@@ -171,13 +171,8 @@ getSizeInBytes(Value val, Location loc, OpBuilder builder) {
 
   // Unranked memrefs should be lowered to just pointer + size, so we need 16
   // bytes.
-  if (type.isa<mlir::UnrankedMemRefType>()) {
-    Value arg_type = builder.create<arith::ConstantOp>(
-        loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_UNRANKED_MEMREF));
-    Value result =
-        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(16));
-    return std::pair<mlir::Value, mlir::Value>(result, arg_type);
-  }
+  assert(!type.isa<mlir::UnrankedMemRefType>() &&
+         "UnrankedMemRefType not currently supported");
 
   Value arg_type = builder.create<arith::ConstantOp>(
       loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_BASE));

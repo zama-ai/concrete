@@ -74,15 +74,14 @@ struct OpaqueInputData {
         param_sizes(std::move(_param_sizes)),
         param_types(std::move(_param_types)),
         output_sizes(std::move(_output_sizes)),
-        output_types(std::move(_output_types)), ksk_id(0), bsk_id(0) {}
+        output_types(std::move(_output_types)) {}
 
   OpaqueInputData(const OpaqueInputData &oid)
       : wfn_name(std::move(oid.wfn_name)), params(std::move(oid.params)),
         param_sizes(std::move(oid.param_sizes)),
         param_types(std::move(oid.param_types)),
         output_sizes(std::move(oid.output_sizes)),
-        output_types(std::move(oid.output_types)), ksk_id(oid.ksk_id),
-        bsk_id(oid.bsk_id) {}
+        output_types(std::move(oid.output_types)) {}
 
   friend class hpx::serialization::access;
   template <class Archive> void load(Archive &ar, const unsigned int version) {
@@ -91,7 +90,8 @@ struct OpaqueInputData {
     ar >> output_sizes >> output_types;
     for (size_t p = 0; p < param_sizes.size(); ++p) {
       char *param;
-      _dfr_checked_aligned_alloc((void **)&param, 64, param_sizes[p]);
+      _dfr_checked_aligned_alloc((void **)&param, sizeof(void *),
+                                 param_sizes[p]);
       ar >> hpx::serialization::make_array(param, param_sizes[p]);
       params.push_back((void *)param);
 
@@ -123,7 +123,6 @@ struct OpaqueInputData {
         params[p] =
             (void *)_dfr_node_level_runtime_context_manager->getContext();
       } break;
-      case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
@@ -157,7 +156,6 @@ struct OpaqueInputData {
         // Nothing to do now - TODO: pass key ids if these are not
         // unique for a computation.
       } break;
-      case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
@@ -172,8 +170,6 @@ struct OpaqueInputData {
   std::vector<uint64_t> param_types;
   std::vector<size_t> output_sizes;
   std::vector<uint64_t> output_types;
-  uint64_t ksk_id;
-  uint64_t bsk_id;
 };
 
 struct OpaqueOutputData {
@@ -193,7 +189,8 @@ struct OpaqueOutputData {
     ar >> output_sizes >> output_types;
     for (size_t p = 0; p < output_sizes.size(); ++p) {
       char *output;
-      _dfr_checked_aligned_alloc((void **)&output, 64, (output_sizes[p]));
+      _dfr_checked_aligned_alloc((void **)&output, sizeof(void *),
+                                 (output_sizes[p]));
 
       ar >> hpx::serialization::make_array(output, output_sizes[p]);
       outputs.push_back((void *)output);
@@ -221,7 +218,6 @@ struct OpaqueOutputData {
       case _DFR_TASK_ARG_CONTEXT: {
 
       } break;
-      case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
@@ -251,7 +247,6 @@ struct OpaqueOutputData {
       case _DFR_TASK_ARG_CONTEXT: {
 
       } break;
-      case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");

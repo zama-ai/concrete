@@ -28,8 +28,7 @@ bool _dfr_use_omp();
 typedef enum _dfr_task_arg_type {
   _DFR_TASK_ARG_BASE = 0,
   _DFR_TASK_ARG_MEMREF = 1,
-  _DFR_TASK_ARG_UNRANKED_MEMREF = 2,
-  _DFR_TASK_ARG_CONTEXT = 3
+  _DFR_TASK_ARG_CONTEXT = 2
 } _dfr_task_arg_type;
 
 static inline _dfr_task_arg_type _dfr_get_arg_type(uint64_t val) {
