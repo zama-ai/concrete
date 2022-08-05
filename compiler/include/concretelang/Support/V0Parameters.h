@@ -42,7 +42,7 @@ struct Description {
 
 } // namespace optimizer
 
-llvm::Optional<V0Parameter> getParameter(optimizer::Description &descr,
+llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
                                          optimizer::Config optimizerConfig);
 } // namespace concretelang
 } // namespace mlir

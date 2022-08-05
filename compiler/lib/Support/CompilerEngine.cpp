@@ -171,11 +171,16 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
 llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   if (compilerOptions.v0Parameter.hasValue()) {
     // parameters come from the compiler options
-    V0Parameter v0Params = compilerOptions.v0Parameter.value();
+    auto v0Params = compilerOptions.v0Parameter.value();
     if (compilerOptions.largeIntegerParameter.hasValue()) {
       v0Params.largeInteger = compilerOptions.largeIntegerParameter;
     }
-    res.fheContext.emplace(mlir::concretelang::V0FHEContext{{0, 0}, v0Params});
+    V0FHEConstraint constraint;
+    if (compilerOptions.v0FHEConstraints.hasValue()) {
+      constraint = compilerOptions.v0FHEConstraints.value();
+    }
+    res.fheContext.emplace(
+        mlir::concretelang::V0FHEContext{constraint, v0Params});
     return llvm::Error::success();
   }
   // compute parameters
@@ -187,16 +192,13 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     if (!descr.get().hasValue()) {
       return llvm::Error::success();
     }
-    auto optV0Params =
+    auto v0Params =
         getParameter(descr.get().value(), compilerOptions.optimizerConfig);
-    if (!optV0Params) {
-      return StreamStringError()
-             << "Could not determine V0 parameters for 2-norm of "
-             << (*descr)->constraint.norm2 << " and p of "
-             << (*descr)->constraint.p;
+    if (auto err = v0Params.takeError()) {
+      return err;
     }
     res.fheContext.emplace(mlir::concretelang::V0FHEContext{
-        descr.get().value().constraint, optV0Params.getValue()});
+        descr.get().value().constraint, v0Params.get()});
   }
 
   return llvm::Error::success();

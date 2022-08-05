@@ -115,7 +115,6 @@ def BConcrete_WopPBSCRTLweBufferOp : BConcrete_Op<"wop_pbs_crt_lwe_buffer"> {
         I32Attr : $keyswitchBaseLog,
         // Packing keyswitch key parameters
         I32Attr : $packingKeySwitchInputLweDimension,
-        I32Attr : $packingKeySwitchinputLweCount,
         I32Attr : $packingKeySwitchoutputPolynomialSize,
         I32Attr : $packingKeySwitchLevel,
         I32Attr : $packingKeySwitchBaseLog,

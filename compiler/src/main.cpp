@@ -230,8 +230,8 @@ llvm::cl::list<int64_t> largeIntegerPackingKeyswitch(
     llvm::cl::desc(
         "Use the large integer to lower FHE.eint with the given parameters for "
         "packing keyswitch, must be used with the other large-integers options "
-        "(experimental) [inputLweDimension, inputLweCount, "
-        "outputPolynomialSize, level, baseLog]"),
+        "(experimental) [inputLweDimension, outputPolynomialSize, level, "
+        "baseLog]"),
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 
 llvm::cl::list<int64_t> largeIntegerCircuitBootstrap(
@@ -330,14 +330,12 @@ cmdlineCompilationOptions() {
         cmdline::largeIntegerCRTDecomposition;
     options.largeIntegerParameter->wopPBS.packingKeySwitch.inputLweDimension =
         cmdline::largeIntegerPackingKeyswitch[0];
-    options.largeIntegerParameter->wopPBS.packingKeySwitch.inputLweCount =
-        cmdline::largeIntegerPackingKeyswitch[1];
     options.largeIntegerParameter->wopPBS.packingKeySwitch
-        .outputPolynomialSize = cmdline::largeIntegerPackingKeyswitch[2];
+        .outputPolynomialSize = cmdline::largeIntegerPackingKeyswitch[1];
     options.largeIntegerParameter->wopPBS.packingKeySwitch.level =
-        cmdline::largeIntegerPackingKeyswitch[3];
+        cmdline::largeIntegerPackingKeyswitch[2];
     options.largeIntegerParameter->wopPBS.packingKeySwitch.baseLog =
-        cmdline::largeIntegerPackingKeyswitch[4];
+        cmdline::largeIntegerPackingKeyswitch[3];
     options.largeIntegerParameter->wopPBS.circuitBootstrap.level =
         cmdline::largeIntegerCircuitBootstrap[0];
     options.largeIntegerParameter->wopPBS.circuitBootstrap.baseLog =

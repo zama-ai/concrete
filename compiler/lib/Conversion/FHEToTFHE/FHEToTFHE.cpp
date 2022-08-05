@@ -147,7 +147,7 @@ struct ApplyLookupTableEintOpToWopPBSPattern
     //         (!TFHE.glwe<{_,_,_}{2}>)
     auto wopPBS = rewriter.replaceOpWithNewOp<TFHE::WopPBSGLWEOp>(
         lutOp, resultTy, lutOp.a(), lutOp.lut(), -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1);
+        -1, -1);
     mlir::concretelang::convertOperandAndResultTypes(
         rewriter, wopPBS, [&](mlir::MLIRContext *, mlir::Type t) {
           return converter.convertType(t);

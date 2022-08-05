@@ -129,7 +129,6 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
         wopOp.keyswitchLevel(), wopOp.keyswitchBaseLog(),
         // Packing keyswitch key parameters
         wopOp.packingKeySwitchInputLweDimension(),
-        wopOp.packingKeySwitchinputLweCount(),
         wopOp.packingKeySwitchoutputPolynomialSize(),
         wopOp.packingKeySwitchLevel(), wopOp.packingKeySwitchBaseLog(),
         // Circuit bootstrap parameters

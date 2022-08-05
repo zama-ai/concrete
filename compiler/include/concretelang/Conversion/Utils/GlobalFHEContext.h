@@ -23,7 +23,6 @@ struct V0FHEConstraint {
 
 struct PackingKeySwitchParameter {
   size_t inputLweDimension;
-  size_t inputLweCount;
   size_t outputPolynomialSize;
   size_t level;
   size_t baseLog;
@@ -55,7 +54,7 @@ struct V0Parameter {
 
   llvm::Optional<LargeIntegerParameter> largeInteger;
 
-  V0Parameter() = delete;
+  V0Parameter() {}
 
   V0Parameter(size_t glweDimension, size_t logPolynomialSize, size_t nSmall,
               size_t brLevel, size_t brLogBase, size_t ksLevel,

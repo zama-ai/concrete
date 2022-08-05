@@ -181,7 +181,6 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
         // Packing keyswitch key parameters
         cryptoParameters.largeInteger->wopPBS.packingKeySwitch
             .inputLweDimension,
-        cryptoParameters.largeInteger->wopPBS.packingKeySwitch.inputLweCount,
         cryptoParameters.largeInteger->wopPBS.packingKeySwitch
             .outputPolynomialSize,
         cryptoParameters.largeInteger->wopPBS.packingKeySwitch.level,

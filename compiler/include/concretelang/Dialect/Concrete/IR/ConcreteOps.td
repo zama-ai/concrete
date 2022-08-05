@@ -97,7 +97,6 @@ def Concrete_WopPBSLweOp : Concrete_Op<"wop_pbs_lwe"> {
         I32Attr : $keyswitchBaseLog,
         // Packing keyswitch key parameters
         I32Attr : $packingKeySwitchInputLweDimension,
-        I32Attr : $packingKeySwitchinputLweCount,
         I32Attr : $packingKeySwitchoutputPolynomialSize,
         I32Attr : $packingKeySwitchLevel,
         I32Attr : $packingKeySwitchBaseLog,
