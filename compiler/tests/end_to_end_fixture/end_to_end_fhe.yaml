@@ -27,9 +27,6 @@ tests:
     - scalar: 72071
     outputs:
     - scalar: 72071
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: zero_tensor
 program: |
@@ -52,9 +49,6 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: add_eint_int_cst
 program: |
@@ -89,9 +83,6 @@ tests:
     - scalar: 72071
     outputs:
     - scalar: 0
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: add_eint_int_arg
 program: |
@@ -133,9 +124,6 @@ tests:
     - scalar: 36035
     outputs:
     - scalar: 72071
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: add_eint
 program: |
@@ -177,9 +165,6 @@ tests:
     - scalar: 36035
     outputs:
     - scalar: 72071
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_eint_int_cst
 program: |
@@ -210,9 +195,6 @@ tests:
       - scalar: 7
     outputs:
       - scalar: 0
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_eint_int_arg
 program: |
@@ -249,9 +231,6 @@ tests:
       - scalar: 2
     outputs:
       - scalar: 72069
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_eint
 program: |
@@ -298,9 +277,6 @@ tests:
       - scalar: 4
     outputs:
       - scalar: 3
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_int_eint_arg
 program: |
@@ -342,20 +318,6 @@ tests:
       - scalar: -1
     outputs:
       - scalar: 1
-  #- inputs:
-  #    - scalar: 72071
-  #    - scalar: 0
-  #  outputs:
-  #    - scalar: 72071
-  #- inputs:
-  #    - scalar: 7
-  #    - scalar: 4
-  #  outputs:
-  #    - scalar: 3
-  
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_int_eint_cst
 program: |
@@ -394,9 +356,6 @@ tests:
       - scalar: 32000
     outputs:
       - scalar: 40071
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: neg_eint
 program: |
@@ -441,9 +400,6 @@ tests:
     - scalar: 72071
     outputs:
     - scalar: 1
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: neg_eint_3bits
 program: |
@@ -514,9 +470,6 @@ tests:
     - scalar: 36035
     outputs:
     - scalar: 72070
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: mul_eint_int_arg
 program: |
@@ -563,9 +516,6 @@ tests:
     - scalar: 3572
     outputs:
     - scalar: 7144
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: apply_lookup_table_1_bits
 program: |
