@@ -42,9 +42,6 @@ tests:
     - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
                38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
       shape: [2,10]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: extract
 program: |
@@ -131,9 +128,6 @@ tests:
     - scalar: 9
     outputs:
     - scalar: 9
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: insert
 program: |
@@ -238,9 +232,6 @@ tests:
     - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
                38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 42]
       shape: [2,10]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: extract_slice
 program: |
@@ -288,9 +279,6 @@ tests:
     outputs:
     - tensor: [64814, 65491, 4271, 9294, 0]
       shape: [1,5]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: extract_slice_stride
 program: |
@@ -325,9 +313,9 @@ tests:
 ---
 description: extract_slice_stride_16bits
 program: |
-  func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
-    %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
-    return %r : tensor<1x5x!FHE.eint<6>>
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<1x5x!FHE.eint<16>> {
+    %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<16>> to tensor<1x5x!FHE.eint<16>>
+    return %r : tensor<1x5x!FHE.eint<16>>
   }
 tests:
   - inputs:
@@ -337,9 +325,6 @@ tests:
     outputs:
     - tensor: [38786, 65112, 60515, 65491, 9294]
       shape: [1,5]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: insert_slice
 program: |
@@ -417,6 +402,3 @@ tests:
     - tensor: [65535, 46706, 18752, 55384, 55709, 1000, 1001, 57650, 45551, 5769,
                38786, 36362, 65112, 5748, 60515, 1002, 1003, 4271, 9294, 0]
       shape: [2,10]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]

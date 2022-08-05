@@ -33,9 +33,6 @@ tests:
     outputs:
     - tensor: [65535, 0, 10215, 22243, 112, 24123, 32766]
       shape: [7]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: add_eint_term_to_term
 program: |
@@ -68,9 +65,6 @@ tests:
     outputs:
     - tensor: [65535, 22243, 10215, 0]
       shape: [4]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_int_eint_term_to_term
 program: |
@@ -107,9 +101,6 @@ tests:
     outputs:
     - tensor: [0, 20967, 3, 0]
       shape: [4]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_eint_int_term_to_term
 program: |
@@ -144,9 +135,6 @@ tests:
     outputs:
     - tensor: [0, 20967, 3, 0]
       shape: [4]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: sub_eint_term_to_term
 program: |
@@ -168,9 +156,9 @@ tests:
 ---
 description: sub_eint_term_to_term_16bits
 program: |
-  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
-    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
-    return %res : tensor<4x!FHE.eint<6>>
+  func.func @main(%a0: tensor<4x!FHE.eint<16>>, %a1: tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<16>>, tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>>
+    return %res : tensor<4x!FHE.eint<16>>
   }
 tests:
   - inputs:
@@ -181,9 +169,6 @@ tests:
     outputs:
     - tensor: [0, 20967, 3, 0]
       shape: [4]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: mul_eint_int_term_to_term
 program: |
@@ -220,9 +205,6 @@ tests:
     outputs:
     - tensor: [65535, 65535, 23844, 0]
       shape: [4]
-v0-constraint: [16, 0]
-v0-parameter: [1,11,565,1,23,5,3]
-large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: transpose1d
 program: |
