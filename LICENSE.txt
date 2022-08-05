@@ -27,13 +27,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCL
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-*EXEMPTION: ZAMA grants to the user a non-exclusive, free and non-commercial license
-on all patents filed in its name relating to the open-source code (the "Patents") for
-the sole purpose of development, research, prototyping and experimentation. It is agreed
-that ZAMA will support the user and the community to use, develop and improve this
-open-source code and Patents included in it. As a counterpart, the user undertakes to
-collaborate and share information with ZAMA regarding any use, developments or improvements,
-whether protectable or not, of this open-source code and Patents included in it. In
-particular, the user commits to declaring to ZAMA their wish to file any patent or
-copyright application relating to this open-source code and Patents included in it,
-before the application is filed.
+*In addition to the rights carried by this license, ZAMA grants to the user a non-exclusive,
+free and non-commercial license on all patents filed in its name relating to the open-source
+code (the "Patents") for the sole purpose of evaluation, development, research, prototyping
+and experimentation.
