@@ -629,31 +629,10 @@ struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
   };
 };
 
-/// This rewrite pattern transforms any instance of
-/// `tensor.from_elements` operators that operates on tensor of lwe ciphertext.
+/// FromElementsOpPatterns transform each tensor.from_elements that operates on
+/// Concrete.lwe_ciphertext
 ///
-/// Example:
-///
-/// ```mlir
-/// %0 = tensor.from_elements %e0, ..., %e(n-1)
-///        : tensor<Nx!Concrete.lwe_ciphertext<lweDim,p>>
-/// ```
-///
-/// becomes:
-///
-/// ```mlir
-/// %m = memref.alloc() : memref<NxlweDim+1xi64>
-/// %s0 = memref.subview %m[0, 0][1, lweDim+1][1, 1] : memref<lweDim+1xi64>
-/// %m0 = memref.buffer_cast %e0 : memref<lweDim+1xi64>
-/// memref.copy %m0, s0 : memref<lweDim+1xi64> to memref<lweDim+1xi64>
-/// ...
-/// %s(n-1) = memref.subview %m[(n-1), 0][1, lweDim+1][1, 1]
-///             : memref<lweDim+1xi64>
-/// %m(n-1) = memref.buffer_cast %e(n-1) : memref<lweDim+1xi64>
-/// memref.copy %e(n-1), s(n-1)
-///   : memref<lweDim+1xi64> to memref<lweDim+1xi64>
-/// %0 = memref.tensor_load %m : memref<NxlweDim+1xi64>
-/// ```
+/// refs: check_tests/Conversion/ConcreteToBConcrete/tensor_from_elements.mlir
 struct FromElementsOpPattern
     : public mlir::OpRewritePattern<mlir::tensor::FromElementsOp> {
   FromElementsOpPattern(::mlir::MLIRContext *context,
@@ -673,26 +652,33 @@ struct FromElementsOpPattern
 
     auto newTensorResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
+    auto newRank = newTensorResultTy.getRank();
+    auto newShape = newTensorResultTy.getShape();
 
     mlir::Value tensor = rewriter.create<mlir::bufferization::AllocTensorOp>(
         fromElementsOp.getLoc(), newTensorResultTy, mlir::ValueRange{});
 
-    llvm::SmallVector<mlir::OpFoldResult> sizes(1,
+    // sizes are [1, ..., 1, lweSize]
+    llvm::SmallVector<mlir::OpFoldResult> sizes(newRank - 1,
                                                 rewriter.getI64IntegerAttr(1));
-    std::transform(newTensorResultTy.getShape().begin() + 1,
-                   newTensorResultTy.getShape().end(),
-                   std::back_inserter(sizes),
-                   [&](auto v) { return rewriter.getI64IntegerAttr(v); });
+    sizes.push_back(
+        rewriter.getI64IntegerAttr(*(newTensorResultTy.getShape().end() - 1)));
 
+    // strides are [1, ..., 1]
     llvm::SmallVector<mlir::OpFoldResult> oneStrides(
-        newTensorResultTy.getShape().size(), rewriter.getI64IntegerAttr(1));
+        newShape.size(), rewriter.getI64IntegerAttr(1));
 
-    llvm::SmallVector<mlir::OpFoldResult> offsets(
-        newTensorResultTy.getRank(), rewriter.getI64IntegerAttr(0));
+    // start with offets [0, ..., 0]
+    llvm::SmallVector<int64_t> currentOffsets(newRank, 0);
 
+    // for each elements insert_slice with right offet
     for (auto elt : llvm::enumerate(fromElementsOp.elements())) {
-      offsets[0] = rewriter.getI64IntegerAttr(elt.index());
-
+      // Just create offsets as attributes
+      llvm::SmallVector<mlir::OpFoldResult, 4> offsets;
+      offsets.reserve(currentOffsets.size());
+      std::transform(currentOffsets.begin(), currentOffsets.end(),
+                     std::back_inserter(offsets),
+                     [&](auto v) { return rewriter.getI64IntegerAttr(v); });
       mlir::tensor::InsertSliceOp insOp =
           rewriter.create<mlir::tensor::InsertSliceOp>(
               fromElementsOp.getLoc(),
@@ -708,6 +694,16 @@ struct FromElementsOpPattern
           });
 
       tensor = insOp.getResult();
+
+      // Increment the offsets
+      for (auto i = newRank - 2; i >= 0; i--) {
+        if (currentOffsets[i] == newShape[i] - 1) {
+          currentOffsets[i] = 0;
+          continue;
+        }
+        currentOffsets[i]++;
+        break;
+      }
     }
 
     rewriter.replaceOp(fromElementsOp, tensor);

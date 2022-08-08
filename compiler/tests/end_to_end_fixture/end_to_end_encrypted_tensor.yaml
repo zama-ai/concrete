@@ -111,3 +111,40 @@ tests:
     - tensor: [63, 12, 7, 43, 52, 31, 32, 34, 22,  0,
                0,  1,  2,  3,  4, 33, 34,  7,  8,  9]
       shape: [2,10]
+---
+description: from_elements
+program: |
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>, %arg2: !FHE.eint<4>, %arg3: !FHE.eint<4>, %arg4: !FHE.eint<4>, %arg5: !FHE.eint<4>) -> tensor<6x!FHE.eint<4>> {
+    %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<6x!FHE.eint<4>>
+    return %0 : tensor<6x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    - scalar: 2
+    - scalar: 3
+    - scalar: 4
+    - scalar: 5
+    outputs:
+    - tensor: [0, 1, 2, 3, 4, 5]
+      shape: [6]
+---
+description: from_elements_2D
+program: |
+  func.func @main(%arg0 : !FHE.eint<4>, %arg1 : !FHE.eint<4>, %arg2 : !FHE.eint<4>, %arg3 : !FHE.eint<4>, %arg4 : !FHE.eint<4>, %arg5 : !FHE.eint<4>) -> tensor<2x3x!FHE.eint<4>> {
+    %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<2x3x!FHE.eint<4>>
+    return %0 : tensor<2x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    - scalar: 2
+    - scalar: 3
+    - scalar: 4
+    - scalar: 5
+    outputs:
+    - tensor: [0, 1, 2,
+               3, 4, 5]
+      shape: [2, 3]
