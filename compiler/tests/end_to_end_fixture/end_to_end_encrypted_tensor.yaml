@@ -91,6 +91,21 @@ tests:
     - tensor: [0, 2, 4, 6, 8]
       shape: [1,5]
 ---
+description: extract_slice_negative_stride
+program: |
+  func.func @main(%arg0: tensor<3x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
+    %0 = tensor.extract_slice %arg0[2] [3] [-1] : tensor<3x!FHE.eint<5>> to tensor<3x!FHE.eint<5>>
+    return %0 : tensor<3x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+    - tensor: [1, 2, 3]
+      shape: [3]
+      width: 8
+    outputs:
+    - tensor: [3, 2, 1]
+      shape: [3]
+---
 description: insert_slice
 program: |
   func.func @main(%t0: tensor<2x10x!FHE.eint<6>>, %t1: tensor<2x2x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
