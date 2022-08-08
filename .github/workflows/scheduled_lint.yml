@@ -1,7 +1,7 @@
 # Scheduled clipy check event that does not have a pinned version
 # of rust, and so will serve as a way to know when new lints are
 # available and that we trigger them.
-name: Rustfmt and Clippy check
+name: Scheduled Clippy Checks
 
 on:
   schedule:
