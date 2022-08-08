@@ -12,6 +12,12 @@ KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
 KEYSETCACHENAME ?= KeySetCacheV1
 
+HPX_VERSION?=1.7.1
+HPX_URL=https://github.com/STEllAR-GROUP/hpx/archive/refs/tags/$(HPX_VERSION).tar.gz
+HPX_TARBALL=$(shell pwd)/hpx-$(HPX_VERSION).tar.gz
+HPX_LOCAL_DIR=$(shell pwd)/hpx-$(HPX_VERSION)
+HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)
+
 export PATH := $(abspath $(BUILD_DIR))/bin:$(PATH)
 
 ifeq ($(shell which ccache),)
@@ -45,6 +51,8 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
+all: concretecompiler python-bindings build-tests build-benchmarks doc
+
 $(BUILD_DIR)/configured.stamp:
 	mkdir -p $(BUILD_DIR)
 	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
@@ -68,8 +76,6 @@ $(BUILD_DIR)/configured.stamp:
 	-DCONCRETE_OPTIMIZER_DIR=${CONCRETE_OPTIMIZER_DIR}
 	touch $@
 
-all: concretecompiler python-bindings build-tests build-benchmarks doc
-
 build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
 
 CONCRETE_OPTIMIZER_SRC = $(shell find $(CONCRETE_OPTIMIZER_DIR)/* -not -path '$(CONCRETE_OPTIMIZER_DIR)/target*')
@@ -81,6 +87,22 @@ $(LIB_CONCRETE_OPTIMIZER_CPP): $(CONCRETE_OPTIMIZER_SRC)
 	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $@
 
 concrete-optimizer-lib: $(LIB_CONCRETE_OPTIMIZER_CPP)
+
+# HPX
+
+install-hpx-from-source: $(HPX_LOCAL_DIR)
+	mkdir -p $(HPX_LOCAL_DIR)/build
+	cd $(HPX_LOCAL_DIR)/build && cmake \
+		-DHPX_WITH_FETCH_ASIO=on \
+		-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
+		-DHPX_WITH_MALLOC=system ..
+	cd $(HPX_LOCAL_DIR)/build && make -j2
+
+$(HPX_TARBALL): 
+	curl -L $(HPX_URL) -o $(HPX_TARBALL)
+
+$(HPX_LOCAL_DIR): $(HPX_TARBALL)
+	tar xzvf $(HPX_TARBALL)
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
