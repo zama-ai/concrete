@@ -520,7 +520,7 @@ def deterministic_unary_function(x):
             {
                 "x": {"status": "encrypted", "range": [0, 15], "shape": (3, 2)},
             },
-            id="x + shape[0] + x.ndim + x.size",
+            id="x + x.shape[0] + x.ndim + x.size",
         ),
         pytest.param(
             lambda x: (50 * np.sin(x.transpose())).astype(np.int64),

@@ -436,8 +436,8 @@ def test_graph_converter_bad_convert(
             range(3),
             """
 
-module  {
-  func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+module {
+  func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
     %c1_i4 = arith.constant 1 : i4
     %cst = arith.constant dense<[4, 1, 2, 3, 3, 3, 3, 3]> : tensor<8xi64>
     %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<3>, tensor<8xi64>) -> !FHE.eint<3>

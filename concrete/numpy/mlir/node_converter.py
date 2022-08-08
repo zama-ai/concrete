@@ -4,7 +4,6 @@ Declaration of `NodeConverter` class.
 
 # pylint: disable=no-member,no-name-in-module,too-many-lines
 
-from copy import deepcopy
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -52,7 +51,7 @@ class NodeConverter:
     one_of_the_inputs_is_a_tensor: bool
 
     constant_cache: Dict[Tuple[Type, Attribute], OpResult]
-    direct_replacements: Dict[str, str]
+    from_elements_operations: Dict[OpResult, List[OpResult]]
 
     # pylint: enable=too-many-instance-attributes
 
@@ -114,7 +113,7 @@ class NodeConverter:
         node: Node,
         preds: List[OpResult],
         constant_cache: Dict[Tuple[Type, Attribute], OpResult],
-        direct_replacements: Dict[str, str],
+        from_elements_operations: Dict[OpResult, List[OpResult]],
     ):
         self.ctx = ctx
         self.graph = graph
@@ -135,7 +134,7 @@ class NodeConverter:
                 self.one_of_the_inputs_is_a_tensor = True
 
         self.constant_cache = constant_cache
-        self.direct_replacements = direct_replacements
+        self.from_elements_operations = from_elements_operations
 
     def convert(self) -> OpResult:
         """
@@ -276,17 +275,10 @@ class NodeConverter:
         resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
         preds = self.preds
 
-        number_of_values = len(preds)
-
-        intermediate_value = deepcopy(self.node.output)
-        intermediate_value.shape = (number_of_values,)
-
-        intermediate_type = NodeConverter.value_to_mlir_type(self.ctx, intermediate_value)
-
-        pred_names = []
+        processed_preds = []
         for pred, value in zip(preds, self.node.inputs):
             if value.is_encrypted or self.node.output.is_clear:
-                pred_names.append(NodeConverter.mlir_name(pred))
+                processed_preds.append(pred)
                 continue
 
             assert isinstance(value.dtype, Integer)
@@ -296,35 +288,22 @@ class NodeConverter:
             zero = fhe.ZeroEintOp(zero_type).result
 
             encrypted_pred = fhe.AddEintIntOp(zero_type, zero, pred).result
-            pred_names.append(NodeConverter.mlir_name(encrypted_pred))
+            processed_preds.append(encrypted_pred)
 
         # `placeholder_result` will be replaced textually by `actual_value` below in graph converter
         # `tensor.from_elements` cannot be created from python bindings
         # that's why we use placeholder values and text manipulation
 
-        placeholder_result = fhe.ZeroTensorOp(intermediate_type).result
-        placeholder_result_name = NodeConverter.mlir_name(placeholder_result)
+        if self.node.output.is_clear:
+            attribute = Attribute.parse(f"dense<0> : {resulting_type}")
+            # pylint: disable=too-many-function-args
+            placeholder_result = arith.ConstantOp(resulting_type, attribute).result
+            # pylint: enable=too-many-function-args
+        else:
+            placeholder_result = fhe.ZeroTensorOp(resulting_type).result
 
-        actual_value = f"tensor.from_elements {', '.join(pred_names)} : {intermediate_type}"
-        self.direct_replacements[placeholder_result_name] = actual_value
-
-        if self.node.output.shape == (number_of_values,):
-            return placeholder_result
-
-        return tensor.ExpandShapeOp(
-            resulting_type,
-            placeholder_result,
-            ArrayAttr.get(
-                [
-                    ArrayAttr.get(
-                        [
-                            IntegerAttr.get(IntegerType.get_signless(64), i)
-                            for i in range(len(self.node.output.shape))
-                        ]
-                    )
-                ]
-            ),
-        ).result
+        self.from_elements_operations[placeholder_result] = processed_preds
+        return placeholder_result
 
     def _convert_concat(self) -> OpResult:
         """

@@ -43,7 +43,7 @@ matplotlib = "^3.5.1"
 numpy = "^1.22.0"
 pygraphviz = { version = "^1.7", optional = true }
 Pillow = "^9.0.0"
-concrete-compiler = "^0.13.0"
+concrete-compiler = "^0.15.0"
 torch = "^1.10.2"
 
 [tool.poetry.extras]

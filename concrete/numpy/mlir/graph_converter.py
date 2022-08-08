@@ -19,6 +19,7 @@ from mlir.ir import (
     IntegerType,
     Location,
     Module,
+    OpResult,
     RankedTensorType,
 )
 
@@ -460,8 +461,7 @@ class GraphConverter:
         GraphConverter._offset_negative_lookup_table_inputs(graph)
         GraphConverter._tensorize_scalars_for_fhelinalg(graph)
 
-        # { "%0": "tensor.from_elements ..." } == we need to convert the part after "=" for %0
-        direct_replacements: Dict[str, str] = {}
+        from_elements_operations: Dict[OpResult, List[OpResult]] = {}
 
         with Context() as ctx, Location.unknown():
             concretelang.register_dialects(ctx)
@@ -493,12 +493,18 @@ class GraphConverter:
                             node,
                             preds,
                             constant_cache,
-                            direct_replacements,
+                            from_elements_operations,
                         )
                         ir_to_mlir[node] = node_converter.convert()
 
                     results = (ir_to_mlir[output_node] for output_node in graph.ordered_outputs())
                     return results
+
+        direct_replacements = {}
+        for placeholder, elements in from_elements_operations.items():
+            element_names = [NodeConverter.mlir_name(element) for element in elements]
+            actual_value = f"tensor.from_elements {', '.join(element_names)} : {placeholder.type}"
+            direct_replacements[NodeConverter.mlir_name(placeholder)] = actual_value
 
         module_lines_after_hacks_are_applied = []
         for line in str(module).split("\n"):
