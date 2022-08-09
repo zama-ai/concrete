@@ -9,7 +9,7 @@
 /// This hides the details of implementation, including of the HPX
 /// framework currently used, from the code generation side.
 
-#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+#ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
 
 #include <assert.h>
 #include <hpx/barrier.hpp>
@@ -1287,7 +1287,7 @@ void _dfr_print_debug(size_t val) {
   hpx::cout << "_dfr_print_debug : " << val << "\n" << std::flush;
 }
 
-#else // CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+#else // CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
 
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/time_util.h"

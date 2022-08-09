@@ -234,7 +234,7 @@ clientParametersSerialize(mlir::concretelang::ClientParameters &params) {
 }
 
 void terminateParallelization() {
-#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+#ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
   _dfr_terminate();
 #endif
 }

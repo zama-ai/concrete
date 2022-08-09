@@ -30,8 +30,8 @@ internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
 
   // Allow loop parallelism in all cases
   options.loopParallelize = loopParallelize;
-#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
-#ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
+#ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
+#ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
   options.dataflowParallelize = true;
   options.loopParallelize = true;
 #else

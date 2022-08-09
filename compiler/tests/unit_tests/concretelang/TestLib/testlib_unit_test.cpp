@@ -44,8 +44,8 @@ compile(std::string outputLib, std::string source,
       mlir::concretelang::CompilationContext::createShared();
   mlir::concretelang::CompilerEngine ce{ccx};
   mlir::concretelang::CompilationOptions options(funcname);
-#ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
-  options.autoParallelize = true;
+#ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
+  options.dataflowParallelize = true;
 #endif
   ce.setCompilationOptions(options);
   auto result = ce.compile(sources, outputLib);

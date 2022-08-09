@@ -24,7 +24,7 @@ static inline int timespec_diff(struct timespec *, const struct timespec *,
     assert(clock_gettime(TIME_UTIL_CLOCK, (p)) == 0);                          \
   } while (0)
 
-#if CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+#if CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
 #define END_TIME(p, m)                                                         \
   do {                                                                         \
     struct timespec _end_time_tv;                                              \

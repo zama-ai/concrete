@@ -359,7 +359,7 @@ jobs:
             pip install pytest
             rm -rf /build
             export PYTHONPATH=""
-            make PARALLEL_EXECUTION_ENABLED=ON CCACHE=ON BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache

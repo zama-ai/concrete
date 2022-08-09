@@ -2,9 +2,9 @@ FROM ubuntu:latest
 
 RUN apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ \
-    				     build-essential python3 python3-pip \
-				     python3-setuptools ninja-build git \
-				     zlib1g-dev ccache libboost-filesystem-dev libhwloc-dev
+    build-essential python3 python3-pip \
+    python3-setuptools ninja-build git \
+    zlib1g-dev ccache libboost-filesystem-dev libhwloc-dev
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
@@ -24,8 +24,8 @@ COPY /llvm-project /llvm-project
 COPY /compiler /compiler
 WORKDIR /compiler
 RUN mkdir -p /build
-RUN make PARALLEL_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
-        concretecompiler python-bindings && \
+RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
+    concretecompiler python-bindings && \
     mv /build/tools/concretelang/python_packages/concretelang_core /concretelang_core && \
     mv /build/bin/concretecompiler /bin && \
     mv /build/lib/libConcretelangRuntime.so /lib && \

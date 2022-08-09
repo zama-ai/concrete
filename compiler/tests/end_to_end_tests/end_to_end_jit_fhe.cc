@@ -25,7 +25,7 @@ void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
   }
 
   /* 0 - Enable parallel testing where required */
-#ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
+#ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
   options.dataflowParallelize = true;
   options.loopParallelize = true;
 #endif

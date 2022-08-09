@@ -4,7 +4,7 @@ add_library(ConcretelangRuntime SHARED
   DFRuntime.cpp
 )
 
-if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(
     ConcretelangRuntime
     PRIVATE

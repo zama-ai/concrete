@@ -17,9 +17,9 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   )
 endif()
 
-if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   add_compile_options(
-    -DCONCRETELANG_PARALLEL_TESTING_ENABLED
+    -DCONCRETELANG_DATAFLOW_TESTING_ENABLED
   )
 endif()
 
@@ -59,7 +59,7 @@ add_concretecompiler_unittest(
   globals.cc
 )
 
-if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   add_concretecompiler_unittest(
     end_to_end_jit_auto_parallelization
     end_to_end_jit_auto_parallelization.cc

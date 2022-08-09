@@ -84,7 +84,7 @@ uint64_t numArgOfRankedMemrefCallingConvention(uint64_t rank) {
 llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
 JITLambda::call(clientlib::PublicArguments &args,
                 clientlib::EvaluationKeys &evaluationKeys) {
-#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+#ifndef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
   if (this->useDataflow) {
     return StreamStringError(
         "call: current runtime doesn't support dataflow execution, while "
