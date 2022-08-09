@@ -75,6 +75,22 @@ tests:
     - tensor: [ 5,  6,  7,  8,  9]
       shape: [1,5]
 ---
+description: extract_slice_with_rank_reduction
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<5x!FHE.eint<6>> {
+    %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<6>> to tensor<5x!FHE.eint<6>>
+    return %r : tensor<5x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    outputs:
+    - tensor: [ 5,  6,  7,  8,  9]
+      shape: [5]
+---
 description: extract_slice_stride
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
