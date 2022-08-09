@@ -32,7 +32,6 @@ const auto v0Curve = getV0Curves(securityLevel, keyFormat);
 
 /// For the v0 the secretKeyID and precision are the same for all gates.
 llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
-                                             Precision precision,
                                              Variance variance,
                                              mlir::Type type) {
   if (type.isIntOrIndex()) {
@@ -53,9 +52,11 @@ llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
         },
     };
   }
-  if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>()) {
+  if (auto lweType = type.dyn_cast_or_null<
+                     mlir::concretelang::Concrete::LweCiphertextType>()) {
     // TODO - Get the width from the LWECiphertextType instead of global
     // precision (could be possible after merge concrete-ciphertext-parameter)
+    size_t precision = (size_t)lweType.getP();
     return CircuitGate{
         /* .encryption = */ llvm::Optional<EncryptionGate>({
             /* .secretKeyID = */ secretKeyID,
@@ -75,8 +76,8 @@ llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
   }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
   if (tensor != nullptr) {
-    auto gate = gateFromMLIRType(secretKeyID, precision, variance,
-                                 tensor.getElementType());
+    auto gate =
+        gateFromMLIRType(secretKeyID, variance, tensor.getElementType());
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
@@ -142,9 +143,6 @@ createClientParametersForV0(V0FHEContext fheContext,
         llvm::inconvertibleErrorCode());
   }
 
-  // For the v0 the precision is global
-  auto precision = fheContext.constraint.p;
-
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getFunctionType();
 
@@ -157,16 +155,14 @@ createClientParametersForV0(V0FHEContext fheContext,
 
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {
-    auto gate =
-        gateFromMLIRType(BIG_KEY, precision, encryptionVariance, *inType);
+    auto gate = gateFromMLIRType(BIG_KEY, encryptionVariance, *inType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
     c.inputs.push_back(gate.get());
   }
   for (auto outType : funcType.getResults()) {
-    auto gate =
-        gateFromMLIRType(BIG_KEY, precision, encryptionVariance, outType);
+    auto gate = gateFromMLIRType(BIG_KEY, encryptionVariance, outType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }

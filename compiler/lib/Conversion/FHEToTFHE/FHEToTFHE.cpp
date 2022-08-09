@@ -99,8 +99,8 @@ struct ApplyLookupTableEintOpPattern
                        .cast<TFHE::GLWECipherTextType>();
     auto resultTy = converter.convertType(lutOp.getType());
     //  %glwe_lut = "TFHE.glwe_from_table"(%lut)
-    auto glweLut = rewriter.create<TFHE::GLWEFromTableOp>(lutOp.getLoc(),
-                                                          inputTy, lutOp.lut());
+    auto glweLut = rewriter.create<TFHE::GLWEFromTableOp>(
+        lutOp.getLoc(), resultTy, lutOp.lut());
     //  %glwe_ks = "TFHE.keyswitch_glwe"(%ct)
     auto glweKs = rewriter.create<TFHE::KeySwitchGLWEOp>(
         lutOp.getLoc(), inputTy, lutOp.a(), -1, -1);
