@@ -131,7 +131,7 @@ impl From<DagSolution> for ffi::DagSolution {
                 use_wop_pbs: true,
                 cb_decomposition_level_count: sol.cb_decomposition_level_count,
                 cb_decomposition_base_log: sol.cb_decomposition_base_log,
-                crt_decomposition: vec![],
+                crt_decomposition: sol.crt_decomposition,
             },
         }
     }

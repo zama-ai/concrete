@@ -66,13 +66,12 @@ pub fn optimize<W: UnsignedInteger>(
     } else if max_precision > MAXIMAL_WOP_PRECISION {
         None
     } else {
-        let fallback_16b_precision = 16;
         let default_log_norm = default_log_norm2_woppbs;
         let worst_log_norm = analyze::worst_log_norm(dag);
         let nb_luts = analyze::lut_count_from_dag(dag);
         let log_norm = default_log_norm.min(worst_log_norm);
         let opt_sol = wop_optimize::<W>(
-            fallback_16b_precision,
+            max_precision as u64,
             security_level,
             log_norm,
             maximum_acceptable_error_probability,

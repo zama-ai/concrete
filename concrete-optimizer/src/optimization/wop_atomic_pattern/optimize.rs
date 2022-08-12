@@ -44,7 +44,7 @@ pub struct OptimizationState {
     pub count_domain: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Solution {
     pub input_lwe_dimension: u64,
     //n_big
@@ -69,6 +69,7 @@ pub struct Solution {
     // error probability
     pub cb_decomposition_level_count: u64,
     pub cb_decomposition_base_log: u64,
+    pub crt_decomposition: Vec<u64>,
 }
 
 impl Solution {
@@ -88,6 +89,7 @@ impl Solution {
             global_p_error: 0.0,
             cb_decomposition_level_count: 0,
             cb_decomposition_base_log: 0,
+            crt_decomposition: vec![],
         }
     }
 }
@@ -241,8 +243,14 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
         return;
     }
 
-    let mut best_complexity = state.best_solution.map_or(f64::INFINITY, |s| s.complexity);
-    let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
+    let mut best_complexity = state
+        .best_solution
+        .as_ref()
+        .map_or(f64::INFINITY, |s| s.complexity);
+    let mut best_variance = state
+        .best_solution
+        .as_ref()
+        .map_or(f64::INFINITY, |s| s.noise_max);
 
     let variance_cost_opt = compute_noise_cost_by_micro_param::<W>(
         consts,
@@ -437,6 +445,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     global_p_error: f64::NAN,
                     cb_decomposition_level_count: circuit_pbs_decomposition_parameter.level,
                     cb_decomposition_base_log: circuit_pbs_decomposition_parameter.log2_base,
+                    crt_decomposition: vec![],
                 });
             }
         }
@@ -535,7 +544,7 @@ pub fn optimize_one<W: UnsignedInteger>(
     let nb_words = partitionning.len() as u64;
     let max_word_precision = *partitionning.iter().max().unwrap() as u64;
     let n_functions = 1;
-    optimize_raw::<W>(
+    let mut state = optimize_raw::<W>(
         max_word_precision,
         log_norm,
         security_level,
@@ -545,7 +554,12 @@ pub fn optimize_one<W: UnsignedInteger>(
         internal_lwe_dimensions,
         n_functions,
         nb_words, // Tau
-    )
+    );
+    state.best_solution = state.best_solution.map(|mut sol| -> Solution {
+        sol.crt_decomposition = coprimes;
+        sol
+    });
+    state
 }
 
 #[allow(clippy::too_many_lines)]
