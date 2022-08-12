@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "concrete-numpy"
-version = "0.6.0-rc10"
+version = "0.6.0-rc11"
 description = "Concrete Numpy is an open-source library which simplifies the use of fully homomorphic encryption (FHE)."
 license = "BSD-3-Clause"
 authors = [
