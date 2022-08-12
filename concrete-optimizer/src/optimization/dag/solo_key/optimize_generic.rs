@@ -10,6 +10,7 @@ use crate::optimization::wop_atomic_pattern::optimize::optimize_one as wop_optim
 use crate::optimization::wop_atomic_pattern::Solution as WopSolution;
 
 const MINIMAL_WOP_PRECISION: Precision = 9;
+const MAXIMAL_WOP_PRECISION: Precision = 16;
 
 pub enum Solution {
     WpSolution(WpSolution),
@@ -54,6 +55,8 @@ pub fn optimize<W: UnsignedInteger>(
         )
         .best_solution;
         opt_sol.map(Solution::WpSolution)
+    } else if max_precision > MAXIMAL_WOP_PRECISION {
+        None
     } else {
         let fallback_16b_precision = 16;
         let default_log_norm = default_log_norm2_woppbs;
