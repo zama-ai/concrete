@@ -95,9 +95,7 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
 
   if (sol.p_error == 1.0) {
     // The optimizer return a p_error = 1 if there is no solution
-    return StreamStringError()
-           << "Could not determine V0 parameters for 2-norm of "
-           << descr.constraint.norm2 << " and p of " << descr.constraint.p;
+    return StreamStringError() << "Cannot find crypto parameters";
   }
 
   V0Parameter params;
