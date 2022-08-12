@@ -178,7 +178,7 @@ def test_client_server_api(helpers):
     def function(x):
         return x + 42
 
-    inputset = range(10)
+    inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
     circuit = function.compile(inputset, configuration.fork(jit=False))
 
     # for coverage
@@ -206,7 +206,7 @@ def test_client_server_api(helpers):
         ]
 
         for client in clients:
-            args = client.encrypt(4)
+            args = client.encrypt([3, 8, 1])
 
             serialized_args = client.specs.serialize_public_args(args)
             serialized_evaluation_keys = client.evaluation_keys.serialize()
@@ -220,7 +220,7 @@ def test_client_server_api(helpers):
             unserialized_result = client.specs.unserialize_public_result(serialized_result)
             output = client.decrypt(unserialized_result)
 
-            assert output == 46
+            assert np.array_equal(output, [45, 50, 43])
 
         server.cleanup()
 

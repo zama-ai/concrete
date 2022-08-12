@@ -128,6 +128,9 @@ class Client:
         sanitized_args: Dict[int, Union[int, np.ndarray]] = {}
         for index, spec in enumerate(input_specs):
             arg = args[index]
+            if isinstance(arg, list):
+                arg = np.array(arg)
+
             is_valid = isinstance(arg, (int, np.integer)) or (
                 isinstance(arg, np.ndarray) and np.issubdtype(arg.dtype, np.integer)
             )
