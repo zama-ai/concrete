@@ -194,7 +194,8 @@ class GraphConverter:
 
         if len(offending_nodes) == 0:
             for node in graph.graph.nodes:
-                if (reason := GraphConverter._check_node_convertibility(graph, node)) is not None:
+                reason = GraphConverter._check_node_convertibility(graph, node)
+                if reason is not None:
                     offending_nodes[node] = [reason]
 
         if len(offending_nodes) != 0:

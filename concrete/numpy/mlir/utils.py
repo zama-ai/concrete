@@ -2,7 +2,6 @@
 Declaration of various functions and constants related to MLIR conversion.
 """
 
-import math
 from collections import defaultdict, deque
 from copy import deepcopy
 from itertools import product
@@ -165,7 +164,7 @@ def construct_deduplicated_tables(
         tables_to_cell_idx[hashable_array].append(idx)
         all_idx_set.add(idx)
 
-    assert_that(len(all_idx_set) == math.prod(node_complete_table.shape[:-1]))
+    assert_that(len(all_idx_set) == np.prod(node_complete_table.shape[:-1]))
 
     return tuple(
         (hashable_array.array, indices) for hashable_array, indices in tables_to_cell_idx.items()

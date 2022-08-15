@@ -47,7 +47,10 @@ def univariate(
                 else np.int64
             )
 
-            sample = dtype(1) if x.output.shape == () else np.ones(x.output.shape, dtype=dtype)
+            if x.output.shape == ():
+                sample = dtype(1)  # type: ignore
+            else:
+                sample = np.ones(x.output.shape, dtype=dtype)
             evaluation = function(sample)
 
             output_value = Value.of(evaluation, is_encrypted=x.output.is_encrypted)

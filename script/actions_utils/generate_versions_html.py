@@ -89,9 +89,8 @@ def main(args):
             )
             version_tags.append(potential_version_tag.string)
 
-        assert (
-            num_version_tags := len(version_tags) == 1
-        ), f"Can only have 1 version tag, got {num_version_tags}"
+        num_version_tags = len(version_tags)
+        assert num_version_tags == 1, f"Can only have 1 version tag, got {num_version_tags}"
 
         version_tag = version_tags[0]
 

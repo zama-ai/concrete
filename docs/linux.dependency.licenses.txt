@@ -6,8 +6,8 @@
  fonttools          4.36.0     MIT License
  kiwisolver         1.4.4      BSD License
  matplotlib         3.5.3      Python Software Foundation License
- networkx           2.8.5      BSD License
- numpy              1.23.2     BSD License
+ networkx           2.6.3      BSD License
+ numpy              1.21.6     BSD License
  packaging          21.3       Apache Software License; BSD License
  pyparsing          3.0.9      MIT License
  python-dateutil    2.8.2      Apache Software License; BSD License
@@ -15,4 +15,4 @@
  six                1.16.0     MIT License
  tomli              2.0.1      MIT License
  torch              1.12.1     BSD License
- typing-extensions  4.3.0      Python Software Foundation License
+ typing-extensions  3.10.0.2   Python Software Foundation License

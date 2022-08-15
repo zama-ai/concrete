@@ -16,18 +16,18 @@ MACOS = "macos"
 OSES = {LINUX, MACOS}
 
 PR_OSES = {LINUX: "ubuntu-20.04"}
-PR_PYTHON_VERSIONS = ["3.8"]
+PR_PYTHON_VERSIONS = ["3.7"]
 PR_CONF = {"os": PR_OSES, "python": PR_PYTHON_VERSIONS}
 
 PUSH_TO_MAIN_OSES = {LINUX: "ubuntu-20.04"}
-PUSH_TO_MAIN_PYTHON_VERSIONS = ["3.8"]
+PUSH_TO_MAIN_PYTHON_VERSIONS = ["3.7"]
 PUSH_TO_MAIN_CONF = {"os": PUSH_TO_MAIN_OSES, "python": PUSH_TO_MAIN_PYTHON_VERSIONS}
 
 WEEKLY_OSES = {
     LINUX: "ubuntu-20.04",
     MACOS: "macos-11",
 }
-WEEKLY_PYTHON_VERSIONS = ["3.8", "3.9"]
+WEEKLY_PYTHON_VERSIONS = ["3.7", "3.8", "3.9"]
 WEEKLY_CONF = {"os": WEEKLY_OSES, "python": WEEKLY_PYTHON_VERSIONS}
 
 # The OSes here are to indicate the OSes used for runners during release
@@ -38,7 +38,7 @@ RELEASE_OSES = {
     # MACOS: "macos-10.15",
 }
 # The python versions will be used to build packages during release
-RELEASE_PYTHON_VERSIONS = ["3.8", "3.9"]
+RELEASE_PYTHON_VERSIONS = ["3.7", "3.8", "3.9"]
 RELEASE_CONF = {"os": RELEASE_OSES, "python": RELEASE_PYTHON_VERSIONS}
 
 CONFIGURATIONS = {

@@ -34,12 +34,13 @@ def islatest(args):
             )
 
             # Keep versions that are not release candidate
-            all_non_prerelease_version_infos = [
-                version_info
+            version_infos = [
+                VersionInfo.parse(version_str)
                 for version_str in all_versions_str
                 if VersionInfo.isvalid(version_str)
-                and (version_info := VersionInfo.parse(version_str))
-                and version_info.prerelease is None
+            ]
+            all_non_prerelease_version_infos = [
+                version_info for version_info in version_infos if version_info.prerelease is None
             ]
 
             all_non_prerelease_version_infos.append(new_version_info)

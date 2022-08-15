@@ -2,7 +2,6 @@
 Declaration of `Value` class.
 """
 
-from math import prod
 from typing import Any, Tuple
 
 import numpy as np
@@ -159,4 +158,4 @@ class Value:
                 number of elements in the value
         """
 
-        return int(prod(self.shape))
+        return int(np.prod(self.shape))
