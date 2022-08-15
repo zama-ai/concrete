@@ -264,6 +264,16 @@ lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
   return pm.run(module.getOperation());
 }
 
+mlir::LogicalResult asyncOffload(mlir::MLIRContext &context,
+                                 mlir::ModuleOp &module,
+                                 std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("AsyncOffload", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createAsyncOffload(),
+                           enablePass);
+  return pm.run(module.getOperation());
+}
+
 mlir::LogicalResult
 lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass) {

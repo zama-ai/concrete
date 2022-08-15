@@ -21,4 +21,9 @@ def EliminateCRTOps : Pass<"eliminate-bconcrete-crt-ops", "mlir::func::FuncOp"> 
   let constructor = "mlir::concretelang::createEliminateCRTOpsPass()";
 }
 
+def AsyncOffload : Pass<"async-offload", "mlir::ModuleOp"> {
+  let summary = "Replace keyswitch and bootstrap operations by async versions and add synchronisation.";
+  let constructor = "mlir::concretelang::createAsyncOffload()";
+}
+
 #endif // MLIR_DIALECT_TENSOR_TRANSFORMS_PASSES

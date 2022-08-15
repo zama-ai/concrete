@@ -1,6 +1,7 @@
 add_library(ConcretelangRuntime SHARED
   context.cpp
   wrappers.cpp
+  AsyncOffload.cpp
   DFRuntime.cpp
   seeder.cpp
 )

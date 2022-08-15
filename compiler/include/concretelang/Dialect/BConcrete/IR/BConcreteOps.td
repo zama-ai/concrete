@@ -8,6 +8,8 @@ include "mlir/Dialect/MemRef/IR/MemRefBase.td"
 
 include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.td"
 include "concretelang/Dialect/Concrete/IR/ConcreteTypes.td"
+include "concretelang/Dialect/RT/IR/RTDialect.td"
+include "concretelang/Dialect/RT/IR/RTTypes.td"
 
 class BConcrete_Op<string mnemonic, list<Trait> traits = []> :
     Op<BConcrete_Dialect, mnemonic, traits>;
@@ -123,6 +125,35 @@ def BConcrete_WopPBSCRTLweBufferOp : BConcrete_Op<"wop_pbs_crt_lwe_buffer"> {
         I32Attr : $circuitBootstrapBaseLog
     );
     let results = (outs 2DTensorOf<[I64]>:$result);
+}
+
+def BConcrete_KeySwitchLweBufferAsyncOffloadOp :
+    BConcrete_Op<"keyswitch_lwe_buffer_async_offload"> {
+    let arguments = (ins
+        // LweKeySwitchKeyType:$keyswitch_key,
+        1DTensorOf<[I64]>:$ciphertext,
+        I32Attr:$level,
+        I32Attr:$baseLog
+    );
+    let results = (outs RT_Future : $result);
+}
+
+def BConcrete_BootstrapLweBufferAsyncOffloadOp :
+    BConcrete_Op<"bootstrap_lwe_buffer_async_offload"> {
+    let arguments = (ins
+        // LweBootstrapKeyType:$bootstrap_key,
+        1DTensorOf<[I64]>:$input_ciphertext,
+        1DTensorOf<[I64]>:$accumulator,
+        I32Attr:$level,
+        I32Attr:$baseLog
+    );
+    let results = (outs RT_Future : $result);
+}
+
+def BConcrete_AwaitFutureOp :
+    BConcrete_Op<"await_future"> {
+    let arguments = (ins RT_Future : $future);
+    let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
 #endif

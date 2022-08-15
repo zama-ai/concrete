@@ -85,6 +85,9 @@ char memref_mul_cleartext_lwe_ciphertext_u64[] =
 char memref_negate_lwe_ciphertext_u64[] = "memref_negate_lwe_ciphertext_u64";
 char memref_keyswitch_lwe_u64[] = "memref_keyswitch_lwe_u64";
 char memref_bootstrap_lwe_u64[] = "memref_bootstrap_lwe_u64";
+char memref_keyswitch_async_lwe_u64[] = "memref_keyswitch_async_lwe_u64";
+char memref_bootstrap_async_lwe_u64[] = "memref_bootstrap_async_lwe_u64";
+char memref_await_future[] = "memref_await_future";
 char memref_expand_lut_in_trivial_glwe_ct_u64[] =
     "memref_expand_lut_in_trivial_glwe_ct_u64";
 
@@ -95,9 +98,10 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
 
   auto memref1DType = getDynamicMemrefWithUnknownOffset(rewriter, 1);
   auto memref2DType = getDynamicMemrefWithUnknownOffset(rewriter, 2);
+  auto futureType =
+      mlir::concretelang::RT::FutureType::get(rewriter.getIndexType());
   auto contextType =
       mlir::concretelang::Concrete::ContextType::get(rewriter.getContext());
-
   mlir::FunctionType funcType;
 
   if (funcName == memref_add_lwe_ciphertexts_u64) {
@@ -121,6 +125,18 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(
         rewriter.getContext(),
         {memref1DType, memref1DType, memref1DType, contextType}, {});
+  } else if (funcName == memref_keyswitch_async_lwe_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(), {memref1DType, memref1DType, contextType},
+        {futureType});
+  } else if (funcName == memref_bootstrap_async_lwe_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref1DType, memref1DType, memref1DType, contextType}, {futureType});
+  } else if (funcName == memref_await_future) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref1DType, futureType, memref1DType, memref1DType}, {});
   } else if (funcName == memref_expand_lut_in_trivial_glwe_ct_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {
@@ -333,6 +349,154 @@ struct BufferizableGlweFromTableOpInterface
   }
 };
 
+template <typename Op, char const *funcName, bool withContext = false>
+struct BufferizableWithAsyncCallOpInterface
+    : public BufferizableOpInterface::ExternalModel<
+          BufferizableWithAsyncCallOpInterface<Op, funcName, withContext>, Op> {
+  bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
+                              const AnalysisState &state) const {
+    return true;
+  }
+
+  bool bufferizesToMemoryWrite(Operation *op, OpOperand &opOperand,
+                               const AnalysisState &state) const {
+    return false;
+  }
+
+  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+                                            const AnalysisState &state) const {
+    return {};
+  }
+
+  BufferRelation bufferRelation(Operation *op, OpResult opResult,
+                                const AnalysisState &state) const {
+    return BufferRelation::None;
+  }
+
+  LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
+                          const BufferizationOptions &options) const {
+
+    auto loc = op->getLoc();
+    auto castOp = cast<Op>(op);
+
+    // For now we always alloc for the result, we didn't have the in place
+    // operators yet.
+    auto resTensorType =
+        castOp.result()
+            .getType()
+            .template cast<mlir::concretelang::RT::FutureType>()
+            .getElementType()
+            .template cast<mlir::TensorType>();
+
+    auto outMemrefType = MemRefType::get(resTensorType.getShape(),
+                                         resTensorType.getElementType());
+    auto outMemref = options.createAlloc(rewriter, loc, outMemrefType, {});
+    if (mlir::failed(outMemref)) {
+      return mlir::failure();
+    }
+
+    // The first operand is the result
+    mlir::SmallVector<mlir::Value, 3> operands{
+        getCastedMemRef(rewriter, loc, *outMemref),
+    };
+    // For all tensor operand get the corresponding casted buffer
+    for (auto &operand : op->getOpOperands()) {
+      if (!operand.get().getType().isa<mlir::RankedTensorType>()) {
+        operands.push_back(operand.get());
+      } else {
+        auto memrefOperand =
+            bufferization::getBuffer(rewriter, operand.get(), options);
+        operands.push_back(getCastedMemRef(rewriter, loc, memrefOperand));
+      }
+    }
+    // Append the context argument
+    if (withContext) {
+      operands.push_back(getContextArgument(op));
+    }
+
+    // Insert forward declaration of the function
+    if (insertForwardDeclarationOfTheCAPI(op, rewriter, funcName).failed()) {
+      return mlir::failure();
+    }
+
+    auto result = rewriter.create<mlir::func::CallOp>(
+        loc, funcName,
+        mlir::TypeRange{
+            mlir::concretelang::RT::FutureType::get(rewriter.getIndexType())},
+        operands);
+
+    replaceOpWithBufferizedValues(rewriter, op, result.getResult(0));
+
+    return success();
+  }
+};
+
+template <typename Op, char const *funcName>
+struct BufferizableWithSyncCallOpInterface
+    : public BufferizableOpInterface::ExternalModel<
+          BufferizableWithSyncCallOpInterface<Op, funcName>, Op> {
+  bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
+                              const AnalysisState &state) const {
+    return true;
+  }
+
+  bool bufferizesToMemoryWrite(Operation *op, OpOperand &opOperand,
+                               const AnalysisState &state) const {
+    return false;
+  }
+
+  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+                                            const AnalysisState &state) const {
+    return {};
+  }
+
+  BufferRelation bufferRelation(Operation *op, OpResult opResult,
+                                const AnalysisState &state) const {
+    return BufferRelation::None;
+  }
+
+  LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
+                          const BufferizationOptions &options) const {
+
+    auto loc = op->getLoc();
+    auto castOp = cast<Op>(op);
+
+    auto resTensorType =
+        castOp.result().getType().template cast<mlir::TensorType>();
+
+    auto outMemrefType = MemRefType::get(resTensorType.getShape(),
+                                         resTensorType.getElementType());
+    auto outMemref = options.createAlloc(rewriter, loc, outMemrefType, {});
+    if (mlir::failed(outMemref)) {
+      return mlir::failure();
+    }
+
+    // The first operand is the result
+    mlir::SmallVector<mlir::Value, 3> operands{
+        getCastedMemRef(rewriter, loc, *outMemref),
+    };
+    // Then add the future operand
+    operands.push_back(op->getOpOperand(0).get());
+    // Finally add a dependence on the memref covered by the future to
+    // prevent early deallocation
+    auto def = op->getOpOperand(0).get().getDefiningOp();
+    operands.push_back(def->getOpOperand(0).get());
+    operands.push_back(def->getOpOperand(1).get());
+
+    // Insert forward declaration of the function
+    if (insertForwardDeclarationOfTheCAPI(op, rewriter, funcName).failed()) {
+      return mlir::failure();
+    }
+
+    rewriter.create<mlir::func::CallOp>(loc, funcName, mlir::TypeRange{},
+                                        operands);
+
+    replaceOpWithBufferizedValues(rewriter, op, *outMemref);
+
+    return success();
+  }
+};
+
 } // namespace
 
 void mlir::concretelang::BConcrete::
@@ -363,6 +527,17 @@ void mlir::concretelang::BConcrete::
     BConcrete::WopPBSCRTLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::WopPBSCRTLweBufferOp,
                                         memref_wop_pbs_crt_buffer, true>>(*ctx);
+    BConcrete::KeySwitchLweBufferAsyncOffloadOp::attachInterface<
+        BufferizableWithAsyncCallOpInterface<
+            BConcrete::KeySwitchLweBufferAsyncOffloadOp,
+            memref_keyswitch_async_lwe_u64, true>>(*ctx);
+    BConcrete::BootstrapLweBufferAsyncOffloadOp::attachInterface<
+        BufferizableWithAsyncCallOpInterface<
+            BConcrete::BootstrapLweBufferAsyncOffloadOp,
+            memref_bootstrap_async_lwe_u64, true>>(*ctx);
+    BConcrete::AwaitFutureOp::attachInterface<
+        BufferizableWithSyncCallOpInterface<BConcrete::AwaitFutureOp,
+                                            memref_await_future>>(*ctx);
     BConcrete::FillGlweFromTable::attachInterface<
         BufferizableGlweFromTableOpInterface>(*ctx);
   });

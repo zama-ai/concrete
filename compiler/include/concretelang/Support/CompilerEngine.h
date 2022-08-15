@@ -52,6 +52,7 @@ struct CompilationOptions {
   bool autoParallelize;
   bool loopParallelize;
   bool dataflowParallelize;
+  bool asyncOffload;
   bool optimizeConcrete;
   llvm::Optional<std::vector<int64_t>> fhelinalgTileSizes;
 
@@ -62,7 +63,7 @@ struct CompilationOptions {
   CompilationOptions()
       : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false),
-        dataflowParallelize(false), optimizeConcrete(true),
+        dataflowParallelize(false), asyncOffload(false), optimizeConcrete(true),
         clientParametersFuncName(llvm::None),
         optimizerConfig(optimizer::DEFAULT_CONFIG){};
 
