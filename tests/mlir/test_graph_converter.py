@@ -287,23 +287,6 @@ return %1
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x: x - 1,
-            {"x": "clear"},
-            [np.random.randint(0, 2**3, size=(2, 3)) for _ in range(100)],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be converted to MLIR
-
-%0 = x                       # ClearTensor<uint3, shape=(2, 3)>
-%1 = 1                       # ClearScalar<uint1>
-%2 = subtract(%0, %1)        # ClearTensor<int4, shape=(2, 3)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only subtraction of encrypted from clear is supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
             lambda x: np.sum(x),
             {"x": "clear"},
             [np.random.randint(0, 2, size=(1,)) for _ in range(100)],

@@ -840,10 +840,23 @@ class NodeConverter:
         resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
         preds = self.preds
 
-        if self.one_of_the_inputs_is_a_tensor:
-            result = fhelinalg.SubIntEintOp(resulting_type, *preds).result
+        if self.all_of_the_inputs_are_encrypted:
+            if self.one_of_the_inputs_is_a_tensor:
+                result = fhelinalg.SubEintOp(resulting_type, *preds).result
+            else:
+                result = fhe.SubEintOp(resulting_type, *preds).result
+
+        elif self.node.inputs[0].is_clear:
+            if self.one_of_the_inputs_is_a_tensor:
+                result = fhelinalg.SubIntEintOp(resulting_type, *preds).result
+            else:
+                result = fhe.SubIntEintOp(resulting_type, *preds).result
+
         else:
-            result = fhe.SubIntEintOp(resulting_type, *preds).result
+            if self.one_of_the_inputs_is_a_tensor:
+                result = fhelinalg.SubEintIntOp(resulting_type, *preds).result
+            else:
+                result = fhe.SubEintIntOp(resulting_type, *preds).result
 
         return result
 

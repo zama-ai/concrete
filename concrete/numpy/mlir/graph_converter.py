@@ -137,8 +137,6 @@ class GraphConverter:
 
             elif name == "subtract":
                 assert_that(len(inputs) == 2)
-                if not (inputs[0].is_clear and inputs[1].is_encrypted):
-                    return "only subtraction of encrypted from clear is supported"
 
             elif name == "sum":
                 assert_that(len(inputs) == 1)
