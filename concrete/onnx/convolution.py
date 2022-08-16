@@ -95,8 +95,6 @@ def conv(
 
     if not isinstance(group, int) or group <= 0:
         raise ValueError(f"expected group to be an integer > 0, but got {group}")
-    if group != 1:
-        raise NotImplementedError("only group == 1 is currently supported")
 
     if auto_pad not in SUPPORTED_AUTO_PAD:
         raise ValueError(f"auto_pad should be in {SUPPORTED_AUTO_PAD}, but got {repr(auto_pad)}")
@@ -107,8 +105,8 @@ def conv(
             f"expected number of channel in weight to be {n_channels / group} (C / group), but got "
             f"{weight.shape[1]}"
         )
-    # TODO: no cover as we don't support group != 1 for the moment
-    if weight.shape[0] % group != 0:  # pragma: no cover
+
+    if weight.shape[0] % group != 0:
         raise ValueError(
             f"expected number of feature maps ({weight.shape[0]}) to be a multiple of group "
             f"({group})"

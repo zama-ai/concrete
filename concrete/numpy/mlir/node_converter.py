@@ -427,6 +427,9 @@ class NodeConverter:
             type=integer_type,
             context=self.ctx,
         )
+        group = IntegerAttr.get(
+            IntegerType.get_signless(64), self.node.properties["kwargs"]["group"]
+        )
 
         has_bias = len(self.node.inputs) == 3
         if has_bias:
@@ -436,7 +439,13 @@ class NodeConverter:
         # input and weight
         preds = self.preds[:2]
         return fhelinalg.Conv2dOp(
-            resulting_type, *preds, bias=bias, padding=pads, strides=strides, dilations=dilations
+            resulting_type,
+            *preds,
+            bias=bias,
+            padding=pads,
+            strides=strides,
+            dilations=dilations,
+            group=group,
         ).result
 
     def _convert_conv3d(self) -> OpResult:

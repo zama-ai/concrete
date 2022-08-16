@@ -12,15 +12,22 @@ from concrete.numpy.tracing.tracer import Tracer
 
 
 @pytest.mark.parametrize(
-    "input_shape,weight_shape",
+    "input_shape,weight_shape, group",
     [
         pytest.param(
             (1, 1, 4, 4),
             (1, 1, 2, 2),
+            1,
         ),
         pytest.param(
             (4, 3, 4, 4),
             (2, 3, 2, 2),
+            1,
+        ),
+        pytest.param(
+            (1, 6, 4, 4),
+            (6, 1, 2, 2),
+            6,
         ),
     ],
 )
@@ -43,7 +50,7 @@ from concrete.numpy.tracing.tracer import Tracer
         False,
     ],
 )
-def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers):
+def test_conv2d(input_shape, weight_shape, group, strides, dilations, has_bias, helpers):
     """
     Test conv2d.
     """
@@ -59,7 +66,7 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
 
     @cnp.compiler({"x": "encrypted"})
     def function(x):
-        return connx.conv(x, weight, bias, strides=strides, dilations=dilations)
+        return connx.conv(x, weight, bias, strides=strides, dilations=dilations, group=group)
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     circuit = function.compile(inputset, configuration)
@@ -330,7 +337,7 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             "only 1D, 2D, and 3D convolutions are supported",
         ),
         pytest.param(
-            (1, 1, 4, 4),
+            (1, 2, 4, 4),
             (1, 1, 2, 2),
             (1,),
             (0, 0, 0, 0),
@@ -339,8 +346,8 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             None,
             2,
             "NOTSET",
-            NotImplementedError,
-            "only group == 1 is currently supported",
+            ValueError,
+            "expected number of feature maps (1) to be a multiple of group (2)",
         ),
     ],
 )
