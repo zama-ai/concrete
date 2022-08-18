@@ -76,13 +76,9 @@ tests:
     outputs:
     - scalar: 1
   - inputs:
-    - scalar: 72070
+    - scalar: 65534
     outputs:
-    - scalar: 72071
-  - inputs:
-    - scalar: 72071
-    outputs:
-    - scalar: 0
+    - scalar: 65535
 ---
 description: add_eint_int_arg
 program: |
@@ -120,10 +116,10 @@ tests:
     outputs:
     - scalar: 5
   - inputs:
-    - scalar: 36036
-    - scalar: 36035
+    - scalar: 32767
+    - scalar: 32768
     outputs:
-    - scalar: 72071
+    - scalar: 65535
 ---
 description: add_eint
 program: |
@@ -161,10 +157,10 @@ tests:
     outputs:
     - scalar: 5
   - inputs:
-    - scalar: 36036
-    - scalar: 36035
+    - scalar: 32767
+    - scalar: 32768
     outputs:
-    - scalar: 72071
+    - scalar: 65535
 ---
 description: sub_eint_int_cst
 program: |
@@ -339,24 +335,25 @@ tests:
 description: sub_int_eint_cst_16bits
 program: |
  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
-    %0 = arith.constant -1 : i17
+    %0 = arith.constant 65535 : i17
     %1 = "FHE.sub_int_eint"(%0, %arg0): (i17, !FHE.eint<16>) -> (!FHE.eint<16>)
     return %1: !FHE.eint<16>
   }
 tests:
   - inputs:
-      - scalar: 72071
+      - scalar: 65535
     outputs:
       - scalar: 0
   - inputs:
       - scalar: 0
     outputs:
-      - scalar: 72071
-  - inputs:
-      - scalar: 32000
-    outputs:
-      - scalar: 40071
+      - scalar: 65535
 ---
+# TODO: Rewrite/Remove
+# The FHE.neg_eint op doesn't come with a well defined semantics as FHE.eint
+# has an undefined behavior for under/overflow.
+# For now we keep it, knowning the compiler/optimizer behavior but that could
+# break at anytime.
 description: neg_eint
 program: |
   func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
@@ -381,6 +378,11 @@ tests:
     outputs:
     - scalar: 6
 ---
+# TODO: Rewrite/Remove
+# The FHE.neg_eint op doesn't come with a well defined semantics as FHE.eint
+# has an undefined behavior for under/overflow.
+# For now we keep it, knowning the compiler/optimizer behavior but that could
+# break at anytime.
 description: neg_eint_16bits
 program: |
  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
@@ -395,9 +397,9 @@ tests:
   - inputs:
     - scalar: 1
     outputs:
-    - scalar: 72071
+    - scalar: 131071
   - inputs:
-    - scalar: 72071
+    - scalar: 131071
     outputs:
     - scalar: 1
 ---
