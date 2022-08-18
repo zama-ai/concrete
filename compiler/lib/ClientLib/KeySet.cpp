@@ -280,10 +280,12 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
   // Simple TFHE integers - 1 blocks with one padding bits
   uint64_t plaintext = ::decrypt_lwe_u64(engine, lweSecretKey, ciphertext);
   // Decode
-  size_t precision = encryption->encoding.precision;
+  uint64_t precision = encryption->encoding.precision;
   output = plaintext >> (64 - precision - 2);
-  size_t carry = output % 2;
-  output = ((output >> 1) + carry) % (1 << (precision + 1));
+  auto carry = output % 2;
+  uint64_t mod = (((uint64_t)1) << (precision + 1));
+  output = ((output >> 1) + carry) % mod;
+
   return outcome::success();
 }
 
