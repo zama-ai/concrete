@@ -206,7 +206,7 @@ jobs:
           path: docs/_build/html
 
   BuildAndTestMacOS:
-    runs-on: macos-10.15
+    runs-on: macos-11
     steps:
       # A SSH private key is required as some dependencies are from private repos
       - uses: webfactory/ssh-agent@v0.5.2
@@ -537,7 +537,7 @@ jobs:
 
   BuildAndPushPackagesMacOS:
     needs: CreateRelease
-    runs-on: macos-10.15
+    runs-on: macos-11
     strategy:
       matrix:
         python: ['3.8', '3.9', '3.10']
@@ -680,7 +680,7 @@ jobs:
           pytest -vs -m "not parallel" tests/python
 
   TestPythonPackageMacOS:
-    runs-on: macos-10.15
+    runs-on: macos-11
     needs: [BuildAndPushPackagesMacOS, CreateRelease]
     strategy:
       matrix:
