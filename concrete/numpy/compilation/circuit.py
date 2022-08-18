@@ -2,7 +2,6 @@
 Declaration of `Circuit` class.
 """
 
-from pathlib import Path
 from typing import Any, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -65,37 +64,6 @@ class Circuit:
 
     def __str__(self):
         return self.graph.format()
-
-    def draw(
-        self,
-        show: bool = False,
-        horizontal: bool = False,
-        save_to: Optional[Union[Path, str]] = None,
-    ) -> Path:
-        """
-        Draw `self.graph` and optionally save/show the drawing.
-
-        note that this function requires the python `pygraphviz` package
-        which itself requires the installation of `graphviz` packages
-        see https://pygraphviz.github.io/documentation/stable/install.html
-
-        Args:
-            show (bool, default = False):
-                whether to show the drawing using matplotlib or not
-
-            horizontal (bool, default = False):
-                whether to draw horizontally or not
-
-            save_to (Optional[Path], default = None):
-                path to save the drawing
-                a temporary file will be used if it's None
-
-        Returns:
-            Path:
-                path to the saved drawing
-        """
-
-        return self.graph.draw(show, horizontal, save_to)
 
     def keygen(self, force: bool = False):
         """

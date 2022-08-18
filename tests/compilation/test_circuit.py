@@ -38,29 +38,6 @@ return %2
     )
 
 
-def test_circuit_draw(helpers):
-    """
-    Test `draw` method of `Circuit` class.
-    """
-
-    configuration = helpers.configuration()
-
-    @compiler({"x": "encrypted", "y": "encrypted"})
-    def f(x, y):
-        return x + y
-
-    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
-    circuit = f.compile(inputset, configuration)
-
-    with tempfile.TemporaryDirectory() as path:
-        tmpdir = Path(path)
-
-        png = tmpdir / "drawing.png"
-        circuit.draw(save_to=png)
-
-        assert png.exists()
-
-
 def test_circuit_bad_run(helpers):
     """
     Test `run` method of `Circuit` class with bad parameters.

@@ -26,7 +26,6 @@ class DebugArtifacts:
     source_code: Optional[str]
     parameter_encryption_statuses: Dict[str, str]
 
-    drawings_of_graphs: Dict[str, List[str]]
     textual_representations_of_graphs: Dict[str, List[str]]
 
     final_graph: Optional[Graph]
@@ -42,7 +41,6 @@ class DebugArtifacts:
         self.source_code = None
         self.parameter_encryption_statuses = {}
 
-        self.drawings_of_graphs = {}
         self.textual_representations_of_graphs = {}
 
         self.final_graph = None
@@ -97,22 +95,8 @@ class DebugArtifacts:
         if name not in self.textual_representations_of_graphs:
             self.textual_representations_of_graphs[name] = []
 
-        if name not in self.drawings_of_graphs:
-            self.drawings_of_graphs[name] = []
-
         textual_representation = graph.format()
         self.textual_representations_of_graphs[name].append(textual_representation)
-
-        # 100 is an arbitrary number after which the drawing would become too hard to follow
-        if len(graph.graph.nodes()) < 100:
-            try:
-                drawing = graph.draw()
-                self.drawings_of_graphs[name].append(str(drawing))
-            except ImportError as error:  # pragma: no cover
-                if "pygraphviz" in str(error):
-                    pass
-                else:
-                    raise error
 
         self.final_graph = graph
 
@@ -206,15 +190,6 @@ class DebugArtifacts:
             with open(output_directory.joinpath("parameters.txt"), "w", encoding="utf-8") as f:
                 for name, parameter in self.parameter_encryption_statuses.items():
                     f.write(f"{name} :: {parameter}\n")
-
-        identifier = 0
-
-        drawings = self.drawings_of_graphs.items()
-        for name, drawing_filenames in drawings:
-            for drawing_filename in drawing_filenames:
-                identifier += 1
-                output_path = output_directory.joinpath(f"{identifier}.{name}.graph.png")
-                shutil.copy(drawing_filename, output_path)
 
         identifier = 0
 

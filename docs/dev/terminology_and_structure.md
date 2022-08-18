@@ -7,7 +7,7 @@ Some terms used throughout the project include:
 * computation graph - a data structure to represent a computation. This is basically a directed acyclic graph in which nodes are either inputs, constants or operations on other nodes.
 * tracing - the technique that takes a Python function from the user and generates the  corresponding computation graph in an easy to read format.
 * bounds - before a computation graph is converted to MLIR, we need to know which node will output which type (e.g., uint3 vs euint5). Computation graphs with different inputs must remember the minimum and maximum values for each node, which is what we call bounds, and use bounds to determine the appropriate type for each node
-* circuit - the result of compilation. A circuit is made of the client and server components and has methods, everything from printing and drawing to evaluation.
+* circuit - the result of compilation. A circuit is made of the client and server components and has methods, everything from printing to evaluation.
 
 ## Module structure
 

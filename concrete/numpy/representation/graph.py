@@ -2,20 +2,15 @@
 Declaration of `Graph` class.
 """
 
-import os
-import tempfile
 from copy import deepcopy
-from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from PIL import Image
 
 from ..dtypes import Float, Integer, UnsignedInteger
 from .node import Node
-from .operation import OPERATION_COLOR_MAPPING, Operation
+from .operation import Operation
 
 
 class Graph:
@@ -91,112 +86,6 @@ class Graph:
                 ) from error
 
         return node_results
-
-    def draw(
-        self,
-        show: bool = False,
-        horizontal: bool = False,
-        save_to: Optional[Union[Path, str]] = None,
-    ) -> Path:
-        """
-        Draw the `Graph` and optionally save/show the drawing.
-
-        note that this function requires the python `pygraphviz` package
-        which itself requires the installation of `graphviz` packages
-        see https://pygraphviz.github.io/documentation/stable/install.html
-
-        Args:
-            show (bool, default = False):
-                whether to show the drawing using matplotlib or not
-
-            horizontal (bool, default = False):
-                whether to draw horizontally or not
-
-            save_to (Optional[Path], default = None):
-                path to save the drawing
-                a temporary file will be used if it's None
-
-        Returns:
-            Path:
-                path to the saved drawing
-        """
-
-        def get_color(node, output_nodes):
-            if node in output_nodes:
-                return OPERATION_COLOR_MAPPING["output"]
-            return OPERATION_COLOR_MAPPING[node.operation]
-
-        graph = self.graph
-        output_nodes = set(self.output_nodes.values())
-
-        attributes = {
-            node: {
-                "label": node.label(),
-                "color": get_color(node, output_nodes),
-                "penwidth": 2,  # double thickness for circles
-                "peripheries": 2 if node in output_nodes else 1,  # two circles for output nodes
-            }
-            for node in graph.nodes
-        }
-        nx.set_node_attributes(graph, attributes)
-
-        for edge in graph.edges(keys=True):
-            idx = graph.edges[edge]["input_idx"]
-            graph.edges[edge]["label"] = f" {idx} "
-
-        try:
-            agraph = nx.nx_agraph.to_agraph(graph)
-        except ImportError as error:  # pragma: no cover
-            if "pygraphviz" in str(error):
-                raise ImportError(
-                    "Graph.draw requires pygraphviz. Install graphviz distribution to your OS "
-                    "following https://pygraphviz.github.io/documentation/stable/install.html "
-                    "and reinstall concrete-numpy with extras: `pip install --force-reinstall "
-                    "concrete-numpy[full]`"
-                ) from error
-
-            raise
-
-        agraph.graph_attr["rankdir"] = "LR" if horizontal else "TB"
-        agraph.layout("dot")
-
-        if save_to is None:
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                # we need to change the permissions of the temporary file
-                # so that it can be read by all users
-
-                # (https://stackoverflow.com/a/44130605)
-
-                # get the old umask and replace it with 0o666
-                old_umask = os.umask(0o666)
-
-                # restore the old umask back
-                os.umask(old_umask)
-
-                # combine the old umask with the wanted permissions
-                permissions = 0o666 & ~old_umask
-
-                # set new permissions
-                os.chmod(tmp.name, permissions)
-
-                save_to_str = str(tmp.name)
-        else:
-            save_to_str = str(save_to)
-
-        agraph.draw(save_to_str)
-
-        if show:  # pragma: no cover
-            plt.close("all")
-            plt.figure()
-
-            img = Image.open(save_to_str)
-            plt.imshow(img)
-            img.close()
-
-            plt.axis("off")
-            plt.show()
-
-        return Path(save_to_str)
 
     def format(
         self,

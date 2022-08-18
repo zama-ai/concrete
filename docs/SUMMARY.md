@@ -14,7 +14,7 @@
 * [Extensions](tutorial/extensions.md)
 * [Table Lookups](tutorial/table\_lookup.md)
 * [Floating Points](tutorial/floating\_points.md)
-* [Format and Draw](tutorial/formatting\_and\_drawing.md)
+* [Format](tutorial/formatting.md)
 
 ## How To
 

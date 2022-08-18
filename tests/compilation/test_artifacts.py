@@ -39,16 +39,9 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "parameters.txt").exists()
 
         assert (tmpdir / "1.initial.graph.txt").exists()
-        assert (tmpdir / "1.initial.graph.png").exists()
-
         assert (tmpdir / "2.after-fusing.graph.txt").exists()
-        assert (tmpdir / "2.after-fusing.graph.png").exists()
-
         assert (tmpdir / "3.after-fusing.graph.txt").exists()
-        assert (tmpdir / "3.after-fusing.graph.png").exists()
-
         assert (tmpdir / "4.final.graph.txt").exists()
-        assert (tmpdir / "4.final.graph.png").exists()
 
         assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()
@@ -63,16 +56,9 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "parameters.txt").exists()
 
         assert (tmpdir / "1.initial.graph.txt").exists()
-        assert (tmpdir / "1.initial.graph.png").exists()
-
         assert (tmpdir / "2.after-fusing.graph.txt").exists()
-        assert (tmpdir / "2.after-fusing.graph.png").exists()
-
         assert (tmpdir / "3.after-fusing.graph.txt").exists()
-        assert (tmpdir / "3.after-fusing.graph.png").exists()
-
         assert (tmpdir / "4.final.graph.txt").exists()
-        assert (tmpdir / "4.final.graph.png").exists()
 
         assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()

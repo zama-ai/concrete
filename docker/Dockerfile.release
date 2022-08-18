@@ -20,7 +20,7 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
-    python3 -m pip install --no-cache-dir "$(ls ./*.whl)[full]" && \
+    python3 -m pip install --no-cache-dir "$(ls ./*.whl)" && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
 
 WORKDIR /app

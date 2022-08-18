@@ -223,7 +223,7 @@ class Node:
 
     def format(self, predecessors: List[str], maximum_constant_length: int = 45) -> str:
         """
-        Get the textual representation of the `Node` (for printing).
+        Get the textual representation of the `Node` (dependent to preds).
 
         Args:
             predecessors (List[str]):
@@ -234,7 +234,7 @@ class Node:
 
         Returns:
             str:
-                textual representation of the `Node` (for printing)
+                textual representation of the `Node` (dependent to preds)
         """
 
         if self.operation == Operation.Constant:
@@ -276,11 +276,11 @@ class Node:
 
     def label(self) -> str:
         """
-        Get the textual representation of the `Node` (for drawing).
+        Get the textual representation of the `Node` (independent of preds).
 
         Returns:
             str:
-                textual representation of the `Node` (for drawing).
+                textual representation of the `Node` (independent of preds).
         """
 
         if self.operation == Operation.Constant:

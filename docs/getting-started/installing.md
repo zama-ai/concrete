@@ -15,17 +15,6 @@ pip install concrete-numpy
 Apple silicon users must use docker installation (explained below) as there is no ARM version of some of our dependencies for the time being.
 {% endhint %}
 
-You can install the extra python dependencies for drawing circuits:
-
-```shell
-pip install -U pip wheel setuptools
-pip install concrete-numpy[full]
-```
-
-{% hint style="info" %}
-**Concrete Numpy** depends on `pygraphviz` for drawing, which requires `graphviz` packages to be installed on your system (see [pygraphviz installation documentation](https://pygraphviz.github.io/documentation/stable/install.html)).
-{% endhint %}
-
 ## Using Docker
 
 You can also get the **Concrete Numpy** docker image:

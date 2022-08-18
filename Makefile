@@ -11,17 +11,17 @@ setup_env:
 	poetry run python -m pip install -U pip wheel
 	poetry run python -m pip install -U --force-reinstall setuptools
 	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
-		poetry install --extras full --only dev; \
+		poetry install --only dev; \
 	else \
-		poetry install --extras full; \
+		poetry install; \
 	fi
 
 .PHONY: sync_env # Synchronise the environment
 sync_env:
 	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
-		poetry install --extras full --remove-untracked --only dev; \
+		poetry install --remove-untracked --only dev; \
 	else \
-		poetry install --extras full --remove-untracked; \
+		poetry install --remove-untracked; \
 	fi
 	$(MAKE) setup_env
 

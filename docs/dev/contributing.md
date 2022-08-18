@@ -58,7 +58,7 @@ make show_scope
 
 ```shell
 git commit -m "feat: implement bounds checking"
-git commit -m "feat(debugging): add an helper function to draw intermediate representation"
+git commit -m "feat(debugging): add an helper function to print intermediate representation"
 git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 ```
 
