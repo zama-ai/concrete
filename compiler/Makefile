@@ -154,7 +154,7 @@ run-check-tests: concretecompiler file-check not
 
 ## unit-tests
 
-build-unit-tests:
+build-unit-tests: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangUnitTests
 
 run-unit-tests: build-unit-tests
