@@ -441,7 +441,7 @@ class Compiler:
 
             if show_optimizer:
                 if self.configuration.virtual:
-                    print("Virtual circuits doesn't have optimizer output.")
+                    print("Virtual circuits don't have optimizer output.")
 
                 print("-" * columns)
                 print()

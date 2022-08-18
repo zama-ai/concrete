@@ -115,12 +115,12 @@ Computation Graph
 
 MLIR
 ------------------------------------------------
-Virtual circuits doesn't have MLIR.
+Virtual circuits don't have MLIR.
 ------------------------------------------------
 
 Optimizer
 ------------------------------------------------
-Virtual circuits doesn't have optimizer output.
+Virtual circuits don't have optimizer output.
 ------------------------------------------------
 
         """.strip()

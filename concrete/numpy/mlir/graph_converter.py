@@ -453,7 +453,7 @@ class GraphConverter:
 
         GraphConverter._check_graph_convertibility(graph)
         if virtual:
-            return "Virtual circuits doesn't have MLIR."
+            return "Virtual circuits don't have MLIR."
 
         GraphConverter._update_bit_widths(graph)
         GraphConverter._offset_negative_lookup_table_inputs(graph)
