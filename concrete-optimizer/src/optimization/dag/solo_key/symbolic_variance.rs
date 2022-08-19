@@ -73,7 +73,7 @@ impl SymbolicVariance {
     }
 
     pub fn manp_to_variance_factor(manp: f64) -> f64 {
-        manp
+        manp * manp
     }
 
     pub fn dominate_or_equal(&self, other: &Self) -> bool {

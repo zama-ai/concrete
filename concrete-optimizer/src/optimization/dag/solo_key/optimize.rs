@@ -15,7 +15,6 @@ use crate::optimization::config::NoiseBoundConfig;
 use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositionParameters};
 use crate::pareto;
 use crate::security::glwe::minimal_variance;
-use crate::utils::square;
 
 use super::analyze;
 
@@ -308,7 +307,7 @@ pub fn optimize_v0<W: UnsignedInteger>(
 ) -> OptimizationState {
     use crate::dag::operator::{FunctionTable, Shape};
     let same_scale_manp = 0.0;
-    let manp = square(noise_factor);
+    let manp = noise_factor;
     let out_shape = &Shape::number();
     let complexity = LevelledComplexity::ADDITION * sum_size;
     let comment = "dot";
@@ -344,6 +343,7 @@ mod tests {
 
     use super::*;
     use crate::optimization::atomic_pattern;
+    use crate::utils::square;
 
     fn small_relative_diff(v1: f64, v2: f64) -> bool {
         f64::abs(v1 - v2) / f64::max(v1, v2) <= f64::EPSILON

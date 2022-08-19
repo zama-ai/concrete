@@ -769,7 +769,8 @@ mod tests {
         let input1 = graph.add_input(3, Shape::number());
         let cpx_dot = LevelledComplexity::ADDITION;
         let weights = Weights::vector([1, 2]);
-        let manp = 1.0 * 1.0 + 2.0 * 2_f64;
+        #[allow(clippy::imprecise_flops)]
+        let manp = (1.0 * 1.0 + 2.0 * 2_f64).sqrt();
         let dot = graph.add_levelled_op([input1, input1], cpx_dot, manp, Shape::number(), "dot");
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
