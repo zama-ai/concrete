@@ -10,11 +10,16 @@
 #include <concretelang/Dialect/RT/IR/RTOps.h>
 #include <concretelang/Dialect/RT/IR/RTTypes.h>
 
+#include "mlir/Dialect/Func/Transforms/FuncConversions.h"
+#include "mlir/Dialect/Func/Transforms/Passes.h"
+#include "mlir/Transforms/DialectConversion.h"
+#include <concretelang/Conversion/Utils/FuncConstOpConversion.h>
 #include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 #include <llvm/IR/Instructions.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Bufferization/Transforms/Bufferize.h>
 #include <mlir/Dialect/Bufferization/Transforms/Passes.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
@@ -27,67 +32,34 @@ namespace mlir {
 namespace concretelang {
 
 namespace {
-class BufferizeDataflowYieldOp
-    : public OpConversionPattern<RT::DataflowYieldOp> {
+
+class BufferizeRTTypesConverter
+    : public mlir::bufferization::BufferizeTypeConverter {
 public:
-  using OpConversionPattern::OpConversionPattern;
-  LogicalResult
-  matchAndRewrite(RT::DataflowYieldOp op, RT::DataflowYieldOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    rewriter.replaceOpWithNewOp<RT::DataflowYieldOp>(op, mlir::TypeRange(),
-                                                     adaptor.getOperands());
-    return success();
+  BufferizeRTTypesConverter() {
+    addConversion([&](mlir::concretelang::RT::FutureType type) {
+      return mlir::concretelang::RT::FutureType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::FutureType>()
+                                .getElementType()));
+    });
+    addConversion([&](mlir::concretelang::RT::PointerType type) {
+      return mlir::concretelang::RT::PointerType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::PointerType>()
+                                .getElementType()));
+    });
+    addConversion([&](mlir::FunctionType type) {
+      SignatureConversion result(type.getNumInputs());
+      mlir::SmallVector<mlir::Type, 1> newResults;
+      if (failed(this->convertSignatureArgs(type.getInputs(), result)) ||
+          failed(this->convertTypes(type.getResults(), newResults)))
+        return type;
+      return mlir::FunctionType::get(type.getContext(),
+                                     result.getConvertedTypes(), newResults);
+    });
   }
 };
+
 } // namespace
-
-namespace {
-class BufferizeDataflowTaskOp : public OpConversionPattern<RT::DataflowTaskOp> {
-public:
-  using OpConversionPattern::OpConversionPattern;
-  LogicalResult
-  matchAndRewrite(RT::DataflowTaskOp op, RT::DataflowTaskOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    mlir::OpBuilder::InsertionGuard guard(rewriter);
-
-    SmallVector<Type> newResults;
-    (void)getTypeConverter()->convertTypes(op.getResultTypes(), newResults);
-    auto newop = rewriter.create<RT::DataflowTaskOp>(op.getLoc(), newResults,
-                                                     adaptor.getOperands());
-    // We cannot clone here as cloned ops must be legalized (so this
-    // would break on the YieldOp).  Instead use mergeBlocks which
-    // moves the ops instead of cloning.
-    rewriter.mergeBlocks(op.getBody(), newop.getBody(),
-                         newop.getBody()->getArguments());
-    // Because of previous bufferization there are buffer cast ops
-    // that have been generated for the previously tensor results of
-    // some tasks.  These cannot just be replaced directly as the
-    // task's results would still be live.
-    for (auto res : llvm::enumerate(op.getResults())) {
-      // If this result is getting bufferized ...
-      if (res.value().getType() !=
-          getTypeConverter()->convertType(res.value().getType())) {
-        for (auto &use : llvm::make_early_inc_range(res.value().getUses())) {
-          // ... and its uses are in `ToMemrefOp`s, then we
-          // replace further uses of the buffer cast.
-          if (isa<mlir::bufferization::ToMemrefOp>(use.getOwner())) {
-            rewriter.replaceOp(use.getOwner(), {newop.getResult(res.index())});
-          }
-        }
-      }
-    }
-    rewriter.replaceOp(op, {newop.getResults()});
-    return success();
-  }
-};
-} // namespace
-
-void populateRTBufferizePatterns(
-    mlir::bufferization::BufferizeTypeConverter &typeConverter,
-    RewritePatternSet &patterns) {
-  patterns.add<BufferizeDataflowYieldOp, BufferizeDataflowTaskOp>(
-      typeConverter, patterns.getContext());
-}
 
 namespace {
 /// For documentation see Autopar.td
@@ -97,15 +69,75 @@ struct BufferizeDataflowTaskOpsPass
   void runOnOperation() override {
     auto module = getOperation();
     auto *context = &getContext();
-    mlir::bufferization::BufferizeTypeConverter typeConverter;
+    BufferizeRTTypesConverter typeConverter;
+
     RewritePatternSet patterns(context);
     ConversionTarget target(*context);
 
-    populateRTBufferizePatterns(typeConverter, patterns);
+    populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
+        patterns, typeConverter);
+    patterns.add<FunctionConstantOpConversion<BufferizeRTTypesConverter>>(
+        context, typeConverter);
 
-    // Forbid all RT ops that still use/return tensors
-    target.addDynamicallyLegalDialect<RT::RTDialect>(
-        [&](Operation *op) { return typeConverter.isLegal(op); });
+    target.addDynamicallyLegalDialect<mlir::func::FuncDialect>([&](Operation
+                                                                       *op) {
+      if (auto fun = dyn_cast_or_null<mlir::func::FuncOp>(op))
+        return typeConverter.isSignatureLegal(fun.getFunctionType()) &&
+               typeConverter.isLegal(&fun.getBody());
+      if (auto fun = dyn_cast_or_null<mlir::func::ConstantOp>(op))
+        return FunctionConstantOpConversion<BufferizeRTTypesConverter>::isLegal(
+            fun, typeConverter);
+      return typeConverter.isLegal(op);
+    });
+
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DataflowTaskOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DataflowYieldOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::MakeReadyFutureOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::AwaitFutureOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::CreateAsyncTaskOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::WorkFunctionReturnOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
+                                                                 typeConverter);
+
+    // Conversion of RT Dialect Ops
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DataflowTaskOp>(target, typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DataflowYieldOp>(target, typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::MakeReadyFutureOp>(target, typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::AwaitFutureOp>(target, typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::CreateAsyncTaskOp>(target, typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target,
+                                                             typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
+        target, typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target,
+                                                             typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::WorkFunctionReturnOp>(target, typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target,
+                                                            typeConverter);
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
       signalPassFailure();

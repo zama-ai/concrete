@@ -69,23 +69,27 @@ struct OpaqueInputData {
                   std::vector<size_t> _param_sizes,
                   std::vector<uint64_t> _param_types,
                   std::vector<size_t> _output_sizes,
-                  std::vector<uint64_t> _output_types)
+                  std::vector<uint64_t> _output_types, void *_context = nullptr)
       : wfn_name(_wfn_name), params(std::move(_params)),
         param_sizes(std::move(_param_sizes)),
         param_types(std::move(_param_types)),
         output_sizes(std::move(_output_sizes)),
-        output_types(std::move(_output_types)) {}
+        output_types(std::move(_output_types)), context(_context) {
+    if (_context)
+      params.push_back(_context);
+  }
 
   OpaqueInputData(const OpaqueInputData &oid)
       : wfn_name(std::move(oid.wfn_name)), params(std::move(oid.params)),
         param_sizes(std::move(oid.param_sizes)),
         param_types(std::move(oid.param_types)),
         output_sizes(std::move(oid.output_sizes)),
-        output_types(std::move(oid.output_types)) {}
+        output_types(std::move(oid.output_types)), context(oid.context) {}
 
   friend class hpx::serialization::access;
   template <class Archive> void load(Archive &ar, const unsigned int version) {
-    ar >> wfn_name;
+    bool has_context;
+    ar >> wfn_name >> has_context;
     ar >> param_sizes >> param_types;
     ar >> output_sizes >> output_types;
     for (size_t p = 0; p < param_sizes.size(); ++p) {
@@ -114,27 +118,22 @@ struct OpaqueInputData {
         static_cast<StridedMemRefType<char, 1> *>(params[p])->basePtr = nullptr;
         static_cast<StridedMemRefType<char, 1> *>(params[p])->data = data;
       } break;
-      case _DFR_TASK_ARG_CONTEXT: {
-        // The copied pointer is meaningless - TODO: if the context
-        // can change dynamically (e.g., different evaluation keys)
-        // then this needs updating by passing key ids and retrieving
-        // adequate keys for the context.
-        delete ((char *)params[p]);
-        params[p] =
-            (void *)_dfr_node_level_runtime_context_manager->getContext();
-      } break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
       }
     }
+    if (has_context)
+      params.push_back(
+          (void *)_dfr_node_level_runtime_context_manager->getContext());
   }
   template <class Archive>
   void save(Archive &ar, const unsigned int version) const {
-    ar << wfn_name;
+    bool has_context = (bool)(context != nullptr);
+    ar << wfn_name << has_context;
     ar << param_sizes << param_types;
     ar << output_sizes << output_types;
-    for (size_t p = 0; p < params.size(); ++p) {
+    for (size_t p = 0; p < param_sizes.size(); ++p) {
       // Save the first level of the data structure - if the parameter
       // is a tensor/memref, there is a second level.
       ar << hpx::serialization::make_array((char *)params[p], param_sizes[p]);
@@ -152,10 +151,6 @@ struct OpaqueInputData {
         ar << hpx::serialization::make_array(
             mref.data + mref.offset * elementSize, size * elementSize);
       } break;
-      case _DFR_TASK_ARG_CONTEXT: {
-        // Nothing to do now - TODO: pass key ids if these are not
-        // unique for a computation.
-      } break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
@@ -170,6 +165,7 @@ struct OpaqueInputData {
   std::vector<uint64_t> param_types;
   std::vector<size_t> output_sizes;
   std::vector<uint64_t> output_types;
+  void *context;
 };
 
 struct OpaqueOutputData {
@@ -215,9 +211,6 @@ struct OpaqueOutputData {
             nullptr;
         static_cast<StridedMemRefType<char, 1> *>(outputs[p])->data = data;
       } break;
-      case _DFR_TASK_ARG_CONTEXT: {
-
-      } break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
@@ -243,9 +236,6 @@ struct OpaqueOutputData {
           size *= mref.sizes[r];
         ar << hpx::serialization::make_array(
             mref.data + mref.offset * elementSize, size * elementSize);
-      } break;
-      case _DFR_TASK_ARG_CONTEXT: {
-
       } break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
@@ -282,121 +272,121 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
         wfn(output);
         break;
       case 1:
-        wfn(inputs.params[0], output);
+        wfn(output, inputs.params[0]);
         break;
       case 2:
-        wfn(inputs.params[0], inputs.params[1], output);
+        wfn(output, inputs.params[0], inputs.params[1]);
         break;
       case 3:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2], output);
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2]);
         break;
       case 4:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], output);
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3]);
         break;
       case 5:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], output);
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4]);
         break;
       case 6:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5], output);
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5]);
         break;
       case 7:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], output);
+            inputs.params[6]);
         break;
       case 8:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], output);
+            inputs.params[6], inputs.params[7]);
         break;
       case 9:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8], output);
+            inputs.params[6], inputs.params[7], inputs.params[8]);
         break;
       case 10:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], output);
+            inputs.params[9]);
         break;
       case 11:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], output);
+            inputs.params[9], inputs.params[10]);
         break;
       case 12:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11], output);
+            inputs.params[9], inputs.params[10], inputs.params[11]);
         break;
       case 13:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], output);
+            inputs.params[12]);
         break;
       case 14:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], output);
+            inputs.params[12], inputs.params[13]);
         break;
       case 15:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14], output);
+            inputs.params[12], inputs.params[13], inputs.params[14]);
         break;
       case 16:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
             inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], output);
+            inputs.params[15]);
         break;
       case 17:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
             inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], output);
+            inputs.params[15], inputs.params[16]);
         break;
       case 18:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
             inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], inputs.params[17], output);
+            inputs.params[15], inputs.params[16], inputs.params[17]);
         break;
       case 19:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
             inputs.params[12], inputs.params[13], inputs.params[14],
             inputs.params[15], inputs.params[16], inputs.params[17],
-            inputs.params[18], output);
+            inputs.params[18]);
         break;
       case 20:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+        wfn(output, inputs.params[0], inputs.params[1], inputs.params[2],
             inputs.params[3], inputs.params[4], inputs.params[5],
             inputs.params[6], inputs.params[7], inputs.params[8],
             inputs.params[9], inputs.params[10], inputs.params[11],
             inputs.params[12], inputs.params[13], inputs.params[14],
             inputs.params[15], inputs.params[16], inputs.params[17],
-            inputs.params[18], inputs.params[19], output);
+            inputs.params[18], inputs.params[19]);
         break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
@@ -415,127 +405,127 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
         wfn(output1, output2);
         break;
       case 1:
-        wfn(inputs.params[0], output1, output2);
+        wfn(output1, output2, inputs.params[0]);
         break;
       case 2:
-        wfn(inputs.params[0], inputs.params[1], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1]);
         break;
       case 3:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2], output1,
-            output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], output1, output2);
         break;
       case 4:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3]);
         break;
       case 5:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4]);
         break;
       case 6:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5], output1,
-            output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], output1, output2);
         break;
       case 7:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6]);
         break;
       case 8:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7]);
         break;
       case 9:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8], output1,
-            output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], output1, output2);
         break;
       case 10:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9]);
         break;
       case 11:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10]);
         break;
       case 12:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11], output1,
-            output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], output1, output2);
         break;
       case 13:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12]);
         break;
       case 14:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13]);
         break;
       case 15:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14], output1,
-            output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], output1, output2);
         break;
       case 16:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15]);
         break;
       case 17:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16]);
         break;
       case 18:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], inputs.params[17], output1,
-            output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16],
+            inputs.params[17], output1, output2);
         break;
       case 19:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], inputs.params[17],
-            inputs.params[18], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16],
+            inputs.params[17], inputs.params[18]);
         break;
       case 20:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], inputs.params[17],
-            inputs.params[18], inputs.params[19], output1, output2);
+        wfn(output1, output2, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16],
+            inputs.params[17], inputs.params[18], inputs.params[19]);
         break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
@@ -555,127 +545,127 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
         wfn(output1, output2, output3);
         break;
       case 1:
-        wfn(inputs.params[0], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0]);
         break;
       case 2:
-        wfn(inputs.params[0], inputs.params[1], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1]);
         break;
       case 3:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2], output1,
-            output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], output1, output2, output3);
         break;
       case 4:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3]);
         break;
       case 5:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4]);
         break;
       case 6:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5], output1,
-            output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], output1, output2, output3);
         break;
       case 7:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6]);
         break;
       case 8:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7]);
         break;
       case 9:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8], output1,
-            output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], output1, output2, output3);
         break;
       case 10:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9]);
         break;
       case 11:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10]);
         break;
       case 12:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11], output1,
-            output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], output1, output2, output3);
         break;
       case 13:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12]);
         break;
       case 14:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13]);
         break;
       case 15:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14], output1,
-            output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], output1, output2, output3);
         break;
       case 16:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15]);
         break;
       case 17:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16]);
         break;
       case 18:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], inputs.params[17], output1,
-            output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16],
+            inputs.params[17], output1, output2, output3);
         break;
       case 19:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], inputs.params[17],
-            inputs.params[18], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16],
+            inputs.params[17], inputs.params[18]);
         break;
       case 20:
-        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
-            inputs.params[3], inputs.params[4], inputs.params[5],
-            inputs.params[6], inputs.params[7], inputs.params[8],
-            inputs.params[9], inputs.params[10], inputs.params[11],
-            inputs.params[12], inputs.params[13], inputs.params[14],
-            inputs.params[15], inputs.params[16], inputs.params[17],
-            inputs.params[18], inputs.params[19], output1, output2, output3);
+        wfn(output1, output2, output3, inputs.params[0], inputs.params[1],
+            inputs.params[2], inputs.params[3], inputs.params[4],
+            inputs.params[5], inputs.params[6], inputs.params[7],
+            inputs.params[8], inputs.params[9], inputs.params[10],
+            inputs.params[11], inputs.params[12], inputs.params[13],
+            inputs.params[14], inputs.params[15], inputs.params[16],
+            inputs.params[17], inputs.params[18], inputs.params[19]);
         break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
@@ -693,12 +683,10 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
     // Deallocate input data buffers from OID deserialization (load)
     if (!_dfr_is_root_node()) {
       for (size_t p = 0; p < inputs.param_sizes.size(); ++p) {
-        if (_dfr_get_arg_type(inputs.param_types[p]) != _DFR_TASK_ARG_CONTEXT) {
-          if (_dfr_get_arg_type(inputs.param_types[p]) == _DFR_TASK_ARG_MEMREF)
-            delete (static_cast<StridedMemRefType<char, 1> *>(inputs.params[p])
-                        ->data);
-          delete ((char *)inputs.params[p]);
-        }
+        if (_dfr_get_arg_type(inputs.param_types[p]) == _DFR_TASK_ARG_MEMREF)
+          delete (static_cast<StridedMemRefType<char, 1> *>(inputs.params[p])
+                      ->data);
+        delete ((char *)inputs.params[p]);
       }
     }
 

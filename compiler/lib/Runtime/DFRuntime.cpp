@@ -93,8 +93,8 @@ static inline size_t _dfr_find_next_execution_locality() {
 /// hpx::future<void*> and the size of data within the future.  After
 /// that come NUM_OUTPUTS pairs of hpx::future<void*>* and size_t for
 /// the returns.
-void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
-                            ...) {
+void _dfr_create_async_task(wfnptr wfn, void *ctx, size_t num_params,
+                            size_t num_outputs, ...) {
   std::vector<void *> refcounted_futures;
   std::vector<size_t> param_sizes;
   std::vector<uint64_t> param_types;
@@ -104,15 +104,15 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   va_list args;
   va_start(args, num_outputs);
-  for (size_t i = 0; i < num_params; ++i) {
-    refcounted_futures.push_back(va_arg(args, void *));
-    param_sizes.push_back(va_arg(args, uint64_t));
-    param_types.push_back(va_arg(args, uint64_t));
-  }
   for (size_t i = 0; i < num_outputs; ++i) {
     outputs.push_back(va_arg(args, void *));
     output_sizes.push_back(va_arg(args, uint64_t));
     output_types.push_back(va_arg(args, uint64_t));
+  }
+  for (size_t i = 0; i < num_params; ++i) {
+    refcounted_futures.push_back(va_arg(args, void *));
+    param_sizes.push_back(va_arg(args, uint64_t));
+    param_types.push_back(va_arg(args, uint64_t));
   }
   va_end(args);
 
@@ -140,12 +140,12 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 0:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target]()
-            -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
+         gcc_target,
+         ctx]() -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         }));
     break;
@@ -153,12 +153,12 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 1:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0)
+         gcc_target, ctx](hpx::shared_future<void *> param0)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {param0.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future));
@@ -167,13 +167,13 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 2:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -183,15 +183,15 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 3:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -202,16 +202,16 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 4:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get(), param3.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -223,18 +223,18 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 5:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get(), param3.get(),
                                         param4.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -247,19 +247,19 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 6:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get(), param3.get(),
                                         param4.get(), param5.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -273,20 +273,20 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 7:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
               param4.get(), param5.get(), param6.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -301,21 +301,21 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 8:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
               param4.get(), param5.get(), param6.get(), param7.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -331,15 +331,15 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 9:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(),
@@ -347,7 +347,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param6.get(), param7.get(), param8.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -364,16 +364,16 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 10:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
@@ -381,7 +381,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param8.get(), param9.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -399,17 +399,17 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 11:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
@@ -417,7 +417,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param8.get(), param9.get(), param10.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -436,18 +436,18 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 12:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(),  param3.get(),
@@ -455,7 +455,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param8.get(), param9.get(), param10.get(), param11.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -475,19 +475,19 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 13:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(),  param3.get(),
@@ -496,7 +496,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param12.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -517,20 +517,20 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 14:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12,
-                     hpx::shared_future<void *> param13)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12,
+                          hpx::shared_future<void *> param13)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(), param2.get(),  param3.get(),
@@ -539,7 +539,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param12.get(), param13.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -561,21 +561,21 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 15:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12,
-                     hpx::shared_future<void *> param13,
-                     hpx::shared_future<void *> param14)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12,
+                          hpx::shared_future<void *> param13,
+                          hpx::shared_future<void *> param14)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
@@ -584,7 +584,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param12.get(), param13.get(), param14.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -607,22 +607,22 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 16:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12,
-                     hpx::shared_future<void *> param13,
-                     hpx::shared_future<void *> param14,
-                     hpx::shared_future<void *> param15)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12,
+                          hpx::shared_future<void *> param13,
+                          hpx::shared_future<void *> param14,
+                          hpx::shared_future<void *> param15)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
@@ -631,7 +631,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param12.get(), param13.get(), param14.get(), param15.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -655,23 +655,23 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 17:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12,
-                     hpx::shared_future<void *> param13,
-                     hpx::shared_future<void *> param14,
-                     hpx::shared_future<void *> param15,
-                     hpx::shared_future<void *> param16)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12,
+                          hpx::shared_future<void *> param13,
+                          hpx::shared_future<void *> param14,
+                          hpx::shared_future<void *> param15,
+                          hpx::shared_future<void *> param16)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
@@ -681,7 +681,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param16.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -706,24 +706,24 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 18:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12,
-                     hpx::shared_future<void *> param13,
-                     hpx::shared_future<void *> param14,
-                     hpx::shared_future<void *> param15,
-                     hpx::shared_future<void *> param16,
-                     hpx::shared_future<void *> param17)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12,
+                          hpx::shared_future<void *> param13,
+                          hpx::shared_future<void *> param14,
+                          hpx::shared_future<void *> param15,
+                          hpx::shared_future<void *> param16,
+                          hpx::shared_future<void *> param17)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
@@ -733,7 +733,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param16.get(), param17.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -759,25 +759,25 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 19:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12,
-                     hpx::shared_future<void *> param13,
-                     hpx::shared_future<void *> param14,
-                     hpx::shared_future<void *> param15,
-                     hpx::shared_future<void *> param16,
-                     hpx::shared_future<void *> param17,
-                     hpx::shared_future<void *> param18)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12,
+                          hpx::shared_future<void *> param13,
+                          hpx::shared_future<void *> param14,
+                          hpx::shared_future<void *> param15,
+                          hpx::shared_future<void *> param16,
+                          hpx::shared_future<void *> param17,
+                          hpx::shared_future<void *> param18)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
@@ -787,7 +787,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param16.get(), param17.get(), param18.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -814,26 +814,26 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   case 20:
     oodf = std::move(hpx::dataflow(
         [wfnname, param_sizes, param_types, output_sizes, output_types,
-         gcc_target](hpx::shared_future<void *> param0,
-                     hpx::shared_future<void *> param1,
-                     hpx::shared_future<void *> param2,
-                     hpx::shared_future<void *> param3,
-                     hpx::shared_future<void *> param4,
-                     hpx::shared_future<void *> param5,
-                     hpx::shared_future<void *> param6,
-                     hpx::shared_future<void *> param7,
-                     hpx::shared_future<void *> param8,
-                     hpx::shared_future<void *> param9,
-                     hpx::shared_future<void *> param10,
-                     hpx::shared_future<void *> param11,
-                     hpx::shared_future<void *> param12,
-                     hpx::shared_future<void *> param13,
-                     hpx::shared_future<void *> param14,
-                     hpx::shared_future<void *> param15,
-                     hpx::shared_future<void *> param16,
-                     hpx::shared_future<void *> param17,
-                     hpx::shared_future<void *> param18,
-                     hpx::shared_future<void *> param19)
+         gcc_target, ctx](hpx::shared_future<void *> param0,
+                          hpx::shared_future<void *> param1,
+                          hpx::shared_future<void *> param2,
+                          hpx::shared_future<void *> param3,
+                          hpx::shared_future<void *> param4,
+                          hpx::shared_future<void *> param5,
+                          hpx::shared_future<void *> param6,
+                          hpx::shared_future<void *> param7,
+                          hpx::shared_future<void *> param8,
+                          hpx::shared_future<void *> param9,
+                          hpx::shared_future<void *> param10,
+                          hpx::shared_future<void *> param11,
+                          hpx::shared_future<void *> param12,
+                          hpx::shared_future<void *> param13,
+                          hpx::shared_future<void *> param14,
+                          hpx::shared_future<void *> param15,
+                          hpx::shared_future<void *> param16,
+                          hpx::shared_future<void *> param17,
+                          hpx::shared_future<void *> param18,
+                          hpx::shared_future<void *> param19)
             -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
@@ -843,7 +843,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               param16.get(), param17.get(), param18.get(), param19.get()};
           mlir::concretelang::dfr::OpaqueInputData oid(
               wfnname, params, param_sizes, param_types, output_sizes,
-              output_types);
+              output_types, ctx);
           return gcc_target->execute_task(oid);
         },
         *((dfr_refcounted_future_p)refcounted_futures[0])->future,
@@ -969,6 +969,7 @@ void _dfr_set_use_omp(bool use_omp) {
 bool _dfr_is_jit() { return mlir::concretelang::dfr::is_jit_p; }
 bool _dfr_is_root_node() { return mlir::concretelang::dfr::is_root_node_p; }
 bool _dfr_use_omp() { return mlir::concretelang::dfr::use_omp_p; }
+bool _dfr_is_distributed() { return num_nodes > 1; }
 } // namespace dfr
 } // namespace concretelang
 } // namespace mlir
@@ -1002,6 +1003,7 @@ static inline void _dfr_stop_impl() {
 }
 
 static inline void _dfr_start_impl(int argc, char *argv[]) {
+  BEGIN_TIME(&mlir::concretelang::dfr::init_timer);
   mlir::concretelang::dfr::dl_handle = dlopen(nullptr, RTLD_NOW);
 
   // If OpenMP is to be used, we need to force its initialization
@@ -1126,15 +1128,15 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
             mlir::concretelang::dfr::num_nodes)
             .get();
   }
+  END_TIME(&mlir::concretelang::dfr::init_timer, "Initialization");
 }
 
 /*  Start/stop functions to be called from within user code (or during
     JIT invocation).  These serve to pause/resume the runtime
     scheduler and to clean up used resources.  */
-void _dfr_start(int64_t use_dfr_p) {
+void _dfr_start(int64_t use_dfr_p, void *ctx) {
   BEGIN_TIME(&mlir::concretelang::dfr::whole_timer);
   if (use_dfr_p) {
-    BEGIN_TIME(&mlir::concretelang::dfr::init_timer);
     // The first invocation will initialise the runtime. As each call to
     // _dfr_start is matched with _dfr_stop, if this is not hte first,
     // we need to resume the HPX runtime.
@@ -1146,15 +1148,10 @@ void _dfr_start(int64_t use_dfr_p) {
     if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(
             expected, mlir::concretelang::dfr::active))
       _dfr_start_impl(0, nullptr);
-    END_TIME(&mlir::concretelang::dfr::init_timer, "Initialization");
 
     assert(mlir::concretelang::dfr::init_guard ==
                mlir::concretelang::dfr::active &&
            "DFR runtime failed to initialise");
-
-    if (use_dfr_p == 1) {
-      BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
-    }
 
     // If this is not the root node in a non-JIT execution, then this
     // node should only run the scheduler for any incoming work until
@@ -1164,28 +1161,24 @@ void _dfr_start(int64_t use_dfr_p) {
         !mlir::concretelang::dfr::_dfr_is_jit())
       _dfr_stop_impl();
   }
-}
 
-// Startup entry point when a RuntimeContext is used
-void _dfr_start_c(int64_t use_dfr_p, void *ctx) {
-  _dfr_start(2);
+  // If DFR is used and a runtime context is needed, and execution is
+  // distributed, then broadcast from root to all compute nodes.
+  if (use_dfr_p && (mlir::concretelang::dfr::num_nodes > 1) &&
+      (ctx || !mlir::concretelang::dfr::_dfr_is_root_node())) {
+    BEGIN_TIME(&mlir::concretelang::dfr::broadcast_timer);
+    new mlir::concretelang::dfr::RuntimeContextManager();
+    mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
+        ->setContext(ctx);
 
-  if (use_dfr_p) {
-    if (mlir::concretelang::dfr::num_nodes > 1) {
-      BEGIN_TIME(&mlir::concretelang::dfr::broadcast_timer);
-      new mlir::concretelang::dfr::RuntimeContextManager();
-      mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
-          ->setContext(ctx);
-
-      // If this is not JIT, then the remote nodes never reach _dfr_stop,
-      // so root should not instantiate this barrier.
-      if (mlir::concretelang::dfr::_dfr_is_root_node() &&
-          mlir::concretelang::dfr::_dfr_is_jit())
-        mlir::concretelang::dfr::_dfr_startup_barrier->wait();
-      END_TIME(&mlir::concretelang::dfr::broadcast_timer, "Key broadcasting");
-    }
-    BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
+    // If this is not JIT, then the remote nodes never reach _dfr_stop,
+    // so root should not instantiate this barrier.
+    if (mlir::concretelang::dfr::_dfr_is_root_node() &&
+        mlir::concretelang::dfr::_dfr_is_jit())
+      mlir::concretelang::dfr::_dfr_startup_barrier->wait();
+    END_TIME(&mlir::concretelang::dfr::broadcast_timer, "Key broadcasting");
   }
+  BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
 }
 
 // This function cannot be used to terminate the runtime as it is
@@ -1216,8 +1209,8 @@ void _dfr_stop(int64_t use_dfr_p) {
       mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
           ->clearContext();
     }
-    END_TIME(&mlir::concretelang::dfr::compute_timer, "Compute");
   }
+  END_TIME(&mlir::concretelang::dfr::compute_timer, "Compute");
   END_TIME(&mlir::concretelang::dfr::whole_timer, "Total execution");
 }
 
@@ -1298,6 +1291,7 @@ namespace dfr {
 namespace {
 static bool is_jit_p = false;
 static bool use_omp_p = false;
+static size_t num_nodes = 1;
 static struct timespec compute_timer;
 } // namespace
 
@@ -1307,15 +1301,15 @@ void _dfr_set_use_omp(bool use_omp) { use_omp_p = use_omp; }
 bool _dfr_is_jit() { return is_jit_p; }
 bool _dfr_is_root_node() { return true; }
 bool _dfr_use_omp() { return use_omp_p; }
+bool _dfr_is_distributed() { return num_nodes > 1; }
 
 } // namespace dfr
 } // namespace concretelang
 } // namespace mlir
 
-void _dfr_start(int64_t use_dfr_p) {
+void _dfr_start(int64_t use_dfr_p, void *ctx) {
   BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
 }
-void _dfr_start_c(int64_t use_dfr_p, void *ctx) { _dfr_start(2); }
 void _dfr_stop(int64_t use_dfr_p) {
   END_TIME(&mlir::concretelang::dfr::compute_timer, "Compute");
 }

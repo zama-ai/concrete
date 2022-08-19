@@ -53,23 +53,6 @@ def BufferizeDataflowTaskOps : Pass<"BufferizeDataflowTaskOps", "mlir::ModuleOp"
   }];
 }
 
-def FixupDataflowTaskOps : Pass<"FixupDataflowTaskOps", "mlir::ModuleOp"> {
-  let summary =
-      "Fix DataflowTaskOp(s) before lowering.";
-
-  let description = [{
-  This pass fixes up code changes that intervene between the
-  BuildDataflowTaskGraph pass and the lowering of the taskgraph to
-  LLVMIR and calls to the DFR runtime system.
-
-  In particular, some operations (e.g., constants, dimension
-  operations, etc.) can be used within the task while only defined
-  outside. In most cases cloning and sinking these operations in the
-  task is the simplest to avoid adding dependences.
-
-  }];
-}
-
 def LowerDataflowTasks : Pass<"LowerDataflowTasks", "mlir::ModuleOp"> {
   let summary =
       "Outline the body of a DataflowTaskOp into a separate function which will serve as a task work function and lower the task graph to RT.";
@@ -79,6 +62,30 @@ def LowerDataflowTasks : Pass<"LowerDataflowTasks", "mlir::ModuleOp"> {
     DataflowTaskOp into separate work functions and introducing the
     necessary operations to communicate and synchronize execution via
     futures.
+  }];
+}
+
+def FinalizeTaskCreation : Pass<"FinalizeTaskCreation", "mlir::ModuleOp"> {
+  let summary =
+      "Finalize the CreateAsyncTaskOp ops.";
+
+  let description = [{
+      This pass adds the lower level information missing in
+      CreateAsyncTaskOp, in particular the type sizes and if required
+      passing the runtime context.
+  }];
+}
+
+def StartStop : Pass<"StartStop", "mlir::ModuleOp"> {
+  let summary =
+      "Issue calls to start/stop the runtime system.";
+
+  let description = [{
+      This pass adds calls to _dfr_start and _dfr_stop which
+      respectively initialize/start and pause the runtime system.  The
+      start function further distributes the evaluation keys to
+      compute nodes when required and the stop function clears the
+      execution context.
   }];
 }
 

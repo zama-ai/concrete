@@ -32,28 +32,13 @@ struct AddRuntimeContextToFuncOpPattern
         rewriter.getType<mlir::concretelang::Concrete::ContextType>());
     mlir::FunctionType newFuncTy = rewriter.getType<mlir::FunctionType>(
         newInputs, oldFuncType.getResults());
-    // Create the new func
-    mlir::func::FuncOp newFuncOp = rewriter.create<mlir::func::FuncOp>(
-        oldFuncOp.getLoc(), oldFuncOp.getName(), newFuncTy);
 
-    // Create the arguments of the new func
-    mlir::Region &newFuncBody = newFuncOp.getBody();
-    mlir::Block *newFuncEntryBlock = new mlir::Block();
-    llvm::SmallVector<mlir::Location> locations(newFuncTy.getInputs().size(),
-                                                oldFuncOp.getLoc());
+    rewriter.updateRootInPlace(oldFuncOp,
+                               [&] { oldFuncOp.setType(newFuncTy); });
+    oldFuncOp.getBody().front().addArgument(
+        rewriter.getType<mlir::concretelang::Concrete::ContextType>(),
+        oldFuncOp.getLoc());
 
-    newFuncEntryBlock->addArguments(newFuncTy.getInputs(), locations);
-    newFuncBody.push_back(newFuncEntryBlock);
-
-    // Clone the old body to the new one
-    mlir::BlockAndValueMapping map;
-    for (auto arg : llvm::enumerate(oldFuncOp.getArguments())) {
-      map.map(arg.value(), newFuncEntryBlock->getArgument(arg.index()));
-    }
-    for (auto &op : oldFuncOp.getBody().front()) {
-      newFuncEntryBlock->push_back(op.clone(map));
-    }
-    rewriter.eraseOp(oldFuncOp);
     return mlir::success();
   }
 
@@ -71,6 +56,50 @@ struct AddRuntimeContextToFuncOpPattern
                .isa<mlir::concretelang::Concrete::ContextType>();
   }
 };
+
+namespace {
+struct FunctionConstantOpConversion
+    : public mlir::OpRewritePattern<mlir::func::ConstantOp> {
+  FunctionConstantOpConversion(mlir::MLIRContext *ctx,
+                               mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::func::ConstantOp>(ctx, benefit) {}
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::func::ConstantOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto symTab = mlir::SymbolTable::getNearestSymbolTable(op);
+    auto funcOp = mlir::SymbolTable::lookupSymbolIn(symTab, op.getValue());
+    assert(funcOp &&
+           "Function symbol missing in symbol table for function constant op.");
+    mlir::FunctionType funType = mlir::cast<mlir::func::FuncOp>(funcOp)
+                                     .getFunctionType()
+                                     .cast<mlir::FunctionType>();
+    mlir::SmallVector<mlir::Type> newInputs(funType.getInputs().begin(),
+                                            funType.getInputs().end());
+    newInputs.push_back(
+        rewriter.getType<mlir::concretelang::Concrete::ContextType>());
+    mlir::FunctionType newFuncTy =
+        rewriter.getType<mlir::FunctionType>(newInputs, funType.getResults());
+
+    rewriter.updateRootInPlace(op, [&] { op.getResult().setType(newFuncTy); });
+    return mlir::success();
+  }
+  static bool isLegal(mlir::func::ConstantOp fun) {
+    auto symTab = mlir::SymbolTable::getNearestSymbolTable(fun);
+    auto funcOp = mlir::SymbolTable::lookupSymbolIn(symTab, fun.getValue());
+    assert(funcOp &&
+           "Function symbol missing in symbol table for function constant op.");
+    mlir::FunctionType funType = mlir::cast<mlir::func::FuncOp>(funcOp)
+                                     .getFunctionType()
+                                     .cast<mlir::FunctionType>();
+    if ((AddRuntimeContextToFuncOpPattern::isLegal(
+             mlir::cast<mlir::func::FuncOp>(funcOp)) &&
+         fun.getType() == funType) ||
+        fun.getType() != funType)
+      return true;
+    return false;
+  }
+};
+} // namespace
 
 struct AddRuntimeContextPass
     : public AddRuntimeContextBase<AddRuntimeContextPass> {
@@ -90,8 +119,13 @@ void AddRuntimeContextPass::runOnOperation() {
         [&](mlir::func::FuncOp funcOp) {
           return AddRuntimeContextToFuncOpPattern::isLegal(funcOp);
         });
+    target.addDynamicallyLegalOp<mlir::func::ConstantOp>(
+        [&](mlir::func::ConstantOp op) {
+          return FunctionConstantOpConversion::isLegal(op);
+        });
 
     patterns.add<AddRuntimeContextToFuncOpPattern>(patterns.getContext());
+    patterns.add<FunctionConstantOpConversion>(patterns.getContext());
 
     // Apply the conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

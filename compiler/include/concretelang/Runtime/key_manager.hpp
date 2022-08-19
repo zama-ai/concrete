@@ -180,7 +180,7 @@ struct RuntimeContextManager {
     }
   }
 
-  RuntimeContext **getContext() { return &context; }
+  RuntimeContext *getContext() { return context; }
 
   void clearContext() {
     if (context != nullptr)

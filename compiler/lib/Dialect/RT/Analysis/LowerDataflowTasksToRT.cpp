@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <concretelang/Conversion/Tools.h>
+#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteTypes.h>
@@ -18,9 +19,7 @@
 #include <concretelang/Dialect/RT/IR/RTTypes.h>
 #include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/math.h>
-#include <mlir/IR/BuiltinOps.h>
 
-#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 #include <llvm/IR/Instructions.h>
 #include <mlir/Analysis/DataFlowAnalysis.h>
 #include <mlir/Conversion/LLVMCommon/ConversionTarget.h>
@@ -39,7 +38,9 @@
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinAttributes.h>
+#include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/SymbolTable.h>
+#include <mlir/Interfaces/ViewLikeInterface.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LLVM.h>
 #include <mlir/Support/LogicalResult.h>
@@ -67,10 +68,10 @@ static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
   // types, which will be changed to use an indirection when lowering.
   SmallVector<Type, 4> operandTypes;
   operandTypes.reserve(DFTOp.getNumOperands() + DFTOp.getNumResults());
-  for (Value operand : DFTOp.getOperands())
-    operandTypes.push_back(RT::PointerType::get(operand.getType()));
   for (Value res : DFTOp.getResults())
     operandTypes.push_back(RT::PointerType::get(res.getType()));
+  for (Value operand : DFTOp.getOperands())
+    operandTypes.push_back(RT::PointerType::get(operand.getType()));
 
   FunctionType type = FunctionType::get(DFTOp.getContext(), operandTypes, {});
   auto outlinedFunc = builder.create<func::FuncOp>(loc, workFunctionName, type);
@@ -82,6 +83,7 @@ static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
   outlinedFuncBody.push_back(outlinedEntryBlock);
 
   BlockAndValueMapping map;
+  int input_offset = DFTOp.getNumResults();
   Block &entryBlock = outlinedFuncBody.front();
   builder.setInsertionPointToStart(&entryBlock);
   for (auto operand : llvm::enumerate(DFTOp.getOperands())) {
@@ -89,7 +91,7 @@ static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
     auto derefdop =
         builder.create<RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
             DFTOp.getLoc(), operand.value().getType(),
-            entryBlock.getArgument(operand.index()));
+            entryBlock.getArgument(operand.index() + input_offset));
     map.map(operand.value(), derefdop->getResult(0));
   }
   DFTOpBody.cloneInto(&outlinedFuncBody, map);
@@ -99,17 +101,14 @@ static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
   builder.setInsertionPointToEnd(&entryBlock);
   builder.create<cf::BranchOp>(loc, clonedDFTOpEntry);
 
-  // TODO: we use a WorkFunctionReturnOp to tie return to the
-  // corresponding argument.  This can be lowered to a copy/deref for
-  // shared memory and pointers, but needs to be handled for
-  // distributed memory.
+  // WorkFunctionReturnOp ties return to the corresponding argument.
+  // This is lowered to a copy/deref for shared memory and pointers,
+  // and handled in the serializer for distributed memory.
   outlinedFunc.walk([&](RT::DataflowYieldOp op) {
     OpBuilder replacer(op);
-    int output_offset = DFTOp.getNumOperands();
     for (auto ret : llvm::enumerate(op.getOperands()))
       replacer.create<RT::WorkFunctionReturnOp>(
-          op.getLoc(), ret.value(),
-          outlinedFunc.getArgument(ret.index() + output_offset));
+          op.getLoc(), ret.value(), outlinedFunc.getArgument(ret.index()));
     replacer.create<func::ReturnOp>(op.getLoc());
     op.erase();
   });
@@ -126,33 +125,37 @@ static void replaceAllUsesInDFTsInRegionWith(Value orig, Value replacement,
   }
 }
 
+static mlir::Type stripType(mlir::Type type) {
+  if (type.isa<RT::FutureType>())
+    return stripType(type.dyn_cast<RT::FutureType>().getElementType());
+  if (type.isa<RT::PointerType>())
+    return stripType(type.dyn_cast<RT::PointerType>().getElementType());
+  return type;
+}
+
 // TODO: Fix type sizes. For now we're using some default values.
-static std::pair<mlir::Value, mlir::Value>
+static std::pair<Value, Value>
 getTaskArgumentSizeAndType(Value val, Location loc, OpBuilder builder) {
   DataLayout dataLayout = DataLayout::closest(val.getDefiningOp());
-  Type type = (val.getType().isa<RT::FutureType>())
-                  ? val.getType().dyn_cast<RT::FutureType>().getElementType()
-                  : val.getType();
+  Type type = stripType(val.getType());
 
   // In the case of memref, we need to determine how much space
   // (conservatively) we need to store the memref itself. Overshooting
   // by a few bytes should not be an issue, so the main thing is to
   // properly account for the rank.
   if (type.isa<mlir::MemRefType>()) {
-    // Space for the allocated and aligned pointers, and offset
-    Value ptrs_offset =
-        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(24));
-    // For the sizes and shapes arrays, we need 2*8 = 16 times the rank in bytes
-    Value multiplier =
-        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(16));
-    unsigned _rank = type.dyn_cast<mlir::MemRefType>().getRank();
-    Value rank = builder.create<arith::ConstantOp>(
-        loc, builder.getI64IntegerAttr(_rank));
-    Value sizes_shapes = builder.create<LLVM::MulOp>(loc, rank, multiplier);
-    Value typeSize =
-        builder.create<LLVM::AddOp>(loc, ptrs_offset, sizes_shapes);
-
+    // Space for the allocated and aligned pointers, and offset plus
+    // rank * sizes and strides
+    size_t element_size;
+    unsigned rank = type.dyn_cast<mlir::MemRefType>().getRank();
     Type elementType = type.dyn_cast<mlir::MemRefType>().getElementType();
+
+    element_size = dataLayout.getTypeSize(elementType);
+
+    size_t size = 24 + 16 * rank;
+    Value typeSize =
+        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(size));
+
     // Assume here that the base type is a simple scalar-type or at
     // least its size can be determined.
     // size_t elementAttr = dataLayout.getTypeSize(elementType);
@@ -160,7 +163,6 @@ getTaskArgumentSizeAndType(Value val, Location loc, OpBuilder builder) {
     // elementAttr <<= 8;
     // elementAttr |= _DFR_TASK_ARG_MEMREF;
     uint64_t elementAttr = 0;
-    size_t element_size = dataLayout.getTypeSize(elementType);
     elementAttr =
         dfr::_dfr_set_arg_type(elementAttr, dfr::_DFR_TASK_ARG_MEMREF);
     elementAttr = dfr::_dfr_set_memref_element_size(elementAttr, element_size);
@@ -169,34 +171,19 @@ getTaskArgumentSizeAndType(Value val, Location loc, OpBuilder builder) {
     return std::pair<mlir::Value, mlir::Value>(typeSize, arg_type);
   }
 
-  // Unranked memrefs should be lowered to just pointer + size, so we need 16
-  // bytes.
-  assert(!type.isa<mlir::UnrankedMemRefType>() &&
-         "UnrankedMemRefType not currently supported");
+  if (type.isa<mlir::concretelang::Concrete::ContextType>()) {
+    Value arg_type = builder.create<arith::ConstantOp>(
+        loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_CONTEXT));
+    Value typeSize =
+        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
+    return std::pair<mlir::Value, mlir::Value>(typeSize, arg_type);
+  }
 
   Value arg_type = builder.create<arith::ConstantOp>(
       loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_BASE));
-
-  // FHE types are converted to pointers, so we take their size as 8
-  // bytes until we can get the actual size of the actual types.
-  if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::PlaintextType>()) {
-    Value result =
-        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
-    return std::pair<mlir::Value, mlir::Value>(result, arg_type);
-  } else if (type.isa<mlir::concretelang::Concrete::ContextType>()) {
-    Value arg_type = builder.create<arith::ConstantOp>(
-        loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_CONTEXT));
-    Value result =
-        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
-    return std::pair<mlir::Value, mlir::Value>(result, arg_type);
-  }
-
-  // For all other types, get type size.
-  Value result = builder.create<arith::ConstantOp>(
+  Value typeSize = builder.create<arith::ConstantOp>(
       loc, builder.getI64IntegerAttr(dataLayout.getTypeSize(type)));
-  return std::pair<mlir::Value, mlir::Value>(result, arg_type);
+  return std::pair<mlir::Value, mlir::Value>(typeSize, arg_type);
 }
 
 static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
@@ -212,7 +199,6 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
     if (!val.getType().isa<RT::FutureType>()) {
       OpBuilder::InsertionGuard guard(builder);
       Type futType = RT::FutureType::get(val.getType());
-      Value memrefCloned;
 
       // Find out if this value is needed in any other task
       SmallVector<Operation *, 2> taskOps;
@@ -224,20 +210,10 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
         if (first->getBlock() == op->getBlock() && op->isBeforeInBlock(first))
           first = op;
       builder.setInsertionPoint(first);
-
-      // If we are building a future on a MemRef, then we need to clone
-      // the memref in order to allow the deallocation pass which does
-      // not synchronize with task execution.
-      if (val.getType().isa<mlir::MemRefType>()) {
-        memrefCloned = builder.create<arith::ConstantOp>(
-            val.getLoc(), builder.getI64IntegerAttr(1));
-      } else {
-        memrefCloned = builder.create<arith::ConstantOp>(
-            val.getLoc(), builder.getI64IntegerAttr(0));
-      }
-
-      auto mrf = builder.create<RT::MakeReadyFutureOp>(val.getLoc(), futType,
-                                                       val, memrefCloned);
+      auto mrf = builder.create<RT::MakeReadyFutureOp>(
+          val.getLoc(), futType, val,
+          builder.create<arith::ConstantOp>(val.getLoc(),
+                                            builder.getI64IntegerAttr(0)));
       replaceAllUsesInDFTsInRegionWith(val, mrf, opBody);
     }
   }
@@ -246,7 +222,7 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   // DataflowTaskOp.  This also includes the necessary handling of
   // operands and results (conversion to/from futures and propagation).
   SmallVector<Value, 4> catOperands;
-  int size = 3 + DFTOp.getNumResults() * 3 + DFTOp.getNumOperands() * 3;
+  int size = 3 + DFTOp.getNumResults() + DFTOp.getNumOperands();
   catOperands.reserve(size);
   auto fnptr = builder.create<mlir::func::ConstantOp>(
       DFTOp.getLoc(), workFunction.getFunctionType(),
@@ -258,12 +234,6 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   catOperands.push_back(fnptr.getResult());
   catOperands.push_back(numIns.getResult());
   catOperands.push_back(numOuts.getResult());
-  for (auto operand : DFTOp.getOperands()) {
-    auto op_size = getTaskArgumentSizeAndType(operand, DFTOp.getLoc(), builder);
-    catOperands.push_back(operand);
-    catOperands.push_back(op_size.first);
-    catOperands.push_back(op_size.second);
-  }
 
   // We need to adjust the results for the CreateAsyncTaskOp which
   // are the work function's returns through pointers passed as
@@ -276,11 +246,11 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
     Type futType = RT::PointerType::get(RT::FutureType::get(result.getType()));
     auto brpp = builder.create<RT::BuildReturnPtrPlaceholderOp>(DFTOp.getLoc(),
                                                                 futType);
-    auto op_size = getTaskArgumentSizeAndType(result, DFTOp.getLoc(), builder);
     map.map(result, brpp->getResult(0));
     catOperands.push_back(brpp->getResult(0));
-    catOperands.push_back(op_size.first);
-    catOperands.push_back(op_size.second);
+  }
+  for (auto operand : DFTOp.getOperands()) {
+    catOperands.push_back(operand);
   }
   builder.create<RT::CreateAsyncTaskOp>(
       DFTOp.getLoc(),
@@ -341,59 +311,6 @@ static func::FuncOp getCalledFunction(CallOpInterface callOp) {
       SymbolTable::lookupNearestSymbolFrom(callOp, sym));
 }
 
-static void propagateMemRefLayoutInDFTs(RT::DataflowTaskOp op, Value val,
-                                        Value newval) {
-  for (auto &use : llvm::make_early_inc_range(val.getUses()))
-    if (use.getOwner()->getParentOfType<RT::DataflowTaskOp>() != nullptr) {
-      OpBuilder builder(use.getOwner());
-      Value cast_newval = builder.create<mlir::memref::CastOp>(
-          val.getLoc(), val.getType(), newval);
-      use.set(cast_newval);
-    }
-}
-
-static void cloneMemRefTaskArgumentsWithIdentityMaps(RT::DataflowTaskOp op) {
-  OpBuilder builder(op);
-  for (Value val : op.getOperands()) {
-    if (val.getType().isa<mlir::MemRefType>()) {
-      OpBuilder::InsertionGuard guard(builder);
-
-      // Find out if this memref is needed in any other task to clone
-      // before all uses
-      SmallVector<Operation *, 2> taskOps;
-      for (auto &use : val.getUses())
-        if (isa<RT::DataflowTaskOp>(use.getOwner()))
-          taskOps.push_back(use.getOwner());
-      Operation *first = op;
-      for (auto op : taskOps)
-        if (first->getBlock() == op->getBlock() && op->isBeforeInBlock(first))
-          first = op;
-      builder.setInsertionPoint(first);
-
-      // Get the type of memref that we will clone.  In case this is
-      // a subview, we discard the mapping so we copy to a contiguous
-      // layout which pre-serializes this.
-      MemRefType mrType_base = val.getType().dyn_cast<mlir::MemRefType>();
-      MemRefType mrType = mrType_base;
-      if (!mrType_base.getLayout().isIdentity()) {
-        unsigned rank = mrType_base.getRank();
-        mrType = MemRefType::Builder(mrType_base)
-                     .setShape(mrType_base.getShape())
-                     .setLayout(AffineMapAttr::get(
-                         builder.getMultiDimIdentityMap(rank)));
-      }
-      Value newval = builder.create<mlir::memref::AllocOp>(val.getLoc(), mrType)
-                         .getResult();
-      builder.create<mlir::memref::CopyOp>(val.getLoc(), val, newval);
-      // Value cast_newval = builder.create<mlir::memref::CastOp>(val.getLoc(),
-      // mrType_base, newval);
-      replaceAllUsesInDFTsInRegionWith(
-          val, newval, op->getParentOfType<func::FuncOp>().getBody());
-      propagateMemRefLayoutInDFTs(op, val, newval);
-    }
-  }
-}
-
 /// For documentation see Autopar.td
 struct LowerDataflowTasksPass
     : public LowerDataflowTasksBase<LowerDataflowTasksPass> {
@@ -413,8 +330,8 @@ struct LowerDataflowTasksPass
       SymbolTable symbolTable = mlir::SymbolTable::getNearestSymbolTable(func);
       SmallVector<std::pair<RT::DataflowTaskOp, func::FuncOp>, 4> outliningMap;
 
+      // Outline DataflowTaskOp bodies to work functions
       func.walk([&](RT::DataflowTaskOp op) {
-        cloneMemRefTaskArgumentsWithIdentityMaps(op);
         auto workFunctionName =
             Twine("_dfr_DFT_work_function__") +
             Twine(op->getParentOfType<func::FuncOp>().getName()) +
@@ -423,15 +340,15 @@ struct LowerDataflowTasksPass
             outlineWorkFunction(op, workFunctionName.str());
         outliningMap.push_back(
             std::pair<RT::DataflowTaskOp, func::FuncOp>(op, outlinedFunc));
-        workFunctions.push_back(outlinedFunc);
         symbolTable.insert(outlinedFunc);
+        workFunctions.push_back(outlinedFunc);
         return WalkResult::advance();
       });
-
       // Lower the DF task ops to RT dialect ops.
       for (auto mapping : outliningMap)
         lowerDataflowTaskOp(mapping.first, mapping.second);
 
+      // Gather all entry points (assuming no recursive calls to entry points)
       // Main is always an entry-point - otherwise check if this
       // function is called within the module.  TODO: we assume no
       // recursion.
@@ -449,17 +366,6 @@ struct LowerDataflowTasksPass
     });
 
     for (auto entryPoint : entryPoints) {
-      // Check if this entry point uses a context - do this before we
-      // remove arguments in remote nodes
-      int ctxIndex = -1;
-      for (auto arg : llvm::enumerate(entryPoint.getArguments()))
-        if (arg.value()
-                .getType()
-                .isa<mlir::concretelang::Concrete::ContextType>()) {
-          ctxIndex = arg.index();
-          break;
-        }
-
       // If this is a JIT invocation and we're not on the root node,
       // we do not need to do any computation, only register all work
       // functions with the runtime system
@@ -486,49 +392,6 @@ struct LowerDataflowTasksPass
       // runtime.
       for (auto wf : workFunctions)
         registerWorkFunction(entryPoint, wf);
-
-      // Issue _dfr_start/stop calls for this function
-      OpBuilder builder(entryPoint.getBody());
-      builder.setInsertionPointToStart(&entryPoint.getBody().front());
-      int useDFR = (workFunctions.empty()) ? 0 : 1;
-      Value useDFRVal = builder.create<arith::ConstantOp>(
-          entryPoint.getLoc(), builder.getI64IntegerAttr(useDFR));
-
-      if (ctxIndex >= 0) {
-        auto startFunTy =
-            (dfr::_dfr_is_root_node())
-                ? mlir::FunctionType::get(
-                      entryPoint->getContext(),
-                      {useDFRVal.getType(),
-                       entryPoint.getArgument(ctxIndex).getType()},
-                      {})
-                : mlir::FunctionType::get(entryPoint->getContext(),
-                                          {useDFRVal.getType()}, {});
-        (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start_c",
-                                       startFunTy);
-        (dfr::_dfr_is_root_node())
-            ? builder.create<mlir::func::CallOp>(
-                  entryPoint.getLoc(), "_dfr_start_c", mlir::TypeRange(),
-                  mlir::ValueRange(
-                      {useDFRVal, entryPoint.getArgument(ctxIndex)}))
-            : builder.create<mlir::func::CallOp>(entryPoint.getLoc(),
-                                                 "_dfr_start_c",
-                                                 mlir::TypeRange(), useDFRVal);
-      } else {
-        auto startFunTy = mlir::FunctionType::get(entryPoint->getContext(),
-                                                  {useDFRVal.getType()}, {});
-        (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start",
-                                       startFunTy);
-        builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_start",
-                                           mlir::TypeRange(), useDFRVal);
-      }
-      builder.setInsertionPoint(entryPoint.getBody().back().getTerminator());
-      auto stopFunTy = mlir::FunctionType::get(entryPoint->getContext(),
-                                               {useDFRVal.getType()}, {});
-      (void)insertForwardDeclaration(entryPoint, builder, "_dfr_stop",
-                                     stopFunTy);
-      builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_stop",
-                                         mlir::TypeRange(), useDFRVal);
     }
   }
   LowerDataflowTasksPass(bool debug) : debug(debug){};
@@ -545,6 +408,188 @@ std::unique_ptr<mlir::Pass> createLowerDataflowTasksPass(bool debug) {
 namespace {
 
 // For documentation see Autopar.td
+struct StartStopPass : public StartStopBase<StartStopPass> {
+
+  void runOnOperation() override {
+    auto module = getOperation();
+    int useDFR = 0;
+    SmallVector<func::FuncOp, 1> entryPoints;
+
+    module.walk([&](mlir::func::FuncOp func) {
+      // Do not add start/stop to work functions - but if any are
+      // present, then we need to activate the runtime
+      if (func->getAttr("_dfr_work_function_attribute")) {
+        useDFR = 1;
+      } else {
+        // Main is always an entry-point - otherwise check if this
+        // function is called within the module.  TODO: we assume no
+        // recursion.
+        if (func.getName() == "main")
+          entryPoints.push_back(func);
+        else {
+          bool found = false;
+          module.walk([&](mlir::func::CallOp op) {
+            if (getCalledFunction(op) == func)
+              found = true;
+          });
+          if (!found)
+            entryPoints.push_back(func);
+        }
+      }
+    });
+
+    for (auto entryPoint : entryPoints) {
+      // Issue _dfr_start/stop calls for this function
+      OpBuilder builder(entryPoint.getBody());
+      builder.setInsertionPointToStart(&entryPoint.getBody().front());
+      Value useDFRVal = builder.create<arith::ConstantOp>(
+          entryPoint.getLoc(), builder.getI64IntegerAttr(useDFR));
+
+      // Check if this entry point uses a context
+      Value ctx = nullptr;
+      if (dfr::_dfr_is_root_node())
+        for (auto arg : llvm::enumerate(entryPoint.getArguments()))
+          if (arg.value()
+                  .getType()
+                  .isa<mlir::concretelang::Concrete::ContextType>()) {
+            ctx = arg.value();
+            break;
+          }
+      if (!ctx)
+        ctx = builder.create<arith::ConstantOp>(entryPoint.getLoc(),
+                                                builder.getI64IntegerAttr(0));
+
+      auto startFunTy = mlir::FunctionType::get(
+          entryPoint->getContext(), {useDFRVal.getType(), ctx.getType()}, {});
+      (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start",
+                                     startFunTy);
+      builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_start",
+                                         mlir::TypeRange(),
+                                         mlir::ValueRange({useDFRVal, ctx}));
+      builder.setInsertionPoint(entryPoint.getBody().back().getTerminator());
+      auto stopFunTy = mlir::FunctionType::get(entryPoint->getContext(),
+                                               {useDFRVal.getType()}, {});
+      (void)insertForwardDeclaration(entryPoint, builder, "_dfr_stop",
+                                     stopFunTy);
+      builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_stop",
+                                         mlir::TypeRange(), useDFRVal);
+    }
+  }
+  StartStopPass(bool debug) : debug(debug){};
+
+protected:
+  bool debug;
+};
+} // namespace
+
+std::unique_ptr<mlir::Pass> createStartStopPass(bool debug) {
+  return std::make_unique<StartStopPass>(debug);
+}
+
+namespace {
+
+// For documentation see Autopar.td
+struct FinalizeTaskCreationPass
+    : public FinalizeTaskCreationBase<FinalizeTaskCreationPass> {
+
+  void runOnOperation() override {
+    auto module = getOperation();
+    std::vector<Operation *> ops;
+
+    module.walk([&](RT::CreateAsyncTaskOp catOp) {
+      OpBuilder builder(catOp);
+      SmallVector<Value, 4> operands;
+
+      // Determine if this task needs a runtime context
+      Value ctx = nullptr;
+      SymbolRefAttr sym =
+          catOp->getAttr("workfn").dyn_cast_or_null<SymbolRefAttr>();
+      assert(sym && "Work function symbol attribute missing.");
+      func::FuncOp workfn = dyn_cast_or_null<func::FuncOp>(
+          SymbolTable::lookupNearestSymbolFrom(catOp, sym));
+      assert(workfn && "Task work function missing.");
+      if (workfn.getNumArguments() > catOp.getNumOperands() - 3)
+        ctx = *catOp->getParentOfType<func::FuncOp>().getArguments().rbegin();
+      else
+        ctx = builder.create<arith::ConstantOp>(catOp.getLoc(),
+                                                builder.getI64IntegerAttr(0));
+      int index = 0;
+      for (auto op : catOp.getOperands()) {
+        operands.push_back(op);
+        // Add index in second position - in all cases to avoid
+        // checking if needed. It can be null when not relevant.
+        if (index == 0)
+          operands.push_back(ctx);
+        // First three operands are the function pointer, number inputs
+        // and number outputs - nothing further to do.
+        if (++index <= 3)
+          continue;
+        auto op_size = getTaskArgumentSizeAndType(op, catOp.getLoc(), builder);
+        operands.push_back(op_size.first);
+        operands.push_back(op_size.second);
+      }
+
+      builder.create<RT::CreateAsyncTaskOp>(catOp.getLoc(), sym, operands);
+      ops.push_back(catOp);
+    });
+    for (auto op : ops) {
+      op->erase();
+    }
+
+    // If we are building a future on a MemRef, we need to flatten it.
+
+    // TODO: the performance of shared memory can be improved by
+    // allowing view-like access instead of cloning, but memory
+    // deallocation needs to be synchronized appropriately
+    module.walk([&](RT::MakeReadyFutureOp op) {
+      OpBuilder builder(op);
+
+      Value val = op.getOperand(0);
+      Value clone = op.getOperand(1);
+      if (val.getType().isa<mlir::MemRefType>()) {
+        MemRefType mrType_base = val.getType().dyn_cast<mlir::MemRefType>();
+        MemRefType mrType = mrType_base;
+        if (!mrType_base.getLayout().isIdentity()) {
+          unsigned rank = mrType_base.getRank();
+          mrType = MemRefType::Builder(mrType_base)
+                       .setShape(mrType_base.getShape())
+                       .setLayout(AffineMapAttr::get(
+                           builder.getMultiDimIdentityMap(rank)));
+        }
+        // We need to make a copy of this MemRef to allow deallocation
+        // based on refcounting
+        Value newval =
+            builder.create<mlir::memref::AllocOp>(val.getLoc(), mrType)
+                .getResult();
+        builder.create<mlir::memref::CopyOp>(val.getLoc(), val, newval);
+        clone = builder.create<arith::ConstantOp>(op.getLoc(),
+                                                  builder.getI64IntegerAttr(1));
+        op->setOperand(0, newval);
+        op->setOperand(1, clone);
+      }
+    });
+  }
+  FinalizeTaskCreationPass(bool debug) : debug(debug){};
+
+protected:
+  bool debug;
+};
+} // namespace
+
+std::unique_ptr<mlir::Pass> createFinalizeTaskCreationPass(bool debug) {
+  return std::make_unique<FinalizeTaskCreationPass>(debug);
+}
+
+namespace {
+static void getAliasedUses(Value val, DenseSet<OpOperand *> &aliasedUses) {
+  for (auto &use : val.getUses()) {
+    aliasedUses.insert(&use);
+    if (dyn_cast<ViewLikeOpInterface>(use.getOwner()))
+      getAliasedUses(use.getOwner()->getResult(0), aliasedUses);
+  }
+}
+
+// For documentation see Autopar.td
 struct FixupBufferDeallocationPass
     : public FixupBufferDeallocationBase<FixupBufferDeallocationPass> {
 
@@ -552,23 +597,21 @@ struct FixupBufferDeallocationPass
     auto module = getOperation();
     std::vector<Operation *> ops;
 
-    // All buffers allocated and either made into a future, directly
-    // or as a result of being returned by a task, are managed by the
-    // DFR runtime system's reference counting.
-    module.walk([&](RT::WorkFunctionReturnOp retOp) {
-      for (auto &use :
-           llvm::make_early_inc_range(retOp.getOperands().front().getUses()))
-        if (isa<mlir::memref::DeallocOp>(use.getOwner()))
-          ops.push_back(use.getOwner());
+    module.walk([&](mlir::memref::DeallocOp op) {
+      Value alloc = op.getOperand();
+      DenseSet<OpOperand *> aliasedUses;
+      getAliasedUses(alloc, aliasedUses);
+
+      for (auto use : aliasedUses)
+        if (isa<RT::WorkFunctionReturnOp, RT::MakeReadyFutureOp>(
+                use->getOwner())) {
+          ops.push_back(op);
+          return;
+        }
     });
-    module.walk([&](RT::MakeReadyFutureOp mrfOp) {
-      for (auto &use :
-           llvm::make_early_inc_range(mrfOp.getOperands().front().getUses()))
-        if (isa<mlir::memref::DeallocOp>(use.getOwner()))
-          ops.push_back(use.getOwner());
-    });
-    for (auto op : ops)
+    for (auto op : ops) {
       op->erase();
+    }
   }
   FixupBufferDeallocationPass(bool debug) : debug(debug){};
 

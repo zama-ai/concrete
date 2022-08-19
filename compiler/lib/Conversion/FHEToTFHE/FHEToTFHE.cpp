@@ -14,11 +14,14 @@
 
 #include "concretelang/Conversion/FHEToTFHE/Patterns.h"
 #include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
+#include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
+#include "concretelang/Dialect/RT/IR/RTTypes.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 
@@ -52,6 +55,16 @@ public:
           mlir::concretelang::convertTypeEncryptedIntegerToGLWE(
               eint.getContext(), eint));
       return r;
+    });
+    addConversion([&](mlir::concretelang::RT::FutureType type) {
+      return mlir::concretelang::RT::FutureType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::FutureType>()
+                                .getElementType()));
+    });
+    addConversion([&](mlir::concretelang::RT::PointerType type) {
+      return mlir::concretelang::RT::PointerType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::PointerType>()
+                                .getElementType()));
     });
   }
 };
@@ -269,6 +282,11 @@ struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
           return converter.isSignatureLegal(funcOp.getFunctionType()) &&
                  converter.isLegal(&funcOp.getBody());
         });
+    target.addDynamicallyLegalOp<mlir::func::ConstantOp>(
+        [&](mlir::func::ConstantOp op) {
+          return FunctionConstantOpConversion<FHEToTFHETypeConverter>::isLegal(
+              op, converter);
+        });
 
     // Add all patterns required to lower all ops from `FHE` to
     // `TFHE`
@@ -292,6 +310,8 @@ struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
 
     patterns.add<SubEintOpPattern>(&getContext());
     patterns.add<SubEintIntOpPattern>(&getContext());
+    patterns.add<FunctionConstantOpConversion<FHEToTFHETypeConverter>>(
+        &getContext(), converter);
 
     patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
                                               FHEToTFHETypeConverter>>(
@@ -319,16 +339,43 @@ struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
         patterns, converter);
 
     // Conversion of RT Dialect Ops
-    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-        mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
-                                                 converter);
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
+        mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::MakeReadyFutureOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::AwaitFutureOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::CreateAsyncTaskOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::WorkFunctionReturnOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
+                                                                 converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DataflowTaskOp>(target, converter);
-    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-        mlir::concretelang::RT::DataflowYieldOp>>(patterns.getContext(),
-                                                  converter);
+        mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DataflowYieldOp>(target, converter);
+        mlir::concretelang::RT::AwaitFutureOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
+        target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

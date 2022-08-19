@@ -7,6 +7,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
 #include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
@@ -51,6 +52,16 @@ public:
       mlir::Type r = mlir::RankedTensorType::get(type.getShape(),
                                                  this->glweInterPBSType(glwe));
       return r;
+    });
+    addConversion([&](mlir::concretelang::RT::FutureType type) {
+      return mlir::concretelang::RT::FutureType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::FutureType>()
+                                .getElementType()));
+    });
+    addConversion([&](mlir::concretelang::RT::PointerType type) {
+      return mlir::concretelang::RT::PointerType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::PointerType>()
+                                .getElementType()));
     });
   }
 
@@ -293,6 +304,14 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
           return converter.isSignatureLegal(funcOp.getFunctionType()) &&
                  converter.isLegal(&funcOp.getBody());
         });
+    target.addDynamicallyLegalOp<mlir::func::ConstantOp>(
+        [&](mlir::func::ConstantOp op) {
+          return FunctionConstantOpConversion<
+              TFHEGlobalParametrizationTypeConverter>::isLegal(op, converter);
+        });
+    patterns.add<
+        FunctionConstantOpConversion<TFHEGlobalParametrizationTypeConverter>>(
+        &getContext(), converter);
     mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
         patterns, converter);
 
@@ -354,16 +373,43 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
         patterns, target, converter);
 
     // Conversion of RT Dialect Ops
-    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-        mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
-                                                 converter);
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
+        mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::MakeReadyFutureOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::AwaitFutureOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::CreateAsyncTaskOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::WorkFunctionReturnOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
+                                                                 converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DataflowTaskOp>(target, converter);
-    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-        mlir::concretelang::RT::DataflowYieldOp>>(patterns.getContext(),
-                                                  converter);
+        mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DataflowYieldOp>(target, converter);
+        mlir::concretelang::RT::AwaitFutureOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
+        target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

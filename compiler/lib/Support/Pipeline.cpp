@@ -153,6 +153,8 @@ mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createBuildDataflowTaskGraphPass(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createLowerDataflowTasksPass(), enablePass);
 
   return pm.run(module.getOperation());
 }
@@ -294,6 +296,9 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       mlir::bufferization::createOneShotBufferizePass(bufferizationOptions);
 
   addPotentiallyNestedPass(pm, std::move(comprBuffPass), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
+
   if (parallelizeLoops) {
     addPotentiallyNestedPass(pm, mlir::concretelang::createForLoopToParallel(),
                              enablePass);
@@ -305,14 +310,16 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   // Lower affine
   addPotentiallyNestedPass(pm, mlir::createLowerAffinePass(), enablePass);
 
-  // Lower Dataflow tasks to DRF
+  // Finalize the lowering of RT/DFR which includes:
+  //   - adding type and typesize information for dependences
+  //   - issue _dfr_start and _dfr_stop calls to start/stop the runtime
+  //   - remove deallocation calls for buffers managed through refcounting
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createFixupDataflowTaskOpsPass(), enablePass);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createLowerDataflowTasksPass(), enablePass);
-  // Use the buffer deallocation interface to insert future deallocation calls
+      pm, mlir::concretelang::createFinalizeTaskCreationPass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::bufferization::createBufferDeallocationPass(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createStartStopPass(),
+                           enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFixupBufferDeallocationPass(), enablePass);
 

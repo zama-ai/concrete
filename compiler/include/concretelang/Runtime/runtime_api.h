@@ -15,7 +15,7 @@ extern "C" {
 typedef void (*wfnptr)(...);
 
 void *_dfr_make_ready_future(void *, size_t);
-void _dfr_create_async_task(wfnptr, size_t, size_t, ...);
+void _dfr_create_async_task(wfnptr, void *, size_t, size_t, ...);
 void _dfr_register_work_function(wfnptr);
 void *_dfr_await_future(void *);
 
@@ -26,8 +26,7 @@ void _dfr_deallocate_future(void *);
 void _dfr_deallocate_future_data(void *);
 
 /*  Initialisation & termination.  */
-void _dfr_start_c(int64_t, void *);
-void _dfr_start(int64_t);
+void _dfr_start(int64_t, void *);
 void _dfr_stop(int64_t);
 
 void _dfr_terminate();
