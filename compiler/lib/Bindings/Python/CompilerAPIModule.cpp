@@ -227,19 +227,19 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
-      .def_static("from_tensor",
+      .def_static("from_tensor_8",
                   [](std::vector<uint8_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU8(tensor, dims);
                   })
-      .def_static("from_tensor",
+      .def_static("from_tensor_16",
                   [](std::vector<uint16_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU16(tensor, dims);
                   })
-      .def_static("from_tensor",
+      .def_static("from_tensor_32",
                   [](std::vector<uint32_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU32(tensor, dims);
                   })
-      .def_static("from_tensor",
+      .def_static("from_tensor_64",
                   [](std::vector<uint64_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU64(tensor, dims);
                   })

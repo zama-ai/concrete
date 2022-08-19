@@ -188,4 +188,12 @@ class ClientSupport(WrapperCpp):
                 value = value.max()
             # should be a single uint here
             return LambdaArgument.from_scalar(value)
-        return LambdaArgument.from_tensor(value.flatten().tolist(), value.shape)
+        if value.dtype == np.uint8:
+            return LambdaArgument.from_tensor_8(value.flatten().tolist(), value.shape)
+        if value.dtype == np.uint16:
+            return LambdaArgument.from_tensor_16(value.flatten().tolist(), value.shape)
+        if value.dtype == np.uint32:
+            return LambdaArgument.from_tensor_32(value.flatten().tolist(), value.shape)
+        if value.dtype == np.uint64:
+            return LambdaArgument.from_tensor_64(value.flatten().tolist(), value.shape)
+        raise TypeError("numpy.array must be of dtype uint{8,16,32,64}")

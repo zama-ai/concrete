@@ -63,7 +63,7 @@ class LambdaArgument(WrapperCpp):
         return LambdaArgument.wrap(_LambdaArgument.from_scalar(scalar))
 
     @staticmethod
-    def from_tensor(data: List[int], shape: List[int]) -> "LambdaArgument":
+    def from_tensor_8(data: List[int], shape: List[int]) -> "LambdaArgument":
         """Build a LambdaArgument containing the given tensor.
 
         Args:
@@ -73,7 +73,46 @@ class LambdaArgument(WrapperCpp):
         Returns:
             LambdaArgument
         """
-        return LambdaArgument.wrap(_LambdaArgument.from_tensor(data, shape))
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_8(data, shape))
+
+    @staticmethod
+    def from_tensor_16(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_16(data, shape))
+
+    @staticmethod
+    def from_tensor_32(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_32(data, shape))
+
+    @staticmethod
+    def from_tensor_64(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_64(data, shape))
 
     def is_scalar(self) -> bool:
         """Check if the contained argument is a scalar.

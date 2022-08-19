@@ -43,30 +43,30 @@ def test_accepted_ints(value):
 
 
 # TODO: #495
-# @pytest.mark.parametrize(
-#     "dtype",
-#     [
-#         pytest.param(np.uint8, id="uint8"),
-#         pytest.param(np.uint16, id="uint16"),
-#         pytest.param(np.uint32, id="uint32"),
-#         pytest.param(np.uint64, id="uint64"),
-#     ],
-# )
-# def test_accepted_ndarray(dtype):
-#     value = np.array([0, 1, 2], dtype=dtype)
-#     try:
-#         arg = ClientSupport._create_lambda_argument(value)
-#     except Exception:
-#         pytest.fail(f"value of type {type(value)} should be supported")
+@pytest.mark.parametrize(
+    "dtype, maxvalue",
+    [
+        pytest.param(np.uint8, 2**8 - 1, id="uint8"),
+        pytest.param(np.uint16, 2**16 - 1, id="uint16"),
+        pytest.param(np.uint32, 2**32 - 1, id="uint32"),
+        pytest.param(np.uint64, 2**64 - 1, id="uint64"),
+    ],
+)
+def test_accepted_ndarray(dtype, maxvalue):
+    value = np.array([0, 1, 2, maxvalue], dtype=dtype)
+    try:
+        arg = ClientSupport._create_lambda_argument(value)
+    except Exception:
+        pytest.fail(f"value of type {type(value)} should be supported")
 
-#     assert arg.is_tensor(), "should have been a tensor"
-#     assert np.all(np.equal(arg.get_tensor_shape(), value.shape))
-#     assert np.all(
-#         np.equal(
-#             value,
-#             np.array(arg.get_tensor_data()).reshape(arg.get_tensor_shape()),
-#         )
-#     )
+    assert arg.is_tensor(), "should have been a tensor"
+    assert np.all(np.equal(arg.get_tensor_shape(), value.shape))
+    assert np.all(
+        np.equal(
+            value,
+            np.array(arg.get_tensor_data()).reshape(arg.get_tensor_shape()),
+        )
+    )
 
 
 def test_accepted_array_as_scalar():
