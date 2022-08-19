@@ -115,7 +115,10 @@ std::string printEndToEndDesc(const testing::TestParamInfo<EndToEndDesc> desc) {
       "tests/end_to_end_fixture/end_to_end_encrypted_tensor.yaml")             \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
       FHELinalg, suite, lambdasupport,                                         \
-      "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml")
+      "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml")                    \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      FHELeveledOps, suite, lambdasupport,                                     \
+      "tests/end_to_end_fixture/end_to_end_leveled.yaml")
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(

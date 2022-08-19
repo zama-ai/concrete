@@ -1,0 +1,6152 @@
+# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY
+# /!\ THIS FILE HAS BEEN GENERATED THANKS THE end_to_end_levelled_gen.py scripts
+# This reference file aims to test all levelled ops with all bitwidth than we known that the compiler/optimizer support.
+
+
+description: identity_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>) -> !FHE.eint<1> {
+    return %arg0: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: zero_tensor_1bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<1>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<1>>
+    return %0: tensor<2x2x4x!FHE.eint<1>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>) -> !FHE.eint<1> {
+    %0 = arith.constant 1 : i2
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<1>, i2) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 1
+---
+description: add_eint_int_arg_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>, %arg1: i2) -> !FHE.eint<1> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<1>, i2) -> (!FHE.eint<1>)
+    return %0: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: add_eint_1_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>, %arg1: !FHE.eint<1>) -> !FHE.eint<1> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<1>, !FHE.eint<1>) -> !FHE.eint<1>
+    return %res: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: sub_eint_int_cst_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>) -> !FHE.eint<1> {
+    %0 = arith.constant 1 : i2
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<1>, i2) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 1
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>, %arg1: i2) -> !FHE.eint<1> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<1>, i2) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_cst_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>) -> !FHE.eint<1> {
+    %0 = arith.constant 1 : i2
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i2, !FHE.eint<1>) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 1
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_1bits
+program: |
+  func.func @main(%arg0: i2, %arg1: !FHE.eint<1>) -> !FHE.eint<1> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i2, !FHE.eint<1>) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>, %arg1: !FHE.eint<1>) -> !FHE.eint<1> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<1>, !FHE.eint<1>) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+---
+description: mul_eint_int_cst_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>) -> !FHE.eint<1> {
+    %0 = arith.constant 2 : i2
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<1>, i2) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+---
+description: mul_eint_int_arg_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>, %arg1: i2) -> !FHE.eint<1> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<1>, i2) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+---
+description: identity_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
+    return %arg0: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    outputs:
+    - scalar: 3
+---
+description: zero_tensor_2bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<2>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<2>>
+    return %0: tensor<2x2x4x!FHE.eint<2>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
+    %0 = arith.constant 1 : i3
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 2
+    outputs:
+    - scalar: 3
+---
+description: add_eint_int_arg_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>, %arg1: i3) -> !FHE.eint<2> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+    return %0: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 2
+    - scalar: 1
+    outputs:
+    - scalar: 3
+  - inputs:
+    - scalar: 3
+    - scalar: 0
+    outputs:
+    - scalar: 3
+  - inputs:
+    - scalar: 1
+    - scalar: 2
+    outputs:
+    - scalar: 3
+---
+description: add_eint_2_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>, %arg1: !FHE.eint<2>) -> !FHE.eint<2> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<2>, !FHE.eint<2>) -> !FHE.eint<2>
+    return %res: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 1
+    - scalar: 2
+    outputs:
+    - scalar: 3
+---
+description: sub_eint_int_cst_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
+    %0 = arith.constant 3 : i3
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>, %arg1: i3) -> !FHE.eint<2> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    - scalar: 3
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 3
+    - scalar: 0
+    outputs:
+    - scalar: 3
+  - inputs:
+    - scalar: 2
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: sub_int_eint_cst_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
+    %0 = arith.constant 3 : i3
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i3, !FHE.eint<2>) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_2bits
+program: |
+  func.func @main(%arg0: i3, %arg1: !FHE.eint<2>) -> !FHE.eint<2> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i3, !FHE.eint<2>) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    - scalar: 3
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 3
+    - scalar: 0
+    outputs:
+    - scalar: 3
+  - inputs:
+    - scalar: 2
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: sub_eint_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>, %arg1: !FHE.eint<2>) -> !FHE.eint<2> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    - scalar: 3
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 3
+    - scalar: 0
+    outputs:
+    - scalar: 3
+  - inputs:
+    - scalar: 2
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: mul_eint_int_cst_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
+    %0 = arith.constant 2 : i3
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    outputs:
+    - scalar: 2
+---
+description: mul_eint_int_arg_2bits
+program: |
+  func.func @main(%arg0: !FHE.eint<2>, %arg1: i3) -> !FHE.eint<2> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+    return %1: !FHE.eint<2>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 3
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 3
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 3
+    outputs:
+    - scalar: 3
+  - inputs:
+    - scalar: 3
+    - scalar: 1
+    outputs:
+    - scalar: 3
+---
+---
+description: identity_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+    return %arg0: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 7
+    outputs:
+    - scalar: 7
+---
+description: zero_tensor_3bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<3>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<3>>
+    return %0: tensor<2x2x4x!FHE.eint<3>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+    %0 = arith.constant 1 : i4
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<3>, i4) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 6
+    outputs:
+    - scalar: 7
+---
+description: add_eint_int_arg_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>, %arg1: i4) -> !FHE.eint<3> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<3>, i4) -> (!FHE.eint<3>)
+    return %0: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 6
+    - scalar: 1
+    outputs:
+    - scalar: 7
+  - inputs:
+    - scalar: 7
+    - scalar: 0
+    outputs:
+    - scalar: 7
+  - inputs:
+    - scalar: 3
+    - scalar: 4
+    outputs:
+    - scalar: 7
+---
+description: add_eint_3_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>, %arg1: !FHE.eint<3>) -> !FHE.eint<3> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
+    return %res: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    - scalar: 4
+    outputs:
+    - scalar: 7
+---
+description: sub_eint_int_cst_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+    %0 = arith.constant 7 : i4
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<3>, i4) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 7
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>, %arg1: i4) -> !FHE.eint<3> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<3>, i4) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 7
+    - scalar: 7
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 7
+    - scalar: 0
+    outputs:
+    - scalar: 7
+  - inputs:
+    - scalar: 6
+    - scalar: 3
+    outputs:
+    - scalar: 3
+---
+description: sub_int_eint_cst_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+    %0 = arith.constant 7 : i4
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i4, !FHE.eint<3>) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 7
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_3bits
+program: |
+  func.func @main(%arg0: i4, %arg1: !FHE.eint<3>) -> !FHE.eint<3> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i4, !FHE.eint<3>) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 7
+    - scalar: 7
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 7
+    - scalar: 0
+    outputs:
+    - scalar: 7
+  - inputs:
+    - scalar: 6
+    - scalar: 3
+    outputs:
+    - scalar: 3
+---
+description: sub_eint_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>, %arg1: !FHE.eint<3>) -> !FHE.eint<3> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<3>, !FHE.eint<3>) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 7
+    - scalar: 7
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 7
+    - scalar: 0
+    outputs:
+    - scalar: 7
+  - inputs:
+    - scalar: 6
+    - scalar: 3
+    outputs:
+    - scalar: 3
+---
+description: mul_eint_int_cst_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+    %0 = arith.constant 2 : i4
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<3>, i4) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 3
+    outputs:
+    - scalar: 6
+---
+description: mul_eint_int_arg_3bits
+program: |
+  func.func @main(%arg0: !FHE.eint<3>, %arg1: i4) -> !FHE.eint<3> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<3>, i4) -> (!FHE.eint<3>)
+    return %1: !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 7
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 7
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 7
+    outputs:
+    - scalar: 7
+  - inputs:
+    - scalar: 7
+    - scalar: 1
+    outputs:
+    - scalar: 7
+---
+---
+description: identity_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+    return %arg0: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 15
+    outputs:
+    - scalar: 15
+---
+description: zero_tensor_4bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<4>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<4>>
+    return %0: tensor<2x2x4x!FHE.eint<4>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+    %0 = arith.constant 1 : i5
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<4>, i5) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 14
+    outputs:
+    - scalar: 15
+---
+description: add_eint_int_arg_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: i5) -> !FHE.eint<4> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<4>, i5) -> (!FHE.eint<4>)
+    return %0: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 14
+    - scalar: 1
+    outputs:
+    - scalar: 15
+  - inputs:
+    - scalar: 15
+    - scalar: 0
+    outputs:
+    - scalar: 15
+  - inputs:
+    - scalar: 7
+    - scalar: 8
+    outputs:
+    - scalar: 15
+---
+description: add_eint_4_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
+    return %res: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 7
+    - scalar: 8
+    outputs:
+    - scalar: 15
+---
+description: sub_eint_int_cst_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+    %0 = arith.constant 15 : i5
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<4>, i5) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 15
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: i5) -> !FHE.eint<4> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<4>, i5) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 15
+    - scalar: 15
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 15
+    - scalar: 0
+    outputs:
+    - scalar: 15
+  - inputs:
+    - scalar: 14
+    - scalar: 7
+    outputs:
+    - scalar: 7
+---
+description: sub_int_eint_cst_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+    %0 = arith.constant 15 : i5
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i5, !FHE.eint<4>) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 15
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_4bits
+program: |
+  func.func @main(%arg0: i5, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i5, !FHE.eint<4>) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 15
+    - scalar: 15
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 15
+    - scalar: 0
+    outputs:
+    - scalar: 15
+  - inputs:
+    - scalar: 14
+    - scalar: 7
+    outputs:
+    - scalar: 7
+---
+description: sub_eint_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 15
+    - scalar: 15
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 15
+    - scalar: 0
+    outputs:
+    - scalar: 15
+  - inputs:
+    - scalar: 14
+    - scalar: 7
+    outputs:
+    - scalar: 7
+---
+description: mul_eint_int_cst_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+    %0 = arith.constant 2 : i5
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<4>, i5) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 7
+    outputs:
+    - scalar: 14
+---
+description: mul_eint_int_arg_4bits
+program: |
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: i5) -> !FHE.eint<4> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<4>, i5) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 15
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 15
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 15
+    outputs:
+    - scalar: 15
+  - inputs:
+    - scalar: 15
+    - scalar: 1
+    outputs:
+    - scalar: 15
+---
+---
+description: identity_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
+    return %arg0: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 31
+    outputs:
+    - scalar: 31
+---
+description: zero_tensor_5bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<5>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<5>>
+    return %0: tensor<2x2x4x!FHE.eint<5>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
+    %0 = arith.constant 1 : i6
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 30
+    outputs:
+    - scalar: 31
+---
+description: add_eint_int_arg_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>, %arg1: i6) -> !FHE.eint<5> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
+    return %0: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 30
+    - scalar: 1
+    outputs:
+    - scalar: 31
+  - inputs:
+    - scalar: 31
+    - scalar: 0
+    outputs:
+    - scalar: 31
+  - inputs:
+    - scalar: 15
+    - scalar: 16
+    outputs:
+    - scalar: 31
+---
+description: add_eint_5_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
+    return %res: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 15
+    - scalar: 16
+    outputs:
+    - scalar: 31
+---
+description: sub_eint_int_cst_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
+    %0 = arith.constant 31 : i6
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 31
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>, %arg1: i6) -> !FHE.eint<5> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 31
+    - scalar: 31
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 31
+    - scalar: 0
+    outputs:
+    - scalar: 31
+  - inputs:
+    - scalar: 30
+    - scalar: 15
+    outputs:
+    - scalar: 15
+---
+description: sub_int_eint_cst_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
+    %0 = arith.constant 31 : i6
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i6, !FHE.eint<5>) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 31
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_5bits
+program: |
+  func.func @main(%arg0: i6, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i6, !FHE.eint<5>) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 31
+    - scalar: 31
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 31
+    - scalar: 0
+    outputs:
+    - scalar: 31
+  - inputs:
+    - scalar: 30
+    - scalar: 15
+    outputs:
+    - scalar: 15
+---
+description: sub_eint_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<5>, !FHE.eint<5>) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 31
+    - scalar: 31
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 31
+    - scalar: 0
+    outputs:
+    - scalar: 31
+  - inputs:
+    - scalar: 30
+    - scalar: 15
+    outputs:
+    - scalar: 15
+---
+description: mul_eint_int_cst_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
+    %0 = arith.constant 2 : i6
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 15
+    outputs:
+    - scalar: 30
+---
+description: mul_eint_int_arg_5bits
+program: |
+  func.func @main(%arg0: !FHE.eint<5>, %arg1: i6) -> !FHE.eint<5> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 31
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 31
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 31
+    outputs:
+    - scalar: 31
+  - inputs:
+    - scalar: 31
+    - scalar: 1
+    outputs:
+    - scalar: 31
+---
+---
+description: identity_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+    return %arg0: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 63
+    outputs:
+    - scalar: 63
+---
+description: zero_tensor_6bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<6>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<6>>
+    return %0: tensor<2x2x4x!FHE.eint<6>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+    %0 = arith.constant 1 : i7
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<6>, i7) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 62
+    outputs:
+    - scalar: 63
+---
+description: add_eint_int_arg_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>, %arg1: i7) -> !FHE.eint<6> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<6>, i7) -> (!FHE.eint<6>)
+    return %0: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 62
+    - scalar: 1
+    outputs:
+    - scalar: 63
+  - inputs:
+    - scalar: 63
+    - scalar: 0
+    outputs:
+    - scalar: 63
+  - inputs:
+    - scalar: 31
+    - scalar: 32
+    outputs:
+    - scalar: 63
+---
+description: add_eint_6_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<6>) -> !FHE.eint<6> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<6>, !FHE.eint<6>) -> !FHE.eint<6>
+    return %res: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 31
+    - scalar: 32
+    outputs:
+    - scalar: 63
+---
+description: sub_eint_int_cst_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+    %0 = arith.constant 63 : i7
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<6>, i7) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 63
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>, %arg1: i7) -> !FHE.eint<6> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<6>, i7) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 63
+    - scalar: 63
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 63
+    - scalar: 0
+    outputs:
+    - scalar: 63
+  - inputs:
+    - scalar: 62
+    - scalar: 31
+    outputs:
+    - scalar: 31
+---
+description: sub_int_eint_cst_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+    %0 = arith.constant 63 : i7
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i7, !FHE.eint<6>) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 63
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_6bits
+program: |
+  func.func @main(%arg0: i7, %arg1: !FHE.eint<6>) -> !FHE.eint<6> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i7, !FHE.eint<6>) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 63
+    - scalar: 63
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 63
+    - scalar: 0
+    outputs:
+    - scalar: 63
+  - inputs:
+    - scalar: 62
+    - scalar: 31
+    outputs:
+    - scalar: 31
+---
+description: sub_eint_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<6>) -> !FHE.eint<6> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<6>, !FHE.eint<6>) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 63
+    - scalar: 63
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 63
+    - scalar: 0
+    outputs:
+    - scalar: 63
+  - inputs:
+    - scalar: 62
+    - scalar: 31
+    outputs:
+    - scalar: 31
+---
+description: mul_eint_int_cst_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+    %0 = arith.constant 2 : i7
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<6>, i7) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 31
+    outputs:
+    - scalar: 62
+---
+description: mul_eint_int_arg_6bits
+program: |
+  func.func @main(%arg0: !FHE.eint<6>, %arg1: i7) -> !FHE.eint<6> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<6>, i7) -> (!FHE.eint<6>)
+    return %1: !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 63
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 63
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 63
+    outputs:
+    - scalar: 63
+  - inputs:
+    - scalar: 63
+    - scalar: 1
+    outputs:
+    - scalar: 63
+---
+---
+description: identity_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+    return %arg0: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 127
+    outputs:
+    - scalar: 127
+---
+description: zero_tensor_7bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<7>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<7>>
+    return %0: tensor<2x2x4x!FHE.eint<7>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+    %0 = arith.constant 1 : i8
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 126
+    outputs:
+    - scalar: 127
+---
+description: add_eint_int_arg_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+    return %0: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 126
+    - scalar: 1
+    outputs:
+    - scalar: 127
+  - inputs:
+    - scalar: 127
+    - scalar: 0
+    outputs:
+    - scalar: 127
+  - inputs:
+    - scalar: 63
+    - scalar: 64
+    outputs:
+    - scalar: 127
+---
+description: add_eint_7_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
+    return %res: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 63
+    - scalar: 64
+    outputs:
+    - scalar: 127
+---
+description: sub_eint_int_cst_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+    %0 = arith.constant 127 : i8
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 127
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 127
+    - scalar: 127
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 127
+    - scalar: 0
+    outputs:
+    - scalar: 127
+  - inputs:
+    - scalar: 126
+    - scalar: 63
+    outputs:
+    - scalar: 63
+---
+description: sub_int_eint_cst_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+    %0 = arith.constant 127 : i8
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i8, !FHE.eint<7>) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 127
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_7bits
+program: |
+  func.func @main(%arg0: i8, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i8, !FHE.eint<7>) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 127
+    - scalar: 127
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 127
+    - scalar: 0
+    outputs:
+    - scalar: 127
+  - inputs:
+    - scalar: 126
+    - scalar: 63
+    outputs:
+    - scalar: 63
+---
+description: sub_eint_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 127
+    - scalar: 127
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 127
+    - scalar: 0
+    outputs:
+    - scalar: 127
+  - inputs:
+    - scalar: 126
+    - scalar: 63
+    outputs:
+    - scalar: 63
+---
+description: mul_eint_int_cst_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+    %0 = arith.constant 2 : i8
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 63
+    outputs:
+    - scalar: 126
+---
+description: mul_eint_int_arg_7bits
+program: |
+  func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+    return %1: !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 127
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 127
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 127
+    outputs:
+    - scalar: 127
+  - inputs:
+    - scalar: 127
+    - scalar: 1
+    outputs:
+    - scalar: 127
+---
+---
+description: identity_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<8> {
+    return %arg0: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 255
+    outputs:
+    - scalar: 255
+---
+description: zero_tensor_8bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<8>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<8>>
+    return %0: tensor<2x2x4x!FHE.eint<8>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<8> {
+    %0 = arith.constant 1 : i9
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<8>, i9) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 254
+    outputs:
+    - scalar: 255
+---
+description: add_eint_int_arg_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>, %arg1: i9) -> !FHE.eint<8> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<8>, i9) -> (!FHE.eint<8>)
+    return %0: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 254
+    - scalar: 1
+    outputs:
+    - scalar: 255
+  - inputs:
+    - scalar: 255
+    - scalar: 0
+    outputs:
+    - scalar: 255
+  - inputs:
+    - scalar: 127
+    - scalar: 128
+    outputs:
+    - scalar: 255
+---
+description: add_eint_8_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>, %arg1: !FHE.eint<8>) -> !FHE.eint<8> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<8>, !FHE.eint<8>) -> !FHE.eint<8>
+    return %res: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 127
+    - scalar: 128
+    outputs:
+    - scalar: 255
+---
+description: sub_eint_int_cst_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<8> {
+    %0 = arith.constant 255 : i9
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<8>, i9) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 255
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>, %arg1: i9) -> !FHE.eint<8> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<8>, i9) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 255
+    - scalar: 255
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 255
+    - scalar: 0
+    outputs:
+    - scalar: 255
+  - inputs:
+    - scalar: 254
+    - scalar: 127
+    outputs:
+    - scalar: 127
+---
+description: sub_int_eint_cst_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<8> {
+    %0 = arith.constant 255 : i9
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i9, !FHE.eint<8>) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 255
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_8bits
+program: |
+  func.func @main(%arg0: i9, %arg1: !FHE.eint<8>) -> !FHE.eint<8> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i9, !FHE.eint<8>) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 255
+    - scalar: 255
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 255
+    - scalar: 0
+    outputs:
+    - scalar: 255
+  - inputs:
+    - scalar: 254
+    - scalar: 127
+    outputs:
+    - scalar: 127
+---
+description: sub_eint_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>, %arg1: !FHE.eint<8>) -> !FHE.eint<8> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<8>, !FHE.eint<8>) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 255
+    - scalar: 255
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 255
+    - scalar: 0
+    outputs:
+    - scalar: 255
+  - inputs:
+    - scalar: 254
+    - scalar: 127
+    outputs:
+    - scalar: 127
+---
+description: mul_eint_int_cst_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<8> {
+    %0 = arith.constant 2 : i9
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<8>, i9) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 127
+    outputs:
+    - scalar: 254
+---
+description: mul_eint_int_arg_8bits
+program: |
+  func.func @main(%arg0: !FHE.eint<8>, %arg1: i9) -> !FHE.eint<8> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<8>, i9) -> (!FHE.eint<8>)
+    return %1: !FHE.eint<8>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 255
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 255
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 255
+    outputs:
+    - scalar: 255
+  - inputs:
+    - scalar: 255
+    - scalar: 1
+    outputs:
+    - scalar: 255
+---
+---
+description: identity_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>) -> !FHE.eint<9> {
+    return %arg0: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 511
+    outputs:
+    - scalar: 511
+---
+description: zero_tensor_9bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<9>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<9>>
+    return %0: tensor<2x2x4x!FHE.eint<9>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>) -> !FHE.eint<9> {
+    %0 = arith.constant 1 : i10
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<9>, i10) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 510
+    outputs:
+    - scalar: 511
+---
+description: add_eint_int_arg_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>, %arg1: i10) -> !FHE.eint<9> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<9>, i10) -> (!FHE.eint<9>)
+    return %0: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 510
+    - scalar: 1
+    outputs:
+    - scalar: 511
+  - inputs:
+    - scalar: 511
+    - scalar: 0
+    outputs:
+    - scalar: 511
+  - inputs:
+    - scalar: 255
+    - scalar: 256
+    outputs:
+    - scalar: 511
+---
+description: add_eint_9_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>, %arg1: !FHE.eint<9>) -> !FHE.eint<9> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<9>, !FHE.eint<9>) -> !FHE.eint<9>
+    return %res: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 255
+    - scalar: 256
+    outputs:
+    - scalar: 511
+---
+description: sub_eint_int_cst_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>) -> !FHE.eint<9> {
+    %0 = arith.constant 511 : i10
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<9>, i10) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 511
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>, %arg1: i10) -> !FHE.eint<9> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<9>, i10) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 511
+    - scalar: 511
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 511
+    - scalar: 0
+    outputs:
+    - scalar: 511
+  - inputs:
+    - scalar: 510
+    - scalar: 255
+    outputs:
+    - scalar: 255
+---
+description: sub_int_eint_cst_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>) -> !FHE.eint<9> {
+    %0 = arith.constant 511 : i10
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i10, !FHE.eint<9>) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 511
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_9bits
+program: |
+  func.func @main(%arg0: i10, %arg1: !FHE.eint<9>) -> !FHE.eint<9> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i10, !FHE.eint<9>) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 511
+    - scalar: 511
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 511
+    - scalar: 0
+    outputs:
+    - scalar: 511
+  - inputs:
+    - scalar: 510
+    - scalar: 255
+    outputs:
+    - scalar: 255
+---
+description: sub_eint_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>, %arg1: !FHE.eint<9>) -> !FHE.eint<9> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<9>, !FHE.eint<9>) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 511
+    - scalar: 511
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 511
+    - scalar: 0
+    outputs:
+    - scalar: 511
+  - inputs:
+    - scalar: 510
+    - scalar: 255
+    outputs:
+    - scalar: 255
+---
+description: mul_eint_int_cst_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>) -> !FHE.eint<9> {
+    %0 = arith.constant 2 : i10
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<9>, i10) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 255
+    outputs:
+    - scalar: 510
+---
+description: mul_eint_int_arg_9bits
+program: |
+  func.func @main(%arg0: !FHE.eint<9>, %arg1: i10) -> !FHE.eint<9> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<9>, i10) -> (!FHE.eint<9>)
+    return %1: !FHE.eint<9>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 511
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 511
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 511
+    outputs:
+    - scalar: 511
+  - inputs:
+    - scalar: 511
+    - scalar: 1
+    outputs:
+    - scalar: 511
+---
+---
+description: identity_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>) -> !FHE.eint<10> {
+    return %arg0: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1023
+    outputs:
+    - scalar: 1023
+---
+description: zero_tensor_10bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<10>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<10>>
+    return %0: tensor<2x2x4x!FHE.eint<10>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>) -> !FHE.eint<10> {
+    %0 = arith.constant 1 : i11
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<10>, i11) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1022
+    outputs:
+    - scalar: 1023
+---
+description: add_eint_int_arg_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>, %arg1: i11) -> !FHE.eint<10> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<10>, i11) -> (!FHE.eint<10>)
+    return %0: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1022
+    - scalar: 1
+    outputs:
+    - scalar: 1023
+  - inputs:
+    - scalar: 1023
+    - scalar: 0
+    outputs:
+    - scalar: 1023
+  - inputs:
+    - scalar: 511
+    - scalar: 512
+    outputs:
+    - scalar: 1023
+---
+description: add_eint_10_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>, %arg1: !FHE.eint<10>) -> !FHE.eint<10> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<10>, !FHE.eint<10>) -> !FHE.eint<10>
+    return %res: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 511
+    - scalar: 512
+    outputs:
+    - scalar: 1023
+---
+description: sub_eint_int_cst_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>) -> !FHE.eint<10> {
+    %0 = arith.constant 1023 : i11
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<10>, i11) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1023
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>, %arg1: i11) -> !FHE.eint<10> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<10>, i11) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1023
+    - scalar: 1023
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1023
+    - scalar: 0
+    outputs:
+    - scalar: 1023
+  - inputs:
+    - scalar: 1022
+    - scalar: 511
+    outputs:
+    - scalar: 511
+---
+description: sub_int_eint_cst_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>) -> !FHE.eint<10> {
+    %0 = arith.constant 1023 : i11
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i11, !FHE.eint<10>) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1023
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_10bits
+program: |
+  func.func @main(%arg0: i11, %arg1: !FHE.eint<10>) -> !FHE.eint<10> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i11, !FHE.eint<10>) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1023
+    - scalar: 1023
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1023
+    - scalar: 0
+    outputs:
+    - scalar: 1023
+  - inputs:
+    - scalar: 1022
+    - scalar: 511
+    outputs:
+    - scalar: 511
+---
+description: sub_eint_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>, %arg1: !FHE.eint<10>) -> !FHE.eint<10> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<10>, !FHE.eint<10>) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 1023
+    - scalar: 1023
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1023
+    - scalar: 0
+    outputs:
+    - scalar: 1023
+  - inputs:
+    - scalar: 1022
+    - scalar: 511
+    outputs:
+    - scalar: 511
+---
+description: mul_eint_int_cst_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>) -> !FHE.eint<10> {
+    %0 = arith.constant 2 : i11
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<10>, i11) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 511
+    outputs:
+    - scalar: 1022
+---
+description: mul_eint_int_arg_10bits
+program: |
+  func.func @main(%arg0: !FHE.eint<10>, %arg1: i11) -> !FHE.eint<10> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<10>, i11) -> (!FHE.eint<10>)
+    return %1: !FHE.eint<10>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1023
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1023
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 1023
+    outputs:
+    - scalar: 1023
+  - inputs:
+    - scalar: 1023
+    - scalar: 1
+    outputs:
+    - scalar: 1023
+---
+---
+description: identity_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>) -> !FHE.eint<11> {
+    return %arg0: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2047
+    outputs:
+    - scalar: 2047
+---
+description: zero_tensor_11bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<11>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<11>>
+    return %0: tensor<2x2x4x!FHE.eint<11>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>) -> !FHE.eint<11> {
+    %0 = arith.constant 1 : i12
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<11>, i12) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2046
+    outputs:
+    - scalar: 2047
+---
+description: add_eint_int_arg_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>, %arg1: i12) -> !FHE.eint<11> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<11>, i12) -> (!FHE.eint<11>)
+    return %0: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2046
+    - scalar: 1
+    outputs:
+    - scalar: 2047
+  - inputs:
+    - scalar: 2047
+    - scalar: 0
+    outputs:
+    - scalar: 2047
+  - inputs:
+    - scalar: 1023
+    - scalar: 1024
+    outputs:
+    - scalar: 2047
+---
+description: add_eint_11_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>, %arg1: !FHE.eint<11>) -> !FHE.eint<11> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<11>, !FHE.eint<11>) -> !FHE.eint<11>
+    return %res: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 1023
+    - scalar: 1024
+    outputs:
+    - scalar: 2047
+---
+description: sub_eint_int_cst_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>) -> !FHE.eint<11> {
+    %0 = arith.constant 2047 : i12
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<11>, i12) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2047
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>, %arg1: i12) -> !FHE.eint<11> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<11>, i12) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2047
+    - scalar: 2047
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2047
+    - scalar: 0
+    outputs:
+    - scalar: 2047
+  - inputs:
+    - scalar: 2046
+    - scalar: 1023
+    outputs:
+    - scalar: 1023
+---
+description: sub_int_eint_cst_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>) -> !FHE.eint<11> {
+    %0 = arith.constant 2047 : i12
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i12, !FHE.eint<11>) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2047
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_11bits
+program: |
+  func.func @main(%arg0: i12, %arg1: !FHE.eint<11>) -> !FHE.eint<11> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i12, !FHE.eint<11>) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2047
+    - scalar: 2047
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2047
+    - scalar: 0
+    outputs:
+    - scalar: 2047
+  - inputs:
+    - scalar: 2046
+    - scalar: 1023
+    outputs:
+    - scalar: 1023
+---
+description: sub_eint_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>, %arg1: !FHE.eint<11>) -> !FHE.eint<11> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<11>, !FHE.eint<11>) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 2047
+    - scalar: 2047
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2047
+    - scalar: 0
+    outputs:
+    - scalar: 2047
+  - inputs:
+    - scalar: 2046
+    - scalar: 1023
+    outputs:
+    - scalar: 1023
+---
+description: mul_eint_int_cst_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>) -> !FHE.eint<11> {
+    %0 = arith.constant 2 : i12
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<11>, i12) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1023
+    outputs:
+    - scalar: 2046
+---
+description: mul_eint_int_arg_11bits
+program: |
+  func.func @main(%arg0: !FHE.eint<11>, %arg1: i12) -> !FHE.eint<11> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<11>, i12) -> (!FHE.eint<11>)
+    return %1: !FHE.eint<11>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 2047
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2047
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 2047
+    outputs:
+    - scalar: 2047
+  - inputs:
+    - scalar: 2047
+    - scalar: 1
+    outputs:
+    - scalar: 2047
+---
+---
+description: identity_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>) -> !FHE.eint<12> {
+    return %arg0: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4095
+    outputs:
+    - scalar: 4095
+---
+description: zero_tensor_12bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<12>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<12>>
+    return %0: tensor<2x2x4x!FHE.eint<12>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>) -> !FHE.eint<12> {
+    %0 = arith.constant 1 : i13
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<12>, i13) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4094
+    outputs:
+    - scalar: 4095
+---
+description: add_eint_int_arg_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>, %arg1: i13) -> !FHE.eint<12> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<12>, i13) -> (!FHE.eint<12>)
+    return %0: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4094
+    - scalar: 1
+    outputs:
+    - scalar: 4095
+  - inputs:
+    - scalar: 4095
+    - scalar: 0
+    outputs:
+    - scalar: 4095
+  - inputs:
+    - scalar: 2047
+    - scalar: 2048
+    outputs:
+    - scalar: 4095
+---
+description: add_eint_12_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>, %arg1: !FHE.eint<12>) -> !FHE.eint<12> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<12>, !FHE.eint<12>) -> !FHE.eint<12>
+    return %res: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 2047
+    - scalar: 2048
+    outputs:
+    - scalar: 4095
+---
+description: sub_eint_int_cst_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>) -> !FHE.eint<12> {
+    %0 = arith.constant 4095 : i13
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<12>, i13) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4095
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>, %arg1: i13) -> !FHE.eint<12> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<12>, i13) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4095
+    - scalar: 4095
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4095
+    - scalar: 0
+    outputs:
+    - scalar: 4095
+  - inputs:
+    - scalar: 4094
+    - scalar: 2047
+    outputs:
+    - scalar: 2047
+---
+description: sub_int_eint_cst_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>) -> !FHE.eint<12> {
+    %0 = arith.constant 4095 : i13
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i13, !FHE.eint<12>) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4095
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_12bits
+program: |
+  func.func @main(%arg0: i13, %arg1: !FHE.eint<12>) -> !FHE.eint<12> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i13, !FHE.eint<12>) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4095
+    - scalar: 4095
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4095
+    - scalar: 0
+    outputs:
+    - scalar: 4095
+  - inputs:
+    - scalar: 4094
+    - scalar: 2047
+    outputs:
+    - scalar: 2047
+---
+description: sub_eint_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>, %arg1: !FHE.eint<12>) -> !FHE.eint<12> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<12>, !FHE.eint<12>) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 4095
+    - scalar: 4095
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4095
+    - scalar: 0
+    outputs:
+    - scalar: 4095
+  - inputs:
+    - scalar: 4094
+    - scalar: 2047
+    outputs:
+    - scalar: 2047
+---
+description: mul_eint_int_cst_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>) -> !FHE.eint<12> {
+    %0 = arith.constant 2 : i13
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<12>, i13) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2047
+    outputs:
+    - scalar: 4094
+---
+description: mul_eint_int_arg_12bits
+program: |
+  func.func @main(%arg0: !FHE.eint<12>, %arg1: i13) -> !FHE.eint<12> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<12>, i13) -> (!FHE.eint<12>)
+    return %1: !FHE.eint<12>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 4095
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4095
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 4095
+    outputs:
+    - scalar: 4095
+  - inputs:
+    - scalar: 4095
+    - scalar: 1
+    outputs:
+    - scalar: 4095
+---
+---
+description: identity_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>) -> !FHE.eint<13> {
+    return %arg0: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8191
+    outputs:
+    - scalar: 8191
+---
+description: zero_tensor_13bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<13>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<13>>
+    return %0: tensor<2x2x4x!FHE.eint<13>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>) -> !FHE.eint<13> {
+    %0 = arith.constant 1 : i14
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<13>, i14) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8190
+    outputs:
+    - scalar: 8191
+---
+description: add_eint_int_arg_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>, %arg1: i14) -> !FHE.eint<13> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<13>, i14) -> (!FHE.eint<13>)
+    return %0: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8190
+    - scalar: 1
+    outputs:
+    - scalar: 8191
+  - inputs:
+    - scalar: 8191
+    - scalar: 0
+    outputs:
+    - scalar: 8191
+  - inputs:
+    - scalar: 4095
+    - scalar: 4096
+    outputs:
+    - scalar: 8191
+---
+description: add_eint_13_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>, %arg1: !FHE.eint<13>) -> !FHE.eint<13> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<13>, !FHE.eint<13>) -> !FHE.eint<13>
+    return %res: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 4095
+    - scalar: 4096
+    outputs:
+    - scalar: 8191
+---
+description: sub_eint_int_cst_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>) -> !FHE.eint<13> {
+    %0 = arith.constant 8191 : i14
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<13>, i14) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8191
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>, %arg1: i14) -> !FHE.eint<13> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<13>, i14) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8191
+    - scalar: 8191
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8191
+    - scalar: 0
+    outputs:
+    - scalar: 8191
+  - inputs:
+    - scalar: 8190
+    - scalar: 4095
+    outputs:
+    - scalar: 4095
+---
+description: sub_int_eint_cst_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>) -> !FHE.eint<13> {
+    %0 = arith.constant 8191 : i14
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i14, !FHE.eint<13>) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8191
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_13bits
+program: |
+  func.func @main(%arg0: i14, %arg1: !FHE.eint<13>) -> !FHE.eint<13> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i14, !FHE.eint<13>) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8191
+    - scalar: 8191
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8191
+    - scalar: 0
+    outputs:
+    - scalar: 8191
+  - inputs:
+    - scalar: 8190
+    - scalar: 4095
+    outputs:
+    - scalar: 4095
+---
+description: sub_eint_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>, %arg1: !FHE.eint<13>) -> !FHE.eint<13> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<13>, !FHE.eint<13>) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 8191
+    - scalar: 8191
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8191
+    - scalar: 0
+    outputs:
+    - scalar: 8191
+  - inputs:
+    - scalar: 8190
+    - scalar: 4095
+    outputs:
+    - scalar: 4095
+---
+description: mul_eint_int_cst_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>) -> !FHE.eint<13> {
+    %0 = arith.constant 2 : i14
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<13>, i14) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4095
+    outputs:
+    - scalar: 8190
+---
+description: mul_eint_int_arg_13bits
+program: |
+  func.func @main(%arg0: !FHE.eint<13>, %arg1: i14) -> !FHE.eint<13> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<13>, i14) -> (!FHE.eint<13>)
+    return %1: !FHE.eint<13>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 8191
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8191
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 8191
+    outputs:
+    - scalar: 8191
+  - inputs:
+    - scalar: 8191
+    - scalar: 1
+    outputs:
+    - scalar: 8191
+---
+---
+description: identity_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>) -> !FHE.eint<14> {
+    return %arg0: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16383
+    outputs:
+    - scalar: 16383
+---
+description: zero_tensor_14bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<14>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<14>>
+    return %0: tensor<2x2x4x!FHE.eint<14>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>) -> !FHE.eint<14> {
+    %0 = arith.constant 1 : i15
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<14>, i15) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16382
+    outputs:
+    - scalar: 16383
+---
+description: add_eint_int_arg_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>, %arg1: i15) -> !FHE.eint<14> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<14>, i15) -> (!FHE.eint<14>)
+    return %0: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16382
+    - scalar: 1
+    outputs:
+    - scalar: 16383
+  - inputs:
+    - scalar: 16383
+    - scalar: 0
+    outputs:
+    - scalar: 16383
+  - inputs:
+    - scalar: 8191
+    - scalar: 8192
+    outputs:
+    - scalar: 16383
+---
+description: add_eint_14_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>, %arg1: !FHE.eint<14>) -> !FHE.eint<14> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<14>, !FHE.eint<14>) -> !FHE.eint<14>
+    return %res: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 8191
+    - scalar: 8192
+    outputs:
+    - scalar: 16383
+---
+description: sub_eint_int_cst_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>) -> !FHE.eint<14> {
+    %0 = arith.constant 16383 : i15
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<14>, i15) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16383
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>, %arg1: i15) -> !FHE.eint<14> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<14>, i15) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16383
+    - scalar: 16383
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16383
+    - scalar: 0
+    outputs:
+    - scalar: 16383
+  - inputs:
+    - scalar: 16382
+    - scalar: 8191
+    outputs:
+    - scalar: 8191
+---
+description: sub_int_eint_cst_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>) -> !FHE.eint<14> {
+    %0 = arith.constant 16383 : i15
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i15, !FHE.eint<14>) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16383
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_14bits
+program: |
+  func.func @main(%arg0: i15, %arg1: !FHE.eint<14>) -> !FHE.eint<14> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i15, !FHE.eint<14>) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16383
+    - scalar: 16383
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16383
+    - scalar: 0
+    outputs:
+    - scalar: 16383
+  - inputs:
+    - scalar: 16382
+    - scalar: 8191
+    outputs:
+    - scalar: 8191
+---
+description: sub_eint_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>, %arg1: !FHE.eint<14>) -> !FHE.eint<14> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<14>, !FHE.eint<14>) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 16383
+    - scalar: 16383
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16383
+    - scalar: 0
+    outputs:
+    - scalar: 16383
+  - inputs:
+    - scalar: 16382
+    - scalar: 8191
+    outputs:
+    - scalar: 8191
+---
+description: mul_eint_int_cst_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>) -> !FHE.eint<14> {
+    %0 = arith.constant 2 : i15
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<14>, i15) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8191
+    outputs:
+    - scalar: 16382
+---
+description: mul_eint_int_arg_14bits
+program: |
+  func.func @main(%arg0: !FHE.eint<14>, %arg1: i15) -> !FHE.eint<14> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<14>, i15) -> (!FHE.eint<14>)
+    return %1: !FHE.eint<14>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 16383
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16383
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 16383
+    outputs:
+    - scalar: 16383
+  - inputs:
+    - scalar: 16383
+    - scalar: 1
+    outputs:
+    - scalar: 16383
+---
+---
+description: identity_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>) -> !FHE.eint<15> {
+    return %arg0: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32767
+    outputs:
+    - scalar: 32767
+---
+description: zero_tensor_15bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<15>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<15>>
+    return %0: tensor<2x2x4x!FHE.eint<15>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>) -> !FHE.eint<15> {
+    %0 = arith.constant 1 : i16
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<15>, i16) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32766
+    outputs:
+    - scalar: 32767
+---
+description: add_eint_int_arg_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>, %arg1: i16) -> !FHE.eint<15> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<15>, i16) -> (!FHE.eint<15>)
+    return %0: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32766
+    - scalar: 1
+    outputs:
+    - scalar: 32767
+  - inputs:
+    - scalar: 32767
+    - scalar: 0
+    outputs:
+    - scalar: 32767
+  - inputs:
+    - scalar: 16383
+    - scalar: 16384
+    outputs:
+    - scalar: 32767
+---
+description: add_eint_15_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>, %arg1: !FHE.eint<15>) -> !FHE.eint<15> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<15>, !FHE.eint<15>) -> !FHE.eint<15>
+    return %res: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 16383
+    - scalar: 16384
+    outputs:
+    - scalar: 32767
+---
+description: sub_eint_int_cst_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>) -> !FHE.eint<15> {
+    %0 = arith.constant 32767 : i16
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<15>, i16) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32767
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>, %arg1: i16) -> !FHE.eint<15> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<15>, i16) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32767
+    - scalar: 32767
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 32767
+    - scalar: 0
+    outputs:
+    - scalar: 32767
+  - inputs:
+    - scalar: 32766
+    - scalar: 16383
+    outputs:
+    - scalar: 16383
+---
+description: sub_int_eint_cst_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>) -> !FHE.eint<15> {
+    %0 = arith.constant 32767 : i16
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i16, !FHE.eint<15>) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32767
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_15bits
+program: |
+  func.func @main(%arg0: i16, %arg1: !FHE.eint<15>) -> !FHE.eint<15> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i16, !FHE.eint<15>) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32767
+    - scalar: 32767
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 32767
+    - scalar: 0
+    outputs:
+    - scalar: 32767
+  - inputs:
+    - scalar: 32766
+    - scalar: 16383
+    outputs:
+    - scalar: 16383
+---
+description: sub_eint_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>, %arg1: !FHE.eint<15>) -> !FHE.eint<15> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<15>, !FHE.eint<15>) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 32767
+    - scalar: 32767
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 32767
+    - scalar: 0
+    outputs:
+    - scalar: 32767
+  - inputs:
+    - scalar: 32766
+    - scalar: 16383
+    outputs:
+    - scalar: 16383
+---
+description: mul_eint_int_cst_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>) -> !FHE.eint<15> {
+    %0 = arith.constant 2 : i16
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<15>, i16) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16383
+    outputs:
+    - scalar: 32766
+---
+description: mul_eint_int_arg_15bits
+program: |
+  func.func @main(%arg0: !FHE.eint<15>, %arg1: i16) -> !FHE.eint<15> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<15>, i16) -> (!FHE.eint<15>)
+    return %1: !FHE.eint<15>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 32767
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 32767
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 32767
+    outputs:
+    - scalar: 32767
+  - inputs:
+    - scalar: 32767
+    - scalar: 1
+    outputs:
+    - scalar: 32767
+---
+---
+description: identity_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
+    return %arg0: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65535
+    outputs:
+    - scalar: 65535
+---
+description: zero_tensor_16bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<16>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<16>>
+    return %0: tensor<2x2x4x!FHE.eint<16>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
+    %0 = arith.constant 1 : i17
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<16>, i17) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65534
+    outputs:
+    - scalar: 65535
+---
+description: add_eint_int_arg_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>, %arg1: i17) -> !FHE.eint<16> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<16>, i17) -> (!FHE.eint<16>)
+    return %0: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65534
+    - scalar: 1
+    outputs:
+    - scalar: 65535
+  - inputs:
+    - scalar: 65535
+    - scalar: 0
+    outputs:
+    - scalar: 65535
+  - inputs:
+    - scalar: 32767
+    - scalar: 32768
+    outputs:
+    - scalar: 65535
+---
+description: add_eint_16_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>, %arg1: !FHE.eint<16>) -> !FHE.eint<16> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<16>, !FHE.eint<16>) -> !FHE.eint<16>
+    return %res: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 32767
+    - scalar: 32768
+    outputs:
+    - scalar: 65535
+---
+description: sub_eint_int_cst_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
+    %0 = arith.constant 65535 : i17
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<16>, i17) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65535
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>, %arg1: i17) -> !FHE.eint<16> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<16>, i17) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65535
+    - scalar: 65535
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 65535
+    - scalar: 0
+    outputs:
+    - scalar: 65535
+  - inputs:
+    - scalar: 65534
+    - scalar: 32767
+    outputs:
+    - scalar: 32767
+---
+description: sub_int_eint_cst_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
+    %0 = arith.constant 65535 : i17
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i17, !FHE.eint<16>) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65535
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_16bits
+program: |
+  func.func @main(%arg0: i17, %arg1: !FHE.eint<16>) -> !FHE.eint<16> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i17, !FHE.eint<16>) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65535
+    - scalar: 65535
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 65535
+    - scalar: 0
+    outputs:
+    - scalar: 65535
+  - inputs:
+    - scalar: 65534
+    - scalar: 32767
+    outputs:
+    - scalar: 32767
+---
+description: sub_eint_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>, %arg1: !FHE.eint<16>) -> !FHE.eint<16> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<16>, !FHE.eint<16>) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 65535
+    - scalar: 65535
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 65535
+    - scalar: 0
+    outputs:
+    - scalar: 65535
+  - inputs:
+    - scalar: 65534
+    - scalar: 32767
+    outputs:
+    - scalar: 32767
+---
+description: mul_eint_int_cst_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
+    %0 = arith.constant 2 : i17
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<16>, i17) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 32767
+    outputs:
+    - scalar: 65534
+---
+description: mul_eint_int_arg_16bits
+program: |
+  func.func @main(%arg0: !FHE.eint<16>, %arg1: i17) -> !FHE.eint<16> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<16>, i17) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 65535
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 65535
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 65535
+    outputs:
+    - scalar: 65535
+  - inputs:
+    - scalar: 65535
+    - scalar: 1
+    outputs:
+    - scalar: 65535
+---
+---
+description: identity_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>) -> !FHE.eint<17> {
+    return %arg0: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131071
+    outputs:
+    - scalar: 131071
+---
+description: zero_tensor_17bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<17>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<17>>
+    return %0: tensor<2x2x4x!FHE.eint<17>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>) -> !FHE.eint<17> {
+    %0 = arith.constant 1 : i18
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<17>, i18) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131070
+    outputs:
+    - scalar: 131071
+---
+description: add_eint_int_arg_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>, %arg1: i18) -> !FHE.eint<17> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<17>, i18) -> (!FHE.eint<17>)
+    return %0: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131070
+    - scalar: 1
+    outputs:
+    - scalar: 131071
+  - inputs:
+    - scalar: 131071
+    - scalar: 0
+    outputs:
+    - scalar: 131071
+  - inputs:
+    - scalar: 65535
+    - scalar: 65536
+    outputs:
+    - scalar: 131071
+---
+description: add_eint_17_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>, %arg1: !FHE.eint<17>) -> !FHE.eint<17> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<17>, !FHE.eint<17>) -> !FHE.eint<17>
+    return %res: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 65535
+    - scalar: 65536
+    outputs:
+    - scalar: 131071
+---
+description: sub_eint_int_cst_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>) -> !FHE.eint<17> {
+    %0 = arith.constant 131071 : i18
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<17>, i18) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131071
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>, %arg1: i18) -> !FHE.eint<17> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<17>, i18) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131071
+    - scalar: 131071
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 131071
+    - scalar: 0
+    outputs:
+    - scalar: 131071
+  - inputs:
+    - scalar: 131070
+    - scalar: 65535
+    outputs:
+    - scalar: 65535
+---
+description: sub_int_eint_cst_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>) -> !FHE.eint<17> {
+    %0 = arith.constant 131071 : i18
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i18, !FHE.eint<17>) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131071
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_17bits
+program: |
+  func.func @main(%arg0: i18, %arg1: !FHE.eint<17>) -> !FHE.eint<17> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i18, !FHE.eint<17>) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131071
+    - scalar: 131071
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 131071
+    - scalar: 0
+    outputs:
+    - scalar: 131071
+  - inputs:
+    - scalar: 131070
+    - scalar: 65535
+    outputs:
+    - scalar: 65535
+---
+description: sub_eint_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>, %arg1: !FHE.eint<17>) -> !FHE.eint<17> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<17>, !FHE.eint<17>) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 131071
+    - scalar: 131071
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 131071
+    - scalar: 0
+    outputs:
+    - scalar: 131071
+  - inputs:
+    - scalar: 131070
+    - scalar: 65535
+    outputs:
+    - scalar: 65535
+---
+description: mul_eint_int_cst_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>) -> !FHE.eint<17> {
+    %0 = arith.constant 2 : i18
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<17>, i18) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 65535
+    outputs:
+    - scalar: 131070
+---
+description: mul_eint_int_arg_17bits
+program: |
+  func.func @main(%arg0: !FHE.eint<17>, %arg1: i18) -> !FHE.eint<17> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<17>, i18) -> (!FHE.eint<17>)
+    return %1: !FHE.eint<17>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 131071
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 131071
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 131071
+    outputs:
+    - scalar: 131071
+  - inputs:
+    - scalar: 131071
+    - scalar: 1
+    outputs:
+    - scalar: 131071
+---
+---
+description: identity_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>) -> !FHE.eint<18> {
+    return %arg0: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262143
+    outputs:
+    - scalar: 262143
+---
+description: zero_tensor_18bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<18>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<18>>
+    return %0: tensor<2x2x4x!FHE.eint<18>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>) -> !FHE.eint<18> {
+    %0 = arith.constant 1 : i19
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<18>, i19) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262142
+    outputs:
+    - scalar: 262143
+---
+description: add_eint_int_arg_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>, %arg1: i19) -> !FHE.eint<18> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<18>, i19) -> (!FHE.eint<18>)
+    return %0: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262142
+    - scalar: 1
+    outputs:
+    - scalar: 262143
+  - inputs:
+    - scalar: 262143
+    - scalar: 0
+    outputs:
+    - scalar: 262143
+  - inputs:
+    - scalar: 131071
+    - scalar: 131072
+    outputs:
+    - scalar: 262143
+---
+description: add_eint_18_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>, %arg1: !FHE.eint<18>) -> !FHE.eint<18> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<18>, !FHE.eint<18>) -> !FHE.eint<18>
+    return %res: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 131071
+    - scalar: 131072
+    outputs:
+    - scalar: 262143
+---
+description: sub_eint_int_cst_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>) -> !FHE.eint<18> {
+    %0 = arith.constant 262143 : i19
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<18>, i19) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262143
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>, %arg1: i19) -> !FHE.eint<18> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<18>, i19) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262143
+    - scalar: 262143
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 262143
+    - scalar: 0
+    outputs:
+    - scalar: 262143
+  - inputs:
+    - scalar: 262142
+    - scalar: 131071
+    outputs:
+    - scalar: 131071
+---
+description: sub_int_eint_cst_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>) -> !FHE.eint<18> {
+    %0 = arith.constant 262143 : i19
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i19, !FHE.eint<18>) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262143
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_18bits
+program: |
+  func.func @main(%arg0: i19, %arg1: !FHE.eint<18>) -> !FHE.eint<18> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i19, !FHE.eint<18>) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262143
+    - scalar: 262143
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 262143
+    - scalar: 0
+    outputs:
+    - scalar: 262143
+  - inputs:
+    - scalar: 262142
+    - scalar: 131071
+    outputs:
+    - scalar: 131071
+---
+description: sub_eint_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>, %arg1: !FHE.eint<18>) -> !FHE.eint<18> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<18>, !FHE.eint<18>) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 262143
+    - scalar: 262143
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 262143
+    - scalar: 0
+    outputs:
+    - scalar: 262143
+  - inputs:
+    - scalar: 262142
+    - scalar: 131071
+    outputs:
+    - scalar: 131071
+---
+description: mul_eint_int_cst_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>) -> !FHE.eint<18> {
+    %0 = arith.constant 2 : i19
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<18>, i19) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 131071
+    outputs:
+    - scalar: 262142
+---
+description: mul_eint_int_arg_18bits
+program: |
+  func.func @main(%arg0: !FHE.eint<18>, %arg1: i19) -> !FHE.eint<18> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<18>, i19) -> (!FHE.eint<18>)
+    return %1: !FHE.eint<18>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 262143
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 262143
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 262143
+    outputs:
+    - scalar: 262143
+  - inputs:
+    - scalar: 262143
+    - scalar: 1
+    outputs:
+    - scalar: 262143
+---
+---
+description: identity_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>) -> !FHE.eint<19> {
+    return %arg0: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524287
+    outputs:
+    - scalar: 524287
+---
+description: zero_tensor_19bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<19>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<19>>
+    return %0: tensor<2x2x4x!FHE.eint<19>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>) -> !FHE.eint<19> {
+    %0 = arith.constant 1 : i20
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<19>, i20) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524286
+    outputs:
+    - scalar: 524287
+---
+description: add_eint_int_arg_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>, %arg1: i20) -> !FHE.eint<19> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<19>, i20) -> (!FHE.eint<19>)
+    return %0: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524286
+    - scalar: 1
+    outputs:
+    - scalar: 524287
+  - inputs:
+    - scalar: 524287
+    - scalar: 0
+    outputs:
+    - scalar: 524287
+  - inputs:
+    - scalar: 262143
+    - scalar: 262144
+    outputs:
+    - scalar: 524287
+---
+description: add_eint_19_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>, %arg1: !FHE.eint<19>) -> !FHE.eint<19> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<19>, !FHE.eint<19>) -> !FHE.eint<19>
+    return %res: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 262143
+    - scalar: 262144
+    outputs:
+    - scalar: 524287
+---
+description: sub_eint_int_cst_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>) -> !FHE.eint<19> {
+    %0 = arith.constant 524287 : i20
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<19>, i20) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524287
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>, %arg1: i20) -> !FHE.eint<19> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<19>, i20) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524287
+    - scalar: 524287
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 524287
+    - scalar: 0
+    outputs:
+    - scalar: 524287
+  - inputs:
+    - scalar: 524286
+    - scalar: 262143
+    outputs:
+    - scalar: 262143
+---
+description: sub_int_eint_cst_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>) -> !FHE.eint<19> {
+    %0 = arith.constant 524287 : i20
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i20, !FHE.eint<19>) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524287
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_19bits
+program: |
+  func.func @main(%arg0: i20, %arg1: !FHE.eint<19>) -> !FHE.eint<19> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i20, !FHE.eint<19>) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524287
+    - scalar: 524287
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 524287
+    - scalar: 0
+    outputs:
+    - scalar: 524287
+  - inputs:
+    - scalar: 524286
+    - scalar: 262143
+    outputs:
+    - scalar: 262143
+---
+description: sub_eint_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>, %arg1: !FHE.eint<19>) -> !FHE.eint<19> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<19>, !FHE.eint<19>) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 524287
+    - scalar: 524287
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 524287
+    - scalar: 0
+    outputs:
+    - scalar: 524287
+  - inputs:
+    - scalar: 524286
+    - scalar: 262143
+    outputs:
+    - scalar: 262143
+---
+description: mul_eint_int_cst_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>) -> !FHE.eint<19> {
+    %0 = arith.constant 2 : i20
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<19>, i20) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 262143
+    outputs:
+    - scalar: 524286
+---
+description: mul_eint_int_arg_19bits
+program: |
+  func.func @main(%arg0: !FHE.eint<19>, %arg1: i20) -> !FHE.eint<19> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<19>, i20) -> (!FHE.eint<19>)
+    return %1: !FHE.eint<19>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 524287
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 524287
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 524287
+    outputs:
+    - scalar: 524287
+  - inputs:
+    - scalar: 524287
+    - scalar: 1
+    outputs:
+    - scalar: 524287
+---
+---
+description: identity_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>) -> !FHE.eint<20> {
+    return %arg0: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048575
+    outputs:
+    - scalar: 1048575
+---
+description: zero_tensor_20bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<20>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<20>>
+    return %0: tensor<2x2x4x!FHE.eint<20>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>) -> !FHE.eint<20> {
+    %0 = arith.constant 1 : i21
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<20>, i21) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048574
+    outputs:
+    - scalar: 1048575
+---
+description: add_eint_int_arg_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>, %arg1: i21) -> !FHE.eint<20> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<20>, i21) -> (!FHE.eint<20>)
+    return %0: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048574
+    - scalar: 1
+    outputs:
+    - scalar: 1048575
+  - inputs:
+    - scalar: 1048575
+    - scalar: 0
+    outputs:
+    - scalar: 1048575
+  - inputs:
+    - scalar: 524287
+    - scalar: 524288
+    outputs:
+    - scalar: 1048575
+---
+description: add_eint_20_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>, %arg1: !FHE.eint<20>) -> !FHE.eint<20> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<20>, !FHE.eint<20>) -> !FHE.eint<20>
+    return %res: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 524287
+    - scalar: 524288
+    outputs:
+    - scalar: 1048575
+---
+description: sub_eint_int_cst_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>) -> !FHE.eint<20> {
+    %0 = arith.constant 1048575 : i21
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<20>, i21) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048575
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>, %arg1: i21) -> !FHE.eint<20> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<20>, i21) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048575
+    - scalar: 1048575
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1048575
+    - scalar: 0
+    outputs:
+    - scalar: 1048575
+  - inputs:
+    - scalar: 1048574
+    - scalar: 524287
+    outputs:
+    - scalar: 524287
+---
+description: sub_int_eint_cst_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>) -> !FHE.eint<20> {
+    %0 = arith.constant 1048575 : i21
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i21, !FHE.eint<20>) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048575
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_20bits
+program: |
+  func.func @main(%arg0: i21, %arg1: !FHE.eint<20>) -> !FHE.eint<20> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i21, !FHE.eint<20>) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048575
+    - scalar: 1048575
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1048575
+    - scalar: 0
+    outputs:
+    - scalar: 1048575
+  - inputs:
+    - scalar: 1048574
+    - scalar: 524287
+    outputs:
+    - scalar: 524287
+---
+description: sub_eint_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>, %arg1: !FHE.eint<20>) -> !FHE.eint<20> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<20>, !FHE.eint<20>) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 1048575
+    - scalar: 1048575
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1048575
+    - scalar: 0
+    outputs:
+    - scalar: 1048575
+  - inputs:
+    - scalar: 1048574
+    - scalar: 524287
+    outputs:
+    - scalar: 524287
+---
+description: mul_eint_int_cst_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>) -> !FHE.eint<20> {
+    %0 = arith.constant 2 : i21
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<20>, i21) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 524287
+    outputs:
+    - scalar: 1048574
+---
+description: mul_eint_int_arg_20bits
+program: |
+  func.func @main(%arg0: !FHE.eint<20>, %arg1: i21) -> !FHE.eint<20> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<20>, i21) -> (!FHE.eint<20>)
+    return %1: !FHE.eint<20>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1048575
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1048575
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 1048575
+    outputs:
+    - scalar: 1048575
+  - inputs:
+    - scalar: 1048575
+    - scalar: 1
+    outputs:
+    - scalar: 1048575
+---
+---
+description: identity_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>) -> !FHE.eint<21> {
+    return %arg0: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097151
+    outputs:
+    - scalar: 2097151
+---
+description: zero_tensor_21bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<21>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<21>>
+    return %0: tensor<2x2x4x!FHE.eint<21>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>) -> !FHE.eint<21> {
+    %0 = arith.constant 1 : i22
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<21>, i22) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097150
+    outputs:
+    - scalar: 2097151
+---
+description: add_eint_int_arg_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>, %arg1: i22) -> !FHE.eint<21> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<21>, i22) -> (!FHE.eint<21>)
+    return %0: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097150
+    - scalar: 1
+    outputs:
+    - scalar: 2097151
+  - inputs:
+    - scalar: 2097151
+    - scalar: 0
+    outputs:
+    - scalar: 2097151
+  - inputs:
+    - scalar: 1048575
+    - scalar: 1048576
+    outputs:
+    - scalar: 2097151
+---
+description: add_eint_21_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>, %arg1: !FHE.eint<21>) -> !FHE.eint<21> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<21>, !FHE.eint<21>) -> !FHE.eint<21>
+    return %res: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 1048575
+    - scalar: 1048576
+    outputs:
+    - scalar: 2097151
+---
+description: sub_eint_int_cst_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>) -> !FHE.eint<21> {
+    %0 = arith.constant 2097151 : i22
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<21>, i22) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097151
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>, %arg1: i22) -> !FHE.eint<21> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<21>, i22) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097151
+    - scalar: 2097151
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2097151
+    - scalar: 0
+    outputs:
+    - scalar: 2097151
+  - inputs:
+    - scalar: 2097150
+    - scalar: 1048575
+    outputs:
+    - scalar: 1048575
+---
+description: sub_int_eint_cst_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>) -> !FHE.eint<21> {
+    %0 = arith.constant 2097151 : i22
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i22, !FHE.eint<21>) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097151
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_21bits
+program: |
+  func.func @main(%arg0: i22, %arg1: !FHE.eint<21>) -> !FHE.eint<21> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i22, !FHE.eint<21>) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097151
+    - scalar: 2097151
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2097151
+    - scalar: 0
+    outputs:
+    - scalar: 2097151
+  - inputs:
+    - scalar: 2097150
+    - scalar: 1048575
+    outputs:
+    - scalar: 1048575
+---
+description: sub_eint_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>, %arg1: !FHE.eint<21>) -> !FHE.eint<21> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<21>, !FHE.eint<21>) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 2097151
+    - scalar: 2097151
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2097151
+    - scalar: 0
+    outputs:
+    - scalar: 2097151
+  - inputs:
+    - scalar: 2097150
+    - scalar: 1048575
+    outputs:
+    - scalar: 1048575
+---
+description: mul_eint_int_cst_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>) -> !FHE.eint<21> {
+    %0 = arith.constant 2 : i22
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<21>, i22) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1048575
+    outputs:
+    - scalar: 2097150
+---
+description: mul_eint_int_arg_21bits
+program: |
+  func.func @main(%arg0: !FHE.eint<21>, %arg1: i22) -> !FHE.eint<21> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<21>, i22) -> (!FHE.eint<21>)
+    return %1: !FHE.eint<21>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 2097151
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2097151
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 2097151
+    outputs:
+    - scalar: 2097151
+  - inputs:
+    - scalar: 2097151
+    - scalar: 1
+    outputs:
+    - scalar: 2097151
+---
+---
+description: identity_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>) -> !FHE.eint<22> {
+    return %arg0: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194303
+    outputs:
+    - scalar: 4194303
+---
+description: zero_tensor_22bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<22>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<22>>
+    return %0: tensor<2x2x4x!FHE.eint<22>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>) -> !FHE.eint<22> {
+    %0 = arith.constant 1 : i23
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<22>, i23) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194302
+    outputs:
+    - scalar: 4194303
+---
+description: add_eint_int_arg_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>, %arg1: i23) -> !FHE.eint<22> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<22>, i23) -> (!FHE.eint<22>)
+    return %0: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194302
+    - scalar: 1
+    outputs:
+    - scalar: 4194303
+  - inputs:
+    - scalar: 4194303
+    - scalar: 0
+    outputs:
+    - scalar: 4194303
+  - inputs:
+    - scalar: 2097151
+    - scalar: 2097152
+    outputs:
+    - scalar: 4194303
+---
+description: add_eint_22_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>, %arg1: !FHE.eint<22>) -> !FHE.eint<22> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<22>, !FHE.eint<22>) -> !FHE.eint<22>
+    return %res: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 2097151
+    - scalar: 2097152
+    outputs:
+    - scalar: 4194303
+---
+description: sub_eint_int_cst_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>) -> !FHE.eint<22> {
+    %0 = arith.constant 4194303 : i23
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<22>, i23) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194303
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>, %arg1: i23) -> !FHE.eint<22> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<22>, i23) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194303
+    - scalar: 4194303
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4194303
+    - scalar: 0
+    outputs:
+    - scalar: 4194303
+  - inputs:
+    - scalar: 4194302
+    - scalar: 2097151
+    outputs:
+    - scalar: 2097151
+---
+description: sub_int_eint_cst_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>) -> !FHE.eint<22> {
+    %0 = arith.constant 4194303 : i23
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i23, !FHE.eint<22>) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194303
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_22bits
+program: |
+  func.func @main(%arg0: i23, %arg1: !FHE.eint<22>) -> !FHE.eint<22> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i23, !FHE.eint<22>) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194303
+    - scalar: 4194303
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4194303
+    - scalar: 0
+    outputs:
+    - scalar: 4194303
+  - inputs:
+    - scalar: 4194302
+    - scalar: 2097151
+    outputs:
+    - scalar: 2097151
+---
+description: sub_eint_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>, %arg1: !FHE.eint<22>) -> !FHE.eint<22> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<22>, !FHE.eint<22>) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 4194303
+    - scalar: 4194303
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4194303
+    - scalar: 0
+    outputs:
+    - scalar: 4194303
+  - inputs:
+    - scalar: 4194302
+    - scalar: 2097151
+    outputs:
+    - scalar: 2097151
+---
+description: mul_eint_int_cst_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>) -> !FHE.eint<22> {
+    %0 = arith.constant 2 : i23
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<22>, i23) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 2097151
+    outputs:
+    - scalar: 4194302
+---
+description: mul_eint_int_arg_22bits
+program: |
+  func.func @main(%arg0: !FHE.eint<22>, %arg1: i23) -> !FHE.eint<22> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<22>, i23) -> (!FHE.eint<22>)
+    return %1: !FHE.eint<22>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 4194303
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4194303
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 4194303
+    outputs:
+    - scalar: 4194303
+  - inputs:
+    - scalar: 4194303
+    - scalar: 1
+    outputs:
+    - scalar: 4194303
+---
+---
+description: identity_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>) -> !FHE.eint<23> {
+    return %arg0: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388607
+    outputs:
+    - scalar: 8388607
+---
+description: zero_tensor_23bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<23>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<23>>
+    return %0: tensor<2x2x4x!FHE.eint<23>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>) -> !FHE.eint<23> {
+    %0 = arith.constant 1 : i24
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<23>, i24) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388606
+    outputs:
+    - scalar: 8388607
+---
+description: add_eint_int_arg_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>, %arg1: i24) -> !FHE.eint<23> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<23>, i24) -> (!FHE.eint<23>)
+    return %0: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388606
+    - scalar: 1
+    outputs:
+    - scalar: 8388607
+  - inputs:
+    - scalar: 8388607
+    - scalar: 0
+    outputs:
+    - scalar: 8388607
+  - inputs:
+    - scalar: 4194303
+    - scalar: 4194304
+    outputs:
+    - scalar: 8388607
+---
+description: add_eint_23_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>, %arg1: !FHE.eint<23>) -> !FHE.eint<23> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<23>, !FHE.eint<23>) -> !FHE.eint<23>
+    return %res: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 4194303
+    - scalar: 4194304
+    outputs:
+    - scalar: 8388607
+---
+description: sub_eint_int_cst_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>) -> !FHE.eint<23> {
+    %0 = arith.constant 8388607 : i24
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<23>, i24) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388607
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>, %arg1: i24) -> !FHE.eint<23> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<23>, i24) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388607
+    - scalar: 8388607
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8388607
+    - scalar: 0
+    outputs:
+    - scalar: 8388607
+  - inputs:
+    - scalar: 8388606
+    - scalar: 4194303
+    outputs:
+    - scalar: 4194303
+---
+description: sub_int_eint_cst_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>) -> !FHE.eint<23> {
+    %0 = arith.constant 8388607 : i24
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i24, !FHE.eint<23>) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388607
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_23bits
+program: |
+  func.func @main(%arg0: i24, %arg1: !FHE.eint<23>) -> !FHE.eint<23> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i24, !FHE.eint<23>) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388607
+    - scalar: 8388607
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8388607
+    - scalar: 0
+    outputs:
+    - scalar: 8388607
+  - inputs:
+    - scalar: 8388606
+    - scalar: 4194303
+    outputs:
+    - scalar: 4194303
+---
+description: sub_eint_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>, %arg1: !FHE.eint<23>) -> !FHE.eint<23> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<23>, !FHE.eint<23>) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 8388607
+    - scalar: 8388607
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8388607
+    - scalar: 0
+    outputs:
+    - scalar: 8388607
+  - inputs:
+    - scalar: 8388606
+    - scalar: 4194303
+    outputs:
+    - scalar: 4194303
+---
+description: mul_eint_int_cst_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>) -> !FHE.eint<23> {
+    %0 = arith.constant 2 : i24
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<23>, i24) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 4194303
+    outputs:
+    - scalar: 8388606
+---
+description: mul_eint_int_arg_23bits
+program: |
+  func.func @main(%arg0: !FHE.eint<23>, %arg1: i24) -> !FHE.eint<23> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<23>, i24) -> (!FHE.eint<23>)
+    return %1: !FHE.eint<23>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 8388607
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8388607
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 8388607
+    outputs:
+    - scalar: 8388607
+  - inputs:
+    - scalar: 8388607
+    - scalar: 1
+    outputs:
+    - scalar: 8388607
+---
+---
+description: identity_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>) -> !FHE.eint<24> {
+    return %arg0: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777215
+    outputs:
+    - scalar: 16777215
+---
+description: zero_tensor_24bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<24>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<24>>
+    return %0: tensor<2x2x4x!FHE.eint<24>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>) -> !FHE.eint<24> {
+    %0 = arith.constant 1 : i25
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<24>, i25) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777214
+    outputs:
+    - scalar: 16777215
+---
+description: add_eint_int_arg_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>, %arg1: i25) -> !FHE.eint<24> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<24>, i25) -> (!FHE.eint<24>)
+    return %0: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777214
+    - scalar: 1
+    outputs:
+    - scalar: 16777215
+  - inputs:
+    - scalar: 16777215
+    - scalar: 0
+    outputs:
+    - scalar: 16777215
+  - inputs:
+    - scalar: 8388607
+    - scalar: 8388608
+    outputs:
+    - scalar: 16777215
+---
+description: add_eint_24_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>, %arg1: !FHE.eint<24>) -> !FHE.eint<24> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<24>, !FHE.eint<24>) -> !FHE.eint<24>
+    return %res: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 8388607
+    - scalar: 8388608
+    outputs:
+    - scalar: 16777215
+---
+description: sub_eint_int_cst_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>) -> !FHE.eint<24> {
+    %0 = arith.constant 16777215 : i25
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<24>, i25) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777215
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>, %arg1: i25) -> !FHE.eint<24> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<24>, i25) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777215
+    - scalar: 16777215
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16777215
+    - scalar: 0
+    outputs:
+    - scalar: 16777215
+  - inputs:
+    - scalar: 16777214
+    - scalar: 8388607
+    outputs:
+    - scalar: 8388607
+---
+description: sub_int_eint_cst_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>) -> !FHE.eint<24> {
+    %0 = arith.constant 16777215 : i25
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i25, !FHE.eint<24>) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777215
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_24bits
+program: |
+  func.func @main(%arg0: i25, %arg1: !FHE.eint<24>) -> !FHE.eint<24> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i25, !FHE.eint<24>) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777215
+    - scalar: 16777215
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16777215
+    - scalar: 0
+    outputs:
+    - scalar: 16777215
+  - inputs:
+    - scalar: 16777214
+    - scalar: 8388607
+    outputs:
+    - scalar: 8388607
+---
+description: sub_eint_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>, %arg1: !FHE.eint<24>) -> !FHE.eint<24> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<24>, !FHE.eint<24>) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 16777215
+    - scalar: 16777215
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16777215
+    - scalar: 0
+    outputs:
+    - scalar: 16777215
+  - inputs:
+    - scalar: 16777214
+    - scalar: 8388607
+    outputs:
+    - scalar: 8388607
+---
+description: mul_eint_int_cst_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>) -> !FHE.eint<24> {
+    %0 = arith.constant 2 : i25
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<24>, i25) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 8388607
+    outputs:
+    - scalar: 16777214
+---
+description: mul_eint_int_arg_24bits
+program: |
+  func.func @main(%arg0: !FHE.eint<24>, %arg1: i25) -> !FHE.eint<24> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<24>, i25) -> (!FHE.eint<24>)
+    return %1: !FHE.eint<24>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 16777215
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16777215
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 16777215
+    outputs:
+    - scalar: 16777215
+  - inputs:
+    - scalar: 16777215
+    - scalar: 1
+    outputs:
+    - scalar: 16777215
+---
+---
+description: identity_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>) -> !FHE.eint<25> {
+    return %arg0: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554431
+    outputs:
+    - scalar: 33554431
+---
+description: zero_tensor_25bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<25>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<25>>
+    return %0: tensor<2x2x4x!FHE.eint<25>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>) -> !FHE.eint<25> {
+    %0 = arith.constant 1 : i26
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<25>, i26) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554430
+    outputs:
+    - scalar: 33554431
+---
+description: add_eint_int_arg_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>, %arg1: i26) -> !FHE.eint<25> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<25>, i26) -> (!FHE.eint<25>)
+    return %0: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554430
+    - scalar: 1
+    outputs:
+    - scalar: 33554431
+  - inputs:
+    - scalar: 33554431
+    - scalar: 0
+    outputs:
+    - scalar: 33554431
+  - inputs:
+    - scalar: 16777215
+    - scalar: 16777216
+    outputs:
+    - scalar: 33554431
+---
+description: add_eint_25_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>, %arg1: !FHE.eint<25>) -> !FHE.eint<25> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<25>, !FHE.eint<25>) -> !FHE.eint<25>
+    return %res: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 16777215
+    - scalar: 16777216
+    outputs:
+    - scalar: 33554431
+---
+description: sub_eint_int_cst_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>) -> !FHE.eint<25> {
+    %0 = arith.constant 33554431 : i26
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<25>, i26) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554431
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>, %arg1: i26) -> !FHE.eint<25> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<25>, i26) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554431
+    - scalar: 33554431
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 33554431
+    - scalar: 0
+    outputs:
+    - scalar: 33554431
+  - inputs:
+    - scalar: 33554430
+    - scalar: 16777215
+    outputs:
+    - scalar: 16777215
+---
+description: sub_int_eint_cst_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>) -> !FHE.eint<25> {
+    %0 = arith.constant 33554431 : i26
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i26, !FHE.eint<25>) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554431
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_25bits
+program: |
+  func.func @main(%arg0: i26, %arg1: !FHE.eint<25>) -> !FHE.eint<25> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i26, !FHE.eint<25>) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554431
+    - scalar: 33554431
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 33554431
+    - scalar: 0
+    outputs:
+    - scalar: 33554431
+  - inputs:
+    - scalar: 33554430
+    - scalar: 16777215
+    outputs:
+    - scalar: 16777215
+---
+description: sub_eint_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>, %arg1: !FHE.eint<25>) -> !FHE.eint<25> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<25>, !FHE.eint<25>) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 33554431
+    - scalar: 33554431
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 33554431
+    - scalar: 0
+    outputs:
+    - scalar: 33554431
+  - inputs:
+    - scalar: 33554430
+    - scalar: 16777215
+    outputs:
+    - scalar: 16777215
+---
+description: mul_eint_int_cst_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>) -> !FHE.eint<25> {
+    %0 = arith.constant 2 : i26
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<25>, i26) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 16777215
+    outputs:
+    - scalar: 33554430
+---
+description: mul_eint_int_arg_25bits
+program: |
+  func.func @main(%arg0: !FHE.eint<25>, %arg1: i26) -> !FHE.eint<25> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<25>, i26) -> (!FHE.eint<25>)
+    return %1: !FHE.eint<25>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 33554431
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 33554431
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 33554431
+    outputs:
+    - scalar: 33554431
+  - inputs:
+    - scalar: 33554431
+    - scalar: 1
+    outputs:
+    - scalar: 33554431
+---
+---
+description: identity_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>) -> !FHE.eint<26> {
+    return %arg0: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108863
+    outputs:
+    - scalar: 67108863
+---
+description: zero_tensor_26bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<26>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<26>>
+    return %0: tensor<2x2x4x!FHE.eint<26>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>) -> !FHE.eint<26> {
+    %0 = arith.constant 1 : i27
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<26>, i27) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108862
+    outputs:
+    - scalar: 67108863
+---
+description: add_eint_int_arg_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>, %arg1: i27) -> !FHE.eint<26> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<26>, i27) -> (!FHE.eint<26>)
+    return %0: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108862
+    - scalar: 1
+    outputs:
+    - scalar: 67108863
+  - inputs:
+    - scalar: 67108863
+    - scalar: 0
+    outputs:
+    - scalar: 67108863
+  - inputs:
+    - scalar: 33554431
+    - scalar: 33554432
+    outputs:
+    - scalar: 67108863
+---
+description: add_eint_26_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>, %arg1: !FHE.eint<26>) -> !FHE.eint<26> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<26>, !FHE.eint<26>) -> !FHE.eint<26>
+    return %res: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 33554431
+    - scalar: 33554432
+    outputs:
+    - scalar: 67108863
+---
+description: sub_eint_int_cst_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>) -> !FHE.eint<26> {
+    %0 = arith.constant 67108863 : i27
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<26>, i27) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108863
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>, %arg1: i27) -> !FHE.eint<26> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<26>, i27) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108863
+    - scalar: 67108863
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 67108863
+    - scalar: 0
+    outputs:
+    - scalar: 67108863
+  - inputs:
+    - scalar: 67108862
+    - scalar: 33554431
+    outputs:
+    - scalar: 33554431
+---
+description: sub_int_eint_cst_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>) -> !FHE.eint<26> {
+    %0 = arith.constant 67108863 : i27
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i27, !FHE.eint<26>) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108863
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_26bits
+program: |
+  func.func @main(%arg0: i27, %arg1: !FHE.eint<26>) -> !FHE.eint<26> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i27, !FHE.eint<26>) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108863
+    - scalar: 67108863
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 67108863
+    - scalar: 0
+    outputs:
+    - scalar: 67108863
+  - inputs:
+    - scalar: 67108862
+    - scalar: 33554431
+    outputs:
+    - scalar: 33554431
+---
+description: sub_eint_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>, %arg1: !FHE.eint<26>) -> !FHE.eint<26> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<26>, !FHE.eint<26>) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 67108863
+    - scalar: 67108863
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 67108863
+    - scalar: 0
+    outputs:
+    - scalar: 67108863
+  - inputs:
+    - scalar: 67108862
+    - scalar: 33554431
+    outputs:
+    - scalar: 33554431
+---
+description: mul_eint_int_cst_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>) -> !FHE.eint<26> {
+    %0 = arith.constant 2 : i27
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<26>, i27) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 33554431
+    outputs:
+    - scalar: 67108862
+---
+description: mul_eint_int_arg_26bits
+program: |
+  func.func @main(%arg0: !FHE.eint<26>, %arg1: i27) -> !FHE.eint<26> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<26>, i27) -> (!FHE.eint<26>)
+    return %1: !FHE.eint<26>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 67108863
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 67108863
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 67108863
+    outputs:
+    - scalar: 67108863
+  - inputs:
+    - scalar: 67108863
+    - scalar: 1
+    outputs:
+    - scalar: 67108863
+---
+---
+description: identity_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>) -> !FHE.eint<27> {
+    return %arg0: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217727
+    outputs:
+    - scalar: 134217727
+---
+description: zero_tensor_27bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<27>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<27>>
+    return %0: tensor<2x2x4x!FHE.eint<27>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>) -> !FHE.eint<27> {
+    %0 = arith.constant 1 : i28
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<27>, i28) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217726
+    outputs:
+    - scalar: 134217727
+---
+description: add_eint_int_arg_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>, %arg1: i28) -> !FHE.eint<27> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<27>, i28) -> (!FHE.eint<27>)
+    return %0: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217726
+    - scalar: 1
+    outputs:
+    - scalar: 134217727
+  - inputs:
+    - scalar: 134217727
+    - scalar: 0
+    outputs:
+    - scalar: 134217727
+  - inputs:
+    - scalar: 67108863
+    - scalar: 67108864
+    outputs:
+    - scalar: 134217727
+---
+description: add_eint_27_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>, %arg1: !FHE.eint<27>) -> !FHE.eint<27> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<27>, !FHE.eint<27>) -> !FHE.eint<27>
+    return %res: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 67108863
+    - scalar: 67108864
+    outputs:
+    - scalar: 134217727
+---
+description: sub_eint_int_cst_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>) -> !FHE.eint<27> {
+    %0 = arith.constant 134217727 : i28
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<27>, i28) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217727
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>, %arg1: i28) -> !FHE.eint<27> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<27>, i28) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217727
+    - scalar: 134217727
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 134217727
+    - scalar: 0
+    outputs:
+    - scalar: 134217727
+  - inputs:
+    - scalar: 134217726
+    - scalar: 67108863
+    outputs:
+    - scalar: 67108863
+---
+description: sub_int_eint_cst_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>) -> !FHE.eint<27> {
+    %0 = arith.constant 134217727 : i28
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i28, !FHE.eint<27>) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217727
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_27bits
+program: |
+  func.func @main(%arg0: i28, %arg1: !FHE.eint<27>) -> !FHE.eint<27> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i28, !FHE.eint<27>) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217727
+    - scalar: 134217727
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 134217727
+    - scalar: 0
+    outputs:
+    - scalar: 134217727
+  - inputs:
+    - scalar: 134217726
+    - scalar: 67108863
+    outputs:
+    - scalar: 67108863
+---
+description: sub_eint_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>, %arg1: !FHE.eint<27>) -> !FHE.eint<27> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<27>, !FHE.eint<27>) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 134217727
+    - scalar: 134217727
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 134217727
+    - scalar: 0
+    outputs:
+    - scalar: 134217727
+  - inputs:
+    - scalar: 134217726
+    - scalar: 67108863
+    outputs:
+    - scalar: 67108863
+---
+description: mul_eint_int_cst_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>) -> !FHE.eint<27> {
+    %0 = arith.constant 2 : i28
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<27>, i28) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 67108863
+    outputs:
+    - scalar: 134217726
+---
+description: mul_eint_int_arg_27bits
+program: |
+  func.func @main(%arg0: !FHE.eint<27>, %arg1: i28) -> !FHE.eint<27> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<27>, i28) -> (!FHE.eint<27>)
+    return %1: !FHE.eint<27>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 134217727
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 134217727
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 134217727
+    outputs:
+    - scalar: 134217727
+  - inputs:
+    - scalar: 134217727
+    - scalar: 1
+    outputs:
+    - scalar: 134217727
+---
+---
+description: identity_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>) -> !FHE.eint<28> {
+    return %arg0: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435455
+    outputs:
+    - scalar: 268435455
+---
+description: zero_tensor_28bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<28>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<28>>
+    return %0: tensor<2x2x4x!FHE.eint<28>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>) -> !FHE.eint<28> {
+    %0 = arith.constant 1 : i29
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<28>, i29) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435454
+    outputs:
+    - scalar: 268435455
+---
+description: add_eint_int_arg_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>, %arg1: i29) -> !FHE.eint<28> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<28>, i29) -> (!FHE.eint<28>)
+    return %0: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435454
+    - scalar: 1
+    outputs:
+    - scalar: 268435455
+  - inputs:
+    - scalar: 268435455
+    - scalar: 0
+    outputs:
+    - scalar: 268435455
+  - inputs:
+    - scalar: 134217727
+    - scalar: 134217728
+    outputs:
+    - scalar: 268435455
+---
+description: add_eint_28_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>, %arg1: !FHE.eint<28>) -> !FHE.eint<28> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<28>, !FHE.eint<28>) -> !FHE.eint<28>
+    return %res: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 134217727
+    - scalar: 134217728
+    outputs:
+    - scalar: 268435455
+---
+description: sub_eint_int_cst_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>) -> !FHE.eint<28> {
+    %0 = arith.constant 268435455 : i29
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<28>, i29) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435455
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>, %arg1: i29) -> !FHE.eint<28> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<28>, i29) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435455
+    - scalar: 268435455
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 268435455
+    - scalar: 0
+    outputs:
+    - scalar: 268435455
+  - inputs:
+    - scalar: 268435454
+    - scalar: 134217727
+    outputs:
+    - scalar: 134217727
+---
+description: sub_int_eint_cst_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>) -> !FHE.eint<28> {
+    %0 = arith.constant 268435455 : i29
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i29, !FHE.eint<28>) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435455
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_28bits
+program: |
+  func.func @main(%arg0: i29, %arg1: !FHE.eint<28>) -> !FHE.eint<28> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i29, !FHE.eint<28>) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435455
+    - scalar: 268435455
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 268435455
+    - scalar: 0
+    outputs:
+    - scalar: 268435455
+  - inputs:
+    - scalar: 268435454
+    - scalar: 134217727
+    outputs:
+    - scalar: 134217727
+---
+description: sub_eint_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>, %arg1: !FHE.eint<28>) -> !FHE.eint<28> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<28>, !FHE.eint<28>) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 268435455
+    - scalar: 268435455
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 268435455
+    - scalar: 0
+    outputs:
+    - scalar: 268435455
+  - inputs:
+    - scalar: 268435454
+    - scalar: 134217727
+    outputs:
+    - scalar: 134217727
+---
+description: mul_eint_int_cst_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>) -> !FHE.eint<28> {
+    %0 = arith.constant 2 : i29
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<28>, i29) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 134217727
+    outputs:
+    - scalar: 268435454
+---
+description: mul_eint_int_arg_28bits
+program: |
+  func.func @main(%arg0: !FHE.eint<28>, %arg1: i29) -> !FHE.eint<28> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<28>, i29) -> (!FHE.eint<28>)
+    return %1: !FHE.eint<28>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 268435455
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 268435455
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 268435455
+    outputs:
+    - scalar: 268435455
+  - inputs:
+    - scalar: 268435455
+    - scalar: 1
+    outputs:
+    - scalar: 268435455
+---
+---
+description: identity_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>) -> !FHE.eint<29> {
+    return %arg0: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870911
+    outputs:
+    - scalar: 536870911
+---
+description: zero_tensor_29bits
+program: |
+  func.func @main() -> tensor<2x2x4x!FHE.eint<29>> {
+    %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<29>>
+    return %0: tensor<2x2x4x!FHE.eint<29>>
+  }
+tests:
+  - outputs:
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [2,2,4]
+---
+description: add_eint_int_cst_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>) -> !FHE.eint<29> {
+    %0 = arith.constant 1 : i30
+    %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870910
+    outputs:
+    - scalar: 536870911
+---
+description: add_eint_int_arg_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>, %arg1: i30) -> !FHE.eint<29> {
+    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
+    return %0: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870910
+    - scalar: 1
+    outputs:
+    - scalar: 536870911
+  - inputs:
+    - scalar: 536870911
+    - scalar: 0
+    outputs:
+    - scalar: 536870911
+  - inputs:
+    - scalar: 268435455
+    - scalar: 268435456
+    outputs:
+    - scalar: 536870911
+---
+description: add_eint_29_bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>, %arg1: !FHE.eint<29>) -> !FHE.eint<29> {
+    %res = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<29>, !FHE.eint<29>) -> !FHE.eint<29>
+    return %res: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 268435455
+    - scalar: 268435456
+    outputs:
+    - scalar: 536870911
+---
+description: sub_eint_int_cst_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>) -> !FHE.eint<29> {
+    %0 = arith.constant 536870911 : i30
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870911
+    outputs:
+    - scalar: 0
+---
+description: sub_eint_int_arg_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>, %arg1: i30) -> !FHE.eint<29> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870911
+    - scalar: 536870911
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 536870911
+    - scalar: 0
+    outputs:
+    - scalar: 536870911
+  - inputs:
+    - scalar: 536870910
+    - scalar: 268435455
+    outputs:
+    - scalar: 268435455
+---
+description: sub_int_eint_cst_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>) -> !FHE.eint<29> {
+    %0 = arith.constant 536870911 : i30
+    %1 = "FHE.sub_int_eint"(%0, %arg0): (i30, !FHE.eint<29>) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870911
+    outputs:
+    - scalar: 0
+---
+description: sub_int_eint_arg_29bits
+program: |
+  func.func @main(%arg0: i30, %arg1: !FHE.eint<29>) -> !FHE.eint<29> {
+    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i30, !FHE.eint<29>) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870911
+    - scalar: 536870911
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 536870911
+    - scalar: 0
+    outputs:
+    - scalar: 536870911
+  - inputs:
+    - scalar: 536870910
+    - scalar: 268435455
+    outputs:
+    - scalar: 268435455
+---
+description: sub_eint_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>, %arg1: !FHE.eint<29>) -> !FHE.eint<29> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<29>, !FHE.eint<29>) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 536870911
+    - scalar: 536870911
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 536870911
+    - scalar: 0
+    outputs:
+    - scalar: 536870911
+  - inputs:
+    - scalar: 536870910
+    - scalar: 268435455
+    outputs:
+    - scalar: 268435455
+---
+description: mul_eint_int_cst_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>) -> !FHE.eint<29> {
+    %0 = arith.constant 2 : i30
+    %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 268435455
+    outputs:
+    - scalar: 536870910
+---
+description: mul_eint_int_arg_29bits
+program: |
+  func.func @main(%arg0: !FHE.eint<29>, %arg1: i30) -> !FHE.eint<29> {
+    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
+    return %1: !FHE.eint<29>
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 536870911
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 536870911
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 536870911
+    outputs:
+    - scalar: 536870911
+  - inputs:
+    - scalar: 536870911
+    - scalar: 1
+    outputs:
+    - scalar: 536870911
+---
