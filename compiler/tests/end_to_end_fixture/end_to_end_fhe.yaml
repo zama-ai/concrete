@@ -155,6 +155,13 @@ tests:
     - scalar: 12
     outputs:
     - scalar: 12
+test-error-rates:
+  - p-error: 0.05
+    nb-repetition: 100
+  - p-error: 0.01
+    nb-repetition: 100
+  - p-error: 0.001
+    nb-repetition: 100
 ---
 description: apply_lookup_table_5_bits
 program: |
@@ -218,6 +225,7 @@ tests:
     - scalar: 96
     outputs:
     - scalar: 96
+
 ---
 description: apply_lookup_table_8_bits
 program: |

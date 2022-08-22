@@ -37,6 +37,14 @@ struct TestDescription {
   std::vector<ValueDescription> outputs;
 };
 
+struct TestErrorRate {
+  double p_error;
+  uint64_t nb_repetition;
+  // rate at which a valid code will make the test fail due to bad luck
+  const double FALSE_ALARM_RATE = 0.00001;
+  uint64_t too_high_error_count_threshold();
+};
+
 struct EndToEndDesc {
   std::string description;
   std::string program;
@@ -45,6 +53,7 @@ struct EndToEndDesc {
   llvm::Optional<mlir::concretelang::V0FHEConstraint> v0Constraint;
   llvm::Optional<mlir::concretelang::LargeIntegerParameter>
       largeIntegerParameter;
+  std::vector<TestErrorRate> test_error_rates;
 };
 
 llvm::Expected<mlir::concretelang::LambdaArgument *>

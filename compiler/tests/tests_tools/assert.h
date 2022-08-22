@@ -15,6 +15,16 @@
     }                                                                          \
   }
 
+#define DISCARD_LLVM_ERROR(err)                                                \
+  {                                                                            \
+    llvm::Error e = std::move(err);                                            \
+    if (e) {                                                                   \
+      handleAllErrors(std::move(e), [](const llvm::ErrorInfoBase &ei) {        \
+        ASSERT_TRUE(true);                                                     \
+      });                                                                      \
+    }                                                                          \
+  }
+
 // Checks that the value `val` is not in an error state. Returns
 // `true` if the test passes, otherwise `false`.
 template <typename T>

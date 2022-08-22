@@ -1,6 +1,15 @@
 MIN_PRECISON = 1
 MAX_PRECISION = 57
 
+TEST_ERROR_RATES = """\
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000"""
+
+PRECISIONS_WITH_ERROR_RATES = {
+    1, 2, 3, 4, 9, 16, 24, 32, 57
+}
+
 
 def main():
     print("# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
@@ -9,6 +18,9 @@ def main():
     for p in range(MIN_PRECISON, MAX_PRECISION+1):
         if p != 1:
             print("---")
+        def may_check_error_rate():
+            if p in PRECISIONS_WITH_ERROR_RATES:
+                print(TEST_ERROR_RATES)
         max_value = (2 ** p) - 1
         integer_bitwidth = p + 1
         max_constant = min((2 ** (57-p)) - 1, max_value)
@@ -25,6 +37,7 @@ def main():
         print("    - scalar: {0}".format(max_value))
         print("    outputs:")
         print("    - scalar: {0}".format(max_value))
+        may_check_error_rate()
         print("---")
         # zero_tensor
         print("description: zero_tensor_{0}bits".format(p))
@@ -39,6 +52,7 @@ def main():
         print("  - outputs:")
         print("    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]")
         print("      shape: [2,2,4]")
+        may_check_error_rate()
         print("---")
         # add_eint_int_cst
         print("description: add_eint_int_cst_{0}bits".format(p))
@@ -55,6 +69,7 @@ def main():
         print("    - scalar: {0}".format(max_value-1))
         print("    outputs:")
         print("    - scalar: {0}".format(max_value))
+        may_check_error_rate()
         print("---")
         # add_eint_int_arg
         if p <= 28:
@@ -84,6 +99,7 @@ def main():
             print("    - scalar: {0}".format((max_value >> 1) + 1))
             print("    outputs:")
             print("    - scalar: {0}".format(max_value))
+            may_check_error_rate()
             print("---")
         # add_eint
         print("description: add_eint_{0}_bits".format(p))
@@ -100,6 +116,7 @@ def main():
         print("    - scalar: {0}".format(((2 ** p) >> 1)))
         print("    outputs:")
         print("    - scalar: {0}".format((2 ** p) - 1))
+        may_check_error_rate()
         print("---")
         # sub_eint_int_cst
         print("description: sub_eint_int_cst_{0}bits".format(p))
@@ -117,6 +134,7 @@ def main():
         print("    - scalar: {0}".format(max_value))
         print("    outputs:")
         print("    - scalar: {0}".format(max_value-max_constant))
+        may_check_error_rate()
         print("---")
         # sub_eint_int_arg
         if p <= 28:
@@ -146,6 +164,7 @@ def main():
             print("    - scalar: {0}".format(max_value >> 1))
             print("    outputs:")
             print("    - scalar: {0}".format(max_value >> 1))
+            may_check_error_rate()
             print("---")
         # sub_int_eint_cst
         print("description: sub_int_eint_cst_{0}bits".format(p))
@@ -163,6 +182,7 @@ def main():
         print("    - scalar: {0}".format(max_constant))
         print("    outputs:")
         print("    - scalar: 0")
+        may_check_error_rate()
         print("---")
         # sub_int_eint_arg
         if p <= 28:
@@ -192,6 +212,7 @@ def main():
             print("    - scalar: {0}".format(max_value >> 1))
             print("    outputs:")
             print("    - scalar: {0}".format(max_value >> 1))
+            may_check_error_rate()
             print("---")
         # sub_eint
         print("description: sub_eint_{0}bits".format(p))
@@ -218,6 +239,7 @@ def main():
         print("    - scalar: {0}".format(max_value >> 1))
         print("    outputs:")
         print("    - scalar: {0}".format(max_value >> 1))
+        may_check_error_rate()
         print("---")
         # mul_eint_int_cst
         print("description: mul_eint_int_cst_{0}bits".format(p))
@@ -238,6 +260,7 @@ def main():
         print("    - scalar: {0}".format(max_value >> 1))
         print("    outputs:")
         print("    - scalar: {0}".format(max_value - 1))
+        may_check_error_rate()
         print("---")
         # mul_eint_int_arg
         if p <= 28:
@@ -272,6 +295,7 @@ def main():
             print("    - scalar: 1")
             print("    outputs:")
             print("    - scalar: {0}".format(max_value))
+            may_check_error_rate()
             print("---")
 
 

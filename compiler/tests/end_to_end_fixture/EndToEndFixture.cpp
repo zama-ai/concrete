@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "EndToEndFixture.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Jit.h"
@@ -5,6 +7,61 @@
 #include "llvm/Support/YAMLTraits.h"
 
 using mlir::concretelang::StreamStringError;
+
+// derived from https://stackoverflow.com/a/45869209
+uint64_t solve_binomial_cdf_bigger_than(size_t n, double p_error,
+                                        double p_mass) {
+  // Solve: find k such that
+  //   - binomial_cdf(k, n, p_error) >= p_mass
+  //   - given n and p_error and p_mass
+  // Notation:
+  //   - n is the number of repetition,
+  //   - p_error the probability of error,
+  //   - p_mass is the mass probability of having a number of error <= k
+  //   - k is a number of error that is returned
+  // This returns the smallest threshold for error such that the number of error
+  // is below or equal, with probability p_mass.
+  using std::exp;
+  using std::log;
+  auto log_p_error = log(p_error);
+  auto log_p_success = log(1.0 - p_error);
+  auto cdf_k = 0.0;
+  double log_pmf_k;
+  // k in 0..n, isum and stop when the cumulative attained p_mass
+  for (uint64_t k = 0; k < n; k++) {
+    if (k == 0) {
+      // start with n success
+      log_pmf_k = n * log_p_success;
+    } else {
+      // add one error and remove one success
+      log_pmf_k += log(n - k + 1) - log(k) + (log_p_error - log_p_success);
+    }
+    cdf_k += exp(log_pmf_k);
+    if (cdf_k > p_mass) {
+      return k;
+    }
+  }
+  return n;
+}
+
+uint64_t TestErrorRate::too_high_error_count_threshold() {
+  // Return the smallest threshold for error such that
+  // the number of error is higher than this threshold
+  // with probability FALSE_ALARM_RATE.
+
+  // Examples:
+  // n_rep=100, p_error=0.05 -> 16 error max  (ratio 3)
+  // n_rep=100, p_error=0.01 -> 7 error max (ratio 7)
+  // n_rep=100, p_error=0.001 -> 3 error max (ratio 30)
+  // n_rep=10000, p_error=0.0001 -> 8 error max (ratio 8)
+  // A high ratio indicate that the number of repetition should be increased.
+  // A good ratio (but costly) is between 1 and 2.
+  // A bad ratio can still detect most issues.
+  // A good ratio will help to detect more precise calibration issue.
+  double p_mass = 1.0 - TestErrorRate::FALSE_ALARM_RATE;
+  return solve_binomial_cdf_bigger_than(this->nb_repetition, this->p_error,
+                                        p_mass);
+}
 
 llvm::Expected<mlir::concretelang::LambdaArgument *>
 scalarDescToLambdaArgument(ScalarDesc desc) {
@@ -176,6 +233,15 @@ template <> struct llvm::yaml::MappingTraits<TestDescription> {
 
 LLVM_YAML_IS_SEQUENCE_VECTOR(TestDescription)
 
+template <> struct llvm::yaml::MappingTraits<TestErrorRate> {
+  static void mapping(IO &io, TestErrorRate &desc) {
+    io.mapRequired("p-error", desc.p_error);
+    io.mapRequired("nb-repetition", desc.nb_repetition);
+  }
+};
+
+LLVM_YAML_IS_SEQUENCE_VECTOR(TestErrorRate)
+
 template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
   static void mapping(IO &io, EndToEndDesc &desc) {
     io.mapRequired("description", desc.description);
@@ -210,6 +276,7 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
     if (!largeInterger.crtDecomposition.empty()) {
       desc.largeIntegerParameter = largeInterger;
     }
+    io.mapOptional("test-error-rates", desc.test_error_rates);
   }
 };
 
@@ -227,7 +294,9 @@ std::vector<EndToEndDesc> loadEndToEndDesc(std::string path) {
   yin >> desc;
 
   // Check for error
-  if (yin.error())
-    assert(false && "cannot parse doc");
+  if (yin.error()) { // .error() displays the beginning of the error message
+    std::cerr << "In yaml file: " << path << "\n";
+    assert(false);
+  }
   return desc;
 }

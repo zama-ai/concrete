@@ -13,6 +13,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_1bits
 program: |
@@ -24,6 +27,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_1bits
 program: |
@@ -37,6 +43,9 @@ tests:
     - scalar: 0
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_arg_1bits
 program: |
@@ -60,6 +69,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_1_bits
 program: |
@@ -73,6 +85,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_1bits
 program: |
@@ -86,6 +101,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_arg_1bits
 program: |
@@ -109,6 +127,9 @@ tests:
     - scalar: 0
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_1bits
 program: |
@@ -122,6 +143,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_arg_1bits
 program: |
@@ -145,6 +169,9 @@ tests:
     - scalar: 0
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_1bits
 program: |
@@ -168,6 +195,9 @@ tests:
     - scalar: 0
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_1bits
 program: |
@@ -185,6 +215,9 @@ tests:
     - scalar: 0
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_arg_1bits
 program: |
@@ -213,6 +246,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_2bits
@@ -225,6 +261,9 @@ tests:
     - scalar: 3
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_2bits
 program: |
@@ -236,6 +275,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_2bits
 program: |
@@ -249,6 +291,9 @@ tests:
     - scalar: 2
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_arg_2bits
 program: |
@@ -272,6 +317,9 @@ tests:
     - scalar: 2
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_2_bits
 program: |
@@ -285,6 +333,9 @@ tests:
     - scalar: 2
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_2bits
 program: |
@@ -298,6 +349,9 @@ tests:
     - scalar: 3
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_arg_2bits
 program: |
@@ -321,6 +375,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_2bits
 program: |
@@ -334,6 +391,9 @@ tests:
     - scalar: 3
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_arg_2bits
 program: |
@@ -357,6 +417,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_2bits
 program: |
@@ -380,6 +443,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_2bits
 program: |
@@ -397,6 +463,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 2
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_arg_2bits
 program: |
@@ -425,6 +494,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_3bits
@@ -437,6 +509,9 @@ tests:
     - scalar: 7
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_3bits
 program: |
@@ -448,6 +523,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_3bits
 program: |
@@ -461,6 +539,9 @@ tests:
     - scalar: 6
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_arg_3bits
 program: |
@@ -484,6 +565,9 @@ tests:
     - scalar: 4
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_3_bits
 program: |
@@ -497,6 +581,9 @@ tests:
     - scalar: 4
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_3bits
 program: |
@@ -510,6 +597,9 @@ tests:
     - scalar: 7
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_arg_3bits
 program: |
@@ -533,6 +623,9 @@ tests:
     - scalar: 3
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_3bits
 program: |
@@ -546,6 +639,9 @@ tests:
     - scalar: 7
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_arg_3bits
 program: |
@@ -569,6 +665,9 @@ tests:
     - scalar: 3
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_3bits
 program: |
@@ -592,6 +691,9 @@ tests:
     - scalar: 3
     outputs:
     - scalar: 3
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_3bits
 program: |
@@ -609,6 +711,9 @@ tests:
     - scalar: 3
     outputs:
     - scalar: 6
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_arg_3bits
 program: |
@@ -637,6 +742,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_4bits
@@ -649,6 +757,9 @@ tests:
     - scalar: 15
     outputs:
     - scalar: 15
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_4bits
 program: |
@@ -660,6 +771,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_4bits
 program: |
@@ -673,6 +787,9 @@ tests:
     - scalar: 14
     outputs:
     - scalar: 15
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_arg_4bits
 program: |
@@ -696,6 +813,9 @@ tests:
     - scalar: 8
     outputs:
     - scalar: 15
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_4_bits
 program: |
@@ -709,6 +829,9 @@ tests:
     - scalar: 8
     outputs:
     - scalar: 15
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_4bits
 program: |
@@ -722,6 +845,9 @@ tests:
     - scalar: 15
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_arg_4bits
 program: |
@@ -745,6 +871,9 @@ tests:
     - scalar: 7
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_4bits
 program: |
@@ -758,6 +887,9 @@ tests:
     - scalar: 15
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_arg_4bits
 program: |
@@ -781,6 +913,9 @@ tests:
     - scalar: 7
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_4bits
 program: |
@@ -804,6 +939,9 @@ tests:
     - scalar: 7
     outputs:
     - scalar: 7
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_4bits
 program: |
@@ -821,6 +959,9 @@ tests:
     - scalar: 7
     outputs:
     - scalar: 14
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_arg_4bits
 program: |
@@ -849,6 +990,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 15
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_5bits
@@ -1709,6 +1853,9 @@ tests:
     - scalar: 511
     outputs:
     - scalar: 511
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_9bits
 program: |
@@ -1720,6 +1867,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_9bits
 program: |
@@ -1733,6 +1883,9 @@ tests:
     - scalar: 510
     outputs:
     - scalar: 511
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_arg_9bits
 program: |
@@ -1756,6 +1909,9 @@ tests:
     - scalar: 256
     outputs:
     - scalar: 511
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_9_bits
 program: |
@@ -1769,6 +1925,9 @@ tests:
     - scalar: 256
     outputs:
     - scalar: 511
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_9bits
 program: |
@@ -1782,6 +1941,9 @@ tests:
     - scalar: 511
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_arg_9bits
 program: |
@@ -1805,6 +1967,9 @@ tests:
     - scalar: 255
     outputs:
     - scalar: 255
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_9bits
 program: |
@@ -1818,6 +1983,9 @@ tests:
     - scalar: 511
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_arg_9bits
 program: |
@@ -1841,6 +2009,9 @@ tests:
     - scalar: 255
     outputs:
     - scalar: 255
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_9bits
 program: |
@@ -1864,6 +2035,9 @@ tests:
     - scalar: 255
     outputs:
     - scalar: 255
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_9bits
 program: |
@@ -1881,6 +2055,9 @@ tests:
     - scalar: 255
     outputs:
     - scalar: 510
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_arg_9bits
 program: |
@@ -1909,6 +2086,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 511
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_10bits
@@ -3193,6 +3373,9 @@ tests:
     - scalar: 65535
     outputs:
     - scalar: 65535
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_16bits
 program: |
@@ -3204,6 +3387,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_16bits
 program: |
@@ -3217,6 +3403,9 @@ tests:
     - scalar: 65534
     outputs:
     - scalar: 65535
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_arg_16bits
 program: |
@@ -3240,6 +3429,9 @@ tests:
     - scalar: 32768
     outputs:
     - scalar: 65535
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_16_bits
 program: |
@@ -3253,6 +3445,9 @@ tests:
     - scalar: 32768
     outputs:
     - scalar: 65535
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_16bits
 program: |
@@ -3266,6 +3461,9 @@ tests:
     - scalar: 65535
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_arg_16bits
 program: |
@@ -3289,6 +3487,9 @@ tests:
     - scalar: 32767
     outputs:
     - scalar: 32767
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_16bits
 program: |
@@ -3302,6 +3503,9 @@ tests:
     - scalar: 65535
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_arg_16bits
 program: |
@@ -3325,6 +3529,9 @@ tests:
     - scalar: 32767
     outputs:
     - scalar: 32767
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_16bits
 program: |
@@ -3348,6 +3555,9 @@ tests:
     - scalar: 32767
     outputs:
     - scalar: 32767
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_16bits
 program: |
@@ -3365,6 +3575,9 @@ tests:
     - scalar: 32767
     outputs:
     - scalar: 65534
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_arg_16bits
 program: |
@@ -3393,6 +3606,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 65535
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_17bits
@@ -4889,6 +5105,9 @@ tests:
     - scalar: 16777215
     outputs:
     - scalar: 16777215
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_24bits
 program: |
@@ -4900,6 +5119,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_24bits
 program: |
@@ -4913,6 +5135,9 @@ tests:
     - scalar: 16777214
     outputs:
     - scalar: 16777215
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_arg_24bits
 program: |
@@ -4936,6 +5161,9 @@ tests:
     - scalar: 8388608
     outputs:
     - scalar: 16777215
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_24_bits
 program: |
@@ -4949,6 +5177,9 @@ tests:
     - scalar: 8388608
     outputs:
     - scalar: 16777215
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_24bits
 program: |
@@ -4962,6 +5193,9 @@ tests:
     - scalar: 16777215
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_arg_24bits
 program: |
@@ -4985,6 +5219,9 @@ tests:
     - scalar: 8388607
     outputs:
     - scalar: 8388607
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_24bits
 program: |
@@ -4998,6 +5235,9 @@ tests:
     - scalar: 16777215
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_arg_24bits
 program: |
@@ -5021,6 +5261,9 @@ tests:
     - scalar: 8388607
     outputs:
     - scalar: 8388607
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_24bits
 program: |
@@ -5044,6 +5287,9 @@ tests:
     - scalar: 8388607
     outputs:
     - scalar: 8388607
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_24bits
 program: |
@@ -5061,6 +5307,9 @@ tests:
     - scalar: 8388607
     outputs:
     - scalar: 16777214
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_arg_24bits
 program: |
@@ -5089,6 +5338,9 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 16777215
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_25bits
@@ -6294,6 +6546,9 @@ tests:
     - scalar: 4294967295
     outputs:
     - scalar: 4294967295
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_32bits
 program: |
@@ -6305,6 +6560,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_32bits
 program: |
@@ -6318,6 +6576,9 @@ tests:
     - scalar: 4294967294
     outputs:
     - scalar: 4294967295
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_32_bits
 program: |
@@ -6331,6 +6592,9 @@ tests:
     - scalar: 2147483648
     outputs:
     - scalar: 4294967295
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_32bits
 program: |
@@ -6344,6 +6608,9 @@ tests:
     - scalar: 4294967295
     outputs:
     - scalar: 4261412864
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_32bits
 program: |
@@ -6357,6 +6624,9 @@ tests:
     - scalar: 33554431
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_32bits
 program: |
@@ -6380,6 +6650,9 @@ tests:
     - scalar: 2147483647
     outputs:
     - scalar: 2147483647
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_32bits
 program: |
@@ -6397,6 +6670,9 @@ tests:
     - scalar: 2147483647
     outputs:
     - scalar: 4294967294
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 ---
 description: identity_33bits
@@ -9169,6 +9445,9 @@ tests:
     - scalar: 144115188075855871
     outputs:
     - scalar: 144115188075855871
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: zero_tensor_57bits
 program: |
@@ -9180,6 +9459,9 @@ tests:
   - outputs:
     - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
       shape: [2,2,4]
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_int_cst_57bits
 program: |
@@ -9193,6 +9475,9 @@ tests:
     - scalar: 144115188075855870
     outputs:
     - scalar: 144115188075855871
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: add_eint_57_bits
 program: |
@@ -9206,6 +9491,9 @@ tests:
     - scalar: 72057594037927936
     outputs:
     - scalar: 144115188075855871
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_int_cst_57bits
 program: |
@@ -9219,6 +9507,9 @@ tests:
     - scalar: 144115188075855871
     outputs:
     - scalar: 144115188075855871
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_int_eint_cst_57bits
 program: |
@@ -9232,6 +9523,9 @@ tests:
     - scalar: 0
     outputs:
     - scalar: 0
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: sub_eint_57bits
 program: |
@@ -9255,6 +9549,9 @@ tests:
     - scalar: 72057594037927935
     outputs:
     - scalar: 72057594037927935
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
 description: mul_eint_int_cst_57bits
 program: |
@@ -9272,4 +9569,7 @@ tests:
     - scalar: 72057594037927935
     outputs:
     - scalar: 144115188075855870
+test-error-rates:
+  - p-error: 0.0001
+    nb-repetition: 10000
 ---
