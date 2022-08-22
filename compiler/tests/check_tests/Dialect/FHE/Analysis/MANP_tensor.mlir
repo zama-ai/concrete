@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes MANP --action=dump-fhe --split-input-file %s 2>&1 | FileCheck %s
+// RUN: concretecompiler --passes MANP --passes ConcreteOptimizer --action=dump-fhe --split-input-file %s 2>&1 | FileCheck %s
 
 func.func @tensor_from_elements_1(%a: !FHE.eint<2>, %b: !FHE.eint<2>, %c: !FHE.eint<2>, %d: !FHE.eint<2>) -> tensor<4x!FHE.eint<2>>
 {

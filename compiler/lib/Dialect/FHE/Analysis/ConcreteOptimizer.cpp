@@ -4,6 +4,7 @@
 // for license information.
 
 #include <chrono>
+#include <cmath>
 #include <initializer_list>
 #include <vector>
 
@@ -75,6 +76,7 @@ struct FunctionToDag {
     for (auto &bb : func.getBody().getBlocks()) {
       for (auto &op : bb.getOperations()) {
         addOperation(dag, op);
+        op.removeAttr("SMANP");
       }
     }
     if (index.empty()) {
@@ -178,13 +180,10 @@ struct FunctionToDag {
     // Default complexity is negligible
     double fixed_cost = NEGLIGIBLE_COMPLEXITY;
     double lwe_dim_cost_factor = NEGLIGIBLE_COMPLEXITY;
-    auto manp_int = op.getAttrOfType<mlir::IntegerAttr>("MANP");
+    auto smanp_int = op.getAttrOfType<mlir::IntegerAttr>("SMANP");
     auto loc = loc_to_string(op.getLoc());
-    if (!manp_int) {
-      DEBUG("Cannot read manp on " << op << "\n" << loc);
-    }
-    assert(manp_int && "Missing manp value on a crypto operation");
-    double manp = (double)manp_int.getValue().getZExtValue();
+    assert(smanp_int && "Missing manp value on a crypto operation");
+    double manp = sqrt((double)smanp_int.getValue().getZExtValue());
     auto comment = std::string(op.getName().getStringRef()) + " " + loc;
     index[val] =
         dag->add_levelled_op(slice(inputs), lwe_dim_cost_factor, fixed_cost,

@@ -1470,6 +1470,13 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
       latticeRes.join(MANPLatticeValue{norm2SqEquiv});
       latticeRes.markOptimisticFixpoint();
 
+      op->setAttr("SMANP",
+                  mlir::IntegerAttr::get(
+                      mlir::IntegerType::get(
+                          op->getContext(), norm2SqEquiv.getBitWidth(),
+                          mlir::IntegerType::SignednessSemantics::Unsigned),
+                      norm2SqEquiv));
+
       llvm::APInt norm2Equiv = APIntCeilSqrt(norm2SqEquiv);
 
       op->setAttr("MANP",

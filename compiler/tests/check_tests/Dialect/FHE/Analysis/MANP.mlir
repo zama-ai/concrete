@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes MANP --action=dump-fhe --split-input-file %s 2>&1 | FileCheck %s
+// RUN: concretecompiler --passes MANP --passes ConcreteOptimizer --action=dump-fhe --split-input-file %s 2>&1 | FileCheck %s
 
 func.func @single_zero() -> !FHE.eint<2>
 {
