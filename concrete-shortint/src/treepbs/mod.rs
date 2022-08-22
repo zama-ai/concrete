@@ -12,7 +12,9 @@ mod tests;
 use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, ServerKey};
 use concrete_core::prelude::PackingKeyswitchKey64;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct TreepbsKey {
     pub pksk: PackingKeyswitchKey64,
 }

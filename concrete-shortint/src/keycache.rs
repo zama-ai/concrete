@@ -1,6 +1,7 @@
 use crate::parameters::parameters_wopbs::*;
 use crate::parameters::parameters_wopbs_message_carry::*;
 use crate::parameters::*;
+use crate::treepbs::TreepbsKey;
 use crate::wopbs::WopbsKey;
 use crate::{ClientKey, ServerKey};
 use concrete_utils::keycache::{
@@ -144,6 +145,10 @@ pub struct SharedWopbsKey {
     wopbs: GenericSharedKey<WopbsKey>,
 }
 
+pub struct SharedTreePbsKey {
+    inner: GenericSharedKey<TreepbsKey>,
+}
+
 impl SharedKey {
     pub fn client_key(&self) -> &ClientKey {
         &self.inner.0
@@ -165,6 +170,12 @@ impl SharedWopbsKey {
     }
 }
 
+impl SharedTreePbsKey {
+    pub fn tree_pbs(&self) -> &TreepbsKey {
+        &self.inner
+    }
+}
+
 impl Keycache {
     pub fn get_from_param(&self, param: Parameters) -> SharedKey {
         SharedKey {
@@ -182,6 +193,41 @@ impl From<Parameters> for WopbsKey {
     }
 }
 
+pub struct KeycacheTreePpbs {
+    inner: TKeyCache<Parameters, TreepbsKey, FileStorage>,
+}
+
+/// This impl is a workaround / cheat
+/// maybe we should find a better way
+impl From<Parameters> for TreepbsKey {
+    fn from(params: Parameters) -> Self {
+        let shared_key = KEY_CACHE.get_from_param(params);
+        Self::new_tree_key(shared_key.client_key())
+    }
+}
+
+impl Default for KeycacheTreePpbs {
+    fn default() -> Self {
+        let persistent_storage = FileStorage::new("../keys/shortint/treepbs".to_string());
+
+        Self {
+            inner: TKeyCache::new(persistent_storage),
+        }
+    }
+}
+
+impl KeycacheTreePpbs {
+    pub fn get_from_param(&self, param: Parameters) -> SharedTreePbsKey {
+        SharedTreePbsKey {
+            inner: self.inner.get(param),
+        }
+    }
+}
+
+/// The KeyCache struct for shortint.
+///
+/// You should not create an instance yourself,
+/// but rather use the global variable defined: [KEY_CACHE_WOPBS]
 pub struct KeycacheWopbsV0 {
     inner: TKeyCache<Parameters, WopbsKey, FileStorage>,
 }
@@ -206,9 +252,7 @@ impl KeycacheWopbsV0 {
 }
 
 lazy_static! {
-    pub static ref KEY_CACHE: Keycache = Keycache::default();
-}
-
-lazy_static! {
-    pub static ref KEY_CACHE_WOPBS: KeycacheWopbsV0 = KeycacheWopbsV0::default();
+    pub static ref KEY_CACHE: Keycache = Default::default();
+    pub static ref KEY_CACHE_WOPBS: KeycacheWopbsV0 = Default::default();
+    pub static ref KEY_CACHE_TREEPBS: KeycacheTreePpbs = Default::default();
 }

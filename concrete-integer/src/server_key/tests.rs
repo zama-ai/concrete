@@ -1,6 +1,5 @@
 use crate::client_key::VecLength;
-use crate::keycache::KEY_CACHE;
-use crate::treepbs::TreepbsKey;
+use crate::keycache::{KEY_CACHE, KEY_CACHE_TREEPBS};
 use concrete_shortint::parameters::*;
 use concrete_shortint::Parameters;
 use paste::paste;
@@ -860,9 +859,9 @@ fn integer_two_block_pbs(param: Parameters) {
     let modulus = param.message_modulus.0.pow(2) as u64;
     // println!("modulus = {}", modulus);
 
-    let treepbs_key = TreepbsKey::new(&cks);
+    let treepbs_key = KEY_CACHE_TREEPBS.get_from_params(param);
 
-    for _ in 0..NB_TEST {
+    for _ in 0..NB_TEST_SMALLER {
         let clear_0 = rng.gen::<u64>() % modulus;
 
         // encryption of an integer
@@ -898,9 +897,9 @@ fn integer_two_block_pbs_base(param: Parameters) {
     let modulus = param.message_modulus.0.pow(2) as u64;
     // println!("modulus = {}", modulus);
 
-    let treepbs_key = TreepbsKey::new(&cks);
+    let treepbs_key = KEY_CACHE_TREEPBS.get_from_params(param);
 
-    for _ in 0..NB_TEST {
+    for _ in 0..NB_TEST_SMALLER {
         let clear_0 = rng.gen::<u64>() % modulus;
 
         // encryption of an integer
@@ -936,9 +935,9 @@ fn integer_three_block_pbs(param: Parameters) {
     let modulus = param.message_modulus.0.pow(3) as u64;
     // println!("modulus = {}", modulus);
 
-    let treepbs_key = TreepbsKey::new(&cks);
+    let treepbs_key = KEY_CACHE_TREEPBS.get_from_params(param);
 
-    for _ in 0..NB_TEST {
+    for _ in 0..NB_TEST_SMALLER {
         let clear_0 = rng.gen::<u64>() % modulus;
 
         // encryption of an integer
@@ -974,9 +973,9 @@ fn integer_three_block_pbs_base(param: Parameters) {
     let modulus = param.message_modulus.0.pow(3) as u64;
     // println!("modulus = {}", modulus);
 
-    let treepbs_key = TreepbsKey::new(&cks);
+    let treepbs_key = KEY_CACHE_TREEPBS.get_from_params(param);
 
-    for _ in 0..NB_TEST {
+    for _ in 0..NB_TEST_SMALLER {
         let clear_0 = rng.gen::<u64>() % modulus;
 
         // encryption of an integer

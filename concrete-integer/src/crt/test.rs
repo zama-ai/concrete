@@ -2,6 +2,8 @@ use crate::crt::gen_keys_from_basis_and_carry_space;
 use rand::Rng;
 
 #[test]
+#[ignore]
+// see internal issue #527
 pub fn test_crt() {
     let basis: Vec<u64> = vec![2, 3, 5];
     let carry_space = vec![4, 4, 4];

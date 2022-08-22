@@ -988,7 +988,7 @@ fn shortint_smart_scalar_equal(param: Parameters) {
     for _ in 0..NB_TEST {
         let clear = rng.gen::<u64>() % msg_modulus;
 
-        let scalar = rng.gen::<u8>() % modulus as u8;
+        let scalar = (rng.gen::<u16>() % modulus as u16) as u8;
 
         // encryption of an integer
         let ctxt = cks.encrypt(clear);
@@ -1017,7 +1017,7 @@ fn shortint_smart_scalar_less(param: Parameters) {
     for _ in 0..NB_TEST {
         let clear = rng.gen::<u64>() % msg_modulus;
 
-        let scalar = rng.gen::<u8>() % modulus as u8;
+        let scalar = (rng.gen::<u16>() % modulus as u16) as u8;
 
         // encryption of an integer
         let ctxt = cks.encrypt(clear);
@@ -1046,7 +1046,7 @@ fn shortint_smart_scalar_less_or_equal(param: Parameters) {
     for _ in 0..NB_TEST {
         let clear = rng.gen::<u64>() % msg_modulus;
 
-        let scalar = rng.gen::<u8>() % modulus as u8;
+        let scalar = (rng.gen::<u16>() % modulus as u16) as u8;
 
         // encryption of an integer
         let ctxt = cks.encrypt(clear);
@@ -1075,7 +1075,7 @@ fn shortint_smart_scalar_greater(param: Parameters) {
     for _ in 0..NB_TEST {
         let clear = rng.gen::<u64>() % msg_modulus;
 
-        let scalar = rng.gen::<u8>() % modulus as u8;
+        let scalar = (rng.gen::<u16>() % modulus as u16) as u8;
 
         // encryption of an integer
         let ctxt = cks.encrypt(clear);
@@ -1104,7 +1104,7 @@ fn shortint_smart_scalar_greater_or_equal(param: Parameters) {
     for _ in 0..NB_TEST {
         let clear = rng.gen::<u64>() % msg_modulus;
 
-        let scalar = rng.gen::<u8>() % modulus as u8;
+        let scalar = (rng.gen::<u16>() % modulus as u16) as u8;
 
         // encryption of an integer
         let ctxt = cks.encrypt(clear);
