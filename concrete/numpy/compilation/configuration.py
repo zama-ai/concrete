@@ -114,10 +114,20 @@ class Configuration:
                 raise TypeError(f"Unexpected keyword argument '{name}'")
 
             hint = hints[name]
-            if not isinstance(value, hint):  # type: ignore
+            is_correctly_typed = True
+
+            if name == "insecure_key_cache_location":
+                if not (value is None or isinstance(value, str)):
+                    is_correctly_typed = False
+
+            elif not isinstance(value, hint):  # type: ignore
+                is_correctly_typed = False
+
+            if not is_correctly_typed:
+                expected = hint.__name__ if hasattr(hint, "__name__") else str(hint)
                 raise TypeError(
                     f"Unexpected type for keyword argument '{name}' "
-                    f"(expected '{hint.__name__}', got '{type(value).__name__}')"
+                    f"(expected '{expected}', got '{type(value).__name__}')"
                 )
 
             setattr(result, name, value)

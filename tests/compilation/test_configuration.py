@@ -68,6 +68,12 @@ def test_configuration_fork():
             "Unexpected type for keyword argument 'dump_artifacts_on_unexpected_failures' "
             "(expected 'bool', got 'str')",
         ),
+        pytest.param(
+            {"insecure_key_cache_location": 3},
+            TypeError,
+            "Unexpected type for keyword argument 'insecure_key_cache_location' "
+            "(expected 'typing.Union[str, NoneType]', got 'int')",
+        ),
     ],
 )
 def test_configuration_bad_fork(kwargs, expected_error, expected_message):

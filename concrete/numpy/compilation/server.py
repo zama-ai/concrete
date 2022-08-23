@@ -2,6 +2,7 @@
 Declaration of `Server` class.
 """
 
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -37,6 +38,9 @@ class Server:
     _compilation_result: Union[JITCompilationResult, LibraryCompilationResult]
     _server_lambda: Union[JITLambda, LibraryLambda]
 
+    _mlir: Optional[str]
+    _configuration: Optional[Configuration]
+
     def __init__(
         self,
         client_specs: ClientSpecs,
@@ -51,6 +55,7 @@ class Server:
         self._support = support
         self._compilation_result = compilation_result
         self._server_lambda = server_lambda
+        self._mlir = None
 
         assert_that(
             support.load_client_parameters(compilation_result).serialize()
@@ -112,26 +117,60 @@ class Server:
 
         client_parameters = support.load_client_parameters(compilation_result)
         client_specs = ClientSpecs(input_signs, client_parameters, output_signs)
-        return Server(client_specs, output_dir, support, compilation_result, server_lambda)
 
-    def save(self, path: Union[str, Path]):
+        result = Server(client_specs, output_dir, support, compilation_result, server_lambda)
+
+        # pylint: disable=protected-access
+        result._mlir = mlir
+        result._configuration = configuration
+        # pylint: enable=protected-access
+
+        return result
+
+    def save(self, path: Union[str, Path], via_mlir: bool = False):
         """
         Save the server into the given path in zip format.
 
         Args:
             path (Union[str, Path]):
                 path to save the server
+
+            via_mlir (bool, default = False)
+                export using the MLIR code of the program,
+                this will make the export cross-platform
         """
+
+        path = str(path)
+        if path.endswith(".zip"):
+            path = path[: len(path) - 4]
+
+        if via_mlir:
+            if self._mlir is None or self._configuration is None:
+                raise RuntimeError("Loaded server objects cannot be saved again via MLIR")
+
+            with tempfile.TemporaryDirectory() as tmp:
+
+                with open(Path(tmp) / "circuit.mlir", "w", encoding="utf-8") as f:
+                    f.write(self._mlir)
+
+                with open(Path(tmp) / "input_signs.json", "w", encoding="utf-8") as f:
+                    f.write(json.dumps(self.client_specs.input_signs))
+
+                with open(Path(tmp) / "output_signs.json", "w", encoding="utf-8") as f:
+                    f.write(json.dumps(self.client_specs.output_signs))
+
+                with open(Path(tmp) / "configuration.json", "w", encoding="utf-8") as f:
+                    f.write(json.dumps(self._configuration.__dict__))
+
+                shutil.make_archive(path, "zip", tmp)
+
+            return
 
         if self._output_dir is None:
             raise RuntimeError("Just-in-Time compilation cannot be saved")
 
         with open(Path(self._output_dir.name) / "client.specs.json", "w", encoding="utf-8") as f:
             f.write(self.client_specs.serialize())
-
-        path = str(path)
-        if path.endswith(".zip"):
-            path = path[: len(path) - 4]
 
         shutil.make_archive(path, "zip", self._output_dir.name)
 
@@ -155,6 +194,25 @@ class Server:
         # pylint: enable=consider-using-with
 
         shutil.unpack_archive(path, str(output_dir_path), "zip")
+
+        if (output_dir_path / "circuit.mlir").exists():
+            with open(output_dir_path / "circuit.mlir", "r", encoding="utf-8") as f:
+                mlir = f.read()
+
+            with open(output_dir_path / "input_signs.json", "r", encoding="utf-8") as f:
+                input_signs = json.load(f)
+                assert_that(isinstance(input_signs, list))
+                assert_that(all(isinstance(sign, bool) for sign in input_signs))
+
+            with open(output_dir_path / "output_signs.json", "r", encoding="utf-8") as f:
+                output_signs = json.load(f)
+                assert_that(isinstance(output_signs, list))
+                assert_that(all(isinstance(sign, bool) for sign in output_signs))
+
+            with open(output_dir_path / "configuration.json", "r", encoding="utf-8") as f:
+                configuration = Configuration().fork(**json.load(f))
+
+            return Server.create(mlir, input_signs, output_signs, configuration)
 
         with open(output_dir_path / "client.specs.json", "r", encoding="utf-8") as f:
             client_specs = ClientSpecs.unserialize(f.read())

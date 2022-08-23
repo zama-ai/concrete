@@ -199,6 +199,66 @@ def test_client_server_api(helpers):
 
             assert np.array_equal(output, [45, 50, 43])
 
+        with pytest.raises(RuntimeError) as excinfo:
+            server.save("UNUSED", via_mlir=True)
+
+        assert str(excinfo.value) == "Loaded server objects cannot be saved again via MLIR"
+
+        server.cleanup()
+
+
+def test_client_server_api_via_mlir(helpers):
+    """
+    Test client/server API.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted"})
+    def function(x):
+        return x + 42
+
+    inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
+    circuit = function.compile(inputset, configuration.fork(jit=False))
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_dir_path = Path(tmp_dir)
+
+        server_path = tmp_dir_path / "server.zip"
+        circuit.server.save(server_path, via_mlir=True)
+
+        client_path = tmp_dir_path / "client.zip"
+        circuit.client.save(client_path)
+
+        circuit.cleanup()
+
+        server = Server.load(server_path)
+
+        serialized_client_specs = server.client_specs.serialize()
+        client_specs = ClientSpecs.unserialize(serialized_client_specs)
+
+        clients = [
+            Client(client_specs, configuration.insecure_key_cache_location),
+            Client.load(client_path, configuration.insecure_key_cache_location),
+        ]
+
+        for client in clients:
+            args = client.encrypt([3, 8, 1])
+
+            serialized_args = client.specs.serialize_public_args(args)
+            serialized_evaluation_keys = client.evaluation_keys.serialize()
+
+            unserialized_args = server.client_specs.unserialize_public_args(serialized_args)
+            unserialized_evaluation_keys = EvaluationKeys.unserialize(serialized_evaluation_keys)
+
+            result = server.run(unserialized_args, unserialized_evaluation_keys)
+            serialized_result = server.client_specs.serialize_public_result(result)
+
+            unserialized_result = client.specs.unserialize_public_result(serialized_result)
+            output = client.decrypt(unserialized_result)
+
+            assert np.array_equal(output, [45, 50, 43])
+
         server.cleanup()
 
 
