@@ -5,6 +5,12 @@ This compiler is based on the [MLIR project](https://mlir.llvm.org/) it use the 
 
 ## Getting started
 
+The source of the project is located in the `compiler` directory.
+
+```sh
+cd compiler
+```
+
 ### Prerequisite: Building HPX and enable dataflow parallelism (optional)
 
 In order to implement the dataflow parallelism and the distribution of the computation we use the [HPX Standard Library](https://hpx-docs.stellar-group.org/). You can else use your own HPX installation by set the `HPX_INSTALL_DIR` environment variable or you can install HPX on the default path of our build system thanks the following command:
@@ -13,6 +19,7 @@ In order to implement the dataflow parallelism and the distribution of the compu
 make install-hpx-from-source
 ```
 
+This may fail on some systems when dependences are missing. Some recent packages required are Cmake, HWLOC and BOOST. For full details see [HPX Quickstart guide](https://hpx-docs.stellar-group.org/tags/1.7.1/html/quickstart.html).
 Once you have a proper installation of HPX to enable the dataflow parallelism set the `DATAFLOW_EXECUTION_ENABLED=ON`.
 
 ### Prerequisite: Fetch git submodules
