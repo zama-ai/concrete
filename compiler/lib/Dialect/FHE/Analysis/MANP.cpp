@@ -170,9 +170,9 @@ static llvm::APInt APIntWidthExtendUnsignedSq(const llvm::APInt &i) {
 static llvm::APInt APIntWidthExtendSqForConstant(const llvm::APInt &i) {
   // Make sure the required number of bits can be represented by the
   // `unsigned` argument of `zext`.
-  assert(i.getBitWidth() < 32 &&
+  assert(i.getActiveBits() < 32 &&
          "Square of the constant cannot be represented on 64 bits");
-  return llvm::APInt(2 * i.getBitWidth(),
+  return llvm::APInt(2 * i.getActiveBits(),
                      i.abs().getZExtValue() * i.abs().getZExtValue());
 }
 
