@@ -78,15 +78,12 @@ $(BUILD_DIR)/configured.stamp:
 
 build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
 
-CONCRETE_OPTIMIZER_SRC = $(shell find $(CONCRETE_OPTIMIZER_DIR)/* -not -path '$(CONCRETE_OPTIMIZER_DIR)/target*')
-
 LIB_CONCRETE_OPTIMIZER_CPP = $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer_cpp.a
 
 # we need CONCRETE_OPTIMIZER_DIR here to ensure it is present before computing CONCRETE_OPTIMIZER_SRC
-$(LIB_CONCRETE_OPTIMIZER_CPP): $(CONCRETE_OPTIMIZER_SRC)
-	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $@
 
-concrete-optimizer-lib: $(LIB_CONCRETE_OPTIMIZER_CPP)
+concrete-optimizer-lib:
+	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $(LIB_CONCRETE_OPTIMIZER_CPP)
 
 # HPX
 
