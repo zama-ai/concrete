@@ -13,6 +13,7 @@ use concrete_shortint::server_key::MaxDegree;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct CRTVecClientKey {
     pub(crate) key: Vec<concrete_shortint::client_key::ClientKey>,
     pub(crate) key_id: Vec<KeyId>,
@@ -230,7 +231,7 @@ impl CRTVecClientKey {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct CRTVecServerKey {
     pub(crate) key: Vec<concrete_shortint::server_key::ServerKey>,
     pub(crate) key_id: Vec<KeyId>,
