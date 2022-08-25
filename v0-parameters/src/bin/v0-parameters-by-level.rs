@@ -17,12 +17,6 @@ fn main() {
     let month = now.month();
     let day = now.day();
 
-    let filename = if args.wop_pbs {
-        format!("ref/wop_pbs_{year}-{month}-{day}")
-    } else {
-        format!("ref/v0_{year}-{month}-{day}")
-    };
-
     if args.wop_pbs {
         args.min_intern_lwe_dim = 450;
         args.min_log_poly_size = 10;
@@ -31,12 +25,19 @@ fn main() {
     }
 
     for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
+        let filename_date = if args.wop_pbs {
+            format!("ref/wop_pbs_{year}-{month}-{day}_{security_level}")
+        } else {
+            format!("ref/v0_{year}-{month}-{day}_{security_level}")
+        };
+        let filename_last = if args.wop_pbs {
+            format!("ref/wop_pbs_last_{security_level}")
+        } else {
+            format!("ref/v0_last_{security_level}")
+        };
         args.security_level = security_level;
-
-        let filename = format!("{filename}_{security_level}");
-
-        let file = File::create(filename).unwrap();
-
+        let file = File::create(&filename_date).unwrap();
         compute_print_results(file, &args).unwrap();
+        std::fs::copy(&filename_date, &filename_last).expect("Copy to last failed");
     }
 }
