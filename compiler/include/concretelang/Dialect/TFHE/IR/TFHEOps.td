@@ -92,24 +92,18 @@ def TFHE_KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe"> {
   let results = (outs TFHE_GLWECipherTextType : $result);
 }
 
-def TFHE_GLWEFromTableOp : TFHE_Op<"glwe_from_table"> {
-  let summary =
-      "Creates a GLWE ciphertext which is the trivial encrytion of a the input "
-      "table interpreted as a polynomial (to use later in a bootstrap)";
-
-  let arguments = (ins 1DTensorOf < [I64] > : $table);
-  let results = (outs TFHE_GLWECipherTextType : $result);
-}
-
 def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
   let summary =
       "Programmable bootstraping of a GLWE ciphertext with a lookup table";
 
   let arguments = (ins
     TFHE_GLWECipherTextType : $ciphertext,
-    TFHE_GLWECipherTextType : $lookup_table,
+    1DTensorOf<[I64]> : $lookup_table,
+    I32Attr : $inputLweDim,
+    I32Attr : $polySize,
     I32Attr : $level,
-    I32Attr : $baseLog
+    I32Attr : $baseLog,
+    I32Attr : $glweDimension
   );
 
   let results = (outs TFHE_GLWECipherTextType : $result);

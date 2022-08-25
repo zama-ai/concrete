@@ -48,11 +48,12 @@ struct ConcreteToBConcretePass
     : public ConcreteToBConcreteBase<ConcreteToBConcretePass> {
   void runOnOperation() final;
   ConcreteToBConcretePass() = delete;
-  ConcreteToBConcretePass(bool loopParallelize)
-      : loopParallelize(loopParallelize){};
+  ConcreteToBConcretePass(bool loopParallelize, bool useGPU)
+      : loopParallelize(loopParallelize), useGPU(useGPU){};
 
 private:
   bool loopParallelize;
+  bool useGPU;
 };
 } // namespace
 
@@ -65,10 +66,6 @@ class ConcreteToBConcreteTypeConverter : public mlir::TypeConverter {
 public:
   ConcreteToBConcreteTypeConverter() {
     addConversion([](mlir::Type type) { return type; });
-    addConversion([&](mlir::concretelang::Concrete::GPUBskType type) {
-      return mlir::LLVM::LLVMPointerType::get(
-          mlir::IntegerType::get(type.getContext(), 64));
-    });
     addConversion([&](mlir::concretelang::Concrete::PlaintextType type) {
       return mlir::IntegerType::get(type.getContext(), 64);
     });
@@ -305,43 +302,6 @@ struct MulCleartextLweCiphertextOpPattern
         rewriter, bConcreteOp, [&](mlir::MLIRContext *, mlir::Type t) {
           return converter.convertType(t);
         });
-
-    return ::mlir::success();
-  };
-};
-
-struct GlweFromTablePattern : public mlir::OpRewritePattern<
-                                  mlir::concretelang::Concrete::GlweFromTable> {
-  GlweFromTablePattern(::mlir::MLIRContext *context,
-                       mlir::PatternBenefit benefit = 1)
-      : ::mlir::OpRewritePattern<mlir::concretelang::Concrete::GlweFromTable>(
-            context, benefit) {}
-
-  ::mlir::LogicalResult
-  matchAndRewrite(mlir::concretelang::Concrete::GlweFromTable op,
-                  ::mlir::PatternRewriter &rewriter) const override {
-    ConcreteToBConcreteTypeConverter converter;
-    auto resultTy =
-        op.result()
-            .getType()
-            .cast<mlir::concretelang::Concrete::GlweCiphertextType>();
-
-    auto newResultTy =
-        converter.convertType(resultTy).cast<mlir::RankedTensorType>();
-    // %0 = linalg.init_tensor [polynomialSize*(glweDimension+1)]
-    //        : tensor<polynomialSize*(glweDimension+1), i64>
-    mlir::Value init =
-        rewriter.replaceOpWithNewOp<mlir::bufferization::AllocTensorOp>(
-            op, newResultTy, mlir::ValueRange{});
-
-    // "BConcrete.fill_glwe_from_table" : (%0, polynomialSize, glweDimension,
-    // %tlu)
-    auto polySize = resultTy.getPolynomialSize();
-    auto glweDimension = resultTy.getGlweDimension();
-    auto outPrecision = resultTy.getP();
-
-    rewriter.create<mlir::concretelang::BConcrete::FillGlweFromTable>(
-        op.getLoc(), init, glweDimension, polySize, outPrecision, op.table());
 
     return ::mlir::success();
   };
@@ -915,22 +875,22 @@ void ConcreteToBConcretePass::runOnOperation() {
         LowToBConcrete<mlir::concretelang::Concrete::KeySwitchLweOp,
                        mlir::concretelang::BConcrete::KeySwitchLweBufferOp,
                        mlir::concretelang::BConcrete::KeySwitchLweBufferOp>,
-        LowToBConcrete<mlir::concretelang::Concrete::BootstrapLweOp,
-                       mlir::concretelang::BConcrete::BootstrapLweBufferOp,
-                       mlir::concretelang::BConcrete::BootstrapLweBufferOp>,
-        LowToBConcrete<mlir::concretelang::Concrete::BootstrapLweGPUOp,
-                       mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp,
-                       mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp>,
-        LowToBConcrete<mlir::concretelang::Concrete::MoveBskToGPUOp,
-                       mlir::concretelang::BConcrete::MoveBskToGPUOp,
-                       mlir::concretelang::BConcrete::MoveBskToGPUOp>,
-        LowToBConcrete<mlir::concretelang::Concrete::FreeBskFromGPUOp,
-                       mlir::concretelang::BConcrete::FreeBskFromGPUOp,
-                       mlir::concretelang::BConcrete::FreeBskFromGPUOp>,
         LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweBufferOp,
                        BConcrete::WopPBSCRTLweBufferOp>>(&getContext());
 
-    patterns.insert<GlweFromTablePattern>(&getContext());
+    if (this->useGPU) {
+      patterns.insert<LowToBConcrete<
+          mlir::concretelang::Concrete::BootstrapLweOp,
+          mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp,
+          mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp>>(
+          &getContext());
+    } else {
+      patterns.insert<
+          LowToBConcrete<mlir::concretelang::Concrete::BootstrapLweOp,
+                         mlir::concretelang::BConcrete::BootstrapLweBufferOp,
+                         mlir::concretelang::BConcrete::BootstrapLweBufferOp>>(
+          &getContext());
+    }
 
     // Add patterns to rewrite tensor operators that works on encrypted
     // tensors
@@ -1058,8 +1018,8 @@ void ConcreteToBConcretePass::runOnOperation() {
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertConcreteToBConcretePass(bool loopParallelize) {
-  return std::make_unique<ConcreteToBConcretePass>(loopParallelize);
+createConvertConcreteToBConcretePass(bool loopParallelize, bool useGPU) {
+  return std::make_unique<ConcreteToBConcretePass>(loopParallelize, useGPU);
 }
 } // namespace concretelang
 } // namespace mlir

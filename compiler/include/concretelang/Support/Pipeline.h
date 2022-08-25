@@ -47,7 +47,7 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult
 lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass,
-                         bool parallelizeLoops);
+                         bool parallelizeLoops, bool useGPU);
 
 mlir::LogicalResult
 optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
@@ -56,10 +56,6 @@ optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult asyncOffload(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
                                  std::function<bool(mlir::Pass *)> enablePass);
-
-mlir::LogicalResult
-transformsConcreteToGPU(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                        std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,

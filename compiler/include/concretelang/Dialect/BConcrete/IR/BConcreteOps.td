@@ -73,17 +73,6 @@ def BConcrete_NegateCRTLweBufferOp : BConcrete_Op<"negate_crt_lwe_buffer"> {
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_FillGlweFromTable : BConcrete_Op<"fill_glwe_from_table"> {
-    let arguments = (ins
-        1DTensorOf<[I64]>:$glwe,
-        I32Attr:$glweDimension,
-        I32Attr:$polynomialSize,
-        I32Attr:$outPrecision,
-        1DTensorOf<[I64]>:$table
-    );
-    let results = (outs);
-}
-
 def BConcrete_KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
     let arguments = (ins
         // LweKeySwitchKeyType:$keyswitch_key,
@@ -96,11 +85,14 @@ def BConcrete_KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
 
 def BConcrete_BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
     let arguments = (ins
-        // LweBootstrapKeyType:$bootstrap_key,
         1DTensorOf<[I64]>:$input_ciphertext,
-        1DTensorOf<[I64]>:$accumulator,
-        I32Attr:$level,
-        I32Attr:$baseLog
+        1DTensorOf<[I64]>:$lookup_table,
+        I32:$inputLweDim,
+        I32:$polySize,
+        I32:$level,
+        I32:$baseLog,
+        I32:$glweDimension,
+        I32:$outPrecision
     );
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
@@ -143,11 +135,14 @@ def BConcrete_KeySwitchLweBufferAsyncOffloadOp :
 def BConcrete_BootstrapLweBufferAsyncOffloadOp :
     BConcrete_Op<"bootstrap_lwe_buffer_async_offload"> {
     let arguments = (ins
-        // LweBootstrapKeyType:$bootstrap_key,
         1DTensorOf<[I64]>:$input_ciphertext,
-        1DTensorOf<[I64]>:$accumulator,
-        I32Attr:$level,
-        I32Attr:$baseLog
+        1DTensorOf<[I64]>:$lookup_table,
+        I32:$inputLweDim,
+        I32:$polySize,
+        I32:$level,
+        I32:$baseLog,
+        I32:$glweDimension,
+        I32:$outPrecision
     );
     let results = (outs RT_Future : $result);
 }
@@ -158,6 +153,9 @@ def BConcrete_AwaitFutureOp :
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
+// This is a different op in BConcrete just because of the way we are lowering to CAPI
+// When the CAPI lowering is detached from bufferization, we can remove this op, and lower
+// to the appropriate CAPI (gpu or cpu) depending on the useGPU compilation option
 def BConcrete_BootstrapLweGPUBufferOp : BConcrete_Op<"bootstrap_lwe_gpu_buffer"> {
     let arguments = (ins
         1DTensorOf<[I64]>:$input_ciphertext,
@@ -166,19 +164,10 @@ def BConcrete_BootstrapLweGPUBufferOp : BConcrete_Op<"bootstrap_lwe_gpu_buffer">
         I32:$polySize,
         I32:$level,
         I32:$baseLog,
-        LLVM_PointerTo<I64>:$bsk
+        I32:$glweDimension,
+        I32:$outPrecision
     );
     let results = (outs 1DTensorOf<[I64]>:$result);
-}
-
-def BConcrete_MoveBskToGPUOp : BConcrete_Op<"move_bsk_to_gpu"> {
-    let arguments = (ins);
-    let results = (outs LLVM_PointerTo<I64>:$bsk);
-}
-
-def BConcrete_FreeBskFromGPUOp : BConcrete_Op<"free_bsk_from_gpu"> {
-    let arguments = (ins LLVM_PointerTo<I64>:$bsk);
-    let results = (outs);
 }
 
 #endif

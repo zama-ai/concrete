@@ -93,14 +93,4 @@ def Concrete_Context : Concrete_Type<"Context"> {
     }];
 }
 
-def Concrete_GPUBsk : Concrete_Type<"GPUBsk"> {
-    let mnemonic = "gpu_bsk";
-
-    let summary = "A bsk in GPU";
-
-    let description = [{
-       A bootstrapping key in GPU memory
-    }];
-}
-
 #endif

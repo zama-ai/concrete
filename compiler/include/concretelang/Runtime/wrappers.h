@@ -10,6 +10,21 @@
 
 extern "C" {
 
+/// \brief Expands the input LUT
+///
+/// It duplicates values as needed to fill mega cases, taking care of the
+/// encoding and the half mega case shift in the process as well. All sizes
+/// should be powers of 2.
+///
+/// \param output where to write the expanded LUT
+/// \param output_size
+/// \param out_MESSAGE_BITS number of bits of message to be used
+/// \param lut original LUT
+/// \param lut_size
+void encode_and_expand_lut(uint64_t *output, size_t output_size,
+                           size_t out_MESSAGE_BITS, const uint64_t *lut,
+                           size_t lut_size);
+
 void memref_expand_lut_in_trivial_glwe_ct_u64(
     uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
     uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
@@ -58,15 +73,20 @@ void memref_bootstrap_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
     uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
-    uint64_t ct0_stride, uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
-    uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
+    uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
     mlir::concretelang::RuntimeContext *context);
+
 void *memref_bootstrap_async_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
     uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
-    uint64_t ct0_stride, uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
-    uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
+    uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
     mlir::concretelang::RuntimeContext *context);
 
 void memref_await_future(uint64_t *out_allocated, uint64_t *out_aligned,
@@ -131,7 +151,9 @@ void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
 /// \param poly_size polynomial size
 /// \param level level
 /// \param base_log base log
-/// \param bsk pointer to bsk on GPU
+/// \param glwe_dim
+/// \param precision
+/// \param context
 void memref_bootstrap_lwe_cuda_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
@@ -139,7 +161,8 @@ void memref_bootstrap_lwe_cuda_u64(
     uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
     uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
     uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
-    uint32_t base_log, void *bsk);
+    uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
+    mlir::concretelang::RuntimeContext *context);
 
 /// \brief Copy ciphertext from CPU to GPU using a single stream.
 ///
@@ -174,13 +197,19 @@ void move_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
 
 /// \brief Copy bootstrapping key from CPU to GPU using a single stream.
 ///
-/// It handles memory allocation on GPU.
+/// It handles memory allocation on GPU, as well as conversion to the Fourier
+/// domain.
 ///
 /// \param context
+/// \param input_lwe_dim
+/// \param poly_size
+/// \param level
+/// \param glwe_dim
 /// \param gpu_idx index of the GPU to use
 /// \return void*  pointer to the GPU bsk
 void *move_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
-                      uint32_t gpu_idx);
+                      uint32_t input_lwe_dim, uint32_t poly_size,
+                      uint32_t level, uint32_t glwe_dim, uint32_t gpu_idx);
 
 /// \brief Free gpu memory.
 ///

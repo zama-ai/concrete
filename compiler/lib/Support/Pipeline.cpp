@@ -240,25 +240,15 @@ optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-transformsConcreteToGPU(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                        std::function<bool(mlir::Pass *)> enablePass) {
-  mlir::PassManager pm(&context);
-  pipelinePrinting("ConcreteToGPU", pm, context);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertConcreteToGPUPass(), enablePass);
-  return pm.run(module.getOperation());
-}
-
-mlir::LogicalResult
 lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass,
-                         bool parallelizeLoops) {
+                         bool parallelizeLoops, bool useGPU) {
   mlir::PassManager pm(&context);
   pipelinePrinting("ConcreteToBConcrete", pm, context);
 
   std::unique_ptr<Pass> conversionPass =
-      mlir::concretelang::createConvertConcreteToBConcretePass(
-          parallelizeLoops);
+      mlir::concretelang::createConvertConcreteToBConcretePass(parallelizeLoops,
+                                                               useGPU);
 
   bool passEnabled = enablePass(conversionPass.get());
 

@@ -152,15 +152,13 @@ struct BootstrapGLWEOpPattern
     auto newInputTy = converter.glweIntraPBSType(inputTy);
     auto outputTy = bsOp.result().getType().cast<TFHE::GLWECipherTextType>();
     auto newOutputTy = converter.convertType(outputTy);
-    auto tableTy =
-        bsOp.lookup_table().getType().cast<TFHE::GLWECipherTextType>();
-    auto newTableTy = converter.glweLookupTableType(tableTy);
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         bsOp, newOutputTy, bsOp.ciphertext(), bsOp.lookup_table(),
-        cryptoParameters.brLevel, cryptoParameters.brLogBase);
+        cryptoParameters.nSmall, cryptoParameters.getPolynomialSize(),
+        cryptoParameters.brLevel, cryptoParameters.brLogBase,
+        cryptoParameters.glweDimension);
     rewriter.startRootUpdate(newOp);
     newOp.ciphertext().setType(newInputTy);
-    newOp.lookup_table().setType(newTableTy);
     rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
@@ -210,49 +208,6 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
 private:
   TFHEGlobalParametrizationTypeConverter &converter;
   mlir::concretelang::V0Parameter &cryptoParameters;
-};
-
-/// This rewrite pattern transforms any instance of `TFHE.glwe_from_table` by
-/// parametrize GLWE return type and pad the table if the precision has been
-/// changed.
-///
-/// Example:
-///
-/// ```mlir
-/// %lut = arith.constant dense<[0, 1, 2, 3]> : tensor<4xi64>
-/// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<4xi64>) ->
-/// !TFHE.glwe<{_,_,_}{2}>
-/// ```
-///
-/// becomes:
-///
-/// ```mlir
-/// %lut = arith.constant dense<[0, 1, 2, 3, 0, 1, 2, 3]> : tensor<8xi64>
-/// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<8xi64>) ->
-/// !TFHE.glwe<{_,_,_}{3}>
-/// ```
-struct GLWEFromTablePattern
-    : public mlir::OpRewritePattern<TFHE::GLWEFromTableOp> {
-  GLWEFromTablePattern(mlir::MLIRContext *context,
-                       TFHEGlobalParametrizationTypeConverter &converter,
-                       mlir::PatternBenefit benefit =
-                           mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<TFHE::GLWEFromTableOp>(context, benefit),
-        converter(converter) {}
-
-  mlir::LogicalResult
-  matchAndRewrite(TFHE::GLWEFromTableOp glweOp,
-                  mlir::PatternRewriter &rewriter) const override {
-    auto outputTy = glweOp.result().getType().cast<TFHE::GLWECipherTextType>();
-    auto newOutputTy = converter.glweLookupTableType(outputTy);
-    auto tableOp = glweOp.table();
-    rewriter.replaceOpWithNewOp<TFHE::GLWEFromTableOp>(glweOp, newOutputTy,
-                                                       tableOp);
-    return mlir::success();
-  };
-
-private:
-  TFHEGlobalParametrizationTypeConverter &converter;
 };
 
 template <typename Op>
@@ -316,13 +271,6 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
         patterns, converter);
 
     // Parametrize keyswitch bootstrap
-    patterns.add<GLWEFromTablePattern>(&getContext(), converter);
-    target.addDynamicallyLegalOp<TFHE::GLWEFromTableOp>(
-        [&](TFHE::GLWEFromTableOp op) {
-          return !op.getType()
-                      .cast<TFHE::GLWECipherTextType>()
-                      .hasUnparametrizedParameters();
-        });
     target.addLegalOp<mlir::arith::ConstantOp>();
     patterns.add<KeySwitchGLWEOpPattern>(&getContext(), converter,
                                          cryptoParameters);

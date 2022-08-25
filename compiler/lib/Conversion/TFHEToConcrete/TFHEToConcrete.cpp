@@ -66,25 +66,6 @@ public:
 
 namespace {
 
-struct GLWEFromTableOpPattern
-    : public mlir::OpRewritePattern<TFHE::GLWEFromTableOp> {
-  GLWEFromTableOpPattern(mlir::MLIRContext *context,
-                         mlir::PatternBenefit benefit = 1)
-      : ::mlir::OpRewritePattern<TFHE::GLWEFromTableOp>(context, benefit) {}
-
-  ::mlir::LogicalResult
-  matchAndRewrite(TFHE::GLWEFromTableOp glweOp,
-                  mlir::PatternRewriter &rewriter) const override {
-    auto oldTy = glweOp.getType().cast<TFHE::GLWECipherTextType>();
-    auto newTy = rewriter.getType<Concrete::GlweCiphertextType>(
-        oldTy.getDimension(), oldTy.getPolynomialSize(), oldTy.getP());
-
-    rewriter.replaceOpWithNewOp<Concrete::GlweFromTable>(glweOp, newTy,
-                                                         glweOp.table());
-    return ::mlir::success();
-  };
-};
-
 struct BootstrapGLWEOpPattern
     : public mlir::OpRewritePattern<TFHE::BootstrapGLWEOp> {
   BootstrapGLWEOpPattern(mlir::MLIRContext *context,
@@ -98,21 +79,31 @@ struct BootstrapGLWEOpPattern
                   mlir::PatternRewriter &rewriter) const override {
     mlir::Type resultType = converter.convertType(bsOp.getType());
 
+    auto precision = bsOp.getType().cast<TFHE::GLWECipherTextType>().getP();
+
+    mlir::Value inputLweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        bsOp.getLoc(), bsOp.inputLweDim(), 32);
+    mlir::Value polySizeCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        bsOp.getLoc(), bsOp.polySize(), 32);
+    mlir::Value levelCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        bsOp.getLoc(), bsOp.level(), 32);
+    mlir::Value baseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        bsOp.getLoc(), bsOp.baseLog(), 32);
+    mlir::Value glweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        bsOp.getLoc(), bsOp.glweDimension(), 32);
+    mlir::Value precisionCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        bsOp.getLoc(), precision, 32);
+
     auto newOp = rewriter.replaceOpWithNewOp<Concrete::BootstrapLweOp>(
-        bsOp, resultType, bsOp.ciphertext(), bsOp.lookup_table(), bsOp.level(),
-        bsOp.baseLog());
+        bsOp, resultType, bsOp.ciphertext(), bsOp.lookup_table(),
+        inputLweDimCst, polySizeCst, levelCst, baseLogCst, glweDimCst,
+        precisionCst);
 
     rewriter.startRootUpdate(newOp);
-
     newOp.input_ciphertext().setType(
         converter.convertType(bsOp.ciphertext().getType()));
-
-    auto oldTy = bsOp.lookup_table().getType().cast<TFHE::GLWECipherTextType>();
-    auto newTy = rewriter.getType<Concrete::GlweCiphertextType>(
-        oldTy.getDimension(), oldTy.getPolynomialSize(), oldTy.getP());
-    newOp.accumulator().setType(newTy);
-
     rewriter.finalizeRootUpdate(newOp);
+
     return ::mlir::success();
   }
 
@@ -170,6 +161,9 @@ void TFHEToConcretePass::runOnOperation() {
   // Make sure that no ops from `TFHE` remain after the lowering
   target.addIllegalDialect<mlir::concretelang::TFHE::TFHEDialect>();
 
+  // Legalize arith.constant operations introduced by some patterns
+  target.addLegalOp<mlir::arith::ConstantOp>();
+
   // Make sure that no ops `linalg.generic` that have illegal types
   target.addDynamicallyLegalOp<mlir::linalg::GenericOp,
                                mlir::tensor::GenerateOp, mlir::scf::ForOp>(
@@ -201,7 +195,6 @@ void TFHEToConcretePass::runOnOperation() {
   patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
       mlir::concretelang::TFHE::ZeroTensorGLWEOp,
       mlir::concretelang::Concrete::ZeroTensorLWEOp>>(&getContext(), converter);
-  patterns.add<GLWEFromTableOpPattern>(&getContext());
   patterns.add<BootstrapGLWEOpPattern>(&getContext(), converter);
   patterns.add<WopPBSGLWEOpPattern>(&getContext(), converter);
   target.addDynamicallyLegalOp<Concrete::BootstrapLweOp>(

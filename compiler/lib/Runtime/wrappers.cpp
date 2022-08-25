@@ -23,9 +23,6 @@ DefaultEngine *get_levelled_engine() {
   return levelled_engine;
 }
 
-// This helper function expands the input LUT into output, duplicating values as
-// needed to fill mega cases, taking care of the encoding and the half mega case
-// shift in the process as well. All sizes should be powers of 2.
 void encode_and_expand_lut(uint64_t *output, size_t output_size,
                            size_t out_MESSAGE_BITS, const uint64_t *lut,
                            size_t lut_size) {
@@ -65,17 +62,15 @@ void encode_and_expand_lut(uint64_t *output, size_t output_size,
 typedef struct double2 {
   double x, y;
 } double2;
-
+// From concrete-cuda
 #include "bootstrap.h"
 #include "device.h"
 
-void memref_keyswitch_lwe_cuda_u64(uint64_t *out_allocated,
-                                   uint64_t *out_aligned, uint64_t out_offset,
-                                   uint64_t out_size, uint64_t out_stride,
-                                   uint64_t *ct0_allocated,
-                                   uint64_t *ct0_aligned, uint64_t ct0_offset,
-                                   uint64_t ct0_size, uint64_t ct0_stride,
-                                   void *ksk_gpu) {
+void memref_keyswitch_lwe_cuda_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, mlir::concretelang::RuntimeContext *context) {
   // TODO: GPU implementation
 }
 
@@ -83,25 +78,37 @@ void *move_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
                      uint64_t ct_offset, uint64_t ct_size, uint64_t ct_stride,
                      uint32_t gpu_idx) {
   void *stream = cuda_create_stream(gpu_idx);
-  void *ct_gpu = cuda_malloc(ct_size * sizeof(uint64_t), gpu_idx);
-  cuda_memcpy_async_to_gpu(ct_gpu, ct_aligned + ct_offset,
-                           ct_size * sizeof(uint64_t), stream, gpu_idx);
+  size_t buf_size = ct_size * sizeof(uint64_t);
+  void *ct_gpu = cuda_malloc(buf_size, gpu_idx);
+  cuda_memcpy_async_to_gpu(ct_gpu, ct_aligned + ct_offset, buf_size, stream,
+                           gpu_idx);
   cuda_synchronize_device(gpu_idx);
   cuda_destroy_stream(stream, gpu_idx);
   return ct_gpu;
 }
 
 void *move_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
-                      uint32_t gpu_idx = 0) {
+                      uint32_t input_lwe_dim, uint32_t poly_size,
+                      uint32_t level, uint32_t glwe_dim, uint32_t gpu_idx = 0) {
   void *stream = cuda_create_stream(gpu_idx);
-  LweBootstrapKey_u64 *bsk = get_bootstrap_key_u64(context);
-  BufferView bskBuffer = bootstrap_buffer_lwe_u64(bsk);
-  void *bsk_gpu = cuda_malloc(bskBuffer.length, gpu_idx);
-  cuda_memcpy_async_to_gpu(bsk_gpu, (void *)bskBuffer.pointer, bskBuffer.length,
-                           stream, gpu_idx);
+  LweBootstrapKey64 *bsk = get_bootstrap_key_u64(context);
+  size_t bsk_buffer_len =
+      input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) * poly_size * level;
+  size_t bsk_buffer_size = bsk_buffer_len * sizeof(uint64_t);
+  uint64_t *bsk_buffer =
+      (uint64_t *)aligned_alloc(U64_ALIGNMENT, bsk_buffer_size);
+  size_t fbsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
+  void *fbsk_gpu = cuda_malloc(fbsk_gpu_buffer_size, gpu_idx);
+  CAPI_ASSERT_ERROR(
+      default_engine_discard_convert_lwe_bootstrap_key_to_lwe_bootstrap_key_mut_view_u64_raw_ptr_buffers(
+          get_levelled_engine(), bsk, bsk_buffer));
+  cuda_initialize_twiddles(poly_size, gpu_idx);
+  cuda_convert_lwe_bootstrap_key_64(fbsk_gpu, bsk_buffer, stream, gpu_idx,
+                                    input_lwe_dim, glwe_dim, level, poly_size);
   cuda_synchronize_device(gpu_idx);
   cuda_destroy_stream(stream, gpu_idx);
-  return bsk_gpu;
+  free(bsk_buffer);
+  return fbsk_gpu;
 }
 
 void move_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
@@ -125,44 +132,58 @@ void memref_bootstrap_lwe_cuda_u64(
     uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
     uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
     uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
-    uint32_t base_log, void *bsk_gpu) {
-
+    uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
+    mlir::concretelang::RuntimeContext *context) {
+  // we currently just use the first GPU, but this should be decided
+  // dynamically, or during compilation, in the future
   uint32_t gpu_idx = 0;
   void *stream = cuda_create_stream(gpu_idx);
-
+  // move bsk to gpu
+  void *fbsk_gpu = move_bsk_to_gpu(context, input_lwe_dim, poly_size, level,
+                                   glwe_dim, gpu_idx);
   // move input ciphertext into gpu
   void *ct0_gpu = move_ct_to_gpu(ct0_allocated, ct0_aligned, ct0_offset,
                                  ct0_size, ct0_stride, gpu_idx);
   // move output ciphertext into gpu
   void *out_gpu = move_ct_to_gpu(out_allocated, out_aligned, out_offset,
                                  out_size, out_stride, gpu_idx);
-  // hardcoded values
+  // construct LUT GLWE ciphertext
+  uint64_t glwe_ct_len = poly_size * (glwe_dim + 1);
+  uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
+  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size);
+  std::vector<uint64_t> expanded_tabulated_function_array(poly_size);
+  encode_and_expand_lut(expanded_tabulated_function_array.data(), poly_size,
+                        precision, tlu_aligned + tlu_offset, tlu_size);
+  CAPI_ASSERT_ERROR(
+      default_engine_discard_trivially_encrypt_glwe_ciphertext_u64_raw_ptr_buffers(
+          get_levelled_engine(), glwe_ct, glwe_ct_len,
+          expanded_tabulated_function_array.data(), poly_size));
+  // move test vector into gpu
+  void *test_vector_gpu =
+      cuda_malloc(poly_size * (glwe_dim + 1) * sizeof(uint64_t), gpu_idx);
+  cuda_memcpy_async_to_gpu(test_vector_gpu, (void *)glwe_ct, glwe_ct_size,
+                           stream, gpu_idx);
+  // free LUT ciphertext (CPU)
+  free(glwe_ct);
+  // move test vector indexes into gpu
   uint32_t num_samples = 1, num_test_vectors = 1, lwe_idx = 0;
   void *test_vector_idxes = malloc(num_samples * sizeof(uint32_t));
   ((uint32_t *)test_vector_idxes)[0] = 0;
-  void *test_vector = malloc(poly_size * sizeof(uint64_t));
-  for (size_t i = 0; i < poly_size; i++) {
-    ((uint64_t *)test_vector)[i] = (uint64_t)1 << 61;
-  }
-  // move test vector into gpu
-  void *test_vector_gpu = cuda_malloc(poly_size * sizeof(uint64_t), gpu_idx);
-  cuda_memcpy_async_to_gpu(test_vector_gpu, test_vector,
-                           poly_size * sizeof(uint64_t), stream, gpu_idx);
-  // move test vector indexes into gpu
   void *test_vector_idxes_gpu =
       cuda_malloc(num_samples * sizeof(uint32_t), gpu_idx);
   cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, test_vector_idxes,
                            num_samples * sizeof(uint32_t), stream, gpu_idx);
   // run gpu bootstrap
   cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
-      stream, out_gpu, test_vector_gpu, test_vector_idxes_gpu, ct0_gpu, bsk_gpu,
-      input_lwe_dim, poly_size, base_log, level, num_samples, num_test_vectors,
-      lwe_idx, cuda_get_max_shared_memory(gpu_idx));
+      stream, out_gpu, test_vector_gpu, test_vector_idxes_gpu, ct0_gpu,
+      fbsk_gpu, input_lwe_dim, poly_size, base_log, level, num_samples,
+      num_test_vectors, lwe_idx, cuda_get_max_shared_memory(gpu_idx));
   // copy output ciphertext back to cpu
   move_ct_to_cpu(out_allocated, out_aligned, out_offset, out_size, out_stride,
                  out_gpu, out_size, gpu_idx);
   cuda_synchronize_device(gpu_idx);
   // free memory that we allocated on gpu
+  cuda_drop(fbsk_gpu, gpu_idx);
   cuda_drop(ct0_gpu, gpu_idx);
   cuda_drop(out_gpu, gpu_idx);
   cuda_drop(test_vector_gpu, gpu_idx);
@@ -271,14 +292,31 @@ void memref_bootstrap_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
     uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
-    uint64_t ct0_stride, uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
-    uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
+    uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
     mlir::concretelang::RuntimeContext *context) {
+
+  uint64_t glwe_ct_size = poly_size * (glwe_dim + 1);
+  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
+
+  std::vector<uint64_t> expanded_tabulated_function_array(poly_size);
+
+  encode_and_expand_lut(expanded_tabulated_function_array.data(), poly_size,
+                        precision, tlu_aligned + tlu_offset, tlu_size);
+
+  CAPI_ASSERT_ERROR(
+      default_engine_discard_trivially_encrypt_glwe_ciphertext_u64_raw_ptr_buffers(
+          get_levelled_engine(), glwe_ct, glwe_ct_size,
+          expanded_tabulated_function_array.data(), poly_size));
+
   CAPI_ASSERT_ERROR(
       fftw_engine_lwe_ciphertext_discarding_bootstrap_u64_raw_ptr_buffers(
           get_fftw_engine(context), get_engine(context),
           get_fftw_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
-          ct0_aligned + ct0_offset, glwe_ct_aligned + glwe_ct_offset));
+          ct0_aligned + ct0_offset, glwe_ct));
+  free(glwe_ct);
 }
 
 uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product) {

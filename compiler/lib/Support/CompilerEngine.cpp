@@ -317,14 +317,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Optimizing Concrete failed");
   }
 
-  // Transforming into GPU
-  if (this->compilerOptions.useGPU &&
-      mlir::concretelang::pipeline::transformsConcreteToGPU(mlirContext, module,
-                                                            this->enablePass)
-          .failed()) {
-    return errorDiag("Transforming Concrete to GPU failed");
-  }
-
   if (target == Target::CONCRETE)
     return std::move(res);
 
@@ -363,7 +355,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Concrete -> BConcrete
   if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
-          mlirContext, module, this->enablePass, loopParallelize)
+          mlirContext, module, this->enablePass, loopParallelize,
+          options.useGPU)
           .failed()) {
     return StreamStringError(
         "Lowering from Concrete to Bufferized Concrete failed");

@@ -92,7 +92,6 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
   auto contextType =
       mlir::concretelang::Concrete::ContextType::get(rewriter.getContext());
   auto i32Type = rewriter.getI32Type();
-  auto i64PointerType = mlir::LLVM::LLVMPointerType::get(rewriter.getI64Type());
 
   mlir::FunctionType funcType;
 
@@ -114,17 +113,21 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(
         rewriter.getContext(), {memref1DType, memref1DType, contextType}, {});
   } else if (funcName == memref_bootstrap_lwe_u64) {
-    funcType = mlir::FunctionType::get(
-        rewriter.getContext(),
-        {memref1DType, memref1DType, memref1DType, contextType}, {});
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref1DType, memref1DType,
+                                        memref1DType, i32Type, i32Type, i32Type,
+                                        i32Type, i32Type, i32Type, contextType},
+                                       {});
   } else if (funcName == memref_keyswitch_async_lwe_u64) {
     funcType = mlir::FunctionType::get(
         rewriter.getContext(), {memref1DType, memref1DType, contextType},
         {futureType});
   } else if (funcName == memref_bootstrap_async_lwe_u64) {
-    funcType = mlir::FunctionType::get(
-        rewriter.getContext(),
-        {memref1DType, memref1DType, memref1DType, contextType}, {futureType});
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref1DType, memref1DType,
+                                        memref1DType, i32Type, i32Type, i32Type,
+                                        i32Type, i32Type, i32Type, contextType},
+                                       {futureType});
   } else if (funcName == memref_await_future) {
     funcType = mlir::FunctionType::get(
         rewriter.getContext(),
@@ -133,7 +136,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
                                         memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i64PointerType},
+                                        i32Type, i32Type, i32Type, contextType},
                                        {});
   } else if (funcName == memref_expand_lut_in_trivial_glwe_ct_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
@@ -239,90 +242,6 @@ struct BufferizableWithCallOpInterface
                                         operands);
 
     replaceOpWithBufferizedValues(rewriter, op, *outMemref);
-
-    return success();
-  }
-};
-
-struct BufferizableGlweFromTableOpInterface
-    : public BufferizableOpInterface::ExternalModel<
-          BufferizableGlweFromTableOpInterface, BConcrete::FillGlweFromTable> {
-  bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
-                              const AnalysisState &state) const {
-    return true;
-  }
-
-  bool bufferizesToMemoryWrite(Operation *op, OpOperand &opOperand,
-                               const AnalysisState &state) const {
-    return false;
-  }
-
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
-                                            const AnalysisState &state) const {
-    return {};
-  }
-
-  BufferRelation bufferRelation(Operation *op, OpResult opResult,
-                                const AnalysisState &state) const {
-    return BufferRelation::None;
-  }
-
-  /// Bufferize GlweFromTable
-  /// ```
-  /// "BConcrete.fill_glwe_table"(%glwe, %lut) {glweDimension=1,
-  /// polynomialSize=2048, outPrecision=3} :
-  ///   (tensor<4096xi64>, tensor<32xi64>) -> ()
-  /// ```
-  ///
-  /// to
-  ///
-  /// ```
-  /// %glweDim = arith.constant 1 : i32
-  /// %polySize = arith.constant 2048 : i32
-  /// %outPrecision = arith.constant 3 : i32
-  /// %glwe_ = memref.cast %glwe : memref<4096xi64> to memref<?xi64>
-  /// %lut_ = memref.cast %lut : memref<32xi64> to memref<?xi64>
-  /// call @expand_lut_in_trivial_glwe_ct(%glwe, %polySize, %glweDim,
-  /// %outPrecision, %lut_) :
-  ///   (tensor<?xi64>, i32, i32, tensor<?xi64>) -> ()
-  /// ```
-  LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
-                          const BufferizationOptions &options) const {
-
-    auto loc = op->getLoc();
-    auto castOp = cast<BConcrete::FillGlweFromTable>(op);
-
-    auto glweOp =
-        getCastedMemRef(rewriter, loc,
-                        bufferization::getBuffer(
-                            rewriter, castOp->getOpOperand(0).get(), options));
-    auto lutOp =
-        getCastedMemRef(rewriter, loc,
-                        bufferization::getBuffer(
-                            rewriter, castOp->getOpOperand(1).get(), options));
-
-    auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op->getLoc(), rewriter.getI32IntegerAttr(castOp.polynomialSize()));
-    auto glweDimensionOp = rewriter.create<mlir::arith::ConstantOp>(
-        op->getLoc(), rewriter.getI32IntegerAttr(castOp.glweDimension()));
-    auto outPrecisionOp = rewriter.create<mlir::arith::ConstantOp>(
-        op->getLoc(), rewriter.getI32IntegerAttr(castOp.outPrecision()));
-
-    mlir::SmallVector<mlir::Value> operands{glweOp, polySizeOp, glweDimensionOp,
-                                            outPrecisionOp, lutOp};
-
-    // Insert forward declaration of the function
-    if (insertForwardDeclarationOfTheCAPI(
-            op, rewriter, memref_expand_lut_in_trivial_glwe_ct_u64)
-            .failed()) {
-      return mlir::failure();
-    }
-
-    rewriter.create<mlir::func::CallOp>(
-        loc, memref_expand_lut_in_trivial_glwe_ct_u64, mlir::TypeRange{},
-        operands);
-
-    replaceOpWithBufferizedValues(rewriter, op, {});
 
     return success();
   }
@@ -565,7 +484,7 @@ void mlir::concretelang::BConcrete::
         *ctx);
     BConcrete::BootstrapLweGPUBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::BootstrapLweGPUBufferOp,
-                                        memref_bootstrap_lwe_cuda_u64, false>>(
+                                        memref_bootstrap_lwe_cuda_u64, true>>(
         *ctx);
     BConcrete::KeySwitchLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::KeySwitchLweBufferOp,
@@ -587,7 +506,5 @@ void mlir::concretelang::BConcrete::
     BConcrete::AwaitFutureOp::attachInterface<
         BufferizableWithSyncCallOpInterface<BConcrete::AwaitFutureOp,
                                             memref_await_future>>(*ctx);
-    BConcrete::FillGlweFromTable::attachInterface<
-        BufferizableGlweFromTableOpInterface>(*ctx);
   });
 }

@@ -82,12 +82,10 @@ public:
 /// becomes:
 ///
 /// ```mlir
-///  %glwe_lut = "TFHE.glwe_from_table"(%lut)
-///                : (tensor<4xi64>) -> !TFHE.glwe<{_,_,_}{2}>
 ///  %glwe_ks = "TFHE.keyswitch_glwe"(%ct)
 ///               {baseLog = -1 : i32, level = -1 : i32}
 ///               : (!TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
-///  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
+///  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %lut)
 ///         {baseLog = -1 : i32, glweDimension = -1 : i32, level = -1 : i32,
 ///           polynomialSize = -1 : i32}
 ///         : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) ->
@@ -107,10 +105,6 @@ struct ApplyLookupTableEintOpToKeyswitchBootstrapPattern
     auto inputTy = converter.convertType(lutOp.a().getType())
                        .cast<TFHE::GLWECipherTextType>();
     auto resultTy = converter.convertType(lutOp.getType());
-    //  %glwe_lut = "TFHE.glwe_from_table"(%lut)
-    auto glweLut = rewriter.create<TFHE::GLWEFromTableOp>(
-        lutOp.getLoc(), resultTy, lutOp.lut());
-    //  %glwe_ks = "TFHE.keyswitch_glwe"(%ct)
     auto glweKs = rewriter.create<TFHE::KeySwitchGLWEOp>(
         lutOp.getLoc(), inputTy, lutOp.a(), -1, -1);
     mlir::concretelang::convertOperandAndResultTypes(
@@ -118,8 +112,8 @@ struct ApplyLookupTableEintOpToKeyswitchBootstrapPattern
           return converter.convertType(t);
         });
     //  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
-    rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(lutOp, resultTy, glweKs,
-                                                       glweLut, -1, -1);
+    rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
+        lutOp, resultTy, glweKs, lutOp.lut(), -1, -1, -1, -1, -1);
     return ::mlir::success();
   };
 };

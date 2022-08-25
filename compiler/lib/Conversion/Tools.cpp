@@ -42,6 +42,9 @@ mlir::Value getContextArgument(mlir::Operation *op) {
   mlir::Block *block = op->getBlock();
   while (block != nullptr) {
     if (llvm::isa<mlir::func::FuncOp>(block->getParentOp())) {
+      block = &mlir::cast<mlir::func::FuncOp>(block->getParentOp())
+                   .getBody()
+                   .front();
 
       auto context = std::find_if(
           block->getArguments().rbegin(), block->getArguments().rend(),
