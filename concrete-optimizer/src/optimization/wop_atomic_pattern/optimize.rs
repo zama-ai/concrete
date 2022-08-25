@@ -1,21 +1,18 @@
+use super::crt_decomposition;
 use crate::computing_cost::complexity::Complexity;
-use crate::computing_cost::operators::atomic_pattern as complexity_atomic_pattern;
 use crate::computing_cost::operators::cmux;
-use crate::computing_cost::operators::keyswitch_lwe::KeySwitchLWEComplexity;
-use crate::computing_cost::operators::pbs::PbsComplexity;
 use crate::dag::operator::Precision;
 use crate::noise_estimator::error::{
     error_probability_of_sigma_scale, safe_variance_bound_1bit_1padbit,
     sigma_scale_of_error_probability,
 };
-
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::noise_estimator::operators::wop_atomic_pattern::estimate_packing_private_keyswitch;
-
 use crate::optimization::atomic_pattern;
 use crate::optimization::atomic_pattern::{
     cutted_blind_rotate, pareto_keyswitch, ComplexityNoise, OptimizationDecompositionsConsts,
 };
+use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::wop_atomic_pattern::pareto::{
     BR_CIRCUIT_BOOTSTRAP_PARETO_DECOMP, BR_PARETO_DECOMP, KS_CIRCUIT_BOOTSTRAP_PARETO_DECOMP,
     KS_PARETO_DECOMP,
@@ -25,12 +22,8 @@ use crate::parameters::{
 };
 use crate::security;
 use crate::utils::square;
-
-use complexity_atomic_pattern::DEFAULT as DEFAULT_COMPLEXITY;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
-
-use super::crt_decomposition;
 
 pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64) -> f64 {
     let sigma = Variance(variance_bound).get_standard_dev() * kappa;
@@ -131,7 +124,7 @@ fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
     precision: u64,
     n_inputs: u64,
 ) -> Option<NoiseCostByMicroParam> {
-    let security_level = consts.security_level;
+    let security_level = consts.config.security_level;
 
     let variance_coeff = square(consts.noise_factor) / 2.0;
     let complexity_coeff = (n_inputs * (2 * precision - 1)) as f64;
@@ -204,9 +197,10 @@ fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
                 log2_base: pp_ks_decomposition_parameter.log2_base,
             },
         };
-        let complexity_ppks = DEFAULT_COMPLEXITY
-            .ks_lwe
-            .complexity(ppks_parameter_complexity, ciphertext_modulus_log);
+        let complexity_ppks = consts
+            .config
+            .complexity_model
+            .ks_complexity(ppks_parameter_complexity, ciphertext_modulus_log);
         variance_cost_pp_switching[br.index] = (variance_private_packing_ks, complexity_ppks);
     }
 
@@ -227,7 +221,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
     precision: u64,
     n_inputs: u64, // Tau
 ) {
-    let ciphertext_modulus_log = consts.ciphertext_modulus_log;
+    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
     let global_precision = n_inputs * precision;
     let safe_variance_bound = consts.safe_variance;
     let log_norm = consts.noise_factor.log2();
@@ -340,9 +334,10 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
             }
 
             // Hybrid packing
-            let complexity_1_cmux_hp = DEFAULT_COMPLEXITY
-                .pbs
-                .complexity(cmux_tree_blind_rotate_parameters, ciphertext_modulus_log); // TODO: missing fft transform
+            let complexity_1_cmux_hp = consts
+                .config
+                .complexity_model
+                .pbs_complexity(cmux_tree_blind_rotate_parameters, ciphertext_modulus_log); // TODO: missing fft transform
 
             // Hybrid packing (Do we have 1 or 2 groups)
             let log2_polynomial_size = pbs_parameters.output_glwe_params.log2_polynomial_size;
@@ -354,7 +349,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
             };
             let complexity_cmux_tree = cmux_group_count as f64 * complexity_1_cmux_hp;
 
-            let cmux_complexity = cmux::DEFAULT;
+            let cmux_complexity = cmux::SimpleWithFactors::default();
 
             let f_glwe_poly_size = glwe_params.polynomial_size() as f64;
 
@@ -458,16 +453,13 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
 fn optimize_raw<W: UnsignedInteger>(
     max_word_precision: u64, // max precision of a word
     log_norm: f64,           // ?? norm2 of noise multisum, complexity of multisum is neglected
-    security_level: u64,
-    maximum_acceptable_error_probability: f64,
-    glwe_log_polynomial_sizes: &[u64],
-    glwe_dimensions: &[u64],
-    internal_lwe_dimensions: &[u64],
+    config: Config,
+    search_space: &SearchSpace,
     n_functions: u64, // Many functions at the same time, stay at 1 for start
     n_inputs: u64,    // Tau (nb blocks)
 ) -> OptimizationState {
-    assert!(0.0 < maximum_acceptable_error_probability);
-    assert!(maximum_acceptable_error_probability < 1.0);
+    assert!(0.0 < config.maximum_acceptable_error_probability);
+    assert!(config.maximum_acceptable_error_probability < 1.0);
 
     let ciphertext_modulus_log = W::BITS as u64;
 
@@ -476,31 +468,31 @@ fn optimize_raw<W: UnsignedInteger>(
     // Bound for first bit extract in BitExtract (dominate others)
     let safe_variance_bound = safe_variance_bound_1bit_1padbit(
         ciphertext_modulus_log,
-        maximum_acceptable_error_probability,
+        config.maximum_acceptable_error_probability,
     );
-    let kappa: f64 = sigma_scale_of_error_probability(maximum_acceptable_error_probability);
+    let kappa: f64 = sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
     let mut state = OptimizationState {
         best_solution: None,
-        count_domain: glwe_dimensions.len()
-            * glwe_log_polynomial_sizes.len()
-            * internal_lwe_dimensions.len()
+        count_domain: search_space.glwe_dimensions.len()
+            * search_space.glwe_log_polynomial_sizes.len()
+            * search_space.internal_lwe_dimensions.len()
             * KS_PARETO_DECOMP.len()
             * BR_PARETO_DECOMP.len(),
     };
+
     let consts = OptimizationDecompositionsConsts {
+        config,
         kappa,
         sum_size: 1, // Ignored
-        security_level,
         noise_factor: log_norm.exp2(),
-        ciphertext_modulus_log,
         keyswitch_decompositions: KS_CIRCUIT_BOOTSTRAP_PARETO_DECOMP.to_vec(),
         blind_rotate_decompositions: BR_PARETO_DECOMP.to_vec(),
         safe_variance: safe_variance_bound,
     };
 
-    for &glwe_dim in glwe_dimensions {
-        for &glwe_log_poly_size in glwe_log_polynomial_sizes {
+    for &glwe_dim in &search_space.glwe_dimensions {
+        for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
             let input_lwe_dimension = glwe_dim << glwe_log_poly_size;
             // Manual experimental CUT
             if input_lwe_dimension > 1 << 13 {
@@ -512,7 +504,7 @@ fn optimize_raw<W: UnsignedInteger>(
                 glwe_dimension: glwe_dim,
             };
 
-            for &internal_dim in internal_lwe_dimensions {
+            for &internal_dim in &search_space.internal_lwe_dimensions {
                 update_state_with_best_decompositions::<W>(
                     &mut state,
                     &consts,
@@ -532,12 +524,9 @@ fn optimize_raw<W: UnsignedInteger>(
 #[allow(clippy::too_many_lines)]
 pub fn optimize_one<W: UnsignedInteger>(
     precision: u64,
-    security_level: u64,
+    config: Config,
     log_norm: f64,
-    maximum_acceptable_error_probability: f64,
-    glwe_log_polynomial_sizes: &[u64],
-    glwe_dimensions: &[u64],
-    internal_lwe_dimensions: &[u64],
+    search_space: &SearchSpace,
 ) -> OptimizationState {
     let coprimes = crt_decomposition::default_coprimes(precision as Precision);
     let partitionning = crt_decomposition::precisions_from_coprimes(&coprimes);
@@ -547,11 +536,8 @@ pub fn optimize_one<W: UnsignedInteger>(
     let mut state = optimize_raw::<W>(
         max_word_precision,
         log_norm,
-        security_level,
-        maximum_acceptable_error_probability,
-        glwe_log_polynomial_sizes,
-        glwe_dimensions,
-        internal_lwe_dimensions,
+        config,
+        search_space,
         n_functions,
         nb_words, // Tau
     );
@@ -566,23 +552,12 @@ pub fn optimize_one<W: UnsignedInteger>(
 pub fn optimize_one_compat<W: UnsignedInteger>(
     _sum_size: u64,
     precision: u64,
-    security_level: u64,
+    config: Config,
     noise_factor: f64,
-    maximum_acceptable_error_probability: f64,
-    glwe_log_polynomial_sizes: &[u64],
-    glwe_dimensions: &[u64],
-    internal_lwe_dimensions: &[u64],
+    search_space: &SearchSpace,
 ) -> atomic_pattern::OptimizationState {
     let log_norm = noise_factor.log2();
-    let result = optimize_one::<W>(
-        precision,
-        security_level,
-        log_norm,
-        maximum_acceptable_error_probability,
-        glwe_log_polynomial_sizes,
-        glwe_dimensions,
-        internal_lwe_dimensions,
-    );
+    let result = optimize_one::<W>(precision, config, log_norm, search_space);
     atomic_pattern::OptimizationState {
         best_solution: result.best_solution.map(Solution::into),
         count_domain: result.count_domain,

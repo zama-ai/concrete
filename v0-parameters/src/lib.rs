@@ -9,10 +9,12 @@
 #![allow(clippy::missing_errors_doc)]
 
 use clap::Parser;
+use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern::{
     self as optimize_atomic_pattern, OptimizationState,
 };
+use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 use rayon_cond::CondIterator;
 use std::io::Write;
@@ -78,13 +80,14 @@ pub struct Args {
 
 pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
     let sum_size = args.sum_size;
-    let p_error = args.p_error;
+    let maximum_acceptable_error_probability = args.p_error;
     let security_level = args.security_level;
-    let glwe_log_polynomial_sizes: Vec<_> =
-        (args.min_log_poly_size..=args.max_log_poly_size).collect();
-    let glwe_dimensions: Vec<_> = (args.min_glwe_dim..=args.max_glwe_dim).collect();
-    let internal_lwe_dimensions: Vec<_> =
-        (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect();
+
+    let search_space = SearchSpace {
+        glwe_log_polynomial_sizes: (args.min_log_poly_size..=args.max_log_poly_size).collect(),
+        glwe_dimensions: (args.min_glwe_dim..=args.max_glwe_dim).collect(),
+        internal_lwe_dimensions: (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect(),
+    };
 
     let precisions = args.min_precision..=args.max_precision;
     let manps: Vec<_> = (0..=31).collect();
@@ -92,6 +95,13 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
     // let guard = pprof::ProfilerGuard::new(100).unwrap();
 
     let precisions_iter = CondIterator::new(precisions, !args.no_parallelize);
+
+    let config = Config {
+        security_level,
+        maximum_acceptable_error_probability,
+        ciphertext_modulus_log: 64,
+        complexity_model: &CpuComplexity::default(),
+    };
 
     precisions_iter
         .map(|precision| {
@@ -104,23 +114,17 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                         optimize_wop_atomic_pattern::optimize_one_compat::<u64>(
                             sum_size,
                             precision,
-                            security_level,
+                            config,
                             noise_scale,
-                            p_error,
-                            &glwe_log_polynomial_sizes,
-                            &glwe_dimensions,
-                            &internal_lwe_dimensions,
+                            &search_space,
                         )
                     } else {
                         optimize_atomic_pattern::optimize_one::<u64>(
                             sum_size,
                             precision,
-                            security_level,
+                            config,
                             noise_scale,
-                            p_error,
-                            &glwe_log_polynomial_sizes,
-                            &glwe_dimensions,
-                            &internal_lwe_dimensions,
+                            &search_space,
                             last_solution, // 33% gains
                         )
                     };

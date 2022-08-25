@@ -1,22 +1,18 @@
-use concrete_commons::dispersion::DispersionParameter;
-use concrete_commons::numeric::UnsignedInteger;
-
+use super::analyze;
 use crate::dag::operator::{LevelledComplexity, Precision};
 use crate::dag::unparametrized;
 use crate::noise_estimator::error;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
-
 use crate::optimization::atomic_pattern::{
     pareto_blind_rotate, pareto_keyswitch, OptimizationDecompositionsConsts, OptimizationState,
     Solution,
 };
-
-use crate::optimization::config::NoiseBoundConfig;
+use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
 use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositionParameters};
 use crate::pareto;
 use crate::security::glwe::minimal_variance;
-
-use super::analyze;
+use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::numeric::UnsignedInteger;
 
 const CUTS: bool = true;
 const PARETO_CUTS: bool = true;
@@ -73,8 +69,8 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
     let mut i_current_max_ks = i_max_ks;
     let input_noise_out = minimal_variance(
         glwe_params,
-        consts.ciphertext_modulus_log,
-        consts.security_level,
+        consts.config.ciphertext_modulus_log,
+        consts.config.security_level,
     )
     .get_variance();
 
@@ -200,16 +196,13 @@ const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 #[allow(clippy::too_many_lines)]
 pub fn optimize<W: UnsignedInteger>(
     dag: &unparametrized::OperationDag,
-    security_level: u64,
-    maximum_acceptable_error_probability: f64,
-    glwe_log_polynomial_sizes: &[u64],
-    glwe_dimensions: &[u64],
-    internal_lwe_dimensions: &[u64],
+    config: Config,
+    search_space: &SearchSpace,
 ) -> OptimizationState {
     let ciphertext_modulus_log = W::BITS as u64;
     let noise_config = NoiseBoundConfig {
-        security_level,
-        maximum_acceptable_error_probability,
+        security_level: config.security_level,
+        maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
         ciphertext_modulus_log,
     };
     let dag = analyze::analyze(dag, &noise_config);
@@ -219,16 +212,16 @@ pub fn optimize<W: UnsignedInteger>(
     let safe_variance = error::safe_variance_bound_2padbits(
         min_precision as u64,
         ciphertext_modulus_log,
-        maximum_acceptable_error_probability,
+        config.maximum_acceptable_error_probability,
     );
-    let kappa = error::sigma_scale_of_error_probability(maximum_acceptable_error_probability);
+    let kappa =
+        error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
     let consts = OptimizationDecompositionsConsts {
+        config,
         kappa,
-        sum_size: 0, // superseeded by dag.complexity_cost
-        security_level,
+        sum_size: 0,            // superseeded by dag.complexity_cost
         noise_factor: f64::NAN, // superseeded by dag.lut_variance_max
-        ciphertext_modulus_log,
         keyswitch_decompositions: pareto::KS_BL
             .map(|(log2_base, level)| KsDecompositionParameters { level, log2_base })
             .to_vec(),
@@ -240,9 +233,9 @@ pub fn optimize<W: UnsignedInteger>(
 
     let mut state = OptimizationState {
         best_solution: None,
-        count_domain: glwe_dimensions.len()
-            * glwe_log_polynomial_sizes.len()
-            * internal_lwe_dimensions.len()
+        count_domain: search_space.glwe_dimensions.len()
+            * search_space.glwe_log_polynomial_sizes.len()
+            * search_space.internal_lwe_dimensions.len()
             * consts.keyswitch_decompositions.len()
             * consts.blind_rotate_decompositions.len(),
     };
@@ -257,14 +250,14 @@ pub fn optimize<W: UnsignedInteger>(
     let not_feasible =
         |noise_modulus_switching| !dag.feasible(0.0, 0.0, 0.0, noise_modulus_switching);
 
-    for &glwe_dim in glwe_dimensions {
-        for &glwe_log_poly_size in glwe_log_polynomial_sizes {
+    for &glwe_dim in &search_space.glwe_dimensions {
+        for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
             let glwe_poly_size = 1 << glwe_log_poly_size;
             let glwe_params = GlweParameters {
                 log2_polynomial_size: glwe_log_poly_size,
                 glwe_dimension: glwe_dim,
             };
-            for &internal_dim in internal_lwe_dimensions {
+            for &internal_dim in &search_space.internal_lwe_dimensions {
                 let noise_modulus_switching = noise_modulus_switching(glwe_poly_size, internal_dim);
                 if CUTS && not_feasible(noise_modulus_switching) {
                     // assume this noise is increasing with internal_dim
@@ -288,7 +281,7 @@ pub fn optimize<W: UnsignedInteger>(
     if let Some(sol) = state.best_solution {
         assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);
         assert!(0.0 <= sol.global_p_error && sol.global_p_error <= 1.0);
-        assert!(sol.p_error <= maximum_acceptable_error_probability * REL_EPSILON_PROBA);
+        assert!(sol.p_error <= config.maximum_acceptable_error_probability * REL_EPSILON_PROBA);
         assert!(sol.p_error <= sol.global_p_error * REL_EPSILON_PROBA);
     }
 
@@ -298,12 +291,9 @@ pub fn optimize<W: UnsignedInteger>(
 pub fn optimize_v0<W: UnsignedInteger>(
     sum_size: u64,
     precision: u64,
-    security_level: u64,
+    config: Config,
     noise_factor: f64,
-    maximum_acceptable_error_probability: f64,
-    glwe_log_polynomial_sizes: &[u64],
-    glwe_dimensions: &[u64],
-    internal_lwe_dimensions: &[u64],
+    search_space: &SearchSpace,
 ) -> OptimizationState {
     use crate::dag::operator::{FunctionTable, Shape};
     let same_scale_manp = 0.0;
@@ -318,14 +308,7 @@ pub fn optimize_v0<W: UnsignedInteger>(
     let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
     let dot2 = dag.add_levelled_op([lut1], complexity, manp, out_shape, comment);
     let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
-    let mut state = optimize::<u64>(
-        &dag,
-        security_level,
-        maximum_acceptable_error_probability,
-        glwe_log_polynomial_sizes,
-        glwe_dimensions,
-        internal_lwe_dimensions,
-    );
+    let mut state = optimize::<u64>(&dag, config, search_space);
     if let Some(sol) = &mut state.best_solution {
         sol.complexity /= 2.0;
     }
@@ -337,12 +320,12 @@ pub fn optimize_v0<W: UnsignedInteger>(
 mod tests {
     use std::time::Instant;
 
-    use crate::dag::operator::{FunctionTable, Shape, Weights};
-    use crate::global_parameters::DEFAUT_DOMAINS;
-    use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
-
     use super::*;
+    use crate::computing_cost::cpu::CpuComplexity;
+    use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::optimization::atomic_pattern;
+    use crate::optimization::config::SearchSpace;
+    use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
     use crate::utils::square;
 
     fn small_relative_diff(v1: f64, v2: f64) -> bool {
@@ -366,29 +349,17 @@ mod tests {
 
     const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 
-    const CONFIG: NoiseBoundConfig = NoiseBoundConfig {
-        security_level: 128,
-        ciphertext_modulus_log: 64,
-        maximum_acceptable_error_probability: _4_SIGMA,
-    };
-
     fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {
-        let security_level = 128;
-        let maximum_acceptable_error_probability = _4_SIGMA;
-        let glwe_log_polynomial_sizes: Vec<u64> = DEFAUT_DOMAINS
-            .glwe_pbs_constrained
-            .log2_polynomial_size
-            .as_vec();
-        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-        let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-        super::optimize::<u64>(
-            dag,
-            security_level,
-            maximum_acceptable_error_probability,
-            &glwe_log_polynomial_sizes,
-            &glwe_dimensions,
-            &internal_lwe_dimensions,
-        )
+        let config = Config {
+            security_level: 128,
+            maximum_acceptable_error_probability: _4_SIGMA,
+            ciphertext_modulus_log: 64,
+            complexity_model: &CpuComplexity::default(),
+        };
+
+        let search_space = SearchSpace::default();
+
+        super::optimize::<u64>(dag, config, &search_space)
     }
 
     struct Times {
@@ -416,37 +387,28 @@ mod tests {
     }
 
     fn v0_parameter_ref(precision: u64, weight: u64, times: &mut Times) {
-        let security_level = 128;
-        let glwe_log_polynomial_sizes: Vec<u64> = DEFAUT_DOMAINS
-            .glwe_pbs_constrained
-            .log2_polynomial_size
-            .as_vec();
-        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-        let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
+        let search_space = SearchSpace::default();
+
         let sum_size = 1;
 
+        let config = Config {
+            security_level: 128,
+            maximum_acceptable_error_probability: _4_SIGMA,
+            ciphertext_modulus_log: 64,
+            complexity_model: &CpuComplexity::default(),
+        };
+
         let chrono = Instant::now();
-        let state = optimize_v0::<u64>(
-            sum_size,
-            precision,
-            CONFIG.security_level,
-            weight as f64,
-            CONFIG.maximum_acceptable_error_probability,
-            &glwe_log_polynomial_sizes,
-            &glwe_dimensions,
-            &internal_lwe_dimensions,
-        );
+        let state = optimize_v0::<u64>(sum_size, precision, config, weight as f64, &search_space);
+
         times.dag_time += chrono.elapsed().as_nanos();
         let chrono = Instant::now();
         let state_ref = atomic_pattern::optimize_one::<u64>(
             sum_size,
             precision,
-            security_level,
+            config,
             weight as f64,
-            CONFIG.maximum_acceptable_error_probability,
-            &glwe_log_polynomial_sizes,
-            &glwe_dimensions,
-            &internal_lwe_dimensions,
+            &search_space,
             None,
         );
         times.worst_time += chrono.elapsed().as_nanos();
@@ -485,7 +447,14 @@ mod tests {
             let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
         }
         {
-            let dag2 = analyze::analyze(&dag, &CONFIG);
+            let dag2 = analyze::analyze(
+                &dag,
+                &NoiseBoundConfig {
+                    security_level: 128,
+                    maximum_acceptable_error_probability: _4_SIGMA,
+                    ciphertext_modulus_log: 64,
+                },
+            );
             let constraint = dag2.constraint();
             assert_eq!(constraint.pareto_output.len(), 1);
             assert_eq!(constraint.pareto_in_lut.len(), 1);
@@ -496,24 +465,22 @@ mod tests {
             assert_f64_eq(square(weight) as f64, constraint.pareto_in_lut[0].lut_coeff);
         }
 
-        let security_level = 128;
-        let maximum_acceptable_error_probability = _4_SIGMA;
-        let glwe_log_polynomial_sizes: Vec<u64> = DEFAUT_DOMAINS
-            .glwe_pbs_constrained
-            .log2_polynomial_size
-            .as_vec();
-        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-        let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
+        let search_space = SearchSpace::default();
+
+        let config = Config {
+            security_level: 128,
+            maximum_acceptable_error_probability: _4_SIGMA,
+            ciphertext_modulus_log: 64,
+            complexity_model: &CpuComplexity::default(),
+        };
+
         let state = optimize(&dag);
         let state_ref = atomic_pattern::optimize_one::<u64>(
             1,
             precision as u64,
-            security_level,
+            config,
             weight as f64,
-            maximum_acceptable_error_probability,
-            &glwe_log_polynomial_sizes,
-            &glwe_dimensions,
-            &internal_lwe_dimensions,
+            &search_space,
             None,
         );
         assert_eq!(

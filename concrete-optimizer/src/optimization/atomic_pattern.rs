@@ -1,17 +1,13 @@
-use crate::computing_cost::operators::atomic_pattern as complexity_atomic_pattern;
-use crate::computing_cost::operators::keyswitch_lwe::KeySwitchLWEComplexity;
-use crate::computing_cost::operators::pbs::PbsComplexity;
+use super::config::{Config, SearchSpace};
+use crate::computing_cost::atomic_pattern::atomic_pattern_complexity;
 use crate::noise_estimator::error;
-
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::parameters::{
     AtomicPatternParameters, BrDecompositionParameters, GlweParameters, KeyswitchParameters,
     KsDecompositionParameters, LweDimension, PbsParameters,
 };
-use crate::pareto;
-use crate::security;
 use crate::utils::square;
-use complexity_atomic_pattern::{AtomicPatternComplexity, DEFAULT as DEFAULT_COMPLEXITY};
+use crate::{pareto, security};
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
 
@@ -40,12 +36,11 @@ pub struct Solution {
 }
 
 // Constants during optimisation of decompositions
-pub(crate) struct OptimizationDecompositionsConsts {
+pub(crate) struct OptimizationDecompositionsConsts<'a> {
+    pub config: Config<'a>,
     pub kappa: f64,
     pub sum_size: u64,
-    pub security_level: u64,
     pub noise_factor: f64,
-    pub ciphertext_modulus_log: u64,
     pub keyswitch_decompositions: Vec<KsDecompositionParameters>,
     pub blind_rotate_decompositions: Vec<BrDecompositionParameters>,
     pub safe_variance: f64,
@@ -113,8 +108,8 @@ pub(crate) fn pareto_cut_blind_rotate<W: UnsignedInteger>(
     let br_decomp_len = consts.blind_rotate_decompositions.len();
     let mut quantities = vec![ComplexityNoise::ZERO; br_decomp_len];
 
-    let ciphertext_modulus_log = consts.ciphertext_modulus_log;
-    let security_level = consts.security_level;
+    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
+    let security_level = consts.config.security_level;
     let variance_bsk =
         security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
     let mut increasing_complexity = 0.0;
@@ -128,9 +123,10 @@ pub(crate) fn pareto_cut_blind_rotate<W: UnsignedInteger>(
             output_glwe_params: glwe_params,
         };
 
-        let complexity_pbs = DEFAULT_COMPLEXITY
-            .pbs
-            .complexity(pbs_parameters, ciphertext_modulus_log);
+        let complexity_pbs = consts
+            .config
+            .complexity_model
+            .pbs_complexity(pbs_parameters, ciphertext_modulus_log);
 
         if cut_complexity < complexity_pbs && CUTS {
             break; // complexity is increasing
@@ -183,8 +179,8 @@ pub(crate) fn pareto_keyswitch<W: UnsignedInteger>(
     let ks_decomp_len = consts.keyswitch_decompositions.len();
     let mut quantities = vec![ComplexityNoise::ZERO; ks_decomp_len];
 
-    let ciphertext_modulus_log = consts.ciphertext_modulus_log;
-    let security_level = consts.security_level;
+    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
+    let security_level = consts.config.security_level;
     let variance_ksk =
         noise_atomic_pattern::variance_ksk(internal_dim, ciphertext_modulus_log, security_level);
     let mut increasing_complexity = 0.0;
@@ -197,9 +193,11 @@ pub(crate) fn pareto_keyswitch<W: UnsignedInteger>(
             ks_decomposition_parameter,
         };
 
-        let complexity_keyswitch = DEFAULT_COMPLEXITY
-            .ks_lwe
-            .complexity(keyswitch_parameter, ciphertext_modulus_log);
+        let complexity_keyswitch = consts
+            .config
+            .complexity_model
+            .ks_complexity(keyswitch_parameter, ciphertext_modulus_log);
+
         if cut_complexity < complexity_keyswitch && CUTS {
             break;
         }
@@ -407,8 +405,8 @@ fn assert_checks<W: UnsignedInteger>(
     let noise_keyswitch = ks_c_n.noise;
     let complexity_keyswitch = ks_c_n.complexity;
     let complexity_pbs = br_c_n.complexity;
-    let ciphertext_modulus_log = consts.ciphertext_modulus_log;
-    let security_level = consts.security_level;
+    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
+    let security_level = consts.config.security_level;
 
     let br_decomposition_parameter = consts.blind_rotate_decompositions[i_br];
     let ks_decomposition_parameter = consts.keyswitch_decompositions[i_ks];
@@ -429,9 +427,10 @@ fn assert_checks<W: UnsignedInteger>(
     );
     let noise_in_ = base_noise_.get_variance() * square(consts.noise_factor);
 
-    let complexity_pbs_ = DEFAULT_COMPLEXITY
-        .pbs
-        .complexity(pbs_parameters, ciphertext_modulus_log);
+    let complexity_pbs_ = consts
+        .config
+        .complexity_model
+        .pbs_complexity(pbs_parameters, ciphertext_modulus_log);
 
     assert_eq!(complexity_pbs, complexity_pbs_);
     assert_eq!(noise_out * square(consts.noise_factor), noise_in_);
@@ -450,9 +449,11 @@ fn assert_checks<W: UnsignedInteger>(
         variance_ksk,
     )
     .get_variance();
-    let complexity_keyswitch_ = DEFAULT_COMPLEXITY
-        .ks_lwe
-        .complexity(keyswitch_parameters, ciphertext_modulus_log);
+    let complexity_keyswitch_ = consts
+        .config
+        .complexity_model
+        .ks_complexity(keyswitch_parameters, ciphertext_modulus_log);
+
     assert_eq!(complexity_keyswitch, complexity_keyswitch_);
     assert_eq!(noise_keyswitch, noise_keyswitch_);
 
@@ -472,7 +473,8 @@ fn assert_checks<W: UnsignedInteger>(
     )
     .get_variance();
     assert!(f64::abs(noise_max - check_max_noise) / check_max_noise < 0.000_000_000_01);
-    let check_complexity = DEFAULT_COMPLEXITY.complexity(
+    let check_complexity = atomic_pattern_complexity(
+        consts.config.complexity_model,
         consts.sum_size,
         atomic_pattern_parameters,
         ciphertext_modulus_log,
@@ -494,18 +496,15 @@ const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 pub fn optimize_one<W: UnsignedInteger>(
     sum_size: u64,
     precision: u64,
-    security_level: u64,
+    config: Config,
     noise_factor: f64,
-    maximum_acceptable_error_probability: f64,
-    glwe_log_polynomial_sizes: &[u64],
-    glwe_dimensions: &[u64],
-    internal_lwe_dimensions: &[u64],
+    search_space: &SearchSpace,
     restart_at: Option<Solution>,
 ) -> OptimizationState {
     assert!(0 < precision && precision <= 16);
     assert!(1.0 <= noise_factor);
-    assert!(0.0 < maximum_acceptable_error_probability);
-    assert!(maximum_acceptable_error_probability < 1.0);
+    assert!(0.0 < config.maximum_acceptable_error_probability);
+    assert!(config.maximum_acceptable_error_probability < 1.0);
 
     // this assumed the noise level is equal at input/output
     // the security of the noise level of ouput is controlled by
@@ -515,16 +514,16 @@ pub fn optimize_one<W: UnsignedInteger>(
     let safe_variance = error::safe_variance_bound_2padbits(
         precision,
         ciphertext_modulus_log,
-        maximum_acceptable_error_probability,
+        config.maximum_acceptable_error_probability,
     );
-    let kappa = error::sigma_scale_of_error_probability(maximum_acceptable_error_probability);
+    let kappa =
+        error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
     let consts = OptimizationDecompositionsConsts {
+        config,
         kappa,
         sum_size,
-        security_level,
         noise_factor,
-        ciphertext_modulus_log,
         keyswitch_decompositions: pareto::KS_BL
             .map(|(log2_base, level)| KsDecompositionParameters { level, log2_base })
             .to_vec(),
@@ -536,16 +535,16 @@ pub fn optimize_one<W: UnsignedInteger>(
 
     let mut state = OptimizationState {
         best_solution: None,
-        count_domain: glwe_dimensions.len()
-            * glwe_log_polynomial_sizes.len()
-            * internal_lwe_dimensions.len()
+        count_domain: search_space.glwe_dimensions.len()
+            * search_space.glwe_log_polynomial_sizes.len()
+            * search_space.internal_lwe_dimensions.len()
             * consts.keyswitch_decompositions.len()
             * consts.blind_rotate_decompositions.len(),
     };
 
     // cut only on glwe_poly_size based of modulus switching noise
     // assume this noise is increasing with lwe_intern_dim
-    let min_internal_lwe_dimensions = internal_lwe_dimensions[0];
+    let min_internal_lwe_dimensions = search_space.internal_lwe_dimensions[0];
     let lower_bound_cut = |glwe_poly_size| {
         // TODO: cut if min complexity is higher than current best
         CUTS && noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key::<W>(
@@ -563,8 +562,8 @@ pub fn optimize_one<W: UnsignedInteger>(
         None => false,
     };
 
-    for &glwe_dim in glwe_dimensions {
-        for &glwe_log_poly_size in glwe_log_polynomial_sizes {
+    for &glwe_dim in &search_space.glwe_dimensions {
+        for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
             assert!(8 <= glwe_log_poly_size);
             assert!(glwe_log_poly_size < 18);
             let glwe_poly_size = 1 << glwe_log_poly_size;
@@ -580,7 +579,7 @@ pub fn optimize_one<W: UnsignedInteger>(
                 glwe_dimension: glwe_dim,
             };
 
-            for &internal_dim in internal_lwe_dimensions {
+            for &internal_dim in &search_space.internal_lwe_dimensions {
                 assert!(256 < internal_dim);
                 update_state_with_best_decompositions::<W>(
                     &mut state,
@@ -594,7 +593,7 @@ pub fn optimize_one<W: UnsignedInteger>(
 
     if let Some(sol) = state.best_solution {
         assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);
-        assert!(sol.p_error <= maximum_acceptable_error_probability * REL_EPSILON_PROBA);
+        assert!(sol.p_error <= config.maximum_acceptable_error_probability * REL_EPSILON_PROBA);
     }
 
     state

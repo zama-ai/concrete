@@ -1,16 +1,16 @@
+use super::super::complexity::Complexity;
 use crate::parameters::KeyswitchParameters;
 
-use super::super::complexity::Complexity;
+pub struct KsComplexity;
 
-pub trait KeySwitchLWEComplexity {
-    fn complexity(&self, params: KeyswitchParameters, ciphertext_modulus_log: u64) -> Complexity;
-}
-
-pub struct Default;
-
-impl KeySwitchLWEComplexity for Default {
-    // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/keyswitch.py#L91
-    fn complexity(&self, params: KeyswitchParameters, _ciphertext_modulus_log: u64) -> Complexity {
+impl KsComplexity {
+    pub fn complexity(
+        &self,
+        params: KeyswitchParameters,
+        _ciphertext_modulus_log: u64,
+    ) -> Complexity {
+        let _ = self;
+        // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/keyswitch.py#L91
         let input_lwe_dimension = params.input_lwe_dimension.0;
         let output_lwe_dimension = params.output_lwe_dimension.0;
         let level = params.ks_decomposition_parameter.level;
@@ -23,31 +23,11 @@ impl KeySwitchLWEComplexity for Default {
     }
 }
 
-pub struct SimpleProductWithFactor {
-    factor: f64,
-}
-
-impl KeySwitchLWEComplexity for SimpleProductWithFactor {
-    // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/keyswitch.py#L100
-    fn complexity(&self, params: KeyswitchParameters, ciphertext_modulus_log: u64) -> Complexity {
-        let product = params.input_lwe_dimension.0
-            * params.output_lwe_dimension.0
-            * params.ks_decomposition_parameter.level
-            * ciphertext_modulus_log;
-        self.factor * (product as f64)
-    }
-}
-
-pub const DEFAULT: Default = Default;
-
 #[cfg(test)]
 mod tests {
     use crate::parameters::{KsDecompositionParameters, LweDimension};
 
     use super::*;
-    pub const COST_AWS: SimpleProductWithFactor = SimpleProductWithFactor {
-        factor: 0.125_472_398_538_904_43,
-    };
 
     #[test]
     fn golden_python_prototype() {
@@ -63,11 +43,7 @@ mod tests {
             },
         };
 
-        let actual = DEFAULT.complexity(ks_params, 64);
-        approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
-
-        let golden = 538_899_848.275_272_7;
-        let actual = COST_AWS.complexity(ks_params, 64);
+        let actual = KsComplexity.complexity(ks_params, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
     }
 }

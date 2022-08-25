@@ -2,21 +2,15 @@ use super::super::complexity::Complexity;
 use super::cmux;
 use crate::parameters::PbsParameters;
 
-pub trait PbsComplexity {
-    fn complexity(
-        &self,
-        params: PbsParameters,
-        ciphertext_modulus_log: u64, // log2_q
-    ) -> Complexity;
+#[derive(Default)]
+pub struct PbsComplexity {
+    pub cmux: cmux::SimpleWithFactors,
 }
 
-pub struct CmuxProportional<CMUX: cmux::CmuxComplexity> {
-    cmux: CMUX,
-}
-
-impl<CMUX: cmux::CmuxComplexity> PbsComplexity for CmuxProportional<CMUX> {
-    fn complexity(&self, params: PbsParameters, ciphertext_modulus_log: u64) -> Complexity {
+impl PbsComplexity {
+    pub fn complexity(&self, params: PbsParameters, ciphertext_modulus_log: u64) -> Complexity {
         // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L163
+
         let cmux_cost = self
             .cmux
             .complexity(params.cmux_parameters(), ciphertext_modulus_log);
@@ -24,24 +18,11 @@ impl<CMUX: cmux::CmuxComplexity> PbsComplexity for CmuxProportional<CMUX> {
     }
 }
 
-pub type Default = CmuxProportional<cmux::Default>;
-
-pub const DEFAULT: Default = CmuxProportional {
-    cmux: cmux::DEFAULT,
-};
-
 #[cfg(test)]
 pub mod tests {
-
+    use super::*;
     use crate::computing_cost::operators::pbs::PbsParameters;
     use crate::parameters::{BrDecompositionParameters, GlweParameters, LweDimension};
-
-    use super::super::cmux;
-    use super::{CmuxProportional, Default, PbsComplexity, DEFAULT};
-
-    pub const COST_AWS: Default = CmuxProportional {
-        cmux: cmux::tests::COST_AWS,
-    };
 
     #[test]
     fn golden_python_prototype() {
@@ -72,15 +53,13 @@ pub mod tests {
             },
         };
 
-        let actual = DEFAULT.complexity(pbs_param1, 32);
+        let complexity = PbsComplexity::default();
+
+        let actual = complexity.complexity(pbs_param1, 32);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
         let golden = 249_957_554_585_600.0;
-        let actual = DEFAULT.complexity(pbs_param2, 64);
-        approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
-
-        let golden = 208_532_086_206_064.16;
-        let actual = COST_AWS.complexity(pbs_param2, 64);
+        let actual = complexity.complexity(pbs_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
     }
 }

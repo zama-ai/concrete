@@ -1,8 +1,9 @@
+use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::dag::operator::{
     self, FunctionTable, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
 use concrete_optimizer::dag::unparametrized;
-
+use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution as DagSolution;
 
 fn no_solution() -> ffi::Solution {
@@ -25,23 +26,23 @@ fn optimize_bootstrap(
     noise_factor: f64,
     maximum_acceptable_error_probability: f64,
 ) -> ffi::Solution {
-    use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
+    let config = Config {
+        security_level,
+        maximum_acceptable_error_probability,
+        ciphertext_modulus_log: 64,
+        complexity_model: &CpuComplexity::default(),
+    };
+
     let sum_size = 1;
-    let glwe_log_polynomial_sizes = DEFAUT_DOMAINS
-        .glwe_pbs_constrained
-        .log2_polynomial_size
-        .as_vec();
-    let glwe_dimensions = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-    let internal_lwe_dimensions = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
+
+    let search_space = SearchSpace::default();
+
     let result = concrete_optimizer::optimization::atomic_pattern::optimize_one::<u64>(
         sum_size,
         precision,
-        security_level,
+        config,
         noise_factor,
-        maximum_acceptable_error_probability,
-        &glwe_log_polynomial_sizes,
-        &glwe_dimensions,
-        &internal_lwe_dimensions,
+        &search_space,
         None,
     );
     result
@@ -206,20 +207,19 @@ impl OperationDag {
         security_level: u64,
         maximum_acceptable_error_probability: f64,
     ) -> ffi::Solution {
-        use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
-        let glwe_log_polynomial_sizes = DEFAUT_DOMAINS
-            .glwe_pbs_constrained
-            .log2_polynomial_size
-            .as_vec();
-        let glwe_dimensions = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-        let internal_lwe_dimensions = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-        let result = concrete_optimizer::optimization::dag::solo_key::optimize::optimize::<u64>(
-            &self.0,
+        let config = Config {
             security_level,
             maximum_acceptable_error_probability,
-            &glwe_log_polynomial_sizes,
-            &glwe_dimensions,
-            &internal_lwe_dimensions,
+            ciphertext_modulus_log: 64,
+            complexity_model: &CpuComplexity::default(),
+        };
+
+        let search_space = SearchSpace::default();
+
+        let result = concrete_optimizer::optimization::dag::solo_key::optimize::optimize::<u64>(
+            &self.0,
+            config,
+            &search_space,
         );
         result
             .best_solution
@@ -232,23 +232,18 @@ impl OperationDag {
         maximum_acceptable_error_probability: f64,
         default_log_norm2_woppbs: f64,
     ) -> ffi::DagSolution {
-        use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
-        let glwe_log_polynomial_sizes = DEFAUT_DOMAINS
-            .glwe_pbs_constrained
-            .log2_polynomial_size
-            .as_vec();
-        let glwe_dimensions = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-        let internal_lwe_dimensions = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-        let result =
-            concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize::<u64>(
-                &self.0,
-                security_level,
-                maximum_acceptable_error_probability,
-                &glwe_log_polynomial_sizes,
-                &glwe_dimensions,
-                &internal_lwe_dimensions,
-                default_log_norm2_woppbs,
-            );
+        let config = Config {
+            security_level,
+            maximum_acceptable_error_probability,
+            ciphertext_modulus_log: 64,
+            complexity_model: &CpuComplexity::default(),
+        };
+
+        let search_space = SearchSpace::default();
+
+        let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize::<
+            u64,
+        >(&self.0, config, &search_space, default_log_norm2_woppbs);
         result.map_or_else(no_dag_solution, |solution| solution.into())
     }
 
@@ -276,6 +271,7 @@ impl Into<OperatorIndex> for ffi::OperatorIndex {
     }
 }
 
+#[allow(unused_must_use)]
 #[cxx::bridge]
 mod ffi {
 
