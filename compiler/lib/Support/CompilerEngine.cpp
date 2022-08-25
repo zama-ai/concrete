@@ -521,9 +521,13 @@ const std::string CompilerEngine::Library::LINKER = "ld";
 // We need to tell the linker that some symbols will be missing during linking,
 // this symbols should be available during runtime however. This is the case
 // when JIT compiling, the JIT should either link to the runtime library that
-// has the missing symbols, or it would have been loaded even prior to that
+// has the missing symbols, or it would have been loaded even prior to that.
+// Starting from Mac 11 (Big Sur), it appears we need to add -L
+// /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem for the
+// sharedlib to link properly.
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT =
-    " -dylib -undefined dynamic_lookup -o ";
+    " -dylib -undefined dynamic_lookup -L "
+    "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem -o ";
 const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".dylib";
 #else // Linux
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";
