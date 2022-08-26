@@ -133,7 +133,6 @@ impl ServerKey {
     /// use concrete_integer::gen_keys;
     /// use concrete_shortint::parameters::PARAM_MESSAGE_3_CARRY_3;
     ///
-    /// // We have 4 * 2 = 8 bits of message
     /// let size = 4;
     /// let (cks, sks) = gen_keys(&PARAM_MESSAGE_3_CARRY_3, size);
     ///
