@@ -110,32 +110,38 @@ LogicalResult verifyTensorBinaryEintInt(mlir::Operation *op) {
     op->emitOpError() << "should have exactly 2 operands";
     return mlir::failure();
   }
+
   auto op0Ty = op->getOperand(0).getType().dyn_cast_or_null<mlir::TensorType>();
   auto op1Ty = op->getOperand(1).getType().dyn_cast_or_null<mlir::TensorType>();
   if (op0Ty == nullptr || op1Ty == nullptr) {
     op->emitOpError() << "should have both operands as tensor";
     return mlir::failure();
   }
+
   auto el0Ty =
       op0Ty.getElementType()
-          .dyn_cast_or_null<mlir::concretelang::FHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::FHE::FheIntegerInterface>();
   if (el0Ty == nullptr) {
-    op->emitOpError() << "should have a !FHE.eint as the element type of the "
-                         "tensor of operand #0";
+    op->emitOpError()
+        << "should have !FHE.eint or !FHE.esint as the element type of the "
+           "tensor of operand #0";
     return mlir::failure();
   }
+
   auto el1Ty = op1Ty.getElementType().dyn_cast_or_null<mlir::IntegerType>();
   if (el1Ty == nullptr) {
     op->emitOpError() << "should have an integer as the element type of the "
                          "tensor of operand #1";
     return mlir::failure();
   }
+
   if (el1Ty.getWidth() > el0Ty.getWidth() + 1) {
     op->emitOpError()
         << "should have the width of integer values less or equals "
            "than the width of encrypted values + 1";
     return mlir::failure();
   }
+
   return mlir::success();
 }
 
@@ -144,32 +150,38 @@ LogicalResult verifyTensorBinaryIntEint(mlir::Operation *op) {
     op->emitOpError() << "should have exactly 2 operands";
     return mlir::failure();
   }
+
   auto op0Ty = op->getOperand(0).getType().dyn_cast_or_null<mlir::TensorType>();
   auto op1Ty = op->getOperand(1).getType().dyn_cast_or_null<mlir::TensorType>();
   if (op0Ty == nullptr || op1Ty == nullptr) {
     op->emitOpError() << "should have both operands as tensor";
     return mlir::failure();
   }
+
   auto el0Ty = op0Ty.getElementType().dyn_cast_or_null<mlir::IntegerType>();
   if (el0Ty == nullptr) {
     op->emitOpError() << "should have an integer as the element type of the "
                          "tensor of operand #0";
     return mlir::failure();
   }
+
   auto el1Ty =
       op1Ty.getElementType()
-          .dyn_cast_or_null<mlir::concretelang::FHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::FHE::FheIntegerInterface>();
   if (el1Ty == nullptr) {
-    op->emitOpError() << "should have a !FHE.eint as the element type of the "
-                         "tensor of operand #1";
+    op->emitOpError()
+        << "should have !FHE.eint or !FHE.esint as the element type of the "
+           "tensor of operand #1";
     return mlir::failure();
   }
+
   if (el1Ty.getWidth() > el0Ty.getWidth() + 1) {
     op->emitOpError()
         << "should have the width of integer values less or equals "
            "than the width of encrypted values + 1";
     return mlir::failure();
   }
+
   return mlir::success();
 }
 
@@ -178,34 +190,50 @@ LogicalResult verifyTensorBinaryEint(mlir::Operation *op) {
     op->emitOpError() << "should have exactly 2 operands";
     return mlir::failure();
   }
+
   auto op0Ty = op->getOperand(0).getType().dyn_cast_or_null<mlir::TensorType>();
   auto op1Ty = op->getOperand(1).getType().dyn_cast_or_null<mlir::TensorType>();
   if (op0Ty == nullptr || op1Ty == nullptr) {
     op->emitOpError() << "should have both operands as tensor";
     return mlir::failure();
   }
+
   auto el0Ty =
       op0Ty.getElementType()
-          .dyn_cast_or_null<mlir::concretelang::FHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::FHE::FheIntegerInterface>();
   if (el0Ty == nullptr) {
-    op->emitOpError() << "should have a !FHE.eint as the element type of the "
-                         "tensor of operand #0";
+    op->emitOpError()
+        << "should have !FHE.eint or !FHE.esint as the element type of the "
+           "tensor of operand #0";
     return mlir::failure();
   }
+
   auto el1Ty =
       op1Ty.getElementType()
-          .dyn_cast_or_null<mlir::concretelang::FHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::FHE::FheIntegerInterface>();
   if (el1Ty == nullptr) {
-    op->emitOpError() << "should have a !FHE.eint as the element type of the "
-                         "tensor of operand #1";
+    op->emitOpError()
+        << "should have !FHE.eint or !FHE.esint as the element type of the "
+           "tensor of operand #1";
     return mlir::failure();
   }
-  if (el1Ty.getWidth() != el0Ty.getWidth()) {
+
+  if (el0Ty.isSigned() != el1Ty.isSigned()) {
+    op->emitOpError()
+        << "should have the signedness of encrypted arguments equal";
+    return mlir::failure();
+  }
+
+  unsigned el0BitWidth = el0Ty.getWidth();
+  unsigned el1BitWidth = el1Ty.getWidth();
+
+  if (el1BitWidth != el0BitWidth) {
     op->emitOpError() << "should have the width of encrypted equals"
                          ", got "
-                      << el1Ty.getWidth() << " expect " << el0Ty.getWidth();
+                      << el1BitWidth << " expect " << el0BitWidth;
     return mlir::failure();
   }
+
   return mlir::success();
 }
 
@@ -214,19 +242,23 @@ LogicalResult verifyTensorUnaryEint(mlir::Operation *op) {
     op->emitOpError() << "should have exactly 1 operands";
     return mlir::failure();
   }
+
   auto op0Ty = op->getOperand(0).getType().dyn_cast_or_null<mlir::TensorType>();
   if (op0Ty == nullptr) {
     op->emitOpError() << "should have operand as tensor";
     return mlir::failure();
   }
+
   auto el0Ty =
       op0Ty.getElementType()
-          .dyn_cast_or_null<mlir::concretelang::FHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::FHE::FheIntegerInterface>();
   if (el0Ty == nullptr) {
-    op->emitOpError() << "should have a !FHE.eint as the element type of the "
-                         "tensor operand";
+    op->emitOpError()
+        << "should have !FHE.eint or !FHE.esint as the element type of the "
+           "tensor operand";
     return mlir::failure();
   }
+
   return mlir::success();
 }
 
@@ -377,14 +409,14 @@ mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
                         .getType()
                         .cast<mlir::TensorType>()
                         .getElementType()
-                        .cast<FHE::EncryptedIntegerType>();
+                        .dyn_cast<FHE::FheIntegerInterface>();
   auto rhsEltType = this->rhs()
                         .getType()
                         .cast<mlir::TensorType>()
                         .getElementType()
                         .cast<mlir::IntegerType>();
   auto resultType =
-      this->getResult().getType().cast<FHE::EncryptedIntegerType>();
+      this->getResult().getType().dyn_cast<FHE::FheIntegerInterface>();
   if (!mlir::concretelang::FHE::
           verifyEncryptedIntegerAndIntegerInputsConsistency(
               *this->getOperation(), lhsEltType, rhsEltType)) {
@@ -430,16 +462,15 @@ mlir::LogicalResult SumOp::verify() {
   mlir::Value output = this->getResult();
 
   auto inputType = input.getType().dyn_cast<mlir::TensorType>();
-  mlir::Type outputType = output.getType();
+  Type outputType = output.getType();
 
-  FHE::EncryptedIntegerType inputElementType =
-      inputType.getElementType().dyn_cast<FHE::EncryptedIntegerType>();
-  FHE::EncryptedIntegerType outputElementType =
-      !outputType.isa<mlir::TensorType>()
-          ? outputType.dyn_cast<FHE::EncryptedIntegerType>()
-          : outputType.dyn_cast<mlir::TensorType>()
-                .getElementType()
-                .dyn_cast<FHE::EncryptedIntegerType>();
+  auto inputElementType =
+      inputType.getElementType().dyn_cast<FHE::FheIntegerInterface>();
+  auto outputElementType = !outputType.isa<mlir::TensorType>()
+                               ? outputType.dyn_cast<FHE::FheIntegerInterface>()
+                               : outputType.dyn_cast<mlir::TensorType>()
+                                     .getElementType()
+                                     .dyn_cast<FHE::FheIntegerInterface>();
 
   if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
           *this->getOperation(), inputElementType, outputElementType)) {
@@ -517,7 +548,7 @@ mlir::LogicalResult ConcatOp::verify() {
 
   auto outVectorType = out.getType().dyn_cast<mlir::TensorType>();
   auto outElementType =
-      outVectorType.getElementType().dyn_cast<FHE::EncryptedIntegerType>();
+      outVectorType.getElementType().dyn_cast<FHE::FheIntegerInterface>();
 
   llvm::ArrayRef<int64_t> outShape = outVectorType.getShape();
   size_t outDims = outShape.size();
@@ -533,7 +564,7 @@ mlir::LogicalResult ConcatOp::verify() {
   for (mlir::Value in : this->ins()) {
     auto inVectorType = in.getType().dyn_cast<mlir::TensorType>();
     auto inElementType =
-        inVectorType.getElementType().dyn_cast<FHE::EncryptedIntegerType>();
+        inVectorType.getElementType().dyn_cast<FHE::FheIntegerInterface>();
     if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
             *this->getOperation(), inElementType, outElementType)) {
       return ::mlir::failure();
@@ -827,9 +858,11 @@ mlir::LogicalResult Conv2dOp::verify() {
   auto weightShape = weightTy.getShape();
   auto resultShape = resultTy.getShape();
 
-  auto p = inputTy.getElementType()
-               .cast<mlir::concretelang::FHE::EncryptedIntegerType>()
-               .getWidth();
+  Type inputElTy = inputTy.getElementType();
+  auto p = inputElTy.isa<FHE::EncryptedIntegerType>()
+               ? inputElTy.cast<FHE::EncryptedIntegerType>().getWidth()
+               : inputElTy.cast<FHE::EncryptedSignedIntegerType>().getWidth();
+
   auto weightElementTyWidth =
       weightTy.getElementType().cast<mlir::IntegerType>().getWidth();
   if (weightElementTyWidth != p + 1) {
@@ -1065,6 +1098,62 @@ mlir::LogicalResult TransposeOp::verify() {
       return mlir::failure();
     }
   }
+  return mlir::success();
+}
+
+mlir::LogicalResult ToSignedOp::verify() {
+  auto inputType = this->input().getType().cast<mlir::ShapedType>();
+  auto outputType = this->getResult().getType().cast<mlir::ShapedType>();
+
+  llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
+  llvm::ArrayRef<int64_t> outputShape = outputType.getShape();
+
+  if (inputShape != outputShape) {
+    this->emitOpError()
+        << "input and output tensors should have the same shape";
+    return mlir::failure();
+  }
+
+  auto inputElementType =
+      inputType.getElementType().cast<FHE::EncryptedIntegerType>();
+  auto outputElementType =
+      outputType.getElementType().cast<FHE::EncryptedSignedIntegerType>();
+
+  if (inputElementType.getWidth() != outputElementType.getWidth()) {
+    this->emitOpError()
+        << "input and output tensors should have the same width";
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
+mlir::LogicalResult ToUnsignedOp::verify() {
+  mlir::ShapedType inputType =
+      this->input().getType().dyn_cast_or_null<mlir::ShapedType>();
+  mlir::ShapedType outputType =
+      this->getResult().getType().dyn_cast_or_null<mlir::ShapedType>();
+
+  llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
+  llvm::ArrayRef<int64_t> outputShape = outputType.getShape();
+
+  if (inputShape != outputShape) {
+    this->emitOpError()
+        << "input and output tensors should have the same shape";
+    return mlir::failure();
+  }
+
+  auto inputElementType =
+      inputType.getElementType().cast<FHE::EncryptedSignedIntegerType>();
+  auto outputElementType =
+      outputType.getElementType().cast<FHE::EncryptedIntegerType>();
+
+  if (inputElementType.getWidth() != outputElementType.getWidth()) {
+    this->emitOpError()
+        << "input and output tensors should have the same width";
+    return mlir::failure();
+  }
+
   return mlir::success();
 }
 

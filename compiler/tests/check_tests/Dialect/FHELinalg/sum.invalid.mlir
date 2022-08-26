@@ -3,7 +3,7 @@
 // -----
 
 func.func @sum_invalid_bitwidth(%arg0: tensor<4x!FHE.eint<7>>) -> !FHE.eint<6> {
-  // expected-error @+1 {{'FHELinalg.sum' op  should have the width of encrypted inputs and result equals}}
+  // expected-error @+1 {{'FHELinalg.sum' op should have the width of encrypted inputs and result equal}}
   %1 = "FHELinalg.sum"(%arg0): (tensor<4x!FHE.eint<7>>) -> !FHE.eint<6>
   return %1 : !FHE.eint<6>
 }

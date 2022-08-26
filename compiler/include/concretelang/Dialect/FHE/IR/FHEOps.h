@@ -18,10 +18,10 @@ namespace concretelang {
 namespace FHE {
 
 bool verifyEncryptedIntegerInputAndResultConsistency(
-    Operation &op, EncryptedIntegerType &input, EncryptedIntegerType &result);
+    Operation &op, FheIntegerInterface &input, FheIntegerInterface &result);
 
 bool verifyEncryptedIntegerAndIntegerInputsConsistency(Operation &op,
-                                                       EncryptedIntegerType &a,
+                                                       FheIntegerInterface &a,
                                                        IntegerType &b);
 
 /// Shared error message for all ApplyLookupTable variant Op (several Dialect)

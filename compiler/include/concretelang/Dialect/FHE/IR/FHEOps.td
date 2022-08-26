@@ -27,13 +27,13 @@ def FHE_ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
         Example:
         ```mlir
         "FHE.zero"() : () -> !FHE.eint<2>
+        "FHE.zero"() : () -> !FHE.esint<2>
         ```
     }];
 
     let arguments = (ins);
-    let results = (outs FHE_EncryptedIntegerType:$out);
+    let results = (outs FHE_AnyEncryptedInteger:$out);
 }
-
 
 def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [NoSideEffect]> {
     let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
@@ -44,36 +44,38 @@ def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [NoSideEffect]> {
         Example:
         ```mlir
         %tensor = "FHE.zero_tensor"() : () -> tensor<5x!FHE.eint<4>>
+        %tensor = "FHE.zero_tensor"() : () -> tensor<5x!FHE.esint<4>>
         ```
     }];
 
     let arguments = (ins);
 
-    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor);
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
 def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [NoSideEffect]> {
-
     let summary = "Adds an encrypted integer and a clear integer";
 
     let description = [{
         Adds an encrypted integer and a clear integer.
         The clear integer must have at most one more bit than the encrypted integer
-        and the result must have the same width than the encrypted integer.
+        and the result must have the same width and the same signedness as the encrypted integer.
 
         Example:
         ```mlir
         // ok
         "FHE.add_eint_int"(%a, %i) : (!FHE.eint<2>, i3) -> !FHE.eint<2>
+        "FHE.add_eint_int"(%a, %i) : (!FHE.esint<2>, i3) -> !FHE.esint<2>
 
         // error
         "FHE.add_eint_int"(%a, %i) : (!FHE.eint<2>, i4) -> !FHE.eint<2>
         "FHE.add_eint_int"(%a, %i) : (!FHE.eint<2>, i3) -> !FHE.eint<3>
+        "FHE.add_eint_int"(%a, %i) : (!FHE.eint<2>, i3) -> !FHE.esint<2>
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$a, AnyInteger:$b);
-    let results = (outs FHE_EncryptedIntegerType);
+    let arguments = (ins FHE_AnyEncryptedInteger:$a, AnyInteger:$b);
+    let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -86,26 +88,28 @@ def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [NoSideEffect]> {
 }
 
 def FHE_AddEintOp : FHE_Op<"add_eint", [NoSideEffect]> {
-
     let summary = "Adds two encrypted integers";
 
-        let description = [{
+    let description = [{
         Adds two encrypted integers
-        The encrypted integers and the result must have the same width.
+        The encrypted integers and the result must have the same width and the same signedness.
 
         Example:
         ```mlir
         // ok
         "FHE.add_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
+        "FHE.add_eint"(%a, %b): (!FHE.esint<2>, !FHE.esint<2>) -> (!FHE.esint<2>)
 
         // error
         "FHE.add_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<3>) -> (!FHE.eint<2>)
         "FHE.add_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<3>)
+        "FHE.add_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.esint<2>)
+        "FHE.add_eint"(%a, %b): (!FHE.esint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$a, FHE_EncryptedIntegerType:$b);
-    let results = (outs FHE_EncryptedIntegerType);
+    let arguments = (ins FHE_AnyEncryptedInteger:$a, FHE_AnyEncryptedInteger:$b);
+    let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -117,27 +121,28 @@ def FHE_AddEintOp : FHE_Op<"add_eint", [NoSideEffect]> {
 }
 
 def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [NoSideEffect]> {
-
-    let summary = "Substract a clear integer and an encrypted integer";
+    let summary = "Subtract an encrypted integer from a clear integer";
 
     let description = [{
-        Substract a clear integer and an encrypted integer.
-        The clear integer must have at most one more bit than the encrypted integer
-        and the result must have the same width than the encrypted integer.
+        Subtract an encrypted integer from a clear integer.
+        The clear integer must have one more bit than the encrypted integer
+        and the result must have the same width and the same signedness as the encrypted integer.
 
         Example:
         ```mlir
         // ok
         "FHE.sub_int_eint"(%i, %a) : (i3, !FHE.eint<2>) -> !FHE.eint<2>
+        "FHE.sub_int_eint"(%i, %a) : (i3, !FHE.esint<2>) -> !FHE.esint<2>
 
         // error
         "FHE.sub_int_eint"(%i, %a) : (i4, !FHE.eint<2>) -> !FHE.eint<2>
         "FHE.sub_int_eint"(%i, %a) : (i3, !FHE.eint<2>) -> !FHE.eint<3>
+        "FHE.sub_int_eint"(%i, %a) : (i3, !FHE.eint<2>) -> !FHE.esint<2>
         ```
     }];
 
-    let arguments = (ins AnyInteger:$a, FHE_EncryptedIntegerType:$b);
-    let results = (outs FHE_EncryptedIntegerType);
+    let arguments = (ins AnyInteger:$a, FHE_AnyEncryptedInteger:$b);
+    let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -149,27 +154,28 @@ def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [NoSideEffect]> {
 }
 
 def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [NoSideEffect]> {
-
-    let summary = "Substract a clear integer from an encrypted integer";
+    let summary = "Subtract a clear integer from an encrypted integer";
 
     let description = [{
-        Substract a clear integer from an encrypted integer.
-        The clear integer must have at most one more bit than the encrypted integer
-        and the result must have the same width than the encrypted integer.
+        Subtract a clear integer from an encrypted integer.
+        The clear integer must have one more bit than the encrypted integer
+        and the result must have the same width and the same signedness as the encrypted integer.
 
         Example:
         ```mlir
         // ok
         "FHE.sub_eint_int"(%i, %a) : (!FHE.eint<2>, i3) -> !FHE.eint<2>
+        "FHE.sub_eint_int"(%i, %a) : (!FHE.esint<2>, i3) -> !FHE.esint<2>
 
         // error
         "FHE.sub_eint_int"(%i, %a) : (!FHE.eint<2>, i4) -> !FHE.eint<2>
         "FHE.sub_eint_int"(%i, %a) : (!FHE.eint<2>, i3) -> !FHE.eint<3>
+        "FHE.sub_eint_int"(%i, %a) : (!FHE.eint<2>, i3) -> !FHE.esint<2>
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$a, AnyInteger:$b);
-    let results = (outs FHE_EncryptedIntegerType);
+    let arguments = (ins FHE_AnyEncryptedInteger:$a, AnyInteger:$b);
+    let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -178,31 +184,32 @@ def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [NoSideEffect]> {
     ];
 
     let hasVerifier = 1;
-
     let hasFolder = 1;
 }
 
 def FHE_SubEintOp : FHE_Op<"sub_eint", [NoSideEffect]> {
-
-    let summary = "Subtracts two encrypted integers";
+    let summary = "Subtract an encrypted integer from an encrypted integer";
 
     let description = [{
-        Subtracts two encrypted integers
-        The encrypted integers and the result must have the same width.
+        Subtract an encrypted integer from an encrypted integer.
+        The encrypted integers and the result must have the same width and the same signedness.
 
         Example:
         ```mlir
         // ok
         "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
+        "FHE.sub_eint"(%a, %b): (!FHE.esint<2>, !FHE.esint<2>) -> (!FHE.esint<2>)
 
         // error
         "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<3>) -> (!FHE.eint<2>)
         "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<3>)
+        "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.esint<2>) -> (!FHE.esint<2>)
+        "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.esint<2>)
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$a, FHE_EncryptedIntegerType:$b);
-    let results = (outs FHE_EncryptedIntegerType);
+    let arguments = (ins FHE_AnyEncryptedInteger:$a, FHE_AnyEncryptedInteger:$b);
+    let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -219,20 +226,22 @@ def FHE_NegEintOp : FHE_Op<"neg_eint", [NoSideEffect]> {
 
     let description = [{
         Negates an encrypted integer.
-        The result must have the same width than the encrypted integer.
+        The result must have the same width and the same signedness as the encrypted integer.
 
         Example:
         ```mlir
         // ok
         "FHE.neg_eint"(%a): (!FHE.eint<2>) -> (!FHE.eint<2>)
+        "FHE.neg_eint"(%a): (!FHE.esint<2>) -> (!FHE.esint<2>)
 
         // error
         "FHE.neg_eint"(%a): (!FHE.eint<2>) -> (!FHE.eint<3>)
+        "FHE.neg_eint"(%a): (!FHE.eint<2>) -> (!FHE.esint<2>)
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$a);
-    let results = (outs FHE_EncryptedIntegerType);
+    let arguments = (ins FHE_AnyEncryptedInteger:$a);
+    let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
         OpBuilder<(ins "Value":$a), [{
@@ -243,27 +252,28 @@ def FHE_NegEintOp : FHE_Op<"neg_eint", [NoSideEffect]> {
 }
 
 def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [NoSideEffect]> {
-
-    let summary = "Mulitplies an encrypted integer and a clear integer";
+    let summary = "Multiply an encrypted integer with a clear integer";
 
     let description = [{
-        Mulitplies an encrypted integer and a clear integer.
-        The clear integer must have at most one more bit than the encrypted integer
-        and the result must have the same width than the encrypted integer.
+        Multiply an encrypted integer with a clear integer.
+        The clear integer must have one more bit than the encrypted integer
+        and the result must have the same width and the same signedness as the encrypted integer.
 
         Example:
         ```mlir
         // ok
         "FHE.mul_eint_int"(%a, %i) : (!FHE.eint<2>, i3) -> !FHE.eint<2>
+        "FHE.mul_eint_int"(%a, %i) : (!FHE.esint<2>, i3) -> !FHE.esint<2>
 
         // error
         "FHE.mul_eint_int"(%a, %i) : (!FHE.eint<2>, i4) -> !FHE.eint<2>
         "FHE.mul_eint_int"(%a, %i) : (!FHE.eint<2>, i3) -> !FHE.eint<3>
+        "FHE.mul_eint_int"(%a, %i) : (!FHE.eint<2>, i3) -> !FHE.esint<2>
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$a, AnyInteger:$b);
-    let results = (outs FHE_EncryptedIntegerType);
+    let arguments = (ins FHE_AnyEncryptedInteger:$a, AnyInteger:$b);
+    let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -273,6 +283,56 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [NoSideEffect]> {
 
     let hasVerifier = 1;
     let hasFolder = 1;
+}
+
+def FHE_ToSignedOp : FHE_Op<"to_signed", [NoSideEffect]> {
+    let summary = "Cast an unsigned integer to a signed one";
+
+    let description = [{
+        Cast an unsigned integer to a signed one.
+        The result must have the same width as the input.
+
+        The behavior is undefined on overflow/underflow.
+
+        Examples:
+        ```mlir
+        // ok
+        "FHE.to_signed"(%x) : (!FHE.eint<2>) -> !FHE.esint<2>
+
+        // error
+        "FHE.to_signed"(%x) : (!FHE.eint<2>) -> !FHE.esint<3>
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedIntegerType:$input);
+    let results = (outs FHE_EncryptedSignedIntegerType);
+
+    let hasVerifier = 1;
+}
+
+def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [NoSideEffect]> {
+    let summary = "Cast a signed integer to an unsigned one";
+
+    let description = [{
+        Cast a signed integer to an unsigned one.
+        The result must have the same width as the input.
+
+        The behavior is undefined on overflow/underflow.
+
+        Examples:
+        ```mlir
+        // ok
+        "FHE.to_unsigned"(%x) : (!FHE.esint<2>) -> !FHE.eint<2>
+
+        // error
+        "FHE.to_unsigned"(%x) : (!FHE.esint<2>) -> !FHE.eint<3>
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedSignedIntegerType:$input);
+    let results = (outs FHE_EncryptedIntegerType);
+
+    let hasVerifier = 1;
 }
 
 def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [NoSideEffect]> {

@@ -7,6 +7,8 @@
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 
+#include "concretelang/Dialect/FHE/IR/FHETypesInterfaces.cpp.inc"
+
 #define GET_TYPEDEF_CLASSES
 #include "concretelang/Dialect/FHE/IR/FHEOpsTypes.cpp.inc"
 
@@ -31,7 +33,7 @@ void FHEDialect::initialize() {
 mlir::LogicalResult EncryptedIntegerType::verify(
     llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
   if (p == 0) {
-    emitError() << "FHE.eint didn't support precision equals to 0";
+    emitError() << "FHE.eint doesn't support precision of 0";
     return mlir::failure();
   }
   return mlir::success();
@@ -42,6 +44,36 @@ void EncryptedIntegerType::print(mlir::AsmPrinter &p) const {
 }
 
 mlir::Type EncryptedIntegerType::parse(mlir::AsmParser &p) {
+  if (p.parseLess())
+    return mlir::Type();
+
+  int width;
+
+  if (p.parseInteger(width))
+    return mlir::Type();
+
+  if (p.parseGreater())
+    return mlir::Type();
+
+  mlir::Location loc = p.getEncodedSourceLoc(p.getNameLoc());
+
+  return getChecked(loc, loc.getContext(), width);
+}
+
+mlir::LogicalResult EncryptedSignedIntegerType::verify(
+    llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
+  if (p == 0) {
+    emitError() << "FHE.esint doesn't support precision of 0";
+    return mlir::failure();
+  }
+  return mlir::success();
+}
+
+void EncryptedSignedIntegerType::print(mlir::AsmPrinter &p) const {
+  p << "<" << getWidth() << ">";
+}
+
+mlir::Type EncryptedSignedIntegerType::parse(mlir::AsmParser &p) {
   if (p.parseLess())
     return mlir::Type();
 
