@@ -72,7 +72,7 @@ def test_configuration_fork():
             {"insecure_key_cache_location": 3},
             TypeError,
             "Unexpected type for keyword argument 'insecure_key_cache_location' "
-            "(expected 'typing.Union[str, NoneType]', got 'int')",
+            "(expected 'Optional[str]', got 'int')",
         ),
     ],
 )
