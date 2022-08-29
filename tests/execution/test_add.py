@@ -58,6 +58,15 @@ import concrete.numpy as cnp
         {
             "x": {"range": [-50, 10], "status": "encrypted", "shape": (2, 3)},
         },
+        {
+            "x": {"range": [0, 1000000], "status": "encrypted"},
+        },
+        {
+            "x": {"range": [0, 1000000], "status": "encrypted", "shape": (3,)},
+        },
+        {
+            "x": {"range": [0, 1000000], "status": "encrypted", "shape": (2, 3)},
+        },
     ],
 )
 def test_constant_add(function, parameters, helpers):

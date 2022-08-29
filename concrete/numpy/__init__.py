@@ -16,5 +16,5 @@ from .compilation import (
     compiler,
 )
 from .extensions import LookupTable, array, one, ones, univariate, zero, zeros
-from .mlir.utils import MAXIMUM_BIT_WIDTH
+from .mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from .representation import Graph

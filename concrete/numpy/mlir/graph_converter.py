@@ -28,7 +28,7 @@ from ..internal.utils import assert_that
 from ..representation import Graph, Node, Operation
 from ..values import ClearScalar, EncryptedScalar
 from .node_converter import NodeConverter
-from .utils import MAXIMUM_BIT_WIDTH
+from .utils import MAXIMUM_TLU_BIT_WIDTH
 
 # pylint: enable=no-member,no-name-in-module
 
@@ -221,6 +221,10 @@ class GraphConverter:
         offending_nodes: Dict[Node, List[str]] = {}
 
         max_bit_width = 0
+
+        first_tlu_node = None
+        first_signed_node = None
+
         for node in graph.graph.nodes:
             dtype = node.output.dtype
             assert_that(isinstance(dtype, Integer))
@@ -230,10 +234,23 @@ class GraphConverter:
             )
             max_bit_width = max(max_bit_width, current_node_bit_width)
 
-            if current_node_bit_width > MAXIMUM_BIT_WIDTH:
-                offending_nodes[node] = [
-                    f"only up to {MAXIMUM_BIT_WIDTH}-bit integers are supported"
-                ]
+            if node.converted_to_table_lookup and first_tlu_node is None:
+                first_tlu_node = node
+
+            if dtype.is_signed and first_signed_node is None:
+                first_signed_node = node
+
+        if first_tlu_node is not None and max_bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            offending_nodes[first_tlu_node] = [
+                f"table lookups are only supported on circuits with "
+                f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers"
+            ]
+
+        if first_signed_node is not None and max_bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            offending_nodes[first_signed_node] = [
+                f"signed values are only supported on circuits with "
+                f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers"
+            ]
 
         if len(offending_nodes) != 0:
             raise RuntimeError(

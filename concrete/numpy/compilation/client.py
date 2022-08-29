@@ -165,7 +165,7 @@ class Client:
                             arg >= 0,
                             arg,
                             2 * (expected_max + 1) + arg,
-                        ).astype(np.uint8)
+                        ).astype(np.uint64)
 
             if not is_valid:
                 actual_value = Value.of(arg, is_encrypted=is_encrypted)
@@ -220,10 +220,10 @@ class Client:
                 else:
                     result = result.astype(np.longlong)  # to prevent overflows in numpy
                     sanititzed_result = np.where(result < (2 ** (n - 1)), result, result - (2**n))
-                    sanitized_results.append(sanititzed_result.astype(np.int8))
+                    sanitized_results.append(sanititzed_result.astype(np.int64))
             else:
                 sanitized_results.append(
-                    result if isinstance(result, int) else result.astype(np.uint8)
+                    result if isinstance(result, int) else result.astype(np.uint64)
                 )
 
         return sanitized_results[0] if len(sanitized_results) == 1 else tuple(sanitized_results)

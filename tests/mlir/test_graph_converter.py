@@ -349,23 +349,6 @@ return %2
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x: x + 200,
-            {"x": "encrypted"},
-            range(200),
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be converted to MLIR:
-
-%0 = x                  # EncryptedScalar<uint8>
-%1 = 200                # ClearScalar<uint8>
-%2 = add(%0, %1)        # EncryptedScalar<uint9>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only up to 8-bit integers are supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
             lambda x: np.transpose(x),
             {"x": "clear"},
             [np.random.randint(0, 2, size=(3, 2)) for _ in range(100)],
@@ -412,6 +395,53 @@ Function you are trying to compile cannot be converted to MLIR
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only assignment to encrypted tensors are supported
 return %2
 
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: np.abs(10 * np.sin(x + 300)).astype(np.int64),
+            {"x": "encrypted"},
+            range(200),
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR:
+
+%0 = x                   # EncryptedScalar<uint8>
+%1 = 300                 # ClearScalar<uint9>
+%2 = add(%0, %1)         # EncryptedScalar<uint9>
+%3 = subgraph(%2)        # EncryptedScalar<uint4>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 8-bit integers
+return %3
+
+Subgraphs:
+
+    %3 = subgraph(%2):
+
+        %0 = 10                            # ClearScalar<uint4>
+        %1 = input                         # EncryptedScalar<uint2>
+        %2 = sin(%1)                       # EncryptedScalar<float64>
+        %3 = multiply(%0, %2)              # EncryptedScalar<float64>
+        %4 = absolute(%3)                  # EncryptedScalar<float64>
+        %5 = astype(%4, dtype=int_)        # EncryptedScalar<uint1>
+        return %5
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: x - 300,
+            {"x": "encrypted"},
+            range(200),
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR:
+
+%0 = x                       # EncryptedScalar<uint8>
+%1 = 300                     # ClearScalar<uint9>
+%2 = subtract(%0, %1)        # EncryptedScalar<int10>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed values are only supported on circuits with up to 8-bit integers
+return %2
 
             """,  # noqa: E501
         ),

@@ -13,7 +13,7 @@ from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Node, Operation
 
-MAXIMUM_BIT_WIDTH = 8
+MAXIMUM_TLU_BIT_WIDTH = 8
 
 
 class HashableNdarray:

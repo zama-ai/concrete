@@ -201,7 +201,7 @@ class Helpers:
         sample = []
 
         for description in parameters.values():
-            minimum, maximum = description.get("range", [0, 127])
+            minimum, maximum = description.get("range", [0, (2**16) - 1])
 
             if "shape" in description:
                 shape = description["shape"]
