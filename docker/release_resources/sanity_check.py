@@ -1,10 +1,5 @@
 import random
 
-# Check that extras are installed in the docker image
-import pygraphviz
-
-print("Extras import check OK")
-
 import concrete.numpy as cnp
 
 

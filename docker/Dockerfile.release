@@ -16,7 +16,6 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     python3.8-dev \
     python3.8-tk \
     python-is-python3 \
-    graphviz* && \
     rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
