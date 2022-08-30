@@ -557,7 +557,7 @@ pub fn optimize_one<W: UnsignedInteger>(
 
     let skip = |glwe_dim, glwe_poly_size| match restart_at {
         Some(solution) => {
-            (glwe_dim, glwe_poly_size) < (solution.glwe_dimension, solution.glwe_polynomial_size)
+            glwe_dim < solution.glwe_dimension && glwe_poly_size < solution.glwe_polynomial_size
         }
         None => false,
     };
