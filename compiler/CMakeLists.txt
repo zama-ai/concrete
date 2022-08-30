@@ -60,6 +60,9 @@ set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEA
 #--------------------------------------------------------------------------------
 option(CONCRETELANG_CUDA_SUPPORT "Support Concrete CUDA Execution." OFF)
 if(CONCRETELANG_CUDA_SUPPORT)
+  if (NOT DEFINED CONCRETE_CORE_PATH)
+    message(FATAL_ERROR "Compiling with CUDA support requires setting CONCRETE_CORE_PATH")
+  endif()
   message(STATUS "Building with Concrete CUDA execution support")
   include_directories(${CONCRETE_CORE_PATH}/concrete-cuda/cuda/include)
   add_library(ConcreteCUDA STATIC IMPORTED)

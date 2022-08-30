@@ -23,7 +23,6 @@ if(CONCRETELANG_CUDA_SUPPORT)
     ConcretelangRuntime
     PRIVATE
     ConcreteCUDA
-    -L/usr/local/cuda/lib64
     cudart
   )
 endif()
