@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use static_init::dynamic;
+
 pub struct SecurityWeights {
     slope: f64,
     bias: f64,
@@ -100,7 +102,6 @@ const SECURITY_WEIGHTS_ARRAY: [(u64, SecurityWeights); 9] = [
     ),
 ];
 
-lazy_static! {
-    pub static ref SECURITY_WEIGHTS_TABLE: HashMap<u64, SecurityWeights> =
-        HashMap::from(SECURITY_WEIGHTS_ARRAY);
-}
+#[dynamic(lazy)]
+pub static SECURITY_WEIGHTS_TABLE: HashMap<u64, SecurityWeights> =
+    HashMap::from(SECURITY_WEIGHTS_ARRAY);

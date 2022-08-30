@@ -15,6 +15,7 @@ use concrete_optimizer::optimization::atomic_pattern::{
     self as optimize_atomic_pattern, OptimizationState,
 };
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
+use concrete_optimizer::optimization::dag::solo_key::optimize::{self as optimize_dag};
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 use rayon_cond::CondIterator;
 use std::io::Write;
@@ -76,6 +77,9 @@ pub struct Args {
 
     #[clap(long)]
     pub wop_pbs: bool,
+
+    #[clap(long)]
+    pub simulate_dag: bool,
 }
 
 pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
@@ -112,6 +116,14 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                     let noise_scale = 2_f64.powi(manp);
                     let result = if args.wop_pbs {
                         optimize_wop_atomic_pattern::optimize_one_compat(
+                            sum_size,
+                            precision,
+                            config,
+                            noise_scale,
+                            &search_space,
+                        )
+                    } else if args.simulate_dag {
+                        optimize_dag::optimize_v0(
                             sum_size,
                             precision,
                             config,
@@ -197,10 +209,15 @@ mod tests {
 
     #[test]
     fn test_reference_output() {
-        check_reference_output_on_levels(&security_levels_to_test());
+        check_reference_output_on_levels(&security_levels_to_test(), false);
     }
 
-    fn check_reference_output_on_levels(security_levels: &[u64]) {
+    #[test]
+    fn test_reference_output_dag() {
+        check_reference_output_on_levels(&security_levels_to_test(), true);
+    }
+
+    fn check_reference_output_on_levels(security_levels: &[u64], simulate_dag: bool) {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
         for &security_level in security_levels {
@@ -219,6 +236,7 @@ mod tests {
                 sum_size: 4096,
                 no_parallelize: false,
                 wop_pbs: false,
+                simulate_dag,
             };
 
             let mut actual_output = Vec::<u8>::new();
@@ -259,6 +277,7 @@ mod tests {
                 sum_size: 4096,
                 no_parallelize: false,
                 wop_pbs: true,
+                simulate_dag: false,
             };
 
             let mut actual_output = Vec::<u8>::new();

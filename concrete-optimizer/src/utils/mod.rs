@@ -1,3 +1,4 @@
+pub mod cache;
 use std::ops::Mul;
 
 pub fn square<V>(v: V) -> V

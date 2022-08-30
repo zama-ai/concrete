@@ -1,18 +1,12 @@
 use super::config::{Config, SearchSpace};
-use crate::computing_cost::atomic_pattern::atomic_pattern_complexity;
 use crate::noise_estimator::error;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
-use crate::parameters::{
-    AtomicPatternParameters, BrDecompositionParameters, GlweParameters, KeyswitchParameters,
-    KsDecompositionParameters, LweDimension, PbsParameters,
-};
+use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositionParameters};
 use crate::utils::square;
-use crate::{pareto, security};
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 
-/* enable to debug */
-const CHECKS: bool = false;
-/* disable to debug */
+use super::decomposition::{blind_rotate, cut_complexity_noise, keyswitch};
+
 // Ref time for v0 table 1 thread: 950ms
 const CUTS: bool = true; // 80ms
 const PARETO_CUTS: bool = true; // 75ms
@@ -40,206 +34,16 @@ pub(crate) struct OptimizationDecompositionsConsts<'a> {
     pub kappa: f64,
     pub sum_size: u64,
     pub noise_factor: f64,
-    pub keyswitch_decompositions: Vec<KsDecompositionParameters>,
-    pub blind_rotate_decompositions: Vec<BrDecompositionParameters>,
     pub safe_variance: f64,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct ComplexityNoise {
-    pub index: usize,
-    pub complexity: f64,
-    pub noise: f64,
-}
-
-impl ComplexityNoise {
-    const ZERO: Self = Self {
-        index: 0,
-        complexity: 0.0,
-        noise: 0.0,
-    };
-}
-
-pub(crate) fn cutted_blind_rotate(
-    consts: &OptimizationDecompositionsConsts,
-    internal_dim: u64,
-    glwe_params: GlweParameters,
-    cut_complexity: f64,
-    cut_noise: f64,
-) -> Vec<ComplexityNoise> {
-    let pareto_cut = false;
-    pareto_cut_blind_rotate(
-        consts,
-        internal_dim,
-        glwe_params,
-        cut_complexity,
-        cut_noise,
-        pareto_cut,
-    )
-}
-
-pub(crate) fn pareto_blind_rotate(
-    consts: &OptimizationDecompositionsConsts,
-    internal_dim: u64,
-    glwe_params: GlweParameters,
-    cut_complexity: f64,
-    cut_noise: f64,
-) -> Vec<ComplexityNoise> {
-    let pareto_cut = true;
-    pareto_cut_blind_rotate(
-        consts,
-        internal_dim,
-        glwe_params,
-        cut_complexity,
-        cut_noise,
-        pareto_cut,
-    )
-}
-
-pub(crate) fn pareto_cut_blind_rotate(
-    consts: &OptimizationDecompositionsConsts,
-    internal_dim: u64,
-    glwe_params: GlweParameters,
-    cut_complexity: f64,
-    cut_noise: f64,
-    pareto_cut: bool,
-) -> Vec<ComplexityNoise> {
-    let br_decomp_len = consts.blind_rotate_decompositions.len();
-    let mut quantities = vec![ComplexityNoise::ZERO; br_decomp_len];
-
-    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
-    let security_level = consts.config.security_level;
-    let variance_bsk =
-        security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
-    let mut increasing_complexity = 0.0;
-    let mut decreasing_variance = f64::INFINITY;
-    let mut size = 0;
-    for (i_br, &br_decomposition_parameter) in consts.blind_rotate_decompositions.iter().enumerate()
-    {
-        let pbs_parameters = PbsParameters {
-            internal_lwe_dimension: LweDimension(internal_dim),
-            br_decomposition_parameter,
-            output_glwe_params: glwe_params,
-        };
-
-        let complexity_pbs = consts
-            .config
-            .complexity_model
-            .pbs_complexity(pbs_parameters, ciphertext_modulus_log);
-
-        if cut_complexity < complexity_pbs && CUTS {
-            break; // complexity is increasing
-        }
-        let base_noise = noise_atomic_pattern::variance_bootstrap(
-            pbs_parameters,
-            ciphertext_modulus_log,
-            variance_bsk,
-        );
-
-        let noise_out = base_noise.get_variance();
-        if cut_noise < noise_out && CUTS {
-            continue; // noise is decreasing
-        }
-        if decreasing_variance < noise_out && PARETO_CUTS && pareto_cut {
-            // the current case is dominated
-            continue;
-        }
-        let delta_complexity = complexity_pbs - increasing_complexity;
-        size -= if delta_complexity == 0.0 && PARETO_CUTS && pareto_cut {
-            1 // the previous case is dominated
-        } else {
-            0
-        };
-        quantities[size] = ComplexityNoise {
-            index: i_br,
-            complexity: complexity_pbs,
-            noise: noise_out,
-        };
-        assert!(
-            0.0 <= delta_complexity,
-            "blind_rotate_decompositions should be by increasing complexity"
-        );
-        increasing_complexity = complexity_pbs;
-        decreasing_variance = noise_out;
-        size += 1;
-    }
-    assert!(!(PARETO_CUTS && pareto_cut) || size < 64);
-    quantities.truncate(size);
-    quantities
-}
-
-pub(crate) fn pareto_keyswitch(
-    consts: &OptimizationDecompositionsConsts,
-    input_dim: u64,
-    internal_dim: u64,
-    cut_complexity: f64,
-    cut_noise: f64,
-) -> Vec<ComplexityNoise> {
-    let ks_decomp_len = consts.keyswitch_decompositions.len();
-    let mut quantities = vec![ComplexityNoise::ZERO; ks_decomp_len];
-
-    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
-    let security_level = consts.config.security_level;
-    let variance_ksk =
-        noise_atomic_pattern::variance_ksk(internal_dim, ciphertext_modulus_log, security_level);
-    let mut increasing_complexity = 0.0;
-    let mut decreasing_variance = f64::INFINITY;
-    let mut size = 0;
-    for (i_ks, &ks_decomposition_parameter) in consts.keyswitch_decompositions.iter().enumerate() {
-        let keyswitch_parameter = KeyswitchParameters {
-            input_lwe_dimension: LweDimension(input_dim),
-            output_lwe_dimension: LweDimension(internal_dim),
-            ks_decomposition_parameter,
-        };
-
-        let complexity_keyswitch = consts
-            .config
-            .complexity_model
-            .ks_complexity(keyswitch_parameter, ciphertext_modulus_log);
-
-        if cut_complexity < complexity_keyswitch && CUTS {
-            break;
-        }
-        let noise_keyswitch = noise_atomic_pattern::variance_keyswitch(
-            keyswitch_parameter,
-            ciphertext_modulus_log,
-            variance_ksk,
-        )
-        .get_variance();
-        if cut_noise < noise_keyswitch && CUTS {
-            continue; // noise is decreasing
-        }
-        if decreasing_variance < noise_keyswitch && PARETO_CUTS {
-            // the current case is dominated
-            continue;
-        }
-        let delta_complexity = complexity_keyswitch - increasing_complexity;
-        size -= if delta_complexity == 0.0 && PARETO_CUTS {
-            1
-        } else {
-            0
-        };
-        quantities[size] = ComplexityNoise {
-            index: i_ks,
-            complexity: complexity_keyswitch,
-            noise: noise_keyswitch,
-        };
-        assert!(
-            0.0 <= delta_complexity,
-            "keyswitch_decompositions should be by increasing complexity"
-        );
-        increasing_complexity = complexity_keyswitch;
-        decreasing_variance = noise_keyswitch;
-        size += 1;
-    }
-    assert!(!PARETO_CUTS || size < 64);
-    quantities.truncate(size);
-    quantities
 }
 
 pub struct OptimizationState {
     pub best_solution: Option<Solution>,
-    pub count_domain: usize,
+}
+
+pub struct Caches {
+    pub blind_rotate: blind_rotate::Cache,
+    pub keyswitch: keyswitch::Cache,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -248,6 +52,7 @@ fn update_state_with_best_decompositions(
     consts: &OptimizationDecompositionsConsts,
     internal_dim: u64,
     glwe_params: GlweParameters,
+    caches: &mut Caches,
 ) {
     let glwe_poly_size = glwe_params.polynomial_size();
     let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
@@ -269,8 +74,10 @@ fn update_state_with_best_decompositions(
     let complexity_multisum = (consts.sum_size * input_lwe_dimension) as f64;
     let mut cut_complexity = best_complexity - complexity_multisum;
     let mut cut_noise = safe_variance - noise_modulus_switching;
-    let br_quantities =
-        pareto_blind_rotate(consts, internal_dim, glwe_params, cut_complexity, cut_noise);
+    let br_quantities = caches
+        .blind_rotate
+        .pareto_quantities(glwe_params, internal_dim);
+    let br_quantities = cut_complexity_noise(cut_complexity, cut_noise, br_quantities);
     if br_quantities.is_empty() {
         return;
     }
@@ -278,13 +85,11 @@ fn update_state_with_best_decompositions(
         cut_noise -= br_quantities[br_quantities.len() - 1].noise;
         cut_complexity -= br_quantities[0].complexity;
     }
-    let ks_quantities = pareto_keyswitch(
-        consts,
-        input_lwe_dimension,
-        internal_dim,
-        cut_complexity,
-        cut_noise,
-    );
+
+    let ks_quantities = caches
+        .keyswitch
+        .pareto_quantities(glwe_params, internal_dim);
+    let ks_quantities = cut_complexity_noise(cut_complexity, cut_noise, ks_quantities);
     if ks_quantities.is_empty() {
         return;
     }
@@ -317,20 +122,6 @@ fn update_state_with_best_decompositions(
             let complexity_keyswitch = ks_quantity.complexity;
             let complexity = complexity_multisum + complexity_keyswitch + complexity_pbs;
 
-            if CHECKS {
-                assert_checks(
-                    consts,
-                    internal_dim,
-                    glwe_params,
-                    input_lwe_dimension,
-                    ks_quantity,
-                    br_quantity,
-                    noise_max,
-                    complexity_multisum,
-                    complexity,
-                );
-            }
-
             if noise_max > safe_variance {
                 if CROSS_PARETO_CUTS {
                     // the pareto of 2 added pareto is scanned linearly
@@ -353,16 +144,14 @@ fn update_state_with_best_decompositions(
                 let sigma_scale = sigma / Variance(noise_max).get_standard_dev();
                 let p_error = error::error_probability_of_sigma_scale(sigma_scale);
 
-                let i_br = br_quantity.index;
-                let i_ks = ks_quantity.index;
                 let BrDecompositionParameters {
                     level: br_l,
                     log2_base: br_b,
-                } = consts.blind_rotate_decompositions[i_br];
+                } = br_quantity.decomp;
                 let KsDecompositionParameters {
                     level: ks_l,
                     log2_base: ks_b,
-                } = consts.keyswitch_decompositions[i_ks];
+                } = ks_quantity.decomp;
 
                 best_complexity = complexity;
                 best_variance = noise_max;
@@ -385,110 +174,6 @@ fn update_state_with_best_decompositions(
     } // br ks
 }
 
-// This function provides reference values with unoptimised code, until we have non regeression tests
-#[allow(clippy::float_cmp)]
-fn assert_checks(
-    consts: &OptimizationDecompositionsConsts,
-    internal_dim: u64,
-    glwe_params: GlweParameters,
-    input_lwe_dimension: u64,
-    ks_c_n: ComplexityNoise,
-    br_c_n: ComplexityNoise,
-    noise_max: f64,
-    complexity_multisum: f64,
-    complexity: f64,
-) {
-    let i_ks = ks_c_n.index;
-    let i_br = br_c_n.index;
-    let noise_out = br_c_n.noise;
-    let noise_keyswitch = ks_c_n.noise;
-    let complexity_keyswitch = ks_c_n.complexity;
-    let complexity_pbs = br_c_n.complexity;
-    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
-    let security_level = consts.config.security_level;
-
-    let br_decomposition_parameter = consts.blind_rotate_decompositions[i_br];
-    let ks_decomposition_parameter = consts.keyswitch_decompositions[i_ks];
-
-    let variance_bsk =
-        security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
-
-    let pbs_parameters = PbsParameters {
-        internal_lwe_dimension: LweDimension(internal_dim),
-        br_decomposition_parameter,
-        output_glwe_params: glwe_params,
-    };
-
-    let base_noise_ = noise_atomic_pattern::variance_bootstrap(
-        pbs_parameters,
-        ciphertext_modulus_log,
-        variance_bsk,
-    );
-    let noise_in_ = base_noise_.get_variance() * square(consts.noise_factor);
-
-    let complexity_pbs_ = consts
-        .config
-        .complexity_model
-        .pbs_complexity(pbs_parameters, ciphertext_modulus_log);
-
-    assert_eq!(complexity_pbs, complexity_pbs_);
-    assert_eq!(noise_out * square(consts.noise_factor), noise_in_);
-    let variance_ksk =
-        noise_atomic_pattern::variance_ksk(internal_dim, ciphertext_modulus_log, security_level);
-
-    let keyswitch_parameters = KeyswitchParameters {
-        input_lwe_dimension: LweDimension(input_lwe_dimension),
-        output_lwe_dimension: LweDimension(internal_dim),
-        ks_decomposition_parameter,
-    };
-
-    let noise_keyswitch_ = noise_atomic_pattern::variance_keyswitch(
-        keyswitch_parameters,
-        ciphertext_modulus_log,
-        variance_ksk,
-    )
-    .get_variance();
-    let complexity_keyswitch_ = consts
-        .config
-        .complexity_model
-        .ks_complexity(keyswitch_parameters, ciphertext_modulus_log);
-
-    assert_eq!(complexity_keyswitch, complexity_keyswitch_);
-    assert_eq!(noise_keyswitch, noise_keyswitch_);
-
-    let atomic_pattern_parameters = AtomicPatternParameters {
-        input_lwe_dimension: LweDimension(input_lwe_dimension),
-        ks_decomposition_parameter,
-        internal_lwe_dimension: LweDimension(internal_dim),
-        br_decomposition_parameter,
-        output_glwe_params: glwe_params,
-    };
-
-    let check_max_noise = noise_atomic_pattern::maximal_noise::<Variance>(
-        Variance(noise_in_),
-        atomic_pattern_parameters,
-        ciphertext_modulus_log,
-        security_level,
-    )
-    .get_variance();
-    assert!(f64::abs(noise_max - check_max_noise) / check_max_noise < 0.000_000_000_01);
-    let check_complexity = atomic_pattern_complexity(
-        consts.config.complexity_model,
-        consts.sum_size,
-        atomic_pattern_parameters,
-        ciphertext_modulus_log,
-    );
-
-    let diff_complexity = f64::abs(complexity - check_complexity) / check_complexity;
-    if diff_complexity > 0.0001 {
-        println!(
-            "{} + {} + {} != {}",
-            complexity_multisum, complexity_keyswitch, complexity_pbs, check_complexity,
-        );
-    }
-    assert!(diff_complexity < 0.0001);
-}
-
 const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
 pub fn optimize_one(
@@ -509,6 +194,7 @@ pub fn optimize_one(
     // the blind rotate decomposition
 
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
+    let security_level = config.security_level;
     let safe_variance = error::safe_variance_bound_2padbits(
         precision,
         ciphertext_modulus_log,
@@ -522,22 +208,11 @@ pub fn optimize_one(
         kappa,
         sum_size,
         noise_factor,
-        keyswitch_decompositions: pareto::KS_BL
-            .map(|(log2_base, level)| KsDecompositionParameters { level, log2_base })
-            .to_vec(),
-        blind_rotate_decompositions: pareto::BR_BL
-            .map(|(log2_base, level)| BrDecompositionParameters { level, log2_base })
-            .to_vec(),
         safe_variance,
     };
 
     let mut state = OptimizationState {
         best_solution: None,
-        count_domain: search_space.glwe_dimensions.len()
-            * search_space.glwe_log_polynomial_sizes.len()
-            * search_space.internal_lwe_dimensions.len()
-            * consts.keyswitch_decompositions.len()
-            * consts.blind_rotate_decompositions.len(),
     };
 
     // cut only on glwe_poly_size based of modulus switching noise
@@ -559,6 +234,11 @@ pub fn optimize_one(
             glwe_dim < solution.glwe_dimension && glwe_poly_size < solution.glwe_polynomial_size
         }
         None => false,
+    };
+
+    let mut caches = Caches {
+        blind_rotate: blind_rotate::for_security(security_level).cache(),
+        keyswitch: keyswitch::for_security(security_level).cache(),
     };
 
     for &glwe_dim in &search_space.glwe_dimensions {
@@ -585,10 +265,14 @@ pub fn optimize_one(
                     &consts,
                     internal_dim,
                     glwe_params,
+                    &mut caches,
                 );
             }
         }
     }
+
+    blind_rotate::for_security(security_level).backport(caches.blind_rotate);
+    keyswitch::for_security(security_level).backport(caches.keyswitch);
 
     if let Some(sol) = state.best_solution {
         assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);

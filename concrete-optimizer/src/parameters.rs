@@ -3,20 +3,21 @@ pub use individual::*;
 pub use range::*;
 
 mod individual {
+    use serde::{Deserialize, Serialize};
 
-    #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
+    #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
     pub struct KsDecompositionParameters {
         pub level: u64,
         pub log2_base: u64,
     }
 
-    #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
+    #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
     pub struct BrDecompositionParameters {
         pub level: u64,
         pub log2_base: u64,
     }
 
-    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
     pub struct GlweParameters {
         pub log2_polynomial_size: u64,
         pub glwe_dimension: u64,

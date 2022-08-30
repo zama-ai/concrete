@@ -9,14 +9,16 @@ use crate::noise_estimator::error::{
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::noise_estimator::operators::wop_atomic_pattern::estimate_packing_private_keyswitch;
 use crate::optimization::atomic_pattern;
-use crate::optimization::atomic_pattern::{
-    cutted_blind_rotate, pareto_keyswitch, ComplexityNoise, OptimizationDecompositionsConsts,
-};
+use crate::optimization::atomic_pattern::Caches;
+use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
+
 use crate::optimization::config::{Config, SearchSpace};
-use crate::optimization::wop_atomic_pattern::pareto::{
-    BR_CIRCUIT_BOOTSTRAP_PARETO_DECOMP, BR_PARETO_DECOMP, KS_CIRCUIT_BOOTSTRAP_PARETO_DECOMP,
-    KS_PARETO_DECOMP,
-};
+use crate::optimization::decomposition::blind_rotate;
+use crate::optimization::decomposition::blind_rotate::BrComplexityNoise;
+use crate::optimization::decomposition::cut_complexity_noise;
+use crate::optimization::decomposition::keyswitch;
+use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
+use crate::optimization::wop_atomic_pattern::pareto::BR_CIRCUIT_BOOTSTRAP_PARETO_DECOMP;
 use crate::parameters::{
     GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension, PbsParameters,
 };
@@ -33,7 +35,6 @@ pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64)
 #[derive(Clone, Debug)]
 pub struct OptimizationState {
     pub best_solution: Option<Solution>,
-    pub count_domain: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -106,20 +107,22 @@ impl From<Solution> for atomic_pattern::Solution {
 }
 
 #[derive(Debug)]
-struct NoiseCostByMicroParam {
-    cutted_blind_rotate: Vec<ComplexityNoise>,
-    pareto_keyswitch: Vec<ComplexityNoise>,
+struct NoiseCostByMicroParam<'a> {
+    cutted_blind_rotate: &'a [BrComplexityNoise],
+    pareto_keyswitch: &'a [KsComplexityNoise],
     pp_switching: Vec<(f64, Complexity)>,
 }
 
-fn compute_noise_cost_by_micro_param(
+fn compute_noise_cost_by_micro_param<'a>(
     consts: &OptimizationDecompositionsConsts,
     glwe_params: GlweParameters,
     internal_dim: u64,
     best_complexity: f64,
     variance_modulus_switching: f64,
     partitionning: &[u64],
-) -> Option<NoiseCostByMicroParam> {
+    caches: &'a mut Caches,
+) -> Option<NoiseCostByMicroParam<'a>> {
+    let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
     let security_level = consts.config.security_level;
 
     let variance_coeff = square(consts.noise_factor) / 2.0;
@@ -130,13 +133,11 @@ fn compute_noise_cost_by_micro_param(
     let cut_complexity = best_complexity / number_br; // saves 0%
     let cut_variance = (consts.safe_variance - variance_modulus_switching) / variance_coeff; // saves 40%
 
-    let cutted_blind_rotate = cutted_blind_rotate(
-        consts,
-        internal_dim,
-        glwe_params,
-        cut_complexity,
-        cut_variance,
-    );
+    let br_pareto = caches
+        .blind_rotate
+        .pareto_quantities(glwe_params, internal_dim);
+    let cutted_blind_rotate = cut_complexity_noise(cut_complexity, cut_variance, br_pareto);
+
     if cutted_blind_rotate.is_empty() {
         return None;
     }
@@ -150,14 +151,11 @@ fn compute_noise_cost_by_micro_param(
         - variance_coeff_br * cutted_blind_rotate.last().unwrap().noise)
         / variance_coeff; // saves 25%
 
-    let input_dim = glwe_params.sample_extract_lwe_dimension();
-    let pareto_keyswitch = pareto_keyswitch(
-        consts,
-        input_dim,
-        internal_dim,
-        cut_complexity,
-        cut_variance,
-    );
+    let pareto_keyswitch = caches
+        .keyswitch
+        .pareto_quantities(glwe_params, internal_dim);
+    let pareto_keyswitch = cut_complexity_noise(cut_complexity, cut_variance, pareto_keyswitch);
+
     if pareto_keyswitch.is_empty() {
         return None;
     }
@@ -168,10 +166,10 @@ fn compute_noise_cost_by_micro_param(
         security_level,
     );
 
-    let mut variance_cost_pp_switching = vec![(f64::NAN, f64::NAN); BR_PARETO_DECOMP.len()];
-    for br in &cutted_blind_rotate {
+    let mut variance_cost_pp_switching = Vec::with_capacity(cutted_blind_rotate.len());
+    for br in cutted_blind_rotate {
         // saves 0%
-        let pp_ks_decomposition_parameter = BR_PARETO_DECOMP[br.index];
+        let pp_ks_decomposition_parameter = br.decomp;
         let ppks_parameter = PbsParameters {
             internal_lwe_dimension: LweDimension(
                 glwe_params.glwe_dimension * glwe_params.polynomial_size(),
@@ -201,12 +199,11 @@ fn compute_noise_cost_by_micro_param(
                 log2_base: pp_ks_decomposition_parameter.log2_base,
             },
         };
-        let complexity_ppks = consts.config.complexity_model.ks_complexity(
-            ppks_parameter_complexity,
-            consts.config.ciphertext_modulus_log,
-        );
-
-        variance_cost_pp_switching[br.index] = (variance_private_packing_ks, complexity_ppks);
+        let complexity_ppks = consts
+            .config
+            .complexity_model
+            .ks_complexity(ppks_parameter_complexity, ciphertext_modulus_log);
+        variance_cost_pp_switching.push((variance_private_packing_ks, complexity_ppks));
     }
 
     Some(NoiseCostByMicroParam {
@@ -224,6 +221,7 @@ fn update_state_with_best_decompositions(
     internal_dim: u64,
     n_functions: u64,
     partitionning: &[u64],
+    caches: &mut Caches,
 ) {
     let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
     let precisions_sum = partitionning.iter().copied().sum();
@@ -260,6 +258,7 @@ fn update_state_with_best_decompositions(
         best_complexity,
         variance_modulus_switching,
         partitionning,
+        caches,
     );
     let variance_cost = if let Some(variance_cost) = variance_cost_opt {
         variance_cost
@@ -274,9 +273,9 @@ fn update_state_with_best_decompositions(
         precisions_sum as f64 * variance_cost.pareto_keyswitch[0].complexity;
 
     // BlindRotate dans Circuit BS
-    for shared_br_decomp in &variance_cost.cutted_blind_rotate {
+    for (br_i, shared_br_decomp) in variance_cost.cutted_blind_rotate.iter().enumerate() {
         // Pbs dans BitExtract et Circuit BS et FP-KS (partagés)
-        let br_decomposition_parameter = consts.blind_rotate_decompositions[shared_br_decomp.index];
+        let br_decomposition_parameter = shared_br_decomp.decomp;
         let pbs_parameters = PbsParameters {
             internal_lwe_dimension: LweDimension(internal_dim),
             br_decomposition_parameter,
@@ -296,7 +295,7 @@ fn update_state_with_best_decompositions(
 
         // Circuit Boostrap
         // private packing keyswitch, <=> FP-KS
-        let pp_switching_index = shared_br_decomp.index;
+        let pp_switching_index = br_i;
         let (base_variance_private_packing_ks, complexity_ppks) =
             variance_cost.pp_switching[pp_switching_index];
 
@@ -400,7 +399,7 @@ fn update_state_with_best_decompositions(
             }
 
             // Shared by all pbs (like brs)
-            for ks_decomp in &variance_cost.pareto_keyswitch {
+            for ks_decomp in variance_cost.pareto_keyswitch {
                 let variance_keyswitch = ks_decomp.noise;
                 let variance_max = variance_wo_ks + variance_keyswitch;
                 if variance_max > safe_variance_bound {
@@ -429,7 +428,7 @@ fn update_state_with_best_decompositions(
                 let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
                 let glwe_polynomial_size = glwe_params.polynomial_size();
                 let glwe_dimension = glwe_params.glwe_dimension;
-                let ks_decomposition_parameter = consts.keyswitch_decompositions[ks_decomp.index];
+                let ks_decomposition_parameter = ks_decomp.decomp;
                 state.best_solution = Some(Solution {
                     input_lwe_dimension,
                     internal_ks_output_lwe_dimension: internal_dim,
@@ -462,22 +461,20 @@ fn optimize_raw(
     assert!(0.0 < config.maximum_acceptable_error_probability);
     assert!(config.maximum_acceptable_error_probability < 1.0);
 
+    let ciphertext_modulus_log = config.ciphertext_modulus_log;
+    let security_level = config.security_level;
+
     // Circuit BS bound
     // 1 bit of message only here =)
     // Bound for first bit extract in BitExtract (dominate others)
     let safe_variance_bound = safe_variance_bound_1bit_1padbit(
-        config.ciphertext_modulus_log,
+        ciphertext_modulus_log,
         config.maximum_acceptable_error_probability,
     );
     let kappa: f64 = sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
     let mut state = OptimizationState {
         best_solution: None,
-        count_domain: search_space.glwe_dimensions.len()
-            * search_space.glwe_log_polynomial_sizes.len()
-            * search_space.internal_lwe_dimensions.len()
-            * KS_PARETO_DECOMP.len()
-            * BR_PARETO_DECOMP.len(),
     };
 
     let consts = OptimizationDecompositionsConsts {
@@ -485,9 +482,12 @@ fn optimize_raw(
         kappa,
         sum_size: 1, // Ignored
         noise_factor: log_norm.exp2(),
-        keyswitch_decompositions: KS_CIRCUIT_BOOTSTRAP_PARETO_DECOMP.to_vec(),
-        blind_rotate_decompositions: BR_PARETO_DECOMP.to_vec(),
         safe_variance: safe_variance_bound,
+    };
+
+    let mut caches = Caches {
+        blind_rotate: blind_rotate::for_security(security_level).cache(),
+        keyswitch: keyswitch::for_security(security_level).cache(),
     };
 
     for &glwe_dim in &search_space.glwe_dimensions {
@@ -511,10 +511,14 @@ fn optimize_raw(
                     internal_dim,
                     n_functions,
                     partitionning,
+                    &mut caches,
                 );
             }
         }
     }
+
+    blind_rotate::for_security(security_level).backport(caches.blind_rotate);
+    keyswitch::for_security(security_level).backport(caches.keyswitch);
 
     state
 }
@@ -547,6 +551,5 @@ pub fn optimize_one_compat(
     let result = optimize_one(precision, config, log_norm, search_space);
     atomic_pattern::OptimizationState {
         best_solution: result.best_solution.map(Solution::into),
-        count_domain: result.count_domain,
     }
 }
