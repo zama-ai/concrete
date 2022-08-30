@@ -6,11 +6,11 @@
 
 [Installation](getting_started/installation.md)
 
-[Writing Your First Circuit](getting_started/first_circuit.md)
+[Writing Your First Circuit](getting_started/quick_start.md)
 
-[Types Of Operations](getting_started/operation_types.md)
+[Types Of Operations](getting_started/representation.md)
 
-[List of Operations](getting_started/operation_list.md)
+[List of Operations](getting_started/operations.md)
 
 [Cryptographic Parameters](getting_started/parameters.md)
 

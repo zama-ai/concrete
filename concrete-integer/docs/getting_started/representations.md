@@ -35,7 +35,36 @@ $$B=2^2$$. Otherwise said, they allow to work on Integers modulus $$(2^2)^4 = 2^
 
 In this representation, the correctness of operations requires to propagate the carries 
 between the ciphertext. This operation is costly since it relies on the computation of many 
-programmable bootstrapping over Shortints. 
+programmable bootstrapping over Shortints.
+
+```rust
+use concrete_integer::gen_keys;
+use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
+
+fn main() {
+    // We generate a set of client/server keys, using the default parameters:
+    let num_block = 4;
+    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+
+    let msg1 = 128;
+    let msg2 = 13;
+
+    // message_modulus^vec_length
+    let modulus = client_key.parameters().message_modulus.0.pow(num_block as u32) as u64;
+    
+    // We use the client key to encrypt two messages:
+    let ct_1 = client_key.encrypt(msg1);
+    let ct_2 = client_key.encrypt(msg2);
+    
+    // We use the server public key to execute an integer circuit:
+    let ct_3 = server_key.unchecked_add(&ct_1, &ct_2);
+    
+    // We use the client key to decrypt the output of the circuit:
+    let output = client_key.decrypt(&ct_3);
+
+    assert_eq!(output, (msg1 + msg2) % modulus);
+}
+```
 
 
 ## CRT based Integers
@@ -55,32 +84,35 @@ parallelized. Moreover, it allows to efficiently compute PBS in the case where t
 CRT compliant. 
 
 A variant of the CRT is proposed, where each block might be associated to a different key couple. 
-In the end, a keychain is required to the computations, but performance might be improved. 
+In the end, a keychain is required to the computations, but performance might be improved.
+
+```rust
+use concrete_integer::crt::{gen_key_id, gen_several_keys};
+use concrete_shortint::parameters::{PARAM_MESSAGE_2_CARRY_2, PARAM_MESSAGE_3_CARRY_1};
+
+fn main() {
+    // Generate the client key and the server key:
+    let (cks, sks) = gen_several_keys(&vec![PARAM_MESSAGE_2_CARRY_2, PARAM_MESSAGE_3_CARRY_1]);
+    
+    let clear_1 = 14;
+    let clear_2 = 11;
+    let basis = vec![2, 3, 7];
+    let keys_id = gen_key_id(&vec![0, 0, 1]);
+    // Encrypt two messages
+    let mut ctxt_1 = cks.encrypt_crt_several_keys(&clear_1, &basis, &keys_id);
+    let mut ctxt_2 = cks.encrypt_crt_several_keys(&clear_2, &basis, &keys_id);
+    
+    // Compute homomorphically a multiplication
+    sks.unchecked_add_crt_many_keys_assign_parallelized(&mut ctxt_1, &mut ctxt_2);
+    // Decrypt
+    let res = cks.decrypt_crt_several_keys(&ctxt_1);
+    assert_eq!((clear_1 + clear_2) % 30, res);
+}
+```
 
 
+## Differences between the two representations
 
-# Types of operations
-
-
-Much like `concrete-shortint`, the operations available via a `ServerKey` may come in different variants:
-
-  - operations that take their inputs as encrypted values.
-  - scalar operations take at least one non-encrypted value as input.
-
-For example, the addition has both variants:
-
-  - `ServerKey::unchecked_add` which takes two encrypted values and adds them.
-  - `ServerKey::unchecked_scalar_add` which takes an encrypted value and a clear value (the 
-     so-called scalar) and adds them.
-
-Each operation may come in different 'flavors':
-
-  - `unchecked`: Always does the operation, without checking if the result may exceed the capacity of 
-     the plaintext space.
-  - `checked`: Checks are done before computing the operation, returning an error if operation 
-      cannot be done safely.
-  - `smart`: Always does the operation, if the operation cannot be computed safely, the smart operation
-             will propagate the carry buffer to make the operation possible.
-
-Not all operations have these 3 flavors, as some of them are implemented in a way that the operation
-is always possible without ever exceeding the plaintext space capacity.
+Because of the propagation of the carries, the radix representation is generally slower than the CRT representation.
+However the CRT representation is limited in precision by the prime numbers chosen while the radix can offer ever larger 
+precision by adding blocks.

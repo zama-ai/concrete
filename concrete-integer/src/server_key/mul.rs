@@ -206,7 +206,7 @@ impl ServerKey {
     /// ciphertext.
     ///
     /// The result is returned as a new ciphertext.
-    pub fn unchecked_mul(&self, ct1: &mut Ciphertext, ct2: &Ciphertext) -> Ciphertext {
+    pub fn unchecked_mul(&self, ct1: &Ciphertext, ct2: &Ciphertext) -> Ciphertext {
         let copy = ct1.clone();
         let mut result = self.create_trivial_zero(
             ct1.ct_vec.len(),
