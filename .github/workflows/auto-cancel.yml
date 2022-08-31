@@ -1,0 +1,14 @@
+# https://github.com/styfle/cancel-workflow-action#user-content-advanced-canceling-other-workflows
+name: Auto-cancel-outdated PR
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  cancel:
+    name: Auto-cancel-outdated PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: styfle/cancel-workflow-action@0.10.0
+        with:
+          workflow_id: all
+          access_token: ${{ github.token }}

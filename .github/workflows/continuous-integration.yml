@@ -56,10 +56,10 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc7, latest]
-    # We want to always run the tests, but after the docker image build job.
+    # We want to always run the tests unless cancelled, but after the docker image build job.
     # If there is no new build then we use the old image, else we use the new image.
     # The latest compiler job isn't using the built image, so it suffers the dependance of the gcc7 job.
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     needs: [BuildAndPushDockerImages]
     steps:
       # Free 4Gb of workspace
@@ -307,9 +307,9 @@ jobs:
 
   BuildAndTestDF:
     runs-on: ubuntu-latest
-    # We want to always run the tests, but after the docker image build job.
+    # We want to always run the tests unless cancelled, but after the docker image build job.
     # If there is no new build then we use the old image, else we use the new image.
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     needs: [BuildAndPushDockerImages]
     steps:
       # A SSH private key is required as some dependencies are from private repos
