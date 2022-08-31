@@ -655,10 +655,14 @@ impl OperationDag {
         true
     }
 
-    pub fn complexity_cost(&self, input_lwe_dimension: u64, one_lut_cost: f64) -> f64 {
+    pub fn complexity(&self, input_lwe_dimension: u64, one_lut_cost: f64) -> f64 {
         let luts_cost = one_lut_cost * (self.nb_luts as f64);
         let levelled_cost = self.levelled_complexity.cost(input_lwe_dimension);
         luts_cost + levelled_cost
+    }
+
+    pub fn levelled_complexity(&self, input_lwe_dimension: u64) -> f64 {
+        self.levelled_complexity.cost(input_lwe_dimension)
     }
 }
 
@@ -701,7 +705,7 @@ mod tests {
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
-        let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
+        let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         assert_eq!(analysis.out_variances[input1.i], SymbolicVariance::INPUT);
         assert_eq!(analysis.out_shapes[input1.i], Shape::number());
@@ -724,7 +728,7 @@ mod tests {
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
-        let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
+        let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         assert!(analysis.out_variances[lut1.i] == SymbolicVariance::LUT);
         assert!(analysis.out_shapes[lut1.i] == Shape::number());
@@ -750,7 +754,7 @@ mod tests {
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
-        let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
+        let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         let expected_var = SymbolicVariance {
             input_coeff: norm2,
@@ -781,7 +785,7 @@ mod tests {
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
-        let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
+        let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         assert!(analysis.out_variances[dot.i].origin() == VO::Input);
         assert_eq!(analysis.out_precisions[dot.i], 3);
@@ -810,7 +814,7 @@ mod tests {
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
-        let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
+        let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         let expected_var_dot1 = SymbolicVariance {
             input_coeff: weights.square_norm2() as f64,
@@ -858,7 +862,7 @@ mod tests {
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
-        let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
+        let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         let expected_cost = (2 * lwe_dim) as f64 + 2.0 * one_lut_cost;
         assert_f64_eq(expected_cost, complexity_cost);
