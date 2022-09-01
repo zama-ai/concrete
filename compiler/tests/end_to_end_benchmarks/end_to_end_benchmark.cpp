@@ -3,6 +3,7 @@
 #include "llvm/Support/Path.h"
 #include <benchmark/benchmark.h>
 
+#include "tests_tools/StackSize.h"
 #include "tests_tools/keySetCache.h"
 
 /// Benchmark time of the compilation
@@ -100,7 +101,8 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   }
 }
 
-static int registerEndToEndTestFromFile(std::string prefix, std::string path) {
+static int registerEndToEndTestFromFile(std::string prefix, std::string path,
+                                        size_t stackSizeRequirement = 0) {
   auto registe = [&](std::string optionsName,
                      mlir::concretelang::CompilationOptions options) {
     llvm::for_each(loadEndToEndDesc(path), [&](EndToEndDesc &description) {
@@ -131,6 +133,7 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path) {
       return;
     });
   };
+  setCurrentStackLimit(stackSizeRequirement);
   mlir::concretelang::CompilationOptions defaul;
   registe("default", defaul);
   mlir::concretelang::CompilationOptions loop;
@@ -152,6 +155,7 @@ auto _ = {
     registerEndToEndTestFromFile(
         "FHELinalg", "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml"),
     registerEndToEndTestFromFile(
-        "FHELinalg", "tests/end_to_end_fixture/end_to_end_programs.yaml")};
+        "FHELinalg", "tests/end_to_end_fixture/end_to_end_programs.yaml",
+        0x8000000)};
 
 BENCHMARK_MAIN();
