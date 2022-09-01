@@ -26,7 +26,7 @@ struct Config {
   std::uint64_t security;
   double fallback_log_norm_woppbs;
 };
-constexpr Config DEFAULT_CONFIG = {P_ERROR_4_SIGMA, false, true,
+constexpr Config DEFAULT_CONFIG = {P_ERROR_4_SIGMA, false, false,
                                    DEFAULT_SECURITY,
                                    DEFAULT_FALLBACK_LOG_NORM_WOPPBS};
 
