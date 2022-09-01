@@ -4,11 +4,12 @@ use crate::ciphertext::Degree;
 use crate::engine::{EngineResult, ShortintEngine};
 use crate::wopbs::WopbsKey;
 use crate::{Ciphertext, ClientKey, ServerKey};
-use concrete_core::backends::core::private::crypto::circuit_bootstrap::DeltaLog;
-use concrete_core::backends::core::private::crypto::glwe::FunctionalPackingKeyswitchKey;
-use concrete_core::backends::core::private::crypto::lwe::LweCiphertext;
-use concrete_core::backends::core::private::crypto::vertical_packing::vertical_packing_cbs_binary_v0;
-use concrete_core::backends::core::private::crypto::wop_pbs_vp::extract_bit_v0_v1;
+use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
+use concrete_core::backends::fftw::private::crypto::vertical_packing::vertical_packing_cbs_binary_v0;
+use concrete_core::backends::fftw::private::crypto::wop_pbs_vp::extract_bit_v0_v1;
+use concrete_core::commons::crypto::glwe::FunctionalPackingKeyswitchKey;
+use concrete_core::commons::crypto::lwe::LweCiphertext;
+
 use concrete_core::prelude::{
     CleartextVectorCreationEngine, FunctionalPackingKeyswitchKeyCreationEngine,
     GlweSecretKeyEntity, LweCiphertext64,
@@ -85,7 +86,7 @@ impl ShortintEngine {
         server_key: &ServerKey,
         number_values_to_extract: usize,
     ) -> Vec<LweCiphertext<Vec<u64>>> {
-        let (buffers, _) = self.buffers_for_key(server_key);
+        let (buffers, _, _) = self.buffers_for_key(server_key);
         extract_bit_v0_v1(
             delta_log,
             lwe_in,
@@ -107,7 +108,7 @@ impl ShortintEngine {
         let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
         println!("delta log = {}", delta_log.0);
 
-        let (buffers, _engine) = self.buffers_for_key(sks);
+        let (buffers, _engine, _) = self.buffers_for_key(sks);
 
         let nb_bit_to_extract =
             f64::log2((sks.message_modulus.0 * sks.carry_modulus.0) as f64) as usize;
@@ -158,7 +159,7 @@ impl ShortintEngine {
         let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
         //println!("delta log = {}", delta_log.0);
 
-        let (buffers, _) = self.buffers_for_key(sks);
+        let (buffers, _, _) = self.buffers_for_key(sks);
 
         let nb_bit_to_extract =
             f64::log2((sks.message_modulus.0 * sks.carry_modulus.0) as f64) as usize;
@@ -207,7 +208,7 @@ impl ShortintEngine {
         vec_lut: Vec<Vec<u64>>,
         vec_lwe_in: &[LweCiphertext<Vec<u64>>],
     ) -> Vec<LweCiphertext<Vec<u64>>> {
-        let (buffers, _) = self.buffers_for_key(server_key);
+        let (buffers, _, _) = self.buffers_for_key(server_key);
         vertical_packing_cbs_binary_v0(
             vec_lut,
             &mut buffers.fourier,

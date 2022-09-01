@@ -10,8 +10,8 @@
 mod test;
 
 use crate::{Ciphertext, ClientKey, ServerKey};
-use concrete_core::backends::core::private::crypto::circuit_bootstrap::DeltaLog;
-use concrete_core::backends::core::private::crypto::lwe::LweCiphertext;
+use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
+use concrete_core::commons::crypto::lwe::LweCiphertext;
 use concrete_core::prelude::LweCiphertext64;
 use concrete_shortint::ciphertext::Degree;
 

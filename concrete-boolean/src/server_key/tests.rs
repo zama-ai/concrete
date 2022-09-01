@@ -17,10 +17,10 @@ const NB_GATE: usize = 1 << 11;
 /// test encryption and decryption with the LWE secret key
 fn test_encrypt_decrypt_lwe_secret_key() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // encryption of false
@@ -59,7 +59,7 @@ fn test_encrypt_decrypt_lwe_secret_key() {
 
 /// This function randomly either computes a regular encryption of the message or a trivial
 /// encryption of the message
-fn random_enum_encryption(cks: &ClientKey, sks: &mut ServerKey, message: bool) -> Ciphertext {
+fn random_enum_encryption(cks: &ClientKey, sks: &ServerKey, message: bool) -> Ciphertext {
     if random_boolean() {
         cks.encrypt(message)
     } else {
@@ -70,10 +70,10 @@ fn random_enum_encryption(cks: &ClientKey, sks: &mut ServerKey, message: bool) -
 #[test]
 fn test_and_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -82,10 +82,10 @@ fn test_and_gate() {
         let expected_result = b1 && b2;
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // encryption of b2
-        let ct2 = random_enum_encryption(&cks, &mut sks, b2);
+        let ct2 = random_enum_encryption(&cks, &sks, b2);
 
         // AND gate -> "left: {:?}, right: {:?}",ct1, ct2
         let ct_res = sks.and(&ct1, &ct2);
@@ -123,10 +123,10 @@ fn test_and_gate() {
 #[test]
 fn test_mux_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of three random booleans
@@ -136,13 +136,13 @@ fn test_mux_gate() {
         let expected_result = if b1 { b2 } else { b3 };
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // encryption of b2
-        let ct2 = random_enum_encryption(&cks, &mut sks, b2);
+        let ct2 = random_enum_encryption(&cks, &sks, b2);
 
         // encryption of b3
-        let ct3 = random_enum_encryption(&cks, &mut sks, b3);
+        let ct3 = random_enum_encryption(&cks, &sks, b3);
 
         // MUX gate
         let ct_res = sks.mux(&ct1, &ct2, &ct3);
@@ -162,10 +162,10 @@ fn test_mux_gate() {
 #[test]
 fn test_nand_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -174,10 +174,10 @@ fn test_nand_gate() {
         let expected_result = !(b1 && b2);
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // encryption of b2
-        let ct2 = random_enum_encryption(&cks, &mut sks, b2);
+        let ct2 = random_enum_encryption(&cks, &sks, b2);
 
         // NAND gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.nand(&ct1, &ct2);
@@ -223,10 +223,10 @@ fn test_nand_gate() {
 #[test]
 fn test_nor_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -235,10 +235,10 @@ fn test_nor_gate() {
         let expected_result = !(b1 || b2);
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // encryption of b2
-        let ct2 = random_enum_encryption(&cks, &mut sks, b2);
+        let ct2 = random_enum_encryption(&cks, &sks, b2);
 
         // NOR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.nor(&ct1, &ct2);
@@ -276,10 +276,10 @@ fn test_nor_gate() {
 #[test]
 fn test_not_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of one random booleans
@@ -287,7 +287,7 @@ fn test_not_gate() {
         let expected_result = !b1;
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // NOT gate
         let ct_res = sks.not(&ct1);
@@ -303,10 +303,10 @@ fn test_not_gate() {
 #[test]
 fn test_or_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -315,10 +315,10 @@ fn test_or_gate() {
         let expected_result = b1 || b2;
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // encryption of b2
-        let ct2 = random_enum_encryption(&cks, &mut sks, b2);
+        let ct2 = random_enum_encryption(&cks, &sks, b2);
 
         // OR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.or(&ct1, &ct2);
@@ -352,10 +352,10 @@ fn test_or_gate() {
 #[test]
 fn test_xnor_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -364,10 +364,10 @@ fn test_xnor_gate() {
         let expected_result = b1 == b2;
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // encryption of b2
-        let ct2 = random_enum_encryption(&cks, &mut sks, b2);
+        let ct2 = random_enum_encryption(&cks, &sks, b2);
 
         // XNOR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.xnor(&ct1, &ct2);
@@ -413,10 +413,10 @@ fn test_xnor_gate() {
 #[test]
 fn test_xor_gate() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -425,10 +425,10 @@ fn test_xor_gate() {
         let expected_result = b1 ^ b2;
 
         // encryption of b1
-        let ct1 = random_enum_encryption(&cks, &mut sks, b1);
+        let ct1 = random_enum_encryption(&cks, &sks, b1);
 
         // encryption of b2
-        let ct2 = random_enum_encryption(&cks, &mut sks, b2);
+        let ct2 = random_enum_encryption(&cks, &sks, b2);
 
         // XOR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.xor(&ct1, &ct2);
@@ -471,7 +471,7 @@ fn random_index() -> usize {
 /// randomly select a gate, randomly select inputs and the output,
 /// compute the selected gate with the selected inputs
 /// and write in the selected output
-fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &mut ServerKey) {
+fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &ServerKey) {
     // select a random gate in the array [NOT,CMUX,AND,NAND,NOR,OR,XOR,XNOR]
     let gate_id = random_integer() % 8;
 
@@ -527,10 +527,10 @@ fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &mut S
 #[test]
 fn test_deep_circuit() {
     // generate the client key set
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let mut sks = ServerKey::new(&cks);
+    let sks = ServerKey::new(&cks);
 
     // create an array of ciphertexts
     let mut ct_tab: Vec<Ciphertext> = vec![cks.encrypt(true); NB_CT];
@@ -546,7 +546,7 @@ fn test_deep_circuit() {
 
     // compute NB_GATE gates
     for _ in 0..NB_GATE {
-        random_gate_all(&mut ct_tab, &mut bool_tab, &mut sks);
+        random_gate_all(&mut ct_tab, &mut bool_tab, &sks);
     }
 
     // decrypt and assert equality

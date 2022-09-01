@@ -166,12 +166,12 @@ impl SharedWopbsKey {
         &self.inner.1
     }
     pub fn wopbs_key(&self) -> &WopbsKey {
-        &*self.wopbs
+        &self.wopbs
     }
 }
 
 impl SharedTreePbsKey {
-    pub fn tree_pbs(&self) -> &TreepbsKey {
+    pub fn treepbs_key(&self) -> &TreepbsKey {
         &self.inner
     }
 }

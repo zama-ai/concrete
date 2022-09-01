@@ -4,16 +4,11 @@
 //! encryption and decryption methods.
 
 use crate::ciphertext::Ciphertext;
+use crate::engine::with_thread_local_cpu_engine_mut;
 use crate::parameters::BooleanParameters;
-use crate::{PLAINTEXT_FALSE, PLAINTEXT_TRUE};
 use concrete_core::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Formatter};
-
-thread_local! {
-    static ENGINE: RefCell<CoreEngine> = RefCell::new(crate::default_engine());
-}
 
 /// A structure containing the client key, which must be kept secret.
 ///
@@ -23,7 +18,7 @@ thread_local! {
 /// * `glwe_secret_key` - a GLWE secret key, used to generate the bootstrapping keys and key
 /// switching keys.
 /// * `parameters` - the cryptographic parameter set.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone)]
 pub struct ClientKey {
     pub(crate) lwe_secret_key: LweSecretKey32,
     pub(crate) glwe_secret_key: GlweSecretKey32,
@@ -69,26 +64,7 @@ impl ClientKey {
     /// assert_eq!(true, dec);
     /// ```
     pub fn encrypt(&self, message: bool) -> Ciphertext {
-        ENGINE.with(|engine_cell| {
-            let engine = &mut engine_cell.borrow_mut();
-
-            // encode the boolean message
-            let plain: Plaintext32 = if message {
-                engine.create_plaintext(&PLAINTEXT_TRUE).unwrap()
-            } else {
-                engine.create_plaintext(&PLAINTEXT_FALSE).unwrap()
-            };
-
-            // convert into a variance
-            let var = Variance(self.parameters.lwe_modular_std_dev.get_variance());
-
-            // encryption
-            let ct = engine
-                .encrypt_lwe_ciphertext(&self.lwe_secret_key, &plain, var)
-                .unwrap();
-
-            Ciphertext::Encrypted(ct)
-        })
+        with_thread_local_cpu_engine_mut(|engine| engine.encrypt(message, self))
     }
 
     /// Decrypts a ciphertext encrypting a Boolean message using the client key.
@@ -109,29 +85,7 @@ impl ClientKey {
     /// assert_eq!(true, dec);
     /// ```
     pub fn decrypt(&self, ct: &Ciphertext) -> bool {
-        match ct {
-            // in case of a trivial ciphertext (i.e. unencrypted)
-            Ciphertext::Trivial(b) => *b,
-            Ciphertext::Encrypted(ciphertext) => {
-                ENGINE.with(|engine_cell| {
-                    let engine = &mut engine_cell.borrow_mut();
-
-                    // decryption
-                    let decrypted = engine
-                        .decrypt_lwe_ciphertext(&self.lwe_secret_key, ciphertext)
-                        .unwrap();
-
-                    // cast as a u32
-                    let mut decrypted_u32: u32 = 0;
-                    engine
-                        .discard_retrieve_plaintext(&mut decrypted_u32, &decrypted)
-                        .unwrap();
-
-                    // return
-                    decrypted_u32 < (1 << 31)
-                })
-            }
-        }
+        with_thread_local_cpu_engine_mut(|engine| engine.decrypt(ct, self))
     }
 
     /// Allocates and generates a client key.
@@ -144,28 +98,60 @@ impl ClientKey {
     /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key:
-    /// let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    /// let cks = ClientKey::new(&DEFAULT_PARAMETERS);
     /// ```
-    pub fn new(parameter_set: BooleanParameters) -> ClientKey {
-        ENGINE.with(|engine_cell| {
-            let engine = &mut engine_cell.borrow_mut();
-            // generate the lwe secret key
-            let lwe_secret_key: LweSecretKey32 = engine
-                .create_lwe_secret_key(parameter_set.lwe_dimension)
-                .unwrap();
+    pub fn new(parameter_set: &BooleanParameters) -> ClientKey {
+        with_thread_local_cpu_engine_mut(|engine| engine.create_client_key(*parameter_set))
+    }
+}
 
-            // generate the rlwe secret key
-            let glwe_secret_key: GlweSecretKey32 = engine
-                .create_glwe_secret_key(parameter_set.glwe_dimension, parameter_set.polynomial_size)
-                .unwrap();
+#[derive(Serialize, Deserialize)]
+struct SerializableClientKey {
+    lwe_secret_key: Vec<u8>,
+    glwe_secret_key: Vec<u8>,
+    parameters: BooleanParameters,
+}
 
-            // pack the keys in the client key set
-            let cks: ClientKey = ClientKey {
-                lwe_secret_key,
-                glwe_secret_key,
-                parameters: parameter_set,
-            };
-            cks
+impl Serialize for ClientKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+
+        let lwe_secret_key = ser_eng
+            .serialize(&self.lwe_secret_key)
+            .map_err(serde::ser::Error::custom)?;
+        let glwe_secret_key = ser_eng
+            .serialize(&self.glwe_secret_key)
+            .map_err(serde::ser::Error::custom)?;
+
+        SerializableClientKey {
+            lwe_secret_key,
+            glwe_secret_key,
+            parameters: self.parameters,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ClientKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let thing =
+            SerializableClientKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+        let mut de_eng = DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+
+        Ok(Self {
+            lwe_secret_key: de_eng
+                .deserialize(thing.lwe_secret_key.as_slice())
+                .map_err(serde::de::Error::custom)?,
+            glwe_secret_key: de_eng
+                .deserialize(thing.glwe_secret_key.as_slice())
+                .map_err(serde::de::Error::custom)?,
+            parameters: thing.parameters,
         })
     }
 }

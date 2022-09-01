@@ -1,5 +1,5 @@
 use crate::ServerKey;
-use concrete_core::backends::core::private::crypto::bootstrap::FourierBuffers;
+use concrete_core::backends::fftw::private::crypto::bootstrap::FourierBuffers;
 use concrete_core::prelude::*;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -12,6 +12,25 @@ mod wopbs;
 
 thread_local! {
     static LOCAL_ENGINE: RefCell<ShortintEngine> = RefCell::new(ShortintEngine::new());
+}
+
+fn new_seeder() -> Box<dyn Seeder> {
+    let seeder;
+    #[cfg(target_arch = "x86")]
+    {
+        if RdseedSeeder::is_available() {
+            seeder = Box::new(RdseedSeeder);
+        } else {
+            assert!(false);
+            seeder = Box::new(UnixSeeder::new(0));
+        }
+    }
+    #[cfg(not(target_arch = "x86"))]
+    {
+        seeder = Box::new(UnixSeeder::new(0));
+    }
+
+    seeder
 }
 
 /// Stores buffers associated to a ServerKey
@@ -71,7 +90,9 @@ pub(crate) type EngineResult<T> = Result<T, EngineError>;
 ///
 /// This structs actually implements the logics into its methods.
 pub(crate) struct ShortintEngine {
-    pub(crate) engine: CoreEngine,
+    pub(crate) engine: DefaultEngine,
+    pub(crate) fftw_engine: FftwEngine,
+    pub(crate) par_engine: DefaultParallelEngine,
     buffers: BTreeMap<KeyId, Buffers>,
 }
 
@@ -83,7 +104,7 @@ impl ShortintEngine {
     where
         F: FnOnce(&mut Self) -> R,
     {
-        LOCAL_ENGINE.with(|engine_cell| func(&mut *engine_cell.borrow_mut()))
+        LOCAL_ENGINE.with(|engine_cell| func(&mut engine_cell.borrow_mut()))
     }
 
     /// Creates a new shortint engine
@@ -97,16 +118,20 @@ impl ShortintEngine {
     ///
     /// This will panic if the `CoreEngine` failed to create.
     fn new() -> Self {
-        let engine = CoreEngine::new(()).expect("Failed to create a CoreEngine");
-
+        let engine = DefaultEngine::new(new_seeder()).expect("Failed to create a DefaultEngine");
+        let par_engine = DefaultParallelEngine::new(new_seeder())
+            .expect("Failed to create a DefaultParallelEngine");
+        let fftw_engine = FftwEngine::new(()).unwrap();
         Self {
             engine,
+            fftw_engine,
+            par_engine,
             buffers: Default::default(),
         }
     }
 
     fn generate_accumulator_with_engine<F>(
-        engine: &mut CoreEngine,
+        engine: &mut DefaultEngine,
         server_key: &ServerKey,
         f: F,
     ) -> EngineResult<GlweCiphertext64>
@@ -162,7 +187,10 @@ impl ShortintEngine {
     /// This also `&mut CoreEngine` to simply borrow checking for the caller
     /// (since returned buffers are borrowed from `self`, using the `self.engine`
     /// wouldn't be possible after calling `buffers_for_key`)
-    fn buffers_for_key(&mut self, server_key: &ServerKey) -> (&mut Buffers, &mut CoreEngine) {
+    fn buffers_for_key(
+        &mut self,
+        server_key: &ServerKey,
+    ) -> (&mut Buffers, &mut DefaultEngine, &mut FftwEngine) {
         let key = server_key.key_id();
         // To make borrow checker happy
         let engine = &mut self.engine;
@@ -197,6 +225,6 @@ impl ShortintEngine {
             }
         });
 
-        (buffers, engine)
+        (buffers, engine, &mut self.fftw_engine)
     }
 }

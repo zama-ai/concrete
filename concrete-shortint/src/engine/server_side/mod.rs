@@ -36,14 +36,18 @@ impl ShortintEngine {
         // Convert into a variance for rlwe context
         let var_rlwe = Variance(cks.parameters.glwe_modular_std_dev.get_variance());
 
-        // Creation of the bootstrapping key in the Fourier domain
-        let fourier_bsk: FourierLweBootstrapKey64 = self.engine.create_lwe_bootstrap_key(
+        let bootstrap_key: LweBootstrapKey64 = self.par_engine.create_lwe_bootstrap_key(
             &cks.lwe_secret_key_after_ks,
             &cks.glwe_secret_key,
             cks.parameters.pbs_base_log,
             cks.parameters.pbs_level,
             var_rlwe,
         )?;
+
+        // Creation of the bootstrapping key in the Fourier domain
+
+        let fourier_bsk: FftwFourierLweBootstrapKey64 =
+            self.fftw_engine.convert_lwe_bootstrap_key(&bootstrap_key)?;
 
         // Convert into a variance for lwe context
         let var_lwe = Variance(cks.parameters.lwe_modular_std_dev.get_variance());
@@ -94,7 +98,7 @@ impl ShortintEngine {
         ct: &mut Ciphertext,
     ) -> EngineResult<()> {
         // Compute the programmable bootstrapping with fixed test polynomial
-        let (buffers, engine) = self.buffers_for_key(server_key);
+        let (buffers, engine, fftw_engine) = self.buffers_for_key(server_key);
 
         // Compute a keyswitch
         engine.discard_keyswitch_lwe_ciphertext(
@@ -104,7 +108,7 @@ impl ShortintEngine {
         )?;
 
         // Compute a bootstrap
-        engine.discard_bootstrap_lwe_ciphertext(
+        fftw_engine.discard_bootstrap_lwe_ciphertext(
             &mut ct.ct,
             &buffers.buffer_lwe_after_ks,
             &buffers.accumulator,
@@ -131,7 +135,7 @@ impl ShortintEngine {
         acc: &GlweCiphertext64,
     ) -> EngineResult<()> {
         // Compute the programmable bootstrapping with fixed test polynomial
-        let (buffers, engine) = self.buffers_for_key(server_key);
+        let (buffers, engine, fftw_engine) = self.buffers_for_key(server_key);
 
         // Compute a key switch
         engine.discard_keyswitch_lwe_ciphertext(
@@ -141,7 +145,7 @@ impl ShortintEngine {
         )?;
 
         // Compute a bootstrap
-        engine.discard_bootstrap_lwe_ciphertext(
+        fftw_engine.discard_bootstrap_lwe_ciphertext(
             &mut ct.ct,
             &buffers.buffer_lwe_after_ks,
             acc,

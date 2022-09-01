@@ -15,16 +15,23 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-rand = "0.8.4"
 
 [dependencies.concrete-core]
-version = "1.0.0-alpha"
+package = "concrete-core-experimental"
 git = "https://github.com/zama-ai/concrete-core"
-rev = "68a6ae69aba46961c56e683a8e7e893aeb987369"
-features = ["multithread", "serde_serialize"]
+rev = "384889f8b7fac829d9a6a9c18b728ceb8129fdbe"
+features = [
+    "backend_default",
+    "backend_fftw",
+    "backend_default_serialization",
+    "backend_fftw_serialization",
+    "backend_default_parallel",
+    "backend_default_generator_x86_64_aesni"
+]
 
 [dev-dependencies]
 criterion = "0.3.4"
+rand = "0.8.4"
 
 [[bench]]
 name = "bench"

@@ -11,3 +11,10 @@ members = [
 
 [profile.bench]
 lto = "fat"
+
+[profile.release]
+lto = "fat"
+
+[patch.crates-io]
+concrete-csprng = { git = "https://github.com/zama-ai/concrete-core", rev = "384889f8b7fac829d9a6a9c18b728ceb8129fdbe" }
+concrete-commons = { git = "https://github.com/zama-ai/concrete-core", rev = "384889f8b7fac829d9a6a9c18b728ceb8129fdbe" }

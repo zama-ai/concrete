@@ -14,11 +14,23 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 rayon = "1.5.2"
-concrete-core = { package = "concrete-core-experimental", version = "1.0.0-alpha", features = ["multithread", "serde_serialize"] }
 # lazy_static is used for the keycache.
 # It is both a deps to allow usage in bench in integer crate
 # and dev-deps to automatically enable it in tests
 lazy_static = { version = "1.4.0", optional = true }
+
+[dependencies.concrete-core]
+package = "concrete-core-experimental"
+git = "https://github.com/zama-ai/concrete-core"
+rev = "384889f8b7fac829d9a6a9c18b728ceb8129fdbe"
+features = [
+    "backend_default",
+    "backend_fftw",
+    "backend_default_serialization",
+    "backend_fftw_serialization",
+    "backend_default_parallel",
+    "backend_default_generator_x86_64_aesni"
+]
 
 [dependencies.concrete-shortint]
 path = "../concrete-shortint"

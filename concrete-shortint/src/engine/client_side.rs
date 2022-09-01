@@ -19,7 +19,7 @@ impl ShortintEngine {
 
         let large_lwe_secret_key = self
             .engine
-            .transmute_glwe_secret_key_to_lwe_secret_key(glwe_secret_key.clone())?;
+            .transform_glwe_secret_key_to_lwe_secret_key(glwe_secret_key.clone())?;
 
         // pack the keys in the client key set
         Ok(ClientKey {

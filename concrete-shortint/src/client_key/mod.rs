@@ -4,7 +4,7 @@ use crate::ciphertext::Ciphertext;
 use crate::engine::ShortintEngine;
 use crate::parameters::{MessageModulus, Parameters};
 use concrete_core::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::Debug;
 
 /// A structure containing the client key, which must be kept secret.
@@ -15,7 +15,7 @@ use std::fmt::Debug;
 /// * `glwe_secret_key` - a GLWE secret key, used to generate the bootstrapping keys and key
 /// switching keys.
 /// * `parameters` - the cryptographic parameter set.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ClientKey {
     /// The actual encryption / decryption key
     pub(crate) lwe_secret_key: LweSecretKey64,
@@ -323,6 +323,65 @@ impl ClientKey {
             engine
                 .decrypt_message_and_carry_not_power_of_two(self, ct, message_modulus as u64)
                 .unwrap()
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SerializableClientKey {
+    lwe_secret_key: Vec<u8>,
+    glwe_secret_key: Vec<u8>,
+    lwe_secret_key_after_ks: Vec<u8>,
+    parameters: Parameters,
+}
+
+impl Serialize for ClientKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+
+        let lwe_secret_key = ser_eng
+            .serialize(&self.lwe_secret_key)
+            .map_err(serde::ser::Error::custom)?;
+        let glwe_secret_key = ser_eng
+            .serialize(&self.glwe_secret_key)
+            .map_err(serde::ser::Error::custom)?;
+        let lwe_secret_key_after_ks = ser_eng
+            .serialize(&self.lwe_secret_key_after_ks)
+            .map_err(serde::ser::Error::custom)?;
+
+        SerializableClientKey {
+            lwe_secret_key,
+            glwe_secret_key,
+            lwe_secret_key_after_ks,
+            parameters: self.parameters,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ClientKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let thing =
+            SerializableClientKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+        let mut de_eng = DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+
+        Ok(Self {
+            lwe_secret_key: de_eng
+                .deserialize(thing.lwe_secret_key.as_slice())
+                .map_err(serde::de::Error::custom)?,
+            glwe_secret_key: de_eng
+                .deserialize(thing.glwe_secret_key.as_slice())
+                .map_err(serde::de::Error::custom)?,
+            lwe_secret_key_after_ks: de_eng
+                .deserialize(thing.lwe_secret_key_after_ks.as_slice())
+                .map_err(serde::de::Error::custom)?,
+            parameters: thing.parameters,
         })
     }
 }

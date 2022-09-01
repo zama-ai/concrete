@@ -1,11 +1,11 @@
 use crate::{Ciphertext, ClientKey, ServerKey};
-use concrete_core::backends::core::private::crypto::bootstrap::multivaluepbs::{
+use concrete_core::backends::fftw::private::crypto::bootstrap::multivaluepbs::{
     generate_fourier_polynomial_three_variables, generate_fourier_polynomial_three_variables_base,
     generate_fourier_polynomial_two_variables, generate_fourier_polynomial_two_variables_base,
 };
-use concrete_core::backends::core::private::crypto::bootstrap::FourierBuffers;
-use concrete_core::backends::core::private::crypto::lwe::LweCiphertext;
-use concrete_core::backends::core::private::math::polynomial::Polynomial;
+use concrete_core::backends::fftw::private::crypto::bootstrap::FourierBuffers;
+use concrete_core::commons::crypto::lwe::LweCiphertext;
+use concrete_core::commons::math::polynomial::Polynomial;
 use concrete_core::prelude::{LweBootstrapKeyEntity, LweCiphertext64};
 use concrete_shortint::ciphertext::Degree;
 

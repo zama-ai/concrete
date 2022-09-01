@@ -56,8 +56,6 @@ impl ShortintEngine {
         self.engine
             .fuse_add_lwe_ciphertext_plaintext(&mut ct.ct, &clear_w)?;
 
-        self.engine.destroy(clear_w)?;
-
         // Update the degree
         ct.degree = Degree(z as usize);
 

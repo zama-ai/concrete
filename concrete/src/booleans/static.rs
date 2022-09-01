@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use super::FheBoolParameters;
 use concrete_boolean::ciphertext::Ciphertext;
 use concrete_boolean::client_key::ClientKey as BooleanClientKey;
-#[cfg(feature = "__newer_booleans")]
 use concrete_boolean::prelude::BinaryBooleanGates;
 use concrete_boolean::server_key::ServerKey;
 

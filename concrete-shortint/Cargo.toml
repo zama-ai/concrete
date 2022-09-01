@@ -19,7 +19,32 @@ serde = { version = "1.0", features = ["derive"] }
 # and dev-deps to automatically enable them in tests
 concrete-utils = { path = "../concrete-utils", version = "0.1.0", optional = true }
 lazy_static = { version = "1.4.0", optional = true }
-concrete-core = { package = "concrete-core-experimental", version = "1.0.0-alpha", features = ["multithread", "serde_serialize"]}
+
+[target.'cfg(target_arch = "x86")'.dependencies.concrete-core]
+package = "concrete-core-experimental"
+git = "https://github.com/zama-ai/concrete-core"
+rev = "384889f8b7fac829d9a6a9c18b728ceb8129fdbe"
+features = [
+    "backend_default",
+    "backend_fftw",
+    "backend_default_serialization",
+    "backend_fftw_serialization",
+    "backend_default_parallel",
+    "backend_default_generator_x86_64_aesni"
+]
+
+[target.'cfg(not(target_arch = "x86"))'.dependencies.concrete-core]
+package = "concrete-core-experimental"
+git = "https://github.com/zama-ai/concrete-core"
+rev = "384889f8b7fac829d9a6a9c18b728ceb8129fdbe"
+features = [
+    "backend_default",
+    "backend_fftw",
+    "backend_default_serialization",
+    "backend_fftw_serialization",
+    "backend_default_parallel",
+]
+
 
 [dev-dependencies]
 rand = "0.8.4"

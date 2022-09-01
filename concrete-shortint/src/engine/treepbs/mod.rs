@@ -2,10 +2,10 @@ use crate::ciphertext::Degree;
 use crate::engine::{EngineResult, ShortintEngine};
 use crate::treepbs::TreepbsKey;
 use crate::{Ciphertext, ClientKey, ServerKey};
-use concrete_core::backends::core::private::crypto::bootstrap::multivaluepbs::generate_fourier_polynomial_multivalue;
-use concrete_core::backends::core::private::crypto::bootstrap::FourierBuffers;
-use concrete_core::backends::core::private::crypto::lwe::LweCiphertext;
-use concrete_core::backends::core::private::math::polynomial::Polynomial;
+use concrete_core::backends::fftw::private::crypto::bootstrap::multivaluepbs::generate_fourier_polynomial_multivalue;
+use concrete_core::backends::fftw::private::crypto::bootstrap::FourierBuffers;
+use concrete_core::commons::crypto::lwe::LweCiphertext;
+use concrete_core::commons::math::polynomial::Polynomial;
 use concrete_core::prelude::{
     DispersionParameter, LweBootstrapKeyEntity, LweCiphertext64, PackingKeyswitchKeyCreationEngine,
     Variance,

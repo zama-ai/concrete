@@ -31,7 +31,7 @@ mod old {
         }
 
         fn from_static(params: &'static BooleanParameters) -> Self {
-            Self(params.clone())
+            Self(*params)
         }
     }
 

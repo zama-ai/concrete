@@ -1,6 +1,5 @@
-use crate::keycache::KEY_CACHE;
+use crate::keycache::{KEY_CACHE, KEY_CACHE_TREEPBS};
 use crate::parameters::*;
-use crate::treepbs::TreepbsKey;
 use paste::paste;
 use rand::Rng;
 
@@ -59,8 +58,8 @@ create_parametrized_test!(shortint_message_and_carry_extract);
 fn shortint_mul_treepbs(param: Parameters) {
     let keys = KEY_CACHE.get_from_param(param);
     let (cks, sks) = (keys.client_key(), keys.server_key());
-    let mut treepbs_key = TreepbsKey::new_tree_key(cks);
-
+    let shared_treepbs_key = KEY_CACHE_TREEPBS.get_from_param(param);
+    let treepbs_key = shared_treepbs_key.treepbs_key();
     //RNG
     let mut rng = rand::thread_rng();
 
@@ -92,7 +91,8 @@ fn shortint_mul_treepbs(param: Parameters) {
 fn shortint_message_and_carry_extract(param: Parameters) {
     let keys = KEY_CACHE.get_from_param(param);
     let (cks, sks) = (keys.client_key(), keys.server_key());
-    let mut treepbs_key = TreepbsKey::new_tree_key(cks);
+    let shared_treepbs_key = KEY_CACHE_TREEPBS.get_from_param(param);
+    let treepbs_key = shared_treepbs_key.treepbs_key();
     //RNG
     let mut rng = rand::thread_rng();
 

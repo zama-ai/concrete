@@ -8,21 +8,25 @@
 
 use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, Parameters, ServerKey};
-use concrete_core::backends::core::private::crypto::circuit_bootstrap::DeltaLog;
-use concrete_core::backends::core::private::crypto::glwe::FunctionalPackingKeyswitchKey;
-use concrete_core::backends::core::private::crypto::lwe::LweCiphertext;
-use concrete_core::prelude::FourierLweBootstrapKey64;
-use serde::{Deserialize, Serialize};
+use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
+use concrete_core::commons::crypto::glwe::FunctionalPackingKeyswitchKey;
+use concrete_core::commons::crypto::lwe::LweCiphertext;
+use concrete_core::prelude::{
+    AbstractEngine, EntityDeserializationEngine, EntitySerializationEngine,
+    FftwFourierLweBootstrapKey64, FftwSerializationEngine,
+};
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[cfg(test)]
 mod test;
 
 // Struct for WoPBS based on the private functional packing keyswitch.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct WopbsKey {
     //Key for the private functional keyswitch
     pub(crate) vec_pfks_key: Vec<FunctionalPackingKeyswitchKey<Vec<u64>>>,
-    pub(crate) small_bsk: FourierLweBootstrapKey64,
+    pub(crate) small_bsk: FftwFourierLweBootstrapKey64,
     pub param: Parameters,
 }
 
@@ -144,6 +148,63 @@ impl WopbsKey {
     ) -> Vec<LweCiphertext<Vec<u64>>> {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine.vertical_packing_cbs_binary_v0(self, server_key, vec_lut, vec_lwe_in)
+        })
+    }
+}
+
+#[derive(Serialize)]
+struct SerializableWopbsKey<'a> {
+    vec_pfks_key: &'a Vec<FunctionalPackingKeyswitchKey<Vec<u64>>>,
+    small_bsk: Vec<u8>,
+    param: Parameters,
+}
+
+#[derive(Deserialize)]
+struct DeserializableWopbsKey {
+    vec_pfks_key: Vec<FunctionalPackingKeyswitchKey<Vec<u64>>>,
+    small_bsk: Vec<u8>,
+    param: Parameters,
+}
+
+impl Serialize for WopbsKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut fftw_ser_eng =
+            FftwSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+
+        let small_bsk = fftw_ser_eng
+            .serialize(&self.small_bsk)
+            .map_err(serde::ser::Error::custom)?;
+
+        SerializableWopbsKey {
+            vec_pfks_key: &self.vec_pfks_key,
+            small_bsk,
+            param: self.param,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for WopbsKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let thing =
+            DeserializableWopbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+        let mut fftw_ser_eng =
+            FftwSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+
+        let small_bsk = fftw_ser_eng
+            .deserialize(thing.small_bsk.as_slice())
+            .map_err(serde::de::Error::custom)?;
+
+        Ok(Self {
+            vec_pfks_key: thing.vec_pfks_key,
+            small_bsk,
+            param: thing.param,
         })
     }
 }

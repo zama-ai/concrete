@@ -18,6 +18,7 @@
 //! homomorphically.
 //!
 //! ```rust
+//! use concrete_boolean::gen_keys;
 //! use concrete_boolean::prelude::*;
 //!
 //! // We generate a set of client/server keys, using the default parameters:
@@ -54,12 +55,12 @@
 use crate::client_key::ClientKey;
 use crate::parameters::DEFAULT_PARAMETERS;
 use crate::server_key::ServerKey;
-use concrete_core::prelude::*;
 #[cfg(test)]
 use rand::Rng;
 
 pub mod ciphertext;
 pub mod client_key;
+pub mod engine;
 pub mod parameters;
 pub mod prelude;
 pub mod server_key;
@@ -96,11 +97,6 @@ pub(crate) fn random_integer() -> u32 {
     rng.gen::<u32>()
 }
 
-/// generate a default core engine
-fn default_engine() -> CoreEngine {
-    CoreEngine::new().unwrap()
-}
-
 /// Generate a couple of client and server keys with the default cryptographic parameters:
 /// `DEFAULT_PARAMETERS`.
 /// The client is the one generating both keys.
@@ -109,13 +105,14 @@ fn default_engine() -> CoreEngine {
 /// meant to be published (the client sends it to the server).
 ///
 /// ```rust
+/// use concrete_boolean::gen_keys;
 /// use concrete_boolean::prelude::*;
 /// // generate the client key and the server key:
 /// let (cks, sks) = gen_keys();
 /// ```
 pub fn gen_keys() -> (ClientKey, ServerKey) {
     // generate the client key
-    let cks = ClientKey::new(DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key
     let sks = ServerKey::new(&cks);

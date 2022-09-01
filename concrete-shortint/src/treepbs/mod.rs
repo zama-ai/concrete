@@ -11,10 +11,13 @@ mod tests;
 
 use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, ServerKey};
-use concrete_core::prelude::PackingKeyswitchKey64;
-use serde::{Deserialize, Serialize};
+use concrete_core::prelude::{
+    AbstractEngine, DefaultSerializationEngine, EntityDeserializationEngine,
+    EntitySerializationEngine, PackingKeyswitchKey64,
+};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone)]
 pub struct TreepbsKey {
     pub pksk: PackingKeyswitchKey64,
 }
@@ -25,7 +28,7 @@ impl TreepbsKey {
     }
 
     pub fn mul_lsb_treepbs(
-        &mut self,
+        &self,
         sks: &ServerKey,
         ct_left: &Ciphertext,
         ct_right: &Ciphertext,
@@ -38,7 +41,7 @@ impl TreepbsKey {
     }
 
     pub fn bivaluepbs<F1, F2>(
-        &mut self,
+        &self,
         sks: &ServerKey,
         ct_in: &Ciphertext,
         f_1: F1,
@@ -54,7 +57,7 @@ impl TreepbsKey {
     }
 
     pub fn mul_treepbs_with_multivalue(
-        &mut self,
+        &self,
         sks: &ServerKey,
         ct_left: &Ciphertext,
         ct_right: &Ciphertext,
@@ -67,12 +70,51 @@ impl TreepbsKey {
     }
 
     pub fn message_and_carry_extract(
-        &mut self,
+        &self,
         sks: &ServerKey,
         ct_in: &Ciphertext,
     ) -> Vec<Ciphertext> {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine.message_and_carry_extract(sks, ct_in).unwrap()
         })
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SerializableTreePbsKey {
+    pksk: Vec<u8>,
+}
+
+impl Serialize for TreepbsKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut default_ser_eng =
+            DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+
+        let pksk = default_ser_eng
+            .serialize(&self.pksk)
+            .map_err(serde::ser::Error::custom)?;
+
+        SerializableTreePbsKey { pksk }.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for TreepbsKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let thing =
+            SerializableTreePbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+        let mut default_ser_eng =
+            DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+
+        let pksk = default_ser_eng
+            .deserialize(thing.pksk.as_slice())
+            .map_err(serde::de::Error::custom)?;
+
+        Ok(Self { pksk })
     }
 }

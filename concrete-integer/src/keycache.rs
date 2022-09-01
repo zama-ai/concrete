@@ -40,7 +40,7 @@ impl IntegerKeyCacheTreePbs {
     pub fn get_from_params(&self, params: Parameters) -> TreepbsKey {
         let tree_key = concrete_shortint::keycache::KEY_CACHE_TREEPBS.get_from_param(params);
 
-        TreepbsKey(tree_key.tree_pbs().clone())
+        TreepbsKey(tree_key.treepbs_key().clone())
     }
 }
 
