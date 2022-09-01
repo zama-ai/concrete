@@ -62,8 +62,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_display_optimizer_choice",
            [](CompilationOptions &options, bool display) {
              options.optimizerConfig.display = display;
+           })
+      .def("set_strategy_v0",
+           [](CompilationOptions &options, bool strategy_v0) {
+             options.optimizerConfig.strategy_v0 = strategy_v0;
            });
-  ;
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");

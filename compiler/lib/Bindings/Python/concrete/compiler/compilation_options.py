@@ -164,3 +164,16 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(display, bool):
             raise TypeError("display should be a bool")
         self.cpp().set_display_optimizer_choice(display)
+
+    def set_strategy_v0(self, enable: bool):
+        """Set the strategy of the optimizer to the v0 one.
+
+        Args:
+            enable (bool): if true the compiler use the V0 optimizer strategy.
+
+        Raises:
+            TypeError: if the value is not a bool
+        """
+        if not isinstance(enable, bool):
+            raise TypeError("enable should be a bool")
+        self.cpp().set_strategy_v0(enable)
