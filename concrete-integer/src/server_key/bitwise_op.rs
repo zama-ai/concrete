@@ -197,11 +197,11 @@ impl ServerKey {
     /// assert_eq!(dec_result, msg1 & msg2);
     /// ```
     pub fn smart_bitand(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) -> Ciphertext {
-        let mut result = ct_left.clone();
-
-        self.smart_bitand_assign(&mut result, ct_right);
-
-        result
+        if !self.is_functional_bivariate_pbs_possible(ct_left, ct_right) {
+            self.full_propagate(ct_left);
+            self.full_propagate(ct_right);
+        }
+        self.unchecked_bitand(ct_left, ct_right)
     }
 
     pub fn smart_bitand_assign(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) {
@@ -368,11 +368,11 @@ impl ServerKey {
     /// assert_eq!(dec_result, msg1 | msg2);
     /// ```
     pub fn smart_bitor(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) -> Ciphertext {
-        let mut result = ct_left.clone();
-
-        self.smart_bitor_assign(&mut result, ct_right);
-
-        result
+        if !self.is_functional_bivariate_pbs_possible(ct_left, ct_right) {
+            self.full_propagate(ct_left);
+            self.full_propagate(ct_right);
+        }
+        self.unchecked_bitor(ct_left, ct_right)
     }
 
     pub fn smart_bitor_assign(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) {
@@ -539,11 +539,11 @@ impl ServerKey {
     /// assert_eq!(dec_result, msg1 ^ msg2);
     /// ```
     pub fn smart_bitxor(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) -> Ciphertext {
-        let mut result = ct_left.clone();
-
-        self.smart_bitxor_assign(&mut result, ct_right);
-
-        result
+        if !self.is_functional_bivariate_pbs_possible(ct_left, ct_right) {
+            self.full_propagate(ct_left);
+            self.full_propagate(ct_right);
+        }
+        self.unchecked_bitxor(ct_left, ct_right)
     }
 
     pub fn smart_bitxor_assign(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) {

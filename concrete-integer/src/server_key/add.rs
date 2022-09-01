@@ -224,11 +224,11 @@ impl ServerKey {
     /// assert_eq!(dec_result, msg1 + msg2);
     /// ```
     pub fn smart_add(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) -> Ciphertext {
-        let mut result = ct_left.clone();
-
-        self.smart_add_assign(&mut result, ct_right);
-
-        result
+        if !self.is_add_possible(ct_left, ct_right) {
+            self.full_propagate(ct_left);
+            self.full_propagate(ct_right);
+        }
+        self.unchecked_add(ct_left, ct_right)
     }
 
     pub fn smart_add_assign(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) {

@@ -212,22 +212,32 @@ macro_rules! define_server_key_bench_scalar_fn (
 );
 
 define_server_key_bench_fn!(smart_add);
+define_server_key_bench_fn!(smart_add_parallelized);
 define_server_key_bench_fn!(smart_sub);
+define_server_key_bench_fn!(smart_sub_parallelized);
 define_server_key_bench_fn!(smart_mul);
+define_server_key_bench_fn!(smart_mul_parallelized);
 define_server_key_bench_fn!(smart_bitand);
+define_server_key_bench_fn!(smart_bitand_parallelized);
 define_server_key_bench_fn!(smart_bitor);
+define_server_key_bench_fn!(smart_bitor_parallelized);
 define_server_key_bench_fn!(smart_bitxor);
+define_server_key_bench_fn!(smart_bitxor_parallelized);
 
 define_server_key_bench_fn!(unchecked_add);
 define_server_key_bench_fn!(unchecked_sub);
 define_server_key_bench_fn!(unchecked_mul);
+define_server_key_bench_fn!(unchecked_mul_parallelized);
 define_server_key_bench_fn!(unchecked_bitand);
 define_server_key_bench_fn!(unchecked_bitor);
 define_server_key_bench_fn!(unchecked_bitxor);
 
 define_server_key_bench_scalar_fn!(smart_scalar_add);
+define_server_key_bench_scalar_fn!(smart_scalar_add_parallelized);
 define_server_key_bench_scalar_fn!(smart_scalar_sub);
+define_server_key_bench_scalar_fn!(smart_scalar_sub_parallelized);
 define_server_key_bench_scalar_fn!(smart_scalar_mul);
+define_server_key_bench_scalar_fn!(smart_scalar_mul_parallelized);
 
 define_server_key_bench_scalar_fn!(unchecked_scalar_add);
 define_server_key_bench_scalar_fn!(unchecked_scalar_sub);
@@ -237,18 +247,27 @@ criterion_group!(
     smart_arithmetic_operation,
     smart_neg,
     smart_add,
+    smart_add_parallelized,
     smart_sub,
+    smart_sub_parallelized,
     smart_mul,
+    smart_mul_parallelized,
     smart_bitand,
+    smart_bitand_parallelized,
     smart_bitor,
+    smart_bitor_parallelized,
     smart_bitxor,
+    smart_bitxor_parallelized,
 );
 
 criterion_group!(
     smart_scalar_arithmetic_operation,
     smart_scalar_add,
+    smart_scalar_add_parallelized,
     smart_scalar_sub,
+    smart_scalar_sub_parallelized,
     smart_scalar_mul,
+    smart_scalar_mul_parallelized,
 );
 
 criterion_group!(
@@ -256,6 +275,7 @@ criterion_group!(
     unchecked_add,
     unchecked_sub,
     unchecked_mul,
+    unchecked_mul_parallelized,
     unchecked_bitand,
     unchecked_bitor,
     unchecked_bitxor,
