@@ -24,7 +24,7 @@
 * [Dynamic Types](how\_to/dynamic\_types.md)
 * [Generic Bounds](how\_to/generic\_bounds.md)
 
-## Developer
+## Developers
 
 * [Contributing](dev/contributing.md)
 
