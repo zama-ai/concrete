@@ -10,7 +10,7 @@ CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/concrete-optimizer
 
 KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
-KEYSETCACHENAME ?= KeySetCacheV1
+KEYSETCACHENAME ?= KeySetCacheV2
 
 HPX_VERSION?=1.7.1
 HPX_URL=https://github.com/STEllAR-GROUP/hpx/archive/refs/tags/$(HPX_VERSION).tar.gz
