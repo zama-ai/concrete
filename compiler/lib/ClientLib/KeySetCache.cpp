@@ -75,17 +75,16 @@ loadKeyswitchKey(llvm::SmallString<0> &path) {
               engine);
 }
 
-outcome::checked<FftwFourierLweBootstrapKey64 *, StringError>
+outcome::checked<LweBootstrapKey64 *, StringError>
 loadBootstrapKey(llvm::SmallString<0> &path) {
 
-  FftwSerializationEngine *engine;
+  DefaultSerializationEngine *engine;
 
-  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
 
-  return load(
-      path,
-      fftw_serialization_engine_deserialize_fftw_fourier_lwe_bootstrap_key_u64,
-      engine);
+  return load(path,
+              default_serialization_engine_deserialize_lwe_bootstrap_key_u64,
+              engine);
 }
 
 void saveSecretKey(llvm::SmallString<0> &path, LweSecretKey64 *key) {
@@ -103,18 +102,16 @@ void saveSecretKey(llvm::SmallString<0> &path, LweSecretKey64 *key) {
   free(buffer.pointer);
 }
 
-void saveBootstrapKey(llvm::SmallString<0> &path,
-                      FftwFourierLweBootstrapKey64 *key) {
-  FftwSerializationEngine *engine;
+void saveBootstrapKey(llvm::SmallString<0> &path, LweBootstrapKey64 *key) {
+  DefaultSerializationEngine *engine;
 
-  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
 
   Buffer buffer;
 
   CAPI_ASSERT_ERROR(
-      fftw_serialization_engine_serialize_fftw_fourier_lwe_bootstrap_key_u64(
-          engine, key, &buffer));
-
+      default_serialization_engine_serialize_lwe_bootstrap_key_u64(engine, key,
+                                                                   &buffer));
   writeFile(path, buffer);
   free(buffer.pointer);
 }
@@ -166,7 +163,7 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     auto param = bootstrapKeyParam.second;
     llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "pbsKey_" + id);
-    OUTCOME_TRY(FftwFourierLweBootstrapKey64 * bsk, loadBootstrapKey(path));
+    OUTCOME_TRY(LweBootstrapKey64 * bsk, loadBootstrapKey(path));
     bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(bsk)};
   }
   // Load keyswitch keys

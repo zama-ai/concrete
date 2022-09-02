@@ -159,7 +159,7 @@ void memref_bootstrap_lwe_u64(
   CAPI_ASSERT_ERROR(
       fftw_engine_lwe_ciphertext_discarding_bootstrap_u64_raw_ptr_buffers(
           get_fftw_engine(context), get_engine(context),
-          get_bootstrap_key_u64(context), out_aligned + out_offset,
+          get_fftw_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
           ct0_aligned + ct0_offset, glwe_ct_aligned + glwe_ct_offset));
 }
 

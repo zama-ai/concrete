@@ -11,32 +11,23 @@
 
 LweKeyswitchKey64 *
 get_keyswitch_key_u64(mlir::concretelang::RuntimeContext *context) {
-  return context->evaluationKeys.getKsk();
+  return context->get_ksk();
 }
 
-FftwFourierLweBootstrapKey64 *
+LweBootstrapKey64 *
 get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context) {
-  return context->evaluationKeys.getBsk();
+  return context->get_bsk();
+}
+
+FftwFourierLweBootstrapKey64 *get_fftw_fourier_bootstrap_key_u64(
+    mlir::concretelang::RuntimeContext *context) {
+  return context->get_fftw_fourier_bsk();
 }
 
 DefaultEngine *get_engine(mlir::concretelang::RuntimeContext *context) {
-  return context->default_engine;
+  return context->get_default_engine();
 }
 
 FftwEngine *get_fftw_engine(mlir::concretelang::RuntimeContext *context) {
-  pthread_t threadId = pthread_self();
-  std::lock_guard<std::mutex> guard(context->engines_map_guard);
-  auto engineIt = context->fftw_engines.find(threadId);
-  if (engineIt == context->fftw_engines.end()) {
-    FftwEngine *fftw_engine = nullptr;
-
-    CAPI_ASSERT_ERROR(new_fftw_engine(&fftw_engine));
-
-    engineIt =
-        context->fftw_engines
-            .insert(std::pair<pthread_t, FftwEngine *>(threadId, fftw_engine))
-            .first;
-  }
-  assert(engineIt->second && "No engine available in context");
-  return engineIt->second;
+  return context->get_fftw_engine();
 }

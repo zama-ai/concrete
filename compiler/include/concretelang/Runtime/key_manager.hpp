@@ -64,18 +64,16 @@ KeyWrapper<LweKeyswitchKey64>::KeyWrapper(LweKeyswitchKey64 *key) : key(key) {
                                                                    &buffer));
 }
 template <>
-KeyWrapper<FftwFourierLweBootstrapKey64>::KeyWrapper(
-    FftwFourierLweBootstrapKey64 *key)
-    : key(key) {
+KeyWrapper<LweBootstrapKey64>::KeyWrapper(LweBootstrapKey64 *key) : key(key) {
 
-  FftwSerializationEngine *engine;
+  DefaultSerializationEngine *engine;
 
-  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
 
   // No Freeing as it doesn't allocate anything.
   CAPI_ASSERT_ERROR(
-      fftw_serialization_engine_serialize_fftw_fourier_lwe_bootstrap_key_u64(
-          engine, key, &buffer));
+      default_serialization_engine_serialize_lwe_bootstrap_key_u64(engine, key,
+                                                                   &buffer));
 }
 
 template <typename LweKeyType>
@@ -86,25 +84,25 @@ bool operator==(const KeyWrapper<LweKeyType> &lhs,
 
 template <>
 template <class Archive>
-void KeyWrapper<FftwFourierLweBootstrapKey64>::save(
-    Archive &ar, const unsigned int version) const {
+void KeyWrapper<LweBootstrapKey64>::save(Archive &ar,
+                                         const unsigned int version) const {
   ar << buffer.length;
   ar << hpx::serialization::make_array(buffer.pointer, buffer.length);
 }
 template <>
 template <class Archive>
-void KeyWrapper<FftwFourierLweBootstrapKey64>::load(
-    Archive &ar, const unsigned int version) {
-  FftwSerializationEngine *engine;
+void KeyWrapper<LweBootstrapKey64>::load(Archive &ar,
+                                         const unsigned int version) {
+  DefaultSerializationEngine *engine;
 
   // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
 
   ar >> buffer.length;
   buffer.pointer = new uint8_t[buffer.length];
   ar >> hpx::serialization::make_array(buffer.pointer, buffer.length);
   CAPI_ASSERT_ERROR(
-      fftw_serialization_engine_deserialize_fftw_fourier_lwe_bootstrap_key_u64(
+      default_serialization_engine_deserialize_lwe_bootstrap_key_u64(
           engine, {buffer.pointer, buffer.length}, &key));
 }
 
@@ -155,21 +153,22 @@ struct RuntimeContextManager {
     if (_dfr_is_root_node()) {
       RuntimeContext *context = (RuntimeContext *)ctx;
       LweKeyswitchKey64 *ksk = get_keyswitch_key_u64(context);
-      FftwFourierLweBootstrapKey64 *bsk = get_bootstrap_key_u64(context);
+      LweBootstrapKey64 *bsk = get_bootstrap_key_u64(context);
 
       KeyWrapper<LweKeyswitchKey64> kskw(ksk);
-      KeyWrapper<FftwFourierLweBootstrapKey64> bskw(bsk);
+      KeyWrapper<LweBootstrapKey64> bskw(bsk);
       hpx::collectives::broadcast_to("ksk_keystore", kskw);
       hpx::collectives::broadcast_to("bsk_keystore", bskw);
     } else {
       auto kskFut =
           hpx::collectives::broadcast_from<KeyWrapper<LweKeyswitchKey64>>(
               "ksk_keystore");
-      auto bskFut = hpx::collectives::broadcast_from<
-          KeyWrapper<FftwFourierLweBootstrapKey64>>("bsk_keystore");
+      auto bskFut =
+          hpx::collectives::broadcast_from<KeyWrapper<LweBootstrapKey64>>(
+              "bsk_keystore");
 
       KeyWrapper<LweKeyswitchKey64> kskw = kskFut.get();
-      KeyWrapper<FftwFourierLweBootstrapKey64> bskw = bskFut.get();
+      KeyWrapper<LweBootstrapKey64> bskw = bskFut.get();
       context = new mlir::concretelang::RuntimeContext();
       context->evaluationKeys = ::concretelang::clientlib::EvaluationKeys(
           std::shared_ptr<::concretelang::clientlib::LweKeyswitchKey>(

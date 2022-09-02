@@ -197,18 +197,10 @@ KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param) {
       par_engine, inputSk->second.second, output_glwe_sk, param.baseLog,
       param.level, param.variance, &bsk));
 
-  FftwFourierLweBootstrapKey64 *fbsk;
-
-  CAPI_ASSERT_ERROR(
-      fftw_engine_convert_lwe_bootstrap_key_to_fftw_fourier_lwe_bootstrap_key_u64(
-          fftw_engine, bsk, &fbsk));
-
-  CAPI_ASSERT_ERROR(destroy_lwe_bootstrap_key_u64(bsk));
-
   CAPI_ASSERT_ERROR(destroy_glwe_secret_key_u64(output_glwe_sk));
 
   // Store the bootstrap key
-  bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(fbsk)};
+  bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(bsk)};
 
   return outcome::success();
 }

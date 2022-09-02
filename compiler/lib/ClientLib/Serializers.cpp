@@ -60,6 +60,24 @@ std::ostream &operator<<(std::ostream &ostream, const LweKeyswitchKey64 *key) {
   return ostream;
 }
 
+std::ostream &operator<<(std::ostream &ostream, const LweBootstrapKey64 *key) {
+  DefaultSerializationEngine *engine;
+
+  // No Freeing as it doesn't allocate anything.
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  Buffer b;
+
+  CAPI_ASSERT_ERROR(
+      default_serialization_engine_serialize_lwe_bootstrap_key_u64(engine, key,
+                                                                   &b))
+
+  writeBufferLike(ostream, b);
+  free((void *)b.pointer);
+  b.pointer = nullptr;
+  return ostream;
+}
+
 std::ostream &operator<<(std::ostream &ostream,
                          const FftwFourierLweBootstrapKey64 *key) {
   FftwSerializationEngine *engine;
@@ -87,6 +105,18 @@ std::istream &operator>>(std::istream &istream, LweKeyswitchKey64 *&key) {
 
   key = read_deser(
       istream, default_serialization_engine_deserialize_lwe_keyswitch_key_u64,
+      engine);
+  return istream;
+}
+
+std::istream &operator>>(std::istream &istream, LweBootstrapKey64 *&key) {
+  DefaultSerializationEngine *engine;
+
+  // No Freeing as it doesn't allocate anything.
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  key = read_deser(
+      istream, default_serialization_engine_deserialize_lwe_bootstrap_key_u64,
       engine);
   return istream;
 }

@@ -46,10 +46,10 @@ public:
 
 // =============================================
 
-/// Wrapper for `FftwFourierLweBootstrapKey64` so that it cleans up properly.
+/// Wrapper for `LweBootstrapKey64` so that it cleans up properly.
 class LweBootstrapKey {
 private:
-  FftwFourierLweBootstrapKey64 *bsk;
+  LweBootstrapKey64 *bsk;
 
 protected:
   friend std::ostream &operator<<(std::ostream &ostream,
@@ -58,19 +58,19 @@ protected:
                                   LweBootstrapKey &wrappedBsk);
 
 public:
-  LweBootstrapKey(FftwFourierLweBootstrapKey64 *bsk) : bsk{bsk} {}
+  LweBootstrapKey(LweBootstrapKey64 *bsk) : bsk{bsk} {}
   LweBootstrapKey(LweBootstrapKey &other) = delete;
   LweBootstrapKey(LweBootstrapKey &&other) : bsk{other.bsk} {
     other.bsk = nullptr;
   }
   ~LweBootstrapKey() {
     if (this->bsk != nullptr) {
-      CAPI_ASSERT_ERROR(destroy_fftw_fourier_lwe_bootstrap_key_u64(this->bsk));
+      CAPI_ASSERT_ERROR(destroy_lwe_bootstrap_key_u64(this->bsk));
       this->bsk = nullptr;
     }
   }
 
-  FftwFourierLweBootstrapKey64 *get() { return this->bsk; }
+  LweBootstrapKey64 *get() { return this->bsk; }
 };
 
 // =============================================
@@ -97,7 +97,7 @@ public:
       : sharedKsk{sharedKsk}, sharedBsk{sharedBsk} {}
 
   LweKeyswitchKey64 *getKsk() { return this->sharedKsk->get(); }
-  FftwFourierLweBootstrapKey64 *getBsk() { return this->sharedBsk->get(); }
+  LweBootstrapKey64 *getBsk() { return this->sharedBsk->get(); }
 };
 
 // =============================================
