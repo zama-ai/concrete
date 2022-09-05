@@ -320,34 +320,14 @@ static llvm::APInt getSqMANP(
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::AddEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
-  mlir::Type iTy = op->getOpOperand(1).get().getType();
-
-  assert(iTy.isSignlessInteger() &&
-         "Only additions with signless integers are currently allowed");
-
   assert(
       operandMANPs.size() == 2 &&
       operandMANPs[0]->getValue().getMANP().hasValue() &&
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
-  mlir::arith::ConstantOp cstOp =
-      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
-          op->getOpOperand(1).get().getDefiningOp());
-
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
-  llvm::APInt sqNorm;
 
-  if (cstOp) {
-    // For a constant operand use actual constant to calculate 2-norm
-    mlir::IntegerAttr attr = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
-    sqNorm = APIntWidthExtendSqForConstant(attr.getValue());
-  } else {
-    // For a dynamic operand conservatively assume that the value is
-    // the maximum for the integer width
-    sqNorm = conservativeIntNorm2Sq(iTy);
-  }
-
-  return APIntWidthExtendUAdd(sqNorm, eNorm);
+  return eNorm;
 }
 
 /// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
@@ -372,10 +352,6 @@ static llvm::APInt getSqMANP(
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::SubIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
-  mlir::Type iTy = op->getOpOperand(0).get().getType();
-
-  assert(iTy.isSignlessInteger() &&
-         "Only subtractions with signless integers are currently allowed");
 
   assert(
       operandMANPs.size() == 2 &&
@@ -383,22 +359,8 @@ static llvm::APInt getSqMANP(
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt eNorm = operandMANPs[1]->getValue().getMANP().getValue();
-  llvm::APInt sqNorm;
 
-  mlir::arith::ConstantOp cstOp =
-      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
-          op->getOpOperand(0).get().getDefiningOp());
-
-  if (cstOp) {
-    // For constant plaintext operands simply use the constant value
-    mlir::IntegerAttr attr = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
-    sqNorm = APIntWidthExtendSqForConstant(attr.getValue());
-  } else {
-    // For dynamic plaintext operands conservatively assume that the integer has
-    // its maximum possible value
-    sqNorm = conservativeIntNorm2Sq(iTy);
-  }
-  return APIntWidthExtendUAdd(sqNorm, eNorm);
+  return eNorm;
 }
 
 /// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
@@ -406,10 +368,6 @@ static llvm::APInt getSqMANP(
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::SubEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
-  mlir::Type iTy = op->getOpOperand(1).get().getType();
-
-  assert(iTy.isSignlessInteger() &&
-         "Only subtractions with signless integers are currently allowed");
 
   assert(
       operandMANPs.size() == 2 &&
@@ -417,22 +375,8 @@ static llvm::APInt getSqMANP(
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
-  llvm::APInt sqNorm;
 
-  mlir::arith::ConstantOp cstOp =
-      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
-          op->getOpOperand(1).get().getDefiningOp());
-
-  if (cstOp) {
-    // For constant plaintext operands simply use the constant value
-    mlir::IntegerAttr attr = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
-    sqNorm = APIntWidthExtendSqForConstant(attr.getValue());
-  } else {
-    // For dynamic plaintext operands conservatively assume that the integer has
-    // its maximum possible value
-    sqNorm = conservativeIntNorm2Sq(iTy);
-  }
-  return APIntWidthExtendUAdd(sqNorm, eNorm);
+  return eNorm;
 }
 
 /// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
@@ -509,39 +453,14 @@ static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::AddEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
-  mlir::RankedTensorType op1Ty =
-      op->getOpOperand(1).get().getType().cast<mlir::RankedTensorType>();
-
-  mlir::Type iTy = op1Ty.getElementType();
-
-  assert(iTy.isSignlessInteger() &&
-         "Only additions with signless integers are currently allowed");
-
   assert(
       operandMANPs.size() == 2 &&
       operandMANPs[0]->getValue().getMANP().hasValue() &&
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
-  llvm::APInt sqNorm;
 
-  mlir::arith::ConstantOp cstOp =
-      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
-          op->getOpOperand(1).get().getDefiningOp());
-  mlir::DenseIntElementsAttr denseVals =
-      cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
-            : nullptr;
-
-  if (denseVals) {
-    // For a constant operand use actual constant to calculate 2-norm
-    sqNorm = maxIntNorm2Sq(denseVals);
-  } else {
-    // For a dynamic operand conservatively assume that the value is
-    // the maximum for the integer width
-    sqNorm = conservativeIntNorm2Sq(iTy);
-  }
-
-  return APIntWidthExtendUAdd(sqNorm, eNorm);
+  return eNorm;
 }
 
 static llvm::APInt getSqMANP(
@@ -565,50 +484,19 @@ static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::SubIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
-  mlir::RankedTensorType op0Ty =
-      op->getOpOperand(0).get().getType().cast<mlir::RankedTensorType>();
-
-  mlir::Type iTy = op0Ty.getElementType();
-
-  assert(iTy.isSignlessInteger() &&
-         "Only subtractions with signless integers are currently allowed");
-
   assert(
       operandMANPs.size() == 2 &&
       operandMANPs[1]->getValue().getMANP().hasValue() &&
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt eNorm = operandMANPs[1]->getValue().getMANP().getValue();
-  llvm::APInt sqNorm;
 
-  mlir::arith::ConstantOp cstOp =
-      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
-          op->getOpOperand(0).get().getDefiningOp());
-  mlir::DenseIntElementsAttr denseVals =
-      cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
-            : nullptr;
-
-  if (denseVals) {
-    sqNorm = maxIntNorm2Sq(denseVals);
-  } else {
-    // For dynamic plaintext operands conservatively assume that the integer has
-    // its maximum possible value
-    sqNorm = conservativeIntNorm2Sq(iTy);
-  }
-  return APIntWidthExtendUAdd(sqNorm, eNorm);
+  return eNorm;
 }
 
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::SubEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
-
-  mlir::RankedTensorType op1Ty =
-      op->getOpOperand(1).get().getType().cast<mlir::RankedTensorType>();
-
-  mlir::Type iTy = op1Ty.getElementType();
-
-  assert(iTy.isSignlessInteger() &&
-         "Only subtractions with signless integers are currently allowed");
 
   assert(
       operandMANPs.size() == 2 &&
@@ -616,23 +504,8 @@ static llvm::APInt getSqMANP(
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
-  llvm::APInt sqNorm;
 
-  mlir::arith::ConstantOp cstOp =
-      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
-          op->getOpOperand(1).get().getDefiningOp());
-  mlir::DenseIntElementsAttr denseVals =
-      cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
-            : nullptr;
-
-  if (denseVals) {
-    sqNorm = maxIntNorm2Sq(denseVals);
-  } else {
-    // For dynamic plaintext operands conservatively assume that the integer has
-    // its maximum possible value
-    sqNorm = conservativeIntNorm2Sq(iTy);
-  }
-  return APIntWidthExtendUAdd(sqNorm, eNorm);
+  return eNorm;
 }
 
 static llvm::APInt getSqMANP(

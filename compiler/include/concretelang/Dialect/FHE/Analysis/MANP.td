@@ -46,6 +46,7 @@ def MANP : Pass<"MANP", "::mlir::func::FuncOp"> {
     - FHE.apply_lookup_table -> FHELinalg.dot_eint_int([LUT result], [1])
     - FHE.zero()             -> FHELinalg.dot_eint_int([encrypted 0], [1])
     - FHE.add_eint_int(e, c) -> FHELinalg.dot_eint_int([e, 1], [1, c])
+        with the encrypted 1 trivialy encrypted, i.e. without noise so 1xc is not take into account
     - FHE.add_eint(e0, e1)   -> FHELinalg.dot_eint_int([e0, e1], [1, 1])
     - FHE.sub_int_eint(c, e) -> FHELinalg.dot_eint_int([e, c], [1, -1])
     - FHE.neg_eint(e) -> FHELinalg.dot_eint_int([e], [-1])
@@ -84,7 +85,7 @@ def MANP : Pass<"MANP", "::mlir::func::FuncOp"> {
     - FHE.zero()             -> 1
     - FHELinalg.dot_eint_int([e0, e1, ...], [c0, c1, ...]) ->
          c0*c0*sqN(e0) + c1*c1*sqN(e1) + ...
-    - FHE.add_eint_int(e, c) -> 1*1*sqN(e) + c*c*1*1 = sqN(e) + c*c
+    - FHE.add_eint_int(e, c) -> 1*1*sqN(e) = sqN(e)
     - FHE.add_eint(e0, e1)   -> 1*1*sqN(e0) + 1*1*sqN(e2) = sqN(e1) + sqN(e2)
     - FHE.sub_int_eint(c, e) -> 1*1*sqN(e) + c*c*(-1)*(-1) = sqN(e) + c*c
     - FHE.neg_eint(e) -> (-1)*(-1)*sqN(e) = sqN(e)
@@ -96,7 +97,8 @@ def MANP : Pass<"MANP", "::mlir::func::FuncOp"> {
 }
 
 def MaxMANP : Pass<"MaxMANP", "::mlir::func::FuncOp"> {
-  let summary = "Extract maximum FHE Minimal Arithmetic Noise Padding and maximum encrypted integer width";
+  let summary = "Extract maximum FHE Minimal Arithmetic Noise Padding and "
+                "maximum encrypted integer width";
   let description = [{
    This pass calculates the squared Minimal Arithmetic Noise Padding
    (MANP) for each operation using the MANP pass and extracts the
