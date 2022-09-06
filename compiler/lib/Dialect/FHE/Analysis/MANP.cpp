@@ -166,14 +166,14 @@ static llvm::APInt APIntWidthExtendUnsignedSq(const llvm::APInt &i) {
   return ie * ie;
 }
 
-/// Calculates the square of the absolute value of `i`.
+/// Calculates the square of the value of `i`.
 static llvm::APInt APIntWidthExtendSqForConstant(const llvm::APInt &i) {
   // Make sure the required number of bits can be represented by the
   // `unsigned` argument of `zext`.
   assert(i.getActiveBits() < 32 &&
          "Square of the constant cannot be represented on 64 bits");
   return llvm::APInt(2 * i.getActiveBits(),
-                     i.abs().getZExtValue() * i.abs().getZExtValue());
+                     i.getZExtValue() * i.getZExtValue());
 }
 
 /// Calculates the square root of `i` and rounds it to the next highest
@@ -277,7 +277,7 @@ static llvm::APInt conservativeIntNorm2Sq(mlir::Type t) {
   assert(t.isSignlessInteger() && "Type must be a signless integer type");
   assert(std::numeric_limits<unsigned>::max() - t.getIntOrFloatBitWidth() > 1);
 
-  llvm::APInt maxVal = APInt::getSignedMaxValue(t.getIntOrFloatBitWidth());
+  llvm::APInt maxVal = APInt::getMaxValue(t.getIntOrFloatBitWidth());
   return APIntWidthExtendUnsignedSq(maxVal);
 }
 

@@ -57,8 +57,8 @@ def main():
         print("    - scalar: {0}".format(max_value))
         print("---")
         # add_eint_int_arg
-        if p <= 29:
-            # above 29 bits the *arg test doesn't have solution
+        if p <= 28:
+            # above 28 bits the *arg test doesn't have solution
             # TODO: Make a test that test that
             print("description: add_eint_int_arg_{0}bits".format(p))
             print("program: |")
@@ -119,8 +119,8 @@ def main():
         print("    - scalar: {0}".format(max_value-max_constant))
         print("---")
         # sub_eint_int_arg
-        if p <= 29:
-            # above 29 bits the *arg test doesn't have solution
+        if p <= 28:
+            # above 28 bits the *arg test doesn't have solution
             # TODO: Make a test that test that
             print("description: sub_eint_int_arg_{0}bits".format(p))
             print("program: |")
@@ -165,8 +165,8 @@ def main():
         print("    - scalar: 0")
         print("---")
         # sub_int_eint_arg
-        if p <= 29:
-            # above 29 bits the *arg test doesn't have solution
+        if p <= 28:
+            # above 28 bits the *arg test doesn't have solution
             # TODO: Make a test that test that
             print("description: sub_int_eint_arg_{0}bits".format(p))
             print("program: |")
@@ -240,8 +240,8 @@ def main():
         print("    - scalar: {0}".format(max_value - 1))
         print("---")
         # mul_eint_int_arg
-        if p <= 29:
-            # above 29 bits the *arg test doesn't have solution
+        if p <= 28:
+            # above 28 bits the *arg test doesn't have solution
             # TODO: Make a test that test that
             print("description: mul_eint_int_arg_{0}bits".format(p))
             print("program: |")

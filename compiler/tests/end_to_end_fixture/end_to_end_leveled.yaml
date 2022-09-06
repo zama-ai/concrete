@@ -5974,29 +5974,6 @@ tests:
     outputs:
     - scalar: 536870911
 ---
-description: add_eint_int_arg_29bits
-program: |
-  func.func @main(%arg0: !FHE.eint<29>, %arg1: i30) -> !FHE.eint<29> {
-    %0 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
-    return %0: !FHE.eint<29>
-  }
-tests:
-  - inputs:
-    - scalar: 536870910
-    - scalar: 1
-    outputs:
-    - scalar: 536870911
-  - inputs:
-    - scalar: 536870911
-    - scalar: 0
-    outputs:
-    - scalar: 536870911
-  - inputs:
-    - scalar: 268435455
-    - scalar: 268435456
-    outputs:
-    - scalar: 536870911
----
 description: add_eint_29_bits
 program: |
   func.func @main(%arg0: !FHE.eint<29>, %arg1: !FHE.eint<29>) -> !FHE.eint<29> {
@@ -6023,29 +6000,6 @@ tests:
     outputs:
     - scalar: 268435456
 ---
-description: sub_eint_int_arg_29bits
-program: |
-  func.func @main(%arg0: !FHE.eint<29>, %arg1: i30) -> !FHE.eint<29> {
-    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
-    return %1: !FHE.eint<29>
-  }
-tests:
-  - inputs:
-    - scalar: 536870911
-    - scalar: 536870911
-    outputs:
-    - scalar: 0
-  - inputs:
-    - scalar: 536870911
-    - scalar: 0
-    outputs:
-    - scalar: 536870911
-  - inputs:
-    - scalar: 536870910
-    - scalar: 268435455
-    outputs:
-    - scalar: 268435455
----
 description: sub_int_eint_cst_29bits
 program: |
   func.func @main(%arg0: !FHE.eint<29>) -> !FHE.eint<29> {
@@ -6058,29 +6012,6 @@ tests:
     - scalar: 268435455
     outputs:
     - scalar: 0
----
-description: sub_int_eint_arg_29bits
-program: |
-  func.func @main(%arg0: i30, %arg1: !FHE.eint<29>) -> !FHE.eint<29> {
-    %1 = "FHE.sub_int_eint"(%arg0, %arg1): (i30, !FHE.eint<29>) -> (!FHE.eint<29>)
-    return %1: !FHE.eint<29>
-  }
-tests:
-  - inputs:
-    - scalar: 536870911
-    - scalar: 536870911
-    outputs:
-    - scalar: 0
-  - inputs:
-    - scalar: 536870911
-    - scalar: 0
-    outputs:
-    - scalar: 536870911
-  - inputs:
-    - scalar: 536870910
-    - scalar: 268435455
-    outputs:
-    - scalar: 268435455
 ---
 description: sub_eint_29bits
 program: |
@@ -6121,34 +6052,6 @@ tests:
     - scalar: 268435455
     outputs:
     - scalar: 536870910
----
-description: mul_eint_int_arg_29bits
-program: |
-  func.func @main(%arg0: !FHE.eint<29>, %arg1: i30) -> !FHE.eint<29> {
-    %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<29>, i30) -> (!FHE.eint<29>)
-    return %1: !FHE.eint<29>
-  }
-tests:
-  - inputs:
-    - scalar: 0
-    - scalar: 536870911
-    outputs:
-    - scalar: 0
-  - inputs:
-    - scalar: 536870911
-    - scalar: 0
-    outputs:
-    - scalar: 0
-  - inputs:
-    - scalar: 1
-    - scalar: 536870911
-    outputs:
-    - scalar: 536870911
-  - inputs:
-    - scalar: 536870911
-    - scalar: 1
-    outputs:
-    - scalar: 536870911
 ---
 ---
 description: identity_30bits

@@ -99,9 +99,9 @@ func.func @tensor_collapse_shape_1(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8
 
 func.func @tensor_collapse_shape_2(%a: tensor<2x2x4x!FHE.eint<2>>, %b: tensor<2x2x4xi3>) -> tensor<2x8x!FHE.eint<2>>
 {
-  // CHECK: "FHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 4 : ui{{[0-9]+}}}
+  // CHECK: "FHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 8 : ui{{[0-9]+}}}
   %0 = "FHELinalg.add_eint_int"(%a, %b) : (tensor<2x2x4x!FHE.eint<2>>, tensor<2x2x4xi3>) -> tensor<2x2x4x!FHE.eint<2>>
-  // CHECK-NEXT: tensor.collapse_shape %[[A:.*]] [[X:.*]] {MANP = 4 : ui{{[0-9]+}}}
+  // CHECK-NEXT: tensor.collapse_shape %[[A:.*]] [[X:.*]] {MANP = 8 : ui{{[0-9]+}}}
   %1 = tensor.collapse_shape %0 [[0],[1,2]]  : tensor<2x2x4x!FHE.eint<2>> into tensor<2x8x!FHE.eint<2>>
   return %1 : tensor<2x8x!FHE.eint<2>>
 }
@@ -118,9 +118,9 @@ func.func @tensor_expand_shape_1(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!
 
 func.func @tensor_expand_shape_2(%a: tensor<2x8x!FHE.eint<2>>, %b: tensor<2x8xi3>) -> tensor<2x2x4x!FHE.eint<2>>
 {
-  // CHECK: "FHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 4 : ui{{[0-9]+}}}
+  // CHECK: "FHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 8 : ui{{[0-9]+}}}
   %0 = "FHELinalg.add_eint_int"(%a, %b) : (tensor<2x8x!FHE.eint<2>>, tensor<2x8xi3>) -> tensor<2x8x!FHE.eint<2>>
-  // CHECK-NEXT: tensor.expand_shape %[[A:.*]] [[X:.*]] {MANP = 4 : ui{{[0-9]+}}}
+  // CHECK-NEXT: tensor.expand_shape %[[A:.*]] [[X:.*]] {MANP = 8 : ui{{[0-9]+}}}
   %1 = tensor.expand_shape %0 [[0],[1,2]]  : tensor<2x8x!FHE.eint<2>> into tensor<2x2x4x!FHE.eint<2>>
   return %1 : tensor<2x2x4x!FHE.eint<2>>
 }
