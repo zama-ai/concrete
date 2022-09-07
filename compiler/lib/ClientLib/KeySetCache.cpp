@@ -263,6 +263,7 @@ KeySetCache::loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
   // The lock is released when the function returns.
   // => any intermediate state in the function is not visible to others.
   auto unlockAtReturn = llvm::make_scope_exit([&]() {
+    llvm::sys::fs::closeFile(FD_lock);
     llvm::sys::fs::unlockFile(FD_lock);
     llvm::sys::fs::remove(lockPath);
   });

@@ -3,6 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <errno.h>
+
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/Host.h>
@@ -85,9 +87,12 @@ string linkerCmd(vector<string> objectsPath, string libraryPath, string linker,
 }
 
 llvm::Error callCmd(string cmd) {
+  errno = 0;
   FILE *fp = popen(cmd.c_str(), "r");
-  if (fp == NULL)
-    return StreamStringError("Cannot call the linker: " + cmd);
+  if (fp == NULL) {
+    return StreamStringError(strerror(errno))
+           << "\nCannot call the linker: " << cmd;
+  }
 
   string outputContent;
   const int CHUNK_SIZE = 1024;
