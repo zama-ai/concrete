@@ -28,10 +28,12 @@ Zama's variant of TFHE is fully homomorphic and deals with fixed-precision numbe
 
 Using FHE in a Rust program with Concrete consists in:
 
-* generating a secret client and a server key using secure parameters
-* encrypting plaintexts using the secret key to produce ciphertexts
+* generating a client key and a server key using secure parameters:
+    * client key encrypts/decrypts data and must be kept secret
+    * server key is used to perform operations on encrypted data and could be public (also called evaluation key)
+* encrypting plaintexts using the client key to produce ciphertexts
 * operating homomorphically on ciphertexts with the server key
-* decrypting the resulting ciphertexts into plaintexts using the secret key
+* decrypting the resulting ciphertexts into plaintexts using the client key
 
 If you would like to know more about the problems that FHE solves, we suggest you review our [6 minute introduction to homomorphic encryption](https://6min.zama.ai/).
 
@@ -47,7 +49,7 @@ Aside from the advanced customization options offered directly by `concrete`, an
 `concrete` is built as a framework of libraries, but we greatly suggest to any user to start building applications with the `concrete` crate.
 {% endhint %}
 
-In its current state, `concrete` crate is built on top of 3 primitive crate types: respectively, 
+In its current state, `concrete` crate is built on top of 3 primitive crate types: respectively,
 `concrete-boolean` for boolean type, `concrete-shortint` for the integers from 2 to 7 bits, and `concrete-int` for the integer from 4 to 16 bits. Cryptographic operations will be handled by `concrete-core`.&#x20;
 
 We have summarized the relation between all `concrete` crates with the following diagram:
