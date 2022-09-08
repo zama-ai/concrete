@@ -4,7 +4,7 @@ CARGO_PROFILE ?= release
 PROFILE_SUBDIR ?= release
 
 MAKEFILE_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-ROOT = $(shell git rev-parse --show-toplevel)
+ROOT = $(realpath $(MAKEFILE_DIR)/..)
 CXXBRIDGE_DIR = $(ROOT)/target/cxxbridge/concrete-optimizer-cpp/src
 
 # In target intermediate files
