@@ -428,23 +428,6 @@ Subgraphs:
 
             """,  # noqa: E501
         ),
-        pytest.param(
-            lambda x: x - 300,
-            {"x": "encrypted"},
-            range(200),
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be converted to MLIR:
-
-%0 = x                       # EncryptedScalar<uint8>
-%1 = 300                     # ClearScalar<uint9>
-%2 = subtract(%0, %1)        # EncryptedScalar<int10>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed values are only supported on circuits with up to 8-bit integers
-return %2
-
-            """,  # noqa: E501
-        ),
     ],
 )
 def test_graph_converter_bad_convert(

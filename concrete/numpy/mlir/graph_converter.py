@@ -246,12 +246,6 @@ class GraphConverter:
                 f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers"
             ]
 
-        if first_signed_node is not None and max_bit_width > MAXIMUM_TLU_BIT_WIDTH:
-            offending_nodes[first_signed_node] = [
-                f"signed values are only supported on circuits with "
-                f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers"
-            ]
-
         if len(offending_nodes) != 0:
             raise RuntimeError(
                 "Function you are trying to compile cannot be converted to MLIR:\n\n"
