@@ -58,7 +58,7 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
-all: concretecompiler python-bindings build-tests build-benchmarks doc
+all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
 
 # concrete-core-ffi #######################################
 
@@ -232,6 +232,20 @@ build-benchmarks: build-initialized
 
 run-benchmarks: build-benchmarks
 	$(BUILD_DIR)/bin/end_to_end_benchmark
+
+build-mlbench: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_mlbench
+
+generate-mlbench:
+	mkdir -p tests/end_to_end_benchmarks/mlbench
+	rm -rf tests/end_to_end_benchmarks/mlbench/*
+	unzip tests/end_to_end_benchmarks/mlbench.zip -d tests/end_to_end_benchmarks/mlbench
+	rm -f tests/end_to_end_benchmarks/mlbench/**/*\=*
+	find tests/end_to_end_benchmarks/mlbench -name "*.mlir" -exec sed -e '1d' -e 's/ func / func.func /g' -e 's/ linalg.tensor_/ tensor./g' -e '$$d' -i {} \;
+	python tests/end_to_end_benchmarks/generate_bench_yaml.py tests/end_to_end_benchmarks/mlbench tests/end_to_end_benchmarks/mlbench/end_to_end_mlbench
+
+run-mlbench: build-mlbench
+	tests/end_to_end_benchmarks/end_to_end_mlbench.sh tests/end_to_end_benchmarks/mlbench/ $(BUILD_DIR)/bin/end_to_end_mlbench
 
 show-stress-tests-summary:
 	@echo '------ Stress tests summary ------'
