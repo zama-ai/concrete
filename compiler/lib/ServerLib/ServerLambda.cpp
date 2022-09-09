@@ -82,9 +82,17 @@ ServerLambda::call(PublicArguments &args, EvaluationKeys &evaluationKeys) {
          "ServerLambda::call is implemented for only one output");
   auto output = args.clientParameters.outputs[0];
   auto rank = args.clientParameters.bufferShape(output).size();
-  auto result = multi_arity_call_dynamic_rank(func, preparedArgs, rank);
-  return clientlib::PublicResult::fromBuffers(clientParameters, {result});
-  ;
+
+  // FIXME: Handle sign correctly
+  size_t element_width = (output.isEncrypted()) ? 64 : output.shape.width;
+  auto result = multi_arity_call_dynamic_rank(func, preparedArgs, rank,
+                                              element_width, false);
+
+  std::vector<TensorData> results;
+  results.push_back(std::move(result));
+
+  return clientlib::PublicResult::fromBuffers(clientParameters,
+                                              std::move(results));
 }
 
 } // namespace serverlib

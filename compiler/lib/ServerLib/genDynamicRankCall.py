@@ -37,8 +37,8 @@ template <typename FnDstT, typename FnSrcT> FnDstT convert_fnptr(FnSrcT src) {
 }
 
 TensorData multi_arity_call_dynamic_rank(void *(*func)(void *...),
-                                         std::vector<void *> args,
-                                         size_t rank) {
+                                         std::vector<void *> args, size_t rank,
+                                         size_t element_width, bool is_signed) {
   using concretelang::clientlib::MemRefDescriptor;
   constexpr auto convert = concretelang::clientlib::tensorDataFromMemRef;
   switch (rank) {""")
@@ -48,7 +48,8 @@ for tensor_rank in range(1, 33):
     print(f"""  case {tensor_rank}: {{
     auto m = multi_arity_call(
         convert_fnptr<MemRefDescriptor<{memref_rank}> (*)(void *...)>(func), args);
-    return convert({memref_rank}, m.allocated, m.aligned, m.offset, m.sizes, m.strides);
+    return convert({memref_rank}, element_width, is_signed, m.allocated, m.aligned,
+                   m.offset, m.sizes, m.strides);
   }}""")
 
 print("""

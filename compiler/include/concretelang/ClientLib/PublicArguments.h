@@ -66,16 +66,16 @@ private:
 struct PublicResult {
 
   PublicResult(const ClientParameters &clientParameters,
-               std::vector<TensorData> buffers = {})
-      : clientParameters(clientParameters), buffers(buffers){};
+               std::vector<TensorData> &&buffers = {})
+      : clientParameters(clientParameters), buffers(std::move(buffers)){};
 
   PublicResult(PublicResult &) = delete;
 
   /// Create a public result from buffers.
   static std::unique_ptr<PublicResult>
   fromBuffers(const ClientParameters &clientParameters,
-              std::vector<TensorData> buffers) {
-    return std::make_unique<PublicResult>(clientParameters, buffers);
+              std::vector<TensorData> &&buffers) {
+    return std::make_unique<PublicResult>(clientParameters, std::move(buffers));
   }
 
   /// Unserialize from an input stream inplace.
@@ -99,21 +99,22 @@ struct PublicResult {
   outcome::checked<std::vector<T>, StringError>
   asClearTextVector(KeySet &keySet, size_t pos) {
     OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
-    if (!gate.isEncrypted()) {
-      std::vector<T> result;
-      result.reserve(buffers[pos].values.size());
-      std::copy(buffers[pos].values.begin(), buffers[pos].values.end(),
-                std::back_inserter(result));
-      return result;
-    }
+    if (!gate.isEncrypted())
+      return buffers[pos].asFlatVector<T>();
 
-    auto buffer = buffers[pos];
+    auto &buffer = buffers[pos];
     auto lweSize = clientParameters.lweBufferSize(gate);
+
     std::vector<T> decryptedValues(buffer.length() / lweSize);
     for (size_t i = 0; i < decryptedValues.size(); i++) {
-      auto ciphertext = &buffer.values[i * lweSize];
+      auto ciphertext = buffer.getOpaqueElementPointer(i * lweSize);
       uint64_t decrypted;
-      OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertext, decrypted));
+
+      // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
+      // FIXME: this may break alignment restrictions on some
+      // architectures
+      auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
+      OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertextu64, decrypted));
       decryptedValues[i] = decrypted;
     }
     return decryptedValues;
@@ -137,10 +138,9 @@ TensorData tensorDataFromScalar(uint64_t value);
 
 /// Helper function to convert from MemRefDescriptor to
 /// TensorData
-TensorData tensorDataFromMemRef(size_t memref_rank,
-                                encrypted_scalars_t allocated,
-                                encrypted_scalars_t aligned, size_t offset,
-                                size_t *sizes, size_t *strides);
+TensorData tensorDataFromMemRef(size_t memref_rank, size_t element_width,
+                                bool is_signed, void *allocated, void *aligned,
+                                size_t offset, size_t *sizes, size_t *strides);
 
 } // namespace clientlib
 } // namespace concretelang

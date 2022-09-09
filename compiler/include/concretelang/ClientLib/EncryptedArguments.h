@@ -147,9 +147,6 @@ public:
              << pos << "has not the expected number of dimension, got "
              << shape.size() << " expected " << input.shape.dimensions.size();
     }
-    // Allocate empty
-    ciphertextBuffers.resize(ciphertextBuffers.size() + 1);
-    TensorData &values_and_sizes = ciphertextBuffers.back();
 
     // Check shape
     for (size_t i = 0; i < shape.size(); i++) {
@@ -159,53 +156,49 @@ public:
                << shape[i] << " expected " << input.shape.dimensions[i];
       }
     }
+
     // Set sizes
-    values_and_sizes.sizes = keySet.clientParameters().bufferShape(input);
+    std::vector<int64_t> sizes = keySet.clientParameters().bufferShape(input);
 
     if (input.encryption.hasValue()) {
-      // Allocate values
-      values_and_sizes.values.resize(
-          keySet.clientParameters().bufferSize(input));
+      TensorData td(sizes, ElementType::u64);
+
       auto lweSize = keySet.clientParameters().lweBufferSize(input);
-      auto &values = values_and_sizes.values;
+
       for (size_t i = 0, offset = 0; i < input.shape.size;
            i++, offset += lweSize) {
-        OUTCOME_TRYV(keySet.encrypt_lwe(pos, values.data() + offset, data[i]));
+        OUTCOME_TRYV(keySet.encrypt_lwe(
+            pos, td.getElementPointer<uint64_t>(offset), data[i]));
       }
+      ciphertextBuffers.push_back(std::move(td));
     } else {
-      // Allocate values take care of gate bitwidth
       auto bitsPerValue = bitWidthAsWord(input.shape.width);
-      auto bytesPerValue = bitsPerValue / 8;
-      auto nbWordPerValue = 8 / bytesPerValue;
-      // ceil division
-      auto size = (input.shape.size / nbWordPerValue) +
-                  (input.shape.size % nbWordPerValue != 0);
-      size = size == 0 ? 1 : size;
-      values_and_sizes.values.resize(size);
-      auto v = (uint8_t *)values_and_sizes.values.data();
-      for (size_t i = 0; i < input.shape.size; i++) {
-        auto dst = v + i * bytesPerValue;
-        auto src = (const uint8_t *)&data[i];
-        for (size_t j = 0; j < bytesPerValue; j++) {
-          dst[j] = src[j];
-        }
-      }
+
+      // FIXME: This always requests a tensor with unsigned elements,
+      // as the signedness is not captured in the description of the
+      // circuit
+      TensorData td(sizes, bitsPerValue, false);
+      llvm::ArrayRef<T> values(data, TensorData::getNumElements(sizes));
+      td.bulkAssign(values);
+      ciphertextBuffers.push_back(std::move(td));
     }
+    TensorData &td = ciphertextBuffers.back();
+
     // allocated
     preparedArgs.push_back(nullptr);
     // aligned
-    preparedArgs.push_back((void *)values_and_sizes.values.data());
+    preparedArgs.push_back(td.getValuesAsOpaquePointer());
     // offset
     preparedArgs.push_back((void *)0);
     // sizes
-    for (size_t size : values_and_sizes.sizes) {
+    for (size_t size : td.getDimensions()) {
       preparedArgs.push_back((void *)size);
     }
 
     // Set the stride for each dimension, equal to the product of the
     // following dimensions.
-    int64_t stride = values_and_sizes.length();
-    for (size_t size : values_and_sizes.sizes) {
+    int64_t stride = td.getNumElements();
+    for (size_t size : td.getDimensions()) {
       stride = (size == 0 ? 0 : (stride / size));
       preparedArgs.push_back((void *)stride);
     }

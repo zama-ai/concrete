@@ -7,6 +7,7 @@
 #define CONCRETELANG_CLIENTLIB_SERIALIZERS_ARGUMENTS_H
 
 #include <iostream>
+#include <limits>
 
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EvaluationKeys.h"
@@ -40,6 +41,14 @@ std::istream &readWord(std::istream &istream, Word &word) {
   return istream;
 }
 
+template <typename Word>
+std::istream &readWords(std::istream &istream, Word *words, size_t numWords) {
+  assert(std::numeric_limits<size_t>::max() / sizeof(*words) > numWords);
+  istream.read(reinterpret_cast<char *>(words), sizeof(*words) * numWords);
+  assert(istream.good());
+  return istream;
+}
+
 template <typename Size>
 std::istream &readSize(std::istream &istream, Size &size) {
   return readWord(istream, size);
@@ -57,13 +66,29 @@ std::ostream &operator<<(std::ostream &ostream,
                          const RuntimeContext &runtimeContext);
 std::istream &operator>>(std::istream &istream, RuntimeContext &runtimeContext);
 
-std::ostream &serializeTensorData(std::vector<int64_t> &sizes, uint64_t *values,
+std::ostream &serializeTensorData(const TensorData &values_and_sizes,
                                   std::ostream &ostream);
 
-std::ostream &serializeTensorData(TensorData &values_and_sizes,
-                                  std::ostream &ostream);
+template <typename T>
+std::ostream &serializeTensorDataRaw(const llvm::ArrayRef<size_t> &dimensions,
+                                     const llvm::ArrayRef<T> &values,
+                                     std::ostream &ostream) {
 
-TensorData unserializeTensorData(
+  writeWord<uint64_t>(ostream, dimensions.size());
+
+  for (size_t dim : dimensions)
+    writeWord<int64_t>(ostream, dim);
+
+  writeWord<uint64_t>(ostream, sizeof(T) * 8);
+  writeWord<uint8_t>(ostream, std::is_signed<T>());
+
+  for (T val : values)
+    writeWord(ostream, val);
+
+  return ostream;
+}
+
+outcome::checked<TensorData, StringError> unserializeTensorData(
     std::vector<int64_t> &expectedSizes, // includes unsigned to
                                          // accomodate non static sizes
     std::istream &istream);

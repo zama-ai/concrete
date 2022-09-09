@@ -5,7 +5,30 @@
 // 1D tensor //////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(End2EndJit_ClearTensor_1D, DISABLED_identity) {
+TEST(End2EndJit_ClearTensor_2D, constant_i8) {
+  checkedJit(lambda,
+             R"XXX(
+func.func @main() -> tensor<2x2xi8> {
+  %cst = arith.constant dense<[[0, 1], [2, 3]]> : tensor<2x2xi8>
+  return %cst : tensor<2x2xi8>
+}
+)XXX",
+             "main", true);
+
+  llvm::Expected<std::vector<uint8_t>> res =
+      lambda.operator()<std::vector<uint8_t>>();
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (size_t)4);
+
+  EXPECT_EQ((*res)[0], 0);
+  EXPECT_EQ((*res)[1], 1);
+  EXPECT_EQ((*res)[2], 2);
+  EXPECT_EQ((*res)[3], 3);
+}
+
+TEST(End2EndJit_ClearTensor_1D, identity) {
   checkedJit(lambda,
              R"XXX(
 func.func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
@@ -27,6 +50,29 @@ func.func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>(arg, ARRAY_SIZE(arg));
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (size_t)10);
+
+  for (size_t i = 0; i < res->size(); i++) {
+    EXPECT_EQ(arg[i], res->operator[](i)) << "result differ at index " << i;
+  }
+}
+
+TEST(End2EndJit_ClearTensor_1D, identity_i8) {
+  checkedJit(lambda,
+             R"XXX(
+func.func @main(%t: tensor<10xi8>) -> tensor<10xi8> {
+  return %t : tensor<10xi8>
+}
+)XXX",
+             "main", true);
+
+  uint8_t arg[]{16, 21, 3, 127, 9, 17, 32, 18, 29, 104};
+
+  llvm::Expected<std::vector<uint8_t>> res =
+      lambda.operator()<std::vector<uint8_t>>(arg, ARRAY_SIZE(arg));
 
   ASSERT_EXPECTED_SUCCESS(res);
 

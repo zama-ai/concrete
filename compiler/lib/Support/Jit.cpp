@@ -101,7 +101,8 @@ JITLambda::call(clientlib::PublicArguments &args,
       return std::move(err);
     }
     std::vector<clientlib::TensorData> buffers;
-    return clientlib::PublicResult::fromBuffers(args.clientParameters, buffers);
+    return clientlib::PublicResult::fromBuffers(args.clientParameters,
+                                                std::move(buffers));
   }
 #endif
 
@@ -119,11 +120,13 @@ JITLambda::call(clientlib::PublicArguments &args,
       numOutputs += numArgOfRankedMemrefCallingConvention(shape.size());
     }
   }
-  std::vector<void *> outputs(numOutputs);
+  std::vector<uint64_t> outputs(numOutputs);
+
   // Prepare the raw arguments of invokeRaw, i.e. a vector with pointer on
   // inputs and outputs.
-  std::vector<void *> rawArgs(args.preparedArgs.size() + 1 /*runtime context*/ +
-                              outputs.size());
+  std::vector<void *> rawArgs(
+      args.preparedArgs.size() + 1 /*runtime context*/ + 1 /* outputs */
+  );
   size_t i = 0;
   // Pointers on inputs
   for (auto &arg : args.preparedArgs) {
@@ -136,10 +139,10 @@ JITLambda::call(clientlib::PublicArguments &args,
   // is passed to the compiled function.
   auto rtCtxPtr = &runtimeContext;
   rawArgs[i++] = &rtCtxPtr;
-  // Pointers on outputs
-  for (auto &out : outputs) {
-    rawArgs[i++] = &out;
-  }
+
+  // Outputs
+  rawArgs[i++] = reinterpret_cast<void *>(outputs.data());
+
   // Invoke
   if (auto err = invokeRaw(rawArgs)) {
     return std::move(err);
@@ -165,12 +168,20 @@ JITLambda::call(clientlib::PublicArguments &args,
         outputOffset += rank;
         size_t *strides = (size_t *)&outputs[outputOffset];
         outputOffset += rank;
+
+        size_t elementWidth = (output.isEncrypted())
+                                  ? clientlib::EncryptedScalarElementWidth
+                                  : output.shape.width;
+
+        // FIXME: Handle sign correctly
         buffers.push_back(clientlib::tensorDataFromMemRef(
-            rank, allocated, aligned, offset, sizes, strides));
+            rank, elementWidth, false, allocated, aligned, offset, sizes,
+            strides));
       }
     }
   }
-  return clientlib::PublicResult::fromBuffers(args.clientParameters, buffers);
+  return clientlib::PublicResult::fromBuffers(args.clientParameters,
+                                              std::move(buffers));
 }
 
 } // namespace concretelang
