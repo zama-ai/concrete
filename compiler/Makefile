@@ -262,7 +262,7 @@ not: build-initialized
 # Python packages
 
 define build_image_and_copy_wheels
-	docker image build -t concrete-compiler-manylinux:$(1) --build-arg python_tag=$(1) -f ../builders/Dockerfile.release_manylinux_2_24_x86_64 ..
+	docker image build -t concrete-compiler-manylinux:$(1) --build-arg python_tag=$(1) -f ../builders/Dockerfile.release_manylinux_2_28_x86_64 ..
 	docker container run --rm -v ${PWD}/../wheels:/wheels_volume concrete-compiler-manylinux:$(1) cp -r /wheels/. /wheels_volume/.
 endef
 
