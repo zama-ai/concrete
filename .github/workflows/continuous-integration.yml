@@ -11,8 +11,6 @@ on:
 # DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-  DOCKER_IMAGE_TEST_GCC7: ghcr.io/zama-ai/concrete-compiler-gcc7
-  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/concrete-compiler-df
 
 jobs:
   ########################
@@ -53,12 +51,8 @@ jobs:
 
   BuildAndTest:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compiler: [gcc7, latest]
     # We want to always run the tests unless cancelled, but after the docker image build job.
     # If there is no new build then we use the old image, else we use the new image.
-    # The latest compiler job isn't using the built image, so it suffers the dependance of the gcc7 job.
     if: ${{ !cancelled() }}
     needs: [BuildAndPushDockerImages]
     steps:
@@ -97,23 +91,22 @@ jobs:
           make concrete-optimizer-lib
 
       - name: Download KeySetCache
-        if: ${{ matrix.compiler == 'gcc7' && !contains(github.head_ref, 'newkeysetcache') }}
+        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
         continue-on-error: true
         run: |
           cd compiler
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
       - name: Mark KeySetCache
-        if: ${{ matrix.compiler == 'gcc7' }}
         run: |
           touch keysetcache.timestamp
 
       - name: Build and test compiler
-        if: ${{ matrix.compiler == 'gcc7' }}
         uses: addnab/docker-run-action@v3
+        id: build-compiler
         with:
           registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST_GCC7 }}
+          image: ${{ env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
@@ -125,15 +118,14 @@ jobs:
             set -e
             cd /compiler
             rm -rf /build
-            /opt/python/cp38-cp38/bin/pip install pytest
-            sed "s/pytest/\/opt\/python\/cp38-cp38\/bin\/python -m pytest/g" -i Makefile
-            make CXX_COMPILER=/gcc7/bin/g++-7.5.0 CC_COMPILER=/gcc7/bin/gcc-7.5.0 CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build all run-tests
+            pip install pytest
+            sed "s/pytest/python -m pytest/g" -i Makefile
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all run-tests run-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Prune KeySetCache
-        if: ${{ matrix.compiler == 'gcc7' }}
         run: |
           TO_CLEAN=$(find KeySetCache/* -maxdepth 1 -mindepth 1 -not -newer keysetcache.timestamp -type d)
           if [ -n "$TO_CLEAN" ]
@@ -145,7 +137,7 @@ jobs:
           fi
 
       - name: Upload KeySetCache
-        if: ${{ matrix.compiler == 'gcc7' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         with:
           name: KeySetCacheV2
@@ -154,49 +146,36 @@ jobs:
 
       - name: Cleanup Old KeySetCache
         uses: Remagpie/gha-remove-artifact@v1
-        if: ${{ matrix.compiler == 'gcc7' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         with:
           only-name: KeySetCacheV2
           max-count: 1
 
-      - name: Build compiler
-        if: ${{ matrix.compiler == 'latest' }}
-        id: build-compiler-latest
-        uses: addnab/docker-run-action@v3
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/llvm-project:/llvm-project -v ${{ github.workspace }}/build:/build
-          shell: bash
-          run: |
-            set -e
-            cd /compiler
-            export PYTHONPATH=""
-            make CCACHE=ON BUILD_DIR=/build all
-            echo "Debug: ccache statistics (after the build):"
-            ccache -s
-
       - name: Build the documentation
         id: build-doc
-        if: ${{ steps.build-compiler-latest.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/llvm-project:/llvm-project -v ${{ github.workspace }}/docs:/docs -v ${{ github.workspace }}/build:/compiler/build
+          options: >-
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/docs:/docs
           shell: bash
           run: |
             set -e
-            make CCACHE=ON BUILD_DIR=/build concretecompiler python-bindings doc
+            rm -rf /build
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
             cd /docs
             pip install -r requirements.txt
             pip install -r ../llvm-project/mlir/python/requirements.txt
-            DEBIAN_FRONTEND="noninteractive" apt-get install -y doxygen
-            make CCACHE=ON doc
+            dnf install -y doxygen
+            sed "s/sphinx-apidoc/python -m sphinx.ext.apidoc/g" -i Makefile
+            sed "s/sphinx-build/python -m sphinx.cmd.build/g" -i Makefile
+            make COMPILER_BUILD_DIR=/build/ doc
 
       - name: Archive docs artifacts
         if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
@@ -305,65 +284,6 @@ jobs:
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
 
-  BuildAndTestDF:
-    runs-on: ubuntu-latest
-    # We want to always run the tests unless cancelled, but after the docker image build job.
-    # If there is no new build then we use the old image, else we use the new image.
-    if: ${{ !cancelled() }}
-    needs: [BuildAndPushDockerImages]
-    steps:
-      # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.5.2
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
-
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-          token: ${{ secrets.GH_TOKEN }}
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Concrete-Optimizer
-        run: |
-          cd compiler
-          make concrete-optimizer-lib
-
-      - name: Download KeySetCache
-        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
-        continue-on-error: true
-        run: |
-          cd compiler
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
-
-      - name: Build and test compiler (dataflow)
-        uses: addnab/docker-run-action@v3
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST_DF }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}/compiler:/compiler
-            -v ${{ github.workspace }}/llvm-project:/llvm-project
-            -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
-          shell: bash
-          run: |
-            set -e
-            echo "Debug: ccache statistics (prior to the build):"
-            ccache -s
-            cd /compiler
-            pip install pytest
-            rm -rf /build
-            export PYTHONPATH=""
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
-            echo "Debug: ccache statistics (after the build):"
-            ccache -s
-            chmod -R ugo+rwx /tmp/KeySetCache
-
   BlockMerge:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -421,7 +341,7 @@ jobs:
 
   CreateRelease:
     runs-on: ubuntu-latest
-    needs: [BuildAndTest, BuildAndTestDF, BuildAndTestMacOS]
+    needs: [BuildAndTest, BuildAndTestMacOS]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
       upload_url: ${{ steps.release.outputs.upload_url }}
@@ -725,8 +645,8 @@ jobs:
   #################
 
   BuildAndPushDockerImages:
-    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') || needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' || needs.BuildAndPublishGCC7DockerImage.outputs.image_built == 'true' }}
-    needs: [BuildAndPublishHPXDockerImage, BuildAndPublishGCC7DockerImage]
+    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') || needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' }}
+    needs: [BuildAndPublishHPXDockerImage]
     name: Build & Publish Docker Images
     runs-on: ubuntu-latest
     strategy:
@@ -735,12 +655,6 @@ jobs:
           - name: test-env
             image: ghcr.io/zama-ai/concrete-compiler
             dockerfile: builders/Dockerfile.concrete-compiler-env
-          - name: test-env-gcc7
-            image: ghcr.io/zama-ai/concrete-compiler-gcc7
-            dockerfile: builders/Dockerfile.concrete-compiler-gcc7-env
-          - name: test-df
-            image: ghcr.io/zama-ai/concrete-compiler-df
-            dockerfile: builders/Dockerfile.concrete-compiler-df-env
 
     steps:
       # A SSH private key is required as some dependencies are from private repos
@@ -813,54 +727,3 @@ jobs:
       - name: Is Image Built
         id: is-built
         run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env') }}"
-
-  BuildAndPublishGCC7DockerImage:
-    name: Build & Publish GCC7 Docker Image
-    runs-on: ubuntu-latest
-    env:
-      IMAGE: ghcr.io/zama-ai/gcc7
-    outputs:
-      image_built: ${{ steps.is-built.outputs.IMAGE_BUILT }}
-
-    steps:
-      # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.5.2
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          submodules: recursive
-          token: ${{ secrets.GH_TOKEN }}
-
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v2.0.0
-
-      - name: Login
-        id: login
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env')
-        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
-
-      - name: Install rust
-        if: ${{ steps.login.conclusion != 'skipped' }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Concrete-Optimizer
-        if: ${{ steps.login.conclusion != 'skipped' }}
-        run: |
-          cd compiler
-          make concrete-optimizer-lib
-
-      - name: Build Tag and Publish
-        if: ${{ steps.login.conclusion != 'skipped' }}
-        run: |
-          docker build -t $IMAGE -f builders/Dockerfile.gcc7-env .
-          docker push $IMAGE:latest
-
-      - name: Is Image Built
-        id: is-built
-        run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env') }}"

@@ -1,5 +1,10 @@
 #!/bin/bash 
 
+if [ "$#" -ne 1 ]; then
+    echo "You must provide the compiler build directory"
+    exit 1
+fi
+
 create_check_symlink () {
    ln -s $1 $2 -f
    if ! [ -e ${2} ] ; then
@@ -13,7 +18,7 @@ mkdir -p links_to_compiler_build/py/concretelang_core
 
 cd links_to_compiler_build/py/concretelang_core
 
-ln -s ../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/mlir -f
+ln -s $1/tools/concretelang/python_packages/concretelang_core/mlir -f
 
 # Create directories needed for symlinks
 mkdir -p concrete/lang/dialects
@@ -22,7 +27,7 @@ cd concrete
 # Consider concrete as a package, as it's not detecting it as a namespace
 touch __init__.py
 
-py_prefix="$PWD/../../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/concrete/"
+py_prefix="$1/tools/concretelang/python_packages/concretelang_core/concrete/"
 pyfiles=`find $py_prefix -iname "*.py"`
 
 for file in $pyfiles

@@ -1,10 +1,27 @@
-FROM ubuntu:latest
+FROM quay.io/pypa/manylinux_2_28_x86_64
 
-RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-essential python3 python3-pip python3-setuptools ninja-build git zlib1g-dev ccache
+# epel-release is for install ccache
+RUN dnf install -y epel-release
+RUN dnf update -y
+RUN dnf install -y ninja-build hwloc-devel ccache
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
+# Install boost
+ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
+RUN tar -xzvf /boost_1_71_0.tar.gz
+WORKDIR /boost_1_71_0
+RUN ./bootstrap.sh && ./b2 --with-filesystem install
+# Setup HPX
+COPY --from=ghcr.io/zama-ai/hpx:latest /hpx /hpx
+ENV HPX_INSTALL_DIR=/hpx/build
+# Set the python path. Options: [cp37-cp37m, cp38-cp38, cp39-cp39, cp310-cp310]
+# Links and env would be available to use the appropriate python version
+ARG python_tag=cp38-cp38
+RUN ln -s /opt/python/${python_tag}/bin/pip /bin/pip
+RUN ln -s /opt/python/${python_tag}/bin/python /bin/python
+ENV PYTHON_EXEC=/opt/python/${python_tag}/bin/python
+# Install python deps
 RUN pip install numpy pybind11==2.8 PyYAML
 # Setup LLVM
 COPY /llvm-project /llvm-project
@@ -12,7 +29,9 @@ COPY /llvm-project /llvm-project
 COPY /compiler /compiler
 WORKDIR /compiler
 RUN mkdir -p /build
-RUN make BUILD_DIR=/build CCACHE=ON concretecompiler python-bindings
+RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
+    Python3_EXECUTABLE=${PYTHON_EXEC} \
+    concretecompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"
 ENV PATH "$PATH:/build/bin"
 RUN ccache -z
