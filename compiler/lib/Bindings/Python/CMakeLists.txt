@@ -29,6 +29,7 @@ declare_mlir_python_sources(ConcretelangBindingsPythonSources
     concrete/compiler/__init__.py
     concrete/compiler/client_parameters.py
     concrete/compiler/client_support.py
+    concrete/compiler/compilation_feedback.py
     concrete/compiler/compilation_options.py
     concrete/compiler/jit_compilation_result.py
     concrete/compiler/jit_support.py

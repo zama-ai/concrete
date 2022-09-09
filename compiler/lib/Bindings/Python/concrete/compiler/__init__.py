@@ -15,6 +15,7 @@ from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
 from .compilation_options import CompilationOptions
 from .key_set_cache import KeySetCache
 from .client_parameters import ClientParameters
+from .compilation_feedback import CompilationFeedback
 from .key_set import KeySet
 from .public_result import PublicResult
 from .public_arguments import PublicArguments

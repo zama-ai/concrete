@@ -47,6 +47,10 @@ MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 jit_load_client_parameters(JITSupport_C support,
                            mlir::concretelang::JitCompilationResult &);
 
+MLIR_CAPI_EXPORTED mlir::concretelang::CompilationFeedback
+jit_load_compilation_feedback(JITSupport_C support,
+                              mlir::concretelang::JitCompilationResult &);
+
 MLIR_CAPI_EXPORTED std::shared_ptr<mlir::concretelang::JITLambda>
 jit_load_server_lambda(JITSupport_C support,
                        mlir::concretelang::JitCompilationResult &);
@@ -66,7 +70,8 @@ typedef struct LibrarySupport_C LibrarySupport_C;
 MLIR_CAPI_EXPORTED LibrarySupport_C
 library_support(const char *outputPath, const char *runtimeLibraryPath,
                 bool generateSharedLib, bool generateStaticLib,
-                bool generateClientParameters, bool generateCppHeader);
+                bool generateClientParameters, bool generateCompilationFeedback,
+                bool generateCppHeader);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
 library_compile(LibrarySupport_C support, const char *module,
@@ -75,6 +80,10 @@ library_compile(LibrarySupport_C support, const char *module,
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 library_load_client_parameters(LibrarySupport_C support,
                                mlir::concretelang::LibraryCompilationResult &);
+
+MLIR_CAPI_EXPORTED mlir::concretelang::CompilationFeedback
+library_load_compilation_feedback(
+    LibrarySupport_C support, mlir::concretelang::LibraryCompilationResult &);
 
 MLIR_CAPI_EXPORTED concretelang::serverlib::ServerLambda
 library_load_server_lambda(LibrarySupport_C support,

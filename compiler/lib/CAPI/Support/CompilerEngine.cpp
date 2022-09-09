@@ -44,6 +44,14 @@ jit_load_client_parameters(JITSupport_C support,
   return *clientParameters;
 }
 
+MLIR_CAPI_EXPORTED mlir::concretelang::CompilationFeedback
+jit_load_compilation_feedback(
+    JITSupport_C support, mlir::concretelang::JitCompilationResult &result) {
+  GET_OR_THROW_LLVM_EXPECTED(compilationFeedback,
+                             support.support.loadCompilationFeedback(result));
+  return *compilationFeedback;
+}
+
 MLIR_CAPI_EXPORTED std::shared_ptr<mlir::concretelang::JITLambda>
 jit_load_server_lambda(JITSupport_C support,
                        mlir::concretelang::JitCompilationResult &result) {
@@ -64,10 +72,12 @@ jit_server_call(JITSupport_C support, mlir::concretelang::JITLambda &lambda,
 MLIR_CAPI_EXPORTED LibrarySupport_C
 library_support(const char *outputPath, const char *runtimeLibraryPath,
                 bool generateSharedLib, bool generateStaticLib,
-                bool generateClientParameters, bool generateCppHeader) {
+                bool generateClientParameters, bool generateCompilationFeedback,
+                bool generateCppHeader) {
   return LibrarySupport_C{mlir::concretelang::LibrarySupport(
       outputPath, runtimeLibraryPath, generateSharedLib, generateStaticLib,
-      generateClientParameters, generateCppHeader)};
+      generateClientParameters, generateCompilationFeedback,
+      generateCppHeader)};
 }
 
 std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
@@ -85,6 +95,15 @@ library_load_client_parameters(
   GET_OR_THROW_LLVM_EXPECTED(clientParameters,
                              support.support.loadClientParameters(result));
   return *clientParameters;
+}
+
+MLIR_CAPI_EXPORTED mlir::concretelang::CompilationFeedback
+library_load_compilation_feedback(
+    LibrarySupport_C support,
+    mlir::concretelang::LibraryCompilationResult &result) {
+  GET_OR_THROW_LLVM_EXPECTED(compilationFeedback,
+                             support.support.loadCompilationFeedback(result));
+  return *compilationFeedback;
 }
 
 MLIR_CAPI_EXPORTED concretelang::serverlib::ServerLambda

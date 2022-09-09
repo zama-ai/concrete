@@ -7,6 +7,7 @@ from concrete.compiler import (
     LibrarySupport,
     ClientSupport,
     CompilationOptions,
+    CompilationFeedback,
 )
 
 
@@ -27,19 +28,16 @@ def run(engine, args, compilation_result, keyset_cache):
 
     Perform required loading, encryption, execution, and decryption."""
     # Dev
-    compilation_feedback = engine.load_compilation_feedback(
-        compilation_result)
-    assert(compilation_feedback is not None)
+    compilation_feedback = engine.load_compilation_feedback(compilation_result)
+    assert isinstance(compilation_feedback, CompilationFeedback)
     # Client
     client_parameters = engine.load_client_parameters(compilation_result)
     key_set = ClientSupport.key_set(client_parameters, keyset_cache)
-    public_arguments = ClientSupport.encrypt_arguments(
-        client_parameters, key_set, args)
+    public_arguments = ClientSupport.encrypt_arguments(client_parameters, key_set, args)
     # Server
     server_lambda = engine.load_server_lambda(compilation_result)
     evaluation_keys = key_set.get_evaluation_keys()
-    public_result = engine.server_call(
-        server_lambda, public_arguments, evaluation_keys)
+    public_result = engine.server_call(server_lambda, public_arguments, evaluation_keys)
     # Client
     result = ClientSupport.decrypt_result(key_set, public_result)
     return result
@@ -141,10 +139,8 @@ end_to_end_parallel_fixture = [
             }
             """,
         (
-            np.array([[1, 2, 3, 4], [4, 2, 1, 0], [
-                     2, 3, 1, 5]], dtype=np.uint8),
-            np.array([[1, 2, 3, 4], [4, 2, 1, 1], [
-                     2, 3, 1, 5]], dtype=np.uint8),
+            np.array([[1, 2, 3, 4], [4, 2, 1, 0], [2, 3, 1, 5]], dtype=np.uint8),
+            np.array([[1, 2, 3, 4], [4, 2, 1, 1], [2, 3, 1, 5]], dtype=np.uint8),
         ),
         np.array([[52, 36], [31, 34], [42, 52]]),
         id="matmul_eint_int_uint8",
@@ -228,8 +224,7 @@ def test_lib_compile_and_run_p_error(keyset_cache):
     options = CompilationOptions.new("main")
     options.set_p_error(0.00001)
     options.set_display_optimizer_choice(True)
-    compile_run_assert(engine, mlir_input, args,
-                       expected_result, keyset_cache, options)
+    compile_run_assert(engine, mlir_input, args, expected_result, keyset_cache, options)
 
 
 def test_lib_compile_and_run_p_error(keyset_cache):

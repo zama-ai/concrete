@@ -73,7 +73,22 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            });
 
   pybind11::class_<mlir::concretelang::CompilationFeedback>(
-      m, "CompilationFeedback");
+      m, "CompilationFeedback")
+      .def_readonly("complexity",
+                    &mlir::concretelang::CompilationFeedback::complexity)
+      .def_readonly(
+          "total_secret_keys_size",
+          &mlir::concretelang::CompilationFeedback::totalSecretKeysSize)
+      .def_readonly(
+          "total_bootstrap_keys_size",
+          &mlir::concretelang::CompilationFeedback::totalBootstrapKeysSize)
+      .def_readonly(
+          "total_keyswitch_keys_size",
+          &mlir::concretelang::CompilationFeedback::totalKeyswitchKeysSize)
+      .def_readonly("total_inputs_size",
+                    &mlir::concretelang::CompilationFeedback::totalInputsSize)
+      .def_readonly("total_output_size",
+                    &mlir::concretelang::CompilationFeedback::totalOutputsSize);
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");
@@ -97,7 +112,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("load_compilation_feedback",
            [](JITSupport_C &support,
               mlir::concretelang::JitCompilationResult &result) {
-             return jit_load_client_parameters(support, result);
+             return jit_load_compilation_feedback(support, result);
            })
       .def(
           "load_server_lambda",
@@ -127,11 +142,12 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def(pybind11::init(
           [](std::string outputPath, std::string runtimeLibraryPath,
              bool generateSharedLib, bool generateStaticLib,
-             bool generateClientParameters, bool generateCppHeader) {
-            return library_support(outputPath.c_str(),
-                                   runtimeLibraryPath.c_str(),
-                                   generateSharedLib, generateStaticLib,
-                                   generateClientParameters, generateCppHeader);
+             bool generateClientParameters, bool generateCompilationFeedback,
+             bool generateCppHeader) {
+            return library_support(
+                outputPath.c_str(), runtimeLibraryPath.c_str(),
+                generateSharedLib, generateStaticLib, generateClientParameters,
+                generateCompilationFeedback, generateCppHeader);
           }))
       .def("compile",
            [](LibrarySupport_C &support, std::string mlir_program,

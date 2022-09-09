@@ -21,6 +21,7 @@ from .public_arguments import PublicArguments
 from .library_lambda import LibraryLambda
 from .public_result import PublicResult
 from .client_parameters import ClientParameters
+from .compilation_feedback import CompilationFeedback
 from .wrapper import WrapperCpp
 from .utils import lookup_runtime_lib
 from .evaluation_keys import EvaluationKeys
@@ -71,6 +72,7 @@ class LibrarySupport(WrapperCpp):
         generateSharedLib: bool = True,
         generateStaticLib: bool = False,
         generateClientParameters: bool = True,
+        generateCompilationFeedback: bool = True,
         generateCppHeader: bool = False,
     ) -> "LibrarySupport":
         """Build a LibrarySupport.
@@ -104,6 +106,7 @@ class LibrarySupport(WrapperCpp):
             ("generateSharedLib", generateSharedLib),
             ("generateStaticLib", generateStaticLib),
             ("generateClientParameters", generateClientParameters),
+            ("generateCompilationFeedback", generateCompilationFeedback),
             ("generateCppHeader", generateCppHeader),
         ]:
             if not isinstance(value, bool):
@@ -115,6 +118,7 @@ class LibrarySupport(WrapperCpp):
                 generateSharedLib,
                 generateStaticLib,
                 generateClientParameters,
+                generateCompilationFeedback,
                 generateCppHeader,
             )
         )
@@ -186,6 +190,28 @@ class LibrarySupport(WrapperCpp):
 
         return ClientParameters.wrap(
             self.cpp().load_client_parameters(library_compilation_result.cpp())
+        )
+
+    def load_compilation_feedback(
+        self, compilation_result: LibraryCompilationResult
+    ) -> CompilationFeedback:
+        """Load the compilation feedback from the JIT compilation result.
+
+        Args:
+            compilation_result (JITCompilationResult): result of the JIT compilation
+
+        Raises:
+            TypeError: if compilation_result is not of type JITCompilationResult
+
+        Returns:
+            CompilationFeedback: the compilation feedback for the compiled program
+        """
+        if not isinstance(compilation_result, LibraryCompilationResult):
+            raise TypeError(
+                f"compilation_result must be of type JITCompilationResult, not {type(compilation_result)}"
+            )
+        return CompilationFeedback.wrap(
+            self.cpp().load_compilation_feedback(compilation_result.cpp())
         )
 
     def load_server_lambda(

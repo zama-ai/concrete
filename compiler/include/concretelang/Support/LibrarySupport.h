@@ -37,11 +37,13 @@ public:
   LibrarySupport(std::string outputPath, std::string runtimeLibraryPath = "",
                  bool generateSharedLib = true, bool generateStaticLib = true,
                  bool generateClientParameters = true,
+                 bool generateCompilationFeedback = true,
                  bool generateCppHeader = true)
       : outputPath(outputPath), runtimeLibraryPath(runtimeLibraryPath),
         generateSharedLib(generateSharedLib),
         generateStaticLib(generateStaticLib),
         generateClientParameters(generateClientParameters),
+        generateCompilationFeedback(generateCompilationFeedback),
         generateCppHeader(generateCppHeader) {}
 
   llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
@@ -52,9 +54,10 @@ public:
     engine.setCompilationOptions(options);
 
     // Compile to a library
-    auto library = engine.compile(program, outputPath, runtimeLibraryPath,
-                                  generateSharedLib, generateStaticLib,
-                                  generateClientParameters, generateCppHeader);
+    auto library = engine.compile(
+        program, outputPath, runtimeLibraryPath, generateSharedLib,
+        generateStaticLib, generateClientParameters,
+        generateCompilationFeedback, generateCppHeader);
     if (auto err = library.takeError()) {
       return std::move(err);
     }
@@ -136,6 +139,7 @@ private:
   bool generateSharedLib;
   bool generateStaticLib;
   bool generateClientParameters;
+  bool generateCompilationFeedback;
   bool generateCppHeader;
 };
 

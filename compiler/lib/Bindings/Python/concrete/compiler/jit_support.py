@@ -19,6 +19,7 @@ from .utils import lookup_runtime_lib
 from .compilation_options import CompilationOptions
 from .jit_compilation_result import JITCompilationResult
 from .client_parameters import ClientParameters
+from .compilation_feedback import CompilationFeedback
 from .jit_lambda import JITLambda
 from .public_arguments import PublicArguments
 from .public_result import PublicResult
@@ -119,6 +120,28 @@ class JITSupport(WrapperCpp):
             )
         return ClientParameters.wrap(
             self.cpp().load_client_parameters(compilation_result.cpp())
+        )
+
+    def load_compilation_feedback(
+        self, compilation_result: JITCompilationResult
+    ) -> CompilationFeedback:
+        """Load the compilation feedback from the JIT compilation result.
+
+        Args:
+            compilation_result (JITCompilationResult): result of the JIT compilation
+
+        Raises:
+            TypeError: if compilation_result is not of type JITCompilationResult
+
+        Returns:
+            CompilationFeedback: the compilation feedback for the compiled program
+        """
+        if not isinstance(compilation_result, JITCompilationResult):
+            raise TypeError(
+                f"compilation_result must be of type JITCompilationResult, not {type(compilation_result)}"
+            )
+        return CompilationFeedback.wrap(
+            self.cpp().load_compilation_feedback(compilation_result.cpp())
         )
 
     def load_server_lambda(self, compilation_result: JITCompilationResult) -> JITLambda:
