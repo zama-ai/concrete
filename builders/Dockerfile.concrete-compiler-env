@@ -6,9 +6,6 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-ess
 RUN ccache -M 0
 RUN ccache -F 0
 RUN pip install numpy pybind11==2.8 PyYAML
-# Setup Concrete
-COPY --from=ghcr.io/zama-ai/concrete-compiler-api-env:latest /target/release /concrete/target/release
-ENV CONCRETE_PROJECT=/concrete
 # Setup LLVM
 COPY /llvm-project /llvm-project
 # Setup and build compiler

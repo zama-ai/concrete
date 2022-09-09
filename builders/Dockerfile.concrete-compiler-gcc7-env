@@ -19,9 +19,6 @@ ENV CXX=/gcc7/bin/g++-7.5.0
 
 # Setup LLVM
 COPY /llvm-project /llvm-project
-# Setup Concrete
-COPY --from=ghcr.io/zama-ai/concrete-compiler-api-env:latest /target/release /concrete/target/release
-ENV CONCRETE_PROJECT=/concrete
 # Setup and build compiler
 COPY /compiler /compiler
 WORKDIR /compiler
