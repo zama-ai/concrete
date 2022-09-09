@@ -83,6 +83,7 @@ public:
 
     llvm::Optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
     llvm::Optional<mlir::concretelang::ClientParameters> clientParameters;
+    llvm::Optional<CompilationFeedback> feedback;
     std::unique_ptr<llvm::Module> llvmModule;
     llvm::Optional<mlir::concretelang::V0FHEContext> fheContext;
 
@@ -94,6 +95,8 @@ public:
     std::string outputDirPath;
     std::vector<std::string> objectsPath;
     std::vector<mlir::concretelang::ClientParameters> clientParametersList;
+    std::vector<mlir::concretelang::CompilationFeedback>
+        compilationFeedbackList;
     /// Path to the runtime library. Will be linked to the output library if set
     std::string runtimeLibraryPath;
     bool cleanUp;
@@ -110,7 +113,8 @@ public:
     llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
     /// Emit the library artifacts with the previously added compilation result
     llvm::Error emitArtifacts(bool sharedLib, bool staticLib,
-                              bool clientParameters, bool cppHeader);
+                              bool clientParameters, bool compilationFeedback,
+                              bool cppHeader);
     /// After a shared library has been emitted, its path is here
     std::string sharedLibraryPath;
     /// After a static library has been emitted, its path is here
@@ -122,8 +126,11 @@ public:
     /// Returns the path of the static library
     static std::string getStaticLibraryPath(std::string outputDirPath);
 
-    /// Returns the path of the static library
+    /// Returns the path of the client parameters
     static std::string getClientParametersPath(std::string outputDirPath);
+
+    /// Returns the path of the compilation feedback
+    static std::string getCompilationFeedbackPath(std::string outputDirPath);
 
     // For advanced use
     const static std::string OBJECT_EXT, LINKER, LINKER_SHARED_OPT, AR,
@@ -141,6 +148,8 @@ public:
     llvm::Expected<std::string> emitShared();
     /// Emit a json ClientParameters corresponding to library content
     llvm::Expected<std::string> emitClientParametersJSON();
+    /// Emit a json CompilationFeedback corresponding to library content
+    llvm::Expected<std::string> emitCompilationFeedbackJSON();
     /// Emit a client header file for this corresponding to library content
     llvm::Expected<std::string> emitCppHeader();
   };
@@ -211,6 +220,7 @@ public:
   compile(std::vector<std::string> inputs, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
+          bool generateCompilationFeedback = true,
           bool generateCppHeader = true);
 
   /// Compile and emit artifact to the given outputDirPath from an LLVM source
@@ -219,6 +229,7 @@ public:
   compile(llvm::SourceMgr &sm, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
+          bool generateCompilationFeedback = true,
           bool generateCppHeader = true);
 
   void setCompilationOptions(CompilationOptions &options) {

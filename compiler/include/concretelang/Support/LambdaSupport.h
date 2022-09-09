@@ -273,6 +273,10 @@ public:
   llvm::Expected<clientlib::ClientParameters> virtual loadClientParameters(
       CompilationResult &result) = 0;
 
+  /// Load the compilation feedback from the compilation result.
+  llvm::Expected<CompilationFeedback> virtual loadCompilationFeedback(
+      CompilationResult &result) = 0;
+
   /// Call the lambda with the public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>> virtual serverCall(
       Lambda lambda, clientlib::PublicArguments &args,

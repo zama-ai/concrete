@@ -25,6 +25,7 @@ namespace clientlib = ::concretelang::clientlib;
 struct JitCompilationResult {
   std::shared_ptr<concretelang::JITLambda> lambda;
   clientlib::ClientParameters clientParameters;
+  CompilationFeedback feedback;
 };
 
 /// JITSupport is the instantiated LambdaSupport for the Jit Compilation.
@@ -47,6 +48,11 @@ public:
   llvm::Expected<clientlib::ClientParameters>
   loadClientParameters(JitCompilationResult &result) override {
     return result.clientParameters;
+  }
+
+  llvm::Expected<CompilationFeedback>
+  loadCompilationFeedback(JitCompilationResult &result) override {
+    return result.feedback;
   }
 
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>

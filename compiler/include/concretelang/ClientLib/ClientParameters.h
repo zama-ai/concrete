@@ -18,6 +18,19 @@
 #include <llvm/Support/JSON.h>
 
 namespace concretelang {
+
+inline size_t bitWidthAsWord(size_t exactBitWidth) {
+  if (exactBitWidth <= 8)
+    return 8;
+  if (exactBitWidth <= 16)
+    return 16;
+  if (exactBitWidth <= 32)
+    return 32;
+  if (exactBitWidth <= 64)
+    return 64;
+  assert(false && "Bit witdh > 64 not supported");
+}
+
 namespace clientlib {
 
 using concretelang::error::StringError;
@@ -44,6 +57,7 @@ struct LweSecretKeyParam {
   void hash(size_t &seed);
   inline uint64_t lweDimension() { return dimension; }
   inline uint64_t lweSize() { return dimension + 1; }
+  inline uint64_t byteSize() { return lweSize() * 8; }
 };
 static bool operator==(const LweSecretKeyParam &lhs,
                        const LweSecretKeyParam &rhs) {
@@ -60,6 +74,11 @@ struct BootstrapKeyParam {
   Variance variance;
 
   void hash(size_t &seed);
+
+  uint64_t byteSize(uint64_t inputLweSize, uint64_t outputLweSize) {
+    return inputLweSize * level * (glweDimension + 1) * (glweDimension + 1) *
+           outputLweSize * 8;
+  }
 };
 static inline bool operator==(const BootstrapKeyParam &lhs,
                               const BootstrapKeyParam &rhs) {
@@ -78,6 +97,10 @@ struct KeyswitchKeyParam {
   Variance variance;
 
   void hash(size_t &seed);
+
+  size_t byteSize(size_t inputLweSize, size_t outputLweSize) {
+    return level * inputLweSize * outputLweSize * 8;
+  }
 };
 static inline bool operator==(const KeyswitchKeyParam &lhs,
                               const KeyswitchKeyParam &rhs) {
@@ -125,6 +148,19 @@ struct CircuitGate {
   CircuitGateShape shape;
 
   bool isEncrypted() { return encryption.hasValue(); }
+
+  /// byteSize returns the size in bytes for this gate.
+  size_t byteSize(std::map<LweSecretKeyID, LweSecretKeyParam> secretKeys) {
+    auto width = shape.width;
+    auto numElts = shape.size == 0 ? 1 : shape.size;
+    if (isEncrypted()) {
+      auto skParam = secretKeys.find(encryption->secretKeyID);
+      assert(skParam != secretKeys.end());
+      return 8 * skParam->second.lweSize() * numElts;
+    }
+    width = bitWidthAsWord(width) / 8;
+    return width * numElts;
+  }
 };
 static inline bool operator==(const CircuitGate &lhs, const CircuitGate &rhs) {
   return lhs.encryption == rhs.encryption && lhs.shape == rhs.shape;

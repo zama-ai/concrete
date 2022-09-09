@@ -49,11 +49,13 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
   // Mark the lambda as compiled using DF parallelization
   result->lambda->setUseDataflow(options.dataflowParallelize ||
                                  options.autoParallelize);
-  if (!mlir::concretelang::dfr::_dfr_is_root_node())
+  if (!mlir::concretelang::dfr::_dfr_is_root_node()) {
     result->clientParameters = clientlib::ClientParameters();
-  else
+  } else {
     result->clientParameters =
         compilationResult.get().clientParameters.getValue();
+    result->feedback = compilationResult.get().feedback.getValue();
+  }
   return std::move(result);
 }
 

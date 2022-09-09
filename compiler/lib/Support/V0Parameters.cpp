@@ -135,6 +135,7 @@ static void display(optimizer::Description &descr,
 }
 
 llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
+                                         CompilationFeedback &feedback,
                                          optimizer::Config config) {
   namespace chrono = std::chrono;
   auto start = chrono::high_resolution_clock::now();
@@ -205,6 +206,8 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
 
     params.largeInteger = lParams;
   }
+
+  feedback.complexity = sol.complexity;
 
   return params;
 }

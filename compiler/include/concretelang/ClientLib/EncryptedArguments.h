@@ -23,18 +23,6 @@ using concretelang::error::StringError;
 
 class PublicArguments;
 
-inline size_t bitWidthAsWord(size_t exactBitWidth) {
-  if (exactBitWidth <= 8)
-    return 8;
-  if (exactBitWidth <= 16)
-    return 16;
-  if (exactBitWidth <= 32)
-    return 32;
-  if (exactBitWidth <= 64)
-    return 64;
-  assert(false && "Bit witdh > 64 not supported");
-}
-
 /// Temporary object used to hold and encrypt parameters before calling a
 /// ClientLambda. Use preferably TypeClientLambda and serializeCall(Args...).
 /// Otherwise convert it to a PublicArguments and use

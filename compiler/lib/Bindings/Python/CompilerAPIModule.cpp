@@ -72,6 +72,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              options.optimizerConfig.global_p_error = global_p_error;
            });
 
+  pybind11::class_<mlir::concretelang::CompilationFeedback>(
+      m, "CompilationFeedback");
+
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");
   pybind11::class_<mlir::concretelang::JITLambda,
@@ -87,6 +90,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return jit_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
+           [](JITSupport_C &support,
+              mlir::concretelang::JitCompilationResult &result) {
+             return jit_load_client_parameters(support, result);
+           })
+      .def("load_compilation_feedback",
            [](JITSupport_C &support,
               mlir::concretelang::JitCompilationResult &result) {
              return jit_load_client_parameters(support, result);
@@ -134,6 +142,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](LibrarySupport_C &support,
               mlir::concretelang::LibraryCompilationResult &result) {
              return library_load_client_parameters(support, result);
+           })
+      .def("load_compilation_feedback",
+           [](LibrarySupport_C &support,
+              mlir::concretelang::LibraryCompilationResult &result) {
+             return library_load_compilation_feedback(support, result);
            })
       .def(
           "load_server_lambda",

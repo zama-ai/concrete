@@ -10,6 +10,7 @@
 
 #include "concrete-optimizer.hpp"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
+#include "concretelang/Support/CompilationFeedback.h"
 
 namespace mlir {
 namespace concretelang {
@@ -49,6 +50,7 @@ struct Description {
 } // namespace optimizer
 
 llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
+                                         CompilationFeedback &feedback,
                                          optimizer::Config optimizerConfig);
 } // namespace concretelang
 } // namespace mlir

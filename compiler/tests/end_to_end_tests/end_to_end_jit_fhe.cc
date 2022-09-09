@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
+#include "concretelang/Support/CompilationFeedback.h"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/LibrarySupport.h"
 #include "end_to_end_fixture/EndToEndFixture.h"
@@ -69,6 +70,10 @@ void compile_and_run_for_config(EndToEndDesc desc, LambdaSupport support,
   /* 3 - Load the server lambda */
   auto serverLambda = support.loadServerLambda(**compilationResult);
   ASSERT_EXPECTED_SUCCESS(serverLambda);
+
+  // Just test that we can load the compilation feedback
+  auto feedback = support.loadCompilationFeedback(**compilationResult);
+  ASSERT_EXPECTED_SUCCESS(feedback);
 
   assert_all_test_entries(desc, test_error_rate, support, keySet,
                           evaluationKeys, clientParameters, serverLambda);

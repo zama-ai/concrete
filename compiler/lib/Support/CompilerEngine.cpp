@@ -192,13 +192,15 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     if (!descr.get().hasValue()) {
       return llvm::Error::success();
     }
-    auto v0Params =
-        getParameter(descr.get().value(), compilerOptions.optimizerConfig);
+    CompilationFeedback feedback;
+    auto v0Params = getParameter(descr.get().value(), feedback,
+                                 compilerOptions.optimizerConfig);
     if (auto err = v0Params.takeError()) {
       return err;
     }
     res.fheContext.emplace(mlir::concretelang::V0FHEContext{
         descr.get().value().constraint, v0Params.get()});
+    res.feedback.emplace(feedback);
   }
 
   return llvm::Error::success();
@@ -347,6 +349,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
         return clientParametersOrErr.takeError();
 
       res.clientParameters = clientParametersOrErr.get();
+      res.feedback->fillFromClientParameters(*res.clientParameters);
     }
   }
 
@@ -440,12 +443,11 @@ CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
   return this->compile(sm, target, lib);
 }
 
-llvm::Expected<CompilerEngine::Library>
-CompilerEngine::compile(std::vector<std::string> inputs,
-                        std::string outputDirPath,
-                        std::string runtimeLibraryPath, bool generateSharedLib,
-                        bool generateStaticLib, bool generateClientParameters,
-                        bool generateCppHeader) {
+llvm::Expected<CompilerEngine::Library> CompilerEngine::compile(
+    std::vector<std::string> inputs, std::string outputDirPath,
+    std::string runtimeLibraryPath, bool generateSharedLib,
+    bool generateStaticLib, bool generateClientParameters,
+    bool generateCompilationFeedback, bool generateCppHeader) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
@@ -456,9 +458,9 @@ CompilerEngine::compile(std::vector<std::string> inputs,
              << llvm::toString(compilation.takeError());
     }
   }
-  if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,
-                                          generateClientParameters,
-                                          generateCppHeader)) {
+  if (auto err = outputLib->emitArtifacts(
+          generateSharedLib, generateStaticLib, generateClientParameters,
+          generateCompilationFeedback, generateCppHeader)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -469,6 +471,7 @@ llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
+                        bool generateCompilationFeedback,
                         bool generateCppHeader) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
@@ -480,9 +483,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
            << llvm::toString(compilation.takeError());
   }
 
-  if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,
-                                          generateClientParameters,
-                                          generateCppHeader)) {
+  if (auto err = outputLib->emitArtifacts(
+          generateSharedLib, generateStaticLib, generateClientParameters,
+          generateCompilationFeedback, generateCppHeader)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -505,7 +508,7 @@ CompilerEngine::Library::getStaticLibraryPath(std::string outputDirPath) {
   return staticLibraryPath.str().str();
 }
 
-/// Returns the path of the static library
+/// Returns the path of the client parameter
 std::string
 CompilerEngine::Library::getClientParametersPath(std::string outputDirPath) {
   llvm::SmallString<0> clientParametersPath(outputDirPath);
@@ -513,6 +516,14 @@ CompilerEngine::Library::getClientParametersPath(std::string outputDirPath) {
       clientParametersPath,
       ClientParameters::getClientParametersPath("client_parameters"));
   return clientParametersPath.str().str();
+}
+
+/// Returns the path of the compiler feedback
+std::string
+CompilerEngine::Library::getCompilationFeedbackPath(std::string outputDirPath) {
+  llvm::SmallString<0> compilationFeedbackPath(outputDirPath);
+  llvm::sys::path::append(compilationFeedbackPath, "compilation_feedback.json");
+  return compilationFeedbackPath.str().str();
 }
 
 const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
@@ -556,6 +567,26 @@ CompilerEngine::Library::emitClientParametersJSON() {
   out.close();
 
   return clientParamsPath;
+}
+
+llvm::Expected<std::string>
+CompilerEngine::Library::emitCompilationFeedbackJSON() {
+  auto path = getCompilationFeedbackPath(outputDirPath);
+  if (compilationFeedbackList.size() != 1) {
+    return StreamStringError("multiple compilation feedback not supported");
+  }
+  llvm::json::Value value(compilationFeedbackList[0]);
+  std::error_code error;
+  llvm::raw_fd_ostream out(path, error);
+
+  if (error) {
+    return StreamStringError("cannot emit client parameters, error: ")
+           << error.message();
+  }
+  out << llvm::formatv("{0:2}", value);
+  out.close();
+
+  return path;
 }
 
 static std::string ccpResultType(size_t rank) {
@@ -662,6 +693,9 @@ CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
   addExtraObjectFilePath(objectPath);
   if (compilation.clientParameters.hasValue()) {
     clientParametersList.push_back(compilation.clientParameters.getValue());
+  }
+  if (compilation.feedback.hasValue()) {
+    compilationFeedbackList.push_back(compilation.feedback.getValue());
   }
   return objectPath;
 }
@@ -776,6 +810,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
 llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
                                                    bool staticLib,
                                                    bool clientParameters,
+                                                   bool compilationFeedback,
                                                    bool cppHeader) {
   // Create output directory if doesn't exist
   llvm::sys::fs::create_directory(outputDirPath);
@@ -791,6 +826,11 @@ llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
   }
   if (clientParameters) {
     if (auto err = emitClientParametersJSON().takeError()) {
+      return err;
+    }
+  }
+  if (compilationFeedback) {
+    if (auto err = emitCompilationFeedbackJSON().takeError()) {
       return err;
     }
   }

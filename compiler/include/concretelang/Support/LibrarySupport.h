@@ -101,6 +101,17 @@ public:
     return *param;
   }
 
+  llvm::Expected<CompilationFeedback>
+  loadCompilationFeedback(LibraryCompilationResult &result) override {
+    auto path = CompilerEngine::Library::getCompilationFeedbackPath(
+        result.outputDirPath);
+    auto feedback = CompilationFeedback::load(path);
+    if (feedback.has_error()) {
+      return StreamStringError(feedback.error().mesg);
+    }
+    return feedback.value();
+  }
+
   /// Call the lambda with the public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
   serverCall(serverlib::ServerLambda lambda, clientlib::PublicArguments &args,
