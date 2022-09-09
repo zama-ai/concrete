@@ -4,20 +4,14 @@ RUN apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ \
     build-essential python3 python3-pip \
     python3-setuptools ninja-build git \
-    zlib1g-dev ccache libboost-filesystem-dev libhwloc-dev
+    zlib1g-dev ccache cmake libboost-filesystem-dev libhwloc-dev
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
 RUN pip install numpy pybind11==2.8 PyYAML
-# Setup Concrete
-COPY --from=ghcr.io/zama-ai/concrete-compiler-api-env:latest /target/release /concrete/target/release
-ENV CONCRETE_PROJECT=/concrete
 # Setup HPX
 COPY --from=ghcr.io/zama-ai/hpx:latest /hpx /hpx
 ENV HPX_INSTALL_DIR=/hpx/build
-# Setup Cmake
-COPY --from=ghcr.io/zama-ai/hpx:latest /cmake /cmake
-ENV PATH=/cmake/cmake-3.22.0-linux-x86_64/bin:${PATH}
 # Setup LLVM
 COPY /llvm-project /llvm-project
 # Setup and build compiler
@@ -25,18 +19,7 @@ COPY /compiler /compiler
 WORKDIR /compiler
 RUN mkdir -p /build
 RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
-    concretecompiler python-bindings && \
-    mv /build/tools/concretelang/python_packages/concretelang_core /concretelang_core && \
-    mv /build/bin/concretecompiler /bin && \
-    mv /build/lib/libConcretelangRuntime.so /lib && \
-    rm -rf /build && \
-    mkdir -p /build/tools/concretelang/python_packages/ && \
-    mkdir -p /build/bin && \
-    mkdir -p /build/lib && \
-    mv /concretelang_core /build/tools/concretelang/python_packages/ && \
-    mv /bin/concretecompiler /build/bin && \
-    mv /lib/libConcretelangRuntime.so /build/lib
+    concretecompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"
 ENV PATH "$PATH:/build/bin"
-ENV RT_LIB "/build/lib/libConcretelangRuntime.so"
 RUN ccache -z

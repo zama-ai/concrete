@@ -807,8 +807,8 @@ jobs:
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
-          docker build -t $IMAGE:libc_2_28 -f builders/Dockerfile.hpx-env .
-          docker push $IMAGE:libc_2_28
+          docker build -t $IMAGE -f builders/Dockerfile.hpx-env .
+          docker push $IMAGE:latest
 
       - name: Is Image Built
         id: is-built

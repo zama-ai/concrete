@@ -15,18 +15,7 @@ COPY /llvm-project /llvm-project
 COPY /compiler /compiler
 WORKDIR /compiler
 RUN mkdir -p /build
-RUN make BUILD_DIR=/build CCACHE=ON concretecompiler python-bindings && \
-    mv /build/tools/concretelang/python_packages/concretelang_core /concretelang_core && \
-    mv /build/bin/concretecompiler /bin && \
-    mv /build/lib/libConcretelangRuntime.so /lib && \
-    rm -rf /build && \
-    mkdir -p /build/tools/concretelang/python_packages/ && \
-    mkdir -p /build/bin && \
-    mkdir -p /build/lib && \
-    mv /concretelang_core /build/tools/concretelang/python_packages/ && \
-    mv /bin/concretecompiler /build/bin && \
-    mv /lib/libConcretelangRuntime.so /build/lib
+RUN make BUILD_DIR=/build CCACHE=ON concretecompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"
 ENV PATH "$PATH:/build/bin"
-ENV RT_LIB "/build/lib/libConcretelangRuntime.so"
 RUN ccache -z
