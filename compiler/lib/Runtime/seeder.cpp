@@ -17,7 +17,6 @@ SeederBuilder *get_best_seeder() {
 
   if (rdseed_seeder_available) {
     CAPI_ASSERT_ERROR(get_rdseed_seeder_builder(&builder));
-    std::cout << "Using rdseed seeder." << std::endl;
     return builder;
   }
 
@@ -30,8 +29,6 @@ SeederBuilder *get_best_seeder() {
     uint64_t secret_low_64 = 0;
     CAPI_ASSERT_ERROR(
         get_unix_seeder_builder(secret_high_64, secret_low_64, &builder));
-    std::cout << "Using Unix /dev/random seeder without an additionnal secret."
-              << std::endl;
 
     return builder;
   }
