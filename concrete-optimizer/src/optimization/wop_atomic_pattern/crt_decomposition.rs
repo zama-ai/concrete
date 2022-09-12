@@ -26,6 +26,10 @@ fn bitwidth(v: u64) -> Precision {
     (v as f64).log2().ceil() as Precision
 }
 
-pub fn precisions_from_coprimes(coprimes: &[u64]) -> Vec<Precision> {
-    coprimes.iter().copied().map(bitwidth).collect()
+pub fn precisions_from_coprimes(coprimes: &[u64]) -> Vec<u64> {
+    coprimes
+        .iter()
+        .copied()
+        .map(|coprime| bitwidth(coprime) as u64)
+        .collect()
 }

@@ -119,14 +119,16 @@ fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
     internal_dim: u64,
     best_complexity: f64,
     variance_modulus_switching: f64,
-    precision: u64,
-    n_inputs: u64,
+    partitionning: &[u64],
 ) -> Option<NoiseCostByMicroParam> {
     let security_level = consts.config.security_level;
 
     let variance_coeff = square(consts.noise_factor) / 2.0;
-    let complexity_coeff = (n_inputs * (2 * precision - 1)) as f64;
-    let cut_complexity = best_complexity / complexity_coeff; // saves 0%
+    let number_br = partitionning
+        .iter()
+        .map(|&precision| (2 * precision - 1))
+        .sum::<u64>() as f64;
+    let cut_complexity = best_complexity / number_br; // saves 0%
     let cut_variance = (consts.safe_variance - variance_modulus_switching) / variance_coeff; // saves 40%
 
     let cutted_blind_rotate = cutted_blind_rotate::<W>(
@@ -142,8 +144,8 @@ fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
 
     let variance_coeff_br = variance_coeff;
     let variance_coeff = 1.0;
-    let complexity_coeff = (precision * n_inputs) as f64;
-    let cut_complexity = best_complexity / complexity_coeff; // saves 0%
+    let number_ks = partitionning.iter().copied().sum::<u64>() as f64;
+    let cut_complexity = best_complexity / number_ks; // saves 0%
     let cut_variance = (consts.safe_variance
         - variance_modulus_switching
         - variance_coeff_br * cutted_blind_rotate.last().unwrap().noise)
@@ -216,11 +218,12 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
     glwe_params: GlweParameters,
     internal_dim: u64,
     n_functions: u64,
-    precision: u64,
-    n_inputs: u64, // Tau
+    partitionning: &[u64],
 ) {
     let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
-    let global_precision = n_inputs * precision;
+    let precisions_sum = partitionning.iter().copied().sum();
+    let max_precision = partitionning.iter().copied().max().unwrap();
+
     let safe_variance_bound = consts.safe_variance;
     let log_norm = consts.noise_factor.log2();
 
@@ -250,8 +253,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
         internal_dim,
         best_complexity,
         variance_modulus_switching,
-        precision,
-        n_inputs,
+        partitionning,
     );
     let variance_cost = if let Some(variance_cost) = variance_cost_opt {
         variance_cost
@@ -263,7 +265,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
     let lower_bound_variance_keyswitch =
         variance_cost.pareto_keyswitch[variance_cost.pareto_keyswitch.len() - 1].noise;
     let lower_bound_complexity_all_ks =
-        (precision * n_inputs) as f64 * variance_cost.pareto_keyswitch[0].complexity;
+        precisions_sum as f64 * variance_cost.pareto_keyswitch[0].complexity;
 
     // BlindRotate dans Circuit BS
     for shared_br_decomp in &variance_cost.cutted_blind_rotate {
@@ -278,7 +280,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
         // BitExtract use this pbs
         let complexity_bit_extract_1_pbs = shared_br_decomp.complexity;
         let complexity_bit_extract_wo_ks =
-            (n_inputs * (precision - 1)) as f64 * complexity_bit_extract_1_pbs;
+            (precisions_sum - partitionning.len() as u64) as f64 * complexity_bit_extract_1_pbs;
 
         if complexity_bit_extract_wo_ks + lower_bound_complexity_all_ks > best_complexity {
             // saves 0%
@@ -296,8 +298,8 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
 
         let variance_coeff_1_cmux_tree =
             2_f64.powf(2. * log_norm as f64) // variance_coeff for the multisum
-            * (global_precision              // for hybrid packing
-            << (2 * (precision - 1))) as f64 // for left shift
+            * (precisions_sum              // for hybrid packing
+            << (2 * (max_precision - 1))) as f64 // for left shift
         ;
 
         // CircuitBootstrap: new parameters l,b
@@ -313,11 +315,11 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
             // Circuit bs: fp-ks
             let complexity_all_ppks = ((pbs_parameters.output_glwe_params.glwe_dimension + 1)
                 * circuit_pbs_decomposition_parameter.level
-                * global_precision) as f64
+                * precisions_sum) as f64
                 * complexity_ppks;
 
             // Circuit bs: pbs
-            let complexity_all_pbs = (global_precision * circuit_pbs_decomposition_parameter.level)
+            let complexity_all_pbs = (precisions_sum * circuit_pbs_decomposition_parameter.level)
                 as f64
                 * shared_br_decomp.complexity;
 
@@ -340,8 +342,8 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
             // Hybrid packing (Do we have 1 or 2 groups)
             let log2_polynomial_size = pbs_parameters.output_glwe_params.log2_polynomial_size;
             // Size of cmux_group, can be zero
-            let cmux_group_count = if global_precision > log2_polynomial_size {
-                2f64.powi((global_precision - log2_polynomial_size - 1) as i32)
+            let cmux_group_count = if precisions_sum > log2_polynomial_size {
+                2f64.powi((precisions_sum - log2_polynomial_size - 1) as i32)
             } else {
                 0.0
             };
@@ -357,13 +359,13 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                 * circuit_pbs_decomposition_parameter.level as f64
                 * cmux_complexity.fft_complexity(f_glwe_poly_size, ciphertext_modulus_log);
 
-            let complexity_all_ggsw_to_fft = global_precision as f64 * complexity_one_ggsw_to_fft;
+            let complexity_all_ggsw_to_fft = precisions_sum as f64 * complexity_one_ggsw_to_fft;
 
             // Hybrid packing blind rotate
             let complexity_g_br = complexity_1_cmux_hp
                 * u64::min(
                     pbs_parameters.output_glwe_params.log2_polynomial_size,
-                    global_precision,
+                    precisions_sum,
                 ) as f64;
 
             let complexity_hybrid_packing = complexity_cmux_tree + complexity_g_br;
@@ -399,7 +401,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     continue;
                 }
 
-                let complexity_all_ks = (precision * n_inputs) as f64 * ks_decomp.complexity;
+                let complexity_all_ks = precisions_sum as f64 * ks_decomp.complexity;
                 let complexity = complexity_bit_extract_wo_ks
                     + complexity_circuit_bs
                     + complexity_multi_hybrid_packing
@@ -445,12 +447,11 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
 }
 
 fn optimize_raw<W: UnsignedInteger>(
-    max_word_precision: u64, // max precision of a word
-    log_norm: f64,           // ?? norm2 of noise multisum, complexity of multisum is neglected
+    log_norm: f64, // ?? norm2 of noise multisum, complexity of multisum is neglected
     config: Config,
     search_space: &SearchSpace,
     n_functions: u64, // Many functions at the same time, stay at 1 for start
-    n_inputs: u64,    // Tau (nb blocks)
+    partitionning: &[u64],
 ) -> OptimizationState {
     assert!(0.0 < config.maximum_acceptable_error_probability);
     assert!(config.maximum_acceptable_error_probability < 1.0);
@@ -505,8 +506,7 @@ fn optimize_raw<W: UnsignedInteger>(
                     glwe_params,
                     internal_dim,
                     n_functions,
-                    max_word_precision,
-                    n_inputs,
+                    partitionning,
                 );
             }
         }
@@ -523,17 +523,8 @@ pub fn optimize_one<W: UnsignedInteger>(
 ) -> OptimizationState {
     let coprimes = crt_decomposition::default_coprimes(precision as Precision);
     let partitionning = crt_decomposition::precisions_from_coprimes(&coprimes);
-    let nb_words = partitionning.len() as u64;
-    let max_word_precision = *partitionning.iter().max().unwrap() as u64;
     let n_functions = 1;
-    let mut state = optimize_raw::<W>(
-        max_word_precision,
-        log_norm,
-        config,
-        search_space,
-        n_functions,
-        nb_words, // Tau
-    );
+    let mut state = optimize_raw::<W>(log_norm, config, search_space, n_functions, &partitionning);
     state.best_solution = state.best_solution.map(|mut sol| -> Solution {
         sol.crt_decomposition = coprimes;
         sol
