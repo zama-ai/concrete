@@ -19,7 +19,8 @@ const double NOISE_DEVIATION_COEFF = 1.0;
 
 void test_v0() {
   concrete_optimizer::v0::Solution solution =
-      concrete_optimizer::v0::optimize_bootstrap(PRECISION_1B, SECURITY_128B, NOISE_DEVIATION_COEFF, P_ERROR);
+      concrete_optimizer::v0::optimize_bootstrap(
+          PRECISION_1B, SECURITY_128B, NOISE_DEVIATION_COEFF, P_ERROR);
 
   assert(solution.glwe_polynomial_size == 1024);
 }
@@ -77,8 +78,8 @@ void test_dag_lut_wop() {
       dag->add_lut(input, slice(table), PRECISION_16B);
 
   auto solution = dag->optimize(SECURITY_128B, P_ERROR, WOP_FALLBACK_LOG_NORM);
-  assert(solution.glwe_dimension == 1);
-  assert(solution.glwe_polynomial_size == 2048);
+  assert(solution.glwe_dimension == 2);
+  assert(solution.glwe_polynomial_size == 1024);
   assert(solution.use_wop_pbs);
 }
 

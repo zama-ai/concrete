@@ -357,8 +357,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                 * circuit_pbs_decomposition_parameter.level as f64
                 * cmux_complexity.fft_complexity(f_glwe_poly_size, ciphertext_modulus_log);
 
-            let complexity_all_ggsw_to_fft =
-                (1 << global_precision) as f64 * complexity_one_ggsw_to_fft;
+            let complexity_all_ggsw_to_fft = global_precision as f64 * complexity_one_ggsw_to_fft;
 
             // Hybrid packing blind rotate
             let complexity_g_br = complexity_1_cmux_hp
