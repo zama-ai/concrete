@@ -38,6 +38,28 @@ return %2
     )
 
 
+def test_circuit_feedback(helpers):
+    """
+    Test feedback properties of `Circuit` class.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
+    circuit = f.compile(inputset, configuration)
+
+    assert isinstance(circuit.complexity, float)
+    assert isinstance(circuit.size_of_secret_keys, int)
+    assert isinstance(circuit.size_of_bootstrap_keys, int)
+    assert isinstance(circuit.size_of_keyswitch_keys, int)
+    assert isinstance(circuit.size_of_inputs, int)
+    assert isinstance(circuit.size_of_outputs, int)
+
+
 def test_circuit_bad_run(helpers):
     """
     Test `run` method of `Circuit` class with bad parameters.

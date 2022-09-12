@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from concrete.compiler import (
+    CompilationFeedback,
     CompilationOptions,
     EvaluationKeys,
     JITCompilationResult,
@@ -36,6 +37,7 @@ class Server:
     _output_dir: Optional[tempfile.TemporaryDirectory]
     _support: Union[JITSupport, LibrarySupport]
     _compilation_result: Union[JITCompilationResult, LibraryCompilationResult]
+    _compilation_feedback: CompilationFeedback
     _server_lambda: Union[JITLambda, LibraryLambda]
 
     _mlir: Optional[str]
@@ -54,6 +56,7 @@ class Server:
         self._output_dir = output_dir
         self._support = support
         self._compilation_result = compilation_result
+        self._compilation_feedback = self._support.load_compilation_feedback(compilation_result)
         self._server_lambda = server_lambda
         self._mlir = None
 
@@ -252,3 +255,45 @@ class Server:
 
         if self._output_dir is not None:
             self._output_dir.cleanup()
+
+    @property
+    def complexity(self) -> float:
+        """
+        Get complexity of the compiled program.
+        """
+        return self._compilation_feedback.complexity
+
+    @property
+    def size_of_secret_keys(self) -> int:
+        """
+        Get size of the secret keys of the compiled program.
+        """
+        return self._compilation_feedback.total_secret_keys_size
+
+    @property
+    def size_of_bootstrap_keys(self) -> int:
+        """
+        Get size of the bootstrap keys of the compiled program.
+        """
+        return self._compilation_feedback.total_bootstrap_keys_size
+
+    @property
+    def size_of_keyswitch_keys(self) -> int:
+        """
+        Get size of the key switch keys of the compiled program.
+        """
+        return self._compilation_feedback.total_keyswitch_keys_size
+
+    @property
+    def size_of_inputs(self) -> int:
+        """
+        Get size of the inputs of the compiled program.
+        """
+        return self._compilation_feedback.total_inputs_size
+
+    @property
+    def size_of_outputs(self) -> int:
+        """
+        Get size of the outputs of the compiled program.
+        """
+        return self._compilation_feedback.total_output_size

@@ -161,3 +161,45 @@ class Circuit:
         """
 
         self.server.cleanup()
+
+    @property
+    def complexity(self) -> float:
+        """
+        Get complexity of the circuit.
+        """
+        return self.server.complexity
+
+    @property
+    def size_of_secret_keys(self) -> int:
+        """
+        Get size of the secret keys of the circuit.
+        """
+        return self.server.size_of_secret_keys
+
+    @property
+    def size_of_bootstrap_keys(self) -> int:
+        """
+        Get size of the bootstrap keys of the circuit.
+        """
+        return self.server.size_of_bootstrap_keys
+
+    @property
+    def size_of_keyswitch_keys(self) -> int:
+        """
+        Get size of the key switch keys of the circuit.
+        """
+        return self.server.size_of_keyswitch_keys
+
+    @property
+    def size_of_inputs(self) -> int:
+        """
+        Get size of the inputs of the circuit.
+        """
+        return self.server.size_of_inputs
+
+    @property
+    def size_of_outputs(self) -> int:
+        """
+        Get size of the outputs of the circuit.
+        """
+        return self.server.size_of_outputs
