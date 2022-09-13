@@ -360,12 +360,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [37, 38, 39, 310]
+        include:
+          - python: 37
+            python_dir: "cp37-cp37m"
+          - python: 38
+            python_dir: "cp38-cp38"
+          - python: 39
+            python_dir: "cp39-cp39"
+          - python: 310
+            python_dir: "cp310-cp310"
     outputs:
-      python-package-name-linux-py37: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY37 }}
-      python-package-name-linux-py38: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY38 }}
-      python-package-name-linux-py39: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY39 }}
-      python-package-name-linux-py310: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY310 }}
+      python-package-name-linux-py37: ${{ steps.set-output-wheel-linux.outputs.ASSET_NAME_PY37 }}
+      python-package-name-linux-py38: ${{ steps.set-output-wheel-linux.outputs.ASSET_NAME_PY38 }}
+      python-package-name-linux-py39: ${{ steps.set-output-wheel-linux.outputs.ASSET_NAME_PY39 }}
+      python-package-name-linux-py310: ${{ steps.set-output-wheel-linux.outputs.ASSET_NAME_PY310 }}
     needs: CreateRelease
     steps:
       # A SSH private key is required as some dependencies are from private repos
@@ -388,14 +396,44 @@ jobs:
           cd compiler
           make concrete-optimizer-lib
 
+      - name: Update Python Version
+        run: cd compiler && make update-python-version
+
       - name: Login to Github Container Registry
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
-      - name: Build
-        id: build-wheel-linux
+      - name: Build Wheel
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/wheels:/wheels
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            rm -rf /build
+            export PYTHON_EXEC=/opt/python/${{ matrix.python_dir }}/bin/python
+            $PYTHON_EXEC -m pip install -r /llvm-project/mlir/python/requirements.txt
+            # setup env variable for wheel building
+            export CONCRETE_COMPILER_Python3_EXECUTABLE=$PYTHON_EXEC
+            export CONCRETE_COMPILER_BUILD_DIR=/build
+            /opt/python/${{ matrix.python_dir }}/bin/pip wheel -vvv --no-deps -w /wheels .
+            # We need to run it twice: the first will generate the directories, so that
+            # the second run can find the packages via find_namespace_packages
+            /opt/python/${{ matrix.python_dir }}/bin/pip wheel -vvv --no-deps -w /wheels .
+            auditwheel repair /wheels/*.whl --plat manylinux_2_28_x86_64 -w /wheels
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
+      - name: Set Outputs
+        id: set-output-wheel-linux
         run: |
-          cd compiler
-          make package_py${{ matrix.python }}
           echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *manylinux*.whl | rev |cut -d "/" -f 1 |rev `"
           # used later for python package test
           echo "::set-output name=ASSET_NAME_PY${{ matrix.python }}::`find ${{ github.workspace }}/wheels/ -name *manylinux*.whl | rev |cut -d "/" -f 1 |rev `"
@@ -406,8 +444,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
         with:
           upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/wheels/${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
-          asset_name: ${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
+          asset_path: ${{ github.workspace }}/wheels/${{ steps.set-output-wheel-linux.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.set-output-wheel-linux.outputs.ASSET_NAME }}
           asset_content_type: application/zip
 
   BuildAndPushTarballLinux:
@@ -597,7 +635,7 @@ jobs:
         run: |
           cd compiler
           pip install pytest
-          pytest -vs -m "not parallel" tests/python
+          pytest -vs tests/python
 
   TestPythonPackageMacOS:
     runs-on: macos-11

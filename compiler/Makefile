@@ -273,26 +273,6 @@ file-check: build-initialized
 not: build-initialized
 	cmake --build $(BUILD_DIR) --target not
 
-# Python packages
-
-define build_image_and_copy_wheels
-	docker image build -t concrete-compiler-manylinux:$(1) --build-arg python_tag=$(1) -f ../builders/Dockerfile.release_manylinux_2_28_x86_64 ..
-	docker container run --rm -v ${PWD}/../wheels:/wheels_volume concrete-compiler-manylinux:$(1) cp -r /wheels/. /wheels_volume/.
-endef
-
-
-package_py37: update_python_version
-	$(call build_image_and_copy_wheels,cp37-cp37m)
-
-package_py38: update_python_version
-	$(call build_image_and_copy_wheels,cp38-cp38)
-
-package_py39: update_python_version
-	$(call build_image_and_copy_wheels,cp39-cp39)
-
-package_py310: update_python_version
-	$(call build_image_and_copy_wheels,cp310-cp310)
-
 release_tarballs:
 	docker image build -t concrete-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
 	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concrete-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
@@ -316,10 +296,6 @@ python_lint:
 	add-deps \
 	file-check \
 	not \
-	package_py37 \
-	package_py38 \
-	package_py39 \
-	package_py310 \
 	release_tarballs \
 	update_python_version \
 	python_lint \

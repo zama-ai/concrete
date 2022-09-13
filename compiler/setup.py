@@ -35,13 +35,11 @@ class MakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        cmd = ["make", f"BUILD_DIR={build_dir()}"]
+        cmd = ["make", "DATAFLOW_EXECUTION_ENABLED=ON", "CCACHE=ON"]
         py_exec = os.environ.get("CONCRETE_COMPILER_Python3_EXECUTABLE")
         if py_exec:
             cmd.append(f"Python3_EXECUTABLE={py_exec}")
-        ccache = os.environ.get("CONCRETE_COMPILER_CCACHE")
-        if ccache:
-            cmd.append(f"CCACHE={ccache}")
+        cmd.append(f"BUILD_DIR={build_dir()}")
         cmd.append("python-bindings")
         subprocess.check_call(cmd)
 
