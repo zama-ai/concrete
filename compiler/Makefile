@@ -273,20 +273,20 @@ file-check: build-initialized
 not: build-initialized
 	cmake --build $(BUILD_DIR) --target not
 
-release_tarballs:
+release-tarballs:
 	docker image build -t concrete-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
 	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concrete-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
 
-update_python_version:
+update-python-version:
 	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/version.txt
 
-check_python_format:
+check-python-format:
 	black --check tests/python/ lib/Bindings/Python/concrete/
 
-python_format:
+python-format:
 	black tests/python/ lib/Bindings/Python/concrete/
 
-python_lint:
+python-lint:
 	pylint --rcfile=../pylintrc lib/Bindings/Python/concrete/compiler
 
 .PHONY: build-initialized \
@@ -296,11 +296,11 @@ python_lint:
 	add-deps \
 	file-check \
 	not \
-	release_tarballs \
-	update_python_version \
-	python_lint \
-	python_format \
-	check_python_format \
+	release-tarballs \
+	update-python-version \
+	python-lint \
+	python-format \
+	check-python-format \
 	concrete-optimizer-lib \
 	concrete-core-ffi \
 	build-tests \

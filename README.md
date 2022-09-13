@@ -63,7 +63,7 @@ The final tarball contains intallation instructions. We only support Linux x86_6
 
 ```bash
 $ cd compiler
-$ make release_tarballs
+$ make release-tarballs
 ```
 
 ### Build the Python Package

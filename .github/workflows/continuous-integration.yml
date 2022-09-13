@@ -30,13 +30,13 @@ jobs:
         run: |
           cd compiler
           pip install -r lib/Bindings/Python/requirements_dev.txt
-          make check_python_format
+          make check-python-format
       - name: Lint with pylint (Python)
         run: |
           cd compiler
           # compiler requirements to lint
           pip install numpy
-          make python_lint
+          make python-lint
       - name: Linelint
         uses: fernandrone/linelint@0.0.4
         id: linelint
@@ -479,7 +479,7 @@ jobs:
         id: build-tarball
         run: |
           cd compiler
-          make release_tarballs
+          make release-tarballs
           sudo cp ${{ github.workspace }}/tarballs/concretecompiler.tar.gz ${{ github.workspace }}/tarballs/concretecompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz
           echo "::set-output name=ASSET_NAME::concretecompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz"
 
@@ -545,7 +545,7 @@ jobs:
           RUSTFLAGS="-C target-cpu=native" cargo build --release
 
       - name: Update Python Version
-        run: cd compiler && make update_python_version
+        run: cd compiler && make update-python-version
 
       - name: Build
         id: build-wheel-macos
