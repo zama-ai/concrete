@@ -1099,7 +1099,7 @@ void concrete_optimizer$cxxbridge1$OperationDag$dump(const ::concrete_optimizer:
 
 namespace weights {
 extern "C" {
-::concrete_optimizer::Weights *concrete_optimizer$weights$cxxbridge1$vector(::rust::Slice<const ::std::uint64_t> weights) noexcept;
+::concrete_optimizer::Weights *concrete_optimizer$weights$cxxbridge1$vector(::rust::Slice<const ::std::int64_t> weights) noexcept;
 } // extern "C"
 } // namespace weights
 
@@ -1172,7 +1172,7 @@ namespace dag {
 }
 
 namespace weights {
-::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<const ::std::uint64_t> weights) noexcept {
+::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<const ::std::int64_t> weights) noexcept {
   return ::rust::Box<::concrete_optimizer::Weights>::from_raw(concrete_optimizer$weights$cxxbridge1$vector(weights));
 }
 } // namespace weights

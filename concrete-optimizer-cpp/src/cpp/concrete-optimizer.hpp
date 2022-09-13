@@ -1050,6 +1050,6 @@ namespace dag {
 } // namespace dag
 
 namespace weights {
-::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<const ::std::uint64_t> weights) noexcept;
+::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<const ::std::int64_t> weights) noexcept;
 } // namespace weights
 } // namespace concrete_optimizer

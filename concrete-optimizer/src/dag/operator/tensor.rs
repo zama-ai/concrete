@@ -1,3 +1,5 @@
+use std::{iter::Sum, ops::Mul};
+
 use delegate::delegate;
 
 use crate::utils::square_ref;
@@ -59,20 +61,23 @@ impl Shape {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct ClearTensor {
+pub struct ClearTensor<W> {
     pub shape: Shape,
-    pub values: Vec<u64>,
+    pub values: Vec<W>,
 }
 
-impl ClearTensor {
-    pub fn number(value: u64) -> Self {
+impl<W> ClearTensor<W>
+where
+    W: Copy + Mul<Output = W> + Sum<W>,
+{
+    pub fn number(value: W) -> Self {
         Self {
             shape: Shape::number(),
             values: vec![value],
         }
     }
 
-    pub fn vector(values: impl Into<Vec<u64>>) -> Self {
+    pub fn vector(values: impl Into<Vec<W>>) -> Self {
         let values = values.into();
         Self {
             shape: Shape::vector(values.len() as u64),
@@ -89,7 +94,7 @@ impl ClearTensor {
         }
     }
 
-    pub fn square_norm2(&self) -> u64 {
+    pub fn square_norm2(&self) -> W {
         self.values.iter().map(square_ref).sum()
     }
 }
@@ -102,15 +107,21 @@ impl From<&Self> for Shape {
 }
 
 // helps using shared weights
-impl From<&Self> for ClearTensor {
+impl<W> From<&Self> for ClearTensor<W>
+where
+    W: Copy + Mul<Output = W> + Sum<W>,
+{
     fn from(item: &Self) -> Self {
         item.clone()
     }
 }
 
 // helps using array as weights
-impl<const N: usize> From<[u64; N]> for ClearTensor {
-    fn from(item: [u64; N]) -> Self {
-        Self::vector(item)
+impl<const N: usize, W> From<[W; N]> for ClearTensor<W>
+where
+    W: Copy + Mul<Output = W> + Sum<W>,
+{
+    fn from(items: [W; N]) -> Self {
+        Self::vector(items)
     }
 }

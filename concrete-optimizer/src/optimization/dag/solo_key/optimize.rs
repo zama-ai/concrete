@@ -361,9 +361,10 @@ mod tests {
     use crate::computing_cost::cpu::CpuComplexity;
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::noise_estimator::p_error::repeat_p_error;
+    use crate::optimization::atomic_pattern;
     use crate::optimization::config::SearchSpace;
     use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
-    use crate::optimization::{atomic_pattern, decomposition};
+    use crate::optimization::decomposition;
     use crate::utils::square;
 
     fn small_relative_diff(v1: f64, v2: f64) -> bool {
@@ -497,7 +498,7 @@ mod tests {
         }
     }
 
-    fn v0_parameter_ref_with_dot(precision: Precision, weight: u64) {
+    fn v0_parameter_ref_with_dot(precision: Precision, weight: i64) {
         let security_level = 128;
 
         let cache = decomposition::cache(security_level);
@@ -596,7 +597,7 @@ mod tests {
 
     fn lut_with_input_base_noise_better_than_lut_with_lut_base_noise(
         precision: Precision,
-        weight: u64,
+        weight: i64,
         cache: &PersistDecompCache,
     ) {
         let weight = &Weights::number(weight);
@@ -673,7 +674,7 @@ mod tests {
         }
     }
 
-    fn circuit(dag: &mut unparametrized::OperationDag, precision: Precision, weight: u64) {
+    fn circuit(dag: &mut unparametrized::OperationDag, precision: Precision, weight: i64) {
         let input = dag.add_input(precision, Shape::number());
         let dot1 = dag.add_dot([input], [weight]);
         let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
@@ -682,7 +683,7 @@ mod tests {
     }
 
     fn assert_multi_precision_dominate_single(
-        weight: u64,
+        weight: i64,
         cache: &PersistDecompCache,
     ) -> Option<bool> {
         let low_precision = 4u8;
@@ -767,7 +768,7 @@ mod tests {
 
     fn check_global_p_error_input(
         dim: u64,
-        weight: u64,
+        weight: i64,
         precision: u8,
         cache: &PersistDecompCache,
     ) -> f64 {
@@ -797,7 +798,7 @@ mod tests {
 
     fn check_global_p_error_lut(
         depth: u64,
-        weight: u64,
+        weight: i64,
         precision: u8,
         cache: &PersistDecompCache,
     ) {
@@ -825,8 +826,8 @@ mod tests {
         depth: u64,
         precision_low: Precision,
         precision_high: Precision,
-        weight_low: u64,
-        weight_high: u64,
+        weight_low: i64,
+        weight_high: i64,
     ) -> unparametrized::OperationDag {
         let shape = Shape::number();
         let mut dag = unparametrized::OperationDag::new();

@@ -1,7 +1,7 @@
 use crate::dag::operator::tensor::{ClearTensor, Shape};
 use derive_more::{Add, AddAssign};
 
-pub type Weights = ClearTensor;
+pub type Weights = ClearTensor<i64>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct FunctionTable {

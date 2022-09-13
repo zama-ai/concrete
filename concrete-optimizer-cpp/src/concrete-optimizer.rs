@@ -247,7 +247,7 @@ impl OperationDag {
 
 pub struct Weights(operator::Weights);
 
-fn vector(weights: &[u64]) -> Box<Weights> {
+fn vector(weights: &[i64]) -> Box<Weights> {
     Box::new(Weights(operator::Weights::vector(weights)))
 }
 
@@ -320,7 +320,7 @@ mod ffi {
         type Weights;
 
         #[namespace = "concrete_optimizer::weights"]
-        fn vector(weights: &[u64]) -> Box<Weights>;
+        fn vector(weights: &[i64]) -> Box<Weights>;
     }
 
     #[derive(Clone, Copy)]

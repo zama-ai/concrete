@@ -13,7 +13,7 @@ pub enum DotKind {
     Unsupported,
 }
 
-pub fn dot_kind(nb_inputs: u64, input_shape: &Shape, weights: &ClearTensor) -> DotKind {
+pub fn dot_kind<W>(nb_inputs: u64, input_shape: &Shape, weights: &ClearTensor<W>) -> DotKind {
     let inputs_shape = Shape::duplicated(nb_inputs, input_shape);
     if input_shape.is_number() && inputs_shape == weights.shape {
         DotKind::Simple

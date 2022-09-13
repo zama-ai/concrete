@@ -42,7 +42,7 @@ void test_dag_no_lut() {
 
   std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {node1};
 
-  std::vector<uint64_t> weight_vec = {1, 1, 1};
+  std::vector<int64_t> weight_vec = {1, 1, 1};
 
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
       concrete_optimizer::weights::vector(slice(weight_vec));
