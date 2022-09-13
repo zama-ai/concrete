@@ -13,14 +13,14 @@ use concrete_shortint::ciphertext::Ciphertext;
 use crate::errors::OutOfRangeError;
 use crate::global_state::WithGlobalKey;
 use crate::keys::{ClientKey, RefKeyFromKeyChain};
-use crate::prelude::{FheEq, FheOrd};
 use crate::traits::{
-    FheBootstrap, FheDecrypt, FheNumberConstant, FheTryEncrypt, FheTryTrivialEncrypt,
+    FheBootstrap, FheDecrypt, FheEq, FheNumberConstant, FheOrd, FheTryEncrypt, FheTryTrivialEncrypt,
 };
 
-use super::client_key::ShortIntegerClientKey;
-use super::server_key::ShortIntegerServerKey;
-use super::ShortIntegerParameter;
+use super::{
+    ShortIntegerClientKey, ShortIntegerParameter, ShortIntegerServerKey,
+    StaticShortIntegerParameter,
+};
 
 /// A Generic short FHE unsigned integer
 ///
@@ -33,7 +33,7 @@ use super::ShortIntegerParameter;
 /// Since the `GenericShortInt` type is not `Copy` the operators are also overloaded
 /// to work with references.
 ///
-/// You will need to use one of this type specialization (e.g., [FheUint2], [FheUint3]).
+/// You will need to use one of this type specialization (e.g., [FheUint2], [FheUint3], [FheUint4]).
 ///
 /// To be able to use this type, the cargo feature `shortints` must be enabled,
 /// and your config should also enable the type with either default parameters or custom ones.
@@ -89,34 +89,49 @@ use super::ShortIntegerParameter;
 ///
 /// [FheUint2]: crate::FheUint2
 /// [FheUint3]: crate::FheUint3
+/// [FheUint4]: crate::FheUint4
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(doc, cfg(feature = "shortints"))]
 #[derive(Clone)]
 pub struct GenericShortInt<P: ShortIntegerParameter> {
     /// The actual ciphertext.
-    /// 'Hidden' behind a RefCell because some methods
+    /// Wrapped inside a RefCell because some methods
     /// of the corresponding `ServerKey` (in concrete-shortint)
-    /// require the ciphertext to be a `&mut`, while we only have a `&` in rust operators.
-    pub(super) ciphertext: RefCell<Ciphertext>,
-    _marker: std::marker::PhantomData<P>,
+    /// require the ciphertext to be a `&mut`,
+    /// while we also overloads rust operators for have a `&` references
+    pub(in crate::shortints) ciphertext: RefCell<Ciphertext>,
+    pub(in crate::shortints) id: P::Id,
 }
 
 impl<P> GenericShortInt<P>
 where
     P: ShortIntegerParameter,
 {
+    pub fn message_max(&self) -> u64 {
+        self.message_modulus() - 1
+    }
+
+    pub fn message_modulus(&self) -> u64 {
+        self.ciphertext.borrow().message_modulus.0 as u64
+    }
+}
+
+impl<P> GenericShortInt<P>
+where
+    P: StaticShortIntegerParameter,
+{
     /// Minimum value this type can hold, always 0.
     pub const MIN: u8 = 0;
 
     /// Maximum value this type can hold.
-    pub const MAX: u8 = (1 << P::MESSAGE_BIT_SIZE) - 1;
+    pub const MAX: u8 = (1 << P::MESSAGE_BITS) - 1;
 
-    pub const MODULUS: u8 = (1 << P::MESSAGE_BIT_SIZE);
+    pub const MODULUS: u8 = (1 << P::MESSAGE_BITS);
 }
 
 impl<P> FheNumberConstant for GenericShortInt<P>
 where
-    P: ShortIntegerParameter,
+    P: StaticShortIntegerParameter,
 {
     const MIN: u64 = 0;
 
@@ -125,151 +140,11 @@ where
     const MODULUS: u64 = Self::MODULUS as u64;
 }
 
-impl<P> GenericShortInt<P>
-where
-    P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
-{
-    pub fn bivariate_pbs<F>(&self, other: &Self, func: F) -> Self
-    where
-        F: Fn(u8, u8) -> u8,
-    {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.bivariate_bps(self, other, func)
-        })
-    }
-}
-
-impl<P> FheOrd<u8> for GenericShortInt<P>
-where
-    P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
-{
-    type Output = Self;
-
-    fn lt(&self, rhs: u8) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_less(self, rhs)
-        })
-    }
-
-    fn le(&self, rhs: u8) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_less_or_equal(self, rhs)
-        })
-    }
-
-    fn gt(&self, rhs: u8) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_greater(self, rhs)
-        })
-    }
-
-    fn ge(&self, rhs: u8) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_greater_or_equal(self, rhs)
-        })
-    }
-}
-
-impl<P> FheEq<u8> for GenericShortInt<P>
-where
-    P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
-{
-    type Output = Self;
-
-    fn eq(&self, rhs: u8) -> Self::Output {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_equal(self, rhs)
-        })
-    }
-}
-
-impl<P, B> FheOrd<B> for GenericShortInt<P>
-where
-    B: Borrow<Self>,
-    P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
-{
-    type Output = Self;
-
-    fn lt(&self, other: B) -> Self::Output {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_less(self, other.borrow())
-        })
-    }
-
-    fn le(&self, other: B) -> Self::Output {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_less_or_equal(self, other.borrow())
-        })
-    }
-
-    fn gt(&self, other: B) -> Self::Output {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_greater(self, other.borrow())
-        })
-    }
-
-    fn ge(&self, other: B) -> Self::Output {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_greater_or_equal(self, other.borrow())
-        })
-    }
-}
-
-impl<P, B> FheEq<B> for GenericShortInt<P>
-where
-    B: Borrow<Self>,
-    P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
-{
-    type Output = Self;
-
-    fn eq(&self, other: B) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_equal(self, other.borrow())
-        })
-    }
-}
-
-impl<P> FheBootstrap for GenericShortInt<P>
-where
-    P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
-{
-    fn map<F>(&self, func: F) -> Self
-    where
-        F: Fn(u64) -> u64,
-    {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| key.bootstrap_with(self, func))
-    }
-
-    fn apply<F>(&mut self, func: F)
-    where
-        F: Fn(u64) -> u64,
-    {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| {
-            key.bootstrap_inplace_with(self, func);
-        })
-    }
-}
-
-impl<P: ShortIntegerParameter> From<Ciphertext> for GenericShortInt<P> {
-    fn from(ciphertext: Ciphertext) -> Self {
-        Self {
-            ciphertext: RefCell::new(ciphertext),
-            _marker: Default::default(),
-        }
-    }
-}
-
-impl<P, T> FheTryEncrypt<T> for GenericShortInt<P>
+impl<T, P> FheTryEncrypt<T> for GenericShortInt<P>
 where
     T: TryInto<u8>,
-    P: ShortIntegerParameter,
-    ShortIntegerClientKey<P>: RefKeyFromKeyChain,
+    P: StaticShortIntegerParameter,
+    P::Id: Default + RefKeyFromKeyChain<Key = ShortIntegerClientKey<P>>,
 {
     type Error = OutOfRangeError;
 
@@ -304,8 +179,13 @@ where
         if value > Self::MAX {
             Err(OutOfRangeError)
         } else {
-            let key = ShortIntegerClientKey::<P>::unwrapped_ref_key(key);
-            Ok(key.encrypt(value))
+            let id = P::Id::default();
+            let key = id.unwrapped_ref_key(key);
+            let ciphertext = key.key.encrypt(u64::from(value));
+            Ok(Self {
+                ciphertext: RefCell::new(ciphertext),
+                id,
+            })
         }
     }
 }
@@ -313,8 +193,8 @@ where
 impl<Clear, P> FheTryTrivialEncrypt<Clear> for GenericShortInt<P>
 where
     Clear: TryInto<u8>,
-    P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
+    P: StaticShortIntegerParameter,
+    P::Id: Default + WithGlobalKey<Key = ShortIntegerServerKey<P>>,
 {
     type Error = OutOfRangeError;
 
@@ -323,10 +203,140 @@ where
         if value > Self::MAX {
             Err(OutOfRangeError)
         } else {
-            Ok(ShortIntegerServerKey::<P>::with_unwrapped_global_mut(
-                |key| key.create_trivial(value),
-            ))
+            let id = P::Id::default();
+            id.with_unwrapped_global_mut(|key| {
+                let ciphertext = key.key.create_trivial(value);
+                Ok(Self {
+                    ciphertext: RefCell::new(ciphertext),
+                    id,
+                })
+            })
         }
+    }
+}
+
+impl<P> GenericShortInt<P>
+where
+    P: ShortIntegerParameter,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
+{
+    pub fn bivariate_pbs<F>(&self, other: &Self, func: F) -> Self
+    where
+        F: Fn(u8, u8) -> u8,
+    {
+        self.id
+            .with_unwrapped_global_mut(|server_key| server_key.bivariate_bps(self, other, func))
+    }
+}
+
+impl<P> FheOrd<u8> for GenericShortInt<P>
+where
+    P: ShortIntegerParameter,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
+{
+    type Output = Self;
+
+    fn lt(&self, rhs: u8) -> Self {
+        self.id
+            .with_unwrapped_global_mut(|server_key| server_key.smart_scalar_less(self, rhs))
+    }
+
+    fn le(&self, rhs: u8) -> Self {
+        self.id.with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_less_or_equal(self, rhs)
+        })
+    }
+
+    fn gt(&self, rhs: u8) -> Self {
+        self.id
+            .with_unwrapped_global_mut(|server_key| server_key.smart_scalar_greater(self, rhs))
+    }
+
+    fn ge(&self, rhs: u8) -> Self {
+        self.id.with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_greater_or_equal(self, rhs)
+        })
+    }
+}
+
+impl<P> FheEq<u8> for GenericShortInt<P>
+where
+    P: ShortIntegerParameter,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
+{
+    type Output = Self;
+
+    fn eq(&self, rhs: u8) -> Self::Output {
+        self.id
+            .with_unwrapped_global_mut(|server_key| server_key.smart_scalar_equal(self, rhs))
+    }
+}
+
+impl<P, B> FheOrd<B> for GenericShortInt<P>
+where
+    B: Borrow<Self>,
+    P: ShortIntegerParameter,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
+{
+    type Output = Self;
+
+    fn lt(&self, other: B) -> Self::Output {
+        self.id
+            .with_unwrapped_global_mut(|server_key| server_key.smart_less(self, other.borrow()))
+    }
+
+    fn le(&self, other: B) -> Self::Output {
+        self.id.with_unwrapped_global_mut(|server_key| {
+            server_key.smart_less_or_equal(self, other.borrow())
+        })
+    }
+
+    fn gt(&self, other: B) -> Self::Output {
+        self.id
+            .with_unwrapped_global_mut(|server_key| server_key.smart_greater(self, other.borrow()))
+    }
+
+    fn ge(&self, other: B) -> Self::Output {
+        self.id.with_unwrapped_global_mut(|server_key| {
+            server_key.smart_greater_or_equal(self, other.borrow())
+        })
+    }
+}
+
+impl<P, B> FheEq<B> for GenericShortInt<P>
+where
+    B: Borrow<Self>,
+    P: ShortIntegerParameter,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
+{
+    type Output = Self;
+
+    fn eq(&self, other: B) -> Self {
+        self.id
+            .with_unwrapped_global_mut(|server_key| server_key.smart_equal(self, other.borrow()))
+    }
+}
+
+impl<P> FheBootstrap for GenericShortInt<P>
+where
+    P: ShortIntegerParameter,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
+{
+    fn map<F>(&self, func: F) -> Self
+    where
+        F: Fn(u64) -> u64,
+    {
+        self.id
+            .with_unwrapped_global_mut(|key| key.bootstrap_with(self, func))
+    }
+
+    fn apply<F>(&mut self, func: F)
+    where
+        F: Fn(u64) -> u64,
+    {
+        self.id.with_unwrapped_global_mut(|key| {
+            key.bootstrap_inplace_with(self, func);
+        })
     }
 }
 
@@ -334,7 +344,7 @@ impl<P, B> std::iter::Sum<B> for GenericShortInt<P>
 where
     B: Borrow<Self>,
     P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
     Self: FheTryTrivialEncrypt<u8> + AddAssign<B>,
 {
     fn sum<I: Iterator<Item = B>>(iter: I) -> Self {
@@ -349,11 +359,14 @@ where
 impl<P, B> std::iter::Product<B> for GenericShortInt<P>
 where
     P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
     Self: FheTryTrivialEncrypt<u8> + MulAssign<B>,
 {
     fn product<I: Iterator<Item = B>>(iter: I) -> Self {
-        let mut product = Self::try_encrypt_trivial(1u8).expect("Failed to trivially encrypt one");
+        let mut product = Self::try_encrypt_trivial(1u8).expect(
+            "Failed to trivially encrypt
+one",
+        );
         for item in iter {
             product *= item;
         }
@@ -364,7 +377,7 @@ where
 impl<P> FheDecrypt<u8> for GenericShortInt<P>
 where
     P: ShortIntegerParameter,
-    ShortIntegerClientKey<P>: RefKeyFromKeyChain,
+    P::Id: RefKeyFromKeyChain<Key = ShortIntegerClientKey<P>>,
 {
     /// Decrypt the encrypted value to a u8
     /// # Example
@@ -391,8 +404,8 @@ where
     /// ```
     #[track_caller]
     fn decrypt(&self, key: &ClientKey) -> u8 {
-        let key = ShortIntegerClientKey::<P>::unwrapped_ref_key(key);
-        key.decrypt(self) as u8
+        let key = self.id.unwrapped_ref_key(key);
+        key.key.decrypt(&*self.ciphertext.borrow()) as u8
     }
 }
 
@@ -452,13 +465,13 @@ macro_rules! short_int_impl_operation (
         impl<P, I> $trait_name<I> for GenericShortInt<P>
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key=ShortIntegerServerKey<P>>,
             I: Borrow<Self>,
         {
             type Output = Self;
 
             fn $trait_method(self, rhs: I) -> Self::Output {
-                ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| {
+                self.id.with_unwrapped_global_mut(|key| {
                     key.$key_method(&self, rhs.borrow())
                 })
             }
@@ -518,13 +531,13 @@ macro_rules! short_int_impl_operation (
         impl<P, I> $trait_name<I> for &GenericShortInt<P>
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key=ShortIntegerServerKey<P>>,
             I: Borrow<GenericShortInt<P>>,
         {
             type Output = GenericShortInt<P>;
 
             fn $trait_method(self, rhs: I) -> Self::Output {
-                ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| {
+                self.id.with_unwrapped_global_mut(|key| {
                     key.$key_method(self, rhs.borrow())
                 })
             }
@@ -590,11 +603,11 @@ macro_rules! short_int_impl_operation_assign (
         impl<P, I> $trait_name<I> for GenericShortInt<P>
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key=ShortIntegerServerKey<P>>,
             I: Borrow<Self>,
         {
             fn $trait_method(&mut self, rhs: I) {
-                ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| {
+                self.id.with_unwrapped_global_mut(|key| {
                     key.$key_method(&self, rhs.borrow())
                 })
             }
@@ -608,21 +621,20 @@ macro_rules! short_int_impl_scalar_operation {
         impl<P> $trait_name<u8> for &GenericShortInt<P>
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
         {
             type Output = GenericShortInt<P>;
 
             fn $trait_method(self, rhs: u8) -> Self::Output {
-                ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| {
-                    key.$key_method(self, rhs)
-                })
+                self.id
+                    .with_unwrapped_global_mut(|key| key.$key_method(self, rhs))
             }
         }
 
         impl<P> $trait_name<u8> for GenericShortInt<P>
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
         {
             type Output = GenericShortInt<P>;
 
@@ -634,7 +646,7 @@ macro_rules! short_int_impl_scalar_operation {
         impl<P> $trait_name<&GenericShortInt<P>> for u8
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
         {
             type Output = GenericShortInt<P>;
 
@@ -646,7 +658,7 @@ macro_rules! short_int_impl_scalar_operation {
         impl<P> $trait_name<GenericShortInt<P>> for u8
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
         {
             type Output = GenericShortInt<P>;
 
@@ -662,12 +674,11 @@ macro_rules! short_int_impl_scalar_operation_assign {
         impl<P> $trait_name<u8> for GenericShortInt<P>
         where
             P: ShortIntegerParameter,
-            ShortIntegerServerKey<P>: WithGlobalKey,
+            P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
         {
             fn $trait_method(&mut self, rhs: u8) {
-                ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| {
-                    key.$key_method(self, rhs)
-                })
+                self.id
+                    .with_unwrapped_global_mut(|key| key.$key_method(self, rhs))
             }
         }
     };
@@ -676,24 +687,25 @@ macro_rules! short_int_impl_scalar_operation_assign {
 impl<P> Neg for GenericShortInt<P>
 where
     P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| key.smart_neg(&self))
+        self.id
+            .with_unwrapped_global_mut(|key| key.smart_neg(&self))
     }
 }
 
 impl<P> Neg for &GenericShortInt<P>
 where
     P: ShortIntegerParameter,
-    ShortIntegerServerKey<P>: WithGlobalKey,
+    P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
 {
     type Output = GenericShortInt<P>;
 
     fn neg(self) -> Self::Output {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|key| key.smart_neg(self))
+        self.id.with_unwrapped_global_mut(|key| key.smart_neg(self))
     }
 }
 

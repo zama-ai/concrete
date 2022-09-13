@@ -22,12 +22,12 @@ Creating a 10-bit integer by combining five 2-bit ShortInts
 fn main() {
     use concrete::prelude::*;
     use concrete::{
-        generate_keys, set_server_key, ConfigBuilder, DynIntegerParameters,
+        generate_keys, set_server_key, ConfigBuilder, RadixParameters,
         FheUint2Parameters,
     };
 
     let mut config = ConfigBuilder::all_disabled();
-    let uint10_type = config.add_integer_type(DynIntegerParameters {
+    let uint10_type = config.add_integer_type(RadixParameters {
         block_parameters: FheUint2Parameters::default().into(),
         num_block: 5,
     });

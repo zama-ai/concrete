@@ -1,20 +1,23 @@
-use std::fmt::Debug;
-
-use client_key::ShortIntegerClientKey;
 use concrete_shortint::parameters::{
     CarryModulus, DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension,
     MessageModulus, Parameters, PolynomialSize, StandardDev,
 };
-use server_key::ShortIntegerServerKey;
-pub use types::GenericShortInt;
 
-use crate::errors::{Type, UninitializedClientKey, UninitializedServerKey};
-use crate::ClientKey;
+use crate::errors::{UninitializedClientKey, UninitializedServerKey};
+use crate::{ClientKey, GenericShortInt};
 
-mod client_key;
-mod server_key;
-mod types;
+use super::{
+    ShortIntegerClientKey, ShortIntegerParameter, ShortIntegerServerKey,
+    StaticShortIntegerParameter,
+};
 
+use paste::paste;
+
+/// Generic Parameter struct for short integers.
+///
+/// It allows to customize the same parameters as the ones
+/// from the underlying `concrete_shortint` with the exception of
+/// the number of bits of message as its embeded in the type.
 #[derive(Copy, Clone, Debug)]
 pub struct ShortIntegerParameterSet<const MESSAGE_BITS: u8> {
     pub lwe_dimension: LweDimension,
@@ -35,15 +38,10 @@ pub struct ShortIntegerParameterSet<const MESSAGE_BITS: u8> {
 }
 
 impl<const MESSAGE_BITS: u8> ShortIntegerParameterSet<MESSAGE_BITS> {
-    // Feels like this could/should be a const fn, but panics are not yet allowed
-    // in const fn, and we need a check to make sure params has same message precision
-    // as MESSAGE_BITS
-    fn from_static(params: &'static Parameters) -> Self {
-        assert_eq!(
-            params.message_modulus.0,
-            1 << MESSAGE_BITS as usize,
-            "Incoherent bit size"
-        );
+    const fn from_static(params: &'static Parameters) -> Self {
+        if params.message_modulus.0 != 1 << MESSAGE_BITS as usize {
+            panic!("Invalid bit number");
+        }
         Self {
             lwe_dimension: params.lwe_dimension,
             glwe_dimension: params.glwe_dimension,
@@ -87,25 +85,91 @@ impl<const MESSAGE_BITS: u8> From<ShortIntegerParameterSet<MESSAGE_BITS>> for Pa
     }
 }
 
-pub trait ShortIntegerParameter: Copy + Into<Parameters> {
-    const MESSAGE_BIT_SIZE: u8;
-}
+/// The Id that is used to identify and retrieve the corresponding keys
+#[derive(Copy, Clone, Default)]
+pub struct ShorIntId<const MESSAGE_BITS: u8>;
 
 impl<const MESSAGE_BITS: u8> ShortIntegerParameter for ShortIntegerParameterSet<MESSAGE_BITS> {
-    const MESSAGE_BIT_SIZE: u8 = MESSAGE_BITS;
+    type Id = ShorIntId<MESSAGE_BITS>;
 }
 
-/// Parameters for the [FheUint2] data type.
-#[cfg_attr(doc, cfg(feature = "shortints"))]
-pub type FheUint2Parameters = ShortIntegerParameterSet<2>;
+impl<const MESSAGE_BITS: u8> StaticShortIntegerParameter
+    for ShortIntegerParameterSet<MESSAGE_BITS>
+{
+    const MESSAGE_BITS: u8 = MESSAGE_BITS;
+}
 
-/// Parameters for the [FheUint3] data type.
-#[cfg_attr(doc, cfg(feature = "shortints"))]
-pub type FheUint3Parameters = ShortIntegerParameterSet<3>;
+/// Defines a new static shortint type.
+///
+/// It needs as input the:
+///     - name of the type
+///     - the number of bits of message the type has
+///     - the keychain member where ClientKey / Server Key is stored
+///
+/// It generates code:
+///     - type alias for the client key, server key, parameter and shortint types
+///     - the trait impl on the id type to access the keys
+macro_rules! static_shortint_type {
+    (
+        $(#[$outer:meta])*
+        $name:ident {
+            num_bits: $num_bits:literal,
+            keychain_member: $($member:ident).*,
+        }
+    ) => {
+        paste! {
 
-/// Parameters for the [FheUint4] data type.
-#[cfg_attr(doc, cfg(feature = "shortints"))]
-pub type FheUint4Parameters = ShortIntegerParameterSet<4>;
+            #[doc = concat!("Parameters for the [", stringify!($name), "] data type.")]
+            #[cfg_attr(doc, cfg(feature = "shortints"))]
+            pub type [<$name Parameters>] = ShortIntegerParameterSet<$num_bits>;
+
+            pub(in crate::shortints) type [<$name ClientKey>] = ShortIntegerClientKey<[<$name Parameters>]>;
+            pub(in crate::shortints) type [<$name ServerKey>] = ShortIntegerServerKey<[<$name Parameters>]>;
+
+            $(#[$outer])*
+            #[doc=concat!("An unsigned integer type with ", stringify!($num_bits), " bits.")]
+            #[cfg_attr(doc, cfg(feature = "shortints"))]
+            pub type $name = GenericShortInt<[<$name Parameters>]>;
+
+            impl_ref_key_from_keychain!(
+                for <[<$name Parameters>] as ShortIntegerParameter>::Id {
+                    key_type: [<$name ClientKey>],
+                    keychain_member: $($member).*,
+                    type_variant: crate::errors::Type::$name,
+                }
+            );
+
+            impl_with_global_key!(
+                for <[<$name Parameters>] as ShortIntegerParameter>::Id {
+                    key_type: [<$name ServerKey>],
+                    keychain_member: $($member).*,
+                    type_variant: crate::errors::Type::$name,
+                }
+            );
+        }
+    };
+}
+
+static_shortint_type! {
+    FheUint2 {
+        num_bits: 2,
+        keychain_member: shortint_key.uint2_key,
+    }
+}
+
+static_shortint_type! {
+    FheUint3 {
+        num_bits: 3,
+        keychain_member: shortint_key.uint3_key,
+    }
+}
+
+static_shortint_type! {
+    FheUint4 {
+        num_bits: 4,
+        keychain_member: shortint_key.uint4_key,
+    }
+}
 
 impl FheUint2Parameters {
     // pub fn with_carry_0() -> Self {
@@ -200,72 +264,5 @@ impl FheUint4Parameters {
 impl Default for FheUint4Parameters {
     fn default() -> Self {
         Self::with_carry_4()
-    }
-}
-
-macro_rules! static_shortint_type {
-    (
-        $(#[$outer:meta])*
-        $name:ident {
-            parameters: $parameters:ty,
-            client_key_name: $client_key_name:ident,
-            server_key_name: $server_key_name:ident,
-            keychain_member: $($member:ident).*,
-            type_variant: $enum_variant:expr,
-        }
-    ) => {
-        pub(super) type $client_key_name = ShortIntegerClientKey<$parameters>;
-        pub(super) type $server_key_name = ShortIntegerServerKey<$parameters>;
-
-        $(#[$outer])*
-        #[cfg_attr(doc, cfg(feature = "shortints"))]
-        pub type $name = GenericShortInt<$parameters>;
-
-        impl_ref_key_from_keychain!(
-            for $client_key_name {
-                keychain_member: $($member).*,
-                type_variant: $enum_variant,
-            }
-        );
-
-        impl_with_global_key!(
-            for $server_key_name {
-                keychain_member: $($member).*,
-                type_variant: $enum_variant,
-            }
-        );
-    };
-}
-
-static_shortint_type! {
-    #[doc="An unsigned integer type with 2 bits."]
-    FheUint2 {
-        parameters: FheUint2Parameters,
-        client_key_name: FheUint2ClientKey,
-        server_key_name: FheUint2ServerKey,
-        keychain_member: shortint_key.uint2_key,
-        type_variant: Type::FheUint2,
-    }
-}
-
-static_shortint_type! {
-    #[doc="An unsigned integer type with 3 bits."]
-    FheUint3 {
-        parameters: FheUint3Parameters,
-        client_key_name: FheUint3ClientKey,
-        server_key_name: FheUint3ServerKey,
-        keychain_member: shortint_key.uint3_key,
-        type_variant: Type::FheUint3,
-    }
-}
-
-static_shortint_type! {
-    #[doc="An unsigned integer type with 4 bits."]
-    FheUint4 {
-        parameters: FheUint4Parameters,
-        client_key_name: FheUint4ClientKey,
-        server_key_name: FheUint4ServerKey,
-        keychain_member: shortint_key.uint4_key,
-        type_variant: Type::FheUint4,
     }
 }

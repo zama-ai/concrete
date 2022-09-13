@@ -89,22 +89,26 @@ where
 /// our keys, the implementation is the same, only a few things change.
 ///
 /// It expects:
+/// - The implementor type
 /// - The  `name` of the key type for which the trait will be implemented.
-/// - The identifier (or identifier chain) that points to the member in the `ServerKey` that hols
+/// - The identifier (or identifier chain) that points to the member in the `ServerKey` that holds
 ///   the key for which the trait is implemented.
 /// - Type Variant used to identify the type at runtime (see `error.rs`)
 #[cfg(any(feature = "shortints", feature = "integers", feature = "booleans"))]
 macro_rules! impl_with_global_key {
     (
-        for $key_type:ty {
+        for $implementor:ty {
+            key_type: $key_type:ty,
             keychain_member: $($member:ident).*,
             type_variant: $enum_variant:expr,
         }
     ) => {
-        impl crate::global_state::WithGlobalKey for $key_type {
-            fn with_global_mut<R, F>(func: F) -> Result<R, UninitializedServerKey>
+        impl crate::global_state::WithGlobalKey for $implementor {
+            type Key = $key_type;
+
+            fn with_global_mut<R, F>(self, func: F) -> Result<R, UninitializedServerKey>
             where
-                F: FnOnce(&mut Self) -> R,
+                F: FnOnce(&mut Self::Key) -> R,
             {
                 crate::global_state::with_internal_keys_mut(|keys| {
                     keys$(.$member)*
@@ -125,16 +129,18 @@ macro_rules! impl_with_global_key {
 ///
 /// Typically, the implementation of the trait will be on the 'internal' key type
 /// and will call [with_internal_keys_mut] and select the right member of the [ServerKey] type.
-pub trait WithGlobalKey {
-    fn with_global_mut<R, F>(func: F) -> Result<R, UninitializedServerKey>
+pub trait WithGlobalKey: Sized {
+    type Key;
+
+    fn with_global_mut<R, F>(self, func: F) -> Result<R, UninitializedServerKey>
     where
-        F: FnOnce(&mut Self) -> R;
+        F: FnOnce(&mut Self::Key) -> R;
 
     #[track_caller]
-    fn with_unwrapped_global_mut<R, F>(func: F) -> R
+    fn with_unwrapped_global_mut<R, F>(self, func: F) -> R
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self::Key) -> R,
     {
-        Self::with_global_mut(func).unwrap_display()
+        self.with_global_mut(func).unwrap_display()
     }
 }

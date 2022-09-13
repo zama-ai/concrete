@@ -20,7 +20,7 @@ concrete-boolean = { path = "../concrete-boolean", optional = true }
 concrete-shortint = { path = "../concrete-shortint", version = "0.1.0-beta.0", optional = true}
 concrete-integer = { path = "../concrete-integer", version = "0.1.0-beta.0", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true}
-
+paste = "1.0.7"
 
 [features]
 booleans = ["concrete-boolean"]
@@ -28,7 +28,6 @@ shortints = ["concrete-shortint"]
 integers = ["concrete-integer", "shortints"]
 experimental_syntax_sugar = []
 internal-keycache = ["concrete-shortint/internal-keycache", "concrete-integer/internal-keycache"]
-#__newer_booleans = []
 
 [[bench]]
 name = "booleans"

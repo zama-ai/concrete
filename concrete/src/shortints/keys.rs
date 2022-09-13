@@ -1,16 +1,12 @@
-use super::r#static::{
-    FheUint2ClientKey, FheUint2Parameters, FheUint2ServerKey, FheUint3ClientKey,
-    FheUint3Parameters, FheUint3ServerKey, FheUint4ClientKey, FheUint4Parameters,
-    FheUint4ServerKey,
-};
-
-use super::dynamic::{
-    DynShortIntClientKey, DynShortIntEncryptor, DynShortIntParameters, DynShortIntServerKey,
-    ShortIntTypeId,
-};
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+use super::types::{
+    DynShortIntClientKey, DynShortIntEncryptor, DynShortIntParameters, DynShortIntServerKey,
+    FheUint2ClientKey, FheUint2Parameters, FheUint2ServerKey, FheUint3ClientKey,
+    FheUint3Parameters, FheUint3ServerKey, FheUint4ClientKey, FheUint4Parameters,
+    FheUint4ServerKey, ShortIntTypeId,
+};
 
 #[derive(Clone, Debug)]
 pub(crate) struct ShortIntConfig {

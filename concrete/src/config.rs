@@ -1,14 +1,12 @@
 #[cfg(feature = "booleans")]
 use crate::booleans::{BoolConfig, DynFheBoolEncryptor, FheBoolParameters};
-
+#[cfg(feature = "integers")]
+use crate::integers::{DynIntegerEncryptor, DynIntegerParameters, IntegerConfig};
 #[cfg(feature = "shortints")]
 use crate::shortints::{
     DynShortIntEncryptor, DynShortIntParameters, FheUint2Parameters, FheUint3Parameters,
     FheUint4Parameters, ShortIntConfig,
 };
-
-#[cfg(feature = "integers")]
-use crate::integers::{DynIntegerEncryptor, DynIntegerParameters, IntegerConfig};
 
 /// The config type
 #[derive(Clone, Debug)]
@@ -80,7 +78,7 @@ impl ConfigBuilder {
     /// [FheBool]: crate::FheBool
     #[cfg(feature = "booleans")]
     pub fn enable_default_bool(mut self) -> Self {
-        self.config.bool_config.parameters = Some(FheBoolParameters::default());
+        self.config.bool_config.parameters = Some(FheBoolParameters::default().into());
         self
     }
 
@@ -89,7 +87,7 @@ impl ConfigBuilder {
     /// [FheBool]: crate::FheBool
     #[cfg(feature = "booleans")]
     pub fn enable_custom_bool(mut self, params: FheBoolParameters) -> Self {
-        self.config.bool_config.parameters = Some(params);
+        self.config.bool_config.parameters = Some(params.into());
         self
     }
 
@@ -213,12 +211,6 @@ impl ConfigBuilder {
     }
 
     #[cfg(feature = "integers")]
-    pub fn enable_custom_uint8(mut self, parameters: FheUint2Parameters) -> Self {
-        self.config.integer_config.uint8_params = Some(parameters);
-        self
-    }
-
-    #[cfg(feature = "integers")]
     pub fn disable_uint8(mut self) -> Self {
         self.config.integer_config.uint8_params = None;
         self
@@ -227,12 +219,6 @@ impl ConfigBuilder {
     #[cfg(feature = "integers")]
     pub fn enable_default_uint12(mut self) -> Self {
         self.config.integer_config.uint12_params = Some(Default::default());
-        self
-    }
-
-    #[cfg(feature = "integers")]
-    pub fn enable_custom_uint12(mut self, parameters: FheUint2Parameters) -> Self {
-        self.config.integer_config.uint12_params = Some(parameters);
         self
     }
 
@@ -249,19 +235,16 @@ impl ConfigBuilder {
     }
 
     #[cfg(feature = "integers")]
-    pub fn enable_custom_uint16(mut self, parameters: FheUint2Parameters) -> Self {
-        self.config.integer_config.uint16_params = Some(parameters);
-        self
-    }
-
-    #[cfg(feature = "integers")]
     pub fn disable_uint16(mut self) -> Self {
         self.config.integer_config.uint16_params = None;
         self
     }
 
     #[cfg(feature = "integers")]
-    pub fn add_integer_type(&mut self, parameters: DynIntegerParameters) -> DynIntegerEncryptor {
+    pub fn add_integer_type<P: Into<DynIntegerParameters>>(
+        &mut self,
+        parameters: P,
+    ) -> DynIntegerEncryptor {
         self.config.integer_config.add_integer_type(parameters)
     }
 

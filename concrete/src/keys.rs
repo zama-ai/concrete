@@ -81,10 +81,12 @@ impl ClientKey {
 /// in the `ClientKeyChain`.
 ///
 /// This is to allow the writing of generic functions.
-pub trait RefKeyFromKeyChain {
+pub trait RefKeyFromKeyChain: Sized {
+    type Key;
+
     /// The method to implement, shall return a ref to the key or an error if
     /// the key member in the key was not initialized
-    fn ref_key(keys: &ClientKey) -> Result<&Self, UninitializedClientKey>;
+    fn ref_key(self, keys: &ClientKey) -> Result<&Self::Key, UninitializedClientKey>;
 
     /// Returns a mutable ref to the key member of the key
     ///
@@ -92,8 +94,8 @@ pub trait RefKeyFromKeyChain {
     ///
     /// This will panic if the key was not initialized
     #[track_caller]
-    fn unwrapped_ref_key(keys: &ClientKey) -> &Self {
-        Self::ref_key(keys).unwrap_display()
+    fn unwrapped_ref_key(self, keys: &ClientKey) -> &Self::Key {
+        self.ref_key(keys).unwrap_display()
     }
 }
 
@@ -102,20 +104,24 @@ pub trait RefKeyFromKeyChain {
 /// our keys, the implementation is the same, only a few things change.
 ///
 /// It expects:
+/// - The implementor type
 /// - The  `name` of the key type for which the trait will be implemented.
-/// - The identifier (or identifier chain) that points to the member in the `ClientKey` that hols
+/// - The identifier (or identifier chain) that points to the member in the `ClientKey` that holds
 ///   the key for which the trait is implemented.
 /// - Type Variant used to identify the type at runtime (see `error.rs`)
-#[cfg(any(feature = "shortints", feature = "integers"))]
+#[cfg(any(feature = "booleans", feature = "shortints", feature = "integers"))]
 macro_rules! impl_ref_key_from_keychain {
     (
-        for $key_type:ty {
+        for $implementor:ty {
+            key_type: $key_type:ty,
             keychain_member: $($member:ident).*,
             type_variant: $enum_variant:expr,
         }
     ) => {
-        impl crate::keys::RefKeyFromKeyChain for $key_type {
-            fn ref_key(keys: &ClientKey) -> Result<&Self, UninitializedClientKey> {
+        impl crate::keys::RefKeyFromKeyChain for $implementor {
+            type Key = $key_type;
+
+            fn ref_key(self, keys: &ClientKey) -> Result<&Self::Key, UninitializedClientKey> {
                 keys$(.$member)*
                     .as_ref()
                     .ok_or(UninitializedClientKey($enum_variant))

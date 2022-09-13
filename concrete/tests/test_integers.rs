@@ -21,13 +21,13 @@ fn test_uint8() {
 mod dynamic {
     use concrete::prelude::*;
     use concrete::{
-        generate_keys, set_server_key, ConfigBuilder, DynIntegerParameters, FheUint2Parameters,
+        generate_keys, set_server_key, ConfigBuilder, FheUint2Parameters, RadixParameters,
     };
 
     #[test]
     fn test_uint10() {
         let mut config = ConfigBuilder::all_disabled();
-        let uint10_type = config.add_integer_type(DynIntegerParameters {
+        let uint10_type = config.add_integer_type(RadixParameters {
             block_parameters: FheUint2Parameters::with_carry_2().into(),
             num_block: 5,
         });

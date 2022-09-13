@@ -1,5 +1,5 @@
-//! This module implements the generation of the client secret keys, together with the
-//! encryption and decryption methods.
+//! This module implements the generation of the client secret ShortIntegerClientKeykeys, together
+//! with the encryption and decryption methods.
 
 pub(crate) mod utils;
 

@@ -1,21 +1,22 @@
-use super::r#static::{
-    FheUint12ClientKey, FheUint12ServerKey, FheUint16ClientKey, FheUint16ServerKey,
-    FheUint8ClientKey, FheUint8ServerKey,
-};
-use crate::FheUint2Parameters;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::dynamic::{
+use crate::integers::types::dynamic::{
     DynIntegerClientKey, DynIntegerEncryptor, DynIntegerParameters, DynIntegerServerKey,
     IntegerTypeId,
 };
 
+use super::types::r#static::{
+    FheUint12ClientKey, FheUint12Parameters, FheUint12ServerKey, FheUint16ClientKey,
+    FheUint16Parameters, FheUint16ServerKey, FheUint8ClientKey, FheUint8Parameters,
+    FheUint8ServerKey,
+};
+
 #[derive(Clone, Debug)]
 pub(crate) struct IntegerConfig {
-    pub(crate) uint8_params: Option<FheUint2Parameters>,
-    pub(crate) uint12_params: Option<FheUint2Parameters>,
-    pub(crate) uint16_params: Option<FheUint2Parameters>,
+    pub(crate) uint8_params: Option<FheUint8Parameters>,
+    pub(crate) uint12_params: Option<FheUint12Parameters>,
+    pub(crate) uint16_params: Option<FheUint16Parameters>,
 
     pub(crate) custom_params: Vec<DynIntegerParameters>,
 }
@@ -23,9 +24,9 @@ pub(crate) struct IntegerConfig {
 impl IntegerConfig {
     pub(crate) fn all_default() -> Self {
         Self {
-            uint8_params: Some(FheUint2Parameters::default()),
-            uint12_params: Some(FheUint2Parameters::default()),
-            uint16_params: Some(FheUint2Parameters::default()),
+            uint8_params: Some(Default::default()),
+            uint12_params: Some(Default::default()),
+            uint16_params: Some(Default::default()),
 
             custom_params: vec![],
         }
@@ -41,12 +42,12 @@ impl IntegerConfig {
         }
     }
 
-    pub(crate) fn add_integer_type(
+    pub(crate) fn add_integer_type<P: Into<DynIntegerParameters>>(
         &mut self,
-        parameters: DynIntegerParameters,
+        parameters: P,
     ) -> DynIntegerEncryptor {
         let type_id = IntegerTypeId(self.custom_params.len());
-        self.custom_params.push(parameters);
+        self.custom_params.push(parameters.into());
         <DynIntegerEncryptor as From<IntegerTypeId>>::from(type_id)
     }
 }

@@ -45,11 +45,11 @@
 //! {
 //!     use concrete::prelude::*;
 //!     use concrete::{
-//!         generate_keys, set_server_key, ConfigBuilder, DynIntegerParameters, FheUint2Parameters,
+//!         generate_keys, set_server_key, ConfigBuilder, RadixParameters, FheUint2Parameters,
 //!     };
 //!
 //!     let mut config = ConfigBuilder::all_disabled();
-//!     let uint10_type = config.add_integer_type(DynIntegerParameters {
+//!     let uint10_type = config.add_integer_type(RadixParameters {
 //!         block_parameters: FheUint2Parameters::default().into(),
 //!         num_block: 5,
 //!     });
@@ -102,7 +102,7 @@ pub use crate::shortints::{
 #[cfg(feature = "integers")]
 pub use crate::integers::{
     DynInteger, DynIntegerEncryptor, DynIntegerParameters,
-    FheUint8, FheUint12, FheUint16, GenericInteger,
+    FheUint8, FheUint12, FheUint16, GenericInteger, RadixParameters, IntegerParameterSet
 };
 
 #[cfg(feature = "shortints")]
@@ -130,14 +130,14 @@ mod integers;
 mod syntax_sugar;
 
 pub mod parameters {
-    #[cfg(all(feature = "booleans", feature = "__newer_booleans"))]
+    #[cfg(feature = "booleans")]
     pub use concrete_boolean::parameters::{
         DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
         StandardDev,
     };
     #[cfg(feature = "shortints")]
     pub use concrete_shortint::parameters::{CarryModulus, MessageModulus};
-    #[cfg(all(feature = "shortints", not(all(feature = "booleans", feature = "__newer_booleans"))))]
+    #[cfg(all(feature = "shortints", not(feature = "booleans")))]
     pub use concrete_shortint::parameters::{
         DecompositionBaseLog, DecompositionLevelCount, DispersionParameter, GlweDimension,
         LweDimension, PolynomialSize, StandardDev,

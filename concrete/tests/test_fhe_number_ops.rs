@@ -240,11 +240,11 @@ fn test_static_supports_ops() {
 fn test_dynamic_supports_ops() {
     use concrete::prelude::*;
     use concrete::{
-        generate_keys, set_server_key, ConfigBuilder, DynIntegerParameters, FheUint2Parameters,
+        generate_keys, set_server_key, ConfigBuilder, FheUint2Parameters, RadixParameters,
     };
 
     let mut config = ConfigBuilder::all_disabled();
-    let uint10_type = config.add_integer_type(DynIntegerParameters {
+    let uint10_type = config.add_integer_type(RadixParameters {
         block_parameters: FheUint2Parameters::default().into(),
         num_block: 5,
     });

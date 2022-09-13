@@ -1,6 +1,6 @@
 use concrete::parameters::*;
 use concrete::ConfigBuilder;
-#[cfg(all(feature = "booleans", feature = "__newer_booleans"))]
+#[cfg(feature = "booleans")]
 use concrete::FheBoolParameters;
 #[cfg(feature = "shortints")]
 use concrete::{FheUint2Parameters, FheUint3Parameters, FheUint4Parameters};
@@ -19,7 +19,7 @@ use concrete::{FheUint2Parameters, FheUint3Parameters, FheUint4Parameters};
 fn test_user_is_able_to_specify_parameters() {
     let config = ConfigBuilder::all_disabled();
 
-    #[cfg(all(feature = "booleans", feature = "__newer_booleans"))]
+    #[cfg(feature = "booleans")]
     let config = {
         config.enable_custom_bool(FheBoolParameters {
             lwe_dimension: LweDimension(1),
@@ -34,7 +34,7 @@ fn test_user_is_able_to_specify_parameters() {
         })
     };
 
-    #[cfg(all(feature = "booleans", feature = "__newer_booleans"))]
+    #[cfg(feature = "booleans")]
     let config = {
         let mut config = config;
         let _instanciator = config.add_bool_type(FheBoolParameters {

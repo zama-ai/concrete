@@ -3,12 +3,11 @@ use std::marker::PhantomData;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use concrete_shortint::ClientKey;
-
-use super::{GenericShortInt, ShortIntegerParameter};
-
 #[cfg(feature = "internal-keycache")]
 use concrete_shortint::keycache::KEY_CACHE;
+use concrete_shortint::ClientKey;
+
+use super::types::ShortIntegerParameter;
 
 /// The key associated to a short integer type
 ///
@@ -37,13 +36,5 @@ where
             key,
             _marker: Default::default(),
         }
-    }
-
-    pub(super) fn encrypt(&self, value: u8) -> GenericShortInt<P> {
-        self.key.encrypt(u64::from(value)).into()
-    }
-
-    pub(super) fn decrypt(&self, value: &GenericShortInt<P>) -> u64 {
-        self.key.decrypt(&value.ciphertext.borrow())
     }
 }

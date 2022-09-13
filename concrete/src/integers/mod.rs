@@ -1,8 +1,12 @@
-mod dynamic;
-mod keys;
-mod r#static;
-
 pub(crate) use keys::{IntegerClientKey, IntegerConfig, IntegerServerKey};
+pub use parameters::{IntegerParameterSet, RadixParameters};
+pub use types::{
+    DynInteger, DynIntegerEncryptor, DynIntegerParameters, FheUint12, FheUint16, FheUint8,
+    GenericInteger,
+};
 
-pub use dynamic::{DynInteger, DynIntegerEncryptor, DynIntegerParameters};
-pub use r#static::{FheUint12, FheUint16, FheUint8, GenericInteger};
+mod client_key;
+mod keys;
+mod parameters;
+mod server_key;
+mod types;
