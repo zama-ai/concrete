@@ -36,12 +36,31 @@ namespace {} // namespace
 
 namespace {
 
+// Returns a map with a symbolic offset for each dimension, i.e., for N
+// dimensions, it returns
+//
+// [d1, d2, ..., dN](s1, s2, ..., sN) -> (d1 + s1, d2 + s2, ..., dN + sN)
+//
+AffineMap getMultiDimSymbolicOffsetMap(mlir::RewriterBase &rewriter,
+                                       unsigned rank) {
+  SmallVector<AffineExpr, 4> dimExprs;
+  dimExprs.reserve(rank);
+
+  for (unsigned i = 0; i < rank; ++i)
+    dimExprs.push_back(rewriter.getAffineDimExpr(i) +
+                       rewriter.getAffineSymbolExpr(i));
+
+  return AffineMap::get(/*dimCount=*/rank, /*symbolCount=*/rank, dimExprs,
+                        rewriter.getContext());
+}
+
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
   mlir::MLIRContext *ctx = rewriter.getContext();
   std::vector<int64_t> shape(rank, -1);
+
   return mlir::MemRefType::get(shape, rewriter.getI64Type(),
-                               rewriter.getMultiDimIdentityMap(rank));
+                               getMultiDimSymbolicOffsetMap(rewriter, rank));
 }
 
 // Returns `memref.cast %0 : memref<...xAxT> to memref<...x?xT>`
