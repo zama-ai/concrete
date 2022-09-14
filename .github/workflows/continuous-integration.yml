@@ -640,6 +640,8 @@ jobs:
   TestPythonPackageMacOS:
     runs-on: macos-11
     needs: [BuildAndPushPackagesMacOS, CreateRelease]
+    env:
+      SYSTEM_VERSION_COMPAT: 0
     strategy:
       matrix:
         include:
