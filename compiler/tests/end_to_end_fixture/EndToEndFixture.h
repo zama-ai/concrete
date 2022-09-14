@@ -54,6 +54,9 @@ struct EndToEndDesc {
   llvm::Optional<mlir::concretelang::LargeIntegerParameter>
       largeIntegerParameter;
   std::vector<TestErrorRate> test_error_rates;
+  bool loopParallelize;
+  bool dataflowParallelize;
+  bool asyncOffload;
 };
 
 llvm::Expected<mlir::concretelang::LambdaArgument *>

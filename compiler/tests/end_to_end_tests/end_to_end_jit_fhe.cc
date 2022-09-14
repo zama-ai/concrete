@@ -24,6 +24,9 @@ using mlir::concretelang::StreamStringError;
 template <typename LambdaSupport>
 void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
   mlir::concretelang::CompilationOptions options("main");
+  options.loopParallelize = desc.loopParallelize;
+  options.dataflowParallelize = desc.dataflowParallelize;
+  options.asyncOffload = desc.asyncOffload;
   if (desc.v0Constraint.hasValue()) {
     options.v0FHEConstraints = *desc.v0Constraint;
   }
@@ -47,13 +50,6 @@ template <typename LambdaSupport>
 void compile_and_run_for_config(EndToEndDesc desc, LambdaSupport support,
                                 mlir::concretelang::CompilationOptions options,
                                 llvm::Optional<TestErrorRate> test_error_rate) {
-
-  /* 0 - Enable parallel testing where required */
-#ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
-  options.dataflowParallelize = true;
-  options.loopParallelize = true;
-#endif
-
   /* 1 - Compile the program */
   auto compilationResult = support.compile(desc.program, options);
   ASSERT_EXPECTED_SUCCESS(compilationResult);
@@ -157,6 +153,31 @@ std::string printEndToEndDesc(const testing::TestParamInfo<EndToEndDesc> desc) {
   return desc.param.description;
 }
 
+std::vector<EndToEndDesc> generateCustomVersions(std::string path) {
+  std::vector<EndToEndDesc> cvdesc;
+  auto add_custom = [&](EndToEndDesc d, std::string version,
+                        bool loopParallelize, bool dataflowParallelize,
+                        bool asyncOffload) {
+    d.description = version + "__" + d.description;
+    d.loopParallelize = loopParallelize;
+    d.dataflowParallelize = dataflowParallelize;
+    d.asyncOffload = asyncOffload;
+    cvdesc.push_back(d);
+    return;
+  };
+  for (auto d : loadEndToEndDesc(path)) {
+    add_custom(d, "default", false, false, false);
+    add_custom(d, "loop", true, false, false);
+    add_custom(d, "async", false, false, true);
+#ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
+    add_custom(d, "dataflow", false, true, false);
+    add_custom(d, "dataflow_loop", true, true, false);
+    add_custom(d, "dataflow_loop_async", true, true, true);
+#endif
+  }
+  return cvdesc;
+}
+
 // Macro to define and end to end TestSuite that run test thanks the
 // LambdaSupport according a EndToEndDesc
 #define INSTANTIATE_END_TO_END_COMPILE_AND_RUN(TestSuite, lambdaSupport)       \
@@ -168,7 +189,7 @@ std::string printEndToEndDesc(const testing::TestParamInfo<EndToEndDesc> desc) {
 #define INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(prefix, suite,             \
                                                     lambdasupport, path)       \
   namespace prefix##suite {                                                    \
-    auto valuesVector = loadEndToEndDesc(path);                                \
+    auto valuesVector = generateCustomVersions(path);                          \
     auto values = testing::ValuesIn<std::vector<EndToEndDesc>>(valuesVector);  \
     INSTANTIATE_TEST_SUITE_P(prefix, suite, values, printEndToEndDesc);        \
   }
