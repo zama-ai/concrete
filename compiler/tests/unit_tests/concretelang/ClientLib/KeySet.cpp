@@ -53,10 +53,13 @@ clientlib::ClientParameters generateClientParameterOneScalarOneScalar(
   params.secretKeys.insert({clientlib::SMALL_KEY, {/*.dimension =*/dimension}});
   // One input and output encryption gate on the same secret key and encoded
   // with the same precision
+  const auto v0Curve =
+      mlir::concretelang::getV0Curves(SECURITY_LEVEL_128, KEY_FORMAT_BINARY);
   clientlib::EncryptionGate encryption;
   encryption.secretKeyID = clientlib::SMALL_KEY;
   encryption.encoding.precision = precision;
   encryption.encoding.crt = crtDecomposition;
+  encryption.variance = v0Curve->getVariance(1, dimension, 64);
   clientlib::CircuitGate gate;
   gate.encryption = encryption;
   params.inputs.push_back(gate);
