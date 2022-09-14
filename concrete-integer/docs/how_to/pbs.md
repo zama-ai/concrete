@@ -13,14 +13,14 @@ The `tree pbs` is quite slow, therefore its use is currently restricted to two a
 {% endhint %}
 
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 use concrete_integer::treepbs::TreepbsKey;
 
 fn main() {
     let num_block = 2;
     // Generate the client key and the server key:
-    let (cks, sks) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (cks, sks) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 
     let msg: u64 = 27;
     let ct = cks.encrypt(msg);

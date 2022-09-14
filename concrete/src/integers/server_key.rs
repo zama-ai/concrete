@@ -27,13 +27,8 @@ where
         {
             use super::IntegerParameterSet;
             match client_key.params {
-                IntegerParameterSet::Radix(radix) => {
-                    let key = KEY_CACHE
-                        .get_from_params(
-                            client_key.key.parameters(),
-                            concrete_integer::client_key::VecLength(radix.num_block),
-                        )
-                        .1;
+                IntegerParameterSet::Radix(_) => {
+                    let key = KEY_CACHE.get_from_params(client_key.key.parameters()).1;
                     Self {
                         key,
                         _marker: Default::default(),

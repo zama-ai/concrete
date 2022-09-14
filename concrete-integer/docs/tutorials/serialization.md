@@ -25,14 +25,14 @@ bincode = "1.3.3"
 use bincode;
 
 use std::io::Cursor;
-use concrete_integer::{gen_keys, ServerKey, Ciphertext};
+use concrete_integer::{gen_keys_radix, ServerKey, RadixCiphertext};
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // We generate a set of client/server keys, using the default parameters:
     let num_block = 4;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 
     let msg1 = 201;
     let msg2 = 12;
@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Simulate sending serialized data to a server and getting
     // back the serialized result
     let serialized_result = server_function(&serialized_data)?;
-    let result: Ciphertext = bincode::deserialize(&serialized_result)?;
+    let result: RadixCiphertext = bincode::deserialize(&serialized_result)?;
 
     let output = client_key.decrypt(&result);
     assert_eq!(output, (msg1 + msg2) % modulus);
@@ -62,8 +62,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn server_function(serialized_data: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut serialized_data = Cursor::new(serialized_data);
     let server_key: ServerKey = bincode::deserialize_from(&mut serialized_data)?;
-    let ct_1: Ciphertext = bincode::deserialize_from(&mut serialized_data)?;
-    let ct_2: Ciphertext = bincode::deserialize_from(&mut serialized_data)?;
+    let ct_1: RadixCiphertext = bincode::deserialize_from(&mut serialized_data)?;
+    let ct_2: RadixCiphertext = bincode::deserialize_from(&mut serialized_data)?;
 
     let result = server_key.unchecked_add(&ct_1, &ct_2);
 

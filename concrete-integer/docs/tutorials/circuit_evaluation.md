@@ -8,12 +8,12 @@ As an example, let's do a scalar multiplication, a subtraction and an addition.
 
 
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 fn main() {
     let num_block = 4;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 
     let msg1 = 12;
     let msg2 = 11;
@@ -47,12 +47,12 @@ may be incorrect.
 If we redo this same circuit but using the `checked` flavour, a panic will occur.
 
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 fn main() {
     let num_block = 2;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 
     let msg1 = 12;
     let msg2 = 11;
@@ -87,12 +87,12 @@ Lastly, using the `smart` flavour will output the correct result all the time. H
 as the carry buffer may be propagated during the computations.
 
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 fn main() {
     let num_block = 4;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 
     let msg1 = 12;
     let msg2 = 11;

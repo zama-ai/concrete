@@ -19,13 +19,13 @@ the end, an Integer ciphertext is defined as a set of Shortint ciphertexts.
 In practice, the definition of an Integer requires the basis and the number of blocks. This is 
 done at the key creation step.
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 fn main() {
     // We generate a set of client/server keys, using the default parameters:
     let num_block = 4;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 }
 ```
 

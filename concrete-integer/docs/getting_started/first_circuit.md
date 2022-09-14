@@ -35,13 +35,13 @@ by using **4** shortint blocks that store **2** bits of message each.
 
 
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 fn main() {
     // We generate a set of client/server keys, using the default parameters:
     let num_block = 4;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 }
 ```
 
@@ -53,13 +53,13 @@ fn main() {
 Once we have our keys we can encrypt values:
 
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 fn main() {
     // We generate a set of client/server keys, using the default parameters:
     let num_block = 4;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
    
     let msg1 = 128;
     let msg2 = 13;
@@ -76,13 +76,13 @@ With our `server_key`, and encrypted values, we can now do an addition
 and then decrypt the result.
 
 ```rust
-use concrete_integer::gen_keys;
+use concrete_integer::gen_keys_radix;
 use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
 
 fn main() {
     // We generate a set of client/server keys, using the default parameters:
     let num_block = 4;
-    let (client_key, server_key) = gen_keys(&PARAM_MESSAGE_2_CARRY_2, num_block);
+    let (client_key, server_key) = gen_keys_radix(&PARAM_MESSAGE_2_CARRY_2, num_block);
 
     let msg1 = 128;
     let msg2 = 13;

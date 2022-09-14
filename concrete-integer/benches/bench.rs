@@ -1,12 +1,14 @@
 #![allow(dead_code)]
 
-use concrete_integer::client_key::{radix_decomposition, VecLength};
-use concrete_integer::crt::{gen_key_id, CRTVecClientKey, CRTVecServerKey};
+use concrete_integer::client_key::radix_decomposition;
 use concrete_integer::keycache::KEY_CACHE;
 use concrete_integer::parameters::*;
 use concrete_integer::treepbs::TreepbsKey;
 use concrete_integer::wopbs::WopbsKeyV0;
-use concrete_integer::{gen_keys, Ciphertext, ServerKey};
+use concrete_integer::{
+    gen_key_id, gen_keys, CrtMultiCiphertext, CrtMultiClientKey, CrtMultiServerKey,
+    RadixCiphertext, ServerKey,
+};
 use concrete_shortint::keycache::KEY_CACHE_WOPBS;
 use concrete_shortint::parameters::parameters_wopbs_message_carry::get_parameters_from_message_and_carry_wopbs;
 use concrete_shortint::parameters::{get_parameters_from_message_and_carry, DEFAULT_PARAMETERS};
@@ -54,17 +56,17 @@ macro_rules! named_param {
 
 struct Parameters {
     block_parameters: concrete_shortint::Parameters,
-    num_block: VecLength,
+    num_block: usize,
 }
 
 const BLOCK_4_MESSAGE_2_CARRY_2: Parameters = Parameters {
     block_parameters: PARAM_MESSAGE_2_CARRY_2,
-    num_block: VecLength(4),
+    num_block: 4,
 };
 
 const BLOCK_4_MESSAGE_3_CARRY_3: Parameters = Parameters {
     block_parameters: PARAM_MESSAGE_3_CARRY_3,
-    num_block: VecLength(4),
+    num_block: 4,
 };
 
 const SERVER_KEY_BENCH_PARAMS: [(&str, Parameters); 2] = [
@@ -76,16 +78,15 @@ fn smart_neg(c: &mut Criterion) {
     let mut bench_group = c.benchmark_group("smart_neg");
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters, param.num_block);
+        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters);
 
         let mut rng = rand::thread_rng();
 
-        let modulus =
-            1_u64 << (param.block_parameters.message_modulus.0 * param.num_block.0) as u64;
+        let modulus = 1_u64 << (param.block_parameters.message_modulus.0 * param.num_block) as u64;
 
         let clear_0 = rng.gen::<u64>() % modulus;
 
-        let mut ct = cks.encrypt(clear_0);
+        let mut ct = cks.encrypt_radix(clear_0, param.num_block);
 
         let bench_id = param_name;
         bench_group.bench_function(bench_id, |b| {
@@ -102,16 +103,14 @@ fn full_propagate(c: &mut Criterion) {
     let mut bench_group = c.benchmark_group("full_propagate");
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters, param.num_block);
-
+        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters);
         let mut rng = rand::thread_rng();
 
-        let modulus =
-            1_u64 << (param.block_parameters.message_modulus.0 * param.num_block.0) as u64;
+        let modulus = 1_u64 << (param.block_parameters.message_modulus.0 * param.num_block) as u64;
 
         let clear_0 = rng.gen::<u64>() % modulus;
 
-        let mut ct = cks.encrypt(clear_0);
+        let mut ct = cks.encrypt_radix(clear_0, param.num_block);
 
         let bench_id = param_name;
         bench_group.bench_function(bench_id, |b| {
@@ -126,23 +125,22 @@ fn full_propagate(c: &mut Criterion) {
 
 fn bench_server_key_binary_function<F>(c: &mut Criterion, bench_name: &str, binary_op: F)
 where
-    F: Fn(&ServerKey, &mut Ciphertext, &mut Ciphertext),
+    F: Fn(&ServerKey, &mut RadixCiphertext, &mut RadixCiphertext),
 {
     let mut bench_group = c.benchmark_group(bench_name);
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters, param.num_block);
+        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters);
 
         let mut rng = rand::thread_rng();
 
-        let modulus =
-            1_u64 << (param.block_parameters.message_modulus.0 * param.num_block.0) as u64;
+        let modulus = 1_u64 << (param.block_parameters.message_modulus.0 * param.num_block) as u64;
 
         let clear_0 = rng.gen::<u64>() % modulus;
         let clear_1 = rng.gen::<u64>() % modulus;
 
-        let mut ct_0 = cks.encrypt(clear_0);
-        let mut ct_1 = cks.encrypt(clear_1);
+        let mut ct_0 = cks.encrypt_radix(clear_0, param.num_block);
+        let mut ct_1 = cks.encrypt_radix(clear_1, param.num_block);
 
         let bench_id = format!("{}::{}", bench_name, param_name);
         bench_group.bench_function(&bench_id, |b| {
@@ -157,22 +155,21 @@ where
 
 fn bench_server_key_binary_scalar_function<F>(c: &mut Criterion, bench_name: &str, binary_op: F)
 where
-    F: Fn(&ServerKey, &mut Ciphertext, u64),
+    F: Fn(&ServerKey, &mut RadixCiphertext, u64),
 {
     let mut bench_group = c.benchmark_group(bench_name);
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters, param.num_block);
+        let (cks, sks) = KEY_CACHE.get_from_params(param.block_parameters);
 
         let mut rng = rand::thread_rng();
 
-        let modulus =
-            1_u64 << (param.block_parameters.message_modulus.0 * param.num_block.0) as u64;
+        let modulus = 1_u64 << (param.block_parameters.message_modulus.0 * param.num_block) as u64;
 
         let clear_0 = rng.gen::<u64>() % modulus;
         let clear_1 = rng.gen::<u64>() % modulus;
 
-        let mut ct_0 = cks.encrypt(clear_0);
+        let mut ct_0 = cks.encrypt_radix(clear_0, param.num_block);
 
         let bench_id = format!("{}::{}", bench_name, param_name);
         bench_group.bench_function(&bench_id, |b| {
@@ -303,7 +300,7 @@ fn smart_block_mul(c: &mut Criterion) {
     let size = 4;
 
     // generate the server-client key set
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS, size);
+    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
 
     //RNG
     let mut rng = rand::thread_rng();
@@ -318,7 +315,7 @@ fn smart_block_mul(c: &mut Criterion) {
     let clear_1 = rng.gen::<u64>() % block_modulus;
 
     // encryption of an integer
-    let mut ct_zero = cks.encrypt(clear_0);
+    let mut ct_zero = cks.encrypt_radix(clear_0, size);
 
     // encryption of an integer
     let ct_one = cks.encrypt_one_block(clear_1);
@@ -332,10 +329,8 @@ fn smart_block_mul(c: &mut Criterion) {
 }
 
 fn crt(c: &mut Criterion) {
-    let size = 4;
-
     // generate the server-client key set
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS, size);
+    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
 
     //RNG
     let mut rng = rand::thread_rng();
@@ -359,7 +354,7 @@ fn crt(c: &mut Criterion) {
     });
     c.bench_function("CRT: Smart_Add", |b| {
         b.iter(|| {
-            sks.smart_add_assign(&mut ctxt_1, &mut ctxt_2);
+            sks.smart_add_crt_assign(&mut ctxt_1, &mut ctxt_2);
         })
     });
 }
@@ -368,7 +363,7 @@ fn radmodint_unchecked_mul(c: &mut Criterion) {
     let size = 2;
 
     let param = DEFAULT_PARAMETERS;
-    let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(size));
+    let (cks, sks) = KEY_CACHE.get_from_params(param);
 
     println!("Chosen Parameter Set: {:?}", param);
 
@@ -383,8 +378,8 @@ fn radmodint_unchecked_mul(c: &mut Criterion) {
     let clear2 = rng.gen::<u64>() % modulus;
 
     // Encrypt the integers
-    let mut ctxt_1 = cks.encrypt(clear1);
-    let ctxt_2 = cks.encrypt(clear2);
+    let mut ctxt_1 = cks.encrypt_radix(clear1, size);
+    let ctxt_2 = cks.encrypt_radix(clear2, size);
 
     //scalar mul
     c.bench_function("Unchecked Mul + Full Propagate", |b| {
@@ -412,7 +407,7 @@ fn radmodint_unchecked_mul_many_sizes(c: &mut Criterion) {
 
             let param =
                 get_parameters_from_message_and_carry(1 << rad_decomp.msg_space, 1 << carry_space);
-            let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(rad_decomp.block_number));
+            let (cks, sks) = KEY_CACHE.get_from_params(param);
 
             println!("Chosen Parameter Set: {:?}", param);
 
@@ -425,8 +420,8 @@ fn radmodint_unchecked_mul_many_sizes(c: &mut Criterion) {
 
             // Encrypt the integers
 
-            let mut ctxt_1 = cks.encrypt(clear1);
-            let ctxt_2 = cks.encrypt(clear2);
+            let mut ctxt_1 = cks.encrypt_radix(clear1, rad_decomp.block_number);
+            let ctxt_2 = cks.encrypt_radix(clear2, rad_decomp.block_number);
 
             println!(
                 "(Input Size {}; Carry_Space {}, Message_Space {}, Block Number {}):  \
@@ -477,10 +472,7 @@ fn radmodint_wopbs(c: &mut Criterion) {
 
         println!("Chosen Parameter Set: {:?}", param);
 
-        let cks = concrete_integer::client_key::ClientKey::from_shortint(
-            cks.clone(),
-            VecLength(rad_decomp.block_number),
-        );
+        let cks = concrete_integer::client_key::ClientKey::from(cks.clone());
 
         let sks = concrete_integer::server_key::ServerKey::from_shortint(&cks, sks.clone());
 
@@ -492,7 +484,7 @@ fn radmodint_wopbs(c: &mut Criterion) {
         let clear1 = rng.gen::<u64>() % msg_space as u64;
 
         // Encrypt the integers
-        let mut ctxt_1 = cks.encrypt(clear1);
+        let mut ctxt_1 = cks.encrypt_radix(clear1, rad_decomp.block_number);
 
         let nb_bit_to_extract = f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64)
             as usize
@@ -548,7 +540,7 @@ fn radmodint_wopbs_16bits_param_2_2_8_blocks(c: &mut Criterion) {
         PARAM_MESSAGE_2_CARRY_2_16_BITS
     );
 
-    let (cks, sks) = gen_keys(&param, nb_block);
+    let (cks, sks) = gen_keys(&param);
     let wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
 
     let mut rng = rand::thread_rng();
@@ -557,7 +549,7 @@ fn radmodint_wopbs_16bits_param_2_2_8_blocks(c: &mut Criterion) {
     let clear1 = rng.gen::<u64>() % param.message_modulus.0 as u64;
 
     // Encrypt the integers
-    let mut ctxt_1 = cks.encrypt(clear1);
+    let mut ctxt_1 = cks.encrypt_radix(clear1, nb_block);
 
     let nb_bit_to_extract =
         f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * nb_block;
@@ -600,7 +592,7 @@ fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
 
     println!("Chosen Parameter Set: {:?}", param);
 
-    let (cks, sks) = gen_keys(&param, nb_block);
+    let (cks, sks) = gen_keys(&param);
     let wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
 
     let mut rng = rand::thread_rng();
@@ -609,7 +601,7 @@ fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
     let clear1 = rng.gen::<u64>() % param.message_modulus.0 as u64;
 
     // Encrypt the integers
-    let mut ctxt_1 = cks.encrypt(clear1);
+    let mut ctxt_1 = cks.encrypt_radix(clear1, nb_block);
 
     let nb_bit_to_extract =
         f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * nb_block;
@@ -657,7 +649,7 @@ fn radmodint_wopbs_32_bits(c: &mut Criterion) {
     for (param, nb_block) in vec_param.iter().zip(vec_nb_block.iter()) {
         println!("Chosen Parameter Set: {:?}", param);
 
-        let (cks, sks) = gen_keys(param, *nb_block);
+        let (cks, sks) = gen_keys(param);
         let wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
 
         let mut rng = rand::thread_rng();
@@ -666,7 +658,7 @@ fn radmodint_wopbs_32_bits(c: &mut Criterion) {
         let clear1 = rng.gen::<u64>() % param.message_modulus.0 as u64;
 
         // Encrypt the integers
-        let mut ctxt_1 = cks.encrypt(clear1);
+        let mut ctxt_1 = cks.encrypt_radix(clear1, *nb_block);
 
         let nb_bit_to_extract =
             f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * nb_block;
@@ -706,7 +698,7 @@ fn concrete_integer_unchecked_mul_crt_16_bits(c: &mut Criterion) {
     group.sample_size(10);
     let param = concrete_shortint::parameters::PARAM_MESSAGE_4_CARRY_4;
 
-    let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(4));
+    let (cks, sks) = KEY_CACHE.get_from_params(param);
 
     println!("Chosen Parameter Set: {:?}", param);
 
@@ -743,7 +735,7 @@ fn concrete_integer_unchecked_add_crt_16_bits(c: &mut Criterion) {
     group.sample_size(10);
     let param = concrete_shortint::parameters::PARAM_MESSAGE_4_CARRY_4;
 
-    let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(4));
+    let (cks, sks) = KEY_CACHE.get_from_params(param);
 
     println!("Chosen Parameter Set: {:?}", param);
 
@@ -786,7 +778,7 @@ fn concrete_integer_unchecked_clean_carry_crt_16_bits(c: &mut Criterion) {
     //gen_keys(&concrete_shortint::parameters::PARAM_MESSAGE_4_CARRY_4,
     //size);
 
-    let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(4));
+    let (cks, sks) = KEY_CACHE.get_from_params(param);
 
     println!("Chosen Parameter Set: {:?}", param);
 
@@ -827,7 +819,7 @@ fn concrete_integer_unchecked_mul_crt_32_bits(c: &mut Criterion) {
     //gen_keys(&concrete_shortint::parameters::PARAM_MESSAGE_4_CARRY_4,
     //size);
 
-    let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(8));
+    let (cks, sks) = KEY_CACHE.get_from_params(param);
 
     println!("Chosen Parameter Set: {:?}", param);
 
@@ -869,7 +861,7 @@ fn concrete_integer_unchecked_add_crt_32_bits(c: &mut Criterion) {
     //gen_keys(&concrete_shortint::parameters::PARAM_MESSAGE_4_CARRY_4,
     //size);
 
-    let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(8));
+    let (cks, sks) = KEY_CACHE.get_from_params(param);
 
     println!("Chosen Parameter Set: {:?}", param);
 
@@ -912,7 +904,7 @@ fn concrete_integer_unchecked_clean_carry_crt_32_bits(c: &mut Criterion) {
     //gen_keys(&concrete_shortint::parameters::PARAM_MESSAGE_4_CARRY_4,
     //size);
 
-    let (cks, sks) = KEY_CACHE.get_from_params(param, VecLength(8));
+    let (cks, sks) = KEY_CACHE.get_from_params(param);
 
     println!("Chosen Parameter Set: {:?}", param);
 
@@ -945,7 +937,7 @@ fn concrete_integer_unchecked_clean_carry_crt_32_bits(c: &mut Criterion) {
 
 fn crt_op_many_sizes_generic(
     c: &mut Criterion,
-    op: &dyn Fn(&CRTVecServerKey, &mut Ciphertext, &mut Ciphertext),
+    op: &dyn Fn(&CrtMultiServerKey, &mut CrtMultiCiphertext, &mut CrtMultiCiphertext),
     prefix: &str,
     suffix: &str,
 ) {
@@ -986,8 +978,8 @@ fn crt_op_many_sizes_generic(
         vec_cks.push(cks_shortint);
     }
 
-    let cks = CRTVecClientKey::new_many_keys_from_shortint(vec_cks.as_slice());
-    let sks = CRTVecServerKey::new_many_keys_from_shortint(vec_sks.as_slice());
+    let cks = CrtMultiClientKey::from(vec_cks);
+    let sks = CrtMultiServerKey::from(vec_sks);
 
     let mut rng = rand::thread_rng();
 
@@ -1002,8 +994,8 @@ fn crt_op_many_sizes_generic(
 
     // Encrypt the integers
 
-    let mut ctxt_1 = cks.encrypt_crt_several_keys(&clear1, &basis, &vec_key_id);
-    let mut ctxt_2 = cks.encrypt_crt_several_keys(&clear2, &basis, &vec_key_id);
+    let mut ctxt_1 = cks.encrypt(&clear1, &basis, &vec_key_id);
+    let mut ctxt_2 = cks.encrypt(&clear2, &basis, &vec_key_id);
 
     println!(
         "(Input Size {}; Carry_Space {:?}, Message_Space {:?},):  \
@@ -1048,7 +1040,7 @@ fn crt_arithmetic_many_sizes_parallelized(c: &mut Criterion) {
 fn crt_unchecked_mul_many_sizes(c: &mut Criterion) {
     crt_op_many_sizes_generic(
         c,
-        &CRTVecServerKey::unchecked_mul_crt_many_keys_assign,
+        &CrtMultiServerKey::unchecked_mul_crt_many_keys_assign,
         "Mul",
         "serial",
     )
@@ -1057,7 +1049,7 @@ fn crt_unchecked_mul_many_sizes(c: &mut Criterion) {
 fn crt_unchecked_mul_many_sizes_parallelized(c: &mut Criterion) {
     crt_op_many_sizes_generic(
         c,
-        &CRTVecServerKey::unchecked_mul_crt_many_keys_assign_parallelized,
+        &CrtMultiServerKey::unchecked_mul_crt_many_keys_assign_parallelized,
         "Mul",
         "parallelized",
     )
@@ -1066,7 +1058,7 @@ fn crt_unchecked_mul_many_sizes_parallelized(c: &mut Criterion) {
 fn two_block_pbs(c: &mut Criterion) {
     let size = 2;
 
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS, size);
+    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
     let treepbs_key = TreepbsKey::new(&cks);
 
     //RNG
@@ -1078,7 +1070,7 @@ fn two_block_pbs(c: &mut Criterion) {
     let clear_0 = rng.gen::<u64>() % modulus;
 
     // encryption of an integer
-    let ctxt_0 = cks.encrypt(clear_0);
+    let ctxt_0 = cks.encrypt_radix(clear_0, size);
 
     let f = |x: u64| x * x;
 
@@ -1092,7 +1084,7 @@ fn two_block_pbs(c: &mut Criterion) {
 fn two_block_pbs_base(c: &mut Criterion) {
     let size = 2;
 
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS, size);
+    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
     let treepbs_key = TreepbsKey::new(&cks);
 
     //RNG
@@ -1104,7 +1096,7 @@ fn two_block_pbs_base(c: &mut Criterion) {
     let clear_0 = rng.gen::<u64>() % modulus;
 
     // encryption of an integer
-    let ctxt_0 = cks.encrypt(clear_0);
+    let ctxt_0 = cks.encrypt_radix(clear_0, size);
 
     let f = |x: u64| x * x;
 
@@ -1118,7 +1110,7 @@ fn two_block_pbs_base(c: &mut Criterion) {
 fn three_block_pbs(c: &mut Criterion) {
     let size = 3;
 
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS, size);
+    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
     let treepbs_key = TreepbsKey::new(&cks);
 
     //RNG
@@ -1130,7 +1122,7 @@ fn three_block_pbs(c: &mut Criterion) {
     let clear_0 = rng.gen::<u64>() % modulus;
 
     // encryption of an integer
-    let ctxt_0 = cks.encrypt(clear_0);
+    let ctxt_0 = cks.encrypt_radix(clear_0, size);
 
     let f = |x: u64| x * x;
 
@@ -1144,7 +1136,7 @@ fn three_block_pbs(c: &mut Criterion) {
 fn three_block_pbs_base(c: &mut Criterion) {
     let size = 3;
 
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS, size);
+    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
     let treepbs_key = TreepbsKey::new(&cks);
 
     //RNG
@@ -1156,7 +1148,7 @@ fn three_block_pbs_base(c: &mut Criterion) {
     let clear_0 = rng.gen::<u64>() % modulus;
 
     // encryption of an integer
-    let ctxt_0 = cks.encrypt(clear_0);
+    let ctxt_0 = cks.encrypt_radix(clear_0, size);
 
     let f = |x: u64| x * x;
 

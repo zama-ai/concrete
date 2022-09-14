@@ -9,7 +9,7 @@
 #[cfg(test)]
 mod test;
 
-use crate::{Ciphertext, ClientKey, ServerKey};
+use crate::{ClientKey, RadixCiphertext, ServerKey};
 use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
 use concrete_core::prelude::LweCiphertext64;
@@ -34,13 +34,13 @@ impl WopbsKeyV0 {
     pub fn circuit_bootstrap_vertical_packing_v0(
         &self,
         sks: &ServerKey,
-        ct_in: &mut Ciphertext,
+        ct_in: &mut RadixCiphertext,
         lut: &[Vec<u64>],
-    ) -> Ciphertext {
+    ) -> RadixCiphertext {
         let mut vec_lwe: Vec<LweCiphertext<Vec<u64>>> = vec![];
 
         // Extraction of each bit for each block
-        for block in ct_in.ct_vec.iter_mut() {
+        for block in ct_in.blocks.iter_mut() {
             let delta = (1_usize << 63) / (block.message_modulus.0 * block.carry_modulus.0);
             let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
             let nb_bit_to_extract =
@@ -61,7 +61,7 @@ impl WopbsKeyV0 {
         );
 
         let mut ct_vec_out: Vec<concrete_shortint::Ciphertext> = vec![];
-        for (block, block_out) in ct_in.ct_vec.iter().zip(vec_ct_out.into_iter()) {
+        for (block, block_out) in ct_in.blocks.iter().zip(vec_ct_out.into_iter()) {
             ct_vec_out.push(concrete_shortint::Ciphertext {
                 ct: LweCiphertext64(block_out),
                 degree: Degree(block.message_modulus.0 - 1),
@@ -70,10 +70,6 @@ impl WopbsKeyV0 {
             });
         }
 
-        Ciphertext {
-            ct_vec: ct_vec_out,
-            message_modulus_vec: ct_in.message_modulus_vec.clone(),
-            key_id_vec: ct_in.key_id_vec.clone(),
-        }
+        RadixCiphertext { blocks: ct_vec_out }
     }
 }

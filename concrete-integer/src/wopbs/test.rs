@@ -105,8 +105,8 @@ macro_rules! create_parametrized_test{
 
 pub fn wopbs_v0(param: Parameters) {
     //Generate the client key and the server key:
-    let (cks, mut sks) = gen_keys(&param, 8);
-    //
+    let (cks, mut sks) = gen_keys(&param);
+
     // //Generate wopbs_v0 key
     let mut wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
     let mut rng = rand::thread_rng();
@@ -117,7 +117,7 @@ pub fn wopbs_v0(param: Parameters) {
         println!("-------------------------------------");
 
         let clear = rng.gen::<usize>() % 8;
-        let mut ct = cks.encrypt(clear as u64);
+        let mut ct = cks.encrypt_radix(clear as u64, 8);
         let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
 
         let nb_bit_to_extract =
@@ -136,7 +136,7 @@ pub fn wopbs_v0(param: Parameters) {
 
         let ct_res = wopbs_key.circuit_bootstrap_vertical_packing_v0(&sks, &mut ct, &big_lut);
 
-        let res = cks.decrypt(&ct_res);
+        let res = cks.decrypt_radix(&ct_res);
         if res != 1 {
             cpt += 1;
         }
@@ -152,7 +152,7 @@ pub fn wopbs_v0_16_bits(param: Parameters) {
     let nb_block = 8;
 
     //Generate the client key and the server key:
-    let (cks, sks) = gen_keys(&param, nb_block);
+    let (cks, sks) = gen_keys(&param);
     //
     // //Generate wopbs_v0 key
     let mut wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
@@ -164,7 +164,7 @@ pub fn wopbs_v0_16_bits(param: Parameters) {
         println!("-------------------------------------");
 
         let clear = rng.gen::<usize>() % 8;
-        let mut ct = cks.encrypt(clear as u64);
+        let mut ct = cks.encrypt_radix(clear as u64, 8);
         let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
 
         let nb_bit_to_extract =
@@ -197,14 +197,14 @@ pub fn wopbs_v0_16_bits(param: Parameters) {
         let shift_clear = ((clear & 100) << 2) + ((clear & 10) << 1) + (clear & 1);
         //println!("nulber of block of the outputi ciphertext = {}", ct_res.ct_vec.len());
 
-        let res = cks.decrypt(&ct_res);
+        let res = cks.decrypt_radix(&ct_res);
         let decoded_1 =
             (lut_res_1[shift_clear] + 2 * (lut_res_1[shift_clear] & (1 << (delta - 1)))) >> delta;
         let decoded_2 =
             (lut_res_2[shift_clear] + 2 * (lut_res_2[shift_clear] & (1 << (delta - 1)))) >> delta;
         let decoded = ((decoded_2 << 1) + decoded_1) % 8;
         //Deciphering each block separately
-        for (i, block) in ct_res.ct_vec.iter().enumerate() {
+        for (i, block) in ct_res.blocks.iter().enumerate() {
             println!(
                 "block numero {} = {}",
                 i,

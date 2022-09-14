@@ -1,7 +1,6 @@
 use concrete_shortint::Parameters;
 use lazy_static::lazy_static;
 
-use crate::client_key::VecLength;
 use crate::treepbs::TreepbsKey;
 
 use crate::{ClientKey, ServerKey};
@@ -10,15 +9,11 @@ use crate::{ClientKey, ServerKey};
 pub struct IntegerKeyCache;
 
 impl IntegerKeyCache {
-    pub fn get_from_params(
-        &self,
-        params: Parameters,
-        vec_length: VecLength,
-    ) -> (ClientKey, ServerKey) {
+    pub fn get_from_params(&self, params: Parameters) -> (ClientKey, ServerKey) {
         let keys = concrete_shortint::keycache::KEY_CACHE.get_from_param(params);
         let (client_key, server_key) = (keys.client_key(), keys.server_key());
 
-        let client_key = ClientKey::from_shortint(client_key.clone(), vec_length);
+        let client_key = ClientKey::from(client_key.clone());
         let server_key = ServerKey::from_shortint(&client_key, server_key.clone());
 
         (client_key, server_key)

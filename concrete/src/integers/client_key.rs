@@ -5,16 +5,15 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "internal-keycache")]
 use concrete_integer::keycache::KEY_CACHE;
-use concrete_integer::ClientKey;
+use concrete_integer::RadixClientKey;
 
 use super::parameters::{IntegerParameter, IntegerParameterSet};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct GenericIntegerClientKey<P: IntegerParameter> {
-    pub(in crate::integers) key: ClientKey,
+    pub(in crate::integers) key: RadixClientKey,
     pub(in crate::integers) _marker: PhantomData<P>,
-    #[cfg(feature = "internal-keycache")]
     pub(in crate::integers) params: IntegerParameterSet,
 }
 
@@ -28,12 +27,8 @@ where
             IntegerParameterSet::Radix(radix_params) => {
                 #[cfg(feature = "internal-keycache")]
                 {
-                    let key = KEY_CACHE
-                        .get_from_params(
-                            radix_params.block_parameters,
-                            concrete_integer::client_key::VecLength(radix_params.num_block),
-                        )
-                        .0;
+                    let key = KEY_CACHE.get_from_params(radix_params.block_parameters).0;
+                    let key = RadixClientKey::from((key, radix_params.num_block));
                     Self {
                         key,
                         _marker: Default::default(),
@@ -43,8 +38,12 @@ where
                 #[cfg(not(feature = "internal-keycache"))]
                 {
                     Self {
-                        key: ClientKey::new(radix_params.block_parameters, radix_params.num_block),
+                        key: RadixClientKey::new(
+                            radix_params.block_parameters,
+                            radix_params.num_block,
+                        ),
                         _marker: Default::default(),
+                        params,
                     }
                 }
             }

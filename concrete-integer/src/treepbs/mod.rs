@@ -1,4 +1,4 @@
-use crate::{Ciphertext, ClientKey, ServerKey};
+use crate::{ClientKey, RadixCiphertext, ServerKey};
 use concrete_core::backends::fftw::private::crypto::bootstrap::multivaluepbs::{
     generate_fourier_polynomial_three_variables, generate_fourier_polynomial_three_variables_base,
     generate_fourier_polynomial_two_variables, generate_fourier_polynomial_two_variables_base,
@@ -7,18 +7,33 @@ use concrete_core::backends::fftw::private::crypto::bootstrap::FourierBuffers;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
 use concrete_core::commons::math::polynomial::Polynomial;
 use concrete_core::prelude::{LweBootstrapKeyEntity, LweCiphertext64};
+
+#[cfg(test)]
+mod tests;
+
 use concrete_shortint::ciphertext::Degree;
 
 pub struct TreepbsKey(pub(crate) concrete_shortint::treepbs::TreepbsKey);
 
 impl TreepbsKey {
-    pub fn new(cks: &ClientKey) -> TreepbsKey {
-        TreepbsKey(concrete_shortint::treepbs::TreepbsKey::new_tree_key(
-            &cks.key,
-        ))
+    pub fn new<Key>(cks: &Key) -> TreepbsKey
+    where
+        Key: AsRef<ClientKey>,
+    {
+        #[cfg(any(test, feature = "internal-keycache"))]
+        {
+            let parameters = cks.as_ref().parameters();
+            crate::keycache::KEY_CACHE_TREEPBS.get_from_params(parameters)
+        }
+        #[cfg(not(any(test, feature = "internal-keycache")))]
+        {
+            TreepbsKey(concrete_shortint::treepbs::TreepbsKey::new_tree_key(
+                &cks.as_ref().key,
+            ))
+        }
     }
 
-    pub fn two_block_pbs<F>(&self, sks: &ServerKey, ct: &Ciphertext, f: F) -> Ciphertext
+    pub fn two_block_pbs<F>(&self, sks: &ServerKey, ct: &RadixCiphertext, f: F) -> RadixCiphertext
     where
         F: Fn(u64) -> u64,
     {
@@ -49,7 +64,7 @@ impl TreepbsKey {
         //Keyswitch the ciphertexts
         //=======================================================================
         let vec_lwe_in: Vec<LweCiphertext<Vec<u64>>> =
-            ct.ct_vec.iter().map(|ct| ct.ct.0.clone()).collect();
+            ct.blocks.iter().map(|ct| ct.ct.0.clone()).collect();
         let empty_selector =
             LweCiphertext::allocate(0_u64, sks.key.bootstrapping_key.0.key_size().to_lwe_size());
         let mut selectors = vec![empty_selector; vec_lwe_in.len()];
@@ -132,14 +147,17 @@ impl TreepbsKey {
             carry_modulus: sks.key.carry_modulus,
         };
 
-        Ciphertext {
-            ct_vec: vec![c_1, c_2],
-            message_modulus_vec: ct.message_modulus_vec.clone(),
-            key_id_vec: ct.key_id_vec.clone(),
+        RadixCiphertext {
+            blocks: vec![c_1, c_2],
         }
     }
 
-    pub fn two_block_pbs_base<F>(&self, sks: &ServerKey, ct: &Ciphertext, f: F) -> Ciphertext
+    pub fn two_block_pbs_base<F>(
+        &self,
+        sks: &ServerKey,
+        ct: &RadixCiphertext,
+        f: F,
+    ) -> RadixCiphertext
     where
         F: Fn(u64) -> u64,
     {
@@ -170,7 +188,7 @@ impl TreepbsKey {
         //Keyswitch the ciphertexts
         //=======================================================================
         let vec_lwe_in: Vec<LweCiphertext<Vec<u64>>> =
-            ct.ct_vec.iter().map(|ct| ct.ct.0.clone()).collect();
+            ct.blocks.iter().map(|ct| ct.ct.0.clone()).collect();
         let empty_selector =
             LweCiphertext::allocate(0_u64, sks.key.bootstrapping_key.0.key_size().to_lwe_size());
         let mut selectors = vec![empty_selector; vec_lwe_in.len()];
@@ -267,14 +285,12 @@ impl TreepbsKey {
             carry_modulus: sks.key.carry_modulus,
         };
 
-        Ciphertext {
-            ct_vec: vec![c_1, c_2],
-            message_modulus_vec: ct.message_modulus_vec.clone(),
-            key_id_vec: ct.key_id_vec.clone(),
+        RadixCiphertext {
+            blocks: vec![c_1, c_2],
         }
     }
 
-    pub fn three_block_pbs<F>(&self, sks: &ServerKey, ct: &Ciphertext, f: F) -> Ciphertext
+    pub fn three_block_pbs<F>(&self, sks: &ServerKey, ct: &RadixCiphertext, f: F) -> RadixCiphertext
     where
         F: Fn(u64) -> u64,
     {
@@ -313,7 +329,7 @@ impl TreepbsKey {
         //Keyswitch the ciphertexts
         //=======================================================================
         let vec_lwe_in: Vec<LweCiphertext<Vec<u64>>> =
-            ct.ct_vec.iter().map(|ct| ct.ct.0.clone()).collect();
+            ct.blocks.iter().map(|ct| ct.ct.0.clone()).collect();
         let empty_selector =
             LweCiphertext::allocate(0_u64, sks.key.bootstrapping_key.0.key_size().to_lwe_size());
         let mut selectors = vec![empty_selector; vec_lwe_in.len()];
@@ -416,14 +432,17 @@ impl TreepbsKey {
             carry_modulus: sks.key.carry_modulus,
         };
 
-        Ciphertext {
-            ct_vec: vec![c_1, c_2, c_3],
-            message_modulus_vec: ct.message_modulus_vec.clone(),
-            key_id_vec: ct.key_id_vec.clone(),
+        RadixCiphertext {
+            blocks: vec![c_1, c_2, c_3],
         }
     }
 
-    pub fn three_block_pbs_base<F>(&self, sks: &ServerKey, ct: &Ciphertext, f: F) -> Ciphertext
+    pub fn three_block_pbs_base<F>(
+        &self,
+        sks: &ServerKey,
+        ct: &RadixCiphertext,
+        f: F,
+    ) -> RadixCiphertext
     where
         F: Fn(u64) -> u64,
     {
@@ -462,7 +481,7 @@ impl TreepbsKey {
         //Keyswitch the ciphertexts
         //=======================================================================
         let vec_lwe_in: Vec<LweCiphertext<Vec<u64>>> =
-            ct.ct_vec.iter().map(|ct| ct.ct.0.clone()).collect();
+            ct.blocks.iter().map(|ct| ct.ct.0.clone()).collect();
         let empty_selector =
             LweCiphertext::allocate(0_u64, sks.key.bootstrapping_key.0.key_size().to_lwe_size());
         let mut selectors = vec![empty_selector; vec_lwe_in.len()];
@@ -585,10 +604,8 @@ impl TreepbsKey {
             carry_modulus: sks.key.carry_modulus,
         };
 
-        Ciphertext {
-            ct_vec: vec![c_1, c_2, c_3],
-            message_modulus_vec: ct.message_modulus_vec.clone(),
-            key_id_vec: ct.key_id_vec.clone(),
+        RadixCiphertext {
+            blocks: vec![c_1, c_2, c_3],
         }
     }
 }

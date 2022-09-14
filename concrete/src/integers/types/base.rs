@@ -8,7 +8,7 @@ use std::ops::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use concrete_integer::ciphertext::Ciphertext;
+use concrete_integer::ciphertext::RadixCiphertext;
 
 use crate::global_state::WithGlobalKey;
 use crate::integers::client_key::GenericIntegerClientKey;
@@ -50,7 +50,7 @@ use crate::{ClientKey, OutOfRangeError};
 #[cfg_attr(doc, doc(cfg(feature = "integers")))]
 #[derive(Clone)]
 pub struct GenericInteger<P: IntegerParameter> {
-    pub(in crate::integers) ciphertext: RefCell<Ciphertext>,
+    pub(in crate::integers) ciphertext: RefCell<RadixCiphertext>,
     pub(in crate::integers) id: P::Id,
 }
 
@@ -58,7 +58,7 @@ impl<P> GenericInteger<P>
 where
     P: IntegerParameter,
 {
-    pub(in crate::integers) fn new(ciphertext: Ciphertext, id: P::Id) -> Self {
+    pub(in crate::integers) fn new(ciphertext: RadixCiphertext, id: P::Id) -> Self {
         Self {
             ciphertext: RefCell::new(ciphertext),
             id,
