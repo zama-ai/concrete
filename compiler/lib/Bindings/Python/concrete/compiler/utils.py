@@ -6,7 +6,16 @@ import os
 import numpy as np
 
 
-ACCEPTED_NUMPY_UINTS = (np.uint8, np.uint16, np.uint32, np.uint64)
+ACCEPTED_NUMPY_UINTS = (
+    np.int8,
+    np.int16,
+    np.int32,
+    np.int64,
+    np.uint8,
+    np.uint16,
+    np.uint32,
+    np.uint64,
+)
 ACCEPTED_INTS = (int,) + ACCEPTED_NUMPY_UINTS
 ACCEPTED_TYPES = (np.ndarray,) + ACCEPTED_INTS
 

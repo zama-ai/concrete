@@ -228,7 +228,7 @@ mlir::LogicalResult GenGateOp::verify() {
 }
 
 ::mlir::LogicalResult ApplyLookupTableEintOp::verify() {
-  auto ct = this->a().getType().cast<EncryptedIntegerType>();
+  auto ct = this->a().getType().cast<FheIntegerInterface>();
   auto lut = this->lut().getType().cast<TensorType>();
 
   // Check the shape of lut argument

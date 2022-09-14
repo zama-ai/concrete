@@ -1215,7 +1215,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(transposeOp, operands);
       } else {
         isDummy = true;
@@ -1227,7 +1227,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     else if (auto extractOp = llvm::dyn_cast<mlir::tensor::ExtractOp>(op)) {
       if (extractOp.result()
               .getType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(extractOp, operands);
       } else {
         isDummy = true;
@@ -1240,7 +1240,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(extractSliceOp, operands);
       } else {
         isDummy = true;
@@ -1252,7 +1252,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(insertOp, operands);
       } else {
         isDummy = true;
@@ -1265,7 +1265,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(insertSliceOp, operands);
       } else {
         isDummy = true;
@@ -1277,7 +1277,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(fromOp, operands);
       } else {
         isDummy = true;
@@ -1290,7 +1290,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(reshapeOp, operands);
       } else {
         isDummy = true;
@@ -1302,7 +1302,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::FHE::FheIntegerInterface>()) {
         norm2SqEquiv = getSqMANP(reshapeOp, operands);
       } else {
         isDummy = true;
@@ -1410,16 +1410,15 @@ protected:
 
     // Process all results using MANP attribute from MANP pas
     for (mlir::OpResult res : op->getResults()) {
-      mlir::concretelang::FHE::EncryptedIntegerType eTy =
+      mlir::concretelang::FHE::FheIntegerInterface eTy =
           res.getType()
-              .dyn_cast_or_null<
-                  mlir::concretelang::FHE::EncryptedIntegerType>();
+              .dyn_cast_or_null<mlir::concretelang::FHE::FheIntegerInterface>();
       if (eTy == nullptr) {
         auto tensorTy = res.getType().dyn_cast_or_null<mlir::TensorType>();
         if (tensorTy != nullptr) {
           eTy = tensorTy.getElementType()
                     .dyn_cast_or_null<
-                        mlir::concretelang::FHE::EncryptedIntegerType>();
+                        mlir::concretelang::FHE::FheIntegerInterface>();
         }
       }
 

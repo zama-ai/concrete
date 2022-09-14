@@ -133,9 +133,10 @@ static inline bool operator==(const PackingKeySwitchParam &lhs,
 struct Encoding {
   Precision precision;
   CRTDecomposition crt;
+  bool isSigned;
 };
 static inline bool operator==(const Encoding &lhs, const Encoding &rhs) {
-  return lhs.precision == rhs.precision;
+  return lhs.precision == rhs.precision && lhs.isSigned == rhs.isSigned;
 }
 
 struct EncryptionGate {

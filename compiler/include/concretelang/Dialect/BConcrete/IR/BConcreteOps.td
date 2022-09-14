@@ -71,7 +71,8 @@ def BConcrete_EncodeExpandLutForBootstrapTensorOp : BConcrete_Op<"encode_expand_
     let arguments = (ins
         1DTensorOf<[I64]> : $input_lookup_table,
         I32Attr: $polySize,
-        I32Attr: $outputBits
+        I32Attr: $outputBits,
+        BoolAttr: $isSigned
     );
 
     let results = (outs 1DTensorOf<[I64]> : $result);
@@ -86,7 +87,8 @@ def BConcrete_EncodeExpandLutForWopPBSTensorOp : BConcrete_Op<"encode_expand_lut
         I64ArrayAttr: $crtDecomposition,
         I64ArrayAttr: $crtBits,
         I32Attr : $polySize,
-        I32Attr : $modulusProduct
+        I32Attr : $modulusProduct,
+        BoolAttr: $isSigned
     );
 
     let results = (outs 1DTensorOf<[I64]> : $result);
@@ -226,7 +228,8 @@ def BConcrete_EncodeExpandLutForBootstrapBufferOp : BConcrete_Op<"encode_expand_
         BConcrete_LutBuffer: $result,
         BConcrete_LutBuffer: $input_lookup_table,
         I32Attr: $polySize,
-        I32Attr: $outputBits
+        I32Attr: $outputBits,
+        BoolAttr : $isSigned
     );
 }
 
@@ -240,7 +243,8 @@ def BConcrete_EncodeExpandLutForWopPBSBufferOp : BConcrete_Op<"encode_expand_lut
         I64ArrayAttr: $crtDecomposition,
         I64ArrayAttr: $crtBits,
         I32Attr : $polySize,
-        I32Attr : $modulusProduct
+        I32Attr : $modulusProduct,
+        BoolAttr: $isSigned
     );
 }
 

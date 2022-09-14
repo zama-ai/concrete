@@ -123,11 +123,14 @@ class ClientSupport(WrapperCpp):
 
     @staticmethod
     def decrypt_result(
-        keyset: KeySet, public_result: PublicResult
+        client_parameters: ClientParameters,
+        keyset: KeySet,
+        public_result: PublicResult,
     ) -> Union[int, np.ndarray]:
         """Decrypt a public result using the keyset.
 
         Args:
+            client_parameters (ClientParameters): client parameters for decryption
             keyset (KeySet): keyset used for decryption
             public_result: public result to decrypt
 
@@ -148,12 +151,20 @@ class ClientSupport(WrapperCpp):
         lambda_arg = LambdaArgument.wrap(
             _ClientSupport.decrypt_result(keyset.cpp(), public_result.cpp())
         )
+
+        output_signs = client_parameters.output_signs()
+        assert len(output_signs) == 1
+
+        is_signed = output_signs[0]
         if lambda_arg.is_scalar():
-            return lambda_arg.get_scalar()
+            result = lambda_arg.get_scalar()
+            return (
+                result if not is_signed else int(np.array([result]).astype(np.int64)[0])
+            )
         if lambda_arg.is_tensor():
             shape = lambda_arg.get_tensor_shape()
             tensor = np.array(lambda_arg.get_tensor_data()).reshape(shape)
-            return tensor
+            return tensor if not is_signed else tensor.astype(np.int64)
         raise RuntimeError("unknown return type")
 
     @staticmethod
@@ -171,29 +182,42 @@ class ClientSupport(WrapperCpp):
         """
         if not isinstance(value, ACCEPTED_TYPES):
             raise TypeError(
-                "value of lambda argument must be either int, numpy.array or numpy.uint{8,16,32,64}"
+                "value of lambda argument must be either int, numpy.array or numpy.(u)int{8,16,32,64}"
             )
         if isinstance(value, ACCEPTED_INTS):
-            if isinstance(value, int) and not 0 <= value < np.iinfo(np.uint64).max:
+            if (
+                isinstance(value, int)
+                and not np.iinfo(np.int64).min <= value < np.iinfo(np.uint64).max
+            ):
                 raise TypeError(
-                    "single integer must be in the range [0, 2**64 - 1] (uint64)"
+                    "single integer must be in the range [-2**63, 2**64 - 1]"
                 )
+            if value < 0:
+                value = int(np.int64(value).astype(np.uint64))
             return LambdaArgument.from_scalar(value)
         assert isinstance(value, np.ndarray)
         if value.dtype not in ACCEPTED_NUMPY_UINTS:
-            raise TypeError("numpy.array must be of dtype uint{8,16,32,64}")
+            raise TypeError("numpy.array must be of dtype (u)int{8,16,32,64}")
         if value.shape == ():
             if isinstance(value, np.ndarray):
                 # extract the single element
                 value = value.max()
             # should be a single uint here
             return LambdaArgument.from_scalar(value)
-        if value.dtype == np.uint8:
-            return LambdaArgument.from_tensor_8(value.flatten().tolist(), value.shape)
-        if value.dtype == np.uint16:
-            return LambdaArgument.from_tensor_16(value.flatten().tolist(), value.shape)
-        if value.dtype == np.uint32:
-            return LambdaArgument.from_tensor_32(value.flatten().tolist(), value.shape)
-        if value.dtype == np.uint64:
-            return LambdaArgument.from_tensor_64(value.flatten().tolist(), value.shape)
-        raise TypeError("numpy.array must be of dtype uint{8,16,32,64}")
+        if value.dtype in [np.uint8, np.int8]:
+            return LambdaArgument.from_tensor_8(
+                value.astype(np.uint8).flatten().tolist(), value.shape
+            )
+        if value.dtype in [np.uint16, np.int16]:
+            return LambdaArgument.from_tensor_16(
+                value.astype(np.uint16).flatten().tolist(), value.shape
+            )
+        if value.dtype in [np.uint32, np.int32]:
+            return LambdaArgument.from_tensor_32(
+                value.astype(np.uint32).flatten().tolist(), value.shape
+            )
+        if value.dtype in [np.uint64, np.int64]:
+            return LambdaArgument.from_tensor_64(
+                value.astype(np.uint64).flatten().tolist(), value.shape
+            )
+        raise TypeError("numpy.array must be of dtype (u)int{8,16,32,64}")

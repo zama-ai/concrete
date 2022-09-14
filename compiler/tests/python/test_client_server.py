@@ -108,5 +108,7 @@ def test_client_server_end_to_end(mlir, args, expected_result, keyset_cache):
             client_parameters, result_serialized
         )
 
-        output = ClientSupport.decrypt_result(keyset, result_unserialized)
+        output = ClientSupport.decrypt_result(
+            client_parameters, keyset, result_unserialized
+        )
         assert np.array_equal(output, expected_result)

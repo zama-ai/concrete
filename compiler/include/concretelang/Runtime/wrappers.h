@@ -27,7 +27,7 @@ void memref_encode_expand_lut_for_bootstrap(
     uint64_t output_lut_stride, uint64_t *input_lut_allocated,
     uint64_t *input_lut_aligned, uint64_t input_lut_offset,
     uint64_t input_lut_size, uint64_t input_lut_stride, uint32_t poly_size,
-    uint32_t out_MESSAGE_BITS);
+    uint32_t out_MESSAGE_BITS, bool is_signed);
 
 void memref_encode_expand_lut_for_woppbs(
     uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
@@ -40,7 +40,7 @@ void memref_encode_expand_lut_for_woppbs(
     uint64_t crt_decomposition_stride, uint64_t *crt_bits_allocated,
     uint64_t *crt_bits_aligned, uint64_t crt_bits_offset,
     uint64_t crt_bits_size, uint64_t crt_bits_stride, uint32_t poly_size,
-    uint32_t modulus_product);
+    uint32_t modulus_product, bool is_signed);
 
 void memref_encode_plaintext_with_crt(
     uint64_t *output_allocated, uint64_t *output_aligned,

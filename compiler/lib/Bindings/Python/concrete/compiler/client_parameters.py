@@ -3,6 +3,8 @@
 
 """Client parameters."""
 
+from typing import List
+
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
     ClientParameters as _ClientParameters,
@@ -34,6 +36,14 @@ class ClientParameters(WrapperCpp):
                 f"client_parameters must be of type _ClientParameters, not {type(client_parameters)}"
             )
         super().__init__(client_parameters)
+
+    def output_signs(self) -> List[bool]:
+        """Return the sign information of outputs.
+
+        Returns:
+            List[bool]: list of booleans to indicate whether the outputs are signed or not
+        """
+        return self.cpp().output_signs()
 
     def serialize(self) -> bytes:
         """Serialize the ClientParameters.

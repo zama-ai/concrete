@@ -38,41 +38,42 @@ namespace fhe_to_tfhe_crt_conversion {
 
 namespace typing {
 
-/// Converts `FHE::EncryptedInteger` into `Tensor<TFHE::GlweCiphetext>`.
-mlir::RankedTensorType convertEint(mlir::MLIRContext *context,
-                                   FHE::EncryptedIntegerType eint,
-                                   uint64_t crtLength) {
+/// Converts an encrypted integer into `TFHE::GlweCiphertext`.
+mlir::RankedTensorType convertEncrypted(mlir::MLIRContext *context,
+                                        FHE::FheIntegerInterface enc,
+                                        uint64_t crtLength) {
   return mlir::RankedTensorType::get(
       mlir::ArrayRef<int64_t>((int64_t)crtLength),
-      TFHE::GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth()));
+      TFHE::GLWECipherTextType::get(context, -1, -1, -1, enc.getWidth()));
 }
 
-/// Converts `Tensor<FHE::EncryptedInteger>` into a
-/// `Tensor<TFHE::GlweCiphertext>` if the element type is appropriate. Otherwise
-/// return the input type.
-mlir::Type maybeConvertEintTensor(mlir::MLIRContext *context,
-                                  mlir::RankedTensorType maybeEintTensor,
-                                  uint64_t crtLength) {
-  if (!maybeEintTensor.getElementType().isa<FHE::EncryptedIntegerType>()) {
-    return (mlir::Type)(maybeEintTensor);
+/// Converts `Tensor<FHE::AnyEncryptedInteger>` into a
+/// `Tensor<TFHE::GlweCiphertext>` if the element type is appropriate.
+/// Otherwise return the input type.
+mlir::Type
+maybeConvertEncryptedTensor(mlir::MLIRContext *context,
+                            mlir::RankedTensorType maybeEncryptedTensor,
+                            uint64_t crtLength) {
+  if (!maybeEncryptedTensor.getElementType().isa<FHE::FheIntegerInterface>()) {
+    return (mlir::Type)(maybeEncryptedTensor);
   }
-  auto eint =
-      maybeEintTensor.getElementType().cast<FHE::EncryptedIntegerType>();
-  auto currentShape = maybeEintTensor.getShape();
+  auto encType =
+      maybeEncryptedTensor.getElementType().cast<FHE::FheIntegerInterface>();
+  auto currentShape = maybeEncryptedTensor.getShape();
   mlir::SmallVector<int64_t> newShape =
       mlir::SmallVector<int64_t>(currentShape.begin(), currentShape.end());
   newShape.push_back((int64_t)crtLength);
   return mlir::RankedTensorType::get(
       llvm::ArrayRef<int64_t>(newShape),
-      TFHE::GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth()));
+      TFHE::GLWECipherTextType::get(context, -1, -1, -1, encType.getWidth()));
 }
 
-/// Converts the type `FHE::EncryptedInteger` to `Tensor<TFHE::GlweCiphetext>`
-/// if the input type is appropriate. Otherwise return the input type.
-mlir::Type maybeConvertEint(mlir::MLIRContext *context, mlir::Type t,
-                            uint64_t crtLength) {
-  if (auto eint = t.dyn_cast<FHE::EncryptedIntegerType>())
-    return convertEint(context, eint, crtLength);
+/// Converts any encrypted type to `TFHE::GlweCiphetext` if the
+/// input type is appropriate. Otherwise return the input type.
+mlir::Type maybeConvertEncrypted(mlir::MLIRContext *context, mlir::Type t,
+                                 uint64_t crtLength) {
+  if (auto eint = t.dyn_cast<FHE::FheIntegerInterface>())
+    return convertEncrypted(context, eint, crtLength);
 
   return t;
 }
@@ -85,11 +86,11 @@ public:
   TypeConverter(concretelang::CrtLoweringParameters loweringParameters) {
     size_t nMods = loweringParameters.nMods;
     addConversion([](mlir::Type type) { return type; });
-    addConversion([=](FHE::EncryptedIntegerType type) {
-      return convertEint(type.getContext(), type, nMods);
+    addConversion([=](FHE::FheIntegerInterface type) {
+      return convertEncrypted(type.getContext(), type, nMods);
     });
     addConversion([=](mlir::RankedTensorType type) {
-      return maybeConvertEintTensor(type.getContext(), type, nMods);
+      return maybeConvertEncryptedTensor(type.getContext(), type, nMods);
     });
     addConversion([&](concretelang::RT::FutureType type) {
       return concretelang::RT::FutureType::get(this->convertType(
@@ -517,6 +518,8 @@ struct ApplyLookupTableEintOpPattern
                   mlir::ConversionPatternRewriter &rewriter) const override {
     mlir::TypeConverter *converter = this->getTypeConverter();
 
+    auto originalInputType = op.a().getType().cast<FHE::FheIntegerInterface>();
+
     mlir::Value newLut =
         rewriter
             .create<TFHE::EncodeExpandLutForWopPBSOp>(
@@ -530,7 +533,8 @@ struct ApplyLookupTableEintOpPattern
                 rewriter.getI64ArrayAttr(
                     mlir::ArrayRef<int64_t>(loweringParameters.bits)),
                 rewriter.getI32IntegerAttr(loweringParameters.polynomialSize),
-                rewriter.getI32IntegerAttr(loweringParameters.modsProd))
+                rewriter.getI32IntegerAttr(loweringParameters.modsProd),
+                rewriter.getBoolAttr(originalInputType.isSigned()))
             .getResult();
 
     // Replace the lut with an encoded / expanded one.

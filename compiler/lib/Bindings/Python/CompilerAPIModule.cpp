@@ -238,6 +238,19 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](mlir::concretelang::ClientParameters &clientParameters) {
              return pybind11::bytes(
                  clientParametersSerialize(clientParameters));
+           })
+      .def("output_signs",
+           [](mlir::concretelang::ClientParameters &clientParameters) {
+             std::vector<bool> result;
+             for (auto output : clientParameters.outputs) {
+               if (output.encryption.hasValue()) {
+                 result.push_back(
+                     output.encryption.getValue().encoding.isSigned);
+               } else {
+                 result.push_back(true);
+               }
+             }
+             return result;
            });
 
   pybind11::class_<clientlib::KeySet>(m, "KeySet")

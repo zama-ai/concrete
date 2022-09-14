@@ -47,7 +47,7 @@ def run(engine, args, compilation_result, keyset_cache):
     evaluation_keys = key_set.get_evaluation_keys()
     public_result = engine.server_call(server_lambda, public_arguments, evaluation_keys)
     # Client
-    result = ClientSupport.decrypt_result(key_set, public_result)
+    result = ClientSupport.decrypt_result(client_parameters, key_set, public_result)
     return result
 
 

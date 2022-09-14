@@ -11,11 +11,8 @@ from concrete.compiler import ClientSupport
         pytest.param([0, 1, 2], id="list"),
         pytest.param(0.5, id="float"),
         pytest.param(2**70, id="large int"),
-        pytest.param(-8, id="negative int"),
         pytest.param("aze", id="str"),
         pytest.param(np.float64(0.8), id="np.float64"),
-        pytest.param(np.int8(9), id="np.int8"),
-        pytest.param(np.array([1, 2, 3], dtype=np.int64), id="np.array(np.int64)"),
     ],
 )
 def test_invalid_arg_type(garbage):

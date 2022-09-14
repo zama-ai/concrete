@@ -355,9 +355,9 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [NoSideEffect]> {
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$a,
+    let arguments = (ins FHE_AnyEncryptedInteger:$a,
         TensorOf<[AnyInteger]>:$lut);
-    let results = (outs FHE_EncryptedIntegerType);
+    let results = (outs FHE_AnyEncryptedInteger);
     let hasVerifier = 1;
 }
 

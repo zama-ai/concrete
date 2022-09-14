@@ -42,17 +42,20 @@ TEST(Support, client_parameters_json_serde) {
                             }}};
   params0.inputs = {
       {
-          /*.encryption = */ {{clientlib::SMALL_KEY, 0.00, {4, {1, 2, 3, 4}}}},
+          /*.encryption = */ {
+              {clientlib::SMALL_KEY, 0.00, {4, {1, 2, 3, 4}, false}}},
           /*.shape = */ {32, {1, 2, 3, 4}, 1 * 2 * 3 * 4, false},
       },
       {
-          /*.encryption = */ {{clientlib::SMALL_KEY, 0.00, {5, {1, 2, 3, 4}}}},
+          /*.encryption = */ {
+              {clientlib::SMALL_KEY, 0.00, {5, {1, 2, 3, 4}, false}}},
           /*.shape = */ {8, {4, 4, 4, 4}, 4 * 4 * 4 * 4, false},
       },
   };
   params0.outputs = {
       {
-          /*.encryption = */ {{clientlib::SMALL_KEY, 0.00, {5, {1, 2, 3, 4}}}},
+          /*.encryption = */ {
+              {clientlib::SMALL_KEY, 0.00, {5, {1, 2, 3, 4}, false}}},
           /*.shape = */ {8, {4, 4, 4, 4}, 4 * 4 * 4 * 4, false},
       },
   };

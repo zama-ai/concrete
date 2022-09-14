@@ -58,7 +58,7 @@ class LambdaArgument(WrapperCpp):
         """
         if not isinstance(scalar, ACCEPTED_INTS):
             raise TypeError(
-                f"scalar must be of type int or numpy.uint, not {type(scalar)}"
+                f"scalar must be of type int or numpy.(u)int, not {type(scalar)}"
             )
         return LambdaArgument.wrap(_LambdaArgument.from_scalar(scalar))
 

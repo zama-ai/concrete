@@ -37,34 +37,34 @@ namespace fhe_to_tfhe_scalar_conversion {
 
 namespace typing {
 
-/// Converts `FHE::EncryptedInteger` into `TFHE::GlweCiphetext`.
-TFHE::GLWECipherTextType convertEint(mlir::MLIRContext *context,
-                                     FHE::EncryptedIntegerType eint) {
-  return TFHE::GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth());
+/// Converts an encrypted integer into `TFHE::GlweCiphetext`.
+TFHE::GLWECipherTextType convertEncrypted(mlir::MLIRContext *context,
+                                          FHE::FheIntegerInterface enc) {
+  return TFHE::GLWECipherTextType::get(context, -1, -1, -1, enc.getWidth());
 }
 
-/// Converts `Tensor<FHE::EncryptedInteger>` into a
+/// Converts `Tensor<FHE::AnyEncryptedInteger>` into a
 /// `Tensor<TFHE::GlweCiphertext>` if the element type is appropriate.
 /// Otherwise return the input type.
-mlir::Type maybeConvertEintTensor(mlir::MLIRContext *context,
-                                  mlir::RankedTensorType maybeEintTensor) {
-  if (!maybeEintTensor.getElementType().isa<FHE::EncryptedIntegerType>()) {
-    return (mlir::Type)(maybeEintTensor);
+mlir::Type
+maybeConvertEncryptedTensor(mlir::MLIRContext *context,
+                            mlir::RankedTensorType maybeEncryptedTensor) {
+  if (!maybeEncryptedTensor.getElementType().isa<FHE::FheIntegerInterface>()) {
+    return (mlir::Type)(maybeEncryptedTensor);
   }
-  auto eint =
-      maybeEintTensor.getElementType().cast<FHE::EncryptedIntegerType>();
-  auto currentShape = maybeEintTensor.getShape();
+  auto enc =
+      maybeEncryptedTensor.getElementType().cast<FHE::FheIntegerInterface>();
+  auto currentShape = maybeEncryptedTensor.getShape();
   return mlir::RankedTensorType::get(
       currentShape,
-      TFHE::GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth()));
+      TFHE::GLWECipherTextType::get(context, -1, -1, -1, enc.getWidth()));
 }
 
-/// Converts the type `FHE::EncryptedInteger` to `TFHE::GlweCiphetext` if the
+/// Converts any encrypted type to `TFHE::GlweCiphetext` if the
 /// input type is appropriate. Otherwise return the input type.
-mlir::Type maybeConvertEint(mlir::MLIRContext *context, mlir::Type t) {
-  if (auto eint = t.dyn_cast<FHE::EncryptedIntegerType>())
-    return convertEint(context, eint);
-
+mlir::Type maybeConvertEncrypted(mlir::MLIRContext *context, mlir::Type t) {
+  if (auto eint = t.dyn_cast<FHE::FheIntegerInterface>())
+    return convertEncrypted(context, eint);
   return t;
 }
 
@@ -75,8 +75,8 @@ class TypeConverter : public mlir::TypeConverter {
 public:
   TypeConverter() {
     addConversion([](mlir::Type type) { return type; });
-    addConversion([](FHE::EncryptedIntegerType type) {
-      return convertEint(type.getContext(), type);
+    addConversion([](FHE::FheIntegerInterface type) {
+      return convertEncrypted(type.getContext(), type);
     });
     addConversion([](FHE::EncryptedBooleanType type) {
       return TFHE::GLWECipherTextType::get(
@@ -84,7 +84,7 @@ public:
           mlir::concretelang::FHE::EncryptedBooleanType::getWidth());
     });
     addConversion([](mlir::RankedTensorType type) {
-      return maybeConvertEintTensor(type.getContext(), type);
+      return maybeConvertEncryptedTensor(type.getContext(), type);
     });
     addConversion([&](concretelang::RT::FutureType type) {
       return concretelang::RT::FutureType::get(this->convertType(
@@ -145,7 +145,7 @@ struct AddEintIntOpPattern : public ScalarOpPattern<FHE::AddEintIntOp> {
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
         op.getLoc(), adaptor.b(),
-        op.getType().cast<FHE::EncryptedIntegerType>().getWidth(), rewriter);
+        op.getType().cast<FHE::FheIntegerInterface>().getWidth(), rewriter);
 
     // Write the new op
     rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
@@ -183,7 +183,7 @@ struct SubEintIntOpPattern : public ScalarOpPattern<FHE::SubEintIntOp> {
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
         op.getLoc(), negative,
-        eintOperand.getType().cast<FHE::EncryptedIntegerType>().getWidth(),
+        eintOperand.getType().cast<FHE::FheIntegerInterface>().getWidth(),
         rewriter);
 
     // Write the new op
@@ -208,7 +208,7 @@ struct SubIntEintOpPattern : public ScalarOpPattern<FHE::SubIntEintOp> {
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
         op.getLoc(), adaptor.a(),
-        op.b().getType().cast<FHE::EncryptedIntegerType>().getWidth(),
+        op.b().getType().cast<FHE::FheIntegerInterface>().getWidth(),
         rewriter);
 
     // Write the new op
@@ -290,8 +290,9 @@ struct ApplyLookupTableEintOpPattern
                   FHE::ApplyLookupTableEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
+    auto inputType = op.a().getType().cast<FHE::FheIntegerInterface>();
     size_t outputBits =
-        op.getResult().getType().cast<FHE::EncryptedIntegerType>().getWidth();
+        op.getResult().getType().cast<FHE::FheIntegerInterface>().getWidth();
     mlir::Value newLut =
         rewriter
             .create<TFHE::EncodeExpandLutForBootstrapOp>(
@@ -301,12 +302,36 @@ struct ApplyLookupTableEintOpPattern
                     rewriter.getI64Type()),
                 op.lut(),
                 rewriter.getI32IntegerAttr(loweringParameters.polynomialSize),
-                rewriter.getI32IntegerAttr(outputBits))
+                rewriter.getI32IntegerAttr(outputBits),
+                rewriter.getBoolAttr(inputType.isSigned()))
             .getResult();
+
+    typing::TypeConverter converter;
+    mlir::Value input = adaptor.a();
+
+    if (inputType.isSigned()) {
+      // If the input is a signed integer, it comes to the bootstrap with a
+      // signed-leveled encoding (compatible with 2s complement semantics).
+      // Unfortunately pbs is not compatible with this encoding, since the
+      // (virtual) msb must be 0 to avoid a lookup in the phantom negative lut.
+      uint64_t constantRaw = (uint64_t)1 << (inputType.getWidth() - 1);
+      // Note that the constant must be encoded with one more bit to ensure the
+      // signed extension used in the plaintext encoding works as expected.
+      mlir::Value constant = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(),
+          rewriter.getIntegerAttr(
+              rewriter.getIntegerType(inputType.getWidth() + 1), constantRaw));
+      mlir::Value encodedConstant = writePlaintextShiftEncoding(
+          op.getLoc(), constant, inputType.getWidth(), rewriter);
+      auto inputOp = rewriter.create<TFHE::AddGLWEIntOp>(
+          op.getLoc(), converter.convertType(input.getType()), input,
+          encodedConstant);
+      input = inputOp;
+    }
 
     // Insert keyswitch
     auto ksOp = rewriter.create<TFHE::KeySwitchGLWEOp>(
-        op.getLoc(), adaptor.a().getType(), adaptor.a(), -1, -1);
+        op.getLoc(), getTypeConverter()->convertType(adaptor.a().getType()), input, -1, -1);
 
     // Insert bootstrap
     rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(

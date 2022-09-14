@@ -13,14 +13,13 @@ namespace utils {
 /// Returns `true` if the given value is a scalar or tensor argument of
 /// a function, for which a MANP of 1 can be assumed.
 bool isEncryptedValue(mlir::Value value) {
-  return (
-      value.getType().isa<mlir::concretelang::FHE::EncryptedIntegerType>() ||
-      value.getType().isa<mlir::concretelang::FHE::EncryptedBooleanType>() ||
+  return (value.getType().isa<mlir::concretelang::FHE::FheIntegerInterface>() ||
+          value.getType().isa<mlir::concretelang::FHE::EncryptedBooleanType>() ||
       (value.getType().isa<mlir::TensorType>() &&
        value.getType()
            .cast<mlir::TensorType>()
            .getElementType()
-           .isa<mlir::concretelang::FHE::EncryptedIntegerType>()));
+           .isa<mlir::concretelang::FHE::FheIntegerInterface>()));
 }
 
 /// Returns the bit width of `value` if `value` is an encrypted integer,
@@ -30,7 +29,7 @@ bool isEncryptedValue(mlir::Value value) {
 unsigned int getEintPrecision(mlir::Value value) {
   if (auto ty = value.getType()
                     .dyn_cast_or_null<
-                        mlir::concretelang::FHE::EncryptedIntegerType>()) {
+                        mlir::concretelang::FHE::FheIntegerInterface>()) {
     return ty.getWidth();
   }
   if (auto ty = value.getType()
@@ -41,7 +40,7 @@ unsigned int getEintPrecision(mlir::Value value) {
                  value.getType().dyn_cast_or_null<mlir::TensorType>()) {
     if (auto ty = tensorTy.getElementType()
                       .dyn_cast_or_null<
-                          mlir::concretelang::FHE::EncryptedIntegerType>())
+                          mlir::concretelang::FHE::FheIntegerInterface>())
       return ty.getWidth();
   }
 

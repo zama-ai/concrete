@@ -306,6 +306,7 @@ bool fromJSON(const llvm::json::Value j, CircuitGateShape &v,
 llvm::json::Value toJSON(const Encoding &v) {
   llvm::json::Object object{
       {"precision", v.precision},
+      {"isSigned", v.isSigned},
   };
   if (!v.crt.empty()) {
     object.insert({"crt", v.crt});
@@ -324,6 +325,12 @@ bool fromJSON(const llvm::json::Value j, Encoding &v, llvm::json::Path p) {
     return false;
   }
   v.precision = precision.getValue();
+  auto isSigned = obj->getBoolean("isSigned");
+  if (!isSigned.hasValue()) {
+    p.report("missing isSigned field");
+    return false;
+  }
+  v.isSigned = isSigned.getValue();
   auto crt = obj->getArray("crt");
   if (crt != nullptr) {
     for (auto dim : *crt) {

@@ -174,16 +174,16 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                         memref1DType, rewriter.getI64Type()},
                                        {});
   } else if (funcName == memref_encode_expand_lut_for_bootstrap) {
-    funcType =
-        mlir::FunctionType::get(rewriter.getContext(),
-                                {memref1DType, memref1DType,
-                                 rewriter.getI32Type(), rewriter.getI32Type()},
-                                {});
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref1DType, memref1DType, rewriter.getI32Type(),
+         rewriter.getI32Type(), rewriter.getI1Type()},
+        {});
   } else if (funcName == memref_encode_expand_lut_for_woppbs) {
     funcType = mlir::FunctionType::get(
         rewriter.getContext(),
         {memref1DType, memref1DType, memref1DType, memref1DType,
-         rewriter.getI32Type(), rewriter.getI32Type()},
+         rewriter.getI32Type(), rewriter.getI32Type(), rewriter.getI1Type()},
         {});
   } else {
     op->emitError("unknwon external function") << funcName;
@@ -359,6 +359,9 @@ void encodeExpandLutForBootstrapAddOperands(
   // output bits
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.outputBitsAttr()));
+  // is_signed
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.isSignedAttr()));
 }
 
 void encodeExpandLutForWopPBSAddOperands(
@@ -409,6 +412,9 @@ void encodeExpandLutForWopPBSAddOperands(
   // modulus_product
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.modulusProductAttr()));
+  // is_signed
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.isSignedAttr()));
 }
 
 struct BConcreteToCAPIPass : public BConcreteToCAPIBase<BConcreteToCAPIPass> {

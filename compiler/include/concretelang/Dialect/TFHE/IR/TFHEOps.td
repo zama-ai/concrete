@@ -26,7 +26,8 @@ def TFHE_EncodeExpandLutForBootstrapOp : TFHE_Op<"encode_expand_lut_for_bootstra
     let arguments = (ins
         1DTensorOf<[I64]> : $input_lookup_table,
         I32Attr: $polySize,
-        I32Attr: $outputBits
+        I32Attr: $outputBits,
+        BoolAttr: $isSigned
     );
 
     let results = (outs 1DTensorOf<[I64]> : $result);
@@ -41,7 +42,8 @@ def TFHE_EncodeExpandLutForWopPBSOp : TFHE_Op<"encode_expand_lut_for_woppbs"> {
         I64ArrayAttr: $crtDecomposition,
         I64ArrayAttr: $crtBits,
         I32Attr : $polySize,
-        I32Attr : $modulusProduct
+        I32Attr : $modulusProduct,
+        BoolAttr: $isSigned
     );
 
     let results = (outs 1DTensorOf<[I64]> : $result);

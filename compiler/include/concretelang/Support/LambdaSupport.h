@@ -290,7 +290,8 @@ public:
     // treatment, since it may alias none of the fixed size integer
     // types
     llvm::Expected<bool> successOrError =
-        LambdaArgumentAdaptor::tryAddArg<uint64_t, uint32_t, uint16_t, uint8_t,
+        LambdaArgumentAdaptor::tryAddArg<int64_t, int32_t, int16_t, int8_t,
+                                         uint64_t, uint32_t, uint16_t, uint8_t,
                                          size_t>(encryptedArgs, arg, keySet);
 
     if (!successOrError)

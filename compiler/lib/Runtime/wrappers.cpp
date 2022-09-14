@@ -8,6 +8,7 @@
 #include "concretelang/Runtime/seeder.h"
 #include <assert.h>
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -253,7 +254,7 @@ void memref_encode_expand_lut_for_bootstrap(
     uint64_t output_lut_stride, uint64_t *input_lut_allocated,
     uint64_t *input_lut_aligned, uint64_t input_lut_offset,
     uint64_t input_lut_size, uint64_t input_lut_stride, uint32_t poly_size,
-    uint32_t out_MESSAGE_BITS) {
+    uint32_t out_MESSAGE_BITS, bool is_signed) {
 
   assert(input_lut_stride == 1 && "Runtime: stride not equal to 1, check "
                                   "memref_encode_expand_lut_bootstrap");
@@ -265,19 +266,41 @@ void memref_encode_expand_lut_for_bootstrap(
 
   assert((mega_case_size % 2) == 0);
 
-  for (size_t idx = 0; idx < mega_case_size / 2; ++idx) {
-    output_lut_aligned[output_lut_offset + idx] =
-        input_lut_aligned[input_lut_offset] << (64 - out_MESSAGE_BITS - 1);
+  // When the bootstrap is executed on encrypted signed integers, the lut must
+  // be half-rotated. This map takes care about properly indexing into the input
+  // lut depending on what bootstrap gets executed.
+  std::function<size_t(size_t)> indexMap;
+  if (is_signed) {
+    size_t halfInputSize = input_lut_size / 2;
+    indexMap = [=](size_t idx) {
+      if (idx < halfInputSize) {
+        return idx + halfInputSize;
+      } else {
+        return idx - halfInputSize;
+      }
+    };
+  } else {
+    indexMap = [=](size_t idx) { return idx; };
   }
 
+  // The first lut value should be centered over zero. This means that half of
+  // it should appear at the beginning of the output lut, and half of it at the
+  // end (but negated).
+  for (size_t idx = 0; idx < mega_case_size / 2; ++idx) {
+    output_lut_aligned[output_lut_offset + idx] =
+        input_lut_aligned[input_lut_offset + indexMap(0)]
+        << (64 - out_MESSAGE_BITS - 1);
+  }
   for (size_t idx = (input_lut_size - 1) * mega_case_size + mega_case_size / 2;
        idx < output_lut_size; ++idx) {
     output_lut_aligned[output_lut_offset + idx] =
-        -(input_lut_aligned[input_lut_offset] << (64 - out_MESSAGE_BITS - 1));
+        -(input_lut_aligned[input_lut_offset + indexMap(0)]
+          << (64 - out_MESSAGE_BITS - 1));
   }
 
+  // Treats the other ut values.
   for (size_t lut_idx = 1; lut_idx < input_lut_size; ++lut_idx) {
-    uint64_t lut_value = input_lut_aligned[input_lut_offset + lut_idx]
+    uint64_t lut_value = input_lut_aligned[input_lut_offset + indexMap(lut_idx)]
                          << (64 - out_MESSAGE_BITS - 1);
     size_t start = mega_case_size * (lut_idx - 1) + mega_case_size / 2;
     for (size_t output_idx = start; output_idx < start + mega_case_size;
@@ -306,7 +329,7 @@ void memref_encode_expand_lut_for_woppbs(
     uint64_t *crt_bits_allocated, uint64_t *crt_bits_aligned,
     uint64_t crt_bits_offset, uint64_t crt_bits_size, uint64_t crt_bits_stride,
     // Crypto parameters
-    uint32_t poly_size, uint32_t modulus_product) {
+    uint32_t poly_size, uint32_t modulus_product, bool is_signed) {
 
   assert(input_lut_stride == 1 && "Runtime: stride not equal to 1, check "
                                   "memref_encode_expand_lut_woppbs");
@@ -314,22 +337,77 @@ void memref_encode_expand_lut_for_woppbs(
                                    "memref_encode_expand_lut_woppbs");
   assert(modulus_product > input_lut_size);
 
+  // When the woppbs is executed on encrypted signed integers, the index of the
+  // lut elements must be adapted to fit the way signed are encrypted in CRT
+  // (to ensure the lookup falls into the proper case).
+  // This map takes care about properly indexing into the output lut depending
+  // on what bootstrap gets executed.
+  std::function<uint64_t(uint64_t)> indexMap;
+  if (!is_signed) {
+    // When not signed, the integer values are encoded in increasing order. That
+    // is (example of 9 bits values, using crt decomposition [5,7,16]):
+    //
+    // |0     511|
+    // |---------|
+    // |0     511|
+    //
+    // is encoded as
+    //
+    // |0   511|  INVALID  |
+    // |-------|-----------|
+    // |0   511|512     559|
+    //
+    // Where on top are represented the semantic values, and below, the actual
+    // encoding of values, either on uint64_t or as increasing crt values.
+    //
+    // As a consequence, there is nothing particular to do to map the index of
+    // the input lut to an index of the output lut.
+    indexMap = [=](uint64_t plaintext) { return plaintext; };
+  } else {
+    // When signed, the integer values are encoded in a way that resembles 2s
+    // complement. That is (example of 9 bits values, using crt decomposition
+    // [5,7,16]):
+    //
+    // |0     255|-256    -1|
+    // |---------|----------|
+    // |0     255|256    511|
+    //
+    // is encoded as
+    //
+    // |0     255|   INVALID   |-256    -1|
+    // |---------|-------------|----------|
+    // |0     255|256       303|304    559|
+    //
+    // Where on top are represented the semantic values, and below, the actual
+    // encoding of values, either on uint64_t or as increasing crt values.
+    //
+    // As a consequence, to map the index of the input lut to an index of the
+    // output lut we must take care of crossing the invalid range in between
+    // positive values and negative values.
+    indexMap = [=](uint64_t plaintext) {
+      if (plaintext >= (input_lut_size / 2)) {
+        plaintext += modulus_product - input_lut_size;
+      }
+      return plaintext;
+    };
+  }
+
   uint64_t lut_crt_size = output_lut_size / crt_decomposition_size;
 
-  for (uint64_t value = 0; value < input_lut_size; value++) {
+  for (uint64_t index = 0; index < input_lut_size; index++) {
     uint64_t index_lut = 0;
     uint64_t tmp = 1;
 
     for (size_t block = 0; block < crt_decomposition_size; block++) {
       auto base = crt_decomposition_aligned[crt_decomposition_offset + block];
       auto bits = crt_bits_aligned[crt_bits_offset + block];
-      index_lut += (((value % base) << bits) / base) * tmp;
+      index_lut += (((indexMap(index) % base) << bits) / base) * tmp;
       tmp <<= bits;
     }
 
     for (size_t block = 0; block < crt_decomposition_size; block++) {
       auto base = crt_decomposition_aligned[crt_decomposition_offset + block];
-      auto v = encode_crt(input_lut_aligned[input_lut_offset + value], base,
+      auto v = encode_crt(input_lut_aligned[input_lut_offset + index], base,
                           modulus_product);
       output_lut_aligned[output_lut_offset + block * lut_crt_size + index_lut] =
           v;

@@ -58,8 +58,8 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
     };
   }
   if (auto lweTy = type.dyn_cast_or_null<
-                   mlir::concretelang::FHE::EncryptedIntegerType>()) {
-    bool sign = lweTy.isSignedInteger();
+                   mlir::concretelang::FHE::FheIntegerInterface>()) {
+    bool sign = lweTy.isSigned();
     std::vector<int64_t> crt;
     if (fheContext.parameter.largeInteger.has_value()) {
       crt = fheContext.parameter.largeInteger.value().crtDecomposition;
@@ -72,15 +72,14 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
             {
                 /* .precision = */ lweTy.getWidth(),
                 /* .crt = */ crt,
+                /*.sign = */ sign,
             },
         }),
         /*.shape = */
-        {
-            /*.width = */ (size_t)lweTy.getWidth(),
-            /*.dimensions = */ std::vector<int64_t>(),
-            /*.size = */ 0,
-            /*.sign = */ sign,
-        },
+        {/*.width = */ (size_t)lweTy.getWidth(),
+         /*.dimensions = */ std::vector<int64_t>(),
+         /*.size = */ 0,
+         /*.sign = */ sign},
     };
   }
   if (auto lweTy = type.dyn_cast_or_null<
@@ -214,17 +213,12 @@ createClientParametersForV0(V0FHEContext fheContext,
   auto funcType = (*funcOp).getFunctionType();
 
   auto inputs = funcType.getInputs();
-  bool hasContext =
-      inputs.empty()
-          ? false
-          : inputs.back().isa<mlir::concretelang::Concrete::ContextType>();
 
   auto gateFromType = [&](mlir::Type ty) {
     return gateFromMLIRType(fheContext, clientlib::BIG_KEY, inputVariance, ty);
   };
-  for (auto inType = funcType.getInputs().begin();
-       inType < funcType.getInputs().end() - hasContext; inType++) {
-    auto gate = gateFromType(*inType);
+  for (auto inType : inputs) {
+    auto gate = gateFromType(inType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }

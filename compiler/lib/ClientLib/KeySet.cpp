@@ -355,37 +355,62 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
   if (!encryption.hasValue()) {
     return StringError("decrypt_lwe: the positional argument is not encrypted");
   }
+
   auto crt = encryption->encoding.crt;
-  // CRT encoding - N blocks with crt encoding
-  if (!crt.empty()) {
+
+  if (!crt.empty()) { // The ciphertext used the crt strategy.
+
+    // Decrypt and decode remainders
     std::vector<int64_t> remainders;
-    // decrypt and decode remainders
     for (auto modulus : crt) {
       uint64_t decrypted;
       CAPI_ASSERT_ERROR(
           default_engine_decrypt_lwe_ciphertext_u64_raw_ptr_buffers(
               engine, lweSecretKey, ciphertext, &decrypted));
-
       auto plaintext = crt::decode(decrypted, modulus);
       remainders.push_back(plaintext);
       ciphertext = ciphertext + lweSecretKeyParam.lweSize();
     }
-    // compute the inverse crt
+
+    // Compute the inverse crt
     output = crt::iCrt(crt, remainders);
-    return outcome::success();
+
+    // Further decode signed integers
+    if (encryption->encoding.isSigned) {
+      uint64_t maxPos = 1;
+      for (auto prime : encryption->encoding.crt) {
+        maxPos *= prime;
+      }
+      maxPos /= 2;
+      if (output >= maxPos) {
+        output -= maxPos * 2;
+      }
+    }
+  } else { // The ciphertext used the scalar strategy
+
+    // Decrypt
+    uint64_t plaintext;
+    CAPI_ASSERT_ERROR(default_engine_decrypt_lwe_ciphertext_u64_raw_ptr_buffers(
+        engine, lweSecretKey, ciphertext, &plaintext));
+
+    // Decode unsigned integer
+    uint64_t precision = encryption->encoding.precision;
+    output = plaintext >> (64 - precision - 2);
+    auto carry = output % 2;
+    uint64_t mod = (((uint64_t)1) << (precision + 1));
+    output = ((output >> 1) + carry) % mod;
+
+    // Further decode signed integers.
+    if (encryption->encoding.isSigned) {
+      uint64_t maxPos = (((uint64_t)1) << (precision - 1));
+      if (output >= maxPos) { // The output is actually negative.
+        // Set the preceding bits to zero
+        output |= UINT64_MAX << precision;
+        // This makes sure when the value is cast to int64, it has the correct
+        // value
+      };
+    }
   }
-  // Simple TFHE integers - 1 blocks with one padding bits
-  uint64_t plaintext;
-
-  CAPI_ASSERT_ERROR(default_engine_decrypt_lwe_ciphertext_u64_raw_ptr_buffers(
-      engine, lweSecretKey, ciphertext, &plaintext));
-
-  // Decode
-  uint64_t precision = encryption->encoding.precision;
-  output = plaintext >> (64 - precision - 2);
-  auto carry = output % 2;
-  uint64_t mod = (((uint64_t)1) << (precision + 1));
-  output = ((output >> 1) + carry) % mod;
 
   return outcome::success();
 }
