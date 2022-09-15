@@ -539,13 +539,21 @@ jobs:
       - name: Install Deps
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
-          brew install ninja
+          brew install ninja ccache
           pip install numpy pybind11==2.8 wheel delocate
           cd ${{ github.workspace }}/concrete/concrete-ffi
           RUSTFLAGS="-C target-cpu=native" cargo build --release
 
       - name: Update Python Version
         run: cd compiler && make update-python-version
+
+      - name: Use Compilation Cache
+        uses: actions/cache@v2
+        with:
+          path: /Users/runner/Library/Caches/ccache
+          key: ${{ runner.os }}-compilation-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-compilation-cache-
 
       - name: Build
         id: build-wheel-macos
