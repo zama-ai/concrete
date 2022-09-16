@@ -55,10 +55,6 @@ ServerLambda::loadFromModule(std::shared_ptr<DynamicModule> module,
            << ") != 1 is not supported";
   }
 
-  if (!param->outputs[0].encryption.hasValue()) {
-    return StringError("ServerLambda: clear output is not yet supported");
-  }
-
   lambda.clientParameters = *param;
   return lambda;
 }
