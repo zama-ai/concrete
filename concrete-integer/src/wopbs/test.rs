@@ -6,7 +6,7 @@
 use std::cmp::max;
 use crate::gen_keys;
 use crate::parameters::*;
-use crate::wopbs::WopbsKey;
+use crate::wopbs::{encode_radix, WopbsKey};
 use concrete_shortint::parameters::parameters_wopbs::*;
 use concrete_shortint::parameters::parameters_wopbs_message_carry::*;
 use concrete_shortint::parameters::{Parameters, *};
@@ -111,6 +111,7 @@ create_parametrized_test!(wopbs_16_lut_test);
 create_parametrized_test!(wopbs_crt_without_padding);
 create_parametrized_test!(wopbs_crt_fake_crt);
 create_parametrized_test!(wopbs_bivariate_radix);
+create_parametrized_test!(wopbs_bivariate_crt_fake);
 
 
 pub fn wopbs(param: Parameters) {
@@ -306,7 +307,7 @@ pub fn wopbs_crt_fake_crt(param: Parameters){
     let mut rng = rand::thread_rng();
     println!("param : {:?}", param);
 
-    let basis : Vec<u64> = vec![3,5,7];
+    let basis : Vec<u64> = vec![2,3];
 
     let nb_block = basis.len();
 
@@ -333,7 +334,7 @@ pub fn wopbs_crt_fake_crt(param: Parameters){
         println!("LUT = {:?}", lut);
         let ct_res = wopbs_key.wopbs_with_degree(&sks, &mut ct_add, &lut);
         let res = cks.decrypt_crt(&ct_res);
-        assert_eq!(res, ((clear1+clear2)*(clear1+clear2)) % (3*5*7));
+        assert_eq!(res, ((clear1+clear2)*(clear1+clear2)) % msg_space);
     }
 }
 
@@ -370,5 +371,43 @@ pub fn wopbs_bivariate_radix(param: Parameters){
         let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &ct_add, &ct2, &lut);
         let res = cks.decrypt_radix(&ct_res);
         assert_eq!(res, (max(clear1+clear2, clear2)) % msg_space);
+    }
+}
+
+pub fn wopbs_bivariate_crt_fake(param: Parameters){
+
+    let mut rng = rand::thread_rng();
+    println!("param : {:?}", param);
+
+    let basis = vec![2,3];
+
+    //Generate the client key and the server key:
+    let (mut cks, sks) = gen_keys(&param);
+    // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
+    let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+
+    let mut msg_space:u64 = 1;
+    for modulus in basis.iter() {
+        msg_space *= modulus;
+    }
+
+    println!("MSG SPAC = {}", msg_space);
+
+    let nb_test = 5;
+
+    for _ in 0..nb_test {
+        let clear1 = rng.gen::<u64>() % msg_space;
+        let clear2 = rng.gen::<u64>() % msg_space;
+        // let clear1 = 0;
+        // let clear2 = 2;
+        let mut ct1 = cks.encrypt_crt(clear1, basis.clone());
+        let mut ct2 = cks.encrypt_crt(clear2, basis.clone());
+        //let ct_add = sks.unchecked_add(&ct1, &ct2);
+        let lut = wopbs_key.generate_lut_bivariate_crt(&ct1, &ct2, |x,y| max(x,x));
+        // let res = cks.decrypt_crt(&ct_add);
+        println!("LUT = {:?}", lut);
+        let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &ct1, &ct2, &lut);
+        let res = cks.decrypt_crt(&ct_res);
+        assert_eq!(res, (max(clear1, clear1)) % msg_space);
     }
 }

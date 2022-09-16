@@ -97,7 +97,7 @@ pub const DEFAULT_PARAMETERS: BooleanParameters = BooleanParameters {
 /// Details about this set are provided
 /// [here](https://github.com/tfhe/tfhe/blob/master/src/libtfhe/tfhe_gate_bootstrapping.cpp).
 /// The secret keys generated with this parameter set are uniform binary.
-/// This parameter set ensures a probability of error is upper-bounded by $2^{-165}$.
+    /// This parameter set ensures a probability of error is upper-bounded by $2^{-165}$.
 pub const TFHE_LIB_PARAMETERS: BooleanParameters = BooleanParameters {
     lwe_dimension: LweDimension(630),
     glwe_dimension: GlweDimension(1),
