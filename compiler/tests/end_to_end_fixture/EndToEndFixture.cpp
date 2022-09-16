@@ -284,6 +284,12 @@ LLVM_YAML_IS_DOCUMENT_LIST_VECTOR(EndToEndDesc)
 
 std::vector<EndToEndDesc> loadEndToEndDesc(std::string path) {
   std::ifstream file(path);
+
+  if (!file.good()) {
+    std::cerr << "Could not read yaml file: " << path << std::endl;
+    assert(false);
+  }
+
   std::string content((std::istreambuf_iterator<char>(file)),
                       (std::istreambuf_iterator<char>()));
 
