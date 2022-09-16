@@ -8,6 +8,8 @@
 
 using mlir::concretelang::StreamStringError;
 
+const mlir::concretelang::V0FHEConstraint defaultV0Constraints{1, 1};
+
 // derived from https://stackoverflow.com/a/45869209
 uint64_t solve_binomial_cdf_bigger_than(size_t n, double p_error,
                                         double p_mass) {
@@ -247,6 +249,13 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
     io.mapRequired("description", desc.description);
     io.mapRequired("program", desc.program);
     io.mapRequired("tests", desc.tests);
+
+    bool use_default_fhe_constraints = false;
+    io.mapOptional("use_default_fhe_constraints", use_default_fhe_constraints);
+
+    if (use_default_fhe_constraints)
+      desc.v0Constraint = defaultV0Constraints;
+
     std::vector<int64_t> v0parameter;
     io.mapOptional("v0-parameter", v0parameter);
     if (!v0parameter.empty()) {
