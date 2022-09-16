@@ -443,14 +443,8 @@ mod tests {
 
         times.dag_time += chrono.elapsed().as_nanos();
         let chrono = Instant::now();
-        let state_ref = atomic_pattern::optimize_one(
-            sum_size,
-            precision,
-            config,
-            weight as f64,
-            &search_space,
-            None,
-        );
+        let state_ref =
+            atomic_pattern::optimize_one(sum_size, precision, config, weight as f64, &search_space);
         times.worst_time += chrono.elapsed().as_nanos();
         assert_eq!(
             state.best_solution.is_some(),
@@ -515,14 +509,8 @@ mod tests {
         };
 
         let state = optimize(&dag);
-        let state_ref = atomic_pattern::optimize_one(
-            1,
-            precision as u64,
-            config,
-            weight as f64,
-            &search_space,
-            None,
-        );
+        let state_ref =
+            atomic_pattern::optimize_one(1, precision as u64, config, weight as f64, &search_space);
         assert_eq!(
             state.best_solution.is_some(),
             state_ref.best_solution.is_some()

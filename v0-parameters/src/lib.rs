@@ -137,7 +137,6 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                             config,
                             noise_scale,
                             &search_space,
-                            last_solution, // 33% gains
                         )
                     };
                     last_solution = result.best_solution;

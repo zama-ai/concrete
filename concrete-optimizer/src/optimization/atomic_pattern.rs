@@ -182,7 +182,6 @@ pub fn optimize_one(
     config: Config,
     noise_factor: f64,
     search_space: &SearchSpace,
-    restart_at: Option<Solution>,
 ) -> OptimizationState {
     assert!(0 < precision && precision <= 16);
     assert!(1.0 <= noise_factor);
@@ -229,13 +228,6 @@ pub fn optimize_one(
             > consts.safe_variance
     };
 
-    let skip = |glwe_dim, glwe_poly_size| match restart_at {
-        Some(solution) => {
-            glwe_dim < solution.glwe_dimension && glwe_poly_size < solution.glwe_polynomial_size
-        }
-        None => false,
-    };
-
     let mut caches = Caches {
         blind_rotate: blind_rotate::for_security(security_level).cache(),
         keyswitch: keyswitch::for_security(security_level).cache(),
@@ -247,9 +239,6 @@ pub fn optimize_one(
             assert!(glwe_log_poly_size < 18);
             let glwe_poly_size = 1 << glwe_log_poly_size;
             if lower_bound_cut(glwe_poly_size) {
-                continue;
-            }
-            if skip(glwe_dim, glwe_poly_size) {
                 continue;
             }
 

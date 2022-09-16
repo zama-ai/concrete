@@ -35,12 +35,6 @@ impl LevelledComplexity {
     }
 }
 
-impl std::ops::AddAssign<&Self> for LevelledComplexity {
-    fn add_assign(&mut self, rhs: &Self) {
-        *self += *rhs;
-    }
-}
-
 impl std::ops::Mul<u64> for LevelledComplexity {
     type Output = Self;
     fn mul(self, factor: u64) -> Self {

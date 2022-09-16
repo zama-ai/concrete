@@ -43,7 +43,6 @@ fn optimize_bootstrap(
         config,
         noise_factor,
         &search_space,
-        None,
     );
     result
         .best_solution
