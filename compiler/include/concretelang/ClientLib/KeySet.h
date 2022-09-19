@@ -87,8 +87,11 @@ public:
   }
 
   EvaluationKeys evaluationKeys() {
-    auto kskIt = this->keyswitchKeys.find("ksk_v0");
-    auto bskIt = this->bootstrapKeys.find("bsk_v0");
+    if (this->bootstrapKeys.empty() && this->keyswitchKeys.empty()) {
+      return EvaluationKeys();
+    }
+    auto kskIt = this->keyswitchKeys.find(clientlib::KEYSWITCH_KEY);
+    auto bskIt = this->bootstrapKeys.find(clientlib::BOOTSTRAP_KEY);
     if (kskIt != this->keyswitchKeys.end() &&
         bskIt != this->bootstrapKeys.end()) {
       auto sharedKsk = std::get<1>(kskIt->second);

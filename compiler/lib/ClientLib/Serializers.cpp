@@ -241,24 +241,40 @@ std::istream &operator>>(std::istream &istream, LweBootstrapKey &wrappedBsk) {
 
 std::ostream &operator<<(std::ostream &ostream,
                          const EvaluationKeys &evaluationKeys) {
-  ostream << *evaluationKeys.sharedKsk;
-  ostream << *evaluationKeys.sharedBsk;
+  bool has_ksk = (bool)evaluationKeys.sharedKsk;
+  writeWord(ostream, has_ksk);
+  if (has_ksk) {
+    ostream << *evaluationKeys.sharedKsk;
+  }
+
+  bool has_bsk = (bool)evaluationKeys.sharedBsk;
+  writeWord(ostream, has_bsk);
+  if (has_bsk) {
+    ostream << *evaluationKeys.sharedBsk;
+  }
   assert(ostream.good());
   return ostream;
 }
 
 std::istream &operator>>(std::istream &istream,
                          EvaluationKeys &evaluationKeys) {
-  auto sharedKsk = LweKeyswitchKey(nullptr);
-  auto sharedBsk = LweBootstrapKey(nullptr);
+  bool has_ksk;
+  readWord(istream, has_ksk);
+  if (has_ksk) {
+    auto sharedKsk = LweKeyswitchKey(nullptr);
+    istream >> sharedKsk;
+    evaluationKeys.sharedKsk =
+        std::make_shared<LweKeyswitchKey>(std::move(sharedKsk));
+  }
 
-  istream >> sharedKsk;
-  istream >> sharedBsk;
-
-  evaluationKeys.sharedKsk =
-      std::make_shared<LweKeyswitchKey>(std::move(sharedKsk));
-  evaluationKeys.sharedBsk =
-      std::make_shared<LweBootstrapKey>(std::move(sharedBsk));
+  bool has_bsk;
+  readWord(istream, has_bsk);
+  if (has_bsk) {
+    auto sharedBsk = LweBootstrapKey(nullptr);
+    istream >> sharedBsk;
+    evaluationKeys.sharedBsk =
+        std::make_shared<LweBootstrapKey>(std::move(sharedBsk));
+  }
 
   assert(istream.good());
   return istream;

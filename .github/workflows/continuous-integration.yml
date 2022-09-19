@@ -132,6 +132,8 @@ jobs:
           then
             echo Cleaning $TO_CLEAN
             rm -rf $TO_CLEAN
+            echo New cache size is
+            du -sh KeySetCache
           else
             echo Nothing to clean
           fi

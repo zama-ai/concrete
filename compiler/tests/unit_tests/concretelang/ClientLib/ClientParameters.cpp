@@ -13,7 +13,7 @@ TEST(Support, client_parameters_json_serde) {
       {clientlib::BIG_KEY, {/*.size = */ 14}},
   };
   params0.bootstrapKeys = {
-      {"bsk_v0",
+      {clientlib::BOOTSTRAP_KEY,
        {/*.inputSecretKeyID = */ clientlib::SMALL_KEY,
         /*.outputSecretKeyID = */ clientlib::BIG_KEY,
         /*.level = */ 1,
@@ -30,7 +30,7 @@ TEST(Support, client_parameters_json_serde) {
            /*.variance = */ 0.0001,
        }},
   };
-  params0.keyswitchKeys = {{"ksk_v0",
+  params0.keyswitchKeys = {{clientlib::KEYSWITCH_KEY,
                             {
                                 /*.inputSecretKeyID = */
                                 clientlib::BIG_KEY,

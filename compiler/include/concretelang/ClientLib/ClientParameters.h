@@ -37,6 +37,8 @@ using concretelang::error::StringError;
 
 const std::string SMALL_KEY = "small";
 const std::string BIG_KEY = "big";
+const std::string BOOTSTRAP_KEY = "bsk_v0";
+const std::string KEYSWITCH_KEY = "ksk_v0";
 
 const std::string CLIENT_PARAMETERS_EXT = ".concrete.params.json";
 
