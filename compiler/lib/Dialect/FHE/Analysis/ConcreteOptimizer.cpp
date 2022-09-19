@@ -154,7 +154,7 @@ struct FunctionToDag {
   }
 
   void addDot(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
-              std::vector<std::uint64_t> &weights_vector) {
+              std::vector<std::int64_t> &weights_vector) {
     assert(encrypted_inputs.size() == 1);
     auto weights = concrete_optimizer::weights::vector(slice(weights_vector));
     index[val] = dag->add_dot(slice(encrypted_inputs), std::move(weights));
@@ -228,19 +228,19 @@ struct FunctionToDag {
     return value.isa<mlir::BlockArgument>();
   }
 
-  std::vector<std::uint64_t>
+  std::vector<std::int64_t>
   resolveConstantVectorWeights(mlir::arith::ConstantOp &cstOp) {
-    std::vector<std::uint64_t> values;
+    std::vector<std::int64_t> values;
     mlir::DenseIntElementsAttr denseVals =
         cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value");
 
     for (llvm::APInt val : denseVals.getValues<llvm::APInt>()) {
-      values.push_back(val.getZExtValue());
+      values.push_back(val.getSExtValue());
     }
     return values;
   }
 
-  llvm::Optional<std::vector<std::uint64_t>>
+  llvm::Optional<std::vector<std::int64_t>>
   resolveConstantWeights(mlir::Value &value) {
     if (auto cstOp = llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
             value.getDefiningOp())) {
@@ -258,7 +258,7 @@ struct FunctionToDag {
     }
   }
 
-  llvm::Optional<std::vector<std::uint64_t>>
+  llvm::Optional<std::vector<std::int64_t>>
   dotWeights(mlir::concretelang::FHELinalg::Dot &dot) {
     if (dot.getOperands().size() != 2) {
       return llvm::None;
