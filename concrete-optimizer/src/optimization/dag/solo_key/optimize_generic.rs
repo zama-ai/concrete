@@ -4,6 +4,7 @@ use crate::noise_estimator::p_error::repeat_p_error;
 use crate::optimization::atomic_pattern::Solution as WpSolution;
 use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::dag::solo_key::{analyze, optimize};
+use crate::optimization::decomposition::PersistDecompCache;
 use crate::optimization::wop_atomic_pattern::optimize::optimize_one as wop_optimize;
 use crate::optimization::wop_atomic_pattern::Solution as WopSolution;
 use std::ops::RangeInclusive;
@@ -48,6 +49,7 @@ pub fn optimize(
     config: Config,
     search_space: &SearchSpace,
     default_log_norm2_woppbs: f64,
+    cache: &PersistDecompCache,
 ) -> Option<Solution> {
     let max_precision = max_precision(dag);
     let nb_luts = analyze::lut_count_from_dag(dag);
@@ -58,11 +60,17 @@ pub fn optimize(
         let default_log_norm = default_log_norm2_woppbs;
         let worst_log_norm = analyze::worst_log_norm(dag);
         let log_norm = default_log_norm.min(worst_log_norm);
-        let opt_sol =
-            wop_optimize(fallback_16b_precision, config, log_norm, search_space).best_solution;
+        let opt_sol = wop_optimize(
+            fallback_16b_precision,
+            config,
+            log_norm,
+            search_space,
+            cache,
+        )
+        .best_solution;
         opt_sol.map(|sol| Solution::WopSolution(updated_global_p_error(nb_luts, sol)))
     } else {
-        let opt_sol = optimize::optimize(dag, config, search_space).best_solution;
+        let opt_sol = optimize::optimize(dag, config, search_space, cache).best_solution;
         opt_sol.map(Solution::WpSolution)
     }
 }

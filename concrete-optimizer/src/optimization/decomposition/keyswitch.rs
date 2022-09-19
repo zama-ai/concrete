@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 
 use concrete_commons::dispersion::DispersionParameter;
@@ -9,7 +7,6 @@ use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::parameters::{
     GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension,
 };
-use crate::security::security_weights::SECURITY_WEIGHTS_TABLE;
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::PersistentCacheHashMap;
 
@@ -121,42 +118,22 @@ impl Cache {
     }
 }
 
-type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<KsComplexityNoise>>;
-type MultiSecPersistDecompCache = HashMap<u64, PersistDecompCache>;
+pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<KsComplexityNoise>>;
 
-#[static_init::dynamic]
-pub static SHARED_CACHE: MultiSecPersistDecompCache = SECURITY_WEIGHTS_TABLE
-    .keys()
-    .map(|&security_level| {
-        let ciphertext_modulus_log = 64;
-        let tmp: String = std::env::temp_dir()
-            .to_str()
-            .expect("Invalid tmp dir")
-            .into();
-        let path = format!("{tmp}/optimizer/cache/ks-decomp-cpu-64-{security_level}");
-        let function = move |(glwe_params, internal_dim): MacroParam| {
-            pareto_quantities(
-                ciphertext_modulus_log,
-                security_level,
-                internal_dim,
-                glwe_params,
-            )
-        };
-        (
+pub fn cache(security_level: u64) -> PersistDecompCache {
+    let ciphertext_modulus_log = 64;
+    let tmp: String = std::env::temp_dir()
+        .to_str()
+        .expect("Invalid tmp dir")
+        .into();
+    let path = format!("{tmp}/optimizer/cache/ks-decomp-cpu-64-{security_level}");
+    let function = move |(glwe_params, internal_dim): MacroParam| {
+        pareto_quantities(
+            ciphertext_modulus_log,
             security_level,
-            PersistentCacheHashMap::new(&path, "v0", function),
+            internal_dim,
+            glwe_params,
         )
-    })
-    .collect::<MultiSecPersistDecompCache>();
-
-#[cfg(not(target_os = "macos"))]
-#[static_init::destructor(10)]
-extern "C" fn finaly() {
-    for v in SHARED_CACHE.values() {
-        v.sync_to_disk();
-    }
-}
-
-pub fn for_security(security_level: u64) -> &'static PersistDecompCache {
-    SHARED_CACHE.get(&security_level).unwrap()
+    };
+    PersistentCacheHashMap::new(&path, "v0", function)
 }

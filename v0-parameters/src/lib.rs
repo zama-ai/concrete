@@ -16,6 +16,7 @@ use concrete_optimizer::optimization::atomic_pattern::{
 };
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::solo_key::optimize::{self as optimize_dag};
+use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 use rayon_cond::CondIterator;
 use std::io::Write;
@@ -107,6 +108,8 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
         complexity_model: &CpuComplexity::default(),
     };
 
+    let cache = decomposition::cache(config.security_level);
+
     precisions_iter
         .map(|precision| {
             let mut last_solution = None;
@@ -121,6 +124,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                             config,
                             noise_scale,
                             &search_space,
+                            &cache,
                         )
                     } else if args.simulate_dag {
                         optimize_dag::optimize_v0(
@@ -129,6 +133,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                             config,
                             noise_scale,
                             &search_space,
+                            &cache,
                         )
                     } else {
                         optimize_atomic_pattern::optimize_one(
@@ -137,6 +142,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                             config,
                             noise_scale,
                             &search_space,
+                            &cache,
                         )
                     };
                     last_solution = result.best_solution;

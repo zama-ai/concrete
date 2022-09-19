@@ -5,6 +5,7 @@ use concrete_optimizer::dag::operator::{
 use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution as DagSolution;
+use concrete_optimizer::optimization::decomposition;
 
 fn no_solution() -> ffi::Solution {
     ffi::Solution {
@@ -43,6 +44,7 @@ fn optimize_bootstrap(
         config,
         noise_factor,
         &search_space,
+        &decomposition::cache(security_level),
     );
     result
         .best_solution
@@ -219,6 +221,7 @@ impl OperationDag {
             &self.0,
             config,
             &search_space,
+            &decomposition::cache(security_level),
         );
         result
             .best_solution
@@ -239,12 +242,14 @@ impl OperationDag {
         };
 
         let search_space = SearchSpace::default();
+        let cache = decomposition::cache(security_level);
 
         let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
             &self.0,
             config,
             &search_space,
             default_log_norm2_woppbs,
+            &cache,
         );
         result.map_or_else(no_dag_solution, |solution| solution.into())
     }

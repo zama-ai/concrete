@@ -3,6 +3,7 @@ use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern::{self as optimize_atomic_pattern};
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
+use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 
 pub const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
@@ -40,6 +41,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         complexity_model: &CpuComplexity::default(),
     };
 
+    let cache = decomposition::cache(security_level);
+
     let solutions: Vec<_> = precisions
         .clone()
         .filter_map(|precision| {
@@ -51,6 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config,
                 noise_factor,
                 &search_space,
+                &cache,
             )
             .best_solution
             .map(|a| (precision, a.complexity))
@@ -64,6 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config,
                 log_norm2 as f64,
                 &search_space,
+                &cache,
             )
             .best_solution
             .map(|a| (precision, a.complexity))

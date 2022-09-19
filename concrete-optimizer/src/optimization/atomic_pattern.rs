@@ -5,7 +5,8 @@ use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositi
 use crate::utils::square;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 
-use super::decomposition::{blind_rotate, cut_complexity_noise, keyswitch};
+use super::decomposition;
+use super::decomposition::{blind_rotate, cut_complexity_noise, keyswitch, PersistDecompCache};
 
 // Ref time for v0 table 1 thread: 950ms
 const CUTS: bool = true; // 80ms
@@ -44,6 +45,19 @@ pub struct OptimizationState {
 pub struct Caches {
     pub blind_rotate: blind_rotate::Cache,
     pub keyswitch: keyswitch::Cache,
+}
+
+impl Caches {
+    pub fn new(cache: &decomposition::PersistDecompCache) -> Self {
+        Self {
+            blind_rotate: cache.br.cache(),
+            keyswitch: cache.ks.cache(),
+        }
+    }
+    pub fn backport_to(self, cache: &decomposition::PersistDecompCache) {
+        cache.ks.backport(self.keyswitch);
+        cache.br.backport(self.blind_rotate);
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -182,6 +196,7 @@ pub fn optimize_one(
     config: Config,
     noise_factor: f64,
     search_space: &SearchSpace,
+    cache: &PersistDecompCache,
 ) -> OptimizationState {
     assert!(0 < precision && precision <= 16);
     assert!(1.0 <= noise_factor);
@@ -193,7 +208,6 @@ pub fn optimize_one(
     // the blind rotate decomposition
 
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
-    let security_level = config.security_level;
     let safe_variance = error::safe_variance_bound_2padbits(
         precision,
         ciphertext_modulus_log,
@@ -228,10 +242,7 @@ pub fn optimize_one(
             > consts.safe_variance
     };
 
-    let mut caches = Caches {
-        blind_rotate: blind_rotate::for_security(security_level).cache(),
-        keyswitch: keyswitch::for_security(security_level).cache(),
-    };
+    let mut caches = Caches::new(cache);
 
     for &glwe_dim in &search_space.glwe_dimensions {
         for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
@@ -260,8 +271,7 @@ pub fn optimize_one(
         }
     }
 
-    blind_rotate::for_security(security_level).backport(caches.blind_rotate);
-    keyswitch::for_security(security_level).backport(caches.keyswitch);
+    caches.backport_to(cache);
 
     if let Some(sol) = state.best_solution {
         assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);

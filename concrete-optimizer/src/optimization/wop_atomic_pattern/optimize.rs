@@ -9,15 +9,12 @@ use crate::noise_estimator::error::{
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::noise_estimator::operators::wop_atomic_pattern::estimate_packing_private_keyswitch;
 use crate::optimization::atomic_pattern;
-use crate::optimization::atomic_pattern::Caches;
-use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
+use crate::optimization::atomic_pattern::{Caches, OptimizationDecompositionsConsts};
 
 use crate::optimization::config::{Config, SearchSpace};
-use crate::optimization::decomposition::blind_rotate;
 use crate::optimization::decomposition::blind_rotate::BrComplexityNoise;
-use crate::optimization::decomposition::cut_complexity_noise;
-use crate::optimization::decomposition::keyswitch;
 use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
+use crate::optimization::decomposition::{cut_complexity_noise, PersistDecompCache};
 use crate::optimization::wop_atomic_pattern::pareto::BR_CIRCUIT_BOOTSTRAP_PARETO_DECOMP;
 use crate::parameters::{
     GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension, PbsParameters,
@@ -457,12 +454,12 @@ fn optimize_raw(
     search_space: &SearchSpace,
     n_functions: u64, // Many functions at the same time, stay at 1 for start
     partitionning: &[u64],
+    cache: &PersistDecompCache,
 ) -> OptimizationState {
     assert!(0.0 < config.maximum_acceptable_error_probability);
     assert!(config.maximum_acceptable_error_probability < 1.0);
 
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
-    let security_level = config.security_level;
 
     // Circuit BS bound
     // 1 bit of message only here =)
@@ -485,10 +482,7 @@ fn optimize_raw(
         safe_variance: safe_variance_bound,
     };
 
-    let mut caches = Caches {
-        blind_rotate: blind_rotate::for_security(security_level).cache(),
-        keyswitch: keyswitch::for_security(security_level).cache(),
-    };
+    let mut caches = Caches::new(cache);
 
     for &glwe_dim in &search_space.glwe_dimensions {
         for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
@@ -516,9 +510,7 @@ fn optimize_raw(
             }
         }
     }
-
-    blind_rotate::for_security(security_level).backport(caches.blind_rotate);
-    keyswitch::for_security(security_level).backport(caches.keyswitch);
+    caches.backport_to(cache);
 
     state
 }
@@ -528,11 +520,19 @@ pub fn optimize_one(
     config: Config,
     log_norm: f64,
     search_space: &SearchSpace,
+    cache: &PersistDecompCache,
 ) -> OptimizationState {
     let coprimes = crt_decomposition::default_coprimes(precision as Precision);
     let partitionning = crt_decomposition::precisions_from_coprimes(&coprimes);
     let n_functions = 1;
-    let mut state = optimize_raw(log_norm, config, search_space, n_functions, &partitionning);
+    let mut state = optimize_raw(
+        log_norm,
+        config,
+        search_space,
+        n_functions,
+        &partitionning,
+        cache,
+    );
     state.best_solution = state.best_solution.map(|mut sol| -> Solution {
         sol.crt_decomposition = coprimes;
         sol
@@ -546,9 +546,10 @@ pub fn optimize_one_compat(
     config: Config,
     noise_factor: f64,
     search_space: &SearchSpace,
+    cache: &PersistDecompCache,
 ) -> atomic_pattern::OptimizationState {
     let log_norm = noise_factor.log2();
-    let result = optimize_one(precision, config, log_norm, search_space);
+    let result = optimize_one(precision, config, log_norm, search_space, cache);
     atomic_pattern::OptimizationState {
         best_solution: result.best_solution.map(Solution::into),
     }
