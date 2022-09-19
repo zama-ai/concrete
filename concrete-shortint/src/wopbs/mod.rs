@@ -9,7 +9,7 @@
 use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, Parameters, ServerKey};
 use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
-use concrete_core::commons::crypto::glwe::FunctionalPackingKeyswitchKey;
+use concrete_core::commons::crypto::glwe::LwePrivateFunctionalPackingKeyswitchKey;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
 use concrete_core::prelude::{
     AbstractEngine, EntityDeserializationEngine, EntitySerializationEngine,
@@ -25,7 +25,7 @@ mod test;
 #[derive(Clone, Debug)]
 pub struct WopbsKey {
     //Key for the private functional keyswitch
-    pub(crate) vec_pfks_key: Vec<FunctionalPackingKeyswitchKey<Vec<u64>>>,
+    pub(crate) vec_pfks_key: Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>>,
     pub(crate) small_bsk: FftwFourierLweBootstrapKey64,
     pub param: Parameters,
 }
@@ -154,14 +154,14 @@ impl WopbsKey {
 
 #[derive(Serialize)]
 struct SerializableWopbsKey<'a> {
-    vec_pfks_key: &'a Vec<FunctionalPackingKeyswitchKey<Vec<u64>>>,
+    vec_pfks_key: &'a Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>>,
     small_bsk: Vec<u8>,
     param: Parameters,
 }
 
 #[derive(Deserialize)]
 struct DeserializableWopbsKey {
-    vec_pfks_key: Vec<FunctionalPackingKeyswitchKey<Vec<u64>>>,
+    vec_pfks_key: Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>>,
     small_bsk: Vec<u8>,
     param: Parameters,
 }

@@ -7,12 +7,12 @@ use crate::{Ciphertext, ClientKey, ServerKey};
 use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
 use concrete_core::backends::fftw::private::crypto::vertical_packing::vertical_packing_cbs_binary_v0;
 use concrete_core::backends::fftw::private::crypto::wop_pbs_vp::extract_bit_v0_v1;
-use concrete_core::commons::crypto::glwe::FunctionalPackingKeyswitchKey;
+use concrete_core::commons::crypto::glwe::LwePrivateFunctionalPackingKeyswitchKey;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
 
 use concrete_core::prelude::{
-    CleartextVectorCreationEngine, FunctionalPackingKeyswitchKeyCreationEngine,
-    GlweSecretKeyEntity, LweCiphertext64,
+    CleartextVectorCreationEngine, GlweSecretKeyEntity, LweCiphertext64,
+    LwePrivateFunctionalLwePackingKeyswitchKeyGenerationEngine,
 };
 
 impl ShortintEngine {
@@ -23,7 +23,7 @@ impl ShortintEngine {
         sks: &ServerKey,
     ) -> EngineResult<WopbsKey> {
         //Generation of the private functional packing keyswitch for the circuit bootstrap
-        let mut vec_pfks_key: Vec<FunctionalPackingKeyswitchKey<Vec<u64>>> = vec![];
+        let mut vec_pfks_key: Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>> = vec![];
 
         //Here the cleartext represents a polynomial
         for key_coef in cks.glwe_secret_key.0.as_polynomial_list().polynomial_iter() {
@@ -33,17 +33,17 @@ impl ShortintEngine {
             }
             let polynomial_as_cleartext = self
                 .engine
-                .create_cleartext_vector(vec_cleartext.as_slice())?;
+                .create_cleartext_vector_from(vec_cleartext.as_slice())?;
 
             vec_pfks_key.push(
                 self.engine
-                    .create_functional_packing_keyswitch_key(
+                    .generate_new_lwe_private_functional_packing_keyswitch_key(
                         &cks.lwe_secret_key,
                         &cks.glwe_secret_key,
                         cks.parameters.pfks_level,
                         cks.parameters.pfks_base_log,
                         cks.parameters.pfks_modular_std_dev,
-                        |x| 0_u64.wrapping_sub(x),
+                        &|x| 0_u64.wrapping_sub(x),
                         &polynomial_as_cleartext,
                     )
                     .unwrap()
@@ -52,16 +52,16 @@ impl ShortintEngine {
         }
         let mut vec_tmp: Vec<u64> = vec![0_u64; cks.glwe_secret_key.polynomial_size().0];
         vec_tmp[0] = 1;
-        let polynomial_as_cleartext = self.engine.create_cleartext_vector(&vec_tmp)?;
+        let polynomial_as_cleartext = self.engine.create_cleartext_vector_from(&vec_tmp)?;
         vec_pfks_key.push(
             self.engine
-                .create_functional_packing_keyswitch_key(
+                .generate_new_lwe_private_functional_packing_keyswitch_key(
                     &cks.lwe_secret_key,
                     &cks.glwe_secret_key,
                     cks.parameters.pfks_level,
                     cks.parameters.pfks_base_log,
                     cks.parameters.pfks_modular_std_dev,
-                    |x| x,
+                    &|x| x,
                     &polynomial_as_cleartext,
                 )
                 .unwrap()
@@ -131,7 +131,7 @@ impl ShortintEngine {
             &vec_lwe.clone(),
             wopbs_key.param.cbs_level,
             wopbs_key.param.cbs_base_log,
-            &wopbs_key.vec_pfks_key,
+            wopbs_key.vec_pfks_key.as_slice(),
         );
 
         let mut result: Vec<Ciphertext> = vec![];

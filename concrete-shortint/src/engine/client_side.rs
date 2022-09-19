@@ -10,12 +10,12 @@ impl ShortintEngine {
         // generate the lwe secret key
         let small_lwe_secret_key: LweSecretKey64 = self
             .engine
-            .create_lwe_secret_key(parameters.lwe_dimension)?;
+            .generate_new_lwe_secret_key(parameters.lwe_dimension)?;
 
         // generate the rlwe secret key
         let glwe_secret_key: GlweSecretKey64 = self
             .engine
-            .create_glwe_secret_key(parameters.glwe_dimension, parameters.polynomial_size)?;
+            .generate_new_glwe_secret_key(parameters.glwe_dimension, parameters.polynomial_size)?;
 
         let large_lwe_secret_key = self
             .engine
@@ -64,7 +64,7 @@ impl ShortintEngine {
 
         let shifted_message = m * delta;
         // encode the message
-        let plain: Plaintext64 = self.engine.create_plaintext(&shifted_message)?;
+        let plain: Plaintext64 = self.engine.create_plaintext_from(&shifted_message)?;
 
         // convert into a variance
         let var = Variance(client_key.parameters.lwe_modular_std_dev.get_variance());
@@ -92,7 +92,7 @@ impl ShortintEngine {
                 as u64;
         let shifted_message = message * delta;
         // encode the message
-        let plain: Plaintext64 = self.engine.create_plaintext(&shifted_message)?;
+        let plain: Plaintext64 = self.engine.create_plaintext_from(&shifted_message)?;
 
         // convert into a variance
         let var = Variance(client_key.parameters.lwe_modular_std_dev.get_variance());
@@ -156,7 +156,7 @@ impl ShortintEngine {
 
         let shifted_message = message * delta;
         // encode the message
-        let plain: Plaintext64 = self.engine.create_plaintext(&shifted_message)?;
+        let plain: Plaintext64 = self.engine.create_plaintext_from(&shifted_message)?;
 
         // convert into a variance
         let var = Variance(client_key.parameters.lwe_modular_std_dev.get_variance());
@@ -221,7 +221,9 @@ impl ShortintEngine {
         let m = (message % message_modulus as u64) as u128;
         let shifted_message = m * (1 << 64) / message_modulus as u128;
         // encode the message
-        let plain: Plaintext64 = self.engine.create_plaintext(&(shifted_message as u64))?;
+        let plain: Plaintext64 = self
+            .engine
+            .create_plaintext_from(&(shifted_message as u64))?;
 
         // convert into a variance
         let var = Variance(client_key.parameters.lwe_modular_std_dev.get_variance());

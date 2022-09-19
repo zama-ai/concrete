@@ -46,13 +46,13 @@ impl<B> BooleanEngine<B> {
         // generate the lwe secret key
         let lwe_secret_key: LweSecretKey32 = self
             .engine
-            .create_lwe_secret_key(parameters.lwe_dimension)
+            .generate_new_lwe_secret_key(parameters.lwe_dimension)
             .unwrap();
 
         // generate the rlwe secret key
         let glwe_secret_key: GlweSecretKey32 = self
             .engine
-            .create_glwe_secret_key(parameters.glwe_dimension, parameters.polynomial_size)
+            .generate_new_glwe_secret_key(parameters.glwe_dimension, parameters.polynomial_size)
             .unwrap();
 
         ClientKey {
@@ -68,9 +68,9 @@ impl<B> BooleanEngine<B> {
     pub fn encrypt(&mut self, message: bool, cks: &ClientKey) -> Ciphertext {
         // encode the boolean message
         let plain: Plaintext32 = if message {
-            self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap()
+            self.engine.create_plaintext_from(&PLAINTEXT_TRUE).unwrap()
         } else {
-            self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap()
+            self.engine.create_plaintext_from(&PLAINTEXT_FALSE).unwrap()
         };
 
         // convert into a variance
@@ -146,9 +146,9 @@ where
             Ciphertext::Trivial(message) => {
                 // encode the boolean message
                 let plain: Plaintext32 = if *message {
-                    self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap()
+                    self.engine.create_plaintext_from(&PLAINTEXT_TRUE).unwrap()
                 } else {
-                    self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap()
+                    self.engine.create_plaintext_from(&PLAINTEXT_FALSE).unwrap()
                 };
                 self.engine
                     .trivially_encrypt_lwe_ciphertext(server_key.lwe_size(), &plain)
@@ -204,7 +204,7 @@ where
 
                 let mut buffer_lwe_before_pbs_o = self
                     .engine
-                    .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])
+                    .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])
                     .unwrap();
                 let buffer_lwe_before_pbs = &mut buffer_lwe_before_pbs_o;
                 let bootstrapper = &mut self.bootstrapper;
@@ -214,7 +214,7 @@ where
                 self.engine
                     .discard_add_lwe_ciphertext(buffer_lwe_before_pbs, ct_condition_ct, &ct_then_ct)
                     .unwrap(); // ct_condition + ct_then
-                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                let cst = self.engine.create_plaintext_from(&PLAINTEXT_FALSE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(buffer_lwe_before_pbs, &cst)
                     .unwrap(); //
@@ -227,7 +227,7 @@ where
                 self.engine
                     .fuse_add_lwe_ciphertext(&mut ct_temp_2, &ct_else_ct)
                     .unwrap(); // + ct_else
-                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                let cst = self.engine.create_plaintext_from(&PLAINTEXT_FALSE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut ct_temp_2, &cst)
                     .unwrap(); //
@@ -245,7 +245,7 @@ where
                 self.engine
                     .fuse_add_lwe_ciphertext(&mut ct_pbs_1, &ct_pbs_2)
                     .unwrap(); // + buffer_lwe_pbs
-                let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                let cst = self.engine.create_plaintext_from(&PLAINTEXT_TRUE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut ct_pbs_1, &cst)
                     .unwrap(); // + 1/8
@@ -282,7 +282,7 @@ where
             (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
                 let mut buffer_lwe_before_pbs = self
                     .engine
-                    .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])
+                    .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])
                     .unwrap();
                 let bootstrapper = &mut self.bootstrapper;
 
@@ -290,7 +290,7 @@ where
                 self.engine
                     .discard_add_lwe_ciphertext(&mut buffer_lwe_before_pbs, ct_left_ct, ct_right_ct)
                     .unwrap(); // ct_left + ct_right
-                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                let cst = self.engine.create_plaintext_from(&PLAINTEXT_FALSE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut buffer_lwe_before_pbs, &cst)
                     .unwrap(); //
@@ -323,7 +323,7 @@ where
             (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
                 let mut buffer_lwe_before_pbs = self
                     .engine
-                    .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])
+                    .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])
                     .unwrap();
                 let bootstrapper = &mut self.bootstrapper;
 
@@ -334,7 +334,7 @@ where
                 self.engine
                     .fuse_opp_lwe_ciphertext(&mut buffer_lwe_before_pbs)
                     .unwrap(); // compute the negation
-                let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                let cst = self.engine.create_plaintext_from(&PLAINTEXT_TRUE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut buffer_lwe_before_pbs, &cst)
                     .unwrap(); // + 1/8
@@ -366,7 +366,7 @@ where
             (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
                 let mut buffer_lwe_before_pbs = self
                     .engine
-                    .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])
+                    .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])
                     .unwrap();
                 let bootstrapper = &mut self.bootstrapper;
 
@@ -377,7 +377,7 @@ where
                 self.engine
                     .fuse_opp_lwe_ciphertext(&mut buffer_lwe_before_pbs)
                     .unwrap(); // compute the negation
-                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                let cst = self.engine.create_plaintext_from(&PLAINTEXT_FALSE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut buffer_lwe_before_pbs, &cst)
                     .unwrap(); //
@@ -410,7 +410,7 @@ where
             (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
                 let mut buffer_lwe_before_pbs = self
                     .engine
-                    .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])
+                    .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])
                     .unwrap();
                 let bootstrapper = &mut self.bootstrapper;
 
@@ -418,7 +418,7 @@ where
                 self.engine
                     .discard_add_lwe_ciphertext(&mut buffer_lwe_before_pbs, ct_left_ct, ct_right_ct)
                     .unwrap(); // ct_left + ct_right
-                let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                let cst = self.engine.create_plaintext_from(&PLAINTEXT_TRUE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut buffer_lwe_before_pbs, &cst)
                     .unwrap(); // + 1/8
@@ -450,7 +450,7 @@ where
             (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
                 let mut buffer_lwe_before_pbs = self
                     .engine
-                    .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])
+                    .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])
                     .unwrap();
                 let bootstrapper = &mut self.bootstrapper;
 
@@ -458,11 +458,11 @@ where
                 self.engine
                     .discard_add_lwe_ciphertext(&mut buffer_lwe_before_pbs, ct_left_ct, ct_right_ct)
                     .unwrap(); // ct_left + ct_right
-                let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                let cst_add = self.engine.create_plaintext_from(&PLAINTEXT_TRUE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut buffer_lwe_before_pbs, &cst_add)
                     .unwrap(); // + 1/8
-                let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
+                let cst_mul = self.engine.create_cleartext_from(&2u32).unwrap();
                 self.engine
                     .fuse_mul_lwe_ciphertext_cleartext(&mut buffer_lwe_before_pbs, &cst_mul)
                     .unwrap(); //* 2
@@ -494,7 +494,7 @@ where
             (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
                 let mut buffer_lwe_before_pbs = self
                     .engine
-                    .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])
+                    .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])
                     .unwrap();
                 let bootstrapper = &mut self.bootstrapper;
 
@@ -502,14 +502,14 @@ where
                 self.engine
                     .discard_add_lwe_ciphertext(&mut buffer_lwe_before_pbs, ct_left_ct, ct_right_ct)
                     .unwrap(); // ct_left + ct_right
-                let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                let cst_add = self.engine.create_plaintext_from(&PLAINTEXT_TRUE).unwrap();
                 self.engine
                     .fuse_add_lwe_ciphertext_plaintext(&mut buffer_lwe_before_pbs, &cst_add)
                     .unwrap(); // + 1/8
                 self.engine
                     .fuse_opp_lwe_ciphertext(&mut buffer_lwe_before_pbs)
                     .unwrap(); // compute the negation
-                let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
+                let cst_mul = self.engine.create_cleartext_from(&2u32).unwrap();
                 self.engine
                     .fuse_mul_lwe_ciphertext_cleartext(&mut buffer_lwe_before_pbs, &cst_mul)
                     .unwrap(); //* 2

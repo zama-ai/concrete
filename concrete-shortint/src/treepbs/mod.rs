@@ -13,13 +13,13 @@ use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, ServerKey};
 use concrete_core::prelude::{
     AbstractEngine, DefaultSerializationEngine, EntityDeserializationEngine,
-    EntitySerializationEngine, PackingKeyswitchKey64,
+    EntitySerializationEngine, LwePackingKeyswitchKey64,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone)]
 pub struct TreepbsKey {
-    pub pksk: PackingKeyswitchKey64,
+    pub pksk: LwePackingKeyswitchKey64,
 }
 
 impl TreepbsKey {

@@ -22,7 +22,7 @@ lazy_static = { version = "1.4.0", optional = true }
 [dependencies.concrete-core]
 package = "concrete-core-experimental"
 git = "https://github.com/zama-ai/concrete-core"
-rev = "384889f8b7fac829d9a6a9c18b728ceb8129fdbe"
+rev = "52084d47c8f5c98568b69389665e82baaf3b8790"
 features = [
     "backend_default",
     "backend_fftw",

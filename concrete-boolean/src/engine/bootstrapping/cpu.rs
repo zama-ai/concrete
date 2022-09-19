@@ -29,7 +29,7 @@ impl CpuServerKey {
         // creation of the bootstrapping key in the Fourier domain
         let mut fftw_engine = FftwEngine::new(()).unwrap();
 
-        let bootstrap_key: LweBootstrapKey32 = engine.create_lwe_bootstrap_key(
+        let bootstrap_key: LweBootstrapKey32 = engine.generate_new_lwe_bootstrap_key(
             &cks.lwe_secret_key,
             &cks.glwe_secret_key,
             cks.parameters.pbs_base_log,
@@ -46,7 +46,7 @@ impl CpuServerKey {
         // convert into a variance for lwe context
         let var_lwe = Variance(cks.parameters.lwe_modular_std_dev.get_variance());
         // creation of the key switching key
-        let ksk = engine.create_lwe_keyswitch_key(
+        let ksk = engine.generate_new_lwe_keyswitch_key(
             &big_lwe_secret_key,
             &cks.lwe_secret_key,
             cks.parameters.ks_level,
@@ -114,12 +114,12 @@ impl Memory {
             .fill(PLAINTEXT_TRUE);
 
         let accumulator = engine
-            .create_glwe_ciphertext(
+            .create_glwe_ciphertext_from(
                 &*accumulator_elements,
                 server_key.bootstrapping_key.polynomial_size(),
             )
             .unwrap();
-        let lwe = engine.create_lwe_ciphertext(lwe_elements).unwrap();
+        let lwe = engine.create_lwe_ciphertext_from(lwe_elements).unwrap();
 
         (accumulator, lwe)
     }
@@ -164,7 +164,7 @@ impl Bootstrapper for CpuBootstrapper {
             .unwrap();
         let input = self
             .engine
-            .create_lwe_ciphertext(inner_data.as_slice())
+            .create_lwe_ciphertext_from(inner_data.as_slice())
             .unwrap();
 
         self.fftw_engine.discard_bootstrap_lwe_ciphertext(
@@ -179,7 +179,7 @@ impl Bootstrapper for CpuBootstrapper {
             .consume_retrieve_lwe_ciphertext(buffer_lwe_after_pbs)
             .unwrap()
             .to_vec();
-        let ct = self.engine.create_lwe_ciphertext(data)?;
+        let ct = self.engine.create_lwe_ciphertext_from(data)?;
         Ok(ct)
     }
 
@@ -191,7 +191,7 @@ impl Bootstrapper for CpuBootstrapper {
         // Allocate the output of the KS
         let mut ct_ks = self
             .engine
-            .create_lwe_ciphertext(vec![0u32; server_key.lwe_size().0])?;
+            .create_lwe_ciphertext_from(vec![0u32; server_key.lwe_size().0])?;
 
         self.engine.discard_keyswitch_lwe_ciphertext(
             &mut ct_ks,
@@ -214,7 +214,9 @@ impl Bootstrapper for CpuBootstrapper {
             .engine
             .consume_retrieve_lwe_ciphertext(ciphertext)
             .unwrap();
-        let input_view = self.engine.create_lwe_ciphertext(inner_data.as_slice())?;
+        let input_view = self
+            .engine
+            .create_lwe_ciphertext_from(inner_data.as_slice())?;
 
         self.fftw_engine.discard_bootstrap_lwe_ciphertext(
             &mut buffer_lwe_after_pbs,
@@ -228,11 +230,11 @@ impl Bootstrapper for CpuBootstrapper {
             .engine
             .consume_retrieve_lwe_ciphertext(buffer_lwe_after_pbs)
             .unwrap();
-        let buffer_lwe_after_pbs = self.engine.create_lwe_ciphertext(&*slice)?;
+        let buffer_lwe_after_pbs = self.engine.create_lwe_ciphertext_from(&*slice)?;
 
         let mut output_view = self
             .engine
-            .create_lwe_ciphertext(inner_data.as_mut_slice())?;
+            .create_lwe_ciphertext_from(inner_data.as_mut_slice())?;
 
         // Compute a key switch to get back to input key
         self.engine.discard_keyswitch_lwe_ciphertext(
@@ -241,7 +243,7 @@ impl Bootstrapper for CpuBootstrapper {
             &server_key.key_switching_key,
         )?;
 
-        let ciphertext = self.engine.create_lwe_ciphertext(inner_data)?;
+        let ciphertext = self.engine.create_lwe_ciphertext_from(inner_data)?;
 
         Ok(Ciphertext::Encrypted(ciphertext))
     }

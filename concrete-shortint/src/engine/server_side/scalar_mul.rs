@@ -21,7 +21,7 @@ impl ShortintEngine {
         scalar: u8,
     ) -> EngineResult<()> {
         let scalar = u64::from(scalar);
-        let cleartext_scalar = self.engine.create_cleartext(&scalar).unwrap();
+        let cleartext_scalar = self.engine.create_cleartext_from(&scalar).unwrap();
         self.engine
             .fuse_mul_lwe_ciphertext_cleartext(&mut ct.ct, &cleartext_scalar)?;
 

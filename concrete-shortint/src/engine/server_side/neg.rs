@@ -52,7 +52,7 @@ impl ShortintEngine {
         // (0,Delta*z) - ct
         self.engine.fuse_opp_lwe_ciphertext(&mut ct.ct)?;
 
-        let clear_w = self.engine.create_plaintext(&w)?;
+        let clear_w = self.engine.create_plaintext_from(&w)?;
         self.engine
             .fuse_add_lwe_ciphertext_plaintext(&mut ct.ct, &clear_w)?;
 

@@ -21,7 +21,7 @@ impl ShortintEngine {
     ) -> EngineResult<()> {
         let delta = (1_u64 << 63) / (ct.message_modulus.0 * ct.carry_modulus.0) as u64;
         let shift_plaintext = u64::from(scalar) * delta;
-        let plaintext_scalar = self.engine.create_plaintext(&shift_plaintext).unwrap();
+        let plaintext_scalar = self.engine.create_plaintext_from(&shift_plaintext).unwrap();
         self.engine
             .fuse_add_lwe_ciphertext_plaintext(&mut ct.ct, &plaintext_scalar)?;
 

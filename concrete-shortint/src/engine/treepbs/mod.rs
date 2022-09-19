@@ -7,8 +7,8 @@ use concrete_core::backends::fftw::private::crypto::bootstrap::FourierBuffers;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
 use concrete_core::commons::math::polynomial::Polynomial;
 use concrete_core::prelude::{
-    DispersionParameter, LweBootstrapKeyEntity, LweCiphertext64, PackingKeyswitchKeyCreationEngine,
-    Variance,
+    DispersionParameter, LweBootstrapKeyEntity, LweCiphertext64,
+    LwePackingKeyswitchKeyGenerationEngine, Variance,
 };
 
 impl ShortintEngine {
@@ -17,7 +17,7 @@ impl ShortintEngine {
         let decomp_level_count = cks.parameters.ks_level;
         let noise = Variance(cks.parameters.glwe_modular_std_dev.get_variance());
 
-        let pksk = self.engine.create_packing_keyswitch_key(
+        let pksk = self.engine.generate_new_lwe_packing_keyswitch_key(
             &cks.lwe_secret_key,
             &cks.glwe_secret_key,
             decomp_level_count,

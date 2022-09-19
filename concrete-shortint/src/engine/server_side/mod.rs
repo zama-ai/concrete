@@ -36,7 +36,7 @@ impl ShortintEngine {
         // Convert into a variance for rlwe context
         let var_rlwe = Variance(cks.parameters.glwe_modular_std_dev.get_variance());
 
-        let bootstrap_key: LweBootstrapKey64 = self.par_engine.create_lwe_bootstrap_key(
+        let bootstrap_key: LweBootstrapKey64 = self.par_engine.generate_new_lwe_bootstrap_key(
             &cks.lwe_secret_key_after_ks,
             &cks.glwe_secret_key,
             cks.parameters.pbs_base_log,
@@ -53,7 +53,7 @@ impl ShortintEngine {
         let var_lwe = Variance(cks.parameters.lwe_modular_std_dev.get_variance());
 
         // Creation of the key switching key
-        let ksk = self.engine.create_lwe_keyswitch_key(
+        let ksk = self.engine.generate_new_lwe_keyswitch_key(
             &cks.lwe_secret_key,
             &cks.lwe_secret_key_after_ks,
             cks.parameters.ks_level,
@@ -264,7 +264,7 @@ impl ShortintEngine {
 
         let shifted_value = (modular_value as u64) * delta;
 
-        let plaintext = self.engine.create_plaintext(&shifted_value).unwrap();
+        let plaintext = self.engine.create_plaintext_from(&shifted_value).unwrap();
 
         let ct = self
             .engine
@@ -299,7 +299,7 @@ impl ShortintEngine {
 
         let shifted_value = (modular_value as u64) * delta;
 
-        let plaintext = self.engine.create_plaintext(&shifted_value).unwrap();
+        let plaintext = self.engine.create_plaintext_from(&shifted_value).unwrap();
 
         ct.ct = self
             .engine

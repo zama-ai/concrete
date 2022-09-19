@@ -170,7 +170,7 @@ impl ShortintEngine {
         accumulator_u64.rotate_left(half_box_size);
 
         // Everywhere
-        let accumulator_plaintext = engine.create_plaintext_vector(&accumulator_u64)?;
+        let accumulator_plaintext = engine.create_plaintext_vector_from(&accumulator_u64)?;
 
         let accumulator = engine.trivially_encrypt_glwe_ciphertext(
             server_key.bootstrapping_key.glwe_dimension().to_glwe_size(),
@@ -202,7 +202,7 @@ impl ShortintEngine {
             .unwrap();
 
             // Allocate the buffer for the output of the PBS
-            let zero_plaintext = engine.create_plaintext(&0_u64).unwrap();
+            let zero_plaintext = engine.create_plaintext_from(&0_u64).unwrap();
             let buffer_lwe_after_pbs = engine
                 .trivially_encrypt_lwe_ciphertext(
                     server_key
