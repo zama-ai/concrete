@@ -144,7 +144,8 @@ fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
 
     let param = WOPBS_PARAM_MESSAGE_8_NORM2_5;
 
-    let (cks, sks, wopbs_key) = KEY_CACHE_WOPBS.get_from_param(param);
+    let keys = KEY_CACHE_WOPBS.get_from_param(param);
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
     let mut rng = rand::thread_rng();
 
@@ -203,7 +204,6 @@ define_server_key_bench_fn!(smart_bitxor);
 define_server_key_bench_fn!(smart_add);
 define_server_key_bench_fn!(smart_sub);
 define_server_key_bench_fn!(smart_mul_lsb);
-define_server_key_bench_fn!(smart_mul_msb);
 
 define_server_key_scalar_bench_fn!(unchecked_scalar_add);
 define_server_key_scalar_bench_fn!(unchecked_scalar_mul);
@@ -226,7 +226,8 @@ criterion_group!(
     // multivalue_programmable_bootstrapping
     //bench_two_block_pbs
     //wopbs_v0_norm2_2,
-    bench_wopbs_param_message_8_norm2_5,
+    //bench_wopbs_param_message_8_norm2_5,
+    programmable_bootstrapping
 );
 
 criterion_group!(

@@ -208,7 +208,8 @@ fn wopbs_v0_norm2(param: Parameters) {
 }
 
 fn generate_lut(param: Parameters) {
-    let (cks, sks, wopbs_key) = KEY_CACHE_WOPBS.get_from_param(param);
+    let keys = KEY_CACHE_WOPBS.get_from_param(param);
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
 
     for _ in 0..NB_TEST {
@@ -228,7 +229,8 @@ fn generate_lut(param: Parameters) {
 
 fn generate_lut_modulus(param: Parameters) {
 
-    let (cks, sks, wopbs_key) = KEY_CACHE_WOPBS.get_from_param(param);
+    let keys = KEY_CACHE_WOPBS.get_from_param(param);
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
 
     for _ in 0..NB_TEST {
@@ -246,7 +248,9 @@ fn generate_lut_modulus(param: Parameters) {
 }
 
 fn generate_lut_modulus_not_power_of_two(param: Parameters) {
-    let (cks, sks, wopbs_key) = KEY_CACHE_WOPBS.get_from_param(param);
+
+    let keys = KEY_CACHE_WOPBS.get_from_param(param);
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
 
     for _ in 0..NB_TEST {
