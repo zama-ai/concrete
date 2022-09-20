@@ -148,6 +148,7 @@ pub static SHARED_CACHE: MultiSecPersistDecompCache = SECURITY_WEIGHTS_TABLE
     })
     .collect::<MultiSecPersistDecompCache>();
 
+#[cfg(not(target_os = "macos"))]
 #[static_init::destructor(10)]
 extern "C" fn finaly() {
     for v in SHARED_CACHE.values() {
