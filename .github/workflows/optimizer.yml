@@ -9,7 +9,10 @@ env:
   CARGO_TERM_COLOR: always
 jobs:
   check-concrete-optimizer:
-    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-11]
+    runs-on: ${{ matrix.os }}
     env:
       RUSTFLAGS: -D warnings
     steps:
@@ -30,6 +33,7 @@ jobs:
         run: cargo clippy --all-targets
 
       - name: Tests
+        if: matrix.os == 'ubuntu-20.04'
         run: |
           cargo test --release --no-fail-fast --all-targets
           make -C concrete-optimizer-cpp test-ci
