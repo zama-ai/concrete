@@ -17,6 +17,22 @@ __device__ void real_to_complex_compressed(T *src, double2 *dst) {
   }
 }
 
+template <typename T, typename ST, class params>
+__device__ void real_to_complex_compressed(T *src, double2 *dst) {
+  int tid = threadIdx.x;
+
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    ST x = src[2 * tid];
+    ST y = src[2 * tid + 1];
+
+    dst[tid].x = x / (double)std::numeric_limits<T>::max();
+    dst[tid].y = y / (double)std::numeric_limits<T>::max();
+
+    tid += params::degree / params::opt;
+  }
+}
+
 /*
  * copy source polynomial to specific slice of batched polynomials
  * used only in low latency version
@@ -158,18 +174,14 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
     double frac = v1 - floor(v1);
     frac *= mx;
     double carry = frac - floor(frac);
-    double zero_point_five = 1. / 2.;
-    if (carry >= zero_point_five)
-      frac++;
-
+    frac += (carry >= 0.5);
 
     Torus V1 = typecast_double_to_torus<Torus>(frac);
 
     frac = v2 - floor(v2);
     frac *= mx;
     carry = frac - floor(v2);
-    if (carry >= zero_point_five)
-      frac++;
+    frac += (carry >= 0.5);
 
     Torus V2 = typecast_double_to_torus<Torus>(frac);
 

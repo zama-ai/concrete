@@ -13,16 +13,18 @@ __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
     return i * polynomial_size / 2  * (glwe_dimension + 1) * (glwe_dimension + 1) * l_gadget;
 }
 
-__device__ double2*
-get_ith_mask_kth_block(double2* ptr, int i, int k, int level, uint32_t polynomial_size,
+template <typename T>
+__device__ T*
+get_ith_mask_kth_block(T* ptr, int i, int k, int level, uint32_t polynomial_size,
                        int glwe_dimension, uint32_t l_gadget) {
   return &ptr[get_start_ith_ggsw(i, polynomial_size, glwe_dimension, l_gadget) +
           level * polynomial_size / 2 * (glwe_dimension + 1) * (glwe_dimension + 1) +
           k * polynomial_size / 2 * (glwe_dimension + 1)];
 }
 
-__device__ double2*
-get_ith_body_kth_block(double2 *ptr, int i, int k, int level, uint32_t polynomial_size,
+template <typename T>
+__device__ T*
+get_ith_body_kth_block(T *ptr, int i, int k, int level, uint32_t polynomial_size,
                        int glwe_dimension, uint32_t l_gadget) {
     return &ptr[get_start_ith_ggsw(i, polynomial_size, glwe_dimension, l_gadget) +
                 level * polynomial_size / 2 * (glwe_dimension + 1) * (glwe_dimension + 1) +
@@ -153,5 +155,26 @@ void cuda_convert_lwe_bootstrap_key_64(void *dest, void *src, void *v_stream,
                                            v_stream, gpu_index, input_lwe_dim,
                                            glwe_dim, l_gadget, polynomial_size);
 }
+
+
+// We need these lines so the compiler knows how to specialize these functions
+template __device__ uint64_t*
+get_ith_mask_kth_block(uint64_t* ptr, int i, int k, int level, uint32_t polynomial_size,
+                       int glwe_dimension, uint32_t l_gadget);
+template __device__ uint32_t*
+get_ith_mask_kth_block(uint32_t* ptr, int i, int k, int level, uint32_t polynomial_size,
+                       int glwe_dimension, uint32_t l_gadget);
+template __device__ double2*
+get_ith_mask_kth_block(double2* ptr, int i, int k, int level, uint32_t polynomial_size,
+                       int glwe_dimension, uint32_t l_gadget);
+template __device__ uint64_t*
+get_ith_body_kth_block(uint64_t *ptr, int i, int k, int level, uint32_t polynomial_size,
+                       int glwe_dimension, uint32_t l_gadget);
+template __device__ uint32_t*
+get_ith_body_kth_block(uint32_t *ptr, int i, int k, int level, uint32_t polynomial_size,
+                       int glwe_dimension, uint32_t l_gadget);
+template __device__ double2*
+get_ith_body_kth_block(double2 *ptr, int i, int k, int level, uint32_t polynomial_size,
+                       int glwe_dimension, uint32_t l_gadget);
 
 #endif // CNCRT_BSK_H

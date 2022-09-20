@@ -78,17 +78,44 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     uint32_t num_test_vectors,
     uint32_t lwe_idx,
     uint32_t max_shared_memory);
+
+void cuda_cmux_tree_32(
+        void *v_stream,
+        void *glwe_out,
+        void *ggsw_in,
+        void *lut_vector,
+        uint32_t glwe_dimension,
+        uint32_t polynomial_size,
+        uint32_t base_log,
+        uint32_t l_gadget,
+        uint32_t r,
+        uint32_t max_shared_memory);
+
+void cuda_cmux_tree_64(
+        void *v_stream,
+        void *glwe_out,
+        void *ggsw_in,
+        void *lut_vector,
+        uint32_t glwe_dimension,
+        uint32_t polynomial_size,
+        uint32_t base_log,
+        uint32_t l_gadget,
+        uint32_t r,
+        uint32_t max_shared_memory);
 };
+
 
 __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
                                          int glwe_dimension,
                                          uint32_t l_gadget);
 
-__device__ double2*
-get_ith_mask_kth_block(double2* ptr, int i, int k, int level, uint32_t polynomial_size,
+template <typename T>
+__device__ T*
+get_ith_mask_kth_block(T* ptr, int i, int k, int level, uint32_t polynomial_size,
                        int glwe_dimension, uint32_t l_gadget);
 
-__device__ double2*
-get_ith_body_kth_block(double2 *ptr, int i, int k, int level, uint32_t polynomial_size,
+template <typename T>
+__device__ T*
+get_ith_body_kth_block(T *ptr, int i, int k, int level, uint32_t polynomial_size,
                        int glwe_dimension, uint32_t l_gadget);
 #endif // CUDA_BOOTSTRAP_H
