@@ -25,7 +25,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release -p concrete-boolean --all-targets --all-features
+          args: --release -p concrete-boolean --all-targets
 
       - name: Build Release concrete-shortint
         uses: actions-rs/cargo@v1

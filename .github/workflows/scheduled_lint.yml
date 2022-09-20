@@ -23,7 +23,7 @@ jobs:
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-targets --all-features -- --no-deps -D warnings
+          args: --all-targets --features=booleans,shortints,integers,internal-keycache -- --no-deps -D warnings
 
   audit:
     runs-on: ubuntu-latest

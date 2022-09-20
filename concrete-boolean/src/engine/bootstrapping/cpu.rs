@@ -17,19 +17,23 @@ use super::{BooleanServerKey, Bootstrapper};
 /// * `bootstrapping_key` - a public key, used to perform the bootstrapping operation.
 /// * `key_switching_key` - a public key, used to perform the key-switching operation.
 #[derive(Clone)]
-pub(crate) struct CpuServerKey {
+pub struct CpuBootstrapKey {
+    pub(super) standard_bootstraping_key: LweBootstrapKey32,
     pub(super) bootstrapping_key: FftwFourierLweBootstrapKey32,
     pub(super) key_switching_key: LweKeyswitchKey32,
 }
 
-impl CpuServerKey {
-    pub(crate) fn new(engine: &mut DefaultEngine, cks: &ClientKey) -> Result<Self, Box<dyn Error>> {
+impl CpuBootstrapKey {
+    pub(crate) fn new(
+        engine: &mut DefaultEngine,
+        cks: &ClientKey,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         // convert into a variance for rlwe context
         let var_rlwe = Variance(cks.parameters.glwe_modular_std_dev.get_variance());
         // creation of the bootstrapping key in the Fourier domain
         let mut fftw_engine = FftwEngine::new(()).unwrap();
 
-        let bootstrap_key: LweBootstrapKey32 = engine.generate_new_lwe_bootstrap_key(
+        let standard_bootstraping_key: LweBootstrapKey32 = engine.generate_new_lwe_bootstrap_key(
             &cks.lwe_secret_key,
             &cks.glwe_secret_key,
             cks.parameters.pbs_base_log,
@@ -37,7 +41,7 @@ impl CpuServerKey {
             var_rlwe,
         )?;
 
-        let fourier_bsk = fftw_engine.convert_lwe_bootstrap_key(&bootstrap_key)?;
+        let fourier_bsk = fftw_engine.convert_lwe_bootstrap_key(&standard_bootstraping_key)?;
 
         // Convert the GLWE secret key into an LWE secret key:
         let big_lwe_secret_key =
@@ -55,13 +59,14 @@ impl CpuServerKey {
         )?;
 
         Ok(Self {
+            standard_bootstraping_key,
             bootstrapping_key: fourier_bsk,
             key_switching_key: ksk,
         })
     }
 }
 
-impl BooleanServerKey for CpuServerKey {
+impl BooleanServerKey for CpuBootstrapKey {
     fn lwe_size(&self) -> LweSize {
         self.bootstrapping_key.input_lwe_dimension().to_lwe_size()
     }
@@ -85,7 +90,7 @@ impl Memory {
     fn as_buffers(
         &mut self,
         engine: &mut DefaultEngine,
-        server_key: &CpuServerKey,
+        server_key: &CpuBootstrapKey,
     ) -> (GlweCiphertextView32, LweCiphertextMutView32) {
         let num_elem_in_accumulator = server_key
             .bootstrapping_key
@@ -147,7 +152,7 @@ impl Default for CpuBootstrapper {
 }
 
 impl Bootstrapper for CpuBootstrapper {
-    type ServerKey = CpuServerKey;
+    type ServerKey = CpuBootstrapKey;
 
     fn bootstrap(
         &mut self,
@@ -251,35 +256,33 @@ impl Bootstrapper for CpuBootstrapper {
 
 #[derive(Serialize, Deserialize)]
 struct SerializableCpuServerKey {
+    pub standard_bootstraping_key: Vec<u8>,
     pub key_switching_key: Vec<u8>,
-    pub bootstrapping_key: Vec<u8>,
 }
 
-impl Serialize for CpuServerKey {
+impl Serialize for CpuBootstrapKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
-        let mut fftw_ser_eng =
-            FftwSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
 
         let key_switching_key = ser_eng
             .serialize(&self.key_switching_key)
             .map_err(serde::ser::Error::custom)?;
-        let bootstrapping_key = fftw_ser_eng
-            .serialize(&self.bootstrapping_key)
+        let standard_bootstraping_key = ser_eng
+            .serialize(&self.standard_bootstraping_key)
             .map_err(serde::ser::Error::custom)?;
 
         SerializableCpuServerKey {
             key_switching_key,
-            bootstrapping_key,
+            standard_bootstraping_key,
         }
         .serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for CpuServerKey {
+impl<'de> Deserialize<'de> for CpuBootstrapKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -287,16 +290,22 @@ impl<'de> Deserialize<'de> for CpuServerKey {
         let thing = SerializableCpuServerKey::deserialize(deserializer)
             .map_err(serde::de::Error::custom)?;
         let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
-        let mut fftw_ser_eng =
-            FftwSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+
+        let key_switching_key = ser_eng
+            .deserialize(thing.key_switching_key.as_slice())
+            .map_err(serde::de::Error::custom)?;
+        let standard_bootstraping_key = ser_eng
+            .deserialize(thing.standard_bootstraping_key.as_slice())
+            .map_err(serde::de::Error::custom)?;
+        let bootstrapping_key = FftwEngine::new(())
+            .unwrap()
+            .convert_lwe_bootstrap_key(&standard_bootstraping_key)
+            .map_err(serde::de::Error::custom)?;
 
         Ok(Self {
-            key_switching_key: ser_eng
-                .deserialize(thing.key_switching_key.as_slice())
-                .map_err(serde::de::Error::custom)?,
-            bootstrapping_key: fftw_ser_eng
-                .deserialize(thing.bootstrapping_key.as_slice())
-                .map_err(serde::de::Error::custom)?,
+            standard_bootstraping_key,
+            key_switching_key,
+            bootstrapping_key,
         })
     }
 }

@@ -5,7 +5,11 @@ use bootstrapping::{BooleanServerKey, Bootstrapper, CpuBootstrapper};
 use concrete_core::prelude::{DefaultEngine, *};
 use std::cell::RefCell;
 pub mod bootstrapping;
-use crate::engine::bootstrapping::CpuServerKey;
+use crate::engine::bootstrapping::CpuBootstrapKey;
+
+#[cfg(feature = "cuda")]
+use bootstrapping::{CudaBootstrapKey, CudaBootstrapper};
+
 pub(crate) trait BinaryGatesEngine<L, R, K> {
     fn and(&mut self, ct_left: L, ct_right: R, server_key: &K) -> Ciphertext;
     fn nand(&mut self, ct_left: L, ct_right: R, server_key: &K) -> Ciphertext;
@@ -15,17 +19,43 @@ pub(crate) trait BinaryGatesEngine<L, R, K> {
     fn xnor(&mut self, ct_left: L, ct_right: R, server_key: &K) -> Ciphertext;
 }
 
+/// Trait to be able to acces thread_local
+/// engines in a generic way
+pub(crate) trait WithThreadLocalEngine {
+    fn with_thread_local_mut<R, F>(func: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R;
+}
+
+pub(crate) type CpuBooleanEngine = BooleanEngine<CpuBootstrapper>;
+#[cfg(feature = "cuda")]
+pub(crate) type CudaBooleanEngine = BooleanEngine<CudaBootstrapper>;
+
 // All our thread local engines
 // that our exposed types will use internally to implement their methods
 thread_local! {
     static CPU_ENGINE: RefCell<BooleanEngine<CpuBootstrapper>> = RefCell::new(BooleanEngine::<_>::new());
+    #[cfg(feature = "cuda")]
+    static CUDA_ENGINE: RefCell<BooleanEngine<CudaBootstrapper>> = RefCell::new(BooleanEngine::<_>::new());
 }
 
-pub(crate) fn with_thread_local_cpu_engine_mut<R, F>(func: F) -> R
-where
-    F: FnOnce(&mut BooleanEngine<CpuBootstrapper>) -> R,
-{
-    CPU_ENGINE.with(|engine_cell| func(&mut engine_cell.borrow_mut()))
+impl WithThreadLocalEngine for CpuBooleanEngine {
+    fn with_thread_local_mut<R, F>(func: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        CPU_ENGINE.with(|engine_cell| func(&mut engine_cell.borrow_mut()))
+    }
+}
+
+#[cfg(feature = "cuda")]
+impl WithThreadLocalEngine for CudaBooleanEngine {
+    fn with_thread_local_mut<R, F>(func: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        CUDA_ENGINE.with(|engine_cell| func(&mut engine_cell.borrow_mut()))
+    }
 }
 
 pub(crate) struct BooleanEngine<B> {
@@ -34,8 +64,17 @@ pub(crate) struct BooleanEngine<B> {
 }
 
 impl BooleanEngine<CpuBootstrapper> {
-    pub fn create_server_key(&mut self, cks: &ClientKey) -> CpuServerKey {
-        let server_key = CpuServerKey::new(&mut self.engine, cks).unwrap();
+    pub fn create_server_key(&mut self, cks: &ClientKey) -> CpuBootstrapKey {
+        let server_key = CpuBootstrapKey::new(&mut self.engine, cks).unwrap();
+
+        server_key
+    }
+}
+
+#[cfg(feature = "cuda")]
+impl BooleanEngine<CudaBootstrapper> {
+    pub fn create_server_key(&mut self, cpu_key: &CpuBootstrapKey) -> CudaBootstrapKey {
+        let server_key = self.bootstrapper.new_serverk_key(cpu_key).unwrap();
 
         server_key
     }

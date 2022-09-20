@@ -18,7 +18,10 @@
 //! homomorphically.
 //!
 //! ```rust
-//! use concrete_boolean::gen_keys;
+//! # #[cfg(not(feature = "cuda"))]
+//! # fn main() {
+//!
+//! //! use concrete_boolean::gen_keys;
 //! use concrete_boolean::prelude::*;
 //!
 //! // We generate a set of client/server keys, using the default parameters:
@@ -50,6 +53,10 @@
 //! let ct_9 = server_key.mux(&ct_7, &ct_3, &ct_8);
 //! let output_3 = client_key.decrypt(&ct_9);
 //! assert_eq!(output_3, true);
+//! # }
+//!
+//! # #[cfg(feature = "cuda")]
+//! # fn main() {}
 //! ```
 
 use crate::client_key::ClientKey;
@@ -105,10 +112,15 @@ pub(crate) fn random_integer() -> u32 {
 /// meant to be published (the client sends it to the server).
 ///
 /// ```rust
+/// # #[cfg(not(feature = "cuda"))]
+/// # fn main() {
 /// use concrete_boolean::gen_keys;
 /// use concrete_boolean::prelude::*;
 /// // generate the client key and the server key:
 /// let (cks, sks) = gen_keys();
+/// # }
+/// # #[cfg(feature = "cuda")]
+/// # fn main() {}
 /// ```
 pub fn gen_keys() -> (ClientKey, ServerKey) {
     // generate the client key

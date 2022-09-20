@@ -4,7 +4,7 @@
 //! encryption and decryption methods.
 
 use crate::ciphertext::Ciphertext;
-use crate::engine::with_thread_local_cpu_engine_mut;
+use crate::engine::{CpuBooleanEngine, WithThreadLocalEngine};
 use crate::parameters::BooleanParameters;
 use concrete_core::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -51,6 +51,8 @@ impl ClientKey {
     /// # Example
     ///
     /// ```rust
+    /// # #[cfg(not(feature = "cuda"))]
+    /// # fn main() {
     /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key and the server key:
@@ -62,9 +64,12 @@ impl ClientKey {
     /// // Decryption:
     /// let dec = cks.decrypt(&ct);
     /// assert_eq!(true, dec);
+    /// # }
+    /// # #[cfg(feature = "cuda")]
+    /// # fn main() {}
     /// ```
     pub fn encrypt(&self, message: bool) -> Ciphertext {
-        with_thread_local_cpu_engine_mut(|engine| engine.encrypt(message, self))
+        CpuBooleanEngine::with_thread_local_mut(|engine| engine.encrypt(message, self))
     }
 
     /// Decrypts a ciphertext encrypting a Boolean message using the client key.
@@ -72,6 +77,8 @@ impl ClientKey {
     /// # Example
     ///
     /// ```rust
+    /// # #[cfg(not(feature = "cuda"))]
+    /// # fn main() {
     /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key and the server key:
@@ -83,25 +90,39 @@ impl ClientKey {
     /// // Decryption:
     /// let dec = cks.decrypt(&ct);
     /// assert_eq!(true, dec);
+    /// # }
+    /// # #[cfg(feature = "cuda")]
+    /// # fn main() {}
     /// ```
     pub fn decrypt(&self, ct: &Ciphertext) -> bool {
-        with_thread_local_cpu_engine_mut(|engine| engine.decrypt(ct, self))
+        CpuBooleanEngine::with_thread_local_mut(|engine| engine.decrypt(ct, self))
     }
 
     /// Allocates and generates a client key.
+    ///
+    /// # Panic
+    ///
+    /// This will panic when the "cuda" feature is enabled and the parameters
+    /// uses a GlweDimension > 1 (as it is not yet supported by the cuda backend).
     ///
     /// # Example
     ///
     /// ```rust
     /// use concrete_boolean::client_key::ClientKey;
-    /// use concrete_boolean::parameters::DEFAULT_PARAMETERS;
+    /// use concrete_boolean::parameters::TFHE_LIB_PARAMETERS;
     /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key:
-    /// let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    /// let cks = ClientKey::new(&TFHE_LIB_PARAMETERS);
     /// ```
     pub fn new(parameter_set: &BooleanParameters) -> ClientKey {
-        with_thread_local_cpu_engine_mut(|engine| engine.create_client_key(*parameter_set))
+        #[cfg(feature = "cuda")]
+        {
+            if parameter_set.glwe_dimension.0 > 1 {
+                panic!("the cuda backend does not support support GlweSize greater than one");
+            }
+        }
+        CpuBooleanEngine::with_thread_local_mut(|engine| engine.create_client_key(*parameter_set))
     }
 }
 

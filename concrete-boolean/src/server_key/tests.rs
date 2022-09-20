@@ -1,6 +1,6 @@
 use crate::ciphertext::Ciphertext;
 use crate::client_key::ClientKey;
-use crate::parameters::DEFAULT_PARAMETERS;
+use crate::parameters::BooleanParameters;
 use crate::server_key::{BinaryBooleanGates, ServerKey};
 use crate::{random_boolean, random_integer};
 
@@ -13,11 +13,103 @@ const NB_CT: usize = 8;
 /// Number of gates computed in the deep circuit test
 const NB_GATE: usize = 1 << 11;
 
-#[test]
+#[cfg(not(feature = "cuda"))]
+mod default_parameters_tests {
+    use super::*;
+    use crate::parameters::DEFAULT_PARAMETERS;
+
+    #[test]
+    fn test_encrypt_decrypt_lwe_secret_key_default_parameters() {
+        test_encrypt_decrypt_lwe_secret_key(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_and_gate_default_parameters() {
+        test_and_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_nand_gate_default_parameters() {
+        test_nand_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_or_gate_default_parameters() {
+        test_or_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_nor_gate_default_parameters() {
+        test_nor_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_xor_gate_default_parameters() {
+        test_xor_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_xnor_gate_default_parameters() {
+        test_xnor_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_not_gate_default_parameters() {
+        test_not_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_mux_gate_default_parameters() {
+        test_mux_gate(DEFAULT_PARAMETERS);
+    }
+    #[test]
+    fn test_deep_circuit_default_parameters() {
+        test_deep_circuit(DEFAULT_PARAMETERS);
+    }
+}
+
+mod tfhe_lib_parameters_tests {
+    use super::*;
+    use crate::parameters::TFHE_LIB_PARAMETERS;
+
+    #[test]
+    fn test_encrypt_decrypt_lwe_secret_key_tfhe_lib_parameters() {
+        test_encrypt_decrypt_lwe_secret_key(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_and_gate_tfhe_lib_parameters() {
+        test_and_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_nand_gate_tfhe_lib_parameters() {
+        test_nand_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_or_gate_tfhe_lib_parameters() {
+        test_or_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_nor_gate_tfhe_lib_parameters() {
+        test_nor_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_xor_gate_tfhe_lib_parameters() {
+        test_xor_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_xnor_gate_tfhe_lib_parameters() {
+        test_xnor_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_not_gate_tfhe_lib_parameters() {
+        test_not_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_mux_gate_tfhe_lib_parameters() {
+        test_mux_gate(TFHE_LIB_PARAMETERS);
+    }
+    #[test]
+    fn test_deep_circuit_tfhe_lib_parameters() {
+        test_deep_circuit(TFHE_LIB_PARAMETERS);
+    }
+}
+
 /// test encryption and decryption with the LWE secret key
-fn test_encrypt_decrypt_lwe_secret_key() {
+fn test_encrypt_decrypt_lwe_secret_key(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -67,10 +159,9 @@ fn random_enum_encryption(cks: &ClientKey, sks: &ServerKey, message: bool) -> Ci
     }
 }
 
-#[test]
-fn test_and_gate() {
+fn test_and_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -120,10 +211,9 @@ fn test_and_gate() {
     }
 }
 
-#[test]
-fn test_mux_gate() {
+fn test_mux_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -159,10 +249,9 @@ fn test_mux_gate() {
     }
 }
 
-#[test]
-fn test_nand_gate() {
+fn test_nand_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -220,10 +309,9 @@ fn test_nand_gate() {
     }
 }
 
-#[test]
-fn test_nor_gate() {
+fn test_nor_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -273,10 +361,9 @@ fn test_nor_gate() {
     }
 }
 
-#[test]
-fn test_not_gate() {
+fn test_not_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -300,10 +387,9 @@ fn test_not_gate() {
     }
 }
 
-#[test]
-fn test_or_gate() {
+fn test_or_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -349,10 +435,9 @@ fn test_or_gate() {
     }
 }
 
-#[test]
-fn test_xnor_gate() {
+fn test_xnor_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -410,10 +495,9 @@ fn test_xnor_gate() {
     }
 }
 
-#[test]
-fn test_xor_gate() {
+fn test_xor_gate(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);
@@ -524,10 +608,9 @@ fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &Serve
     }
 }
 
-#[test]
-fn test_deep_circuit() {
+fn test_deep_circuit(parameters: BooleanParameters) {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(&parameters);
 
     // generate the server key set
     let sks = ServerKey::new(&cks);

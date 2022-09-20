@@ -1,7 +1,13 @@
 use crate::ciphertext::Ciphertext;
 use concrete_core::prelude::{LweCiphertext32, LweSize};
 mod cpu;
-pub(crate) use cpu::{CpuBootstrapper, CpuServerKey};
+#[cfg(feature = "cuda")]
+mod cuda;
+
+#[cfg(feature = "cuda")]
+pub(crate) use cuda::{CudaBootstrapKey, CudaBootstrapper};
+
+pub(crate) use cpu::{CpuBootstrapKey, CpuBootstrapper};
 
 pub trait BooleanServerKey {
     /// The LweSize of the Ciphertexts that this key can bootstrap

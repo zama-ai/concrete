@@ -33,6 +33,10 @@ features = [
 criterion = "0.3.4"
 rand = "0.8.4"
 
+
+[features]
+cuda = ["concrete-core/backend_cuda"]
+
 [[bench]]
 name = "bench"
 harness = false
