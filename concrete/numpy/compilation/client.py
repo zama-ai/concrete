@@ -196,6 +196,7 @@ class Client:
                 clear result of homomorphic evaluaton
         """
 
+        self.keygen(force=False)
         results = ClientSupport.decrypt_result(self._keyset, result)
         if not isinstance(results, tuple):
             results = (results,)
