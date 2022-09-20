@@ -65,6 +65,16 @@ public:
   unsigned int getPrecision() const { return this->precision; }
   BackingIntType getValue() const { return this->value; }
 
+  template <typename OtherBackingIntType>
+  bool operator==(const IntLambdaArgument<OtherBackingIntType> &other) const {
+    return getValue() == other.getValue();
+  }
+
+  template <typename OtherBackingIntType>
+  bool operator!=(const IntLambdaArgument<OtherBackingIntType> &other) const {
+    return !(*this == other);
+  }
+
   static char ID;
 
 protected:
@@ -175,6 +185,26 @@ public:
   /// version).
   typename ScalarArgumentT::value_type *getValue() {
     return this->value.data();
+  }
+
+  template <typename OtherScalarArgumentT>
+  bool
+  operator==(const TensorLambdaArgument<OtherScalarArgumentT> &other) const {
+    if (getDimensions() != other.getDimensions())
+      return false;
+
+    for (auto pair : llvm::zip(value, other.value)) {
+      if (std::get<0>(pair) != std::get<1>(pair))
+        return false;
+    }
+
+    return true;
+  }
+
+  template <typename OtherScalarArgumentT>
+  bool
+  operator!=(const TensorLambdaArgument<OtherScalarArgumentT> &other) const {
+    return !(*this == other);
   }
 
   static char ID;
