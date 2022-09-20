@@ -65,32 +65,57 @@ typedef struct double2 {
 // From concrete-cuda
 #include "bootstrap.h"
 #include "device.h"
+#include "keyswitch.h"
 
 void memref_keyswitch_lwe_cuda_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
     uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
-    uint64_t ct0_stride, mlir::concretelang::RuntimeContext *context) {
-  // TODO: GPU implementation
+    uint64_t ct0_stride, uint32_t level, uint32_t base_log,
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim,
+    mlir::concretelang::RuntimeContext *context) {
+  // we currently just use the first GPU, but this should be decided
+  // dynamically, or during compilation, in the future
+  uint32_t gpu_idx = 0;
+  uint32_t num_samples = 1;
+  void *stream = cuda_create_stream(gpu_idx);
+  // move input ciphertext into gpu
+  void *ct0_gpu = memcpy_async_ct_to_gpu(ct0_allocated, ct0_aligned, ct0_offset,
+                                         ct0_size, ct0_stride, gpu_idx, stream);
+  // move output ciphertext into gpu
+  void *out_gpu = memcpy_async_ct_to_gpu(out_allocated, out_aligned, out_offset,
+                                         out_size, out_stride, gpu_idx, stream);
+  void *ksk_gpu = memcpy_async_ksk_to_gpu(context, level, input_lwe_dim,
+                                          output_lwe_dim, gpu_idx, stream);
+  cuda_keyswitch_lwe_ciphertext_vector_64(stream, out_gpu, ct0_gpu, ksk_gpu,
+                                          input_lwe_dim, output_lwe_dim,
+                                          base_log, level, num_samples);
+  // copy output ciphertext back to cpu
+  memcpy_async_ct_to_cpu(out_allocated, out_aligned, out_offset, out_size,
+                         out_stride, out_gpu, out_size, gpu_idx, stream);
+  cuda_synchronize_device(gpu_idx);
+  // free memory that we allocated on gpu
+  cuda_drop(ct0_gpu, gpu_idx);
+  cuda_drop(out_gpu, gpu_idx);
+  cuda_drop(ksk_gpu, gpu_idx);
+  cuda_destroy_stream(stream, gpu_idx);
 }
 
-void *move_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
-                     uint64_t ct_offset, uint64_t ct_size, uint64_t ct_stride,
-                     uint32_t gpu_idx) {
-  void *stream = cuda_create_stream(gpu_idx);
+void *memcpy_async_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
+                             uint64_t ct_offset, uint64_t ct_size,
+                             uint64_t ct_stride, uint32_t gpu_idx,
+                             void *stream) {
   size_t buf_size = ct_size * sizeof(uint64_t);
   void *ct_gpu = cuda_malloc(buf_size, gpu_idx);
   cuda_memcpy_async_to_gpu(ct_gpu, ct_aligned + ct_offset, buf_size, stream,
                            gpu_idx);
-  cuda_synchronize_device(gpu_idx);
-  cuda_destroy_stream(stream, gpu_idx);
   return ct_gpu;
 }
 
-void *move_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
-                      uint32_t input_lwe_dim, uint32_t poly_size,
-                      uint32_t level, uint32_t glwe_dim, uint32_t gpu_idx = 0) {
-  void *stream = cuda_create_stream(gpu_idx);
+void *memcpy_async_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
+                              uint32_t input_lwe_dim, uint32_t poly_size,
+                              uint32_t level, uint32_t glwe_dim,
+                              uint32_t gpu_idx, void *stream) {
   LweBootstrapKey64 *bsk = get_bootstrap_key_u64(context);
   size_t bsk_buffer_len =
       input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) * poly_size * level;
@@ -105,20 +130,41 @@ void *move_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
   cuda_initialize_twiddles(poly_size, gpu_idx);
   cuda_convert_lwe_bootstrap_key_64(fbsk_gpu, bsk_buffer, stream, gpu_idx,
                                     input_lwe_dim, glwe_dim, level, poly_size);
+  // This is currently not 100% async as we have to free CPU memory after
+  // conversion
   cuda_synchronize_device(gpu_idx);
-  cuda_destroy_stream(stream, gpu_idx);
   free(bsk_buffer);
   return fbsk_gpu;
 }
 
-void move_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
-                    uint64_t out_offset, uint64_t out_size, uint64_t out_stride,
-                    void *ct_gpu, size_t size, uint32_t gpu_idx) {
-  void *stream = cuda_create_stream(gpu_idx);
+void *memcpy_async_ksk_to_gpu(mlir::concretelang::RuntimeContext *context,
+                              uint32_t level, uint32_t input_lwe_dim,
+                              uint32_t output_lwe_dim, uint32_t gpu_idx,
+                              void *stream) {
+  LweKeyswitchKey64 *ksk = get_keyswitch_key_u64(context);
+  size_t ksk_buffer_len = input_lwe_dim * (output_lwe_dim + 1) * level;
+  size_t ksk_buffer_size = sizeof(uint64_t) * ksk_buffer_len;
+  uint64_t *ksk_buffer =
+      (uint64_t *)aligned_alloc(U64_ALIGNMENT, ksk_buffer_size);
+  void *ksk_gpu = cuda_malloc(ksk_buffer_size, gpu_idx);
+  CAPI_ASSERT_ERROR(
+      default_engine_discard_convert_lwe_keyswitch_key_to_lwe_keyswitch_key_mut_view_u64_raw_ptr_buffers(
+          get_levelled_engine(), ksk, ksk_buffer));
+  cuda_memcpy_async_to_gpu(ksk_gpu, ksk_buffer, ksk_buffer_size, stream,
+                           gpu_idx);
+  // This is currently not 100% async as we have to free CPU memory after
+  // conversion
+  cuda_synchronize_device(gpu_idx);
+  free(ksk_buffer);
+  return ksk_gpu;
+}
+
+void memcpy_async_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
+                            uint64_t out_offset, uint64_t out_size,
+                            uint64_t out_stride, void *ct_gpu, size_t size,
+                            uint32_t gpu_idx, void *stream) {
   cuda_memcpy_async_to_cpu(out_aligned + out_offset, ct_gpu,
                            size * sizeof(uint64_t), stream, gpu_idx);
-  cuda_synchronize_device(gpu_idx);
-  cuda_destroy_stream(stream, gpu_idx);
 }
 
 void free_from_gpu(void *gpu_ptr, uint32_t gpu_idx = 0) {
@@ -139,14 +185,14 @@ void memref_bootstrap_lwe_cuda_u64(
   uint32_t gpu_idx = 0;
   void *stream = cuda_create_stream(gpu_idx);
   // move bsk to gpu
-  void *fbsk_gpu = move_bsk_to_gpu(context, input_lwe_dim, poly_size, level,
-                                   glwe_dim, gpu_idx);
+  void *fbsk_gpu = memcpy_async_bsk_to_gpu(context, input_lwe_dim, poly_size,
+                                           level, glwe_dim, gpu_idx, stream);
   // move input ciphertext into gpu
-  void *ct0_gpu = move_ct_to_gpu(ct0_allocated, ct0_aligned, ct0_offset,
-                                 ct0_size, ct0_stride, gpu_idx);
+  void *ct0_gpu = memcpy_async_ct_to_gpu(ct0_allocated, ct0_aligned, ct0_offset,
+                                         ct0_size, ct0_stride, gpu_idx, stream);
   // move output ciphertext into gpu
-  void *out_gpu = move_ct_to_gpu(out_allocated, out_aligned, out_offset,
-                                 out_size, out_stride, gpu_idx);
+  void *out_gpu = memcpy_async_ct_to_gpu(out_allocated, out_aligned, out_offset,
+                                         out_size, out_stride, gpu_idx, stream);
   // construct LUT GLWE ciphertext
   uint64_t glwe_ct_len = poly_size * (glwe_dim + 1);
   uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
@@ -179,8 +225,8 @@ void memref_bootstrap_lwe_cuda_u64(
       fbsk_gpu, input_lwe_dim, poly_size, base_log, level, num_samples,
       num_test_vectors, lwe_idx, cuda_get_max_shared_memory(gpu_idx));
   // copy output ciphertext back to cpu
-  move_ct_to_cpu(out_allocated, out_aligned, out_offset, out_size, out_stride,
-                 out_gpu, out_size, gpu_idx);
+  memcpy_async_ct_to_cpu(out_allocated, out_aligned, out_offset, out_size,
+                         out_stride, out_gpu, out_size, gpu_idx, stream);
   cuda_synchronize_device(gpu_idx);
   // free memory that we allocated on gpu
   cuda_drop(fbsk_gpu, gpu_idx);

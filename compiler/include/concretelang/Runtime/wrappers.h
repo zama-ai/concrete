@@ -129,8 +129,7 @@ void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
 /// \brief Run bootstrapping on GPU.
 ///
 /// It handles memory copy of the different arguments from CPU to GPU, and
-/// freeing memory, except for the bootstrapping key, which should already be in
-/// GPU.
+/// freeing memory.
 ///
 /// \param out_allocated
 /// \param out_aligned
@@ -164,7 +163,35 @@ void memref_bootstrap_lwe_cuda_u64(
     uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
     mlir::concretelang::RuntimeContext *context);
 
-/// \brief Copy ciphertext from CPU to GPU using a single stream.
+/// \brief Run Keyswitch on GPU.
+///
+/// It handles memory copy of the different arguments from CPU to GPU, and
+/// freeing memory.
+///
+/// \param out_allocated
+/// \param out_aligned
+/// \param out_offset
+/// \param out_size
+/// \param out_stride
+/// \param ct0_allocated
+/// \param ct0_aligned
+/// \param ct0_offset
+/// \param ct0_size
+/// \param ct0_stride
+/// \param level
+/// \param base_log
+/// \param input_lwe_dim LWE input dimension
+/// \param output_lwe_dim LWE output dimension
+/// \param context
+void memref_keyswitch_lwe_cuda_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, uint32_t level, uint32_t base_log,
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim,
+    mlir::concretelang::RuntimeContext *context);
+
+/// \brief Copy ciphertext from CPU to GPU.
 ///
 /// It handles memory allocation on GPU.
 ///
@@ -174,12 +201,14 @@ void memref_bootstrap_lwe_cuda_u64(
 /// \param ct_size
 /// \param ct_stride
 /// \param gpu_idx index of the GPU to use
+/// \param stream cuda stream to use for the copy
 /// \return void* pointer to the GPU ciphertext
-void *move_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
-                     uint64_t ct_offset, uint64_t ct_size, uint64_t ct_stride,
-                     uint32_t gpu_idx);
+void *memcpy_async_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
+                             uint64_t ct_offset, uint64_t ct_size,
+                             uint64_t ct_stride, uint32_t gpu_idx,
+                             void *stream);
 
-/// \brief Copy ciphertext from GPU to CPU using a single stream.
+/// \brief Copy ciphertext from GPU to CPU.
 ///
 /// Memory on GPU won't be freed after the copy.
 ///
@@ -191,11 +220,13 @@ void *move_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
 /// \param ct_gpu
 /// \param size
 /// \param gpu_idx index of the GPU to use
-void move_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
-                    uint64_t out_offset, uint64_t out_size, uint64_t out_stride,
-                    void *ct_gpu, size_t size, uint32_t gpu_idx);
+/// \param stream cuda stream to use for the copy
+void memcpy_async_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
+                            uint64_t out_offset, uint64_t out_size,
+                            uint64_t out_stride, void *ct_gpu, size_t size,
+                            uint32_t gpu_idx, void *stream);
 
-/// \brief Copy bootstrapping key from CPU to GPU using a single stream.
+/// \brief Copy bootstrapping key from CPU to GPU.
 ///
 /// It handles memory allocation on GPU, as well as conversion to the Fourier
 /// domain.
@@ -206,10 +237,28 @@ void move_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
 /// \param level
 /// \param glwe_dim
 /// \param gpu_idx index of the GPU to use
+/// \param stream cuda stream to use for the copy
 /// \return void*  pointer to the GPU bsk
-void *move_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
-                      uint32_t input_lwe_dim, uint32_t poly_size,
-                      uint32_t level, uint32_t glwe_dim, uint32_t gpu_idx);
+void *memcpy_async_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
+                              uint32_t input_lwe_dim, uint32_t poly_size,
+                              uint32_t level, uint32_t glwe_dim,
+                              uint32_t gpu_idx, void *stream);
+
+/// \brief Copy keyswitching key from CPU to GPU.
+///
+/// It handles memory allocation on GPU.
+///
+/// \param context
+/// \param level
+/// \param input_lwe_dim
+/// \param output_lwe_dim
+/// \param gpu_idx index of the GPU to use
+/// \param stream cuda stream to use for the copy
+/// \return void*  pointer to the GPU ksk
+void *memcpy_async_ksk_to_gpu(mlir::concretelang::RuntimeContext *context,
+                              uint32_t level, uint32_t input_lwe_dim,
+                              uint32_t output_lwe_dim, uint32_t gpu_idx,
+                              void *stream);
 
 /// \brief Free gpu memory.
 ///

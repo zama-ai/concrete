@@ -201,6 +201,50 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   };
 };
 
+struct KeySwitchToGPU : public mlir::OpRewritePattern<
+                            mlir::concretelang::Concrete::KeySwitchLweOp> {
+  KeySwitchToGPU(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::concretelang::Concrete::KeySwitchLweOp>(
+            context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::Concrete::KeySwitchLweOp keySwitchOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    ConcreteToBConcreteTypeConverter converter;
+
+    mlir::Value levelCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        keySwitchOp.getLoc(), keySwitchOp.level(), 32);
+    mlir::Value baseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        keySwitchOp.getLoc(), keySwitchOp.baseLog(), 32);
+
+    // construct operands for in/out dimensions
+    mlir::concretelang::Concrete::LweCiphertextType outType =
+        keySwitchOp.getType();
+    auto outDim = outType.getDimension();
+    mlir::Value outDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        keySwitchOp.getLoc(), outDim, 32);
+    auto inputType =
+        keySwitchOp.ciphertext()
+            .getType()
+            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
+    auto inputDim = inputType.getDimension();
+    mlir::Value inputDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        keySwitchOp.getLoc(), inputDim, 32);
+
+    mlir::Operation *bKeySwitchGPUOp = rewriter.replaceOpWithNewOp<
+        mlir::concretelang::BConcrete::KeySwitchLweGPUBufferOp>(
+        keySwitchOp, outType, keySwitchOp.ciphertext(), levelCst, baseLogCst,
+        inputDimCst, outDimCst);
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, bKeySwitchGPUOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
+    return ::mlir::success();
+  };
+};
+
 struct AddPlaintextLweCiphertextOpPattern
     : public mlir::OpRewritePattern<Concrete::AddPlaintextLweCiphertextOp> {
   AddPlaintextLweCiphertextOpPattern(::mlir::MLIRContext *context,
@@ -872,23 +916,24 @@ void ConcreteToBConcretePass::runOnOperation() {
         LowToBConcrete<mlir::concretelang::Concrete::NegateLweCiphertextOp,
                        mlir::concretelang::BConcrete::NegateLweBufferOp,
                        BConcrete::NegateCRTLweBufferOp>,
-        LowToBConcrete<mlir::concretelang::Concrete::KeySwitchLweOp,
-                       mlir::concretelang::BConcrete::KeySwitchLweBufferOp,
-                       mlir::concretelang::BConcrete::KeySwitchLweBufferOp>,
         LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweBufferOp,
                        BConcrete::WopPBSCRTLweBufferOp>>(&getContext());
 
     if (this->useGPU) {
-      patterns.insert<LowToBConcrete<
-          mlir::concretelang::Concrete::BootstrapLweOp,
-          mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp,
-          mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp>>(
-          &getContext());
+      patterns
+          .insert<LowToBConcrete<
+                      mlir::concretelang::Concrete::BootstrapLweOp,
+                      mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp,
+                      mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp>,
+                  KeySwitchToGPU>(&getContext());
     } else {
       patterns.insert<
           LowToBConcrete<mlir::concretelang::Concrete::BootstrapLweOp,
                          mlir::concretelang::BConcrete::BootstrapLweBufferOp,
-                         mlir::concretelang::BConcrete::BootstrapLweBufferOp>>(
+                         mlir::concretelang::BConcrete::BootstrapLweBufferOp>,
+          LowToBConcrete<mlir::concretelang::Concrete::KeySwitchLweOp,
+                         mlir::concretelang::BConcrete::KeySwitchLweBufferOp,
+                         mlir::concretelang::BConcrete::KeySwitchLweBufferOp>>(
           &getContext());
     }
 

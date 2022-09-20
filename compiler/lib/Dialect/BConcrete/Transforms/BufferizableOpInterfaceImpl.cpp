@@ -76,6 +76,7 @@ char memref_bootstrap_lwe_u64[] = "memref_bootstrap_lwe_u64";
 char memref_keyswitch_async_lwe_u64[] = "memref_keyswitch_async_lwe_u64";
 char memref_bootstrap_async_lwe_u64[] = "memref_bootstrap_async_lwe_u64";
 char memref_await_future[] = "memref_await_future";
+char memref_keyswitch_lwe_cuda_u64[] = "memref_keyswitch_lwe_cuda_u64";
 char memref_bootstrap_lwe_cuda_u64[] = "memref_bootstrap_lwe_cuda_u64";
 char memref_expand_lut_in_trivial_glwe_ct_u64[] =
     "memref_expand_lut_in_trivial_glwe_ct_u64";
@@ -112,6 +113,11 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
   } else if (funcName == memref_keyswitch_lwe_u64) {
     funcType = mlir::FunctionType::get(
         rewriter.getContext(), {memref1DType, memref1DType, contextType}, {});
+  } else if (funcName == memref_keyswitch_lwe_cuda_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref1DType, memref1DType, i32Type,
+                                        i32Type, i32Type, i32Type, contextType},
+                                       {});
   } else if (funcName == memref_bootstrap_lwe_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
@@ -481,6 +487,10 @@ void mlir::concretelang::BConcrete::
     BConcrete::NegateLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::NegateLweBufferOp,
                                         memref_negate_lwe_ciphertext_u64>>(
+        *ctx);
+    BConcrete::KeySwitchLweGPUBufferOp::attachInterface<
+        BufferizableWithCallOpInterface<BConcrete::KeySwitchLweGPUBufferOp,
+                                        memref_keyswitch_lwe_cuda_u64, true>>(
         *ctx);
     BConcrete::BootstrapLweGPUBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::BootstrapLweGPUBufferOp,
