@@ -145,6 +145,15 @@ public:
     std::copy(value.begin(), value.end(), std::back_inserter(this->value));
   }
 
+  /// Construct tensor argument by moving the values from the
+  /// one-dimensional vector `value`, but interpreting the array's
+  /// values as a linearized multi-dimensional tensor with the sizes
+  /// of the dimensions specified in `dimensions`.
+  TensorLambdaArgument(
+      std::vector<typename ScalarArgumentT::value_type> &&value,
+      llvm::ArrayRef<int64_t> dimensions)
+      : dimensions(dimensions.vec()), value(std::move(value)) {}
+
   /// Construct a one-dimensional tensor argument from the
   /// array `value`.
   TensorLambdaArgument(
