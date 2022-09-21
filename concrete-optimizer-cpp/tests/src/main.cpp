@@ -30,7 +30,7 @@ void test_v0() {
       concrete_optimizer::v0::optimize_bootstrap(
           PRECISION_1B, NOISE_DEVIATION_COEFF, default_options());
 
-  assert(solution.glwe_polynomial_size == 1024);
+  assert(solution.glwe_polynomial_size == 256);
 }
 
 void test_dag_no_lut() {
@@ -52,7 +52,7 @@ void test_dag_no_lut() {
       dag->add_dot(slice(inputs), std::move(weights));
 
   auto solution = dag->optimize_v0(default_options());
-  assert(solution.glwe_polynomial_size == 1024);
+  assert(solution.glwe_polynomial_size == 256);
 }
 
 void test_dag_lut() {

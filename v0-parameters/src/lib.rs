@@ -259,7 +259,7 @@ mod tests {
             let ref_file: &str = &format!("ref/v0_last_{security_level}");
             let args: Args = Args {
                 min_precision: 1,
-                max_precision: 9,
+                max_precision: 10,
                 p_error: _4_SIGMA,
                 security_level,
                 min_log_poly_size: MIN_LOG_POLY_SIZE,

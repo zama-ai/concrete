@@ -590,6 +590,7 @@ mod tests {
         let sol_lut = state_lut.best_solution.unwrap();
         assert!(sol_no_lut.complexity < sol_lut.complexity);
     }
+
     #[test]
     fn test_lut_vs_no_lut() {
         for precision in 1..=8 {
@@ -659,7 +660,13 @@ mod tests {
 
         let sol_1_layer = optimize(&dag_1_layer).best_solution.unwrap();
         let sol_2_layer = optimize(&dag_2_layer).best_solution.unwrap();
-        assert!(sol_1_layer.complexity < sol_2_layer.complexity);
+        assert!(
+            sol_1_layer.complexity <= sol_2_layer.complexity,
+            "Precision: {} => sol_1_layer: {} ; sol_2_layer: {}",
+            precision,
+            sol_1_layer.complexity,
+            sol_2_layer.complexity
+        );
     }
 
     #[test]
@@ -856,7 +863,7 @@ mod tests {
     #[test]
     fn test_global_p_error_non_dominating_lut() {
         let depth = 128;
-        let weights_low = 1024 * 1024 * 3;
+        let weights_low = 1024 * 2200;
         let weights_high = 1;
         let precision_low = 6 as Precision;
         let precision_high = 8 as Precision;

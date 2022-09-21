@@ -13,7 +13,7 @@ use crate::parameters::{
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::PersistentCacheHashMap;
 
-use super::common::MacroParam;
+use super::common::{MacroParam, VERSION};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct KsComplexityNoise {
@@ -137,5 +137,5 @@ pub fn cache(
             glwe_params,
         )
     };
-    PersistentCacheHashMap::new(&path, "v0", function)
+    PersistentCacheHashMap::new(&path, VERSION, function)
 }

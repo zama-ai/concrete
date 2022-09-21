@@ -11,7 +11,7 @@ use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::PersistentCacheHashMap;
 use crate::{config, security};
 
-use super::common::MacroParam;
+use super::common::{MacroParam, VERSION};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct BrComplexityNoise {
@@ -137,5 +137,5 @@ pub fn cache(
             max_log2_base,
         )
     };
-    PersistentCacheHashMap::new(&path, "v0", function)
+    PersistentCacheHashMap::new(&path, VERSION, function)
 }

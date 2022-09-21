@@ -23,7 +23,8 @@ fn main() {
         args.max_log_poly_size = 11;
         args.max_precision = 16;
     } else {
-        args.max_precision = 9;
+        args.max_precision = 10;
+        args.max_log_poly_size = 17;
     }
 
     for security_level in supported_security_levels() {
