@@ -363,13 +363,14 @@ mod tests {
     use super::*;
     use crate::computing_cost::cpu::CpuComplexity;
     use crate::dag::operator::{FunctionTable, Shape, Weights};
+    use crate::noise_estimator::p_error::repeat_p_error;
     use crate::optimization::atomic_pattern;
     use crate::optimization::config::SearchSpace;
     use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
     use crate::utils::square;
 
     fn small_relative_diff(v1: f64, v2: f64) -> bool {
-        f64::abs(v1 - v2) / f64::max(v1, v2) <= f64::EPSILON
+        f64::abs(v1 - v2) / f64::max(v1, v2) <= 0.000_000_1
     }
 
     impl Solution {
@@ -700,12 +701,11 @@ mod tests {
         if local_p_error == 0f64 {
             return 0.0;
         }
-        let local_p_success = 1.0 - local_p_error;
-        assert!(local_p_success < 1.0);
-        let p_success = local_p_success.powi(nb_pbs as i32);
-        assert!(p_success < 1.0);
-        assert!(0.0 < p_success);
-        1.0 - p_success
+
+        assert!(local_p_error <= 1.0);
+        assert!(0.0 <= local_p_error);
+
+        repeat_p_error(local_p_error, nb_pbs)
     }
 
     #[test]

@@ -4,13 +4,13 @@ use crate::dag::operator::{
 };
 use crate::dag::unparametrized;
 use crate::noise_estimator::error;
+use crate::noise_estimator::p_error::{combine_errors, repeat_p_error};
 use crate::optimization::config::NoiseBoundConfig;
 use crate::utils::square;
 use std::collections::{HashMap, HashSet};
 
 // private short convention
-use DotKind as DK;
-use VarianceOrigin as VO;
+use {DotKind as DK, VarianceOrigin as VO};
 type Op = unparametrized::UnparameterizedOperator;
 
 fn first<'a, Property>(inputs: &[OperatorIndex], properties: &'a [Property]) -> &'a Property {
@@ -555,12 +555,12 @@ fn peak_relative_variance(
     (max_relative_var, safe_noise)
 }
 
-fn p_success_from_relative_variance(relative_variance: f64, kappa: f64) -> f64 {
+fn p_error_from_relative_variance(relative_variance: f64, kappa: f64) -> f64 {
     let sigma_scale = kappa / relative_variance.sqrt();
-    error::success_probability_of_sigma_scale(sigma_scale)
+    error::error_probability_of_sigma_scale(sigma_scale)
 }
 
-fn p_success_per_constraint(
+fn p_error_per_constraint(
     constraint: &VariancesAndBound,
     input_noise_out: f64,
     blind_rotate_noise_out: f64,
@@ -569,13 +569,14 @@ fn p_success_per_constraint(
     kappa: f64,
 ) -> f64 {
     // Note: no log probability to keep accuracy near 0, 0 is a fine answer when p_success is very small.
-    let mut p_success = 1.0;
+    let mut p_error = 0.0;
     for &(count, vf) in &constraint.all_output {
         assert!(0 < count);
         let variance = vf.eval(input_noise_out, blind_rotate_noise_out);
         let relative_variance = variance / constraint.safe_variance_bound;
-        let vf_p_success = p_success_from_relative_variance(relative_variance, kappa);
-        p_success *= vf_p_success.powi(count as i32);
+        let vf_p_error = p_error_from_relative_variance(relative_variance, kappa);
+
+        p_error = combine_errors(p_error, repeat_p_error(vf_p_error, count));
     }
     // the maximal variance encountered during a lut computation
     for &(count, vf) in &constraint.all_in_lut {
@@ -583,10 +584,11 @@ fn p_success_per_constraint(
         let variance = vf.eval(input_noise_out, blind_rotate_noise_out);
         let relative_variance =
             (variance + noise_keyswitch + noise_modulus_switching) / constraint.safe_variance_bound;
-        let vf_p_success = p_success_from_relative_variance(relative_variance, kappa);
-        p_success *= vf_p_success.powi(count as i32);
+        let vf_p_error = p_error_from_relative_variance(relative_variance, kappa);
+
+        p_error = combine_errors(p_error, repeat_p_error(vf_p_error, count));
     }
-    p_success
+    p_error
 }
 
 impl OperationDag {
@@ -606,7 +608,7 @@ impl OperationDag {
             noise_modulus_switching,
         );
         (
-            1.0 - p_success_from_relative_variance(relative_var, kappa),
+            p_error_from_relative_variance(relative_var, kappa),
             relative_var * variance_bound,
         )
     }
@@ -618,9 +620,9 @@ impl OperationDag {
         noise_modulus_switching: f64,
         kappa: f64,
     ) -> f64 {
-        let mut p_success = 1.0;
+        let mut p_error = 0.0;
         for ns in &self.constraints_by_precisions {
-            p_success *= p_success_per_constraint(
+            let p_error_c = p_error_per_constraint(
                 ns,
                 input_noise_out,
                 blind_rotate_noise_out,
@@ -628,9 +630,11 @@ impl OperationDag {
                 noise_modulus_switching,
                 kappa,
             );
+
+            p_error = combine_errors(p_error, p_error_c);
         }
-        assert!(0.0 <= p_success && p_success <= 1.0);
-        1.0 - p_success
+        assert!(0.0 <= p_error && p_error <= 1.0);
+        p_error
     }
 
     pub fn feasible(

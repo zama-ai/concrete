@@ -1,5 +1,6 @@
 use crate::dag::operator::{Operator, Precision};
 use crate::dag::unparametrized::{OperationDag, UnparameterizedOperator};
+use crate::noise_estimator::p_error::repeat_p_error;
 use crate::optimization::atomic_pattern::Solution as WpSolution;
 use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::dag::solo_key::{analyze, optimize};
@@ -34,7 +35,8 @@ fn max_precision(dag: &OperationDag) -> Precision {
 }
 
 fn updated_global_p_error(nb_luts: u64, sol: WopSolution) -> WopSolution {
-    let global_p_error = 1.0 - (1.0 - sol.p_error).powi(nb_luts as i32);
+    let global_p_error = repeat_p_error(sol.p_error, nb_luts);
+
     WopSolution {
         global_p_error,
         ..sol
