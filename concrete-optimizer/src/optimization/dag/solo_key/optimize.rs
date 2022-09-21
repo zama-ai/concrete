@@ -240,9 +240,9 @@ pub fn optimize(
         maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
         ciphertext_modulus_log,
     };
-    let dag = analyze::analyze(dag, &noise_config);
-
     let &min_precision = dag.out_precisions.iter().min().unwrap();
+
+    let dag = analyze::analyze(dag, &noise_config);
 
     let safe_variance = error::safe_variance_bound_2padbits(
         min_precision as u64,
@@ -357,6 +357,8 @@ pub fn optimize_v0(
 mod tests {
     use std::time::Instant;
 
+    use once_cell::sync::Lazy;
+
     use super::*;
     use crate::computing_cost::cpu::CpuComplexity;
     use crate::config;
@@ -388,10 +390,12 @@ mod tests {
 
     const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 
-    fn optimize(
-        dag: &unparametrized::OperationDag,
-        cache: &PersistDecompCache,
-    ) -> OptimizationState {
+    static SHARED_CACHES: Lazy<PersistDecompCache> = Lazy::new(|| {
+        let processing_unit = config::ProcessingUnit::Cpu;
+        decomposition::cache(128, processing_unit, None)
+    });
+
+    fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {
         let config = Config {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
@@ -401,7 +405,7 @@ mod tests {
 
         let search_space = SearchSpace::default_cpu();
 
-        super::optimize(dag, config, &search_space, cache)
+        super::optimize(dag, config, &search_space, &SHARED_CACHES)
     }
 
     struct Times {
@@ -442,15 +446,13 @@ mod tests {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let cache = decomposition::cache(config.security_level, processing_unit, None);
-
         let _ = optimize_v0(
             sum_size,
             precision,
             config,
             weight as f64,
             &search_space,
-            &cache,
+            &SHARED_CACHES,
         );
         // ensure cache is filled
 
@@ -461,7 +463,7 @@ mod tests {
             config,
             weight as f64,
             &search_space,
-            &cache,
+            &SHARED_CACHES,
         );
 
         times.dag_time += chrono.elapsed().as_nanos();
@@ -472,7 +474,7 @@ mod tests {
             config,
             weight as f64,
             &search_space,
-            &cache,
+            &SHARED_CACHES,
         );
         times.worst_time += chrono.elapsed().as_nanos();
         assert_eq!(
@@ -503,8 +505,6 @@ mod tests {
     fn v0_parameter_ref_with_dot(precision: Precision, weight: i64) {
         let processing_unit = config::ProcessingUnit::Cpu;
         let security_level = 128;
-
-        let cache = decomposition::cache(security_level, processing_unit, None);
 
         let mut dag = unparametrized::OperationDag::new();
         {
@@ -542,14 +542,14 @@ mod tests {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let state = optimize(&dag, &cache);
+        let state = optimize(&dag);
         let state_ref = atomic_pattern::optimize_one(
             1,
             precision as u64,
             config,
             weight as f64,
             &search_space,
-            &cache,
+            &SHARED_CACHES,
         );
         assert_eq!(
             state.best_solution.is_some(),
@@ -567,7 +567,7 @@ mod tests {
         assert!(sol.global_p_error <= 1.0);
     }
 
-    fn no_lut_vs_lut(precision: Precision, cache: &PersistDecompCache) {
+    fn no_lut_vs_lut(precision: Precision) {
         let mut dag_lut = unparametrized::OperationDag::new();
         let input1 = dag_lut.add_input(precision, Shape::number());
         let _lut1 = dag_lut.add_lut(input1, FunctionTable::UNKWOWN, precision);
@@ -575,8 +575,8 @@ mod tests {
         let mut dag_no_lut = unparametrized::OperationDag::new();
         let _input2 = dag_no_lut.add_input(precision, Shape::number());
 
-        let state_no_lut = optimize(&dag_no_lut, cache);
-        let state_lut = optimize(&dag_lut, cache);
+        let state_no_lut = optimize(&dag_no_lut);
+        let state_lut = optimize(&dag_lut);
         assert_eq!(
             state_no_lut.best_solution.is_some(),
             state_lut.best_solution.is_some()
@@ -592,17 +592,14 @@ mod tests {
     }
     #[test]
     fn test_lut_vs_no_lut() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         for precision in 1..=8 {
-            no_lut_vs_lut(precision, &cache);
+            no_lut_vs_lut(precision);
         }
     }
 
     fn lut_with_input_base_noise_better_than_lut_with_lut_base_noise(
         precision: Precision,
         weight: i64,
-        cache: &PersistDecompCache,
     ) {
         let weight = &Weights::number(weight);
 
@@ -622,8 +619,8 @@ mod tests {
             let _lut2 = dag_2.add_lut(scaled_lut1, FunctionTable::UNKWOWN, precision);
         }
 
-        let state_1 = optimize(&dag_1, cache);
-        let state_2 = optimize(&dag_2, cache);
+        let state_1 = optimize(&dag_1);
+        let state_2 = optimize(&dag_2);
 
         if state_1.best_solution.is_none() {
             assert!(state_2.best_solution.is_none());
@@ -636,19 +633,15 @@ mod tests {
 
     #[test]
     fn test_lut_with_input_base_noise_better_than_lut_with_lut_base_noise() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         for log_weight in 1..=16 {
             let weight = 1 << log_weight;
             for precision in 5..=9 {
-                lut_with_input_base_noise_better_than_lut_with_lut_base_noise(
-                    precision, weight, &cache,
-                );
+                lut_with_input_base_noise_better_than_lut_with_lut_base_noise(precision, weight);
             }
         }
     }
 
-    fn lut_1_layer_has_better_complexity(precision: Precision, cache: &PersistDecompCache) {
+    fn lut_1_layer_has_better_complexity(precision: Precision) {
         let dag_1_layer = {
             let mut dag = unparametrized::OperationDag::new();
             let input1 = dag.add_input(precision, Shape::number());
@@ -664,19 +657,17 @@ mod tests {
             dag
         };
 
-        let sol_1_layer = optimize(&dag_1_layer, cache).best_solution.unwrap();
-        let sol_2_layer = optimize(&dag_2_layer, cache).best_solution.unwrap();
+        let sol_1_layer = optimize(&dag_1_layer).best_solution.unwrap();
+        let sol_2_layer = optimize(&dag_2_layer).best_solution.unwrap();
         assert!(sol_1_layer.complexity < sol_2_layer.complexity);
     }
 
     #[test]
     fn test_lut_1_layer_is_better() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         // for some reason on 4, 5, 6, the complexity is already minimal
         // this could be due to pre-defined pareto set
         for precision in [1, 2, 3, 7, 8] {
-            lut_1_layer_has_better_complexity(precision, &cache);
+            lut_1_layer_has_better_complexity(precision);
         }
     }
 
@@ -688,10 +679,7 @@ mod tests {
         let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
     }
 
-    fn assert_multi_precision_dominate_single(
-        weight: i64,
-        cache: &PersistDecompCache,
-    ) -> Option<bool> {
+    fn assert_multi_precision_dominate_single(weight: i64) -> Option<bool> {
         let low_precision = 4u8;
         let high_precision = 5u8;
         let mut dag_low = unparametrized::OperationDag::new();
@@ -704,12 +692,12 @@ mod tests {
             circuit(&mut dag_multi, low_precision, weight);
             circuit(&mut dag_multi, high_precision, 1);
         }
-        let state_multi = optimize(&dag_multi, cache);
+        let state_multi = optimize(&dag_multi);
 
         let mut sol_multi = state_multi.best_solution?;
 
-        let state_low = optimize(&dag_low, cache);
-        let state_high = optimize(&dag_high, cache);
+        let state_low = optimize(&dag_low);
+        let state_high = optimize(&dag_high);
 
         let sol_low = state_low.best_solution.unwrap();
         let sol_high = state_high.best_solution.unwrap();
@@ -728,12 +716,10 @@ mod tests {
 
     #[test]
     fn test_multi_precision_dominate_single() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         let mut prev = Some(true); // true -> ... -> true -> false -> ... -> false
         for log2_weight in 0..29 {
             let weight = 1 << log2_weight;
-            let current = assert_multi_precision_dominate_single(weight, &cache);
+            let current = assert_multi_precision_dominate_single(weight);
             #[allow(clippy::match_like_matches_macro)] // less readable
             let authorized = match (prev, current) {
                 (Some(false), Some(true)) => false,
@@ -763,29 +749,22 @@ mod tests {
 
     #[test]
     fn test_global_p_error_input() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         for precision in [4_u8, 8] {
             for weight in [1, 3, 27, 243, 729] {
                 for dim in [1, 2, 16, 32] {
-                    let _ = check_global_p_error_input(dim, weight, precision, &cache);
+                    let _ = check_global_p_error_input(dim, weight, precision);
                 }
             }
         }
     }
 
-    fn check_global_p_error_input(
-        dim: u64,
-        weight: i64,
-        precision: u8,
-        cache: &PersistDecompCache,
-    ) -> f64 {
+    fn check_global_p_error_input(dim: u64, weight: i64, precision: u8) -> f64 {
         let shape = Shape::vector(dim);
         let weights = Weights::number(weight);
         let mut dag = unparametrized::OperationDag::new();
         let input1 = dag.add_input(precision, shape);
         let _dot1 = dag.add_dot([input1], weights); // this is just several multiply
-        let state = optimize(&dag, cache);
+        let state = optimize(&dag);
         let sol = state.best_solution.unwrap();
         let worst_expected_p_error_dim = local_to_approx_global_p_error(sol.p_error, dim);
         approx::assert_relative_eq!(sol.global_p_error, worst_expected_p_error_dim);
@@ -794,23 +773,16 @@ mod tests {
 
     #[test]
     fn test_global_p_error_lut() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         for precision in [4_u8, 8] {
             for weight in [1, 3, 27, 243, 729] {
                 for depth in [2, 16, 32] {
-                    check_global_p_error_lut(depth, weight, precision, &cache);
+                    check_global_p_error_lut(depth, weight, precision);
                 }
             }
         }
     }
 
-    fn check_global_p_error_lut(
-        depth: u64,
-        weight: i64,
-        precision: u8,
-        cache: &PersistDecompCache,
-    ) {
+    fn check_global_p_error_lut(depth: u64, weight: i64, precision: u8) {
         let shape = Shape::number();
         let weights = Weights::number(weight);
         let mut dag = unparametrized::OperationDag::new();
@@ -819,7 +791,7 @@ mod tests {
             let dot = dag.add_dot([last_val], &weights);
             last_val = dag.add_lut(dot, FunctionTable::UNKWOWN, precision);
         }
-        let state = optimize(&dag, cache);
+        let state = optimize(&dag);
         let sol = state.best_solution.unwrap();
         // the first lut on input has reduced impact on error probability
         let lower_nb_dominating_lut = depth - 1;
@@ -856,8 +828,6 @@ mod tests {
     #[allow(clippy::unnecessary_cast)] // clippy bug refusing as Precision on const
     #[test]
     fn test_global_p_error_dominating_lut() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         let depth = 128;
         let weights_low = 1;
         let weights_high = 1;
@@ -870,7 +840,7 @@ mod tests {
             weights_low,
             weights_high,
         );
-        let sol = optimize(&dag, &cache).best_solution.unwrap();
+        let sol = optimize(&dag).best_solution.unwrap();
         // the 2 first luts and low precision/weight luts have little impact on error probability
         let nb_dominating_lut = depth - 1;
         let approx_global_p_error = local_to_approx_global_p_error(sol.p_error, nb_dominating_lut);
@@ -885,8 +855,6 @@ mod tests {
     #[allow(clippy::unnecessary_cast)] // clippy bug refusing as Precision on const
     #[test]
     fn test_global_p_error_non_dominating_lut() {
-        let processing_unit = config::ProcessingUnit::Cpu;
-        let cache = decomposition::cache(128, processing_unit, None);
         let depth = 128;
         let weights_low = 1024 * 1024 * 3;
         let weights_high = 1;
@@ -899,7 +867,7 @@ mod tests {
             weights_low,
             weights_high,
         );
-        let sol = optimize(&dag, &cache).best_solution.unwrap();
+        let sol = optimize(&dag).best_solution.unwrap();
         // all intern luts have an impact on error probability almost equaly
         let nb_dominating_lut = (2 * depth) - 1;
         let approx_global_p_error = local_to_approx_global_p_error(sol.p_error, nb_dominating_lut);
@@ -909,5 +877,90 @@ mod tests {
             approx_global_p_error,
             max_relative = 0.05
         );
+    }
+
+    fn circuit_with_rounded_lut(
+        rounded_precision: Precision,
+        precision: Precision,
+        weight: i64,
+    ) -> unparametrized::OperationDag {
+        // circuit with intermediate high precision in levelled op
+        let shape = Shape::number();
+        let mut dag = unparametrized::OperationDag::new();
+        let weight = Weights::number(weight);
+        let val = dag.add_input(precision, &shape);
+        let lut1 =
+            dag.add_expanded_rounded_lut(val, FunctionTable::UNKWOWN, rounded_precision, precision);
+        let dot = dag.add_dot([lut1], &weight);
+        let _lut2 = dag.add_expanded_rounded_lut(
+            dot,
+            FunctionTable::UNKWOWN,
+            rounded_precision,
+            rounded_precision,
+        );
+        dag
+    }
+
+    fn check_global_p_error_rounded_lut(
+        precision: Precision,
+        rounded_precision: Precision,
+        weight: i64,
+    ) {
+        let dag_no_rounded = circuit_with_rounded_lut(precision, precision, weight);
+        let dag_rounded = circuit_with_rounded_lut(rounded_precision, precision, weight);
+        let dag_reduced = circuit_with_rounded_lut(rounded_precision, rounded_precision, weight);
+        let best_reduced = optimize(&dag_reduced).best_solution.unwrap();
+        let best_rounded = optimize(&dag_rounded).best_solution.unwrap();
+        let best_no_rounded_complexity = optimize(&dag_no_rounded)
+            .best_solution
+            .map_or(f64::INFINITY, |s| s.complexity);
+        // println!("Slowdown acc {rounded_precision} -> {precision}, {best_rounded.complexity/best_reduced.complexity}");
+        // println!("Speedup tlu {precision} -> {rounded_precision}, {best_no_rounded_complexity/best_rounded.complexity}");
+        if weight == 0 && precision - rounded_precision <= 4
+            || weight == 16 && precision - rounded_precision <= 3
+        {
+            // linear slowdown with almost no margin
+            assert!(
+                best_rounded.complexity
+                    <= best_reduced.complexity
+                        * (1.0 + 1.01 * (precision - rounded_precision) as f64)
+            );
+        } else if precision - rounded_precision <= 4 {
+            // linear slowdown with margin
+            assert!(
+                best_rounded.complexity
+                    <= best_reduced.complexity
+                        * (1.0 + 1.5 * (precision - rounded_precision) as f64)
+            );
+        } else if precision != rounded_precision {
+            // slowdown
+            assert!(best_reduced.complexity < best_rounded.complexity);
+        }
+        // linear speedup
+        assert!(
+            best_rounded.complexity * (precision - rounded_precision) as f64
+                <= best_no_rounded_complexity
+        );
+    }
+
+    #[allow(clippy::unnecessary_cast)] // clippy bug refusing as Precision on const
+    #[test]
+    fn test_global_p_error_rounded_lut() {
+        let precision = 8 as Precision;
+        for rounded_precision in 4..9 {
+            check_global_p_error_rounded_lut(precision, rounded_precision, 1);
+        }
+    }
+
+    #[allow(clippy::unnecessary_cast)] // clippy bug refusing as Precision on const
+    #[test]
+    fn test_global_p_error_increased_accumulator() {
+        let rounded_precision = 8 as Precision;
+        for precision in [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] {
+            for weight in [1, 2, 4, 8, 16, 32, 64, 128] {
+                println!("{precision} {weight}");
+                check_global_p_error_rounded_lut(precision, rounded_precision, weight);
+            }
+        }
     }
 }

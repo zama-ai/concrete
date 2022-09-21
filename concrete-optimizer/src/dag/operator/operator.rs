@@ -65,22 +65,19 @@ pub type Precision = u8;
 pub const MIN_PRECISION: Precision = 1;
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum Operator<InputExtraData, LutExtraData, DotExtraData, LevelledOpExtraData> {
+pub enum Operator {
     Input {
         out_precision: Precision,
         out_shape: Shape,
-        extra_data: InputExtraData,
     },
     Lut {
         input: OperatorIndex,
         table: FunctionTable,
         out_precision: Precision,
-        extra_data: LutExtraData,
     },
     Dot {
         inputs: Vec<OperatorIndex>,
         weights: Weights,
-        extra_data: DotExtraData,
     },
     LevelledOp {
         inputs: Vec<OperatorIndex>,
@@ -88,7 +85,12 @@ pub enum Operator<InputExtraData, LutExtraData, DotExtraData, LevelledOpExtraDat
         manp: f64,
         out_shape: Shape,
         comment: String,
-        extra_data: LevelledOpExtraData,
+    },
+    // Used to reduced or increase precision when the cyphertext is compatible with different precision
+    // This is done without any checking
+    UnsafeCast {
+        input: OperatorIndex,
+        out_precision: Precision, // precision is changed without modifying the input, can be increase or decrease
     },
 }
 

@@ -1,5 +1,5 @@
-use crate::dag::operator::{Operator, Precision};
-use crate::dag::unparametrized::{OperationDag, UnparameterizedOperator};
+use crate::dag::operator::Precision;
+use crate::dag::unparametrized::OperationDag;
 use crate::noise_estimator::p_error::repeat_p_error;
 use crate::optimization::atomic_pattern::Solution as WpSolution;
 use crate::optimization::config::{Config, SearchSpace};
@@ -18,21 +18,8 @@ pub enum Solution {
     WopSolution(WopSolution),
 }
 
-fn precision_op(op: &UnparameterizedOperator) -> Option<Precision> {
-    match op {
-        Operator::Input { out_precision, .. } | Operator::Lut { out_precision, .. } => {
-            Some(*out_precision)
-        }
-        Operator::Dot { .. } | Operator::LevelledOp { .. } => None,
-    }
-}
-
 fn max_precision(dag: &OperationDag) -> Precision {
-    dag.operators
-        .iter()
-        .filter_map(precision_op)
-        .max()
-        .unwrap_or(0)
+    dag.out_precisions.iter().copied().max().unwrap_or(0)
 }
 
 fn updated_global_p_error(nb_luts: u64, sol: WopSolution) -> WopSolution {

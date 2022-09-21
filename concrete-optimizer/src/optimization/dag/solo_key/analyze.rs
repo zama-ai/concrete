@@ -54,6 +54,8 @@ fn assert_non_empty_inputs(op: &unparametrized::UnparameterizedOperator) {
 fn assert_dag_correctness(dag: &unparametrized::OperationDag) {
     for op in &dag.operators {
         assert_non_empty_inputs(op);
+        assert_inputs_uniform_precisions(op, &dag.out_precisions);
+        assert_dot_uniform_inputs_shape(op, &dag.out_shapes);
     }
 }
 
@@ -68,10 +70,6 @@ fn assert_valid_variances(dag: &OperationDag) {
 }
 
 fn assert_properties_correctness(dag: &OperationDag) {
-    for op in &dag.operators {
-        assert_inputs_uniform_precisions(op, &dag.out_precisions);
-        assert_dot_uniform_inputs_shape(op, &dag.out_shapes);
-    }
     assert_valid_variances(dag);
 }
 
@@ -89,10 +87,6 @@ fn variance_origin(inputs: &[OperatorIndex], out_variances: &[SymbolicVariance])
 #[derive(Clone, Debug)]
 pub struct OperationDag {
     pub operators: Vec<Op>,
-    // Collect all operators ouput shape
-    pub out_shapes: Vec<Shape>,
-    // Collect all operators ouput precision
-    pub out_precisions: Vec<Precision>,
     // Collect all operators ouput variances
     pub out_variances: Vec<SymbolicVariance>,
     pub nb_luts: u64,
@@ -116,66 +110,6 @@ pub struct VariancesAndBound {
     // All counted variances for computing exact full dag error probability
     pub all_output: Vec<(u64, SymbolicVariance)>,
     pub all_in_lut: Vec<(u64, SymbolicVariance)>,
-}
-
-fn out_shape(op: &unparametrized::UnparameterizedOperator, out_shapes: &mut [Shape]) -> Shape {
-    match op {
-        Op::Input { out_shape, .. } | Op::LevelledOp { out_shape, .. } => out_shape.clone(),
-        Op::Lut { input, .. } => out_shapes[input.i].clone(),
-        Op::Dot {
-            inputs, weights, ..
-        } => {
-            if inputs.is_empty() {
-                return Shape::number();
-            }
-            let input_shape = first(inputs, out_shapes);
-            let kind = dot_kind(inputs.len() as u64, input_shape, weights);
-            match kind {
-                DK::Simple | DK::Tensor => Shape::number(),
-                DK::CompatibleTensor => weights.shape.clone(),
-                DK::Broadcast { .. } => Shape::vector(input_shape.first_dim_size()),
-                DK::Unsupported { .. } => {
-                    let weights_shape = &weights.shape;
-                    println!();
-                    println!();
-                    println!("Error diagnostic on dot operation:");
-                    println!("Incompatible operands: <{input_shape:?}> DOT <{weights_shape:?}>");
-                    println!();
-                    panic!("Unsupported or invalid dot operation")
-                }
-            }
-        }
-    }
-}
-
-fn out_shapes(dag: &unparametrized::OperationDag) -> Vec<Shape> {
-    let nb_ops = dag.operators.len();
-    let mut out_shapes = Vec::<Shape>::with_capacity(nb_ops);
-    for op in &dag.operators {
-        let shape = out_shape(op, &mut out_shapes);
-        out_shapes.push(shape);
-    }
-    out_shapes
-}
-
-fn out_precision(
-    op: &unparametrized::UnparameterizedOperator,
-    out_precisions: &[Precision],
-) -> Precision {
-    match op {
-        Op::Input { out_precision, .. } | Op::Lut { out_precision, .. } => *out_precision,
-        Op::Dot { inputs, .. } | Op::LevelledOp { inputs, .. } => out_precisions[inputs[0].i],
-    }
-}
-
-fn out_precisions(dag: &unparametrized::OperationDag) -> Vec<Precision> {
-    let nb_ops = dag.operators.len();
-    let mut out_precisions = Vec::<Precision>::with_capacity(nb_ops);
-    for op in &dag.operators {
-        let precision = out_precision(op, &out_precisions);
-        out_precisions.push(precision);
-    }
-    out_precisions
 }
 
 fn out_variance(
@@ -220,17 +154,15 @@ fn out_variance(
                 DK::Unsupported { .. } => panic!("Unsupported"),
             }
         }
+        Op::UnsafeCast { input, .. } => out_variances[input.i],
     }
 }
 
-fn out_variances(
-    dag: &unparametrized::OperationDag,
-    out_shapes: &[Shape],
-) -> Vec<SymbolicVariance> {
+fn out_variances(dag: &unparametrized::OperationDag) -> Vec<SymbolicVariance> {
     let nb_ops = dag.operators.len();
     let mut out_variances = Vec::with_capacity(nb_ops);
     for op in &dag.operators {
-        let vf = out_variance(op, out_shapes, &mut out_variances);
+        let vf = out_variance(op, &dag.out_shapes, &mut out_variances);
         out_variances.push(vf);
     }
     out_variances
@@ -242,7 +174,7 @@ fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> 
     for op in &dag.operators {
         match op {
             Op::Input { .. } => (),
-            Op::Lut { input, .. } => {
+            Op::Lut { input, .. } | Op::UnsafeCast { input, .. } => {
                 extra_values_to_check[input.i] = false;
             }
             Op::Dot { inputs, .. } | Op::LevelledOp { inputs, .. } => {
@@ -257,8 +189,6 @@ fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> 
 
 fn extra_final_variances(
     dag: &unparametrized::OperationDag,
-    out_shapes: &[Shape],
-    out_precisions: &[Precision],
     out_variances: &[SymbolicVariance],
 ) -> Vec<(Precision, Shape, SymbolicVariance)> {
     extra_final_values_to_check(dag)
@@ -266,7 +196,11 @@ fn extra_final_variances(
         .enumerate()
         .filter_map(|(i, &is_final)| {
             if is_final {
-                Some((out_precisions[i], out_shapes[i].clone(), out_variances[i]))
+                Some((
+                    dag.out_precisions[i],
+                    dag.out_shapes[i].clone(),
+                    out_variances[i],
+                ))
             } else {
                 None
             }
@@ -276,8 +210,6 @@ fn extra_final_variances(
 
 fn in_luts_variance(
     dag: &unparametrized::OperationDag,
-    out_shapes: &[Shape],
-    out_precisions: &[Precision],
     out_variances: &[SymbolicVariance],
 ) -> Vec<(Precision, Shape, SymbolicVariance)> {
     dag.operators
@@ -286,8 +218,8 @@ fn in_luts_variance(
         .filter_map(|(i, op)| {
             if let &Op::Lut { input, .. } = op {
                 Some((
-                    out_precisions[input.i],
-                    out_shapes[i].clone(),
+                    dag.out_precisions[input.i],
+                    dag.out_shapes[i].clone(),
                     out_variances[input.i],
                 ))
             } else {
@@ -315,26 +247,23 @@ fn op_levelled_complexity(
             }
         }
         Op::LevelledOp { complexity, .. } => *complexity,
-        Op::Input { .. } | Op::Lut { .. } => LevelledComplexity::ZERO,
+        Op::Input { .. } | Op::Lut { .. } | Op::UnsafeCast { .. } => LevelledComplexity::ZERO,
     }
 }
 
-fn levelled_complexity(
-    dag: &unparametrized::OperationDag,
-    out_shapes: &[Shape],
-) -> LevelledComplexity {
+fn levelled_complexity(dag: &unparametrized::OperationDag) -> LevelledComplexity {
     let mut levelled_complexity = LevelledComplexity::ZERO;
     for op in &dag.operators {
-        levelled_complexity += op_levelled_complexity(op, out_shapes);
+        levelled_complexity += op_levelled_complexity(op, &dag.out_shapes);
     }
     levelled_complexity
 }
 
-fn lut_count(dag: &unparametrized::OperationDag, out_shapes: &[Shape]) -> u64 {
+pub fn lut_count_from_dag(dag: &unparametrized::OperationDag) -> u64 {
     let mut count = 0;
     for (i, op) in dag.operators.iter().enumerate() {
         if let Op::Lut { .. } = op {
-            count += out_shapes[i].flat_size();
+            count += dag.out_shapes[i].flat_size();
         }
     }
     count
@@ -433,10 +362,8 @@ fn constraint_for_one_precision(
 
 pub fn worst_log_norm(dag: &unparametrized::OperationDag) -> f64 {
     assert_dag_correctness(dag);
-    let out_shapes = out_shapes(dag);
-    let out_precisions = out_precisions(dag);
-    let out_variances = out_variances(dag, &out_shapes);
-    let in_luts_variance = in_luts_variance(dag, &out_shapes, &out_precisions, &out_variances);
+    let out_variances = out_variances(dag);
+    let in_luts_variance = in_luts_variance(dag, &out_variances);
     let coeffs = in_luts_variance
         .iter()
         .map(|(_precision, _shape, symbolic_variance)| {
@@ -447,25 +374,18 @@ pub fn worst_log_norm(dag: &unparametrized::OperationDag) -> f64 {
     worst.log2()
 }
 
-pub fn lut_count_from_dag(dag: &unparametrized::OperationDag) -> u64 {
-    lut_count(dag, &out_shapes(dag))
-}
-
 pub fn analyze(
     dag: &unparametrized::OperationDag,
     noise_config: &NoiseBoundConfig,
 ) -> OperationDag {
     assert_dag_correctness(dag);
-    let out_shapes = out_shapes(dag);
-    let out_precisions = out_precisions(dag);
-    let out_variances = out_variances(dag, &out_shapes);
-    let in_luts_variance = in_luts_variance(dag, &out_shapes, &out_precisions, &out_variances);
-    let nb_luts = lut_count(dag, &out_shapes);
-    let extra_final_variances =
-        extra_final_variances(dag, &out_shapes, &out_precisions, &out_variances);
-    let levelled_complexity = levelled_complexity(dag, &out_shapes);
+    let out_variances = out_variances(dag);
+    let in_luts_variance = in_luts_variance(dag, &out_variances);
+    let nb_luts = lut_count_from_dag(dag);
+    let extra_final_variances = extra_final_variances(dag, &out_variances);
+    let levelled_complexity = levelled_complexity(dag);
     let constraints_by_precisions = constraints_by_precisions(
-        &out_precisions,
+        &dag.out_precisions,
         &extra_final_variances,
         &in_luts_variance,
         noise_config,
@@ -475,8 +395,6 @@ pub fn analyze(
         .all(|(_, _, sb)| sb.origin() == VarianceOrigin::Input);
     let result = OperationDag {
         operators: dag.operators.clone(),
-        out_shapes,
-        out_precisions,
         out_variances,
         nb_luts,
         levelled_complexity,
@@ -712,9 +630,9 @@ mod tests {
         let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         assert_eq!(analysis.out_variances[input1.i], SymbolicVariance::INPUT);
-        assert_eq!(analysis.out_shapes[input1.i], Shape::number());
+        assert_eq!(graph.out_shapes[input1.i], Shape::number());
         assert_eq!(analysis.levelled_complexity, LevelledComplexity::ZERO);
-        assert_eq!(analysis.out_precisions[input1.i], 1);
+        assert_eq!(graph.out_precisions[input1.i], 1);
         assert_f64_eq(complexity_cost, 0.0);
         assert!(analysis.nb_luts == 0);
         let constraint = analysis.constraint();
@@ -735,9 +653,9 @@ mod tests {
         let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         assert!(analysis.out_variances[lut1.i] == SymbolicVariance::LUT);
-        assert!(analysis.out_shapes[lut1.i] == Shape::number());
+        assert!(graph.out_shapes[lut1.i] == Shape::number());
         assert!(analysis.levelled_complexity == LevelledComplexity::ZERO);
-        assert_eq!(analysis.out_precisions[lut1.i], 8);
+        assert_eq!(graph.out_precisions[lut1.i], 8);
         assert_f64_eq(one_lut_cost, complexity_cost);
         let constraint = analysis.constraint();
         assert!(constraint.pareto_output.len() == 1);
@@ -765,9 +683,9 @@ mod tests {
             lut_coeff: 0.0,
         };
         assert!(analysis.out_variances[dot.i] == expected_var);
-        assert!(analysis.out_shapes[dot.i] == Shape::number());
+        assert!(graph.out_shapes[dot.i] == Shape::number());
         assert!(analysis.levelled_complexity == LevelledComplexity::ADDITION * 2);
-        assert_eq!(analysis.out_precisions[dot.i], 1);
+        assert_eq!(graph.out_precisions[dot.i], 1);
         let expected_dot_cost = (2 * lwe_dim) as f64;
         assert_f64_eq(expected_dot_cost, complexity_cost);
         let constraint = analysis.constraint();
@@ -792,7 +710,7 @@ mod tests {
         let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
         assert!(analysis.out_variances[dot.i].origin() == VO::Input);
-        assert_eq!(analysis.out_precisions[dot.i], 3);
+        assert_eq!(graph.out_precisions[dot.i], 3);
         let expected_square_norm2 = weights.square_norm2() as f64;
         let actual_square_norm2 = analysis.out_variances[dot.i].input_coeff;
         // Due to call on log2() to compute manp the result is not exact
