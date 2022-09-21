@@ -43,10 +43,17 @@ optimizer::DagSolution getV1ParameterGlobalPError(optimizer::Dag &dag,
   auto ref_global_p_success = 1.0 - config.global_p_error;
   auto sol = dag->optimize(config.security, ref_p_error,
                            config.fallback_log_norm_woppbs);
+  if (sol.global_p_error <= config.global_p_error) {
+    // for levelled circuit the error is almost zero
+    return sol;
+  }
   for (int i = 2; i <= MAXIMUM_OPTIMIZER_CALL; i++) {
     auto local_p_success = 1.0 - sol.p_error;
     auto global_p_success = 1.0 - sol.global_p_error;
     auto power_global_to_local = log(local_p_success) / log(global_p_success);
+    if (std::isnan(power_global_to_local)) {
+      break;
+    }
     auto surrogate_p_local_success =
         pow(ref_global_p_success, power_global_to_local);
     config.p_error = 1.0 - surrogate_p_local_success;
