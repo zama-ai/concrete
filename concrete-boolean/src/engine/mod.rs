@@ -65,7 +65,7 @@ pub(crate) struct BooleanEngine<B> {
 
 impl BooleanEngine<CpuBootstrapper> {
     pub fn create_server_key(&mut self, cks: &ClientKey) -> CpuBootstrapKey {
-        let server_key = CpuBootstrapKey::new(&mut self.engine, cks).unwrap();
+        let server_key = self.bootstrapper.new_server_key(cks).unwrap();
 
         server_key
     }
