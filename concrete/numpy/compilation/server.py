@@ -94,7 +94,10 @@ class Server:
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
-        options.set_p_error(configuration.p_error)
+        if configuration.p_error is not None:
+            options.set_p_error(configuration.p_error)
+        else:
+            options.set_global_p_error(configuration.global_p_error)
         options.set_display_optimizer_choice(configuration.verbose or configuration.show_optimizer)
 
         if configuration.jit:

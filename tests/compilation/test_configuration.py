@@ -74,6 +74,12 @@ def test_configuration_fork():
             "Unexpected type for keyword argument 'insecure_key_cache_location' "
             "(expected 'Optional[str]', got 'int')",
         ),
+        pytest.param(
+            {"p_error": "yes"},
+            TypeError,
+            "Unexpected type for keyword argument 'p_error' "
+            "(expected 'Optional[float]', got 'str')",
+        ),
     ],
 )
 def test_configuration_bad_fork(kwargs, expected_error, expected_message):

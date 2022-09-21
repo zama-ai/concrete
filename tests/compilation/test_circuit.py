@@ -23,7 +23,7 @@ def test_circuit_str(helpers):
         return x + y
 
     inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
-    circuit = f.compile(inputset, configuration)
+    circuit = f.compile(inputset, configuration.fork(p_error=6e-5))
 
     assert str(circuit) == (
         """

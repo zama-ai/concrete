@@ -64,8 +64,11 @@ Additional kwarg to `compile` function have higher precedence. So if you set an 
 * **dump_artifacts_on_unexpected_failures**: bool = True
   * Whether to export debugging artifacts automatically on compilation failures.
 
-* **p_error**: float = 0.000063342483999973
-  * Error probability for table lookups.
+* **p_error**: Optional[float] = None
+  * Error probability for individual table lookups.  Overwrites **global_p_error** if set.
+
+* **global_p_error**: float = (1 / 100_000)
+    * Global error probability for the whole circuit.
 
 * **jit**: bool = False
   * Whether to use JIT compilation.

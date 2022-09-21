@@ -26,7 +26,8 @@ class Configuration:
     dataflow_parallelize: bool
     auto_parallelize: bool
     jit: bool
-    p_error: float
+    p_error: Optional[float]
+    global_p_error: float
     insecure_key_cache_location: Optional[str]
 
     # pylint: enable=too-many-instance-attributes
@@ -70,7 +71,8 @@ class Configuration:
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
         jit: bool = False,
-        p_error: float = 6.3342483999973e-05,
+        p_error: Optional[float] = None,
+        global_p_error: float = (1 / 100_000),
     ):
         self.verbose = verbose
         self.show_graph = show_graph
@@ -88,6 +90,7 @@ class Configuration:
         self.auto_parallelize = auto_parallelize
         self.jit = jit
         self.p_error = p_error
+        self.global_p_error = global_p_error
 
         self._validate()
 
@@ -121,6 +124,11 @@ class Configuration:
                 if not (value is None or isinstance(value, str)):
                     is_correctly_typed = False
                     expected = "Optional[str]"
+
+            elif name == "p_error":
+                if not (value is None or isinstance(value, float)):
+                    is_correctly_typed = False
+                    expected = "Optional[float]"
 
             elif not isinstance(value, hint):  # type: ignore
                 is_correctly_typed = False
