@@ -61,8 +61,8 @@ uint64_t TestErrorRate::too_high_error_count_threshold() {
   // A bad ratio can still detect most issues.
   // A good ratio will help to detect more precise calibration issue.
   double p_mass = 1.0 - TestErrorRate::FALSE_ALARM_RATE;
-  return solve_binomial_cdf_bigger_than(this->nb_repetition, this->p_error,
-                                        p_mass);
+  return solve_binomial_cdf_bigger_than(this->nb_repetition,
+                                        this->global_p_error, p_mass);
 }
 
 template <typename T>
@@ -289,7 +289,7 @@ LLVM_YAML_IS_SEQUENCE_VECTOR(TestDescription)
 
 template <> struct llvm::yaml::MappingTraits<TestErrorRate> {
   static void mapping(IO &io, TestErrorRate &desc) {
-    io.mapRequired("p-error", desc.p_error);
+    io.mapRequired("global-p-error", desc.global_p_error);
     io.mapRequired("nb-repetition", desc.nb_repetition);
   }
 };

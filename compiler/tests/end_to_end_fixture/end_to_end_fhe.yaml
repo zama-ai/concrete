@@ -156,11 +156,11 @@ tests:
     outputs:
     - scalar: 12
 test-error-rates:
-  - p-error: 0.05
+  - global-p-error: 0.05
     nb-repetition: 100
-  - p-error: 0.01
+  - global-p-error: 0.01
     nb-repetition: 100
-  - p-error: 0.001
+  - global-p-error: 0.001
     nb-repetition: 100
 ---
 description: apply_lookup_table_5_bits

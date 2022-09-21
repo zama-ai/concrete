@@ -38,7 +38,7 @@ struct TestDescription {
 };
 
 struct TestErrorRate {
-  double p_error;
+  double global_p_error;
   uint64_t nb_repetition;
   // rate at which a valid code will make the test fail due to bad luck
   const double FALSE_ALARM_RATE = 0.00001;
