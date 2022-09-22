@@ -155,7 +155,7 @@ def BConcrete_AwaitFutureOp :
 
 // This is a different op in BConcrete just because of the way we are lowering to CAPI
 // When the CAPI lowering is detached from bufferization, we can remove this op, and lower
-// to the appropriate CAPI (gpu or cpu) depending on the useGPU compilation option
+// to the appropriate CAPI (gpu or cpu) depending on the emitGPUOps compilation option
 def BConcrete_BootstrapLweGPUBufferOp : BConcrete_Op<"bootstrap_lwe_gpu_buffer"> {
     let arguments = (ins
         1DTensorOf<[I64]>:$input_ciphertext,
@@ -172,7 +172,7 @@ def BConcrete_BootstrapLweGPUBufferOp : BConcrete_Op<"bootstrap_lwe_gpu_buffer">
 
 // This is a different op in BConcrete just because of the way we are lowering to CAPI
 // When the CAPI lowering is detached from bufferization, we can remove this op, and lower
-// to the appropriate CAPI (gpu or cpu) depending on the useGPU compilation option
+// to the appropriate CAPI (gpu or cpu) depending on the emitGPUOps compilation option
 def BConcrete_KeySwitchLweGPUBufferOp : BConcrete_Op<"keyswitch_lwe_gpu_buffer"> {
     let arguments = (ins
         1DTensorOf<[I64]>:$ciphertext,

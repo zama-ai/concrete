@@ -231,6 +231,14 @@ run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
 
+## GPU tests
+
+build-end-to-end-gpu-tests: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_gpu_test
+
+run-end-to-end-gpu-tests: build-end-to-end-gpu-tests
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_gpu_test
+
 # benchmark
 
 build-benchmarks: build-initialized

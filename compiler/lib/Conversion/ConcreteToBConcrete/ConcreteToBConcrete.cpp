@@ -48,12 +48,12 @@ struct ConcreteToBConcretePass
     : public ConcreteToBConcreteBase<ConcreteToBConcretePass> {
   void runOnOperation() final;
   ConcreteToBConcretePass() = delete;
-  ConcreteToBConcretePass(bool loopParallelize, bool useGPU)
-      : loopParallelize(loopParallelize), useGPU(useGPU){};
+  ConcreteToBConcretePass(bool loopParallelize, bool emitGPUOps)
+      : loopParallelize(loopParallelize), emitGPUOps(emitGPUOps){};
 
 private:
   bool loopParallelize;
-  bool useGPU;
+  bool emitGPUOps;
 };
 } // namespace
 
@@ -919,7 +919,7 @@ void ConcreteToBConcretePass::runOnOperation() {
         LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweBufferOp,
                        BConcrete::WopPBSCRTLweBufferOp>>(&getContext());
 
-    if (this->useGPU) {
+    if (this->emitGPUOps) {
       patterns
           .insert<LowToBConcrete<
                       mlir::concretelang::Concrete::BootstrapLweOp,
@@ -1063,8 +1063,8 @@ void ConcreteToBConcretePass::runOnOperation() {
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertConcreteToBConcretePass(bool loopParallelize, bool useGPU) {
-  return std::make_unique<ConcreteToBConcretePass>(loopParallelize, useGPU);
+createConvertConcreteToBConcretePass(bool loopParallelize, bool emitGPUOps) {
+  return std::make_unique<ConcreteToBConcretePass>(loopParallelize, emitGPUOps);
 }
 } // namespace concretelang
 } // namespace mlir

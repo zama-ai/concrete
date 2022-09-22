@@ -356,7 +356,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   // Concrete -> BConcrete
   if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
           mlirContext, module, this->enablePass, loopParallelize,
-          options.useGPU)
+          options.emitGPUOps)
           .failed()) {
     return StreamStringError(
         "Lowering from Concrete to Bufferized Concrete failed");

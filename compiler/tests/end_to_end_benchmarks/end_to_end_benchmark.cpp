@@ -137,7 +137,7 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   registe("loop", loop);
 #ifdef CONCRETELANG_CUDA_SUPPORT
   mlir::concretelang::CompilationOptions gpu;
-  gpu.useGPU = true;
+  gpu.emitGPUOps = true;
   registe("gpu", gpu);
 #endif
   // mlir::concretelang::CompilationOptions dataflow;

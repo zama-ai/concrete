@@ -242,13 +242,13 @@ optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult
 lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass,
-                         bool parallelizeLoops, bool useGPU) {
+                         bool parallelizeLoops, bool emitGPUOps) {
   mlir::PassManager pm(&context);
   pipelinePrinting("ConcreteToBConcrete", pm, context);
 
   std::unique_ptr<Pass> conversionPass =
       mlir::concretelang::createConvertConcreteToBConcretePass(parallelizeLoops,
-                                                               useGPU);
+                                                               emitGPUOps);
 
   bool passEnabled = enablePass(conversionPass.get());
 

@@ -98,8 +98,8 @@ llvm::cl::opt<bool>
                                     "dialects. (Enabled by default)"),
                      llvm::cl::init<bool>(true));
 
-llvm::cl::opt<bool> useGPU(
-    "use-gpu",
+llvm::cl::opt<bool> emitGPUOps(
+    "emit-gpu-ops",
     llvm::cl::desc(
         "enable/disable generating GPU operations (Disabled by default)"),
     llvm::cl::init<bool>(false));
@@ -289,7 +289,7 @@ cmdlineCompilationOptions() {
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.optimizeConcrete = cmdline::optimizeConcrete;
-  options.useGPU = cmdline::useGPU;
+  options.emitGPUOps = cmdline::emitGPUOps;
 
   if (!cmdline::v0Constraint.empty()) {
     if (cmdline::v0Constraint.size() != 2) {

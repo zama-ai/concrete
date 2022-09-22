@@ -1,5 +1,5 @@
-#ifndef END_TO_END_JIT_TEST_H
-#define END_TO_END_JIT_TEST_H
+#ifndef END_TO_END_GPU_TEST_H
+#define END_TO_END_GPU_TEST_H
 
 #include <gtest/gtest.h>
 
@@ -24,6 +24,8 @@ internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
 
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
+  options.emitGPUOps = true;
+
   if (useDefaultFHEConstraints) {
     options.v0FHEConstraints = defaultV0Constraints;
     options.optimizerConfig.strategy_v0 = true;

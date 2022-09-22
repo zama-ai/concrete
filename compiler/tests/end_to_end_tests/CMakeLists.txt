@@ -70,3 +70,11 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
     globals.cc
   )
 endif()
+
+if(CONCRETELANG_CUDA_SUPPORT)
+  add_concretecompiler_unittest(
+    end_to_end_gpu_test
+    end_to_end_gpu_test.cc
+    globals.cc
+  )
+endif()

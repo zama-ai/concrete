@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes concrete-to-bconcrete --action=dump-bconcrete --use-gpu %s 2>&1| FileCheck %s
+// RUN: concretecompiler --passes concrete-to-bconcrete --action=dump-bconcrete --emit-gpu-ops %s 2>&1| FileCheck %s
 
 
 //CHECK: func.func @main(%arg0: tensor<1025xi64>) -> tensor<1025xi64> {
