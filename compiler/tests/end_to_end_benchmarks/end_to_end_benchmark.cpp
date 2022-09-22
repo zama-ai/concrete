@@ -135,6 +135,11 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   mlir::concretelang::CompilationOptions loop;
   loop.loopParallelize = true;
   registe("loop", loop);
+#ifdef CONCRETELANG_CUDA_SUPPORT
+  mlir::concretelang::CompilationOptions gpu;
+  gpu.useGPU = true;
+  registe("gpu", gpu);
+#endif
   // mlir::concretelang::CompilationOptions dataflow;
   // dataflow.dataflowParallelize = true;
   // registe("dataflow", dataflow);
