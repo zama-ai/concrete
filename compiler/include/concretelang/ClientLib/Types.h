@@ -35,6 +35,40 @@ using encrypted_scalars_t = uint64_t *;
 // Element types for `TensorData`
 enum class ElementType { u64, i64, u32, i32, u16, i16, u8, i8 };
 
+// Returns the width in bits of an integer whose width is a power of
+// two that can hold values with at most `width` bits
+static inline constexpr size_t getStorageWidth(size_t width) {
+  if (width > 64)
+    assert(false && "Unsupported scalar width");
+
+  if (width > 32) {
+    return 64;
+  } else if (width > 16) {
+    return 32;
+  } else if (width > 8) {
+    return 16;
+  } else {
+    return 8;
+  }
+}
+
+// Translates `sign` and `width` into an `ElementType`.
+static inline ElementType getElementTypeFromWidthAndSign(size_t width,
+                                                         bool sign) {
+  switch (getStorageWidth(width)) {
+  case 64:
+    return (sign) ? ElementType::i64 : ElementType::u64;
+  case 32:
+    return (sign) ? ElementType::i32 : ElementType::u32;
+  case 16:
+    return (sign) ? ElementType::i16 : ElementType::u16;
+  case 8:
+    return (sign) ? ElementType::i8 : ElementType::u8;
+  default:
+    assert(false && "Unsupported scalar width");
+  }
+}
+
 namespace {
 // Returns the number of bits for an element type
 static constexpr size_t getElementTypeWidth(ElementType t) {
@@ -52,6 +86,37 @@ static constexpr size_t getElementTypeWidth(ElementType t) {
   case ElementType::i8:
     return 8;
   }
+
+  // Cannot happen
+  return 0;
+}
+
+// Returns `true` if the element type `t` designates a signed type,
+// otherwise `false`.
+static constexpr size_t getElementTypeSignedness(ElementType t) {
+  switch (t) {
+  case ElementType::u64:
+  case ElementType::u32:
+  case ElementType::u16:
+  case ElementType::u8:
+    return false;
+  case ElementType::i64:
+  case ElementType::i32:
+  case ElementType::i16:
+  case ElementType::i8:
+    return true;
+  }
+
+  // Cannot happen
+  return false;
+}
+
+// Returns `true` iff the element type `t` designates the smallest
+// unsigned / signed (depending on `sign`) integer type that can hold
+// values of up to `width` bits, otherwise false.
+static inline bool checkElementTypeForWidthAndSign(ElementType t, size_t width,
+                                                   bool sign) {
+  return getElementTypeFromWidthAndSign(getStorageWidth(width), sign) == t;
 }
 } // namespace
 
@@ -59,7 +124,7 @@ static constexpr size_t getElementTypeWidth(ElementType t) {
 // encrypted data and data after decryption
 constexpr ElementType EncryptedScalarElementType = ElementType::u64;
 constexpr size_t EncryptedScalarElementWidth =
-    getElementTypeWidth(ElementType::u64);
+    getElementTypeWidth(EncryptedScalarElementType);
 
 using EncryptedScalarElement = uint64_t;
 
@@ -186,12 +251,16 @@ protected:
   detail::TensorData::value_vector_union values;
   ElementType elementType;
   std::vector<size_t> dimensions;
+  size_t elementWidth;
 
   /* Multi-dimensional, uninitialized, but preallocated tensor */
   void initPreallocated(llvm::ArrayRef<size_t> dimensions,
-                        ElementType elementType) {
+                        ElementType elementType, size_t elementWidth,
+                        bool sign) {
+    assert(checkElementTypeForWidthAndSign(elementType, elementWidth, sign) &&
+           "Incoherent parameters for element type, width and sign");
+
     assert(dimensions.size() != 0);
-    this->dimensions.resize(dimensions.size());
 
     size_t n = getNumElements(dimensions);
 
@@ -221,6 +290,9 @@ protected:
       this->values.i8 = new std::vector<int8_t>(n);
       break;
     }
+
+    this->dimensions.resize(dimensions.size());
+    this->elementWidth = elementWidth;
     this->elementType = elementType;
     std::copy(dimensions.begin(), dimensions.end(), this->dimensions.begin());
   }
@@ -242,25 +314,10 @@ public:
     return n;
   }
 
-  // Returns the number of bits of an integer capable of storing
-  // values with up to `elementWidth` bits.
-  static size_t storageWidth(size_t elementWidth) {
-    if (elementWidth > 64) {
-      assert(false && "Maximum supported element width is 64");
-    } else if (elementWidth > 32) {
-      return 64;
-    } else if (elementWidth > 16) {
-      return 32;
-    } else if (elementWidth > 8) {
-      return 16;
-    } else {
-      return 8;
-    }
-  }
-
   // Move constructor. Leaves `that` uninitialized.
   TensorData(TensorData &&that)
-      : elementType(that.elementType), dimensions(std::move(that.dimensions)) {
+      : elementType(that.elementType), dimensions(std::move(that.dimensions)),
+        elementWidth(that.elementWidth) {
     switch (that.elementType) {
     case ElementType::u64:
       this->values.u64 = that.values.u64;
@@ -300,39 +357,23 @@ public:
   // Constructor to build a multi-dimensional tensor with the
   // corresponding element type. All elements are initialized with the
   // default value of `0`.
-  TensorData(llvm::ArrayRef<size_t> dimensions, ElementType elementType) {
-    initPreallocated(dimensions, elementType);
+  TensorData(llvm::ArrayRef<size_t> dimensions, ElementType elementType,
+             size_t elementWidth) {
+    initPreallocated(dimensions, elementType, elementWidth,
+                     getElementTypeSignedness(elementType));
   }
 
-  TensorData(llvm::ArrayRef<int64_t> dimensions, ElementType elementType)
-      : TensorData(toDimSpec(dimensions), elementType) {}
+  TensorData(llvm::ArrayRef<int64_t> dimensions, ElementType elementType,
+             size_t elementWidth)
+      : TensorData(toDimSpec(dimensions), elementType, elementWidth) {}
 
   // Constructor to build a multi-dimensional tensor with the element
-  // type corresponding to `elementWidth` and `sign`. The value for
-  // `elementWidth` must be a power of 2 of up to 64. All elements are
+  // type corresponding to `elementWidth` and `sign`. All elements are
   // initialized with the default value of `0`.
-  TensorData(llvm::ArrayRef<size_t> dimensions, size_t elementWidth,
-             bool sign) {
-    switch (elementWidth) {
-    case 64:
-      initPreallocated(dimensions,
-                       (sign) ? ElementType::i64 : ElementType::u64);
-      break;
-    case 32:
-      initPreallocated(dimensions,
-                       (sign) ? ElementType::i32 : ElementType::u32);
-      break;
-    case 16:
-      initPreallocated(dimensions,
-                       (sign) ? ElementType::i16 : ElementType::u16);
-      break;
-    case 8:
-      initPreallocated(dimensions, (sign) ? ElementType::i8 : ElementType::u8);
-      break;
-    default:
-      assert(false && "Element width must be 64, 32, 16 or 8 bits");
-    }
-  }
+  TensorData(llvm::ArrayRef<size_t> dimensions, size_t elementWidth, bool sign)
+      : TensorData(dimensions,
+                   getElementTypeFromWidthAndSign(elementWidth, sign),
+                   elementWidth) {}
 
   TensorData(llvm::ArrayRef<int64_t> dimensions, size_t elementWidth, bool sign)
       : TensorData(toDimSpec(dimensions), elementWidth, sign) {}
@@ -340,8 +381,12 @@ public:
 #define DEF_TENSOR_DATA_TENSOR_COSTRUCTORS(ELTY, SUFFIX)                       \
   /* Multi-dimensional, initialized tensor, values copied from */              \
   /* `values` */                                                               \
-  TensorData(llvm::ArrayRef<ELTY> values, llvm::ArrayRef<size_t> dimensions)   \
+  TensorData(llvm::ArrayRef<ELTY> values, llvm::ArrayRef<size_t> dimensions,   \
+             size_t elementWidth)                                              \
       : dimensions(dimensions.begin(), dimensions.end()) {                     \
+    assert(checkElementTypeForWidthAndSign(ElementType::SUFFIX, elementWidth,  \
+                                           std::is_signed<ELTY>()) &&          \
+           "wrong element type for width");                                    \
     assert(dimensions.size() != 0);                                            \
     size_t n = getNumElements(dimensions);                                     \
     this->values.SUFFIX = new std::vector<ELTY>(n);                            \
@@ -351,8 +396,9 @@ public:
                                                                                \
   /* One-dimensional, initialized tensor. Values are copied from */            \
   /* `values` */                                                               \
-  TensorData(llvm::ArrayRef<ELTY> values)                                      \
-      : TensorData(values, llvm::SmallVector<size_t, 1>{values.size()}) {}
+  TensorData(llvm::ArrayRef<ELTY> values, size_t width)                        \
+      : TensorData(values, llvm::SmallVector<size_t, 1>{values.size()},        \
+                   width) {}
 
   DEF_TENSOR_DATA_TENSOR_COSTRUCTORS(uint64_t, u64)
   DEF_TENSOR_DATA_TENSOR_COSTRUCTORS(int64_t, i64)
@@ -397,6 +443,10 @@ public:
 
   // Returns a vector with the size for each dimension of the tensor
   const std::vector<size_t> &getDimensions() const { return this->dimensions; }
+
+  template <typename T> const std::vector<T> getDimensionsAs() const {
+    return std::vector<T>(this->dimensions.begin(), this->dimensions.end());
+  }
 
   // Returns the number of dimensions
   size_t getRank() const { return this->dimensions.size(); }
@@ -470,6 +520,12 @@ public:
     return detail::TensorData::getElementPointer<T>(values, index, elementType);
   }
 
+  // Returns a pointer to the `index`-th value of a flat
+  // representation of the tensor (const version)
+  template <typename T> const T *getElementPointer(size_t index) const {
+    return detail::TensorData::getElementPointer<T>(values, index, elementType);
+  }
+
   // Returns a void pointer to the `index`-th value of a flat
   // representation of the tensor
   void *getOpaqueElementPointer(size_t index) {
@@ -514,7 +570,13 @@ public:
   // Returns the element type of the tensor
   ElementType getElementType() const { return this->elementType; }
 
-  // Returns the size of a tensor element in bytes
+  // Returns the actual width in bits of a data element (i.e., the
+  // width specified upon construction and not the storage width of an
+  // element)
+  size_t getElementWidth() const { return this->elementWidth; }
+
+  // Returns the size of a tensor element in bytes (i.e., the storage width in
+  // bytes)
   size_t getElementSize() const {
     switch (this->elementType) {
     case ElementType::u64:
@@ -546,11 +608,6 @@ public:
     case ElementType::i8:
       return true;
     }
-  }
-
-  // Returns the width of an element in bits
-  size_t getElementWidth() const {
-    return getElementTypeWidth(this->elementType);
   }
 
   // Returns the total number of elements of the tensor
@@ -592,38 +649,38 @@ public:
 
   // Copies all elements of a flat representation of the tensor to the
   // positions starting with the iterator `start`.
-  template <typename IT> void copy(IT start) {
+  template <typename IT> void copy(IT start) const {
     switch (this->elementType) {
     case ElementType::u64:
-      std::copy(this->values.u64->begin(), this->values.u64->end(), start);
+      std::copy(this->values.u64->cbegin(), this->values.u64->cend(), start);
       break;
     case ElementType::i64:
-      std::copy(this->values.i64->begin(), this->values.i64->end(), start);
+      std::copy(this->values.i64->cbegin(), this->values.i64->cend(), start);
       break;
     case ElementType::u32:
-      std::copy(this->values.u32->begin(), this->values.u32->end(), start);
+      std::copy(this->values.u32->cbegin(), this->values.u32->cend(), start);
       break;
     case ElementType::i32:
-      std::copy(this->values.i32->begin(), this->values.i32->end(), start);
+      std::copy(this->values.i32->cbegin(), this->values.i32->cend(), start);
       break;
     case ElementType::u16:
-      std::copy(this->values.u16->begin(), this->values.u16->end(), start);
+      std::copy(this->values.u16->cbegin(), this->values.u16->cend(), start);
       break;
     case ElementType::i16:
-      std::copy(this->values.i16->begin(), this->values.i16->end(), start);
+      std::copy(this->values.i16->cbegin(), this->values.i16->cend(), start);
       break;
     case ElementType::u8:
-      std::copy(this->values.u8->begin(), this->values.u8->end(), start);
+      std::copy(this->values.u8->cbegin(), this->values.u8->cend(), start);
       break;
     case ElementType::i8:
-      std::copy(this->values.i8->begin(), this->values.i8->end(), start);
+      std::copy(this->values.i8->cbegin(), this->values.i8->cend(), start);
       break;
     }
   }
 
   // Returns a flat representation of the tensor with elements
   // converted to the type `T`
-  template <typename T> std::vector<T> asFlatVector() {
+  template <typename T> std::vector<T> asFlatVector() const {
     std::vector<T> ret(getNumElements());
     this->copy(ret.begin());
     return ret;
@@ -655,6 +712,169 @@ public:
   }
 };
 
+namespace detail {
+namespace ScalarData {
+// Union representing a single scalar value
+union scalar_union {
+  uint64_t u64;
+  int64_t i64;
+  uint32_t u32;
+  int32_t i32;
+  uint16_t u16;
+  int16_t i16;
+  uint8_t u8;
+  int8_t i8;
+};
+
+// Template + specializations that should be in ScalarData, but which need to be
+// in namespace scope
+template <typename T> T getValue(const union scalar_union &u, ElementType type);
+
+#define SCALARDATA_SPECIALIZE_VALUE_GETTER(ELTY, SUFFIX)                       \
+  template <>                                                                  \
+  inline ELTY getValue(const union scalar_union &u, ElementType type) {        \
+    assert(type == ElementType::SUFFIX);                                       \
+    return u.SUFFIX;                                                           \
+  }
+
+SCALARDATA_SPECIALIZE_VALUE_GETTER(uint64_t, u64)
+SCALARDATA_SPECIALIZE_VALUE_GETTER(int64_t, i64)
+SCALARDATA_SPECIALIZE_VALUE_GETTER(uint32_t, u32)
+SCALARDATA_SPECIALIZE_VALUE_GETTER(int32_t, i32)
+SCALARDATA_SPECIALIZE_VALUE_GETTER(uint16_t, u16)
+SCALARDATA_SPECIALIZE_VALUE_GETTER(int16_t, i16)
+SCALARDATA_SPECIALIZE_VALUE_GETTER(uint8_t, u8)
+SCALARDATA_SPECIALIZE_VALUE_GETTER(int8_t, i8)
+
+} // namespace ScalarData
+} // namespace detail
+
+// Class representing a single scalar value
+class ScalarData {
+public:
+  ScalarData(const ScalarData &s)
+      : type(s.type), value(s.value), width(s.width) {}
+
+  // Construction with a specific type and an actual width, but with a value
+  // provided in a generic `uint64_t`
+  ScalarData(uint64_t value, ElementType type, size_t width)
+      : type(type), width(width) {
+    assert(width <= getElementTypeWidth(type));
+
+    switch (type) {
+    case ElementType::u64:
+      this->value.u64 = value;
+      break;
+    case ElementType::i64:
+      this->value.i64 = value;
+      break;
+    case ElementType::u32:
+      this->value.u32 = value;
+      break;
+    case ElementType::i32:
+      this->value.i32 = value;
+      break;
+    case ElementType::u16:
+      this->value.u16 = value;
+      break;
+    case ElementType::i16:
+      this->value.i16 = value;
+      break;
+    case ElementType::u8:
+      this->value.u8 = value;
+      break;
+    case ElementType::i8:
+      this->value.i8 = value;
+      break;
+    }
+  }
+
+  // Construction with a specific type determined by `sign` and
+  // `width`, but value provided in a generic `uint64_t`
+  ScalarData(uint64_t value, bool sign, size_t width)
+      : ScalarData(value, getElementTypeFromWidthAndSign(width, sign), width) {}
+
+#define DEF_SCALAR_DATA_CONSTRUCTOR(ELTY, SUFFIX)                              \
+  ScalarData(ELTY value)                                                       \
+      : type(ElementType::SUFFIX),                                             \
+        width(getElementTypeWidth(ElementType::SUFFIX)) {                      \
+    this->value.SUFFIX = value;                                                \
+  }
+
+  // Construction from specific value type
+  DEF_SCALAR_DATA_CONSTRUCTOR(uint64_t, u64)
+  DEF_SCALAR_DATA_CONSTRUCTOR(int64_t, i64)
+  DEF_SCALAR_DATA_CONSTRUCTOR(uint32_t, u32)
+  DEF_SCALAR_DATA_CONSTRUCTOR(int32_t, i32)
+  DEF_SCALAR_DATA_CONSTRUCTOR(uint16_t, u16)
+  DEF_SCALAR_DATA_CONSTRUCTOR(int16_t, i16)
+  DEF_SCALAR_DATA_CONSTRUCTOR(uint8_t, u8)
+  DEF_SCALAR_DATA_CONSTRUCTOR(int8_t, i8)
+
+  template <typename T> T getValue() const {
+    return detail::ScalarData::getValue<T>(value, type);
+  }
+
+  // Retrieves the value as a generic `uint64_t`
+  uint64_t getValueAsU64() const {
+    size_t width = getElementTypeWidth(type);
+    uint64_t mask = ((uint64_t)1 << width) - 1;
+    uint64_t val = value.u64 & mask;
+    return val;
+  }
+
+  ElementType getType() const { return type; }
+  size_t getWidth() const { return width; }
+
+protected:
+  ElementType type;
+  union detail::ScalarData::scalar_union value;
+  size_t width;
+};
+
+// Variant for TensorData and ScalarData
+class ScalarOrTensorData {
+protected:
+  std::unique_ptr<ScalarData> scalar;
+  std::unique_ptr<TensorData> tensor;
+
+public:
+  ScalarOrTensorData(ScalarOrTensorData &&td)
+      : scalar(std::move(td.scalar)), tensor(std::move(td.tensor)) {}
+
+  ScalarOrTensorData(TensorData &&td)
+      : scalar(nullptr), tensor(std::make_unique<TensorData>(std::move(td))) {}
+
+  ScalarOrTensorData(const ScalarData &s)
+      : scalar(std::make_unique<ScalarData>(s)), tensor(nullptr) {}
+
+  bool isTensor() const { return tensor != nullptr; }
+  bool isScalar() const { return scalar != nullptr; }
+
+  ScalarData &getScalar() {
+    assert(scalar != nullptr &&
+           "Attempt to get a scalar value from variant that is a tensor");
+    return *scalar;
+  }
+
+  const ScalarData &getScalar() const {
+    assert(scalar != nullptr &&
+           "Attempt to get a scalar value from variant that is a tensor");
+    return *scalar;
+  }
+
+  TensorData &getTensor() {
+    assert(tensor != nullptr &&
+           "Attempt to get a tensor value from variant that is a scalar");
+    return *tensor;
+  }
+
+  const TensorData &getTensor() const {
+    assert(tensor != nullptr &&
+           "Attempt to get a tensor value from variant that is a scalar");
+    return *tensor;
+  }
+};
 } // namespace clientlib
 } // namespace concretelang
 

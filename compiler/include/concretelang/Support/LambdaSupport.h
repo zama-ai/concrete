@@ -32,21 +32,60 @@ template <typename ResT>
 llvm::Expected<ResT> typedResult(clientlib::KeySet &keySet,
                                  clientlib::PublicResult &result);
 
-/// Specialization of `typedResult()` for scalar results, forwarding
-/// scalar value to caller
+template <typename T>
+inline llvm::Expected<T> typedScalarResult(clientlib::KeySet &keySet,
+                                           clientlib::PublicResult &result) {
+  auto clearResult = result.asClearTextScalar<T>(keySet, 0);
+  if (!clearResult.has_value()) {
+    return StreamStringError("typedResult cannot get clear text scalar")
+           << clearResult.error().mesg;
+  }
+
+  return clearResult.value();
+}
+
+/// Specializations of `typedResult()` for scalar results, forwarding
+/// scalar value to caller.
+
 template <>
 inline llvm::Expected<uint64_t> typedResult(clientlib::KeySet &keySet,
                                             clientlib::PublicResult &result) {
-  auto clearResult = result.asClearTextVector<uint64_t>(keySet, 0);
-  if (!clearResult.has_value()) {
-    return StreamStringError("typedResult cannot get clear text vector")
-           << clearResult.error().mesg;
-  }
-  if (clearResult.value().size() != 1) {
-    return StreamStringError("typedResult expect only one value but got ")
-           << clearResult.value().size();
-  }
-  return clearResult.value()[0];
+  return std::move(typedScalarResult<uint64_t>(keySet, result));
+}
+template <>
+inline llvm::Expected<int64_t> typedResult(clientlib::KeySet &keySet,
+                                           clientlib::PublicResult &result) {
+  return std::move(typedScalarResult<int64_t>(keySet, result));
+}
+template <>
+inline llvm::Expected<uint32_t> typedResult(clientlib::KeySet &keySet,
+                                            clientlib::PublicResult &result) {
+  return std::move(typedScalarResult<uint32_t>(keySet, result));
+}
+template <>
+inline llvm::Expected<int32_t> typedResult(clientlib::KeySet &keySet,
+                                           clientlib::PublicResult &result) {
+  return std::move(typedScalarResult<int32_t>(keySet, result));
+}
+template <>
+inline llvm::Expected<uint16_t> typedResult(clientlib::KeySet &keySet,
+                                            clientlib::PublicResult &result) {
+  return std::move(typedScalarResult<uint16_t>(keySet, result));
+}
+template <>
+inline llvm::Expected<int16_t> typedResult(clientlib::KeySet &keySet,
+                                           clientlib::PublicResult &result) {
+  return std::move(typedScalarResult<int16_t>(keySet, result));
+}
+template <>
+inline llvm::Expected<uint8_t> typedResult(clientlib::KeySet &keySet,
+                                           clientlib::PublicResult &result) {
+  return std::move(typedScalarResult<uint8_t>(keySet, result));
+}
+template <>
+inline llvm::Expected<int8_t> typedResult(clientlib::KeySet &keySet,
+                                          clientlib::PublicResult &result) {
+  return std::move(typedScalarResult<int8_t>(keySet, result));
 }
 
 template <typename T>
@@ -73,9 +112,19 @@ typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
   return typedVectorResult<uint8_t>(keySet, result);
 }
 template <>
+inline llvm::Expected<std::vector<int8_t>>
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<int8_t>(keySet, result);
+}
+template <>
 inline llvm::Expected<std::vector<uint16_t>>
 typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
   return typedVectorResult<uint16_t>(keySet, result);
+}
+template <>
+inline llvm::Expected<std::vector<int16_t>>
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<int16_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<std::vector<uint32_t>>
@@ -83,9 +132,19 @@ typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
   return typedVectorResult<uint32_t>(keySet, result);
 }
 template <>
+inline llvm::Expected<std::vector<int32_t>>
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<int32_t>(keySet, result);
+}
+template <>
 inline llvm::Expected<std::vector<uint64_t>>
 typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
   return typedVectorResult<uint64_t>(keySet, result);
+}
+template <>
+inline llvm::Expected<std::vector<int64_t>>
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<int64_t>(keySet, result);
 }
 
 template <typename T>
@@ -105,37 +164,67 @@ buildTensorLambdaResult(clientlib::KeySet &keySet,
       *tensorOrError, tensorDim.value());
 }
 
+template <typename T>
+llvm::Expected<std::unique_ptr<LambdaArgument>>
+buildScalarLambdaResult(clientlib::KeySet &keySet,
+                        clientlib::PublicResult &result) {
+  llvm::Expected<T> scalarOrError = typedResult<T>(keySet, result);
+  if (auto err = scalarOrError.takeError())
+    return std::move(err);
+
+  return std::make_unique<IntLambdaArgument<T>>(*scalarOrError);
+}
+
 /// pecialization of `typedResult()` for a single result wrapped into
 /// a `LambdaArgument`.
 template <>
 inline llvm::Expected<std::unique_ptr<LambdaArgument>>
 typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
   auto gate = keySet.outputGate(0);
-  // scalar case
+  auto width = gate.shape.width;
+  bool sign = gate.shape.sign;
+
+  if (width > 64)
+    return StreamStringError("Cannot handle values with more than 64 bits");
+
+  // By convention, decrypted integers are always 64 bits wide
+  if (gate.isEncrypted())
+    width = 64;
+
   if (gate.shape.dimensions.empty()) {
-    auto clearResult = result.asClearTextVector<uint64_t>(keySet, 0);
-    if (clearResult.has_error()) {
-      return StreamStringError("typedResult: ") << clearResult.error().mesg;
+    // scalar case
+    if (width > 32) {
+      return (sign) ? buildScalarLambdaResult<int64_t>(keySet, result)
+                    : buildScalarLambdaResult<uint64_t>(keySet, result);
+    } else if (width > 16) {
+      return (sign) ? buildScalarLambdaResult<int32_t>(keySet, result)
+                    : buildScalarLambdaResult<uint32_t>(keySet, result);
+    } else if (width > 8) {
+      return (sign) ? buildScalarLambdaResult<int16_t>(keySet, result)
+                    : buildScalarLambdaResult<uint16_t>(keySet, result);
+    } else if (width <= 8) {
+      return (sign) ? buildScalarLambdaResult<int8_t>(keySet, result)
+                    : buildScalarLambdaResult<uint8_t>(keySet, result);
     }
-    auto res = clearResult.value()[0];
-
-    return std::make_unique<IntLambdaArgument<uint64_t>>(res);
+  } else {
+    // tensor case
+    if (width > 32) {
+      return (sign) ? buildTensorLambdaResult<int64_t>(keySet, result)
+                    : buildTensorLambdaResult<uint64_t>(keySet, result);
+    } else if (width > 16) {
+      return (sign) ? buildTensorLambdaResult<int32_t>(keySet, result)
+                    : buildTensorLambdaResult<uint32_t>(keySet, result);
+    } else if (width > 8) {
+      return (sign) ? buildTensorLambdaResult<int16_t>(keySet, result)
+                    : buildTensorLambdaResult<uint16_t>(keySet, result);
+    } else if (width <= 8) {
+      return (sign) ? buildTensorLambdaResult<int8_t>(keySet, result)
+                    : buildTensorLambdaResult<uint8_t>(keySet, result);
+    }
   }
-  // tensor case
-  // auto width = gate.shape.width;
 
-  // if (width > 32)
-  return buildTensorLambdaResult<uint64_t>(keySet, result);
-  // else if (width > 16)
-  //   return buildTensorLambdaResult<uint32_t>(keySet, result);
-  // else if (width > 8)
-  //   return buildTensorLambdaResult<uint16_t>(keySet, result);
-  // else if (width <= 8)
-  //   return buildTensorLambdaResult<uint8_t>(keySet, result);
-
-  // return StreamStringError("Cannot handle scalars with more than 64 bits");
+  assert(false && "Cannot happen");
 }
-
 } // namespace
 
 /// Adaptor class that push arguments specified as instances of
@@ -215,7 +304,7 @@ public:
 
   /// Encrypts and build public arguments from lambda arguments
   static llvm::Expected<std::unique_ptr<clientlib::PublicArguments>>
-  exportArguments(llvm::ArrayRef<LambdaArgument *> args,
+  exportArguments(llvm::ArrayRef<const LambdaArgument *> args,
                   clientlib::ClientParameters clientParameters,
                   clientlib::KeySet &keySet) {
 
@@ -301,7 +390,7 @@ public:
   static llvm::Expected<std::unique_ptr<clientlib::PublicArguments>>
   exportArguments(clientlib::ClientParameters clientParameters,
                   clientlib::KeySet &keySet,
-                  llvm::ArrayRef<LambdaArgument *> args) {
+                  llvm::ArrayRef<const LambdaArgument *> args) {
     return LambdaArgumentAdaptor::exportArguments(args, clientParameters,
                                                   keySet);
   }

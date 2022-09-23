@@ -35,8 +35,10 @@ EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
   std::vector<int64_t> shape = keySet.clientParameters().bufferShape(input);
 
   // Allocate empty
-  ciphertextBuffers.emplace_back(shape, clientlib::EncryptedScalarElementType);
-  TensorData &values_and_sizes = ciphertextBuffers.back();
+  ciphertextBuffers.emplace_back(
+      TensorData(shape, clientlib::EncryptedScalarElementType,
+                 clientlib::EncryptedScalarElementWidth));
+  TensorData &values_and_sizes = ciphertextBuffers.back().getTensor();
 
   OUTCOME_TRYV(keySet.encrypt_lwe(
       pos, values_and_sizes.getElementPointer<decrypted_scalar_t>(0), arg));

@@ -192,6 +192,7 @@ llvm::json::Value toJSON(const CircuitGateShape &v) {
       {"width", v.width},
       {"dimensions", v.dimensions},
       {"size", v.size},
+      {"sign", v.sign},
   };
   return object;
 }
@@ -225,8 +226,14 @@ bool fromJSON(const llvm::json::Value j, CircuitGateShape &v,
     p.report("missing size field");
     return false;
   }
+  auto sign = obj->getBoolean("sign");
+  if (!sign.hasValue()) {
+    p.report("missing sign field");
+    return false;
+  }
   v.width = width.getValue();
   v.size = size.getValue();
+  v.sign = sign.getValue();
   return true;
 }
 

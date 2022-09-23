@@ -66,6 +66,11 @@ std::ostream &operator<<(std::ostream &ostream,
                          const RuntimeContext &runtimeContext);
 std::istream &operator>>(std::istream &istream, RuntimeContext &runtimeContext);
 
+std::ostream &serializeScalarData(const ScalarData &sd, std::ostream &ostream);
+
+outcome::checked<ScalarData, StringError>
+unserializeScalarData(std::istream &istream);
+
 std::ostream &serializeTensorData(const TensorData &values_and_sizes,
                                   std::ostream &ostream);
 
@@ -92,6 +97,13 @@ outcome::checked<TensorData, StringError> unserializeTensorData(
     std::vector<int64_t> &expectedSizes, // includes unsigned to
                                          // accomodate non static sizes
     std::istream &istream);
+
+std::ostream &serializeScalarOrTensorData(const ScalarOrTensorData &sotd,
+                                          std::ostream &ostream);
+
+outcome::checked<ScalarOrTensorData, StringError>
+unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
+                              std::istream &istream);
 
 std::ostream &operator<<(std::ostream &ostream,
                          const LweKeyswitchKey &wrappedKsk);

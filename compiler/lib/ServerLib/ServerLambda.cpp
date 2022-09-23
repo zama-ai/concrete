@@ -79,12 +79,12 @@ ServerLambda::call(PublicArguments &args, EvaluationKeys &evaluationKeys) {
   auto output = args.clientParameters.outputs[0];
   auto rank = args.clientParameters.bufferShape(output).size();
 
-  // FIXME: Handle sign correctly
   size_t element_width = (output.isEncrypted()) ? 64 : output.shape.width;
+  bool sign = (output.isEncrypted()) ? false : output.shape.sign;
   auto result = multi_arity_call_dynamic_rank(func, preparedArgs, rank,
-                                              element_width, false);
+                                              element_width, sign);
 
-  std::vector<TensorData> results;
+  std::vector<ScalarOrTensorData> results;
   results.push_back(std::move(result));
 
   return clientlib::PublicResult::fromBuffers(clientParameters,

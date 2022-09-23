@@ -19,9 +19,7 @@
 namespace concretelang {
 namespace serverlib {
 
-using concretelang::clientlib::encrypted_scalar_t;
-using concretelang::clientlib::encrypted_scalars_t;
-using concretelang::clientlib::TensorData;
+using concretelang::clientlib::ScalarOrTensorData;
 
 /// ServerLambda is a utility class that allows to call a function of a
 /// compilation result.

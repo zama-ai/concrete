@@ -36,12 +36,17 @@ template <typename FnDstT, typename FnSrcT> FnDstT convert_fnptr(FnSrcT src) {
   return reinterpret_cast<FnDstT>(raw);
 }
 
-TensorData multi_arity_call_dynamic_rank(void *(*func)(void *...),
-                                         std::vector<void *> args, size_t rank,
-                                         size_t element_width, bool is_signed) {
+ScalarOrTensorData multi_arity_call_dynamic_rank(void *(*func)(void *...),
+                                                 std::vector<void *> args, size_t rank,
+                                                 size_t element_width, bool is_signed) {
   using concretelang::clientlib::MemRefDescriptor;
   constexpr auto convert = concretelang::clientlib::tensorDataFromMemRef;
-  switch (rank) {""")
+  switch (rank) {
+  case 0: {
+    auto m =
+        multi_arity_call(convert_fnptr<uint64_t (*)(void *...)>(func), args);
+    return concretelang::clientlib::ScalarData(m, is_signed, element_width);
+  }""")
 
 for tensor_rank in range(1, 33):
     memref_rank = tensor_rank

@@ -45,14 +45,16 @@ llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
     if (!type.isIndex()) {
       width = type.getIntOrFloatBitWidth();
     }
+
+    bool sign = type.isSignedInteger();
+
     return CircuitGate{
         /*.encryption = */ llvm::None,
         /*.shape = */
-        {
-            /*.width = */ width,
-            /*.dimensions = */ std::vector<int64_t>(),
-            /*.size = */ 0,
-        },
+        {/*.width = */ width,
+         /*.dimensions = */ std::vector<int64_t>(),
+         /*.size = */ 0,
+         /* .sign */ sign},
     };
   }
   if (auto lweTy = type.dyn_cast_or_null<

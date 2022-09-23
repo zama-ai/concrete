@@ -161,7 +161,8 @@ public:
     std::vector<int64_t> sizes = keySet.clientParameters().bufferShape(input);
 
     if (input.encryption.hasValue()) {
-      TensorData td(sizes, ElementType::u64);
+      TensorData td(sizes, EncryptedScalarElementType,
+                    EncryptedScalarElementWidth);
 
       auto lweSize = keySet.clientParameters().lweBufferSize(input);
 
@@ -174,15 +175,12 @@ public:
     } else {
       auto bitsPerValue = bitWidthAsWord(input.shape.width);
 
-      // FIXME: This always requests a tensor with unsigned elements,
-      // as the signedness is not captured in the description of the
-      // circuit
-      TensorData td(sizes, bitsPerValue, false);
+      TensorData td(sizes, bitsPerValue, input.shape.sign);
       llvm::ArrayRef<T> values(data, TensorData::getNumElements(sizes));
       td.bulkAssign(values);
       ciphertextBuffers.push_back(std::move(td));
     }
-    TensorData &td = ciphertextBuffers.back();
+    TensorData &td = ciphertextBuffers.back().getTensor();
 
     // allocated
     preparedArgs.push_back(nullptr);
@@ -238,7 +236,7 @@ private:
   std::vector<void *> preparedArgs;
 
   /// Store buffers of ciphertexts
-  std::vector<TensorData> ciphertextBuffers;
+  std::vector<ScalarOrTensorData> ciphertextBuffers;
 };
 
 } // namespace clientlib

@@ -5,31 +5,31 @@
 #include <string>
 #include <vector>
 
+#include "concretelang/ClientLib/Types.h"
 #include "concretelang/Support/JITSupport.h"
 
-typedef uint8_t ValueWidth;
-struct TensorDescription {
-  std::vector<int64_t> shape;
-  std::vector<uint64_t> values;
-  ValueWidth width;
-};
-struct ScalarDesc {
-  int64_t value;
-  ValueWidth width;
-};
-
 struct ValueDescription {
-  template <typename T> static ValueDescription get(T value) {
-    ValueDescription desc;
-    desc.tag = ValueDescription::SCALAR;
-    desc.scalar.value = (uint64_t)value;
-    desc.scalar.width = sizeof(value) * 8;
-    return desc;
-  }
-  enum { SCALAR, TENSOR } tag;
+  ValueDescription() : value(nullptr) {}
+  ValueDescription(const ValueDescription &other) : value(other.value) {}
 
-  ScalarDesc scalar;
-  TensorDescription tensor;
+  template <typename T> void setValue(T value) {
+    this->value =
+        std::make_shared<mlir::concretelang::IntLambdaArgument<T>>(value);
+  }
+
+  template <typename T>
+  void setValue(std::vector<T> &&value, llvm::ArrayRef<int64_t> shape) {
+    this->value = std::make_shared<mlir::concretelang::TensorLambdaArgument<
+        mlir::concretelang::IntLambdaArgument<T>>>(value, shape);
+  }
+
+  const mlir::concretelang::LambdaArgument &getValue() const {
+    assert(this->value != nullptr);
+    return *value;
+  }
+
+protected:
+  std::shared_ptr<mlir::concretelang::LambdaArgument> value;
 };
 
 struct TestDescription {
@@ -58,15 +58,6 @@ struct EndToEndDesc {
   bool dataflowParallelize;
   bool asyncOffload;
 };
-
-llvm::Expected<mlir::concretelang::LambdaArgument *>
-scalarDescToLambdaArgument(ScalarDesc desc);
-
-llvm::Expected<mlir::concretelang::LambdaArgument *>
-valueDescriptionToLambdaArgument(ValueDescription desc);
-
-llvm::Error checkResult(ScalarDesc &desc,
-                        mlir::concretelang::LambdaArgument *res);
 
 llvm::Error checkResult(ValueDescription &desc,
                         mlir::concretelang::LambdaArgument &res);

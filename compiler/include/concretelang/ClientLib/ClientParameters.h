@@ -138,6 +138,8 @@ struct CircuitGateShape {
   std::vector<int64_t> dimensions;
   /// Size of the buffer containing the tensor
   size_t size;
+  // Indicated whether elements are signed
+  bool sign;
 };
 static inline bool operator==(const CircuitGateShape &lhs,
                               const CircuitGateShape &rhs) {

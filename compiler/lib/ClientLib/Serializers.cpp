@@ -150,6 +150,86 @@ std::ostream &operator<<(std::ostream &ostream,
 }
 
 template <typename T>
+std::ostream &serializeScalarDataRaw(T value, std::ostream &ostream) {
+  writeWord<uint64_t>(ostream, sizeof(T) * 8);
+  writeWord<uint8_t>(ostream, std::is_signed<T>());
+  writeWord<T>(ostream, value);
+  return ostream;
+}
+
+std::ostream &serializeScalarData(const ScalarData &sd, std::ostream &ostream) {
+  switch (sd.getType()) {
+  case ElementType::u64:
+    return serializeScalarDataRaw<uint64_t>(sd.getValue<uint64_t>(), ostream);
+  case ElementType::i64:
+    return serializeScalarDataRaw<int64_t>(sd.getValue<int64_t>(), ostream);
+  case ElementType::u32:
+    return serializeScalarDataRaw<uint32_t>(sd.getValue<uint32_t>(), ostream);
+  case ElementType::i32:
+    return serializeScalarDataRaw<int32_t>(sd.getValue<int32_t>(), ostream);
+  case ElementType::u16:
+    return serializeScalarDataRaw<uint16_t>(sd.getValue<uint16_t>(), ostream);
+  case ElementType::i16:
+    return serializeScalarDataRaw<int16_t>(sd.getValue<int16_t>(), ostream);
+  case ElementType::u8:
+    return serializeScalarDataRaw<uint8_t>(sd.getValue<uint8_t>(), ostream);
+  case ElementType::i8:
+    return serializeScalarDataRaw<int8_t>(sd.getValue<int8_t>(), ostream);
+  }
+
+  return ostream;
+}
+
+template <typename T> ScalarData unserializeScalarValue(std::istream &istream) {
+  T value;
+  readWord(istream, value);
+  return ScalarData(value);
+}
+
+outcome::checked<ScalarData, StringError>
+unserializeScalarData(std::istream &istream) {
+  uint64_t scalarWidth;
+  readWord(istream, scalarWidth);
+
+  switch (scalarWidth) {
+  case 64:
+  case 32:
+  case 16:
+  case 8:
+    break;
+  default:
+    return StringError("Scalar width must be either 64, 32, 16 or 8, but got ")
+           << scalarWidth;
+  }
+
+  uint8_t scalarSignedness;
+  readWord(istream, scalarSignedness);
+
+  if (scalarSignedness != 0 && scalarSignedness != 1) {
+    return StringError("Numerical value for scalar signedness must be either "
+                       "0 or 1, but got ")
+           << scalarSignedness;
+  }
+
+  switch (scalarWidth) {
+  case 64:
+    return (scalarSignedness) ? unserializeScalarValue<int64_t>(istream)
+                              : unserializeScalarValue<uint64_t>(istream);
+  case 32:
+    return (scalarSignedness) ? unserializeScalarValue<int32_t>(istream)
+                              : unserializeScalarValue<uint32_t>(istream);
+  case 16:
+    return (scalarSignedness) ? unserializeScalarValue<int16_t>(istream)
+                              : unserializeScalarValue<uint16_t>(istream);
+  case 8:
+    return (scalarSignedness) ? unserializeScalarValue<int8_t>(istream)
+                              : unserializeScalarValue<uint8_t>(istream);
+  }
+
+  assert(false && "Unhandled scalar type");
+}
+
+template <typename T>
 static std::istream &unserializeTensorDataElements(TensorData &values_and_sizes,
                                                    std::istream &istream) {
   readWords(istream, values_and_sizes.getElementPointer<T>(0),
@@ -199,8 +279,8 @@ std::ostream &serializeTensorData(const TensorData &values_and_sizes,
 }
 
 outcome::checked<TensorData, StringError> unserializeTensorData(
-    std::vector<int64_t> &expectedSizes, // includes lweSize, unsigned to
-                                         // accomodate non static sizes
+    const std::vector<int64_t> &expectedSizes, // includes lweSize, unsigned to
+                                               // accomodate non static sizes
     std::istream &istream) {
 
   if (incorrectMode(istream)) {
@@ -278,6 +358,45 @@ outcome::checked<TensorData, StringError> unserializeTensorData(
   }
 
   return std::move(result);
+}
+
+std::ostream &serializeScalarOrTensorData(const ScalarOrTensorData &sotd,
+                                          std::ostream &ostream) {
+  writeWord<uint8_t>(ostream, sotd.isTensor());
+
+  if (sotd.isTensor())
+    return serializeTensorData(sotd.getTensor(), ostream);
+  else
+    return serializeScalarData(sotd.getScalar(), ostream);
+}
+
+outcome::checked<ScalarOrTensorData, StringError>
+unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
+                              std::istream &istream) {
+  uint8_t isTensor;
+  readWord(istream, isTensor);
+
+  if (isTensor != 0 && isTensor != 1) {
+    return StringError("Numerical value indicating whether a data element is a "
+                       "tensor must be either 0 or 1, but got ")
+           << isTensor;
+  }
+
+  if (isTensor) {
+    auto tdOrErr = unserializeTensorData(expectedSizes, istream);
+
+    if (tdOrErr.has_error())
+      return std::move(tdOrErr.error());
+    else
+      return ScalarOrTensorData(std::move(tdOrErr.value()));
+  } else {
+    auto tdOrErr = unserializeScalarData(istream);
+
+    if (tdOrErr.has_error())
+      return std::move(tdOrErr.error());
+    else
+      return ScalarOrTensorData(std::move(tdOrErr.value()));
+  }
 }
 
 std::ostream &operator<<(std::ostream &ostream,

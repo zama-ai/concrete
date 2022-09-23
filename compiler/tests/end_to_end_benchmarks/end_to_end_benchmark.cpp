@@ -49,12 +49,10 @@ static void BM_ExportArguments(benchmark::State &state,
 
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
-  std::vector<mlir::concretelang::LambdaArgument *> inputArguments;
+  std::vector<const mlir::concretelang::LambdaArgument *> inputArguments;
   inputArguments.reserve(test.inputs.size());
   for (auto input : test.inputs) {
-    auto arg = valueDescriptionToLambdaArgument(input);
-    assert(arg);
-    inputArguments.push_back(arg.get());
+    inputArguments.push_back(&input.getValue());
   }
 
   for (auto _ : state) {
@@ -79,12 +77,10 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
 
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
-  std::vector<mlir::concretelang::LambdaArgument *> inputArguments;
+  std::vector<const mlir::concretelang::LambdaArgument *> inputArguments;
   inputArguments.reserve(test.inputs.size());
   for (auto input : test.inputs) {
-    auto arg = valueDescriptionToLambdaArgument(input);
-    assert(arg);
-    inputArguments.push_back(arg.get());
+    inputArguments.push_back(&input.getValue());
   }
 
   auto publicArguments =

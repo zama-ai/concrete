@@ -39,7 +39,7 @@ class PublicArguments {
 public:
   PublicArguments(const ClientParameters &clientParameters,
                   std::vector<void *> &&preparedArgs,
-                  std::vector<TensorData> &&ciphertextBuffers);
+                  std::vector<ScalarOrTensorData> &&ciphertextBuffers);
   ~PublicArguments();
   PublicArguments(PublicArguments &other) = delete;
   PublicArguments(PublicArguments &&other) = delete;
@@ -58,7 +58,7 @@ private:
   ClientParameters clientParameters;
   std::vector<void *> preparedArgs;
   /// Store buffers of ciphertexts
-  std::vector<TensorData> ciphertextBuffers;
+  std::vector<ScalarOrTensorData> ciphertextBuffers;
 };
 
 /// PublicResult is a result of a ServerLambda call which contains encrypted
@@ -66,7 +66,7 @@ private:
 struct PublicResult {
 
   PublicResult(const ClientParameters &clientParameters,
-               std::vector<TensorData> &&buffers = {})
+               std::vector<ScalarOrTensorData> &&buffers = {})
       : clientParameters(clientParameters), buffers(std::move(buffers)){};
 
   PublicResult(PublicResult &) = delete;
@@ -74,7 +74,7 @@ struct PublicResult {
   /// Create a public result from buffers.
   static std::unique_ptr<PublicResult>
   fromBuffers(const ClientParameters &clientParameters,
-              std::vector<TensorData> &&buffers) {
+              std::vector<ScalarOrTensorData> &&buffers) {
     return std::make_unique<PublicResult>(clientParameters, std::move(buffers));
   }
 
@@ -90,19 +90,39 @@ struct PublicResult {
   /// Serialize into an output stream.
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 
-  /// Get the result at `pos` as a vector, if the result is a scalar returns a
-  /// vector of size 1. Decryption happens if the result is encrypted.
-  // outcome::checked<std::vector<decrypted_scalar_t>, StringError>
-  // asClearTextVector(KeySet &keySet, size_t pos);
+  /// Get the result at `pos` as a scalar. Decryption happens if the
+  /// result is encrypted.
+  template <typename T>
+  outcome::checked<T, StringError> asClearTextScalar(KeySet &keySet,
+                                                     size_t pos) {
+    OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
+    if (!gate.isEncrypted())
+      return buffers[pos].getScalar().getValue<T>();
 
+    auto &buffer = buffers[pos].getTensor();
+
+    auto ciphertext = buffer.getOpaqueElementPointer(0);
+    uint64_t decrypted;
+
+    // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
+    // FIXME: this may break alignment restrictions on some
+    // architectures
+    auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
+    OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertextu64, decrypted));
+
+    return (T)decrypted;
+  }
+
+  /// Get the result at `pos` as a vector. Decryption happens if the
+  /// result is encrypted.
   template <typename T>
   outcome::checked<std::vector<T>, StringError>
   asClearTextVector(KeySet &keySet, size_t pos) {
     OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
     if (!gate.isEncrypted())
-      return buffers[pos].asFlatVector<T>();
+      return buffers[pos].getTensor().asFlatVector<T>();
 
-    auto &buffer = buffers[pos];
+    auto &buffer = buffers[pos].getTensor();
     auto lweSize = clientParameters.lweBufferSize(gate);
 
     std::vector<T> decryptedValues(buffer.length() / lweSize);
@@ -130,11 +150,8 @@ struct PublicResult {
   // private: TODO tmp
   friend class ::concretelang::serverlib::ServerLambda;
   ClientParameters clientParameters;
-  std::vector<TensorData> buffers;
+  std::vector<ScalarOrTensorData> buffers;
 };
-
-/// Helper function to convert from a scalar to TensorData
-TensorData tensorDataFromScalar(uint64_t value);
 
 /// Helper function to convert from MemRefDescriptor to
 /// TensorData

@@ -15,9 +15,10 @@ namespace clientlib {
 using concretelang::error::StringError;
 
 // TODO: optimize the move
-PublicArguments::PublicArguments(const ClientParameters &clientParameters,
-                                 std::vector<void *> &&preparedArgs_,
-                                 std::vector<TensorData> &&ciphertextBuffers_)
+PublicArguments::PublicArguments(
+    const ClientParameters &clientParameters,
+    std::vector<void *> &&preparedArgs_,
+    std::vector<ScalarOrTensorData> &&ciphertextBuffers_)
     : clientParameters(clientParameters) {
   preparedArgs = std::move(preparedArgs_);
   ciphertextBuffers = std::move(ciphertextBuffers_);
@@ -62,6 +63,7 @@ PublicArguments::serialize(std::ostream &ostream) {
     // TODO: STRIDES
     auto values = aligned + offset;
 
+    writeWord<uint8_t>(ostream, 1);
     serializeTensorDataRaw(sizes,
                            llvm::ArrayRef<clientlib::EncryptedScalarElement>{
                                values, TensorData::getNumElements(sizes)},
@@ -82,31 +84,38 @@ PublicArguments::unserializeArgs(std::istream &istream) {
     auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
     std::vector<int64_t> sizes = gate.shape.dimensions;
     sizes.push_back(lweSize);
-    auto tdOrErr = unserializeTensorData(sizes, istream);
+    auto sotdOrErr = unserializeScalarOrTensorData(sizes, istream);
 
-    if (tdOrErr.has_error())
-      return tdOrErr.error();
+    if (sotdOrErr.has_error())
+      return sotdOrErr.error();
 
-    ciphertextBuffers.push_back(std::move(tdOrErr.value()));
-    auto &values_and_sizes = ciphertextBuffers.back();
+    ciphertextBuffers.push_back(std::move(sotdOrErr.value()));
+    auto &buffer = ciphertextBuffers.back();
 
     if (istream.fail()) {
       return StringError(
                  "PublicArguments::unserializeArgs: Failed to read argument ")
              << iGate;
     }
-    preparedArgs.push_back(/*allocated*/ nullptr);
-    preparedArgs.push_back(values_and_sizes.getValuesAsOpaquePointer());
-    preparedArgs.push_back(/*offset*/ 0);
-    // sizes
-    for (auto size : values_and_sizes.getDimensions()) {
-      preparedArgs.push_back((void *)size);
-    }
-    // strides has been removed by serialization
-    auto stride = values_and_sizes.length();
-    for (auto size : sizes) {
-      stride /= size;
-      preparedArgs.push_back((void *)stride);
+
+    if (buffer.isTensor()) {
+      TensorData &td = buffer.getTensor();
+      preparedArgs.push_back(/*allocated*/ nullptr);
+      preparedArgs.push_back(td.getValuesAsOpaquePointer());
+      preparedArgs.push_back(/*offset*/ 0);
+      // sizes
+      for (auto size : td.getDimensions()) {
+        preparedArgs.push_back((void *)size);
+      }
+      // strides has been removed by serialization
+      auto stride = td.length();
+      for (auto size : sizes) {
+        stride /= size;
+        preparedArgs.push_back((void *)stride);
+      }
+    } else {
+      ScalarData &sd = buffer.getScalar();
+      preparedArgs.push_back((void *)sd.getValueAsU64());
     }
   }
   return outcome::success();
@@ -116,7 +125,7 @@ outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 PublicArguments::unserialize(ClientParameters &clientParameters,
                              std::istream &istream) {
   std::vector<void *> empty;
-  std::vector<TensorData> emptyBuffers;
+  std::vector<ScalarOrTensorData> emptyBuffers;
   auto sArguments = std::make_unique<PublicArguments>(
       clientParameters, std::move(empty), std::move(emptyBuffers));
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));
@@ -132,12 +141,12 @@ PublicResult::unserialize(std::istream &istream) {
     auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
     std::vector<int64_t> sizes = gate.shape.dimensions;
     sizes.push_back(lweSize);
-    auto tdOrErr = unserializeTensorData(sizes, istream);
+    auto sotd = unserializeScalarOrTensorData(sizes, istream);
 
-    if (tdOrErr.has_error())
-      return tdOrErr.error();
+    if (sotd.has_error())
+      return sotd.error();
 
-    buffers.push_back(std::move(tdOrErr.value()));
+    buffers.push_back(std::move(sotd.value()));
   }
   return outcome::success();
 }
@@ -148,10 +157,10 @@ PublicResult::serialize(std::ostream &ostream) {
     return StringError(
         "PublicResult::serialize: ostream should be in binary mode");
   }
-  for (const TensorData &tensorData : buffers) {
-    serializeTensorData(tensorData, ostream);
+  for (const ScalarOrTensorData &sotd : buffers) {
+    serializeScalarOrTensorData(sotd, ostream);
     if (ostream.fail()) {
-      return StringError("Cannot write tensor data");
+      return StringError("Cannot write data");
     }
   }
   return outcome::success();
@@ -180,10 +189,6 @@ size_t global_index(size_t index[], size_t sizes[], size_t strides[],
   return g_index;
 }
 
-TensorData tensorDataFromScalar(uint64_t value) {
-  return TensorData{llvm::ArrayRef<uint64_t>{value}, {1}};
-}
-
 static inline bool isReferenceToMLIRGlobalMemory(void *ptr) {
   return reinterpret_cast<uintptr_t>(ptr) == 0xdeadbeef;
 }
@@ -195,9 +200,8 @@ TensorData tensorDataFromMemRefTyped(size_t memref_rank, void *allocatedVoid,
   T *allocated = reinterpret_cast<T *>(allocatedVoid);
   T *aligned = reinterpret_cast<T *>(alignedVoid);
 
-  // FIXME: handle sign correctly
   TensorData result(llvm::ArrayRef<size_t>{sizes, memref_rank}, sizeof(T) * 8,
-                    false);
+                    std::is_signed<T>());
   assert(aligned != nullptr);
 
   // ephemeral multi dim index to compute global strides
@@ -228,36 +232,37 @@ TensorData tensorDataFromMemRefTyped(size_t memref_rank, void *allocatedVoid,
 TensorData tensorDataFromMemRef(size_t memref_rank, size_t element_width,
                                 bool is_signed, void *allocated, void *aligned,
                                 size_t offset, size_t *sizes, size_t *strides) {
-  size_t storage_width = TensorData::storageWidth(element_width);
+  ElementType et = getElementTypeFromWidthAndSign(element_width, is_signed);
 
-  switch (storage_width) {
-  case 64:
-    return (is_signed)
-               ? std::move(tensorDataFromMemRefTyped<int64_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides))
-               : std::move(tensorDataFromMemRefTyped<uint64_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides));
-  case 32:
-    return (is_signed)
-               ? std::move(tensorDataFromMemRefTyped<int32_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides))
-               : std::move(tensorDataFromMemRefTyped<uint32_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides));
-  case 16:
-    return (is_signed)
-               ? std::move(tensorDataFromMemRefTyped<int16_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides))
-               : std::move(tensorDataFromMemRefTyped<uint16_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides));
-  case 8:
-    return (is_signed)
-               ? std::move(tensorDataFromMemRefTyped<int8_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides))
-               : std::move(tensorDataFromMemRefTyped<uint8_t>(
-                     memref_rank, allocated, aligned, offset, sizes, strides));
-  default:
-    assert(false);
+  switch (et) {
+  case ElementType::i64:
+    return tensorDataFromMemRefTyped<int64_t>(memref_rank, allocated, aligned,
+                                              offset, sizes, strides);
+  case ElementType::u64:
+    return tensorDataFromMemRefTyped<uint64_t>(memref_rank, allocated, aligned,
+                                               offset, sizes, strides);
+  case ElementType::i32:
+    return tensorDataFromMemRefTyped<int32_t>(memref_rank, allocated, aligned,
+                                              offset, sizes, strides);
+  case ElementType::u32:
+    return tensorDataFromMemRefTyped<uint32_t>(memref_rank, allocated, aligned,
+                                               offset, sizes, strides);
+  case ElementType::i16:
+    return tensorDataFromMemRefTyped<int16_t>(memref_rank, allocated, aligned,
+                                              offset, sizes, strides);
+  case ElementType::u16:
+    return tensorDataFromMemRefTyped<uint16_t>(memref_rank, allocated, aligned,
+                                               offset, sizes, strides);
+  case ElementType::i8:
+    return tensorDataFromMemRefTyped<int8_t>(memref_rank, allocated, aligned,
+                                             offset, sizes, strides);
+  case ElementType::u8:
+    return tensorDataFromMemRefTyped<uint8_t>(memref_rank, allocated, aligned,
+                                              offset, sizes, strides);
   }
+
+  // Cannot happen
+  assert(false);
 }
 
 } // namespace clientlib

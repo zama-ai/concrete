@@ -121,7 +121,8 @@ func.func @main(%t: tensor<10xi32>, %i: index) -> i32{
                  197864,     698735, 72132, 87474,   42};
 
   for (size_t i = 0; i < ARRAY_SIZE(arg); i++) {
-    ASSERT_EXPECTED_VALUE(lambda(arg, ARRAY_SIZE(arg), i), arg[i]);
+    ASSERT_EXPECTED_VALUE(lambda.operator()<uint32_t>(arg, ARRAY_SIZE(arg), i),
+                          arg[i]);
   }
 }
 
@@ -139,7 +140,8 @@ func.func @main(%t: tensor<10xi16>, %i: index) -> i16{
                  63269,  36435, 52380, 7401,  13313};
 
   for (size_t i = 0; i < ARRAY_SIZE(arg); i++) {
-    ASSERT_EXPECTED_VALUE(lambda(arg, ARRAY_SIZE(arg), i), arg[i]);
+    ASSERT_EXPECTED_VALUE(lambda.operator()<uint16_t>(arg, ARRAY_SIZE(arg), i),
+                          arg[i]);
   }
 }
 
@@ -156,7 +158,8 @@ func.func @main(%t: tensor<10xi8>, %i: index) -> i8{
   uint8_t arg[]{0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93};
 
   for (size_t i = 0; i < ARRAY_SIZE(arg); i++) {
-    ASSERT_EXPECTED_VALUE(lambda(arg, ARRAY_SIZE(arg), i), arg[i]);
+    ASSERT_EXPECTED_VALUE(lambda.operator()<uint8_t>(arg, ARRAY_SIZE(arg), i),
+                          arg[i]);
   }
 }
 
@@ -173,7 +176,8 @@ func.func @main(%t: tensor<10xi5>, %i: index) -> i5{
   uint8_t arg[]{32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
 
   for (size_t i = 0; i < ARRAY_SIZE(arg); i++) {
-    ASSERT_EXPECTED_VALUE(lambda(arg, ARRAY_SIZE(arg), i), arg[i]);
+    ASSERT_EXPECTED_VALUE(lambda.operator()<uint8_t>(arg, ARRAY_SIZE(arg), i),
+                          arg[i]);
   }
 }
 
@@ -190,7 +194,8 @@ func.func @main(%t: tensor<10xi1>, %i: index) -> i1{
   uint8_t arg[]{0, 0, 1, 0, 1, 1, 0, 1, 1, 0};
 
   for (size_t i = 0; i < ARRAY_SIZE(arg); i++) {
-    ASSERT_EXPECTED_VALUE(lambda(arg, ARRAY_SIZE(arg), i), arg[i]);
+    ASSERT_EXPECTED_VALUE(lambda.operator()<uint8_t>(arg, ARRAY_SIZE(arg), i),
+                          arg[i]);
   }
 }
 

@@ -82,12 +82,11 @@ llvm::Error run_once_1_test_entry_once(TestDescription &test,
                                        EvaluationKeys &evaluationKeys,
                                        ClientParameters &clientParameters,
                                        ServerLambda &serverLambda) {
-  std::vector<mlir::concretelang::LambdaArgument *> inputArguments;
+  std::vector<const mlir::concretelang::LambdaArgument *> inputArguments;
   inputArguments.reserve(test.inputs.size());
-  for (auto input : test.inputs) {
-    auto arg = valueDescriptionToLambdaArgument(input);
-    CHECK_OR_ERROR(arg);
-    inputArguments.push_back(arg.get());
+
+  for (auto &input : test.inputs) {
+    inputArguments.push_back(&input.getValue());
   }
 
   /* 4 - Create the public arguments */
@@ -108,9 +107,7 @@ llvm::Error run_once_1_test_entry_once(TestDescription &test,
   /* 7 - Check result */
   CHECK_OR_ERROR(result);
   auto error = checkResult(test.outputs[0], **result);
-  for (auto arg : inputArguments) {
-    delete arg;
-  }
+
   return error;
 }
 

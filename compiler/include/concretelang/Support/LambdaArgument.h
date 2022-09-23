@@ -292,7 +292,8 @@ template <typename T, typename... Ts> struct LambdaArgumentTypeName<T, Ts...> {
 };
 } // namespace
 
-const std::string getLambdaArgumentTypeAsString(const LambdaArgument &arg) {
+static inline const std::string
+getLambdaArgumentTypeAsString(const LambdaArgument &arg) {
   return LambdaArgumentTypeName<int8_t, uint8_t, int16_t, uint16_t, int32_t,
                                 uint32_t, int64_t, uint64_t>::get(arg);
 }

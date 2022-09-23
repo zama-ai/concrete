@@ -100,7 +100,7 @@ JITLambda::call(clientlib::PublicArguments &args,
     if (auto err = invokeRaw(rawArgs)) {
       return std::move(err);
     }
-    std::vector<clientlib::TensorData> buffers;
+    std::vector<clientlib::ScalarOrTensorData> buffers;
     return clientlib::PublicResult::fromBuffers(args.clientParameters,
                                                 std::move(buffers));
   }
@@ -149,15 +149,17 @@ JITLambda::call(clientlib::PublicArguments &args,
   }
 
   // Store the result to the PublicResult
-  std::vector<clientlib::TensorData> buffers;
+  std::vector<clientlib::ScalarOrTensorData> buffers;
   {
     size_t outputOffset = 0;
     for (auto &output : args.clientParameters.outputs) {
       auto shape = args.clientParameters.bufferShape(output);
       if (shape.size() == 0) {
         // scalar scalar
-        buffers.push_back(
-            clientlib::tensorDataFromScalar((uint64_t)outputs[outputOffset++]));
+        buffers.push_back(concretelang::clientlib::ScalarOrTensorData(
+            concretelang::clientlib::ScalarData(outputs[outputOffset++],
+                                                output.shape.sign,
+                                                output.shape.width)));
       } else {
         // buffer gate
         auto rank = shape.size();
@@ -173,10 +175,12 @@ JITLambda::call(clientlib::PublicArguments &args,
                                   ? clientlib::EncryptedScalarElementWidth
                                   : output.shape.width;
 
-        // FIXME: Handle sign correctly
-        buffers.push_back(clientlib::tensorDataFromMemRef(
-            rank, elementWidth, false, allocated, aligned, offset, sizes,
-            strides));
+        bool sign = (output.isEncrypted()) ? false : output.shape.sign;
+        concretelang::clientlib::TensorData td =
+            clientlib::tensorDataFromMemRef(rank, elementWidth, sign, allocated,
+                                            aligned, offset, sizes, strides);
+        buffers.push_back(
+            concretelang::clientlib::ScalarOrTensorData(std::move(td)));
       }
     }
   }
