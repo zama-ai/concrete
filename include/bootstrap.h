@@ -104,7 +104,7 @@ void cuda_cmux_tree_64(
         uint32_t max_shared_memory);
 };
 
-
+#ifdef __CUDACC__
 __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
                                          int glwe_dimension,
                                          uint32_t l_gadget);
@@ -118,4 +118,6 @@ template <typename T>
 __device__ T*
 get_ith_body_kth_block(T *ptr, int i, int k, int level, uint32_t polynomial_size,
                        int glwe_dimension, uint32_t l_gadget);
+#endif
+
 #endif // CUDA_BOOTSTRAP_H
