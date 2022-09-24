@@ -40,11 +40,15 @@ __global__ void batch_fft_ggsw_vectors(double2 *dest, T *src){
  * Applies the FFT transform on sequence of GGSW ciphertexts already in the global memory
  */
 template <typename T, typename ST, class params>
-void batch_fft_ggsw_vector(double2 *dest, T *src,
-                                uint32_t r,
-                                uint32_t glwe_dim,
-                                uint32_t polynomial_size,
-                                uint32_t l_gadget) {
+void batch_fft_ggsw_vector(
+        void *v_stream,
+        double2 *dest, T *src,
+        uint32_t r,
+        uint32_t glwe_dim,
+        uint32_t polynomial_size,
+        uint32_t l_gadget) {
+
+  auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int shared_memory_size = sizeof(double) * polynomial_size;
 
@@ -52,7 +56,8 @@ void batch_fft_ggsw_vector(double2 *dest, T *src,
   int gridSize = total_polynomials;
   int blockSize = polynomial_size / params::opt;
 
-  batch_fft_ggsw_vectors<T, ST, params><<<gridSize, blockSize, shared_memory_size>>>(dest, src);
+  batch_fft_ggsw_vectors<T, ST, params><<<gridSize, blockSize, shared_memory_size, *stream>>>(dest,
+                                                                                          src);
   checkCudaErrors(cudaGetLastError());
 
 }
