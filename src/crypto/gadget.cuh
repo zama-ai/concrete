@@ -4,6 +4,7 @@
 #include "polynomial/polynomial.cuh"
 #include <cstdint>
 
+#pragma once
 template <typename T, class params> class GadgetMatrix {
 private:
   uint32_t l_gadget;

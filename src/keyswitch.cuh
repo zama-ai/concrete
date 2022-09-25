@@ -17,6 +17,18 @@ __device__ Torus *get_ith_block(Torus *ksk, int i, int level,
     return ptr;
 }
 
+template <typename Torus>
+__device__ Torus decompose_one(Torus &state, Torus  mod_b_mask,
+                               int base_log) {
+    Torus res = state & mod_b_mask;
+    state >>= base_log;
+    Torus carry = ((res - 1ll) | state) & res;
+    carry >>= base_log - 1;
+    state += carry;
+    res -= carry << base_log;
+    return res;
+}
+
 /*
  * keyswitch kernel
  * Each thread handles a piece of the following equation:
@@ -76,9 +88,15 @@ __global__ void keyswitch(Torus *lwe_out, Torus *lwe_in,
     Torus a_i = round_to_closest_multiple(block_lwe_in[i], base_log,
                                           l_gadget);
 
+    Torus state = a_i >> (sizeof(Torus) * 8 - base_log * l_gadget);
+    Torus mod_b_mask = (1ll << base_log) - 1ll;
+
     for (int j = 0; j < l_gadget; j++) {
-      auto ksk_block = get_ith_block(ksk, i, j, lwe_dimension_after, l_gadget);
-      Torus decomposed = gadget.decompose_one_level_single(a_i, (uint32_t)j);
+      auto ksk_block = get_ith_block(ksk, i, l_gadget - j - 1,
+                                     lwe_dimension_after,
+                                     l_gadget);
+      Torus decomposed = decompose_one<Torus>(state, mod_b_mask,
+                                                base_log);
       for (int k = 0; k < lwe_part_per_thd; k++) {
         int idx = tid + k * blockDim.x;
         local_lwe_out[idx] -= (Torus)ksk_block[idx] * decomposed;
