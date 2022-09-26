@@ -98,14 +98,16 @@ createClientParametersForV0(V0FHEContext fheContext,
                             llvm::StringRef functionName,
                             mlir::ModuleOp module) {
   auto v0Param = fheContext.parameter;
-  Variance encryptionVariance = v0Curve->getVariance(
+  Variance inputVariance =
+      v0Curve->getVariance(1, v0Param.getNBigLweDimension(), 64);
+
+  Variance bootstrapKeyVariance = v0Curve->getVariance(
       v0Param.glweDimension, v0Param.getPolynomialSize(), 64);
-  // Variance encryptionVariance = 0.;
-  Variance keyswitchVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
+  Variance keyswitchKeyVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
   ClientParameters c;
   c.secretKeys = {
-      {clientlib::BIG_KEY, {/*.size = */ v0Param.getNBigGlweDimension()}},
+      {clientlib::BIG_KEY, {/*.size = */ v0Param.getNBigLweDimension()}},
   };
   bool has_small_key = v0Param.nSmall != 0;
   bool has_bootstrap = v0Param.brLevel != 0;
@@ -123,7 +125,7 @@ createClientParametersForV0(V0FHEContext fheContext,
                 /*.level = */ v0Param.brLevel,
                 /*.baseLog = */ v0Param.brLogBase,
                 /*.glweDimension = */ v0Param.glweDimension,
-                /*.variance = */ encryptionVariance,
+                /*.variance = */ bootstrapKeyVariance,
             },
         },
     };
@@ -137,7 +139,7 @@ createClientParametersForV0(V0FHEContext fheContext,
                 /*.outputSecretKeyID = */ clientlib::SMALL_KEY,
                 /*.level = */ v0Param.ksLevel,
                 /*.baseLog = */ v0Param.ksLogBase,
-                /*.variance = */ keyswitchVariance,
+                /*.variance = */ keyswitchKeyVariance,
             },
         },
     };
@@ -165,7 +167,7 @@ createClientParametersForV0(V0FHEContext fheContext,
           : inputs.back().isa<mlir::concretelang::Concrete::ContextType>();
 
   auto gateFromType = [&](mlir::Type ty) {
-    return gateFromMLIRType(clientlib::BIG_KEY, encryptionVariance, ty);
+    return gateFromMLIRType(clientlib::BIG_KEY, inputVariance, ty);
   };
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {

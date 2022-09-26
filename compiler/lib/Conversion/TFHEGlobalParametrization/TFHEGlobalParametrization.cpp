@@ -67,7 +67,7 @@ public:
 
   TFHE::GLWECipherTextType glweInterPBSType(GLWECipherTextType &type) {
     auto bits = 64;
-    auto dimension = cryptoParameters.getNBigGlweDimension();
+    auto dimension = cryptoParameters.getNBigLweDimension();
     auto polynomialSize = 1;
     auto precision = (signed)type.getP();
     auto crtDecomposition =

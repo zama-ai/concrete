@@ -66,7 +66,7 @@ struct V0Parameter {
   // TODO remove the shift when we have true polynomial size
   size_t getPolynomialSize() { return 1 << logPolynomialSize; }
 
-  size_t getNBigGlweDimension() { return glweDimension * getPolynomialSize(); }
+  size_t getNBigLweDimension() { return glweDimension * getPolynomialSize(); }
 };
 
 struct V0FHEContext {
