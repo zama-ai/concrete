@@ -439,6 +439,9 @@ mod tests {
             complexity_model: &CpuComplexity::default(),
         };
 
+        let _ = optimize_v0(sum_size, precision, config, weight as f64, &search_space);
+        // ensure cache is filled
+
         let chrono = Instant::now();
         let state = optimize_v0(sum_size, precision, config, weight as f64, &search_space);
 
