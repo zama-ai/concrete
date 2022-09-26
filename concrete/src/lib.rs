@@ -102,7 +102,7 @@ pub use crate::shortints::{
 #[cfg(feature = "integers")]
 pub use crate::integers::{
     DynInteger, DynIntegerEncryptor, DynIntegerParameters,
-    FheUint8, FheUint12, FheUint16, GenericInteger, RadixParameters, IntegerParameterSet
+    FheUint8, FheUint12, FheUint16, GenericInteger, RadixParameters, CrtParameters
 };
 
 #[cfg(feature = "shortints")]

@@ -8,12 +8,14 @@ use std::ops::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use concrete_integer::ciphertext::RadixCiphertext;
-
 use crate::global_state::WithGlobalKey;
 use crate::integers::client_key::GenericIntegerClientKey;
-use crate::integers::parameters::{IntegerParameter, StaticIntegerParameter};
-use crate::integers::server_key::GenericIntegerServerKey;
+use crate::integers::parameters::{IntegerParameter, PrivateIntegerKey, StaticIntegerParameter};
+use crate::integers::server_key::{
+    GenericIntegerServerKey, SmartAdd, SmartAddAssign, SmartBitAnd, SmartBitAndAssign, SmartBitOr,
+    SmartBitOrAssign, SmartBitXor, SmartBitXorAssign, SmartMul, SmartMulAssign, SmartNeg, SmartShl,
+    SmartShlAssign, SmartShr, SmartShrAssign, SmartSub, SmartSubAssign,
+};
 use crate::keys::RefKeyFromKeyChain;
 use crate::traits::{FheDecrypt, FheNumberConstant, FheTryEncrypt};
 use crate::{ClientKey, OutOfRangeError};
@@ -50,7 +52,7 @@ use crate::{ClientKey, OutOfRangeError};
 #[cfg_attr(doc, doc(cfg(feature = "integers")))]
 #[derive(Clone)]
 pub struct GenericInteger<P: IntegerParameter> {
-    pub(in crate::integers) ciphertext: RefCell<RadixCiphertext>,
+    pub(in crate::integers) ciphertext: RefCell<P::InnerCiphertext>,
     pub(in crate::integers) id: P::Id,
 }
 
@@ -58,7 +60,7 @@ impl<P> GenericInteger<P>
 where
     P: IntegerParameter,
 {
-    pub(in crate::integers) fn new(ciphertext: RadixCiphertext, id: P::Id) -> Self {
+    pub(in crate::integers) fn new(ciphertext: P::InnerCiphertext, id: P::Id) -> Self {
         Self {
             ciphertext: RefCell::new(ciphertext),
             id,
@@ -92,7 +94,7 @@ where
 {
     fn decrypt(&self, key: &ClientKey) -> u64 {
         let key = self.id.unwrapped_ref_key(key);
-        key.key.decrypt(&*self.ciphertext.borrow())
+        key.inner.decrypt(&self.ciphertext.borrow())
     }
 }
 
@@ -111,14 +113,14 @@ where
         } else {
             let id = P::Id::default();
             let key = id.unwrapped_ref_key(key);
-            let ciphertext = key.key.encrypt(value);
+            let ciphertext = key.inner.encrypt(value);
             Ok(Self::new(ciphertext, id))
         }
     }
 }
 
 macro_rules! generic_integer_impl_operation (
-    ($trait_name:ident($trait_method:ident,$op:tt) => $key_method:ident) => {
+    ($trait_name:ident($trait_method:ident,$op:tt, $smart_trait:ident) => $key_method:ident) => {
         #[doc = concat!(" Allows using the `", stringify!($op), "` operator between a")]
         #[doc = " `GenericInteger` and a `GenericInteger` or a `&GenericInteger`"]
         #[doc = " "]
@@ -177,6 +179,10 @@ macro_rules! generic_integer_impl_operation (
             P: IntegerParameter,
             B: Borrow<Self>,
             P::Id: WithGlobalKey<Key=GenericIntegerServerKey<P>>,
+            P::InnerServerKey: for<'a> $smart_trait<
+                                            &'a mut P::InnerCiphertext,
+                                            &'a mut P::InnerCiphertext,
+                                            Output=P::InnerCiphertext>,
         {
             type Output = Self;
 
@@ -190,29 +196,42 @@ macro_rules! generic_integer_impl_operation (
             P: IntegerParameter,
             B: Borrow<GenericInteger<P>>,
             P::Id: WithGlobalKey<Key=GenericIntegerServerKey<P>>,
+            P::InnerServerKey: for<'a> $smart_trait<
+                                            &'a mut P::InnerCiphertext,
+                                            &'a mut P::InnerCiphertext,
+                                            Output=P::InnerCiphertext>,
         {
             type Output = GenericInteger<P>;
 
             fn $trait_method(self, rhs: B) -> Self::Output {
-                self.id.with_unwrapped_global_mut(|key| {
-                    key.$key_method(self, rhs.borrow())
-                })
+                let ciphertext = self.id.with_unwrapped_global_mut(|key| {
+                    key.inner.$key_method(
+                        &mut self.ciphertext.borrow_mut(),
+                        &mut rhs.borrow().ciphertext.borrow_mut(),
+                    )
+                });
+
+                GenericInteger::<P>::new(ciphertext, self.id)
             }
         }
     }
 );
 
 macro_rules! generic_integer_impl_operation_assign (
-    ($trait_name:ident($trait_method:ident, $op:tt) => $key_method:ident) => {
+    ($trait_name:ident($trait_method:ident, $op:tt, $smart_assign_trait:ident) => $key_method:ident) => {
         impl<P, I> $trait_name<I> for GenericInteger<P>
         where
             P: IntegerParameter,
             P::Id: WithGlobalKey<Key=GenericIntegerServerKey<P>>,
+            P::InnerServerKey: for<'a> $smart_assign_trait<P::InnerCiphertext, &'a mut P::InnerCiphertext>,
             I: Borrow<Self>,
         {
             fn $trait_method(&mut self, rhs: I) {
                 self.id.with_unwrapped_global_mut(|key| {
-                    key.$key_method(&self, rhs.borrow())
+                    key.inner.$key_method(
+                        self.ciphertext.get_mut(),
+                        &mut rhs.borrow().ciphertext.borrow_mut()
+                    )
                 })
             }
         }
@@ -220,12 +239,16 @@ macro_rules! generic_integer_impl_operation_assign (
 );
 
 macro_rules! generic_integer_impl_scalar_operation {
-    ($trait_name:ident($trait_method:ident) => $key_method:ident($($scalar_type:ty),*)) => {
+    ($trait_name:ident($trait_method:ident, $smart_trait:ident) => $key_method:ident($($scalar_type:ty),*)) => {
         $(
             impl<P> $trait_name<$scalar_type> for GenericInteger<P>
             where
                 P: IntegerParameter,
                 P::Id: WithGlobalKey<Key=GenericIntegerServerKey<P>>,
+                P::InnerServerKey: for<'a> $smart_trait<
+                                            &'a mut P::InnerCiphertext,
+                                            u64,
+                                            Output=P::InnerCiphertext>,
             {
                 type Output = GenericInteger<P>;
 
@@ -238,13 +261,22 @@ macro_rules! generic_integer_impl_scalar_operation {
             where
                 P: IntegerParameter,
                 P::Id: WithGlobalKey<Key=GenericIntegerServerKey<P>>,
+                P::InnerServerKey: for<'a> $smart_trait<
+                                            &'a mut P::InnerCiphertext,
+                                            u64,
+                                            Output=P::InnerCiphertext>,
             {
                 type Output = GenericInteger<P>;
 
                 fn $trait_method(self, rhs: $scalar_type) -> Self::Output {
-                    self.id.with_unwrapped_global_mut(|key| {
-                        key.$key_method(self, rhs.into())
-                    })
+                    let ciphertext = self.id.with_unwrapped_global_mut(|key| {
+                        key.inner.$key_method(
+                            &mut self.ciphertext.borrow_mut(),
+                            u64::from(rhs)
+                        )
+                    });
+
+                    GenericInteger::<P>::new(ciphertext, self.id)
                 }
             }
         )*
@@ -252,16 +284,20 @@ macro_rules! generic_integer_impl_scalar_operation {
 }
 
 macro_rules! generic_integer_impl_scalar_operation_assign {
-    ($trait_name:ident($trait_method:ident) => $key_method:ident($($scalar_type:ty),*)) => {
+    ($trait_name:ident($trait_method:ident,$smart_assign_trait:ident) => $key_method:ident($($scalar_type:ty),*)) => {
         $(
             impl<P> $trait_name<$scalar_type> for GenericInteger<P>
                 where
                     P: IntegerParameter,
                     P::Id: WithGlobalKey<Key=GenericIntegerServerKey<P>>,
+                    P::InnerServerKey: for<'a> $smart_assign_trait<P::InnerCiphertext, u64>,
             {
                 fn $trait_method(&mut self, rhs: $scalar_type) {
                     self.id.with_unwrapped_global_mut(|key| {
-                        key.$key_method(self, u64::from(rhs))
+                        key.inner.$key_method(
+                            &mut self.ciphertext.borrow_mut(),
+                            u64::from(rhs)
+                        )
                     });
                 }
             }
@@ -269,36 +305,38 @@ macro_rules! generic_integer_impl_scalar_operation_assign {
     }
 }
 
-generic_integer_impl_operation!(Add(add,+) => smart_add);
-generic_integer_impl_operation!(Sub(sub,-) => smart_sub);
-generic_integer_impl_operation!(Mul(mul,*) => smart_mul);
-generic_integer_impl_operation!(BitAnd(bitand,&) => smart_bitand);
-generic_integer_impl_operation!(BitOr(bitor,^) => smart_bitor);
-generic_integer_impl_operation!(BitXor(bitxor,|) => smart_bitxor);
+generic_integer_impl_operation!(Add(add,+,SmartAdd) => smart_add);
+generic_integer_impl_operation!(Sub(sub,-,SmartSub) => smart_sub);
+generic_integer_impl_operation!(Mul(mul,*, SmartMul) => smart_mul);
+generic_integer_impl_operation!(BitAnd(bitand,&, SmartBitAnd) => smart_bitand);
+generic_integer_impl_operation!(BitOr(bitor,^, SmartBitOr) => smart_bitor);
+generic_integer_impl_operation!(BitXor(bitxor,|, SmartBitXor) => smart_bitxor);
 
-generic_integer_impl_operation_assign!(AddAssign(add_assign,+=) => smart_add_assign);
-generic_integer_impl_operation_assign!(SubAssign(sub_assign,-=) => smart_sub_assign);
-generic_integer_impl_operation_assign!(MulAssign(mul_assign,*=) => smart_mul_assign);
-generic_integer_impl_operation_assign!(BitAndAssign(bitand_assign,&=) => smart_bitand_assign);
-generic_integer_impl_operation_assign!(BitOrAssign(bitor_assign,|=) => smart_bitor_assign);
-generic_integer_impl_operation_assign!(BitXorAssign(bitxor_assign,^=) => smart_bitxor_assign);
+generic_integer_impl_operation_assign!(AddAssign(add_assign,+=, SmartAddAssign) => smart_add_assign);
+generic_integer_impl_operation_assign!(SubAssign(sub_assign,-=, SmartSubAssign) => smart_sub_assign);
+generic_integer_impl_operation_assign!(MulAssign(mul_assign,*=, SmartMulAssign) => smart_mul_assign);
+generic_integer_impl_operation_assign!(BitAndAssign(bitand_assign,&=, SmartBitAndAssign) => smart_bitand_assign);
+generic_integer_impl_operation_assign!(BitOrAssign(bitor_assign,|=, SmartBitOrAssign) => smart_bitor_assign);
+generic_integer_impl_operation_assign!(BitXorAssign(bitxor_assign,^=, SmartBitXorAssign) => smart_bitxor_assign);
 
-generic_integer_impl_scalar_operation!(Mul(mul) => smart_scalar_mul(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation!(Add(add) => smart_scalar_add(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation!(Sub(sub) => smart_scalar_sub(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation!(Shl(shl) => unchecked_scalar_left_shift(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation!(Shr(shr) => unchecked_scalar_right_shift(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation!(Add(add, SmartAdd) => smart_add(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation!(Sub(sub, SmartSub) => smart_sub(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation!(Mul(mul, SmartMul) => smart_mul(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation!(Shl(shl, SmartShl) => smart_shl(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation!(Shr(shr, SmartShr) => smart_shr(u8, u16, u32, u64));
 
-generic_integer_impl_scalar_operation_assign!(AddAssign(add_assign) => smart_scalar_add_assign(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation_assign!(SubAssign(sub_assign) => smart_scalar_sub_assign(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation_assign!(MulAssign(mul_assign) => smart_scalar_mul_assign(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation_assign!(ShlAssign(shl_assign) => unchecked_scalar_left_shift_assign(u8, u16, u32, u64));
-generic_integer_impl_scalar_operation_assign!(ShrAssign(shr_assign) => unchecked_scalar_right_shift_assign(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation_assign!(AddAssign(add_assign, SmartAddAssign) => smart_add_assign(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation_assign!(SubAssign(sub_assign, SmartSubAssign) => smart_sub_assign(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation_assign!(MulAssign(mul_assign, SmartMulAssign) => smart_mul_assign(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation_assign!(ShlAssign(shl_assign, SmartShlAssign) => smart_shl_assign(u8, u16, u32, u64));
+generic_integer_impl_scalar_operation_assign!(ShrAssign(shr_assign, SmartShrAssign) => smart_shr_assign(u8, u16, u32, u64));
 
 impl<P> Neg for GenericInteger<P>
 where
     P: IntegerParameter,
     P::Id: WithGlobalKey<Key = GenericIntegerServerKey<P>>,
+    GenericIntegerServerKey<P>: for<'a> SmartNeg<&'a GenericInteger<P>, Output = GenericInteger<P>>,
+    P::InnerServerKey: for<'a> SmartNeg<&'a mut P::InnerCiphertext, Output = P::InnerCiphertext>,
 {
     type Output = GenericInteger<P>;
 
@@ -311,10 +349,15 @@ impl<P> Neg for &GenericInteger<P>
 where
     P: IntegerParameter,
     P::Id: WithGlobalKey<Key = GenericIntegerServerKey<P>>,
+    P::InnerServerKey: for<'a> SmartNeg<&'a mut P::InnerCiphertext, Output = P::InnerCiphertext>,
 {
     type Output = GenericInteger<P>;
 
     fn neg(self) -> Self::Output {
-        self.id.with_unwrapped_global_mut(|key| key.smart_neg(self))
+        let ciphertext = self.id.with_unwrapped_global_mut(|key| {
+            key.inner.smart_neg(&mut self.ciphertext.borrow_mut())
+        });
+
+        GenericInteger::<P>::new(ciphertext, self.id)
     }
 }

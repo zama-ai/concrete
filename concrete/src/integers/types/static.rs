@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::errors::{UninitializedClientKey, UninitializedServerKey};
 use crate::integers::client_key::GenericIntegerClientKey;
 use crate::integers::parameters::{
-    IntegerParameter, IntegerParameterSet, RadixParameters, StaticIntegerParameter,
+    EvaluationIntegerKey, IntegerParameter, RadixParameters, StaticIntegerParameter,
 };
 use crate::integers::server_key::GenericIntegerServerKey;
 use crate::keys::RefKeyFromKeyChain;
@@ -12,28 +12,25 @@ use crate::traits::{FheDecrypt, FheEncrypt};
 use crate::{ClientKey, FheUint2Parameters};
 
 use super::base::GenericInteger;
+#[cfg(feature = "internal-keycache")]
+use concrete_integer::keycache::KEY_CACHE;
 use paste::paste;
 
 macro_rules! define_static_integer_parameters {
     (
-        num_bits: $num_bits:literal,
-        block_parameters: $block_parameters:expr,
-        num_block: $num_block:literal,
+        Radix {
+            num_bits: $num_bits:literal,
+            block_parameters: $block_parameters:expr,
+            num_block: $num_block:literal,
+        }
     ) => {
         paste! {
-
             #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             #[derive(Copy, Clone, Debug, Default)]
             pub struct [<FheUint $num_bits Id>];
 
             #[derive(Copy, Clone, Debug)]
             pub struct [<FheUint $num_bits Parameters>](RadixParameters);
-
-            impl From<[<FheUint $num_bits Parameters>]> for IntegerParameterSet {
-                fn from(v: [<FheUint $num_bits Parameters>]) -> IntegerParameterSet {
-                    Self::from(v.0)
-                }
-            }
 
             impl Default for [<FheUint $num_bits Parameters>] {
                 fn default() -> Self {
@@ -48,6 +45,59 @@ macro_rules! define_static_integer_parameters {
 
             impl IntegerParameter for [<FheUint $num_bits Parameters>] {
                 type Id = [<FheUint $num_bits Id>];
+                type InnerCiphertext = concrete_integer::RadixCiphertext;
+                type InnerClientKey = concrete_integer::RadixClientKey;
+                type InnerServerKey = concrete_integer::ServerKey;
+            }
+
+            impl From<[<FheUint $num_bits Parameters>]> for RadixParameters {
+                fn from(p: [<FheUint $num_bits Parameters>]) -> Self {
+                    p.0
+                }
+            }
+
+            impl StaticIntegerParameter for [<FheUint $num_bits Parameters>] {
+                const MESSAGE_BITS: usize = $num_bits;
+            }
+        }
+    };
+    (
+        Crt {
+            num_bits: $num_bits:literal,
+            block_parameters: $block_parameters:expr,
+            moduli: $moduli:expr,
+        }
+    ) => {
+        paste! {
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+            #[derive(Copy, Clone, Debug, Default)]
+            pub struct [<FheUint $num_bits Id>];
+
+            #[derive(Copy, Clone, Debug)]
+            pub struct [<FheUint $num_bits Parameters>](CrtParameters);
+
+            impl Default for [<FheUint $num_bits Parameters>] {
+                fn default() -> Self {
+                    Self(
+                        CrtParameters {
+                            block_parameters: $block_parameters,
+                            moduli: $moduli,
+                        },
+                    )
+                }
+            }
+
+            impl IntegerParameter for [<FheUint $num_bits Parameters>] {
+                type Id = [<FheUint $num_bits Id>];
+                type InnerCiphertext = concrete_integer::CrtCiphertext;
+                type InnerClientKey = concrete_integer::CrtClientKey;
+                type InnerServerKey = concrete_integer::ServerKey;
+            }
+
+            impl From<[<FheUint $num_bits Parameters>]> for CrtCiphertext {
+                fn from(p: [<FheUint $num_bits Parameters>]) -> Self {
+                    p.0
+                }
             }
 
             impl StaticIntegerParameter for [<FheUint $num_bits Parameters>] {
@@ -58,26 +108,18 @@ macro_rules! define_static_integer_parameters {
 }
 
 macro_rules! static_int_type {
+    // This rule generates the types specialization
+    // as well as call the macros
+    // that implement necessary traits for the ClientKey and ServerKey
     (
+        @impl_types_and_key_traits,
         $(#[$outer:meta])*
         $name:ident {
             num_bits: $num_bits:literal,
             keychain_member: $($member:ident).*,
-            parameters: {
-                block_parameters: $block_parameters:expr,
-                num_block: $num_block:literal,
-            },
         }
     ) => {
-
-        define_static_integer_parameters!(
-            num_bits: $num_bits,
-            block_parameters: $block_parameters,
-            num_block: $num_block,
-        );
-
-
-        paste! {
+         paste! {
             pub(in crate::integers) type [<$name ClientKey>] = GenericIntegerClientKey<[<$name Parameters>]>;
             pub(in crate::integers) type [<$name ServerKey>] = GenericIntegerServerKey<[<$name Parameters>]>;
 
@@ -102,6 +144,83 @@ macro_rules! static_int_type {
             );
         }
     };
+
+    // For Radix parameters
+    (
+        $(#[$outer:meta])*
+        $name:ident {
+            num_bits: $num_bits:literal,
+            keychain_member: $($member:ident).*,
+            parameters: Radix {
+                block_parameters: $block_parameters:expr,
+                num_block: $num_block:literal,
+            },
+        }
+    ) => {
+        define_static_integer_parameters!(
+            Radix {
+                num_bits: $num_bits,
+                block_parameters: $block_parameters,
+                num_block: $num_block,
+            }
+        );
+
+        static_int_type!(
+            @impl_types_and_key_traits,
+            $(#[$outer])*
+            $name {
+                num_bits: $num_bits,
+                keychain_member: $($member).*,
+            }
+        );
+    };
+    // For Crt parameters
+    (
+        $(#[$outer:meta])*
+        $name:ident {
+            num_bits: $num_bits:literal,
+            keychain_member: $($member:ident).*,
+            parameters: Crt {
+                block_parameters: $block_parameters:expr,
+                moduli: $moduli:expr,
+            },
+        }
+    ) => {
+        define_static_integer_parameters!(
+            Crt {
+                num_bits: $num_bits,
+                block_parameters: $block_parameters,
+                moduli: $moduli,
+            }
+        );
+
+        static_int_type!(
+            @impl_types_and_key_traits,
+            $(#[$outer])*
+            $name {
+                num_bits: $num_bits,
+                keychain_member: $($member).*,
+            }
+        );
+    };
+}
+
+impl<C> EvaluationIntegerKey<C> for concrete_integer::ServerKey
+where
+    C: AsRef<concrete_integer::ClientKey>,
+{
+    fn new(client_key: &C) -> Self {
+        #[cfg(feature = "internal-keycache")]
+        {
+            KEY_CACHE
+                .get_from_params(client_key.as_ref().parameters())
+                .1
+        }
+        #[cfg(not(feature = "internal-keycache"))]
+        {
+            concrete_integer::ServerKey::new(client_key)
+        }
+    }
 }
 
 static_int_type! {
@@ -109,7 +228,7 @@ static_int_type! {
     FheUint8 {
         num_bits: 8,
         keychain_member: integer_key.uint8_key,
-        parameters: {
+        parameters: Radix {
             block_parameters: FheUint2Parameters::with_carry_2().into(),
             num_block: 4,
         },
@@ -121,7 +240,7 @@ static_int_type! {
     FheUint12 {
         num_bits: 12,
         keychain_member: integer_key.uint12_key,
-        parameters: {
+        parameters: Radix {
             block_parameters: FheUint2Parameters::with_carry_2().into(),
             num_block: 6,
         },
@@ -133,7 +252,7 @@ static_int_type! {
     FheUint16 {
         num_bits: 16,
         keychain_member: integer_key.uint16_key,
-        parameters: {
+        parameters: Radix {
             block_parameters: FheUint2Parameters::with_carry_2().into(),
             num_block: 8,
         },
@@ -145,7 +264,7 @@ impl FheEncrypt<u8> for GenericInteger<FheUint8Parameters> {
     fn encrypt(value: u8, key: &ClientKey) -> Self {
         let id = <FheUint8Parameters as IntegerParameter>::Id::default();
         let key = id.unwrapped_ref_key(key);
-        let ciphertext = key.key.encrypt(u64::from(value));
+        let ciphertext = key.inner.encrypt(u64::from(value));
         Self::new(ciphertext, id)
     }
 }
@@ -155,7 +274,7 @@ impl FheDecrypt<u8> for FheUint8 {
     fn decrypt(&self, key: &ClientKey) -> u8 {
         let id = <FheUint8Parameters as IntegerParameter>::Id::default();
         let key = id.unwrapped_ref_key(key);
-        key.key.decrypt(&*self.ciphertext.borrow()) as u8
+        key.inner.decrypt(&self.ciphertext.borrow()) as u8
     }
 }
 
@@ -164,7 +283,7 @@ impl FheEncrypt<u16> for FheUint16 {
     fn encrypt(value: u16, key: &ClientKey) -> Self {
         let id = <FheUint16Parameters as IntegerParameter>::Id::default();
         let key = id.unwrapped_ref_key(key);
-        let ciphertext = key.key.encrypt(u64::from(value));
+        let ciphertext = key.inner.encrypt(u64::from(value));
         Self::new(ciphertext, id)
     }
 }
@@ -174,6 +293,6 @@ impl FheDecrypt<u16> for FheUint16 {
     fn decrypt(&self, key: &ClientKey) -> u16 {
         let id = <FheUint16Parameters as IntegerParameter>::Id::default();
         let key = id.unwrapped_ref_key(key);
-        key.key.decrypt(&*self.ciphertext.borrow()) as u16
+        key.inner.decrypt(&self.ciphertext.borrow()) as u16
     }
 }

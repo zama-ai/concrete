@@ -1,5 +1,5 @@
 pub(crate) use keys::{IntegerClientKey, IntegerConfig, IntegerServerKey};
-pub use parameters::{IntegerParameterSet, RadixParameters};
+pub use parameters::{CrtParameters, RadixParameters};
 pub use types::{
     DynInteger, DynIntegerEncryptor, DynIntegerParameters, FheUint12, FheUint16, FheUint8,
     GenericInteger,

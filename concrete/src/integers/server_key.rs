@@ -3,232 +3,146 @@ use std::marker::PhantomData;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "internal-keycache")]
-use concrete_integer::keycache::KEY_CACHE;
-use concrete_integer::ServerKey;
+use crate::integers::parameters::EvaluationIntegerKey;
 
 use super::client_key::GenericIntegerClientKey;
 use super::parameters::IntegerParameter;
-use super::types::GenericInteger;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone)]
 pub struct GenericIntegerServerKey<P: IntegerParameter> {
-    key: ServerKey,
+    pub(in crate::integers) inner: P::InnerServerKey,
     _marker: PhantomData<P>,
 }
 
 impl<P> GenericIntegerServerKey<P>
 where
     P: IntegerParameter,
+    P::InnerServerKey: EvaluationIntegerKey<P::InnerClientKey>,
 {
     pub(super) fn new(client_key: &GenericIntegerClientKey<P>) -> Self {
-        #[cfg(feature = "internal-keycache")]
-        {
-            use super::IntegerParameterSet;
-            match client_key.params {
-                IntegerParameterSet::Radix(_) => {
-                    let key = KEY_CACHE.get_from_params(client_key.key.parameters()).1;
-                    Self {
-                        key,
-                        _marker: Default::default(),
-                    }
-                }
-            }
+        let inner = P::InnerServerKey::new(&client_key.inner);
+        Self {
+            inner,
+            _marker: Default::default(),
         }
-        #[cfg(not(feature = "internal-keycache"))]
-        {
-            Self {
-                key: ServerKey::new(&client_key.key),
-                _marker: Default::default(),
-            }
-        }
-    }
-
-    pub(super) fn smart_neg(&self, lhs: &GenericInteger<P>) -> GenericInteger<P> {
-        let ciphertext = self.key.smart_neg(&mut lhs.ciphertext.borrow_mut());
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_add(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: &GenericInteger<P>,
-    ) -> GenericInteger<P> {
-        let ciphertext = self.key.smart_add(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_sub(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: &GenericInteger<P>,
-    ) -> GenericInteger<P> {
-        let ciphertext = self.key.smart_sub(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_mul(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: &GenericInteger<P>,
-    ) -> GenericInteger<P> {
-        let ciphertext = self.key.smart_mul(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_bitand(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: &GenericInteger<P>,
-    ) -> GenericInteger<P> {
-        let ciphertext = self.key.smart_bitand(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_bitor(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: &GenericInteger<P>,
-    ) -> GenericInteger<P> {
-        let ciphertext = self.key.smart_bitor(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_bitxor(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: &GenericInteger<P>,
-    ) -> GenericInteger<P> {
-        let ciphertext = self.key.smart_bitxor(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_add_assign(&self, lhs: &GenericInteger<P>, rhs: &GenericInteger<P>) {
-        self.key.smart_add_assign(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-    }
-
-    pub(super) fn smart_sub_assign(&self, lhs: &GenericInteger<P>, rhs: &GenericInteger<P>) {
-        self.key.smart_sub_assign(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-    }
-
-    pub(super) fn smart_mul_assign(&self, lhs: &GenericInteger<P>, rhs: &GenericInteger<P>) {
-        self.key.smart_mul_assign(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-    }
-
-    pub(super) fn smart_bitand_assign(&self, lhs: &GenericInteger<P>, rhs: &GenericInteger<P>) {
-        self.key.smart_bitand_assign(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-    }
-
-    pub(super) fn smart_bitor_assign(&self, lhs: &GenericInteger<P>, rhs: &GenericInteger<P>) {
-        self.key.smart_bitor(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-    }
-
-    pub(super) fn smart_bitxor_assign(&self, lhs: &GenericInteger<P>, rhs: &GenericInteger<P>) {
-        self.key.smart_bitxor_assign(
-            &mut lhs.ciphertext.borrow_mut(),
-            &mut rhs.ciphertext.borrow_mut(),
-        );
-    }
-
-    pub(super) fn smart_scalar_add(&self, lhs: &GenericInteger<P>, rhs: u64) -> GenericInteger<P> {
-        let ciphertext = self
-            .key
-            .smart_scalar_add(&mut lhs.ciphertext.borrow_mut(), rhs);
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_scalar_sub(&self, lhs: &GenericInteger<P>, rhs: u64) -> GenericInteger<P> {
-        let ciphertext = self
-            .key
-            .smart_scalar_sub(&mut lhs.ciphertext.borrow_mut(), rhs);
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_scalar_mul(&self, lhs: &GenericInteger<P>, rhs: u64) -> GenericInteger<P> {
-        let ciphertext = self
-            .key
-            .smart_scalar_mul(&mut lhs.ciphertext.borrow_mut(), rhs);
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn unchecked_scalar_left_shift(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: u64,
-    ) -> GenericInteger<P> {
-        let ciphertext = self
-            .key
-            .unchecked_scalar_left_shift(&lhs.ciphertext.borrow(), rhs as usize);
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn unchecked_scalar_right_shift(
-        &self,
-        lhs: &GenericInteger<P>,
-        rhs: u64,
-    ) -> GenericInteger<P> {
-        let ciphertext = self
-            .key
-            .unchecked_scalar_right_shift(&lhs.ciphertext.borrow(), rhs as usize);
-        GenericInteger::<P>::new(ciphertext, lhs.id)
-    }
-
-    pub(super) fn smart_scalar_add_assign(&self, lhs: &GenericInteger<P>, rhs: u64) {
-        self.key
-            .smart_scalar_add_assign(&mut lhs.ciphertext.borrow_mut(), rhs);
-    }
-
-    pub(super) fn smart_scalar_sub_assign(&self, lhs: &GenericInteger<P>, rhs: u64) {
-        self.key
-            .smart_scalar_sub_assign(&mut lhs.ciphertext.borrow_mut(), rhs);
-    }
-
-    pub(super) fn smart_scalar_mul_assign(&self, lhs: &GenericInteger<P>, rhs: u64) {
-        self.key
-            .smart_scalar_mul_assign(&mut lhs.ciphertext.borrow_mut(), rhs);
-    }
-
-    pub(super) fn unchecked_scalar_left_shift_assign(&self, lhs: &GenericInteger<P>, rhs: u64) {
-        self.key
-            .unchecked_scalar_left_shift_assign(&mut lhs.ciphertext.borrow_mut(), rhs as usize);
-    }
-
-    pub(super) fn unchecked_scalar_right_shift_assign(&self, lhs: &GenericInteger<P>, rhs: u64) {
-        self.key
-            .unchecked_scalar_right_shift_assign(&mut lhs.ciphertext.borrow_mut(), rhs as usize);
     }
 }
+
+pub(super) trait SmartNeg<Ciphertext> {
+    type Output;
+    fn smart_neg(&self, lhs: Ciphertext) -> Self::Output;
+}
+
+macro_rules! define_smart_server_key_op {
+    ($op_name:ident) => {
+        paste::paste! {
+            pub(super) trait [< Smart $op_name >]<Lhs, Rhs> {
+                type Output;
+
+                fn [< smart_ $op_name:lower >](
+                    &self,
+                    lhs: Lhs,
+                    rhs: Rhs,
+                ) -> Self::Output;
+            }
+
+            pub(super) trait [< Smart $op_name Assign >]<Lhs, Rhs> {
+                fn [< smart_ $op_name:lower _assign >](
+                    &self,
+                    lhs: &mut Lhs,
+                    rhs: Rhs,
+                );
+            }
+        }
+    };
+    ($($op:ident),*) => {
+        $(
+            define_smart_server_key_op!($op);
+        )*
+    };
+}
+
+define_smart_server_key_op!(Add, Sub, Mul, BitAnd, BitOr, BitXor, Shl, Shr);
+
+macro_rules! impl_smart_op_for_concrete_integer_server_key {
+    ($smart_trait:ident($smart_trait_fn:ident) => ($ciphertext:ty, $method:ident)) => {
+        impl $smart_trait<&mut $ciphertext, &mut $ciphertext> for concrete_integer::ServerKey {
+            type Output = $ciphertext;
+
+            fn $smart_trait_fn(
+                &self,
+                lhs: &mut $ciphertext,
+                rhs: &mut $ciphertext,
+            ) -> Self::Output {
+                self.$method(lhs, rhs)
+            }
+        }
+    };
+}
+
+macro_rules! impl_smart_assign_op_for_concrete_integer_server_key {
+    ($smart_trait:ident($smart_trait_fn:ident) => ($ciphertext:ty, $method:ident)) => {
+        impl $smart_trait<$ciphertext, &mut $ciphertext> for concrete_integer::ServerKey {
+            fn $smart_trait_fn(&self, lhs: &mut $ciphertext, rhs: &mut $ciphertext) {
+                self.$method(lhs, rhs);
+            }
+        }
+    };
+}
+
+macro_rules! impl_smart_scalar_op_for_concrete_integer_server_key {
+    ($smart_trait:ident($smart_trait_fn:ident) => ($ciphertext:ty, $method:ident)) => {
+        impl $smart_trait<&mut $ciphertext, u64> for concrete_integer::ServerKey {
+            type Output = $ciphertext;
+
+            fn $smart_trait_fn(&self, lhs: &mut $ciphertext, rhs: u64) -> Self::Output {
+                self.$method(lhs, rhs.try_into().unwrap())
+            }
+        }
+    };
+}
+
+macro_rules! impl_smart_scalar_assign_op_for_concrete_integer_server_key {
+    ($smart_trait:ident($smart_trait_fn:ident) => ($ciphertext:ty, $method:ident)) => {
+        impl $smart_trait<$ciphertext, u64> for concrete_integer::ServerKey {
+            fn $smart_trait_fn(&self, lhs: &mut $ciphertext, rhs: u64) {
+                // TODO fix this
+                self.$method(lhs, rhs.try_into().unwrap());
+            }
+        }
+    };
+}
+
+impl SmartNeg<&mut concrete_integer::RadixCiphertext> for concrete_integer::ServerKey {
+    type Output = concrete_integer::RadixCiphertext;
+    fn smart_neg(&self, lhs: &mut concrete_integer::RadixCiphertext) -> Self::Output {
+        self.smart_neg(lhs)
+    }
+}
+
+impl_smart_op_for_concrete_integer_server_key!(SmartAdd(smart_add) => (concrete_integer::RadixCiphertext, smart_add_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartSub(smart_sub) => (concrete_integer::RadixCiphertext, smart_sub_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartMul(smart_mul) => (concrete_integer::RadixCiphertext, smart_mul_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartBitAnd(smart_bitand) => (concrete_integer::RadixCiphertext, smart_bitand_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartBitOr(smart_bitor) => (concrete_integer::RadixCiphertext, smart_bitor_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartBitXor(smart_bitxor) => (concrete_integer::RadixCiphertext, smart_bitxor_parallelized));
+
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartAddAssign(smart_add_assign) => (concrete_integer::RadixCiphertext, smart_add_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smart_sub_assign) => (concrete_integer::RadixCiphertext, smart_sub_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::RadixCiphertext, smart_mul_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartBitAndAssign(smart_bitand_assign) => (concrete_integer::RadixCiphertext, smart_bitand_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartBitOrAssign(smart_bitor_assign) => (concrete_integer::RadixCiphertext, smart_bitor_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartBitXorAssign(smart_bitxor_assign) => (concrete_integer::RadixCiphertext, smart_bitxor_assign_parallelized));
+
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartAdd(smart_add) => (concrete_integer::RadixCiphertext, smart_scalar_add_parallelized));
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartSub(smart_sub) => (concrete_integer::RadixCiphertext, smart_scalar_sub_parallelized));
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartMul(smart_mul) => (concrete_integer::RadixCiphertext, smart_scalar_mul_parallelized));
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartShl(smart_shl) => (concrete_integer::RadixCiphertext, unchecked_scalar_left_shift_parallelized));
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartShr(smart_shr) => (concrete_integer::RadixCiphertext, unchecked_scalar_right_shift_parallelized));
+
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartAddAssign(smart_add_assign) => (concrete_integer::RadixCiphertext, smart_scalar_add_assign_parallelized));
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smart_sub_assign) => (concrete_integer::RadixCiphertext, smart_scalar_sub_assign_parallelized));
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::RadixCiphertext, smart_scalar_mul_assign_parallelized));
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartShlAssign(smart_shl_assign) => (concrete_integer::RadixCiphertext, unchecked_scalar_left_shift_assign_parallelized));
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartShrAssign(smart_shr_assign) => (concrete_integer::RadixCiphertext, unchecked_scalar_right_shift_assign_parallelized));
