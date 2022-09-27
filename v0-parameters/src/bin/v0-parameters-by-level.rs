@@ -22,6 +22,8 @@ fn main() {
         args.min_log_poly_size = 10;
         args.max_log_poly_size = 11;
         args.max_precision = 16;
+    } else {
+        args.max_precision = 9;
     }
 
     for &security_level in SECURITY_WEIGHTS_TABLE.keys() {

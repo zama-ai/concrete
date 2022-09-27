@@ -12,11 +12,13 @@ use clap::Parser;
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
-use concrete_optimizer::optimization::atomic_pattern::{
-    self as optimize_atomic_pattern, OptimizationState,
-};
+use concrete_optimizer::optimization::atomic_pattern as optimize_atomic_pattern;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::solo_key::optimize::{self as optimize_dag};
+use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution;
+use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution::{
+    WopSolution, WpSolution,
+};
 use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 use rayon_cond::CondIterator;
@@ -84,9 +86,8 @@ pub struct Args {
     pub simulate_dag: bool,
 }
 
-pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
+pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
     let processing_unit = config::ProcessingUnit::Cpu;
-
     let sum_size = args.sum_size;
     let maximum_acceptable_error_probability = args.p_error;
     let security_level = args.security_level;
@@ -115,20 +116,21 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
 
     precisions_iter
         .map(|precision| {
-            let mut last_solution = None;
             log_norms2
                 .iter()
                 .map(|&log_norm2| {
                     let noise_scale = 2_f64.powi(log_norm2);
-                    let result = if args.wop_pbs {
-                        optimize_wop_atomic_pattern::optimize_one_compat(
-                            sum_size,
+                    if args.wop_pbs {
+                        let log_norm = noise_scale.log2();
+                        optimize_wop_atomic_pattern::optimize_one(
                             precision,
                             config,
-                            noise_scale,
+                            log_norm,
                             &search_space,
                             &cache,
                         )
+                        .best_solution
+                        .map(WopSolution)
                     } else if args.simulate_dag {
                         optimize_dag::optimize_v0(
                             sum_size,
@@ -138,6 +140,8 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                             &search_space,
                             &cache,
                         )
+                        .best_solution
+                        .map(WpSolution)
                     } else {
                         optimize_atomic_pattern::optimize_one(
                             sum_size,
@@ -147,9 +151,9 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                             &search_space,
                             &cache,
                         )
-                    };
-                    last_solution = result.best_solution;
-                    result
+                        .best_solution
+                        .map(WpSolution)
+                    }
                 })
                 .collect::<Vec<_>>()
         })
@@ -164,35 +168,70 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
 
     let precisions = args.min_precision..=args.max_precision;
     let manps: Vec<_> = (0..=31).collect();
-    writeln!(writer, "{{ /* Security level: {} */", security_level)?;
-    writeln!(writer, "{{ /* {:1.1e} errors */", p_error)?;
+    writeln!(writer, "security level: {}", security_level)?;
+    writeln!(writer, "target p_error: {:1.1e}", p_error)?;
+    writeln!(writer, "per precision and log norm2:")?;
 
     for (precision_i, precision) in precisions.enumerate() {
-        writeln!(writer, "{{ /* precision {:2} */", precision)?;
-
+        writeln!(writer)?;
+        writeln!(writer, "  - {precision}: # bits")?;
+        let mut no_solution_at = None;
         for (manp_i, manp) in manps.clone().iter().enumerate() {
-            if let Some(solution) = all_results[precision_i][manp_i].best_solution {
-                writeln!(writer,
-                         "    /* {:2} */ V0Parameter({:2}, {:2}, {:4}, {:2}, {:2}, {:2}, {:2}), \t\t // {:4} mops, {:1.1e} errors",
-                         manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
-                         solution.internal_ks_output_lwe_dimension,
-                         solution.br_decomposition_level_count, solution.br_decomposition_base_log,
-                         solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
-                         (solution.complexity / (1024.0 * 1024.0)) as u64,
-                         solution.p_error
-                )?;
+            if let Some(solution) = &all_results[precision_i][manp_i] {
+                assert!(no_solution_at.is_none());
+                match solution {
+                    WpSolution(solution) => {
+                        if manp_i == 0 {
+                            writeln!(
+                                writer,
+                                "    -ln2:   k,  N,    n, br_l,br_b, ks_l,ks_b,  cost, p_error"
+                            )?;
+                        }
+                        writeln!(writer,
+                            "    - {:<2}:  {:2}, {:2}, {:4},   {:2}, {:2},    {:2}, {:2}, {:6}, {:1.1e}",
+                            manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
+                            solution.internal_ks_output_lwe_dimension,
+                            solution.br_decomposition_level_count, solution.br_decomposition_base_log,
+                            solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
+                            (solution.complexity / (1024.0 * 1024.0)) as u64,
+                            solution.p_error
+                        )?;
+                    }
+                    WopSolution(solution) => {
+                        if manp_i == 0 {
+                            writeln!(
+                                writer,
+                                "    -ln2:   k,  N,    n, br_l,br_b, ks_l,ks_b, cb_l,cb_b,  cost, p_error"
+                            )?;
+                        }
+                        writeln!(writer,
+                            "    - {:<2}:  {:2}, {:2}, {:4},   {:2}, {:2},    {:2}, {:2},    {:2}, {:2}, {:6}, {:1.1e}",
+                            manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
+                            solution.internal_ks_output_lwe_dimension,
+                            solution.br_decomposition_level_count, solution.br_decomposition_base_log,
+                            solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
+                            solution.cb_decomposition_level_count, solution.cb_decomposition_base_log,
+                            (solution.complexity / (1024.0 * 1024.0)) as u64,
+                            solution.p_error
+                        )?;
+                    }
+                }
+            } else if no_solution_at.is_none() {
+                no_solution_at = Some(*manp);
+            }
+        }
+        if let Some(no_solution_at) = no_solution_at {
+            if no_solution_at == 0 {
+                writeln!(writer, "    # no solution at all",)?;
             } else {
                 writeln!(
                     writer,
-                    "    /* {:2} : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),",
-                    manp,
+                    "    # no solution starting from log norm2 = {}",
+                    no_solution_at
                 )?;
             }
         }
-        writeln!(writer, "  }},")?;
     }
-    writeln!(writer, "}}")?;
-
     Ok(())
 }
 
@@ -222,7 +261,7 @@ mod tests {
             let ref_file: &str = &format!("ref/v0_last_{}", security_level);
             let args: Args = Args {
                 min_precision: 1,
-                max_precision: 8,
+                max_precision: 9,
                 p_error: _4_SIGMA,
                 security_level,
                 min_log_poly_size: MIN_LOG_POLY_SIZE,
