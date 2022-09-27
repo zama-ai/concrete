@@ -1,5 +1,5 @@
 use std::borrow::BorrowMut;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Seek, Write};
 use std::os::unix::prelude::MetadataExt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
@@ -244,12 +244,18 @@ where
                 content.len()
             );
         }
+        if let Err(err) = filelock.file.rewind() {
+            println!(
+                "PersistentCache::write: cannot rewind file: {}, {}",
+                self.path, err
+            );
+            return;
+        }
         if let Err(err) = filelock.file.set_len(0) {
             println!(
                 "PersistentCache::write: cannot truncate file: {}, {}",
                 self.path, err
             );
-            return;
         }
         let file = &mut filelock.file;
         let mut buf = BufWriter::new(file);
