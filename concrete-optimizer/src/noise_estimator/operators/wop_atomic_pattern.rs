@@ -2,13 +2,13 @@ use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_npe::KeyDispersion;
 
-use crate::parameters::PbsParameters;
+use crate::parameters::CmuxParameters;
 use crate::utils::square;
 
 pub fn estimate_packing_private_keyswitch<T>(
     var_glwe: Variance,
     var_ggsw: Variance,
-    param: PbsParameters,
+    param: CmuxParameters,
     ciphertext_modulus_log: u32,
 ) -> Variance {
     type K = BinaryKeyKind;

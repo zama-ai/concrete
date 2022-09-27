@@ -126,7 +126,7 @@ pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<KsComplexit
 pub fn cache(
     security_level: u64,
     processing_unit: config::ProcessingUnit,
-    complexity_model: Option<Arc<dyn ComplexityModel>>,
+    complexity_model: Arc<dyn ComplexityModel>,
 ) -> PersistDecompCache {
     let ciphertext_modulus_log = 64;
     let tmp: String = std::env::temp_dir()
@@ -137,8 +137,6 @@ pub fn cache(
     let hardware = processing_unit.ks_to_string();
 
     let path = format!("{tmp}/optimizer/cache/ks-decomp-{hardware}-64-{security_level}");
-
-    let complexity_model = complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
 
     let function = move |(glwe_params, internal_dim): MacroParam| {
         pareto_quantities(

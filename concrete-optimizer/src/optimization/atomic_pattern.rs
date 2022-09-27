@@ -6,7 +6,9 @@ use crate::utils::square;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 
 use super::decomposition;
-use super::decomposition::{blind_rotate, cut_complexity_noise, keyswitch, PersistDecompCache};
+use super::decomposition::{
+    blind_rotate, circuit_bootstrap, cut_complexity_noise, keyswitch, pp_switch, PersistDecompCache,
+};
 
 // Ref time for v0 table 1 thread: 950ms
 const CUTS: bool = true; // 80ms
@@ -45,6 +47,8 @@ pub struct OptimizationState {
 pub struct Caches {
     pub blind_rotate: blind_rotate::Cache,
     pub keyswitch: keyswitch::Cache,
+    pub pp_switch: pp_switch::Cache,
+    pub cb_pbs: circuit_bootstrap::Cache,
 }
 
 impl Caches {
@@ -52,11 +56,15 @@ impl Caches {
         Self {
             blind_rotate: cache.br.cache(),
             keyswitch: cache.ks.cache(),
+            pp_switch: cache.pp.cache(),
+            cb_pbs: cache.cb.cache(),
         }
     }
     pub fn backport_to(self, cache: &decomposition::PersistDecompCache) {
         cache.ks.backport(self.keyswitch);
         cache.br.backport(self.blind_rotate);
+        cache.pp.backport(self.pp_switch);
+        cache.cb.backport(self.cb_pbs);
     }
 }
 

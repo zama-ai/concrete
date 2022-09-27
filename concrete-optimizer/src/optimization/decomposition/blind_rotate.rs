@@ -123,7 +123,7 @@ pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<BrComplexit
 pub fn cache(
     security_level: u64,
     processing_unit: config::ProcessingUnit,
-    complexity_model: Option<Arc<dyn ComplexityModel>>,
+    complexity_model: Arc<dyn ComplexityModel>,
 ) -> PersistDecompCache {
     let max_log2_base = processing_unit.max_br_base_log();
 
@@ -136,8 +136,6 @@ pub fn cache(
     let hardware = processing_unit.br_to_string();
 
     let path = format!("{tmp}/optimizer/cache/br-decomp-{hardware}-64-{security_level}");
-
-    let complexity_model = complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
 
     let function = move |(glwe_params, internal_dim): MacroParam| {
         pareto_quantities(

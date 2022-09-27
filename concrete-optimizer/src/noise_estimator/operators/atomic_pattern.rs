@@ -1,7 +1,8 @@
 use crate::global_parameters::DEFAUT_DOMAINS;
+use crate::parameters;
 use crate::parameters::{
-    AtomicPatternParameters, BrDecompositionParameters, GlweParameters, KeyswitchParameters,
-    PbsParameters,
+    AtomicPatternParameters, BrDecompositionParameters, CmuxParameters, GlweParameters,
+    KeyswitchParameters, PbsParameters,
 };
 use crate::security;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
@@ -124,6 +125,19 @@ pub fn variance_bootstrap(
         ciphertext_modulus_log,
     );
     Variance(out_variance_pbs.get_variance() + additional_fft_noise.get_variance())
+}
+
+pub fn variance_cmux(
+    cmux_params: CmuxParameters,
+    ciphertext_modulus_log: u32,
+    variance_bsk: Variance,
+) -> Variance {
+    let pbs_params = PbsParameters {
+        internal_lwe_dimension: parameters::LweDimension(1),
+        br_decomposition_parameter: cmux_params.br_decomposition_parameter,
+        output_glwe_params: cmux_params.output_glwe_params,
+    };
+    variance_bootstrap(pbs_params, ciphertext_modulus_log, variance_bsk)
 }
 
 pub fn estimate_modulus_switching_noise_with_binary_key(

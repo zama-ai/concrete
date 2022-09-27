@@ -2,7 +2,7 @@ use super::complexity::Complexity;
 use super::complexity_model::ComplexityModel;
 use super::operators::keyswitch_lwe::KsComplexity;
 use super::operators::{keyswitch_lwe, pbs};
-use crate::parameters::{KeyswitchParameters, LweDimension, PbsParameters};
+use crate::parameters::{CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters};
 
 #[derive(Clone)]
 pub struct CpuComplexity {
@@ -15,12 +15,22 @@ impl ComplexityModel for CpuComplexity {
         self.pbs.complexity(params, ciphertext_modulus_log)
     }
 
+    fn cmux_complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u32) -> Complexity {
+        self.pbs.cmux.complexity(params, ciphertext_modulus_log)
+    }
+
     fn ks_complexity(
         &self,
         params: KeyswitchParameters,
         ciphertext_modulus_log: u32,
     ) -> Complexity {
         self.ks_lwe.complexity(params, ciphertext_modulus_log)
+    }
+
+    fn fft_complexity(&self, glwe_polynomial_size: f64, ciphertext_modulus_log: u32) -> Complexity {
+        self.pbs
+            .cmux
+            .fft_complexity(glwe_polynomial_size, ciphertext_modulus_log)
     }
 
     fn levelled_complexity(

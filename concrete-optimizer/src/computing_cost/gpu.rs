@@ -1,6 +1,6 @@
 use super::complexity::Complexity;
 use super::complexity_model::ComplexityModel;
-use crate::parameters::{KeyswitchParameters, LweDimension, PbsParameters};
+use crate::parameters::{CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters};
 use crate::utils::square;
 
 #[derive(Clone, Copy)]
@@ -43,10 +43,22 @@ impl ComplexityModel for GpuComplexity {
         todo!()
     }
 
+    fn cmux_complexity(&self, _params: CmuxParameters, _ciphertext_modulus_log: u32) -> Complexity {
+        todo!()
+    }
+
     #[allow(clippy::let_and_return)]
     fn ks_complexity(
         &self,
         _params: KeyswitchParameters,
+        _ciphertext_modulus_log: u32,
+    ) -> Complexity {
+        todo!()
+    }
+
+    fn fft_complexity(
+        &self,
+        _glwe_polynomial_size: f64,
         _ciphertext_modulus_log: u32,
     ) -> Complexity {
         todo!()
