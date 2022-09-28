@@ -1,3 +1,4 @@
+use concrete_integer::{CrtCiphertext, CrtClientKey, RadixCiphertext, RadixClientKey};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -35,6 +36,11 @@ pub trait PrivateIntegerKey {
 
 pub trait EvaluationIntegerKey<ClientKey> {
     fn new(client_key: &ClientKey) -> Self;
+
+    fn new_wopbs_key(
+        client_key: &ClientKey,
+        server_key: &Self,
+    ) -> concrete_integer::wopbs::WopbsKey;
 }
 
 pub trait FromParameters<P> {
@@ -93,11 +99,38 @@ pub trait IntegerParameter: Clone {
     type InnerServerKey;
 }
 
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
+pub struct RadixRepresentation;
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
+pub struct CrtRepresentation;
+
 /// Trait to mark parameters type for static integers
 ///
 /// Static means the integer types with parameters provided by
 /// the crate, so parameters for which we know the number of
 /// bits the represent.
 pub trait StaticIntegerParameter: IntegerParameter {
+    type Representation: Default + Eq;
+
     const MESSAGE_BITS: usize;
+}
+
+pub trait StaticRadixParameter:
+    StaticIntegerParameter<Representation = RadixRepresentation>
+where
+    Self: IntegerParameter<
+        InnerClientKey = RadixClientKey,
+        InnerServerKey = concrete_integer::ServerKey,
+        InnerCiphertext = RadixCiphertext,
+    >,
+{
+}
+pub trait StaticCrtParameter: StaticIntegerParameter<Representation = CrtRepresentation>
+where
+    Self: IntegerParameter<
+        InnerClientKey = CrtClientKey,
+        InnerServerKey = concrete_integer::ServerKey,
+        InnerCiphertext = CrtCiphertext,
+    >,
+{
 }

@@ -5,19 +5,24 @@ use std::ops::{
     Neg, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
 
+use concrete_integer::wopbs::WopbsKey;
+use concrete_integer::{CrtCiphertext, RadixCiphertext};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::global_state::WithGlobalKey;
 use crate::integers::client_key::GenericIntegerClientKey;
-use crate::integers::parameters::{IntegerParameter, PrivateIntegerKey, StaticIntegerParameter};
+use crate::integers::parameters::{
+    CrtRepresentation, IntegerParameter, PrivateIntegerKey, RadixRepresentation,
+    StaticCrtParameter, StaticIntegerParameter, StaticRadixParameter,
+};
 use crate::integers::server_key::{
     GenericIntegerServerKey, SmartAdd, SmartAddAssign, SmartBitAnd, SmartBitAndAssign, SmartBitOr,
     SmartBitOrAssign, SmartBitXor, SmartBitXorAssign, SmartMul, SmartMulAssign, SmartNeg, SmartShl,
     SmartShlAssign, SmartShr, SmartShrAssign, SmartSub, SmartSubAssign,
 };
 use crate::keys::RefKeyFromKeyChain;
-use crate::traits::{FheDecrypt, FheNumberConstant, FheTryEncrypt};
+use crate::traits::{FheBootstrap, FheDecrypt, FheNumberConstant, FheTryEncrypt};
 use crate::{ClientKey, OutOfRangeError};
 
 /// A Generic FHE unsigned integer
@@ -116,6 +121,99 @@ where
             let ciphertext = key.inner.encrypt(value);
             Ok(Self::new(ciphertext, id))
         }
+    }
+}
+
+// This extra trait is needed as otherwise
+//
+// impl<P> FheBootstrap for GenericInteger<P>
+//     where P: StaticCrtParameters,
+//           P: IntegerParameter<InnerCiphertext=CrtCiphertext>,
+// { /* sutff */ }
+//
+// impl<P> FheBootstrap for GenericInteger<P>
+//     where P: StaticRadixParameters,
+//         P: IntegerParameter<InnerCiphertext=RadixCiphertext>,
+//       P::Id: WithGlobalKey<Key=GenericIntegerServerKey<P>>,
+// { /* sutff */ }
+//
+// Leads to errors about conflicting impl
+pub trait WopbsExecutor<
+    P: StaticIntegerParameter,
+    R = <P as StaticIntegerParameter>::Representation,
+>
+{
+    fn execute_wopbs<F: Fn(u64) -> u64>(
+        &self,
+        ct_in: &GenericInteger<P>,
+        func: F,
+    ) -> GenericInteger<P>;
+}
+
+pub(crate) fn wopbs_radix(
+    wopbs_key: &WopbsKey,
+    server_key: &concrete_integer::ServerKey,
+    ct_in: &RadixCiphertext,
+    func: impl Fn(u64) -> u64,
+) -> RadixCiphertext {
+    let luts = wopbs_key.generate_lut(ct_in, func);
+    wopbs_key.wopbs_with_degree(server_key, ct_in, luts.as_slice())
+}
+
+pub(crate) fn wopbs_crt(
+    wopbs_key: &WopbsKey,
+    server_key: &concrete_integer::ServerKey,
+    ct_in: &CrtCiphertext,
+    func: impl Fn(u64) -> u64,
+) -> CrtCiphertext {
+    let luts = wopbs_key.generate_lut_fake_crt(ct_in, func);
+    wopbs_key.wopbs(server_key, ct_in, luts.as_slice())
+}
+
+impl<P> WopbsExecutor<P, RadixRepresentation> for GenericIntegerServerKey<P>
+where
+    P: StaticRadixParameter,
+{
+    fn execute_wopbs<F: Fn(u64) -> u64>(
+        &self,
+        ct_in: &GenericInteger<P>,
+        func: F,
+    ) -> GenericInteger<P> {
+        let ct = ct_in.ciphertext.borrow();
+        let res = wopbs_radix(&self.wopbs_key, &self.inner, &*ct, func);
+        GenericInteger::<P>::new(res, ct_in.id)
+    }
+}
+
+impl<P> WopbsExecutor<P, CrtRepresentation> for GenericIntegerServerKey<P>
+where
+    P: StaticCrtParameter,
+{
+    fn execute_wopbs<F: Fn(u64) -> u64>(
+        &self,
+        ct_in: &GenericInteger<P>,
+        func: F,
+    ) -> GenericInteger<P> {
+        let ct = ct_in.ciphertext.borrow();
+        let res = wopbs_crt(&self.wopbs_key, &self.inner, &*ct, func);
+        GenericInteger::<P>::new(res, ct_in.id)
+    }
+}
+
+impl<P> FheBootstrap for GenericInteger<P>
+where
+    P: StaticIntegerParameter,
+    P::Id: WithGlobalKey<Key = GenericIntegerServerKey<P>>,
+    GenericIntegerServerKey<P>: WopbsExecutor<P, <P as StaticIntegerParameter>::Representation>,
+{
+    fn map<F: Fn(u64) -> u64>(&self, func: F) -> Self {
+        self.id
+            .with_unwrapped_global_mut(|key| key.execute_wopbs(self, func))
+    }
+
+    fn apply<F: Fn(u64) -> u64>(&mut self, func: F) {
+        let result = self.map(func);
+        *self = result;
     }
 }
 

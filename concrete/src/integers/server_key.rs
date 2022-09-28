@@ -8,10 +8,13 @@ use crate::integers::parameters::EvaluationIntegerKey;
 use super::client_key::GenericIntegerClientKey;
 use super::parameters::IntegerParameter;
 
+use concrete_integer::wopbs::WopbsKey;
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone)]
 pub struct GenericIntegerServerKey<P: IntegerParameter> {
     pub(in crate::integers) inner: P::InnerServerKey,
+    pub(in crate::integers) wopbs_key: WopbsKey,
     _marker: PhantomData<P>,
 }
 
@@ -22,8 +25,10 @@ where
 {
     pub(super) fn new(client_key: &GenericIntegerClientKey<P>) -> Self {
         let inner = P::InnerServerKey::new(&client_key.inner);
+        let wopbs_key = P::InnerServerKey::new_wopbs_key(&client_key.inner, &inner);
         Self {
             inner,
+            wopbs_key,
             _marker: Default::default(),
         }
     }

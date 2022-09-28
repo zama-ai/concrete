@@ -4,12 +4,24 @@ use std::marker::PhantomData;
 use serde::{Deserialize, Serialize};
 
 use crate::integers::parameters::FromParameters;
-use concrete_integer::{RadixCiphertext, RadixClientKey};
+use concrete_integer::{CrtCiphertext, CrtClientKey, RadixCiphertext, RadixClientKey};
 
 use super::parameters::{IntegerParameter, PrivateIntegerKey};
 
 impl PrivateIntegerKey for RadixClientKey {
     type Ciphertext = RadixCiphertext;
+
+    fn encrypt(&self, value: u64) -> Self::Ciphertext {
+        self.encrypt(value)
+    }
+
+    fn decrypt(&self, ciphertext: &Self::Ciphertext) -> u64 {
+        self.decrypt(ciphertext)
+    }
+}
+
+impl PrivateIntegerKey for CrtClientKey {
+    type Ciphertext = CrtCiphertext;
 
     fn encrypt(&self, value: u64) -> Self::Ciphertext {
         self.encrypt(value)

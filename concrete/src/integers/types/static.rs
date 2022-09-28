@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::errors::{UninitializedClientKey, UninitializedServerKey};
 use crate::integers::client_key::GenericIntegerClientKey;
 use crate::integers::parameters::{
-    EvaluationIntegerKey, IntegerParameter, RadixParameters, StaticIntegerParameter,
+    CrtRepresentation, EvaluationIntegerKey, IntegerParameter, RadixParameters,
+    RadixRepresentation, StaticCrtParameter, StaticIntegerParameter, StaticRadixParameter,
 };
 use crate::integers::server_key::GenericIntegerServerKey;
 use crate::keys::RefKeyFromKeyChain;
@@ -14,6 +15,7 @@ use crate::{ClientKey, FheUint2Parameters};
 use super::base::GenericInteger;
 #[cfg(feature = "internal-keycache")]
 use concrete_integer::keycache::KEY_CACHE;
+use concrete_integer::wopbs::WopbsKey;
 use paste::paste;
 
 macro_rules! define_static_integer_parameters {
@@ -57,8 +59,11 @@ macro_rules! define_static_integer_parameters {
             }
 
             impl StaticIntegerParameter for [<FheUint $num_bits Parameters>] {
+                type Representation = RadixRepresentation;
                 const MESSAGE_BITS: usize = $num_bits;
             }
+
+            impl StaticRadixParameter for [<FheUint $num_bits Parameters>] {}
         }
     };
     (
@@ -101,8 +106,11 @@ macro_rules! define_static_integer_parameters {
             }
 
             impl StaticIntegerParameter for [<FheUint $num_bits Parameters>] {
+                type Representation = CrtRepresentation;
                 const MESSAGE_BITS: usize = $num_bits;
             }
+
+            impl StaticCrtParameter for [<FheUint $num_bits Parameters>] {}
         }
     };
 }
@@ -221,15 +229,18 @@ where
             concrete_integer::ServerKey::new(client_key)
         }
     }
-}
 
+    fn new_wopbs_key(client_key: &C, server_key: &Self) -> WopbsKey {
+        WopbsKey::new_wopbs_key(client_key.as_ref(), server_key)
+    }
+}
 static_int_type! {
     #[doc="An unsigned integer type with 8 bits."]
     FheUint8 {
         num_bits: 8,
         keychain_member: integer_key.uint8_key,
         parameters: Radix {
-            block_parameters: FheUint2Parameters::with_carry_2().into(),
+            block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
             num_block: 4,
         },
     }
@@ -241,7 +252,7 @@ static_int_type! {
         num_bits: 12,
         keychain_member: integer_key.uint12_key,
         parameters: Radix {
-            block_parameters: FheUint2Parameters::with_carry_2().into(),
+            block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
             num_block: 6,
         },
     }
@@ -253,7 +264,7 @@ static_int_type! {
         num_bits: 16,
         keychain_member: integer_key.uint16_key,
         parameters: Radix {
-            block_parameters: FheUint2Parameters::with_carry_2().into(),
+            block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
             num_block: 8,
         },
     }

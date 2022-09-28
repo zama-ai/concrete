@@ -1,3 +1,4 @@
+use concrete_integer::wopbs::WopbsKey;
 use concrete_integer::{CrtCiphertext, CrtClientKey, RadixCiphertext, RadixClientKey, ServerKey};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ use crate::integers::server_key::{
     SmartShlAssign, SmartShr, SmartShrAssign, SmartSub, SmartSubAssign,
 };
 use crate::keys::RefKeyFromKeyChain;
-use crate::traits::DynamicFheEncryptor;
+use crate::traits::{DynamicFheEncryptor, FheBootstrap};
 use crate::{ClientKey, CrtParameters, GenericInteger, RadixParameters};
 
 /// Parameters for integers
@@ -116,6 +117,15 @@ impl crate::integers::parameters::EvaluationIntegerKey<DynInnerClientKey> for Dy
         };
         Self { inner }
     }
+
+    fn new_wopbs_key(client_key: &DynInnerClientKey, server_key: &Self) -> WopbsKey {
+        match client_key {
+            DynInnerClientKey::Radix(cks) => {
+                WopbsKey::new_wopbs_key(cks.as_ref(), &server_key.inner)
+            }
+            DynInnerClientKey::Crt(cks) => WopbsKey::new_wopbs_key(cks.as_ref(), &server_key.inner),
+        }
+    }
 }
 
 impl FromParameters<DynIntegerParameters> for DynInnerClientKey {
@@ -153,6 +163,40 @@ impl PrivateIntegerKey for DynInnerClientKey {
             (DynInnerClientKey::Crt(key), DynInnerCiphertext::Crt(ct)) => key.decrypt(ct),
             (_, _) => panic!("Mismatch between ciphertext and client key representation"),
         }
+    }
+}
+
+impl FheBootstrap for DynInteger {
+    fn map<F: Fn(u64) -> u64>(&self, func: F) -> Self {
+        let new_ct = self
+            .id
+            .with_unwrapped_global_mut(|key| match &*self.ciphertext.borrow() {
+                DynInnerCiphertext::Radix(ct) => {
+                    let res = crate::integers::types::base::wopbs_radix(
+                        &key.wopbs_key,
+                        &key.inner.inner,
+                        ct,
+                        func,
+                    );
+                    DynInnerCiphertext::Radix(res)
+                }
+                DynInnerCiphertext::Crt(ct) => {
+                    let res = crate::integers::types::base::wopbs_crt(
+                        &key.wopbs_key,
+                        &key.inner.inner,
+                        ct,
+                        func,
+                    );
+                    DynInnerCiphertext::Crt(res)
+                }
+            });
+
+        Self::new(new_ct, self.id)
+    }
+
+    fn apply<F: Fn(u64) -> u64>(&mut self, func: F) {
+        let res = self.map(func);
+        self.ciphertext = res.ciphertext;
     }
 }
 
