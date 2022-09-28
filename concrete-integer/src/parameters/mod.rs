@@ -104,7 +104,7 @@ pub const PARAM_MESSAGE_1_CARRY_1_32_BITS: Parameters = Parameters {
     carry_modulus: CarryModulus(2),
 };
 
-pub const PARAM_4_BITS_5_BLOCKS: Parameters = Parameters{
+pub const PARAM_4_BITS_5_BLOCKS: Parameters = Parameters {
     lwe_dimension: LweDimension(667),
     glwe_dimension: GlweDimension(2),
     polynomial_size: PolynomialSize(1024),
@@ -120,5 +120,5 @@ pub const PARAM_4_BITS_5_BLOCKS: Parameters = Parameters{
     cbs_level: DecompositionLevelCount(7),
     cbs_base_log: DecompositionBaseLog(4),
     message_modulus: MessageModulus(16),
-    carry_modulus: CarryModulus(1)
+    carry_modulus: CarryModulus(1),
 };

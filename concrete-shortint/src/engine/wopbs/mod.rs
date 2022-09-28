@@ -97,7 +97,6 @@ impl ShortintEngine {
         )
     }
 
-
     pub(crate) fn programmable_bootstrapping_without_padding(
         &mut self,
         wopbs_key: &WopbsKey,
@@ -209,12 +208,11 @@ impl ShortintEngine {
             f64::log2((ct_in.message_modulus.0 * ct_in.carry_modulus.0) as f64).ceil() as usize;
         let delta_log = DeltaLog(64 - nb_bit_to_extract);
 
-
         // trick ( ct - delta/2 + delta/2^4  )
         let lwe_size = ct_in.ct.0.lwe_size().0;
         let mut cont = vec![0; lwe_size];
-        cont[lwe_size - 1] = (1 << (64 - nb_bit_to_extract - 1)) - (1 << (64 -
-            nb_bit_to_extract - 5));
+        cont[lwe_size - 1] =
+            (1 << (64 - nb_bit_to_extract - 1)) - (1 << (64 - nb_bit_to_extract - 5));
         let tmp = LweCiphertext::from_container(cont);
         ct_in.ct.0.update_with_sub(&tmp);
 

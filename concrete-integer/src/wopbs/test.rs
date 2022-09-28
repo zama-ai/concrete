@@ -3,7 +3,6 @@
 
 #![allow(unused)]
 
-use std::cmp::max;
 use crate::gen_keys;
 use crate::parameters::*;
 use crate::wopbs::{encode_radix, WopbsKey};
@@ -11,9 +10,10 @@ use concrete_shortint::parameters::parameters_wopbs::*;
 use concrete_shortint::parameters::parameters_wopbs_message_carry::*;
 use concrete_shortint::parameters::{Parameters, *};
 use rand::Rng;
+use std::cmp::max;
 
-use paste::paste;
 use crate::keycache::KEY_CACHE;
+use paste::paste;
 
 const NB_TEST: usize = 10;
 
@@ -115,7 +115,6 @@ create_parametrized_test!(wopbs_bivariate_fake_crt);
 create_parametrized_test!(wopbs_crt_without_padding_bivariate);
 create_parametrized_test!(wopbs_radix);
 
-
 pub fn wopbs(param: Parameters) {
     //Generate the client key and the server key:
     let (cks, mut sks) = gen_keys(&param);
@@ -204,8 +203,7 @@ pub fn wopbs_16_bits(param: Parameters) {
         let lut_res_1 = lut_1.clone();
         let lut_res_2 = lut_2.clone();
 
-        let ct_res =
-            wopbs_key.wopbs(&sks, &mut ct, &[lut_1, lut_2]);
+        let ct_res = wopbs_key.wopbs(&sks, &mut ct, &[lut_1, lut_2]);
 
         let shift_clear = ((clear & 100) << 2) + ((clear & 10) << 1) + (clear & 1);
         //println!("nulber of block of the outputi ciphertext = {}", ct_res.ct_vec.len());
@@ -254,7 +252,7 @@ pub fn wopbs_16_lut_test(param: Parameters) {
 
         let clear = rng.gen::<usize>() % 128;
         let mut ct = cks.encrypt_radix(clear as u64, nb_block);
-        let lut = wopbs_key.generate_lut(&ct, |x|x);
+        let lut = wopbs_key.generate_lut(&ct, |x| x);
         //println!("lut : {:?}", lut[0]);
         let ct_res = wopbs_key.wopbs(&sks, &mut ct, &lut);
 
@@ -264,23 +262,22 @@ pub fn wopbs_16_lut_test(param: Parameters) {
             cpt += 1;
         }
     }
-    println!("failure rate : {:?} / {:?}", cpt , nb_test);
+    println!("failure rate : {:?} / {:?}", cpt, nb_test);
     assert_eq!(cpt, 0);
 }
 
-pub fn wopbs_crt_without_padding(param: Parameters){
-
+pub fn wopbs_crt_without_padding(param: Parameters) {
     let mut rng = rand::thread_rng();
     println!("param : {:?}", param);
 
-    let basis : Vec<u64> = vec![7,8,9,11,13];
+    let basis: Vec<u64> = vec![7, 8, 9, 11, 13];
 
     let nb_block = basis.len();
 
     //Generate the client key and the server key:
     let (mut cks, sks) = gen_keys(&param);
     // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
     let mut msg_space = 1;
     for modulus in basis.iter() {
@@ -290,7 +287,7 @@ pub fn wopbs_crt_without_padding(param: Parameters){
     let nb_test = 10;
 
     for _ in 0..nb_test {
-        let clear1 = rng.gen::<u64>() % msg_space;    // Encrypt the integers
+        let clear1 = rng.gen::<u64>() % msg_space; // Encrypt the integers
         let mut ct1 = cks.encrypt_crt_not_power_of_two(clear1, basis.clone());
 
         let lut = wopbs_key.generate_lut_crt_without_padding(&ct1, |x| x);
@@ -302,19 +299,18 @@ pub fn wopbs_crt_without_padding(param: Parameters){
     }
 }
 
-pub fn wopbs_crt_without_padding_bivariate(param: Parameters){
-
+pub fn wopbs_crt_without_padding_bivariate(param: Parameters) {
     let mut rng = rand::thread_rng();
     println!("param : {:?}", param);
 
-    let basis : Vec<u64> = vec![9,11];
+    let basis: Vec<u64> = vec![9, 11];
 
     let nb_block = basis.len();
 
     //Generate the client key and the server key:
     let (mut cks, sks) = gen_keys(&param);
     // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
     let mut msg_space = 1;
     for modulus in basis.iter() {
@@ -324,37 +320,42 @@ pub fn wopbs_crt_without_padding_bivariate(param: Parameters){
     let nb_test = 10;
     let mut tmp = 0;
     for _ in 0..nb_test {
-        let clear1 = rng.gen::<u64>() % msg_space;    // Encrypt the integers
-        let clear2 = rng.gen::<u64>() % msg_space;    // Encrypt the integers
+        let clear1 = rng.gen::<u64>() % msg_space; // Encrypt the integers
+        let clear2 = rng.gen::<u64>() % msg_space; // Encrypt the integers
         let mut ct1 = cks.encrypt_crt_not_power_of_two(clear1, basis.clone());
         let mut ct2 = cks.encrypt_crt_not_power_of_two(clear2, basis.clone());
 
-        let lut = wopbs_key.generate_lut_bivariate_crt_without_padding(&ct1, |x,y| x * y);
+        let lut = wopbs_key.generate_lut_bivariate_crt_without_padding(&ct1, |x, y| x * y);
         let ct_res = wopbs_key.bivariate_wopbs_not_power_of_two(&sks, &mut ct1, &mut ct2, &lut);
         let res = cks.decrypt_crt_not_power_of_two(&ct_res);
 
-        if (clear1 * clear2) % msg_space != res{
+        if (clear1 * clear2) % msg_space != res {
             tmp += 1;
-            println!("clear1 {:?}, clear2 {:?}, add {:?}, res {:?}", clear1, clear2, (clear1 * clear2) % msg_space, res);
+            println!(
+                "clear1 {:?}, clear2 {:?}, add {:?}, res {:?}",
+                clear1,
+                clear2,
+                (clear1 * clear2) % msg_space,
+                res
+            );
         }
     }
     assert_eq!(tmp, 0);
 }
 
 // test wopbs fake crt with different degree for each Ct
-pub fn wopbs_crt_fake_crt(param: Parameters){
-
+pub fn wopbs_crt_fake_crt(param: Parameters) {
     let mut rng = rand::thread_rng();
     println!("param : {:?}", param);
 
-    let basis : Vec<u64> = vec![4,3];
+    let basis: Vec<u64> = vec![4, 3];
 
     let nb_block = basis.len();
 
     //Generate the client key and the server key:
     let (mut cks, sks) = gen_keys(&param);
     // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
     let mut msg_space = 1;
     for modulus in basis.iter() {
@@ -367,8 +368,9 @@ pub fn wopbs_crt_fake_crt(param: Parameters){
         let clear1 = rng.gen::<u64>() % msg_space;
         let mut ct1 = cks.encrypt_crt(clear1, basis.clone());
         //artificially modify the degree
-        for ct in ct1.blocks.iter_mut(){
-            let degree = param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1 ) ;
+        for ct in ct1.blocks.iter_mut() {
+            let degree =
+                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct.degree.0 = degree;
         }
         let lut = wopbs_key.generate_lut_fake_crt(&ct1, |x| (x * x) + x);
@@ -380,32 +382,28 @@ pub fn wopbs_crt_fake_crt(param: Parameters){
             tmp += 1;
         }
     }
-    if tmp != 0{
+    if tmp != 0 {
         println!("failure rate {:?}/{:?} ", tmp, nb_test);
         panic!()
     }
 }
 
-
 // test wopbs fake crt with different degree for each Ct
-pub fn wopbs_radix(param: Parameters){
-
+pub fn wopbs_radix(param: Parameters) {
     let mut rng = rand::thread_rng();
     println!("param : {:?}", param);
-
 
     let nb_block = 2;
 
     //Generate the client key and the server key:
     let (mut cks, sks) = gen_keys(&param);
     // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
-    let mut msg_space:u64 = param.message_modulus.0 as u64;
+    let mut msg_space: u64 = param.message_modulus.0 as u64;
     for modulus in 1..nb_block {
         msg_space *= param.message_modulus.0 as u64;
     }
-
 
     let nb_test = 10;
     let mut tmp = 0;
@@ -414,8 +412,9 @@ pub fn wopbs_radix(param: Parameters){
         let mut ct1 = cks.encrypt_radix(clear1, nb_block);
 
         //artificially modify the degree
-        for ct in ct1.blocks.iter_mut(){
-            let degree = param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1 ) ;
+        for ct in ct1.blocks.iter_mut() {
+            let degree =
+                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct.degree.0 = degree;
             //println!("deg : {:?}", ct.degree)
         }
@@ -429,15 +428,14 @@ pub fn wopbs_radix(param: Parameters){
             tmp += 1;
         }
     }
-    if tmp != 0{
+    if tmp != 0 {
         println!("failure rate {:?}/{:?} ", tmp, nb_test);
         panic!()
     }
 }
 
 // test wopbs radix with different degree for each Ct
-pub fn wopbs_bivariate_radix(param: Parameters){
-
+pub fn wopbs_bivariate_radix(param: Parameters) {
     let mut rng = rand::thread_rng();
     println!("param : {:?}", param);
 
@@ -446,9 +444,9 @@ pub fn wopbs_bivariate_radix(param: Parameters){
     //Generate the client key and the server key:
     let (mut cks, sks) = gen_keys(&param);
     // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
-    let mut msg_space:u64 = param.message_modulus.0 as u64;
+    let mut msg_space: u64 = param.message_modulus.0 as u64;
     for modulus in 1..nb_block {
         msg_space *= modulus as u64;
     }
@@ -462,13 +460,15 @@ pub fn wopbs_bivariate_radix(param: Parameters){
         let mut ct1 = cks.encrypt_radix(clear1, nb_block);
         let mut ct2 = cks.encrypt_radix(clear2, nb_block);
         //artificially modify the degree
-        for (ct_1,ct_2) in ct1.blocks.iter_mut().zip(ct2.blocks.iter_mut()){
-            let degree = param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1 ) ;
+        for (ct_1, ct_2) in ct1.blocks.iter_mut().zip(ct2.blocks.iter_mut()) {
+            let degree =
+                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct_1.degree.0 = degree;
-            let degree = param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1 );
+            let degree =
+                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct_2.degree.0 = degree;
         }
-        let lut = wopbs_key.generate_lut_bivariate_radix(&ct1, &ct2, |x,y| max(x,y));
+        let lut = wopbs_key.generate_lut_bivariate_radix(&ct1, &ct2, |x, y| max(x, y));
         let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &ct1, &ct2, &lut);
         let res = cks.decrypt_radix(&ct_res);
         assert_eq!(res, (max(clear1, clear2)) % msg_space);
@@ -476,19 +476,18 @@ pub fn wopbs_bivariate_radix(param: Parameters){
 }
 
 // test wopbs bivariate fake crt with different degree for each Ct
-pub fn wopbs_bivariate_fake_crt(param: Parameters){
-
+pub fn wopbs_bivariate_fake_crt(param: Parameters) {
     let mut rng = rand::thread_rng();
     println!("param : {:?}", param);
 
-    let basis = vec![3,7];
+    let basis = vec![3, 7];
 
     //Generate the client key and the server key:
     let (mut cks, sks) = gen_keys(&param);
     // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
-    let mut msg_space:u64 = 1;
+    let mut msg_space: u64 = 1;
     for modulus in basis.iter() {
         msg_space *= modulus;
     }
@@ -501,10 +500,12 @@ pub fn wopbs_bivariate_fake_crt(param: Parameters){
         let mut ct1 = cks.encrypt_crt(clear1, basis.clone());
         let mut ct2 = cks.encrypt_crt(clear2, basis.clone());
         //artificially modify the degree
-        for (ct_1,ct_2) in ct1.blocks.iter_mut().zip(ct2.blocks.iter_mut()){
-            let degree = param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1 ) ;
+        for (ct_1, ct_2) in ct1.blocks.iter_mut().zip(ct2.blocks.iter_mut()) {
+            let degree =
+                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct_1.degree.0 = degree;
-            let degree = param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1 ) ;
+            let degree =
+                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct_2.degree.0 = degree;
         }
         let lut = wopbs_key.generate_lut_bivariate_fake_crt(&ct1, &ct2, |x, y| (x * y) + y);

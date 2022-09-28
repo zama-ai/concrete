@@ -65,7 +65,7 @@ mod test_user_docs;
 pub mod treepbs;
 pub mod wopbs;
 
-pub use ciphertext::{CrtCiphertext, CrtMultiCiphertext, RadixCiphertext, IntegerCiphertext};
+pub use ciphertext::{CrtCiphertext, CrtMultiCiphertext, IntegerCiphertext, RadixCiphertext};
 pub use client_key::multi_crt::gen_key_id;
 pub use client_key::{ClientKey, CrtClientKey, CrtMultiClientKey, RadixClientKey};
 pub use server_key::{CheckError, CrtMultiServerKey, ServerKey};

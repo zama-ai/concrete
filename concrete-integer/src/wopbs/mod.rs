@@ -9,14 +9,17 @@
 #[cfg(test)]
 mod test;
 
-use crate::{ClientKey, CrtCiphertext, gen_keys, IntegerCiphertext, RadixCiphertext, ServerKey};
+use crate::client_key::utils::i_crt;
+use crate::{gen_keys, ClientKey, CrtCiphertext, IntegerCiphertext, RadixCiphertext, ServerKey};
 use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
 use concrete_core::backends::fftw::private::crypto::wop_pbs_vp::extract_bit_v0_v1;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
 use concrete_core::prelude::LweCiphertext64;
 use concrete_shortint::ciphertext::Degree;
-use crate::client_key::utils::i_crt;
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct WopbsKey {
     wopbs_key: concrete_shortint::wopbs::WopbsKey,
 }
@@ -32,7 +35,6 @@ pub struct WopbsKey {
 /// let radix = encode_radix(val, basis, nb_block);
 ///
 /// assert_eq!(val, decode_radix(radix, basis));
-///
 /// ```
 pub fn encode_radix(val: u64, basis: u64, nb_block: u64) -> Vec<u64> {
     let mut output = vec![];
@@ -57,17 +59,18 @@ pub fn encode_radix(val: u64, basis: u64, nb_block: u64) -> Vec<u64> {
 pub fn encode_crt(val: u64, basis: &Vec<u64>) -> Vec<u64> {
     let mut output = vec![];
     //Put each decomposition into a new ciphertext
-    for i in 0..basis.len(){
+    for i in 0..basis.len() {
         output.push(val % basis[i]);
     }
     output
 }
 
-
-
 //Concatenate two ciphertexts in one
 //Used to compute bivariate wopbs
-pub fn ciphertext_concatenation<T>(ct1: &T, ct2: &T) -> T where T: IntegerCiphertext{
+pub fn ciphertext_concatenation<T>(ct1: &T, ct2: &T) -> T
+where
+    T: IntegerCiphertext,
+{
     let mut new_blocks = ct1.blocks().to_vec();
     new_blocks.extend_from_slice(ct2.blocks());
     T::from_blocks(new_blocks)
@@ -79,9 +82,8 @@ pub fn ciphertext_concatenation<T>(ct1: &T, ct2: &T) -> T where T: IntegerCipher
 /// use concrete_integer::wopbs::encode_mix_radix;
 ///
 /// let val = 1600;
-/// let basis = vec![60,24,7];
-/// assert_eq!(encode_mix_radix(val, &basis),[40,2,1]);
-///
+/// let basis = vec![60, 24, 7];
+/// assert_eq!(encode_mix_radix(val, &basis), [40, 2, 1]);
 /// ```
 pub fn encode_mix_radix(val: u64, basis: &Vec<u64>) -> Vec<u64> {
     let mut output = vec![];
@@ -106,22 +108,20 @@ pub fn encode_mix_radix(val: u64, basis: &Vec<u64>) -> Vec<u64> {
     output
 }
 
-
 // Example: val = 5 = 0b101 , basis = [1,2] -> output = [1, 1]
 /// ```rust
-/// use concrete_integer::wopbs::{split_value_according_to_bit_basis};
+/// use concrete_integer::wopbs::split_value_according_to_bit_basis;
 /// // Generate the client key and the server key:
 /// let val = 5;
-/// let basis = vec![1,2];
-/// assert_eq!(vec![1,2], split_value_according_to_bit_basis(val, &basis));
+/// let basis = vec![1, 2];
+/// assert_eq!(vec![1, 2], split_value_according_to_bit_basis(val, &basis));
 /// ```
-pub fn split_value_according_to_bit_basis(value: u64, basis: &Vec<u64>) -> Vec<u64>{
-
+pub fn split_value_according_to_bit_basis(value: u64, basis: &Vec<u64>) -> Vec<u64> {
     let mut output = vec![];
     let mut tmp = value.clone();
     let mask = 1;
 
-    for i in 0..basis.len(){
+    for i in 0..basis.len() {
         let mut tmp_output = 0;
         for j in 0..basis[i] {
             let val = tmp & mask;
@@ -133,11 +133,10 @@ pub fn split_value_according_to_bit_basis(value: u64, basis: &Vec<u64>) -> Vec<u
     output
 }
 
-
 //TODO: Move to a different file?
 // Update to pub(crate)
 /// ```rust
-/// use concrete_integer::wopbs::{encode_radix, decode_radix};
+/// use concrete_integer::wopbs::{decode_radix, encode_radix};
 ///
 /// let val = 11;
 /// let basis = 2;
@@ -186,12 +185,10 @@ impl WopbsKey {
 
     // TODO : we don't have LUT generation for wop without deg
     // TODO maybe remove it, we already have wop_with_deg
-    pub fn wopbs<T>(
-        &self,
-        sks: &ServerKey,
-        ct_in: &mut T,
-        lut: &[Vec<u64>],
-    ) -> T where T: IntegerCiphertext {
+    pub fn wopbs<T>(&self, sks: &ServerKey, ct_in: &T, lut: &[Vec<u64>]) -> T
+    where
+        T: IntegerCiphertext,
+    {
         let mut vec_lwe: Vec<LweCiphertext<Vec<u64>>> = vec![];
         let mut ct_in = ct_in.clone();
         // Extraction of each bit for each block
@@ -252,20 +249,16 @@ impl WopbsKey {
     ///
     ///  assert_eq!(res, clear);
     /// ```
-    pub fn wopbs_with_degree<T>(
-        &self,
-        sks: &ServerKey,
-        ct_in: &T,
-        lut: &[Vec<u64>],
-    ) -> T where T: IntegerCiphertext {
+    pub fn wopbs_with_degree<T>(&self, sks: &ServerKey, ct_in: &T, lut: &[Vec<u64>]) -> T
+    where
+        T: IntegerCiphertext,
+    {
         let mut vec_lwe: Vec<LweCiphertext<Vec<u64>>> = vec![];
         let mut ct_in = ct_in.clone();
         // Extraction of each bit for each block
         for block in ct_in.blocks_mut().iter_mut() {
-            let delta = (1_usize << 63) / (self.wopbs_key.param.message_modulus.0 * self.wopbs_key
-                .param
-                .carry_modulus
-                .0);
+            let delta = (1_usize << 63)
+                / (self.wopbs_key.param.message_modulus.0 * self.wopbs_key.param.carry_modulus.0);
             let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
             let nb_bit_to_extract = f64::log2((block.degree.0 + 1) as f64).ceil() as usize;
             let mut tmp =
@@ -281,7 +274,6 @@ impl WopbsKey {
             lut.to_vec(),
             vec_lwe.as_slice(),
         );
-
 
         let mut ct_vec_out: Vec<concrete_shortint::Ciphertext> = vec![];
         for (block, block_out) in ct_in.blocks().iter().zip(vec_ct_out.into_iter()) {
@@ -319,13 +311,9 @@ impl WopbsKey {
     ///
     /// assert_eq!(res, (clear * 2) % moduli)
     /// ```
-    pub fn wopbs_without_padding<T>(
-        &self,
-        sks: &ServerKey,
-        ct_in: &T,
-        lut: &[Vec<u64>],
-    ) -> T where
-        T: IntegerCiphertext
+    pub fn wopbs_without_padding<T>(&self, sks: &ServerKey, ct_in: &T, lut: &[Vec<u64>]) -> T
+    where
+        T: IntegerCiphertext,
     {
         let mut vec_lwe: Vec<LweCiphertext<Vec<u64>>> = vec![];
         let mut ct_in = ct_in.clone();
@@ -395,7 +383,10 @@ impl WopbsKey {
         ct1: &T,
         ct2: &T,
         lut: &[Vec<u64>],
-    ) -> T where T: IntegerCiphertext {
+    ) -> T
+    where
+        T: IntegerCiphertext,
+    {
         let ct = ciphertext_concatenation(ct1, ct2);
         self.wopbs_with_degree(sks, &ct, lut)
     }
@@ -425,9 +416,9 @@ impl WopbsKey {
     ///  assert_eq!(res, (2 * clear) % moduli);
     /// ```
     pub fn generate_lut<F, T>(&self, ct: &T, f: F) -> Vec<Vec<u64>>
-        where
-            F: Fn(u64) -> u64,
-            T: IntegerCiphertext,
+    where
+        F: Fn(u64) -> u64,
+        T: IntegerCiphertext,
     {
         let mut bit = vec![];
         let mut total_bit = 0;
@@ -457,7 +448,7 @@ impl WopbsKey {
 
         let delta: u64 = (1 << 63)
             / (self.wopbs_key.param.message_modulus.0 * self.wopbs_key.param.carry_modulus.0)
-            as u64;
+                as u64;
 
         for lut_index_val in 0..(1 << total_bit) {
             let val = encode_radix(lut_index_val, 1 << total_bit, 1);
@@ -498,9 +489,9 @@ impl WopbsKey {
     /// assert_eq!(res, (clear * 2) % moduli)
     /// ```
     pub fn generate_lut_without_padding<F, T>(&self, ct: &T, f: F) -> Vec<Vec<u64>>
-        where
-            F: Fn(u64) -> u64,
-            T: IntegerCiphertext
+    where
+        F: Fn(u64) -> u64,
+        T: IntegerCiphertext,
     {
         let log_message_modulus = f64::log2((self.wopbs_key.param.message_modulus.0) as f64) as u64;
         let log_carry_modulus = f64::log2((self.wopbs_key.param.carry_modulus.0) as f64) as u64;
@@ -541,18 +532,18 @@ impl WopbsKey {
     /// use concrete_integer::parameters::PARAM_4_BITS_5_BLOCKS;
     /// use concrete_integer::wopbs::WopbsKey;
     ///
-    /// let basis : Vec<u64> = vec![9,11];
+    /// let basis: Vec<u64> = vec![9, 11];
     ///
     /// let param = PARAM_4_BITS_5_BLOCKS;
     /// //Generate the client key and the server key:
     /// let (cks, sks) = gen_keys(&param);
-    /// let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     ///
     /// let mut msg_space = 1;
     /// for modulus in basis.iter() {
     ///     msg_space *= modulus;
     /// }
-    /// let clear = 42 % msg_space;    // Encrypt the integers
+    /// let clear = 42 % msg_space; // Encrypt the integers
     /// let mut ct = cks.encrypt_crt_not_power_of_two(clear, basis.clone());
     /// let lut = wopbs_key.generate_lut_crt_without_padding(&ct, |x| x);
     /// let ct_res = wopbs_key.wopbs_not_power_of_two(&sks, &mut ct, &lut);
@@ -560,8 +551,8 @@ impl WopbsKey {
     /// assert_eq!(res, clear);
     /// ```
     pub fn generate_lut_crt_without_padding<F>(&self, ct: &CrtCiphertext, f: F) -> Vec<Vec<u64>>
-        where
-            F: Fn(u64) -> u64,
+    where
+        F: Fn(u64) -> u64,
     {
         let mut bit = vec![];
         let mut total_bit = 0;
@@ -600,7 +591,7 @@ impl WopbsKey {
     /// generate LUt for 'fake' crt
     /// # Example
     /// ```rust
-    ///
+    /// 
     /// use concrete_integer::gen_keys;
     /// use concrete_integer::wopbs::*;
     /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_3_CARRY_3;
@@ -625,8 +616,8 @@ impl WopbsKey {
     /// assert_eq!(res, clear);
     /// ```
     pub fn generate_lut_fake_crt<F>(&self, ct: &CrtCiphertext, f: F) -> Vec<Vec<u64>>
-        where
-            F: Fn(u64) -> u64,
+    where
+        F: Fn(u64) -> u64,
     {
         let mut bit = vec![];
         let mut total_bit = 0;
@@ -651,7 +642,7 @@ impl WopbsKey {
                 let deg = f64::log2((block.degree.0 + 1) as f64).ceil() as u64;
                 let delta: u64 = (1 << 63)
                     / (self.wopbs_key.param.message_modulus.0
-                    * self.wopbs_key.param.carry_modulus.0) as u64;
+                        * self.wopbs_key.param.carry_modulus.0) as u64;
                 vec_lut[j][i as usize] =
                     ((f((value % (1 << deg)) % block.message_modulus.0 as u64))
                         % block.message_modulus.0 as u64)
@@ -661,8 +652,6 @@ impl WopbsKey {
         }
         vec_lut
     }
-
-
 
     /// # Example
     /// ```rust
@@ -691,9 +680,14 @@ impl WopbsKey {
     ///
     ///  assert_eq!(res, (2 * clear1 * clear2) % moduli);
     /// ```
-    pub fn generate_lut_bivariate_radix<F>(&self, ct1: &RadixCiphertext, ct2: &RadixCiphertext, f: F) -> Vec<Vec<u64>>
-        where
-            F: Fn(u64, u64) -> u64,
+    pub fn generate_lut_bivariate_radix<F>(
+        &self,
+        ct1: &RadixCiphertext,
+        ct2: &RadixCiphertext,
+        f: F,
+    ) -> Vec<Vec<u64>>
+    where
+        F: Fn(u64, u64) -> u64,
     {
         let mut bit = vec![];
         let mut nb_bit_to_extract = vec![0; 2];
@@ -726,7 +720,7 @@ impl WopbsKey {
 
         let delta: u64 = (1 << 63)
             / (self.wopbs_key.param.message_modulus.0 * self.wopbs_key.param.carry_modulus.0)
-            as u64;
+                as u64;
 
         for lut_index_val in 0..(1 << total_bit) {
             let split = encode_radix(lut_index_val, 1 << nb_bit_to_extract[0], 2);
@@ -745,11 +739,10 @@ impl WopbsKey {
         vec_lut
     }
 
-
     /// generate bivariate LUT for 'fake' CRT
     /// # Example
     /// ```rust
-    ///
+    /// 
     /// use concrete_integer::gen_keys;
     /// use concrete_integer::wopbs::*;
     /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_3_CARRY_3;
@@ -779,8 +772,8 @@ impl WopbsKey {
         ct2: &CrtCiphertext,
         f: F,
     ) -> Vec<Vec<u64>>
-        where
-            F: Fn(u64, u64) -> u64,
+    where
+        F: Fn(u64, u64) -> u64,
     {
         let mut bit = vec![];
         let mut nb_bit_to_extract = vec![0; 2];
@@ -788,7 +781,6 @@ impl WopbsKey {
 
         //ct2 & ct1 should have the same basis
         let basis = ct1.moduli();
-
 
         for (ct_num, ct) in [ct1, ct2].iter().enumerate() {
             for (i, deg) in basis.iter().zip(ct.blocks.iter()) {
@@ -809,7 +801,7 @@ impl WopbsKey {
 
         let delta: u64 = (1 << 63)
             / (self.wopbs_key.param.message_modulus.0 * self.wopbs_key.param.carry_modulus.0)
-            as u64;
+                as u64;
 
         for index in 0..(1 << total_bit) {
             let mut split = encode_radix(index, 1 << nb_bit_to_extract[0], 2);
@@ -841,12 +833,12 @@ impl WopbsKey {
     /// use concrete_integer::parameters::PARAM_4_BITS_5_BLOCKS;
     /// use concrete_integer::wopbs::WopbsKey;
     ///
-    /// let basis : Vec<u64> = vec![9,11];
+    /// let basis: Vec<u64> = vec![9, 11];
     ///
     /// let param = PARAM_4_BITS_5_BLOCKS;
     /// //Generate the client key and the server key:
     /// let (cks, sks) = gen_keys(&param);
-    /// let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     ///
     /// let mut msg_space = 1;
     /// for modulus in basis.iter() {
@@ -856,14 +848,18 @@ impl WopbsKey {
     /// let clear2 = 24 % msg_space;
     /// let mut ct1 = cks.encrypt_crt_not_power_of_two(clear1, basis.clone());
     /// let mut ct2 = cks.encrypt_crt_not_power_of_two(clear2, basis.clone());
-    /// let lut = wopbs_key.generate_lut_bivariate_crt_without_padding(&ct1, |x,y| x * y * 2);
+    /// let lut = wopbs_key.generate_lut_bivariate_crt_without_padding(&ct1, |x, y| x * y * 2);
     /// let ct_res = wopbs_key.bivariate_wopbs_not_power_of_two(&sks, &mut ct1, &mut ct2, &lut);
     /// let res = cks.decrypt_crt_not_power_of_two(&ct_res);
-    /// assert_eq!(res, (clear1 * clear2 * 2)% msg_space );
+    /// assert_eq!(res, (clear1 * clear2 * 2) % msg_space);
     /// ```
-    pub fn generate_lut_bivariate_crt_without_padding<F>(&self, ct_1: &CrtCiphertext, f: F) -> Vec<Vec<u64>>
-        where
-            F: Fn(u64, u64) -> u64,
+    pub fn generate_lut_bivariate_crt_without_padding<F>(
+        &self,
+        ct_1: &CrtCiphertext,
+        f: F,
+    ) -> Vec<Vec<u64>>
+    where
+        F: Fn(u64, u64) -> u64,
     {
         let mut bit = vec![];
         let mut total_bit = 0;
@@ -909,12 +905,12 @@ impl WopbsKey {
     /// use concrete_integer::parameters::PARAM_4_BITS_5_BLOCKS;
     /// use concrete_integer::wopbs::WopbsKey;
     ///
-    /// let basis : Vec<u64> = vec![9,11];
+    /// let basis: Vec<u64> = vec![9, 11];
     ///
     /// let param = PARAM_4_BITS_5_BLOCKS;
     /// //Generate the client key and the server key:
     /// let (cks, sks) = gen_keys(&param);
-    /// let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     ///
     /// let mut msg_space = 1;
     /// for modulus in basis.iter() {
@@ -924,10 +920,10 @@ impl WopbsKey {
     /// let clear2 = 24 % msg_space;
     /// let mut ct1 = cks.encrypt_crt_not_power_of_two(clear1, basis.clone());
     /// let mut ct2 = cks.encrypt_crt_not_power_of_two(clear2, basis.clone());
-    /// let lut = wopbs_key.generate_lut_bivariate_crt_without_padding(&ct1, |x,y| x * y * 2);
+    /// let lut = wopbs_key.generate_lut_bivariate_crt_without_padding(&ct1, |x, y| x * y * 2);
     /// let ct_res = wopbs_key.bivariate_wopbs_not_power_of_two(&sks, &mut ct1, &mut ct2, &lut);
     /// let res = cks.decrypt_crt_not_power_of_two(&ct_res);
-    /// assert_eq!(res, (clear1 * clear2 * 2)% msg_space );
+    /// assert_eq!(res, (clear1 * clear2 * 2) % msg_space);
     /// ```
     pub fn bivariate_wopbs_not_power_of_two(
         &self,
@@ -936,7 +932,11 @@ impl WopbsKey {
         ct2: &CrtCiphertext,
         lut: &[Vec<u64>],
     ) -> CrtCiphertext {
-        self.circuit_bootstrap_vertical_packing_v0_without_padding(sks, &[ct1.clone(), ct2.clone()], lut)
+        self.circuit_bootstrap_vertical_packing_v0_without_padding(
+            sks,
+            &[ct1.clone(), ct2.clone()],
+            lut,
+        )
     }
 
     /// WOPBS for 'true' CRT
@@ -946,18 +946,18 @@ impl WopbsKey {
     /// use concrete_integer::parameters::PARAM_4_BITS_5_BLOCKS;
     /// use concrete_integer::wopbs::WopbsKey;
     ///
-    /// let basis : Vec<u64> = vec![9,11];
+    /// let basis: Vec<u64> = vec![9, 11];
     ///
     /// let param = PARAM_4_BITS_5_BLOCKS;
     /// //Generate the client key and the server key:
     /// let (cks, sks) = gen_keys(&param);
-    /// let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     ///
     /// let mut msg_space = 1;
     /// for modulus in basis.iter() {
     ///     msg_space *= modulus;
     /// }
-    /// let clear = 42 % msg_space;    // Encrypt the integers
+    /// let clear = 42 % msg_space; // Encrypt the integers
     /// let mut ct = cks.encrypt_crt_not_power_of_two(clear, basis.clone());
     /// let lut = wopbs_key.generate_lut_crt_without_padding(&ct, |x| x);
     /// let ct_res = wopbs_key.wopbs_not_power_of_two(&sks, &mut ct, &lut);
@@ -978,14 +978,18 @@ impl WopbsKey {
         sks: &ServerKey,
         vec_ct_in: &[T],
         lut: &[Vec<u64>],
-    ) -> T where T: IntegerCiphertext {
+    ) -> T
+    where
+        T: IntegerCiphertext,
+    {
         let mut vec_lwe: Vec<LweCiphertext<Vec<u64>>> = vec![];
         for ct_in in vec_ct_in.iter() {
             let mut ct_in = ct_in.clone();
             // Extraction of each bit for each block
             for block in ct_in.blocks_mut().iter_mut() {
                 let nb_bit_to_extract =
-                    f64::log2((block.message_modulus.0 * block.carry_modulus.0) as f64).ceil() as usize;
+                    f64::log2((block.message_modulus.0 * block.carry_modulus.0) as f64).ceil()
+                        as usize;
                 let delta_log = DeltaLog(64 - nb_bit_to_extract);
 
                 // trick ( ct - delta/2 + delta/2^4  )
@@ -996,20 +1000,19 @@ impl WopbsKey {
                 let tmp = LweCiphertext::from_container(cont);
                 block.ct.0.update_with_sub(&tmp);
 
-                concrete_shortint::engine::ShortintEngine::with_thread_local_mut
-                    (|engine| {
-                        let (buffers, _, _) = engine.buffers_for_key(&sks.key);
+                concrete_shortint::engine::ShortintEngine::with_thread_local_mut(|engine| {
+                    let (buffers, _, _) = engine.buffers_for_key(&sks.key);
 
-                        let mut vec_lwe_tmp = extract_bit_v0_v1(
-                            delta_log,
-                            &mut block.ct.0,
-                            &sks.key.key_switching_key.0,
-                            &sks.key.bootstrapping_key.0,
-                            &mut buffers.fourier,
-                            nb_bit_to_extract,
-                        );
-                        vec_lwe.append(&mut vec_lwe_tmp);
-                    });
+                    let mut vec_lwe_tmp = extract_bit_v0_v1(
+                        delta_log,
+                        &mut block.ct.0,
+                        &sks.key.key_switching_key.0,
+                        &sks.key.bootstrapping_key.0,
+                        &mut buffers.fourier,
+                        nb_bit_to_extract,
+                    );
+                    vec_lwe.append(&mut vec_lwe_tmp);
+                });
             }
         }
 
@@ -1035,26 +1038,26 @@ impl WopbsKey {
 }
 
 #[test]
-pub fn wipwip(){
-     use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_3_CARRY_3;
+pub fn wipwip() {
+    use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_3_CARRY_3;
 
-     let basis : Vec<u64> = vec![5,7];
+    let basis: Vec<u64> = vec![5, 7];
 
-     let param = WOPBS_PARAM_MESSAGE_3_CARRY_3;
-     //Generate the client key and the server key:
-     let (mut cks, sks) = gen_keys(&param);
-     let wopbs_key =  WopbsKey::new_wopbs_key(&cks, &sks);
+    let param = WOPBS_PARAM_MESSAGE_3_CARRY_3;
+    //Generate the client key and the server key:
+    let (mut cks, sks) = gen_keys(&param);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
-     let mut msg_space = 1;
-     for modulus in basis.iter() {
-         msg_space *= modulus;
-     }
-     let clear1 = 42 % msg_space;    // Encrypt the integers
-     let clear2 = 24 % msg_space;    // Encrypt the integers
-     let mut ct1 = cks.encrypt_crt(clear1, basis.clone());
-     let mut ct2 = cks.encrypt_crt(clear2, basis.clone());
-     let lut = wopbs_key.generate_lut_bivariate_fake_crt(&ct1, &ct2, |x,y| x * y * 2);
-     let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &mut ct1, &mut ct2, &lut);
-     let res = cks.decrypt_crt(&ct_res);
-     assert_eq!(res, (clear1 * clear2 * 2) % msg_space );
+    let mut msg_space = 1;
+    for modulus in basis.iter() {
+        msg_space *= modulus;
+    }
+    let clear1 = 42 % msg_space; // Encrypt the integers
+    let clear2 = 24 % msg_space; // Encrypt the integers
+    let mut ct1 = cks.encrypt_crt(clear1, basis.clone());
+    let mut ct2 = cks.encrypt_crt(clear2, basis.clone());
+    let lut = wopbs_key.generate_lut_bivariate_fake_crt(&ct1, &ct2, |x, y| x * y * 2);
+    let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &mut ct1, &mut ct2, &lut);
+    let res = cks.decrypt_crt(&ct_res);
+    assert_eq!(res, (clear1 * clear2 * 2) % msg_space);
 }

@@ -3,8 +3,8 @@ use concrete_shortint::{Ciphertext, Parameters, ServerKey};
 use criterion::{criterion_group, criterion_main, Criterion};
 
 use concrete_shortint::keycache::KEY_CACHE;
-use rand::Rng;
 use concrete_shortint::wopbs::*;
+use rand::Rng;
 
 use concrete_shortint::keycache::KEY_CACHE_WOPBS;
 use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_8_NORM2_5;
@@ -138,7 +138,6 @@ fn programmable_bootstrapping(c: &mut Criterion) {
     bench_group.finish();
 }
 
-
 fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
     let mut bench_group = c.benchmark_group("programmable_bootstrap");
 
@@ -149,21 +148,17 @@ fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
 
     let mut rng = rand::thread_rng();
 
-
     let clear = rng.gen::<usize>() % param.message_modulus.0;
     let mut ct = cks.encrypt_without_padding(clear as u64);
-    let vec_lut = wopbs_key.generate_lut_without_padding_crt(&ct, |x|x);
-
+    let vec_lut = wopbs_key.generate_lut_without_padding_crt(&ct, |x| x);
 
     let id = format!("Shortint WOPBS: {:?}", param);
-
 
     bench_group.bench_function(&id, |b| {
         b.iter(|| {
             wopbs_key.programmable_bootstrapping_without_padding_crt(&sks, &mut ct, &vec_lut);
         })
     });
-
 
     bench_group.finish();
 }
@@ -236,4 +231,4 @@ criterion_group!(
     unchecked_scalar_mul,
 );
 
-criterion_main!(arithmetic_operation,);// arithmetic_scalar_operation,);
+criterion_main!(arithmetic_operation,); // arithmetic_scalar_operation,);

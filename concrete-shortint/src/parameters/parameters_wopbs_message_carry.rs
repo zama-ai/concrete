@@ -1,11 +1,11 @@
 use crate::parameters::parameters_wopbs::*;
+use crate::parameters::parameters_wopbs_prime_moduli::*;
 use crate::parameters::{CarryModulus, MessageModulus};
 use crate::Parameters;
 pub use concrete_core::prelude::{
     DecompositionBaseLog, DecompositionLevelCount, DispersionParameter, GlweDimension,
     LweDimension, PolynomialSize, StandardDev,
 };
-use crate::parameters::parameters_wopbs_prime_moduli::*;
 
 pub const ALL_PARAMETER_VEC_WOPBS: [Parameters; 116] = [
     WOPBS_PARAM_MESSAGE_1_CARRY_0,
@@ -123,7 +123,7 @@ pub const ALL_PARAMETER_VEC_WOPBS: [Parameters; 116] = [
     WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_5,
     WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_6,
     WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_7,
-    WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_8
+    WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_8,
 ];
 
 pub const WOPBS_PARAM_MESSAGE_1_CARRY_5: Parameters = Parameters {

@@ -598,7 +598,6 @@ pub const WOPBS_PARAM_MESSAGE_8_NORM2_6: Parameters = Parameters {
     carry_modulus: CarryModulus(1),
 };
 
-
 //TODO: for test purpose only
 pub const WOPBS_PARAM_MESSAGE_8_NORM2_5: Parameters = Parameters {
     lwe_dimension: LweDimension(481),
@@ -619,7 +618,7 @@ pub const WOPBS_PARAM_MESSAGE_8_NORM2_5: Parameters = Parameters {
     carry_modulus: CarryModulus(1),
 };
 
-pub const PARAM_NAWAK: Parameters = Parameters{
+pub const PARAM_NAWAK: Parameters = Parameters {
     lwe_dimension: LweDimension(667),
     glwe_dimension: GlweDimension(2),
     polynomial_size: PolynomialSize(1024),
@@ -635,5 +634,5 @@ pub const PARAM_NAWAK: Parameters = Parameters{
     cbs_level: DecompositionLevelCount(7),
     cbs_base_log: DecompositionBaseLog(4),
     message_modulus: MessageModulus(16),
-    carry_modulus: CarryModulus(1)
+    carry_modulus: CarryModulus(1),
 };
