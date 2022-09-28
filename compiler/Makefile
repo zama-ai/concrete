@@ -229,7 +229,7 @@ build-benchmarks: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
 
 run-benchmarks: build-benchmarks
-	$(BUILD_DIR)/bin/end_to_end_benchmark
+	$(BUILD_DIR)/bin/end_to_end_benchmark --benchmark_out=benchmarks_results.json --benchmark_out_format=json
 
 build-mlbench: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_mlbench

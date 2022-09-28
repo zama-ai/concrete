@@ -1,0 +1,150 @@
+# Run benchmarks on an AWS instance and return parsed results to Slab CI bot.
+name: Performance benchmarks
+
+on:
+  workflow_dispatch:
+  # Have a weekly benchmark run on main branch to be available on Monday morning (Paris time)
+# TODO: uncomment this section once the benchmarks are debugged
+#  schedule:
+#    # * is a special character in YAML so you have to quote this string
+#    # At 1:00 every Thursday
+#    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+#    - cron: '0 1 * * THU'
+
+env:
+  CARGO_TERM_COLOR: always
+  RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+
+jobs:
+  StartRunner:
+    name: Start EC2 runner
+    runs-on: ubuntu-20.04
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
+          aws-region: eu-west-3
+          aws-resource-tags: [["Name", "compiler-benchmarks-github"]]
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          mode: start
+          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          ec2-image-id: ami-00ac986ef330c077f
+          ec2-instance-type: m6i.metal
+          subnet-id: subnet-a886b4c1
+          security-group-id: sg-0bf1c1d79c97bc88f
+
+  RunBenchmarks:
+    name: Execute end-to-end benchmarks in EC2
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    if: ${{ !cancelled() }}
+    needs: StartRunner
+    steps:
+      # SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Concrete-Optimizer
+        run: |
+          cd compiler
+          make concrete-optimizer-lib
+
+      - name: Download KeySetCache
+        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
+        continue-on-error: true
+        run: |
+          cd compiler
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
+
+      - name: Mark KeySetCache
+        run: |
+          touch keysetcache.timestamp
+
+      - name: Build and test compiler
+        uses: addnab/docker-run-action@v3
+        id: build-compiler
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            rm -rf /build
+            make run-benchmarks
+
+      - name: Parse results
+        shell: bash
+        run: |
+          python3 ./ci/benchmark_parser.py benchmarks_results.json ${RESULTS_FILENAME} \
+          --series-tags '{"commit_hash": "${{ github.sha }}"}'
+          gzip -k ${RESULTS_FILENAME}
+
+      - name: Upload compressed results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.sha }}
+          path: ${RESULTS_FILENAME}.gz
+
+      - uses: actions/checkout@v3
+      - name: Send data to Slab
+        shell: bash
+        run: |
+          echo "Computing HMac on downloaded artifact"
+          SIGNATURE="$(./ci/hmac_calculator.sh ./${RESULTS_FILENAME} '${{ secrets.JOB_SECRET }}')"
+          echo "Sending results to Slab..."
+          curl -v -k \
+          -H "Content-Type: application/json" \
+          -H "X-Slab-Repository: ${{ github.repository }}" \
+          -H "X-Slab-Command: plot_data" \
+          -H "X-Hub-Signature-256: sha256=${SIGNATURE}" \
+          -d @${RESULTS_FILENAME} \
+          ${{ secrets.SLAB_URL }}
+
+
+  StopRunner:
+    name: Stop EC2 runner
+    needs:
+      - StartRunner
+      - RunBenchmarks
+    runs-on: ubuntu-20.04
+    if: ${{ always() && (needs.start-runner.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
+          aws-region: eu-west-3
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
+          mode: stop
