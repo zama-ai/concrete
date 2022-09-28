@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.17)
 
 project(concretecompiler LANGUAGES C CXX)
 
@@ -64,6 +64,10 @@ if(CONCRETELANG_CUDA_SUPPORT)
     message(FATAL_ERROR "Compiling with CUDA support requires setting CONCRETE_CORE_PATH")
   endif()
   message(STATUS "Building with Concrete CUDA execution support")
+  find_package(CUDAToolkit REQUIRED)
+  message(STATUS "Found CUDA version: ${CUDAToolkit_VERSION}")
+  message(STATUS "Found CUDA library dir: ${CUDAToolkit_LIBRARY_DIR}")
+  link_directories(${CUDAToolkit_LIBRARY_DIR})
   include_directories(${CONCRETE_CORE_PATH}/concrete-cuda/cuda/include)
   add_library(ConcreteCUDA STATIC IMPORTED)
   set_target_properties(ConcreteCUDA PROPERTIES IMPORTED_LOCATION ${CONCRETE_CORE_PATH}/concrete-cuda/cuda/build/src/libconcrete_cuda.a )
