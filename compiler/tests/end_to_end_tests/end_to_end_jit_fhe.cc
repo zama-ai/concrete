@@ -197,6 +197,9 @@ std::vector<EndToEndDesc> generateCustomVersions(std::string path) {
   class suite : public testing::TestWithParam<EndToEndDesc> {};                \
   INSTANTIATE_END_TO_END_COMPILE_AND_RUN(suite, lambdasupport)                 \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      ClearTensor, suite, lambdasupport,                                       \
+      "tests/end_to_end_fixture/end_to_end_clear_tensor.yaml")                 \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
       FHE, suite, lambdasupport,                                               \
       "tests/end_to_end_fixture/end_to_end_fhe.yaml")                          \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \

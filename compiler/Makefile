@@ -192,16 +192,13 @@ test-compiler-file-output: concretecompiler
 
 ## end-to-end-tests
 
-build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-fhe build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-jit-fhe build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
 
 run-end-to-end-tests: build-end-to-end-tests
 	find $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests -name end_to_end* -executable -type f | xargs -n1 ./run_test_bin.sh
 
 build-end-to-end-jit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
-
-build-end-to-end-jit-clear-tensor: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_clear_tensor
 
 build-end-to-end-jit-fhe: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_fhe

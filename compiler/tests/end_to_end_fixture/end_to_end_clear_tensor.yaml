@@ -1,0 +1,1043 @@
+description: constant_i8
+program: |
+  func.func @main() -> tensor<2x2xi8> {
+    %cst = arith.constant dense<[[0, 1], [2, 3]]> : tensor<2x2xi8>
+    return %cst : tensor<2x2xi8>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [0, 1, 2, 3]
+      shape: [2, 2]
+      width: 8
+      signed: false
+use_default_fhe_constraints: true
+---
+description: identity
+program: |
+  func.func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
+    return %t : tensor<10xi64>
+  }
+tests:
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF,
+               0,
+               8978,
+               2587490,
+               90,
+               197864,
+               698735,
+               72132,
+               87474,
+               42]
+      shape: [10]
+      width: 64
+      signed: false
+    outputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF,
+               0,
+               8978,
+               2587490,
+               90,
+               197864,
+               698735,
+               72132,
+               87474,
+               42]
+      shape: [10]
+      width: 64
+      signed: false
+use_default_fhe_constraints: true
+---
+description: identity_i8
+program: |
+  func.func @main(%t: tensor<10xi8>) -> tensor<10xi8> {
+    return %t : tensor<10xi8>
+  }
+tests:
+  - inputs:
+    - tensor: [16, 21, 3, 127, 9, 17, 32, 18, 29, 104]
+      shape: [10]
+      width: 8
+      signed: false
+    outputs:
+    - tensor: [16, 21, 3, 127, 9, 17, 32, 18, 29, 104]
+      shape: [10]
+      width: 8
+      signed: false
+use_default_fhe_constraints: true
+---
+description: extract_64
+program: |
+  func.func @main(%t: tensor<10xi64>, %i: index) -> i64 {
+    %c = tensor.extract %t[%i] : tensor<10xi64>
+    return %c : i64
+  }
+tests:
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 0
+    outputs:
+    - scalar: 0xFFFFFFFFFFFFFFFF
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 1
+    outputs:
+    - scalar: 0
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 2
+    outputs:
+    - scalar: 8978
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 3
+    outputs:
+    - scalar: 2587490
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 4
+    outputs:
+    - scalar: 90
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 5
+    outputs:
+    - scalar: 197864
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 6
+    outputs:
+    - scalar: 698735
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 7
+    outputs:
+    - scalar: 72132
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 8
+    outputs:
+    - scalar: 87474
+      width: 64
+      signed: false
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42]
+      width: 64
+      shape: [10]
+      signed: false
+    - scalar: 9
+    outputs:
+    - scalar: 42
+      width: 64
+      signed: false
+use_default_fhe_constraints: true
+---
+description: extract_16
+program: |
+  func.func @main(%t: tensor<10xi16>, %i: index) -> i16 {
+    %c = tensor.extract %t[%i] : tensor<10xi16>
+    return %c : i16
+  }
+tests:
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 0
+    outputs:
+    - scalar: 0xFFFF
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 1
+    outputs:
+    - scalar: 0
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 2
+    outputs:
+    - scalar: 59589
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 3
+    outputs:
+    - scalar: 47826
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 4
+    outputs:
+    - scalar: 16227
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 5
+    outputs:
+    - scalar: 63269
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 6
+    outputs:
+    - scalar: 36435
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 7
+    outputs:
+    - scalar: 52380
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 8
+    outputs:
+    - scalar: 7401
+      width: 16
+      signed: false
+  - inputs:
+    - tensor: [0xFFFF, 0, 59589, 47826, 16227, 63269, 36435, 52380, 7401, 13313]
+      width: 16
+      shape: [10]
+      signed: false
+    - scalar: 9
+    outputs:
+    - scalar: 13313
+      width: 16
+      signed: false
+use_default_fhe_constraints: true
+---
+description: extract_8
+program: |
+  func.func @main(%t: tensor<10xi8>, %i: index) -> i8 {
+    %c = tensor.extract %t[%i] : tensor<10xi8>
+    return %c : i8
+  }
+tests:
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 0
+    outputs:
+    - scalar: 0xFF
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 1
+    outputs:
+    - scalar: 0
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 2
+    outputs:
+    - scalar: 120
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 3
+    outputs:
+    - scalar: 225
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 4
+    outputs:
+    - scalar: 14
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 5
+    outputs:
+    - scalar: 177
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 6
+    outputs:
+    - scalar: 131
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 7
+    outputs:
+    - scalar: 84
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 8
+    outputs:
+    - scalar: 174
+      width: 8
+      signed: false
+  - inputs:
+    - tensor: [0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93]
+      width: 8
+      shape: [10]
+      signed: false
+    - scalar: 9
+    outputs:
+    - scalar: 93
+      width: 8
+      signed: false
+use_default_fhe_constraints: true
+---
+description: extract_5
+program: |
+  func.func @main(%t: tensor<10xi5>, %i: index) -> i5{
+    %c = tensor.extract %t[%i] : tensor<10xi5>
+    return %c : i5
+  }
+tests:
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7]
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 0
+    outputs:
+    - scalar: 32
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 1
+    outputs:
+    - scalar: 0
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 2
+    outputs:
+    - scalar: 10
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 3
+    outputs:
+    - scalar: 25
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 4
+    outputs:
+    - scalar: 14
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 5
+    outputs:
+    - scalar: 25
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 6
+    outputs:
+    - scalar: 18
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 7
+    outputs:
+    - scalar: 28
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 8
+    outputs:
+    - scalar: 14
+      width: 5
+      signed: false
+  - inputs:
+    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7]
+      width: 5
+      shape: [10]
+      signed: false
+    - scalar: 9
+    outputs:
+    - scalar: 7
+      width: 5
+      signed: false
+use_default_fhe_constraints: true
+---
+description: extract_1
+program: |
+  func.func @main(%t: tensor<10xi1>, %i: index) -> i1 {
+    %c = tensor.extract %t[%i] : tensor<10xi1>
+    return %c : i1
+  }
+tests:
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 0
+    outputs:
+    - scalar: 0
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 1
+    outputs:
+    - scalar: 0
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 2
+    outputs:
+    - scalar: 1
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 3
+    outputs:
+    - scalar: 0
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 4
+    outputs:
+    - scalar: 1
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 5
+    outputs:
+    - scalar: 1
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 6
+    outputs:
+    - scalar: 0
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 7
+    outputs:
+    - scalar: 1
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 8
+    outputs:
+    - scalar: 1
+      width: 1
+      signed: false
+  - inputs:
+    - tensor: [0, 0, 1, 0, 1, 1, 0, 1, 1, 0]
+      width: 1
+      shape: [10]
+      signed: false
+    - scalar: 9
+    outputs:
+    - scalar: 0
+      width: 1
+      signed: false
+use_default_fhe_constraints: true
+---
+description: extract_2D
+program: |
+  func.func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
+    %c = tensor.extract %t[%i, %j] : tensor<2x10xi64>
+    return %c : i64
+  }
+tests:
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0xFFFFFFFFFFFFFFFF
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 2
+    outputs:
+    - scalar: 8978
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 3
+    outputs:
+    - scalar: 2587490
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 4
+    outputs:
+    - scalar: 90
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 5
+    outputs:
+    - scalar: 197864
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 6
+    outputs:
+    - scalar: 698735
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 7
+    outputs:
+    - scalar: 72132
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 8
+    outputs:
+    - scalar: 87474
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 0
+    - scalar: 9
+    outputs:
+    - scalar: 42
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 986 
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1873
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 2
+    outputs:
+    - scalar: 298493
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 3
+    outputs:
+    - scalar: 34939
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 4
+    outputs:
+    - scalar: 443
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 5
+    outputs:
+    - scalar: 59874
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 6
+    outputs:
+    - scalar: 43
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 7
+    outputs:
+    - scalar: 743
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 8
+    outputs:
+    - scalar: 8409
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - scalar: 1
+    - scalar: 9
+    outputs:
+    - scalar: 9433
+use_default_fhe_constraints: true
+---
+description: extract_slice
+program: |
+  func.func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
+    %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10xi64> to
+    tensor<1x5xi64> return %r : tensor<1x5xi64>
+  }
+tests:
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    outputs:
+    - tensor: [59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [1, 5]
+      signed: false
+use_default_fhe_constraints: true
+---
+description: extract_slice_stride
+program: |
+  func.func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
+    %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10xi64> to
+    tensor<1x5xi64> return %r : tensor<1x5xi64>
+  }
+tests:
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    outputs:
+    - tensor: [986, 298493, 443, 43, 8409]
+      width: 64
+      shape: [1, 5]
+      signed: false
+use_default_fhe_constraints: true
+---
+description: insert_slice
+program: |
+  func.func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
+    %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2xi64>
+    into tensor<2x10xi64> return %r : tensor<2x10xi64>
+  }
+tests:
+  - inputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+    - tensor: [6, 9, 4, 0]
+      width: 64
+      shape: [2, 2]
+      signed: false
+    outputs:
+    - tensor: [0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 6, 9, 72132, 87474, 42, 986, 1873, 298493, 34939, 443, 4, 0, 743, 8409, 9433]
+      width: 64
+      shape: [2, 10]
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_1
+program: |
+  func.func @main() -> tensor<5x3x2xi1> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi1>
+    return %res : tensor<5x3x2xi1>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 1
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_7
+program: |
+  func.func @main() -> tensor<5x3x2xi7> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi7>
+    return %res : tensor<5x3x2xi7>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 7
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_8
+program: |
+  func.func @main() -> tensor<5x3x2xi8> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi8>
+    return %res : tensor<5x3x2xi8>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 8
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_9
+program: |
+  func.func @main() -> tensor<5x3x2xi9> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi9>
+    return %res : tensor<5x3x2xi9>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 9
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_15
+program: |
+  func.func @main() -> tensor<5x3x2xi15> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi15>
+    return %res : tensor<5x3x2xi15>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 15
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_16
+program: |
+  func.func @main() -> tensor<5x3x2xi16> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi16>
+    return %res : tensor<5x3x2xi16>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 16
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_17
+program: |
+  func.func @main() -> tensor<5x3x2xi17> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi17>
+    return %res : tensor<5x3x2xi17>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 17
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_31
+program: |
+  func.func @main() -> tensor<5x3x2xi31> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi31>
+    return %res : tensor<5x3x2xi31>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 31
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_32
+program: |
+  func.func @main() -> tensor<5x3x2xi32> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi32>
+    return %res : tensor<5x3x2xi32>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 32
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_33
+program: |
+  func.func @main() -> tensor<5x3x2xi33> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi33>
+    return %res : tensor<5x3x2xi33>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 33
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_63
+program: |
+  func.func @main() -> tensor<5x3x2xi63> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi63>
+    return %res : tensor<5x3x2xi63>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 63
+      signed: false
+use_default_fhe_constraints: true
+---
+description: return_tensor_64
+program: |
+  func.func @main() -> tensor<5x3x2xi64> {
+    %res = arith.constant dense<1> : tensor<5x3x2xi64>
+    return %res : tensor<5x3x2xi64>
+  }
+tests:
+  - inputs:
+    outputs:
+    - tensor: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [5, 3, 2]
+      width: 64
+      signed: false
+use_default_fhe_constraints: true

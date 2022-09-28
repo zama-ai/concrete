@@ -30,12 +30,6 @@ add_concretecompiler_unittest(
 )
 
 add_concretecompiler_unittest(
-  end_to_end_jit_clear_tensor
-  end_to_end_jit_clear_tensor.cc
-  globals.cc
-)
-
-add_concretecompiler_unittest(
   end_to_end_jit_encrypted_tensor
   end_to_end_jit_encrypted_tensor.cc
   globals.cc
