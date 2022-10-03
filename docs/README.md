@@ -19,6 +19,3 @@ This documentation is split into several sections:
 * **How to** section to help you perform specific tasks
 * **Developer** section to explain the inner workings of the library and everything related to contributing to the project
 
-## Looking for support? Ask our team!
-
-![](\_static/zama\_support\_docs.jpeg)
