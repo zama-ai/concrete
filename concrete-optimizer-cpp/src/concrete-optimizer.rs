@@ -21,15 +21,10 @@ fn no_dag_solution() -> ffi::DagSolution {
     }
 }
 
-fn optimize_bootstrap(
-    precision: u64,
-    security_level: u64,
-    noise_factor: f64,
-    maximum_acceptable_error_probability: f64,
-) -> ffi::Solution {
+fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) -> ffi::Solution {
     let config = Config {
-        security_level,
-        maximum_acceptable_error_probability,
+        security_level: options.security_level,
+        maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
         ciphertext_modulus_log: 64,
         complexity_model: &CpuComplexity::default(),
     };
@@ -44,7 +39,7 @@ fn optimize_bootstrap(
         config,
         noise_factor,
         &search_space,
-        &decomposition::cache(security_level),
+        &decomposition::cache(options.security_level),
     );
     result
         .best_solution
@@ -203,14 +198,10 @@ impl OperationDag {
             .into()
     }
 
-    fn optimize_v0(
-        &self,
-        security_level: u64,
-        maximum_acceptable_error_probability: f64,
-    ) -> ffi::Solution {
+    fn optimize_v0(&self, options: ffi::Options) -> ffi::Solution {
         let config = Config {
-            security_level,
-            maximum_acceptable_error_probability,
+            security_level: options.security_level,
+            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
             ciphertext_modulus_log: 64,
             complexity_model: &CpuComplexity::default(),
         };
@@ -221,34 +212,29 @@ impl OperationDag {
             &self.0,
             config,
             &search_space,
-            &decomposition::cache(security_level),
+            &decomposition::cache(options.security_level),
         );
         result
             .best_solution
             .map_or_else(no_solution, |solution| solution.into())
     }
 
-    fn optimize(
-        &self,
-        security_level: u64,
-        maximum_acceptable_error_probability: f64,
-        default_log_norm2_woppbs: f64,
-    ) -> ffi::DagSolution {
+    fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
         let config = Config {
-            security_level,
-            maximum_acceptable_error_probability,
+            security_level: options.security_level,
+            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
             ciphertext_modulus_log: 64,
             complexity_model: &CpuComplexity::default(),
         };
 
         let search_space = SearchSpace::default();
-        let cache = decomposition::cache(security_level);
+        let cache = decomposition::cache(options.security_level);
 
         let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
             &self.0,
             config,
             &search_space,
-            default_log_norm2_woppbs,
+            options.default_log_norm2_woppbs,
             &cache,
         );
         result.map_or_else(no_dag_solution, |solution| solution.into())
@@ -286,12 +272,7 @@ mod ffi {
     extern "Rust" {
 
         #[namespace = "concrete_optimizer::v0"]
-        fn optimize_bootstrap(
-            precision: u64,
-            security_level: u64,
-            noise_factor: f64,
-            maximum_acceptable_error_probability: f64,
-        ) -> Solution;
+        fn optimize_bootstrap(precision: u64, noise_factor: f64, options: Options) -> Solution;
 
         #[namespace = "concrete_optimizer::utils"]
         fn convert_to_dag_solution(solution: &Solution) -> DagSolution;
@@ -330,18 +311,9 @@ mod ffi {
             comment: &str,
         ) -> OperatorIndex;
 
-        fn optimize_v0(
-            self: &OperationDag,
-            security_level: u64,
-            maximum_acceptable_error_probability: f64,
-        ) -> Solution;
+        fn optimize_v0(self: &OperationDag, options: Options) -> Solution;
 
-        fn optimize(
-            self: &OperationDag,
-            security_level: u64,
-            maximum_acceptable_error_probability: f64,
-            default_log_norm2_woppbs: f64,
-        ) -> DagSolution;
+        fn optimize(self: &OperationDag, options: Options) -> DagSolution;
 
         fn dump(self: &OperationDag) -> String;
 
@@ -392,5 +364,13 @@ mod ffi {
         pub cb_decomposition_level_count: u64,
         pub cb_decomposition_base_log: u64,
         pub crt_decomposition: Vec<u64>,
+    }
+
+    #[namespace = "concrete_optimizer"]
+    #[derive(Debug, Clone, Copy, Default)]
+    pub struct Options {
+        pub security_level: u64,
+        pub maximum_acceptable_error_probability: f64,
+        pub default_log_norm2_woppbs: f64,
     }
 }

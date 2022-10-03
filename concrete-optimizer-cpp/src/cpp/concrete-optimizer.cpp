@@ -941,6 +941,7 @@ union MaybeUninit {
 namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
+  struct Options;
   namespace dag {
     struct OperatorIndex;
     struct DagSolution;
@@ -958,8 +959,8 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<const ::std::uint64_t> table, ::std::uint8_t out_precision) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<const ::std::uint64_t> out_shape, ::rust::Str comment) noexcept;
-  ::concrete_optimizer::v0::Solution optimize_v0(::std::uint64_t security_level, double maximum_acceptable_error_probability) const noexcept;
-  ::concrete_optimizer::dag::DagSolution optimize(::std::uint64_t security_level, double maximum_acceptable_error_probability, double default_log_norm2_woppbs) const noexcept;
+  ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
+  ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
   ~OperationDag() = delete;
 
@@ -1044,9 +1045,20 @@ struct DagSolution final {
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$DagSolution
 } // namespace dag
 
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+struct Options final {
+  ::std::uint64_t security_level;
+  double maximum_acceptable_error_probability;
+  double default_log_norm2_woppbs;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+
 namespace v0 {
 extern "C" {
-::concrete_optimizer::v0::Solution concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(::std::uint64_t precision, ::std::uint64_t security_level, double noise_factor, double maximum_acceptable_error_probability) noexcept;
+::concrete_optimizer::v0::Solution concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;
 } // extern "C"
 } // namespace v0
 
@@ -1076,9 +1088,9 @@ extern "C" {
 
 ::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_levelled_op(::concrete_optimizer::OperationDag &self, ::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<const ::std::uint64_t> out_shape, ::rust::Str comment) noexcept;
 
-::concrete_optimizer::v0::Solution concrete_optimizer$cxxbridge1$OperationDag$optimize_v0(const ::concrete_optimizer::OperationDag &self, ::std::uint64_t security_level, double maximum_acceptable_error_probability) noexcept;
+::concrete_optimizer::v0::Solution concrete_optimizer$cxxbridge1$OperationDag$optimize_v0(const ::concrete_optimizer::OperationDag &self, ::concrete_optimizer::Options options) noexcept;
 
-void concrete_optimizer$cxxbridge1$OperationDag$optimize(const ::concrete_optimizer::OperationDag &self, ::std::uint64_t security_level, double maximum_acceptable_error_probability, double default_log_norm2_woppbs, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
+void concrete_optimizer$cxxbridge1$OperationDag$optimize(const ::concrete_optimizer::OperationDag &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
 
 void concrete_optimizer$cxxbridge1$OperationDag$dump(const ::concrete_optimizer::OperationDag &self, ::rust::String *return$) noexcept;
 ::std::size_t concrete_optimizer$cxxbridge1$Weights$operator$sizeof() noexcept;
@@ -1092,8 +1104,8 @@ extern "C" {
 } // namespace weights
 
 namespace v0 {
-::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, ::std::uint64_t security_level, double noise_factor, double maximum_acceptable_error_probability) noexcept {
-  return concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(precision, security_level, noise_factor, maximum_acceptable_error_probability);
+::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept {
+  return concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(precision, noise_factor, options);
 }
 } // namespace v0
 
@@ -1135,13 +1147,13 @@ namespace dag {
   return concrete_optimizer$cxxbridge1$OperationDag$add_levelled_op(*this, inputs, lwe_dim_cost_factor, fixed_cost, manp, out_shape, comment);
 }
 
-::concrete_optimizer::v0::Solution OperationDag::optimize_v0(::std::uint64_t security_level, double maximum_acceptable_error_probability) const noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$optimize_v0(*this, security_level, maximum_acceptable_error_probability);
+::concrete_optimizer::v0::Solution OperationDag::optimize_v0(::concrete_optimizer::Options options) const noexcept {
+  return concrete_optimizer$cxxbridge1$OperationDag$optimize_v0(*this, options);
 }
 
-::concrete_optimizer::dag::DagSolution OperationDag::optimize(::std::uint64_t security_level, double maximum_acceptable_error_probability, double default_log_norm2_woppbs) const noexcept {
+::concrete_optimizer::dag::DagSolution OperationDag::optimize(::concrete_optimizer::Options options) const noexcept {
   ::rust::MaybeUninit<::concrete_optimizer::dag::DagSolution> return$;
-  concrete_optimizer$cxxbridge1$OperationDag$optimize(*this, security_level, maximum_acceptable_error_probability, default_log_norm2_woppbs, &return$.value);
+  concrete_optimizer$cxxbridge1$OperationDag$optimize(*this, options, &return$.value);
   return ::std::move(return$.value);
 }
 

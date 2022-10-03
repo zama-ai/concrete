@@ -922,6 +922,7 @@ std::size_t align_of() {
 namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
+  struct Options;
   namespace dag {
     struct OperatorIndex;
     struct DagSolution;
@@ -939,8 +940,8 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<const ::std::uint64_t> table, ::std::uint8_t out_precision) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<const ::std::uint64_t> out_shape, ::rust::Str comment) noexcept;
-  ::concrete_optimizer::v0::Solution optimize_v0(::std::uint64_t security_level, double maximum_acceptable_error_probability) const noexcept;
-  ::concrete_optimizer::dag::DagSolution optimize(::std::uint64_t security_level, double maximum_acceptable_error_probability, double default_log_norm2_woppbs) const noexcept;
+  ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
+  ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
   ~OperationDag() = delete;
 
@@ -1025,8 +1026,19 @@ struct DagSolution final {
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$DagSolution
 } // namespace dag
 
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+struct Options final {
+  ::std::uint64_t security_level;
+  double maximum_acceptable_error_probability;
+  double default_log_norm2_woppbs;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+
 namespace v0 {
-::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, ::std::uint64_t security_level, double noise_factor, double maximum_acceptable_error_probability) noexcept;
+::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;
 } // namespace v0
 
 namespace utils {
