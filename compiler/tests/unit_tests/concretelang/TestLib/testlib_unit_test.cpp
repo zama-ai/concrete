@@ -154,7 +154,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
         continue;
       }
       auto res = lambda.call(a, b);
-      ASSERT_EQ_OUTCOME(res, (int64_t)a + b);
+      ASSERT_EQ_OUTCOME(res, a + b);
     }
 }
 
