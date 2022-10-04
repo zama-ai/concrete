@@ -1,19 +1,12 @@
-//!
 //! # WARNING: this module is experimental.
 use crate::ciphertext::Degree;
 use crate::engine::{EngineResult, ShortintEngine};
 use crate::wopbs::WopbsKey;
 use crate::{Ciphertext, ClientKey, ServerKey};
 use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
-use concrete_core::backends::fftw::private::crypto::vertical_packing::vertical_packing_cbs_binary_v0;
-use concrete_core::backends::fftw::private::crypto::wop_pbs_vp::extract_bit_v0_v1;
-use concrete_core::commons::crypto::glwe::LwePrivateFunctionalPackingKeyswitchKey;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
 
-use concrete_core::prelude::{
-    CleartextVectorCreationEngine, GlweSecretKeyEntity, LweCiphertext64,
-    LwePrivateFunctionalLwePackingKeyswitchKeyGenerationEngine,
-};
+use concrete_core::prelude::*;
 
 impl ShortintEngine {
     //Fills with functional packing key switch keys.
@@ -22,188 +15,187 @@ impl ShortintEngine {
         cks: &ClientKey,
         sks: &ServerKey,
     ) -> EngineResult<WopbsKey> {
-        //Generation of the private functional packing keyswitch for the circuit bootstrap
-        let mut vec_pfks_key: Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>> = vec![];
-
-        //Here the cleartext represents a polynomial
-        for key_coef in cks.glwe_secret_key.0.as_polynomial_list().polynomial_iter() {
-            let mut vec_cleartext: Vec<u64> = vec![];
-            for key_coef_monomial in key_coef.coefficient_iter() {
-                vec_cleartext.push(*key_coef_monomial);
-            }
-            let polynomial_as_cleartext = self
-                .engine
-                .create_cleartext_vector_from(vec_cleartext.as_slice())?;
-
-            vec_pfks_key.push(
-                self.engine
-                    .generate_new_lwe_private_functional_packing_keyswitch_key(
-                        &cks.lwe_secret_key,
-                        &cks.glwe_secret_key,
-                        cks.parameters.pfks_level,
-                        cks.parameters.pfks_base_log,
-                        cks.parameters.pfks_modular_std_dev,
-                        &|x| 0_u64.wrapping_sub(x),
-                        &polynomial_as_cleartext,
-                    )
-                    .unwrap()
-                    .0,
-            );
-        }
-        let mut vec_tmp: Vec<u64> = vec![0_u64; cks.glwe_secret_key.polynomial_size().0];
-        vec_tmp[0] = 1;
-        let polynomial_as_cleartext = self.engine.create_cleartext_vector_from(&vec_tmp)?;
-        vec_pfks_key.push(
-            self.engine
-                .generate_new_lwe_private_functional_packing_keyswitch_key(
-                    &cks.lwe_secret_key,
-                    &cks.glwe_secret_key,
-                    cks.parameters.pfks_level,
-                    cks.parameters.pfks_base_log,
-                    cks.parameters.pfks_modular_std_dev,
-                    &|x| x,
-                    &polynomial_as_cleartext,
-                )
-                .unwrap()
-                .0,
-        );
-
-        // This will be updated
         let small_bsk = sks.bootstrapping_key.clone();
 
+        let cbs_pfpksk = self
+            .engine
+            .generate_new_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys(
+                &cks.lwe_secret_key,
+                &cks.glwe_secret_key,
+                cks.parameters.pfks_base_log,
+                cks.parameters.pfks_level,
+                Variance(cks.parameters.pfks_modular_std_dev.get_variance()),
+            )?;
+
         let wopbs_key = WopbsKey {
-            vec_pfks_key,
             small_bsk,
+            cbs_pfpksk,
             param: cks.parameters,
         };
         Ok(wopbs_key)
     }
 
-    pub(crate) fn extract_bit(
+    pub(crate) fn extract_bits(
         &mut self,
         delta_log: DeltaLog,
-        lwe_in: &mut LweCiphertext<Vec<u64>>,
+        lwe_in: &LweCiphertext64,
         server_key: &ServerKey,
-        number_values_to_extract: usize,
-    ) -> Vec<LweCiphertext<Vec<u64>>> {
-        let (buffers, _, _) = self.buffers_for_key(server_key);
-        extract_bit_v0_v1(
-            delta_log,
-            lwe_in,
-            &server_key.key_switching_key.0,
-            &server_key.bootstrapping_key.0,
-            &mut buffers.fourier,
-            number_values_to_extract,
-        )
+        extracted_bit_count: ExtractedBitsCount,
+    ) -> EngineResult<LweCiphertextVector64> {
+        let lwe_size = server_key
+            .key_switching_key
+            .output_lwe_dimension()
+            .to_lwe_size();
+        let mut output = self.engine.create_lwe_ciphertext_vector_from(
+            vec![0u64; lwe_size.0 * extracted_bit_count.0],
+            lwe_size,
+        )?;
+
+        self.fftw_engine.discard_extract_bits_lwe_ciphertext(
+            &mut output,
+            &lwe_in,
+            &server_key.bootstrapping_key,
+            &server_key.key_switching_key,
+            extracted_bit_count,
+            concrete_core::prelude::DeltaLog(delta_log.0),
+        )?;
+        Ok(output)
+    }
+
+    pub(crate) fn circuit_bootstrap_with_bits(
+        &mut self,
+        wopbs_key: &WopbsKey,
+        sks: &ServerKey,
+        extracted_bits: &LweCiphertextVectorView64<'_>,
+        lut: &PlaintextVector64,
+        count: LweCiphertextCount,
+    ) -> EngineResult<LweCiphertextVector64> {
+        let mut output_cbs_vp_ct_container =
+            vec![0u64; sks.bootstrapping_key.output_lwe_dimension().to_lwe_size().0 * count.0];
+
+        let mut output_cbs_vp_ct = self.engine.create_lwe_ciphertext_vector_from(
+            output_cbs_vp_ct_container.as_mut_slice(),
+            sks.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
+        )?;
+
+        self.fftw_engine
+            .discard_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_vector(
+                &mut output_cbs_vp_ct,
+                extracted_bits,
+                &sks.bootstrapping_key,
+                lut,
+                wopbs_key.param.cbs_level,
+                wopbs_key.param.cbs_base_log,
+                &wopbs_key.cbs_pfpksk,
+            )?;
+
+        let output_vector = self.engine.create_lwe_ciphertext_vector_from(
+            output_cbs_vp_ct_container,
+            sks.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
+        )?;
+
+        Ok(output_vector)
+    }
+
+    pub(crate) fn extract_bits_circuit_bootstrapping(
+        &mut self,
+        wopbs_key: &WopbsKey,
+        sks: &ServerKey,
+        ct_in: &Ciphertext,
+        lut: &Vec<u64>,
+        delta_log: DeltaLog,
+        nb_bit_to_extract: ExtractedBitsCount,
+    ) -> EngineResult<Ciphertext> {
+        let extracted_bits = self.extract_bits(delta_log, &ct_in.ct, sks, nb_bit_to_extract)?;
+
+        let data = self
+            .engine
+            .consume_retrieve_lwe_ciphertext_vector(extracted_bits)?;
+        let extrated_bits_view = self.engine.create_lwe_ciphertext_vector_from(
+            data.as_slice(),
+            ct_in.ct.lwe_dimension().to_lwe_size(),
+        )?;
+
+        let plaintext_lut = self.engine.create_plaintext_vector_from(lut)?;
+
+        let ciphertext = self.circuit_bootstrap_with_bits(
+            wopbs_key,
+            sks,
+            &extrated_bits_view,
+            &plaintext_lut,
+            LweCiphertextCount(1),
+        )?;
+
+        let container = self
+            .engine
+            .consume_retrieve_lwe_ciphertext_vector(ciphertext)?;
+        let ct = self.engine.create_lwe_ciphertext_from(container)?;
+
+        Ok(Ciphertext {
+            ct,
+            degree: Degree(sks.message_modulus.0 - 1),
+            message_modulus: sks.message_modulus,
+            carry_modulus: sks.carry_modulus,
+        })
     }
 
     pub(crate) fn programmable_bootstrapping_without_padding(
         &mut self,
         wopbs_key: &WopbsKey,
         sks: &ServerKey,
-        ct_in: &mut Ciphertext,
+        ct_in: &Ciphertext,
         lut: &Vec<u64>,
-    ) -> EngineResult<Vec<Ciphertext>> {
+    ) -> EngineResult<Ciphertext> {
         let delta = (1_usize << 63) / (sks.message_modulus.0 * sks.carry_modulus.0) * 2;
         let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
-
-        let (buffers, _engine, _) = self.buffers_for_key(sks);
 
         let nb_bit_to_extract =
             f64::log2((sks.message_modulus.0 * sks.carry_modulus.0) as f64) as usize;
 
-        let mut vec_lwe = extract_bit_v0_v1(
+        let ciphertext = self.extract_bits_circuit_bootstrapping(
+            wopbs_key,
+            sks,
+            ct_in,
+            lut,
             delta_log,
-            &mut ct_in.ct.0,
-            &sks.key_switching_key.0,
-            &sks.bootstrapping_key.0,
-            &mut buffers.fourier,
-            nb_bit_to_extract,
-        );
+            ExtractedBitsCount(nb_bit_to_extract),
+        )?;
 
-        vec_lwe.reverse();
-
-        let vec_ct_out = vertical_packing_cbs_binary_v0(
-            [lut.clone()].to_vec(),
-            &mut buffers.fourier,
-            &wopbs_key.small_bsk.0,
-            &vec_lwe.clone(),
-            wopbs_key.param.cbs_level,
-            wopbs_key.param.cbs_base_log,
-            &wopbs_key.vec_pfks_key,
-        );
-
-        let mut result: Vec<Ciphertext> = vec![];
-        for lwe in vec_ct_out.iter() {
-            let tmp = lwe.clone();
-            result.push(Ciphertext {
-                ct: LweCiphertext64(tmp),
-                degree: Degree(sks.message_modulus.0 - 1),
-                message_modulus: sks.message_modulus,
-                carry_modulus: sks.carry_modulus,
-            })
-        }
-        Ok(result)
+        Ok(ciphertext)
     }
 
     pub(crate) fn programmable_bootstrapping(
         &mut self,
         wopbs_key: &WopbsKey,
         sks: &ServerKey,
-        ct_in: &mut Ciphertext,
+        ct_in: &Ciphertext,
         lut: &Vec<u64>,
-    ) -> EngineResult<Vec<Ciphertext>> {
+    ) -> EngineResult<Ciphertext> {
         let delta = (1_usize << 63) / (sks.message_modulus.0 * sks.carry_modulus.0);
         let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
-
-        let (buffers, _engine, _) = self.buffers_for_key(sks);
 
         let nb_bit_to_extract =
             f64::log2((sks.message_modulus.0 * sks.carry_modulus.0) as f64) as usize;
 
-        let mut vec_lwe = extract_bit_v0_v1(
+        let ciphertext = self.extract_bits_circuit_bootstrapping(
+            wopbs_key,
+            sks,
+            ct_in,
+            lut,
             delta_log,
-            &mut ct_in.ct.0,
-            &sks.key_switching_key.0,
-            &sks.bootstrapping_key.0,
-            &mut buffers.fourier,
-            nb_bit_to_extract,
-        );
+            ExtractedBitsCount(nb_bit_to_extract),
+        )?;
 
-        vec_lwe.reverse();
-
-        let vec_ct_out = vertical_packing_cbs_binary_v0(
-            [lut.clone()].to_vec(),
-            &mut buffers.fourier,
-            &wopbs_key.small_bsk.0,
-            &vec_lwe.clone(),
-            wopbs_key.param.cbs_level,
-            wopbs_key.param.cbs_base_log,
-            wopbs_key.vec_pfks_key.as_slice(),
-        );
-
-        let mut result: Vec<Ciphertext> = vec![];
-        for lwe in vec_ct_out.iter() {
-            let tmp = lwe.clone();
-            result.push(Ciphertext {
-                ct: LweCiphertext64(tmp),
-                degree: Degree(sks.message_modulus.0 - 1),
-                message_modulus: sks.message_modulus,
-                carry_modulus: sks.carry_modulus,
-            })
-        }
-        Ok(result)
+        Ok(ciphertext)
     }
 
-    pub(crate) fn programmable_bootstrapping_without_padding_crt(
+    pub(crate) fn programmable_bootstrapping_native_crt(
         &mut self,
         wopbs_key: &WopbsKey,
         sks: &ServerKey,
         ct_in: &mut Ciphertext,
         lut: &Vec<u64>,
-    ) -> EngineResult<Vec<Ciphertext>> {
-        let (buffers, _, _) = self.buffers_for_key(sks);
-
+    ) -> EngineResult<Ciphertext> {
         let nb_bit_to_extract =
             f64::log2((ct_in.message_modulus.0 * ct_in.carry_modulus.0) as f64).ceil() as usize;
         let delta_log = DeltaLog(64 - nb_bit_to_extract);
@@ -216,59 +208,74 @@ impl ShortintEngine {
         let tmp = LweCiphertext::from_container(cont);
         ct_in.ct.0.update_with_sub(&tmp);
 
-        let mut vec_lwe = extract_bit_v0_v1(
+        let ciphertext = self.extract_bits_circuit_bootstrapping(
+            wopbs_key,
+            sks,
+            ct_in,
+            lut,
             delta_log,
-            &mut ct_in.ct.0,
-            &sks.key_switching_key.0,
-            &sks.bootstrapping_key.0,
-            &mut buffers.fourier,
-            nb_bit_to_extract,
-        );
+            ExtractedBitsCount(nb_bit_to_extract),
+        )?;
 
-        vec_lwe.reverse();
-
-        let vec_ct_out = vertical_packing_cbs_binary_v0(
-            [lut.clone()].to_vec(),
-            &mut buffers.fourier,
-            &wopbs_key.small_bsk.0,
-            &vec_lwe.clone(),
-            wopbs_key.param.cbs_level,
-            wopbs_key.param.cbs_base_log,
-            &wopbs_key.vec_pfks_key,
-        );
-
-        let mut result: Vec<Ciphertext> = vec![];
-        for lwe in vec_ct_out.iter() {
-            let tmp = lwe.clone();
-            result.push(Ciphertext {
-                ct: LweCiphertext64(tmp),
-                degree: Degree(sks.message_modulus.0 - 1),
-                message_modulus: sks.message_modulus,
-                carry_modulus: sks.carry_modulus,
-            })
-        }
-        Ok(result)
+        Ok(ciphertext)
     }
 
     /// Temporary wrapper used in `concrete-integer`.
     ///
     /// # Warning Experimental
-    pub fn vertical_packing_cbs_binary_v0(
+    pub fn circuit_bootstrapping_vertical_packing(
         &mut self,
         wopbs_key: &WopbsKey,
         server_key: &ServerKey,
         vec_lut: Vec<Vec<u64>>,
-        vec_lwe_in: &[LweCiphertext<Vec<u64>>],
-    ) -> Vec<LweCiphertext<Vec<u64>>> {
-        let (buffers, _, _) = self.buffers_for_key(server_key);
-        vertical_packing_cbs_binary_v0(
-            vec_lut,
-            &mut buffers.fourier,
-            &wopbs_key.small_bsk.0,
-            vec_lwe_in,
-            wopbs_key.param.cbs_level,
-            wopbs_key.param.cbs_base_log,
-            &wopbs_key.vec_pfks_key,
-        )
+        extracted_bits_blocks: Vec<LweCiphertextVector64>,
+    ) -> Vec<LweCiphertext64> {
+        assert_eq!(vec_lut.len(), extracted_bits_blocks.len());
+        let lwe_size = extracted_bits_blocks[0].lwe_dimension().to_lwe_size();
+
+        let mut all_datas = vec![];
+        for lwe_vec in extracted_bits_blocks.into_iter() {
+            let data = self
+                .engine
+                .consume_retrieve_lwe_ciphertext_vector(lwe_vec)
+                .unwrap();
+
+            all_datas.extend_from_slice(data.as_slice());
+        }
+
+        let flatenned_extracted_bits_view = self
+            .engine
+            .create_lwe_ciphertext_vector_from(all_datas.as_slice(), lwe_size)
+            .unwrap();
+
+        let flattened_lut: Vec<u64> = vec_lut.iter().flatten().copied().collect();
+        let plaintext_lut = self
+            .engine
+            .create_plaintext_vector_from(&flattened_lut)
+            .unwrap();
+        let output = self
+            .circuit_bootstrap_with_bits(
+                wopbs_key,
+                server_key,
+                &flatenned_extracted_bits_view,
+                &plaintext_lut,
+                LweCiphertextCount(vec_lut.len()),
+            )
+            .unwrap();
+
+        assert_eq!(output.lwe_ciphertext_count().0, vec_lut.len());
+        let output_container = self
+            .engine
+            .consume_retrieve_lwe_ciphertext_vector(output)
+            .unwrap();
+        let lwes: Result<Vec<_>, _> = output_container
+            .chunks_exact(output_container.len() / vec_lut.len())
+            .map(|s| self.engine.create_lwe_ciphertext_from(s.to_vec()))
+            .collect();
+
+        let lwes = lwes.unwrap();
+
+        assert_eq!(lwes.len(), vec_lut.len());
+        lwes
     }
 }

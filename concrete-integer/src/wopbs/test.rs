@@ -252,7 +252,7 @@ pub fn wopbs_16_lut_test(param: Parameters) {
 
         let clear = rng.gen::<usize>() % 128;
         let mut ct = cks.encrypt_radix(clear as u64, nb_block);
-        let lut = wopbs_key.generate_lut(&ct, |x| x);
+        let lut = wopbs_key.generate_lut_radix(&ct, |x| x);
         //println!("lut : {:?}", lut[0]);
         let ct_res = wopbs_key.wopbs(&sks, &mut ct, &lut);
 
@@ -290,7 +290,7 @@ pub fn wopbs_crt_without_padding(param: Parameters) {
         let clear1 = rng.gen::<u64>() % msg_space; // Encrypt the integers
         let mut ct1 = cks.encrypt_crt_not_power_of_two(clear1, basis.clone());
 
-        let lut = wopbs_key.generate_lut_crt_without_padding(&ct1, |x| x);
+        let lut = wopbs_key.generate_lut_native_crt(&ct1, |x| x);
 
         let ct_res = wopbs_key.wopbs_not_power_of_two(&sks, &mut ct1, &lut);
         let res = cks.decrypt_crt_not_power_of_two(&ct_res);
@@ -325,8 +325,8 @@ pub fn wopbs_crt_without_padding_bivariate(param: Parameters) {
         let mut ct1 = cks.encrypt_crt_not_power_of_two(clear1, basis.clone());
         let mut ct2 = cks.encrypt_crt_not_power_of_two(clear2, basis.clone());
 
-        let lut = wopbs_key.generate_lut_bivariate_crt_without_padding(&ct1, |x, y| x * y);
-        let ct_res = wopbs_key.bivariate_wopbs_not_power_of_two(&sks, &mut ct1, &mut ct2, &lut);
+        let lut = wopbs_key.generate_lut_bivariate_native_crt(&ct1, |x, y| x * y);
+        let ct_res = wopbs_key.bivariate_wopbs_native_crt(&sks, &mut ct1, &mut ct2, &lut);
         let res = cks.decrypt_crt_not_power_of_two(&ct_res);
 
         if (clear1 * clear2) % msg_space != res {
@@ -373,10 +373,10 @@ pub fn wopbs_crt_fake_crt(param: Parameters) {
                 param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct.degree.0 = degree;
         }
-        let lut = wopbs_key.generate_lut_fake_crt(&ct1, |x| (x * x) + x);
+        let lut = wopbs_key.generate_lut_crt(&ct1, |x| (x * x) + x);
         let res = cks.decrypt_crt(&ct1);
         //println!("LUT = {:?}", lut);
-        let ct_res = wopbs_key.wopbs_with_degree(&sks, &mut ct1, &lut);
+        let ct_res = wopbs_key.wopbs(&sks, &mut ct1, &lut);
         let res_wop = cks.decrypt_crt(&ct_res);
         if ((res * res) + res) % msg_space != res_wop {
             tmp += 1;
@@ -415,12 +415,12 @@ pub fn wopbs_radix(param: Parameters) {
         let scalar = rng.gen::<u64>() % msg_space as u64;
         sks.smart_scalar_add_assign(&mut ct1, scalar);
 
-        let lut = wopbs_key.generate_lut(&ct1, |x| x * x);
+        let lut = wopbs_key.generate_lut_radix(&ct1, |x| x * x);
         let res = cks.decrypt_radix(&ct1);
         //println!("LUT = {:?}", lut);
-        let ct_res = wopbs_key.wopbs_with_degree(&sks, &mut ct1, &lut);
+        let ct_res = wopbs_key.wopbs(&sks, &mut ct1, &lut);
         let res_wop = cks.decrypt_radix(&ct_res);
-        if  (res * res) % msg_space as u64 != res_wop {
+        if (res * res) % msg_space as u64 != res_wop {
             tmp += 1;
         }
     }
@@ -463,7 +463,7 @@ pub fn wopbs_bivariate_radix(param: Parameters) {
         sks.smart_scalar_add_assign(&mut ct2, scalar);
         let dec2 = cks.decrypt_radix(&ct2);
 
-        let lut = wopbs_key.generate_lut_bivariate_radix(&ct1, &ct2, |x,y| x + y*x);
+        let lut = wopbs_key.generate_lut_bivariate_radix(&ct1, &ct2, |x, y| x + y * x);
         let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &ct1, &ct2, &lut);
         let res = cks.decrypt_radix(&ct_res);
         assert_eq!(res, (dec1 + dec2 * dec1) % msg_space);
@@ -503,7 +503,7 @@ pub fn wopbs_bivariate_fake_crt(param: Parameters) {
                 param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
             ct_2.degree.0 = degree;
         }
-        let lut = wopbs_key.generate_lut_bivariate_fake_crt(&ct1, &ct2, |x, y| (x * y) + y);
+        let lut = wopbs_key.generate_lut_bivariate_crt(&ct1, &ct2, |x, y| (x * y) + y);
 
         let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &ct1, &ct2, &lut);
         let res = cks.decrypt_crt(&ct_res);

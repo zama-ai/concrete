@@ -10,12 +10,7 @@ use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, Parameters, ServerKey};
 
 use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
-use concrete_core::commons::crypto::glwe::LwePrivateFunctionalPackingKeyswitchKey;
-use concrete_core::commons::crypto::lwe::LweCiphertext;
-use concrete_core::prelude::{
-    AbstractEngine, EntityDeserializationEngine, EntitySerializationEngine,
-    FftwFourierLweBootstrapKey64, FftwSerializationEngine, LweBootstrapKeyEntity,
-};
+use concrete_core::prelude::*;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -26,8 +21,8 @@ mod test;
 #[derive(Clone, Debug)]
 pub struct WopbsKey {
     //Key for the private functional keyswitch
-    pub(crate) vec_pfks_key: Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>>,
     pub(crate) small_bsk: FftwFourierLweBootstrapKey64,
+    pub(crate) cbs_pfpksk: LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64,
     pub param: Parameters,
 }
 
@@ -149,7 +144,7 @@ impl WopbsKey {
     /// let res = cks.decrypt_message_and_carry_not_power_of_two(&ct_res[0], message_modulus);
     /// assert_eq!(res, (m * m) % message_modulus as u64);
     /// ```
-    pub fn generate_lut_without_padding_crt<F>(&self, ct: &Ciphertext, f: F) -> Vec<u64>
+    pub fn generate_lut_native_crt<F>(&self, ct: &Ciphertext, f: F) -> Vec<u64>
     where
         F: Fn(u64) -> u64,
     {
@@ -181,22 +176,22 @@ impl WopbsKey {
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_NORM2_2);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     /// let mut rng = rand::thread_rng();
     /// let message_modulus = WOPBS_PARAM_MESSAGE_2_NORM2_2.message_modulus.0;
-    /// let mut ct = cks.encrypt(rng.gen::<u64>() % message_modulus);
+    /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus);
     /// let lut = vec![(1_u64 << 61); wopbs_key.param.polynomial_size.0];
-    /// let ct_res = wopbs_key.programmable_bootstrapping(&mut sks, &mut ct, &lut);
-    /// let res = cks.decrypt_message_and_carry(&ct_res[0]);
+    /// let ct_res = wopbs_key.programmable_bootstrapping(&sks, &ct, &lut);
+    /// let res = cks.decrypt_message_and_carry(&ct_res);
     /// assert_eq!(res, 1);
     /// ```
     pub fn programmable_bootstrapping(
         &self,
         sks: &ServerKey,
-        ct_in: &mut Ciphertext,
+        ct_in: &Ciphertext,
         lut: &Vec<u64>,
-    ) -> Vec<Ciphertext> {
+    ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
                 .programmable_bootstrapping(self, sks, ct_in, &lut)
@@ -215,21 +210,21 @@ impl WopbsKey {
     /// use concrete_shortint::wopbs::*;
     /// use rand::Rng;
     ///
-    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_1_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_1_NORM2_2);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     /// let mut rng = rand::thread_rng();
-    /// let mut ct = cks.encrypt_without_padding(rng.gen::<u64>() % 2);
+    /// let ct = cks.encrypt_without_padding(rng.gen::<u64>() % 2);
     /// let lut = vec![(1_u64 << 63); wopbs_key.param.polynomial_size.0];
-    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding(&mut sks, &mut ct, &lut);
-    /// let res = cks.decrypt_message_and_carry_without_padding(&ct_res[0]);
+    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding(&sks, &ct, &lut);
+    /// let res = cks.decrypt_message_and_carry_without_padding(&ct_res);
     /// assert_eq!(res, 1);
     /// ```
     pub fn programmable_bootstrapping_without_padding(
         &self,
         sks: &ServerKey,
-        ct_in: &mut Ciphertext,
+        ct_in: &Ciphertext,
         lut: &Vec<u64>,
-    ) -> Vec<Ciphertext> {
+    ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
                 .programmable_bootstrapping_without_padding(self, sks, ct_in, lut)
@@ -247,25 +242,25 @@ impl WopbsKey {
     /// use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_3_NORM2_2;
     /// use concrete_shortint::wopbs::*;
     ///
-    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_3_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_3_NORM2_2);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     /// let msg = 2;
     /// let modulus = 5;
     /// let mut ct = cks.encrypt_with_message_modulus_not_power_of_two(msg, modulus);
     /// let lut = wopbs_key.generate_lut_without_padding_crt(&ct, |x| x);
-    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding_crt(&mut sks, &mut ct, &lut);
-    /// let res = cks.decrypt_message_and_carry_not_power_of_two(&ct_res[0], modulus);
+    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding_crt(&sks, &mut ct, &lut);
+    /// let res = cks.decrypt_message_and_carry_not_power_of_two(&ct_res, modulus);
     /// assert_eq!(res, msg);
     /// ```
-    pub fn programmable_bootstrapping_without_padding_crt(
+    pub fn programmable_bootstrapping_native_crt(
         &self,
         sks: &ServerKey,
         ct_in: &mut Ciphertext,
         lut: &Vec<u64>,
-    ) -> Vec<Ciphertext> {
+    ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
-                .programmable_bootstrapping_without_padding_crt(self, sks, ct_in, lut)
+                .programmable_bootstrapping_native_crt(self, sks, ct_in, lut)
                 .unwrap()
         })
     }
@@ -273,44 +268,49 @@ impl WopbsKey {
     /// Extracts the given number of bits from a ciphertext.
     ///
     /// # Warning Experimental
-    pub fn extract_bit(
+    pub fn extract_bits(
         &self,
         delta_log: DeltaLog,
-        lwe_in: &mut LweCiphertext<Vec<u64>>,
+        ciphertext: &Ciphertext,
         server_key: &ServerKey,
-        number_values_to_extract: usize,
-    ) -> Vec<LweCiphertext<Vec<u64>>> {
+        num_bits_to_extract: usize,
+    ) -> LweCiphertextVector64 {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine.extract_bit(delta_log, lwe_in, server_key, number_values_to_extract)
+            engine
+                .extract_bits(
+                    delta_log,
+                    &ciphertext.ct,
+                    server_key,
+                    ExtractedBitsCount(num_bits_to_extract),
+                )
+                .unwrap()
         })
     }
 
     /// Temporary wrapper used in `concrete-integer`.
     ///
     /// # Warning Experimental
-    pub fn vertical_packing_cbs_binary_v0(
+    pub fn circuit_bootstrapping_vertical_packing(
         &self,
         server_key: &ServerKey,
         vec_lut: Vec<Vec<u64>>,
-        vec_lwe_in: &[LweCiphertext<Vec<u64>>],
-    ) -> Vec<LweCiphertext<Vec<u64>>> {
+        extracted_bits_blocks: Vec<LweCiphertextVector64>,
+    ) -> Vec<LweCiphertext64> {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine.vertical_packing_cbs_binary_v0(self, server_key, vec_lut, vec_lwe_in)
+            engine.circuit_bootstrapping_vertical_packing(
+                self,
+                server_key,
+                vec_lut,
+                extracted_bits_blocks,
+            )
         })
     }
 }
 
-#[derive(Serialize)]
-struct SerializableWopbsKey<'a> {
-    vec_pfks_key: &'a Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>>,
+#[derive(Serialize, Deserialize)]
+struct SerializableWopbsKey {
     small_bsk: Vec<u8>,
-    param: Parameters,
-}
-
-#[derive(Deserialize)]
-struct DeserializableWopbsKey {
-    vec_pfks_key: Vec<LwePrivateFunctionalPackingKeyswitchKey<Vec<u64>>>,
-    small_bsk: Vec<u8>,
+    cbs_pfpksk: Vec<u8>,
     param: Parameters,
 }
 
@@ -322,13 +322,20 @@ impl Serialize for WopbsKey {
         let mut fftw_ser_eng =
             FftwSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
 
+        let mut default_ser_eng =
+            DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+
         let small_bsk = fftw_ser_eng
             .serialize(&self.small_bsk)
             .map_err(serde::ser::Error::custom)?;
 
+        let cbs_pfpksk = default_ser_eng
+            .serialize(&self.cbs_pfpksk)
+            .map_err(serde::ser::Error::custom)?;
+
         SerializableWopbsKey {
-            vec_pfks_key: &self.vec_pfks_key,
             small_bsk,
+            cbs_pfpksk,
             param: self.param,
         }
         .serialize(serializer)
@@ -341,17 +348,25 @@ impl<'de> Deserialize<'de> for WopbsKey {
         D: Deserializer<'de>,
     {
         let thing =
-            DeserializableWopbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+            SerializableWopbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+
         let mut fftw_ser_eng =
             FftwSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+
+        let mut default_ser_eng =
+            DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
 
         let small_bsk = fftw_ser_eng
             .deserialize(thing.small_bsk.as_slice())
             .map_err(serde::de::Error::custom)?;
 
+        let cbs_pfpksk = default_ser_eng
+            .deserialize(thing.cbs_pfpksk.as_slice())
+            .map_err(serde::de::Error::custom)?;
+
         Ok(Self {
-            vec_pfks_key: thing.vec_pfks_key,
             small_bsk,
+            cbs_pfpksk,
             param: thing.param,
         })
     }

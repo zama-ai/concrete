@@ -156,8 +156,8 @@ pub(crate) fn wopbs_radix(
     ct_in: &RadixCiphertext,
     func: impl Fn(u64) -> u64,
 ) -> RadixCiphertext {
-    let luts = wopbs_key.generate_lut(ct_in, func);
-    wopbs_key.wopbs_with_degree(server_key, ct_in, luts.as_slice())
+    let luts = wopbs_key.generate_lut_radix(ct_in, func);
+    wopbs_key.wopbs(server_key, ct_in, luts.as_slice())
 }
 
 pub(crate) fn wopbs_crt(
@@ -166,7 +166,7 @@ pub(crate) fn wopbs_crt(
     ct_in: &CrtCiphertext,
     func: impl Fn(u64) -> u64,
 ) -> CrtCiphertext {
-    let luts = wopbs_key.generate_lut_fake_crt(ct_in, func);
+    let luts = wopbs_key.generate_lut_crt(ct_in, func);
     wopbs_key.wopbs(server_key, ct_in, luts.as_slice())
 }
 

@@ -4,7 +4,7 @@ use concrete_integer::client_key::radix_decomposition;
 use concrete_integer::keycache::KEY_CACHE;
 use concrete_integer::parameters::*;
 use concrete_integer::treepbs::TreepbsKey;
-use concrete_integer::wopbs::{WopbsKey, WopbsKeyV0};
+use concrete_integer::wopbs::WopbsKey;
 use concrete_integer::{
     gen_key_id, gen_keys, CrtMultiCiphertext, CrtMultiClientKey, CrtMultiServerKey,
     RadixCiphertext, ServerKey,
@@ -476,7 +476,6 @@ fn radmodint_wopbs(c: &mut Criterion) {
 
         let sks = concrete_integer::server_key::ServerKey::from_shortint(&cks, sks.clone());
 
-
         let wopbs = concrete_integer::wopbs::WopbsKey::new_from_shortint(&wopbs_shortint);
         let mut rng = rand::thread_rng();
 
@@ -520,9 +519,7 @@ fn radmodint_wopbs(c: &mut Criterion) {
             rad_decomp.msg_space, carry_space, msg_space, rad_decomp.block_number,
         );
 
-        group.bench_function(&id, |b| {
-            b.iter(|| wopbs.wopbs(&sks, &mut ctxt_1, &big_lut))
-        });
+        group.bench_function(&id, |b| b.iter(|| wopbs.wopbs(&sks, &mut ctxt_1, &big_lut)));
     }
     //}
 }
