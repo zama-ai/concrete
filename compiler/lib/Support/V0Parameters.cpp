@@ -23,14 +23,25 @@
 namespace mlir {
 namespace concretelang {
 
+concrete_optimizer::Options options_from_config(optimizer::Config config) {
+  concrete_optimizer::Options options;
+  options.security_level = config.security;
+  options.maximum_acceptable_error_probability = config.p_error;
+  options.default_log_norm2_woppbs = config.fallback_log_norm_woppbs;
+  return options;
+}
+
 optimizer::DagSolution getV0Parameter(V0FHEConstraint constraint,
                                       optimizer::Config config) {
   // the norm2 0 is equivalent to a maximum noise_factor of 2.0
   // norm2 = 0  ==>  1.0 =< noise_factor < 2.0
   // norm2 = k  ==>  2^norm2 =< noise_factor < 2.0^norm2 + 1
   double noise_factor = std::exp2(constraint.norm2 + 1);
+
+  auto options = options_from_config(config);
+
   auto solution = concrete_optimizer::v0::optimize_bootstrap(
-      constraint.p, config.security, noise_factor, config.p_error);
+      constraint.p, noise_factor, options);
   return concrete_optimizer::utils::convert_to_dag_solution(solution);
 }
 
@@ -39,10 +50,14 @@ optimizer::DagSolution getV1ParameterGlobalPError(optimizer::Dag &dag,
                                                   optimizer::Config config) {
   // We find the approximate translation between local and global error with a
   // calibration call
-  auto ref_p_error = std::min(config.p_error, config.global_p_error);
   auto ref_global_p_success = 1.0 - config.global_p_error;
-  auto sol = dag->optimize(config.security, ref_p_error,
-                           config.fallback_log_norm_woppbs);
+
+  auto options = options_from_config(config);
+  options.maximum_acceptable_error_probability =
+      std::min(config.p_error, config.global_p_error);
+
+  auto sol = dag->optimize(options);
+
   if (sol.global_p_error <= config.global_p_error) {
     // for levelled circuit the error is almost zero
     return sol;
@@ -56,9 +71,11 @@ optimizer::DagSolution getV1ParameterGlobalPError(optimizer::Dag &dag,
     }
     auto surrogate_p_local_success =
         pow(ref_global_p_success, power_global_to_local);
-    config.p_error = 1.0 - surrogate_p_local_success;
-    sol = dag->optimize(config.security, config.p_error,
-                        config.fallback_log_norm_woppbs);
+
+    options.maximum_acceptable_error_probability =
+        1.0 - surrogate_p_local_success;
+
+    sol = dag->optimize(options);
     if (sol.global_p_error <= config.global_p_error) {
       break;
     }
@@ -71,8 +88,10 @@ optimizer::DagSolution getV1Parameter(optimizer::Dag &dag,
   if (!std::isnan(config.global_p_error)) {
     return getV1ParameterGlobalPError(dag, config);
   }
-  return dag->optimize(config.security, config.p_error,
-                       config.fallback_log_norm_woppbs);
+
+  auto options = options_from_config(config);
+
+  return dag->optimize(options);
 }
 
 constexpr double WARN_ABOVE_GLOBAL_ERROR_RATE = 1.0 / 1000.0;
