@@ -24,6 +24,15 @@ else()
   target_link_libraries(ConcretelangRuntime PUBLIC -Wl,--no-as-needed omp)
 endif()
 
+# Required to link with Concrete
+if(APPLE)
+  find_library(SECURITY_FRAMEWORK Security)
+  if (NOT SECURITY_FRAMEWORK)
+    message(FATAL_ERROR "Security framework not found")
+  endif()
+  target_link_libraries(ConcretelangRuntime LINK_PUBLIC ${SECURITY_FRAMEWORK})
+endif()
+
 target_link_libraries(
   ConcretelangRuntime
   PUBLIC
