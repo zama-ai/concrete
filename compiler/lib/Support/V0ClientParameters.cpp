@@ -132,6 +132,20 @@ createClientParametersForV0(V0FHEContext fheContext,
         },
     };
   }
+  if (v0Param.largeInteger.hasValue()) {
+    clientlib::PackingKeySwitchParam param;
+    param.inputSecretKeyID = clientlib::BIG_KEY;
+    param.outputSecretKeyID = clientlib::BIG_KEY;
+    param.level = v0Param.largeInteger->wopPBS.packingKeySwitch.level;
+    param.baseLog = v0Param.largeInteger->wopPBS.packingKeySwitch.baseLog;
+    param.bootstrapKeyID = clientlib::BOOTSTRAP_KEY;
+    c.packingKeys = {
+        {
+            "fpksk_v0",
+            param,
+        },
+    };
+  }
   if (has_small_key) {
     c.keyswitchKeys = {
         {
@@ -146,6 +160,7 @@ createClientParametersForV0(V0FHEContext fheContext,
         },
     };
   }
+
   c.functionName = (std::string)functionName;
   // Find the input function
   auto rangeOps = module.getOps<mlir::func::FuncOp>();

@@ -122,7 +122,8 @@ def BConcrete_WopPBSCRTLweBufferOp : BConcrete_Op<"wop_pbs_crt_lwe_buffer"> {
         I32Attr : $packingKeySwitchBaseLog,
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
-        I32Attr : $circuitBootstrapBaseLog
+        I32Attr : $circuitBootstrapBaseLog,
+        I64ArrayAttr:$crtDecomposition
     );
     let results = (outs 2DTensorOf<[I64]>:$result);
 }

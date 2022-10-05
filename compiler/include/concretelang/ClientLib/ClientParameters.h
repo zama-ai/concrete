@@ -112,6 +112,24 @@ static inline bool operator==(const KeyswitchKeyParam &lhs,
          lhs.variance == rhs.variance;
 }
 
+typedef std::string PackingKeySwitchID;
+struct PackingKeySwitchParam {
+  LweSecretKeyID inputSecretKeyID;
+  LweSecretKeyID outputSecretKeyID;
+  BootstrapKeyID bootstrapKeyID;
+  size_t level;
+  size_t baseLog;
+  Variance variance;
+
+  void hash(size_t &seed);
+};
+static inline bool operator==(const PackingKeySwitchParam &lhs,
+                              const PackingKeySwitchParam &rhs) {
+  return lhs.inputSecretKeyID == rhs.inputSecretKeyID &&
+         lhs.outputSecretKeyID == rhs.outputSecretKeyID &&
+         lhs.level == rhs.level && lhs.baseLog == rhs.baseLog;
+}
+
 struct Encoding {
   Precision precision;
   CRTDecomposition crt;
@@ -174,6 +192,7 @@ struct ClientParameters {
   std::map<LweSecretKeyID, LweSecretKeyParam> secretKeys;
   std::map<BootstrapKeyID, BootstrapKeyParam> bootstrapKeys;
   std::map<KeyswitchKeyID, KeyswitchKeyParam> keyswitchKeys;
+  std::map<PackingKeySwitchID, PackingKeySwitchParam> packingKeys;
   std::vector<CircuitGate> inputs;
   std::vector<CircuitGate> outputs;
   std::string functionName;
@@ -275,6 +294,10 @@ bool fromJSON(const llvm::json::Value, BootstrapKeyParam &, llvm::json::Path);
 
 llvm::json::Value toJSON(const KeyswitchKeyParam &);
 bool fromJSON(const llvm::json::Value, KeyswitchKeyParam &, llvm::json::Path);
+
+llvm::json::Value toJSON(const PackingKeySwitchParam &);
+bool fromJSON(const llvm::json::Value, PackingKeySwitchParam &,
+              llvm::json::Path);
 
 llvm::json::Value toJSON(const Encoding &);
 bool fromJSON(const llvm::json::Value, Encoding &, llvm::json::Path);

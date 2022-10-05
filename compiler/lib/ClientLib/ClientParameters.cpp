@@ -39,6 +39,11 @@ void KeyswitchKeyParam::hash(size_t &seed) {
         double_to_bits(variance));
 }
 
+void PackingKeySwitchParam::hash(size_t &seed) {
+  hash_(seed, inputSecretKeyID, outputSecretKeyID, bootstrapKeyID, level,
+        baseLog, double_to_bits(variance));
+}
+
 std::size_t ClientParameters::hash() {
   std::size_t currentHash = 1;
   for (auto secretKeyParam : secretKeys) {
@@ -52,6 +57,10 @@ std::size_t ClientParameters::hash() {
   for (auto keyswitchParam : keyswitchKeys) {
     hash_(currentHash, keyswitchParam.first);
     keyswitchParam.second.hash(currentHash);
+  }
+  for (auto packingParam : packingKeys) {
+    hash_(currentHash, packingParam.first);
+    packingParam.second.hash(currentHash);
   }
   return currentHash;
 }
@@ -181,6 +190,63 @@ bool fromJSON(const llvm::json::Value j, KeyswitchKeyParam &v,
   }
   v.inputSecretKeyID = (std::string)inputSecretKeyID.getValue();
   v.outputSecretKeyID = (std::string)outputSecretKeyID.getValue();
+  v.level = level.getValue();
+  v.baseLog = baseLog.getValue();
+  v.variance = variance.getValue();
+  return true;
+}
+
+llvm::json::Value toJSON(const PackingKeySwitchParam &v) {
+  llvm::json::Object object{
+      {"inputSecretKeyID", v.inputSecretKeyID},
+      {"outputSecretKeyID", v.outputSecretKeyID},
+      {"bootstrapKeyID", v.bootstrapKeyID},
+      {"level", v.level},
+      {"baseLog", v.baseLog},
+      {"variance", v.variance},
+  };
+  return object;
+}
+bool fromJSON(const llvm::json::Value j, PackingKeySwitchParam &v,
+              llvm::json::Path p) {
+  auto obj = j.getAsObject();
+  if (obj == nullptr) {
+    p.report("should be an object");
+    return false;
+  }
+  auto inputSecretKeyID = obj->getString("inputSecretKeyID");
+  if (!inputSecretKeyID.hasValue()) {
+    p.report("missing inputSecretKeyID field");
+    return false;
+  }
+  auto outputSecretKeyID = obj->getString("outputSecretKeyID");
+  if (!outputSecretKeyID.hasValue()) {
+    p.report("missing outputSecretKeyID field");
+    return false;
+  }
+  auto bootstrapKeyID = obj->getString("bootstrapKeyID");
+  if (!bootstrapKeyID.hasValue()) {
+    p.report("missing bootstrapKeyID field");
+    return false;
+  }
+  auto level = obj->getInteger("level");
+  if (!level.hasValue()) {
+    p.report("missing level field");
+    return false;
+  }
+  auto baseLog = obj->getInteger("baseLog");
+  if (!baseLog.hasValue()) {
+    p.report("missing baseLog field");
+    return false;
+  }
+  auto variance = obj->getNumber("variance");
+  if (!variance.hasValue()) {
+    p.report("missing variance field");
+    return false;
+  }
+  v.inputSecretKeyID = (std::string)inputSecretKeyID.getValue();
+  v.outputSecretKeyID = (std::string)outputSecretKeyID.getValue();
+  v.bootstrapKeyID = (std::string)bootstrapKeyID.getValue();
   v.level = level.getValue();
   v.baseLog = baseLog.getValue();
   v.variance = variance.getValue();
@@ -352,6 +418,7 @@ llvm::json::Value toJSON(const ClientParameters &v) {
       {"secretKeys", toJson(v.secretKeys)},
       {"bootstrapKeys", toJson(v.bootstrapKeys)},
       {"keyswitchKeys", toJson(v.keyswitchKeys)},
+      {"packingKeys", toJson(v.packingKeys)},
       {"inputs", v.inputs},
       {"outputs", v.outputs},
       {"functionName", v.functionName},
@@ -384,6 +451,14 @@ bool fromJSON(const llvm::json::Value j, ClientParameters &v,
     return false;
   }
   if (!fromJSON(*keyswitchKeys, v.keyswitchKeys, p.field("keyswitchKeys"))) {
+    return false;
+  }
+  auto packingKeys = obj->get("packingKeys");
+  if (packingKeys == nullptr) {
+    p.report("missing packingKeys field");
+    return false;
+  }
+  if (!fromJSON(*packingKeys, v.packingKeys, p.field("packingKeys"))) {
     return false;
   }
   auto inputs = obj->get("inputs");

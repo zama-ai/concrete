@@ -11,6 +11,12 @@
 #include "concrete-core-ffi.h"
 #include "concretelang/Common/Error.h"
 
+typedef struct LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64
+    LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64;
+
+int destroy_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
+    LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *);
+
 namespace concretelang {
 namespace clientlib {
 
@@ -75,11 +81,48 @@ public:
 
 // =============================================
 
+/// Wrapper for `LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64` so
+/// that it cleans up properly.
+class PackingKeyswitchKey {
+private:
+  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *key;
+
+protected:
+  friend std::ostream &operator<<(std::ostream &ostream,
+                                  const PackingKeyswitchKey &wrappedFpksk);
+  friend std::istream &operator>>(std::istream &istream,
+                                  PackingKeyswitchKey &wrappedFpksk);
+
+public:
+  PackingKeyswitchKey(
+      LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *key)
+      : key{key} {}
+  PackingKeyswitchKey(PackingKeyswitchKey &other) = delete;
+  PackingKeyswitchKey(PackingKeyswitchKey &&other) : key{other.key} {
+    other.key = nullptr;
+  }
+  ~PackingKeyswitchKey() {
+    if (this->key != nullptr) {
+      CAPI_ASSERT_ERROR(
+          destroy_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
+              this->key));
+      this->key = nullptr;
+    }
+  }
+
+  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *get() {
+    return this->key;
+  }
+};
+
+// =============================================
+
 /// Evalution keys required for execution.
 class EvaluationKeys {
 private:
   std::shared_ptr<LweKeyswitchKey> sharedKsk;
   std::shared_ptr<LweBootstrapKey> sharedBsk;
+  std::shared_ptr<PackingKeyswitchKey> sharedFpksk;
 
 protected:
   friend std::ostream &operator<<(std::ostream &ostream,
@@ -93,11 +136,15 @@ public:
         sharedBsk{std::shared_ptr<LweBootstrapKey>(nullptr)} {}
 
   EvaluationKeys(std::shared_ptr<LweKeyswitchKey> sharedKsk,
-                 std::shared_ptr<LweBootstrapKey> sharedBsk)
-      : sharedKsk{sharedKsk}, sharedBsk{sharedBsk} {}
+                 std::shared_ptr<LweBootstrapKey> sharedBsk,
+                 std::shared_ptr<PackingKeyswitchKey> sharedFpksk)
+      : sharedKsk{sharedKsk}, sharedBsk{sharedBsk}, sharedFpksk{sharedFpksk} {}
 
   LweKeyswitchKey64 *getKsk() { return this->sharedKsk->get(); }
   LweBootstrapKey64 *getBsk() { return this->sharedBsk->get(); }
+  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *getFpksk() {
+    return this->sharedFpksk->get();
+  };
 };
 
 // =============================================

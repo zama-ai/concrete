@@ -5,6 +5,7 @@
 
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
+#include "mlir/Dialect/Bufferization/Transforms/BufferUtils.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -56,7 +57,6 @@ AffineMap getMultiDimSymbolicOffsetMap(mlir::RewriterBase &rewriter,
 
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
-  mlir::MLIRContext *ctx = rewriter.getContext();
   std::vector<int64_t> shape(rank, -1);
 
   return mlir::MemRefType::get(shape, rewriter.getI64Type(),
@@ -153,6 +153,11 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                            memref2DType,
                                            memref2DType,
                                            memref1DType,
+                                           memref1DType,
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
                                            contextType,
                                        },
                                        {});
@@ -188,12 +193,16 @@ mlir::Value getContextArgument(mlir::Operation *op) {
   }
   assert("can't find a function that enclose the op");
   return nullptr;
-}
+};
 
-template <typename Op, char const *funcName, bool withContext = false>
+template <typename Op>
+void pushAdditionalArgs(Op op, mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter);
+
+template <typename Op, char const *funcName>
 struct BufferizableWithCallOpInterface
     : public BufferizableOpInterface::ExternalModel<
-          BufferizableWithCallOpInterface<Op, funcName, withContext>, Op> {
+          BufferizableWithCallOpInterface<Op, funcName>, Op> {
   bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
                               const AnalysisState &state) const {
     return true;
@@ -233,7 +242,7 @@ struct BufferizableWithCallOpInterface
     }
 
     // The first operand is the result
-    mlir::SmallVector<mlir::Value, 3> operands{
+    mlir::SmallVector<mlir::Value> operands{
         getCastedMemRef(rewriter, loc, *outMemref),
     };
     // For all tensor operand get the corresponding casted buffer
@@ -246,10 +255,8 @@ struct BufferizableWithCallOpInterface
         operands.push_back(getCastedMemRef(rewriter, loc, memrefOperand));
       }
     }
-    // Append the context argument
-    if (withContext) {
-      operands.push_back(getContextArgument(op));
-    }
+    // Append additional argument
+    pushAdditionalArgs<Op>(castOp, operands, rewriter);
 
     // Insert forward declaration of the function
     if (insertForwardDeclarationOfTheCAPI(op, rewriter, funcName).failed()) {
@@ -497,6 +504,73 @@ struct BufferizableWithSyncCallOpInterface
   }
 };
 
+template <>
+void pushAdditionalArgs(BConcrete::AddPlaintextLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter){};
+template <>
+void pushAdditionalArgs(BConcrete::AddLweBuffersOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter){};
+template <>
+void pushAdditionalArgs(BConcrete::MulCleartextLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter){};
+template <>
+void pushAdditionalArgs(BConcrete::NegateLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter){};
+
+template <>
+void pushAdditionalArgs(BConcrete::KeySwitchLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter) {
+  // context
+  operands.push_back(getContextArgument(op));
+};
+
+template <>
+void pushAdditionalArgs(BConcrete::BootstrapLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter) {
+  // context
+  operands.push_back(getContextArgument(op));
+};
+
+template <>
+void pushAdditionalArgs(BConcrete::WopPBSCRTLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter) {
+  mlir::Type crtType = mlir::RankedTensorType::get(
+      {(int)op.crtDecompositionAttr().size()}, rewriter.getI64Type());
+  std::vector<int64_t> values;
+  for (auto a : op.crtDecomposition()) {
+    values.push_back(a.cast<IntegerAttr>().getValue().getZExtValue());
+  }
+  auto attr = rewriter.getI64TensorAttr(values);
+  auto x = rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), attr, crtType);
+  auto globalMemref = bufferization::getGlobalFor(x, 0);
+  assert(!failed(globalMemref));
+
+  auto globalRef = rewriter.create<memref::GetGlobalOp>(
+      op.getLoc(), (*globalMemref).type(), (*globalMemref).getName());
+  operands.push_back(getCastedMemRef(rewriter, op.getLoc(), globalRef));
+
+  //   lwe_small_size
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.packingKeySwitchInputLweDimensionAttr()));
+  // cbs_level_count
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.circuitBootstrapLevelAttr()));
+  // cbs_base_log
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.circuitBootstrapBaseLogAttr()));
+  // polynomial_size
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.packingKeySwitchoutputPolynomialSizeAttr()));
+  // context
+  operands.push_back(getContextArgument(op));
+};
 } // namespace
 
 void mlir::concretelang::BConcrete::
@@ -519,14 +593,13 @@ void mlir::concretelang::BConcrete::
         *ctx);
     BConcrete::KeySwitchLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::KeySwitchLweBufferOp,
-                                        memref_keyswitch_lwe_u64, true>>(*ctx);
+                                        memref_keyswitch_lwe_u64>>(*ctx);
     BConcrete::BootstrapLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::BootstrapLweBufferOp,
-                                        memref_bootstrap_lwe_u64, true>>(*ctx);
-    // TODO(16bits): hack
+                                        memref_bootstrap_lwe_u64>>(*ctx);
     BConcrete::WopPBSCRTLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::WopPBSCRTLweBufferOp,
-                                        memref_wop_pbs_crt_buffer, true>>(*ctx);
+                                        memref_wop_pbs_crt_buffer>>(*ctx);
     BConcrete::KeySwitchLweBufferAsyncOffloadOp::attachInterface<
         BufferizableWithAsyncCallOpInterface<
             BConcrete::KeySwitchLweBufferAsyncOffloadOp,

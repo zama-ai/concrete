@@ -50,16 +50,14 @@ KeySet::KeySet() {
   CAPI_ASSERT_ERROR(new_default_engine(best_seeder, &engine));
 
   CAPI_ASSERT_ERROR(new_default_parallel_engine(best_seeder, &par_engine));
-
-  CAPI_ASSERT_ERROR(new_fftw_engine(&fftw_engine));
 }
 
 KeySet::~KeySet() {
   for (auto it : secretKeys) {
     CAPI_ASSERT_ERROR(destroy_lwe_secret_key_u64(it.second.second));
   }
+
   CAPI_ASSERT_ERROR(destroy_default_engine(engine));
-  CAPI_ASSERT_ERROR(destroy_fftw_engine(fftw_engine));
   CAPI_ASSERT_ERROR(destroy_default_parallel_engine(par_engine));
 }
 
@@ -127,7 +125,7 @@ KeySet::generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
           this->generateSecretKey(secretKeyParam.first, secretKeyParam.second));
     }
   }
-  // Generate bootstrap and keyswitch keys
+  // Generate bootstrap, keyswitch and packing keyswitch keys
   {
     for (auto bootstrapKeyParam : params.bootstrapKeys) {
       OUTCOME_TRYV(this->generateBootstrapKey(bootstrapKeyParam.first,
@@ -136,6 +134,10 @@ KeySet::generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
     for (auto keyswitchParam : params.keyswitchKeys) {
       OUTCOME_TRYV(this->generateKeyswitchKey(keyswitchParam.first,
                                               keyswitchParam.second));
+    }
+    for (auto packingParam : params.packingKeys) {
+      OUTCOME_TRYV(
+          this->generatePackingKey(packingParam.first, packingParam.second));
     }
   }
   return outcome::success();
@@ -149,10 +151,14 @@ void KeySet::setKeys(
         bootstrapKeys,
     std::map<LweSecretKeyID,
              std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
-        keyswitchKeys) {
+        keyswitchKeys,
+    std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
+                                       std::shared_ptr<PackingKeyswitchKey>>>
+        packingKeys) {
   this->secretKeys = secretKeys;
   this->bootstrapKeys = bootstrapKeys;
   this->keyswitchKeys = keyswitchKeys;
+  this->packingKeys = packingKeys;
 }
 
 outcome::checked<void, StringError>
@@ -225,6 +231,43 @@ KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param) {
 
   // Store the keyswitch key
   keyswitchKeys[id] = {param, std::make_shared<LweKeyswitchKey>(ksk)};
+
+  return outcome::success();
+}
+
+outcome::checked<void, StringError>
+KeySet::generatePackingKey(PackingKeySwitchID id, PackingKeySwitchParam param) {
+  // Finding input secretKeys
+  auto inputSk = secretKeys.find(param.inputSecretKeyID);
+  if (inputSk == secretKeys.end()) {
+    return StringError(
+        "cannot find input key to generate packing keyswitch key");
+  }
+  auto bsk = bootstrapKeys.find(param.bootstrapKeyID);
+  if (bsk == bootstrapKeys.end()) {
+    return StringError(
+        "cannot find input key to generate packing keyswitch key");
+  }
+
+  // This is not part of the C FFI but rather is a C util exposed for
+  // convenience in tests.
+  GlweSecretKey64 *output_glwe_sk = nullptr;
+
+  auto lweDimension =
+      inputSk->second.first.lweDimension() / bsk->second.first.glweDimension;
+
+  CAPI_ASSERT_ERROR(clone_transform_lwe_secret_key_to_glwe_secret_key_u64(
+      engine, inputSk->second.second, lweDimension, &output_glwe_sk));
+
+  // Allocate the packing keyswitch key
+  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *fpksk;
+  CAPI_ASSERT_ERROR(
+      default_engine_generate_new_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_unchecked_u64(
+          engine, inputSk->second.second, output_glwe_sk, param.baseLog,
+          param.level, param.variance, &fpksk));
+
+  // Store the keyswitch key
+  packingKeys[id] = {param, std::make_shared<PackingKeyswitchKey>(fpksk)};
 
   return outcome::success();
 }
@@ -362,6 +405,12 @@ const std::map<LweSecretKeyID,
                std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>> &
 KeySet::getKeyswitchKeys() {
   return keyswitchKeys;
+}
+
+const std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
+                                         std::shared_ptr<PackingKeyswitchKey>>>
+    &KeySet::getPackingKeys() {
+  return packingKeys;
 }
 
 } // namespace clientlib

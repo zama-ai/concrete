@@ -78,19 +78,25 @@ void memref_await_future(uint64_t *out_allocated, uint64_t *out_aligned,
 
 uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product);
 
-// TODO(16bits): Hackish wrapper for the 16 bits quick win
 void memref_wop_pbs_crt_buffer(
     // Output memref 2D memref
-    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset_0,
-    uint64_t out_offset_1, uint64_t out_size_0, uint64_t out_size_1,
-    uint64_t out_stride_0, uint64_t out_stride_1,
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
     // Input memref
-    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset_0,
-    uint64_t in_offset_1, uint64_t in_size_0, uint64_t in_size_1,
-    uint64_t in_stride_0, uint64_t in_stride_1,
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
     // clear text lut
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
     uint64_t lut_ct_offset, uint64_t lut_ct_size, uint64_t lut_ct_stride,
+    // CRT decomposition
+    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
+    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
+    uint64_t crt_decomp_stride,
+    // Additional crypto parameters
+    uint32_t lwe_small_size, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t polynomial_size,
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context);
 

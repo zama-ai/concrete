@@ -92,11 +92,15 @@ public:
     }
     auto kskIt = this->keyswitchKeys.find(clientlib::KEYSWITCH_KEY);
     auto bskIt = this->bootstrapKeys.find(clientlib::BOOTSTRAP_KEY);
+    auto fpkskIt = this->packingKeys.find("fpksk_v0");
     if (kskIt != this->keyswitchKeys.end() &&
         bskIt != this->bootstrapKeys.end()) {
       auto sharedKsk = std::get<1>(kskIt->second);
       auto sharedBsk = std::get<1>(bskIt->second);
-      return EvaluationKeys(sharedKsk, sharedBsk);
+      auto sharedFpksk = fpkskIt == this->packingKeys.end()
+                             ? std::make_shared<PackingKeyswitchKey>(nullptr)
+                             : std::get<1>(fpkskIt->second);
+      return EvaluationKeys(sharedKsk, sharedBsk, sharedFpksk);
     }
     assert(!mlir::concretelang::dfr::_dfr_is_root_node() &&
            "Evaluation keys missing in KeySet (on root node).");
@@ -114,6 +118,11 @@ public:
                  std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
       &getKeyswitchKeys();
 
+  const std::map<
+      LweSecretKeyID,
+      std::pair<PackingKeySwitchParam, std::shared_ptr<PackingKeyswitchKey>>> &
+  getPackingKeys();
+
 protected:
   outcome::checked<void, StringError>
   generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param);
@@ -123,6 +132,9 @@ protected:
 
   outcome::checked<void, StringError>
   generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param);
+
+  outcome::checked<void, StringError>
+  generatePackingKey(PackingKeySwitchID id, PackingKeySwitchParam param);
 
   outcome::checked<void, StringError>
   generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
@@ -137,7 +149,6 @@ protected:
 private:
   DefaultEngine *engine;
   DefaultParallelEngine *par_engine;
-  FftwEngine *fftw_engine;
   std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
       secretKeys;
   std::map<LweSecretKeyID,
@@ -146,6 +157,9 @@ private:
   std::map<LweSecretKeyID,
            std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
       keyswitchKeys;
+  std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
+                                     std::shared_ptr<PackingKeyswitchKey>>>
+      packingKeys;
   std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *>>
       inputs;
   std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *>>
@@ -159,7 +173,10 @@ private:
           bootstrapKeys,
       std::map<LweSecretKeyID,
                std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
-          keyswitchKeys);
+          keyswitchKeys,
+      std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
+                                         std::shared_ptr<PackingKeyswitchKey>>>
+          packingKeys);
 
   clientlib::ClientParameters _clientParameters;
 };

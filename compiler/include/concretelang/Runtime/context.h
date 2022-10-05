@@ -84,6 +84,10 @@ typedef struct RuntimeContext {
 
   LweKeyswitchKey64 *get_ksk() { return evaluationKeys.getKsk(); }
 
+  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *get_fpksk() {
+    return evaluationKeys.getFpksk();
+  }
+
   RuntimeContext &operator=(const RuntimeContext &rhs) {
     this->evaluationKeys = rhs.evaluationKeys;
     return *this;

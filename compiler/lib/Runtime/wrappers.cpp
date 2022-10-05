@@ -7,6 +7,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Runtime/seeder.h"
 #include <assert.h>
+#include <cmath>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +22,7 @@ DefaultEngine *get_levelled_engine() {
   }
   return levelled_engine;
 }
+
 // This helper function expands the input LUT into output, duplicating values as
 // needed to fill mega cases, taking care of the encoding and the half mega case
 // shift in the process as well. All sizes should be powers of 2.
@@ -165,6 +167,138 @@ void memref_bootstrap_lwe_u64(
 
 uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product) {
   return concretelang::clientlib::crt::encode(plaintext, modulus, product);
+}
+
+void generate_luts_crt_without_padding(
+    uint64_t *&luts_crt, uint64_t &total_luts_crt_size, uint64_t *crt_decomp,
+    uint64_t *number_of_bits_per_block, size_t crt_size, uint64_t *lut,
+    uint64_t lut_size, uint64_t total_number_of_bits, uint64_t modulus,
+    uint64_t polynomialSize) {
+
+  uint64_t lut_crt_size = uint64_t(1) << total_number_of_bits;
+  lut_crt_size = std::max(lut_crt_size, polynomialSize);
+
+  total_luts_crt_size = crt_size * lut_crt_size;
+  luts_crt = (uint64_t *)aligned_alloc(U64_ALIGNMENT,
+                                       sizeof(uint64_t) * total_luts_crt_size);
+
+  assert(modulus > lut_size);
+  for (uint64_t value = 0; value < lut_size; value++) {
+    uint64_t index_lut = 0;
+
+    uint64_t tmp = 1;
+
+    for (size_t block = 0; block < crt_size; block++) {
+      auto base = crt_decomp[block];
+      auto bits = number_of_bits_per_block[block];
+      index_lut += (((value % base) << bits) / base) * tmp;
+      tmp <<= bits;
+    }
+
+    for (size_t block = 0; block < crt_size; block++) {
+      auto base = crt_decomp[block];
+      auto v = encode_crt(lut[value], base, modulus);
+      luts_crt[block * lut_crt_size + index_lut] = v;
+    }
+  }
+}
+
+void memref_wop_pbs_crt_buffer(
+    // Output 2D memref
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
+    // Input 2D memref
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
+    // clear text lut 1D memref
+    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size, uint64_t lut_ct_stride,
+    // CRT decomposition 1D memref
+    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
+    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
+    uint64_t crt_decomp_stride,
+    // Additional crypto parameters
+    uint32_t lwe_small_size, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t polynomial_size,
+    // runtime context that hold evluation keys
+    mlir::concretelang::RuntimeContext *context) {
+
+  // The compiler should only generates 2D memref<BxS>, where B is the number of
+  // ciphertext block and S the lweSize.
+  // Check for the strides
+
+  assert(out_stride_1 == 1);
+  assert(in_stride_0 == in_size_1 && in_stride_0 == in_size_1);
+  // Check for the size B
+  assert(out_size_0 == in_size_0 && out_size_0 == crt_decomp_size);
+  // Check for the size S
+  assert(out_size_1 == in_size_1);
+
+  uint64_t lwe_big_size = in_size_1;
+
+  // Compute the numbers of bits to extract for each block and the total one.
+  uint64_t total_number_of_bits_per_block = 0;
+  uint64_t message_modulus = 1;
+  auto number_of_bits_per_block = new uint64_t[crt_decomp_size]();
+  for (uint64_t i = 0; i < crt_decomp_size; i++) {
+    uint64_t modulus = crt_decomp_aligned[i + crt_decomp_offset];
+    uint64_t nb_bit_to_extract =
+        static_cast<uint64_t>(ceil(log2(static_cast<double>(modulus))));
+    number_of_bits_per_block[i] = nb_bit_to_extract;
+
+    total_number_of_bits_per_block += nb_bit_to_extract;
+    message_modulus *= modulus;
+  }
+
+  // Create the buffer of ciphertexts for storing the total number of bits to
+  // extract.
+  // The extracted bit should be in the following order:
+  //
+  // [msb(m%crt[n-1])..lsb(m%crt[n-1])...msb(m%crt[0])..lsb(m%crt[0])] where n
+  // is the size of the crt decomposition
+  auto extract_bits_output_buffer =
+      new uint64_t[lwe_small_size * total_number_of_bits_per_block]{0};
+
+  // Extraction of each bit for each block
+  for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0; i >= 0;
+       extract_bits_output_offset += number_of_bits_per_block[i--]) {
+    auto nb_bits_to_extract = number_of_bits_per_block[i];
+
+    auto delta_log = 64 - nb_bits_to_extract;
+    auto in_block = &in_aligned[lwe_big_size * i];
+
+    // trick ( ct - delta/2 + delta/2^4  )
+    uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -
+                   (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 5));
+    in_block[lwe_big_size - 1] -= sub;
+    CAPI_ASSERT_ERROR(
+        fftw_engine_lwe_ciphertext_discarding_bit_extraction_unchecked_u64_raw_ptr_buffers(
+            context->get_fftw_engine(), context->get_default_engine(),
+            context->get_fftw_fourier_bsk(), context->get_ksk(),
+            &extract_bits_output_buffer[lwe_small_size *
+                                        extract_bits_output_offset],
+            in_block, nb_bits_to_extract, delta_log));
+  }
+
+  uint64_t *luts_crt;
+  uint64_t luts_crt_size;
+  generate_luts_crt_without_padding(
+      luts_crt, luts_crt_size, crt_decomp_aligned, number_of_bits_per_block,
+      crt_decomp_size, lut_ct_aligned, lut_ct_size,
+      total_number_of_bits_per_block, message_modulus, polynomial_size);
+
+  // Vertical packing
+  CAPI_ASSERT_ERROR(
+      fftw_engine_lwe_ciphertext_vector_discarding_circuit_bootstrap_boolean_vertical_packing_u64_raw_ptr_buffers(
+          context->get_fftw_engine(), context->get_default_engine(),
+          context->get_fftw_fourier_bsk(), out_aligned, lwe_big_size,
+          crt_decomp_size, extract_bits_output_buffer, lwe_small_size,
+          total_number_of_bits_per_block, luts_crt, luts_crt_size,
+          cbs_level_count, cbs_base_log, context->get_fpksk()));
+
+  free(luts_crt);
 }
 
 void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,

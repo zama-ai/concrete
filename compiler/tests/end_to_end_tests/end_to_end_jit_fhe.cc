@@ -210,7 +210,10 @@ std::vector<EndToEndDesc> generateCustomVersions(std::string path) {
       "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml")                    \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
       FHELeveledOps, suite, lambdasupport,                                     \
-      "tests/end_to_end_fixture/end_to_end_leveled.yaml")
+      "tests/end_to_end_fixture/end_to_end_leveled.yaml")                      \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      FHEApplyLookupTable, suite, lambdasupport,                               \
+      "tests/end_to_end_fixture/end_to_end_apply_lookup_table.yaml")
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(

@@ -170,11 +170,14 @@ struct RuntimeContextManager {
       KeyWrapper<LweKeyswitchKey64> kskw = kskFut.get();
       KeyWrapper<LweBootstrapKey64> bskw = bskFut.get();
       context = new mlir::concretelang::RuntimeContext();
+      // TODO - packing keyswitch key for distributed
       context->evaluationKeys = ::concretelang::clientlib::EvaluationKeys(
           std::shared_ptr<::concretelang::clientlib::LweKeyswitchKey>(
               new ::concretelang::clientlib::LweKeyswitchKey(kskw.key)),
           std::shared_ptr<::concretelang::clientlib::LweBootstrapKey>(
-              new ::concretelang::clientlib::LweBootstrapKey(bskw.key)));
+              new ::concretelang::clientlib::LweBootstrapKey(bskw.key)),
+          std::shared_ptr<::concretelang::clientlib::PackingKeyswitchKey>(
+              nullptr));
       delete (kskw.buffer.pointer);
       delete (bskw.buffer.pointer);
     }

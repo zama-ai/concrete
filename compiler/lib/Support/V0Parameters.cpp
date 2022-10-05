@@ -224,7 +224,9 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
     // FIXME: For now the packing keyswitch parameter are the same than the
     // blind rotate one. But that should be done on the optimizer size and
     // moreover this assumption could change.
-    lParams.wopPBS.packingKeySwitch.inputLweDimension = sol.input_lwe_dimension;
+    // TODO - change
+    lParams.wopPBS.packingKeySwitch.inputLweDimension =
+        sol.internal_ks_output_lwe_dimension + 1;
     lParams.wopPBS.packingKeySwitch.outputPolynomialSize =
         sol.glwe_polynomial_size;
     lParams.wopPBS.packingKeySwitch.level = sol.br_decomposition_level_count;

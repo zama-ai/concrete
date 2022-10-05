@@ -87,6 +87,20 @@ loadBootstrapKey(llvm::SmallString<0> &path) {
               engine);
 }
 
+outcome::checked<LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *,
+                 StringError>
+loadPackingKey(llvm::SmallString<0> &path) {
+
+  DefaultSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  return load(
+      path,
+      default_serialization_engine_deserialize_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64,
+      engine);
+}
+
 void saveSecretKey(llvm::SmallString<0> &path, LweSecretKey64 *key) {
 
   DefaultSerializationEngine *engine;
@@ -130,6 +144,23 @@ void saveKeyswitchKey(llvm::SmallString<0> &path, LweKeyswitchKey64 *key) {
   free(buffer.pointer);
 }
 
+void savePackingKey(
+    llvm::SmallString<0> &path,
+    LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *key) {
+
+  DefaultSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  Buffer buffer;
+  CAPI_ASSERT_ERROR(
+      default_serialization_engine_serialize_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
+          engine, key, &buffer));
+
+  writeFile(path, buffer);
+  free(buffer.pointer);
+}
+
 outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
                       uint64_t seed_lsb, std::string folderPath) {
@@ -147,6 +178,9 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
   std::map<LweSecretKeyID,
            std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
       keyswitchKeys;
+  std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
+                                     std::shared_ptr<PackingKeyswitchKey>>>
+      packingKeys;
 
   // Load LWE secret keys
   for (auto secretKeyParam : params.secretKeys) {
@@ -175,8 +209,19 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     OUTCOME_TRY(LweKeyswitchKey64 * ksk, loadKeyswitchKey(path));
     keyswitchKeys[id] = {param, std::make_shared<LweKeyswitchKey>(ksk)};
   }
+  // Load packing keys
+  for (auto packingParam : params.packingKeys) {
+    auto id = packingParam.first;
+    auto param = packingParam.second;
+    llvm::SmallString<0> path(folderPath);
+    llvm::sys::path::append(path, "fpksKey_" + id);
+    OUTCOME_TRY(LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *
+                    ksk,
+                loadPackingKey(path));
+    packingKeys[id] = {param, std::make_shared<PackingKeyswitchKey>(ksk)};
+  }
 
-  key_set->setKeys(secretKeys, bootstrapKeys, keyswitchKeys);
+  key_set->setKeys(secretKeys, bootstrapKeys, keyswitchKeys, packingKeys);
 
   OUTCOME_TRYV(key_set->setupEncryptionMaterial(params, seed_msb, seed_lsb));
 
@@ -218,6 +263,14 @@ outcome::checked<void, StringError> saveKeys(KeySet &key_set,
     llvm::SmallString<0> path = folderIncompletePath;
     llvm::sys::path::append(path, "ksKey_" + id);
     saveKeyswitchKey(path, key->get());
+  }
+  // Save packing keys
+  for (auto keyswitchParam : key_set.getPackingKeys()) {
+    auto id = keyswitchParam.first;
+    auto key = keyswitchParam.second.second;
+    llvm::SmallString<0> path = folderIncompletePath;
+    llvm::sys::path::append(path, "fpksKey_" + id);
+    savePackingKey(path, key->get());
   }
 
   err = llvm::sys::fs::rename(folderIncompletePath, folderPath);
