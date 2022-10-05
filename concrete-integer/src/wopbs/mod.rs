@@ -10,7 +10,7 @@
 mod test;
 
 use crate::client_key::utils::i_crt;
-use crate::{gen_keys, ClientKey, CrtCiphertext, IntegerCiphertext, RadixCiphertext, ServerKey};
+use crate::{ClientKey, CrtCiphertext, IntegerCiphertext, RadixCiphertext, ServerKey};
 use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
 use concrete_core::backends::fftw::private::crypto::wop_pbs_vp::extract_bit_v0_v1;
 use concrete_core::commons::crypto::lwe::LweCiphertext;
@@ -78,32 +78,17 @@ where
 
 //TODO: Move to a different file?
 // Update to pub(crate)
+// split the value following the degree and the modulus
 /// ```rust
-/// use concrete_integer::wopbs::encode_mix_radix;
-///
-/// let val = 1600;
-/// let basis = vec![60, 24, 7];
-/// assert_eq!(encode_mix_radix(val, &basis), [40, 2, 1]);
 /// ```
-pub fn encode_mix_radix(val: u64, basis: &Vec<u64>) -> Vec<u64> {
+pub fn encode_mix_radix(mut val: u64, basis: &Vec<u64>, modulus: u64) -> Vec<u64> {
     let mut output = vec![];
-    //Bits of message put to 1
-
-    let mut power = 1_u64;
-
-    let mut div = val.clone();
-    let mut quo;
-    let mut rem;
-    //Put each decomposition into a new ciphertext
-    for basis in basis.iter() {
-        quo = div / basis;
-        rem = div - quo * basis;
-        div = quo;
-        // fill the vector with the message moduli
-        output.push(rem);
-
-        //modulus to the power i
-        power *= basis;
+    for basis in basis.iter(){
+        output.push(val % modulus);
+        val -= val % modulus;
+        let tmp = (val % (1 << basis)) >> (f64::log2(modulus as f64) as u64);
+        val >>= basis;
+        val += tmp;
     }
     output
 }
@@ -420,41 +405,36 @@ impl WopbsKey {
         F: Fn(u64) -> u64,
         T: IntegerCiphertext,
     {
-        let mut bit = vec![];
         let mut total_bit = 0;
         let block_nb = ct.blocks().len();
-        let mut modulus = self.wopbs_key.param.message_modulus.0 as u64;
+        let mut modulus = 1;
 
-        let basis = ct.moduli();
 
         //This contains the basis of each block depending on the degree
         let mut vec_deg_basis = vec![];
 
-        for (i, deg) in basis.iter().zip(ct.blocks().iter()) {
+        for (i, deg) in ct.moduli().iter().zip(ct.blocks().iter()) {
             modulus *= i;
             let b = f64::log2((deg.degree.0 + 1) as f64).ceil() as u64;
-            vec_deg_basis.push(deg.degree.0 as u64 + 1);
+            vec_deg_basis.push(b);
             total_bit += b;
-            bit.push(b);
         }
 
         let mut lut_size = 1 << total_bit;
         if 1 << total_bit < self.wopbs_key.param.polynomial_size.0 as u64 {
             lut_size = self.wopbs_key.param.polynomial_size.0;
         }
-        let mut vec_lut = vec![vec![0; lut_size]; basis.len()];
+        let mut vec_lut = vec![vec![0; lut_size]; ct.blocks().len()];
 
         let basis = ct.moduli()[0];
-
         let delta: u64 = (1 << 63)
             / (self.wopbs_key.param.message_modulus.0 * self.wopbs_key.param.carry_modulus.0)
                 as u64;
 
         for lut_index_val in 0..(1 << total_bit) {
-            let val = encode_radix(lut_index_val, 1 << total_bit, 1);
-            let encoded_with_deg_val = encode_mix_radix(val[0], &vec_deg_basis);
+            let encoded_with_deg_val = encode_mix_radix(lut_index_val, &vec_deg_basis, basis);
             let decoded_val = decode_radix(encoded_with_deg_val.clone(), basis);
-            let f_val = f(decoded_val % modulus);
+            let f_val = f(decoded_val % modulus) % modulus;
             let encoded_f_val = encode_radix(f_val, basis, block_nb as u64);
             for lut_number in 0..block_nb {
                 vec_lut[lut_number as usize][lut_index_val as usize] =
@@ -689,23 +669,22 @@ impl WopbsKey {
     where
         F: Fn(u64, u64) -> u64,
     {
-        let mut bit = vec![];
         let mut nb_bit_to_extract = vec![0; 2];
         let block_nb = ct1.blocks.len();
         //ct2 & ct1 should have the same basis
         let basis = ct1.moduli();
 
         //This contains the basis of each block depending on the degree
-        let mut vec_deg_basis = vec![];
+        let mut vec_deg_basis = vec![vec![];2];
 
-        let mut modulus = 1;
+        let mut modulus= 1;
         for (ct_num, ct) in [ct1, ct2].iter().enumerate() {
+            modulus = 1;
             for deg in ct.blocks.iter() {
                 modulus *= self.wopbs_key.param.message_modulus.0 as u64;
                 let b = f64::log2((deg.degree.0 + 1) as f64).ceil() as u64;
-                vec_deg_basis.push(deg.degree.0 as u64 + 1);
+                vec_deg_basis[ct_num].push(b);
                 nb_bit_to_extract[ct_num] += b;
-                bit.push(b);
             }
         }
 
@@ -723,13 +702,13 @@ impl WopbsKey {
                 as u64;
 
         for lut_index_val in 0..(1 << total_bit) {
-            let split = encode_radix(lut_index_val, 1 << nb_bit_to_extract[0], 2);
+            let split = vec![lut_index_val % (1 << nb_bit_to_extract[0]), lut_index_val >> nb_bit_to_extract[0]];
             let mut decoded_val = vec![0; 2];
             for i in 0..2 {
-                let encoded_with_deg_val = encode_mix_radix(split[i], &vec_deg_basis);
+                let encoded_with_deg_val = encode_mix_radix(split[i], &vec_deg_basis[i], basis);
                 decoded_val[i] = decode_radix(encoded_with_deg_val.clone(), basis);
             }
-            let f_val = f(decoded_val[0] % modulus, decoded_val[1] % modulus);
+            let f_val = f(decoded_val[0] % modulus, decoded_val[1] % modulus) % modulus;
             let encoded_f_val = encode_radix(f_val, basis, block_nb as u64);
             for lut_number in 0..block_nb {
                 vec_lut[lut_number as usize][lut_index_val as usize] =
@@ -1035,29 +1014,4 @@ impl WopbsKey {
         }
         T::from_blocks(ct_vec_out)
     }
-}
-
-#[test]
-pub fn wipwip() {
-    use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_3_CARRY_3;
-
-    let basis: Vec<u64> = vec![5, 7];
-
-    let param = WOPBS_PARAM_MESSAGE_3_CARRY_3;
-    //Generate the client key and the server key:
-    let (mut cks, sks) = gen_keys(&param);
-    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
-
-    let mut msg_space = 1;
-    for modulus in basis.iter() {
-        msg_space *= modulus;
-    }
-    let clear1 = 42 % msg_space; // Encrypt the integers
-    let clear2 = 24 % msg_space; // Encrypt the integers
-    let mut ct1 = cks.encrypt_crt(clear1, basis.clone());
-    let mut ct2 = cks.encrypt_crt(clear2, basis.clone());
-    let lut = wopbs_key.generate_lut_bivariate_fake_crt(&ct1, &ct2, |x, y| x * y * 2);
-    let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &mut ct1, &mut ct2, &lut);
-    let res = cks.decrypt_crt(&ct_res);
-    assert_eq!(res, (clear1 * clear2 * 2) % msg_space);
 }

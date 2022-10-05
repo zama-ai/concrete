@@ -412,19 +412,15 @@ pub fn wopbs_radix(param: Parameters) {
         let mut ct1 = cks.encrypt_radix(clear1, nb_block);
 
         //artificially modify the degree
-        for ct in ct1.blocks.iter_mut() {
-            let degree =
-                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
-            ct.degree.0 = degree;
-            //println!("deg : {:?}", ct.degree)
-        }
-        let lut = wopbs_key.generate_lut(&ct1, |x| (x * x) + x);
+        let scalar = rng.gen::<u64>() % msg_space as u64;
+        sks.smart_scalar_add_assign(&mut ct1, scalar);
+
+        let lut = wopbs_key.generate_lut(&ct1, |x| x * x);
         let res = cks.decrypt_radix(&ct1);
         //println!("LUT = {:?}", lut);
         let ct_res = wopbs_key.wopbs_with_degree(&sks, &mut ct1, &lut);
         let res_wop = cks.decrypt_radix(&ct_res);
-
-        if ((res * res) + res) % msg_space as u64 != res_wop {
+        if  (res * res) % msg_space as u64 != res_wop {
             tmp += 1;
         }
     }
@@ -448,30 +444,29 @@ pub fn wopbs_bivariate_radix(param: Parameters) {
 
     let mut msg_space: u64 = param.message_modulus.0 as u64;
     for modulus in 1..nb_block {
-        msg_space *= modulus as u64;
+        msg_space *= param.message_modulus.0 as u64;
     }
 
     let nb_test = 10;
 
     for _ in 0..nb_test {
-        let clear1 = rng.gen::<u64>() % msg_space;
-        let clear2 = rng.gen::<u64>() % msg_space;
+        let mut clear1 = rng.gen::<u64>() % msg_space;
+        let mut clear2 = rng.gen::<u64>() % msg_space;
 
         let mut ct1 = cks.encrypt_radix(clear1, nb_block);
+        let scalar = rng.gen::<u64>() % msg_space as u64;
+        sks.smart_scalar_add_assign(&mut ct1, scalar);
+        let dec1 = cks.decrypt_radix(&ct1);
+
         let mut ct2 = cks.encrypt_radix(clear2, nb_block);
-        //artificially modify the degree
-        for (ct_1, ct_2) in ct1.blocks.iter_mut().zip(ct2.blocks.iter_mut()) {
-            let degree =
-                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
-            ct_1.degree.0 = degree;
-            let degree =
-                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
-            ct_2.degree.0 = degree;
-        }
-        let lut = wopbs_key.generate_lut_bivariate_radix(&ct1, &ct2, |x, y| max(x, y));
+        let scalar = rng.gen::<u64>() % msg_space as u64;
+        sks.smart_scalar_add_assign(&mut ct2, scalar);
+        let dec2 = cks.decrypt_radix(&ct2);
+
+        let lut = wopbs_key.generate_lut_bivariate_radix(&ct1, &ct2, |x,y| x + y*x);
         let ct_res = wopbs_key.bivariate_wopbs_with_degree(&sks, &ct1, &ct2, &lut);
         let res = cks.decrypt_radix(&ct_res);
-        assert_eq!(res, (max(clear1, clear2)) % msg_space);
+        assert_eq!(res, (dec1 + dec2 * dec1) % msg_space);
     }
 }
 
