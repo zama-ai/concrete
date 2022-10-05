@@ -269,7 +269,7 @@ def test_conv2d(input_shape, weight_shape, group, strides, dilations, has_bias, 
             1,
             "NOTSET",
             ValueError,
-            "expected kernel_shape to be (1, 1, 2, 2), but got (1, 2)",
+            "expected kernel_shape to be (2, 2), but got (1, 2)",
         ),
         pytest.param(
             (1, 1, 4, 4),

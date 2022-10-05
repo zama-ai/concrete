@@ -64,9 +64,9 @@ def conv(
         Union[np.ndarray, Tracer]: evaluation result or traced computation
     """
     if kernel_shape is not None and (
-        weight.ndim != len(kernel_shape) or not np.equal(weight.shape, kernel_shape)
+        (weight.ndim - 2) != len(kernel_shape) or not np.all(weight.shape[2:] == kernel_shape)
     ):
-        raise ValueError(f"expected kernel_shape to be {weight.shape}, but got {kernel_shape}")
+        raise ValueError(f"expected kernel_shape to be {weight.shape[2:]}, but got {kernel_shape}")
 
     if isinstance(x, np.ndarray):
         if not isinstance(weight, np.ndarray):
