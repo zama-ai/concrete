@@ -12,7 +12,6 @@
 #include "../include/helper_cuda.h"
 #include "bootstrap.h"
 #include "complex/operations.cuh"
-//#include "crypto/bootstrapping_key.cuh"
 #include "crypto/gadget.cuh"
 #include "crypto/torus.cuh"
 #include "fft/bnsmfft.cuh"
@@ -83,7 +82,6 @@ __global__ void device_bootstrap_amortized(
   // polynomials take coefficients between -B/2 and B/2 they can be represented
   // with only 16 bits, assuming the base log does not exceed 2^16
   int16_t *accumulator_mask_decomposed = (int16_t *)selected_memory;
-  // TODO (Agnes) why not the 16 bits representation here?
   int16_t *accumulator_body_decomposed =
       (int16_t *)accumulator_mask_decomposed + polynomial_size;
   Torus *accumulator_mask = (Torus *)accumulator_body_decomposed +
@@ -103,28 +101,11 @@ __global__ void device_bootstrap_amortized(
     accumulator_fft =
         (double2 *)body_res_fft + (ptrdiff_t)(polynomial_size / 2);
 
-  /*
-  int dif0 = ((char*)accumulator_body_decomposed - (char*)selected_memory);
-  int dif1 = ((char*)accumulator_mask - (char*)accumulator_body_decomposed);
-  int dif2 = ((char*)accumulator_body - (char*)accumulator_mask);
-  int dif3 = ((char*)accumulator_mask_rotated - (char*)accumulator_body);
-  int dif4 = ((char*)accumulator_body_rotated -
-  (char*)accumulator_mask_rotated); int dif5 = ((char*)mask_res_fft -
-  (char*)accumulator_body_rotated); int dif6 = ((char*)body_res_fft -
-  (char*)mask_res_fft); int dif7 =  (SMD != PARTIALSM)? (char*)accumulator_fft -
-  (char*)body_res_fft:0; if (threadIdx.x == 0 && blockIdx.x == 0) {
-    printf("device and shared mem: %d %d %d %d %d %d %d %d\n ",dif0, dif1, dif2,
-  dif3, dif4, dif5, dif6, dif7);
-  }
-  */
-
   auto block_lwe_in = &lwe_in[blockIdx.x * (lwe_mask_size + 1)];
   Torus *block_lut_vector =
       &lut_vector[lut_vector_indexes[lwe_idx + blockIdx.x] * params::degree * 2];
 
-  // TODO (Agnes) try to store the gadget matrix in const memory to see if
-  // register use decreases Since all const mem is used for twiddles currently,
-  // it would mean moving some of them to global memory instead
+
   GadgetMatrix<Torus, params> gadget(base_log, l_gadget);
 
   // Put "b", the body, in [0, 2N[
@@ -145,25 +126,12 @@ __global__ void device_bootstrap_amortized(
   // into l_gadget polynomials, and performing polynomial multiplication
   // via an FFT with the RGSW encrypted secret key
   for (int iteration = 0; iteration < lwe_mask_size; iteration++) {
-    // TODO make sure that following sync is necessary
     synchronize_threads_in_block();
 
     // Put "a" in [0, 2N[ instead of Zq
     Torus a_hat = rescale_torus_element(
         block_lwe_in[iteration],
         2 * params::degree); // 2 * params::log2_degree + 1);
-
-    // TODO (Agnes) why is there this if condition?
-    if (a_hat == 0) {
-      // todo(Joao): **cannot use this optimization**
-      // the reason is that one of the input ciphertexts (blockIdx.z)
-      // might skip an iteration while others don't, which as a result
-      // will make that block not call the grid.sync(), causing a deadlock;
-      // maybe it's a workaround to add grid.sync() here, but not sure if
-      // there are any edge cases?
-
-      // continue
-    }
 
     // Perform ACC * (X^ä - 1)
     multiply_by_monomial_negacyclic_and_sub_polynomial<
@@ -200,7 +168,6 @@ __global__ void device_bootstrap_amortized(
     // Now that the rotation is done, decompose the resulting polynomial
     // coefficients so as to multiply each decomposed level with the
     // corresponding part of the bootstrapping key
-    // TODO (Agnes) explain why we do that for the mask and body separately
     for (int decomp_level = 0; decomp_level < l_gadget; decomp_level++) {
 
       gadget.decompose_one_level(accumulator_mask_decomposed,
@@ -227,8 +194,6 @@ __global__ void device_bootstrap_amortized(
 
       // Get the bootstrapping key piece necessary for the multiplication
       // It is already in the Fourier domain
-      // TODO (Agnes) Explain why for the mask polynomial multiplication
-      // we need the bsk_body_slice and vice versa
       auto bsk_mask_slice = PolynomialFourier<double2, params>(
           get_ith_mask_kth_block(
               bootstrapping_key, iteration, 0, decomp_level,
@@ -241,7 +206,7 @@ __global__ void device_bootstrap_amortized(
       synchronize_threads_in_block();
 
       // Perform the coefficient-wise product with the two pieces of
-      // bootstrapping key TODO (Agnes) why two pieces?
+      // bootstrapping key
       polynomial_product_accumulate_in_fourier_domain(
           mask_res_fft, accumulator_fft, bsk_mask_slice);
       polynomial_product_accumulate_in_fourier_domain(
@@ -333,7 +298,7 @@ __global__ void device_bootstrap_amortized(
   // The blind rotation for this block is over
   // Now we can perform the sample extraction: for the body it's just
   // the resulting constant coefficient of the accumulator
-  // For the mask it's more complicated TODO (Agnes) explain why
+  // For the mask it's more complicated
   sample_extract_mask<Torus, params>(block_lwe_out, accumulator_mask);
   sample_extract_body<Torus, params>(block_lwe_out, accumulator_body);
 }
@@ -380,11 +345,6 @@ __host__ void host_bootstrap_amortized(
   // handles opt polynomial coefficients
   // (actually opt/2 coefficients since we compress the real polynomial into a
   // complex)
-  // TODO (Agnes) Polynomial size / params::opt should be equal to 256 or 512
-  //   probably, maybe 1024 would be too big?
-  //   Or would it actually be good in our case to have the largest possible
-  //   number of threads per block since anyway few blocks will run
-  //   concurrently?
   dim3 grid(input_lwe_ciphertext_count, 1, 1);
   dim3 thds(polynomial_size / params::opt, 1, 1);
 
@@ -426,7 +386,6 @@ __host__ void host_bootstrap_amortized(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize,
         SM_FULL));
-    // TODO (Agnes): is this necessary?
     checkCudaErrors(cudaFuncSetCacheConfig(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncCachePreferShared));
@@ -454,7 +413,6 @@ int cuda_get_pbs_per_gpu(int polynomial_size) {
   int num_threads = polynomial_size / params::opt;
   cudaGetDeviceCount(0);
   cudaDeviceProp device_properties;
-  // FIXME: here we assume every device has same properties
   cudaGetDeviceProperties(&device_properties, 0);
   cudaOccupancyMaxActiveBlocksPerMultiprocessor(
       &blocks_per_sm, device_bootstrap_amortized<Torus, params>,

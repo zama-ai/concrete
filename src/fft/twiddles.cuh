@@ -2,14 +2,6 @@
 #ifndef GPU_BOOTSTRAP_TWIDDLES_CUH
 #define GPU_BOOTSTRAP_TWIDDLES_CUH
 
-// TODO (Agnes) depending on the device architecture
-// can we make more of them __constant__?
-// Do we have to define them all regardless of the
-// polynomial degree and q values?
-
-// TODO (Beka) make those two arrays with dynamic size
-// or find exact maximum for 8192 length poly it shuld
-// be less than 2048
 extern __constant__ short SW1[2048];
 extern __constant__ short SW2[2048];
 

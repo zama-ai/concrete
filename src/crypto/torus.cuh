@@ -36,8 +36,6 @@ __device__ inline T round_to_closest_multiple(T x, uint32_t base_log,
 template <typename T>
 __device__ __forceinline__ T rescale_torus_element(T element,
                                                    uint32_t log_shift) {
-  // todo(Joao): not sure if this works
-  // return element >> log_shift;
   return round((double)element / (double(std::numeric_limits<T>::max()) + 1.0) *
                (double)log_shift);
 }

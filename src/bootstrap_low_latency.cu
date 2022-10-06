@@ -48,12 +48,11 @@
  * 		  - switch to the FFT domain
  * 		  - multiply with the bootstrapping key
  * 		  - come back to the coefficients representation
- * 	- between each stage a synchronization of the threads is necessary TODO
- * (Agnes) check this
+ * 	- between each stage a synchronization of the threads is necessary
  * 	- in case the device has enough shared memory, temporary arrays used for
  * the different stages (accumulators) are stored into the shared memory
  * 	- the accumulators serve to combine the results for all decomposition
- * levels TODO (Agnes) check this
+ * levels
  * 	- the constant memory (64K) is used for storing the roots of identity
  * values for the FFT
  */

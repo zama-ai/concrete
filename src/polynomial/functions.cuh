@@ -166,7 +166,6 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
   Torus mx = (sizeof(Torus) == 4) ? UINT32_MAX : UINT64_MAX;
   int tid = threadIdx.x;
 #pragma unroll
-  // TODO (Beka) check if better memory access is possible
   for (int i = 0; i < params::opt / 2; i++) {
     double v1 = m_values[tid].x;
     double v2 = m_values[tid].y;
@@ -194,8 +193,6 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
 template <typename Torus, class params>
 __device__ void sample_extract_body(Torus *lwe_out, Torus *accumulator) {
   // Set first coefficient of the accumulator as the body of the LWE sample
-  // todo(Joao): not every thread needs to set it
-  // if (threadIdx.x == 0)
   lwe_out[params::degree] = accumulator[0];
 }
 

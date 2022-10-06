@@ -80,7 +80,7 @@ template <class params> __device__ void NSMFFT_direct(double2 *A) {
    *  Each thread is always in charge of "opt/2" pairs of coefficients,
    *  which is why we always loop through N/2 by N/opt strides
    *  The pragma unroll instruction tells the compiler to unroll the
-   *  full loop, which should increase performance TODO (Agnes) check this
+   *  full loop, which should increase performance
    */
   bit_reverse_inplace<params>(A);
   __syncthreads();
@@ -113,8 +113,6 @@ template <class params> __device__ void NSMFFT_direct(double2 *A) {
   // between groups of 4 coefficients
   // k=2, \zeta=exp(i pi/4) for even coefficients and
   // exp(3 i pi / 4) for odd coefficients
-  // TODO (Agnes) how does this work on the gpu? aren't we doing
-  // a lot more computations than we should?
   tid = threadIdx.x;
   // odd = 0 for even coefficients, 1 for odd coefficients
   int odd = tid & 1;
@@ -371,7 +369,7 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
    *  Each thread is always in charge of "opt/2" pairs of coefficients,
    *  which is why we always loop through N/2 by N/opt strides
    *  The pragma unroll instruction tells the compiler to unroll the
-   *  full loop, which should increase performance TODO (Agnes) check this
+   *  full loop, which should increase performance
    */
   int tid;
   int i1, i2;
@@ -589,8 +587,6 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
   // between groups of 4 coefficients
   // k=2, \zeta=exp(i pi/4) for even coefficients and
   // exp(3 i pi / 4) for odd coefficients
-  // TODO (Agnes) how does this work on the gpu? aren't we doing
-  // a lot more computations than we should?
   tid = threadIdx.x;
   // odd = 0 for even coefficients, 1 for odd coefficients
   int odd = tid & 1;
@@ -602,7 +598,6 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
     i1 = (tid << 1) - odd;
     i2 = i1 + 2;
 
-    // TODO(Beka) optimize twiddle multiplication
     double2 w;
     if (odd) {
       w.x = -0.707106781186547461715008466854;
@@ -629,7 +624,6 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
     // of coefficients, with a stride of 2
     i1 = tid << 1;
     i2 = i1 + 1;
-    // TODO(Beka) optimize twiddle multiplication
     double2 w = {0, -1};
     u = A[i1], v = A[i2];
     A[i1] = (u + v) * 0.5;

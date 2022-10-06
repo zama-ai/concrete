@@ -337,7 +337,6 @@ void host_cmux_tree(
             device_batch_cmux<Torus, STorus, params, FULLSM>,
             cudaFuncAttributeMaxDynamicSharedMemorySize,
             memory_needed_per_block));
-        // TODO (Agnes): is this necessary?
         checkCudaErrors(cudaFuncSetCacheConfig(
             device_batch_cmux<Torus, STorus, params, FULLSM>,
             cudaFuncCachePreferShared));

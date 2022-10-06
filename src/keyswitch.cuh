@@ -136,8 +136,6 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(void *v_stream, Torus *lwe_ou
     lwe_upper = (int)ceil((double)lwe_dim / (double)ideal_threads);
   }
 
-//  int lwe_size_before =
-//      (lwe_dimension_before + 1) * num_samples;
   int lwe_size_after =
       (lwe_dimension_after + 1) * num_samples;
 

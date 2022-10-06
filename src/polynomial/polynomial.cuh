@@ -50,8 +50,7 @@ public:
                                                    int chunk_size) {
     int pos = chunk_num * chunk_size;
     T *ptr = &m_data[pos];
-    // todo(Joao): unsafe, user must pass chunk that has size multiple of
-    // polynomial degree
+
     return VectorPolynomial<T, params>(ptr, chunk_size / params::degree);
   }
 
@@ -88,8 +87,6 @@ public:
     synchronize_threads_in_block();
   }
 
-  // todo(Joao): we need to make these APIs more clear, as it's confusing what's
-  // being copied where
   __device__ void copy_into_ith_polynomial(PolynomialFourier<T, params> &source,
                                            int i) {
     int tid = threadIdx.x;
@@ -160,22 +157,6 @@ public:
     }
   }
 
-  /*
-  __device__ void add_polynomial_inplace(PolynomialFourier<T, params> &source,
-                                         int begin) {
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt / 2; i++) {
-      this->m_values[tid] += source.m_values[tid + begin];
-      tid = tid + params::degree / params::opt;
-    }
-    if (threadIdx.x == 0) {
-      this->m_values[params::degree / 2] += source.m_values[params::degree / 2 +
-begin];
-    }
-  }
-  */
-
   __device__ void swap_quarters_inplace() {
     int tid = threadIdx.x;
     int s1 = params::quarter;
@@ -200,20 +181,6 @@ begin];
       this->m_values[params::degree / 2] +=
           source.m_data[params::degree / 2 + begin];
     }
-  }
-
-  __device__ void
-  forward_negacyclic_fft_inplace(PolynomialFourier<double2, params> &X) {
-    // TODO function should be removed
-  }
-
-  __device__ void inverse_negacyclic_fft_inplace() {
-    // TODO function should be removed
-  }
-
-  template <typename Torus>
-  __device__ void add_to_torus(Polynomial<Torus, params> &result) {
-    // TODO function should be removed
   }
 
   __device__ T &operator[](int i) { return m_values[i]; }
@@ -474,18 +441,6 @@ public:
     }
   }
 
-  /*
-  __device__ void add_polynomial_inplace(Polynomial<T, params> &source,
-                                         int begin) {
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt; i++) {
-      this->coefficients[tid] += source.coefficients[tid + begin];
-      tid = tid + params::degree / params::opt;
-    }
-  }
-  */
-
   __device__ void sub_polynomial_inplace(Polynomial<T, params> &rhs) {
     int tid = threadIdx.x;
     const int grid_dim = blockDim.x;
@@ -543,11 +498,6 @@ public:
     synchronize_threads_in_block();
   }
 
-  template <typename FT>
-  __device__ void
-  forward_negacyclic_fft_half(PolynomialFourier<FT, params> &result) {
-    // TODO function should be removed
-  }
 };
 template <typename T, class params> class Vector {
 public:
@@ -624,7 +574,6 @@ public:
 
   __device__ void set_last_element(T elem) { m_data[m_size - 1] = elem; }
 
-  // todo(Joao): let's do coalesced access here at some point
   __device__ void operator-=(const Vector<T, params> &rhs) {
     assert(m_size == rhs->m_size);
     int tid = threadIdx.x;

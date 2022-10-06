@@ -83,9 +83,7 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
 
   int gridSize = total_polynomials;
   int blockSize = polynomial_size / choose_opt(polynomial_size);
-  // todo(Joao): let's use cudaMallocHost here,
-  // since it allocates page-staged memory which allows
-  // faster data copy
+
   double2 *h_bsk = (double2 *)malloc(buffer_size);
   double2 *d_bsk;
   cudaMalloc((void **)&d_bsk, buffer_size);
@@ -110,7 +108,6 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   switch (polynomial_size) {
-    // FIXME (Agnes): check if polynomial sizes are ok
   case 512:
     batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>>
     <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);

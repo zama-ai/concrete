@@ -23,8 +23,7 @@
 #include "utils/memory.cuh"
 #include "utils/timer.cuh"
 
-// Cooperative groups are used in the low latency
-// version of the bootstrapping
+// Cooperative groups are used in the low latency PBS
 using namespace cooperative_groups;
 namespace cg = cooperative_groups;
 
@@ -57,11 +56,6 @@ mul_trgsw_trlwe(Torus *accumulator,
   // this function, so we end up getting the lines of the bootstrapping key
   // needed to perform the external product in this block (corresponding to
   // the same decomposition level)
-
-//  auto bsk_mask_slice = bootstrapping_key.get_ith_mask_kth_block(
-//      gpu_num, iteration, blockIdx.y, blockIdx.x);
-//  auto bsk_body_slice = bootstrapping_key.get_ith_body_kth_block(
-//      gpu_num, iteration, blockIdx.y, blockIdx.x);
 
     auto bsk_mask_slice = PolynomialFourier<double2, params>(
       get_ith_mask_kth_block(
@@ -195,7 +189,6 @@ __global__ void device_bootstrap_low_latency(
   // Since the space is L1 cache is small, we use the same memory location for
   // the rotated accumulator and the fft accumulator, since we know that the
   // rotated array is not in use anymore by the time we perform the fft
-
   GadgetMatrix<Torus, params> gadget(base_log, l_gadget);
 
   // Put "b" in [0, 2N[
@@ -222,17 +215,6 @@ __global__ void device_bootstrap_low_latency(
         block_lwe_in[i],
         2 * params::degree); // 2 * params::log2_degree + 1);
 
-    if (a_hat == 0) {
-      // todo(Joao): **cannot use this optimization**
-      // the reason is that one of the input ciphertexts (blockIdx.z)
-      // might skip an iteration while others don't, which as a result
-      // will make that block not call the grid.sync(), causing a deadlock;
-      // maybe it's a workaround to add grid.sync() here, but not sure if
-      // there are any edge cases?
-
-      // continue
-    }
-
     // Perform ACC * (X^ä - 1)
     multiply_by_monomial_negacyclic_and_sub_polynomial<
           Torus, params::opt, params::degree / params::opt>(
@@ -244,8 +226,6 @@ __global__ void device_bootstrap_low_latency(
     round_to_closest_multiple_inplace<Torus, params::opt,
           params::degree / params::opt>(
           accumulator_rotated, base_log, l_gadget);
-
-
 
     // Decompose the accumulator. Each block gets one level of the
     // decomposition, for the mask and the body (so block 0 will have the
