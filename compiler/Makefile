@@ -271,6 +271,18 @@ file-check: build-initialized
 not: build-initialized
 	cmake --build $(BUILD_DIR) --target not
 
+mlir-cpu-runner: build-initialized
+	cmake --build $(BUILD_DIR) --target mlir-cpu-runner
+
+opt: build-initialized
+	cmake --build $(BUILD_DIR) --target opt
+
+mlir-opt: build-initialized
+	cmake --build $(BUILD_DIR) --target mlir-opt
+
+mlir-translate: build-initialized
+	cmake --build $(BUILD_DIR) --target mlir-translate
+
 release-tarballs:
 	docker image build -t concrete-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
 	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concrete-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
@@ -310,4 +322,8 @@ python-lint:
 	build-end-to-end-tests \
 	build-end-to-end-dataflow-tests \
 	run-end-to-end-dataflow-tests \
-	concrete-core-ffi
+	concrete-core-ffi \
+	opt \
+	mlir-opt \
+	mlir-cpu-runner \
+	mlir-translate
