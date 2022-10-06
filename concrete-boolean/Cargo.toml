@@ -16,7 +16,7 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 
-[dependencies.concrete-core]
+[target.'cfg(target_arch = "x86_64")'.dependencies.concrete-core]
 git = "https://github.com/zama-ai/concrete-core"
 rev = "60beb99460db2075bf832b49af47b4f8d67ac4c7"
 features = [
@@ -24,6 +24,18 @@ features = [
     "backend_default_serialization",
     "backend_default_parallel",
     "backend_default_generator_x86_64_aesni"
+]
+
+[target.'cfg(target_arch = "aarch64")'.dependencies.concrete-core]
+git = "https://github.com/zama-ai/concrete-core"
+rev = "60beb99460db2075bf832b49af47b4f8d67ac4c7"
+features = [
+    "backend_default",
+    "backend_fftw",
+    "backend_default_serialization",
+    "backend_fftw_serialization",
+    "backend_default_parallel",
+    "backend_default_generator_aarch64_aes"
 ]
 
 [dev-dependencies]
