@@ -46,8 +46,8 @@ impl ShortintEngine {
 
         // Creation of the bootstrapping key in the Fourier domain
 
-        let fourier_bsk: FftwFourierLweBootstrapKey64 =
-            self.fftw_engine.convert_lwe_bootstrap_key(&bootstrap_key)?;
+        let fourier_bsk: FftFourierLweBootstrapKey64 =
+            self.fft_engine.convert_lwe_bootstrap_key(&bootstrap_key)?;
 
         // Convert into a variance for lwe context
         let var_lwe = Variance(cks.parameters.lwe_modular_std_dev.get_variance());
@@ -98,7 +98,7 @@ impl ShortintEngine {
         ct: &mut Ciphertext,
     ) -> EngineResult<()> {
         // Compute the programmable bootstrapping with fixed test polynomial
-        let (buffers, engine, fftw_engine) = self.buffers_for_key(server_key);
+        let (buffers, engine, fft_engine) = self.buffers_for_key(server_key);
 
         // Compute a keyswitch
         engine.discard_keyswitch_lwe_ciphertext(
@@ -108,7 +108,7 @@ impl ShortintEngine {
         )?;
 
         // Compute a bootstrap
-        fftw_engine.discard_bootstrap_lwe_ciphertext(
+        fft_engine.discard_bootstrap_lwe_ciphertext(
             &mut ct.ct,
             &buffers.buffer_lwe_after_ks,
             &buffers.accumulator,

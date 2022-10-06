@@ -49,7 +49,7 @@ impl ShortintEngine {
             lwe_size,
         )?;
 
-        self.fftw_engine.discard_extract_bits_lwe_ciphertext(
+        self.fft_engine.discard_extract_bits_lwe_ciphertext(
             &mut output,
             &lwe_in,
             &server_key.bootstrapping_key,
@@ -76,7 +76,7 @@ impl ShortintEngine {
             sks.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
         )?;
 
-        self.fftw_engine
+        self.fft_engine
             .discard_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_vector(
                 &mut output_cbs_vp_ct,
                 extracted_bits,
@@ -251,6 +251,7 @@ impl ShortintEngine {
             .engine
             .create_plaintext_vector_from(&flattened_lut)
             .unwrap();
+        println!("{:?}", plaintext_lut.plaintext_count());
         let output = self
             .circuit_bootstrap_with_bits(
                 wopbs_key,

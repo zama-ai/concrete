@@ -54,7 +54,7 @@ impl std::error::Error for CheckError {}
 #[derive(Clone, Debug, PartialEq)]
 pub struct ServerKey {
     pub key_switching_key: LweKeyswitchKey64,
-    pub bootstrapping_key: FftwFourierLweBootstrapKey64,
+    pub bootstrapping_key: FftFourierLweBootstrapKey64,
     // Size of the message buffer
     pub message_modulus: MessageModulus,
     // Size of the carry buffer
@@ -469,13 +469,13 @@ impl Serialize for ServerKey {
         S: Serializer,
     {
         let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
-        let mut fftw_ser_eng =
-            FftwSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+        let mut fft_ser_eng =
+            FftSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
 
         let key_switching_key = ser_eng
             .serialize(&self.key_switching_key)
             .map_err(serde::ser::Error::custom)?;
-        let bootstrapping_key = fftw_ser_eng
+        let bootstrapping_key = fft_ser_eng
             .serialize(&self.bootstrapping_key)
             .map_err(serde::ser::Error::custom)?;
 
@@ -498,14 +498,14 @@ impl<'de> Deserialize<'de> for ServerKey {
         let thing =
             SerializableServerKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
         let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
-        let mut fftw_ser_eng =
-            FftwSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+        let mut fft_ser_eng =
+            FftSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
 
         Ok(Self {
             key_switching_key: ser_eng
                 .deserialize(thing.key_switching_key.as_slice())
                 .map_err(serde::de::Error::custom)?,
-            bootstrapping_key: fftw_ser_eng
+            bootstrapping_key: fft_ser_eng
                 .deserialize(thing.bootstrapping_key.as_slice())
                 .map_err(serde::de::Error::custom)?,
             message_modulus: thing.message_modulus,

@@ -20,7 +20,7 @@ mod test;
 #[derive(Clone, Debug)]
 pub struct WopbsKey {
     //Key for the private functional keyswitch
-    pub(crate) small_bsk: FftwFourierLweBootstrapKey64,
+    pub(crate) small_bsk: FftFourierLweBootstrapKey64,
     pub(crate) cbs_pfpksk: LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64,
     pub param: Parameters,
 }
@@ -318,13 +318,13 @@ impl Serialize for WopbsKey {
     where
         S: Serializer,
     {
-        let mut fftw_ser_eng =
-            FftwSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+        let mut fft_ser_eng =
+            FftSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
 
         let mut default_ser_eng =
             DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
 
-        let small_bsk = fftw_ser_eng
+        let small_bsk = fft_ser_eng
             .serialize(&self.small_bsk)
             .map_err(serde::ser::Error::custom)?;
 
@@ -349,13 +349,13 @@ impl<'de> Deserialize<'de> for WopbsKey {
         let thing =
             SerializableWopbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
 
-        let mut fftw_ser_eng =
-            FftwSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+        let mut fft_ser_eng =
+            FftSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
 
         let mut default_ser_eng =
             DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
 
-        let small_bsk = fftw_ser_eng
+        let small_bsk = fft_ser_eng
             .deserialize(thing.small_bsk.as_slice())
             .map_err(serde::de::Error::custom)?;
 
