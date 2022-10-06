@@ -11,8 +11,7 @@ mod test;
 
 use crate::client_key::utils::i_crt;
 use crate::{ClientKey, CrtCiphertext, IntegerCiphertext, RadixCiphertext, ServerKey};
-use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
-use concrete_core::commons::crypto::lwe::LweCiphertext;
+use concrete_core::prelude::*;
 use concrete_shortint::ciphertext::Degree;
 
 use serde::{Deserialize, Serialize};
@@ -930,12 +929,13 @@ impl WopbsKey {
                 let delta_log = DeltaLog(64 - nb_bit_to_extract);
 
                 // trick ( ct - delta/2 + delta/2^4  )
-                let lwe_size = block.ct.0.lwe_size().0;
-                let mut cont = vec![0; lwe_size];
+                let lwe_size = block.ct.lwe_dimension().to_lwe_size().0;
+                let mut cont = vec![0u64; lwe_size];
                 cont[lwe_size - 1] =
                     (1 << (64 - nb_bit_to_extract - 1)) - (1 << (64 - nb_bit_to_extract - 5));
-                let tmp = LweCiphertext::from_container(cont);
-                block.ct.0.update_with_sub(&tmp);
+                let mut engine = DefaultEngine::new(Box::new(UnixSeeder::new(0))).unwrap();
+                let tmp = engine.create_lwe_ciphertext_from(cont).unwrap();
+                engine.fuse_sub_lwe_ciphertext(&mut block.ct, &tmp).unwrap();
 
                 let extracted_bits =
                     self.wopbs_key

@@ -9,7 +9,6 @@
 use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, Parameters, ServerKey};
 
-use concrete_core::backends::fftw::private::crypto::circuit_bootstrap::DeltaLog;
 use concrete_core::prelude::*;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

@@ -3,7 +3,6 @@
 use concrete_integer::client_key::radix_decomposition;
 use concrete_integer::keycache::KEY_CACHE;
 use concrete_integer::parameters::*;
-use concrete_integer::treepbs::TreepbsKey;
 use concrete_integer::wopbs::WopbsKey;
 use concrete_integer::{
     gen_key_id, gen_keys, CrtMultiCiphertext, CrtMultiClientKey, CrtMultiServerKey,
@@ -25,11 +24,6 @@ criterion_group!(
     crt_arithmetic_many_sizes,
     crt_arithmetic_many_sizes_parallelized,
     crt,
-    two_block_pbs,
-    two_block_pbs,
-    two_block_pbs_base,
-    three_block_pbs,
-    three_block_pbs_base,
     // radmodint_wopbs,
     // radmodint_wopbs_32_bits,
     // radmodint_wopbs_16bits_param_2_2_8_blocks,
@@ -1051,108 +1045,4 @@ fn crt_unchecked_mul_many_sizes_parallelized(c: &mut Criterion) {
         "Mul",
         "parallelized",
     )
-}
-
-fn two_block_pbs(c: &mut Criterion) {
-    let size = 2;
-
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
-    let treepbs_key = TreepbsKey::new(&cks);
-
-    //RNG
-    let mut rng = rand::thread_rng();
-
-    // message_modulus^vec_length
-    let modulus = DEFAULT_PARAMETERS.message_modulus.0.pow(size as u32) as u64;
-
-    let clear_0 = rng.gen::<u64>() % modulus;
-
-    // encryption of an integer
-    let ctxt_0 = cks.encrypt_radix(clear_0, size);
-
-    let f = |x: u64| x * x;
-
-    c.bench_function("Two block PBS", |b| {
-        b.iter(|| {
-            treepbs_key.two_block_pbs(&sks, &ctxt_0, f);
-        })
-    });
-}
-
-fn two_block_pbs_base(c: &mut Criterion) {
-    let size = 2;
-
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
-    let treepbs_key = TreepbsKey::new(&cks);
-
-    //RNG
-    let mut rng = rand::thread_rng();
-
-    // message_modulus^vec_length
-    let modulus = DEFAULT_PARAMETERS.message_modulus.0.pow(size as u32) as u64;
-
-    let clear_0 = rng.gen::<u64>() % modulus;
-
-    // encryption of an integer
-    let ctxt_0 = cks.encrypt_radix(clear_0, size);
-
-    let f = |x: u64| x * x;
-
-    c.bench_function("Two block PBS base", |b| {
-        b.iter(|| {
-            treepbs_key.two_block_pbs_base(&sks, &ctxt_0, f);
-        })
-    });
-}
-
-fn three_block_pbs(c: &mut Criterion) {
-    let size = 3;
-
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
-    let treepbs_key = TreepbsKey::new(&cks);
-
-    //RNG
-    let mut rng = rand::thread_rng();
-
-    // message_modulus^vec_length
-    let modulus = DEFAULT_PARAMETERS.message_modulus.0.pow(size as u32) as u64;
-
-    let clear_0 = rng.gen::<u64>() % modulus;
-
-    // encryption of an integer
-    let ctxt_0 = cks.encrypt_radix(clear_0, size);
-
-    let f = |x: u64| x * x;
-
-    c.bench_function("Three block PBS", |b| {
-        b.iter(|| {
-            treepbs_key.three_block_pbs(&sks, &ctxt_0, f);
-        })
-    });
-}
-
-fn three_block_pbs_base(c: &mut Criterion) {
-    let size = 3;
-
-    let (cks, sks) = gen_keys(&DEFAULT_PARAMETERS);
-    let treepbs_key = TreepbsKey::new(&cks);
-
-    //RNG
-    let mut rng = rand::thread_rng();
-
-    // message_modulus^vec_length
-    let modulus = DEFAULT_PARAMETERS.message_modulus.0.pow(size as u32) as u64;
-
-    let clear_0 = rng.gen::<u64>() % modulus;
-
-    // encryption of an integer
-    let ctxt_0 = cks.encrypt_radix(clear_0, size);
-
-    let f = |x: u64| x * x;
-
-    c.bench_function("Three block PBS base", |b| {
-        b.iter(|| {
-            treepbs_key.three_block_pbs_base(&sks, &ctxt_0, f);
-        })
-    });
 }

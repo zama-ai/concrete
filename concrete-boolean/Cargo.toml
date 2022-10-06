@@ -17,9 +17,8 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.concrete-core]
-package = "concrete-core-experimental"
 git = "https://github.com/zama-ai/concrete-core"
-rev = "52084d47c8f5c98568b69389665e82baaf3b8790"
+rev = "60beb99460db2075bf832b49af47b4f8d67ac4c7"
 features = [
     "backend_default",
     "backend_default_serialization",

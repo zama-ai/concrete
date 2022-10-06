@@ -56,7 +56,6 @@ pub mod parameters;
 pub mod server_key;
 #[cfg(doctest)]
 mod test_user_docs;
-pub mod treepbs;
 pub mod wopbs;
 
 pub use ciphertext::Ciphertext;

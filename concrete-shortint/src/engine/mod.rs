@@ -7,7 +7,6 @@ use std::fmt::Debug;
 
 mod client_side;
 mod server_side;
-mod treepbs;
 mod wopbs;
 
 thread_local! {
