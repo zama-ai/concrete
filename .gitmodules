@@ -1,6 +1,8 @@
 [submodule "llvm-project"]
 	path = llvm-project
 	url = git@github.com:zama-ai/concrete-compiler-internal-llvm-project.git
+	shallow = true
 [submodule "compiler/concrete-optimizer"]
 	path = compiler/concrete-optimizer
 	url = git@github.com:zama-ai/concrete-optimizer.git
+	shallow = true
