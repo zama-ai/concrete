@@ -251,7 +251,6 @@ impl ShortintEngine {
             .engine
             .create_plaintext_vector_from(&flattened_lut)
             .unwrap();
-        println!("{:?}", plaintext_lut.plaintext_count());
         let output = self
             .circuit_bootstrap_with_bits(
                 wopbs_key,
