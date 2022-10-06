@@ -64,16 +64,6 @@ impl Memory {
     }
 }
 
-#[cfg(feature = "fftw")]
-type FourierLweBootstrapKey32 = FftwFourierLweBootstrapKey32;
-#[cfg(feature = "fftw")]
-type FourierEngine = FftwEngine;
-
-#[cfg(all(feature = "fft", not(feature = "fftw")))]
-type FourierLweBootstrapKey32 = FftFourierLweBootstrapKey32;
-#[cfg(all(feature = "fft", not(feature = "fftw")))]
-type FourierEngine = FftEngine;
-
 /// A structure containing the server public key.
 ///
 /// This server key data lives on the CPU.
@@ -87,7 +77,7 @@ type FourierEngine = FftEngine;
 #[derive(Clone)]
 pub struct CpuBootstrapKey {
     pub(super) standard_bootstraping_key: LweBootstrapKey32,
-    pub(super) bootstrapping_key: FourierLweBootstrapKey32,
+    pub(super) bootstrapping_key: FftFourierLweBootstrapKey32,
     pub(super) key_switching_key: LweKeyswitchKey32,
 }
 
@@ -103,7 +93,7 @@ impl BooleanServerKey for CpuBootstrapKey {
 pub(crate) struct CpuBootstrapper {
     memory: Memory,
     engine: DefaultEngine,
-    fourier_engine: FourierEngine,
+    fourier_engine: FftEngine,
 }
 
 impl CpuBootstrapper {
@@ -157,7 +147,7 @@ impl Default for CpuBootstrapper {
         let engine = DefaultEngine::new(Box::new(UnixSeeder::new(0)))
             .expect("Unexpectedly failed to create a core engine");
 
-        let fourier_engine = FourierEngine::new(()).unwrap();
+        let fourier_engine = FftEngine::new(()).unwrap();
         Self {
             memory: Default::default(),
             engine,
@@ -312,7 +302,7 @@ impl<'de> Deserialize<'de> for CpuBootstrapKey {
         let standard_bootstraping_key = ser_eng
             .deserialize(thing.standard_bootstraping_key.as_slice())
             .map_err(serde::de::Error::custom)?;
-        let bootstrapping_key = FourierEngine::new(())
+        let bootstrapping_key = FftEngine::new(())
             .unwrap()
             .convert_lwe_bootstrap_key(&standard_bootstraping_key)
             .map_err(serde::de::Error::custom)?;

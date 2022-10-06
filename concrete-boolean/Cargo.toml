@@ -18,17 +18,19 @@ serde = { version = "1.0", features = ["derive"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies.concrete-core]
 git = "https://github.com/zama-ai/concrete-core"
-rev = "60beb99460db2075bf832b49af47b4f8d67ac4c7"
+rev = "96fdb6ea93c69211282fd5f0e83e576930768316"
 features = [
     "backend_default",
     "backend_default_serialization",
     "backend_default_parallel",
+    "backend_fft",
+    "backend_fft_serialization",
     "backend_default_generator_x86_64_aesni"
 ]
 
 [target.'cfg(target_arch = "aarch64")'.dependencies.concrete-core]
 git = "https://github.com/zama-ai/concrete-core"
-rev = "60beb99460db2075bf832b49af47b4f8d67ac4c7"
+rev = "96fdb6ea93c69211282fd5f0e83e576930768316"
 features = [
     "backend_default",
     "backend_default_serialization",
@@ -42,10 +44,7 @@ rand = "0.8.4"
 
 
 [features]
-default = ["fft"]
 cuda = ["concrete-core/backend_cuda"]
-fft = ["concrete-core/backend_fft"]
-fftw = ["concrete-core/backend_fftw"]
 
 
 [[bench]]
