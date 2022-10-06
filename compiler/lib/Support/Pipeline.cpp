@@ -36,6 +36,7 @@
 #include <concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
 #include <concretelang/Dialect/FHE/Transforms/Boolean.h>
+#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Support/Pipeline.h>
@@ -170,6 +171,16 @@ markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
   pipelinePrinting("MarkFHELinalgForTiling", pm, context);
   addPotentiallyNestedPass(pm, createFHELinalgTilingMarkerPass(tileSizes),
                            enablePass);
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                         std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("transformHighLevelFHEOps", pm, context);
+  addPotentiallyNestedPass(pm, createEncryptedMulToDoubleTLUPass(), enablePass);
 
   return pm.run(module.getOperation());
 }

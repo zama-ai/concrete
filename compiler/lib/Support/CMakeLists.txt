@@ -24,6 +24,7 @@ add_mlir_library(
   ExtractSDFGOps
   MLIRLowerableDialectsToLLVM
   FHEDialectAnalysis
+  FHEDialectTransforms
   RTDialectAnalysis
   ConcretelangTransforms
   ConcretelangBConcreteTransforms

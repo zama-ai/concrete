@@ -273,6 +273,41 @@ struct MulEintIntOpPattern : public ScalarOpPattern<FHE::MulEintIntOp> {
   }
 };
 
+/// Rewriter for the `FHE::to_signed` operation.
+struct ToSignedOpPattern : public ScalarOpPattern<FHE::ToSignedOp> {
+  ToSignedOpPattern(mlir::TypeConverter &converter, mlir::MLIRContext *context,
+                    mlir::PatternBenefit benefit = 1)
+      : ScalarOpPattern<FHE::ToSignedOp>(converter, context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHE::ToSignedOp op, FHE::ToSignedOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    typing::TypeConverter converter;
+    rewriter.replaceOp(op, {adaptor.input()});
+
+    return mlir::success();
+  }
+};
+
+/// Rewriter for the `FHE::to_unsigned` operation.
+struct ToUnsignedOpPattern : public ScalarOpPattern<FHE::ToUnsignedOp> {
+  ToUnsignedOpPattern(mlir::TypeConverter &converter,
+                      mlir::MLIRContext *context,
+                      mlir::PatternBenefit benefit = 1)
+      : ScalarOpPattern<FHE::ToUnsignedOp>(converter, context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHE::ToUnsignedOp op, FHE::ToUnsignedOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    typing::TypeConverter converter;
+    rewriter.replaceOp(op, {adaptor.input()});
+
+    return mlir::success();
+  }
+};
+
 /// Rewriter for the `FHE::apply_lookup_table` operation.
 struct ApplyLookupTableEintOpPattern
     : public ScalarOpPattern<FHE::ApplyLookupTableEintOp> {
@@ -474,7 +509,11 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
                  //    |_ `FHE::sub_eint`
                  lowering::SubEintOpPattern,
                  //    |_ `FHE::mul_eint_int`
-                 lowering::MulEintIntOpPattern>(converter, &getContext());
+                 lowering::MulEintIntOpPattern,
+                 //    |_ `FHE::to_signed`
+                 lowering::ToSignedOpPattern,
+                 //    |_ `FHE::to_unsigned`
+                 lowering::ToUnsignedOpPattern>(converter, &getContext());
     //    |_ `FHE::apply_lookup_table`
     patterns.add<lowering::ApplyLookupTableEintOpPattern>(
         converter, &getContext(), loweringParameters);

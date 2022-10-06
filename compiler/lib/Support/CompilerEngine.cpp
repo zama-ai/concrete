@@ -289,6 +289,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Transforming FHE boolean ops failed");
   }
 
+  // Encrypted mul rewriting
+  if (mlir::concretelang::pipeline::transformHighLevelFHEOps(mlirContext,
+                                                             module, enablePass)
+          .failed()) {
+    return StreamStringError("Rewriting of encrypted mul failed");
+  }
+
   // FHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);

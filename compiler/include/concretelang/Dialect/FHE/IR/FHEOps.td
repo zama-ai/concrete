@@ -285,6 +285,44 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [NoSideEffect]> {
     let hasFolder = 1;
 }
 
+def FHE_MulEintOp : FHE_Op<"mul_eint", [NoSideEffect]> {
+    let summary = "Multiplies two encrypted integers";
+
+    let description = [{
+        Multiplies two encrypted integers.
+
+        The encrypted integers and the result must have the same width and
+        signedness. Also, due to the current implementation, one supplementary
+        bit of width must be provided, in addition to the number of bits needed
+        to encode the largest output value.
+
+        Example:
+        ```mlir
+        // ok
+        "FHE.mul_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
+        "FHE.mul_eint"(%a, %b): (!FHE.eint<3>, !FHE.eint<3>) -> (!FHE.eint<3>)
+        "FHE.mul_eint"(%a, %b): (!FHE.esint<3>, !FHE.esint<3>) -> (!FHE.esint<3>)
+
+        // error
+        "FHE.mul_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<3>) -> (!FHE.eint<2>)
+        "FHE.mul_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<3>)
+        "FHE.mul_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.esint<2>)
+        "FHE.mul_eint"(%a, %b): (!FHE.esint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
+        ```
+    }];
+
+    let arguments = (ins FHE_AnyEncryptedInteger:$a, FHE_AnyEncryptedInteger:$b);
+    let results = (outs FHE_AnyEncryptedInteger);
+
+    let builders = [
+        OpBuilder<(ins "Value":$a, "Value":$b), [{
+          build($_builder, $_state, a.getType(), a, b);
+        }]>
+    ];
+
+    let hasVerifier = 1;
+}
+
 def FHE_ToSignedOp : FHE_Op<"to_signed", [NoSideEffect]> {
     let summary = "Cast an unsigned integer to a signed one";
 

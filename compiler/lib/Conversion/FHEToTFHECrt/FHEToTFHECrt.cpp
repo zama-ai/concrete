@@ -458,6 +458,42 @@ struct NegEintOpPattern : CrtOpPattern<FHE::NegEintOp> {
   }
 };
 
+/// Rewriter for the `FHE::to_signed` operation.
+struct ToSignedOpPattern : public CrtOpPattern<FHE::ToSignedOp> {
+  ToSignedOpPattern(mlir::MLIRContext *context,
+                    concretelang::CrtLoweringParameters params,
+                    mlir::PatternBenefit benefit = 1)
+      : CrtOpPattern<FHE::ToSignedOp>(context, params, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHE::ToSignedOp op, FHE::ToSignedOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    typing::TypeConverter converter{loweringParameters};
+    rewriter.replaceOp(op, {adaptor.input()});
+
+    return mlir::success();
+  }
+};
+
+/// Rewriter for the `FHE::to_unsigned` operation.
+struct ToUnsignedOpPattern : public CrtOpPattern<FHE::ToUnsignedOp> {
+  ToUnsignedOpPattern(mlir::MLIRContext *context,
+                      concretelang::CrtLoweringParameters params,
+                      mlir::PatternBenefit benefit = 1)
+      : CrtOpPattern<FHE::ToUnsignedOp>(context, params, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHE::ToUnsignedOp op, FHE::ToUnsignedOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    typing::TypeConverter converter{loweringParameters};
+    rewriter.replaceOp(op, {adaptor.input()});
+
+    return mlir::success();
+  }
+};
+
 /// Rewriter for the `FHE::mul_eint_int` operation.
 struct MulEintIntOpPattern : CrtOpPattern<FHE::MulEintIntOp> {
 
@@ -937,6 +973,10 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
                  lowering::NegEintOpPattern,
                  //    |_ `FHE::mul_eint_int`
                  lowering::MulEintIntOpPattern,
+                 //    |_ `FHE::to_unsigned`
+                 lowering::ToUnsignedOpPattern,
+                 //    |_ `FHE::to_signed`
+                 lowering::ToSignedOpPattern,
                  //    |_ `FHE::apply_lookup_table`
                  lowering::ApplyLookupTableEintOpPattern>(&getContext(),
                                                           loweringParameters);

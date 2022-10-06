@@ -1,6 +1,7 @@
 add_mlir_library(
   FHEDialectTransforms
   Boolean.cpp
+  EncryptedMulToDoubleTLU.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/FHE
   DEPENDS

@@ -176,6 +176,15 @@ func.func @mul_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   return %1: !FHE.eint<2>
 }
 
+// CHECK-LABEL: func.func @mul_eint(%arg0: !FHE.eint<2>, %arg1: !FHE.eint<2>) -> !FHE.eint<2>
+func.func @mul_eint(%arg0: !FHE.eint<2>, %arg1: !FHE.eint<2>) -> !FHE.eint<2> {
+  // CHECK-NEXT: %[[V0:.*]] = "FHE.mul_eint"(%arg0, %arg1) : (!FHE.eint<2>, !FHE.eint<2>) -> !FHE.eint<2>
+  // CHECK-NEXT: return %[[V0]] : !FHE.eint<2>
+
+  %0 = "FHE.mul_eint"(%arg0, %arg1): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
+  return %0: !FHE.eint<2>
+}
+
 // CHECK-LABEL: func.func @mul_eint_int_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2>
 func.func @mul_eint_int_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2> {
   // CHECK-NEXT: %[[V1:.*]] = arith.constant 1 : i3
