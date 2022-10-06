@@ -211,7 +211,6 @@ impl ShortintEngine {
                 )
                 .unwrap();
 
-
             Buffers {
                 accumulator,
                 buffer_lwe_after_ks: buffer_lwe_after_pbs,

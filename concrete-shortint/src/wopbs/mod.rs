@@ -318,8 +318,7 @@ impl Serialize for WopbsKey {
     where
         S: Serializer,
     {
-        let mut fft_ser_eng =
-            FftSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+        let mut fft_ser_eng = FftSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
 
         let mut default_ser_eng =
             DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
@@ -349,8 +348,7 @@ impl<'de> Deserialize<'de> for WopbsKey {
         let thing =
             SerializableWopbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
 
-        let mut fft_ser_eng =
-            FftSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+        let mut fft_ser_eng = FftSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
 
         let mut default_ser_eng =
             DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;

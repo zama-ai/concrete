@@ -469,8 +469,7 @@ impl Serialize for ServerKey {
         S: Serializer,
     {
         let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
-        let mut fft_ser_eng =
-            FftSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
+        let mut fft_ser_eng = FftSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
 
         let key_switching_key = ser_eng
             .serialize(&self.key_switching_key)
@@ -498,8 +497,7 @@ impl<'de> Deserialize<'de> for ServerKey {
         let thing =
             SerializableServerKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
         let mut ser_eng = DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
-        let mut fft_ser_eng =
-            FftSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+        let mut fft_ser_eng = FftSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
 
         Ok(Self {
             key_switching_key: ser_eng
