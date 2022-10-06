@@ -128,10 +128,10 @@ jobs:
       - name: Prune KeySetCache
         run: |
           TO_CLEAN=$(find KeySetCache/* -maxdepth 1 -mindepth 1 -not -newer keysetcache.timestamp -type d)
-          if [ -n "$TO_CLEAN" ]
+          if [ -n "${TO_CLEAN}" ]
           then
-            echo Cleaning $TO_CLEAN
-            rm -rf $TO_CLEAN
+            echo "Cleaning ${TO_CLEAN}"
+            rm -rf "${TO_CLEAN}"
             echo New cache size is
             du -sh KeySetCache
           else
@@ -208,7 +208,7 @@ jobs:
 
       - name: Get ConcreteLib commit hash
         id: concretelib-hash
-        run: cd ${{ github.workspace }}/concrete && echo "::set-output name=COMMIT_SHA::`git rev-parse HEAD`"
+        run: cd ${{ github.workspace }}/concrete && echo "::set-output name=COMMIT_SHA::$(git rev-parse HEAD)"
 
       - name: Cache ConcreteLib
         uses: actions/cache@v2
@@ -251,7 +251,7 @@ jobs:
       - name: Get tmpdir path
         if: github.event_name == 'push'
         id: tmpdir-path
-        run: echo "::set-output name=TMPDIR_PATH::`echo $TMPDIR`"
+        run: echo "::set-output name=TMPDIR_PATH::$TMPDIR"
 
       # We do run run-check-tests as part of the build, as they aren't that costly
       # and will at least give minimum confidence that the compiler works in PRs
@@ -280,8 +280,8 @@ jobs:
           ccache -s
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           pip3 wheel --no-deps -w ${{ github.workspace }}/wheels .
-          delocate-wheel -v `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
-          pip3 install `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
+          delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
+          pip3 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
           make run-tests
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
@@ -312,7 +312,7 @@ jobs:
     steps:
       - name: Set env
         id: vars
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> "${GITHUB_ENV}"
       - name: Download Documentation
         id: download
         uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
@@ -436,9 +436,9 @@ jobs:
       - name: Set Outputs
         id: set-output-wheel-linux
         run: |
-          echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *manylinux*.whl | rev |cut -d "/" -f 1 |rev `"
+          echo "::set-output name=ASSET_NAME::$(find ${{ github.workspace }}/wheels/ -name '*manylinux*.whl' | rev |cut -d "/" -f 1 |rev )"
           # used later for python package test
-          echo "::set-output name=ASSET_NAME_PY${{ matrix.python }}::`find ${{ github.workspace }}/wheels/ -name *manylinux*.whl | rev |cut -d "/" -f 1 |rev `"
+          echo "::set-output name=ASSET_NAME_PY${{ matrix.python }}::$(find ${{ github.workspace }}/wheels/ -name '*manylinux*.whl' | rev |cut -d "/" -f 1 |rev )"
 
       - name: Upload Python Package
         uses: actions/upload-release-asset@v1
@@ -482,8 +482,11 @@ jobs:
         run: |
           cd compiler
           make release-tarballs
-          sudo cp ${{ github.workspace }}/tarballs/concretecompiler.tar.gz ${{ github.workspace }}/tarballs/concretecompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz
-          echo "::set-output name=ASSET_NAME::concretecompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz"
+
+          TAG="$(git describe --tags --abbrev=0)"
+
+          sudo cp "${{ github.workspace }}/tarballs/concretecompiler.tar.gz ${{ github.workspace }}/tarballs/concretecompiler-${TAG}-x86_64-linux-gnu.tar.gz"
+          echo "::set-output name=ASSET_NAME::concretecompiler-${TAG}-x86_64-linux-gnu.tar.gz"
 
       - name: Upload Tarball
         uses: actions/upload-release-asset@v1
@@ -562,12 +565,12 @@ jobs:
         run: |
           cd compiler
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
-          make Python3_EXECUTABLE=`which python` python-bindings
+          make Python3_EXECUTABLE=$(which python) python-bindings
           pip wheel --no-deps -w ${{ github.workspace }}/wheels .
-          delocate-wheel -v `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
-          echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
+          delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
+          echo "::set-output name=ASSET_NAME::$(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl' | rev |cut -d "/" -f 1 |rev )"
           # used later for python package test
-          echo "::set-output name=ASSET_NAME_PY`echo ${{ matrix.python }} |tr -d '.'`::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
+          echo "::set-output name=ASSET_NAME_PY$(echo ${{ matrix.python }} |tr -d '.')::$(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl' | rev |cut -d "/" -f 1 |rev )"
 
       - name: Upload Python Package
         uses: actions/upload-release-asset@v1
@@ -590,8 +593,11 @@ jobs:
           cp build/bin/concretecompiler tarballs/concretecompiler/bin
           cp build/lib/libConcretelangRuntime.dylib tarballs/concretecompiler/lib
           cp ../.github/workflows/assets/Installation.md tarballs/concretecompiler/
-          cd tarballs && tar -czvf concretecompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz concretecompiler
-          echo "::set-output name=ASSET_NAME::concretecompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz"
+
+          TAG=$(git describe --tags --abbrev=0)
+
+          cd tarballs && tar -czvf "concretecompiler-${TAG}-x86_64-macos-catalina.tar.gz" concretecompiler
+          echo "::set-output name=ASSET_NAME::concretecompiler-${TAG}-x86_64-macos-catalina.tar.gz"
 
       - name: Upload Tarball
         if: matrix.python == '3.8'
@@ -628,17 +634,20 @@ jobs:
 
       - name: Extract Package Filename
         id: extract-filename
-        run: echo "::set-output name=FILE_NAME::`echo '${{ toJson(needs.BuildAndPushPythonPackagesLinux.outputs) }}' | jq '.[\"${{ matrix.filename-index }}\"]' | tr -d '\"' `"
+        run: echo "::set-output name=FILE_NAME::$(echo '${{ toJson(needs.BuildAndPushPythonPackagesLinux.outputs) }}' | jq '.[\"${{ matrix.filename-index }}\"]' | tr -d '\"' )"
 
       - name: Download and Install Package
         run: |
+          FILE_NAME=$(curl -s -u "zama-bot:${{ secrets.GH_TOKEN_RELEASE }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases | \
+            jq 'map(select(.tag_name == "${{ github.ref_name }}"))' | \
+            jq '.[0].assets' | \
+            jq 'map(select(.name == "${{ steps.extract-filename.outputs.FILE_NAME }}" ))' | \
+            jq '.[].id')
+
           wget --auth-no-challenge --header='Accept:application/octet-stream' \
-          "https://${{ secrets.GH_TOKEN_RELEASE }}:@api.github.com/repos/${{ github.repository }}/releases/assets/`curl -s -u "zama-bot:${{ secrets.GH_TOKEN_RELEASE }}" \
-          https://api.github.com/repos/${{ github.repository }}/releases | \
-          jq 'map(select(.tag_name == "${{ github.ref_name }}"))' | \
-          jq '.[0].assets' | \
-          jq 'map(select(.name == "${{ steps.extract-filename.outputs.FILE_NAME }}" ))' | \
-          jq '.[].id'`" -O ${{ steps.extract-filename.outputs.FILE_NAME }}
+          "https://${{ secrets.GH_TOKEN_RELEASE }}:@api.github.com/repos/${{ github.repository }}/releases/assets/${FILE_NAME}" \
+          -O ${{ steps.extract-filename.outputs.FILE_NAME }}
           pip install ${{ steps.extract-filename.outputs.FILE_NAME }}
 
       - name: Test
@@ -671,17 +680,20 @@ jobs:
 
       - name: Extract Package Filename
         id: extract-filename
-        run: echo "::set-output name=FILE_NAME::`echo '${{ toJson(needs.BuildAndPushPackagesMacOS.outputs) }}' | jq '.[\"${{ matrix.filename-index }}\"]' | tr -d '\"' `"
+        run: echo "::set-output name=FILE_NAME::$(echo '${{ toJson(needs.BuildAndPushPackagesMacOS.outputs) }}' | jq '.[\"${{ matrix.filename-index }}\"]' | tr -d '\"' )"
 
       - name: Download and Install Package
         run: |
+          FILE_NAME=$(curl -s -u "zama-bot:${{ secrets.GH_TOKEN_RELEASE }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases | \
+            jq 'map(select(.tag_name == "${{ github.ref_name }}"))' | \
+            jq '.[0].assets' | \
+            jq 'map(select(.name == "${{ steps.extract-filename.outputs.FILE_NAME }}" ))' | \
+            jq '.[].id')
+
           wget --auth-no-challenge --header='Accept:application/octet-stream' \
-          "https://${{ secrets.GH_TOKEN_RELEASE }}:@api.github.com/repos/${{ github.repository }}/releases/assets/`curl -s -u "zama-bot:${{ secrets.GH_TOKEN_RELEASE }}" \
-          https://api.github.com/repos/${{ github.repository }}/releases | \
-          jq 'map(select(.tag_name == "${{ github.ref_name }}"))' | \
-          jq '.[0].assets' | \
-          jq 'map(select(.name == "${{ steps.extract-filename.outputs.FILE_NAME }}" ))' | \
-          jq '.[].id'`" -O ${{ steps.extract-filename.outputs.FILE_NAME }}
+            "https://${{ secrets.GH_TOKEN_RELEASE }}:@api.github.com/repos/${{ github.repository }}/releases/assets/${FILE_NAME}" \
+            -O ${{ steps.extract-filename.outputs.FILE_NAME }}
           pip install ${{ steps.extract-filename.outputs.FILE_NAME }}
 
       - name: Test
@@ -771,8 +783,8 @@ jobs:
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
-          docker build -t $IMAGE -f builders/Dockerfile.hpx-env .
-          docker push $IMAGE:latest
+          docker build -t "${IMAGE}" -f builders/Dockerfile.hpx-env .
+          docker push "${IMAGE}:latest"
 
       - name: Is Image Built
         id: is-built
