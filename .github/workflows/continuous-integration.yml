@@ -199,23 +199,6 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
 
-      - uses: actions/checkout@v2
-        with:
-          repository: zama-ai/concrete_internal
-          ref: engine_c_api
-          path: concrete
-          token: ${{ secrets.GH_TOKEN }}
-
-      - name: Get ConcreteLib commit hash
-        id: concretelib-hash
-        run: cd ${{ github.workspace }}/concrete && echo "::set-output name=COMMIT_SHA::$(git rev-parse HEAD)"
-
-      - name: Cache ConcreteLib
-        uses: actions/cache@v2
-        with:
-          path: ${{ github.workspace }}/concrete/target
-          key: ${{ runner.os }}-concrete-lib-${{ steps.concretelib-hash.outputs.COMMIT_SHA }}
-
       - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
@@ -223,12 +206,9 @@ jobs:
 
       - name: Install Deps
         run: |
-          # curl https://sh.rustup.rs -sSf | sh -s -- -y  # TODO check actions-rs/toolchain@v1
           brew install ninja ccache
           pip3 install numpy pybind11==2.8 wheel delocate
           pip3 install pytest
-          cd ${{ github.workspace }}/concrete/concrete-ffi
-          RUSTFLAGS="-C target-cpu=native" cargo build --release
 
       - name: Cache compilation (push)
         if: github.event_name == 'push'
@@ -260,7 +240,6 @@ jobs:
           cd compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
-          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           make all run-check-tests
           echo "Debug: ccache statistics (after the build):"
           ccache -s
@@ -278,7 +257,6 @@ jobs:
           cd compiler
           echo "Debug: ccache statistics (prior to the tests):"
           ccache -s
-          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           pip3 wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
           pip3 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
@@ -529,12 +507,10 @@ jobs:
           cd compiler
           make concrete-optimizer-lib
 
-      - uses: actions/checkout@v2
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
         with:
-          repository: zama-ai/concrete_internal
-          ref: engine_c_api
-          path: concrete
-          token: ${{ secrets.GH_TOKEN }}
+          toolchain: stable
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -543,11 +519,8 @@ jobs:
 
       - name: Install Deps
         run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
           brew install ninja ccache
           pip install numpy pybind11==2.8 wheel delocate
-          cd ${{ github.workspace }}/concrete/concrete-ffi
-          RUSTFLAGS="-C target-cpu=native" cargo build --release
 
       - name: Update Python Version
         run: cd compiler && make update-python-version
@@ -564,7 +537,6 @@ jobs:
         id: build-wheel-macos
         run: |
           cd compiler
-          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           make Python3_EXECUTABLE=$(which python) python-bindings
           pip wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
@@ -587,7 +559,6 @@ jobs:
         id: build-mac-tarball
         run: |
           cd compiler
-          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           make concretecompiler
           mkdir -p tarballs/concretecompiler/lib tarballs/concretecompiler/bin
           cp build/bin/concretecompiler tarballs/concretecompiler/bin
