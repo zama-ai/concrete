@@ -19,15 +19,15 @@ get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context) {
   return context->get_bsk();
 }
 
-FftwFourierLweBootstrapKey64 *get_fftw_fourier_bootstrap_key_u64(
-    mlir::concretelang::RuntimeContext *context) {
-  return context->get_fftw_fourier_bsk();
+FftFourierLweBootstrapKey64 *
+get_fft_fourier_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context) {
+  return context->get_fft_fourier_bsk();
 }
 
 DefaultEngine *get_engine(mlir::concretelang::RuntimeContext *context) {
   return context->get_default_engine();
 }
 
-FftwEngine *get_fftw_engine(mlir::concretelang::RuntimeContext *context) {
-  return context->get_fftw_engine();
+FftEngine *get_fft_engine(mlir::concretelang::RuntimeContext *context) {
+  return context->get_fft_engine();
 }

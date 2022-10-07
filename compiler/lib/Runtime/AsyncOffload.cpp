@@ -66,9 +66,9 @@ void async_bootstrap(
           expanded_tabulated_function_array.data(), poly_size));
 
   CAPI_ASSERT_ERROR(
-      fftw_engine_lwe_ciphertext_discarding_bootstrap_u64_raw_ptr_buffers(
-          get_fftw_engine(context), get_engine(context),
-          get_fftw_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
+      fft_engine_lwe_ciphertext_discarding_bootstrap_u64_raw_ptr_buffers(
+          get_fft_engine(context), get_engine(context),
+          get_fft_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
           ct0_aligned + ct0_offset, glwe_ct));
   promise.set_value(concretelang::clientlib::MemRefDescriptor<1>{
       out_allocated, out_aligned, out_offset, {out_size}, {out_stride}});

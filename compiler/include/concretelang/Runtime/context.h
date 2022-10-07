@@ -37,26 +37,26 @@ typedef struct RuntimeContext {
 
   ~RuntimeContext() {
     CAPI_ASSERT_ERROR(destroy_default_engine(default_engine));
-    for (const auto &key : fftw_engines) {
-      CAPI_ASSERT_ERROR(destroy_fftw_engine(key.second));
+    for (const auto &key : fft_engines) {
+      CAPI_ASSERT_ERROR(destroy_fft_engine(key.second));
     }
     if (fbsk != nullptr) {
-      CAPI_ASSERT_ERROR(destroy_fftw_fourier_lwe_bootstrap_key_u64(fbsk));
+      CAPI_ASSERT_ERROR(destroy_fft_fourier_lwe_bootstrap_key_u64(fbsk));
     }
   }
 
-  FftwEngine *get_fftw_engine() {
+  FftEngine *get_fft_engine() {
     pthread_t threadId = pthread_self();
     std::lock_guard<std::mutex> guard(engines_map_guard);
-    auto engineIt = fftw_engines.find(threadId);
-    if (engineIt == fftw_engines.end()) {
-      FftwEngine *fftw_engine = nullptr;
+    auto engineIt = fft_engines.find(threadId);
+    if (engineIt == fft_engines.end()) {
+      FftEngine *fft_engine = nullptr;
 
-      CAPI_ASSERT_ERROR(new_fftw_engine(&fftw_engine));
+      CAPI_ASSERT_ERROR(new_fft_engine(&fft_engine));
 
       engineIt =
-          fftw_engines
-              .insert(std::pair<pthread_t, FftwEngine *>(threadId, fftw_engine))
+          fft_engines
+              .insert(std::pair<pthread_t, FftEngine *>(threadId, fft_engine))
               .first;
     }
     assert(engineIt->second && "No engine available in context");
@@ -65,7 +65,7 @@ typedef struct RuntimeContext {
 
   DefaultEngine *get_default_engine() { return default_engine; }
 
-  FftwFourierLweBootstrapKey64 *get_fftw_fourier_bsk() {
+  FftFourierLweBootstrapKey64 *get_fft_fourier_bsk() {
 
     if (fbsk != nullptr) {
       return fbsk;
@@ -74,8 +74,8 @@ typedef struct RuntimeContext {
     const std::lock_guard<std::mutex> guard(fbskMutex);
     if (fbsk == nullptr) {
       CAPI_ASSERT_ERROR(
-          fftw_engine_convert_lwe_bootstrap_key_to_fftw_fourier_lwe_bootstrap_key_u64(
-              get_fftw_engine(), evaluationKeys.getBsk(), &fbsk));
+          fft_engine_convert_lwe_bootstrap_key_to_fft_fourier_lwe_bootstrap_key_u64(
+              get_fft_engine(), evaluationKeys.getBsk(), &fbsk));
     }
     return fbsk;
   }
@@ -97,9 +97,9 @@ typedef struct RuntimeContext {
 
 private:
   std::mutex fbskMutex;
-  FftwFourierLweBootstrapKey64 *fbsk = nullptr;
+  FftFourierLweBootstrapKey64 *fbsk = nullptr;
   DefaultEngine *default_engine;
-  std::map<pthread_t, FftwEngine *> fftw_engines;
+  std::map<pthread_t, FftEngine *> fft_engines;
   std::mutex engines_map_guard;
 
 } RuntimeContext;
@@ -111,14 +111,14 @@ extern "C" {
 LweKeyswitchKey64 *
 get_keyswitch_key_u64(mlir::concretelang::RuntimeContext *context);
 
-FftwFourierLweBootstrapKey64 *
-get_fftw_fourier_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context);
+FftFourierLweBootstrapKey64 *
+get_fft_fourier_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context);
 
 LweBootstrapKey64 *
 get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context);
 
 DefaultEngine *get_engine(mlir::concretelang::RuntimeContext *context);
 
-FftwEngine *get_fftw_engine(mlir::concretelang::RuntimeContext *context);
+FftEngine *get_fft_engine(mlir::concretelang::RuntimeContext *context);
 }
 #endif

@@ -79,16 +79,16 @@ std::ostream &operator<<(std::ostream &ostream, const LweBootstrapKey64 *key) {
 }
 
 std::ostream &operator<<(std::ostream &ostream,
-                         const FftwFourierLweBootstrapKey64 *key) {
-  FftwSerializationEngine *engine;
+                         const FftFourierLweBootstrapKey64 *key) {
+  FftSerializationEngine *engine;
 
   // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+  CAPI_ASSERT_ERROR(new_fft_serialization_engine(&engine));
 
   Buffer b;
 
   CAPI_ASSERT_ERROR(
-      fftw_serialization_engine_serialize_fftw_fourier_lwe_bootstrap_key_u64(
+      fft_serialization_engine_serialize_fft_fourier_lwe_bootstrap_key_u64(
           engine, key, &b))
 
   writeBufferLike(ostream, b);
@@ -122,15 +122,15 @@ std::istream &operator>>(std::istream &istream, LweBootstrapKey64 *&key) {
 }
 
 std::istream &operator>>(std::istream &istream,
-                         FftwFourierLweBootstrapKey64 *&key) {
-  FftwSerializationEngine *engine;
+                         FftFourierLweBootstrapKey64 *&key) {
+  FftSerializationEngine *engine;
 
   // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+  CAPI_ASSERT_ERROR(new_fft_serialization_engine(&engine));
 
   key = read_deser(
       istream,
-      fftw_serialization_engine_deserialize_fftw_fourier_lwe_bootstrap_key_u64,
+      fft_serialization_engine_deserialize_fft_fourier_lwe_bootstrap_key_u64,
       engine);
   return istream;
 }

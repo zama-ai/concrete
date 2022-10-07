@@ -360,9 +360,9 @@ void memref_bootstrap_lwe_u64(
           expanded_tabulated_function_array.data(), poly_size));
 
   CAPI_ASSERT_ERROR(
-      fftw_engine_lwe_ciphertext_discarding_bootstrap_u64_raw_ptr_buffers(
-          get_fftw_engine(context), get_engine(context),
-          get_fftw_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
+      fft_engine_lwe_ciphertext_discarding_bootstrap_u64_raw_ptr_buffers(
+          get_fft_engine(context), get_engine(context),
+          get_fft_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
           ct0_aligned + ct0_offset, glwe_ct));
   free(glwe_ct);
 }
@@ -476,9 +476,9 @@ void memref_wop_pbs_crt_buffer(
                    (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 5));
     in_block[lwe_big_size - 1] -= sub;
     CAPI_ASSERT_ERROR(
-        fftw_engine_lwe_ciphertext_discarding_bit_extraction_unchecked_u64_raw_ptr_buffers(
-            context->get_fftw_engine(), context->get_default_engine(),
-            context->get_fftw_fourier_bsk(), context->get_ksk(),
+        fft_engine_lwe_ciphertext_discarding_bit_extraction_unchecked_u64_raw_ptr_buffers(
+            context->get_fft_engine(), context->get_default_engine(),
+            context->get_fft_fourier_bsk(), context->get_ksk(),
             &extract_bits_output_buffer[lwe_small_size *
                                         extract_bits_output_offset],
             in_block, nb_bits_to_extract, delta_log));
@@ -493,9 +493,9 @@ void memref_wop_pbs_crt_buffer(
 
   // Vertical packing
   CAPI_ASSERT_ERROR(
-      fftw_engine_lwe_ciphertext_vector_discarding_circuit_bootstrap_boolean_vertical_packing_u64_raw_ptr_buffers(
-          context->get_fftw_engine(), context->get_default_engine(),
-          context->get_fftw_fourier_bsk(), out_aligned, lwe_big_size,
+      fft_engine_lwe_ciphertext_vector_discarding_circuit_bootstrap_boolean_vertical_packing_u64_raw_ptr_buffers(
+          context->get_fft_engine(), context->get_default_engine(),
+          context->get_fft_fourier_bsk(), out_aligned, lwe_big_size,
           crt_decomp_size, extract_bits_output_buffer, lwe_small_size,
           total_number_of_bits_per_block, luts_crt, luts_crt_size,
           cbs_level_count, cbs_base_log, context->get_fpksk()));
