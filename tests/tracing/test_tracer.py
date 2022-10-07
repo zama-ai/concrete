@@ -7,6 +7,7 @@ import pytest
 
 from concrete.numpy.dtypes import UnsignedInteger
 from concrete.numpy.tracing import Tracer
+from concrete.numpy.tracing.typing import uint4
 from concrete.numpy.values import EncryptedTensor
 
 
@@ -42,6 +43,13 @@ from concrete.numpy.values import EncryptedTensor
             {"x": EncryptedTensor(UnsignedInteger(7), shape=(4,))},
             RuntimeError,
             "Only __call__ hook is supported for numpy ufuncs",
+        ),
+        pytest.param(
+            lambda x: x.astype(uint4),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(4,))},
+            ValueError,
+            "`astype` method must be called with a "
+            "numpy type for compilation (e.g., value.astype(np.int64))",
         ),
     ],
 )

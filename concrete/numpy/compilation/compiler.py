@@ -45,6 +45,56 @@ class Compiler:
     inputset: List[Any]
     graph: Optional[Graph]
 
+    _is_direct: bool
+    _parameter_values: Dict[str, Value]
+
+    @staticmethod
+    def assemble(
+        function: Callable,
+        parameter_values: Dict[str, Value],
+        configuration: Optional[Configuration] = None,
+        artifacts: Optional[DebugArtifacts] = None,
+        **kwargs,
+    ) -> Circuit:
+        """
+        Assemble a circuit from the raw parameter values, used in direct circuit definition.
+
+        Args:
+            function (Callable):
+                function to convert to a circuit
+
+            parameter_values (Dict[str, Value]):
+                parameter values of the function
+
+            configuration(Optional[Configuration], default = None):
+                configuration to use
+
+            artifacts (Optional[DebugArtifacts], default = None):
+                artifacts to store information about the process
+
+            kwargs (Dict[str, Any]):
+                configuration options to overwrite
+
+        Returns:
+            Circuit:
+                assembled circuit
+        """
+
+        compiler = Compiler(
+            function,
+            {
+                name: "encrypted" if value.is_encrypted else "clear"
+                for name, value in parameter_values.items()
+            },
+        )
+
+        # pylint: disable=protected-access
+        compiler._is_direct = True
+        compiler._parameter_values = parameter_values
+        # pylint: enable=protected-access
+
+        return compiler.compile(None, configuration, artifacts, **kwargs)
+
     def __init__(
         self,
         function: Callable,
@@ -101,6 +151,9 @@ class Compiler:
 
         self.inputset = []
         self.graph = None
+
+        self._is_direct = False
+        self._parameter_values = {}
 
     def __call__(
         self,
@@ -170,6 +223,18 @@ class Compiler:
             inputset (Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]):
                 optional inputset to extend accumulated inputset before bounds measurement
         """
+
+        if self._is_direct:
+
+            self.graph = Tracer.trace(self.function, self._parameter_values, is_direct=True)
+            if self.artifacts is not None:
+                self.artifacts.add_graph("initial", self.graph)  # pragma: no cover
+
+            fuse(self.graph, self.artifacts)
+            if self.artifacts is not None:
+                self.artifacts.add_graph("final", self.graph)  # pragma: no cover
+
+            return
 
         if inputset is not None:
             previous_inputset_length = len(self.inputset)

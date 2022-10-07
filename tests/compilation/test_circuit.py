@@ -8,8 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from concrete.numpy import Client, ClientSpecs, EvaluationKeys, Server
-from concrete.numpy.compilation import compiler
+from concrete.numpy import Client, ClientSpecs, EvaluationKeys, Server, compiler
 
 
 def test_circuit_str(helpers):

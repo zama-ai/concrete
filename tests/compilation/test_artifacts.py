@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from concrete.numpy.compilation import DebugArtifacts, compiler
+from concrete.numpy import DebugArtifacts, compiler
 
 
 def test_artifacts_export(helpers):

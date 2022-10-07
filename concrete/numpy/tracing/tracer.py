@@ -4,13 +4,13 @@ Declaration of `Tracer` class.
 
 import inspect
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 import networkx as nx
 import numpy as np
 from numpy.typing import DTypeLike
 
-from ..dtypes import Float, Integer
+from ..dtypes import BaseDataType, Float, Integer
 from ..internal.utils import assert_that
 from ..representation import Graph, Node, Operation
 from ..representation.utils import format_indexing_element
@@ -29,13 +29,12 @@ class Tracer:
     # property to keep track of assignments
     last_version: Optional["Tracer"] = None
 
-    # variable to control the behavior of __eq__
-    # so that it can be traced but still allow
-    # using Tracers in dicts when not tracing
+    # variables to control the behavior of certain functions
     _is_tracing: bool = False
+    _is_direct: bool = False
 
     @staticmethod
-    def trace(function: Callable, parameters: Dict[str, Value]) -> Graph:
+    def trace(function: Callable, parameters: Dict[str, Value], is_direct: bool = False) -> Graph:
         """
         Trace `function` and create the `Graph` that represents it.
 
@@ -46,6 +45,9 @@ class Tracer:
             parameters (Dict[str, Value]):
                 parameters of function to trace
                 e.g. parameter x is an EncryptedScalar holding a 7-bit UnsignedInteger
+
+            is_direct (bool, default = False):
+                whether the tracing is done on actual parameters or placeholders
 
         Returns:
             Graph:
@@ -66,6 +68,8 @@ class Tracer:
             node = Node.input(param, parameters[param])
             arguments[param] = Tracer(node, [])
             input_indices[node] = index
+
+        Tracer._is_direct = is_direct
 
         Tracer._is_tracing = True
         output_tracers: Any = function(**arguments)
@@ -383,6 +387,13 @@ class Tracer:
         output_value = Value.of(evaluation)
         output_value.is_encrypted = any(tracer.output.is_encrypted for tracer in tracers)
 
+        if Tracer._is_direct and isinstance(output_value.dtype, Integer):
+            resulting_bit_width = 0
+            for tracer in tracers:
+                assert isinstance(tracer.output.dtype, Integer)
+                resulting_bit_width = max(resulting_bit_width, tracer.output.dtype.bit_width)
+            output_value.dtype.bit_width = resulting_bit_width
+
         computation = Node.generic(
             operation.__name__,
             [tracer.output for tracer in tracers],
@@ -488,7 +499,12 @@ class Tracer:
 
     def __round__(self, ndigits=None):
         if ndigits is None:
-            return Tracer._trace_numpy_operation(np.around, self).astype(np.int64)
+            result = Tracer._trace_numpy_operation(np.around, self)
+            if self._is_direct:
+                raise RuntimeError(
+                    "'round(x)' cannot be used in direct definition (you may use np.around instead)"
+                )
+            return result.astype(np.int64)
 
         return Tracer._trace_numpy_operation(np.around, self, decimals=ndigits)
 
@@ -551,13 +567,38 @@ class Tracer:
             else Tracer._trace_numpy_operation(np.not_equal, self, self.sanitize(other))
         )
 
-    def astype(self, dtype: DTypeLike) -> "Tracer":
+    def astype(self, dtype: Union[DTypeLike, Type["ScalarAnnotation"]]) -> "Tracer":
         """
         Trace numpy.ndarray.astype(dtype).
         """
 
-        normalized_dtype = np.dtype(dtype)
-        if np.issubdtype(normalized_dtype, np.integer) and normalized_dtype != np.int64:
+        if Tracer._is_direct:
+            output_value = deepcopy(self.output)
+
+            if isinstance(dtype, type) and issubclass(dtype, ScalarAnnotation):
+                output_value.dtype = dtype.dtype
+            else:
+                raise ValueError(
+                    "`astype` method must be called with a concrete.numpy type "
+                    "for direct circuit definition (e.g., value.astype(cnp.uint4))"
+                )
+
+            computation = Node.generic(
+                "astype",
+                [self.output],
+                output_value,
+                lambda x: x,  # unused for direct definition
+            )
+            return Tracer(computation, [self])
+
+        if isinstance(dtype, type) and issubclass(dtype, ScalarAnnotation):
+            raise ValueError(
+                "`astype` method must be called with a "
+                "numpy type for compilation (e.g., value.astype(np.int64))"
+            )
+
+        dtype = np.dtype(dtype).type
+        if np.issubdtype(dtype, np.integer) and dtype != np.int64:
             print(
                 "Warning: When using `value.astype(newtype)` "
                 "with an integer newtype, "
@@ -567,9 +608,9 @@ class Tracer:
             )
 
         output_value = deepcopy(self.output)
-        output_value.dtype = Value.of(normalized_dtype.type(0)).dtype
+        output_value.dtype = Value.of(dtype(0)).dtype  # type: ignore
 
-        if np.issubdtype(normalized_dtype.type, np.integer):
+        if np.issubdtype(dtype, np.integer):
 
             def evaluator(x, dtype):
                 if np.any(np.isnan(x)):
@@ -588,7 +629,7 @@ class Tracer:
             [self.output],
             output_value,
             evaluator,
-            kwargs={"dtype": normalized_dtype.type},
+            kwargs={"dtype": dtype},
         )
         return Tracer(computation, [self])
 
@@ -765,3 +806,23 @@ class Tracer:
         """
 
         return Tracer._trace_numpy_operation(np.transpose, self)
+
+
+class Annotation(Tracer):
+    """
+    Base annotation for direct definition.
+    """
+
+
+class ScalarAnnotation(Annotation):
+    """
+    Base scalar annotation for direct definition.
+    """
+
+    dtype: BaseDataType
+
+
+class TensorAnnotation(Annotation):
+    """
+    Base tensor annotation for direct definition.
+    """

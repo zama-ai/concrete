@@ -7,6 +7,5 @@ from .circuit import Circuit
 from .client import Client
 from .compiler import Compiler, EncryptionStatus
 from .configuration import Configuration
-from .decorator import compiler
 from .server import Server
 from .specs import ClientSpecs

@@ -1,5 +1,5 @@
 """
-Tests of LookupTable.
+Tests of 'array' extension.
 """
 
 import pytest

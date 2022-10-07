@@ -2,18 +2,19 @@
 Declaration of `univariate` function.
 """
 
-from typing import Any, Callable, Union
+from typing import Any, Callable, Optional, Type, Union
 
 import numpy as np
 
-from ..dtypes import Float
+from ..dtypes import BaseDataType, Float
 from ..representation import Node
-from ..tracing import Tracer
+from ..tracing import ScalarAnnotation, Tracer
 from ..values import Value
 
 
 def univariate(
     function: Callable[[Any], Any],
+    outputs: Optional[Union[BaseDataType, Type[ScalarAnnotation]]] = None,
 ) -> Callable[[Union[Tracer, Any]], Union[Tracer, Any]]:
     """
     Wrap a univariate function so that it is traced into a single generic node.
@@ -21,6 +22,9 @@ def univariate(
     Args:
         function (Callable[[Any], Any]):
             univariate function to wrap
+
+        outputs (Optional[Union[BaseDataType, Type[ScalarAnnotation]]], default = None):
+            data type of the result, unused during compilation, required for direct definition
 
     Returns:
         Callable[[Union[Tracer, Any]], Union[Tracer, Any]]:
@@ -56,6 +60,19 @@ def univariate(
             output_value = Value.of(evaluation, is_encrypted=x.output.is_encrypted)
             if output_value.shape != x.output.shape:
                 raise ValueError(f"Function {function.__name__} cannot be used with cnp.univariate")
+
+            # pylint: disable=protected-access
+            is_direct = Tracer._is_direct
+            # pylint: enable=protected-access
+
+            if is_direct:
+                if outputs is None:
+                    raise ValueError(
+                        "Univariate extension requires "
+                        "`outputs` argument for direct circuit definition "
+                        "(e.g., cnp.univariate(function, outputs=cnp.uint4)(x))"
+                    )
+                output_value.dtype = outputs if isinstance(outputs, BaseDataType) else outputs.dtype
 
             computation = Node.generic(
                 function.__name__,
