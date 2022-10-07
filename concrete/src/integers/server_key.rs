@@ -112,7 +112,6 @@ macro_rules! impl_smart_scalar_assign_op_for_concrete_integer_server_key {
     ($smart_trait:ident($smart_trait_fn:ident) => ($ciphertext:ty, $method:ident)) => {
         impl $smart_trait<$ciphertext, u64> for concrete_integer::ServerKey {
             fn $smart_trait_fn(&self, lhs: &mut $ciphertext, rhs: u64) {
-                // TODO fix this
                 self.$method(lhs, rhs.try_into().unwrap());
             }
         }
@@ -151,3 +150,21 @@ impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smar
 impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::RadixCiphertext, smart_scalar_mul_assign_parallelized));
 impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartShlAssign(smart_shl_assign) => (concrete_integer::RadixCiphertext, unchecked_scalar_left_shift_assign_parallelized));
 impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartShrAssign(smart_shr_assign) => (concrete_integer::RadixCiphertext, unchecked_scalar_right_shift_assign_parallelized));
+
+// Crt
+
+impl_smart_op_for_concrete_integer_server_key!(SmartAdd(smart_add) => (concrete_integer::CrtCiphertext, smart_add_crt_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartSub(smart_sub) => (concrete_integer::CrtCiphertext, smart_crt_sub));
+impl_smart_op_for_concrete_integer_server_key!(SmartMul(smart_mul) => (concrete_integer::CrtCiphertext, smart_mul_crt_parallelized));
+
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartAddAssign(smart_add_assign) => (concrete_integer::CrtCiphertext, smart_add_crt_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smart_sub_assign) => (concrete_integer::CrtCiphertext, smart_crt_sub));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::CrtCiphertext, smart_mul_crt_assign_parallelized));
+
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartAdd(smart_add) => (concrete_integer::CrtCiphertext, smart_crt_scalar_add));
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartSub(smart_sub) => (concrete_integer::CrtCiphertext, smart_crt_scalar_sub));
+impl_smart_scalar_op_for_concrete_integer_server_key!(SmartMul(smart_mul) => (concrete_integer::CrtCiphertext, smart_crt_scalar_mul));
+
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartAddAssign(smart_add_assign) => (concrete_integer::CrtCiphertext, smart_crt_scalar_add_assign));
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smart_sub_assign) => (concrete_integer::CrtCiphertext, smart_crt_scalar_sub_assign));
+impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::CrtCiphertext, smart_crt_scalar_mul_assign));

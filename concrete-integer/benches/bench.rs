@@ -343,12 +343,12 @@ fn crt(c: &mut Criterion) {
     //scalar mul
     c.bench_function("CRT: Smart_Mul", |b| {
         b.iter(|| {
-            sks.smart_mul_crt_assign(&mut ctxt_1, &mut ctxt_2);
+            sks.smart_crt_mul_assign(&mut ctxt_1, &mut ctxt_2);
         })
     });
     c.bench_function("CRT: Smart_Add", |b| {
         b.iter(|| {
-            sks.smart_add_crt_assign(&mut ctxt_1, &mut ctxt_2);
+            sks.smart_crt_add_assign(&mut ctxt_1, &mut ctxt_2);
         })
     });
 }
@@ -755,7 +755,7 @@ fn concrete_integer_unchecked_add_crt_16_bits(c: &mut Criterion) {
     // add the two ciphertexts
     group.bench_function(id, |b| {
         b.iter(|| {
-            sks.unchecked_add_crt_assign(&mut ct_zero, &ct_one);
+            sks.unchecked_crt_add_assign(&mut ct_zero, &ct_one);
         })
     });
 }
@@ -881,7 +881,7 @@ fn concrete_integer_unchecked_add_crt_32_bits(c: &mut Criterion) {
     // add the two ciphertexts
     group.bench_function(id, |b| {
         b.iter(|| {
-            sks.unchecked_add_crt_assign(&mut ct_zero, &ct_one);
+            sks.unchecked_crt_add_assign(&mut ct_zero, &ct_one);
         })
     });
 }

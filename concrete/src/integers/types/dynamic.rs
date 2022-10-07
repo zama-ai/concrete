@@ -226,7 +226,7 @@ impl SmartAdd<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerServ
                 DynInnerCiphertext::Radix(self.inner.smart_add(lhs, rhs))
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                DynInnerCiphertext::Crt(self.inner.smart_add_crt(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_add_crt_parallelized(lhs, rhs))
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -247,7 +247,9 @@ impl SmartSub<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerServ
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
                 DynInnerCiphertext::Radix(self.inner.smart_sub(lhs, rhs))
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
+                DynInnerCiphertext::Crt(self.inner.smart_crt_sub(lhs, rhs))
+            },
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -268,7 +270,7 @@ impl SmartMul<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerServ
                 DynInnerCiphertext::Radix(self.inner.smart_mul(lhs, rhs))
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                DynInnerCiphertext::Crt(self.inner.smart_mul_crt(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_mul_crt_parallelized(lhs, rhs))
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -345,7 +347,7 @@ impl SmartAddAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerSer
                 self.inner.smart_add_assign(lhs, rhs)
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                self.inner.smart_add_crt_assign(lhs, rhs)
+                self.inner.smart_add_crt_assign_parallelized(lhs, rhs)
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -360,7 +362,9 @@ impl SmartSubAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerSer
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
                 self.inner.smart_sub_assign(lhs, rhs)
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
+                self.inner.smart_crt_sub_assign(lhs, rhs)
+            },
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -375,7 +379,7 @@ impl SmartMulAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerSer
                 self.inner.smart_mul_assign(lhs, rhs)
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                self.inner.smart_mul_crt_assign(lhs, rhs)
+                self.inner.smart_mul_crt_assign_parallelized(lhs, rhs)
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -435,7 +439,9 @@ impl SmartAdd<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
             DynInnerCiphertext::Radix(lhs) => {
                 DynInnerCiphertext::Radix(self.inner.smart_scalar_add(lhs, rhs))
             }
-            DynInnerCiphertext::Crt(_lhs) => todo!(),
+            DynInnerCiphertext::Crt(lhs) => {
+                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_add(lhs, rhs))
+            },
         }
     }
 }
@@ -448,7 +454,9 @@ impl SmartSub<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
             DynInnerCiphertext::Radix(lhs) => {
                 DynInnerCiphertext::Radix(self.inner.smart_scalar_sub(lhs, rhs))
             }
-            DynInnerCiphertext::Crt(_lhs) => todo!(),
+            DynInnerCiphertext::Crt(lhs) => {
+                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_sub(lhs, rhs))
+            },
         }
     }
 }
@@ -461,7 +469,9 @@ impl SmartMul<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
             DynInnerCiphertext::Radix(lhs) => {
                 DynInnerCiphertext::Radix(self.inner.smart_scalar_mul(lhs, rhs))
             }
-            DynInnerCiphertext::Crt(_lhs) => todo!(),
+            DynInnerCiphertext::Crt(lhs) => {
+                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_mul(lhs, rhs))
+            },
         }
     }
 }
@@ -500,8 +510,8 @@ impl SmartAddAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_add_assign(&self, lhs: &mut DynInnerCiphertext, rhs: u64) {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => self.inner.smart_scalar_add_assign(lhs, rhs),
-            DynInnerCiphertext::Crt(_lhs) => {
-                todo!()
+            DynInnerCiphertext::Crt(lhs) => {
+                self.inner.smart_crt_scalar_add_assign(lhs, rhs)
             }
         }
     }
@@ -511,8 +521,8 @@ impl SmartSubAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_sub_assign(&self, lhs: &mut DynInnerCiphertext, rhs: u64) {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => self.inner.smart_scalar_sub_assign(lhs, rhs),
-            DynInnerCiphertext::Crt(_lhs) => {
-                todo!()
+            DynInnerCiphertext::Crt(lhs) => {
+                self.inner.smart_crt_scalar_sub_assign(lhs, rhs)
             }
         }
     }
@@ -522,8 +532,8 @@ impl SmartMulAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_mul_assign(&self, lhs: &mut DynInnerCiphertext, rhs: u64) {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => self.inner.smart_scalar_mul_assign(lhs, rhs),
-            DynInnerCiphertext::Crt(_lhs) => {
-                todo!()
+            DynInnerCiphertext::Crt(lhs) => {
+                self.inner.smart_crt_scalar_mul_assign(lhs, rhs)
             }
         }
     }
