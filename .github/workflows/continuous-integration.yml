@@ -257,6 +257,7 @@ jobs:
           cd compiler
           echo "Debug: ccache statistics (prior to the tests):"
           ccache -s
+          export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
           pip3 wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
           pip3 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
@@ -537,7 +538,8 @@ jobs:
         id: build-wheel-macos
         run: |
           cd compiler
-          make Python3_EXECUTABLE=$(which python) python-bindings
+          make Python3_EXECUTABLE=$(which python) DATAFLOW_EXECUTION_ENABLED=OFF python-bindings
+          export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
           pip wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
           echo "::set-output name=ASSET_NAME::$(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl' | rev |cut -d "/" -f 1 |rev )"

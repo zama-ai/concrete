@@ -35,7 +35,10 @@ class MakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        cmd = ["make", "DATAFLOW_EXECUTION_ENABLED=ON", "CCACHE=ON"]
+        cmd = ["make", "CCACHE=ON"]
+        # default to dataflow_exec to ON
+        dataflow_build = os.environ.get("CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED", "ON")
+        cmd.append(f"DATAFLOW_EXECUTION_ENABLED={dataflow_build}")
         py_exec = os.environ.get("CONCRETE_COMPILER_Python3_EXECUTABLE")
         if py_exec:
             cmd.append(f"Python3_EXECUTABLE={py_exec}")
