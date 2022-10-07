@@ -1,11 +1,49 @@
-mod add;
-mod mul;
+mod add_crt;
+mod mul_crt;
+mod neg_crt;
+mod scalar_add_crt;
+mod scalar_mul_crt;
+mod scalar_sub_crt;
+mod sub_crt;
 
 use crate::ciphertext::CrtCiphertext;
 use crate::ServerKey;
 use rayon::prelude::*;
 
 impl ServerKey {
+    /// Extract all the messages.
+    ///
+    /// # Example
+    ///
+    ///```rust
+    /// use concrete_integer::gen_keys;
+    /// use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (cks, sks) = gen_keys(&PARAM_MESSAGE_2_CARRY_2);
+    ///
+    /// let clear_1 = 14;
+    /// let clear_2 = 14;
+    /// let basis = vec![2, 3, 5];
+    /// // Encrypt two messages
+    /// let mut ctxt_1 = cks.encrypt_crt(clear_1, basis.clone());
+    /// let ctxt_2 = cks.encrypt_crt(clear_2, basis);
+    ///
+    /// // Compute homomorphically a multiplication
+    /// sks.unchecked_crt_add_assign(&mut ctxt_1, &ctxt_2);
+    ///
+    /// sks.full_extract_parallelized(&mut ctxt_1);
+    ///
+    /// // Decrypt
+    /// let res = cks.decrypt_crt(&ctxt_1);
+    /// assert_eq!((clear_1 + clear_2) % 30, res);
+    /// ```
+    pub fn full_extract_parallelized(&self, ctxt: &mut CrtCiphertext) {
+        ctxt.blocks.par_iter_mut().for_each(|ct_i| {
+            self.key.message_extract_assign(ct_i);
+        });
+    }
+
     /// Computes a PBS for CRT-compliant functions.
     ///
     /// # Warning

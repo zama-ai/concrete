@@ -1,4 +1,5 @@
 use crate::{CrtCiphertext, ServerKey};
+use rayon::prelude::*;
 
 impl ServerKey {
     /// Homomorphically computes the opposite of a ciphertext encrypting an integer message.
@@ -21,17 +22,15 @@ impl ServerKey {
     ///
     /// let mut ctxt = cks.encrypt_crt(clear, basis.clone());
     ///
-    /// sks.unchecked_crt_neg_assign(&mut ctxt);
+    /// sks.unchecked_crt_neg_assign_parallelized(&mut ctxt);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!(16, res);
     /// ```
-    pub fn unchecked_crt_neg(&self, ctxt: &CrtCiphertext) -> CrtCiphertext {
+    pub fn unchecked_crt_neg_parallelized(&self, ctxt: &CrtCiphertext) -> CrtCiphertext {
         let mut result = ctxt.clone();
-
-        self.unchecked_crt_neg_assign(&mut result);
-
+        self.unchecked_crt_neg_assign_parallelized(&mut result);
         result
     }
 
@@ -41,10 +40,10 @@ impl ServerKey {
     /// capacity of the ciphertext.
     ///
     /// The result is assigned to the `ct_left` ciphertext.
-    pub fn unchecked_crt_neg_assign(&self, ctxt: &mut CrtCiphertext) {
-        for ct_i in ctxt.blocks.iter_mut() {
+    pub fn unchecked_crt_neg_assign_parallelized(&self, ctxt: &mut CrtCiphertext) {
+        ctxt.blocks.par_iter_mut().for_each(|ct_i| {
             self.key.unchecked_neg_assign(ct_i);
-        }
+        });
     }
 
     /// Homomorphically computes the opposite of a ciphertext encrypting an integer message.
@@ -63,32 +62,23 @@ impl ServerKey {
     ///
     /// let mut ctxt = cks.encrypt_crt(clear, basis.clone());
     ///
-    /// sks.smart_crt_neg_assign(&mut ctxt);
+    /// sks.smart_crt_neg_assign_parallelized(&mut ctxt);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!(16, res);
     /// ```
-    pub fn smart_crt_neg_assign(&self, ctxt: &mut CrtCiphertext) {
+    pub fn smart_crt_neg_assign_parallelized(&self, ctxt: &mut CrtCiphertext) {
         if !self.is_crt_neg_possible(ctxt) {
-            self.full_extract(ctxt);
+            self.full_extract_parallelized(ctxt);
         }
-        self.unchecked_crt_neg_assign(ctxt);
+        self.unchecked_crt_neg_assign_parallelized(ctxt);
     }
 
-    pub fn smart_crt_neg(&self, ctxt: &mut CrtCiphertext) -> CrtCiphertext {
+    pub fn smart_crt_neg_parallelized(&self, ctxt: &mut CrtCiphertext) -> CrtCiphertext {
         if !self.is_crt_neg_possible(ctxt) {
-            self.full_extract(ctxt);
+            self.full_extract_parallelized(ctxt);
         }
-        self.unchecked_crt_neg(ctxt)
-    }
-
-    pub fn is_crt_neg_possible(&self, ctxt: &CrtCiphertext) -> bool {
-        for ct_i in ctxt.blocks.iter() {
-            if !self.key.is_neg_possible(ct_i) {
-                return false;
-            }
-        }
-        true
+        self.unchecked_crt_neg_parallelized(ctxt)
     }
 }

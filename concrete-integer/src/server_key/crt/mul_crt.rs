@@ -21,24 +21,24 @@ impl ServerKey {
     /// let ctxt_2 = cks.encrypt_crt(clear_2, basis);
     ///
     /// // Compute homomorphically a multiplication
-    /// sks.unchecked_mul_crt_assign(&mut ctxt_1, &ctxt_2);
+    /// sks.unchecked_crt_mul_assign(&mut ctxt_1, &ctxt_2);
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 * clear_2) % 30, res);
     /// ```
-    pub fn unchecked_mul_crt_assign(&self, ct_left: &mut CrtCiphertext, ct_right: &CrtCiphertext) {
+    pub fn unchecked_crt_mul_assign(&self, ct_left: &mut CrtCiphertext, ct_right: &CrtCiphertext) {
         for (ct_left, ct_right) in ct_left.blocks.iter_mut().zip(ct_right.blocks.iter()) {
             self.key.unchecked_mul_lsb_assign(ct_left, ct_right);
         }
     }
 
-    pub fn unchecked_mul_crt(
+    pub fn unchecked_crt_mul(
         &self,
         ct_left: &CrtCiphertext,
         ct_right: &CrtCiphertext,
     ) -> CrtCiphertext {
         let mut ct_res = ct_left.clone();
-        self.unchecked_mul_crt_assign(&mut ct_res, ct_right);
+        self.unchecked_crt_mul_assign(&mut ct_res, ct_right);
         ct_res
     }
 
@@ -75,7 +75,7 @@ impl ServerKey {
             self.key.smart_mul_lsb_assign(block_left, block_right);
         }
     }
-    pub fn smart_mul_crt(
+    pub fn smart_crt_mul(
         &self,
         ct_left: &mut CrtCiphertext,
         ct_right: &mut CrtCiphertext,

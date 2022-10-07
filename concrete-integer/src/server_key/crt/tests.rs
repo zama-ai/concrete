@@ -53,7 +53,7 @@ fn integer_unchecked_crt_mul(param: Parameters) {
         let ct_one = cks.encrypt_crt(clear_1, basis.clone());
 
         // add the two ciphertexts
-        sks.unchecked_mul_crt_assign(&mut ct_zero, &ct_one);
+        sks.unchecked_crt_mul_assign(&mut ct_zero, &ct_one);
 
         // decryption of ct_res
         let dec_res = cks.decrypt_crt(&ct_zero);

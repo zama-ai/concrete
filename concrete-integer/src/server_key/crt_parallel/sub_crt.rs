@@ -1,4 +1,5 @@
 use crate::{CrtCiphertext, ServerKey};
+use rayon::prelude::*;
 
 impl ServerKey {
     /// Computes homomorphically a subtraction between two ciphertexts encrypting integer values.
@@ -23,19 +24,19 @@ impl ServerKey {
     /// let mut ctxt_1 = cks.encrypt_crt(clear_1, basis.clone());
     /// let mut ctxt_2 = cks.encrypt_crt(clear_2, basis.clone());
     ///
-    /// let ctxt = sks.unchecked_crt_sub(&mut ctxt_1, &mut ctxt_2);
+    /// let ctxt = sks.unchecked_crt_sub_parallelized(&mut ctxt_1, &mut ctxt_2);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn unchecked_crt_sub(
+    pub fn unchecked_crt_sub_parallelized(
         &self,
         ctxt_left: &CrtCiphertext,
         ctxt_right: &CrtCiphertext,
     ) -> CrtCiphertext {
         let mut result = ctxt_left.clone();
-        self.unchecked_crt_sub_assign(&mut result, ctxt_right);
+        self.unchecked_crt_sub_assign_parallelized(&mut result, ctxt_right);
         result
     }
 
@@ -61,19 +62,19 @@ impl ServerKey {
     /// let mut ctxt_1 = cks.encrypt_crt(clear_1, basis.clone());
     /// let mut ctxt_2 = cks.encrypt_crt(clear_2, basis.clone());
     ///
-    /// let ctxt = sks.unchecked_crt_sub(&mut ctxt_1, &mut ctxt_2);
+    /// let ctxt = sks.unchecked_crt_sub_parallelized(&mut ctxt_1, &mut ctxt_2);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn unchecked_crt_sub_assign(
+    pub fn unchecked_crt_sub_assign_parallelized(
         &self,
         ctxt_left: &mut CrtCiphertext,
         ctxt_right: &CrtCiphertext,
     ) {
-        let neg = self.unchecked_crt_neg(ctxt_right);
-        self.unchecked_crt_add_assign(ctxt_left, &neg);
+        let neg = self.unchecked_crt_neg_parallelized(ctxt_right);
+        self.unchecked_crt_add_assign_parallelized(ctxt_left, &neg);
     }
 
     /// Computes homomorphically the subtraction between ct_left and ct_right.
@@ -94,27 +95,26 @@ impl ServerKey {
     /// let mut ctxt_1 = cks.encrypt_crt(clear_1, basis.clone());
     /// let mut ctxt_2 = cks.encrypt_crt(clear_2, basis.clone());
     ///
-    /// let ctxt = sks.smart_crt_sub(&mut ctxt_1, &mut ctxt_2);
+    /// let ctxt = sks.smart_crt_sub_parallelized(&mut ctxt_1, &mut ctxt_2);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn smart_crt_sub(
+    pub fn smart_crt_sub_parallelized(
         &self,
         ctxt_left: &mut CrtCiphertext,
         ctxt_right: &mut CrtCiphertext,
     ) -> CrtCiphertext {
         // If the ciphertext cannot be added together without exceeding the capacity of a ciphertext
         if !self.is_crt_sub_possible(ctxt_left, ctxt_right) {
-            self.full_extract(ctxt_left);
-            self.full_extract(ctxt_right);
+            rayon::join(
+                || self.full_extract_parallelized(ctxt_left),
+                || self.full_extract_parallelized(ctxt_right),
+            );
         }
 
-        let mut result = ctxt_left.clone();
-        self.unchecked_crt_sub_assign(&mut result, ctxt_right);
-
-        result
+        self.unchecked_crt_sub_parallelized(ctxt_left, ctxt_right)
     }
 
     /// Computes homomorphically the subtraction between ct_left and ct_right.
@@ -135,36 +135,25 @@ impl ServerKey {
     /// let mut ctxt_1 = cks.encrypt_crt(clear_1, basis.clone());
     /// let mut ctxt_2 = cks.encrypt_crt(clear_2, basis.clone());
     ///
-    /// sks.smart_crt_sub_assign(&mut ctxt_1, &mut ctxt_2);
+    /// sks.smart_crt_sub_assign_parallelized(&mut ctxt_1, &mut ctxt_2);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn smart_crt_sub_assign(
+    pub fn smart_crt_sub_assign_parallelized(
         &self,
         ctxt_left: &mut CrtCiphertext,
         ctxt_right: &mut CrtCiphertext,
     ) {
         // If the ciphertext cannot be added together without exceeding the capacity of a ciphertext
         if !self.is_crt_sub_possible(ctxt_left, ctxt_right) {
-            self.full_extract(ctxt_left);
-            self.full_extract(ctxt_right);
+            rayon::join(
+                || self.full_extract_parallelized(ctxt_left),
+                || self.full_extract_parallelized(ctxt_right),
+            );
         }
 
-        self.unchecked_crt_sub_assign(ctxt_left, ctxt_right);
-    }
-
-    pub fn is_crt_sub_possible(
-        &self,
-        ctxt_left: &CrtCiphertext,
-        ctxt_right: &CrtCiphertext,
-    ) -> bool {
-        for (ct_left_i, ct_right_i) in ctxt_left.blocks.iter().zip(ctxt_right.blocks.iter()) {
-            if !self.key.is_sub_possible(ct_left_i, ct_right_i) {
-                return false;
-            }
-        }
-        true
+        self.unchecked_crt_sub_assign_parallelized(ctxt_left, ctxt_right);
     }
 }
