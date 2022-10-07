@@ -59,14 +59,13 @@ Windows users can use `concrete` through the `WSL`.
 ### Apple Silicon instructions
 
 {% hint style="info" %}
-macOS users who have Apple Silicon (`arm64`) devices can use `concrete` by cross-compiling to `x86_64` and running their program with Rosetta.
+macOS users who have Apple Silicon (`arm64`) devices can use `concrete` by compiling using the `nightly` toolchain
 {% endhint %}
 
 First, install the needed Rust toolchain:
 
 ```shell
-# Install the macOS x86_64 toolchain (you only need to do this once)
-rustup toolchain install --force-non-host stable-x86_64-apple-darwin
+rustup toolchain install nightly
 ```
 
 Then, you can either:
@@ -76,15 +75,15 @@ Then, you can either:
 For example:
 
 ```shell
-cargo +stable-x86_64-apple-darwin build
-cargo +stable-x86_64-apple-darwin test
+cargo +nightly build
+cargo +nightly test
 ```
 
 * Or override the toolchain to use for the current project:
 
 ```shell
-rustup override set stable-x86_64-apple-darwin
-# cargo will use the `stable-x86_64-apple-darwin` toolchain.
+rustup override set nightly
+# cargo will use the `nightly` toolchain.
 cargo build
 ```
 
