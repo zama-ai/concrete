@@ -1,3 +1,22 @@
+# Unreleased (Target 0.2.0)
+
+## Added
+ 
+ - Crt representation for integers (8 bits +) 
+   (**Breakinkg Change** for the parameters of Dynamic Integers).
+ - Univariate function evaluation for integers (8 bits +)
+ - Initial support for aarch64 targets (requires nightly rust)
+
+## Changed
+
+ - Replaced fftw with concrete-fft
+
+ - Updated concrete-boolean dependency to 0.2.0
+ - Updated concrete-shortint dependency to 0.1.0
+ - Updated concrete-integer dependency to 0.1.0
+
+---
+
 # 0.2.0-beta.2
 
 ## Added
