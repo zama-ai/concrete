@@ -150,7 +150,6 @@ fn integer_smart_crt_neg(param: Parameters) {
 
         clear_0 = (modulus - clear_0) % modulus;
 
-
         // println!("clear = {}", clear_0);
         // assert
         assert_eq!(clear_0, dec_res);

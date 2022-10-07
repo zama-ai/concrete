@@ -31,7 +31,11 @@ impl ServerKey {
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn unchecked_crt_sub(&self, ctxt_left: &CrtCiphertext, ctxt_right: &CrtCiphertext) -> CrtCiphertext {
+    pub fn unchecked_crt_sub(
+        &self,
+        ctxt_left: &CrtCiphertext,
+        ctxt_right: &CrtCiphertext,
+    ) -> CrtCiphertext {
         let mut result = ctxt_left.clone();
         self.unchecked_crt_sub_assign(&mut result, ctxt_right);
         result
@@ -65,7 +69,11 @@ impl ServerKey {
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn unchecked_crt_sub_assign(&self, ctxt_left: &mut CrtCiphertext, ctxt_right: &CrtCiphertext) {
+    pub fn unchecked_crt_sub_assign(
+        &self,
+        ctxt_left: &mut CrtCiphertext,
+        ctxt_right: &CrtCiphertext,
+    ) {
         let neg = self.unchecked_crt_neg(ctxt_right);
         self.unchecked_crt_add_assign(ctxt_left, &neg);
     }
@@ -94,7 +102,11 @@ impl ServerKey {
     /// let res = cks.decrypt_crt(&ctxt);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn smart_crt_sub(&self, ctxt_left: &mut CrtCiphertext, ctxt_right: &mut CrtCiphertext) -> CrtCiphertext {
+    pub fn smart_crt_sub(
+        &self,
+        ctxt_left: &mut CrtCiphertext,
+        ctxt_right: &mut CrtCiphertext,
+    ) -> CrtCiphertext {
         // If the ciphertext cannot be added together without exceeding the capacity of a ciphertext
         if !self.is_crt_sub_possible(ctxt_left, ctxt_right) {
             self.full_extract(ctxt_left);
@@ -131,7 +143,11 @@ impl ServerKey {
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 - clear_2) % 30, res);
     /// ```
-    pub fn smart_crt_sub_assign(&self, ctxt_left: &mut CrtCiphertext, ctxt_right: &mut CrtCiphertext) {
+    pub fn smart_crt_sub_assign(
+        &self,
+        ctxt_left: &mut CrtCiphertext,
+        ctxt_right: &mut CrtCiphertext,
+    ) {
         // If the ciphertext cannot be added together without exceeding the capacity of a ciphertext
         if !self.is_crt_sub_possible(ctxt_left, ctxt_right) {
             self.full_extract(ctxt_left);

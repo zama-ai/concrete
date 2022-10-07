@@ -65,7 +65,9 @@ impl ServerKey {
 
     pub fn unchecked_scalar_add_assign_crt(&self, ct: &mut Ciphertext, scalar: u8) {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine.unchecked_scalar_add_assign_crt(&self, ct, scalar).unwrap()
+            engine
+                .unchecked_scalar_add_assign_crt(&self, ct, scalar)
+                .unwrap()
         })
     }
 

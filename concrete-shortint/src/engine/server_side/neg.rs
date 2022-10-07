@@ -44,7 +44,8 @@ impl ShortintEngine {
         z *= msg_mod as u64;
 
         // Value of the shift we multiply our messages by
-        let delta = (1_u64 << 63) / (_server_key.message_modulus.0 * _server_key.carry_modulus.0) as u64;
+        let delta =
+            (1_u64 << 63) / (_server_key.message_modulus.0 * _server_key.carry_modulus.0) as u64;
 
         //Scaling + 1 on the padding bit
         let w = z * delta as u64;

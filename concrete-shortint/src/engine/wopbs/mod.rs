@@ -228,7 +228,6 @@ impl ShortintEngine {
         vec_lut: Vec<Vec<u64>>,
         extracted_bits_blocks: Vec<LweCiphertextVector64>,
     ) -> Vec<LweCiphertext64> {
-        assert_eq!(vec_lut.len(), extracted_bits_blocks.len());
         let lwe_size = extracted_bits_blocks[0].lwe_dimension().to_lwe_size();
 
         let mut all_datas = vec![];

@@ -41,7 +41,8 @@ impl ServerKey {
 
     pub fn unchecked_crt_scalar_mul_assign(&self, ctxt: &mut CrtCiphertext, scalar: u64) {
         for (ct_i, mod_i) in ctxt.blocks.iter_mut().zip(ctxt.moduli.iter()) {
-            self.key.unchecked_scalar_mul_assign(ct_i, (scalar % mod_i) as u8);
+            self.key
+                .unchecked_scalar_mul_assign(ct_i, (scalar % mod_i) as u8);
         }
     }
 
@@ -68,7 +69,10 @@ impl ServerKey {
     /// ```
     pub fn is_crt_scalar_mul_possible(&self, ctxt: &CrtCiphertext, scalar: u64) -> bool {
         for (ct_i, mod_i) in ctxt.blocks.iter().zip(ctxt.moduli.iter()) {
-            if !self.key.is_scalar_mul_possible(ct_i, (scalar % mod_i) as u8) {
+            if !self
+                .key
+                .is_scalar_mul_possible(ct_i, (scalar % mod_i) as u8)
+            {
                 return false;
             }
         }

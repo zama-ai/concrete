@@ -4,13 +4,13 @@ use serde::{Deserialize, Serialize};
 use crate::errors::{UninitializedClientKey, UninitializedServerKey};
 use crate::integers::client_key::GenericIntegerClientKey;
 use crate::integers::parameters::{
-    CrtRepresentation, EvaluationIntegerKey, IntegerParameter, RadixParameters,
-    RadixRepresentation, StaticCrtParameter, StaticIntegerParameter, StaticRadixParameter,
+    EvaluationIntegerKey, IntegerParameter, RadixParameters, RadixRepresentation,
+    StaticIntegerParameter, StaticRadixParameter,
 };
 use crate::integers::server_key::GenericIntegerServerKey;
 use crate::keys::RefKeyFromKeyChain;
 use crate::traits::{FheDecrypt, FheEncrypt};
-use crate::{ClientKey, FheUint2Parameters};
+use crate::ClientKey;
 
 use super::base::GenericInteger;
 #[cfg(feature = "internal-keycache")]

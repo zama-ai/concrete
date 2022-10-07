@@ -32,7 +32,11 @@ impl ServerKey {
         }
     }
 
-    pub fn unchecked_mul_crt(&self, ct_left: &CrtCiphertext, ct_right: &CrtCiphertext) -> CrtCiphertext {
+    pub fn unchecked_mul_crt(
+        &self,
+        ct_left: &CrtCiphertext,
+        ct_right: &CrtCiphertext,
+    ) -> CrtCiphertext {
         let mut ct_res = ct_left.clone();
         self.unchecked_mul_crt_assign(&mut ct_res, ct_right);
         ct_res
@@ -71,7 +75,11 @@ impl ServerKey {
             self.key.smart_mul_lsb_assign(block_left, block_right);
         }
     }
-    pub fn smart_mul_crt(&self, ct_left: &mut CrtCiphertext, ct_right: &mut CrtCiphertext) -> CrtCiphertext {
+    pub fn smart_mul_crt(
+        &self,
+        ct_left: &mut CrtCiphertext,
+        ct_right: &mut CrtCiphertext,
+    ) -> CrtCiphertext {
         let mut ct_res = ct_left.clone();
         self.smart_crt_mul_assign(&mut ct_res, ct_right);
         ct_res

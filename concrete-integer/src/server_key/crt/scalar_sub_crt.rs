@@ -38,11 +38,11 @@ impl ServerKey {
     }
 
     pub fn unchecked_crt_scalar_sub_assign(&self, ct: &mut CrtCiphertext, scalar: u64) {
-
         //Put each decomposition into a new ciphertext
         for (ct_i, mod_i) in ct.blocks.iter_mut().zip(ct.moduli.iter()) {
             let neg_scalar = (mod_i - scalar % mod_i) % mod_i;
-            self.key.unchecked_scalar_add_assign_crt(ct_i, neg_scalar as u8);
+            self.key
+                .unchecked_scalar_add_assign_crt(ct_i, neg_scalar as u8);
         }
     }
 
@@ -70,15 +70,12 @@ impl ServerKey {
     /// assert_eq!(true, bit);
     /// ```
     pub fn is_crt_scalar_sub_possible(&self, ct: &CrtCiphertext, scalar: u64) -> bool {
-
         for (ct_i, mod_i) in ct.blocks.iter().zip(ct.moduli.iter()) {
-
             let neg_scalar = (mod_i - scalar % mod_i) % mod_i;
 
             if !self.key.is_scalar_add_possible(ct_i, neg_scalar as u8) {
                 return false;
             }
-
         }
         true
     }

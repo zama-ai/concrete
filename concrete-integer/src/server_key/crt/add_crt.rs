@@ -1,7 +1,7 @@
-use concrete_shortint::Ciphertext;
 use crate::server_key::CheckError;
 use crate::server_key::CheckError::CarryFull;
 use crate::{CrtCiphertext, ServerKey};
+use concrete_shortint::Ciphertext;
 
 impl ServerKey {
     /// Computes homomorphically an addition between two ciphertexts encrypting integer values.
@@ -28,7 +28,11 @@ impl ServerKey {
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 + clear_2) % 30, res);
     /// ```
-    pub fn smart_crt_add(&self, ct_left: &mut CrtCiphertext, ct_right: &mut CrtCiphertext) -> CrtCiphertext {
+    pub fn smart_crt_add(
+        &self,
+        ct_left: &mut CrtCiphertext,
+        ct_right: &mut CrtCiphertext,
+    ) -> CrtCiphertext {
         let mut result = ct_left.clone();
 
         self.smart_crt_add_assign(&mut result, ct_right);
