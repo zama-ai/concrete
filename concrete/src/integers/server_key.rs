@@ -121,7 +121,7 @@ macro_rules! impl_smart_scalar_assign_op_for_concrete_integer_server_key {
 impl SmartNeg<&mut concrete_integer::RadixCiphertext> for concrete_integer::ServerKey {
     type Output = concrete_integer::RadixCiphertext;
     fn smart_neg(&self, lhs: &mut concrete_integer::RadixCiphertext) -> Self::Output {
-        self.smart_neg(lhs)
+        self.smart_neg_parallelized(lhs)
     }
 }
 
@@ -153,13 +153,13 @@ impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartShrAssign(smar
 
 // Crt
 
-impl_smart_op_for_concrete_integer_server_key!(SmartAdd(smart_add) => (concrete_integer::CrtCiphertext, smart_add_crt_parallelized));
-impl_smart_op_for_concrete_integer_server_key!(SmartSub(smart_sub) => (concrete_integer::CrtCiphertext, smart_crt_sub));
-impl_smart_op_for_concrete_integer_server_key!(SmartMul(smart_mul) => (concrete_integer::CrtCiphertext, smart_mul_crt_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartAdd(smart_add) => (concrete_integer::CrtCiphertext, smart_crt_add_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartSub(smart_sub) => (concrete_integer::CrtCiphertext, smart_crt_sub_parallelized));
+impl_smart_op_for_concrete_integer_server_key!(SmartMul(smart_mul) => (concrete_integer::CrtCiphertext, smart_crt_mul_parallelized));
 
-impl_smart_assign_op_for_concrete_integer_server_key!(SmartAddAssign(smart_add_assign) => (concrete_integer::CrtCiphertext, smart_add_crt_assign_parallelized));
-impl_smart_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smart_sub_assign) => (concrete_integer::CrtCiphertext, smart_crt_sub));
-impl_smart_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::CrtCiphertext, smart_mul_crt_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartAddAssign(smart_add_assign) => (concrete_integer::CrtCiphertext, smart_crt_add_assign_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smart_sub_assign) => (concrete_integer::CrtCiphertext, smart_crt_sub_parallelized));
+impl_smart_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::CrtCiphertext, smart_crt_mul_assign_parallelized));
 
 impl_smart_scalar_op_for_concrete_integer_server_key!(SmartAdd(smart_add) => (concrete_integer::CrtCiphertext, smart_crt_scalar_add));
 impl_smart_scalar_op_for_concrete_integer_server_key!(SmartSub(smart_sub) => (concrete_integer::CrtCiphertext, smart_crt_scalar_sub));
@@ -168,3 +168,10 @@ impl_smart_scalar_op_for_concrete_integer_server_key!(SmartMul(smart_mul) => (co
 impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartAddAssign(smart_add_assign) => (concrete_integer::CrtCiphertext, smart_crt_scalar_add_assign));
 impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartSubAssign(smart_sub_assign) => (concrete_integer::CrtCiphertext, smart_crt_scalar_sub_assign));
 impl_smart_scalar_assign_op_for_concrete_integer_server_key!(SmartMulAssign(smart_mul_assign) => (concrete_integer::CrtCiphertext, smart_crt_scalar_mul_assign));
+
+impl SmartNeg<&mut concrete_integer::CrtCiphertext> for concrete_integer::ServerKey {
+    type Output = concrete_integer::CrtCiphertext;
+    fn smart_neg(&self, lhs: &mut concrete_integer::CrtCiphertext) -> Self::Output {
+        self.smart_crt_neg_parallelized(lhs)
+    }
+}

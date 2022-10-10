@@ -233,8 +233,12 @@ impl SmartNeg<&mut DynInnerCiphertext> for DynInnerServerKey {
 
     fn smart_neg(&self, lhs: &mut DynInnerCiphertext) -> Self::Output {
         match lhs {
-            DynInnerCiphertext::Radix(lhs) => DynInnerCiphertext::Radix(self.inner.smart_neg(lhs)),
-            DynInnerCiphertext::Crt(_lhs) => todo!(),
+            DynInnerCiphertext::Radix(lhs) => {
+                DynInnerCiphertext::Radix(self.inner.smart_neg_parallelized(lhs))
+            }
+            DynInnerCiphertext::Crt(lhs) => {
+                DynInnerCiphertext::Crt(self.inner.smart_crt_neg_parallelized(lhs))
+            }
         }
     }
 }
@@ -249,10 +253,10 @@ impl SmartAdd<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerServ
     ) -> DynInnerCiphertext {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                DynInnerCiphertext::Radix(self.inner.smart_add(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_add_parallelized(lhs, rhs))
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                DynInnerCiphertext::Crt(self.inner.smart_add_crt_parallelized(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_crt_add_parallelized(lhs, rhs))
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -271,10 +275,10 @@ impl SmartSub<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerServ
     ) -> DynInnerCiphertext {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                DynInnerCiphertext::Radix(self.inner.smart_sub(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_sub_parallelized(lhs, rhs))
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                DynInnerCiphertext::Crt(self.inner.smart_crt_sub(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_crt_sub_parallelized(lhs, rhs))
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -293,10 +297,10 @@ impl SmartMul<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerServ
     ) -> DynInnerCiphertext {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                DynInnerCiphertext::Radix(self.inner.smart_mul(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_mul_parallelized(lhs, rhs))
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                DynInnerCiphertext::Crt(self.inner.smart_mul_crt_parallelized(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_crt_mul_parallelized(lhs, rhs))
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -315,9 +319,11 @@ impl SmartBitAnd<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerS
     ) -> DynInnerCiphertext {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                DynInnerCiphertext::Radix(self.inner.smart_bitand(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_bitand_parallelized(lhs, rhs))
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => {
+                panic!("This operation is not supported for CRT representation")
+            }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -335,9 +341,11 @@ impl SmartBitOr<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerSe
     ) -> DynInnerCiphertext {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                DynInnerCiphertext::Radix(self.inner.smart_bitor(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_bitor_parallelized(lhs, rhs))
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => {
+                panic!("This operation is not supported for CRT representation")
+            }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -355,9 +363,11 @@ impl SmartBitXor<&mut DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerS
     ) -> DynInnerCiphertext {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                DynInnerCiphertext::Radix(self.inner.smart_bitxor(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_bitxor_parallelized(lhs, rhs))
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => {
+                panic!("This operation is not supported for CRT representation")
+            }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -370,10 +380,10 @@ impl SmartAddAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerSer
     fn smart_add_assign(&self, lhs: &mut DynInnerCiphertext, rhs: &mut DynInnerCiphertext) {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                self.inner.smart_add_assign(lhs, rhs)
+                self.inner.smart_add_assign_parallelized(lhs, rhs)
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                self.inner.smart_add_crt_assign_parallelized(lhs, rhs)
+                self.inner.smart_crt_add_assign_parallelized(lhs, rhs)
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -386,10 +396,10 @@ impl SmartSubAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerSer
     fn smart_sub_assign(&self, lhs: &mut DynInnerCiphertext, rhs: &mut DynInnerCiphertext) {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                self.inner.smart_sub_assign(lhs, rhs)
+                self.inner.smart_sub_assign_parallelized(lhs, rhs)
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                self.inner.smart_crt_sub_assign(lhs, rhs)
+                self.inner.smart_crt_sub_assign_parallelized(lhs, rhs)
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -402,10 +412,10 @@ impl SmartMulAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerSer
     fn smart_mul_assign(&self, lhs: &mut DynInnerCiphertext, rhs: &mut DynInnerCiphertext) {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                self.inner.smart_mul_assign(lhs, rhs)
+                self.inner.smart_mul_assign_parallelized(lhs, rhs)
             }
             (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
-                self.inner.smart_mul_crt_assign_parallelized(lhs, rhs)
+                self.inner.smart_crt_mul_assign_parallelized(lhs, rhs)
             }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
@@ -418,9 +428,11 @@ impl SmartBitAndAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInner
     fn smart_bitand_assign(&self, lhs: &mut DynInnerCiphertext, rhs: &mut DynInnerCiphertext) {
         match (lhs, rhs) {
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
-                self.inner.smart_bitand_assign(lhs, rhs)
+                self.inner.smart_bitand_assign_parallelized(lhs, rhs)
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => {
+                panic!("This operation is not supported for CRT representation")
+            }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -434,7 +446,9 @@ impl SmartBitOrAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInnerS
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
                 self.inner.smart_bitor_assign(lhs, rhs)
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => {
+                panic!("This operation is not supported for CRT representation")
+            }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -448,7 +462,9 @@ impl SmartBitXorAssign<DynInnerCiphertext, &mut DynInnerCiphertext> for DynInner
             (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
                 self.inner.smart_bitxor_assign(lhs, rhs)
             }
-            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => todo!(),
+            (DynInnerCiphertext::Crt(_lhs), DynInnerCiphertext::Crt(_rhs)) => {
+                panic!("This operation is not supported for CRT representation")
+            }
             (_, _) => {
                 panic!("Cannot mix Crt and Radix representation")
             }
@@ -463,10 +479,10 @@ impl SmartAdd<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_add(&self, lhs: &mut DynInnerCiphertext, rhs: u64) -> Self::Output {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => {
-                DynInnerCiphertext::Radix(self.inner.smart_scalar_add(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_scalar_add_parallelized(lhs, rhs))
             }
             DynInnerCiphertext::Crt(lhs) => {
-                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_add(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_add_parallelized(lhs, rhs))
             }
         }
     }
@@ -478,10 +494,10 @@ impl SmartSub<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_sub(&self, lhs: &mut DynInnerCiphertext, rhs: u64) -> Self::Output {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => {
-                DynInnerCiphertext::Radix(self.inner.smart_scalar_sub(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_scalar_sub_parallelized(lhs, rhs))
             }
             DynInnerCiphertext::Crt(lhs) => {
-                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_sub(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_sub_parallelized(lhs, rhs))
             }
         }
     }
@@ -493,10 +509,10 @@ impl SmartMul<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_mul(&self, lhs: &mut DynInnerCiphertext, rhs: u64) -> Self::Output {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => {
-                DynInnerCiphertext::Radix(self.inner.smart_scalar_mul(lhs, rhs))
+                DynInnerCiphertext::Radix(self.inner.smart_scalar_mul_parallelized(lhs, rhs))
             }
             DynInnerCiphertext::Crt(lhs) => {
-                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_mul(lhs, rhs))
+                DynInnerCiphertext::Crt(self.inner.smart_crt_scalar_mul_parallelized(lhs, rhs))
             }
         }
     }
@@ -509,7 +525,7 @@ impl SmartShl<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => DynInnerCiphertext::Radix(
                 self.inner
-                    .unchecked_scalar_left_shift(lhs, rhs.try_into().unwrap()),
+                    .unchecked_scalar_left_shift_parallelized(lhs, rhs.try_into().unwrap()),
             ),
             DynInnerCiphertext::Crt(_lhs) => todo!(),
         }
@@ -523,7 +539,7 @@ impl SmartShr<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => DynInnerCiphertext::Radix(
                 self.inner
-                    .unchecked_scalar_right_shift(lhs, rhs.try_into().unwrap()),
+                    .unchecked_scalar_right_shift_parallelized(lhs, rhs.try_into().unwrap()),
             ),
             DynInnerCiphertext::Crt(_lhs) => todo!(),
         }
@@ -535,8 +551,12 @@ impl SmartShr<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
 impl SmartAddAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_add_assign(&self, lhs: &mut DynInnerCiphertext, rhs: u64) {
         match lhs {
-            DynInnerCiphertext::Radix(lhs) => self.inner.smart_scalar_add_assign(lhs, rhs),
-            DynInnerCiphertext::Crt(lhs) => self.inner.smart_crt_scalar_add_assign(lhs, rhs),
+            DynInnerCiphertext::Radix(lhs) => {
+                self.inner.smart_scalar_add_assign_parallelized(lhs, rhs)
+            }
+            DynInnerCiphertext::Crt(lhs) => self
+                .inner
+                .smart_crt_scalar_add_assign_parallelized(lhs, rhs),
         }
     }
 }
@@ -544,8 +564,12 @@ impl SmartAddAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
 impl SmartSubAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_sub_assign(&self, lhs: &mut DynInnerCiphertext, rhs: u64) {
         match lhs {
-            DynInnerCiphertext::Radix(lhs) => self.inner.smart_scalar_sub_assign(lhs, rhs),
-            DynInnerCiphertext::Crt(lhs) => self.inner.smart_crt_scalar_sub_assign(lhs, rhs),
+            DynInnerCiphertext::Radix(lhs) => {
+                self.inner.smart_scalar_sub_assign_parallelized(lhs, rhs)
+            }
+            DynInnerCiphertext::Crt(lhs) => self
+                .inner
+                .smart_crt_scalar_sub_assign_parallelized(lhs, rhs),
         }
     }
 }
@@ -553,8 +577,12 @@ impl SmartSubAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
 impl SmartMulAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
     fn smart_mul_assign(&self, lhs: &mut DynInnerCiphertext, rhs: u64) {
         match lhs {
-            DynInnerCiphertext::Radix(lhs) => self.inner.smart_scalar_mul_assign(lhs, rhs),
-            DynInnerCiphertext::Crt(lhs) => self.inner.smart_crt_scalar_mul_assign(lhs, rhs),
+            DynInnerCiphertext::Radix(lhs) => {
+                self.inner.smart_scalar_mul_assign_parallelized(lhs, rhs)
+            }
+            DynInnerCiphertext::Crt(lhs) => self
+                .inner
+                .smart_crt_scalar_mul_assign_parallelized(lhs, rhs),
         }
     }
 }
@@ -564,7 +592,7 @@ impl SmartShlAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => self
                 .inner
-                .unchecked_scalar_left_shift_assign(lhs, rhs.try_into().unwrap()),
+                .unchecked_scalar_left_shift_assign_parallelized(lhs, rhs.try_into().unwrap()),
             DynInnerCiphertext::Crt(_lhs) => {
                 todo!()
             }
@@ -577,7 +605,7 @@ impl SmartShrAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
         match lhs {
             DynInnerCiphertext::Radix(lhs) => self
                 .inner
-                .unchecked_scalar_right_shift_assign(lhs, rhs.try_into().unwrap()),
+                .unchecked_scalar_right_shift_assign_parallelized(lhs, rhs.try_into().unwrap()),
             DynInnerCiphertext::Crt(_lhs) => {
                 todo!()
             }

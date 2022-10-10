@@ -1,5 +1,4 @@
 use crate::{CrtCiphertext, ServerKey};
-use concrete_shortint::Ciphertext;
 
 impl ServerKey {
     /// Computes homomorphically an addition between two ciphertexts encrypting integer values.
