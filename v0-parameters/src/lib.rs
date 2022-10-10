@@ -201,18 +201,8 @@ mod tests {
     use super::*;
     use concrete_optimizer::security::security_weights::SECURITY_WEIGHTS_TABLE;
 
-    #[cfg(not(feature = "expensive_tests"))]
-    const ONLY_SOME_SECURITY_LEVELS: bool = true;
-
-    #[cfg(feature = "expensive_tests")]
-    const ONLY_SOME_SECURITY_LEVELS: bool = false;
-
     fn security_levels_to_test() -> Vec<u64> {
-        if ONLY_SOME_SECURITY_LEVELS {
-            vec![128]
-        } else {
-            SECURITY_WEIGHTS_TABLE.keys().copied().collect()
-        }
+        SECURITY_WEIGHTS_TABLE.keys().copied().collect()
     }
 
     #[test]
