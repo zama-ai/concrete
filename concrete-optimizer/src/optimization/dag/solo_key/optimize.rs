@@ -62,12 +62,13 @@ fn update_best_solution_with_best_decompositions(
         if not_feasible {
             continue;
         }
-        for &ks_quantity in ks_pareto.iter().rev() {
+        for &ks_quantity in ks_pareto {
             let one_lut_cost = ks_quantity.complexity + br_quantity.complexity;
             let complexity = dag.complexity(input_lwe_dimension, one_lut_cost);
             let worse_complexity = complexity > best_complexity;
             if worse_complexity {
-                continue;
+                // Since ks_pareto is scanned by increasing complexity, we can stop
+                break;
             }
             let not_feasible = !dag.feasible(
                 input_noise_out,
@@ -76,8 +77,7 @@ fn update_best_solution_with_best_decompositions(
                 noise_modulus_switching,
             );
             if not_feasible {
-                // Since ks_pareto is scanned by increasing noise, we can stop
-                break;
+                continue;
             }
 
             let (peek_p_error, variance) = dag.peek_p_error(

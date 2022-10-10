@@ -12,7 +12,6 @@ use crate::utils::cache::persistent::PersistentCacheHashMap;
 use crate::{config, security};
 
 use super::common::MacroParam;
-use super::cut::ComplexityNoise;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct BrComplexityNoise {
@@ -95,15 +94,6 @@ pub fn pareto_quantities(
         decreasing_variance = level_decreasing_base_noise;
     }
     quantities
-}
-
-impl ComplexityNoise for BrComplexityNoise {
-    fn noise(&self) -> f64 {
-        self.noise
-    }
-    fn complexity(&self) -> f64 {
-        self.complexity
-    }
 }
 
 pub type Cache = CacheHashMap<MacroParam, Vec<BrComplexityNoise>>;

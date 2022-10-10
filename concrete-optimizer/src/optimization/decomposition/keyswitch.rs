@@ -14,22 +14,12 @@ use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::PersistentCacheHashMap;
 
 use super::common::MacroParam;
-use super::cut::ComplexityNoise;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct KsComplexityNoise {
     pub decomp: KsDecompositionParameters,
     pub complexity: f64,
     pub noise: f64,
-}
-
-impl ComplexityNoise for KsComplexityNoise {
-    fn noise(&self) -> f64 {
-        self.noise
-    }
-    fn complexity(&self) -> f64 {
-        self.complexity
-    }
 }
 
 /* This is stricly variance decreasing and strictly complexity increasing */

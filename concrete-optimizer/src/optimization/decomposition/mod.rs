@@ -1,12 +1,10 @@
 pub mod blind_rotate;
 pub mod circuit_bootstrap;
 pub mod common;
-pub mod cut;
 pub mod keyswitch;
 pub mod pp_switch;
 
 pub use common::MacroParam;
-pub use cut::cut_complexity_noise;
 
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;

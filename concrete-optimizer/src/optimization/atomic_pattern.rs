@@ -7,13 +7,11 @@ use concrete_commons::dispersion::{DispersionParameter, Variance};
 
 use super::decomposition;
 use super::decomposition::{
-    blind_rotate, circuit_bootstrap, cut_complexity_noise, keyswitch, pp_switch, PersistDecompCache,
+    blind_rotate, circuit_bootstrap, keyswitch, pp_switch, PersistDecompCache,
 };
 
 // Ref time for v0 table 1 thread: 950ms
 const CUTS: bool = true; // 80ms
-const PARETO_CUTS: bool = true; // 75ms
-const CROSS_PARETO_CUTS: bool = PARETO_CUTS && true; // 70ms
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Solution {
@@ -94,30 +92,14 @@ fn update_state_with_best_decompositions(
     let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
 
     let complexity_multisum = (consts.sum_size * input_lwe_dimension) as f64;
-    let mut cut_complexity = best_complexity - complexity_multisum;
-    let mut cut_noise = safe_variance - noise_modulus_switching;
     let br_quantities = caches
         .blind_rotate
         .pareto_quantities(glwe_params, internal_dim);
-    let br_quantities = cut_complexity_noise(cut_complexity, cut_noise, br_quantities);
-    if br_quantities.is_empty() {
-        return;
-    }
-    if PARETO_CUTS {
-        cut_noise -= br_quantities[br_quantities.len() - 1].noise;
-        cut_complexity -= br_quantities[0].complexity;
-    }
 
     let ks_quantities = caches
         .keyswitch
         .pareto_quantities(glwe_params, internal_dim);
-    let ks_quantities = cut_complexity_noise(cut_complexity, cut_noise, ks_quantities);
-    if ks_quantities.is_empty() {
-        return;
-    }
 
-    let i_max_ks = ks_quantities.len() - 1;
-    let mut i_current_max_ks = i_max_ks;
     let square_noise_factor = square(consts.noise_factor);
     for br_quantity in br_quantities {
         // increasing complexity, decreasing variance
@@ -130,36 +112,21 @@ fn update_state_with_best_decompositions(
         let complexity = complexity_multisum + complexity_pbs;
         if complexity > best_complexity {
             // As best can evolves it is complementary to blind_rotate_quantities cuts.
-            if PARETO_CUTS {
-                break;
-            } else if CUTS {
-                continue;
-            }
+            break;
         }
-        for i_ks_pareto in (0..=i_current_max_ks).rev() {
-            // increasing variance, decreasing complexity
-            let ks_quantity = ks_quantities[i_ks_pareto];
-            let noise_keyswitch = ks_quantity.noise;
-            let noise_max = noise_in + noise_keyswitch + noise_modulus_switching;
+        for &ks_quantity in ks_quantities.iter().rev() {
             let complexity_keyswitch = ks_quantity.complexity;
             let complexity = complexity_multisum + complexity_keyswitch + complexity_pbs;
-
-            if noise_max > safe_variance {
-                if CROSS_PARETO_CUTS {
-                    // the pareto of 2 added pareto is scanned linearly
-                    // but with all cuts, pre-computing => no gain
-                    i_current_max_ks = usize::min(i_ks_pareto + 1, i_max_ks);
-                    break;
-                    // it's compatible with next i_br but with the worst complexity
-                } else if PARETO_CUTS {
-                    // increasing variance => we can skip all remaining
-                    break;
-                }
-                continue;
-            } else if complexity > best_complexity {
+            if complexity > best_complexity {
                 continue;
             }
-
+            // increasing variance, decreasing complexity
+            let noise_keyswitch = ks_quantity.noise;
+            let noise_max = noise_in + noise_keyswitch + noise_modulus_switching;
+            if noise_max > safe_variance {
+                // increasing variance => we can skip all remaining
+                break;
+            }
             // feasible and at least as good complexity
             if complexity < best_complexity || noise_max < best_variance {
                 let sigma = Variance(safe_variance).get_standard_dev() * consts.kappa;
