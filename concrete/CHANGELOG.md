@@ -3,7 +3,7 @@
 ## Added
  
  - Crt representation for integers (8 bits +) 
-   (**Breakinkg Change** for the parameters of Dynamic Integers).
+   (**Breaking Change** for the parameters of Dynamic Integers).
  - Univariate and bivariate function evaluations for integers (8 bits +)
  - Initial support for aarch64 targets (requires nightly rust)
 
@@ -21,7 +21,7 @@
 
 ## Added
 
-- KeyCacher struct, to help avoiding generating the keys for each run.
+- KeyCacher struct, to avoid key generation at each run.
 - Implementation of `std::iter::{Sum, Product}` for shortints
 - Trivial encryption for shortints
 - `concrete::Config` is now a public type.
