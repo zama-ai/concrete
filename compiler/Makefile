@@ -19,7 +19,7 @@ HPX_TARBALL=$(shell pwd)/hpx-$(HPX_VERSION).tar.gz
 HPX_LOCAL_DIR=$(shell pwd)/hpx-$(HPX_VERSION)
 HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)
 
-CONCRETE_CORE_FFI_VERSION?=0.2.0-rc.7
+CONCRETE_CORE_FFI_VERSION?=0.2.0-rc.5
 ifeq ($(shell uname), Linux)
 	CONCRETE_CORE_FFI_TARBALL=concrete-core-ffi_$(CONCRETE_CORE_FFI_VERSION)_linux_amd64.tar.gz
 else
