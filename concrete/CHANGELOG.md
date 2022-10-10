@@ -4,7 +4,7 @@
  
  - Crt representation for integers (8 bits +) 
    (**Breakinkg Change** for the parameters of Dynamic Integers).
- - Univariate function evaluation for integers (8 bits +)
+ - Univariate and bivariate function evaluations for integers (8 bits +)
  - Initial support for aarch64 targets (requires nightly rust)
 
 ## Changed
