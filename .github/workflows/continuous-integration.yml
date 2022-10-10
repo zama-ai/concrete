@@ -607,7 +607,7 @@ jobs:
 
       - name: Extract Package Filename
         id: extract-filename
-        run: echo "::set-output name=FILE_NAME::$(echo '${{ toJson(needs.BuildAndPushPythonPackagesLinux.outputs) }}' | jq '.[\"${{ matrix.filename-index }}\"]' | tr -d '\"' )"
+        run: echo "::set-output name=FILE_NAME::$(echo '${{ toJson(needs.BuildAndPushPythonPackagesLinux.outputs) }}' | jq '.["${{ matrix.filename-index }}"]' | tr -d '\"' )"
 
       - name: Download and Install Package
         run: |
@@ -653,7 +653,7 @@ jobs:
 
       - name: Extract Package Filename
         id: extract-filename
-        run: echo "::set-output name=FILE_NAME::$(echo '${{ toJson(needs.BuildAndPushPackagesMacOS.outputs) }}' | jq '.[\"${{ matrix.filename-index }}\"]' | tr -d '\"' )"
+        run: echo "::set-output name=FILE_NAME::$(echo '${{ toJson(needs.BuildAndPushPackagesMacOS.outputs) }}' | jq '.["${{ matrix.filename-index }}"]' | tr -d '\"' )"
 
       - name: Download and Install Package
         run: |
