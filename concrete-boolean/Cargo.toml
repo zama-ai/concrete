@@ -45,7 +45,7 @@ rand = "0.8.4"
 
 [features]
 cuda = ["concrete-core/backend_cuda"]
-
+nightly-avx512 = ["concrete-core/backend_fft_nightly_avx512"]
 
 [[bench]]
 name = "bench"
