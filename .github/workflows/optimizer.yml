@@ -27,10 +27,10 @@ jobs:
         run: cargo fmt --check
 
       - name: Build
-        run: cargo build --all-targets
+        run: cargo build --release --all-targets
 
       - name: Lint
-        run: cargo clippy --all-targets
+        run: cargo clippy --release --all-targets
 
       - name: Tests
         if: matrix.os == 'ubuntu-20.04'
