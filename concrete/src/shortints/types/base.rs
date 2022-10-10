@@ -220,12 +220,12 @@ where
     P: ShortIntegerParameter,
     P::Id: WithGlobalKey<Key = ShortIntegerServerKey<P>>,
 {
-    pub fn bivariate_pbs<F>(&self, other: &Self, func: F) -> Self
+    pub fn bivariate_function<F>(&self, other: &Self, func: F) -> Self
     where
         F: Fn(u8, u8) -> u8,
     {
         self.id
-            .with_unwrapped_global_mut(|server_key| server_key.bivariate_bps(self, other, func))
+            .with_unwrapped_global_mut(|server_key| server_key.bivariate_pbs(self, other, func))
     }
 }
 

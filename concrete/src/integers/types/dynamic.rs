@@ -141,12 +141,6 @@ impl FromParameters<DynIntegerParameters> for DynInnerClientKey {
     }
 }
 
-impl From<DynIntegerParameters> for DynInnerClientKey {
-    fn from(_: DynIntegerParameters) -> Self {
-        todo!()
-    }
-}
-
 impl PrivateIntegerKey for DynInnerClientKey {
     type Ciphertext = DynInnerCiphertext;
 
@@ -201,7 +195,7 @@ impl FheBootstrap for DynInteger {
 }
 
 impl DynInteger {
-    pub fn bivariate_bpbs<F: Fn(u64, u64) -> u64>(&self, rhs: &Self, func: F) -> Self {
+    pub fn bivariate_function<F: Fn(u64, u64) -> u64>(&self, rhs: &Self, func: F) -> Self {
         let res_ct = self.id.with_unwrapped_global_mut(|key| {
             match (&*self.ciphertext.borrow(), &*rhs.ciphertext.borrow()) {
                 (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {

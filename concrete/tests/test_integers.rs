@@ -113,15 +113,15 @@ fn test_uint8_bivariate_func_eval_on_dirty() {
 
     let func = |lhs, rhs| u64::from(lhs == rhs);
 
-    let is_a_eq_b = a.bivariate_pbs(&b, func);
+    let is_a_eq_b = a.bivariate_function(&b, func);
     let clear_result: u8 = is_a_eq_b.decrypt(&client_key);
     assert_eq!(clear_result, 0);
 
-    let is_res_eq_b = result.bivariate_pbs(&b, func);
+    let is_res_eq_b = result.bivariate_function(&b, func);
     let clear_result: u8 = is_res_eq_b.decrypt(&client_key);
     assert_eq!(clear_result, 0);
 
-    let is_a_eq_a = a.bivariate_pbs(&a, func);
+    let is_a_eq_a = a.bivariate_function(&a, func);
     let clear_result: u8 = is_a_eq_a.decrypt(&client_key);
     assert_eq!(clear_result, 1);
 }

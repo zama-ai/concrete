@@ -168,7 +168,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 
-### Univariate functions
+### Univariate function evaluations
 
 Shortints type also support the computation of univariate functions,
 which deep down uses TFHE's _programmable bootstrapping_.
@@ -199,12 +199,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+### Bivariate function evaluations
+
+Using the shortint types offers the possibility to evaluate bivariate functions, i.e.,
+functions that takes two ciphertexts as input. 
+
+In what follows, a simple code example:
+
+```rust
+use concrete::prelude::*;
+use concrete::{generate_keys, set_server_key, ConfigBuilder, FheUint2};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ConfigBuilder::all_disabled().enable_default_uint2().build();
+    let (keys, server_keys) = generate_keys(config);
+    set_server_key(server_keys);
+    
+    let clear_a = 1;
+    let clear_b = 3;
+    let a = FheUint2::try_encrypt(clear_a, &keys)?;
+    let b = FheUint2::try_encrypt(clear_b, &keys)?;
+
+    
+    let c = a.bivariate_function(&b, std::cmp::max);
+    let decrypted = c.decrypt(&keys);
+    assert_eq!(decrypted, std::cmp::max(clear_a, clear_b) as u8);
+
+    Ok(())
+}
+```
+
+
 ## Integer.
+
 In the same vein, native homomorphic types supports modular operations. At the moment, integers 
 are more limited than shortint, but operations will be added soon. 
 
 
 ### Arithmetic operations
+
 Homomorphic integer types support arithmetic operations.
 
 The list of supported operations is:
@@ -293,6 +326,75 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // We homomorphically swapped values using bitwise operations
     assert_eq!(dec_a, clear_b);
     assert_eq!(dec_b, clear_a);
+
+    Ok(())
+}
+```
+## Univariate function evaluations
+
+As for shortints, homomorphic integers support the evaluation of univariate functions.
+
+Here, an example on how to use this operation:
+
+```rust
+use concrete::prelude::*;
+use concrete::{generate_keys, set_server_key, ConfigBuilder, FheUint16};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ConfigBuilder::all_disabled().enable_default_uint16().build();
+    let (keys, server_keys) = generate_keys(config);
+    set_server_key(server_keys);
+
+    let hamming_weight = |value: u64| {
+        value.count_ones() as u64
+    };
+
+    let clear_a = 157u64;
+    let a = FheUint16::try_encrypt(clear_a, &keys)?;
+
+    let c = a.map(hamming_weight);
+    let decrypted: u16 = c.decrypt(&keys);
+    assert_eq!(decrypted, hamming_weight(clear_a) as u16);
+
+    Ok(())
+}
+```
+## Bivariate function evaluations
+
+Bivariate function evaluations are now supported by integers. 
+
+{% hint style="info" %} If the precision is too large, this operation might fail due to an out 
+of memory error {% endhint %}
+
+An example of this operation:
+
+```rust
+use concrete::prelude::*;
+use concrete::{generate_keys, set_server_key, ConfigBuilder, FheUint8};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ConfigBuilder::all_disabled().enable_default_uint8().build();
+    let (keys, server_keys) = generate_keys(config);
+    set_server_key(server_keys);
+
+    let some_func = |x: u64, y: u64| {
+        if x.count_ones() > y.count_zeros() {
+            x.reverse_bits()
+        }
+        else {
+            y.reverse_bits()
+        }
+    };
+
+    let clear_a = 157;
+    let clear_b = 112;
+
+    let a = FheUint8::try_encrypt(clear_a, &keys)?;
+    let b = FheUint8::try_encrypt(clear_b, &keys)?;
+
+    let c = a.bivariate_function(&b, some_func);
+    let decrypted: u8 = c.decrypt(&keys);
+    assert_eq!(decrypted, some_func(clear_a, clear_b) as u8);
 
     Ok(())
 }

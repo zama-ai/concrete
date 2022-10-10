@@ -279,7 +279,7 @@ where
     P::Id: WithGlobalKey<Key = GenericIntegerServerKey<P>>,
     GenericIntegerServerKey<P>: WopbsExecutor<P, <P as StaticIntegerParameter>::Representation>,
 {
-    pub fn bivariate_pbs<F>(&self, other: &Self, func: F) -> Self
+    pub fn bivariate_function<F>(&self, other: &Self, func: F) -> Self
     where
         F: Fn(u64, u64) -> u64,
     {

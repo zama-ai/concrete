@@ -477,7 +477,7 @@ where
         )
     }
 
-    pub(super) fn bivariate_bps<F>(
+    pub(super) fn bivariate_pbs<F>(
         &self,
         lhs_ct: &GenericShortInt<P>,
         rhs_ct: &GenericShortInt<P>,

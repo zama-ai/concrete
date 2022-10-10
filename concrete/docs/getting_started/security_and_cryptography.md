@@ -1,13 +1,5 @@
 # Security and Cryptography
 
-## Integer representation
-
-Concrete 0.2.0 proposes predefined types to represent the encryption of unsigned integers, called `FheUint`. In the case where input message size is small enough, the message is simply encrypted with one ciphertext.&#x20;
-
-By means of example, the type `FheUint3`, which is used to represent messages encoded over 3 bits, will contain only one ciphertext. When the input message size is larger, many ciphertexts are used. The idea is to split the input message following a **radix decomposition**, whose decomposition basis is dependent on the chosen parameter set.
-
-For instance, in the type `FheUint12`, now representing messages encoded over 12 bits, 6 ciphertexts are involved. Each one of them contains the encryption of messages encoded over 2 bits. Before being encrypted, the message $$m$$ over 12 bits is split into 6 smaller messages $$m_i, i\in [0,5]$$ over 2 bits such that $$m = \sum_{i = 0}^{5}m_i \times 2^ {i}$$. In other words, the message is first decomposed over the basis $$2^2$$ (for 2 bits), and then each piece is separately encrypted.
-
 ## Security
 
 By default, the cryptographic parameters provided by Concrete 0.2.0 ensure at least 128 bits of security. The security has been evaluated using the latest versions of the Lattice Estimator ([repository](https://github.com/malb/lattice-estimator)) with `red_cost_model = reduction.RC.BDGL16`.
@@ -141,3 +133,26 @@ Concrete manages this for you.
 
 If you would like to know more about TFHE, you can find more information in our
 [TFHE Deep Dive](https://www.zama.ai/post/tfhe-deep-dive-part-1).
+
+
+## Integer representations
+### Radix decomposition
+Concrete 0.2.0 proposes predefined types to represent the encryption of unsigned integers, called `FheUint`. In the case where input message size is small enough, the message is simply encrypted with one ciphertext.&#x20;
+
+By means of example, the type `FheUint3`, which is used to represent messages encoded over 3 bits, will contain only one ciphertext. When the input message size is larger, many ciphertexts are used. The idea is to split the input message following a **radix decomposition**, whose decomposition basis is dependent on the chosen parameter set.
+
+For instance, in the type `FheUint12`, now representing messages encoded over 12 bits, 6 ciphertexts are involved. Each one of them contains the encryption of messages encoded over 2 bits. Before being encrypted, the message $$m$$ over 12 bits is split into 6 smaller messages $$m_i, i\in [0,5]$$ over 2 bits such that $$m = \sum_{i = 0}^{5}m_i \times 2^ {i}$$. In other words, the message is first decomposed over the basis $$2^2$$ (for 2 bits), and then each piece is separately encrypted.
+
+### Based on the Chinese Remainder Theorem
+By defining a new dynamic type (see this [Section](../how_to/dynamic_types.md)), Concrete offers
+the possibility to use a different representation than the radix one, called the **CRT
+representation**. This is based on the famous [theorem](https://en.wikipedia.org/wiki/Chinese_remainder_theorem), which defines a way to represent integer
+values using smaller moduli. For instance, let $$M=35$$ be the original message modulus. Then,
+computing arithmetic operations over the moduli $$m_0 = 3, m_1 = 5, m_2 = 7$$ leads to the same
+result (thanks to the CRT theorem) than directly computing over modulus $$M=35$$. Let $$msg_1 =
+12$$ and $$msg_2 = 17$$. Then, in the CRT representation, $$msg_1$$ becomes $$(0 \mod 3, 2 \mod 5,
+5 \mod 7$$), and $$msg_2$$ becomes $$(2 \mod 3, 2\mod 5, 3 \mod 7)$$. Then, the product $$msg_1
+\cdot msg_2$$ is simply obtained with $$ 0\cdot 2 \mod 3, 2\cdot 2 \mod 5, 5\cdot 3 \mod 7 $$.
+Recovering the result modulus $$M=35$$ is done by computing the inverse CRT. The main advantage
+of this representation lies in the possibility to compute each arithmetic operation in parallel
+on each modulus blocks. 

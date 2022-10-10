@@ -158,12 +158,12 @@ fn test_programmable_biviariate_bootstrap_fhe_uint3() -> Result<(), Box<dyn std:
         let a = FheUint3::try_encrypt(clear_a, &keys)?;
         let b = FheUint3::try_encrypt(clear_b, &keys)?;
 
-        let result = a.bivariate_pbs(&b, std::cmp::max);
+        let result = a.bivariate_function(&b, std::cmp::max);
         let clear_result: u8 = result.decrypt(&keys);
         assert_eq!(clear_result, std::cmp::max(clear_a, clear_b));
 
         // check reversing lhs and rhs works
-        let result = b.bivariate_pbs(&a, std::cmp::max);
+        let result = b.bivariate_function(&a, std::cmp::max);
         let clear_result: u8 = result.decrypt(&keys);
         assert_eq!(clear_result, std::cmp::max(clear_b, clear_a));
     }
