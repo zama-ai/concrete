@@ -78,7 +78,9 @@ def BConcrete_KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
         // LweKeySwitchKeyType:$keyswitch_key,
         1DTensorOf<[I64]>:$ciphertext,
         I32Attr:$level,
-        I32Attr:$baseLog
+        I32Attr:$baseLog,
+        I32Attr:$lwe_dim_in,
+        I32Attr:$lwe_dim_out
     );
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
@@ -87,12 +89,12 @@ def BConcrete_BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
     let arguments = (ins
         1DTensorOf<[I64]>:$input_ciphertext,
         1DTensorOf<[I64]>:$lookup_table,
-        I32:$inputLweDim,
-        I32:$polySize,
-        I32:$level,
-        I32:$baseLog,
-        I32:$glweDimension,
-        I32:$outPrecision
+        I32Attr:$inputLweDim,
+        I32Attr:$polySize,
+        I32Attr:$level,
+        I32Attr:$baseLog,
+        I32Attr:$glweDimension,
+        I32Attr:$outPrecision
     );
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
@@ -137,12 +139,12 @@ def BConcrete_BootstrapLweBufferAsyncOffloadOp :
     let arguments = (ins
         1DTensorOf<[I64]>:$input_ciphertext,
         1DTensorOf<[I64]>:$lookup_table,
-        I32:$inputLweDim,
-        I32:$polySize,
-        I32:$level,
-        I32:$baseLog,
-        I32:$glweDimension,
-        I32:$outPrecision
+        I32Attr:$inputLweDim,
+        I32Attr:$polySize,
+        I32Attr:$level,
+        I32Attr:$baseLog,
+        I32Attr:$glweDimension,
+        I32Attr:$outPrecision
     );
     let results = (outs RT_Future : $result);
 }
@@ -150,37 +152,6 @@ def BConcrete_BootstrapLweBufferAsyncOffloadOp :
 def BConcrete_AwaitFutureOp :
     BConcrete_Op<"await_future"> {
     let arguments = (ins RT_Future : $future);
-    let results = (outs 1DTensorOf<[I64]>:$result);
-}
-
-// This is a different op in BConcrete just because of the way we are lowering to CAPI
-// When the CAPI lowering is detached from bufferization, we can remove this op, and lower
-// to the appropriate CAPI (gpu or cpu) depending on the emitGPUOps compilation option
-def BConcrete_BootstrapLweGPUBufferOp : BConcrete_Op<"bootstrap_lwe_gpu_buffer"> {
-    let arguments = (ins
-        1DTensorOf<[I64]>:$input_ciphertext,
-        1DTensorOf<[I64]>:$table,
-        I32:$inputLweDim,
-        I32:$polySize,
-        I32:$level,
-        I32:$baseLog,
-        I32:$glweDimension,
-        I32:$outPrecision
-    );
-    let results = (outs 1DTensorOf<[I64]>:$result);
-}
-
-// This is a different op in BConcrete just because of the way we are lowering to CAPI
-// When the CAPI lowering is detached from bufferization, we can remove this op, and lower
-// to the appropriate CAPI (gpu or cpu) depending on the emitGPUOps compilation option
-def BConcrete_KeySwitchLweGPUBufferOp : BConcrete_Op<"keyswitch_lwe_gpu_buffer"> {
-    let arguments = (ins
-        1DTensorOf<[I64]>:$ciphertext,
-        I32:$level,
-        I32:$baseLog,
-        I32:$lwe_dim_in,
-        I32:$lwe_dim_out
-    );
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 

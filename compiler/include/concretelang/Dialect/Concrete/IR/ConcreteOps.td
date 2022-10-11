@@ -58,12 +58,10 @@ def Concrete_BootstrapLweOp : Concrete_Op<"bootstrap_lwe"> {
     let arguments = (ins 
         Concrete_LweCiphertextType:$input_ciphertext,
         1DTensorOf<[I64]>:$lookup_table,
-        I32:$inputLweDim,
-        I32:$polySize,
-        I32:$level,
-        I32:$baseLog,
-        I32:$glweDimension,
-        I32:$outPrecision
+        I32Attr:$level,
+        I32Attr:$baseLog,
+        I32Attr:$polySize,
+        I32Attr:$glweDimension
     );
     let results = (outs Concrete_LweCiphertextType:$result);
 }

@@ -44,6 +44,11 @@
 
 namespace mlir {
 namespace concretelang {
+// TODO: should be removed when bufferization is not related to CAPI lowering
+// Control whether we should call a cpu of gpu function when lowering
+// to CAPI
+static bool EMIT_GPU_OPS;
+bool getEmitGPUOption() { return EMIT_GPU_OPS; }
 
 /// Creates a new compilation context that can be shared across
 /// compilation engines and results
@@ -223,8 +228,12 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   CompilationResult res(this->compilationContext);
 
-  mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
   CompilationOptions &options = this->compilerOptions;
+
+  // enable/disable usage of gpu functions during bufferization
+  EMIT_GPU_OPS = options.emitGPUOps;
+
+  mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
 
   if (options.verifyDiagnostics) {
     // Only build diagnostics verifier handler if diagnostics should
@@ -355,8 +364,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Concrete -> BConcrete
   if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
-          mlirContext, module, this->enablePass, loopParallelize,
-          options.emitGPUOps)
+          mlirContext, module, this->enablePass, loopParallelize)
           .failed()) {
     return StreamStringError(
         "Lowering from Concrete to Bufferized Concrete failed");

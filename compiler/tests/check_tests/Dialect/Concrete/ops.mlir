@@ -36,11 +36,11 @@ func.func @negate_lwe_ciphertext(%arg0: !Concrete.lwe_ciphertext<2048,7>) -> !Co
   return %1: !Concrete.lwe_ciphertext<2048,7>
 }
 
-// CHECK-LABEL: func.func @bootstrap_lwe(%arg0: !Concrete.lwe_ciphertext<2048,7>, %arg1: tensor<128xi64>, %arg2: i32, %arg3: i32, %arg4: i32, %arg5: i32, %arg6: i32, %arg7: i32) -> !Concrete.lwe_ciphertext<2048,7>
-func.func @bootstrap_lwe(%arg0: !Concrete.lwe_ciphertext<2048,7>, %arg1: tensor<128xi64>, %arg2: i32, %arg3: i32, %arg4: i32, %arg5: i32, %arg6: i32, %arg7: i32) -> !Concrete.lwe_ciphertext<2048,7> {
-  // CHECK-NEXT: %[[V1:.*]] = "Concrete.bootstrap_lwe"(%arg0, %arg1, %arg2, %arg3, %arg4, %arg5, %arg6, %arg7) : (!Concrete.lwe_ciphertext<2048,7>, tensor<128xi64>, i32, i32, i32, i32, i32, i32) -> !Concrete.lwe_ciphertext<2048,7>
+// CHECK-LABEL: func.func @bootstrap_lwe(%arg0: !Concrete.lwe_ciphertext<2048,7>, %arg1: tensor<128xi64>) -> !Concrete.lwe_ciphertext<2048,7>
+func.func @bootstrap_lwe(%arg0: !Concrete.lwe_ciphertext<2048,7>, %arg1: tensor<128xi64>) -> !Concrete.lwe_ciphertext<2048,7> {
+  // CHECK-NEXT: %[[V1:.*]] = "Concrete.bootstrap_lwe"(%arg0, %arg1) {baseLog = 2 : i32, glweDimension = 4 : i32, level = 3 : i32, polySize = 2048 : i32} : (!Concrete.lwe_ciphertext<2048,7>, tensor<128xi64>) -> !Concrete.lwe_ciphertext<2048,7>
   // CHECK-NEXT: return %[[V1]] : !Concrete.lwe_ciphertext<2048,7>
-  %1 = "Concrete.bootstrap_lwe"(%arg0, %arg1, %arg2, %arg3, %arg4, %arg5, %arg6, %arg7) : (!Concrete.lwe_ciphertext<2048,7>, tensor<128xi64>, i32, i32, i32, i32, i32, i32) -> !Concrete.lwe_ciphertext<2048,7>
+  %1 = "Concrete.bootstrap_lwe"(%arg0, %arg1) {baseLog = 2 : i32, polySize = 2048 : i32, level = 3 : i32, glweDimension = 4 : i32} : (!Concrete.lwe_ciphertext<2048,7>, tensor<128xi64>) -> !Concrete.lwe_ciphertext<2048,7>
   return %1: !Concrete.lwe_ciphertext<2048,7>
 }
 

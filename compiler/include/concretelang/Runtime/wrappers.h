@@ -62,6 +62,8 @@ void memref_keyswitch_lwe_u64(uint64_t *out_allocated, uint64_t *out_aligned,
                               uint64_t out_stride, uint64_t *ct0_allocated,
                               uint64_t *ct0_aligned, uint64_t ct0_offset,
                               uint64_t ct0_size, uint64_t ct0_stride,
+                              uint32_t level, uint32_t base_log,
+                              uint32_t input_lwe_dim, uint32_t output_lwe_dim,
                               mlir::concretelang::RuntimeContext *context);
 void *memref_keyswitch_async_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,

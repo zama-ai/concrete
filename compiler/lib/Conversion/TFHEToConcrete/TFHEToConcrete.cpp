@@ -79,25 +79,9 @@ struct BootstrapGLWEOpPattern
                   mlir::PatternRewriter &rewriter) const override {
     mlir::Type resultType = converter.convertType(bsOp.getType());
 
-    auto precision = bsOp.getType().cast<TFHE::GLWECipherTextType>().getP();
-
-    mlir::Value inputLweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        bsOp.getLoc(), bsOp.inputLweDim(), 32);
-    mlir::Value polySizeCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        bsOp.getLoc(), bsOp.polySize(), 32);
-    mlir::Value levelCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        bsOp.getLoc(), bsOp.level(), 32);
-    mlir::Value baseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        bsOp.getLoc(), bsOp.baseLog(), 32);
-    mlir::Value glweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        bsOp.getLoc(), bsOp.glweDimension(), 32);
-    mlir::Value precisionCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        bsOp.getLoc(), precision, 32);
-
     auto newOp = rewriter.replaceOpWithNewOp<Concrete::BootstrapLweOp>(
-        bsOp, resultType, bsOp.ciphertext(), bsOp.lookup_table(),
-        inputLweDimCst, polySizeCst, levelCst, baseLogCst, glweDimCst,
-        precisionCst);
+        bsOp, resultType, bsOp.ciphertext(), bsOp.lookup_table(), bsOp.level(),
+        bsOp.baseLog(), bsOp.polySize(), bsOp.glweDimension());
 
     rewriter.startRootUpdate(newOp);
     newOp.input_ciphertext().setType(

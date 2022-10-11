@@ -154,9 +154,8 @@ struct BootstrapGLWEOpPattern
     auto newOutputTy = converter.convertType(outputTy);
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         bsOp, newOutputTy, bsOp.ciphertext(), bsOp.lookup_table(),
-        cryptoParameters.nSmall, cryptoParameters.getPolynomialSize(),
         cryptoParameters.brLevel, cryptoParameters.brLogBase,
-        cryptoParameters.glweDimension);
+        cryptoParameters.getPolynomialSize(), cryptoParameters.glweDimension);
     rewriter.startRootUpdate(newOp);
     newOp.ciphertext().setType(newInputTy);
     rewriter.finalizeRootUpdate(newOp);

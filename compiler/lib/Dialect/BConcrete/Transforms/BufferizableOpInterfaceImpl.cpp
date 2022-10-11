@@ -18,6 +18,7 @@
 #include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
 #include "concretelang/Dialect/BConcrete/IR/BConcreteOps.h"
 #include "concretelang/Dialect/BConcrete/Transforms/BufferizableOpInterfaceImpl.h"
+#include "concretelang/Support/CompilerEngine.h"
 #include <mlir/IR/AffineExpr.h>
 #include <mlir/IR/AffineMap.h>
 #include <mlir/IR/BuiltinTypes.h>
@@ -110,15 +111,14 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
   } else if (funcName == memref_negate_lwe_ciphertext_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType}, {});
-  } else if (funcName == memref_keyswitch_lwe_u64) {
-    funcType = mlir::FunctionType::get(
-        rewriter.getContext(), {memref1DType, memref1DType, contextType}, {});
-  } else if (funcName == memref_keyswitch_lwe_cuda_u64) {
+  } else if (funcName == memref_keyswitch_lwe_u64 ||
+             funcName == memref_keyswitch_lwe_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType, i32Type,
                                         i32Type, i32Type, i32Type, contextType},
                                        {});
-  } else if (funcName == memref_bootstrap_lwe_u64) {
+  } else if (funcName == memref_bootstrap_lwe_u64 ||
+             funcName == memref_bootstrap_lwe_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
                                         memref1DType, i32Type, i32Type, i32Type,
@@ -138,12 +138,6 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(
         rewriter.getContext(),
         {memref1DType, futureType, memref1DType, memref1DType}, {});
-  } else if (funcName == memref_bootstrap_lwe_cuda_u64) {
-    funcType = mlir::FunctionType::get(rewriter.getContext(),
-                                       {memref1DType, memref1DType,
-                                        memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i32Type, i32Type, contextType},
-                                       {});
   } else if (funcName == memref_expand_lut_in_trivial_glwe_ct_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {
@@ -253,10 +247,10 @@ struct BufferizableWithCallOpInterface
   }
 };
 
-template <typename Op, char const *funcName, bool withContext = false>
+template <typename Op, char const *funcName>
 struct BufferizableWithAsyncCallOpInterface
     : public BufferizableOpInterface::ExternalModel<
-          BufferizableWithAsyncCallOpInterface<Op, funcName, withContext>, Op> {
+          BufferizableWithAsyncCallOpInterface<Op, funcName>, Op> {
   bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
                               const AnalysisState &state) const {
     return true;
@@ -300,7 +294,7 @@ struct BufferizableWithAsyncCallOpInterface
     }
 
     // The first operand is the result
-    mlir::SmallVector<mlir::Value, 3> operands{
+    mlir::SmallVector<mlir::Value> operands{
         getCastedMemRef(rewriter, loc, *outMemref),
     };
     // For all tensor operand get the corresponding casted buffer
@@ -313,10 +307,9 @@ struct BufferizableWithAsyncCallOpInterface
         operands.push_back(getCastedMemRef(rewriter, loc, memrefOperand));
       }
     }
-    // Append the context argument
-    if (withContext) {
-      operands.push_back(getContextArgument(op));
-    }
+
+    // Append additional arguments
+    pushAdditionalArgs<Op>(castOp, operands, rewriter);
 
     // Insert forward declaration of the function
     if (insertForwardDeclarationOfTheCAPI(op, rewriter, funcName).failed()) {
@@ -422,6 +415,18 @@ template <>
 void pushAdditionalArgs(BConcrete::KeySwitchLweBufferOp op,
                         mlir::SmallVector<mlir::Value> &operands,
                         RewriterBase &rewriter) {
+  // level
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.levelAttr()));
+  // base_log
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.baseLogAttr()));
+  // lwe_dim_in
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.lwe_dim_inAttr()));
+  // lwe_dim_out
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.lwe_dim_outAttr()));
   // context
   operands.push_back(getContextArgument(op));
 };
@@ -430,6 +435,58 @@ template <>
 void pushAdditionalArgs(BConcrete::BootstrapLweBufferOp op,
                         mlir::SmallVector<mlir::Value> &operands,
                         RewriterBase &rewriter) {
+  // input_lwe_dim
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.inputLweDimAttr()));
+  // poly_size
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
+  // level
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.levelAttr()));
+  // base_log
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.baseLogAttr()));
+  // glwe_dim
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.glweDimensionAttr()));
+  // out_precision
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.outPrecisionAttr()));
+  // context
+  operands.push_back(getContextArgument(op));
+};
+
+template <>
+void pushAdditionalArgs(BConcrete::KeySwitchLweBufferAsyncOffloadOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter) {
+  // context
+  operands.push_back(getContextArgument(op));
+};
+
+template <>
+void pushAdditionalArgs(BConcrete::BootstrapLweBufferAsyncOffloadOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter) {
+  // input_lwe_dim
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.inputLweDimAttr()));
+  // poly_size
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
+  // level
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.levelAttr()));
+  // base_log
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.baseLogAttr()));
+  // glwe_dim
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.glweDimensionAttr()));
+  // out_precision
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.outPrecisionAttr()));
   // context
   operands.push_back(getContextArgument(op));
 };
@@ -488,31 +545,32 @@ void mlir::concretelang::BConcrete::
         BufferizableWithCallOpInterface<BConcrete::NegateLweBufferOp,
                                         memref_negate_lwe_ciphertext_u64>>(
         *ctx);
-    BConcrete::KeySwitchLweGPUBufferOp::attachInterface<
-        BufferizableWithCallOpInterface<BConcrete::KeySwitchLweGPUBufferOp,
-                                        memref_keyswitch_lwe_cuda_u64, true>>(
-        *ctx);
-    BConcrete::BootstrapLweGPUBufferOp::attachInterface<
-        BufferizableWithCallOpInterface<BConcrete::BootstrapLweGPUBufferOp,
-                                        memref_bootstrap_lwe_cuda_u64, true>>(
-        *ctx);
-    BConcrete::KeySwitchLweBufferOp::attachInterface<
-        BufferizableWithCallOpInterface<BConcrete::KeySwitchLweBufferOp,
-                                        memref_keyswitch_lwe_u64>>(*ctx);
-    BConcrete::BootstrapLweBufferOp::attachInterface<
-        BufferizableWithCallOpInterface<BConcrete::BootstrapLweBufferOp,
-                                        memref_bootstrap_lwe_u64>>(*ctx);
+    if (mlir::concretelang::getEmitGPUOption()) {
+      BConcrete::KeySwitchLweBufferOp::attachInterface<
+          BufferizableWithCallOpInterface<BConcrete::KeySwitchLweBufferOp,
+                                          memref_keyswitch_lwe_cuda_u64>>(*ctx);
+      BConcrete::BootstrapLweBufferOp::attachInterface<
+          BufferizableWithCallOpInterface<BConcrete::BootstrapLweBufferOp,
+                                          memref_bootstrap_lwe_cuda_u64>>(*ctx);
+    } else {
+      BConcrete::KeySwitchLweBufferOp::attachInterface<
+          BufferizableWithCallOpInterface<BConcrete::KeySwitchLweBufferOp,
+                                          memref_keyswitch_lwe_u64>>(*ctx);
+      BConcrete::BootstrapLweBufferOp::attachInterface<
+          BufferizableWithCallOpInterface<BConcrete::BootstrapLweBufferOp,
+                                          memref_bootstrap_lwe_u64>>(*ctx);
+    }
     BConcrete::WopPBSCRTLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::WopPBSCRTLweBufferOp,
                                         memref_wop_pbs_crt_buffer>>(*ctx);
     BConcrete::KeySwitchLweBufferAsyncOffloadOp::attachInterface<
         BufferizableWithAsyncCallOpInterface<
             BConcrete::KeySwitchLweBufferAsyncOffloadOp,
-            memref_keyswitch_async_lwe_u64, true>>(*ctx);
+            memref_keyswitch_async_lwe_u64>>(*ctx);
     BConcrete::BootstrapLweBufferAsyncOffloadOp::attachInterface<
         BufferizableWithAsyncCallOpInterface<
             BConcrete::BootstrapLweBufferAsyncOffloadOp,
-            memref_bootstrap_async_lwe_u64, true>>(*ctx);
+            memref_bootstrap_async_lwe_u64>>(*ctx);
     BConcrete::AwaitFutureOp::attachInterface<
         BufferizableWithSyncCallOpInterface<BConcrete::AwaitFutureOp,
                                             memref_await_future>>(*ctx);

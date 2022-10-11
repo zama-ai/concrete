@@ -99,10 +99,9 @@ def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
   let arguments = (ins
     TFHE_GLWECipherTextType : $ciphertext,
     1DTensorOf<[I64]> : $lookup_table,
-    I32Attr : $inputLweDim,
-    I32Attr : $polySize,
     I32Attr : $level,
     I32Attr : $baseLog,
+    I32Attr : $polySize,
     I32Attr : $glweDimension
   );
 

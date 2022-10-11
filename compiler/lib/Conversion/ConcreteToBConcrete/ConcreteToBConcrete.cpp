@@ -48,12 +48,11 @@ struct ConcreteToBConcretePass
     : public ConcreteToBConcreteBase<ConcreteToBConcretePass> {
   void runOnOperation() final;
   ConcreteToBConcretePass() = delete;
-  ConcreteToBConcretePass(bool loopParallelize, bool emitGPUOps)
-      : loopParallelize(loopParallelize), emitGPUOps(emitGPUOps){};
+  ConcreteToBConcretePass(bool loopParallelize)
+      : loopParallelize(loopParallelize){};
 
 private:
   bool loopParallelize;
-  bool emitGPUOps;
 };
 } // namespace
 
@@ -201,43 +200,67 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   };
 };
 
-struct KeySwitchToGPU : public mlir::OpRewritePattern<
+struct LowerKeySwitch : public mlir::OpRewritePattern<
                             mlir::concretelang::Concrete::KeySwitchLweOp> {
-  KeySwitchToGPU(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+  LowerKeySwitch(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
       : ::mlir::OpRewritePattern<mlir::concretelang::Concrete::KeySwitchLweOp>(
             context, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(mlir::concretelang::Concrete::KeySwitchLweOp keySwitchOp,
+  matchAndRewrite(mlir::concretelang::Concrete::KeySwitchLweOp ksOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
 
-    mlir::Value levelCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        keySwitchOp.getLoc(), keySwitchOp.level(), 32);
-    mlir::Value baseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        keySwitchOp.getLoc(), keySwitchOp.baseLog(), 32);
-
-    // construct operands for in/out dimensions
-    mlir::concretelang::Concrete::LweCiphertextType outType =
-        keySwitchOp.getType();
-    auto outDim = outType.getDimension();
-    mlir::Value outDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        keySwitchOp.getLoc(), outDim, 32);
+    // construct attributes for in/out dimensions
+    mlir::concretelang::Concrete::LweCiphertextType outType = ksOp.getType();
+    auto outDimAttr = rewriter.getI32IntegerAttr(outType.getDimension());
     auto inputType =
-        keySwitchOp.ciphertext()
+        ksOp.ciphertext()
             .getType()
             .cast<mlir::concretelang::Concrete::LweCiphertextType>();
-    auto inputDim = inputType.getDimension();
-    mlir::Value inputDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        keySwitchOp.getLoc(), inputDim, 32);
+    mlir::IntegerAttr inputDimAttr =
+        rewriter.getI32IntegerAttr(inputType.getDimension());
 
-    mlir::Operation *bKeySwitchGPUOp = rewriter.replaceOpWithNewOp<
-        mlir::concretelang::BConcrete::KeySwitchLweGPUBufferOp>(
-        keySwitchOp, outType, keySwitchOp.ciphertext(), levelCst, baseLogCst,
-        inputDimCst, outDimCst);
+    mlir::Operation *bKeySwitchOp = rewriter.replaceOpWithNewOp<
+        mlir::concretelang::BConcrete::KeySwitchLweBufferOp>(
+        ksOp, outType, ksOp.ciphertext(), ksOp.levelAttr(), ksOp.baseLogAttr(),
+        inputDimAttr, outDimAttr);
 
     mlir::concretelang::convertOperandAndResultTypes(
-        rewriter, bKeySwitchGPUOp, [&](mlir::MLIRContext *, mlir::Type t) {
+        rewriter, bKeySwitchOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
+    return ::mlir::success();
+  };
+};
+
+struct LowerBootstrap : public mlir::OpRewritePattern<
+                            mlir::concretelang::Concrete::BootstrapLweOp> {
+  LowerBootstrap(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::concretelang::Concrete::BootstrapLweOp>(
+            context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::Concrete::BootstrapLweOp bsOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    ConcreteToBConcreteTypeConverter converter;
+
+    mlir::concretelang::Concrete::LweCiphertextType outType = bsOp.getType();
+    auto inputType =
+        bsOp.input_ciphertext()
+            .getType()
+            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
+    auto inputDimAttr = rewriter.getI32IntegerAttr(inputType.getDimension());
+    auto outputPrecisionAttr = rewriter.getI32IntegerAttr(outType.getP());
+    mlir::Operation *bBootstrapOp = rewriter.replaceOpWithNewOp<
+        mlir::concretelang::BConcrete::BootstrapLweBufferOp>(
+        bsOp, outType, bsOp.input_ciphertext(), bsOp.lookup_table(),
+        inputDimAttr, bsOp.polySizeAttr(), bsOp.levelAttr(), bsOp.baseLogAttr(),
+        bsOp.glweDimensionAttr(), outputPrecisionAttr);
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, bBootstrapOp, [&](mlir::MLIRContext *, mlir::Type t) {
           return converter.convertType(t);
         });
 
@@ -909,6 +932,7 @@ void ConcreteToBConcretePass::runOnOperation() {
     // Add patterns to trivialy convert Concrete op to the equivalent
     // BConcrete op
     patterns.insert<
+        LowerBootstrap, LowerKeySwitch,
         LowToBConcrete<mlir::concretelang::Concrete::AddLweCiphertextsOp,
                        mlir::concretelang::BConcrete::AddLweBuffersOp,
                        BConcrete::AddCRTLweBuffersOp>,
@@ -918,24 +942,6 @@ void ConcreteToBConcretePass::runOnOperation() {
                        BConcrete::NegateCRTLweBufferOp>,
         LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweBufferOp,
                        BConcrete::WopPBSCRTLweBufferOp>>(&getContext());
-
-    if (this->emitGPUOps) {
-      patterns
-          .insert<LowToBConcrete<
-                      mlir::concretelang::Concrete::BootstrapLweOp,
-                      mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp,
-                      mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp>,
-                  KeySwitchToGPU>(&getContext());
-    } else {
-      patterns.insert<
-          LowToBConcrete<mlir::concretelang::Concrete::BootstrapLweOp,
-                         mlir::concretelang::BConcrete::BootstrapLweBufferOp,
-                         mlir::concretelang::BConcrete::BootstrapLweBufferOp>,
-          LowToBConcrete<mlir::concretelang::Concrete::KeySwitchLweOp,
-                         mlir::concretelang::BConcrete::KeySwitchLweBufferOp,
-                         mlir::concretelang::BConcrete::KeySwitchLweBufferOp>>(
-          &getContext());
-    }
 
     // Add patterns to rewrite tensor operators that works on encrypted
     // tensors
@@ -1063,8 +1069,8 @@ void ConcreteToBConcretePass::runOnOperation() {
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertConcreteToBConcretePass(bool loopParallelize, bool emitGPUOps) {
-  return std::make_unique<ConcreteToBConcretePass>(loopParallelize, emitGPUOps);
+createConvertConcreteToBConcretePass(bool loopParallelize) {
+  return std::make_unique<ConcreteToBConcretePass>(loopParallelize);
 }
 } // namespace concretelang
 } // namespace mlir

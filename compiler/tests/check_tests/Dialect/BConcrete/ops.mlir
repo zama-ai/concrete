@@ -72,20 +72,20 @@ func.func @negate_crt_lwe_ciphertext(%arg0: tensor<5x2049xi64>) -> tensor<5x2049
   return %0 : tensor<5x2049xi64>
 }
 
-//CHECK: func.func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: tensor<16xi64>, %arg2: i32, %arg3: i32, %arg4: i32, %arg5: i32, %arg6: i32, %arg7: i32) -> tensor<2049xi64> {
-//CHECK:   %[[V0:.*]] = "BConcrete.bootstrap_lwe_buffer"(%arg0, %arg1, %arg2, %arg3, %arg4, %arg5, %arg6, %arg7) : (tensor<2049xi64>, tensor<16xi64>, i32, i32, i32, i32, i32, i32) -> tensor<2049xi64>
+//CHECK: func.func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: tensor<16xi64>) -> tensor<2049xi64> {
+//CHECK:   %[[V0:.*]] = "BConcrete.bootstrap_lwe_buffer"(%arg0, %arg1) {baseLog = 2 : i32, glweDimension = 4 : i32, inputLweDim = 600 : i32, level = 3 : i32, outPrecision = 4 : i32, polySize = 2048 : i32} : (tensor<2049xi64>, tensor<16xi64>) -> tensor<2049xi64>
 //CHECK:   return %[[V0]] : tensor<2049xi64>
 //CHECK: }
-func.func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: tensor<16xi64>, %arg2: i32, %arg3: i32, %arg4: i32, %arg5: i32, %arg6: i32, %arg7: i32) -> tensor<2049xi64> {
-  %0 = "BConcrete.bootstrap_lwe_buffer"(%arg0, %arg1, %arg2, %arg3, %arg4, %arg5, %arg6, %arg7) : (tensor<2049xi64>, tensor<16xi64>, i32, i32, i32, i32, i32, i32) -> (tensor<2049xi64>)
+func.func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: tensor<16xi64>) -> tensor<2049xi64> {
+  %0 = "BConcrete.bootstrap_lwe_buffer"(%arg0, %arg1) {baseLog = 2 : i32, glweDimension = 4 : i32, inputLweDim = 600 : i32, level = 3 : i32, outPrecision = 4 : i32, polySize = 2048 : i32} : (tensor<2049xi64>, tensor<16xi64>) -> (tensor<2049xi64>)
   return %0 : tensor<2049xi64>
 }
 
 //CHECK: func.func @keyswitch_lwe(%[[A0:.*]]: tensor<2049xi64>) -> tensor<2049xi64> {
-//CHECK:   %[[V0:.*]] = "BConcrete.keyswitch_lwe_buffer"(%[[A0]]) {baseLog = 2 : i32, inputLweDimension = 1 : i32, level = 3 : i32, outputLweDimension = 1 : i32} : (tensor<2049xi64>) -> tensor<2049xi64>
+//CHECK:   %[[V0:.*]] = "BConcrete.keyswitch_lwe_buffer"(%[[A0]]) {baseLog = 2 : i32, level = 3 : i32, lwe_dim_in = 2048 : i32, lwe_dim_out = 2048 : i32} : (tensor<2049xi64>) -> tensor<2049xi64>
 //CHECK:   return %[[V0]] : tensor<2049xi64>
 //CHECK: }
 func.func @keyswitch_lwe(%arg0: tensor<2049xi64>) -> tensor<2049xi64> {
-  %0 = "BConcrete.keyswitch_lwe_buffer"(%arg0) {baseLog = 2 : i32, inputLweDimension = 1 : i32, level = 3 : i32, outputLweDimension = 1 : i32} : (tensor<2049xi64>) -> (tensor<2049xi64>)
+  %0 = "BConcrete.keyswitch_lwe_buffer"(%arg0) {baseLog = 2 : i32, level = 3 : i32, lwe_dim_in = 2048 : i32, lwe_dim_out = 2048 : i32} : (tensor<2049xi64>) -> (tensor<2049xi64>)
   return %0 : tensor<2049xi64>
 }

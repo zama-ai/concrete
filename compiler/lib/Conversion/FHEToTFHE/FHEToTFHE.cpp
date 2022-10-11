@@ -113,7 +113,7 @@ struct ApplyLookupTableEintOpToKeyswitchBootstrapPattern
         });
     //  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
     rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
-        lutOp, resultTy, glweKs, lutOp.lut(), -1, -1, -1, -1, -1);
+        lutOp, resultTy, glweKs, lutOp.lut(), -1, -1, -1, -1);
     return ::mlir::success();
   };
 };
@@ -146,8 +146,6 @@ struct ApplyLookupTableEintOpToWopPBSPattern
   matchAndRewrite(FHE::ApplyLookupTableEintOp lutOp,
                   mlir::PatternRewriter &rewriter) const override {
     FHEToTFHETypeConverter converter;
-    auto inputTy = converter.convertType(lutOp.a().getType())
-                       .cast<TFHE::GLWECipherTextType>();
     auto resultTy = converter.convertType(lutOp.getType());
     //  %0 = "TFHE.wop_pbs_glwe"(%ct, %lut)
     //         : (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
