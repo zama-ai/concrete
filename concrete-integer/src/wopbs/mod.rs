@@ -53,11 +53,11 @@ pub fn encode_radix(val: u64, basis: u64, nb_block: u64) -> Vec<u64> {
     output
 }
 
-pub fn encode_crt(val: u64, basis: &Vec<u64>) -> Vec<u64> {
+pub fn encode_crt(val: u64, basis: &[u64]) -> Vec<u64> {
     let mut output = vec![];
     //Put each decomposition into a new ciphertext
-    for i in 0..basis.len() {
-        output.push(val % basis[i]);
+    for i in basis {
+        output.push(val % i);
     }
     output
 }
@@ -78,7 +78,7 @@ where
 // split the value following the degree and the modulus
 /// ```rust
 /// ```
-pub fn encode_mix_radix(mut val: u64, basis: &Vec<u64>, modulus: u64) -> Vec<u64> {
+pub fn encode_mix_radix(mut val: u64, basis: &[u64], modulus: u64) -> Vec<u64> {
     let mut output = vec![];
     for basis in basis.iter() {
         output.push(val % modulus);
@@ -98,14 +98,14 @@ pub fn encode_mix_radix(mut val: u64, basis: &Vec<u64>, modulus: u64) -> Vec<u64
 /// let basis = vec![1, 2];
 /// assert_eq!(vec![1, 2], split_value_according_to_bit_basis(val, &basis));
 /// ```
-pub fn split_value_according_to_bit_basis(value: u64, basis: &Vec<u64>) -> Vec<u64> {
+pub fn split_value_according_to_bit_basis(value: u64, basis: &[u64]) -> Vec<u64> {
     let mut output = vec![];
-    let mut tmp = value.clone();
+    let mut tmp = value;
     let mask = 1;
 
-    for i in 0..basis.len() {
+    for i in basis {
         let mut tmp_output = 0;
-        for j in 0..basis[i] {
+        for j in 0..*i {
             let val = tmp & mask;
             tmp_output += val << j;
             tmp >>= 1;
@@ -498,8 +498,8 @@ impl WopbsKey {
             }
 
             // fill the LUTs
-            for block in 0..nb_block {
-                vec_lut[block][index] = ((f(value as u64) >> (log_carry_modulus * block as u64))
+            for (block_index, lut_block) in vec_lut.iter_mut().enumerate().take(nb_block) {
+                lut_block[index] = ((f(value as u64) >> (log_carry_modulus * block_index as u64))
                     % (1 << log_message_modulus))
                     << delta
             }
@@ -619,7 +619,7 @@ impl WopbsKey {
         let mut vec_lut = vec![vec![0; lut_size]; basis.len()];
 
         for i in 0..(1 << total_bit) {
-            let mut value = i.clone();
+            let mut value = i;
             for (j, block) in ct.blocks.iter().enumerate() {
                 let deg = f64::log2((block.degree.0 + 1) as f64).ceil() as u64;
                 let delta: u64 = (1 << 63)
@@ -793,11 +793,11 @@ impl WopbsKey {
         for index in 0..(1 << total_bit) {
             let mut split = encode_radix(index, 1 << nb_bit_to_extract[0], 2);
             let mut crt_value = vec![vec![0; ct1.blocks.len()]; 2];
-            for j in 0..ct1.blocks.len() {
+            for (j, base) in basis.iter().enumerate().take(ct1.blocks.len()) {
                 let deg_1 = f64::log2((ct1.blocks[j].degree.0 + 1) as f64).ceil() as u64;
                 let deg_2 = f64::log2((ct2.blocks[j].degree.0 + 1) as f64).ceil() as u64;
-                crt_value[0][j] = (split[0] % (1 << deg_1)) % basis[j];
-                crt_value[1][j] = (split[1] % (1 << deg_2)) % basis[j];
+                crt_value[0][j] = (split[0] % (1 << deg_1)) % base;
+                crt_value[1][j] = (split[1] % (1 << deg_2)) % base;
                 split[0] >>= deg_1;
                 split[1] >>= deg_2;
             }

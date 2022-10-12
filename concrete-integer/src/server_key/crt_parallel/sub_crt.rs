@@ -1,5 +1,4 @@
 use crate::{CrtCiphertext, ServerKey};
-use rayon::prelude::*;
 
 impl ServerKey {
     /// Computes homomorphically a subtraction between two ciphertexts encrypting integer values.
