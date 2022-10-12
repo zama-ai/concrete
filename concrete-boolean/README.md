@@ -35,10 +35,17 @@ fn main() {
 }
  ```
 
+## AVX512
+
+On x86_64 CPUs that have the avx512 instruction set, it is possible to compile using the nightly compiler
+with the `nightly-avx152` to get additional speedup.
+
+`cargo +nightly bench --features nightly-avx512`
+
 ## GPU backend
+
 concrete-boolean supports GPU backend via the concrete-cuda crate. It can be activated adding the 
 flag `--features=cuda` to the compile command.  
-
 
 ## Links
 
