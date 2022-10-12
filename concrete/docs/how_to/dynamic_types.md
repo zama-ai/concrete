@@ -51,7 +51,7 @@ integers.
 fn main() {
     use concrete::prelude::*;
     use concrete::{
-        generate_keys, set_server_key, ConfigBuilder, RadixParameters,
+        generate_keys, set_server_key, ConfigBuilder, CrtParameters,
         FheUint2Parameters,
     };
     let mut config = ConfigBuilder::all_disabled();
