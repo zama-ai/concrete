@@ -14,7 +14,7 @@ use crate::ClientKey;
 
 use super::base::GenericInteger;
 #[cfg(feature = "internal-keycache")]
-use concrete_integer::keycache::KEY_CACHE;
+use concrete_integer::keycache::{KEY_CACHE, KEY_CACHE_WOPBS};
 use concrete_integer::wopbs::WopbsKey;
 use paste::paste;
 
@@ -231,9 +231,20 @@ where
     }
 
     fn new_wopbs_key(client_key: &C, server_key: &Self) -> WopbsKey {
-        WopbsKey::new_wopbs_key(client_key.as_ref(), server_key)
+        #[cfg(not(feature = "internal-keycache"))]
+        {
+            WopbsKey::new_wopbs_key(client_key.as_ref(), server_key)
+        }
+        #[cfg(feature = "internal-keycache")]
+        {
+            let _ = &server_key; // silence warning
+            KEY_CACHE_WOPBS
+                .get_from_params(client_key.as_ref().parameters())
+                
+        }
     }
 }
+
 static_int_type! {
     #[doc="An unsigned integer type with 8 bits."]
     FheUint8 {

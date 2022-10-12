@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::errors::{Type, UninitializedClientKey, UninitializedServerKey};
 use crate::global_state::WithGlobalKey;
 use crate::integers::client_key::GenericIntegerClientKey;
-use crate::integers::parameters::{FromParameters, IntegerParameter, PrivateIntegerKey};
+use crate::integers::parameters::{FromParameters, IntegerParameter, PrivateIntegerKey, EvaluationIntegerKey};
 use crate::integers::server_key::{
     GenericIntegerServerKey, SmartAdd, SmartAddAssign, SmartBitAnd, SmartBitAndAssign, SmartBitOr,
     SmartBitOrAssign, SmartBitXor, SmartBitXorAssign, SmartMul, SmartMulAssign, SmartNeg, SmartShl,
@@ -111,9 +111,14 @@ pub struct DynInnerServerKey {
 
 impl crate::integers::parameters::EvaluationIntegerKey<DynInnerClientKey> for DynInnerServerKey {
     fn new(client_key: &DynInnerClientKey) -> Self {
+        // Use full call syntax to make sure we make use of the key-cache
         let inner = match client_key {
-            DynInnerClientKey::Radix(key) => ServerKey::new(key),
-            DynInnerClientKey::Crt(key) => ServerKey::new(key),
+            DynInnerClientKey::Radix(key) => {
+                <ServerKey as EvaluationIntegerKey<RadixClientKey>>::new(key)
+            },
+            DynInnerClientKey::Crt(key) => {
+                <ServerKey as EvaluationIntegerKey<CrtClientKey>>::new(key)
+            },
         };
         Self { inner }
     }
@@ -121,9 +126,11 @@ impl crate::integers::parameters::EvaluationIntegerKey<DynInnerClientKey> for Dy
     fn new_wopbs_key(client_key: &DynInnerClientKey, server_key: &Self) -> WopbsKey {
         match client_key {
             DynInnerClientKey::Radix(cks) => {
-                WopbsKey::new_wopbs_key(cks.as_ref(), &server_key.inner)
+                <ServerKey as EvaluationIntegerKey<RadixClientKey>>::new_wopbs_key(cks, &server_key.inner)
             }
-            DynInnerClientKey::Crt(cks) => WopbsKey::new_wopbs_key(cks.as_ref(), &server_key.inner),
+            DynInnerClientKey::Crt(cks) => {
+                <ServerKey as EvaluationIntegerKey<CrtClientKey>>::new_wopbs_key(cks, &server_key.inner)
+            }
         }
     }
 }

@@ -305,5 +305,4 @@ impl KeycacheWopbsV0 {
 lazy_static! {
     pub static ref KEY_CACHE: Keycache = Default::default();
     pub static ref KEY_CACHE_WOPBS: KeycacheWopbsV0 = Default::default();
-    // pub static ref KEY_CACHE_TREEPBS: KeycacheTreePpbs = Default::default();
 }

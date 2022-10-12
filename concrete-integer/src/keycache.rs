@@ -1,7 +1,7 @@
-use concrete_shortint::Parameters;
+use concrete_shortint::{Parameters};
 use lazy_static::lazy_static;
 
-use crate::{ClientKey, ServerKey};
+use crate::{ClientKey, ServerKey, wopbs::WopbsKey};
 
 #[derive(Default)]
 pub struct IntegerKeyCache;
@@ -26,6 +26,17 @@ impl IntegerKeyCache {
     }
 }
 
+#[derive(Default)]
+pub struct WopbsKeyCache;
+
+impl WopbsKeyCache {
+    pub fn get_from_params(&self, params: Parameters) -> WopbsKey {
+        let shortint_wops_key = concrete_shortint::keycache::KEY_CACHE_WOPBS.get_from_param(params);
+        WopbsKey::from(shortint_wops_key.wopbs_key().clone())
+    }
+}
+
 lazy_static! {
     pub static ref KEY_CACHE: IntegerKeyCache = Default::default();
+    pub static ref KEY_CACHE_WOPBS: WopbsKeyCache = Default::default();
 }

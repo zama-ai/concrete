@@ -141,6 +141,15 @@ pub fn decode_radix(val: Vec<u64>, basis: u64) -> u64 {
     result
 }
 
+
+impl From<concrete_shortint::wopbs::WopbsKey> for WopbsKey {
+    fn from(wopbs_key: concrete_shortint::wopbs::WopbsKey) -> Self {
+        Self {
+            wopbs_key
+        }
+    }
+}
+
 impl WopbsKey {
     /// Generates the server key required to compute a WoPBS from the client and the server keys.
     /// # Example
