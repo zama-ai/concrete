@@ -21,12 +21,13 @@
 
 using mlir::concretelang::StreamStringError;
 
+typedef std::pair<EndToEndDesc, mlir::concretelang::CompilationOptions>
+    TestParam;
+
 template <typename LambdaSupport>
-void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
-  mlir::concretelang::CompilationOptions options("main");
-  options.loopParallelize = desc.loopParallelize;
-  options.dataflowParallelize = desc.dataflowParallelize;
-  options.asyncOffload = desc.asyncOffload;
+void compile_and_run(EndToEndDesc desc,
+                     mlir::concretelang::CompilationOptions options,
+                     LambdaSupport support) {
   if (desc.v0Constraint.hasValue()) {
     options.v0FHEConstraints = *desc.v0Constraint;
   }
@@ -146,80 +147,125 @@ void assert_all_test_entries(EndToEndDesc &desc,
   ASSERT_LE(nb_error, maximum_errors) << "Empirical error rate is too high";
 }
 
-std::string printEndToEndDesc(const testing::TestParamInfo<EndToEndDesc> desc) {
-  return desc.param.description;
-}
-
-std::vector<EndToEndDesc> generateCustomVersions(std::string path) {
-  std::vector<EndToEndDesc> cvdesc;
-  auto add_custom = [&](EndToEndDesc d, std::string version,
-                        bool loopParallelize, bool dataflowParallelize,
-                        bool asyncOffload) {
-    d.description = version + "__" + d.description;
-    d.loopParallelize = loopParallelize;
-    d.dataflowParallelize = dataflowParallelize;
-    d.asyncOffload = asyncOffload;
-    cvdesc.push_back(d);
-    return;
-  };
-  for (auto d : loadEndToEndDesc(path)) {
-    add_custom(d, "default", false, false, false);
-    add_custom(d, "loop", true, false, false);
-    add_custom(d, "async", false, false, true);
-#ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
-    add_custom(d, "dataflow", false, true, false);
-    add_custom(d, "dataflow_loop", true, true, false);
-    add_custom(d, "dataflow_loop_async", true, true, true);
-#endif
+std::string printEndToEndDesc(const testing::TestParamInfo<TestParam> desc) {
+  const auto options = desc.param.second;
+  std::ostringstream opt;
+  if (options.loopParallelize)
+    opt << "_loop";
+  if (options.asyncOffload)
+    opt << "_async";
+  if (options.dataflowParallelize)
+    opt << "_dataflow";
+  if (options.emitGPUOps)
+    opt << "_gpu";
+  std::ostringstream name;
+  name << desc.param.first.description;
+  auto ostr = opt.str();
+  if (ostr.size() == 0) {
+    ostr = "_default";
   }
-  return cvdesc;
+  name << ostr;
+
+  return name.str();
 }
 
 // Macro to define and end to end TestSuite that run test thanks the
 // LambdaSupport according a EndToEndDesc
 #define INSTANTIATE_END_TO_END_COMPILE_AND_RUN(TestSuite, lambdaSupport)       \
   TEST_P(TestSuite, compile_and_run) {                                         \
-    auto desc = GetParam();                                                    \
-    compile_and_run(desc, lambdaSupport);                                      \
+    auto param = GetParam();                                                   \
+    compile_and_run(std::get<0>(param), std::get<1>(param), lambdaSupport);    \
   }
 
-#define INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(prefix, suite,             \
+std::vector<TestParam>
+testParam(std::vector<EndToEndDesc> descs,
+          std::vector<mlir::concretelang::CompilationOptions> options) {
+  std::vector<TestParam> params;
+  for (auto opt : options) {
+    std::transform(descs.begin(), descs.end(), std::back_inserter(params),
+                   [&](auto d) { return TestParam(d, opt); });
+  }
+  return params;
+}
+
+#define INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(prefix, suite, options,    \
                                                     lambdasupport, path)       \
   namespace prefix##suite {                                                    \
-    auto valuesVector = generateCustomVersions(path);                          \
-    auto values = testing::ValuesIn<std::vector<EndToEndDesc>>(valuesVector);  \
+    auto descs = loadEndToEndDesc(path);                                       \
+    std::vector<TestParam> params = testParam(descs, options);                 \
+    auto values = testing::ValuesIn<std::vector<TestParam>>(params);           \
     INSTANTIATE_TEST_SUITE_P(prefix, suite, values, printEndToEndDesc);        \
   }
 
-#define INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(suite,           \
+#define INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(suite, options,  \
                                                               lambdasupport)   \
                                                                                \
-  class suite : public testing::TestWithParam<EndToEndDesc> {};                \
+  class suite : public testing::TestWithParam<TestParam> {};                   \
   INSTANTIATE_END_TO_END_COMPILE_AND_RUN(suite, lambdasupport)                 \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
-      ClearTensor, suite, lambdasupport,                                       \
+      ClearTensor, suite, options, lambdasupport,                              \
       "tests/end_to_end_fixture/end_to_end_clear_tensor.yaml")                 \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
-      FHE, suite, lambdasupport,                                               \
+      FHE, suite, options, lambdasupport,                                      \
       "tests/end_to_end_fixture/end_to_end_fhe.yaml")                          \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
-      EncryptedTensor, suite, lambdasupport,                                   \
+      EncryptedTensor, suite, options, lambdasupport,                          \
       "tests/end_to_end_fixture/end_to_end_encrypted_tensor.yaml")             \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
-      FHELinalg, suite, lambdasupport,                                         \
+      FHELinalg, suite, options, lambdasupport,                                \
       "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml")                    \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
-      FHELeveledOps, suite, lambdasupport,                                     \
+      FHELeveledOps, suite, options, lambdasupport,                            \
       "tests/end_to_end_fixture/end_to_end_leveled.yaml")                      \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
-      FHEApplyLookupTable, suite, lambdasupport,                               \
+      FHEApplyLookupTable, suite, options, lambdasupport,                      \
       "tests/end_to_end_fixture/end_to_end_apply_lookup_table.yaml")
 
-/// Instantiate the test suite for Jit
-INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
-    JitTest, mlir::concretelang::JITSupport())
+mlir::concretelang::CompilationOptions defaultOptions() {
+  mlir::concretelang::CompilationOptions o("main");
+  return o;
+}
+
+mlir::concretelang::CompilationOptions loopOptions() {
+  mlir::concretelang::CompilationOptions o("main");
+  o.loopParallelize = true;
+  return o;
+}
+
+mlir::concretelang::CompilationOptions asyncOptions() {
+  mlir::concretelang::CompilationOptions o("main");
+  o.asyncOffload = true;
+  return o;
+}
+
+mlir::concretelang::CompilationOptions dataflowOptions() {
+  mlir::concretelang::CompilationOptions o("main");
+  o.dataflowParallelize = true;
+  return o;
+}
+
+mlir::concretelang::CompilationOptions gpuOptions() {
+  mlir::concretelang::CompilationOptions o("main");
+  o.emitGPUOps = true;
+  o.optimizerConfig.display = true;
+  return o;
+}
+
+// mlir::concretelang::CompilationOptions optionsLoop("main");
+// optionsLoop.loopParallelize = true;
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
-    LibraryTest, mlir::concretelang::LibrarySupport("/tmp/end_to_end_test_" +
-                                                    desc.description))
+    JitTest, {defaultOptions()}, mlir::concretelang::JITSupport())
+
+std::vector<mlir::concretelang::CompilationOptions> allOptions{
+    defaultOptions(), loopOptions(), asyncOptions(), dataflowOptions(),
+#ifdef CONCRETELANG_CUDA_SUPPORT
+    gpuOptions(),
+#endif
+};
+/// Instantiate the test suite for Library
+INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
+    LibraryTest, allOptions,
+    mlir::concretelang::LibrarySupport("/tmp/end_to_end_test_" +
+                                       param.first.description))
