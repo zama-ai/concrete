@@ -57,6 +57,7 @@ concrete-shortint = { path = "../concrete-shortint", features = ["internal-keyca
 # Keychache used to speed up tests and benches
 # by not requiring to regererate keys at each launch
 internal-keycache = ["lazy_static", "concrete-shortint/internal-keycache"]
+nightly-avx512 = ["concrete-shortint/nightly-avx512"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "katex-header.html"]

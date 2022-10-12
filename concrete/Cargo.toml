@@ -26,6 +26,7 @@ paste = "1.0.7"
 booleans = ["concrete-boolean"]
 shortints = ["concrete-shortint"]
 integers = ["concrete-integer", "shortints"]
+nightly-avx512 = ["concrete-boolean/nightly-avx512", "concrete-shortint/nightly-avx512", "concrete-integer/nightly-avx512"]
 experimental_syntax_sugar = []
 internal-keycache = ["concrete-shortint/internal-keycache", "concrete-integer/internal-keycache"]
 

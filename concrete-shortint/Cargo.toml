@@ -58,6 +58,7 @@ lazy_static = { version = "1.4.0" }
 # Keychache used to speed up tests and benches
 # by not requiring to regererate keys at each launch
 internal-keycache = ["concrete-utils", "lazy_static"]
+nightly-avx512 = ["concrete-core/backend_fft_nightly_avx512"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "katex-header.html"]
