@@ -51,11 +51,11 @@ impl ShortintEngine {
 
         self.fft_engine.discard_extract_bits_lwe_ciphertext(
             &mut output,
-            &lwe_in,
+            lwe_in,
             &server_key.bootstrapping_key,
             &server_key.key_switching_key,
             extracted_bit_count,
-            concrete_core::prelude::DeltaLog(delta_log.0),
+            DeltaLog(delta_log.0),
         )?;
         Ok(output)
     }
@@ -100,7 +100,7 @@ impl ShortintEngine {
         wopbs_key: &WopbsKey,
         sks: &ServerKey,
         ct_in: &Ciphertext,
-        lut: &Vec<u64>,
+        lut: &[u64],
         delta_log: DeltaLog,
         nb_bit_to_extract: ExtractedBitsCount,
     ) -> EngineResult<Ciphertext> {
@@ -142,7 +142,7 @@ impl ShortintEngine {
         wopbs_key: &WopbsKey,
         sks: &ServerKey,
         ct_in: &Ciphertext,
-        lut: &Vec<u64>,
+        lut: &[u64],
     ) -> EngineResult<Ciphertext> {
         let delta = (1_usize << 63) / (sks.message_modulus.0 * sks.carry_modulus.0) * 2;
         let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
@@ -167,7 +167,7 @@ impl ShortintEngine {
         wopbs_key: &WopbsKey,
         sks: &ServerKey,
         ct_in: &Ciphertext,
-        lut: &Vec<u64>,
+        lut: &[u64],
     ) -> EngineResult<Ciphertext> {
         let delta = (1_usize << 63) / (sks.message_modulus.0 * sks.carry_modulus.0);
         let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
@@ -192,7 +192,7 @@ impl ShortintEngine {
         wopbs_key: &WopbsKey,
         sks: &ServerKey,
         ct_in: &mut Ciphertext,
-        lut: &Vec<u64>,
+        lut: &[u64],
     ) -> EngineResult<Ciphertext> {
         let nb_bit_to_extract =
             f64::log2((ct_in.message_modulus.0 * ct_in.carry_modulus.0) as f64).ceil() as usize;

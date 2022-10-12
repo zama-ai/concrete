@@ -75,8 +75,8 @@ impl WopbsKey {
         let delta = 64 - f64::log2((basis) as f64).ceil() as u64 - 1;
         let poly_size = self.small_bsk.polynomial_size().0;
         let mut vec_lut = vec![0; poly_size];
-        for i in 0..basis {
-            vec_lut[i] = f((i % ct.message_modulus.0) as u64) << delta;
+        for (i, value) in vec_lut.iter_mut().enumerate().take(basis) {
+            *value = f((i % ct.message_modulus.0) as u64) << delta;
         }
         vec_lut
     }
@@ -114,8 +114,8 @@ impl WopbsKey {
         let delta = 64 - f64::log2((basis) as f64).ceil() as u64;
         let poly_size = self.small_bsk.polynomial_size().0;
         let mut vec_lut = vec![0; poly_size];
-        for i in 0..basis {
-            vec_lut[i] = f((i % ct.message_modulus.0) as u64) << delta;
+        for (i, value) in vec_lut.iter_mut().enumerate().take(basis) {
+            *value = f((i % ct.message_modulus.0) as u64) << delta;
         }
         vec_lut
     }
@@ -189,11 +189,11 @@ impl WopbsKey {
         &self,
         sks: &ServerKey,
         ct_in: &Ciphertext,
-        lut: &Vec<u64>,
+        lut: &[u64],
     ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
-                .programmable_bootstrapping(self, sks, ct_in, &lut)
+                .programmable_bootstrapping(self, sks, ct_in, lut)
                 .unwrap()
         })
     }
@@ -222,7 +222,7 @@ impl WopbsKey {
         &self,
         sks: &ServerKey,
         ct_in: &Ciphertext,
-        lut: &Vec<u64>,
+        lut: &[u64],
     ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
@@ -255,7 +255,7 @@ impl WopbsKey {
         &self,
         sks: &ServerKey,
         ct_in: &mut Ciphertext,
-        lut: &Vec<u64>,
+        lut: &[u64],
     ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
