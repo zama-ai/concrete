@@ -401,17 +401,17 @@ return %2
         pytest.param(
             lambda x: np.abs(10 * np.sin(x + 300)).astype(np.int64),
             {"x": "encrypted"},
-            range(200),
+            [200000],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR:
 
-%0 = x                   # EncryptedScalar<uint8>
+%0 = x                   # EncryptedScalar<uint18>
 %1 = 300                 # ClearScalar<uint9>
-%2 = add(%0, %1)         # EncryptedScalar<uint9>
+%2 = add(%0, %1)         # EncryptedScalar<uint18>
 %3 = subgraph(%2)        # EncryptedScalar<uint4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 8-bit integers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
 return %3
 
 Subgraphs:
@@ -425,6 +425,35 @@ Subgraphs:
         %4 = absolute(%3)                  # EncryptedScalar<float64>
         %5 = astype(%4, dtype=int_)        # EncryptedScalar<uint1>
         return %5
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: (10 * np.sin(x + 300)).astype(np.int64),
+            {"x": "encrypted"},
+            range(2**10, 2**11),
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR:
+
+%0 = x                   # EncryptedScalar<uint11>
+%1 = 300                 # ClearScalar<uint9>
+%2 = add(%0, %1)         # EncryptedScalar<uint12>
+%3 = subgraph(%2)        # EncryptedScalar<int5>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integers are only supported up to 8-bits on circuits with table lookups
+return %3
+
+Subgraphs:
+
+    %3 = subgraph(%2):
+
+        %0 = 10                            # ClearScalar<uint4>
+        %1 = input                         # EncryptedScalar<uint2>
+        %2 = sin(%1)                       # EncryptedScalar<float64>
+        %3 = multiply(%0, %2)              # EncryptedScalar<float64>
+        %4 = astype(%3, dtype=int_)        # EncryptedScalar<uint1>
+        return %4
 
             """,  # noqa: E501
         ),
