@@ -32,8 +32,6 @@ fn make_basis(message_modulus: usize) -> Vec<u64> {
 }
 
 fn integer_unchecked_crt_mul(param: Parameters) {
-    let size = 4;
-
     // generate the server-client key set
     let (cks, sks) = KEY_CACHE.get_from_params(param);
 
@@ -94,8 +92,6 @@ fn integer_smart_crt_add(param: Parameters) {
 }
 
 fn integer_smart_crt_mul(param: Parameters) {
-    let size = 2;
-
     // generate the server-client key set
     let (cks, sks) = KEY_CACHE.get_from_params(param);
 
@@ -139,7 +135,7 @@ fn integer_smart_crt_neg(param: Parameters) {
     let mut clear_0 = rng.gen::<u64>() % modulus;
 
     // encryption of an integer
-    let mut ct_zero = cks.encrypt_crt(clear_0, basis.clone());
+    let mut ct_zero = cks.encrypt_crt(clear_0, basis);
 
     for _ in 0..NB_TEST {
         // add the two ciphertexts
@@ -226,7 +222,7 @@ fn integer_smart_crt_scalar_sub(param: Parameters) {
     let clear_1 = rng.gen::<u64>() % modulus;
 
     // encryption of an integer
-    let mut ct_zero = cks.encrypt_crt(clear_0, basis.clone());
+    let mut ct_zero = cks.encrypt_crt(clear_0, basis);
 
     for _ in 0..NB_TEST {
         // add the two ciphertexts

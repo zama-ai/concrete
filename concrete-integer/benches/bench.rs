@@ -468,9 +468,9 @@ fn radmodint_wopbs(c: &mut Criterion) {
 
         let cks = concrete_integer::client_key::ClientKey::from(cks.clone());
 
-        let sks = concrete_integer::server_key::ServerKey::from_shortint(&cks, sks.clone());
+        let sks = ServerKey::from_shortint(&cks, sks.clone());
 
-        let wopbs = concrete_integer::wopbs::WopbsKey::new_from_shortint(&wopbs_shortint);
+        let wopbs = WopbsKey::new_from_shortint(wopbs_shortint);
         let mut rng = rand::thread_rng();
 
         let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
@@ -478,7 +478,7 @@ fn radmodint_wopbs(c: &mut Criterion) {
         let clear1 = rng.gen::<u64>() % msg_space as u64;
 
         // Encrypt the integers
-        let mut ctxt_1 = cks.encrypt_radix(clear1, rad_decomp.block_number);
+        let ctxt_1 = cks.encrypt_radix(clear1, rad_decomp.block_number);
 
         let nb_bit_to_extract = f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64)
             as usize
@@ -513,7 +513,7 @@ fn radmodint_wopbs(c: &mut Criterion) {
             rad_decomp.msg_space, carry_space, msg_space, rad_decomp.block_number,
         );
 
-        group.bench_function(&id, |b| b.iter(|| wopbs.wopbs(&sks, &mut ctxt_1, &big_lut)));
+        group.bench_function(&id, |b| b.iter(|| wopbs.wopbs(&sks, &ctxt_1, &big_lut)));
     }
     //}
 }
@@ -541,7 +541,7 @@ fn radmodint_wopbs_16bits_param_2_2_8_blocks(c: &mut Criterion) {
     let clear1 = rng.gen::<u64>() % param.message_modulus.0 as u64;
 
     // Encrypt the integers
-    let mut ctxt_1 = cks.encrypt_radix(clear1, nb_block);
+    let ctxt_1 = cks.encrypt_radix(clear1, nb_block);
 
     let nb_bit_to_extract =
         f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * nb_block;
@@ -569,7 +569,7 @@ fn radmodint_wopbs_16bits_param_2_2_8_blocks(c: &mut Criterion) {
     );
 
     group.bench_function(&id, |b| {
-        b.iter(|| wopbs_key.wopbs(&sks, &mut ctxt_1, &big_lut))
+        b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut))
     });
 }
 
@@ -593,7 +593,7 @@ fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
     let clear1 = rng.gen::<u64>() % param.message_modulus.0 as u64;
 
     // Encrypt the integers
-    let mut ctxt_1 = cks.encrypt_radix(clear1, nb_block);
+    let ctxt_1 = cks.encrypt_radix(clear1, nb_block);
 
     let nb_bit_to_extract =
         f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * nb_block;
@@ -621,7 +621,7 @@ fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
     );
 
     group.bench_function(&id, |b| {
-        b.iter(|| wopbs_key.wopbs(&sks, &mut ctxt_1, &big_lut))
+        b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut))
     });
 }
 
@@ -650,7 +650,7 @@ fn radmodint_wopbs_32_bits(c: &mut Criterion) {
         let clear1 = rng.gen::<u64>() % param.message_modulus.0 as u64;
 
         // Encrypt the integers
-        let mut ctxt_1 = cks.encrypt_radix(clear1, *nb_block);
+        let ctxt_1 = cks.encrypt_radix(clear1, *nb_block);
 
         let nb_bit_to_extract =
             f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * nb_block;
@@ -680,7 +680,7 @@ fn radmodint_wopbs_32_bits(c: &mut Criterion) {
         );
 
         group.bench_function(&id, |b| {
-            b.iter(|| wopbs_key.wopbs(&sks, &mut ctxt_1, &big_lut))
+            b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut))
         });
     }
 }
@@ -949,7 +949,7 @@ fn crt_op_many_sizes_generic(
         let tmp_param =
             get_parameters_from_message_and_carry(*base as usize, *carry_space as usize);
         let tmp_param_exists = vec_param.iter().find(|&&x| x == tmp_param);
-        if tmp_param_exists != None {
+        if tmp_param_exists.is_some() {
             vec_id.push(vec_param.iter().position(|&x| x == tmp_param).unwrap());
         } else {
             vec_param.push(get_parameters_from_message_and_carry(

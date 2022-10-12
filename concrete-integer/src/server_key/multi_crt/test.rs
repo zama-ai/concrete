@@ -24,7 +24,7 @@ pub fn gen_keys_from_basis_and_carry_space(
     for ((i, base), car) in basis.iter().enumerate().zip(carry) {
         let tmp_param = get_parameters_from_message_and_carry(*base as usize, *car as usize);
         let tmp_param_exists = vec_param.iter().find(|&&x| x == tmp_param);
-        if tmp_param_exists != None {
+        if tmp_param_exists.is_some() {
             vec_id.push(vec_param.iter().position(|&x| x == tmp_param).unwrap());
         } else {
             vec_param.push(get_parameters_from_message_and_carry(

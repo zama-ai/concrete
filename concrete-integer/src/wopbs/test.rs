@@ -146,7 +146,7 @@ pub fn wopbs(param: Parameters) {
         }
         let big_lut = vec![lut_1; 8];
 
-        let ct_res = wopbs_key.wopbs(&sks, &mut ct, &big_lut);
+        let ct_res = wopbs_key.wopbs(&sks, &ct, &big_lut);
 
         let res = cks.decrypt_radix(&ct_res);
         if res != 1 {
@@ -203,7 +203,7 @@ pub fn wopbs_16_bits(param: Parameters) {
         let lut_res_1 = lut_1.clone();
         let lut_res_2 = lut_2.clone();
 
-        let ct_res = wopbs_key.wopbs(&sks, &mut ct, &[lut_1, lut_2]);
+        let ct_res = wopbs_key.wopbs(&sks, &ct, &[lut_1, lut_2]);
 
         let shift_clear = ((clear & 100) << 2) + ((clear & 10) << 1) + (clear & 1);
         //println!("nulber of block of the outputi ciphertext = {}", ct_res.ct_vec.len());
@@ -254,7 +254,7 @@ pub fn wopbs_16_lut_test(param: Parameters) {
         let mut ct = cks.encrypt_radix(clear as u64, nb_block);
         let lut = wopbs_key.generate_lut_radix(&ct, |x| x);
         //println!("lut : {:?}", lut[0]);
-        let ct_res = wopbs_key.wopbs(&sks, &mut ct, &lut);
+        let ct_res = wopbs_key.wopbs(&sks, &ct, &lut);
 
         let res = cks.decrypt_radix(&ct_res);
 
@@ -292,7 +292,7 @@ pub fn wopbs_crt_without_padding(param: Parameters) {
 
         let lut = wopbs_key.generate_lut_native_crt(&ct1, |x| x);
 
-        let ct_res = wopbs_key.wopbs_not_power_of_two(&sks, &mut ct1, &lut);
+        let ct_res = wopbs_key.wopbs_not_power_of_two(&sks, &ct1, &lut);
         let res = cks.decrypt_crt_not_power_of_two(&ct_res);
 
         assert_eq!(res, clear1);
@@ -326,7 +326,7 @@ pub fn wopbs_crt_without_padding_bivariate(param: Parameters) {
         let mut ct2 = cks.encrypt_crt_not_power_of_two(clear2, basis.clone());
 
         let lut = wopbs_key.generate_lut_bivariate_native_crt(&ct1, |x, y| x * y);
-        let ct_res = wopbs_key.bivariate_wopbs_native_crt(&sks, &mut ct1, &mut ct2, &lut);
+        let ct_res = wopbs_key.bivariate_wopbs_native_crt(&sks, &ct1, &ct2, &lut);
         let res = cks.decrypt_crt_not_power_of_two(&ct_res);
 
         if (clear1 * clear2) % msg_space != res {
@@ -376,7 +376,7 @@ pub fn wopbs_crt_fake_crt(param: Parameters) {
         let lut = wopbs_key.generate_lut_crt(&ct1, |x| (x * x) + x);
         let res = cks.decrypt_crt(&ct1);
         //println!("LUT = {:?}", lut);
-        let ct_res = wopbs_key.wopbs(&sks, &mut ct1, &lut);
+        let ct_res = wopbs_key.wopbs(&sks, &ct1, &lut);
         let res_wop = cks.decrypt_crt(&ct_res);
         if ((res * res) + res) % msg_space != res_wop {
             tmp += 1;
@@ -418,7 +418,7 @@ pub fn wopbs_radix(param: Parameters) {
         let lut = wopbs_key.generate_lut_radix(&ct1, |x| x * x);
         let res = cks.decrypt_radix(&ct1);
         //println!("LUT = {:?}", lut);
-        let ct_res = wopbs_key.wopbs(&sks, &mut ct1, &lut);
+        let ct_res = wopbs_key.wopbs(&sks, &ct1, &lut);
         let res_wop = cks.decrypt_radix(&ct_res);
         if (res * res) % msg_space as u64 != res_wop {
             tmp += 1;

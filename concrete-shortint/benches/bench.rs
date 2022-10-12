@@ -3,7 +3,6 @@ use concrete_shortint::{Ciphertext, Parameters, ServerKey};
 use criterion::{criterion_group, criterion_main, Criterion};
 
 use concrete_shortint::keycache::KEY_CACHE;
-use concrete_shortint::wopbs::*;
 use rand::Rng;
 
 use concrete_shortint::keycache::KEY_CACHE_WOPBS;
@@ -156,7 +155,7 @@ fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
 
     bench_group.bench_function(&id, |b| {
         b.iter(|| {
-            wopbs_key.programmable_bootstrapping_native_crt(&sks, &mut ct, &vec_lut);
+            wopbs_key.programmable_bootstrapping_native_crt(sks, &mut ct, &vec_lut);
         })
     });
 
@@ -205,23 +204,22 @@ define_server_key_scalar_bench_fn!(unchecked_scalar_mul);
 
 criterion_group!(
     arithmetic_operation,
-    //unchecked_add,
-    // unchecked_sub,
-    // unchecked_mul_lsb,
-    // unchecked_mul_msb,
-    // smart_bitand,
-    // smart_bitor,
-    // smart_bitxor,
-    // smart_add,
-    // smart_sub,
-    // smart_mul_lsb,
-    // smart_mul_msb,
-    // carry_extract,
+    unchecked_add,
+    unchecked_sub,
+    unchecked_mul_lsb,
+    unchecked_mul_msb,
+    smart_bitand,
+    smart_bitor,
+    smart_bitxor,
+    smart_add,
+    smart_sub,
+    smart_mul_lsb,
+    carry_extract,
     // programmable_bootstrapping,
     // multivalue_programmable_bootstrapping
     //bench_two_block_pbs
     //wopbs_v0_norm2_2,
-    //bench_wopbs_param_message_8_norm2_5,
+    bench_wopbs_param_message_8_norm2_5,
     programmable_bootstrapping
 );
 
