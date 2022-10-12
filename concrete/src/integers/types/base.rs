@@ -174,7 +174,7 @@ pub(crate) fn bivariate_wopbs_radix(
     rhs: &RadixCiphertext,
     func: impl Fn(u64, u64) -> u64,
 ) -> RadixCiphertext {
-    let lut = wopbs_key.generate_lut_bivariate_radix(&lhs, &rhs, func);
+    let lut = wopbs_key.generate_lut_bivariate_radix(lhs, rhs, func);
     wopbs_key.bivariate_wopbs_with_degree(server_key, lhs, rhs, lut.as_slice())
 }
 
@@ -209,7 +209,7 @@ where
         func: F,
     ) -> GenericInteger<P> {
         let ct = ct_in.ciphertext.borrow();
-        let res = wopbs_radix(&self.wopbs_key, &self.inner, &*ct, func);
+        let res = wopbs_radix(&self.wopbs_key, &self.inner, &ct, func);
         GenericInteger::<P>::new(res, ct_in.id)
     }
 
@@ -222,7 +222,7 @@ where
         let lhs_ct = lhs.ciphertext.borrow();
         let rhs_ct = rhs.ciphertext.borrow();
 
-        let res_ct = bivariate_wopbs_radix(&self.wopbs_key, &self.inner, &*lhs_ct, &*rhs_ct, func);
+        let res_ct = bivariate_wopbs_radix(&self.wopbs_key, &self.inner, &lhs_ct, &rhs_ct, func);
 
         GenericInteger::<P>::new(res_ct, lhs.id)
     }
@@ -238,7 +238,7 @@ where
         func: F,
     ) -> GenericInteger<P> {
         let ct = ct_in.ciphertext.borrow();
-        let res = wopbs_crt(&self.wopbs_key, &self.inner, &*ct, func);
+        let res = wopbs_crt(&self.wopbs_key, &self.inner, &ct, func);
         GenericInteger::<P>::new(res, ct_in.id)
     }
 
@@ -251,7 +251,7 @@ where
         let lhs_ct = lhs.ciphertext.borrow();
         let rhs_ct = rhs.ciphertext.borrow();
 
-        let res_ct = bivariate_wopbs_crt(&self.wopbs_key, &self.inner, &*lhs_ct, &*rhs_ct, func);
+        let res_ct = bivariate_wopbs_crt(&self.wopbs_key, &self.inner, &lhs_ct, &rhs_ct, func);
         GenericInteger::<P>::new(res_ct, lhs.id)
     }
 }
