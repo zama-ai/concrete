@@ -474,12 +474,12 @@ macro_rules! generic_integer_impl_scalar_operation_assign {
     }
 }
 
-generic_integer_impl_operation!(Add(add,+,SmartAdd) => smart_add);
-generic_integer_impl_operation!(Sub(sub,-,SmartSub) => smart_sub);
+generic_integer_impl_operation!(Add(add,+, SmartAdd) => smart_add);
+generic_integer_impl_operation!(Sub(sub,-, SmartSub) => smart_sub);
 generic_integer_impl_operation!(Mul(mul,*, SmartMul) => smart_mul);
 generic_integer_impl_operation!(BitAnd(bitand,&, SmartBitAnd) => smart_bitand);
-generic_integer_impl_operation!(BitOr(bitor,^, SmartBitOr) => smart_bitor);
-generic_integer_impl_operation!(BitXor(bitxor,|, SmartBitXor) => smart_bitxor);
+generic_integer_impl_operation!(BitOr(bitor,|, SmartBitOr) => smart_bitor);
+generic_integer_impl_operation!(BitXor(bitxor,^, SmartBitXor) => smart_bitxor);
 
 generic_integer_impl_operation_assign!(AddAssign(add_assign,+=, SmartAddAssign) => smart_add_assign);
 generic_integer_impl_operation_assign!(SubAssign(sub_assign,-=, SmartSubAssign) => smart_sub_assign);
