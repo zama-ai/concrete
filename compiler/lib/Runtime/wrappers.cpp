@@ -220,7 +220,7 @@ void memref_bootstrap_lwe_cuda_u64(
   cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, test_vector_idxes,
                            num_samples * sizeof(uint32_t), stream, gpu_idx);
   // run gpu bootstrap
-  cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
+  cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
       stream, out_gpu, test_vector_gpu, test_vector_idxes_gpu, ct0_gpu,
       fbsk_gpu, input_lwe_dim, poly_size, base_log, level, num_samples,
       num_test_vectors, lwe_idx, cuda_get_max_shared_memory(gpu_idx));
