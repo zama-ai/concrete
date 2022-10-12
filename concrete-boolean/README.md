@@ -35,6 +35,11 @@ fn main() {
 }
  ```
 
+## GPU backend
+concrete-boolean supports GPU backend via the concrete-cuda crate. It can be activated adding the 
+flag `--features=cuda` to the compile command.  
+
+
 ## Links
 
 - [documentation](https://docs.zama.ai/concrete/boolean-lib)
