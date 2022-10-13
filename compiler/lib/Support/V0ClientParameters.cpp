@@ -139,6 +139,8 @@ createClientParametersForV0(V0FHEContext fheContext,
     param.level = v0Param.largeInteger->wopPBS.packingKeySwitch.level;
     param.baseLog = v0Param.largeInteger->wopPBS.packingKeySwitch.baseLog;
     param.bootstrapKeyID = clientlib::BOOTSTRAP_KEY;
+    param.variance = v0Curve->getVariance(v0Param.glweDimension,
+                                          v0Param.getPolynomialSize(), 64);
     c.packingKeys = {
         {
             "fpksk_v0",
