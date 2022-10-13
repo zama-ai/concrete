@@ -54,11 +54,12 @@ struct GenericTypeConverterPattern : public mlir::OpRewritePattern<Op> {
 
   mlir::LogicalResult
   matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
-    convertOperandAndResultTypes(rewriter, op,
+    auto newOp = rewriter.clone(*op);
+    convertOperandAndResultTypes(rewriter, newOp,
                                  [&](mlir::MLIRContext *, mlir::Type t) {
                                    return converter.convertType(t);
                                  });
-
+    rewriter.replaceOp(op, newOp->getResults());
     return mlir::success();
   }
 
