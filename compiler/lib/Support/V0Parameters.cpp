@@ -120,7 +120,7 @@ static void display(optimizer::Description &descr,
       << "--- Correctness for each Pbs call\n"
       << "  1/" << int(1.0 / sol.p_error) << " errors (" << sol.p_error
       << ")\n";
-  if (descr.dag) {
+  if (descr.dag && !std::isnan(sol.global_p_error)) {
     o() << "--- Correctness for the full circuit\n"
         << "  1/" << int(1.0 / sol.global_p_error) << " errors ("
         << sol.global_p_error << ")\n";
