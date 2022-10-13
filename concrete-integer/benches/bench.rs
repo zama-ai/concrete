@@ -568,9 +568,7 @@ fn radmodint_wopbs_16bits_param_2_2_8_blocks(c: &mut Criterion) {
         param.message_modulus.0, param.message_modulus.0, input, nb_block
     );
 
-    group.bench_function(&id, |b| {
-        b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut))
-    });
+    group.bench_function(&id, |b| b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut)));
 }
 
 fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
@@ -620,9 +618,7 @@ fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
         param.message_modulus.0, param.message_modulus.0, input, nb_block
     );
 
-    group.bench_function(&id, |b| {
-        b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut))
-    });
+    group.bench_function(&id, |b| b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut)));
 }
 
 fn radmodint_wopbs_32_bits(c: &mut Criterion) {
@@ -679,9 +675,7 @@ fn radmodint_wopbs_32_bits(c: &mut Criterion) {
             param.message_modulus.0, param.message_modulus.0, input, nb_block
         );
 
-        group.bench_function(&id, |b| {
-            b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut))
-        });
+        group.bench_function(&id, |b| b.iter(|| wopbs_key.wopbs(&sks, &ctxt_1, &big_lut)));
     }
 }
 

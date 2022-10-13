@@ -20,8 +20,10 @@ mod test;
 #[derive(Clone, Debug)]
 pub struct WopbsKey {
     //Key for the private functional keyswitch
-    pub(crate) small_bsk: FftFourierLweBootstrapKey64,
-    pub(crate) cbs_pfpksk: LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64,
+    pub wopbs_server_key: ServerKey,
+    pub pbs_server_key: ServerKey,
+    pub cbs_pfpksk: LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64,
+    pub ksk_pbs_to_wopbs: LweKeyswitchKey64,
     pub param: Parameters,
 }
 
@@ -32,14 +34,17 @@ impl WopbsKey {
     /// ```rust
     /// use concrete_shortint::gen_keys;
     /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_1_CARRY_1;
+    /// use concrete_shortint::parameters::PARAM_MESSAGE_1_CARRY_1;
     /// use concrete_shortint::wopbs::*;
     ///
     /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_1_CARRY_1);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let (mut cks, mut sks) = gen_keys(PARAM_MESSAGE_1_CARRY_1);
+    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks, &WOPBS_PARAM_MESSAGE_1_CARRY_1);
     /// ```
-    pub fn new_wopbs_key(cks: &ClientKey, sks: &ServerKey) -> WopbsKey {
-        ShortintEngine::with_thread_local_mut(|engine| engine.new_wopbs_key(cks, sks).unwrap())
+    pub fn new_wopbs_key(cks: &ClientKey, sks: &ServerKey, parameters: &Parameters) -> WopbsKey {
+        ShortintEngine::with_thread_local_mut(|engine| {
+            engine.new_wopbs_key(cks, sks, parameters).unwrap()
+        })
     }
 
     /// Generates the Look-Up Table homomorphically using the WoPBS approach.
@@ -51,13 +56,14 @@ impl WopbsKey {
     /// ```rust
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
-    /// use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_2_NORM2_2;
+    /// use concrete_shortint::parameters::PARAM_MESSAGE_2_NORM2_2;
+    /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_NORM2_2;
     /// use concrete_shortint::wopbs::*;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
     /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks,);
     /// let message_modulus = WOPBS_PARAM_MESSAGE_2_NORM2_2.message_modulus.0 as u64;
     /// let m = 2;
     /// let mut ct = cks.encrypt(m);
@@ -73,7 +79,7 @@ impl WopbsKey {
         // The function is applied only on the message modulus bits
         let basis = ct.message_modulus.0 * ct.carry_modulus.0;
         let delta = 64 - f64::log2((basis) as f64).ceil() as u64 - 1;
-        let poly_size = self.small_bsk.polynomial_size().0;
+        let poly_size = self.wopbs_server_key.bootstrapping_key.polynomial_size().0;
         let mut vec_lut = vec![0; poly_size];
         for (i, value) in vec_lut.iter_mut().enumerate().take(basis) {
             *value = f((i % ct.message_modulus.0) as u64) << delta;
@@ -99,9 +105,9 @@ impl WopbsKey {
     /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     /// let message_modulus = WOPBS_PARAM_MESSAGE_2_NORM2_2.message_modulus.0 as u64;
     /// let m = 2;
-    /// let mut ct = cks.encrypt_without_padding(m);
+    /// let ct = cks.encrypt_without_padding(m);
     /// let lut = wopbs_key.generate_lut(&ct, |x| x * x % message_modulus);
-    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding(&mut sks, &mut ct, &lut);
+    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding(&ct, &lut);
     /// let res = cks.decrypt_without_padding(&ct_res[0]);
     /// assert_eq!(res, (m * m) % message_modulus);
     /// ```
@@ -112,7 +118,7 @@ impl WopbsKey {
         // The function is applied only on the message modulus bits
         let basis = ct.message_modulus.0 * ct.carry_modulus.0;
         let delta = 64 - f64::log2((basis) as f64).ceil() as u64;
-        let poly_size = self.small_bsk.polynomial_size().0;
+        let poly_size = self.wopbs_server_key.bootstrapping_key.polynomial_size().0;
         let mut vec_lut = vec![0; poly_size];
         for (i, value) in vec_lut.iter_mut().enumerate().take(basis) {
             *value = f((i % ct.message_modulus.0) as u64) << delta;
@@ -150,7 +156,7 @@ impl WopbsKey {
         // The function is applied only on the message modulus bits
         let basis = ct.message_modulus.0 * ct.carry_modulus.0;
         let nb_bit = f64::log2((basis) as f64).ceil() as u64;
-        let poly_size = self.small_bsk.polynomial_size().0;
+        let poly_size = self.wopbs_server_key.bootstrapping_key.polynomial_size().0;
         let mut vec_lut = vec![0; poly_size];
         for i in 0..basis {
             let index_lut = (((i as u64 % basis as u64) << nb_bit) / basis as u64) as usize;
@@ -181,20 +187,13 @@ impl WopbsKey {
     /// let message_modulus = WOPBS_PARAM_MESSAGE_2_NORM2_2.message_modulus.0;
     /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus);
     /// let lut = vec![(1_u64 << 61); wopbs_key.param.polynomial_size.0];
-    /// let ct_res = wopbs_key.programmable_bootstrapping(&sks, &ct, &lut);
+    /// let ct_res = wopbs_key.programmable_bootstrapping(&ct, &lut);
     /// let res = cks.decrypt_message_and_carry(&ct_res);
     /// assert_eq!(res, 1);
     /// ```
-    pub fn programmable_bootstrapping(
-        &self,
-        sks: &ServerKey,
-        ct_in: &Ciphertext,
-        lut: &[u64],
-    ) -> Ciphertext {
+    pub fn programmable_bootstrapping(&self, ct_in: &Ciphertext, lut: &[u64]) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine
-                .programmable_bootstrapping(self, sks, ct_in, lut)
-                .unwrap()
+            engine.programmable_bootstrapping(self, ct_in, lut).unwrap()
         })
     }
 
@@ -214,19 +213,18 @@ impl WopbsKey {
     /// let mut rng = rand::thread_rng();
     /// let ct = cks.encrypt_without_padding(rng.gen::<u64>() % 2);
     /// let lut = vec![(1_u64 << 63); wopbs_key.param.polynomial_size.0];
-    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding(&sks, &ct, &lut);
+    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding(&ct, &lut);
     /// let res = cks.decrypt_message_and_carry_without_padding(&ct_res);
     /// assert_eq!(res, 1);
     /// ```
     pub fn programmable_bootstrapping_without_padding(
         &self,
-        sks: &ServerKey,
         ct_in: &Ciphertext,
         lut: &[u64],
     ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
-                .programmable_bootstrapping_without_padding(self, sks, ct_in, lut)
+                .programmable_bootstrapping_without_padding(self, ct_in, lut)
                 .unwrap()
         })
     }
@@ -253,13 +251,12 @@ impl WopbsKey {
     /// ```
     pub fn programmable_bootstrapping_native_crt(
         &self,
-        sks: &ServerKey,
         ct_in: &mut Ciphertext,
         lut: &[u64],
     ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
-                .programmable_bootstrapping_native_crt(self, sks, ct_in, lut)
+                .programmable_bootstrapping_native_crt(self, ct_in, lut)
                 .unwrap()
         })
     }
@@ -271,7 +268,6 @@ impl WopbsKey {
         &self,
         delta_log: DeltaLog,
         ciphertext: &Ciphertext,
-        server_key: &ServerKey,
         num_bits_to_extract: usize,
     ) -> LweCiphertextVector64 {
         ShortintEngine::with_thread_local_mut(|engine| {
@@ -279,7 +275,7 @@ impl WopbsKey {
                 .extract_bits(
                     delta_log,
                     &ciphertext.ct,
-                    server_key,
+                    self,
                     ExtractedBitsCount(num_bits_to_extract),
                 )
                 .unwrap()
@@ -291,25 +287,37 @@ impl WopbsKey {
     /// # Warning Experimental
     pub fn circuit_bootstrapping_vertical_packing(
         &self,
-        server_key: &ServerKey,
         vec_lut: Vec<Vec<u64>>,
         extracted_bits_blocks: Vec<LweCiphertextVector64>,
     ) -> Vec<LweCiphertext64> {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine.circuit_bootstrapping_vertical_packing(
-                self,
-                server_key,
-                vec_lut,
-                extracted_bits_blocks,
-            )
+            engine.circuit_bootstrapping_vertical_packing(self, vec_lut, extracted_bits_blocks)
         })
+    }
+
+    pub fn keyswitch_to_wopbs_params(&self, ct_in: &LweCiphertext64) -> LweCiphertext64 {
+        ShortintEngine::with_thread_local_mut(|engine| {
+            engine.keyswitch_to_wopbs_params(self, ct_in)
+        })
+        .unwrap()
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct SerializableWopbsKey {
-    small_bsk: Vec<u8>,
+#[derive(Serialize)]
+struct SerializableWopbsKey<'a> {
+    wopbs_server_key: &'a ServerKey,
+    pbs_server_key: &'a ServerKey,
     cbs_pfpksk: Vec<u8>,
+    ksk_pbs_to_wopbs: Vec<u8>,
+    param: Parameters,
+}
+
+#[derive(Deserialize)]
+struct DeserializableWopbsKey {
+    wopbs_server_key: ServerKey,
+    pbs_server_key: ServerKey,
+    cbs_pfpksk: Vec<u8>,
+    ksk_pbs_to_wopbs: Vec<u8>,
     param: Parameters,
 }
 
@@ -318,22 +326,22 @@ impl Serialize for WopbsKey {
     where
         S: Serializer,
     {
-        let mut fft_ser_eng = FftSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
-
         let mut default_ser_eng =
             DefaultSerializationEngine::new(()).map_err(serde::ser::Error::custom)?;
-
-        let small_bsk = fft_ser_eng
-            .serialize(&self.small_bsk)
-            .map_err(serde::ser::Error::custom)?;
 
         let cbs_pfpksk = default_ser_eng
             .serialize(&self.cbs_pfpksk)
             .map_err(serde::ser::Error::custom)?;
 
+        let ksk_pbs_to_wopbs = default_ser_eng
+            .serialize(&self.ksk_pbs_to_wopbs)
+            .map_err(serde::ser::Error::custom)?;
+
         SerializableWopbsKey {
-            small_bsk,
+            wopbs_server_key: &self.wopbs_server_key,
+            pbs_server_key: &self.pbs_server_key,
             cbs_pfpksk,
+            ksk_pbs_to_wopbs,
             param: self.param,
         }
         .serialize(serializer)
@@ -346,24 +354,24 @@ impl<'de> Deserialize<'de> for WopbsKey {
         D: Deserializer<'de>,
     {
         let thing =
-            SerializableWopbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
-
-        let mut fft_ser_eng = FftSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
+            DeserializableWopbsKey::deserialize(deserializer).map_err(serde::de::Error::custom)?;
 
         let mut default_ser_eng =
             DefaultSerializationEngine::new(()).map_err(serde::de::Error::custom)?;
-
-        let small_bsk = fft_ser_eng
-            .deserialize(thing.small_bsk.as_slice())
-            .map_err(serde::de::Error::custom)?;
 
         let cbs_pfpksk = default_ser_eng
             .deserialize(thing.cbs_pfpksk.as_slice())
             .map_err(serde::de::Error::custom)?;
 
+        let ksk_pbs_to_wopbs = default_ser_eng
+            .deserialize(thing.ksk_pbs_to_wopbs.as_slice())
+            .map_err(serde::de::Error::custom)?;
+
         Ok(Self {
-            small_bsk,
+            wopbs_server_key: thing.wopbs_server_key,
+            pbs_server_key: thing.pbs_server_key,
             cbs_pfpksk,
+            ksk_pbs_to_wopbs,
             param: thing.param,
         })
     }

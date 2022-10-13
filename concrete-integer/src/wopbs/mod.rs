@@ -14,6 +14,7 @@ use crate::{ClientKey, CrtCiphertext, IntegerCiphertext, RadixCiphertext, Server
 use concrete_core::prelude::*;
 use concrete_shortint::ciphertext::Degree;
 
+use concrete_shortint::Parameters;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -141,12 +142,9 @@ pub fn decode_radix(val: Vec<u64>, basis: u64) -> u64 {
     result
 }
 
-
 impl From<concrete_shortint::wopbs::WopbsKey> for WopbsKey {
     fn from(wopbs_key: concrete_shortint::wopbs::WopbsKey) -> Self {
-        Self {
-            wopbs_key
-        }
+        Self { wopbs_key }
     }
 }
 
@@ -163,9 +161,11 @@ impl WopbsKey {
     /// let (mut cks, mut sks) = gen_keys(&WOPBS_PARAM_MESSAGE_1_CARRY_1);
     /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     /// ```
-    pub fn new_wopbs_key(cks: &ClientKey, sks: &ServerKey) -> WopbsKey {
+    pub fn new_wopbs_key(cks: &ClientKey, sks: &ServerKey, parameters: &Parameters) -> WopbsKey {
         WopbsKey {
-            wopbs_key: concrete_shortint::wopbs::WopbsKey::new_wopbs_key(&cks.key, &sks.key),
+            wopbs_key: concrete_shortint::wopbs::WopbsKey::new_wopbs_key(
+                &cks.key, &sks.key, parameters,
+            ),
         }
     }
 
@@ -203,7 +203,7 @@ impl WopbsKey {
     ///
     ///  assert_eq!(res, clear);
     /// ```
-    pub fn wopbs<T>(&self, sks: &ServerKey, ct_in: &T, lut: &[Vec<u64>]) -> T
+    pub fn wopbs<T>(&self, ct_in: &T, lut: &[Vec<u64>]) -> T
     where
         T: IntegerCiphertext,
     {
@@ -214,19 +214,18 @@ impl WopbsKey {
                 / (self.wopbs_key.param.message_modulus.0 * self.wopbs_key.param.carry_modulus.0);
             let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
             let nb_bit_to_extract = f64::log2((block.degree.0 + 1) as f64).ceil() as usize;
-            let extracted_bits =
-                self.wopbs_key
-                    .extract_bits(delta_log, block, &sks.key, nb_bit_to_extract);
+
+            let extracted_bits = self
+                .wopbs_key
+                .extract_bits(delta_log, block, nb_bit_to_extract);
 
             extracted_bits_blocks.push(extracted_bits);
         }
 
         extracted_bits_blocks.reverse();
-        let vec_ct_out = self.wopbs_key.circuit_bootstrapping_vertical_packing(
-            &sks.key,
-            lut.to_vec(),
-            extracted_bits_blocks,
-        );
+        let vec_ct_out = self
+            .wopbs_key
+            .circuit_bootstrapping_vertical_packing(lut.to_vec(), extracted_bits_blocks);
 
         let mut ct_vec_out = vec![];
         for (block, block_out) in ct_in.blocks().iter().zip(vec_ct_out.into_iter()) {
@@ -264,7 +263,7 @@ impl WopbsKey {
     ///
     /// assert_eq!(res, (clear * 2) % moduli)
     /// ```
-    pub fn wopbs_without_padding<T>(&self, sks: &ServerKey, ct_in: &T, lut: &[Vec<u64>]) -> T
+    pub fn wopbs_without_padding<T>(&self, ct_in: &T, lut: &[Vec<u64>]) -> T
     where
         T: IntegerCiphertext,
     {
@@ -277,19 +276,17 @@ impl WopbsKey {
             let nb_bit_to_extract =
                 f64::log2((block.message_modulus.0 * block.carry_modulus.0) as f64) as usize;
 
-            let extracted_bits =
-                self.wopbs_key
-                    .extract_bits(delta_log, block, &sks.key, nb_bit_to_extract);
+            let extracted_bits = self
+                .wopbs_key
+                .extract_bits(delta_log, block, nb_bit_to_extract);
             extracted_bits_blocks.push(extracted_bits);
         }
 
         extracted_bits_blocks.reverse();
 
-        let vec_ct_out = self.wopbs_key.circuit_bootstrapping_vertical_packing(
-            &sks.key,
-            lut.to_vec(),
-            extracted_bits_blocks,
-        );
+        let vec_ct_out = self
+            .wopbs_key
+            .circuit_bootstrapping_vertical_packing(lut.to_vec(), extracted_bits_blocks);
 
         let mut ct_vec_out = vec![];
         for (block, block_out) in ct_in.blocks().iter().zip(vec_ct_out.into_iter()) {
@@ -328,13 +325,8 @@ impl WopbsKey {
     /// let res = cks.decrypt_crt_not_power_of_two(&ct_res);
     /// assert_eq!(res, clear);
     /// ```
-    pub fn wopbs_not_power_of_two(
-        &self,
-        sks: &ServerKey,
-        ct1: &CrtCiphertext,
-        lut: &[Vec<u64>],
-    ) -> CrtCiphertext {
-        self.circuit_bootstrap_vertical_packing_native_crt(sks, &[ct1.clone()], lut)
+    pub fn wopbs_not_power_of_two(&self, ct1: &CrtCiphertext, lut: &[Vec<u64>]) -> CrtCiphertext {
+        self.circuit_bootstrap_vertical_packing_native_crt(&[ct1.clone()], lut)
     }
 
     /// # Example
@@ -364,18 +356,12 @@ impl WopbsKey {
     ///
     ///  assert_eq!(res, (2 * clear1 * clear2) % moduli);
     /// ```
-    pub fn bivariate_wopbs_with_degree<T>(
-        &self,
-        sks: &ServerKey,
-        ct1: &T,
-        ct2: &T,
-        lut: &[Vec<u64>],
-    ) -> T
+    pub fn bivariate_wopbs_with_degree<T>(&self, ct1: &T, ct2: &T, lut: &[Vec<u64>]) -> T
     where
         T: IntegerCiphertext,
     {
         let ct = ciphertext_concatenation(ct1, ct2);
-        self.wopbs(sks, &ct, lut)
+        self.wopbs(&ct, lut)
     }
 
     /// # Example
@@ -910,17 +896,15 @@ impl WopbsKey {
     /// ```
     pub fn bivariate_wopbs_native_crt(
         &self,
-        sks: &ServerKey,
         ct1: &CrtCiphertext,
         ct2: &CrtCiphertext,
         lut: &[Vec<u64>],
     ) -> CrtCiphertext {
-        self.circuit_bootstrap_vertical_packing_native_crt(sks, &[ct1.clone(), ct2.clone()], lut)
+        self.circuit_bootstrap_vertical_packing_native_crt(&[ct1.clone(), ct2.clone()], lut)
     }
 
     fn circuit_bootstrap_vertical_packing_native_crt<T>(
         &self,
-        sks: &ServerKey,
         vec_ct_in: &[T],
         lut: &[Vec<u64>],
     ) -> T
@@ -948,18 +932,16 @@ impl WopbsKey {
 
                 let extracted_bits =
                     self.wopbs_key
-                        .extract_bits(delta_log, block, &sks.key, nb_bit_to_extract);
+                        .extract_bits(delta_log, block, nb_bit_to_extract);
                 extracted_bits_blocks.push(extracted_bits);
             }
         }
 
         extracted_bits_blocks.reverse();
 
-        let vec_ct_out = self.wopbs_key.circuit_bootstrapping_vertical_packing(
-            &sks.key,
-            lut.to_vec(),
-            extracted_bits_blocks,
-        );
+        let vec_ct_out = self
+            .wopbs_key
+            .circuit_bootstrapping_vertical_packing(lut.to_vec(), extracted_bits_blocks);
 
         let mut ct_vec_out: Vec<concrete_shortint::Ciphertext> = vec![];
         for (block, block_out) in vec_ct_in[0].blocks().iter().zip(vec_ct_out.into_iter()) {

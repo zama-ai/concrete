@@ -247,6 +247,7 @@ fn test_dynamic_supports_ops() {
     let uint10_type = config.add_integer_type(RadixParameters {
         block_parameters: FheUint2Parameters::default().into(),
         num_block: 5,
+        wopbs_block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2
     });
 
     let (client_key, server_key) = generate_keys(config);

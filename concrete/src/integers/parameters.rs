@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 pub struct RadixParameters {
     pub block_parameters: concrete_shortint::Parameters,
     pub num_block: usize,
+    pub wopbs_block_parameters: concrete_shortint::Parameters,
 }
 
 /// Parameters for 'CRT' decomposition
@@ -24,6 +25,7 @@ pub struct RadixParameters {
 pub struct CrtParameters {
     pub block_parameters: concrete_shortint::Parameters,
     pub moduli: Vec<u64>,
+    pub wopbs_block_parameters: concrete_shortint::Parameters,
 }
 
 pub trait PrivateIntegerKey {
@@ -34,12 +36,15 @@ pub trait PrivateIntegerKey {
     fn decrypt(&self, ciphertext: &Self::Ciphertext) -> u64;
 }
 
+/// Meant to be implemented on the inner server key
+/// eg the concrete_integer::ServerKey
 pub trait EvaluationIntegerKey<ClientKey> {
     fn new(client_key: &ClientKey) -> Self;
 
     fn new_wopbs_key(
         client_key: &ClientKey,
         server_key: &Self,
+        wopbs_block_parameters: concrete_shortint::Parameters,
     ) -> concrete_integer::wopbs::WopbsKey;
 }
 
@@ -97,6 +102,10 @@ pub trait IntegerParameter: Clone {
     type InnerClientKey: FromParameters<Self>
         + PrivateIntegerKey<Ciphertext = Self::InnerCiphertext>;
     type InnerServerKey;
+
+    fn wopbs_block_parameters(&self) -> concrete_shortint::Parameters;
+
+    fn block_parameters(&self) -> concrete_shortint::Parameters;
 }
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]

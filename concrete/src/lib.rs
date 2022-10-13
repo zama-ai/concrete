@@ -52,6 +52,7 @@
 //!     let uint10_type = config.add_integer_type(RadixParameters {
 //!         block_parameters: FheUint2Parameters::default().into(),
 //!         num_block: 5,
+//!         wopbs_block_parameters: FheUint2Parameters::wopbs_default().into()
 //!     });
 //!
 //!     let (client_key, server_key) = generate_keys(config);

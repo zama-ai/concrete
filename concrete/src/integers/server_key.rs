@@ -25,7 +25,11 @@ where
 {
     pub(super) fn new(client_key: &GenericIntegerClientKey<P>) -> Self {
         let inner = P::InnerServerKey::new(&client_key.inner);
-        let wopbs_key = P::InnerServerKey::new_wopbs_key(&client_key.inner, &inner);
+        let wopbs_key = P::InnerServerKey::new_wopbs_key(
+            &client_key.inner,
+            &inner,
+            client_key.params.wopbs_block_parameters(),
+        );
         Self {
             inner,
             wopbs_key,

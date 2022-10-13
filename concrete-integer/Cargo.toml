@@ -21,7 +21,8 @@ lazy_static = { version = "1.4.0", optional = true }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies.concrete-core]
 git = "https://github.com/zama-ai/concrete-core"
-rev = "96fdb6ea93c69211282fd5f0e83e576930768316"
+rev = "8a1897c45832f14f75e09407465804822535b58f"
+
 features = [
     "backend_default",
     "backend_default_serialization",
@@ -31,7 +32,8 @@ features = [
 
 [target.'cfg(target_arch = "aarch64")'.dependencies.concrete-core]
 git = "https://github.com/zama-ai/concrete-core"
-rev = "96fdb6ea93c69211282fd5f0e83e576930768316"
+rev = "8a1897c45832f14f75e09407465804822535b58f"
+
 features = [
     "backend_default",
     "backend_default_serialization",

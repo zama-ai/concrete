@@ -10,6 +10,7 @@ use concrete_utils::keycache::{
 };
 use concrete_utils::named_params_impl;
 use lazy_static::*;
+use serde::{Deserialize, Serialize};
 
 impl NamedParam for Parameters {
     fn name(&self) -> String {
@@ -196,10 +197,6 @@ pub struct SharedWopbsKey {
     wopbs: GenericSharedKey<WopbsKey>,
 }
 
-// pub struct SharedTreePbsKey {
-//     inner: GenericSharedKey<TreepbsKey>,
-// }
-
 impl SharedKey {
     pub fn client_key(&self) -> &ClientKey {
         &self.inner.0
@@ -221,12 +218,6 @@ impl SharedWopbsKey {
     }
 }
 
-// impl SharedTreePbsKey {
-//     pub fn treepbs_key(&self) -> &TreepbsKey {
-//         &self.inner
-//     }
-// }
-
 impl Keycache {
     pub fn get_from_param(&self, param: Parameters) -> SharedKey {
         SharedKey {
@@ -235,52 +226,36 @@ impl Keycache {
     }
 }
 
-impl From<Parameters> for WopbsKey {
-    fn from(param: Parameters) -> Self {
-        // use with_key to avoid doing a temporary cloning
-        KEY_CACHE
-            .inner
-            .with_key(param, |keys| WopbsKey::new_wopbs_key(&keys.0, &keys.1))
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct WopbsParamPair(pub Parameters, pub Parameters);
+
+impl From<(Parameters, Parameters)> for WopbsParamPair {
+    fn from(tuple: (Parameters, Parameters)) -> Self {
+        Self(tuple.0, tuple.1)
     }
 }
 
-// pub struct KeycacheTreePpbs {
-//     inner: TKeyCache<Parameters, TreepbsKey, FileStorage>,
-// }
+impl From<WopbsParamPair> for WopbsKey {
+    fn from(params: WopbsParamPair) -> Self {
+        // use with_key to avoid doing a temporary cloning
+        KEY_CACHE.inner.with_key(params.0, |keys| {
+            WopbsKey::new_wopbs_key(&keys.0, &keys.1, &params.1)
+        })
+    }
+}
 
-// /// This impl is a workaround / cheat
-// /// maybe we should find a better way
-// impl From<Parameters> for TreepbsKey {
-//     fn from(params: Parameters) -> Self {
-//         let shared_key = KEY_CACHE.get_from_param(params);
-//         Self::new_tree_key(shared_key.client_key())
-//     }
-// }
-
-// impl Default for KeycacheTreePpbs {
-//     fn default() -> Self {
-//         let persistent_storage = FileStorage::new("../keys/shortint/treepbs".to_string());
-
-//         Self {
-//             inner: TKeyCache::new(persistent_storage),
-//         }
-//     }
-// }
-
-// impl KeycacheTreePpbs {
-//     pub fn get_from_param(&self, param: Parameters) -> SharedTreePbsKey {
-//         SharedTreePbsKey {
-//             inner: self.inner.get(param),
-//         }
-//     }
-// }
+impl NamedParam for WopbsParamPair {
+    fn name(&self) -> String {
+        self.1.name()
+    }
+}
 
 /// The KeyCache struct for shortint.
 ///
 /// You should not create an instance yourself,
 /// but rather use the global variable defined: [KEY_CACHE_WOPBS]
 pub struct KeycacheWopbsV0 {
-    inner: TKeyCache<Parameters, WopbsKey, FileStorage>,
+    inner: TKeyCache<WopbsParamPair, WopbsKey, FileStorage>,
 }
 
 impl Default for KeycacheWopbsV0 {
@@ -292,9 +267,10 @@ impl Default for KeycacheWopbsV0 {
 }
 
 impl KeycacheWopbsV0 {
-    pub fn get_from_param(&self, param: Parameters) -> SharedWopbsKey {
-        let key = KEY_CACHE.get_from_param(param);
-        let wk = self.inner.get(param);
+    pub fn get_from_param<T: Into<WopbsParamPair>>(&self, params: T) -> SharedWopbsKey {
+        let params = params.into();
+        let key = KEY_CACHE.get_from_param(params.0);
+        let wk = self.inner.get(params);
         SharedWopbsKey {
             inner: key.inner,
             wopbs: wk,

@@ -1,12 +1,15 @@
 use concrete_integer::wopbs::WopbsKey;
 use concrete_integer::{CrtCiphertext, CrtClientKey, RadixCiphertext, RadixClientKey, ServerKey};
+use concrete_shortint::Parameters;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::errors::{Type, UninitializedClientKey, UninitializedServerKey};
 use crate::global_state::WithGlobalKey;
 use crate::integers::client_key::GenericIntegerClientKey;
-use crate::integers::parameters::{FromParameters, IntegerParameter, PrivateIntegerKey, EvaluationIntegerKey};
+use crate::integers::parameters::{
+    EvaluationIntegerKey, FromParameters, IntegerParameter, PrivateIntegerKey,
+};
 use crate::integers::server_key::{
     GenericIntegerServerKey, SmartAdd, SmartAddAssign, SmartBitAnd, SmartBitAndAssign, SmartBitOr,
     SmartBitOrAssign, SmartBitXor, SmartBitXorAssign, SmartMul, SmartMulAssign, SmartNeg, SmartShl,
@@ -115,21 +118,33 @@ impl crate::integers::parameters::EvaluationIntegerKey<DynInnerClientKey> for Dy
         let inner = match client_key {
             DynInnerClientKey::Radix(key) => {
                 <ServerKey as EvaluationIntegerKey<RadixClientKey>>::new(key)
-            },
+            }
             DynInnerClientKey::Crt(key) => {
                 <ServerKey as EvaluationIntegerKey<CrtClientKey>>::new(key)
-            },
+            }
         };
         Self { inner }
     }
 
-    fn new_wopbs_key(client_key: &DynInnerClientKey, server_key: &Self) -> WopbsKey {
+    fn new_wopbs_key(
+        client_key: &DynInnerClientKey,
+        server_key: &Self,
+        wopbs_block_parameters: concrete_shortint::Parameters,
+    ) -> WopbsKey {
         match client_key {
             DynInnerClientKey::Radix(cks) => {
-                <ServerKey as EvaluationIntegerKey<RadixClientKey>>::new_wopbs_key(cks, &server_key.inner)
+                <ServerKey as EvaluationIntegerKey<RadixClientKey>>::new_wopbs_key(
+                    cks,
+                    &server_key.inner,
+                    wopbs_block_parameters,
+                )
             }
             DynInnerClientKey::Crt(cks) => {
-                <ServerKey as EvaluationIntegerKey<CrtClientKey>>::new_wopbs_key(cks, &server_key.inner)
+                <ServerKey as EvaluationIntegerKey<CrtClientKey>>::new_wopbs_key(
+                    cks,
+                    &server_key.inner,
+                    wopbs_block_parameters,
+                )
             }
         }
     }
@@ -144,6 +159,27 @@ impl FromParameters<DynIntegerParameters> for DynInnerClientKey {
             DynIntegerParameters::Crt(crt_params) => {
                 Self::Crt(CrtClientKey::from_parameters(crt_params))
             }
+        }
+    }
+}
+
+impl IntegerParameter for DynIntegerParameters {
+    type Id = IntegerTypeId;
+    type InnerCiphertext = DynInnerCiphertext;
+    type InnerClientKey = DynInnerClientKey;
+    type InnerServerKey = DynInnerServerKey;
+
+    fn wopbs_block_parameters(&self) -> Parameters {
+        match self {
+            Self::Radix(radix_params) => radix_params.wopbs_block_parameters,
+            Self::Crt(crt_params) => crt_params.wopbs_block_parameters,
+        }
+    }
+
+    fn block_parameters(&self) -> Parameters {
+        match self {
+            Self::Radix(radix_params) => radix_params.block_parameters,
+            Self::Crt(crt_params) => crt_params.block_parameters,
         }
     }
 }
@@ -173,21 +209,11 @@ impl FheBootstrap for DynInteger {
             .id
             .with_unwrapped_global_mut(|key| match &*self.ciphertext.borrow() {
                 DynInnerCiphertext::Radix(ct) => {
-                    let res = crate::integers::types::base::wopbs_radix(
-                        &key.wopbs_key,
-                        &key.inner.inner,
-                        ct,
-                        func,
-                    );
+                    let res = crate::integers::types::base::wopbs_radix(&key.wopbs_key, ct, func);
                     DynInnerCiphertext::Radix(res)
                 }
                 DynInnerCiphertext::Crt(ct) => {
-                    let res = crate::integers::types::base::wopbs_crt(
-                        &key.wopbs_key,
-                        &key.inner.inner,
-                        ct,
-                        func,
-                    );
+                    let res = crate::integers::types::base::wopbs_crt(&key.wopbs_key, ct, func);
                     DynInnerCiphertext::Crt(res)
                 }
             });
@@ -208,7 +234,6 @@ impl DynInteger {
                 (DynInnerCiphertext::Radix(lhs), DynInnerCiphertext::Radix(rhs)) => {
                     let res = crate::integers::types::base::bivariate_wopbs_radix(
                         &key.wopbs_key,
-                        &key.inner.inner,
                         lhs,
                         rhs,
                         func,
@@ -218,7 +243,6 @@ impl DynInteger {
                 (DynInnerCiphertext::Crt(lhs), DynInnerCiphertext::Crt(rhs)) => {
                     let res = crate::integers::types::base::bivariate_wopbs_crt(
                         &key.wopbs_key,
-                        &key.inner.inner,
                         lhs,
                         rhs,
                         func,
@@ -618,13 +642,6 @@ impl SmartShrAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
             }
         }
     }
-}
-
-impl IntegerParameter for DynIntegerParameters {
-    type Id = IntegerTypeId;
-    type InnerCiphertext = DynInnerCiphertext;
-    type InnerClientKey = DynInnerClientKey;
-    type InnerServerKey = DynInnerServerKey;
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -99,6 +99,8 @@ fn integer_smart_crt_mul(param: Parameters) {
     let basis = make_basis(param.message_modulus.0);
     let modulus = basis.iter().product::<u64>();
 
+    println!("BASIS = {:?}", basis);
+
     //RNG
     let mut rng = rand::thread_rng();
 
@@ -109,15 +111,28 @@ fn integer_smart_crt_mul(param: Parameters) {
     let mut ct_zero = cks.encrypt_crt(clear_0, basis.clone());
     let mut ct_one = cks.encrypt_crt(clear_1, basis);
 
-    for _ in 0..NB_TEST_SMALLER {
-        // add the two ciphertexts
+    for block in ct_zero.blocks.iter() {
+        println!(
+            "MSG SPACE = {}, CARRY SPACE = {}",
+            block.message_modulus.0, block.carry_modulus.0
+        );
+    }
+
+    for i in 0..NB_TEST_SMALLER {
+        println!("PASS NUMBER = {}", i);
+        // mul the two ciphertexts
         sks.smart_crt_mul_assign(&mut ct_zero, &mut ct_one);
 
         // decryption of ct_res
         let dec_res = cks.decrypt_crt(&ct_zero);
 
         // assert
-        clear_0 *= clear_1;
+        clear_0 *= clear_1 % modulus;
+        println!("exp = {}, res = {}", clear_0 % modulus, dec_res);
+        for (ct1, ct2) in ct_zero.blocks.iter().zip(ct_one.blocks.iter()) {
+            println!("deg ct 1 = {}, deg ct 2 = {}", ct1.degree.0, ct2.degree.0);
+        }
+
         assert_eq!(clear_0 % modulus, dec_res % modulus);
     }
 }

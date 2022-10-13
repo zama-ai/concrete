@@ -139,6 +139,7 @@ mod dynamic {
         let uint10_type = config.add_integer_type(RadixParameters {
             block_parameters: FheUint2Parameters::with_carry_2().into(),
             num_block: 5,
+            wopbs_block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2
         });
 
         let (client_key, server_key) = generate_keys(config);
@@ -158,6 +159,7 @@ mod dynamic {
         let uint10_type = config.add_integer_type(CrtParameters {
             block_parameters: FheUint2Parameters::with_carry_2().into(),
             moduli: vec![7, 8, 9, 11, 13],
+            wopbs_block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2
         });
 
         let (client_key, server_key) = generate_keys(config);

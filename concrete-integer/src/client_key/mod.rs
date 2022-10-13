@@ -344,6 +344,7 @@ impl ClientKey {
             // decrypt the component i of the integer and multiply it by the radix product
             val.push(self.key.decrypt_message_and_carry(c_i) % b_i);
         }
+        println!("VAL DEC = {:?}", val);
 
         // Computing the inverse CRT to recompose the message
         let result = i_crt(&ctxt.moduli, &val);

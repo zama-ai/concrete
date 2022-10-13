@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +34,7 @@ impl PrivateIntegerKey for CrtClientKey {
 #[derive(Clone, Debug)]
 pub struct GenericIntegerClientKey<P: IntegerParameter> {
     pub(in crate::integers) inner: P::InnerClientKey,
-    _marker: PhantomData<P>,
+    pub(in crate::integers) params: P,
 }
 
 impl<P> From<P> for GenericIntegerClientKey<P>
@@ -44,10 +42,7 @@ where
     P: IntegerParameter,
 {
     fn from(params: P) -> Self {
-        let key = P::InnerClientKey::from_parameters(params);
-        Self {
-            inner: key,
-            _marker: Default::default(),
-        }
+        let key = P::InnerClientKey::from_parameters(params.clone());
+        Self { inner: key, params }
     }
 }

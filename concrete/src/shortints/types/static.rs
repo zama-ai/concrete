@@ -199,6 +199,10 @@ impl FheUint2Parameters {
     pub fn with_carry_6() -> Self {
         Self::from_static(&concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_6)
     }
+
+    pub fn wopbs_default() -> Self {
+        Self::from_static(&concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2)
+    }
 }
 
 impl Default for FheUint2Parameters {
@@ -231,6 +235,10 @@ impl FheUint3Parameters {
     pub fn with_carry_5() -> Self {
         Self::from_static(&concrete_shortint::parameters::PARAM_MESSAGE_3_CARRY_5)
     }
+
+    pub fn wopbs_default() -> Self {
+        Self::from_static(&concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_3_CARRY_3)
+    }
 }
 
 impl Default for FheUint3Parameters {
@@ -258,6 +266,10 @@ impl FheUint4Parameters {
 
     pub fn with_carry_4() -> Self {
         Self::from_static(&concrete_shortint::parameters::PARAM_MESSAGE_4_CARRY_4)
+    }
+
+    pub fn wopbs_default() -> Self {
+        Self::from_static(&concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_4_CARRY_4)
     }
 }
 

@@ -24,6 +24,7 @@ macro_rules! define_static_integer_parameters {
             num_bits: $num_bits:literal,
             block_parameters: $block_parameters:expr,
             num_block: $num_block:literal,
+            wopbs_block_parameters: $wopbs_block_parameters:expr,
         }
     ) => {
         paste! {
@@ -31,6 +32,7 @@ macro_rules! define_static_integer_parameters {
             #[derive(Copy, Clone, Debug, Default)]
             pub struct [<FheUint $num_bits Id>];
 
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             #[derive(Copy, Clone, Debug)]
             pub struct [<FheUint $num_bits Parameters>](RadixParameters);
 
@@ -40,6 +42,7 @@ macro_rules! define_static_integer_parameters {
                         RadixParameters {
                             block_parameters: $block_parameters,
                             num_block: $num_block,
+                            wopbs_block_parameters: $wopbs_block_parameters,
                         },
                     )
                 }
@@ -50,6 +53,14 @@ macro_rules! define_static_integer_parameters {
                 type InnerCiphertext = concrete_integer::RadixCiphertext;
                 type InnerClientKey = concrete_integer::RadixClientKey;
                 type InnerServerKey = concrete_integer::ServerKey;
+
+                fn wopbs_block_parameters(&self) -> concrete_shortint::Parameters {
+                    self.0.wopbs_block_parameters
+                }
+
+                fn block_parameters(&self) -> concrete_shortint::Parameters {
+                    self.0.block_parameters
+                }
             }
 
             impl From<[<FheUint $num_bits Parameters>]> for RadixParameters {
@@ -71,6 +82,7 @@ macro_rules! define_static_integer_parameters {
             num_bits: $num_bits:literal,
             block_parameters: $block_parameters:expr,
             moduli: $moduli:expr,
+            wopbs_block_parameters: $wopbs_block_parameters:expr,
         }
     ) => {
         paste! {
@@ -78,6 +90,7 @@ macro_rules! define_static_integer_parameters {
             #[derive(Copy, Clone, Debug, Default)]
             pub struct [<FheUint $num_bits Id>];
 
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             #[derive(Copy, Clone, Debug)]
             pub struct [<FheUint $num_bits Parameters>](CrtParameters);
 
@@ -87,6 +100,7 @@ macro_rules! define_static_integer_parameters {
                         CrtParameters {
                             block_parameters: $block_parameters,
                             moduli: $moduli,
+                            wopbs_block_parameters: $wopbs_block_parameters,
                         },
                     )
                 }
@@ -97,6 +111,14 @@ macro_rules! define_static_integer_parameters {
                 type InnerCiphertext = concrete_integer::CrtCiphertext;
                 type InnerClientKey = concrete_integer::CrtClientKey;
                 type InnerServerKey = concrete_integer::ServerKey;
+
+                fn wopbs_block_parameters(&self) -> concrete_shortint::Parameters {
+                    self.0.wopbs_block_parameters
+                }
+
+                fn block_parameters(&self) -> concrete_shortint::Parameters {
+                    self.0.block_parameters
+                }
             }
 
             impl From<[<FheUint $num_bits Parameters>]> for CrtCiphertext {
@@ -162,6 +184,7 @@ macro_rules! static_int_type {
             parameters: Radix {
                 block_parameters: $block_parameters:expr,
                 num_block: $num_block:literal,
+                wopbs_block_parameters: $wopbs_block_parameters:expr,
             },
         }
     ) => {
@@ -170,6 +193,7 @@ macro_rules! static_int_type {
                 num_bits: $num_bits,
                 block_parameters: $block_parameters,
                 num_block: $num_block,
+                wopbs_block_parameters: $wopbs_block_parameters,
             }
         );
 
@@ -191,6 +215,7 @@ macro_rules! static_int_type {
             parameters: Crt {
                 block_parameters: $block_parameters:expr,
                 moduli: $moduli:expr,
+                wopbs_block_parameters: $wopbs_block_parameters:expr,
             },
         }
     ) => {
@@ -199,6 +224,7 @@ macro_rules! static_int_type {
                 num_bits: $num_bits,
                 block_parameters: $block_parameters,
                 moduli: $moduli,
+                wopbs_block_parameters: $wopbs_block_parameters,
             }
         );
 
@@ -230,20 +256,56 @@ where
         }
     }
 
-    fn new_wopbs_key(client_key: &C, server_key: &Self) -> WopbsKey {
+    fn new_wopbs_key(
+        client_key: &C,
+        server_key: &Self,
+        wopbs_block_parameters: concrete_shortint::Parameters,
+    ) -> WopbsKey {
         #[cfg(not(feature = "internal-keycache"))]
         {
-            WopbsKey::new_wopbs_key(client_key.as_ref(), server_key)
+            WopbsKey::new_wopbs_key(client_key.as_ref(), server_key, &wopbs_block_parameters)
         }
         #[cfg(feature = "internal-keycache")]
         {
             let _ = &server_key; // silence warning
             KEY_CACHE_WOPBS
-                .get_from_params(client_key.as_ref().parameters())
-                
+                .get_from_params((client_key.as_ref().parameters(), wopbs_block_parameters))
         }
     }
 }
+
+// impl<P> EvaluationIntegerKey<GenericIntegerClientKey<P>> for concrete_integer::ServerKey
+//     where P: IntegerParameter,
+//           P::InnerClientKey: AsRef<concrete_integer::ClientKey>
+// {
+//     fn new(client_key: &GenericIntegerClientKey<P>) -> Self {
+//         #[cfg(feature = "internal-keycache")]
+//         {
+//             KEY_CACHE
+//                 .get_from_params(client_key.params.block_parameters())
+//                 .1
+//         }
+//         #[cfg(not(feature = "internal-keycache"))]
+//         {
+//             concrete_integer::ServerKey::new(client_key.inner.as_ref())
+//         }
+//     }
+//
+//     fn new_wopbs_key(client_key: &GenericIntegerClientKey<P>, server_key: &Self) -> WopbsKey {
+//         #[cfg(not(feature = "internal-keycache"))]
+//         {
+//             WopbsKey::new_wopbs_key(client_key.inner.as_ref(), server_key,
+// &client_key.params.wopbs_block_parameters())         }
+//         #[cfg(feature = "internal-keycache")]
+//         {
+//             let _ = &server_key; // silence warning
+//             KEY_CACHE_WOPBS
+//                 .get_from_params((client_key.params.block_parameters(),
+// client_key.params.wopbs_block_parameters()))
+//
+//         }
+//     }
+// }
 
 static_int_type! {
     #[doc="An unsigned integer type with 8 bits."]
@@ -251,8 +313,9 @@ static_int_type! {
         num_bits: 8,
         keychain_member: integer_key.uint8_key,
         parameters: Radix {
-            block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
+            block_parameters: concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2,
             num_block: 4,
+            wopbs_block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
         },
     }
 }
@@ -263,8 +326,9 @@ static_int_type! {
         num_bits: 12,
         keychain_member: integer_key.uint12_key,
         parameters: Radix {
-            block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
+            block_parameters: concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2,
             num_block: 6,
+            wopbs_block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
         },
     }
 }
@@ -275,8 +339,9 @@ static_int_type! {
         num_bits: 16,
         keychain_member: integer_key.uint16_key,
         parameters: Radix {
-            block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
+            block_parameters: concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2,
             num_block: 8,
+            wopbs_block_parameters: concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2,
         },
     }
 }

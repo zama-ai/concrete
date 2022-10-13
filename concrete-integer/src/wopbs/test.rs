@@ -12,18 +12,18 @@ use concrete_shortint::parameters::{Parameters, *};
 use rand::Rng;
 use std::cmp::max;
 
-use crate::keycache::KEY_CACHE;
+use crate::keycache::{KEY_CACHE, KEY_CACHE_WOPBS};
 use paste::paste;
 
 const NB_TEST: usize = 10;
 
 macro_rules! create_parametrized_test{
-    ($name:ident { $($param:ident),* }) => {
+    ($name:ident { $( ($sks_param:ident, $wopbs_param:ident) ),* }) => {
         paste! {
             $(
             #[test]
-            fn [<test_ $name _ $param:lower>]() {
-                $name($param)
+            fn [<test_ $name _ $wopbs_param:lower>]() {
+                $name(($sks_param, $wopbs_param))
             }
             )*
         }
@@ -31,79 +31,13 @@ macro_rules! create_parametrized_test{
      ($name:ident)=> {
         create_parametrized_test!($name
         {
-            WOPBS_PARAM_MESSAGE_1_NORM2_2,
-            WOPBS_PARAM_MESSAGE_1_NORM2_4,
-            WOPBS_PARAM_MESSAGE_1_NORM2_6,
-            WOPBS_PARAM_MESSAGE_1_NORM2_8,
-            WOPBS_PARAM_MESSAGE_2_NORM2_2,
-            WOPBS_PARAM_MESSAGE_2_NORM2_4,
-            WOPBS_PARAM_MESSAGE_2_NORM2_6,
-            WOPBS_PARAM_MESSAGE_2_NORM2_8,
-            WOPBS_PARAM_MESSAGE_3_NORM2_2,
-            WOPBS_PARAM_MESSAGE_3_NORM2_4,
-            WOPBS_PARAM_MESSAGE_3_NORM2_6,
-            WOPBS_PARAM_MESSAGE_3_NORM2_8,
-            WOPBS_PARAM_MESSAGE_4_NORM2_2,
-            WOPBS_PARAM_MESSAGE_4_NORM2_4,
-            WOPBS_PARAM_MESSAGE_4_NORM2_6,
-            WOPBS_PARAM_MESSAGE_4_NORM2_8,
-            WOPBS_PARAM_MESSAGE_5_NORM2_2,
-            WOPBS_PARAM_MESSAGE_5_NORM2_4,
-            WOPBS_PARAM_MESSAGE_5_NORM2_6,
-            WOPBS_PARAM_MESSAGE_5_NORM2_8,
-            WOPBS_PARAM_MESSAGE_6_NORM2_2,
-            WOPBS_PARAM_MESSAGE_6_NORM2_4,
-            WOPBS_PARAM_MESSAGE_6_NORM2_6,
-            WOPBS_PARAM_MESSAGE_6_NORM2_8,
-            WOPBS_PARAM_MESSAGE_7_NORM2_2,
-            WOPBS_PARAM_MESSAGE_7_NORM2_4,
-            WOPBS_PARAM_MESSAGE_7_NORM2_6,
-            WOPBS_PARAM_MESSAGE_7_NORM2_8,
-            WOPBS_PARAM_MESSAGE_8_NORM2_2,
-            WOPBS_PARAM_MESSAGE_8_NORM2_4,
-            WOPBS_PARAM_MESSAGE_8_NORM2_6,
-            WOPBS_PARAM_MESSAGE_1_CARRY_0,
-            WOPBS_PARAM_MESSAGE_1_CARRY_1,
-            WOPBS_PARAM_MESSAGE_1_CARRY_2,
-            WOPBS_PARAM_MESSAGE_1_CARRY_3,
-            WOPBS_PARAM_MESSAGE_1_CARRY_4,
-            WOPBS_PARAM_MESSAGE_1_CARRY_5,
-            WOPBS_PARAM_MESSAGE_1_CARRY_6,
-            WOPBS_PARAM_MESSAGE_1_CARRY_7,
-            WOPBS_PARAM_MESSAGE_2_CARRY_0,
-            WOPBS_PARAM_MESSAGE_2_CARRY_1,
-            WOPBS_PARAM_MESSAGE_2_CARRY_2,
-            WOPBS_PARAM_MESSAGE_2_CARRY_3,
-            WOPBS_PARAM_MESSAGE_2_CARRY_4,
-            WOPBS_PARAM_MESSAGE_2_CARRY_5,
-            WOPBS_PARAM_MESSAGE_2_CARRY_6,
-            WOPBS_PARAM_MESSAGE_3_CARRY_0,
-            WOPBS_PARAM_MESSAGE_3_CARRY_1,
-            WOPBS_PARAM_MESSAGE_3_CARRY_2,
-            WOPBS_PARAM_MESSAGE_3_CARRY_3,
-            WOPBS_PARAM_MESSAGE_3_CARRY_4,
-            WOPBS_PARAM_MESSAGE_3_CARRY_5,
-            WOPBS_PARAM_MESSAGE_4_CARRY_0,
-            WOPBS_PARAM_MESSAGE_4_CARRY_1,
-            WOPBS_PARAM_MESSAGE_4_CARRY_2,
-            WOPBS_PARAM_MESSAGE_4_CARRY_3,
-            WOPBS_PARAM_MESSAGE_4_CARRY_4,
-            WOPBS_PARAM_MESSAGE_5_CARRY_0,
-            WOPBS_PARAM_MESSAGE_5_CARRY_1,
-            WOPBS_PARAM_MESSAGE_5_CARRY_2,
-            WOPBS_PARAM_MESSAGE_5_CARRY_3,
-            WOPBS_PARAM_MESSAGE_6_CARRY_0,
-            WOPBS_PARAM_MESSAGE_6_CARRY_1,
-            WOPBS_PARAM_MESSAGE_6_CARRY_2,
-            WOPBS_PARAM_MESSAGE_7_CARRY_0,
-            WOPBS_PARAM_MESSAGE_7_CARRY_1,
-            WOPBS_PARAM_MESSAGE_8_CARRY_0,
-            PARAM_MESSAGE_4_CARRY_4_16_BITS,
-            PARAM_MESSAGE_2_CARRY_2_16_BITS,
-            PARAM_4_BITS_5_BLOCKS
+            (PARAM_MESSAGE_2_CARRY_2, WOPBS_PARAM_MESSAGE_2_CARRY_2),
+            (PARAM_MESSAGE_2_CARRY_2, WOPBS_PARAM_MESSAGE_3_CARRY_3),
+            (PARAM_MESSAGE_2_CARRY_2, WOPBS_PARAM_MESSAGE_4_CARRY_4)
         });
     };
 }
+
 //create_parametrized_test!(wopbs_v_init);
 //create_parametrized_test!(wopbs_v0_16_bits);
 // create_parametrized_test!(wopbs_v1);
@@ -115,12 +49,10 @@ create_parametrized_test!(wopbs_bivariate_fake_crt);
 create_parametrized_test!(wopbs_crt_without_padding_bivariate);
 create_parametrized_test!(wopbs_radix);
 
-pub fn wopbs(param: Parameters) {
-    //Generate the client key and the server key:
-    let (cks, mut sks) = gen_keys(&param);
+pub fn wopbs(params: (Parameters, Parameters)) {
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
-    // //Generate wopbs_v0 key
-    let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     let mut rng = rand::thread_rng();
     let mut cpt = 0;
     let nb_test = 1;
@@ -130,13 +62,14 @@ pub fn wopbs(param: Parameters) {
 
         let clear = rng.gen::<usize>() % 8;
         let mut ct = cks.encrypt_radix(clear as u64, 8);
-        let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
+        let delta =
+            63 - f64::log2((params.0.message_modulus.0 * params.0.carry_modulus.0) as f64) as u64;
 
         let nb_bit_to_extract =
-            f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * 2;
+            f64::log2((params.0.message_modulus.0 * params.0.carry_modulus.0) as f64) as usize * 2;
 
-        let mut lut_size = param.polynomial_size.0;
-        if (1 << nb_bit_to_extract) > param.polynomial_size.0 {
+        let mut lut_size = params.0.polynomial_size.0;
+        if (1 << nb_bit_to_extract) > params.0.polynomial_size.0 {
             lut_size = 1 << nb_bit_to_extract;
         }
 
@@ -160,14 +93,11 @@ pub fn wopbs(param: Parameters) {
     panic!();
 }
 
-pub fn wopbs_16_bits(param: Parameters) {
+pub fn wopbs_16_bits(params: (Parameters, Parameters)) {
     let nb_block = 3;
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
-    //Generate the client key and the server key:
-    let (cks, sks) = gen_keys(&param);
-    //
-    // //Generate wopbs_v0 key
-    let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
     let mut rng = rand::thread_rng();
     let mut cpt = 0;
     let nb_test = 100;
@@ -177,13 +107,15 @@ pub fn wopbs_16_bits(param: Parameters) {
 
         let clear = rng.gen::<usize>() % 8;
         let mut ct = cks.encrypt_radix(clear as u64, 8);
-        let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
+        let delta =
+            63 - f64::log2((params.0.message_modulus.0 * params.0.carry_modulus.0) as f64) as u64;
 
         let nb_bit_to_extract =
-            f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as usize * nb_block;
+            f64::log2((params.0.message_modulus.0 * params.0.carry_modulus.0) as f64) as usize
+                * nb_block;
 
-        let mut lut_size = param.polynomial_size.0;
-        if (1 << nb_bit_to_extract) > param.polynomial_size.0 {
+        let mut lut_size = params.0.polynomial_size.0;
+        if (1 << nb_bit_to_extract) > params.0.polynomial_size.0 {
             lut_size = 1 << nb_bit_to_extract;
         }
 
@@ -191,11 +123,11 @@ pub fn wopbs_16_bits(param: Parameters) {
         let mut lut_2: Vec<u64> = vec![];
         for _ in 0..lut_size {
             lut_1.push(
-                (rng.gen::<u64>() % (param.message_modulus.0 * param.carry_modulus.0) as u64)
+                (rng.gen::<u64>() % (params.0.message_modulus.0 * params.0.carry_modulus.0) as u64)
                     << delta,
             );
             lut_2.push(
-                (rng.gen::<u64>() % (param.message_modulus.0 * param.carry_modulus.0) as u64)
+                (rng.gen::<u64>() % (params.0.message_modulus.0 * params.0.carry_modulus.0) as u64)
                     << delta,
             );
         }
@@ -236,13 +168,10 @@ pub fn wopbs_16_bits(param: Parameters) {
     panic!();
 }
 
-pub fn wopbs_16_lut_test(param: Parameters) {
+pub fn wopbs_16_lut_test(params: (Parameters, Parameters)) {
     let nb_block = 3;
-    //Generate the client key and the server key:
-    let (cks, sks) = gen_keys(&param);
-    //
-    // //Generate wopbs_v0 key
-    let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
     let mut rng = rand::thread_rng();
     let mut cpt = 0;
     let nb_test = 10;
@@ -266,18 +195,16 @@ pub fn wopbs_16_lut_test(param: Parameters) {
     assert_eq!(cpt, 0);
 }
 
-pub fn wopbs_crt_without_padding(param: Parameters) {
+pub fn wopbs_crt_without_padding(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
-    println!("param : {:?}", param);
+    println!("param : {:?}", params);
 
     let basis: Vec<u64> = vec![7, 8, 9, 11, 13];
 
     let nb_block = basis.len();
 
-    //Generate the client key and the server key:
-    let (mut cks, sks) = gen_keys(&param);
-    // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
     let mut msg_space = 1;
     for modulus in basis.iter() {
@@ -299,18 +226,16 @@ pub fn wopbs_crt_without_padding(param: Parameters) {
     }
 }
 
-pub fn wopbs_crt_without_padding_bivariate(param: Parameters) {
+pub fn wopbs_crt_without_padding_bivariate(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
-    println!("param : {:?}", param);
+    println!("param : {:?}", params);
 
     let basis: Vec<u64> = vec![9, 11];
 
     let nb_block = basis.len();
 
-    //Generate the client key and the server key:
-    let (mut cks, sks) = gen_keys(&param);
-    // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
     let mut msg_space = 1;
     for modulus in basis.iter() {
@@ -344,18 +269,16 @@ pub fn wopbs_crt_without_padding_bivariate(param: Parameters) {
 }
 
 // test wopbs fake crt with different degree for each Ct
-pub fn wopbs_crt_fake_crt(param: Parameters) {
+pub fn wopbs_crt_fake_crt(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
-    println!("param : {:?}", param);
+    println!("param : {:?}", params);
 
     let basis: Vec<u64> = vec![4, 3];
 
     let nb_block = basis.len();
 
-    //Generate the client key and the server key:
-    let (mut cks, sks) = gen_keys(&param);
-    // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
     let mut msg_space = 1;
     for modulus in basis.iter() {
@@ -369,8 +292,8 @@ pub fn wopbs_crt_fake_crt(param: Parameters) {
         let mut ct1 = cks.encrypt_crt(clear1, basis.clone());
         //artificially modify the degree
         for ct in ct1.blocks.iter_mut() {
-            let degree =
-                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
+            let degree = params.0.message_modulus.0
+                * ((rng.gen::<usize>() % (params.0.carry_modulus.0 - 1)) + 1);
             ct.degree.0 = degree;
         }
         let lut = wopbs_key.generate_lut_crt(&ct1, |x| (x * x) + x);
@@ -389,20 +312,18 @@ pub fn wopbs_crt_fake_crt(param: Parameters) {
 }
 
 // test wopbs fake crt with different degree for each Ct
-pub fn wopbs_radix(param: Parameters) {
+pub fn wopbs_radix(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
-    println!("param : {:?}", param);
+    println!("param : {:?}", params);
 
     let nb_block = 2;
 
-    //Generate the client key and the server key:
-    let (mut cks, sks) = gen_keys(&param);
-    // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
-    let mut msg_space: u64 = param.message_modulus.0 as u64;
+    let mut msg_space: u64 = params.0.message_modulus.0 as u64;
     for modulus in 1..nb_block {
-        msg_space *= param.message_modulus.0 as u64;
+        msg_space *= params.0.message_modulus.0 as u64;
     }
 
     let nb_test = 10;
@@ -411,16 +332,16 @@ pub fn wopbs_radix(param: Parameters) {
         let clear1 = rng.gen::<u64>() % msg_space as u64;
         let mut ct1 = cks.encrypt_radix(clear1, nb_block);
 
-        //artificially modify the degree
-        let scalar = rng.gen::<u64>() % msg_space as u64;
-        sks.smart_scalar_add_assign(&mut ct1, scalar);
+        // //artificially modify the degree
+        // let scalar = rng.gen::<u64>() % msg_space as u64;
+        // sks.smart_scalar_add_assign(&mut ct1, scalar);
 
-        let lut = wopbs_key.generate_lut_radix(&ct1, |x| x * x);
+        let lut = wopbs_key.generate_lut_radix(&ct1, |x| x);
         let res = cks.decrypt_radix(&ct1);
         //println!("LUT = {:?}", lut);
         let ct_res = wopbs_key.wopbs(&sks, &ct1, &lut);
         let res_wop = cks.decrypt_radix(&ct_res);
-        if (res * res) % msg_space as u64 != res_wop {
+        if (res) % msg_space as u64 != res_wop {
             tmp += 1;
         }
     }
@@ -431,20 +352,18 @@ pub fn wopbs_radix(param: Parameters) {
 }
 
 // test wopbs radix with different degree for each Ct
-pub fn wopbs_bivariate_radix(param: Parameters) {
+pub fn wopbs_bivariate_radix(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
-    println!("param : {:?}", param);
+    println!("param : {:?}", params);
 
     let nb_block = 2;
 
-    //Generate the client key and the server key:
-    let (mut cks, sks) = gen_keys(&param);
-    // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
-    let mut msg_space: u64 = param.message_modulus.0 as u64;
+    let mut msg_space: u64 = params.0.message_modulus.0 as u64;
     for modulus in 1..nb_block {
-        msg_space *= param.message_modulus.0 as u64;
+        msg_space *= params.0.message_modulus.0 as u64;
     }
 
     let nb_test = 10;
@@ -471,16 +390,14 @@ pub fn wopbs_bivariate_radix(param: Parameters) {
 }
 
 // test wopbs bivariate fake crt with different degree for each Ct
-pub fn wopbs_bivariate_fake_crt(param: Parameters) {
+pub fn wopbs_bivariate_fake_crt(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
-    println!("param : {:?}", param);
+    println!("param : {:?}", params);
 
     let basis = vec![3, 7];
 
-    //Generate the client key and the server key:
-    let (mut cks, sks) = gen_keys(&param);
-    // let (mut cks, mut sks) = KEY_CACHE.get_from_params(param, VecLength(nb_block));
-    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    let (cks, mut sks) = gen_keys(&params.0);
+    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
     let mut msg_space: u64 = 1;
     for modulus in basis.iter() {
@@ -496,11 +413,11 @@ pub fn wopbs_bivariate_fake_crt(param: Parameters) {
         let mut ct2 = cks.encrypt_crt(clear2, basis.clone());
         //artificially modify the degree
         for (ct_1, ct_2) in ct1.blocks.iter_mut().zip(ct2.blocks.iter_mut()) {
-            let degree =
-                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
+            let degree = params.0.message_modulus.0
+                * ((rng.gen::<usize>() % (params.0.carry_modulus.0 - 1)) + 1);
             ct_1.degree.0 = degree;
-            let degree =
-                param.message_modulus.0 * ((rng.gen::<usize>() % (param.carry_modulus.0 - 1)) + 1);
+            let degree = params.0.message_modulus.0
+                * ((rng.gen::<usize>() % (params.0.carry_modulus.0 - 1)) + 1);
             ct_2.degree.0 = degree;
         }
         let lut = wopbs_key.generate_lut_bivariate_crt(&ct1, &ct2, |x, y| (x * y) + y);
