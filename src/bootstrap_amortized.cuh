@@ -54,18 +54,10 @@ template <typename Torus, class params, sharedMemDegree SMD>
  * is not FULLSM
  */
 __global__ void device_bootstrap_amortized(
-    Torus *lwe_out,
-    Torus *lut_vector,
-    uint32_t *lut_vector_indexes,
-    Torus *lwe_in,
-    double2 *bootstrapping_key,
-    char *device_mem,
-    uint32_t lwe_mask_size,
-    uint32_t polynomial_size,
-    uint32_t base_log,
-    uint32_t l_gadget,
-    uint32_t lwe_idx,
-    size_t device_memory_size_per_sample) {
+    Torus *lwe_out, Torus *lut_vector, uint32_t *lut_vector_indexes,
+    Torus *lwe_in, double2 *bootstrapping_key, char *device_mem,
+    uint32_t lwe_mask_size, uint32_t polynomial_size, uint32_t base_log,
+    uint32_t l_gadget, uint32_t lwe_idx, size_t device_memory_size_per_sample) {
   // We use shared memory for the polynomials that are used often during the
   // bootstrap, since shared memory is kept in L1 cache and accessing it is
   // much faster than global memory
@@ -103,8 +95,8 @@ __global__ void device_bootstrap_amortized(
 
   auto block_lwe_in = &lwe_in[blockIdx.x * (lwe_mask_size + 1)];
   Torus *block_lut_vector =
-      &lut_vector[lut_vector_indexes[lwe_idx + blockIdx.x] * params::degree * 2];
-
+      &lut_vector[lut_vector_indexes[lwe_idx + blockIdx.x] * params::degree *
+                  2];
 
   GadgetMatrix<Torus, params> gadget(base_log, l_gadget);
 
@@ -114,11 +106,11 @@ __global__ void device_bootstrap_amortized(
       2 * params::degree); // 2 * params::log2_degree + 1);
 
   divide_by_monomial_negacyclic_inplace<Torus, params::opt,
-      params::degree / params::opt>(
+                                        params::degree / params::opt>(
       accumulator_mask, block_lut_vector, b_hat, false);
 
   divide_by_monomial_negacyclic_inplace<Torus, params::opt,
-      params::degree / params::opt>(
+                                        params::degree / params::opt>(
       accumulator_body, &block_lut_vector[params::degree], b_hat, false);
 
   // Loop over all the mask elements of the sample to accumulate
@@ -147,11 +139,11 @@ __global__ void device_bootstrap_amortized(
     // Perform a rounding to increase the accuracy of the
     // bootstrapped ciphertext
     round_to_closest_multiple_inplace<Torus, params::opt,
-        params::degree / params::opt>(
+                                      params::degree / params::opt>(
         accumulator_mask_rotated, base_log, l_gadget);
 
     round_to_closest_multiple_inplace<Torus, params::opt,
-        params::degree / params::opt>(
+                                      params::degree / params::opt>(
         accumulator_body_rotated, base_log, l_gadget);
     // Initialize the polynomial multiplication via FFT arrays
     // The polynomial multiplications happens at the block level
@@ -195,13 +187,11 @@ __global__ void device_bootstrap_amortized(
       // Get the bootstrapping key piece necessary for the multiplication
       // It is already in the Fourier domain
       auto bsk_mask_slice = PolynomialFourier<double2, params>(
-          get_ith_mask_kth_block(
-              bootstrapping_key, iteration, 0, decomp_level,
-              polynomial_size, 1, l_gadget));
+          get_ith_mask_kth_block(bootstrapping_key, iteration, 0, decomp_level,
+                                 polynomial_size, 1, l_gadget));
       auto bsk_body_slice = PolynomialFourier<double2, params>(
-          get_ith_body_kth_block(
-              bootstrapping_key, iteration, 0, decomp_level,
-              polynomial_size, 1, l_gadget));
+          get_ith_body_kth_block(bootstrapping_key, iteration, 0, decomp_level,
+                                 polynomial_size, 1, l_gadget));
 
       synchronize_threads_in_block();
 
@@ -230,7 +220,7 @@ __global__ void device_bootstrap_amortized(
                                  polynomial_size, 1, l_gadget));
       auto bsk_body_slice_2 = PolynomialFourier<double2, params>(
           get_ith_body_kth_block(bootstrapping_key, iteration, 1, decomp_level,
-                                     polynomial_size, 1, l_gadget));
+                                 polynomial_size, 1, l_gadget));
 
       synchronize_threads_in_block();
 
@@ -305,20 +295,11 @@ __global__ void device_bootstrap_amortized(
 
 template <typename Torus, class params>
 __host__ void host_bootstrap_amortized(
-    void *v_stream,
-    Torus *lwe_out,
-    Torus *lut_vector,
-    uint32_t *lut_vector_indexes,
-    Torus *lwe_in,
-    double2 *bootstrapping_key,
-    uint32_t input_lwe_dimension,
-    uint32_t polynomial_size,
-    uint32_t base_log,
-    uint32_t l_gadget,
-    uint32_t input_lwe_ciphertext_count,
-    uint32_t num_lut_vectors,
-    uint32_t lwe_idx,
-    uint32_t max_shared_memory) {
+    void *v_stream, Torus *lwe_out, Torus *lut_vector,
+    uint32_t *lut_vector_indexes, Torus *lwe_in, double2 *bootstrapping_key,
+    uint32_t input_lwe_dimension, uint32_t polynomial_size, uint32_t base_log,
+    uint32_t l_gadget, uint32_t input_lwe_ciphertext_count,
+    uint32_t num_lut_vectors, uint32_t lwe_idx, uint32_t max_shared_memory) {
 
   int SM_FULL = sizeof(Torus) * polynomial_size +   // accumulator mask
                 sizeof(Torus) * polynomial_size +   // accumulator body
@@ -354,28 +335,24 @@ __host__ void host_bootstrap_amortized(
   // from one of three templates (no use, partial use or full use
   // of shared memory)
   if (max_shared_memory < SM_PART) {
-    checkCudaErrors(cudaMalloc((void **)&d_mem, DM_FULL * input_lwe_ciphertext_count));
-    device_bootstrap_amortized<Torus, params, NOSM>
-    <<<grid, thds, 0, *stream>>>(
-        lwe_out, lut_vector, lut_vector_indexes, lwe_in,
-        bootstrapping_key, d_mem,
-        input_lwe_dimension, polynomial_size,
-        base_log, l_gadget, lwe_idx, DM_FULL);
+    checkCudaErrors(
+        cudaMalloc((void **)&d_mem, DM_FULL * input_lwe_ciphertext_count));
+    device_bootstrap_amortized<Torus, params, NOSM><<<grid, thds, 0, *stream>>>(
+        lwe_out, lut_vector, lut_vector_indexes, lwe_in, bootstrapping_key,
+        d_mem, input_lwe_dimension, polynomial_size, base_log, l_gadget,
+        lwe_idx, DM_FULL);
   } else if (max_shared_memory < SM_FULL) {
     cudaFuncSetAttribute(device_bootstrap_amortized<Torus, params, PARTIALSM>,
-                         cudaFuncAttributeMaxDynamicSharedMemorySize,
-                         SM_PART);
-    cudaFuncSetCacheConfig(
-        device_bootstrap_amortized<Torus, params, PARTIALSM>,
-        cudaFuncCachePreferShared);
-    checkCudaErrors(cudaMalloc((void **)&d_mem, DM_PART * input_lwe_ciphertext_count));
+                         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART);
+    cudaFuncSetCacheConfig(device_bootstrap_amortized<Torus, params, PARTIALSM>,
+                           cudaFuncCachePreferShared);
+    checkCudaErrors(
+        cudaMalloc((void **)&d_mem, DM_PART * input_lwe_ciphertext_count));
     device_bootstrap_amortized<Torus, params, PARTIALSM>
-    <<<grid, thds, SM_PART, *stream>>>(
-        lwe_out, lut_vector, lut_vector_indexes,
-        lwe_in, bootstrapping_key,
-        d_mem, input_lwe_dimension, polynomial_size,
-        base_log, l_gadget, lwe_idx,
-        DM_PART);
+        <<<grid, thds, SM_PART, *stream>>>(
+            lwe_out, lut_vector, lut_vector_indexes, lwe_in, bootstrapping_key,
+            d_mem, input_lwe_dimension, polynomial_size, base_log, l_gadget,
+            lwe_idx, DM_PART);
   } else {
     // For devices with compute capability 7.x a single thread block can
     // address the full capacity of shared memory. Shared memory on the
@@ -384,26 +361,22 @@ __host__ void host_bootstrap_amortized(
     // just does nothing and the amount of shared memory used is 48 KB
     checkCudaErrors(cudaFuncSetAttribute(
         device_bootstrap_amortized<Torus, params, FULLSM>,
-        cudaFuncAttributeMaxDynamicSharedMemorySize,
-        SM_FULL));
+        cudaFuncAttributeMaxDynamicSharedMemorySize, SM_FULL));
     checkCudaErrors(cudaFuncSetCacheConfig(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncCachePreferShared));
     checkCudaErrors(cudaMalloc((void **)&d_mem, 0));
 
     device_bootstrap_amortized<Torus, params, FULLSM>
-    <<<grid, thds, SM_FULL, *stream>>>(
-        lwe_out, lut_vector, lut_vector_indexes,
-        lwe_in, bootstrapping_key,
-        d_mem, input_lwe_dimension, polynomial_size,
-        base_log, l_gadget, lwe_idx,
-        0);
+        <<<grid, thds, SM_FULL, *stream>>>(
+            lwe_out, lut_vector, lut_vector_indexes, lwe_in, bootstrapping_key,
+            d_mem, input_lwe_dimension, polynomial_size, base_log, l_gadget,
+            lwe_idx, 0);
   }
   // Synchronize the streams before copying the result to lwe_out at the right
   // place
   cudaStreamSynchronize(*stream);
   cudaFree(d_mem);
-
 }
 
 template <typename Torus, class params>
@@ -415,8 +388,8 @@ int cuda_get_pbs_per_gpu(int polynomial_size) {
   cudaDeviceProp device_properties;
   cudaGetDeviceProperties(&device_properties, 0);
   cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-      &blocks_per_sm, device_bootstrap_amortized<Torus, params>,
-          num_threads, 0);
+      &blocks_per_sm, device_bootstrap_amortized<Torus, params>, num_threads,
+      0);
 
   return device_properties.multiProcessorCount * blocks_per_sm;
 }

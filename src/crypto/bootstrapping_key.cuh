@@ -10,26 +10,29 @@
 __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
                                          int glwe_dimension,
                                          uint32_t l_gadget) {
-    return i * polynomial_size / 2  * (glwe_dimension + 1) * (glwe_dimension + 1) * l_gadget;
+  return i * polynomial_size / 2 * (glwe_dimension + 1) * (glwe_dimension + 1) *
+         l_gadget;
 }
 
 template <typename T>
-__device__ T*
-get_ith_mask_kth_block(T* ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget) {
+__device__ T *get_ith_mask_kth_block(T *ptr, int i, int k, int level,
+                                     uint32_t polynomial_size,
+                                     int glwe_dimension, uint32_t l_gadget) {
   return &ptr[get_start_ith_ggsw(i, polynomial_size, glwe_dimension, l_gadget) +
-          level * polynomial_size / 2 * (glwe_dimension + 1) * (glwe_dimension + 1) +
-          k * polynomial_size / 2 * (glwe_dimension + 1)];
+              level * polynomial_size / 2 * (glwe_dimension + 1) *
+                  (glwe_dimension + 1) +
+              k * polynomial_size / 2 * (glwe_dimension + 1)];
 }
 
 template <typename T>
-__device__ T*
-get_ith_body_kth_block(T *ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget) {
-    return &ptr[get_start_ith_ggsw(i, polynomial_size, glwe_dimension, l_gadget) +
-                level * polynomial_size / 2 * (glwe_dimension + 1) * (glwe_dimension + 1) +
-                k * polynomial_size / 2 * (glwe_dimension + 1) +
-                polynomial_size / 2];
+__device__ T *get_ith_body_kth_block(T *ptr, int i, int k, int level,
+                                     uint32_t polynomial_size,
+                                     int glwe_dimension, uint32_t l_gadget) {
+  return &ptr[get_start_ith_ggsw(i, polynomial_size, glwe_dimension, l_gadget) +
+              level * polynomial_size / 2 * (glwe_dimension + 1) *
+                  (glwe_dimension + 1) +
+              k * polynomial_size / 2 * (glwe_dimension + 1) +
+              polynomial_size / 2];
 }
 
 void cuda_initialize_twiddles(uint32_t polynomial_size, uint32_t gpu_index) {
@@ -65,21 +68,21 @@ void cuda_initialize_twiddles(uint32_t polynomial_size, uint32_t gpu_index) {
 
 template <typename T, typename ST>
 void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
-                               uint32_t gpu_index, uint32_t input_lwe_dim, uint32_t glwe_dim,
-                               uint32_t l_gadget, uint32_t polynomial_size) {
+                                    uint32_t gpu_index, uint32_t input_lwe_dim,
+                                    uint32_t glwe_dim, uint32_t l_gadget,
+                                    uint32_t polynomial_size) {
 
   cudaSetDevice(gpu_index);
   int shared_memory_size = sizeof(double) * polynomial_size;
 
   int total_polynomials =
-      input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) *
-      l_gadget;
+      input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) * l_gadget;
 
   // Here the buffer size is the size of double2 times the number of polynomials
   // times the polynomial size over 2 because the polynomials are compressed
   // into the complex domain to perform the FFT
-  size_t buffer_size = total_polynomials * polynomial_size / 2 * sizeof
-                       (double2);
+  size_t buffer_size =
+      total_polynomials * polynomial_size / 2 * sizeof(double2);
 
   int gridSize = total_polynomials;
   int blockSize = polynomial_size / choose_opt(polynomial_size);
@@ -110,23 +113,23 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   switch (polynomial_size) {
   case 512:
     batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>>
-    <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
     break;
   case 1024:
     batch_NSMFFT<FFTDegree<Degree<1024>, ForwardFFT>>
-    <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
     break;
   case 2048:
     batch_NSMFFT<FFTDegree<Degree<2048>, ForwardFFT>>
-    <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
     break;
   case 4096:
     batch_NSMFFT<FFTDegree<Degree<4096>, ForwardFFT>>
-    <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
     break;
   case 8192:
     batch_NSMFFT<FFTDegree<Degree<8192>, ForwardFFT>>
-    <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
     break;
   default:
     break;
@@ -134,44 +137,58 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
 
   cudaFree(d_bsk);
   free(h_bsk);
-
 }
 
 void cuda_convert_lwe_bootstrap_key_32(void *dest, void *src, void *v_stream,
-                               uint32_t gpu_index, uint32_t input_lwe_dim, uint32_t glwe_dim,
-                               uint32_t l_gadget, uint32_t polynomial_size) {
-  cuda_convert_lwe_bootstrap_key<uint32_t, int32_t>((double2 *)dest, (int32_t *)src,
-                                           v_stream, gpu_index, input_lwe_dim,
-                                           glwe_dim, l_gadget, polynomial_size);
+                                       uint32_t gpu_index,
+                                       uint32_t input_lwe_dim,
+                                       uint32_t glwe_dim, uint32_t l_gadget,
+                                       uint32_t polynomial_size) {
+  cuda_convert_lwe_bootstrap_key<uint32_t, int32_t>(
+      (double2 *)dest, (int32_t *)src, v_stream, gpu_index, input_lwe_dim,
+      glwe_dim, l_gadget, polynomial_size);
 }
 
 void cuda_convert_lwe_bootstrap_key_64(void *dest, void *src, void *v_stream,
-                                  uint32_t gpu_index, uint32_t input_lwe_dim, uint32_t glwe_dim,
-                                  uint32_t l_gadget, uint32_t polynomial_size) {
-  cuda_convert_lwe_bootstrap_key<uint64_t, int64_t>((double2 *)dest, (int64_t *)src,
-                                           v_stream, gpu_index, input_lwe_dim,
-                                           glwe_dim, l_gadget, polynomial_size);
+                                       uint32_t gpu_index,
+                                       uint32_t input_lwe_dim,
+                                       uint32_t glwe_dim, uint32_t l_gadget,
+                                       uint32_t polynomial_size) {
+  cuda_convert_lwe_bootstrap_key<uint64_t, int64_t>(
+      (double2 *)dest, (int64_t *)src, v_stream, gpu_index, input_lwe_dim,
+      glwe_dim, l_gadget, polynomial_size);
 }
 
-
 // We need these lines so the compiler knows how to specialize these functions
-template __device__ uint64_t*
-get_ith_mask_kth_block(uint64_t* ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget);
-template __device__ uint32_t*
-get_ith_mask_kth_block(uint32_t* ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget);
-template __device__ double2*
-get_ith_mask_kth_block(double2* ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget);
-template __device__ uint64_t*
-get_ith_body_kth_block(uint64_t *ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget);
-template __device__ uint32_t*
-get_ith_body_kth_block(uint32_t *ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget);
-template __device__ double2*
-get_ith_body_kth_block(double2 *ptr, int i, int k, int level, uint32_t polynomial_size,
-                       int glwe_dimension, uint32_t l_gadget);
+template __device__ uint64_t *get_ith_mask_kth_block(uint64_t *ptr, int i,
+                                                     int k, int level,
+                                                     uint32_t polynomial_size,
+                                                     int glwe_dimension,
+                                                     uint32_t l_gadget);
+template __device__ uint32_t *get_ith_mask_kth_block(uint32_t *ptr, int i,
+                                                     int k, int level,
+                                                     uint32_t polynomial_size,
+                                                     int glwe_dimension,
+                                                     uint32_t l_gadget);
+template __device__ double2 *get_ith_mask_kth_block(double2 *ptr, int i, int k,
+                                                    int level,
+                                                    uint32_t polynomial_size,
+                                                    int glwe_dimension,
+                                                    uint32_t l_gadget);
+template __device__ uint64_t *get_ith_body_kth_block(uint64_t *ptr, int i,
+                                                     int k, int level,
+                                                     uint32_t polynomial_size,
+                                                     int glwe_dimension,
+                                                     uint32_t l_gadget);
+template __device__ uint32_t *get_ith_body_kth_block(uint32_t *ptr, int i,
+                                                     int k, int level,
+                                                     uint32_t polynomial_size,
+                                                     int glwe_dimension,
+                                                     uint32_t l_gadget);
+template __device__ double2 *get_ith_body_kth_block(double2 *ptr, int i, int k,
+                                                    int level,
+                                                    uint32_t polynomial_size,
+                                                    int glwe_dimension,
+                                                    uint32_t l_gadget);
 
 #endif // CNCRT_BSK_H

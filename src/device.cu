@@ -62,7 +62,7 @@ int cuda_memcpy_async_to_gpu(void *dest, void *src, uint64_t size,
     // error code: zero copy size
     return -3;
   }
-  
+
   if (gpu_index >= cuda_get_number_of_gpus()) {
     // error code: invalid gpu_index
     return -2;
@@ -75,8 +75,8 @@ int cuda_memcpy_async_to_gpu(void *dest, void *src, uint64_t size,
   }
   auto stream = static_cast<cudaStream_t *>(v_stream);
   cudaSetDevice(gpu_index);
-  checkCudaErrors(cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, 
-                                  *stream));
+  checkCudaErrors(
+      cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, *stream));
   return 0;
 }
 
@@ -117,8 +117,8 @@ int cuda_memcpy_async_to_cpu(void *dest, const void *src, uint64_t size,
   }
   auto stream = static_cast<cudaStream_t *>(v_stream);
   cudaSetDevice(gpu_index);
-  checkCudaErrors(cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToHost, 
-                                  *stream));
+  checkCudaErrors(
+      cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToHost, *stream));
   return 0;
 }
 

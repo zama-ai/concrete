@@ -497,7 +497,6 @@ public:
     }
     synchronize_threads_in_block();
   }
-
 };
 template <typename T, class params> class Vector {
 public:

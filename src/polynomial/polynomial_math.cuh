@@ -30,9 +30,10 @@ __device__ void polynomial_product_in_fourier_domain(FT *result, FT *first,
 }
 
 template <class params, typename FT>
-__device__ void polynomial_product_in_fourier_domain(
-    PolynomialFourier<FT, params> &result, PolynomialFourier<FT, params> &first,
-    PolynomialFourier<FT, params> &second) {
+__device__ void
+polynomial_product_in_fourier_domain(PolynomialFourier<FT, params> &result,
+                                     PolynomialFourier<FT, params> &first,
+                                     PolynomialFourier<FT, params> &second) {
   int tid = threadIdx.x;
   for (int i = 0; i < params::opt / 2; i++) {
     result[tid] = first[tid] * second[tid];
@@ -72,8 +73,9 @@ __device__ void polynomial_product_accumulate_in_fourier_domain(
 }
 
 template <class params, typename T>
-__device__ void polynomial_product_accumulate_in_fourier_domain(
-    T *result, T *first, T *second) {
+__device__ void polynomial_product_accumulate_in_fourier_domain(T *result,
+                                                                T *first,
+                                                                T *second) {
   int tid = threadIdx.x;
   for (int i = 0; i < params::opt / 2; i++) {
     result[tid] += first[tid] * second[tid];
