@@ -1287,23 +1287,33 @@ struct TransposeToLinalgGeneric
     auto inputType = input.getType().dyn_cast<mlir::RankedTensorType>();
     auto outputType = output.getType().dyn_cast<mlir::RankedTensorType>();
 
+    auto n_dim = inputType.getShape().size();
+
     mlir::Location location = transposeOp.getLoc();
     // Initialize empty tensor to fill with transpose result
     mlir::Value zeroTensor =
         rewriter.create<FHE::ZeroTensorOp>(location, outputType).getResult();
 
-    // Inverted dimensions to create a transposition
     std::vector<unsigned int> perms = {};
-    auto n_dim = inputType.getShape().size();
-    for (int i = n_dim - 1; i >= 0; i--)
-      perms.push_back(i);
+
+    mlir::ArrayAttr axes = transposeOp.axes();
+    if (axes.empty()) {
+      for (int i = n_dim - 1; i >= 0; i--) {
+        perms.push_back(i);
+      }
+    } else {
+      for (mlir::Attribute axisAttribute : axes) {
+        int64_t axis = axisAttribute.cast<mlir::IntegerAttr>().getInt();
+        perms.push_back(axis);
+      }
+    }
 
     llvm::SmallVector<mlir::Type, 1> resultTypes{zeroTensor.getType()};
     auto ins = llvm::SmallVector<mlir::Value, 1>{input};
     auto outs = llvm::SmallVector<mlir::Value, 1>{zeroTensor};
     llvm::SmallVector<mlir::AffineMap, 2> maps{
-        mlir::AffineMap::getPermutationMap(perms, this->getContext()),
         mlir::AffineMap::getMultiDimIdentityMap(n_dim, this->getContext()),
+        mlir::AffineMap::getPermutationMap(perms, this->getContext()),
     };
     auto iteratorTypes = parallelIteratorType(n_dim);
     // The maps will be responsible for changing item positions, we just return

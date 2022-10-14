@@ -1089,15 +1089,59 @@ mlir::LogicalResult TransposeOp::verify() {
         << "input and output tensors should have the same element type";
     return mlir::failure();
   }
-  size_t n_dims = tensorShapedTy.getShape().size();
-  for (size_t i = 0; i < n_dims; i++) {
-    if (tensorShapedTy.getDimSize(i) !=
-        resultShapedTy.getDimSize(n_dims - (i + 1))) {
+
+  llvm::ArrayRef<int64_t> inShape = tensorShapedTy.getShape();
+  llvm::ArrayRef<int64_t> outShape = resultShapedTy.getShape();
+
+  int64_t inputDimensions = (int64_t)inShape.size();
+
+  mlir::ArrayAttr axes = this->axes();
+  if (axes.empty()) {
+    for (int64_t i = 0; i < inputDimensions; i++) {
+      if (inShape[i] != outShape[inputDimensions - (i + 1)]) {
+        this->emitOpError()
+            << "output tensor should have inverted dimensions of input";
+        return mlir::failure();
+      }
+    }
+  } else {
+    if (axes.size() != (size_t)inputDimensions) {
+      this->emitOpError() << "has invalid axes attribute (doesn't have "
+                          << inputDimensions << " elements)";
+      return mlir::failure();
+    }
+
+    auto seenAxes = std::unordered_set<int64_t>{};
+
+    size_t i = 0;
+    for (mlir::Attribute axisAttribute : axes) {
+      int64_t axis = axisAttribute.cast<mlir::IntegerAttr>().getInt();
+
+      bool axisIsValid = (0 <= axis) && (axis < inputDimensions);
+      if (!axisIsValid) {
+        this->emitOpError()
+            << "has invalid axes attribute (axes[" << i << "] "
+            << "isn't in range [0, " << inputDimensions - 1 << "])";
+        return mlir::failure();
+      }
+
+      seenAxes.insert(axis);
+
+      if (outShape[i] != inShape[axis]) {
+        this->emitOpError() << "has invalid output shape (output.shape[" << i
+                            << "] is not input.shape[axes[" << i << "]])";
+        return mlir::failure();
+      }
+
+      i++;
+    }
+    if (seenAxes.size() != (size_t)inputDimensions) {
       this->emitOpError()
-          << "output tensor should have inverted dimensions of input";
+          << "has invalid axes attribute (doesn't contain all input axes)";
       return mlir::failure();
     }
   }
+
   return mlir::success();
 }
 

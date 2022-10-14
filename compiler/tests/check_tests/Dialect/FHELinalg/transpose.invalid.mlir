@@ -26,3 +26,33 @@ func.func @transpose_eint(%arg0: tensor<3x4x6x!FHE.eint<6>>) -> tensor<5x4x3x!FH
 }
 
 // -----
+
+func.func @transpose_eint(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>> {
+  // expected-error @+1 {{'FHELinalg.transpose' op has invalid axes attribute (doesn't have 3 elements)}}
+  %c = "FHELinalg.transpose"(%arg0) { axes = [0] } : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>>
+  return %c : tensor<4x3x5x!FHE.eint<6>>
+}
+
+// -----
+
+func.func @transpose_eint(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>> {
+  // expected-error @+1 {{'FHELinalg.transpose' op has invalid axes attribute (axes[1] isn't in range [0, 2])}}
+  %c = "FHELinalg.transpose"(%arg0) { axes = [1, 5, 2] } : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>>
+  return %c : tensor<4x3x5x!FHE.eint<6>>
+}
+
+// -----
+
+func.func @transpose_eint(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x10x!FHE.eint<6>> {
+  // expected-error @+1 {{'FHELinalg.transpose' op has invalid output shape (output.shape[2] is not input.shape[axes[2]])}}
+  %c = "FHELinalg.transpose"(%arg0) { axes = [1, 0, 2] } : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x10x!FHE.eint<6>>
+  return %c : tensor<4x3x10x!FHE.eint<6>>
+}
+
+// -----
+
+func.func @transpose_eint(%arg0: tensor<2x2x2x!FHE.eint<6>>) -> tensor<2x2x2x!FHE.eint<6>> {
+  // expected-error @+1 {{'FHELinalg.transpose' op has invalid axes attribute (doesn't contain all input axes)}}
+  %c = "FHELinalg.transpose"(%arg0) { axes = [0, 1, 0] } : (tensor<2x2x2x!FHE.eint<6>>) -> tensor<2x2x2x!FHE.eint<6>>
+  return %c : tensor<2x2x2x!FHE.eint<6>>
+}

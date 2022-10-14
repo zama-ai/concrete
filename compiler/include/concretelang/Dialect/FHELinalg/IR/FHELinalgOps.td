@@ -950,6 +950,13 @@ def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", []> {
     let description = [{
         Performs a transpose operation on an N-dimensional tensor.
 
+        Attributes:
+
+        - axes: I64ArrayAttr = []
+            list of dimension to perform the transposition
+            contains a permutation of [0,1,..,N-1] where N is the number of axes
+            think of it as a way to rearrange axes (see the example below)
+
         ```mlir
         "FHELinalg.transpose"(%a) : (tensor<n0xn1x...xnNxType>) -> tensor<nNx...xn1xn0xType>
         ```
@@ -963,10 +970,14 @@ def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", []> {
         //
         "FHELinalg.transpose"(%a) : (tensor<3x2xi7>) -> tensor<2x3xi7>
         ```
+
+        ```mlir
+        "FHELinalg.transpose"(%a) { axes = [1, 3, 0, 2] } : (tensor<2x3x4x5xi7>) -> tensor<3x5x2x4xi7>
+        ```
     }];
 
-    // Args and result are both supposed to be of tensor of enccrypted integers, and the verifier does check that
-    let arguments = (ins AnyType:$tensor);
+    // Args and result are both supposed to be of tensor of encrypted integers, and the verifier does check that
+    let arguments = (ins AnyType:$tensor, DefaultValuedAttr<I64ArrayAttr, "{}">:$axes);
     let results = (outs AnyType);
 
     let hasVerifier = 1;

@@ -493,3 +493,48 @@ func.func @transpose_eint_3D(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x
   %c = "FHELinalg.transpose"(%arg0) : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>
   return %c : tensor<5x4x3x!FHE.eint<6>>
 }
+
+// CHECK-LABEL:  @transpose_eint_3D_axes_102(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>>
+func.func @transpose_eint_3D_axes_102(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = [1, 0, 2]} : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>>
+  // CHECK-NEXT:   return %[[v0]] : tensor<4x3x5x!FHE.eint<6>>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) { axes = [1, 0, 2] } : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x3x5x!FHE.eint<6>>
+  return %c : tensor<4x3x5x!FHE.eint<6>>
+}
+
+// CHECK-LABEL:  @transpose_eint_3D_axes_120(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x5x3x!FHE.eint<6>>
+func.func @transpose_eint_3D_axes_120(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x5x3x!FHE.eint<6>> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = [1, 2, 0]} : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x5x3x!FHE.eint<6>>
+  // CHECK-NEXT:   return %[[v0]] : tensor<4x5x3x!FHE.eint<6>>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) { axes = [1, 2, 0] } : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<4x5x3x!FHE.eint<6>>
+  return %c : tensor<4x5x3x!FHE.eint<6>>
+}
+
+// CHECK-LABEL:  @transpose_eint_3D_axes_021(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<3x5x4x!FHE.eint<6>>
+func.func @transpose_eint_3D_axes_021(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<3x5x4x!FHE.eint<6>> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = [0, 2, 1]} : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<3x5x4x!FHE.eint<6>>
+  // CHECK-NEXT:   return %[[v0]] : tensor<3x5x4x!FHE.eint<6>>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) { axes = [0, 2, 1] } : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<3x5x4x!FHE.eint<6>>
+  return %c : tensor<3x5x4x!FHE.eint<6>>
+}
+
+// CHECK-LABEL:  @transpose_eint_3D_axes_201(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x3x4x!FHE.eint<6>>
+func.func @transpose_eint_3D_axes_201(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x3x4x!FHE.eint<6>> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = [2, 0, 1]} : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x3x4x!FHE.eint<6>>
+  // CHECK-NEXT:   return %[[v0]] : tensor<5x3x4x!FHE.eint<6>>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) { axes = [2, 0, 1] } : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x3x4x!FHE.eint<6>>
+  return %c : tensor<5x3x4x!FHE.eint<6>>
+}
+
+// CHECK-LABEL:  @transpose_eint_4D_axes_3021(%arg0: tensor<2x3x4x5x!FHE.eint<6>>) -> tensor<5x2x4x3x!FHE.eint<6>>
+func.func @transpose_eint_4D_axes_3021(%arg0: tensor<2x3x4x5x!FHE.eint<6>>) -> tensor<5x2x4x3x!FHE.eint<6>> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = [3, 0, 2, 1]} : (tensor<2x3x4x5x!FHE.eint<6>>) -> tensor<5x2x4x3x!FHE.eint<6>>
+  // CHECK-NEXT:   return %[[v0]] : tensor<5x2x4x3x!FHE.eint<6>>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) { axes = [3, 0, 2, 1] } : (tensor<2x3x4x5x!FHE.eint<6>>) -> tensor<5x2x4x3x!FHE.eint<6>>
+  return %c : tensor<5x2x4x3x!FHE.eint<6>>
+}
