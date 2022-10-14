@@ -80,6 +80,7 @@ Some of these operations are not supported between two encrypted values. A detai
 * [np.equal](https://numpy.org/doc/stable/reference/generated/numpy.equal.html)
 * [np.exp](https://numpy.org/doc/stable/reference/generated/numpy.exp.html)
 * [np.exp2](https://numpy.org/doc/stable/reference/generated/numpy.exp2.html)
+* [np.expand\_dims](https://numpy.org/doc/stable/reference/generated/numpy.expand\_dims.html)
 * [np.expm1](https://numpy.org/doc/stable/reference/generated/numpy.expm1.html)
 * [np.fabs](https://numpy.org/doc/stable/reference/generated/numpy.fabs.html)
 * [np.float\_power](https://numpy.org/doc/stable/reference/generated/numpy.float\_power.html)

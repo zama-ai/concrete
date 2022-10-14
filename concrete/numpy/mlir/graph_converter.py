@@ -111,6 +111,9 @@ class GraphConverter:
                 if inputs[0].is_encrypted and inputs[1].is_encrypted:
                     return "only dot product between encrypted and clear is supported"
 
+            elif name == "expand_dims":
+                assert_that(len(inputs) == 1)
+
             elif name == "index.static":
                 assert_that(len(inputs) == 1)
                 if not inputs[0].is_encrypted:

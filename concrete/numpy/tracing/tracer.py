@@ -217,6 +217,7 @@ class Tracer:
         np.equal,
         np.exp,
         np.exp2,
+        np.expand_dims,
         np.expm1,
         np.fabs,
         np.float_power,
@@ -294,6 +295,9 @@ class Tracer:
             "shape",
         },
         np.concatenate: {
+            "axis",
+        },
+        np.expand_dims: {
             "axis",
         },
         np.ones_like: {

@@ -196,7 +196,7 @@ class NodeConverter:
             elif name == "ones":
                 result = self._convert_ones()
 
-            elif name == "reshape":
+            elif name in ["reshape", "expand_dims"]:
                 result = self._convert_reshape()
 
             elif name == "subtract":

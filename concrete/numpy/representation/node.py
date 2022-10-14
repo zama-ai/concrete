@@ -326,6 +326,7 @@ class Node:
             "conv2d",
             "conv3d",
             "dot",
+            "expand_dims",
             "index.static",
             "matmul",
             "multiply",
