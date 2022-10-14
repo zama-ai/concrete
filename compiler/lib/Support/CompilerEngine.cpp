@@ -198,6 +198,10 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
       return llvm::Error::success();
     }
     CompilationFeedback feedback;
+    // Make sure to use the gpu constraint of the optimizer if we use gpu
+    // backend.
+    compilerOptions.optimizerConfig.use_gpu_constraints =
+        compilerOptions.emitGPUOps;
     auto v0Params = getParameter(descr.get().value(), feedback,
                                  compilerOptions.optimizerConfig);
     if (auto err = v0Params.takeError()) {

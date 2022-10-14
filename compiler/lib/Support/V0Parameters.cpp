@@ -28,6 +28,7 @@ concrete_optimizer::Options options_from_config(optimizer::Config config) {
   options.security_level = config.security;
   options.maximum_acceptable_error_probability = config.p_error;
   options.default_log_norm2_woppbs = config.fallback_log_norm_woppbs;
+  options.use_gpu_constraints = config.use_gpu_constraints;
   return options;
 }
 
