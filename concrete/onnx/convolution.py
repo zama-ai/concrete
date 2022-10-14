@@ -618,6 +618,17 @@ def _evaluate_conv(
     )
     torch_conv_func = cast(Callable, torch_conv_func)
 
+    n_dim = x.ndim - 2  # remove batch_size and channel dims
+    torch_padding = []
+    for dim in range(n_dim):
+        if pads[dim] != pads[n_dim + dim]:
+            raise ValueError(
+                f"padding should be the same for the beginning of the dimension and its end, but "
+                f"got {pads[dim]} in the beginning, and {pads[n_dim + dim]} at the end for "
+                f"dimension {dim}"
+            )
+        torch_padding.append(pads[dim])
+
     dtype = (
         torch.float64
         if np.issubdtype(x.dtype, np.floating)
@@ -630,6 +641,7 @@ def _evaluate_conv(
         torch.tensor(weight, dtype=dtype),
         torch.tensor(bias, dtype=dtype),
         stride=strides,
+        padding=torch_padding,
         dilation=dilations,
         groups=group,
     ).numpy()

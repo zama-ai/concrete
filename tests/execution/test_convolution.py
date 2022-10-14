@@ -93,6 +93,20 @@ def test_conv2d(input_shape, weight_shape, group, strides, dilations, has_bias, 
             "auto_pad should be in {'NOTSET'}, but got 'VALID'",
         ),
         pytest.param(
+            (1, 1, 1, 4),
+            (1, 1, 2, 2),
+            (1,),
+            (1, 0, 2, 0),
+            (1, 1),
+            (1, 1),
+            None,
+            1,
+            "NOTSET",
+            RuntimeError,
+            "padding should be the same for the beginning of the dimension and its end, but got "
+            "1 in the beginning, and 2 at the end for dimension 0",
+        ),
+        pytest.param(
             (1, 1, 4),
             (1, 1, 2),
             (1,),
@@ -398,7 +412,14 @@ def test_bad_conv_compilation(
     with pytest.raises(expected_error) as excinfo:
         function.compile(inputset, configuration)
 
-    assert str(excinfo.value) == expected_message
+    # Get the root cause error
+    current_error = excinfo.value
+    cause = current_error.__cause__
+    while cause:
+        current_error = cause
+        cause = current_error.__cause__
+
+    assert str(current_error) == expected_message
 
 
 @pytest.mark.parametrize(
