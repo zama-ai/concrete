@@ -72,6 +72,18 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
         uint32_t lwe_idx,
         uint32_t max_shared_memory) {
 
+    assert(("Error (GPU low latency PBS): base log should be <= 16", base_log <= 16));
+    assert(("Error (GPU low latency PBS): polynomial size should be one of 512, 1024, 2048",
+            polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048));
+    // The number of samples should be lower than SM/(4 * (k + 1) * l) (the
+    // factor 4 being related to the occupancy of 50%). The only supported
+    // value for k is 1, so k + 1 = 2 for now.
+    int number_of_sm = 0;
+    cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+    assert(("Error (GPU low latency PBS): the number of input LWEs must be lower or equal to the "
+            "number of streaming multiprocessors on the device divided by 8 * l_gadget",
+            num_samples <= number_of_sm / 4. / 2. / l_gadget));
+
   switch (polynomial_size) {
   case 512:
     host_bootstrap_low_latency<uint32_t, Degree<512>>(
@@ -133,6 +145,18 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
         uint32_t num_lut_vectors,
         uint32_t lwe_idx,
         uint32_t max_shared_memory) {
+
+    assert(("Error (GPU low latency PBS): base log should be <= 16", base_log <= 16));
+    assert(("Error (GPU low latency PBS): polynomial size should be one of 512, 1024, 2048",
+            polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048));
+    // The number of samples should be lower than SM/(4 * (k + 1) * l) (the
+    // factor 4 being related to the occupancy of 50%). The only supported
+    // value for k is 1, so k + 1 = 2 for now.
+    int number_of_sm = 0;
+    cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+    assert(("Error (GPU low latency PBS): the number of input LWEs must be lower or equal to the "
+            "number of streaming multiprocessors on the device divided by 8 * l_gadget",
+            num_samples <= number_of_sm / 4. / 2. / l_gadget));
 
   switch (polynomial_size) {
   case 512:

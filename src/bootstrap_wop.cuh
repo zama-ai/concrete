@@ -298,9 +298,6 @@ void host_cmux_tree(
         uint32_t r,
         uint32_t max_shared_memory) {
 
-    assert(glwe_dimension == 1); // For larger k we will need to adjust the mask size
-    assert(r >= 1);
-
     auto stream = static_cast<cudaStream_t *>(v_stream);
     int num_lut = (1<<r);
 

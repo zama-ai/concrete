@@ -73,6 +73,11 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
     uint32_t lwe_idx,
     uint32_t max_shared_memory) {
 
+    assert(("Error (GPU amortized PBS): base log should be <= 16", base_log <= 16));
+    assert(("Error (GPU amortized PBS): polynomial size should be one of 512, 1024, 2048, 4096, 8192",
+            polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048 ||
+            polynomial_size == 4096 || polynomial_size == 8192));
+
   switch (polynomial_size) {
   case 512:
     host_bootstrap_amortized<uint32_t, Degree<512>>(
@@ -131,6 +136,11 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
     uint32_t lwe_idx,
     uint32_t max_shared_memory) {
 
+  assert(("Error (GPU amortized PBS): base log should be <= 16", base_log <= 16));
+  assert(("Error (GPU amortized PBS): polynomial size should be one of 512, 1024, 2048, 4096, 8192",
+          polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048 || 
+              polynomial_size == 4096 || polynomial_size == 8192));
+  
   switch (polynomial_size) {
   case 512:
     host_bootstrap_amortized<uint64_t, Degree<512>>(
