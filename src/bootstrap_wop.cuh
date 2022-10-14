@@ -68,12 +68,12 @@ template <class params> __device__ void ifft_inplace(double2 *data) {
  * Receives an array of GLWE ciphertexts and two indexes to ciphertexts in this
  * array, and an array of GGSW ciphertexts with a index to one ciphertext in it.
  * Compute a CMUX with these operands and writes the output to a particular
- * index of glwe_out.
+ * index of glwe_array_out.
  *
  * This function needs polynomial_size threads per block.
  *
- * - glwe_out: An array where the result should be written to.
- * - glwe_in: An array where the GLWE inputs are stored.
+ * - glwe_array_out: An array where the result should be written to.
+ * - glwe_array_in: An array where the GLWE inputs are stored.
  * - ggsw_in: An array where the GGSW input is stored. In the fourier domain.
  * - selected_memory: An array to be used for the accumulators. Can be in the
  * shared memory or global memory.
@@ -84,15 +84,15 @@ template <class params> __device__ void ifft_inplace(double2 *data) {
  * - glwe_dim: This is k.
  * - polynomial_size: size of the polynomials. This is N.
  * - base_log: log base used for the gadget matrix - B = 2^base_log (~8)
- * - l_gadget: number of decomposition levels in the gadget matrix (~4)
+ * - level_count: number of decomposition levels in the gadget matrix (~4)
  * - ggsw_idx: The index of the GGSW we will use.
  */
 template <typename Torus, typename STorus, class params>
-__device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
-                     char *selected_memory, uint32_t output_idx,
-                     uint32_t input_idx1, uint32_t input_idx2,
-                     uint32_t glwe_dim, uint32_t polynomial_size,
-                     uint32_t base_log, uint32_t l_gadget, uint32_t ggsw_idx) {
+__device__ void
+cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
+     char *selected_memory, uint32_t output_idx, uint32_t input_idx1,
+     uint32_t input_idx2, uint32_t glwe_dim, uint32_t polynomial_size,
+     uint32_t base_log, uint32_t level_count, uint32_t ggsw_idx) {
 
   // Define glwe_sub
   Torus *glwe_sub_mask = (Torus *)selected_memory;
@@ -109,18 +109,18 @@ __device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
   double2 *glwe_fft =
       (double2 *)body_res_fft + (ptrdiff_t)(polynomial_size / 2);
 
-  GadgetMatrix<Torus, params> gadget(base_log, l_gadget);
+  GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   /////////////////////////////////////
 
   // glwe2-glwe1
 
   // Copy m0 to shared memory to preserve data
-  auto m0_mask = &glwe_in[input_idx1 * (glwe_dim + 1) * polynomial_size];
+  auto m0_mask = &glwe_array_in[input_idx1 * (glwe_dim + 1) * polynomial_size];
   auto m0_body = m0_mask + polynomial_size;
 
   // Just gets the pointer for m1 on global memory
-  auto m1_mask = &glwe_in[input_idx2 * (glwe_dim + 1) * polynomial_size];
+  auto m1_mask = &glwe_array_in[input_idx2 * (glwe_dim + 1) * polynomial_size];
   auto m1_body = m1_mask + polynomial_size;
 
   // Mask
@@ -145,13 +145,11 @@ __device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
   // Subtract each glwe operand, decompose the resulting
   // polynomial coefficients to multiply each decomposed level
   // with the corresponding part of the LUT
-  for (int decomp_level = 0; decomp_level < l_gadget; decomp_level++) {
+  for (int level = 0; level < level_count; level++) {
 
     // Decomposition
-    gadget.decompose_one_level(glwe_mask_decomposed, glwe_sub_mask,
-                               decomp_level);
-    gadget.decompose_one_level(glwe_body_decomposed, glwe_sub_body,
-                               decomp_level);
+    gadget.decompose_one_level(glwe_mask_decomposed, glwe_sub_mask, level);
+    gadget.decompose_one_level(glwe_body_decomposed, glwe_sub_body, level);
 
     // First, perform the polynomial multiplication for the mask
     synchronize_threads_in_block();
@@ -159,12 +157,10 @@ __device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
 
     // External product and accumulate
     // Get the piece necessary for the multiplication
-    auto mask_fourier =
-        get_ith_mask_kth_block(ggsw_in, ggsw_idx, 0, decomp_level,
-                               polynomial_size, glwe_dim, l_gadget);
-    auto body_fourier =
-        get_ith_body_kth_block(ggsw_in, ggsw_idx, 0, decomp_level,
-                               polynomial_size, glwe_dim, l_gadget);
+    auto mask_fourier = get_ith_mask_kth_block(
+        ggsw_in, ggsw_idx, 0, level, polynomial_size, glwe_dim, level_count);
+    auto body_fourier = get_ith_body_kth_block(
+        ggsw_in, ggsw_idx, 0, level, polynomial_size, glwe_dim, level_count);
 
     synchronize_threads_in_block();
 
@@ -182,10 +178,10 @@ __device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
 
     // External product and accumulate
     // Get the piece necessary for the multiplication
-    mask_fourier = get_ith_mask_kth_block(ggsw_in, ggsw_idx, 1, decomp_level,
-                                          polynomial_size, glwe_dim, l_gadget);
-    body_fourier = get_ith_body_kth_block(ggsw_in, ggsw_idx, 1, decomp_level,
-                                          polynomial_size, glwe_dim, l_gadget);
+    mask_fourier = get_ith_mask_kth_block(
+        ggsw_in, ggsw_idx, 1, level, polynomial_size, glwe_dim, level_count);
+    body_fourier = get_ith_body_kth_block(
+        ggsw_in, ggsw_idx, 1, level, polynomial_size, glwe_dim, level_count);
 
     synchronize_threads_in_block();
 
@@ -202,7 +198,8 @@ __device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
   synchronize_threads_in_block();
 
   // Write the output
-  Torus *mb_mask = &glwe_out[output_idx * (glwe_dim + 1) * polynomial_size];
+  Torus *mb_mask =
+      &glwe_array_out[output_idx * (glwe_dim + 1) * polynomial_size];
   Torus *mb_body = mb_mask + polynomial_size;
 
   int tid = threadIdx.x;
@@ -221,8 +218,8 @@ __device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
  * ciphertext. The GLWE ciphertexts are picked two-by-two in sequence. Each
  * thread block computes a single CMUX.
  *
- * - glwe_out: An array where the result should be written to.
- * - glwe_in: An array where the GLWE inputs are stored.
+ * - glwe_array_out: An array where the result should be written to.
+ * - glwe_array_in: An array where the GLWE inputs are stored.
  * - ggsw_in: An array where the GGSW input is stored. In the fourier domain.
  * - device_mem: An pointer for the global memory in case the shared memory is
  * not big enough to store the accumulators.
@@ -231,15 +228,15 @@ __device__ void cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
  * - glwe_dim: This is k.
  * - polynomial_size: size of the polynomials. This is N.
  * - base_log: log base used for the gadget matrix - B = 2^base_log (~8)
- * - l_gadget: number of decomposition levels in the gadget matrix (~4)
+ * - level_count: number of decomposition levels in the gadget matrix (~4)
  * - ggsw_idx: The index of the GGSW we will use.
  */
 template <typename Torus, typename STorus, class params, sharedMemDegree SMD>
 __global__ void
-device_batch_cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
+device_batch_cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
                   char *device_mem, size_t device_memory_size_per_block,
                   uint32_t glwe_dim, uint32_t polynomial_size,
-                  uint32_t base_log, uint32_t l_gadget, uint32_t ggsw_idx) {
+                  uint32_t base_log, uint32_t level_count, uint32_t ggsw_idx) {
 
   int cmux_idx = blockIdx.x;
   int output_idx = cmux_idx;
@@ -255,9 +252,10 @@ device_batch_cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
   else
     selected_memory = &device_mem[blockIdx.x * device_memory_size_per_block];
 
-  cmux<Torus, STorus, params>(glwe_out, glwe_in, ggsw_in, selected_memory,
-                              output_idx, input_idx1, input_idx2, glwe_dim,
-                              polynomial_size, base_log, l_gadget, ggsw_idx);
+  cmux<Torus, STorus, params>(glwe_array_out, glwe_array_in, ggsw_in,
+                              selected_memory, output_idx, input_idx1,
+                              input_idx2, glwe_dim, polynomial_size, base_log,
+                              level_count, ggsw_idx);
 }
 /*
  * This kernel executes the CMUX tree used by the hybrid packing of the WoPBS.
@@ -265,20 +263,21 @@ device_batch_cmux(Torus *glwe_out, Torus *glwe_in, double2 *ggsw_in,
  * Uses shared memory for intermediate results
  *
  *  - v_stream: The CUDA stream that should be used.
- *  - glwe_out: A device array for the output GLWE ciphertext.
+ *  - glwe_array_out: A device array for the output GLWE ciphertext.
  *  - ggsw_in: A device array for the GGSW ciphertexts used in each layer.
  *  - lut_vector: A device array for the GLWE ciphertexts used in the first
  * layer.
  * -  polynomial_size: size of the polynomials. This is N.
  *  - base_log: log base used for the gadget matrix - B = 2^base_log (~8)
- *  - l_gadget: number of decomposition levels in the gadget matrix (~4)
+ *  - level_count: number of decomposition levels in the gadget matrix (~4)
  *  - r: Number of layers in the tree.
  */
 template <typename Torus, typename STorus, class params>
-void host_cmux_tree(void *v_stream, Torus *glwe_out, Torus *ggsw_in,
+void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
                     Torus *lut_vector, uint32_t glwe_dimension,
                     uint32_t polynomial_size, uint32_t base_log,
-                    uint32_t l_gadget, uint32_t r, uint32_t max_shared_memory) {
+                    uint32_t level_count, uint32_t r,
+                    uint32_t max_shared_memory) {
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   int num_lut = (1 << r);
@@ -299,7 +298,7 @@ void host_cmux_tree(void *v_stream, Torus *glwe_out, Torus *ggsw_in,
   //////////////////////
   double2 *d_ggsw_fft_in;
   int ggsw_size = r * polynomial_size * (glwe_dimension + 1) *
-                  (glwe_dimension + 1) * l_gadget;
+                  (glwe_dimension + 1) * level_count;
 
 #if (CUDART_VERSION < 11020)
   checkCudaErrors(
@@ -311,7 +310,7 @@ void host_cmux_tree(void *v_stream, Torus *glwe_out, Torus *ggsw_in,
 
   batch_fft_ggsw_vector<Torus, STorus, params>(v_stream, d_ggsw_fft_in, ggsw_in,
                                                r, glwe_dimension,
-                                               polynomial_size, l_gadget);
+                                               polynomial_size, level_count);
 
   //////////////////////
 
@@ -368,7 +367,7 @@ void host_cmux_tree(void *v_stream, Torus *glwe_out, Torus *ggsw_in,
           <<<grid, thds, memory_needed_per_block, *stream>>>(
               output, input, d_ggsw_fft_in, d_mem, memory_needed_per_block,
               glwe_dimension, // k
-              polynomial_size, base_log, l_gadget,
+              polynomial_size, base_log, level_count,
               layer_idx // r
           );
     else
@@ -376,17 +375,18 @@ void host_cmux_tree(void *v_stream, Torus *glwe_out, Torus *ggsw_in,
           <<<grid, thds, memory_needed_per_block, *stream>>>(
               output, input, d_ggsw_fft_in, d_mem, memory_needed_per_block,
               glwe_dimension, // k
-              polynomial_size, base_log, l_gadget,
+              polynomial_size, base_log, level_count,
               layer_idx // r
           );
   }
 
-  checkCudaErrors(cudaMemcpyAsync(
-      glwe_out, output, (glwe_dimension + 1) * polynomial_size * sizeof(Torus),
-      cudaMemcpyDeviceToDevice, *stream));
+  checkCudaErrors(
+      cudaMemcpyAsync(glwe_array_out, output,
+                      (glwe_dimension + 1) * polynomial_size * sizeof(Torus),
+                      cudaMemcpyDeviceToDevice, *stream));
 
-  // We only need synchronization to assert that data is in glwe_out before
-  // returning. Memory release can be added to the stream and processed
+  // We only need synchronization to assert that data is in glwe_array_out
+  // before returning. Memory release can be added to the stream and processed
   // later.
   checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -492,36 +492,38 @@ __global__ void fill_lut_body_for_current_bit(Torus *lut, Torus value) {
 // instead of alpha= 1ll << (ciphertext_n_bits - delta_log - bit_idx - 1)
 template <typename Torus, class params>
 __global__ void add_sub_and_mul_lwe(Torus *shifted_lwe, Torus *state_lwe,
-                                    Torus *pbs_lwe_out, Torus add_value,
+                                    Torus *pbs_lwe_array_out, Torus add_value,
                                     Torus mul_value) {
   size_t tid = threadIdx.x;
   size_t blockId = blockIdx.x;
   auto cur_shifted_lwe = &shifted_lwe[blockId * (params::degree + 1)];
   auto cur_state_lwe = &state_lwe[blockId * (params::degree + 1)];
-  auto cur_pbs_lwe_out = &pbs_lwe_out[blockId * (params::degree + 1)];
+  auto cur_pbs_lwe_array_out =
+      &pbs_lwe_array_out[blockId * (params::degree + 1)];
 #pragma unroll
   for (int i = 0; i < params::opt; i++) {
-    cur_shifted_lwe[tid] = cur_state_lwe[tid] -= cur_pbs_lwe_out[tid];
+    cur_shifted_lwe[tid] = cur_state_lwe[tid] -= cur_pbs_lwe_array_out[tid];
     cur_shifted_lwe[tid] *= mul_value;
     tid += params::degree / params::opt;
   }
 
   if (threadIdx.x == params::degree / params::opt - 1) {
     cur_shifted_lwe[params::degree] = cur_state_lwe[params::degree] -=
-        (cur_pbs_lwe_out[params::degree] + add_value);
+        (cur_pbs_lwe_array_out[params::degree] + add_value);
     cur_shifted_lwe[params::degree] *= mul_value;
   }
 }
 
 template <typename Torus, class params>
 __host__ void host_extract_bits(
-    void *v_stream, Torus *list_lwe_out, Torus *lwe_in, Torus *lwe_in_buffer,
-    Torus *lwe_in_shifted_buffer, Torus *lwe_out_ks_buffer,
-    Torus *lwe_out_pbs_buffer, Torus *lut_pbs, uint32_t *lut_vector_indexes,
-    Torus *ksk, double2 *fourier_bsk, uint32_t number_of_bits,
-    uint32_t delta_log, uint32_t lwe_dimension_before,
-    uint32_t lwe_dimension_after, uint32_t base_log_bsk, uint32_t l_gadget_bsk,
-    uint32_t base_log_ksk, uint32_t l_gadget_ksk, uint32_t number_of_samples) {
+    void *v_stream, Torus *list_lwe_array_out, Torus *lwe_array_in,
+    Torus *lwe_array_in_buffer, Torus *lwe_array_in_shifted_buffer,
+    Torus *lwe_array_out_ks_buffer, Torus *lwe_array_out_pbs_buffer,
+    Torus *lut_pbs, uint32_t *lut_vector_indexes, Torus *ksk,
+    double2 *fourier_bsk, uint32_t number_of_bits, uint32_t delta_log,
+    uint32_t lwe_dimension_in, uint32_t lwe_dimension_out,
+    uint32_t base_log_bsk, uint32_t level_count_bsk, uint32_t base_log_ksk,
+    uint32_t level_count_ksk, uint32_t number_of_samples) {
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   uint32_t ciphertext_n_bits = sizeof(Torus) * 8;
@@ -530,38 +532,38 @@ __host__ void host_extract_bits(
   int threads = params::degree / params::opt;
 
   copy_and_shift_lwe<Torus, params><<<blocks, threads, 0, *stream>>>(
-      lwe_in_buffer, lwe_in_shifted_buffer, lwe_in,
+      lwe_array_in_buffer, lwe_array_in_shifted_buffer, lwe_array_in,
       1ll << (ciphertext_n_bits - delta_log - 1));
 
   for (int bit_idx = 0; bit_idx < number_of_bits; bit_idx++) {
     cuda_keyswitch_lwe_ciphertext_vector(
-        v_stream, lwe_out_ks_buffer, lwe_in_shifted_buffer, ksk,
-        lwe_dimension_before, lwe_dimension_after, base_log_ksk, l_gadget_ksk,
-        1);
+        v_stream, lwe_array_out_ks_buffer, lwe_array_in_shifted_buffer, ksk,
+        lwe_dimension_in, lwe_dimension_out, base_log_ksk, level_count_ksk, 1);
 
     copy_small_lwe<<<1, 256, 0, *stream>>>(
-        list_lwe_out, lwe_out_ks_buffer, lwe_dimension_after + 1,
+        list_lwe_array_out, lwe_array_out_ks_buffer, lwe_dimension_out + 1,
         number_of_bits, number_of_bits - bit_idx - 1);
 
     if (bit_idx == number_of_bits - 1) {
       break;
     }
 
-    add_to_body<Torus><<<1, 1, 0, *stream>>>(
-        lwe_out_ks_buffer, lwe_dimension_after, 1ll << (ciphertext_n_bits - 2));
+    add_to_body<Torus><<<1, 1, 0, *stream>>>(lwe_array_out_ks_buffer,
+                                             lwe_dimension_out,
+                                             1ll << (ciphertext_n_bits - 2));
 
     fill_lut_body_for_current_bit<Torus, params>
         <<<blocks, threads, 0, *stream>>>(
             lut_pbs, 0ll - 1ll << (delta_log - 1 + bit_idx));
 
     host_bootstrap_low_latency<Torus, params>(
-        v_stream, lwe_out_pbs_buffer, lut_pbs, lut_vector_indexes,
-        lwe_out_ks_buffer, fourier_bsk, lwe_dimension_after,
-        lwe_dimension_before, base_log_bsk, l_gadget_bsk, number_of_samples, 1);
+        v_stream, lwe_array_out_pbs_buffer, lut_pbs, lut_vector_indexes,
+        lwe_array_out_ks_buffer, fourier_bsk, lwe_dimension_out,
+        lwe_dimension_in, base_log_bsk, level_count_bsk, number_of_samples, 1);
 
     add_sub_and_mul_lwe<Torus, params><<<1, threads, 0, *stream>>>(
-        lwe_in_shifted_buffer, lwe_in_buffer, lwe_out_pbs_buffer,
-        1ll << (delta_log - 1 + bit_idx),
+        lwe_array_in_shifted_buffer, lwe_array_in_buffer,
+        lwe_array_out_pbs_buffer, 1ll << (delta_log - 1 + bit_idx),
         1ll << (ciphertext_n_bits - delta_log - bit_idx - 2));
   }
 }

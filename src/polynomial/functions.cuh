@@ -145,12 +145,12 @@ multiply_by_monomial_negacyclic_and_sub_polynomial(T *acc, T *result_acc,
  */
 template <typename T, int elems_per_thread, int block_size>
 __device__ void round_to_closest_multiple_inplace(T *rotated_acc, int base_log,
-                                                  int l_gadget) {
+                                                  int level_count) {
   int tid = threadIdx.x;
   for (int i = 0; i < elems_per_thread; i++) {
 
     T x_acc = rotated_acc[tid];
-    T shift = sizeof(T) * 8 - l_gadget * base_log;
+    T shift = sizeof(T) * 8 - level_count * base_log;
     T mask = 1ll << (shift - 1);
     T b_acc = (x_acc & mask) >> (shift - 1);
     T res_acc = x_acc >> shift;
@@ -191,13 +191,13 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
 }
 
 template <typename Torus, class params>
-__device__ void sample_extract_body(Torus *lwe_out, Torus *accumulator) {
+__device__ void sample_extract_body(Torus *lwe_array_out, Torus *accumulator) {
   // Set first coefficient of the accumulator as the body of the LWE sample
-  lwe_out[params::degree] = accumulator[0];
+  lwe_array_out[params::degree] = accumulator[0];
 }
 
 template <typename Torus, class params>
-__device__ void sample_extract_mask(Torus *lwe_out, Torus *accumulator) {
+__device__ void sample_extract_mask(Torus *lwe_array_out, Torus *accumulator) {
   // Set ACC = -ACC
   // accumulator.negate_inplace();
 
@@ -257,12 +257,12 @@ __device__ void sample_extract_mask(Torus *lwe_out, Torus *accumulator) {
   synchronize_threads_in_block();
 
   // Copy to the mask of the LWE sample
-  // accumulator.copy_into(lwe_out);
+  // accumulator.copy_into(lwe_array_out);
 
   tid = threadIdx.x;
 #pragma unroll
   for (int i = 0; i < params::opt; i++) {
-    lwe_out[tid] = accumulator[tid];
+    lwe_array_out[tid] = accumulator[tid];
     tid = tid + params::degree / params::opt;
   }
 }

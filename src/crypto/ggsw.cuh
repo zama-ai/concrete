@@ -44,13 +44,13 @@ __global__ void batch_fft_ggsw_vectors(double2 *dest, T *src) {
 template <typename T, typename ST, class params>
 void batch_fft_ggsw_vector(void *v_stream, double2 *dest, T *src, uint32_t r,
                            uint32_t glwe_dim, uint32_t polynomial_size,
-                           uint32_t l_gadget) {
+                           uint32_t level_count) {
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int shared_memory_size = sizeof(double) * polynomial_size;
 
-  int total_polynomials = r * (glwe_dim + 1) * (glwe_dim + 1) * l_gadget;
+  int total_polynomials = r * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
   int gridSize = total_polynomials;
   int blockSize = polynomial_size / params::opt;
 

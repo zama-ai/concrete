@@ -6,14 +6,14 @@
 extern "C" {
 
 void cuda_keyswitch_lwe_ciphertext_vector_32(
-    void *v_stream, void *lwe_out, void *lwe_in, void *ksk,
-    uint32_t lwe_dimension_before, uint32_t lwe_dimension_after,
-    uint32_t base_log, uint32_t l_gadget, uint32_t num_samples);
+    void *v_stream, void *lwe_array_out, void *lwe_array_in, void *ksk,
+    uint32_t lwe_dimension_in, uint32_t lwe_dimension_out, uint32_t base_log,
+    uint32_t level_count, uint32_t num_samples);
 
 void cuda_keyswitch_lwe_ciphertext_vector_64(
-    void *v_stream, void *lwe_out, void *lwe_in, void *ksk,
-    uint32_t lwe_dimension_before, uint32_t lwe_dimension_after,
-    uint32_t base_log, uint32_t l_gadget, uint32_t num_samples);
+    void *v_stream, void *lwe_array_out, void *lwe_array_in, void *ksk,
+    uint32_t lwe_dimension_in, uint32_t lwe_dimension_out, uint32_t base_log,
+    uint32_t level_count, uint32_t num_samples);
 }
 
 #endif // CNCRT_KS_H_

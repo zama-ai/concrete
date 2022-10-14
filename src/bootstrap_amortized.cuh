@@ -29,35 +29,36 @@ template <typename Torus, class params, sharedMemDegree SMD>
  * Kernel launched by host_bootstrap_amortized
  *
  * Uses shared memory to increase performance
- *  - lwe_out: output batch of num_samples bootstrapped ciphertexts c =
+ *  - lwe_array_out: output batch of num_samples bootstrapped ciphertexts c =
  * (a0,..an-1,b) where n is the LWE dimension
  *  - lut_vector: should hold as many test vectors of size polynomial_size
  * as there are input ciphertexts, but actually holds
  * num_lut_vectors vectors to reduce memory usage
  *  - lut_vector_indexes: stores the index corresponding to which test vector
  * to use for each sample in lut_vector
- *  - lwe_in: input batch of num_samples LWE ciphertexts, containing n mask
- * values + 1 body value
+ *  - lwe_array_in: input batch of num_samples LWE ciphertexts, containing n
+ * mask values + 1 body value
  *  - bootstrapping_key: RGSW encryption of the LWE secret key sk1 under secret
  * key sk2
  *  - device_mem: pointer to the device's global memory in case we use it (SMD
  * == NOSM or PARTIALSM)
- *  - lwe_mask_size: size of the Torus vector used to encrypt the input
+ *  - lwe_dimension: size of the Torus vector used to encrypt the input
  * LWE ciphertexts - referred to as n above (~ 600)
  *  - polynomial_size: size of the test polynomial (test vector) and size of the
  * GLWE polynomial (~1024)
  *  - base_log: log base used for the gadget matrix - B = 2^base_log (~8)
- *  - l_gadget: number of decomposition levels in the gadget matrix (~4)
+ *  - level_count: number of decomposition levels in the gadget matrix (~4)
  *  - gpu_num: index of the current GPU (useful for multi-GPU computations)
  *  - lwe_idx: equal to the number of samples per gpu x gpu_num
  *  - device_memory_size_per_sample: amount of global memory to allocate if SMD
  * is not FULLSM
  */
 __global__ void device_bootstrap_amortized(
-    Torus *lwe_out, Torus *lut_vector, uint32_t *lut_vector_indexes,
-    Torus *lwe_in, double2 *bootstrapping_key, char *device_mem,
-    uint32_t lwe_mask_size, uint32_t polynomial_size, uint32_t base_log,
-    uint32_t l_gadget, uint32_t lwe_idx, size_t device_memory_size_per_sample) {
+    Torus *lwe_array_out, Torus *lut_vector, uint32_t *lut_vector_indexes,
+    Torus *lwe_array_in, double2 *bootstrapping_key, char *device_mem,
+    uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t base_log,
+    uint32_t level_count, uint32_t lwe_idx,
+    size_t device_memory_size_per_sample) {
   // We use shared memory for the polynomials that are used often during the
   // bootstrap, since shared memory is kept in L1 cache and accessing it is
   // much faster than global memory
@@ -69,7 +70,7 @@ __global__ void device_bootstrap_amortized(
   else
     selected_memory = &device_mem[blockIdx.x * device_memory_size_per_sample];
 
-  // For GPU bootstrapping the RLWE dimension is hard-set to 1: there is only
+  // For GPU bootstrapping the GLWE dimension is hard-set to 1: there is only
   // one mask polynomial and 1 body to handle Also, since the decomposed
   // polynomials take coefficients between -B/2 and B/2 they can be represented
   // with only 16 bits, assuming the base log does not exceed 2^16
@@ -93,16 +94,16 @@ __global__ void device_bootstrap_amortized(
     accumulator_fft =
         (double2 *)body_res_fft + (ptrdiff_t)(polynomial_size / 2);
 
-  auto block_lwe_in = &lwe_in[blockIdx.x * (lwe_mask_size + 1)];
+  auto block_lwe_array_in = &lwe_array_in[blockIdx.x * (lwe_dimension + 1)];
   Torus *block_lut_vector =
       &lut_vector[lut_vector_indexes[lwe_idx + blockIdx.x] * params::degree *
                   2];
 
-  GadgetMatrix<Torus, params> gadget(base_log, l_gadget);
+  GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   // Put "b", the body, in [0, 2N[
   Torus b_hat = rescale_torus_element(
-      block_lwe_in[lwe_mask_size],
+      block_lwe_array_in[lwe_dimension],
       2 * params::degree); // 2 * params::log2_degree + 1);
 
   divide_by_monomial_negacyclic_inplace<Torus, params::opt,
@@ -115,14 +116,14 @@ __global__ void device_bootstrap_amortized(
 
   // Loop over all the mask elements of the sample to accumulate
   // (X^a_i-1) multiplication, decomposition of the resulting polynomial
-  // into l_gadget polynomials, and performing polynomial multiplication
+  // into level_count polynomials, and performing polynomial multiplication
   // via an FFT with the RGSW encrypted secret key
-  for (int iteration = 0; iteration < lwe_mask_size; iteration++) {
+  for (int iteration = 0; iteration < lwe_dimension; iteration++) {
     synchronize_threads_in_block();
 
     // Put "a" in [0, 2N[ instead of Zq
     Torus a_hat = rescale_torus_element(
-        block_lwe_in[iteration],
+        block_lwe_array_in[iteration],
         2 * params::degree); // 2 * params::log2_degree + 1);
 
     // Perform ACC * (X^ä - 1)
@@ -140,11 +141,11 @@ __global__ void device_bootstrap_amortized(
     // bootstrapped ciphertext
     round_to_closest_multiple_inplace<Torus, params::opt,
                                       params::degree / params::opt>(
-        accumulator_mask_rotated, base_log, l_gadget);
+        accumulator_mask_rotated, base_log, level_count);
 
     round_to_closest_multiple_inplace<Torus, params::opt,
                                       params::degree / params::opt>(
-        accumulator_body_rotated, base_log, l_gadget);
+        accumulator_body_rotated, base_log, level_count);
     // Initialize the polynomial multiplication via FFT arrays
     // The polynomial multiplications happens at the block level
     // and each thread handles two or more coefficients
@@ -160,13 +161,13 @@ __global__ void device_bootstrap_amortized(
     // Now that the rotation is done, decompose the resulting polynomial
     // coefficients so as to multiply each decomposed level with the
     // corresponding part of the bootstrapping key
-    for (int decomp_level = 0; decomp_level < l_gadget; decomp_level++) {
+    for (int level = 0; level < level_count; level++) {
 
       gadget.decompose_one_level(accumulator_mask_decomposed,
-                                 accumulator_mask_rotated, decomp_level);
+                                 accumulator_mask_rotated, level);
 
       gadget.decompose_one_level(accumulator_body_decomposed,
-                                 accumulator_body_rotated, decomp_level);
+                                 accumulator_body_rotated, level);
 
       synchronize_threads_in_block();
 
@@ -187,11 +188,11 @@ __global__ void device_bootstrap_amortized(
       // Get the bootstrapping key piece necessary for the multiplication
       // It is already in the Fourier domain
       auto bsk_mask_slice = PolynomialFourier<double2, params>(
-          get_ith_mask_kth_block(bootstrapping_key, iteration, 0, decomp_level,
-                                 polynomial_size, 1, l_gadget));
+          get_ith_mask_kth_block(bootstrapping_key, iteration, 0, level,
+                                 polynomial_size, 1, level_count));
       auto bsk_body_slice = PolynomialFourier<double2, params>(
-          get_ith_body_kth_block(bootstrapping_key, iteration, 0, decomp_level,
-                                 polynomial_size, 1, l_gadget));
+          get_ith_body_kth_block(bootstrapping_key, iteration, 0, level,
+                                 polynomial_size, 1, level_count));
 
       synchronize_threads_in_block();
 
@@ -216,11 +217,11 @@ __global__ void device_bootstrap_amortized(
       correction_direct_fft_inplace<params>(accumulator_fft);
 
       auto bsk_mask_slice_2 = PolynomialFourier<double2, params>(
-          get_ith_mask_kth_block(bootstrapping_key, iteration, 1, decomp_level,
-                                 polynomial_size, 1, l_gadget));
+          get_ith_mask_kth_block(bootstrapping_key, iteration, 1, level,
+                                 polynomial_size, 1, level_count));
       auto bsk_body_slice_2 = PolynomialFourier<double2, params>(
-          get_ith_body_kth_block(bootstrapping_key, iteration, 1, decomp_level,
-                                 polynomial_size, 1, l_gadget));
+          get_ith_body_kth_block(bootstrapping_key, iteration, 1, level,
+                                 polynomial_size, 1, level_count));
 
       synchronize_threads_in_block();
 
@@ -283,23 +284,24 @@ __global__ void device_bootstrap_amortized(
     }
   }
 
-  auto block_lwe_out = &lwe_out[blockIdx.x * (polynomial_size + 1)];
+  auto block_lwe_array_out = &lwe_array_out[blockIdx.x * (polynomial_size + 1)];
 
   // The blind rotation for this block is over
   // Now we can perform the sample extraction: for the body it's just
   // the resulting constant coefficient of the accumulator
   // For the mask it's more complicated
-  sample_extract_mask<Torus, params>(block_lwe_out, accumulator_mask);
-  sample_extract_body<Torus, params>(block_lwe_out, accumulator_body);
+  sample_extract_mask<Torus, params>(block_lwe_array_out, accumulator_mask);
+  sample_extract_body<Torus, params>(block_lwe_array_out, accumulator_body);
 }
 
 template <typename Torus, class params>
 __host__ void host_bootstrap_amortized(
-    void *v_stream, Torus *lwe_out, Torus *lut_vector,
-    uint32_t *lut_vector_indexes, Torus *lwe_in, double2 *bootstrapping_key,
-    uint32_t input_lwe_dimension, uint32_t polynomial_size, uint32_t base_log,
-    uint32_t l_gadget, uint32_t input_lwe_ciphertext_count,
-    uint32_t num_lut_vectors, uint32_t lwe_idx, uint32_t max_shared_memory) {
+    void *v_stream, Torus *lwe_array_out, Torus *lut_vector,
+    uint32_t *lut_vector_indexes, Torus *lwe_array_in,
+    double2 *bootstrapping_key, uint32_t input_lwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+    uint32_t input_lwe_ciphertext_count, uint32_t num_lut_vectors,
+    uint32_t lwe_idx, uint32_t max_shared_memory) {
 
   int SM_FULL = sizeof(Torus) * polynomial_size +   // accumulator mask
                 sizeof(Torus) * polynomial_size +   // accumulator body
@@ -338,9 +340,9 @@ __host__ void host_bootstrap_amortized(
     checkCudaErrors(
         cudaMalloc((void **)&d_mem, DM_FULL * input_lwe_ciphertext_count));
     device_bootstrap_amortized<Torus, params, NOSM><<<grid, thds, 0, *stream>>>(
-        lwe_out, lut_vector, lut_vector_indexes, lwe_in, bootstrapping_key,
-        d_mem, input_lwe_dimension, polynomial_size, base_log, l_gadget,
-        lwe_idx, DM_FULL);
+        lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
+        bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
+        base_log, level_count, lwe_idx, DM_FULL);
   } else if (max_shared_memory < SM_FULL) {
     cudaFuncSetAttribute(device_bootstrap_amortized<Torus, params, PARTIALSM>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART);
@@ -350,9 +352,9 @@ __host__ void host_bootstrap_amortized(
         cudaMalloc((void **)&d_mem, DM_PART * input_lwe_ciphertext_count));
     device_bootstrap_amortized<Torus, params, PARTIALSM>
         <<<grid, thds, SM_PART, *stream>>>(
-            lwe_out, lut_vector, lut_vector_indexes, lwe_in, bootstrapping_key,
-            d_mem, input_lwe_dimension, polynomial_size, base_log, l_gadget,
-            lwe_idx, DM_PART);
+            lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
+            bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
+            base_log, level_count, lwe_idx, DM_PART);
   } else {
     // For devices with compute capability 7.x a single thread block can
     // address the full capacity of shared memory. Shared memory on the
@@ -369,12 +371,12 @@ __host__ void host_bootstrap_amortized(
 
     device_bootstrap_amortized<Torus, params, FULLSM>
         <<<grid, thds, SM_FULL, *stream>>>(
-            lwe_out, lut_vector, lut_vector_indexes, lwe_in, bootstrapping_key,
-            d_mem, input_lwe_dimension, polynomial_size, base_log, l_gadget,
-            lwe_idx, 0);
+            lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
+            bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
+            base_log, level_count, lwe_idx, 0);
   }
-  // Synchronize the streams before copying the result to lwe_out at the right
-  // place
+  // Synchronize the streams before copying the result to lwe_array_out at the
+  // right place
   cudaStreamSynchronize(*stream);
   cudaFree(d_mem);
 }

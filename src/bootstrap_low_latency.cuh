@@ -29,13 +29,13 @@ namespace cg = cooperative_groups;
 
 template <typename Torus, class params>
 __device__ void
-mul_trgsw_trlwe(Torus *accumulator, double2 *fft, int16_t *trlwe_decomposed,
-                double2 *mask_join_buffer, double2 *body_join_buffer,
-                double2 *bootstrapping_key, int polynomial_size, int l_gadget,
-                int iteration, grid_group &grid) {
+mul_ggsw_glwe(Torus *accumulator, double2 *fft, int16_t *glwe_decomposed,
+              double2 *mask_join_buffer, double2 *body_join_buffer,
+              double2 *bootstrapping_key, int polynomial_size, int level_count,
+              int iteration, grid_group &grid) {
 
-  // Put the decomposed TRLWE sample in the Fourier domain
-  real_to_complex_compressed<int16_t, params>(trlwe_decomposed, fft);
+  // Put the decomposed GLWE sample in the Fourier domain
+  real_to_complex_compressed<int16_t, params>(glwe_decomposed, fft);
   synchronize_threads_in_block();
 
   // Switch to the FFT space
@@ -53,12 +53,12 @@ mul_trgsw_trlwe(Torus *accumulator, double2 *fft, int16_t *trlwe_decomposed,
 
   auto bsk_mask_slice = PolynomialFourier<double2, params>(
       get_ith_mask_kth_block(bootstrapping_key, iteration, blockIdx.y,
-                             blockIdx.x, polynomial_size, 1, l_gadget));
+                             blockIdx.x, polynomial_size, 1, level_count));
   auto bsk_body_slice = PolynomialFourier<double2, params>(
       get_ith_body_kth_block(bootstrapping_key, iteration, blockIdx.y,
-                             blockIdx.x, polynomial_size, 1, l_gadget));
+                             blockIdx.x, polynomial_size, 1, level_count));
 
-  // Perform the matrix multiplication between the RGSW and the TRLWE,
+  // Perform the matrix multiplication between the GGSW and the GLWE,
   // each block operating on a single level for mask and body
 
   auto first_processed_bsk =
@@ -120,7 +120,7 @@ mul_trgsw_trlwe(Torus *accumulator, double2 *fft, int16_t *trlwe_decomposed,
   correction_inverse_fft_inplace<params>(fft);
   synchronize_threads_in_block();
 
-  // Perform the inverse FFT on the result of the RGSWxTRLWE and add to the
+  // Perform the inverse FFT on the result of the GGSW x GWE and add to the
   // accumulator
   NSMFFT_inverse<HalfDegree<params>>(fft);
   synchronize_threads_in_block();
@@ -134,17 +134,18 @@ template <typename Torus, class params>
 /*
  * Kernel launched by the low latency version of the
  * bootstrapping, that uses cooperative groups
- * lwe_out vector of output lwe s, with length (polynomial_size+1)*num_samples
- * lut_vector - vector of look up tables with length  polynomial_size *
- * num_samples lut_vector_indexes - mapping between lwe_in and lut_vector lwe_in
- * - vector of lwe inputs with length (lwe_mask_size + 1) * num_samples
+ * lwe_array_out vector of output lwe s, with length
+ * (polynomial_size+1)*num_samples lut_vector - vector of look up tables with
+ * length  polynomial_size * num_samples lut_vector_indexes - mapping between
+ * lwe_array_in and lut_vector lwe_array_in
+ * - vector of lwe inputs with length (lwe_dimension + 1) * num_samples
  *
  */
 __global__ void device_bootstrap_low_latency(
-    Torus *lwe_out, Torus *lut_vector, Torus *lwe_in,
+    Torus *lwe_array_out, Torus *lut_vector, Torus *lwe_array_in,
     double2 *bootstrapping_key, double2 *mask_join_buffer,
-    double2 *body_join_buffer, uint32_t lwe_mask_size, uint32_t polynomial_size,
-    uint32_t base_log, uint32_t l_gadget) {
+    double2 *body_join_buffer, uint32_t lwe_dimension, uint32_t polynomial_size,
+    uint32_t base_log, uint32_t level_count) {
 
   grid_group grid = this_grid();
 
@@ -167,23 +168,23 @@ __global__ void device_bootstrap_low_latency(
 
   // The third dimension of the block is used to determine on which ciphertext
   // this block is operating, in the case of batch bootstraps
-  auto block_lwe_in = &lwe_in[blockIdx.z * (lwe_mask_size + 1)];
+  auto block_lwe_array_in = &lwe_array_in[blockIdx.z * (lwe_dimension + 1)];
 
   auto block_lut_vector = &lut_vector[blockIdx.z * params::degree * 2];
 
   auto block_mask_join_buffer =
-      &mask_join_buffer[blockIdx.z * l_gadget * params::degree / 2];
+      &mask_join_buffer[blockIdx.z * level_count * params::degree / 2];
   auto block_body_join_buffer =
-      &body_join_buffer[blockIdx.z * l_gadget * params::degree / 2];
+      &body_join_buffer[blockIdx.z * level_count * params::degree / 2];
 
   // Since the space is L1 cache is small, we use the same memory location for
   // the rotated accumulator and the fft accumulator, since we know that the
   // rotated array is not in use anymore by the time we perform the fft
-  GadgetMatrix<Torus, params> gadget(base_log, l_gadget);
+  GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   // Put "b" in [0, 2N[
-  Torus b_hat =
-      rescale_torus_element(block_lwe_in[lwe_mask_size], 2 * params::degree);
+  Torus b_hat = rescale_torus_element(block_lwe_array_in[lwe_dimension],
+                                      2 * params::degree);
 
   if (blockIdx.y == 0) {
     divide_by_monomial_negacyclic_inplace<Torus, params::opt,
@@ -195,12 +196,12 @@ __global__ void device_bootstrap_low_latency(
         accumulator, &block_lut_vector[params::degree], b_hat, false);
   }
 
-  for (int i = 0; i < lwe_mask_size; i++) {
+  for (int i = 0; i < lwe_dimension; i++) {
     synchronize_threads_in_block();
 
     // Put "a" in [0, 2N[
     Torus a_hat = rescale_torus_element(
-        block_lwe_in[i],
+        block_lwe_array_in[i],
         2 * params::degree); // 2 * params::log2_degree + 1);
 
     // Perform ACC * (X^ä - 1)
@@ -212,7 +213,7 @@ __global__ void device_bootstrap_low_latency(
     // bootstrapped ciphertext
     round_to_closest_multiple_inplace<Torus, params::opt,
                                       params::degree / params::opt>(
-        accumulator_rotated, base_log, l_gadget);
+        accumulator_rotated, base_log, level_count);
 
     // Decompose the accumulator. Each block gets one level of the
     // decomposition, for the mask and the body (so block 0 will have the
@@ -224,22 +225,22 @@ __global__ void device_bootstrap_low_latency(
     // accumulator_rotated, so we need to synchronize here to make sure they
     // don't modify the same memory space at the same time
     synchronize_threads_in_block();
-    // Perform G^-1(ACC) * RGSW -> TRLWE
-    mul_trgsw_trlwe<Torus, params>(
-        accumulator, accumulator_fft, accumulator_decomposed,
-        block_mask_join_buffer, block_body_join_buffer, bootstrapping_key,
-        polynomial_size, l_gadget, i, grid);
+    // Perform G^-1(ACC) * GGSW -> GLWE
+    mul_ggsw_glwe<Torus, params>(accumulator, accumulator_fft,
+                                 accumulator_decomposed, block_mask_join_buffer,
+                                 block_body_join_buffer, bootstrapping_key,
+                                 polynomial_size, level_count, i, grid);
   }
 
-  auto block_lwe_out = &lwe_out[blockIdx.z * (polynomial_size + 1)];
+  auto block_lwe_array_out = &lwe_array_out[blockIdx.z * (polynomial_size + 1)];
 
   if (blockIdx.x == 0 && blockIdx.y == 0) {
     // Perform a sample extract. At this point, all blocks have the result, but
     // we do the computation at block 0 to avoid waiting for extra blocks, in
     // case they're not synchronized
-    sample_extract_mask<Torus, params>(block_lwe_out, accumulator);
+    sample_extract_mask<Torus, params>(block_lwe_array_out, accumulator);
   } else if (blockIdx.x == 0 && blockIdx.y == 1) {
-    sample_extract_body<Torus, params>(block_lwe_out, accumulator);
+    sample_extract_body<Torus, params>(block_lwe_array_out, accumulator);
   }
 }
 
@@ -248,16 +249,18 @@ __global__ void device_bootstrap_low_latency(
  * of bootstrapping
  */
 template <typename Torus, class params>
-__host__ void host_bootstrap_low_latency(
-    void *v_stream, Torus *lwe_out, Torus *lut_vector,
-    uint32_t *lut_vector_indexes, Torus *lwe_in, double2 *bootstrapping_key,
-    uint32_t lwe_mask_size, uint32_t polynomial_size, uint32_t base_log,
-    uint32_t l_gadget, uint32_t num_samples, uint32_t num_lut_vectors) {
+__host__ void
+host_bootstrap_low_latency(void *v_stream, Torus *lwe_array_out,
+                           Torus *lut_vector, uint32_t *lut_vector_indexes,
+                           Torus *lwe_array_in, double2 *bootstrapping_key,
+                           uint32_t lwe_dimension, uint32_t polynomial_size,
+                           uint32_t base_log, uint32_t level_count,
+                           uint32_t num_samples, uint32_t num_lut_vectors) {
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int buffer_size_per_gpu =
-      l_gadget * num_samples * polynomial_size / 2 * sizeof(double2);
+      level_count * num_samples * polynomial_size / 2 * sizeof(double2);
   double2 *mask_buffer_fft;
   double2 *body_buffer_fft;
   checkCudaErrors(cudaMalloc((void **)&mask_buffer_fft, buffer_size_per_gpu));
@@ -268,19 +271,19 @@ __host__ void host_bootstrap_low_latency(
                      sizeof(double2) * polynomial_size / 2; // accumulator fft
 
   int thds = polynomial_size / params::opt;
-  dim3 grid(l_gadget, 2, num_samples);
+  dim3 grid(level_count, 2, num_samples);
 
   void *kernel_args[10];
-  kernel_args[0] = &lwe_out;
+  kernel_args[0] = &lwe_array_out;
   kernel_args[1] = &lut_vector;
-  kernel_args[2] = &lwe_in;
+  kernel_args[2] = &lwe_array_in;
   kernel_args[3] = &bootstrapping_key;
   kernel_args[4] = &mask_buffer_fft;
   kernel_args[5] = &body_buffer_fft;
-  kernel_args[6] = &lwe_mask_size;
+  kernel_args[6] = &lwe_dimension;
   kernel_args[7] = &polynomial_size;
   kernel_args[8] = &base_log;
-  kernel_args[9] = &l_gadget;
+  kernel_args[9] = &level_count;
 
   checkCudaErrors(cudaFuncSetAttribute(
       device_bootstrap_low_latency<Torus, params>,
@@ -292,8 +295,8 @@ __host__ void host_bootstrap_low_latency(
       (void *)device_bootstrap_low_latency<Torus, params>, grid, thds,
       (void **)kernel_args, bytes_needed, *stream));
 
-  // Synchronize the streams before copying the result to lwe_out at the right
-  // place
+  // Synchronize the streams before copying the result to lwe_array_out at the
+  // right place
   cudaStreamSynchronize(*stream);
   cudaFree(mask_buffer_fft);
   cudaFree(body_buffer_fft);

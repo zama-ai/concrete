@@ -23,8 +23,8 @@ __device__ inline Torus typecast_double_to_torus(double x) {
 
 template <typename T>
 __device__ inline T round_to_closest_multiple(T x, uint32_t base_log,
-                                              uint32_t l_gadget) {
-  T shift = sizeof(T) * 8 - l_gadget * base_log;
+                                              uint32_t level_count) {
+  T shift = sizeof(T) * 8 - level_count * base_log;
   T mask = 1ll << (shift - 1);
   T b = (x & mask) >> (shift - 1);
   T res = x >> shift;

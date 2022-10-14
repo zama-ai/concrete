@@ -7,20 +7,20 @@
 #pragma once
 template <typename T, class params> class GadgetMatrix {
 private:
-  uint32_t l_gadget;
+  uint32_t level_count;
   uint32_t base_log;
   uint32_t mask;
   uint32_t halfbg;
   T offset;
 
 public:
-  __device__ GadgetMatrix(uint32_t base_log, uint32_t l_gadget)
-      : base_log(base_log), l_gadget(l_gadget) {
+  __device__ GadgetMatrix(uint32_t base_log, uint32_t level_count)
+      : base_log(base_log), level_count(level_count) {
     uint32_t bg = 1 << base_log;
     this->halfbg = bg / 2;
     this->mask = bg - 1;
     T temp = 0;
-    for (int i = 0; i < this->l_gadget; i++) {
+    for (int i = 0; i < this->level_count; i++) {
       temp += 1ULL << (sizeof(T) * 8 - (i + 1) * this->base_log);
     }
     this->offset = temp * this->halfbg;
@@ -62,20 +62,20 @@ public:
 
 template <typename T> class GadgetMatrixSingle {
 private:
-  uint32_t l_gadget;
+  uint32_t level_count;
   uint32_t base_log;
   uint32_t mask;
   uint32_t halfbg;
   T offset;
 
 public:
-  __device__ GadgetMatrixSingle(uint32_t base_log, uint32_t l_gadget)
-      : base_log(base_log), l_gadget(l_gadget) {
+  __device__ GadgetMatrixSingle(uint32_t base_log, uint32_t level_count)
+      : base_log(base_log), level_count(level_count) {
     uint32_t bg = 1 << base_log;
     this->halfbg = bg / 2;
     this->mask = bg - 1;
     T temp = 0;
-    for (int i = 0; i < this->l_gadget; i++) {
+    for (int i = 0; i < this->level_count; i++) {
       temp += 1ULL << (sizeof(T) * 8 - (i + 1) * this->base_log);
     }
     this->offset = temp * this->halfbg;

@@ -9,10 +9,10 @@
 
 template <typename Torus>
 __device__ Torus *get_ith_block(Torus *ksk, int i, int level,
-                                uint32_t lwe_dimension_after,
-                                uint32_t l_gadget) {
-  int pos = i * l_gadget * (lwe_dimension_after + 1) +
-            level * (lwe_dimension_after + 1);
+                                uint32_t lwe_dimension_out,
+                                uint32_t level_count) {
+  int pos = i * level_count * (lwe_dimension_out + 1) +
+            level * (lwe_dimension_out + 1);
   Torus *ptr = &ksk[pos];
   return ptr;
 }
@@ -42,21 +42,22 @@ __device__ Torus decompose_one(Torus &state, Torus mod_b_mask, int base_log) {
  *
  */
 template <typename Torus>
-__global__ void keyswitch(Torus *lwe_out, Torus *lwe_in, Torus *ksk,
-                          uint32_t lwe_dimension_before,
-                          uint32_t lwe_dimension_after, uint32_t base_log,
-                          uint32_t l_gadget, int lwe_lower, int lwe_upper,
-                          int cutoff) {
+__global__ void keyswitch(Torus *lwe_array_out, Torus *lwe_array_in, Torus *ksk,
+                          uint32_t lwe_dimension_in, uint32_t lwe_dimension_out,
+                          uint32_t base_log, uint32_t level_count,
+                          int lwe_lower, int lwe_upper, int cutoff) {
   int tid = threadIdx.x;
 
   extern __shared__ char sharedmem[];
 
-  Torus *local_lwe_out = (Torus *)sharedmem;
+  Torus *local_lwe_array_out = (Torus *)sharedmem;
 
-  auto block_lwe_in = get_chunk(lwe_in, blockIdx.x, lwe_dimension_before + 1);
-  auto block_lwe_out = get_chunk(lwe_out, blockIdx.x, lwe_dimension_after + 1);
+  auto block_lwe_array_in =
+      get_chunk(lwe_array_in, blockIdx.x, lwe_dimension_in + 1);
+  auto block_lwe_array_out =
+      get_chunk(lwe_array_out, blockIdx.x, lwe_dimension_out + 1);
 
-  auto gadget = GadgetMatrixSingle<Torus>(base_log, l_gadget);
+  auto gadget = GadgetMatrixSingle<Torus>(base_log, level_count);
 
   int lwe_part_per_thd;
   if (tid < cutoff) {
@@ -68,49 +69,51 @@ __global__ void keyswitch(Torus *lwe_out, Torus *lwe_in, Torus *ksk,
 
   for (int k = 0; k < lwe_part_per_thd; k++) {
     int idx = tid + k * blockDim.x;
-    local_lwe_out[idx] = 0;
+    local_lwe_array_out[idx] = 0;
   }
 
   if (tid == 0) {
-    local_lwe_out[lwe_dimension_after] = block_lwe_in[lwe_dimension_before];
+    local_lwe_array_out[lwe_dimension_out] =
+        block_lwe_array_in[lwe_dimension_in];
   }
 
-  for (int i = 0; i < lwe_dimension_before; i++) {
+  for (int i = 0; i < lwe_dimension_in; i++) {
 
     __syncthreads();
 
-    Torus a_i = round_to_closest_multiple(block_lwe_in[i], base_log, l_gadget);
+    Torus a_i =
+        round_to_closest_multiple(block_lwe_array_in[i], base_log, level_count);
 
-    Torus state = a_i >> (sizeof(Torus) * 8 - base_log * l_gadget);
+    Torus state = a_i >> (sizeof(Torus) * 8 - base_log * level_count);
     Torus mod_b_mask = (1ll << base_log) - 1ll;
 
-    for (int j = 0; j < l_gadget; j++) {
-      auto ksk_block = get_ith_block(ksk, i, l_gadget - j - 1,
-                                     lwe_dimension_after, l_gadget);
+    for (int j = 0; j < level_count; j++) {
+      auto ksk_block = get_ith_block(ksk, i, level_count - j - 1,
+                                     lwe_dimension_out, level_count);
       Torus decomposed = decompose_one<Torus>(state, mod_b_mask, base_log);
       for (int k = 0; k < lwe_part_per_thd; k++) {
         int idx = tid + k * blockDim.x;
-        local_lwe_out[idx] -= (Torus)ksk_block[idx] * decomposed;
+        local_lwe_array_out[idx] -= (Torus)ksk_block[idx] * decomposed;
       }
     }
   }
 
   for (int k = 0; k < lwe_part_per_thd; k++) {
     int idx = tid + k * blockDim.x;
-    block_lwe_out[idx] = local_lwe_out[idx];
+    block_lwe_array_out[idx] = local_lwe_array_out[idx];
   }
 }
 
-/// assume lwe_in in the gpu
+/// assume lwe_array_in in the gpu
 template <typename Torus>
 __host__ void cuda_keyswitch_lwe_ciphertext_vector(
-    void *v_stream, Torus *lwe_out, Torus *lwe_in, Torus *ksk,
-    uint32_t lwe_dimension_before, uint32_t lwe_dimension_after,
-    uint32_t base_log, uint32_t l_gadget, uint32_t num_samples) {
+    void *v_stream, Torus *lwe_array_out, Torus *lwe_array_in, Torus *ksk,
+    uint32_t lwe_dimension_in, uint32_t lwe_dimension_out, uint32_t base_log,
+    uint32_t level_count, uint32_t num_samples) {
 
   constexpr int ideal_threads = 128;
 
-  int lwe_dim = lwe_dimension_after + 1;
+  int lwe_dim = lwe_dimension_out + 1;
   int lwe_lower, lwe_upper, cutoff;
   if (lwe_dim % ideal_threads == 0) {
     lwe_lower = lwe_dim / ideal_threads;
@@ -124,11 +127,11 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(
     lwe_upper = (int)ceil((double)lwe_dim / (double)ideal_threads);
   }
 
-  int lwe_size_after = (lwe_dimension_after + 1) * num_samples;
+  int lwe_size_after = (lwe_dimension_out + 1) * num_samples;
 
-  int shared_mem = sizeof(Torus) * (lwe_dimension_after + 1);
+  int shared_mem = sizeof(Torus) * (lwe_dimension_out + 1);
 
-  cudaMemset(lwe_out, 0, sizeof(Torus) * lwe_size_after);
+  cudaMemset(lwe_array_out, 0, sizeof(Torus) * lwe_size_after);
 
   dim3 grid(num_samples, 1, 1);
   dim3 threads(ideal_threads, 1, 1);
@@ -138,8 +141,8 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   keyswitch<<<grid, threads, shared_mem, *stream>>>(
-      lwe_out, lwe_in, ksk, lwe_dimension_before, lwe_dimension_after, base_log,
-      l_gadget, lwe_lower, lwe_upper, cutoff);
+      lwe_array_out, lwe_array_in, ksk, lwe_dimension_in, lwe_dimension_out,
+      base_log, level_count, lwe_lower, lwe_upper, cutoff);
 
   cudaStreamSynchronize(*stream);
 }

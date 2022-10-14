@@ -369,13 +369,13 @@ public:
   }
 
   __device__ void round_to_closest_multiple_inplace(uint32_t base_log,
-                                                    uint32_t l_gadget) {
+                                                    uint32_t level_count) {
     int tid = threadIdx.x;
 #pragma unroll
     for (int i = 0; i < params::opt; i++) {
 
       T x = coefficients[tid];
-      T shift = sizeof(T) * 8 - l_gadget * base_log;
+      T shift = sizeof(T) * 8 - level_count * base_log;
       T mask = 1ll << (shift - 1);
       T b = (x & mask) >> (shift - 1);
       T res = x >> shift;
