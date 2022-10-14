@@ -64,7 +64,8 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
     void *lut_vector_indexes,
     void *lwe_in,
     void *bootstrapping_key,
-    uint32_t input_lwe_dimension,
+    uint32_t lwe_dimension,
+    uint32_t glwe_dimension,
     uint32_t polynomial_size,
     uint32_t base_log,
     uint32_t l_gadget,
@@ -74,6 +75,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
     uint32_t max_shared_memory) {
 
     assert(("Error (GPU amortized PBS): base log should be <= 16", base_log <= 16));
+    assert(("Error (GPU amortized PBS): glwe_dimension should be equal to 1", glwe_dimension == 1));
     assert(("Error (GPU amortized PBS): polynomial size should be one of 512, 1024, 2048, 4096, 8192",
             polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048 ||
             polynomial_size == 4096 || polynomial_size == 8192));
@@ -83,7 +85,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
     host_bootstrap_amortized<uint32_t, Degree<512>>(
         v_stream, (uint32_t *)lwe_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size,
         base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
       break;
@@ -91,28 +93,28 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
     host_bootstrap_amortized<uint32_t, Degree<1024>>(
         v_stream, (uint32_t *)lwe_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   case 2048:
     host_bootstrap_amortized<uint32_t, Degree<2048>>(
         v_stream, (uint32_t *)lwe_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   case 4096:
     host_bootstrap_amortized<uint32_t, Degree<4096>>(
         v_stream, (uint32_t *)lwe_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   case 8192:
     host_bootstrap_amortized<uint32_t, Degree<8192>>(
         v_stream, (uint32_t *)lwe_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   default:
@@ -127,7 +129,8 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
     void *lut_vector_indexes,
     void *lwe_in,
     void *bootstrapping_key,
-    uint32_t input_lwe_dimension,
+    uint32_t lwe_dimension,
+    uint32_t glwe_dimension,
     uint32_t polynomial_size,
     uint32_t base_log,
     uint32_t l_gadget,
@@ -137,6 +140,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
     uint32_t max_shared_memory) {
 
   assert(("Error (GPU amortized PBS): base log should be <= 16", base_log <= 16));
+  assert(("Error (GPU amortized PBS): glwe_dimension should be equal to 1", glwe_dimension == 1));
   assert(("Error (GPU amortized PBS): polynomial size should be one of 512, 1024, 2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048 || 
               polynomial_size == 4096 || polynomial_size == 8192));
@@ -146,7 +150,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
     host_bootstrap_amortized<uint64_t, Degree<512>>(
         v_stream, (uint64_t *)lwe_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size,
         base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
@@ -154,28 +158,28 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
     host_bootstrap_amortized<uint64_t, Degree<1024>>(
         v_stream, (uint64_t *)lwe_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   case 2048:
     host_bootstrap_amortized<uint64_t, Degree<2048>>(
         v_stream, (uint64_t *)lwe_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   case 4096:
     host_bootstrap_amortized<uint64_t, Degree<4096>>(
         v_stream, (uint64_t *)lwe_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   case 8192:
     host_bootstrap_amortized<uint64_t, Degree<8192>>(
         v_stream, (uint64_t *)lwe_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_in,
-        (double2 *)bootstrapping_key, input_lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log, l_gadget, num_samples,
         num_lut_vectors, lwe_idx, max_shared_memory);
     break;
   default:

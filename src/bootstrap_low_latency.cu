@@ -64,6 +64,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
         void *lwe_in,
         void *bootstrapping_key,
         uint32_t lwe_dimension,
+        uint32_t glwe_dimension,
         uint32_t polynomial_size,
         uint32_t base_log,
         uint32_t l_gadget,
@@ -73,6 +74,8 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
         uint32_t max_shared_memory) {
 
     assert(("Error (GPU low latency PBS): base log should be <= 16", base_log <= 16));
+    assert(("Error (GPU low latency PBS): glwe_dimension should be equal to 1",
+            glwe_dimension == 1));
     assert(("Error (GPU low latency PBS): polynomial size should be one of 512, 1024, 2048",
             polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048));
     // The number of samples should be lower than SM/(4 * (k + 1) * l) (the
@@ -138,6 +141,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
         void *lwe_in,
         void *bootstrapping_key,
         uint32_t lwe_dimension,
+        uint32_t glwe_dimension,
         uint32_t polynomial_size,
         uint32_t base_log,
         uint32_t l_gadget,
@@ -147,6 +151,8 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
         uint32_t max_shared_memory) {
 
     assert(("Error (GPU low latency PBS): base log should be <= 16", base_log <= 16));
+    assert(("Error (GPU low latency PBS): glwe_dimension should be equal to 1", 
+            glwe_dimension == 1));
     assert(("Error (GPU low latency PBS): polynomial size should be one of 512, 1024, 2048",
             polynomial_size == 512 || polynomial_size == 1024 || polynomial_size == 2048));
     // The number of samples should be lower than SM/(4 * (k + 1) * l) (the

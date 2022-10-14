@@ -141,6 +141,7 @@ void cuda_extract_bits_32(
     uint32_t delta_log,
     uint32_t lwe_dimension_before,
     uint32_t lwe_dimension_after,
+    uint32_t glwe_dimension,
     uint32_t base_log_bsk,
     uint32_t l_gadget_bsk,
     uint32_t base_log_ksk,
@@ -148,6 +149,7 @@ void cuda_extract_bits_32(
     uint32_t number_of_samples)
 {
     assert(("Error (GPU extract bits): base log should be <= 16", base_log_bsk <= 16));
+    assert(("Error (GPU extract bits): glwe_dimension should be equal to 1", glwe_dimension == 1));
     assert(("Error (GPU extract bits): lwe_dimension_before should be one of 512, 1024, 2048",
             lwe_dimension_before == 512 || lwe_dimension_before == 1024 ||
             lwe_dimension_before == 2048));
@@ -216,6 +218,7 @@ void cuda_extract_bits_64(
     uint32_t delta_log,
     uint32_t lwe_dimension_before,
     uint32_t lwe_dimension_after,
+    uint32_t glwe_dimension,
     uint32_t base_log_bsk,
     uint32_t l_gadget_bsk,
     uint32_t base_log_ksk,
@@ -223,6 +226,7 @@ void cuda_extract_bits_64(
     uint32_t number_of_samples)
 {
     assert(("Error (GPU extract bits): base log should be <= 16", base_log_bsk <= 16));
+    assert(("Error (GPU extract bits): glwe_dimension should be equal to 1", glwe_dimension == 1));
     assert(("Error (GPU extract bits): lwe_dimension_before should be one of 512, 1024, 2048",
             lwe_dimension_before == 512 || lwe_dimension_before == 1024 ||
             lwe_dimension_before == 2048));
