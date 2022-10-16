@@ -349,7 +349,7 @@ jobs:
           ./script/actions_utils/coverage.sh .global-coverage.json
 
       - name: Comment with coverage
-        uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443
+        uses: marocchino/sticky-pull-request-comment@97bddef64db61b9d80edc69593cc4e4c415c3362
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
         continue-on-error: true
         with:
