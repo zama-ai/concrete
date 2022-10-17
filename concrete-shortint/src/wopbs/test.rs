@@ -1,10 +1,7 @@
 use crate::keycache::KEY_CACHE_WOPBS;
-use crate::parameters::parameters_wopbs::*;
 use crate::parameters::parameters_wopbs_message_carry::*;
-use crate::parameters::parameters_wopbs_prime_moduli::*;
 use crate::parameters::{MessageModulus, PARAM_MESSAGE_2_CARRY_2};
-use crate::wopbs::WopbsKey;
-use crate::{gen_keys, Parameters};
+use crate::Parameters;
 use concrete_core::prelude::{LweBootstrapKeyEntity, LweCiphertextEntity, LweKeyswitchKeyEntity};
 use paste::paste;
 use rand::Rng;
@@ -39,7 +36,7 @@ create_parametrized_test!(generate_lut_modulus_not_power_of_two);
 
 fn wopbs_v0(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
     let mut rng = rand::thread_rng();
 
@@ -68,7 +65,7 @@ fn wopbs_v0(params: (Parameters, Parameters)) {
 
 fn wopbs_v0_norm2(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
     let mut rng = rand::thread_rng();
 
@@ -97,7 +94,7 @@ fn wopbs_v0_norm2(params: (Parameters, Parameters)) {
 
 fn generate_lut(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
 
     println!(
@@ -194,7 +191,7 @@ fn generate_lut(params: (Parameters, Parameters)) {
         //
         // let ct_res = wopbs_key.pbs_server_key.keyswitch_programmable_bootstrap(&ct_res, &acc);
 
-        let mut res = cks.decrypt(&ct_res);
+        let res = cks.decrypt(&ct_res);
         if res != (m % message_modulus) as u64 {
             tmp += 1;
         }
@@ -210,7 +207,7 @@ fn generate_lut(params: (Parameters, Parameters)) {
 
 fn generate_lut_modulus(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
 
     for _ in 0..NB_TEST {
@@ -229,7 +226,7 @@ fn generate_lut_modulus(params: (Parameters, Parameters)) {
 
 fn generate_lut_modulus_not_power_of_two(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
 
     for _ in 0..NB_TEST {

@@ -142,8 +142,8 @@ fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
 
     let param = WOPBS_PARAM_MESSAGE_8_NORM2_5;
 
-    let keys = KEY_CACHE_WOPBS.get_from_param(param);
-    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let keys = KEY_CACHE_WOPBS.get_from_param((param, param));
+    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
     let mut rng = rand::thread_rng();
 
@@ -155,7 +155,7 @@ fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
 
     bench_group.bench_function(&id, |b| {
         b.iter(|| {
-            wopbs_key.programmable_bootstrapping_native_crt(sks, &mut ct, &vec_lut);
+            wopbs_key.programmable_bootstrapping_native_crt(&mut ct, &vec_lut);
         })
     });
 
