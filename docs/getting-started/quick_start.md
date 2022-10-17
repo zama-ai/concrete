@@ -1,6 +1,6 @@
 # Quick Start
 
-To compute on encrypted data, you first need to define the function that you want to compute, then compile it into a Concrete Numpy `Circuit`, which you can use to perform homomorphic evaluation.
+To compute on encrypted data, you first need to define the function that you want to compute, then compile it into a Concrete-Numpy `Circuit`, which you can use to perform homomorphic evaluation.
 
 Here is the full example that we will walk through:
 

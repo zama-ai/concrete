@@ -1,10 +1,10 @@
 # Contribute
 
 {% hint style="info" %}
-There are two ways to contribute to **Concrete Numpy** or to **Concrete** tools in general:
+There are two ways to contribute to **Concrete-Numpy** or to **Concrete** tools in general:
 
 * You can open issues to report bugs and typos and to suggest ideas.
-* You can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
+* You can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests (PRs), so please make sure to get in touch before you do!
 {% endhint %}
 
 Now, let's go over some other important items that you need to know.
@@ -17,7 +17,7 @@ We are using a consistent branch naming scheme, and you are expected to follow i
 git checkout -b {feat|fix|refactor|test|benchmark|doc|style|chore}/short-description
 ```
 
-...and some examples:
+...and here are some examples:
 
 ```shell
 git checkout -b feat/direct-tlu
@@ -28,7 +28,7 @@ git checkout -b fix/tracing-indexing
 
 ### Conformance.
 
-Each commit to **Concrete Numpy** should conform to the standards decided by the team. Conformance can be checked using the following command:
+Each commit to **Concrete-Numpy** should conform to the standards decided by the team. Conformance can be checked using the following command:
 
 ```shell
 make pcc
@@ -96,4 +96,4 @@ git rebase --continue
 git push --force
 ```
 
-You can learn more about rebasing in [here](https://git-scm.com/docs/git-rebase).
+You can learn more about rebasing [here](https://git-scm.com/docs/git-rebase).

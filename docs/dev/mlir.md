@@ -1,10 +1,10 @@
 # MLIR
 
-The MLIR project is a sub-project of the LLVM project. It's designed to simplify building domain-specific compilers such as our **Concrete Compiler**.
+The MLIR project is a sub-project of the LLVM project. It's designed to simplify building domain-specific compilers such as our **Concrete-Compiler**.
 
-**Concrete Compiler** accepts MLIR as an input and emits compiled assembly code for a target architecture.
+**Concrete-Compiler** accepts MLIR as an input and emits compiled assembly code for a target architecture.
 
-**Concrete Numpy** performs the MLIR generation from the computation graph. Code related to this conversion is in the `concrete/numpy/mlir` folder.
+**Concrete-Numpy** performs the MLIR generation from the computation graph. Code related to this conversion is in the `concrete/numpy/mlir` folder.
 
 The conversion can be performed using the `convert` method of the `GraphConverter` class.
 

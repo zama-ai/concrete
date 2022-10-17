@@ -5,7 +5,7 @@
 ## Getting Started
 
 * [Installation](getting-started/installing.md)
-* [Quick start](getting-started/quick\_start.md)
+* [Quick Start](getting-started/quick\_start.md)
 * [Compatibility](getting-started/compatibility.md)
 
 ## Tutorials

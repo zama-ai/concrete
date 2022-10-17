@@ -1,6 +1,6 @@
 # Extensions
 
-**Concrete Numpy** tries to support **NumPy** as much as possible, but due to some technical limitations, not everything can be supported. On top of that, there are some things **NumPy** lack, which are useful. In some of these situations, we provide extensions in **Concrete Numpy** to improve your experience.
+**Concrete-Numpy** tries to support **NumPy** as much as possible, but due to some technical limitations, not everything can be supported. On top of that, there are some things **NumPy** lack, which are useful. In some of these situations, we provide extensions in **Concrete-Numpy** to improve your experience.
 
 ## cnp.zero()
 

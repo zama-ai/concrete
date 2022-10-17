@@ -1,6 +1,6 @@
 # Configure
 
-Behavior of **Concrete Numpy** can be customized using `Configuration`s:
+The behavior of **Concrete-Numpy** can be customized using `Configuration`s:
 
 ```python
 import concrete.numpy as cnp
@@ -47,21 +47,20 @@ circuit = f.compile(inputset, configuration=configuration, loop_parallelize=True
 ```
 
 {% hint style="info" %}
-Additional kwarg to `compile` function have higher precedence. So if you set an option in both `configuration` and in `compile` method, the value in the `compile` method will be used.
+Additional kwarg to `compile` function have higher precedence. So if you set an option in both `configuration` and in `compile` methods, the value in the `compile` method will be used.
 {% endhint %}
 
 ## Options
 
-* **show_graph**: bool = False
+* **show\_graph**: bool = False
   * Whether to print computation graph during compilation.
 
-* **show_mlir**: bool = False
+* **show\_mlir**: bool = False
   * Whether to print MLIR during compilation.
 
 * **verbose**: bool = False
   * Whether to print computation graph and MLIR during compilation.
-
-* **dump_artifacts_on_unexpected_failures**: bool = True
+* **dump\_artifacts\_on\_unexpected\_failures**: bool = True
   * Whether to export debugging artifacts automatically on compilation failures.
 
 * **p_error**: Optional[float] = None
@@ -73,23 +72,23 @@ Additional kwarg to `compile` function have higher precedence. So if you set an 
 * **jit**: bool = False
   * Whether to use JIT compilation.
 
-* **loop_parallelize**: bool = True
+* **loop\_parallelize**: bool = True
   * Whether to enable loop parallelization in the compiler.
 
-* **dataflow_parallelize**: bool = False
+* **dataflow\_parallelize**: bool = False
   * Whether to enable dataflow parallelization in the compiler.
 
-* **auto_parallelize**: bool = False
+* **auto\_parallelize**: bool = False
   * Whether to enable auto parallelization in the compiler.
 
-* **enable_unsafe_features**: bool = False
-  * Whether to enable unsage features.
+* **enable\_unsafe\_features**: bool = False
+  * Whether to enable unsafe features.
 
 * **virtual**: bool = False _(Unsafe)_
   * Whether to create a virtual circuit.
 
-* **use_insecure_key_cache**: bool = False _(Unsafe)_
+* **use\_insecure\_key\_cache**: bool = False _(Unsafe)_
   * Whether to use the insecure key cache.
 
-* **insecure_key_cache_location**: Optional[Union[Path, str]] = None
+* **insecure\_key\_cache\_location**: Optional\[Union\[Path, str]] = None
   * Location of insecure key cache.

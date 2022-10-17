@@ -1,10 +1,10 @@
 # Table Lookups
 
-In this tutorial, we will review the ways to perform direct table lookups in **Concrete Numpy**.
+In this tutorial, we will review the ways to perform direct table lookups in **Concrete-Numpy**.
 
 ## Direct table lookup
 
-**Concrete Numpy** provides a `LookupTable` class for you to create your own tables and apply them in your circuits.
+**Concrete-Numpy** provides a `LookupTable` class for you to create your own tables and apply them in your circuits.
 
 {% hint style="info" %}
 `LookupTable`s can have any number of elements. Let's call them **N**. As long as the lookup variable is in range \[-**N**, **N**), table lookup is valid.
@@ -144,7 +144,7 @@ In this example, we applied a `squared` table to the first column and a `cubed` 
 
 ## Fused table lookup
 
-**Concrete Numpy** tries to fuse some operations into table lookups automatically, so you don't need to create the lookup tables manually:
+**Concrete-Numpy** tries to fuse some operations into table lookups automatically, so you don't need to create the lookup tables manually:
 
 ```python
 import concrete.numpy as cnp
@@ -162,17 +162,17 @@ for x in range(8):
 ```
 
 {% hint style="info" %}
-All lookup tables need to be from integers to integers. So, without `.astype(np.int64)`, **Concrete Numpy** will not be able to fuse.
+All lookup tables need to be from integers to integers. So, without `.astype(np.int64)`, **Concrete-Numpy** will not be able to fuse.
 {% endhint %}
 
 The function is first traced into:
 
 ![](../\_static/tutorials/table-lookup/1.initial.graph.png)
 
-Then, **Concrete Numpy** fuses appropriate nodes:
+Then, **Concrete-Numpy** fuses appropriate nodes:
 
 ![](../\_static/tutorials/table-lookup/3.final.graph.png)
 
 {% hint style="info" %}
-Fusing makes the code more readable and easier to modify. So try to utilize it over manual `LookupTable`s as much as possible.
+Fusing makes the code more readable and easier to modify, so try to utilize it over manual `LookupTable`s as much as possible.
 {% endhint %}

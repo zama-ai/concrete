@@ -8,7 +8,7 @@ Before you start this section, go ahead and install Docker. You can follow [this
 
 ### Linux.
 
-You can use xhost command:
+You can use this xhost command:
 
 ```shell
 xhost +localhost
@@ -16,7 +16,7 @@ xhost +localhost
 
 ### macOS.
 
-To use X forwarding on Mac OS:
+To use X forwarding on macOS:
 
 * Install XQuartz
 * Open XQuartz.app application, make sure in the application parameters that `authorize network connections` are set (currently in the Security settings)
@@ -30,7 +30,7 @@ X server should be all set for Docker in the regular terminal.
 
 ## Building
 
-You can use the dedicated target in the Makefile to build the docker image:
+You can use the dedicated target in the makefile to build the docker image:
 
 ```shell
 make docker_build
@@ -38,7 +38,7 @@ make docker_build
 
 ## Starting
 
-You can use the dedicated target in the Makefile to start the docker session:
+You can use the dedicated target in the makefile to start the docker session:
 
 ```shell
 make docker_start

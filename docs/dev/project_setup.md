@@ -1,12 +1,12 @@
 # Project Setup
 
 {% hint style="info" %}
-It is **strongly** recommended to use the development tool Docker. Though, you can set the project up on a bare Linux or macOS as long as you have the required dependencies. You can see the required dependencies in `Dockerfile.dev` under `docker` directory.
+It is **strongly** recommended to use the development tool Docker. However, you are able to set the project up on a bare Linux or macOS as long as you have the required dependencies. You can see the required dependencies in `Dockerfile.dev` under `docker` directory.
 {% endhint %}
 
 ## Installing `Python`
 
-**Concrete Numpy** is a `Python` library, so `Python` should be installed to develop it. `v3.8` and `v3.9` are, currently, the only supported versions.
+**Concrete-Numpy** is a `Python` library, so `Python` should be installed to develop it. `v3.8` and `v3.9` are, currently, the only supported versions.
 
 You probably have Python already, but in case you don't, or in case you have an unsupported version, you can google `how to install python 3.8` and follow one of the results.
 
@@ -34,7 +34,7 @@ In the following sections, be sure to use the proper `make` tool for your system
 
 ## Cloning the repository
 
-Now, it's time to get the source code of **Concrete Numpy**.
+Now, it's time to get the source code of **Concrete-Numpy**.
 
 Clone the git repository from GitHub using the protocol of your choice (ssh or https).
 
@@ -58,9 +58,7 @@ source .venv/bin/activate
 
 ## Syncing the environment
 
-From time to time, new dependencies will be added to the project and old ones will be removed.
-
-The command below will make sure the project has the proper environment, so run it regularly.
+From time to time, new dependencies will be added to the project and old ones will be removed.mThe command below will make sure the project has the proper environment, so run it regularly.
 
 ```shell
 make sync_env

@@ -8,18 +8,18 @@ After transformations are applied, we need to determine the bounds (i.e., the mi
 
 The final step is to transform the computation graph to equivalent `MLIR` code. How this is done will be explained in detail in its own chapter.
 
-Once the MLIR is generated, we send it to the **Concrete Compiler**, and it completes the compilation process.
+Once the MLIR is generated, we send it to the **Concrete-Compiler**, and it completes the compilation process.
 
 ## Tracing
 
-Given a Python function `f` such as this one,
+Given a Python function `f` such as this one:
 
 ```
 def f(x):
     return (2 * x) + 3
 ```
 
-the goal of tracing is to create the following computation graph without needing any change from the user.
+...the goal of tracing is to create the following computation graph without needing any change from the user.
 
 ![](../\_static/compilation-pipeline/two\_x\_plus\_three.png)
 
@@ -49,7 +49,7 @@ Tracing is also responsible for indicating whether the values in the node would 
 
 The goal of topological transforms is to make more functions compilable.
 
-With the current version of **Concrete Numpy**, floating point inputs and floating point outputs are not supported. However, if the floating points operations are intermediate operations, they can sometimes be fused into a single table lookup from integer to integer thanks to some specific transforms.
+With the current version of **Concrete-Numpy**, floating-point inputs and floating-point outputs are not supported. However, if the floating-point operations are intermediate operations, they can sometimes be fused into a single table lookup from integer to integer, thanks to some specific transforms.
 
 Let's take a closer look at the transforms we can currently perform.
 
@@ -145,4 +145,4 @@ Assigned Data Types:
 
 ## MLIR conversion
 
-The actual compilation will be done by the **Concrete Compiler**, which is expecting an MLIR input. The MLIR conversion goes from a computation graph to its MLIR equivalent. You can read more about it [here](mlir.md).
+The actual compilation will be done by the **Concrete-Compiler**, which is expecting an MLIR input. The MLIR conversion goes from a computation graph to its MLIR equivalent. You can read more about it [here](mlir.md).

@@ -8,7 +8,7 @@ Here are the operations you can use inside the function you are compiling.
 Some of these operations are not supported between two encrypted values. A detailed error will be raised if you try to do something that is not supported.
 {% endhint %}
 
-### Supported Python operators
+### Supported Python operators.
 
 * [\_\_abs\_\_](https://docs.python.org/3/reference/datamodel.html#object.\_\_abs\_\_)
 * [\_\_add\_\_](https://docs.python.org/3/reference/datamodel.html#object.\_\_add\_\_)
@@ -49,10 +49,8 @@ Some of these operations are not supported between two encrypted values. A detai
 * [\_\_truediv\_\_](https://docs.python.org/3/reference/datamodel.html#object.\_\_truediv\_\_)
 * [\_\_xor\_\_](https://docs.python.org/3/reference/datamodel.html#object.\_\_xor\_\_)
 
-### Supported NumPy functions
+### Supported NumPy functions.
 
-<!--- gen_supported_ufuncs.py: inject supported operations [BEGIN] -->
-<!--- do not edit, auto generated part by `python3 gen_supported_ufuncs.py` in docker -->
 * [np.absolute](https://numpy.org/doc/stable/reference/generated/numpy.absolute.html)
 * [np.add](https://numpy.org/doc/stable/reference/generated/numpy.add.html)
 * [np.arccos](https://numpy.org/doc/stable/reference/generated/numpy.arccos.html)
@@ -147,9 +145,8 @@ Some of these operations are not supported between two encrypted values. A detai
 * [np.trunc](https://numpy.org/doc/stable/reference/generated/numpy.trunc.html)
 * [np.where](https://numpy.org/doc/stable/reference/generated/numpy.where.html)
 * [np.zeros\_like](https://numpy.org/doc/stable/reference/generated/numpy.zeros\_like.html)
-<!--- gen_supported_ufuncs.py: inject supported operations [END] -->
 
-### Supported `ndarray` methods
+### Supported `ndarray` methods.
 
 * [np.ndarray.astype](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.astype.html)
 * [np.ndarray.clip](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.clip.html)
@@ -158,7 +155,7 @@ Some of these operations are not supported between two encrypted values. A detai
 * [np.ndarray.reshape](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.reshape.html)
 * [np.ndarray.transpose](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.transpose.html)
 
-### Supported `ndarray` properties
+### Supported `ndarray` properties.
 
 * [np.ndarray.shape](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.shape.html)
 * [np.ndarray.ndim](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.ndim.html)
@@ -167,19 +164,19 @@ Some of these operations are not supported between two encrypted values. A detai
 
 ## Limitations
 
-### Operational constraints
+### Operational constraints.
 
 Some Python control flow statements are not supported. For example, you cannot have an `if` statement or a `while` statement for which the condition depends on an encrypted value. However, such statements are supported with constant values (e.g., `for i in range(SOME_CONSTANT)`, `if os.environ.get("SOME_FEATURE") == "ON":`).
 
 Another constraint is that you cannot have floating-point inputs or floating-point outputs. You can have floating-point intermediate values as long as they can be converted to an integer Table Lookup (e.g., `(60 * np.sin(x)).astype(np.int64)`).
 
-### Bit width constraints
+### Bit width constraints.
 
-There is a limit on the bit width of encrypted values. We are constantly working on increasing this bit width. If you go above this limit, you will get an error.
+There is a limit on the bit width of encrypted values. We are constantly working on increasing this bit width. If you go above the limit, you will get an error.
 
-### Computation constraints
+### Computation constraints.
 
-One of the most common operations in **Concrete Numpy** is `Table Lookups` (TLUs). TLUs are performed with an FHE operation called `Programmable Bootstrapping` (PBS). PBSes have a certain probability of error, which, when triggered, result in inaccurate results.
+One of the most common operations in **Concrete-Numpy** is `Table Lookups` (TLUs). TLUs are performed with an FHE operation called `Programmable Bootstrapping` (PBS). PBSes have a certain probability of error, which, when triggered, result in inaccurate results.
 
 Let's say you have the table:
 
@@ -187,7 +184,7 @@ Let's say you have the table:
 [1, 4, 9, 16, 25, 36, 49, 64]
 ```
 
-And you performed a table lookup using `4`, The result you should get is `16`, but because of the possibility of error, you can sometimes get `9` or `25`.
+And you performed a table lookup using `4`. The result you should get is `16`, but because of the possibility of error, you can sometimes get `9` or `25`.
 
 {% hint style="info" %}
 The probability of this error can be configured through the `p_error` configuration option, which has the default value of `0.000063342483999973` (i.e., probability of success is `99.993`%). Keep in mind that changing it could affect compilation and key generation times.

@@ -1,6 +1,6 @@
 # Deploy
 
-After developing your circuit, you may want to deploy it. Sharing the details of your circuit with every client might not be desirable. Further, you might want to perform the computation in dedicated servers. In this case, you can use the `Client` and `Server` features of **Concrete Numpy**.
+After developing your circuit, you may want to deploy it. However, sharing the details of your circuit with every client might not be desirable. Further, you might want to perform the computation in dedicated servers. In this case, you can use the `Client` and `Server` features of **Concrete-Numpy**.
 
 ## Development of the circuit
 
@@ -29,7 +29,7 @@ All you need to do now is to send `server.zip` to your computation server.
 
 ## Setting up a server
 
-You can load the `server.zip` you get from the development machine like so:
+You can load the `server.zip` you get from the development machine as follows:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -51,7 +51,7 @@ Then, you can send it to the clients requesting it.
 
 ## Setting up clients
 
-After getting the serialized `ClientSpecs` from a server, you can create the client object like so:
+After getting the serialized `ClientSpecs` from a server, you can create the client object like this:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -61,7 +61,7 @@ client = cnp.Client(client_specs)
 
 ## Generating keys (on the client)
 
-Once you have the `Client` object, you can perform key generation like so:
+Once you have the `Client` object, you can perform key generation:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -70,7 +70,7 @@ client.keygen()
 
 This method generates encryption/decryption keys and evaluation keys.
 
-The server requires evaluation keys linked to the encryption keys that you just generated. You can serialize your evaluation keys like so:
+The server requires evaluation keys linked to the encryption keys that you just generated. You can serialize your evaluation keys as shown below:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -104,7 +104,7 @@ unserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluat
 unserialized_args  = server.client_specs.unserialize_public_args(serialized_args)
 ```
 
-And you can perform the computation like so:
+And you can perform the computation as well:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -116,7 +116,7 @@ Finally, you can send the serialized public result back to the client, so they c
 
 ## Decrypting the result (on the client)
 
-Once you have received the public result of the computation from the server, you can unserialize it like so:
+Once you have received the public result of the computation from the server, you can unserialize it:
 
 <!--pytest-codeblocks:skip-->
 ```python

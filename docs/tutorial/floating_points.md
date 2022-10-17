@@ -1,6 +1,6 @@
 # Floating Points
 
-**Concrete Numpy** partly supports floating points:
+**Concrete-Numpy** partly supports floating points:
 
 * They cannot be inputs
 * They cannot be outputs
@@ -8,9 +8,9 @@
 
 ## As intermediate values
 
-**Concrete Compile**, which is used for compiling the circuit, doesn't support floating points at all. However, it supports table lookups. They take an integer and map it to another integer. It does not care how the lookup table is calculated. Further, the constraints of this operation are such that there should be a single integer input and it should result in a single integer output.
+**Concrete-Compile**, which is used for compiling the circuit, doesn't support floating points at all. However, it supports table lookups. They take an integer and map it to another integer. It does not care how the lookup table is calculated. Further, the constraints of this operation are such that there should be a single integer input and it should result in a single integer output.
 
-As long as your floating point operations comply with those constraints, **Concrete Numpy** automatically converts your operations to a table lookup operation:
+As long as your floating point operations comply with those constraints, **Concrete-Numpy** automatically converts your operations to a table lookup operation:
 
 ```python
 import concrete.numpy as cnp
@@ -31,7 +31,7 @@ for x in range(8):
     assert circuit.encrypt_run_decrypt(x) == f(x)
 ```
 
-In the example above, `a`, `b`, and `c` are all floating point intermediates. However, they are just used to calculate `d`, which is an integer and value of `d` dependent upon `x` , which is another integer. **Concrete Numpy** detects this and fuses all of those operations into a single table lookup from `x` to `d`.
+In the example above, `a`, `b`, and `c` are all floating point intermediates. However, they are just used to calculate `d`, which is an integer and value of `d` dependent upon `x` , which is another integer. **Concrete-Numpy** detects this and fuses all of those operations into a single table lookup from `x` to `d`.
 
 This approach works for a variety of use cases, but it comes up short for some:
 
@@ -55,7 +55,7 @@ for x in range(8):
     assert circuit.encrypt_run_decrypt(x) == f(x)
 ```
 
-results in
+... results in:
 
 ```
 RuntimeError: Function you are trying to compile cannot be converted to MLIR
@@ -76,4 +76,4 @@ RuntimeError: Function you are trying to compile cannot be converted to MLIR
 return %7
 ```
 
-The reason for that is that `d` no longer depends solely on `x`, it depends on `y` as well. Thus, **Concrete Numpy** cannot fuse these operations, so it raises an exception.
+The reason for this is that `d` no longer depends solely on `x`, it depends on `y` as well. **Concrete-Numpy** cannot fuse these operations, so it raises an exception instead.

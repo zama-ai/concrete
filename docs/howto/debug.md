@@ -4,19 +4,18 @@ In this section, you will learn how to debug the compilation process easily as w
 
 ## Debug Artifacts
 
-**Concrete Numpy** has an artifact system to simplify the process of debugging issues.
+**Concrete-Numpy** has an artifact system to simplify the process of debugging issues.
 
 ### Automatic export.
 
 In case of compilation failures, artifacts are exported automatically to the `.artifacts` directory under the working directory. Let's intentionally create a compilation failure to show what kinds of things are exported.
 
-<!--pytest-codeblocks:skip-->
 ```python
 def f(x):
     return np.sin(x)
 ```
 
-This function fails to compile because **Concrete Numpy** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. If you go the `.artifacts` directory under the working directory, you'll see the following files:
+This function fails to compile because **Concrete-Numpy** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. If you go the `.artifacts` directory under the working directory, you'll see the following files:
 
 #### environment.txt
 
@@ -60,7 +59,7 @@ x :: encrypted
 
 #### 1.initial.graph.txt
 
-This file contains textual representation of the initial computation graph right after tracing.
+This file contains the textual representation of the initial computation graph right after tracing.
 
 ```
 %0 = x              # EncryptedScalar<uint3>
@@ -76,7 +75,7 @@ This file contains the visual representation of the initial computation graph ri
 
 #### 2.final.graph.txt
 
-This file contains textual representation of the final computation graph right before MLIR conversion.
+This file contains the textual representation of the final computation graph right before MLIR conversion.
 
 ```
 %0 = x              # EncryptedScalar<uint3>
@@ -134,7 +133,7 @@ If you go to the `/tmp/custom/export/path` directory, you'll see the following f
 
 #### 1.initial.graph.txt
 
-This file contains textual representation of the initial computation graph right after tracing.
+This file contains the textual representation of the initial computation graph right after tracing.
 
 ```
 %0 = 127                           # ClearScalar<uint7>
@@ -157,7 +156,7 @@ This file contains the visual representation of the initial computation graph ri
 
 #### 2.after-float-fuse-0.graph.txt
 
-This file contains textual representation of the intermediate computation graph after fusing.
+This file contains the textual representation of the intermediate computation graph after fusing.
 
 ```
 %0 = 127                     # ClearScalar<uint7>
@@ -246,7 +245,7 @@ module  {
 
 ## Asking the community
 
-You can seek help with your issue by asking directly in the [community forum](https://community.zama.ai/).
+You can seek help with your issue by asking a question directly in the [community forum](https://community.zama.ai/).
 
 ## Submitting an issue
 
@@ -255,7 +254,7 @@ If you cannot find a solution in the community forum, or you found a bug in the 
 In case of a bug:
 
 * try to minimize randomness
-* try to minimize your function as much as possible while keeping the bug, this will help to fix the bug faster
+* try to minimize your function as much as possible while keeping the bug - this will help to fix the bug faster
 * try to include your inputset in the issue
 * try to include reproduction steps in the issue
 * try to include debug artifacts in the issue
