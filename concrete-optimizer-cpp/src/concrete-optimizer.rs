@@ -1,5 +1,6 @@
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
+use concrete_optimizer::config::ProcessingUnit;
 use concrete_optimizer::dag::operator::{
     self, FunctionTable, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
@@ -23,7 +24,7 @@ fn no_dag_solution() -> ffi::DagSolution {
 }
 
 fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) -> ffi::Solution {
-    let processing_unit = config::ProcessingUnit::Cpu;
+    let processing_unit = processing_unit(options);
 
     let config = Config {
         security_level: options.security_level,
@@ -42,7 +43,11 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
         config,
         noise_factor,
         &search_space,
-        &decomposition::cache(options.security_level, processing_unit, None),
+        &decomposition::cache(
+            options.security_level,
+            processing_unit,
+            Some(ProcessingUnit::Cpu.complexity_model()),
+        ),
     );
     result
         .best_solution
@@ -202,7 +207,8 @@ impl OperationDag {
     }
 
     fn optimize_v0(&self, options: ffi::Options) -> ffi::Solution {
-        let processing_unit = config::ProcessingUnit::Cpu;
+        let processing_unit = processing_unit(options);
+
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
@@ -216,7 +222,11 @@ impl OperationDag {
             &self.0,
             config,
             &search_space,
-            &decomposition::cache(options.security_level, processing_unit, None),
+            &decomposition::cache(
+                options.security_level,
+                processing_unit,
+                Some(ProcessingUnit::Cpu.complexity_model()),
+            ),
         );
         result
             .best_solution
@@ -224,7 +234,7 @@ impl OperationDag {
     }
 
     fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
-        let processing_unit = config::ProcessingUnit::Cpu;
+        let processing_unit = processing_unit(options);
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
@@ -233,7 +243,11 @@ impl OperationDag {
         };
 
         let search_space = SearchSpace::default(processing_unit);
-        let cache = decomposition::cache(options.security_level, processing_unit, None);
+        let cache = decomposition::cache(
+            options.security_level,
+            processing_unit,
+            Some(ProcessingUnit::Cpu.complexity_model()),
+        );
 
         let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
             &self.0,
@@ -377,5 +391,17 @@ mod ffi {
         pub security_level: u64,
         pub maximum_acceptable_error_probability: f64,
         pub default_log_norm2_woppbs: f64,
+        pub use_gpu_constraints: bool,
+    }
+}
+
+fn processing_unit(options: ffi::Options) -> ProcessingUnit {
+    if options.use_gpu_constraints {
+        config::ProcessingUnit::Gpu {
+            pbs_type: config::GpuPbsType::Amortized,
+            number_of_sm: 1,
+        }
+    } else {
+        config::ProcessingUnit::Cpu
     }
 }

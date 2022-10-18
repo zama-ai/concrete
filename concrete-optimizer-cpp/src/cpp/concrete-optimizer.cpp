@@ -1051,6 +1051,7 @@ struct Options final {
   ::std::uint64_t security_level;
   double maximum_acceptable_error_probability;
   double default_log_norm2_woppbs;
+  bool use_gpu_constraints;
 
   using IsRelocatable = ::std::true_type;
 };

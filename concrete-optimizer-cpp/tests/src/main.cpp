@@ -21,6 +21,7 @@ concrete_optimizer::Options default_options() {
   concrete_optimizer::Options options;
   options.security_level = SECURITY_128B;
   options.maximum_acceptable_error_probability = P_ERROR;
+  options.use_gpu_constraints = false;
   return options;
 }
 
