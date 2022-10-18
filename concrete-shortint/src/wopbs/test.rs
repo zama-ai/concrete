@@ -1,13 +1,13 @@
 use crate::keycache::KEY_CACHE_WOPBS;
 use crate::parameters::parameters_wopbs_message_carry::*;
-use crate::parameters::{MessageModulus, PARAM_MESSAGE_2_CARRY_2, PARAM_MESSAGE_3_CARRY_3,
+use crate::parameters::{MessageModulus, PARAM_MESSAGE_1_CARRY_1,PARAM_MESSAGE_2_CARRY_2, PARAM_MESSAGE_3_CARRY_3,
                         PARAM_MESSAGE_4_CARRY_4};
 use crate::Parameters;
 use concrete_core::prelude::{DefaultEngine, LweBootstrapKeyEntity, LweCiphertextEntity, LweKeyswitchKeyEntity, UnixSeeder};
 use paste::paste;
 use rand::Rng;
 
-const NB_TEST: usize = 10;
+const NB_TEST: usize = 100;
 
 macro_rules! create_parametrized_test{
     ($name:ident { $( ($sks_param:ident, $wopbs_param:ident) ),* }) => {
@@ -23,6 +23,7 @@ macro_rules! create_parametrized_test{
      ($name:ident)=> {
         create_parametrized_test!($name
         {
+            (PARAM_MESSAGE_1_CARRY_1, WOPBS_PARAM_MESSAGE_1_CARRY_1),
             (PARAM_MESSAGE_2_CARRY_2, WOPBS_PARAM_MESSAGE_2_CARRY_2),
             (PARAM_MESSAGE_3_CARRY_3, WOPBS_PARAM_MESSAGE_3_CARRY_3),
             (PARAM_MESSAGE_4_CARRY_4, WOPBS_PARAM_MESSAGE_4_CARRY_4)
