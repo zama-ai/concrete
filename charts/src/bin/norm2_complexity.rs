@@ -1,5 +1,6 @@
 use charts::{draw, Serie};
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
+use concrete_optimizer::config;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern::{self as optimize_atomic_pattern};
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
@@ -25,6 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let glwe_dimensions: Vec<_> = (1..=6).collect();
     let internal_lwe_dimensions: Vec<_> = (MIN_LWE_DIM..=MAX_LWE_DIM).step_by(10).collect();
 
+    let processing_unit = config::ProcessingUnit::Cpu;
+
     let search_space = SearchSpace {
         glwe_log_polynomial_sizes,
         glwe_dimensions,
@@ -41,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(security_level);
+    let cache = decomposition::cache(security_level, processing_unit, None);
 
     let solutions: Vec<_> = log_norm2s
         .clone()

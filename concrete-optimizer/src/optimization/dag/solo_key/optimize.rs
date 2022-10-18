@@ -359,12 +359,12 @@ mod tests {
 
     use super::*;
     use crate::computing_cost::cpu::CpuComplexity;
+    use crate::config;
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::noise_estimator::p_error::repeat_p_error;
-    use crate::optimization::atomic_pattern;
     use crate::optimization::config::SearchSpace;
     use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
-    use crate::optimization::decomposition;
+    use crate::optimization::{atomic_pattern, decomposition};
     use crate::utils::square;
 
     fn small_relative_diff(v1: f64, v2: f64) -> bool {
@@ -399,7 +399,7 @@ mod tests {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let search_space = SearchSpace::default();
+        let search_space = SearchSpace::default_cpu();
 
         super::optimize(dag, config, &search_space, cache)
     }
@@ -429,7 +429,9 @@ mod tests {
     }
 
     fn v0_parameter_ref(precision: u64, weight: u64, times: &mut Times) {
-        let search_space = SearchSpace::default();
+        let processing_unit = config::ProcessingUnit::Cpu;
+
+        let search_space = SearchSpace::default(processing_unit);
 
         let sum_size = 1;
 
@@ -440,7 +442,7 @@ mod tests {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let cache = decomposition::cache(config.security_level);
+        let cache = decomposition::cache(config.security_level, processing_unit, None);
 
         let _ = optimize_v0(
             sum_size,
@@ -499,9 +501,10 @@ mod tests {
     }
 
     fn v0_parameter_ref_with_dot(precision: Precision, weight: i64) {
+        let processing_unit = config::ProcessingUnit::Cpu;
         let security_level = 128;
 
-        let cache = decomposition::cache(security_level);
+        let cache = decomposition::cache(security_level, processing_unit, None);
 
         let mut dag = unparametrized::OperationDag::new();
         {
@@ -530,7 +533,7 @@ mod tests {
             assert_f64_eq(square(weight) as f64, constraint.pareto_in_lut[0].lut_coeff);
         }
 
-        let search_space = SearchSpace::default();
+        let search_space = SearchSpace::default(processing_unit);
 
         let config = Config {
             security_level,
@@ -589,7 +592,8 @@ mod tests {
     }
     #[test]
     fn test_lut_vs_no_lut() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         for precision in 1..=8 {
             no_lut_vs_lut(precision, &cache);
         }
@@ -632,7 +636,8 @@ mod tests {
 
     #[test]
     fn test_lut_with_input_base_noise_better_than_lut_with_lut_base_noise() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         for log_weight in 1..=16 {
             let weight = 1 << log_weight;
             for precision in 5..=9 {
@@ -666,7 +671,8 @@ mod tests {
 
     #[test]
     fn test_lut_1_layer_is_better() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         // for some reason on 4, 5, 6, the complexity is already minimal
         // this could be due to pre-defined pareto set
         for precision in [1, 2, 3, 7, 8] {
@@ -722,7 +728,8 @@ mod tests {
 
     #[test]
     fn test_multi_precision_dominate_single() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         let mut prev = Some(true); // true -> ... -> true -> false -> ... -> false
         for log2_weight in 0..29 {
             let weight = 1 << log2_weight;
@@ -756,7 +763,8 @@ mod tests {
 
     #[test]
     fn test_global_p_error_input() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         for precision in [4_u8, 8] {
             for weight in [1, 3, 27, 243, 729] {
                 for dim in [1, 2, 16, 32] {
@@ -786,7 +794,8 @@ mod tests {
 
     #[test]
     fn test_global_p_error_lut() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         for precision in [4_u8, 8] {
             for weight in [1, 3, 27, 243, 729] {
                 for depth in [2, 16, 32] {
@@ -847,7 +856,8 @@ mod tests {
     #[allow(clippy::unnecessary_cast)] // clippy bug refusing as Precision on const
     #[test]
     fn test_global_p_error_dominating_lut() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         let depth = 128;
         let weights_low = 1;
         let weights_high = 1;
@@ -875,7 +885,8 @@ mod tests {
     #[allow(clippy::unnecessary_cast)] // clippy bug refusing as Precision on const
     #[test]
     fn test_global_p_error_non_dominating_lut() {
-        let cache = decomposition::cache(128);
+        let processing_unit = config::ProcessingUnit::Cpu;
+        let cache = decomposition::cache(128, processing_unit, None);
         let depth = 128;
         let weights_low = 1024 * 1024 * 3;
         let weights_high = 1;

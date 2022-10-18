@@ -19,6 +19,7 @@
 
 pub mod computing_cost;
 
+pub mod config;
 pub mod dag;
 pub mod global_parameters;
 pub mod noise_estimator;

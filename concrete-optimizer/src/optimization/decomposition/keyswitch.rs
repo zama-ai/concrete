@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 
 use concrete_commons::dispersion::DispersionParameter;
 
-use crate::computing_cost::operators::keyswitch_lwe::KsComplexity;
+use crate::computing_cost::complexity_model::ComplexityModel;
+use crate::config;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::parameters::{
     GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension,
@@ -31,6 +34,7 @@ impl ComplexityNoise for KsComplexityNoise {
 
 /* This is stricly variance decreasing and strictly complexity increasing */
 pub fn pareto_quantities(
+    complexity_model: &dyn ComplexityModel,
     ciphertext_modulus_log: u32,
     security_level: u64,
     internal_dim: u64,
@@ -54,20 +58,18 @@ pub fn pareto_quantities(
     let mut increasing_complexity = 0.0;
     let mut decreasing_variance = f64::INFINITY;
     let mut counting_no_progress = 0;
-    let mut prev_best_log2_base = 0_u64;
-    let max_level = ciphertext_modulus_log as u64;
-    for level in 1..=max_level {
+    let mut prev_best_log2_base = ciphertext_modulus_log as u64;
+
+    for level in 1..=ciphertext_modulus_log as u64 {
         // detect increasing noise
         let mut level_decreasing_base_noise = f64::INFINITY;
         let mut best_log2_base = 0_u64;
-        let range: Vec<_> = if level == 1 {
-            (1..=(max_level / level)).collect()
-        } else {
-            // we know a max is between 1 and prev_best_log2_base
-            // and the curve has only 1 maximum close to prev_best_log2_base
-            // so we start on prev_best_log2_base
-            (1..=prev_best_log2_base).rev().collect()
-        };
+
+        // we know a max is between 1 and prev_best_log2_base
+        // and the curve has only 1 maximum close to prev_best_log2_base
+        // so we start on prev_best_log2_base
+        let range = (1..=prev_best_log2_base).rev();
+
         for log2_base in range {
             let noise_keyswitch = noise_atomic_pattern::variance_keyswitch(
                 ks_param(level, log2_base),
@@ -93,7 +95,8 @@ pub fn pareto_quantities(
             continue;
         }
         let ks_params = ks_param(level, best_log2_base);
-        let complexity_keyswitch = KsComplexity.complexity(ks_params, ciphertext_modulus_log);
+        let complexity_keyswitch =
+            complexity_model.ks_complexity(ks_params, ciphertext_modulus_log);
         quantities.push(KsComplexityNoise {
             decomp: ks_params.ks_decomposition_parameter,
             noise: level_decreasing_base_noise,
@@ -120,15 +123,26 @@ impl Cache {
 
 pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<KsComplexityNoise>>;
 
-pub fn cache(security_level: u64) -> PersistDecompCache {
+pub fn cache(
+    security_level: u64,
+    processing_unit: config::ProcessingUnit,
+    complexity_model: Option<Arc<dyn ComplexityModel>>,
+) -> PersistDecompCache {
     let ciphertext_modulus_log = 64;
     let tmp: String = std::env::temp_dir()
         .to_str()
         .expect("Invalid tmp dir")
         .into();
-    let path = format!("{tmp}/optimizer/cache/ks-decomp-cpu-64-{security_level}");
+
+    let hardware = processing_unit.ks_to_string();
+
+    let path = format!("{tmp}/optimizer/cache/ks-decomp-{hardware}-64-{security_level}");
+
+    let complexity_model = complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
+
     let function = move |(glwe_params, internal_dim): MacroParam| {
         pareto_quantities(
+            complexity_model.as_ref(),
             ciphertext_modulus_log,
             security_level,
             internal_dim,

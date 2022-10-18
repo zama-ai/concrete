@@ -3,6 +3,7 @@ use super::super::fft;
 use crate::parameters::CmuxParameters;
 use crate::utils::square;
 
+#[derive(Clone)]
 pub struct SimpleWithFactors {
     fft: fft::AsymptoticWithFactors,
     blind_rotate_factor: f64,

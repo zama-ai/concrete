@@ -10,6 +10,7 @@
 
 use clap::Parser;
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
+use concrete_optimizer::config;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern::{
     self as optimize_atomic_pattern, OptimizationState,
@@ -84,6 +85,8 @@ pub struct Args {
 }
 
 pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
+    let processing_unit = config::ProcessingUnit::Cpu;
+
     let sum_size = args.sum_size;
     let maximum_acceptable_error_probability = args.p_error;
     let security_level = args.security_level;
@@ -108,7 +111,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(config.security_level);
+    let cache = decomposition::cache(config.security_level, processing_unit, None);
 
     precisions_iter
         .map(|precision| {

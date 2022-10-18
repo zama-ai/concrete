@@ -1,3 +1,3 @@
 pub mod cmux;
-pub mod keyswitch_lwe;
-pub mod pbs;
+pub(super) mod keyswitch_lwe;
+pub(super) mod pbs;

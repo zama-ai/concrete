@@ -4,6 +4,7 @@ use super::operators::keyswitch_lwe::KsComplexity;
 use super::operators::{keyswitch_lwe, pbs};
 use crate::parameters::{KeyswitchParameters, LweDimension, PbsParameters};
 
+#[derive(Clone)]
 pub struct CpuComplexity {
     pub ks_lwe: keyswitch_lwe::KsComplexity,
     pub pbs: pbs::PbsComplexity,

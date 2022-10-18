@@ -1,13 +1,15 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 
 use concrete_commons::dispersion::DispersionParameter;
 
-use crate::computing_cost::operators::pbs::PbsComplexity;
+use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::parameters::{BrDecompositionParameters, GlweParameters, LweDimension, PbsParameters};
-use crate::security;
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::PersistentCacheHashMap;
+use crate::{config, security};
 
 use super::common::MacroParam;
 use super::cut::ComplexityNoise;
@@ -21,10 +23,12 @@ pub struct BrComplexityNoise {
 
 /* This is stricly variance decreasing and strictly complexity increasing */
 pub fn pareto_quantities(
+    complexity_model: &dyn ComplexityModel,
     ciphertext_modulus_log: u32,
     security_level: u64,
     internal_dim: u64,
     glwe_params: GlweParameters,
+    max_log2_base: u64,
 ) -> Vec<BrComplexityNoise> {
     assert!(ciphertext_modulus_log == 64);
     let pbs_param = |level, log2_base| {
@@ -38,24 +42,22 @@ pub fn pareto_quantities(
     let variance_bsk =
         security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
 
-    let mut quantities = Vec::with_capacity(64);
+    let mut quantities = Vec::with_capacity(max_log2_base as usize);
     let mut increasing_complexity = 0.0;
     let mut decreasing_variance = f64::INFINITY;
     let mut counting_no_progress = 0;
-    let mut prev_best_log2_base = 0_u64;
-    let max_level = ciphertext_modulus_log as u64;
-    for level in 1..=max_level {
+
+    let mut prev_best_log2_base = max_log2_base;
+
+    for level in 1..=ciphertext_modulus_log as u64 {
         // detect increasing noise
         let mut level_decreasing_base_noise = f64::INFINITY;
         let mut best_log2_base = 0_u64;
-        let range: Vec<_> = if level == 1 {
-            (1..=(max_level / level)).collect()
-        } else {
-            // we know a max is between 1 and prev_best_log2_base
-            // and the curve has only 1 maximum close to prev_best_log2_base
-            // so we start on prev_best_log2_base
-            (1..=prev_best_log2_base).rev().collect()
-        };
+        // we know a max is between 1 and prev_best_log2_base
+        // and the curve has only 1 maximum close to prev_best_log2_base
+        // so we start on prev_best_log2_base
+        let range = (1..=prev_best_log2_base).rev();
+
         for log2_base in range {
             let base_noise = noise_atomic_pattern::variance_bootstrap(
                 pbs_param(level, log2_base),
@@ -81,7 +83,7 @@ pub fn pareto_quantities(
             continue;
         }
         let params = pbs_param(level, best_log2_base);
-        let complexity_pbs = PbsComplexity::default().complexity(params, ciphertext_modulus_log);
+        let complexity_pbs = complexity_model.pbs_complexity(params, ciphertext_modulus_log);
 
         quantities.push(BrComplexityNoise {
             decomp: params.br_decomposition_parameter,
@@ -118,19 +120,33 @@ impl Cache {
 
 pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<BrComplexityNoise>>;
 
-pub fn cache(security_level: u64) -> PersistDecompCache {
+pub fn cache(
+    security_level: u64,
+    processing_unit: config::ProcessingUnit,
+    complexity_model: Option<Arc<dyn ComplexityModel>>,
+) -> PersistDecompCache {
+    let max_log2_base = processing_unit.max_br_base_log();
+
     let ciphertext_modulus_log = 64;
     let tmp: String = std::env::temp_dir()
         .to_str()
         .expect("Invalid tmp dir")
         .into();
-    let path = format!("{tmp}/optimizer/cache/br-decomp-cpu-64-{security_level}");
+
+    let hardware = processing_unit.br_to_string();
+
+    let path = format!("{tmp}/optimizer/cache/br-decomp-{hardware}-64-{security_level}");
+
+    let complexity_model = complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
+
     let function = move |(glwe_params, internal_dim): MacroParam| {
         pareto_quantities(
+            complexity_model.as_ref(),
             ciphertext_modulus_log,
             security_level,
             internal_dim,
             glwe_params,
+            max_log2_base,
         )
     };
     PersistentCacheHashMap::new(&path, "v0", function)

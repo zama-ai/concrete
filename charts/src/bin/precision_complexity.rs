@@ -1,5 +1,6 @@
 use charts::{draw, Serie};
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
+use concrete_optimizer::config;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern::{self as optimize_atomic_pattern};
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
@@ -18,6 +19,8 @@ pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start as u6
 pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end as u64 - 1;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let processing_unit = config::ProcessingUnit::Cpu;
+
     let sum_size = 4096;
     let p_error = _4_SIGMA;
     let security_level = 128;
@@ -41,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(security_level);
+    let cache = decomposition::cache(security_level, processing_unit, None);
 
     let solutions: Vec<_> = precisions
         .clone()

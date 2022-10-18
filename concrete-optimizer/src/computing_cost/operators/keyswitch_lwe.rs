@@ -1,6 +1,7 @@
 use super::super::complexity::Complexity;
 use crate::parameters::KeyswitchParameters;
 
+#[derive(Clone)]
 pub struct KsComplexity;
 
 impl KsComplexity {

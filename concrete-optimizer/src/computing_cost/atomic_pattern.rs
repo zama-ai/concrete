@@ -2,6 +2,7 @@ use super::complexity::Complexity;
 use super::complexity_model::ComplexityModel;
 use crate::parameters::AtomicPatternParameters;
 
+#[allow(dead_code)]
 pub fn atomic_pattern_complexity(
     complexity_model: &dyn ComplexityModel,
     sum_size: u64,

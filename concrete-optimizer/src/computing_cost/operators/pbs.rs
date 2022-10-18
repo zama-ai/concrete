@@ -2,7 +2,7 @@ use super::super::complexity::Complexity;
 use super::cmux;
 use crate::parameters::PbsParameters;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PbsComplexity {
     pub cmux: cmux::SimpleWithFactors,
 }
