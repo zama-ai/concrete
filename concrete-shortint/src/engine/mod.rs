@@ -13,8 +13,8 @@ thread_local! {
 }
 
 fn new_seeder() -> Box<dyn Seeder> {
-    let seeder;
-    #[cfg(target_arch = "x86")]
+    let seeder: Box<dyn Seeder>;
+    #[cfg(target_arch = "x86_64")]
     {
         if RdseedSeeder::is_available() {
             seeder = Box::new(RdseedSeeder);
@@ -23,7 +23,7 @@ fn new_seeder() -> Box<dyn Seeder> {
             seeder = Box::new(UnixSeeder::new(0));
         }
     }
-    #[cfg(not(target_arch = "x86"))]
+    #[cfg(not(target_arch = "x86_64"))]
     {
         seeder = Box::new(UnixSeeder::new(0));
     }

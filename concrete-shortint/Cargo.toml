@@ -29,7 +29,8 @@ features = [
     "backend_default_serialization",
     "backend_fft_serialization",
     "backend_default_parallel",
-    "backend_default_generator_x86_64_aesni"
+    "backend_default_generator_x86_64_aesni",
+    "seeder_x86_64_rdseed",
 ]
 
 [target.'cfg(target_arch = "aarch64")'.dependencies.concrete-core]

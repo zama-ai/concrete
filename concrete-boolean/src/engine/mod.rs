@@ -2,7 +2,7 @@ use crate::ciphertext::Ciphertext;
 use crate::parameters::BooleanParameters;
 use crate::{ClientKey, PLAINTEXT_FALSE, PLAINTEXT_TRUE};
 use bootstrapping::{BooleanServerKey, Bootstrapper, CpuBootstrapper};
-use concrete_core::prelude::{DefaultEngine, *};
+use concrete_core::prelude::*;
 use std::cell::RefCell;
 pub mod bootstrapping;
 use crate::engine::bootstrapping::CpuBootstrapKey;
@@ -161,13 +161,32 @@ impl<B> BooleanEngine<B> {
     }
 }
 
+fn new_seeder() -> Box<dyn Seeder> {
+    let seeder: Box<dyn Seeder>;
+    #[cfg(target_arch = "x86_64")]
+    {
+        if RdseedSeeder::is_available() {
+            seeder = Box::new(RdseedSeeder);
+        } else {
+            assert!(false);
+            seeder = Box::new(UnixSeeder::new(0));
+        }
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        seeder = Box::new(UnixSeeder::new(0));
+    }
+
+    seeder
+}
+
 impl<B> BooleanEngine<B>
 where
     B: Bootstrapper,
 {
     pub fn new() -> Self {
-        let engine = DefaultEngine::new(Box::new(UnixSeeder::new(0)))
-            .expect("Unexpectedly failed to create a core engine");
+        let engine =
+            DefaultEngine::new(new_seeder()).expect("Unexpectedly failed to create a core engine");
 
         Self {
             engine,
