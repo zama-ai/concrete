@@ -92,6 +92,11 @@ pub enum Operator {
         input: OperatorIndex,
         out_precision: Precision, // precision is changed without modifying the input, can be increase or decrease
     },
+    // Round is expanded to sub-graph on direct representation or fused in lut for Radix and Crt representation.
+    Round {
+        input: OperatorIndex,
+        out_precision: Precision,
+    },
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

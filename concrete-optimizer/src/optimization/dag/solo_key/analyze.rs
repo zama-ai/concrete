@@ -2,6 +2,7 @@ use super::symbolic_variance::{SymbolicVariance, VarianceOrigin};
 use crate::dag::operator::{
     dot_kind, DotKind, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
+use crate::dag::rewrite::round::expand_round;
 use crate::dag::unparametrized;
 use crate::noise_estimator::error;
 use crate::noise_estimator::p_error::{combine_errors, repeat_p_error};
@@ -56,6 +57,12 @@ fn assert_dag_correctness(dag: &unparametrized::OperationDag) {
         assert_non_empty_inputs(op);
         assert_inputs_uniform_precisions(op, &dag.out_precisions);
         assert_dot_uniform_inputs_shape(op, &dag.out_shapes);
+    }
+}
+
+fn assert_no_round(dag: &unparametrized::OperationDag) {
+    for op in &dag.operators {
+        assert!(!matches!(op, Op::Round { .. }));
     }
 }
 
@@ -155,6 +162,9 @@ fn out_variance(
             }
         }
         Op::UnsafeCast { input, .. } => out_variances[input.i],
+        Op::Round { .. } => {
+            unreachable!("Round should have been either expanded or integrated to a lut")
+        }
     }
 }
 
@@ -174,7 +184,7 @@ fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> 
     for op in &dag.operators {
         match op {
             Op::Input { .. } => (),
-            Op::Lut { input, .. } | Op::UnsafeCast { input, .. } => {
+            Op::Lut { input, .. } | Op::UnsafeCast { input, .. } | Op::Round { input, .. } => {
                 extra_values_to_check[input.i] = false;
             }
             Op::Dot { inputs, .. } | Op::LevelledOp { inputs, .. } => {
@@ -248,6 +258,9 @@ fn op_levelled_complexity(
         }
         Op::LevelledOp { complexity, .. } => *complexity,
         Op::Input { .. } | Op::Lut { .. } | Op::UnsafeCast { .. } => LevelledComplexity::ZERO,
+        Op::Round { .. } => {
+            unreachable!("Round should have been either expanded or integrated to a lut")
+        }
     }
 }
 
@@ -379,6 +392,8 @@ pub fn analyze(
     noise_config: &NoiseBoundConfig,
 ) -> OperationDag {
     assert_dag_correctness(dag);
+    let dag = &expand_round(dag);
+    assert_no_round(dag);
     let out_variances = out_variances(dag);
     let in_luts_variance = in_luts_variance(dag, &out_variances);
     let nb_luts = lut_count_from_dag(dag);

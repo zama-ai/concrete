@@ -106,6 +106,19 @@ impl OperationDag {
         })
     }
 
+    pub fn add_round_op(
+        &mut self,
+        input: OperatorIndex,
+        rounded_precision: Precision,
+    ) -> OperatorIndex {
+        let in_precision = self.out_precisions[input.i];
+        assert!(rounded_precision <= in_precision);
+        self.add_operator(Operator::Round {
+            input,
+            out_precision: rounded_precision,
+        })
+    }
+
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.operators.len()
@@ -209,14 +222,25 @@ impl OperationDag {
         self.add_lut(rounded, table, out_precision)
     }
 
+    pub fn add_rounded_lut(
+        &mut self,
+        input: OperatorIndex,
+        table: FunctionTable,
+        rounded_precision: Precision,
+        out_precision: Precision,
+    ) -> OperatorIndex {
+        let rounded = self.add_round_op(input, rounded_precision);
+        self.add_lut(rounded, table, out_precision)
+    }
+
     fn infer_out_shape(&self, op: &UnparameterizedOperator) -> Shape {
         match op {
             Operator::Input { out_shape, .. } | Operator::LevelledOp { out_shape, .. } => {
                 out_shape.clone()
             }
-            Operator::Lut { input, .. } | Operator::UnsafeCast { input, .. } => {
-                self.out_shapes[input.i].clone()
-            }
+            Operator::Lut { input, .. }
+            | Operator::UnsafeCast { input, .. }
+            | Operator::Round { input, .. } => self.out_shapes[input.i].clone(),
             Operator::Dot {
                 inputs, weights, ..
             } => {
@@ -247,7 +271,8 @@ impl OperationDag {
         match op {
             Operator::Input { out_precision, .. }
             | Operator::Lut { out_precision, .. }
-            | Operator::UnsafeCast { out_precision, .. } => *out_precision,
+            | Operator::UnsafeCast { out_precision, .. }
+            | Operator::Round { out_precision, .. } => *out_precision,
             Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
                 self.out_precisions[inputs[0].i]
             }
