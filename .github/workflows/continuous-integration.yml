@@ -464,7 +464,7 @@ jobs:
 
           TAG="$(git describe --tags --abbrev=0)"
 
-          sudo cp "${{ github.workspace }}/tarballs/concretecompiler.tar.gz ${{ github.workspace }}/tarballs/concretecompiler-${TAG}-x86_64-linux-gnu.tar.gz"
+          sudo cp "${{ github.workspace }}/tarballs/concretecompiler.tar.gz" "${{ github.workspace }}/tarballs/concretecompiler-${TAG}-x86_64-linux-gnu.tar.gz"
           echo "::set-output name=ASSET_NAME::concretecompiler-${TAG}-x86_64-linux-gnu.tar.gz"
 
       - name: Upload Tarball
