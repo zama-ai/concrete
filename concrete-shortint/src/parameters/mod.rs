@@ -158,7 +158,9 @@ pub const DEFAULT_PARAMETERS: Parameters = PARAM_MESSAGE_2_CARRY_2;
 
 /// Nomenclature: PARAM_MESSAGE_X_CARRY_Y: the message (respectively carry) modulus is
 /// encoded over X (reps. Y) bits, i.e., message_modulus = 2^{X} (resp. carry_modulus = 2^{Y}).
-pub const PARAM_MESSAGE_1_CARRY_0: Parameters = Parameters { lwe_dimension: LweDimension(567),glwe_dimension: GlweDimension(5),
+pub const PARAM_MESSAGE_1_CARRY_0: Parameters = Parameters {
+    lwe_dimension: LweDimension(567),
+    glwe_dimension: GlweDimension(5),
     polynomial_size: PolynomialSize(256),
     lwe_modular_std_dev: StandardDev(0.00017395369678340785),
     glwe_modular_std_dev: StandardDev(0.00000000037411618952047216),
@@ -174,7 +176,9 @@ pub const PARAM_MESSAGE_1_CARRY_0: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(2),
     carry_modulus: CarryModulus(1),
 };
-pub const PARAM_MESSAGE_1_CARRY_1: Parameters = Parameters { lwe_dimension: LweDimension(653),glwe_dimension: GlweDimension(6),
+pub const PARAM_MESSAGE_1_CARRY_1: Parameters = Parameters {
+    lwe_dimension: LweDimension(653),
+    glwe_dimension: GlweDimension(6),
     polynomial_size: PolynomialSize(256),
     lwe_modular_std_dev: StandardDev(0.00003604499526942373),
     glwe_modular_std_dev: StandardDev(0.0000000000034525330484572114),
@@ -190,7 +194,9 @@ pub const PARAM_MESSAGE_1_CARRY_1: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(2),
     carry_modulus: CarryModulus(2),
 };
-pub const PARAM_MESSAGE_2_CARRY_0: Parameters = Parameters { lwe_dimension: LweDimension(653),glwe_dimension: GlweDimension(5),
+pub const PARAM_MESSAGE_2_CARRY_0: Parameters = Parameters {
+    lwe_dimension: LweDimension(653),
+    glwe_dimension: GlweDimension(5),
     polynomial_size: PolynomialSize(256),
     lwe_modular_std_dev: StandardDev(0.00003604499526942373),
     glwe_modular_std_dev: StandardDev(0.00000000037411618952047216),
@@ -206,7 +212,9 @@ pub const PARAM_MESSAGE_2_CARRY_0: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(4),
     carry_modulus: CarryModulus(1),
 };
-pub const PARAM_MESSAGE_1_CARRY_2: Parameters = Parameters { lwe_dimension: LweDimension(698),glwe_dimension: GlweDimension(3),
+pub const PARAM_MESSAGE_1_CARRY_2: Parameters = Parameters {
+    lwe_dimension: LweDimension(698),
+    glwe_dimension: GlweDimension(3),
     polynomial_size: PolynomialSize(512),
     lwe_modular_std_dev: StandardDev(0.000015818059929193196),
     glwe_modular_std_dev: StandardDev(0.0000000000034525330484572114),
@@ -222,7 +230,9 @@ pub const PARAM_MESSAGE_1_CARRY_2: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(2),
     carry_modulus: CarryModulus(4),
 };
-pub const PARAM_MESSAGE_2_CARRY_1: Parameters = Parameters { lwe_dimension: LweDimension(696),glwe_dimension: GlweDimension(3),
+pub const PARAM_MESSAGE_2_CARRY_1: Parameters = Parameters {
+    lwe_dimension: LweDimension(696),
+    glwe_dimension: GlweDimension(3),
     polynomial_size: PolynomialSize(512),
     lwe_modular_std_dev: StandardDev(0.00001640781036519474),
     glwe_modular_std_dev: StandardDev(0.0000000000034525330484572114),
@@ -238,7 +248,9 @@ pub const PARAM_MESSAGE_2_CARRY_1: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(4),
     carry_modulus: CarryModulus(2),
 };
-pub const PARAM_MESSAGE_3_CARRY_0: Parameters = Parameters { lwe_dimension: LweDimension(694),glwe_dimension: GlweDimension(3),
+pub const PARAM_MESSAGE_3_CARRY_0: Parameters = Parameters {
+    lwe_dimension: LweDimension(694),
+    glwe_dimension: GlweDimension(3),
     polynomial_size: PolynomialSize(512),
     lwe_modular_std_dev: StandardDev(0.00001701954867950249),
     glwe_modular_std_dev: StandardDev(0.0000000000034525330484572114),
@@ -254,7 +266,9 @@ pub const PARAM_MESSAGE_3_CARRY_0: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(8),
     carry_modulus: CarryModulus(1),
 };
-pub const PARAM_MESSAGE_1_CARRY_3: Parameters = Parameters { lwe_dimension: LweDimension(771),glwe_dimension: GlweDimension(2),
+pub const PARAM_MESSAGE_1_CARRY_3: Parameters = Parameters {
+    lwe_dimension: LweDimension(771),
+    glwe_dimension: GlweDimension(2),
     polynomial_size: PolynomialSize(1024),
     lwe_modular_std_dev: StandardDev(0.000004158126532841584),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -270,7 +284,9 @@ pub const PARAM_MESSAGE_1_CARRY_3: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(2),
     carry_modulus: CarryModulus(8),
 };
-pub const PARAM_MESSAGE_2_CARRY_2: Parameters = Parameters { lwe_dimension: LweDimension(769),glwe_dimension: GlweDimension(2),
+pub const PARAM_MESSAGE_2_CARRY_2: Parameters = Parameters {
+    lwe_dimension: LweDimension(769),
+    glwe_dimension: GlweDimension(2),
     polynomial_size: PolynomialSize(1024),
     lwe_modular_std_dev: StandardDev(0.0000043131554647504185),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -286,7 +302,9 @@ pub const PARAM_MESSAGE_2_CARRY_2: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(4),
     carry_modulus: CarryModulus(4),
 };
-pub const PARAM_MESSAGE_3_CARRY_1: Parameters = Parameters { lwe_dimension: LweDimension(769),glwe_dimension: GlweDimension(2),
+pub const PARAM_MESSAGE_3_CARRY_1: Parameters = Parameters {
+    lwe_dimension: LweDimension(769),
+    glwe_dimension: GlweDimension(2),
     polynomial_size: PolynomialSize(1024),
     lwe_modular_std_dev: StandardDev(0.0000043131554647504185),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -302,7 +320,9 @@ pub const PARAM_MESSAGE_3_CARRY_1: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(8),
     carry_modulus: CarryModulus(2),
 };
-pub const PARAM_MESSAGE_4_CARRY_0: Parameters = Parameters { lwe_dimension: LweDimension(769),glwe_dimension: GlweDimension(2),
+pub const PARAM_MESSAGE_4_CARRY_0: Parameters = Parameters {
+    lwe_dimension: LweDimension(769),
+    glwe_dimension: GlweDimension(2),
     polynomial_size: PolynomialSize(1024),
     lwe_modular_std_dev: StandardDev(0.0000043131554647504185),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -318,7 +338,9 @@ pub const PARAM_MESSAGE_4_CARRY_0: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(16),
     carry_modulus: CarryModulus(1),
 };
-pub const PARAM_MESSAGE_1_CARRY_4: Parameters = Parameters { lwe_dimension: LweDimension(769),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_1_CARRY_4: Parameters = Parameters {
+    lwe_dimension: LweDimension(769),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(2048),
     lwe_modular_std_dev: StandardDev(0.0000043131554647504185),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -334,7 +356,9 @@ pub const PARAM_MESSAGE_1_CARRY_4: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(2),
     carry_modulus: CarryModulus(16),
 };
-pub const PARAM_MESSAGE_2_CARRY_3: Parameters = Parameters { lwe_dimension: LweDimension(755),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_2_CARRY_3: Parameters = Parameters {
+    lwe_dimension: LweDimension(755),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(2048),
     lwe_modular_std_dev: StandardDev(0.000005572845359330198),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -350,7 +374,9 @@ pub const PARAM_MESSAGE_2_CARRY_3: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(4),
     carry_modulus: CarryModulus(8),
 };
-pub const PARAM_MESSAGE_3_CARRY_2: Parameters = Parameters { lwe_dimension: LweDimension(754),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_3_CARRY_2: Parameters = Parameters {
+    lwe_dimension: LweDimension(754),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(2048),
     lwe_modular_std_dev: StandardDev(0.0000056757818866051225),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -366,7 +392,9 @@ pub const PARAM_MESSAGE_3_CARRY_2: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(8),
     carry_modulus: CarryModulus(4),
 };
-pub const PARAM_MESSAGE_4_CARRY_1: Parameters = Parameters { lwe_dimension: LweDimension(754),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_4_CARRY_1: Parameters = Parameters {
+    lwe_dimension: LweDimension(754),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(2048),
     lwe_modular_std_dev: StandardDev(0.0000056757818866051225),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -382,7 +410,9 @@ pub const PARAM_MESSAGE_4_CARRY_1: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(16),
     carry_modulus: CarryModulus(2),
 };
-pub const PARAM_MESSAGE_5_CARRY_0: Parameters = Parameters { lwe_dimension: LweDimension(754),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_5_CARRY_0: Parameters = Parameters {
+    lwe_dimension: LweDimension(754),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(2048),
     lwe_modular_std_dev: StandardDev(0.0000056757818866051225),
     glwe_modular_std_dev: StandardDev(0.00000000000000029403601535432533),
@@ -398,7 +428,9 @@ pub const PARAM_MESSAGE_5_CARRY_0: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(32),
     carry_modulus: CarryModulus(1),
 };
-pub const PARAM_MESSAGE_1_CARRY_5: Parameters = Parameters { lwe_dimension: LweDimension(824),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_1_CARRY_5: Parameters = Parameters {
+    lwe_dimension: LweDimension(824),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(4096),
     lwe_modular_std_dev: StandardDev(0.0000015762180593038625),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -414,7 +446,9 @@ pub const PARAM_MESSAGE_1_CARRY_5: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(2),
     carry_modulus: CarryModulus(32),
 };
-pub const PARAM_MESSAGE_2_CARRY_4: Parameters = Parameters { lwe_dimension: LweDimension(824),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_2_CARRY_4: Parameters = Parameters {
+    lwe_dimension: LweDimension(824),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(4096),
     lwe_modular_std_dev: StandardDev(0.0000015762180593038625),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -430,7 +464,9 @@ pub const PARAM_MESSAGE_2_CARRY_4: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(4),
     carry_modulus: CarryModulus(16),
 };
-pub const PARAM_MESSAGE_3_CARRY_3: Parameters = Parameters { lwe_dimension: LweDimension(873),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_3_CARRY_3: Parameters = Parameters {
+    lwe_dimension: LweDimension(873),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(4096),
     lwe_modular_std_dev: StandardDev(0.0000006428797112843789),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -446,7 +482,9 @@ pub const PARAM_MESSAGE_3_CARRY_3: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(8),
     carry_modulus: CarryModulus(8),
 };
-pub const PARAM_MESSAGE_4_CARRY_2: Parameters = Parameters { lwe_dimension: LweDimension(850),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_4_CARRY_2: Parameters = Parameters {
+    lwe_dimension: LweDimension(850),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(4096),
     lwe_modular_std_dev: StandardDev(0.0000009793771134612522),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -462,7 +500,9 @@ pub const PARAM_MESSAGE_4_CARRY_2: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(16),
     carry_modulus: CarryModulus(4),
 };
-pub const PARAM_MESSAGE_5_CARRY_1: Parameters = Parameters { lwe_dimension: LweDimension(848),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_5_CARRY_1: Parameters = Parameters {
+    lwe_dimension: LweDimension(848),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(4096),
     lwe_modular_std_dev: StandardDev(0.0000010158915837729808),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -478,7 +518,9 @@ pub const PARAM_MESSAGE_5_CARRY_1: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(32),
     carry_modulus: CarryModulus(2),
 };
-pub const PARAM_MESSAGE_6_CARRY_0: Parameters = Parameters { lwe_dimension: LweDimension(847),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_6_CARRY_0: Parameters = Parameters {
+    lwe_dimension: LweDimension(847),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(4096),
     lwe_modular_std_dev: StandardDev(0.0000010346562084806),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -494,7 +536,9 @@ pub const PARAM_MESSAGE_6_CARRY_0: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(64),
     carry_modulus: CarryModulus(1),
 };
-pub const PARAM_MESSAGE_1_CARRY_6: Parameters = Parameters { lwe_dimension: LweDimension(879),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_1_CARRY_6: Parameters = Parameters {
+    lwe_dimension: LweDimension(879),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(8192),
     lwe_modular_std_dev: StandardDev(0.0000005760198979100338),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -510,7 +554,9 @@ pub const PARAM_MESSAGE_1_CARRY_6: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(2),
     carry_modulus: CarryModulus(64),
 };
-pub const PARAM_MESSAGE_2_CARRY_5: Parameters = Parameters { lwe_dimension: LweDimension(878),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_2_CARRY_5: Parameters = Parameters {
+    lwe_dimension: LweDimension(878),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(8192),
     lwe_modular_std_dev: StandardDev(0.0000005866596131917157),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -526,7 +572,9 @@ pub const PARAM_MESSAGE_2_CARRY_5: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(4),
     carry_modulus: CarryModulus(32),
 };
-pub const PARAM_MESSAGE_3_CARRY_4: Parameters = Parameters { lwe_dimension: LweDimension(877),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_3_CARRY_4: Parameters = Parameters {
+    lwe_dimension: LweDimension(877),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(8192),
     lwe_modular_std_dev: StandardDev(0.0000005974958556101962),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -542,7 +590,9 @@ pub const PARAM_MESSAGE_3_CARRY_4: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(8),
     carry_modulus: CarryModulus(16),
 };
-pub const PARAM_MESSAGE_4_CARRY_3: Parameters = Parameters { lwe_dimension: LweDimension(877),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_4_CARRY_3: Parameters = Parameters {
+    lwe_dimension: LweDimension(877),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(8192),
     lwe_modular_std_dev: StandardDev(0.0000005974958556101962),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -558,7 +608,9 @@ pub const PARAM_MESSAGE_4_CARRY_3: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(16),
     carry_modulus: CarryModulus(8),
 };
-pub const PARAM_MESSAGE_5_CARRY_2: Parameters = Parameters { lwe_dimension: LweDimension(877),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_5_CARRY_2: Parameters = Parameters {
+    lwe_dimension: LweDimension(877),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(8192),
     lwe_modular_std_dev: StandardDev(0.0000005974958556101962),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -574,7 +626,9 @@ pub const PARAM_MESSAGE_5_CARRY_2: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(32),
     carry_modulus: CarryModulus(4),
 };
-pub const PARAM_MESSAGE_6_CARRY_1: Parameters = Parameters { lwe_dimension: LweDimension(893),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_6_CARRY_1: Parameters = Parameters {
+    lwe_dimension: LweDimension(893),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(8192),
     lwe_modular_std_dev: StandardDev(0.0000004458159540199854),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),
@@ -590,7 +644,9 @@ pub const PARAM_MESSAGE_6_CARRY_1: Parameters = Parameters { lwe_dimension: LweD
     message_modulus: MessageModulus(64),
     carry_modulus: CarryModulus(2),
 };
-pub const PARAM_MESSAGE_7_CARRY_0: Parameters = Parameters { lwe_dimension: LweDimension(880),glwe_dimension: GlweDimension(1),
+pub const PARAM_MESSAGE_7_CARRY_0: Parameters = Parameters {
+    lwe_dimension: LweDimension(880),
+    glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(8192),
     lwe_modular_std_dev: StandardDev(0.0000005655731455300567),
     glwe_modular_std_dev: StandardDev(0.0000000000000000002168404344971009),

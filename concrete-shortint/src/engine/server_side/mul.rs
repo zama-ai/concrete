@@ -132,26 +132,23 @@ impl ShortintEngine {
                 self.message_extract_assign(server_key, ct_left)?;
                 self.message_extract_assign(server_key, ct_right)?;
             }
-            println!("HERE square mul");
             self.unchecked_mul_lsb_small_carry_modulus_assign(server_key, ct_left, ct_right)?;
         } else {
             //If the ciphertext cannot be added together without exceeding the capacity of a
             // ciphertext
-            println!("HERE other mul");
             if !server_key.is_mul_possible(ct_left, ct_right) {
-                // if server_key.message_modulus.0 * (ct_right.degree.0 + 1) < (ct_right
-                //     .carry_modulus.0* ct_right.message_modulus.0 -1)
-                // {
-                //     self.message_extract_assign(server_key, ct_left)?;
-                // } else if (server_key.message_modulus.0 + 1) + (ct_left.degree.0 + 1)
-                //     < (ct_right
-                //     .carry_modulus.0* ct_right.message_modulus.0 -1)
-                // {
-                //     self.message_extract_assign(server_key, ct_right)?;
-                // } else {
-                self.message_extract_assign(server_key, ct_left)?;
-                self.message_extract_assign(server_key, ct_right)?;
-                // }
+                if server_key.message_modulus.0 * (ct_right.degree.0 + 1)
+                    < (ct_right.carry_modulus.0 * ct_right.message_modulus.0 - 1)
+                {
+                    self.message_extract_assign(server_key, ct_left)?;
+                } else if (server_key.message_modulus.0 + 1) + (ct_left.degree.0 + 1)
+                    < (ct_right.carry_modulus.0 * ct_right.message_modulus.0 - 1)
+                {
+                    self.message_extract_assign(server_key, ct_right)?;
+                } else {
+                    self.message_extract_assign(server_key, ct_left)?;
+                    self.message_extract_assign(server_key, ct_right)?;
+                }
             }
             self.unchecked_mul_lsb_assign(server_key, ct_left, ct_right)?;
         }

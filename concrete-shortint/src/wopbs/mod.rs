@@ -4,7 +4,8 @@
 //! an alternative version of the programmable bootstrapping. This does not require the use of a
 //! bit of padding.
 //!
-//! # WARNING: this module is experimental.
+//! In the case where a padding bit is defined, keys are generated so that there a compatible for
+//! both uses.
 
 use crate::engine::ShortintEngine;
 use crate::{Ciphertext, ClientKey, Parameters, ServerKey};
@@ -28,6 +29,29 @@ pub struct WopbsKey {
 }
 
 impl WopbsKey {
+    /// Generates the server key required to compute a WoPBS from the client and the server keys.
+    ///
+    /// #Warning
+    /// Only when the classical PBS is not used in the circuit
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_shortint::gen_keys;
+    /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_1_CARRY_1;
+    /// use concrete_shortint::parameters::PARAM_MESSAGE_1_CARRY_1;
+    /// use concrete_shortint::wopbs::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_1_CARRY_1);
+    /// let mut wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
+    /// ```
+    pub fn new_wopbs_key_only_for_wopbs(cks: &ClientKey, sks: &ServerKey) -> WopbsKey {
+        ShortintEngine::with_thread_local_mut(|engine| {
+            engine.new_wopbs_key_only_for_wopbs(cks, sks).unwrap()
+        })
+    }
+
     /// Generates the server key required to compute a WoPBS from the client and the server keys.
     /// # Example
     ///
@@ -56,20 +80,20 @@ impl WopbsKey {
     /// ```rust
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
-    /// use concrete_shortint::parameters::PARAM_MESSAGE_2_NORM2_2;
-    /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_NORM2_2;
+    /// use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
+    /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2;
     /// use concrete_shortint::wopbs::*;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks,);
-    /// let message_modulus = WOPBS_PARAM_MESSAGE_2_NORM2_2.message_modulus.0 as u64;
+    /// let (mut cks, mut sks) = gen_keys(PARAM_MESSAGE_2_CARRY_2);
+    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks, &WOPBS_PARAM_MESSAGE_2_CARRY_2);
+    /// let message_modulus = WOPBS_PARAM_MESSAGE_2_CARRY_2.message_modulus.0 as u64;
     /// let m = 2;
     /// let mut ct = cks.encrypt(m);
     /// let lut = wopbs_key.generate_lut(&ct, |x| x * x % message_modulus);
     /// let ct_res = wopbs_key.programmable_bootstrapping(&mut sks, &mut ct, &lut);
-    /// let res = cks.decrypt(&ct_res[0]);
+    /// let res = cks.decrypt(&ct_res);
     /// assert_eq!(res, (m * m) % message_modulus);
     /// ```
     pub fn generate_lut<F>(&self, ct: &Ciphertext, f: F) -> Vec<u64>
@@ -96,19 +120,18 @@ impl WopbsKey {
     /// ```rust
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
-    /// use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_2_NORM2_2;
-    /// use concrete_shortint::wopbs::*;
+    /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
-    /// let message_modulus = WOPBS_PARAM_MESSAGE_2_NORM2_2.message_modulus.0 as u64;
+    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_CARRY_2);
+    /// let mut wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
+    /// let message_modulus = WOPBS_PARAM_MESSAGE_2_CARRY_2.message_modulus.0 as u64;
     /// let m = 2;
     /// let ct = cks.encrypt_without_padding(m);
     /// let lut = wopbs_key.generate_lut(&ct, |x| x * x % message_modulus);
     /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding(&ct, &lut);
-    /// let res = cks.decrypt_without_padding(&ct_res[0]);
+    /// let res = cks.decrypt_without_padding(&ct_res);
     /// assert_eq!(res, (m * m) % message_modulus);
     /// ```
     pub fn generate_lut_without_padding<F>(&self, ct: &Ciphertext, f: F) -> Vec<u64>
@@ -135,18 +158,17 @@ impl WopbsKey {
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
     /// use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_3_NORM2_2;
-    /// use concrete_shortint::wopbs::*;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
     /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_3_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let mut wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
     /// let message_modulus = 5;
     /// let m = 2;
-    /// let mut ct = cks.encrypt_with_message_modulus_not_power_of_two(m, message_modulus);
+    /// let mut ct = cks.encrypt_native_crt(m, message_modulus);
     /// let lut = wopbs_key.generate_lut_without_padding_crt(&ct, |x| x * x % message_modulus as u64);
     /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding_crt(&mut sks, &mut ct, &lut);
-    /// let res = cks.decrypt_message_and_carry_not_power_of_two(&ct_res[0], message_modulus);
+    /// let res = cks.decrypt_message_native_crt(&ct_res, message_modulus);
     /// assert_eq!(res, (m * m) % message_modulus as u64);
     /// ```
     pub fn generate_lut_native_crt<F>(&self, ct: &Ciphertext, f: F) -> Vec<u64>
@@ -160,7 +182,6 @@ impl WopbsKey {
         let mut vec_lut = vec![0; poly_size];
         for i in 0..basis {
             let index_lut = (((i as u64 % basis as u64) << nb_bit) / basis as u64) as usize;
-            //println!("val = {}, lut index = {}", i, index_lut);
             vec_lut[index_lut] =
                 (((f(i as u64) % basis as u64) as u128 * (1 << 64)) / basis as u128) as u64;
         }
@@ -176,25 +197,33 @@ impl WopbsKey {
     /// ```rust
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
-    /// use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_2_NORM2_2;
+    /// use concrete_shortint::parameters::parameters_wopbs_message_carry
+    /// ::WOPBS_PARAM_MESSAGE_2_CARRY_2;
+    /// use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
     /// use concrete_shortint::wopbs::*;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_NORM2_2);
-    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let (cks, sks) = gen_keys(PARAM_MESSAGE_2_CARRY_2);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks, &WOPBS_PARAM_MESSAGE_2_CARRY_2);
     /// let mut rng = rand::thread_rng();
-    /// let message_modulus = WOPBS_PARAM_MESSAGE_2_NORM2_2.message_modulus.0;
-    /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus);
+    /// let message_modulus = WOPBS_PARAM_MESSAGE_2_CARRY_2.message_modulus.0;
+    /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus as u64);
     /// let lut = vec![(1_u64 << 61); wopbs_key.param.polynomial_size.0];
-    /// let ct_res = wopbs_key.programmable_bootstrapping(&ct, &lut);
+    /// let ct_res = wopbs_key.programmable_bootstrapping(&sks, &ct, &lut);
     /// let res = cks.decrypt_message_and_carry(&ct_res);
     /// assert_eq!(res, 1);
     /// ```
-    pub fn programmable_bootstrapping(&self, sks: &ServerKey, ct_in: &Ciphertext, lut: &[u64]) ->
-                                                                                      Ciphertext {
+    pub fn programmable_bootstrapping(
+        &self,
+        sks: &ServerKey,
+        ct_in: &Ciphertext,
+        lut: &[u64],
+    ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine.programmable_bootstrapping(self, sks, ct_in, lut).unwrap()
+            engine
+                .programmable_bootstrapping(self, sks, ct_in, lut)
+                .unwrap()
         })
     }
 
@@ -209,13 +238,12 @@ impl WopbsKey {
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
     /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2;
-    /// use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
     /// use concrete_shortint::wopbs::*;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys(PARAM_MESSAGE_2_CARRY_2);
-    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks, &WOPBS_PARAM_MESSAGE_2_CARRY_2);
+    /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_2_CARRY_2);
+    /// let wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
     /// let mut rng = rand::thread_rng();
     /// let message_modulus = WOPBS_PARAM_MESSAGE_2_CARRY_2.message_modulus.0;
     /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus as u64);
@@ -224,13 +252,9 @@ impl WopbsKey {
     /// let res = cks.decrypt_message_and_carry(&ct_res);
     /// assert_eq!(res, 1);
     /// ```
-    pub fn wopbs(&self, ct_in: &Ciphertext, lut: &[u64]) ->
-    Ciphertext {
-        ShortintEngine::with_thread_local_mut(|engine| {
-            engine.wopbs(self, ct_in, lut).unwrap()
-        })
+    pub fn wopbs(&self, ct_in: &Ciphertext, lut: &[u64]) -> Ciphertext {
+        ShortintEngine::with_thread_local_mut(|engine| engine.wopbs(self, ct_in, lut).unwrap())
     }
-
 
     /// Applies the Look-Up Table homomorphically using the WoPBS approach.
     ///
@@ -244,7 +268,7 @@ impl WopbsKey {
     /// use rand::Rng;
     ///
     /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_1_NORM2_2);
-    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
     /// let mut rng = rand::thread_rng();
     /// let ct = cks.encrypt_without_padding(rng.gen::<u64>() % 2);
     /// let lut = vec![(1_u64 << 63); wopbs_key.param.polynomial_size.0];
@@ -275,13 +299,13 @@ impl WopbsKey {
     /// use concrete_shortint::wopbs::*;
     ///
     /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_3_NORM2_2);
-    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
+    /// let wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
     /// let msg = 2;
     /// let modulus = 5;
-    /// let mut ct = cks.encrypt_with_message_modulus_not_power_of_two(msg, modulus);
-    /// let lut = wopbs_key.generate_lut_without_padding_crt(&ct, |x| x);
-    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding_crt(&sks, &mut ct, &lut);
-    /// let res = cks.decrypt_message_and_carry_not_power_of_two(&ct_res, modulus);
+    /// let mut ct = cks.encrypt_native_crt(msg, modulus);
+    /// let lut = wopbs_key.generate_lut_native_crt(&ct, |x| x);
+    /// let ct_res = wopbs_key.programmable_bootstrapping_native_crt(&mut ct, &lut);
+    /// let res = cks.decrypt_message_native_crt(&ct_res, modulus);
     /// assert_eq!(res, msg);
     /// ```
     pub fn programmable_bootstrapping_native_crt(
@@ -330,11 +354,16 @@ impl WopbsKey {
         })
     }
 
-    pub fn keyswitch_to_wopbs_params(&self, ct_in: &LweCiphertext64) -> LweCiphertext64 {
+    pub fn keyswitch_to_wopbs_params(&self, sks: &ServerKey, ct_in: &Ciphertext) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine.keyswitch_to_wopbs_params(self, ct_in)
+            engine.keyswitch_to_wopbs_params(sks, self, ct_in)
         })
         .unwrap()
+    }
+
+    pub fn keyswitch_to_pbs_params(&self, ct_in: &Ciphertext) -> Ciphertext {
+        ShortintEngine::with_thread_local_mut(|engine| engine.keyswitch_to_pbs_params(self, ct_in))
+            .unwrap()
     }
 }
 

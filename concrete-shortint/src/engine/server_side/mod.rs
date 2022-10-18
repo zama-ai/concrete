@@ -144,8 +144,6 @@ impl ShortintEngine {
             &server_key.key_switching_key,
         )?;
 
-        println!("in PBS, after KS");
-
         // Compute a bootstrap
         fftw_engine.discard_bootstrap_lwe_ciphertext(
             &mut ct.ct,

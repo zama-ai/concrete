@@ -368,13 +368,13 @@ impl ClientKey {
     ///
     /// // Encryption of one message:
     /// let basis: Vec<u64> = vec![2, 3, 5];
-    /// let ct = cks.encrypt_crt_not_power_of_two(msg, basis);
+    /// let ct = cks.encrypt_native_crt(msg, basis);
     ///
     /// // Decryption:
-    /// let dec = cks.decrypt_crt_not_power_of_two(&ct);
+    /// let dec = cks.decrypt_native_crt(&ct);
     /// assert_eq!(msg, dec);
     /// ```
-    pub fn encrypt_crt_not_power_of_two(&self, message: u64, base_vec: Vec<u64>) -> CrtCiphertext {
+    pub fn encrypt_native_crt(&self, message: u64, base_vec: Vec<u64>) -> CrtCiphertext {
         //Empty vector of ciphertexts
         let mut ct_vec = Vec::with_capacity(base_vec.len());
 
@@ -383,7 +383,7 @@ impl ClientKey {
             // encryption
             let ct = self
                 .key
-                .encrypt_with_message_modulus_not_power_of_two(message, *modulus as u8);
+                .encrypt_native_crt(message, *modulus as u8);
 
             // put it in the vector of ciphertexts
             ct_vec.push(ct);
@@ -409,13 +409,13 @@ impl ClientKey {
     /// let msg = 27_u64;
     /// let basis: Vec<u64> = vec![2, 3, 5];
     /// // Encryption of one message:
-    /// let mut ct = cks.encrypt_crt_not_power_of_two(msg, basis);
+    /// let mut ct = cks.encrypt_native_crt(msg, basis);
     ///
     /// // Decryption:
-    /// let dec = cks.decrypt_crt_not_power_of_two(&ct);
+    /// let dec = cks.decrypt_native_crt(&ct);
     /// assert_eq!(msg, dec);
     /// ```
-    pub fn decrypt_crt_not_power_of_two(&self, ct: &CrtCiphertext) -> u64 {
+    pub fn decrypt_native_crt(&self, ct: &CrtCiphertext) -> u64 {
         let mut val: Vec<u64> = vec![];
 
         //Decrypting each block individually
@@ -423,7 +423,7 @@ impl ClientKey {
             //decrypt the component i of the integer and multiply it by the radix product
             val.push(
                 self.key
-                    .decrypt_message_and_carry_not_power_of_two(c_i, *b_i as u8),
+                    .decrypt_message_native_crt(c_i, *b_i as u8),
             );
         }
 

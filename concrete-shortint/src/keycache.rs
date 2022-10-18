@@ -74,7 +74,7 @@ impl NamedParam for Parameters {
                 WOPBS_PARAM_MESSAGE_7_NORM2_8,
                 WOPBS_PARAM_MESSAGE_8_NORM2_2,
                 WOPBS_PARAM_MESSAGE_8_NORM2_4,
-                WOPBS_PARAM_MESSAGE_8_NORM2_5,
+                //WOPBS_PARAM_MESSAGE_8_NORM2_5,
                 WOPBS_PARAM_MESSAGE_8_NORM2_6,
                 WOPBS_PARAM_MESSAGE_1_CARRY_0,
                 WOPBS_PARAM_MESSAGE_1_CARRY_1,
@@ -160,7 +160,6 @@ impl NamedParam for Parameters {
                 WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_5,
                 WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_6,
                 WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_7,
-                PARAM_NAWAK
             )
         );
     }

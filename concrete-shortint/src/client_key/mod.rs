@@ -275,20 +275,20 @@ impl ClientKey {
     /// let modulus = 3;
     ///
     /// // Encryption of one message:
-    /// let ct = cks.encrypt_with_message_modulus_not_power_of_two(msg, modulus);
+    /// let ct = cks.encrypt_native_crt(msg, modulus);
     ///
     /// // Decryption:
-    /// let dec = cks.decrypt_message_and_carry_not_power_of_two(&ct, modulus);
+    /// let dec = cks.decrypt_message_native_crt(&ct, modulus);
     /// assert_eq!(msg, dec % modulus as u64);
     /// ```
-    pub fn encrypt_with_message_modulus_not_power_of_two(
+    pub fn encrypt_native_crt(
         &self,
         message: u64,
         message_modulus: u8,
     ) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
-                .encrypt_with_message_modulus_not_power_of_two(self, message, message_modulus)
+                .encrypt_native_crt(self, message, message_modulus)
                 .unwrap()
         })
     }
@@ -308,20 +308,20 @@ impl ClientKey {
     /// let modulus = 3;
     ///
     /// // Encryption of one message:
-    /// let ct = cks.encrypt_with_message_modulus_not_power_of_two(msg, modulus);
+    /// let ct = cks.encrypt_native_crt(msg, modulus);
     ///
     /// // Decryption:
-    /// let dec = cks.decrypt_message_and_carry_not_power_of_two(&ct, modulus);
+    /// let dec = cks.decrypt_message_native_crt(&ct, modulus);
     /// assert_eq!(msg, dec % modulus as u64);
     /// ```
-    pub fn decrypt_message_and_carry_not_power_of_two(
+    pub fn decrypt_message_native_crt(
         &self,
         ct: &Ciphertext,
         message_modulus: u8,
     ) -> u64 {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
-                .decrypt_message_and_carry_not_power_of_two(self, ct, message_modulus as u64)
+                .decrypt_message_native_crt(self, ct, message_modulus as u64)
                 .unwrap()
         })
     }

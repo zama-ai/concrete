@@ -6,7 +6,7 @@ use concrete_shortint::keycache::KEY_CACHE;
 use rand::Rng;
 
 use concrete_shortint::keycache::KEY_CACHE_WOPBS;
-use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_8_NORM2_5;
+use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_4_NORM2_6;
 
 macro_rules! named_param {
     ($param:ident) => {
@@ -140,7 +140,7 @@ fn programmable_bootstrapping(c: &mut Criterion) {
 fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
     let mut bench_group = c.benchmark_group("programmable_bootstrap");
 
-    let param = WOPBS_PARAM_MESSAGE_8_NORM2_5;
+    let param = WOPBS_PARAM_MESSAGE_4_NORM2_6;
 
     let keys = KEY_CACHE_WOPBS.get_from_param((param, param));
     let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());

@@ -226,7 +226,7 @@ fn shortint_keyswitch_bootstrap(param: Parameters) {
     let modulus = cks.parameters.message_modulus.0 as u64;
     let mut failures = 0;
 
-    for _ in 0..100 {
+    for _ in 0..NB_TEST {
         let clear_0 = rng.gen::<u64>() % modulus;
 
         // encryption of an integer

@@ -211,7 +211,7 @@ impl ShortintEngine {
             .map(|message_and_carry| message_and_carry % ct.message_modulus.0 as u64)
     }
 
-    pub(crate) fn encrypt_with_message_modulus_not_power_of_two(
+    pub(crate) fn encrypt_native_crt(
         &mut self,
         client_key: &ClientKey,
         message: u64,
@@ -240,7 +240,7 @@ impl ShortintEngine {
         })
     }
 
-    pub(crate) fn decrypt_message_and_carry_not_power_of_two(
+    pub(crate) fn decrypt_message_native_crt(
         &mut self,
         client_key: &ClientKey,
         ct: &Ciphertext,
