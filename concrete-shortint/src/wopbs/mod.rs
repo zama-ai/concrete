@@ -191,9 +191,10 @@ impl WopbsKey {
     /// let res = cks.decrypt_message_and_carry(&ct_res);
     /// assert_eq!(res, 1);
     /// ```
-    pub fn programmable_bootstrapping(&self, ct_in: &Ciphertext, lut: &[u64]) -> Ciphertext {
+    pub fn programmable_bootstrapping(&self, sks: &ServerKey, ct_in: &Ciphertext, lut: &[u64]) ->
+                                                                                      Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
-            engine.programmable_bootstrapping(self, ct_in, lut).unwrap()
+            engine.programmable_bootstrapping(self, sks, ct_in, lut).unwrap()
         })
     }
 

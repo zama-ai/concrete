@@ -1,8 +1,9 @@
 use crate::keycache::KEY_CACHE_WOPBS;
 use crate::parameters::parameters_wopbs_message_carry::*;
-use crate::parameters::{MessageModulus, PARAM_MESSAGE_2_CARRY_2};
+use crate::parameters::{MessageModulus, PARAM_MESSAGE_2_CARRY_2, PARAM_MESSAGE_3_CARRY_3,
+                        PARAM_MESSAGE_4_CARRY_4};
 use crate::Parameters;
-use concrete_core::prelude::{LweBootstrapKeyEntity, LweCiphertextEntity, LweKeyswitchKeyEntity};
+use concrete_core::prelude::{DefaultEngine, LweBootstrapKeyEntity, LweCiphertextEntity, LweKeyswitchKeyEntity, UnixSeeder};
 use paste::paste;
 use rand::Rng;
 
@@ -23,8 +24,8 @@ macro_rules! create_parametrized_test{
         create_parametrized_test!($name
         {
             (PARAM_MESSAGE_2_CARRY_2, WOPBS_PARAM_MESSAGE_2_CARRY_2),
-            (PARAM_MESSAGE_2_CARRY_2, WOPBS_PARAM_MESSAGE_3_CARRY_3),
-            (PARAM_MESSAGE_2_CARRY_2, WOPBS_PARAM_MESSAGE_4_CARRY_4)
+            (PARAM_MESSAGE_3_CARRY_3, WOPBS_PARAM_MESSAGE_3_CARRY_3),
+            (PARAM_MESSAGE_4_CARRY_4, WOPBS_PARAM_MESSAGE_4_CARRY_4)
         });
     };
 }
@@ -36,7 +37,7 @@ create_parametrized_test!(generate_lut_modulus_not_power_of_two);
 
 fn wopbs_v0(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
     let mut rng = rand::thread_rng();
 
@@ -57,7 +58,7 @@ fn wopbs_v0(params: (Parameters, Parameters)) {
         }
         let lut_res = lut.clone();
 
-        let ct_res = wopbs_key.programmable_bootstrapping(&ct, &lut);
+        let ct_res = wopbs_key.programmable_bootstrapping(&sks, &ct, &lut);
         let res = cks.decrypt_message_and_carry(&ct_res);
         assert_eq!(res, lut_res[clear] / (1 << delta));
     }
@@ -94,8 +95,54 @@ fn wopbs_v0_norm2(params: (Parameters, Parameters)) {
 
 fn generate_lut(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
+    //
+    // use concrete_core::prelude::*;
+    // let mut engine = DefaultEngine::new(Box::new(UnixSeeder::new(0))).unwrap();
+    //
+    //
+    //
+    // let zero_plaintext = engine.create_plaintext_from(&0_u64).unwrap();
+    // let mut buffer_lwe_after_ks = engine
+    //     .trivially_encrypt_lwe_ciphertext(
+    //         wopbs_key.ksk_pbs_to_wopbs
+    //             .output_lwe_dimension()
+    //             .to_lwe_size(),
+    //         &zero_plaintext,
+    //     )
+    //     .unwrap();
+    //
+    // println!("Before KS: ct_in dim = {}, ct_out dim = {}", ct_clean.ct.lwe_dimension()
+    //     .to_lwe_size().0, buffer_lwe_after_ks.lwe_dimension().to_lwe_size().0 );
+    //
+    // println!("Before KS: ksk_in dim = {}, ksk_out dim = {}",
+    //          wopbs_key.ksk_pbs_to_wopbs.input_lwe_dimension().0, wopbs_key.ksk_pbs_to_wopbs
+    //              .output_lwe_dimension().to_lwe_size
+    //     ().0);
+    //
+    // // Compute a key switch
+    // engine.discard_keyswitch_lwe_ciphertext(
+    //     &mut buffer_lwe_after_ks,
+    //     &ct_clean.ct,
+    //     &wopbs_key.ksk_pbs_to_wopbs,
+    // )?;
+    //
+    // println!("AFTER KS OK");
+    // println!("AFTER KS: ct_in dim = {}, ct_out dim = {}", buffer_lwe_after_ks.lwe_dimension()
+    //     .to_lwe_size().0, buffer_lwe_after_ks.lwe_dimension().to_lwe_size().0 );
+    //
+    // let mut ct_to_wopbs = Ciphertext{
+    //     ct: buffer_lwe_after_ks.clone(),
+    //     degree: ct_in.degree,
+    //     message_modulus: ct_in.message_modulus,
+    //     carry_modulus: ct_in.carry_modulus
+    // };
+    //
+    //
+
+
+
 
     println!(
         "lwe out wop {:?}",
@@ -164,6 +211,10 @@ fn generate_lut(params: (Parameters, Parameters)) {
     );
     println!("______");
 
+
+
+
+
     let mut tmp = 0;
     for _ in 0..NB_TEST {
         let message_modulus = params.0.message_modulus.0;
@@ -173,7 +224,7 @@ fn generate_lut(params: (Parameters, Parameters)) {
         let ct = cks.encrypt(m as u64);
         println!("ct lwe dim {:?}", ct.ct.lwe_dimension());
         let lut = wopbs_key.generate_lut(&ct, |x| x % message_modulus as u64);
-        let ct_res = wopbs_key.programmable_bootstrapping(&ct, &lut);
+        let ct_res = wopbs_key.programmable_bootstrapping(&sks, &ct,  &lut);
 
         // let mut res = cks.decrypt(&ct_res);
         // assert_eq!(res, ((m * m) % message_modulus) as u64);
@@ -207,7 +258,7 @@ fn generate_lut(params: (Parameters, Parameters)) {
 
 fn generate_lut_modulus(params: (Parameters, Parameters)) {
     let keys = KEY_CACHE_WOPBS.get_from_param(params);
-    let (cks, _, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
     let mut rng = rand::thread_rng();
 
     for _ in 0..NB_TEST {
@@ -217,7 +268,7 @@ fn generate_lut_modulus(params: (Parameters, Parameters)) {
         let ct = cks.encrypt_with_message_modulus(m as u64, message_modulus);
 
         let lut = wopbs_key.generate_lut(&ct, |x| (x * x) % message_modulus.0 as u64);
-        let ct_res = wopbs_key.programmable_bootstrapping(&ct, &lut);
+        let ct_res = wopbs_key.programmable_bootstrapping(&sks, &ct, &lut);
 
         let res = cks.decrypt(&ct_res);
         assert_eq!(res as usize, (m * m) % message_modulus.0);

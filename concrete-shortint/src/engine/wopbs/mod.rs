@@ -54,10 +54,11 @@ impl ShortintEngine {
             var_lwe,
         )?;
 
-        let var_lwe = Variance(cks.parameters.lwe_modular_std_dev.get_variance());
-        let ksk_pbs_large_to_wopbs_small = self.engine.generate_new_lwe_keyswitch_key(
+        //KSK to convert from input ciphertext key to the wopbs input one
+        //let var_lwe = Variance(cks.parameters.lwe_modular_std_dev.get_variance());
+        let ksk_pbs_large_to_wopbs_large = self.engine.generate_new_lwe_keyswitch_key(
             &cks.lwe_secret_key,
-            &small_lwe_secret_key,
+            &large_lwe_secret_key,
             cks.parameters.ks_level,
             cks.parameters.ks_base_log,
             var_lwe,
@@ -106,7 +107,7 @@ impl ShortintEngine {
             wopbs_server_key,
             pbs_server_key,
             cbs_pfpksk,
-            ksk_pbs_to_wopbs: ksk_pbs_large_to_wopbs_small,
+            ksk_pbs_to_wopbs: ksk_pbs_large_to_wopbs_large,
             param: *parameters,
         };
         Ok(wopbs_key)
@@ -119,7 +120,6 @@ impl ShortintEngine {
         wopbs_key: &WopbsKey,
         extracted_bit_count: ExtractedBitsCount,
     ) -> EngineResult<LweCiphertextVector64> {
-        let keyswitched_input = self.keyswitch_to_wopbs_params(wopbs_key, lwe_in)?;
         let server_key = &wopbs_key.wopbs_server_key;
 
         let lwe_size = server_key
@@ -133,7 +133,7 @@ impl ShortintEngine {
 
         self.fft_engine.discard_extract_bits_lwe_ciphertext(
             &mut output,
-            &keyswitched_input,
+            &lwe_in,
             &server_key.bootstrapping_key,
             &server_key.key_switching_key,
             extracted_bit_count,
@@ -257,12 +257,12 @@ impl ShortintEngine {
         ct_in: &LweCiphertext64,
     ) -> EngineResult<LweCiphertext64> {
         // move to pbs parameters to wopbs parameters
-        let acc = self.generate_accumulator(&wopbs_key.wopbs_server_key, |x| x)?;
-        let pol_size = wopbs_key.param.polynomial_size.0;
-        let glwe_dim = wopbs_key.param.glwe_dimension.0;
-        let mut tmp = self
-            .engine
-            .create_lwe_ciphertext_from(vec![0; pol_size * glwe_dim + 1])?;
+        // let acc = self.generate_accumulator(&wopbs_key.wopbs_server_key, |x| x)?;
+        // let pol_size = wopbs_key.param.polynomial_size.0;
+        // let glwe_dim = wopbs_key.param.glwe_dimension.0;
+        // let mut tmp = self
+        //     .engine
+        //     .create_lwe_ciphertext_from(vec![0; pol_size * glwe_dim + 1])?;
         //let mut tmp = ct_in.clone();
         let (buffers, engine, fftw_engine) = self.buffers_for_key(&wopbs_key.wopbs_server_key);
         // Compute a key switch
@@ -272,14 +272,14 @@ impl ShortintEngine {
             &wopbs_key.ksk_pbs_to_wopbs,
         )?;
 
-        fftw_engine.discard_bootstrap_lwe_ciphertext(
-            &mut tmp,
-            &buffers.buffer_lwe_after_ks,
-            &acc,
-            &wopbs_key.wopbs_server_key.bootstrapping_key,
-        )?;
+        // fftw_engine.discard_bootstrap_lwe_ciphertext(
+        //     &mut tmp,
+        //     &buffers.buffer_lwe_after_ks,
+        //     &acc,
+        //     &wopbs_key.wopbs_server_key.bootstrapping_key,
+        // )?;
 
-        Ok(tmp)
+        Ok(buffers.buffer_lwe_after_ks.clone())
     }
 
     pub(crate) fn keyswitch_to_pbs_params(
@@ -322,9 +322,68 @@ impl ShortintEngine {
     pub(crate) fn programmable_bootstrapping(
         &mut self,
         wopbs_key: &WopbsKey,
+        sks: &ServerKey,
         ct_in: &Ciphertext,
         lut: &[u64],
     ) -> EngineResult<Ciphertext> {
+
+        // First PBS to remove the noise
+        let acc = self.generate_accumulator(&sks, |x| x)?;
+        println!("GENERATION ACC OK ");
+        let ct_clean = self.programmable_bootstrap_keyswitch(&sks, &ct_in, &acc)?;
+        println!("PBS OK  ");
+
+
+
+        //KS from encryption key to wopbs
+        // let pol_size = wopbs_key.param.polynomial_size.0;
+        // let glwe_dim = wopbs_key.param.glwe_dimension.0;
+        // let mut tmp = self
+        //     .engine
+        //     .create_lwe_ciphertext_from(vec![0; pol_size * glwe_dim + 1])?;
+        //let mut tmp = ct_in.clone();
+
+        // To make borrow checker happy
+        let engine = &mut self.engine;
+        let buffers_map = &mut self.buffers;
+
+        //let (buffers, engine, fftw_engine) = self.buffers_for_key(&wopbs_key.wopbs_server_key);
+
+        let zero_plaintext = engine.create_plaintext_from(&0_u64).unwrap();
+        let mut buffer_lwe_after_ks = engine
+            .trivially_encrypt_lwe_ciphertext(
+                wopbs_key.ksk_pbs_to_wopbs
+                    .output_lwe_dimension()
+                    .to_lwe_size(),
+                &zero_plaintext,
+            )
+            .unwrap();
+
+        println!("Before KS: ct_in dim = {}, ct_out dim = {}", ct_clean.ct.lwe_dimension()
+            .to_lwe_size().0, buffer_lwe_after_ks.lwe_dimension().to_lwe_size().0 );
+
+        println!("Before KS: ksk_in dim = {}, ksk_out dim = {}",
+            wopbs_key.ksk_pbs_to_wopbs.input_lwe_dimension().0, wopbs_key.ksk_pbs_to_wopbs
+                     .output_lwe_dimension().to_lwe_size().0);
+
+        // Compute a key switch
+        engine.discard_keyswitch_lwe_ciphertext(
+            &mut buffer_lwe_after_ks,
+            &ct_clean.ct,
+            &wopbs_key.ksk_pbs_to_wopbs,
+        )?;
+
+        println!("AFTER KS OK");
+        println!("AFTER KS: ct_in dim = {}, ct_out dim = {}", buffer_lwe_after_ks.lwe_dimension()
+            .to_lwe_size().0, buffer_lwe_after_ks.lwe_dimension().to_lwe_size().0 );
+
+        let mut ct_to_wopbs = Ciphertext{
+            ct: buffer_lwe_after_ks.clone(),
+            degree: ct_in.degree,
+            message_modulus: ct_in.message_modulus,
+            carry_modulus: ct_in.carry_modulus
+        };
+
         let sks = &wopbs_key.wopbs_server_key;
         let delta = (1_usize << 63) / (sks.message_modulus.0 * sks.carry_modulus.0);
         let delta_log = DeltaLog(f64::log2(delta as f64) as usize);
@@ -333,7 +392,7 @@ impl ShortintEngine {
 
         let ct_out = self.extract_bits_circuit_bootstrapping(
             wopbs_key,
-            ct_in,
+            &ct_to_wopbs,
             lut,
             delta_log,
             ExtractedBitsCount(nb_bit_to_extract),
