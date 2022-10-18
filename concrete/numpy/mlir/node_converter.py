@@ -1061,9 +1061,17 @@ class NodeConverter:
         """
 
         resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
-        preds = self.preds
+        pred = self.preds[0]
 
-        return fhelinalg.TransposeOp(resulting_type, *preds).result
+        axes = self.node.properties["kwargs"].get("axes", [])
+
+        return fhelinalg.TransposeOp(
+            resulting_type,
+            pred,
+            axes=ArrayAttr.get(
+                [IntegerAttr.get(IntegerType.get_signless(64), axis) for axis in axes]
+            ),
+        ).result
 
     def _convert_zeros(self) -> OpResult:
         """

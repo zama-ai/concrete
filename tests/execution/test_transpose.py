@@ -29,6 +29,36 @@ import concrete.numpy as cnp
                 "x": {"shape": (3, 2), "range": [0, 10], "status": "encrypted"},
             },
         ),
+        pytest.param(
+            lambda x: x.transpose((1, 0, 2)),
+            {
+                "x": {"shape": (2, 3, 4), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
+        pytest.param(
+            lambda x: x.transpose((1, 2, 0)),
+            {
+                "x": {"shape": (2, 3, 4), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
+        pytest.param(
+            lambda x: x.transpose((0, 2, 1)),
+            {
+                "x": {"shape": (2, 3, 4), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
+        pytest.param(
+            lambda x: x.transpose((2, 0, 1)),
+            {
+                "x": {"shape": (2, 3, 4), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
+        pytest.param(
+            lambda x: np.transpose(x, (3, 0, 2, 1)),
+            {
+                "x": {"shape": (2, 3, 4, 5), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
     ],
 )
 def test_transpose(function, parameters, helpers):

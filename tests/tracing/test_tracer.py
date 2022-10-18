@@ -27,16 +27,10 @@ from concrete.numpy.values import EncryptedTensor
             "Function 'np.sum' is not supported with kwarg 'initial'",
         ),
         pytest.param(
-            lambda x: np.transpose(x, (1, 0, 2)),
+            lambda x: np.absolute(x, where=False),
             {"x": EncryptedTensor(UnsignedInteger(7), shape=(1, 2, 3))},
             RuntimeError,
-            "Function 'np.transpose' is not supported with kwarg 'axes'",
-        ),
-        pytest.param(
-            lambda x: x.transpose((1, 0, 2)),
-            {"x": EncryptedTensor(UnsignedInteger(7), shape=(1, 2, 3))},
-            RuntimeError,
-            "Function 'np.transpose' is not supported with kwarg 'axes'",
+            "Function 'np.absolute' is not supported with kwarg 'where'",
         ),
         pytest.param(
             lambda x: np.multiply.outer(x, [1, 2, 3]),

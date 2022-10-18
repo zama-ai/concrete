@@ -313,6 +313,9 @@ class Tracer:
             "axis",
             "keepdims",
         },
+        np.transpose: {
+            "axes",
+        },
         np.zeros_like: {
             "dtype",
         },
