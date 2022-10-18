@@ -7,7 +7,7 @@ use concrete_core::prelude::{DefaultEngine, LweBootstrapKeyEntity, LweCiphertext
 use paste::paste;
 use rand::Rng;
 
-const NB_TEST: usize = 100;
+const NB_TEST: usize = 1;
 
 macro_rules! create_parametrized_test{
     ($name:ident { $( ($sks_param:ident, $wopbs_param:ident) ),* }) => {

@@ -200,6 +200,40 @@ impl WopbsKey {
 
     /// Applies the Look-Up Table homomorphically using the WoPBS approach.
     ///
+    /// #Warning: this assumes one bit of padding.
+    /// #Warning: to use in a WoPBS context ONLY (i.e., non compliant with classical PBS)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_shortint::ciphertext::Ciphertext;
+    /// use concrete_shortint::gen_keys;
+    /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2;
+    /// use concrete_shortint::parameters::PARAM_MESSAGE_2_CARRY_2;
+    /// use concrete_shortint::wopbs::*;
+    /// use rand::Rng;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (cks, sks) = gen_keys(PARAM_MESSAGE_2_CARRY_2);
+    /// let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks, &WOPBS_PARAM_MESSAGE_2_CARRY_2);
+    /// let mut rng = rand::thread_rng();
+    /// let message_modulus = WOPBS_PARAM_MESSAGE_2_CARRY_2.message_modulus.0;
+    /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus as u64);
+    /// let lut = vec![(1_u64 << 61); wopbs_key.param.polynomial_size.0];
+    /// let ct_res = wopbs_key.wopbs(&ct, &lut);
+    /// let res = cks.decrypt_message_and_carry(&ct_res);
+    /// assert_eq!(res, 1);
+    /// ```
+    pub fn wopbs(&self, ct_in: &Ciphertext, lut: &[u64]) ->
+    Ciphertext {
+        ShortintEngine::with_thread_local_mut(|engine| {
+            engine.wopbs(self, ct_in, lut).unwrap()
+        })
+    }
+
+
+    /// Applies the Look-Up Table homomorphically using the WoPBS approach.
+    ///
     /// # Example
     ///
     /// ```rust
