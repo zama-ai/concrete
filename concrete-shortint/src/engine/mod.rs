@@ -19,7 +19,6 @@ fn new_seeder() -> Box<dyn Seeder> {
         if RdseedSeeder::is_available() {
             seeder = Box::new(RdseedSeeder);
         } else {
-            assert!(false);
             seeder = Box::new(UnixSeeder::new(0));
         }
     }
