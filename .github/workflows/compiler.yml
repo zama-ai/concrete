@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Detect changes on API to compiler
-        uses: tj-actions/changed-files@v19
+        uses: tj-actions/changed-files@v32
         id: interface-changes
         with:
           files: |
@@ -33,7 +33,7 @@ jobs:
     steps:
       # A SSH private key is required as some dependencies are from private repos
       - name: Set ssh keys
-        uses: webfactory/ssh-agent@v0.5.2
+        uses: webfactory/ssh-agent@v0.6.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
@@ -55,7 +55,7 @@ jobs:
           toolchain: stable
 
       - name: Download cargo cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
 
       - name: Concrete-Optimizer
         run: |
