@@ -31,7 +31,3 @@ pub fn cache(
         cb: circuit_bootstrap::cache(security_level, processing_unit, complexity_model.clone()),
     }
 }
-
-trait ComplexityModelClone: ComplexityModel + Clone {}
-
-impl<T: ComplexityModel + Clone> ComplexityModelClone for T {}
