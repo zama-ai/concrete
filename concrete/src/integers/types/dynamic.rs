@@ -570,7 +570,7 @@ impl SmartShl<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
                 self.inner
                     .unchecked_scalar_left_shift_parallelized(lhs, rhs.try_into().unwrap()),
             ),
-            DynInnerCiphertext::Crt(_lhs) => todo!(),
+            DynInnerCiphertext::Crt(_lhs) => panic!("This operation is not supported for CRT representation"),
         }
     }
 }
@@ -584,7 +584,7 @@ impl SmartShr<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
                 self.inner
                     .unchecked_scalar_right_shift_parallelized(lhs, rhs.try_into().unwrap()),
             ),
-            DynInnerCiphertext::Crt(_lhs) => todo!(),
+            DynInnerCiphertext::Crt(_lhs) => panic!("This operation is not supported for CRT representation"),
         }
     }
 }
@@ -637,7 +637,7 @@ impl SmartShlAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
                 .inner
                 .unchecked_scalar_left_shift_assign_parallelized(lhs, rhs.try_into().unwrap()),
             DynInnerCiphertext::Crt(_lhs) => {
-                todo!()
+                panic!("This operation is not supported for CRT representation")
             }
         }
     }
@@ -650,7 +650,7 @@ impl SmartShrAssign<DynInnerCiphertext, u64> for DynInnerServerKey {
                 .inner
                 .unchecked_scalar_right_shift_assign_parallelized(lhs, rhs.try_into().unwrap()),
             DynInnerCiphertext::Crt(_lhs) => {
-                todo!()
+                panic!("This operation is not supported for CRT representation")
             }
         }
     }
