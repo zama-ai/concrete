@@ -159,40 +159,54 @@ pub trait WopbsExecutor<
 
 pub(crate) fn wopbs_radix(
     wopbs_key: &WopbsKey,
+    server_key: &concrete_integer::ServerKey,
     ct_in: &RadixCiphertext,
     func: impl Fn(u64) -> u64,
 ) -> RadixCiphertext {
-    let luts = wopbs_key.generate_lut_radix(ct_in, func);
-    wopbs_key.wopbs(ct_in, luts.as_slice())
+    let switched_ct = wopbs_key.keyswitch_to_wopbs_params(server_key, ct_in);
+    let luts = wopbs_key.generate_lut_radix(&switched_ct, func);
+    let res = wopbs_key.wopbs(&switched_ct, luts.as_slice());
+    wopbs_key.keyswitch_to_pbs_params(&res)
 }
 
 pub(crate) fn bivariate_wopbs_radix(
     wopbs_key: &WopbsKey,
+    server_key: &concrete_integer::ServerKey,
     lhs: &RadixCiphertext,
     rhs: &RadixCiphertext,
     func: impl Fn(u64, u64) -> u64,
 ) -> RadixCiphertext {
-    let lut = wopbs_key.generate_lut_bivariate_radix(lhs, rhs, func);
-    wopbs_key.bivariate_wopbs_with_degree(lhs, rhs, lut.as_slice())
+    let switched_lhs = wopbs_key.keyswitch_to_wopbs_params(server_key, lhs);
+    let switched_rhs = wopbs_key.keyswitch_to_wopbs_params(server_key, rhs);
+    let lut = wopbs_key.generate_lut_bivariate_radix(&switched_lhs, &switched_rhs, func);
+    let res = wopbs_key.bivariate_wopbs_with_degree(&switched_lhs, &switched_rhs, lut.as_slice());
+    wopbs_key.keyswitch_to_pbs_params(&res)
 }
 
 pub(crate) fn wopbs_crt(
     wopbs_key: &WopbsKey,
+    server_key: &concrete_integer::ServerKey,
     ct_in: &CrtCiphertext,
     func: impl Fn(u64) -> u64,
 ) -> CrtCiphertext {
-    let luts = wopbs_key.generate_lut_crt(ct_in, func);
-    wopbs_key.wopbs(ct_in, luts.as_slice())
+    let switched_ct = wopbs_key.keyswitch_to_wopbs_params(server_key, ct_in);
+    let luts = wopbs_key.generate_lut_crt(&switched_ct, func);
+    let res = wopbs_key.wopbs(&switched_ct, luts.as_slice());
+    wopbs_key.keyswitch_to_pbs_params(&res)
 }
 
 pub(crate) fn bivariate_wopbs_crt(
     wopbs_key: &WopbsKey,
+    server_key: &concrete_integer::ServerKey,
     lhs: &CrtCiphertext,
     rhs: &CrtCiphertext,
     func: impl Fn(u64, u64) -> u64,
 ) -> CrtCiphertext {
-    let lut = wopbs_key.generate_lut_bivariate_crt(lhs, rhs, func);
-    wopbs_key.bivariate_wopbs_native_crt(lhs, rhs, lut.as_slice())
+    let switched_lhs = wopbs_key.keyswitch_to_wopbs_params(server_key, lhs);
+    let switched_rhs = wopbs_key.keyswitch_to_wopbs_params(server_key, rhs);
+    let lut = wopbs_key.generate_lut_bivariate_crt(&switched_lhs, &switched_rhs, func);
+    let res = wopbs_key.bivariate_wopbs_native_crt(&switched_lhs, &switched_rhs, lut.as_slice());
+    wopbs_key.keyswitch_to_pbs_params(&res)
 }
 
 impl<P> WopbsExecutor<P, RadixRepresentation> for GenericIntegerServerKey<P>
@@ -205,7 +219,7 @@ where
         func: F,
     ) -> GenericInteger<P> {
         let ct = ct_in.ciphertext.borrow();
-        let res = wopbs_radix(&self.wopbs_key, &ct, func);
+        let res = wopbs_radix(&self.wopbs_key, &self.inner, &ct, func);
         GenericInteger::<P>::new(res, ct_in.id)
     }
 
@@ -218,7 +232,7 @@ where
         let lhs_ct = lhs.ciphertext.borrow();
         let rhs_ct = rhs.ciphertext.borrow();
 
-        let res_ct = bivariate_wopbs_radix(&self.wopbs_key, &lhs_ct, &rhs_ct, func);
+        let res_ct = bivariate_wopbs_radix(&self.wopbs_key, &self.inner, &lhs_ct, &rhs_ct, func);
 
         GenericInteger::<P>::new(res_ct, lhs.id)
     }
@@ -234,7 +248,7 @@ where
         func: F,
     ) -> GenericInteger<P> {
         let ct = ct_in.ciphertext.borrow();
-        let res = wopbs_crt(&self.wopbs_key, &ct, func);
+        let res = wopbs_crt(&self.wopbs_key, &self.inner, &ct, func);
         GenericInteger::<P>::new(res, ct_in.id)
     }
 
@@ -247,7 +261,7 @@ where
         let lhs_ct = lhs.ciphertext.borrow();
         let rhs_ct = rhs.ciphertext.borrow();
 
-        let res_ct = bivariate_wopbs_crt(&self.wopbs_key, &lhs_ct, &rhs_ct, func);
+        let res_ct = bivariate_wopbs_crt(&self.wopbs_key, &self.inner, &lhs_ct, &rhs_ct, func);
         GenericInteger::<P>::new(res_ct, lhs.id)
     }
 }
