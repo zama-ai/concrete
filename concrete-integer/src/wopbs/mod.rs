@@ -3,7 +3,6 @@
 //! This module implements the generation of another server public key, which allows to compute
 //! an alternative version of the programmable bootstrapping. This does not require the use of a
 //! bit of padding.
-//!
 #[cfg(test)]
 mod test;
 
@@ -20,7 +19,6 @@ use serde::{Deserialize, Serialize};
 pub struct WopbsKey {
     wopbs_key: concrete_shortint::wopbs::WopbsKey,
 }
-
 
 /// ```rust
 /// use concrete_integer::wopbs::{decode_radix, encode_radix};
@@ -522,7 +520,7 @@ impl WopbsKey {
     /// let clear = 42 % msg_space; // Encrypt the integers
     /// let mut ct = cks.encrypt_native_crt(clear, basis.clone());
     /// let lut = wopbs_key.generate_lut_native_crt(&ct, |x| x);
-    /// let ct_res = wopbs_key.wopbs_without_padding(&mut ct, &lut);
+    /// let ct_res = wopbs_key.wopbs_native_crt(&mut ct, &lut);
     /// let res = cks.decrypt_native_crt(&ct_res);
     /// assert_eq!(res, clear);
     /// ```
@@ -889,10 +887,12 @@ impl WopbsKey {
     ///
     /// ```rust
     /// use concrete_integer::gen_keys;
+    /// use concrete_integer::parameters::PARAM_4_BITS_5_BLOCKS;
     /// use concrete_integer::wopbs::WopbsKey;
     ///
     /// let basis: Vec<u64> = vec![9, 11];
     ///
+    /// let param = PARAM_4_BITS_5_BLOCKS;
     /// //Generate the client key and the server key:
     /// let (cks, sks) = gen_keys(&param);
     /// let mut wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);

@@ -281,11 +281,7 @@ impl ClientKey {
     /// let dec = cks.decrypt_message_native_crt(&ct, modulus);
     /// assert_eq!(msg, dec % modulus as u64);
     /// ```
-    pub fn encrypt_native_crt(
-        &self,
-        message: u64,
-        message_modulus: u8,
-    ) -> Ciphertext {
+    pub fn encrypt_native_crt(&self, message: u64, message_modulus: u8) -> Ciphertext {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
                 .encrypt_native_crt(self, message, message_modulus)
@@ -314,11 +310,7 @@ impl ClientKey {
     /// let dec = cks.decrypt_message_native_crt(&ct, modulus);
     /// assert_eq!(msg, dec % modulus as u64);
     /// ```
-    pub fn decrypt_message_native_crt(
-        &self,
-        ct: &Ciphertext,
-        message_modulus: u8,
-    ) -> u64 {
+    pub fn decrypt_message_native_crt(&self, ct: &Ciphertext, message_modulus: u8) -> u64 {
         ShortintEngine::with_thread_local_mut(|engine| {
             engine
                 .decrypt_message_native_crt(self, ct, message_modulus as u64)

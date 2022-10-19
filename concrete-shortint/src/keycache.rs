@@ -2,7 +2,6 @@ use crate::parameters::parameters_wopbs::*;
 use crate::parameters::parameters_wopbs_message_carry::*;
 use crate::parameters::parameters_wopbs_prime_moduli::*;
 use crate::parameters::*;
-// use crate::treepbs::TreepbsKey;
 use crate::wopbs::WopbsKey;
 use crate::{ClientKey, ServerKey};
 use concrete_utils::keycache::{
@@ -160,6 +159,7 @@ impl NamedParam for Parameters {
                 WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_5,
                 WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_6,
                 WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_7,
+                PARAM_4_BITS_5_BLOCKS,
             )
         );
     }

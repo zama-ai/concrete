@@ -23,7 +23,7 @@ pub fn execute(cmd: &str, env: Option<&Environment>, cwd: Option<&PathBuf>) -> R
         .stdout(Stdio::inherit());
     if let Some(env) = env {
         for (key, val) in env.iter() {
-            command.env(&key, &val);
+            command.env(key, val);
         }
     }
     if let Some(cwd) = cwd {

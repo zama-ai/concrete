@@ -1,4 +1,3 @@
-
 #![allow(unused)]
 
 use crate::gen_keys;
@@ -36,50 +35,21 @@ macro_rules! create_parametrized_test{
     };
 }
 
-create_parametrized_test!(wopbs_16_lut_test);
-create_parametrized_test!(wopbs_native_crt);
-create_parametrized_test!(wopbs_crt_fake_crt);
+create_parametrized_test!(wopbs_crt);
 create_parametrized_test!(wopbs_bivariate_radix);
-create_parametrized_test!(wopbs_bivariate_fake_crt);
-create_parametrized_test!(wopbs_native_crt_bivariate);
+create_parametrized_test!(wopbs_bivariate_crt);
 create_parametrized_test!(wopbs_radix);
 
-pub fn wopbs_16_lut_test(params: (Parameters, Parameters)) {
-    let nb_block = 3;
-    let (cks, mut sks) = gen_keys(&params.0);
-    let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
-    let mut rng = rand::thread_rng();
-    let mut cpt = 0;
-    let nb_test = 10;
-
-    for _ in 0..nb_test {
-        println!("-------------------------------------");
-
-        let clear = rng.gen::<usize>() % 128;
-        let mut ct = cks.encrypt_radix(clear as u64, nb_block);
-
-        let ct = wopbs_key.keyswitch_to_wopbs_params(&sks, &ct);
-        let lut = wopbs_key.generate_lut_radix(&ct, |x| x);
-        let ct_res = wopbs_key.wopbs(&ct, &lut);
-        let ct_res = wopbs_key.keyswitch_to_pbs_params(&ct_res);
-
-        let res = cks.decrypt_radix(&ct_res);
-
-        if res != clear as u64 {
-            cpt += 1;
-        }
-    }
-    println!("failure rate : {:?} / {:?}", cpt, nb_test);
-    assert_eq!(cpt, 0);
-}
-
-pub fn wopbs_native_crt(params: (Parameters, Parameters)) {
+pub fn wopbs_native_crt() {
     let mut rng = rand::thread_rng();
 
-    let basis: Vec<u64> = vec![2,3];
+    let basis: Vec<u64> = vec![2, 3];
     let nb_block = basis.len();
 
-    //let params = (PARAM_4_BITS_5_BLOCKS, PARAM_4_BITS_5_BLOCKS);
+    let params = (
+        concrete_shortint::parameters::parameters_wopbs::PARAM_4_BITS_5_BLOCKS,
+        concrete_shortint::parameters::parameters_wopbs::PARAM_4_BITS_5_BLOCKS,
+    );
 
     let (cks, mut sks) = gen_keys(&params.1);
     let wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
@@ -111,6 +81,11 @@ pub fn wopbs_native_crt_bivariate(params: (Parameters, Parameters)) {
 
     let nb_block = basis.len();
 
+    let params = (
+        concrete_shortint::parameters::parameters_wopbs::PARAM_4_BITS_5_BLOCKS,
+        concrete_shortint::parameters::parameters_wopbs::PARAM_4_BITS_5_BLOCKS,
+    );
+
     let (cks, mut sks) = gen_keys(&params.1);
     let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
 
@@ -139,7 +114,7 @@ pub fn wopbs_native_crt_bivariate(params: (Parameters, Parameters)) {
 }
 
 // test wopbs fake crt with different degree for each Ct
-pub fn wopbs_crt_fake_crt(params: (Parameters, Parameters)) {
+pub fn wopbs_crt(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
 
     let basis: Vec<u64> = vec![4, 3];
@@ -204,8 +179,6 @@ pub fn wopbs_radix(params: (Parameters, Parameters)) {
         let mut ct1 = cks.encrypt_radix(clear1, nb_block);
 
         // //artificially modify the degree
-        // let scalar = rng.gen::<u64>() % msg_space as u64;
-        // sks.smart_scalar_add_assign(&mut ct1, scalar);
         let res = cks.decrypt_radix(&ct1);
         let ct1 = wopbs_key.keyswitch_to_wopbs_params(&sks, &ct1);
         let lut = wopbs_key.generate_lut_radix(&ct1, |x| x);
@@ -269,9 +242,6 @@ pub fn wopbs_bivariate_crt(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
 
     let basis = vec![3, 7];
-
-    // let (cks, mut sks) = gen_keys(&params.0);
-    // let wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
 
     let (cks, mut sks) = gen_keys(&params.0);
     let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);

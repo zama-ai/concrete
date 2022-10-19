@@ -381,9 +381,7 @@ impl ClientKey {
         //Put each decomposition into a new ciphertext
         for modulus in base_vec.iter() {
             // encryption
-            let ct = self
-                .key
-                .encrypt_native_crt(message, *modulus as u8);
+            let ct = self.key.encrypt_native_crt(message, *modulus as u8);
 
             // put it in the vector of ciphertexts
             ct_vec.push(ct);
@@ -421,10 +419,7 @@ impl ClientKey {
         //Decrypting each block individually
         for (c_i, b_i) in ct.blocks.iter().zip(ct.moduli.iter()) {
             //decrypt the component i of the integer and multiply it by the radix product
-            val.push(
-                self.key
-                    .decrypt_message_native_crt(c_i, *b_i as u8),
-            );
+            val.push(self.key.decrypt_message_native_crt(c_i, *b_i as u8));
         }
 
         //Computing the inverse CRT to recompose the message

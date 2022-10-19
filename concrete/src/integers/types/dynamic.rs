@@ -209,11 +209,21 @@ impl FheBootstrap for DynInteger {
             .id
             .with_unwrapped_global_mut(|key| match &*self.ciphertext.borrow() {
                 DynInnerCiphertext::Radix(ct) => {
-                    let res = crate::integers::types::base::wopbs_radix(&key.wopbs_key, &key.inner.inner, ct, func);
+                    let res = crate::integers::types::base::wopbs_radix(
+                        &key.wopbs_key,
+                        &key.inner.inner,
+                        ct,
+                        func,
+                    );
                     DynInnerCiphertext::Radix(res)
                 }
                 DynInnerCiphertext::Crt(ct) => {
-                    let res = crate::integers::types::base::wopbs_crt(&key.wopbs_key, &key.inner.inner, ct, func);
+                    let res = crate::integers::types::base::wopbs_crt(
+                        &key.wopbs_key,
+                        &key.inner.inner,
+                        ct,
+                        func,
+                    );
                     DynInnerCiphertext::Crt(res)
                 }
             });
