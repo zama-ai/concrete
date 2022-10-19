@@ -20,7 +20,7 @@ jobs:
   FormattingAndLinting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -45,7 +45,7 @@ jobs:
   CheckLicense:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check if sources include the license header
         run: .github/workflows/scripts/check_for_license.sh
 
@@ -75,7 +75,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -181,7 +181,7 @@ jobs:
 
       - name: Archive docs artifacts
         if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+        uses: actions/upload-artifact@v3
         with:
           name: html-docs
           path: docs/_build/html
@@ -190,11 +190,11 @@ jobs:
     runs-on: macos-11
     steps:
       # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.5.2
+      - uses: webfactory/ssh-agent@v0.6.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -212,7 +212,7 @@ jobs:
 
       - name: Cache compilation (push)
         if: github.event_name == 'push'
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/ccache
           key: ${{ runner.os }}-compilation-cache-${{ github.sha }}
@@ -221,7 +221,7 @@ jobs:
 
       - name: Cache compilation (pull_request)
         if: github.event_name == 'pull_request'
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/ccache
           key: ${{ runner.os }}-compilation-cache-${{ github.event.pull_request.base.sha }}
@@ -269,7 +269,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -294,7 +294,7 @@ jobs:
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> "${GITHUB_ENV}"
       - name: Download Documentation
         id: download
-        uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+        uses: actions/download-artifact@v3
         with:
           name: html-docs
       - name: Publish Documentation to S3
@@ -362,7 +362,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -434,11 +434,11 @@ jobs:
     needs: CreateRelease
     steps:
       # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.5.2
+      - uses: webfactory/ssh-agent@v0.6.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -489,11 +489,11 @@ jobs:
       python-package-name-macos-py310: ${{ steps.build-wheel-macos.outputs.ASSET_NAME_PY310 }}
     steps:
       # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.5.2
+      - uses: webfactory/ssh-agent@v0.5.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -514,7 +514,7 @@ jobs:
           toolchain: stable
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
@@ -527,7 +527,7 @@ jobs:
         run: cd compiler && make update-python-version
 
       - name: Use Compilation Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/ccache
           key: ${{ runner.os }}-compilation-cache-${{ github.sha }}
@@ -598,10 +598,10 @@ jobs:
           - python: '3.10'
             filename-index: 'python-package-name-linux-py310'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
@@ -644,10 +644,10 @@ jobs:
           - python: '3.10'
             filename-index: 'python-package-name-macos-py310'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
@@ -693,11 +693,11 @@ jobs:
 
     steps:
       # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.5.2
+      - uses: webfactory/ssh-agent@v0.6.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -740,13 +740,13 @@ jobs:
       image_built: ${{ steps.is-built.outputs.IMAGE_BUILT }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v2.0.0
+        uses: tj-actions/changed-files@v32
 
       - name: Login
         id: login
