@@ -5,7 +5,7 @@
 <p align="center">
 <!-- Version badge using shields.io -->
   <a href="https://github.com/zama-ai/concrete/releases">
-    <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
+    <img src="https://img.shields.io/github/v/release/zama-ai/concrete?style=flat-square">
   </a>
 <!-- Link to docs badge using shields.io -->
   <a href="https://docs.zama.ai/concrete">
