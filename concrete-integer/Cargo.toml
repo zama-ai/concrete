@@ -6,7 +6,7 @@ authors = ["Zama team"]
 license = "BSD-3-Clause-Clear"
 description = "Homomorphic Integer circuit interface for the concrete FHE library."
 homepage = "https://www.zama.ai/concrete-framework"
-documentation = "https://docs.zama.ai/home/"
+documentation = "https://docs.zama.ai/concrete/"
 repository = "https://github.com/zama-ai/concrete"
 readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
@@ -40,7 +40,7 @@ features = [
 
 [dependencies.concrete-shortint]
 path = "../concrete-shortint"
-version = "0.1.0-beta.0"
+version = "0.1.0"
 
 [dev-dependencies]
 criterion = "0.3.4"
