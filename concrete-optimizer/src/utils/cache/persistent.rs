@@ -71,7 +71,7 @@ where
             content,
             content_changed,
             version,
-            function: Arc::new(Box::new(function)),
+            function: Arc::new(function),
         }
     }
 
