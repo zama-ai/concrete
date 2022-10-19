@@ -570,7 +570,9 @@ impl SmartShl<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
                 self.inner
                     .unchecked_scalar_left_shift_parallelized(lhs, rhs.try_into().unwrap()),
             ),
-            DynInnerCiphertext::Crt(_lhs) => panic!("This operation is not supported for CRT representation"),
+            DynInnerCiphertext::Crt(_lhs) => {
+                panic!("This operation is not supported for CRT representation")
+            }
         }
     }
 }
@@ -584,7 +586,9 @@ impl SmartShr<&mut DynInnerCiphertext, u64> for DynInnerServerKey {
                 self.inner
                     .unchecked_scalar_right_shift_parallelized(lhs, rhs.try_into().unwrap()),
             ),
-            DynInnerCiphertext::Crt(_lhs) => panic!("This operation is not supported for CRT representation"),
+            DynInnerCiphertext::Crt(_lhs) => {
+                panic!("This operation is not supported for CRT representation")
+            }
         }
     }
 }
