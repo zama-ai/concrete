@@ -40,6 +40,16 @@ create_parametrized_test!(wopbs_bivariate_radix);
 create_parametrized_test!(wopbs_bivariate_crt);
 create_parametrized_test!(wopbs_radix);
 
+fn make_basis(message_modulus: usize) -> Vec<u64> {
+    match message_modulus {
+        2 => vec![2],
+        3 => vec![2],
+        n if n < 8 => vec![2, 3],
+        n if n < 16 => vec![2, 5, 7],
+        _ => vec![3, 7, 13],
+    }
+}
+
 pub fn wopbs_native_crt() {
     let mut rng = rand::thread_rng();
 
@@ -74,7 +84,7 @@ pub fn wopbs_native_crt() {
     }
 }
 
-pub fn wopbs_native_crt_bivariate(params: (Parameters, Parameters)) {
+pub fn wopbs_native_crt_bivariate() {
     let mut rng = rand::thread_rng();
 
     let basis: Vec<u64> = vec![9, 11];
@@ -117,7 +127,7 @@ pub fn wopbs_native_crt_bivariate(params: (Parameters, Parameters)) {
 pub fn wopbs_crt(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
 
-    let basis: Vec<u64> = vec![4, 3];
+    let basis = make_basis(params.1.message_modulus.0);
 
     let nb_block = basis.len();
 
@@ -241,7 +251,8 @@ pub fn wopbs_bivariate_radix(params: (Parameters, Parameters)) {
 pub fn wopbs_bivariate_crt(params: (Parameters, Parameters)) {
     let mut rng = rand::thread_rng();
 
-    let basis = vec![3, 7];
+    let basis = make_basis(params.1.message_modulus.0);
+    let modulus = basis.iter().product::<u64>();
 
     let (cks, mut sks) = gen_keys(&params.0);
     let wopbs_key = KEY_CACHE_WOPBS.get_from_params(params);
