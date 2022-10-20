@@ -30,4 +30,4 @@
 
 ## API reference
 
-* [docs.rs](https://docs.rs/concrete/0.2.0-beta.1/concrete/index.html)
+* [docs.rs](https://docs.rs/concrete/0.2.0/concrete/index.html)

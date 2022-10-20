@@ -41,7 +41,7 @@ fn main() {
 ```
 
 ```toml
-concrete = { version = "0.2.0-beta", features = ["integers"]}
+concrete = { version = "0.2.0", features = ["integers"]}
 ```
 
 ## Imports
@@ -67,7 +67,7 @@ In our example, we are interested in using 8-bit unsigned integers with default 
 
 {% hint style="info" %}
 ```toml
-concrete = { version = "0.2.0-beta.0", features = ["integers"]}
+concrete = { version = "0.2.0", features = ["integers"]}
 ```
 {% endhint %}
 

@@ -11,7 +11,7 @@ To be able to serialize our data, we need to pick a [data format](https://serde.
 
 [dependencies]
 # ...
-concrete = { version = "0.2.0-beta.0", features = ["integers", "serde"]}
+concrete = { version = "0.2.0", features = ["integers", "serde"]}
 bincode = "1.3.3"
 ```
 
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
     let msg1 = 1;
     let msg2 = 0;
-    
+
     let value_1 = FheUint8::encrypt(msg1, &client_key);
     let value_2 = FheUint8::encrypt(msg2, &client_key);
 
@@ -61,7 +61,7 @@ fn server_function(serialized_data: &[u8]) -> Result<Vec<u8>, Box<dyn std::error
     let server_key: ServerKey = bincode::deserialize_from(&mut serialized_data)?;
     let ct_1: FheUint8 = bincode::deserialize_from(&mut serialized_data)?;
     let ct_2: FheUint8 = bincode::deserialize_from(&mut serialized_data)?;
-    
+
     set_server_key(server_key);
 
     let result = ct_1 + ct_2;

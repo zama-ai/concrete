@@ -22,7 +22,7 @@ Since we are going to use booleans, we must enable the `booleans` feature in our
 
 [dependencies]
 # ...
-concrete = { version = "0.2.0-beta", features = ["booleans"]}
+concrete = { version = "0.2.0", features = ["booleans"]}
 ```
 
 ### Function definition.

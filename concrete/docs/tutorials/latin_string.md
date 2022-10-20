@@ -50,7 +50,7 @@ As we will be using the `FheUint8` type, the `integers` feature must be activate
 
 [dependencies]
 # ...
-concrete = { version = "0.2.0-beta", features = ["integers"]}
+concrete = { version = "0.2.0", features = ["integers"]}
 ```
 
 ```rust

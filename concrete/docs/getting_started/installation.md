@@ -9,7 +9,7 @@ Concrete 0.2.0 is the first version of the new Concrete Library. It is based on 
 To use `concrete` in your project, you first need to add it as a dependency in your `Cargo.toml`:
 
 ```toml
-concrete = { version = "0.2.0-beta", features = [ "booleans" ] }
+concrete = { version = "0.2.0", features = [ "booleans" ] }
 ```
 
 ## Choosing your features
@@ -28,13 +28,13 @@ This crate exposes 3 kinds of data types. Each kind is enabled by activating its
 | ShortInts | `shortints`   | [FheUint2]<br>[FheUint3]<br>[FheUint4]   |
 | Integers  | `integers`    | [FheUint8]<br>[FheUint12]<br>[FheUint16] |
 
-[FheBool]: https://docs.rs/concrete/0.2.0-beta.1/concrete/struct.FheBool.html
-[FheUint2]: https://docs.rs/concrete/0.2.0-beta.1/concrete/type.FheUint2.html
-[FheUint3]: https://docs.rs/concrete/0.2.0-beta.1/concrete/type.FheUint3.html
-[FheUint4]: https://docs.rs/concrete/0.2.0-beta.1/concrete/type.FheUint4.html
-[FheUint8]: https://docs.rs/concrete/0.2.0-beta.1/concrete/type.FheUint8.html
-[FheUint12]: https://docs.rs/concrete/0.2.0-beta.1/concrete/type.FheUint12.html
-[FheUint16]: https://docs.rs/concrete/0.2.0-beta.1/concrete/type.FheUint16.html
+[FheBool]: https://docs.rs/concrete/0.2.0/concrete/type.FheBool.html
+[FheUint2]: https://docs.rs/concrete/0.2.0/concrete/type.FheUint2.html
+[FheUint3]: https://docs.rs/concrete/0.2.0/concrete/type.FheUint3.html
+[FheUint4]: https://docs.rs/concrete/0.2.0/concrete/type.FheUint4.html
+[FheUint8]: https://docs.rs/concrete/0.2.0/concrete/type.FheUint8.html
+[FheUint12]: https://docs.rs/concrete/0.2.0/concrete/type.FheUint12.html
+[FheUint16]: https://docs.rs/concrete/0.2.0/concrete/type.FheUint16.html
 
 ### Serialization.
 
@@ -45,7 +45,7 @@ By enabling the `serde` feature, the different data types and keys exposed by th
 Copy this if you would like to enable all features:
 
 ```toml
-concrete = { version = "0.2.0-beta", features = [ "booleans", "shortints", "integers", "serde"] }
+concrete = { version = "0.2.0", features = [ "booleans", "shortints", "integers", "serde"] }
 ```
 
 ***
