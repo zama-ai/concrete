@@ -25,7 +25,6 @@ public:
   uint32_t m_size;
   __device__ ExtraMemory(uint32_t size) : m_size(size) {}
 };
-template <typename T, class params> class PolynomialFourier;
 
 template <typename T, class params> class Polynomial;
 
@@ -87,22 +86,6 @@ public:
     synchronize_threads_in_block();
   }
 
-  __device__ void copy_into_ith_polynomial(PolynomialFourier<T, params> &source,
-                                           int i) {
-    int tid = threadIdx.x;
-    int begin = i * (params::degree / 2 + 1);
-#pragma unroll
-    for (int i = 0; i < params::opt / 2; i++) {
-      this->m_data[tid + begin] = source.m_values[tid];
-      tid = tid + params::degree / params::opt;
-    }
-
-    if (threadIdx.x == 0) {
-      this->m_data[params::degree / 2 + begin] =
-          source.m_values[params::degree / 2];
-    }
-  }
-
   __device__ void split_into_polynomials(Polynomial<T, params> &first,
                                          Polynomial<T, params> &second) {
     int tid = threadIdx.x;
@@ -113,77 +96,6 @@ public:
       tid = tid + params::degree / params::opt;
     }
   }
-};
-
-template <typename T, class params> class PolynomialFourier {
-public:
-  T *m_values;
-  uint32_t degree;
-
-  __device__ __host__ PolynomialFourier(T *m_values) : m_values(m_values) {}
-
-  __device__ PolynomialFourier(SharedMemory &shmem) : degree(degree) {
-    shmem.get_allocation(&this->m_values, params::degree);
-  }
-
-  __device__ PolynomialFourier(SharedMemory &shmem, ExtraMemory extra_memory)
-      : degree(degree) {
-    shmem.get_allocation(&this->m_values, params::degree + extra_memory.m_size);
-  }
-  __device__ PolynomialFourier(SharedMemory &shmem, uint32_t degree)
-      : degree(degree) {
-    shmem.get_allocation(&this->m_values, degree);
-  }
-
-  __host__ PolynomialFourier(DeviceMemory &dmem, int device) : degree(degree) {
-    dmem.get_allocation(&this->m_values, params::degree, device);
-  }
-
-  __device__ char *reuse_memory() { return (char *)m_values; }
-  __device__ void copy_from(PolynomialFourier<T, params> &source, int begin) {
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt; i++) {
-      this->m_values[tid + begin] = source.m_values[tid];
-      tid = tid + params::degree / params::opt;
-    }
-  }
-  __device__ void fill_with(T value) {
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt; i++) {
-      m_values[tid] = value;
-      tid += params::degree / params::opt;
-    }
-  }
-
-  __device__ void swap_quarters_inplace() {
-    int tid = threadIdx.x;
-    int s1 = params::quarter;
-    int s2 = params::three_quarters;
-
-    T tmp = m_values[s2 + tid];
-    m_values[s2 + tid] = m_values[s1 + tid];
-    m_values[s1 + tid] = tmp;
-  }
-
-  __device__ void add_polynomial_inplace(VectorPolynomial<T, params> &source,
-                                         int polynomial_number) {
-    int tid = threadIdx.x;
-    int begin = polynomial_number * (params::degree / 2 + 1);
-#pragma unroll
-    for (int i = 0; i < params::opt / 2; i++) {
-      this->m_values[tid] += source.m_data[tid + begin];
-      tid = tid + params::degree / params::opt;
-    }
-
-    if (threadIdx.x == 0) {
-      this->m_values[params::degree / 2] +=
-          source.m_data[params::degree / 2 + begin];
-    }
-  }
-
-  __device__ T &operator[](int i) { return m_values[i]; }
 };
 
 template <typename T, class params> class Polynomial {
@@ -383,28 +295,6 @@ public:
       res <<= shift;
       coefficients[tid] = res;
       tid = tid + params::degree / params::opt;
-    }
-  }
-
-  __device__ void
-  to_complex_compressed(PolynomialFourier<double2, params> &dest) {
-
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt / 2; i++) {
-      dest.m_values[tid].x = (double)coefficients[2 * tid];
-      dest.m_values[tid].y = (double)coefficients[2 * tid + 1];
-      tid += params::degree / params::opt;
-    }
-  }
-
-  __device__ void to_complex(PolynomialFourier<double2, params> &dest) {
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt; i++) {
-      dest.m_values[tid].x = (double)coefficients[tid];
-      dest.m_values[tid].y = 0.0;
-      tid += params::degree / params::opt;
     }
   }
 

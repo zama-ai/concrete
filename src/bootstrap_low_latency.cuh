@@ -51,12 +51,12 @@ mul_ggsw_glwe(Torus *accumulator, double2 *fft, int16_t *glwe_decomposed,
   // needed to perform the external product in this block (corresponding to
   // the same decomposition level)
 
-  auto bsk_mask_slice = PolynomialFourier<double2, params>(
+  auto bsk_mask_slice =
       get_ith_mask_kth_block(bootstrapping_key, iteration, blockIdx.y,
-                             blockIdx.x, polynomial_size, 1, level_count));
-  auto bsk_body_slice = PolynomialFourier<double2, params>(
+                             blockIdx.x, polynomial_size, 1, level_count);
+  auto bsk_body_slice =
       get_ith_body_kth_block(bootstrapping_key, iteration, blockIdx.y,
-                             blockIdx.x, polynomial_size, 1, level_count));
+                             blockIdx.x, polynomial_size, 1, level_count);
 
   // Perform the matrix multiplication between the GGSW and the GLWE,
   // each block operating on a single level for mask and body
@@ -77,7 +77,7 @@ mul_ggsw_glwe(Torus *accumulator, double2 *fft, int16_t *glwe_decomposed,
 
   // first product
   for (int i = 0; i < params::opt / 2; i++) {
-    first_processed_acc[tid] = fft[tid] * first_processed_bsk.m_values[tid];
+    first_processed_acc[tid] = fft[tid] * first_processed_bsk[tid];
     tid += params::degree / params::opt;
   }
 
@@ -85,7 +85,7 @@ mul_ggsw_glwe(Torus *accumulator, double2 *fft, int16_t *glwe_decomposed,
   tid = threadIdx.x;
   // second product
   for (int i = 0; i < params::opt / 2; i++) {
-    second_processed_acc[tid] += fft[tid] * second_processed_bsk.m_values[tid];
+    second_processed_acc[tid] += fft[tid] * second_processed_bsk[tid];
     tid += params::degree / params::opt;
   }
 

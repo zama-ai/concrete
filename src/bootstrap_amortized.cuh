@@ -187,20 +187,20 @@ __global__ void device_bootstrap_amortized(
 
       // Get the bootstrapping key piece necessary for the multiplication
       // It is already in the Fourier domain
-      auto bsk_mask_slice = PolynomialFourier<double2, params>(
+      auto bsk_mask_slice =
           get_ith_mask_kth_block(bootstrapping_key, iteration, 0, level,
-                                 polynomial_size, 1, level_count));
-      auto bsk_body_slice = PolynomialFourier<double2, params>(
+                                 polynomial_size, 1, level_count);
+      auto bsk_body_slice =
           get_ith_body_kth_block(bootstrapping_key, iteration, 0, level,
-                                 polynomial_size, 1, level_count));
+                                 polynomial_size, 1, level_count);
 
       synchronize_threads_in_block();
 
       // Perform the coefficient-wise product with the two pieces of
       // bootstrapping key
-      polynomial_product_accumulate_in_fourier_domain(
+      polynomial_product_accumulate_in_fourier_domain<params, double2>(
           mask_res_fft, accumulator_fft, bsk_mask_slice);
-      polynomial_product_accumulate_in_fourier_domain(
+      polynomial_product_accumulate_in_fourier_domain<params, double2>(
           body_res_fft, accumulator_fft, bsk_body_slice);
 
       synchronize_threads_in_block();
@@ -216,18 +216,18 @@ __global__ void device_bootstrap_amortized(
 
       correction_direct_fft_inplace<params>(accumulator_fft);
 
-      auto bsk_mask_slice_2 = PolynomialFourier<double2, params>(
+      auto bsk_mask_slice_2 =
           get_ith_mask_kth_block(bootstrapping_key, iteration, 1, level,
-                                 polynomial_size, 1, level_count));
-      auto bsk_body_slice_2 = PolynomialFourier<double2, params>(
+                                 polynomial_size, 1, level_count);
+      auto bsk_body_slice_2 =
           get_ith_body_kth_block(bootstrapping_key, iteration, 1, level,
-                                 polynomial_size, 1, level_count));
+                                 polynomial_size, 1, level_count);
 
       synchronize_threads_in_block();
 
-      polynomial_product_accumulate_in_fourier_domain(
+      polynomial_product_accumulate_in_fourier_domain<params, double2>(
           mask_res_fft, accumulator_fft, bsk_mask_slice_2);
-      polynomial_product_accumulate_in_fourier_domain(
+      polynomial_product_accumulate_in_fourier_domain<params, double2>(
           body_res_fft, accumulator_fft, bsk_body_slice_2);
     }
 
