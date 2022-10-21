@@ -27,6 +27,7 @@ execute_process(COMMAND nvcc -lcuda ${CUDAFILE} -o ${OUTPUTFILE})
 execute_process(COMMAND ${OUTPUTFILE}
         RESULT_VARIABLE CUDA_RETURN_CODE
         OUTPUT_VARIABLE ARCH)
+file(REMOVE ${OUTPUTFILE})
 
 if (${CUDA_RETURN_CODE} EQUAL 0)
     set(CUDA_SUCCESS "TRUE")
