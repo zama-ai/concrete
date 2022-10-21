@@ -9,19 +9,6 @@
 #include <tuple>
 #include <vector>
 
-class SharedMemory {
-public:
-  char *m_memory_block;
-  int m_last_byte;
-
-  __device__ SharedMemory(char *ptr) : m_memory_block(ptr), m_last_byte(0) {}
-
-  template <typename T> __device__ void get_allocation(T **ptr, int elements) {
-    *ptr = (T *)(&this->m_memory_block[m_last_byte]);
-    this->m_last_byte += elements * sizeof(T);
-  }
-};
-
 class DeviceMemory {
 public:
   std::vector<std::tuple<void *, int>> m_allocated;

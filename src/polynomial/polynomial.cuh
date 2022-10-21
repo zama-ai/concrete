@@ -40,11 +40,6 @@ public:
   __device__ VectorPolynomial(T *data, uint32_t num_polynomials)
       : m_data(data), m_num_polynomials(num_polynomials) {}
 
-  __device__ VectorPolynomial(SharedMemory &shmem, uint32_t num_polynomials)
-      : m_num_polynomials(num_polynomials) {
-    shmem.get_allocation(&m_data, m_num_polynomials * params::degree);
-  }
-
   __device__ VectorPolynomial<T, params> get_chunk(int chunk_num,
                                                    int chunk_size) {
     int pos = chunk_num * chunk_size;
@@ -108,10 +103,6 @@ public:
 
   __device__ Polynomial(char *memory, uint32_t degree)
       : coefficients((T *)memory), degree(degree) {}
-
-  __device__ Polynomial(SharedMemory &shmem, uint32_t degree) : degree(degree) {
-    shmem.get_allocation(&this->coefficients, degree);
-  }
 
   __host__ Polynomial(DeviceMemory &dmem, uint32_t degree, int device)
       : degree(degree) {
@@ -396,29 +387,7 @@ public:
   __device__ Vector(T *elements, uint32_t size)
       : m_data(elements), m_size(size) {}
 
-  template <typename V>
-  __device__ Vector(SharedMemory &shmem, V src, int size) : m_size(size) {
-    shmem.get_allocation(&m_data, m_size);
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt && tid < m_size; i++) {
-      if (tid > m_size)
-        continue;
-      m_data[tid] = src[tid];
-      tid += params::degree / params::opt;
-    }
-  }
-
-  __device__ Vector(SharedMemory &shmem, uint32_t size) : m_size(size) {
-    shmem.get_allocation(&m_data, m_size);
-  }
-
   __host__ Vector() {}
-
-  __host__ Vector(DeviceMemory &dmem, uint32_t size, int device)
-      : m_size(size) {
-    dmem.get_allocation(&m_data, m_size, device);
-  }
 
   __device__ T &operator[](int i) { return m_data[i]; }
 
