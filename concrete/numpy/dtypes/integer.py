@@ -2,6 +2,7 @@
 Declaration of `Integer` class.
 """
 
+import math
 from functools import partial
 from typing import Any
 
@@ -66,9 +67,9 @@ class Integer(BaseDataType):
                 return 1
 
             if value < 0:
-                bits = int(np.ceil(np.log2(abs(value)))) + 1
+                bits = int(math.ceil(math.log2(abs(value)))) + 1
             else:
-                bits = int(np.ceil(np.log2(value + 1)))
+                bits = int(math.ceil(math.log2(value + 1)))
                 if force_signed:
                     bits += 1
 
