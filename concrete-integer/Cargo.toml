@@ -1,7 +1,7 @@
 [package]
 name = "concrete-integer"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 authors = ["Zama team"]
 license = "BSD-3-Clause-Clear"
 description = "Homomorphic Integer circuit interface for the concrete FHE library."
