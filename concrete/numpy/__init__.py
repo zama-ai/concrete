@@ -16,7 +16,7 @@ from .compilation import (
 )
 from .compilation.decorators import circuit, compiler
 from .extensions import LookupTable, array, one, ones, univariate, zero, zeros
-from .mlir.utils import MAXIMUM_TLU_BIT_WIDTH
+from .mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS, MAXIMUM_TLU_BIT_WIDTH
 from .representation import Graph
 from .tracing.typing import (
     f32,
