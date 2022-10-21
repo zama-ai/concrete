@@ -34,7 +34,9 @@ features = [
     "backend_default",
     "backend_default_serialization",
     "backend_default_parallel",
-    "backend_default_generator_aarch64_aes"
+    "backend_default_generator_aarch64_aes",
+    "backend_fft",
+    "backend_fft_serialization",
 ]
 
 [dev-dependencies]
