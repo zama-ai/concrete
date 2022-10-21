@@ -52,9 +52,34 @@ concrete = { version = "0.2.0", features = [ "booleans", "shortints", "integers"
 
 ## Supported platforms
 
-As `concrete` relies on `concrete-core`, `concrete` is only supported on `x86_64 Linux` and `x86_64 macOS`.
+As `concrete` relies on `concrete-core`, `concrete` is supported on:
+  - `x86_64 Linux`
+  - `aarch64 Linux`
+  - `x86_64 macOS`
+  - `aarch64 macOS`
 
 Windows users can use `concrete` through the `WSL`.
+
+### Working inside a cargo workspace
+
+To be able to select the correct features depending on the target arch (x86_64 or aarch64),
+concrete enables the option `resolver = "2"` by default.
+
+However, when developing a crate inside a Cargo workspace,
+this is no longer respected by cargo, and you will have to manually specify
+this option in your `Cargo.toml` like so:
+
+```toml
+[workspace]
+resolver = "2"
+members = [
+   "your-crate-that-uses-concrete", 
+   "another-crate",
+]
+```
+
+When compiling, if you see errors mentioning `aarch64` when you are on a `x86_64`
+processor (or the opposite) then it is likely a `resolver` issue.
 
 ### Apple Silicon instructions
 
