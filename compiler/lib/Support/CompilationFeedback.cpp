@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "boost/outcome.h"
+#include "llvm/Support/JSON.h"
 
 #include "concretelang/Support/CompilationFeedback.h"
 
@@ -85,55 +86,13 @@ llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &v) {
 
 bool fromJSON(const llvm::json::Value j,
               mlir::concretelang::CompilationFeedback &v, llvm::json::Path p) {
-  auto obj = j.getAsObject();
-  if (obj == nullptr) {
-    p.report("should be an object");
-    return false;
-  }
-
-  auto complexity = obj->getInteger("complexity");
-  if (!complexity.hasValue()) {
-    p.report("missing size field");
-    return false;
-  }
-  v.complexity = *complexity;
-
-  auto totalSecretKeysSize = obj->getInteger("totalSecretKeysSize");
-  if (!totalSecretKeysSize.hasValue()) {
-    p.report("missing totalSecretKeysSize field");
-    return false;
-  }
-  v.totalSecretKeysSize = *totalSecretKeysSize;
-
-  auto totalBootstrapKeysSize = obj->getInteger("totalBootstrapKeysSize");
-  if (!totalBootstrapKeysSize.hasValue()) {
-    p.report("missing totalBootstrapKeysSize field");
-    return false;
-  }
-  v.totalBootstrapKeysSize = *totalBootstrapKeysSize;
-
-  auto totalKeyswitchKeysSize = obj->getInteger("totalKeyswitchKeysSize");
-  if (!totalKeyswitchKeysSize.hasValue()) {
-    p.report("missing totalKeyswitchKeysSize field");
-    return false;
-  }
-  v.totalKeyswitchKeysSize = *totalKeyswitchKeysSize;
-
-  auto totalInputsSize = obj->getInteger("totalInputsSize");
-  if (!totalInputsSize.hasValue()) {
-    p.report("missing totalInputsSize field");
-    return false;
-  }
-  v.totalInputsSize = *totalInputsSize;
-
-  auto totalOutputsSize = obj->getInteger("totalOutputsSize");
-  if (!totalOutputsSize.hasValue()) {
-    p.report("missing totalOutputsSize field");
-    return false;
-  }
-  v.totalOutputsSize = *totalOutputsSize;
-
-  return true;
+  llvm::json::ObjectMapper O(j, p);
+  return O && O.map("complexity", v.complexity) &&
+         O.map("totalSecretKeysSize", v.totalSecretKeysSize) &&
+         O.map("totalBootstrapKeysSize", v.totalBootstrapKeysSize) &&
+         O.map("totalKeyswitchKeysSize", v.totalKeyswitchKeysSize) &&
+         O.map("totalInputsSize", v.totalInputsSize) &&
+         O.map("totalOutputsSize", v.totalOutputsSize);
 }
 
 } // namespace concretelang
