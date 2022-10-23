@@ -66,7 +66,7 @@ jobs:
           aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID }}
 
       - name: Upload Logs of AMD EC2 Instance
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: amd
           path: ~/latest.*.log
@@ -115,7 +115,7 @@ jobs:
           aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }}
 
       - name: Upload Logs of Intel EC2 Instance
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: intel
           path: ~/latest.*.log
