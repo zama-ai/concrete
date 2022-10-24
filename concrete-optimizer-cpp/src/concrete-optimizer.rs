@@ -208,6 +208,14 @@ impl OperationDag {
             .into()
     }
 
+    fn add_round_op(
+        &mut self,
+        input: ffi::OperatorIndex,
+        rounded_precision: Precision,
+    ) -> ffi::OperatorIndex {
+        self.0.add_round_op(input.into(), rounded_precision).into()
+    }
+
     fn optimize_v0(&self, options: ffi::Options) -> ffi::Solution {
         let processing_unit = processing_unit(options);
 
@@ -343,6 +351,12 @@ mod ffi {
             manp: f64,
             out_shape: &[u64],
             comment: &str,
+        ) -> OperatorIndex;
+
+        fn add_round_op(
+            self: &mut OperationDag,
+            input: OperatorIndex,
+            rounded_precision: u8,
         ) -> OperatorIndex;
 
         fn optimize_v0(self: &OperationDag, options: Options) -> Solution;

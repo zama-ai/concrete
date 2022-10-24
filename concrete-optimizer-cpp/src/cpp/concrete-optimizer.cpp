@@ -960,6 +960,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
   ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
@@ -1100,6 +1101,8 @@ extern "C" {
 
 ::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_levelled_op(::concrete_optimizer::OperationDag &self, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
 
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_round_op(::concrete_optimizer::OperationDag &self, ::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
+
 ::concrete_optimizer::v0::Solution concrete_optimizer$cxxbridge1$OperationDag$optimize_v0(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options options) noexcept;
 
 void concrete_optimizer$cxxbridge1$OperationDag$optimize(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
@@ -1157,6 +1160,10 @@ namespace dag {
 
 ::concrete_optimizer::dag::OperatorIndex OperationDag::add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept {
   return concrete_optimizer$cxxbridge1$OperationDag$add_levelled_op(*this, inputs, lwe_dim_cost_factor, fixed_cost, manp, out_shape, comment);
+}
+
+::concrete_optimizer::dag::OperatorIndex OperationDag::add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept {
+  return concrete_optimizer$cxxbridge1$OperationDag$add_round_op(*this, input, rounded_precision);
 }
 
 ::concrete_optimizer::v0::Solution OperationDag::optimize_v0(::concrete_optimizer::Options options) const noexcept {
