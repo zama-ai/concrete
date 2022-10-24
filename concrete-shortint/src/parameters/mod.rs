@@ -6,7 +6,7 @@
 
 pub use concrete_core::prelude::{
     DecompositionBaseLog, DecompositionLevelCount, DispersionParameter, GlweDimension,
-    LweDimension, PolynomialSize, StandardDev,
+    LweDimension, LwePublicKeyZeroEncryptionCount, PolynomialSize, StandardDev,
 };
 use serde::{Deserialize, Serialize};
 
