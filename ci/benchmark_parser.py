@@ -16,15 +16,18 @@ parser.add_argument('results_path',
                           'In a case of a directory, this script will attempt to parse all the'
                           'files containing a .json extension'))
 parser.add_argument('output_file', help='File storing parsed results')
-parser.add_argument('-n', '--series-name', dest='series_name',
-                    default="concrete_compiler_benchmark_timing",
-                    help='Name of the data series (as stored in Prometheus)')
-parser.add_argument('-e', '--series-help', dest='series_help',
-                    default="Timings of various type of benchmarks in concrete compiler.",
-                    help='Description of the data series (as stored in Prometheus)')
-parser.add_argument('-t', '--series-tags', dest='series_tags',
-                    type=json.loads, default={},
-                    help='Tags to apply to all the points in the data series')
+parser.add_argument('-s', '--schema', dest='schema', required=True,
+                    help='Name of the database schema used to store results')
+parser.add_argument('-w', '--hardware', dest='hardware', required=True,
+                    help='Hardware reference used to perform benchmark')
+parser.add_argument('-V', '--project-version', dest='project_version', required=True,
+                    help='Commit hash reference')
+parser.add_argument('-b', '--branch', dest='branch', required=True,
+                    help='Git branch name on which benchmark was performed')
+parser.add_argument('--commit-date', dest='commit_date', required=True,
+                    help='Timestamp of commit hash used in project_version')
+parser.add_argument('--bench-date', dest='bench_date', required=True,
+                    help='Timestamp when benchmark was run')
 
 
 def parse_results(raw_results):
@@ -35,20 +38,11 @@ def parse_results(raw_results):
 
     :return: :class:`list` of data points
     """
-    result_values = list()
     raw_results = json.loads(raw_results.read_text())
-    for res in raw_results["benchmarks"]:
-        bench_class, action, option_class, application = res["run_name"].split("/")
-
-        for measurement in ("real_time", "cpu_time"):
-            tags = {"bench_class": bench_class,
-                    "action": action,
-                    "option_class": option_class,
-                    "application": application,
-                    "measurement": measurement}
-            result_values.append({"value": res[measurement], "tags": tags})
-
-    return result_values
+    return [
+        {"value": res["cpu_time"], "test": res["run_name"]}
+        for res in raw_results["benchmarks"]
+    ]
 
 
 def recursive_parse(directory):
@@ -70,24 +64,24 @@ def recursive_parse(directory):
     return result_values
 
 
-def dump_results(parsed_results, filename, series_name,
-                 series_help="", series_tags=None):
+def dump_results(parsed_results, filename, input_args):
     """
     Dump parsed results formatted as JSON to file.
 
     :param parsed_results: :class:`list` of data points
     :param filename: filename for dump file as :class:`pathlib.Path`
-    :param series_name: name of the data series as :class:`str`
-    :param series_help: description of the data series as :class:`str`
-    :param series_tags: constant tags for the series
+    :param input_args: CLI input arguments
     """
     filename.parent.mkdir(parents=True, exist_ok=True)
-    series = [
-        {"series_name": series_name,
-         "series_help": series_help,
-         "series_tags": series_tags or dict(),
-         "points": parsed_results},
-    ]
+    series = {
+        "schema": input_args.schema,
+        "hardware": input_args.hardware,
+        "project_version": input_args.project_version,
+        "branch": input_args.branch,
+        "insert_date": input_args.bench_date,
+        "commit_date": input_args.commit_date,
+        "points": parsed_results,
+    }
     filename.write_text(json.dumps(series))
 
 
@@ -104,7 +98,6 @@ if __name__ == "__main__":
 
     output_file = pathlib.Path(args.output_file)
     print(f"Dump parsed results into '{output_file.resolve()}' ... ", end="")
-    dump_results(results, output_file, args.series_name,
-                 series_help=args.series_help, series_tags=args.series_tags)
+    dump_results(results, output_file, args)
 
     print("Done")

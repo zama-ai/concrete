@@ -79,6 +79,10 @@ jobs:
     if: ${{ !cancelled() }}
     needs: start-runner
     steps:
+      - name: Get benchmark date
+        run: |
+          echo "BENCH_DATE=$(date --iso-8601=seconds)" >> "${GITHUB_ENV}"
+
       # SSH private key is required as some dependencies are from private repos
       - uses: webfactory/ssh-agent@v0.5.2
         with:
@@ -87,6 +91,7 @@ jobs:
       - name: Fetch submodules
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
 
@@ -100,11 +105,6 @@ jobs:
         with:
           toolchain: stable
           override: true
-
-      - name: Concrete-Optimizer
-        run: |
-          cd compiler
-          make concrete-optimizer-lib
 
       - name: Build compiler and end-to-end benchmarks
         run: |
@@ -134,11 +134,15 @@ jobs:
       - name: Parse results
         shell: bash
         run: |
-          OPTIMIZER_HASH="$(cd compiler/concrete-optimizer; git rev-parse HEAD)"
+          COMMIT_DATE="$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})"
+          COMMIT_HASH="$(git describe --tags --dirty)"
           python3 ./ci/benchmark_parser.py compiler/benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
-          --series-name compiler_end_to_end_benchmarks \
-          --series-help "Concrete compiler end-to-end benchmarks timings" \
-          --series-tags "{\"compiler_hash\": \"${{ github.sha }}\", \"branch\": \"${{ github.ref_name }}\", \"optimizer_hash\": \"${OPTIMIZER_HASH}\", \"hardware\": \"aws ${{ env.EC2_INSTANCE_TYPE }}\"}"
+          --schema compiler_benchmarks \
+          --hardware ${{ env.EC2_INSTANCE_TYPE }} \
+          --project-version ${COMMIT_HASH} \
+          --branch ${{ github.ref_name }} \
+          --commit-date ${COMMIT_DATE} \
+          --bench-date "${{ env.BENCH_DATE }}"
 
       - name: Upload parsed results artifact
         uses: actions/upload-artifact@v3
@@ -162,11 +166,10 @@ jobs:
           curl -v -k \
           -H "Content-Type: application/json" \
           -H "X-Slab-Repository: ${{ github.repository }}" \
-          -H "X-Slab-Command: plot_data" \
+          -H "X-Slab-Command: store_data" \
           -H "X-Hub-Signature-256: sha256=${SIGNATURE}" \
           -d @${{ env.RESULTS_FILENAME }} \
           ${{ secrets.SLAB_URL }}
-
 
   stop-runner:
     name: Stop EC2 runner
