@@ -4,7 +4,7 @@ Declaration of `Tracer` class.
 
 import inspect
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import networkx as nx
 import numpy as np
@@ -395,11 +395,12 @@ class Tracer:
         output_value.is_encrypted = any(tracer.output.is_encrypted for tracer in tracers)
 
         if Tracer._is_direct and isinstance(output_value.dtype, Integer):
-            resulting_bit_width = 0
-            for tracer in tracers:
-                assert isinstance(tracer.output.dtype, Integer)
-                resulting_bit_width = max(resulting_bit_width, tracer.output.dtype.bit_width)
-            output_value.dtype.bit_width = resulting_bit_width
+
+            assert all(isinstance(tracer.output.dtype, Integer) for tracer in tracers)
+            dtypes = cast(List[Integer], [tracer.output.dtype for tracer in tracers])
+
+            output_value.dtype.bit_width = max(dtype.bit_width for dtype in dtypes)
+            output_value.dtype.is_signed = any(dtype.is_signed for dtype in dtypes)
 
         computation = Node.generic(
             operation.__name__,

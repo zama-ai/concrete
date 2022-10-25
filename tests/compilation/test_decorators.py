@@ -221,6 +221,24 @@ Subgraphs:
         """.strip(),
     )
 
+    # ======================================================================
+
+    @cnp.circuit({"x": "encrypted"}, helpers.configuration())
+    def circuit5(x: cnp.int2):
+        return x + 42
+
+    helpers.check_str(
+        str(circuit5),
+        """
+
+%0 = x                  # EncryptedScalar<int2>
+%1 = 42                 # ClearScalar<uint6>
+%2 = add(%0, %1)        # EncryptedScalar<int6>
+return %2
+
+        """.strip(),
+    )
+
 
 def test_bad_circuit(helpers):
     """
