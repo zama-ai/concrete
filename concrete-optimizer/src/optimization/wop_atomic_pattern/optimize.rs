@@ -1,7 +1,7 @@
 use super::crt_decomposition;
 use crate::dag::operator::Precision;
 use crate::noise_estimator::error::{
-    error_probability_of_sigma_scale, safe_variance_bound_1bit_1padbit,
+    error_probability_of_sigma_scale, safe_variance_bound_product_1padbit,
     sigma_scale_of_error_probability,
 };
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
@@ -330,13 +330,16 @@ fn optimize_raw(
 ) -> OptimizationState {
     assert!(0.0 < config.maximum_acceptable_error_probability);
     assert!(config.maximum_acceptable_error_probability < 1.0);
+    assert!(!partitionning.is_empty());
 
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
 
     // Circuit BS bound
     // 1 bit of message only here =)
     // Bound for first bit extract in BitExtract (dominate others)
-    let safe_variance_bound = safe_variance_bound_1bit_1padbit(
+    let max_block_precision = *partitionning.iter().max().unwrap();
+    let safe_variance_bound = safe_variance_bound_product_1padbit(
+        max_block_precision,
         ciphertext_modulus_log,
         config.maximum_acceptable_error_probability,
     );
