@@ -1,4 +1,6 @@
-int nextPow2(int x) {
+#include "math_functions.h"
+
+__host__ __device__ int nextPow2(int x) {
   --x;
   x |= x >> 1;
   x |= x >> 2;
@@ -8,8 +10,10 @@ int nextPow2(int x) {
   return ++x;
 }
 
-void getNumBlocksAndThreads(const int n, const int maxBlockSize, int &blocks,
-                            int &threads) {
-  threads = (n < maxBlockSize * 2) ? nextPow2((n + 1) / 2) : maxBlockSize;
+__host__ __device__ void getNumBlocksAndThreads(const int n,
+                                                const int maxBlockSize,
+                                                int &blocks, int &threads) {
+  threads =
+      (n < maxBlockSize * 2) ? max(128, nextPow2((n + 1) / 2)) : maxBlockSize;
   blocks = (n + threads - 1) / threads;
 }

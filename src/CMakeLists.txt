@@ -1,5 +1,6 @@
-set(SOURCES ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/bootstrap.h 
-    ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/keyswitch.h)
+set(SOURCES ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/bootstrap.h
+        ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/keyswitch.h
+        ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/negation.h)
 file(GLOB SOURCES
      "*.cu"
      "*.h"
