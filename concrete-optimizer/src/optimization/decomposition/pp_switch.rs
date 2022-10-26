@@ -1,4 +1,3 @@
-use super::cmux;
 use super::common::VERSION;
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
@@ -34,43 +33,77 @@ pub fn pareto_quantities(
     ciphertext_modulus_log: u32,
     security_level: u64,
     glwe_params: GlweParameters,
-    cmux_quantities: &[cmux::CmuxComplexityNoise],
 ) -> Vec<PpSwitchComplexityNoise> {
     let variance_bsk = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
-    let mut result = Vec::with_capacity(cmux_quantities.len());
-    for cmux in cmux_quantities {
-        let pp_ks_decomposition_parameter = cmux.decomp;
+    let mut quantities = Vec::with_capacity(64);
+    let mut increasing_complexity = 0.0;
+    let mut decreasing_variance = f64::INFINITY;
+    let mut counting_no_progress = 0;
 
-        // We assume the packing KS and the external product in a PBSto have
-        // the same parameters (base, level)
-        let variance_private_packing_ks = estimate_packing_private_keyswitch(
-            0.,
-            variance_bsk,
-            pp_ks_decomposition_parameter.log2_base,
-            pp_ks_decomposition_parameter.level,
-            glwe_params.glwe_dimension,
-            glwe_params.polynomial_size(),
-            ciphertext_modulus_log,
-        );
+    let max_level = ciphertext_modulus_log as u64;
 
+    let mut prev_best_log2_base = ciphertext_modulus_log as u64;
+    for level in 1..=max_level {
+        // detect increasing noise
+        let mut level_decreasing_base_noise = f64::INFINITY;
+        let mut best_log2_base = 0_u64;
+
+        // we know a max is between 1 and prev_best_log2_base
+        // and the curve has only 1 maximum close to prev_best_log2_base
+        // so we start on prev_best_log2_base
+        let max_log2_base = prev_best_log2_base.min(max_level / level);
+        for log2_base in (1..=max_log2_base).rev() {
+            let variance_private_packing_ks = estimate_packing_private_keyswitch(
+                0.,
+                variance_bsk,
+                log2_base,
+                level,
+                glwe_params.glwe_dimension,
+                glwe_params.polynomial_size(),
+                ciphertext_modulus_log,
+            );
+            if variance_private_packing_ks > level_decreasing_base_noise {
+                break;
+            }
+            level_decreasing_base_noise = variance_private_packing_ks;
+            best_log2_base = log2_base;
+        }
+        prev_best_log2_base = best_log2_base;
+        if decreasing_variance < level_decreasing_base_noise {
+            // the current case is dominated
+            if best_log2_base == 1 {
+                counting_no_progress += 1;
+                if counting_no_progress > 16 {
+                    break;
+                }
+            }
+            continue;
+        }
         let sample_extract_lwe_dimension = LweDimension(glwe_params.sample_extract_lwe_dimension());
         let ppks_parameter_complexity = KeyswitchParameters {
             input_lwe_dimension: sample_extract_lwe_dimension,
             output_lwe_dimension: sample_extract_lwe_dimension,
             ks_decomposition_parameter: KsDecompositionParameters {
-                level: pp_ks_decomposition_parameter.level,
-                log2_base: pp_ks_decomposition_parameter.log2_base,
+                level,
+                log2_base: best_log2_base,
             },
         };
         let complexity_ppks =
             complexity_model.ks_complexity(ppks_parameter_complexity, ciphertext_modulus_log);
-        result.push(PpSwitchComplexityNoise {
-            decomp: cmux.decomp,
+        let pp_ks_decomposition_parameter = BrDecompositionParameters {
+            level,
+            log2_base: best_log2_base,
+        };
+        quantities.push(PpSwitchComplexityNoise {
+            decomp: pp_ks_decomposition_parameter,
             complexity: complexity_ppks,
-            noise: variance_private_packing_ks,
+            noise: level_decreasing_base_noise,
         });
+        assert!(increasing_complexity < complexity_ppks);
+        increasing_complexity = complexity_ppks;
+        decreasing_variance = level_decreasing_base_noise;
     }
-    result
+    quantities
 }
 
 pub fn cache(
@@ -81,21 +114,14 @@ pub fn cache(
     let cache_dir: String = default_cache_dir();
     let ciphertext_modulus_log = 64;
     let hardware = processing_unit.br_to_string();
-    let path = format!("{cache_dir}/bc-decomp-{hardware}-64-{security_level}");
+    let path = format!("{cache_dir}/pp-decomp-{hardware}-64-{security_level}");
 
     let function = move |glwe_params: GlweParameters| {
-        let br = cmux::pareto_quantities(
-            complexity_model.as_ref(),
-            ciphertext_modulus_log,
-            security_level,
-            glwe_params,
-        );
         pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
             security_level,
             glwe_params,
-            &br,
         )
     };
     PersistentCacheHashMap::new_no_read(&path, VERSION, function)

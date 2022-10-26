@@ -271,13 +271,13 @@ fn update_state_with_best_decompositions(
 
     let variance = |cmux_quantity: Option<CmuxComplexityNoise>,
                     pp_variance: Option<_>,
-                    cb_decomp: Option<&CbComplexityNoise>,
+                    cb_quantity: Option<&CbComplexityNoise>,
                     ks_quantity: Option<KsComplexityNoise>| {
         let br_variance = cmux_quantity.map_or(lower_bound_variance_br, |quantity| {
             quantity.noise_br(internal_dim)
         });
         let pp_variance = pp_variance.unwrap_or(lower_bound_variance_private_packing);
-        let cb_decomp = cb_decomp.unwrap_or(&lower_bound_cb);
+        let cb_decomp = cb_quantity.unwrap_or(&lower_bound_cb);
         let ks_variance = ks_quantity.map_or(lower_bound_variance_ks, |quantity| {
             quantity.noise(input_lwe_dimension)
         });
@@ -300,12 +300,12 @@ fn update_state_with_best_decompositions(
         return;
     }
 
-    let complexity = |cmux_cost: Option<CmuxComplexityNoise>,
+    let complexity = |cmux_quantity: Option<CmuxComplexityNoise>,
                       pp_cost: Option<_>,
                       cb_decomp: Option<&CbComplexityNoise>,
                       ks_quantity: Option<KsComplexityNoise>| {
         // Pbs dans BitExtract et Circuit BS et FP-KS (partagés)
-        let br_cost = cmux_cost.map_or(lower_bound_cost_br, |quantity| {
+        let br_cost = cmux_quantity.map_or(lower_bound_cost_br, |quantity| {
             quantity.complexity_br(internal_dim)
         });
         let ks_cost = ks_quantity.map_or(lower_bound_cost_ks, |pareto| {

@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-concrete-cpu-noise-model = { git = "ssh://git@github.com/zama-ai/concrete-cpu.git", rev = "c185266e55f31b7d4c6e3264d9569eb03b4a785e"  }
+concrete-cpu-noise-model = { git = "ssh://git@github.com/zama-ai/concrete-cpu.git", rev = "91cff0bf1166d00f17d80b2ff03fcb48d161d43c" }
 file-lock = "2.1.6"
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.3"
