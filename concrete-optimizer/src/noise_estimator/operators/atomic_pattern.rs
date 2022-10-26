@@ -1,10 +1,9 @@
 use crate::global_parameters::DEFAUT_DOMAINS;
-use crate::parameters;
 use crate::parameters::{
     AtomicPatternParameters, BrDecompositionParameters, CmuxParameters, GlweParameters,
     KeyswitchParameters, PbsParameters,
 };
-use crate::security;
+use crate::{parameters, security};
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_commons::numeric::UnsignedInteger;

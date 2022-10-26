@@ -1,4 +1,5 @@
-use std::{iter::Sum, ops::Mul};
+use std::iter::Sum;
+use std::ops::Mul;
 
 use delegate::delegate;
 

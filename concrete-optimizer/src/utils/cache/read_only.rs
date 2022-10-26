@@ -1,8 +1,10 @@
+use std::cmp::Eq;
 use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 use std::hash::Hash;
-use std::{cmp::Eq, collections::HashMap};
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 pub type Map<K, V> = HashMap<K, V, RandomState>;
 

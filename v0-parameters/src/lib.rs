@@ -12,15 +12,14 @@ use clap::Parser;
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
-use concrete_optimizer::optimization::atomic_pattern as optimize_atomic_pattern;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::solo_key::optimize::{self as optimize_dag};
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution::{
     WopSolution, WpSolution,
 };
-use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
+use concrete_optimizer::optimization::{atomic_pattern as optimize_atomic_pattern, decomposition};
 use rayon_cond::CondIterator;
 use std::io::Write;
 
