@@ -326,8 +326,8 @@ fn update_state_with_best_decompositions(
     };
 
     // BlindRotate dans Circuit BS
-    for (cmux_i, &shared_cmux_decomp) in pareto_cmux.iter().enumerate() {
-        let lower_bound_variance = variance(Some(shared_cmux_decomp), None, None, None);
+    for &cmux_decomp in pareto_cmux {
+        let lower_bound_variance = variance(Some(cmux_decomp), None, None, None);
 
         if lower_bound_variance > consts.safe_variance {
             // saves 20%
@@ -336,105 +336,96 @@ fn update_state_with_best_decompositions(
 
         // Circuit Boostrap
         // private packing keyswitch, <=> FP-KS
-        let pp_switching_index = cmux_i;
-        let pp_switching = pp_switch[pp_switching_index];
-
-        let lower_bound_variance = variance(
-            Some(shared_cmux_decomp),
-            Some(pp_switching.noise),
-            None,
-            None,
-        );
-        if lower_bound_variance > safe_variance_bound {
-            continue;
-        }
-        let lower_bound_complexity = complexity(
-            Some(shared_cmux_decomp),
-            Some(pp_switching.complexity),
-            None,
-            None,
-        );
-        if lower_bound_complexity > best_complexity {
-            // saves ?? TODO
-            // next br_decomp are at least as costly
-            break;
-        }
-
-        // CircuitBootstrap: new parameters l,b
-        // for &circuit_pbs_decomposition in pareto_circuit_pbs {
-        for cb_decomp in pareto_cb {
-            let lower_bound_variance = variance(
-                Some(shared_cmux_decomp),
-                Some(pp_switching.noise),
-                Some(cb_decomp),
-                None,
-            );
+        for pp_switching in pp_switch {
+            let lower_bound_variance =
+                variance(Some(cmux_decomp), Some(pp_switching.noise), None, None);
             if lower_bound_variance > safe_variance_bound {
                 continue;
             }
-            let lower_bound_complexity = complexity(
-                Some(shared_cmux_decomp),
-                Some(pp_switching.complexity),
-                Some(cb_decomp),
-                None,
-            );
+            let lower_bound_complexity =
+                complexity(Some(cmux_decomp), Some(pp_switching.complexity), None, None);
             if lower_bound_complexity > best_complexity {
-                // saves 50%
-                // next circuit_pbs_decomposition_parameter are at least as costly
+                // saves ?? TODO
+                // next br_decomp are at least as costly
                 break;
             }
-            // Shared by all pbs (like brs)
-            for &ks_decomp in pareto_keyswitch.iter().rev() {
-                let variance_max = variance(
-                    Some(shared_cmux_decomp),
+
+            // CircuitBootstrap: new parameters l,b
+            // for &circuit_pbs_decomposition in pareto_circuit_pbs {
+            for cb_decomp in pareto_cb {
+                let lower_bound_variance = variance(
+                    Some(cmux_decomp),
                     Some(pp_switching.noise),
                     Some(cb_decomp),
-                    Some(ks_decomp),
+                    None,
                 );
-                if variance_max > safe_variance_bound {
-                    // saves 40%
-                    break;
+                if lower_bound_variance > safe_variance_bound {
+                    continue;
                 }
-
-                let complexity = complexity(
-                    Some(shared_cmux_decomp),
+                let lower_bound_complexity = complexity(
+                    Some(cmux_decomp),
                     Some(pp_switching.complexity),
                     Some(cb_decomp),
-                    Some(ks_decomp),
+                    None,
                 );
-
-                if complexity > best_complexity {
-                    continue;
+                if lower_bound_complexity > best_complexity {
+                    // saves 50%
+                    // next circuit_pbs_decomposition_parameter are at least as costly
+                    break;
                 }
+                // Shared by all pbs (like brs)
+                for &ks_decomp in pareto_keyswitch.iter().rev() {
+                    let variance_max = variance(
+                        Some(cmux_decomp),
+                        Some(pp_switching.noise),
+                        Some(cb_decomp),
+                        Some(ks_decomp),
+                    );
+                    if variance_max > safe_variance_bound {
+                        // saves 40%
+                        break;
+                    }
 
-                #[allow(clippy::float_cmp)]
-                if complexity == best_complexity && variance_max > best_variance {
-                    continue;
+                    let complexity = complexity(
+                        Some(cmux_decomp),
+                        Some(pp_switching.complexity),
+                        Some(cb_decomp),
+                        Some(ks_decomp),
+                    );
+
+                    if complexity > best_complexity {
+                        continue;
+                    }
+
+                    #[allow(clippy::float_cmp)]
+                    if complexity == best_complexity && variance_max > best_variance {
+                        continue;
+                    }
+
+                    let kappa = consts.kappa;
+                    best_complexity = complexity;
+                    best_variance = variance_max;
+                    let p_error = find_p_error(kappa, safe_variance_bound, variance_max);
+                    state.best_solution = Some(Solution {
+                        input_lwe_dimension,
+                        internal_ks_output_lwe_dimension: internal_dim,
+                        ks_decomposition_level_count: ks_decomp.decomp.level,
+                        ks_decomposition_base_log: ks_decomp.decomp.log2_base,
+                        glwe_polynomial_size: glwe_params.polynomial_size(),
+                        glwe_dimension: glwe_params.glwe_dimension,
+                        br_decomposition_level_count: cmux_decomp.decomp.level,
+                        br_decomposition_base_log: cmux_decomp.decomp.log2_base,
+                        noise_max: variance_max,
+                        complexity,
+                        p_error,
+                        global_p_error: f64::NAN,
+                        cb_decomposition_level_count: cb_decomp.decomp.level,
+                        cb_decomposition_base_log: cb_decomp.decomp.log2_base,
+                        crt_decomposition: vec![],
+                        pp_decomposition_level_count: pp_switching.decomp.level,
+                        pp_decomposition_base_log: pp_switching.decomp.log2_base,
+                    });
                 }
-
-                let kappa = consts.kappa;
-                best_complexity = complexity;
-                best_variance = variance_max;
-                let p_error = find_p_error(kappa, safe_variance_bound, variance_max);
-                state.best_solution = Some(Solution {
-                    input_lwe_dimension,
-                    internal_ks_output_lwe_dimension: internal_dim,
-                    ks_decomposition_level_count: ks_decomp.decomp.level,
-                    ks_decomposition_base_log: ks_decomp.decomp.log2_base,
-                    glwe_polynomial_size: glwe_params.polynomial_size(),
-                    glwe_dimension: glwe_params.glwe_dimension,
-                    br_decomposition_level_count: shared_cmux_decomp.decomp.level,
-                    br_decomposition_base_log: shared_cmux_decomp.decomp.log2_base,
-                    noise_max: variance_max,
-                    complexity,
-                    p_error,
-                    global_p_error: f64::NAN,
-                    cb_decomposition_level_count: cb_decomp.decomp.level,
-                    cb_decomposition_base_log: cb_decomp.decomp.log2_base,
-                    crt_decomposition: vec![],
-                    pp_decomposition_level_count: pp_switching.decomp.level,
-                    pp_decomposition_base_log: pp_switching.decomp.log2_base,
-                });
             }
         }
     }
