@@ -11,6 +11,7 @@ include_directories(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp)
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   link_libraries(
+
     # usefull for old gcc versions
     -Wl,--allow-multiple-definition # static concrete-optimizer and concrete shares some code
   )
@@ -34,8 +35,4 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   add_concretecompiler_unittest(end_to_end_jit_auto_parallelization end_to_end_jit_auto_parallelization.cc globals.cc)
   add_concretecompiler_unittest(end_to_end_jit_distributed end_to_end_jit_distributed.cc globals.cc)
   add_concretecompiler_unittest(end_to_end_jit_aes_short end_to_end_jit_aes_short.cc globals.cc)
-endif()
-
-if(CONCRETELANG_CUDA_SUPPORT)
-  add_concretecompiler_unittest(end_to_end_gpu_test end_to_end_gpu_test.cc globals.cc)
 endif()
