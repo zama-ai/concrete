@@ -79,7 +79,7 @@ pub fn fft_noise(
     let l = br_decomposition_parameter.level as f64;
     let big_n = glwe_params.polynomial_size() as f64;
     let k = glwe_params.glwe_dimension;
-    assert!(k > 0, "k = {}", k);
+    assert!(k > 0, "k = {k}");
     assert!(
         DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.end > k,
         "k={} and bound={}",

@@ -11,12 +11,11 @@ pub const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 const MIN_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS
     .glwe_pbs_constrained
     .log2_polynomial_size
-    .start as u64;
-const MAX_LOG_POLY_SIZE: u64 =
-    DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end as u64 - 1;
+    .start;
+const MAX_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end - 1;
 pub const MAX_GLWE_DIM: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.end - 1;
-pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start as u64;
-pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end as u64 - 1;
+pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start;
+pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end - 1;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sum_size = 4096;

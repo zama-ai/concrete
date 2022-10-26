@@ -11,7 +11,7 @@ pub fn minimal_variance(
     let equiv_lwe_dimension = glwe_params.glwe_dimension * glwe_params.polynomial_size();
     let security_weights = SECURITY_WEIGHTS_TABLE
         .get(&security_level)
-        .unwrap_or_else(|| panic!("{} bits of security is not supported", security_level));
+        .unwrap_or_else(|| panic!("{security_level} bits of security is not supported"));
     let secure_log2_std =
         security_weights.secure_log2_std(equiv_lwe_dimension, ciphertext_modulus_log as f64);
     let log2_var = 2.0 * secure_log2_std;

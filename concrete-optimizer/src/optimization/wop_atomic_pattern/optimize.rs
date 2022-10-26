@@ -197,7 +197,7 @@ fn update_state_with_best_decompositions(
         let variance_ggsw = base_variance_private_packing_ks + shared_br_decomp.noise / 2.;
 
         let variance_coeff_1_cmux_tree =
-            2_f64.powf(2. * log_norm as f64) // variance_coeff for the multisum
+            2_f64.powf(2. * log_norm) // variance_coeff for the multisum
             * (precisions_sum              // for hybrid packing
             << (2 * (max_precision - 1))) as f64 // for left shift
         ;
@@ -238,7 +238,7 @@ fn update_state_with_best_decompositions(
             } else {
                 0.0
             };
-            let complexity_cmux_tree = cmux_group_count as f64 * complexity_1_cmux_hp;
+            let complexity_cmux_tree = cmux_group_count * complexity_1_cmux_hp;
 
             let complexity_one_ggsw_to_fft = cb_decomp.complexity_one_ggsw_to_fft;
 

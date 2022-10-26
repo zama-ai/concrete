@@ -155,10 +155,8 @@ where
         match std::fs::create_dir_all(std::path::Path::new(&self.path).parent().unwrap()) {
             Ok(()) => (),
             Err(err) => {
-                println!(
-                    "PersistentCache::sync_to_disk: Cannot create directory {}, {}",
-                    self.path, err
-                );
+                let path = &self.path;
+                println!("PersistentCache::sync_to_disk: Cannot create directory {path}, {err}",);
                 return;
             }
         };
@@ -209,7 +207,7 @@ where
         match disk_version {
             Ok(disk_version) => {
                 if disk_version != *version {
-                    println!("PersistentCache:: Invalid version {}: cleaning", path);
+                    println!("PersistentCache:: Invalid version {path}: cleaning");
                     Self::clear_file(path);
                     return None;
                 }
@@ -246,15 +244,15 @@ where
         }
         if let Err(err) = filelock.file.rewind() {
             println!(
-                "PersistentCache::write: cannot rewind file: {}, {}",
-                self.path, err
+                "PersistentCache::write: cannot rewind file: {}, {err}",
+                self.path
             );
             return;
         }
         if let Err(err) = filelock.file.set_len(0) {
             println!(
-                "PersistentCache::write: cannot truncate file: {}, {}",
-                self.path, err
+                "PersistentCache::write: cannot truncate file: {}, {err}",
+                self.path
             );
         }
         let file = &mut filelock.file;
@@ -273,7 +271,7 @@ where
         let filelock = match FileLock::lock(path, is_blocking, options) {
             Ok(lock) => lock,
             Err(_err) => {
-                println!("PersistentCache::clear: Cannot lock cache file {}", path);
+                println!("PersistentCache::clear: Cannot lock cache file {path}");
                 return;
             }
         };

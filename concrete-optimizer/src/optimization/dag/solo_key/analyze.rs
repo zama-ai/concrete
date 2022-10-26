@@ -887,7 +887,7 @@ mod tests {
         let mut graph = unparametrized::OperationDag::new();
         let max_precision: Precision = 5;
         for i in 1..=max_precision {
-            let _ = graph.add_input(i as u8, Shape::number());
+            let _ = graph.add_input(i, Shape::number());
         }
         let analysis = analyze(&graph);
         assert!(analysis.constraints_by_precisions.len() == max_precision as usize);

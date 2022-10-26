@@ -28,12 +28,11 @@ pub const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 const MIN_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS
     .glwe_pbs_constrained
     .log2_polynomial_size
-    .start as u64;
-const MAX_LOG_POLY_SIZE: u64 =
-    DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end as u64 - 1;
+    .start;
+const MAX_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end - 1;
 pub const MAX_GLWE_DIM: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.end - 1;
-pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start as u64;
-pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end as u64 - 1;
+pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start;
+pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end - 1;
 
 /// Find parameters for classical PBS and new WoP-PBS
 #[derive(Parser, Debug)]
@@ -168,8 +167,8 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
 
     let precisions = args.min_precision..=args.max_precision;
     let manps: Vec<_> = (0..=31).collect();
-    writeln!(writer, "security level: {}", security_level)?;
-    writeln!(writer, "target p_error: {:1.1e}", p_error)?;
+    writeln!(writer, "security level: {security_level}")?;
+    writeln!(writer, "target p_error: {p_error:1.1e}")?;
     writeln!(writer, "per precision and log norm2:")?;
 
     for (precision_i, precision) in precisions.enumerate() {
@@ -258,7 +257,7 @@ mod tests {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
         for &security_level in security_levels {
-            let ref_file: &str = &format!("ref/v0_last_{}", security_level);
+            let ref_file: &str = &format!("ref/v0_last_{security_level}");
             let args: Args = Args {
                 min_precision: 1,
                 max_precision: 9,
@@ -298,7 +297,7 @@ mod tests {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
         for &security_level in security_levels {
-            let ref_file: &str = &format!("ref/wop_pbs_last_{}", security_level);
+            let ref_file: &str = &format!("ref/wop_pbs_last_{security_level}");
 
             let args = Args {
                 min_precision: 1,

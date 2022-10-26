@@ -57,7 +57,7 @@ pub fn safe_variance_bound_1bit_1padbit(
     // This is hardcoded and only valid for 16bit wop pbs
     // Precision is 1
     let noise_bits = 58;
-    let fatal_noise_limit = 2_f64.powi(noise_bits as i32);
+    let fatal_noise_limit = 2_f64.powi(noise_bits);
     safe_variance_bound_from_p_error(
         fatal_noise_limit,
         ciphertext_modulus_log,

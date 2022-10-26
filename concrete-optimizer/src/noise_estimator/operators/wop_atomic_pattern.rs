@@ -20,12 +20,12 @@ pub fn estimate_packing_private_keyswitch<T>(
     let var_s_w = 1. / 4.;
     let mean_s_w = 1. / 2.;
     // println!("n = {}", n);
-    let res_1 = (l * (n + 1.) * var_ggsw.get_modular_variance(ciphertext_modulus_log)) as f64
+    let res_1 = (l * (n + 1.) * var_ggsw.get_modular_variance(ciphertext_modulus_log))
         * (square(b) + 2.)
         / 12.;
 
     #[allow(clippy::cast_possible_wrap)]
-    let res_3 = ((square(f64::powi(2., ciphertext_modulus_log as i32)) as f64 - b2l) / (12. * b2l)
+    let res_3 = ((square(f64::powi(2., ciphertext_modulus_log as i32)) - b2l) / (12. * b2l)
         * (1.
             + n * (K::variance_key_coefficient(ciphertext_modulus_log)
                 .get_modular_variance(ciphertext_modulus_log)

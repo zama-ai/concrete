@@ -227,10 +227,7 @@ pub fn domains_to_ranges(
 
     let parameter_ranges = ParameterRanges {
         glwe,
-        br_decomposition: vec![
-            domains.br_decomposition;
-            parameters_count.br_decomposition as usize
-        ],
+        br_decomposition: vec![domains.br_decomposition; parameters_count.br_decomposition],
         ks_decomposition: vec![domains.ks_decomposition; parameters_count.ks_decomposition],
     };
 

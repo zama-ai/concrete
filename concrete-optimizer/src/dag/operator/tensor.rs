@@ -48,7 +48,7 @@ impl Shape {
 
     pub fn duplicated(out_dim_size: u64, other: &Self) -> Self {
         let mut dimensions_size = Vec::with_capacity(other.rank() + 1);
-        dimensions_size.push(out_dim_size as u64);
+        dimensions_size.push(out_dim_size);
         dimensions_size.extend_from_slice(&other.dimensions_size);
         Self { dimensions_size }
     }

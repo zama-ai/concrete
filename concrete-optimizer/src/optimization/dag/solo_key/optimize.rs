@@ -569,11 +569,11 @@ mod tests {
 
     fn no_lut_vs_lut(precision: Precision, cache: &PersistDecompCache) {
         let mut dag_lut = unparametrized::OperationDag::new();
-        let input1 = dag_lut.add_input(precision as u8, Shape::number());
+        let input1 = dag_lut.add_input(precision, Shape::number());
         let _lut1 = dag_lut.add_lut(input1, FunctionTable::UNKWOWN, precision);
 
         let mut dag_no_lut = unparametrized::OperationDag::new();
-        let _input2 = dag_no_lut.add_input(precision as u8, Shape::number());
+        let _input2 = dag_no_lut.add_input(precision, Shape::number());
 
         let state_no_lut = optimize(&dag_no_lut, cache);
         let state_lut = optimize(&dag_lut, cache);
@@ -608,7 +608,7 @@ mod tests {
 
         let mut dag_1 = unparametrized::OperationDag::new();
         {
-            let input1 = dag_1.add_input(precision as u8, Shape::number());
+            let input1 = dag_1.add_input(precision, Shape::number());
             let scaled_input1 = dag_1.add_dot([input1], weight);
             let lut1 = dag_1.add_lut(scaled_input1, FunctionTable::UNKWOWN, precision);
             let _lut2 = dag_1.add_lut(lut1, FunctionTable::UNKWOWN, precision);
@@ -616,7 +616,7 @@ mod tests {
 
         let mut dag_2 = unparametrized::OperationDag::new();
         {
-            let input1 = dag_2.add_input(precision as u8, Shape::number());
+            let input1 = dag_2.add_input(precision, Shape::number());
             let lut1 = dag_2.add_lut(input1, FunctionTable::UNKWOWN, precision);
             let scaled_lut1 = dag_2.add_dot([lut1], weight);
             let _lut2 = dag_2.add_lut(scaled_lut1, FunctionTable::UNKWOWN, precision);
@@ -651,14 +651,14 @@ mod tests {
     fn lut_1_layer_has_better_complexity(precision: Precision, cache: &PersistDecompCache) {
         let dag_1_layer = {
             let mut dag = unparametrized::OperationDag::new();
-            let input1 = dag.add_input(precision as u8, Shape::number());
+            let input1 = dag.add_input(precision, Shape::number());
             let _lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, precision);
             let _lut2 = dag.add_lut(input1, FunctionTable::UNKWOWN, precision);
             dag
         };
         let dag_2_layer = {
             let mut dag = unparametrized::OperationDag::new();
-            let input1 = dag.add_input(precision as u8, Shape::number());
+            let input1 = dag.add_input(precision, Shape::number());
             let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, precision);
             let _lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, precision);
             dag
@@ -783,7 +783,7 @@ mod tests {
         let shape = Shape::vector(dim);
         let weights = Weights::number(weight);
         let mut dag = unparametrized::OperationDag::new();
-        let input1 = dag.add_input(precision as u8, shape);
+        let input1 = dag.add_input(precision, shape);
         let _dot1 = dag.add_dot([input1], weights); // this is just several multiply
         let state = optimize(&dag, cache);
         let sol = state.best_solution.unwrap();
@@ -814,7 +814,7 @@ mod tests {
         let shape = Shape::number();
         let weights = Weights::number(weight);
         let mut dag = unparametrized::OperationDag::new();
-        let mut last_val = dag.add_input(precision as u8, shape);
+        let mut last_val = dag.add_input(precision, shape);
         for _i in 0..depth {
             let dot = dag.add_dot([last_val], &weights);
             last_val = dag.add_lut(dot, FunctionTable::UNKWOWN, precision);
@@ -842,8 +842,8 @@ mod tests {
         let mut dag = unparametrized::OperationDag::new();
         let weights_low = Weights::number(weight_low);
         let weights_high = Weights::number(weight_high);
-        let mut last_val_low = dag.add_input(precision_low as u8, &shape);
-        let mut last_val_high = dag.add_input(precision_high as u8, &shape);
+        let mut last_val_low = dag.add_input(precision_low, &shape);
+        let mut last_val_high = dag.add_input(precision_high, &shape);
         for _i in 0..depth {
             let dot_low = dag.add_dot([last_val_low], &weights_low);
             last_val_low = dag.add_lut(dot_low, FunctionTable::UNKWOWN, precision_low);
