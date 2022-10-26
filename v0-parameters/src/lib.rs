@@ -199,16 +199,17 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
                         if manp_i == 0 {
                             writeln!(
                                 writer,
-                                "    -ln2:   k,  N,    n, br_l,br_b, ks_l,ks_b, cb_l,cb_b,  cost, p_error"
+                                "    -ln2:   k,  N,    n, br_l,br_b, ks_l,ks_b, cb_l,cb_b, pp_l,pp_b,  cost, p_error"
                             )?;
                         }
                         writeln!(writer,
-                            "    - {:<2}:  {:2}, {:2}, {:4},   {:2}, {:2},    {:2}, {:2},    {:2}, {:2}, {:6}, {:1.1e}",
+                            "    - {:<2}:  {:2}, {:2}, {:4},   {:2}, {:2},    {:2}, {:2},    {:2}, {:2},    {:2}, {:2}, {:6}, {:1.1e}",
                             manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
                             solution.internal_ks_output_lwe_dimension,
                             solution.br_decomposition_level_count, solution.br_decomposition_base_log,
                             solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
                             solution.cb_decomposition_level_count, solution.cb_decomposition_base_log,
+                            solution.pp_decomposition_level_count, solution.pp_decomposition_base_log,
                             (solution.complexity / (1024.0 * 1024.0)) as u64,
                             solution.p_error
                         )?;

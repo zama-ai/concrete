@@ -51,6 +51,8 @@ pub struct Solution {
     pub cb_decomposition_level_count: u64,
     pub cb_decomposition_base_log: u64,
     pub crt_decomposition: Vec<u64>,
+    pub pp_decomposition_level_count: u64,
+    pub pp_decomposition_base_log: u64,
 }
 
 impl Solution {
@@ -71,6 +73,8 @@ impl Solution {
             cb_decomposition_level_count: 0,
             cb_decomposition_base_log: 0,
             crt_decomposition: vec![],
+            pp_decomposition_level_count: 0,
+            pp_decomposition_base_log: 0,
         }
     }
 }
@@ -421,6 +425,8 @@ fn update_state_with_best_decompositions(
                     cb_decomposition_level_count: cb_decomp.decomp.level,
                     cb_decomposition_base_log: cb_decomp.decomp.log2_base,
                     crt_decomposition: vec![],
+                    pp_decomposition_level_count: pp_switching.decomp.level,
+                    pp_decomposition_base_log: pp_switching.decomp.log2_base,
                 });
             }
         }
