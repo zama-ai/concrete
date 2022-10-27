@@ -1,5 +1,5 @@
-#ifndef CUDA_NEGATE_H
-#define CUDA_NEGATE_H
+#ifndef CUDA_ADD_H
+#define CUDA_ADD_H
 
 #ifdef __CDT_PARSER__
 #undef __CUDA_RUNTIME_H__
@@ -11,19 +11,21 @@
 #include "utils/kernel_dimensions.cuh"
 
 template <typename T>
-__global__ void negation(T *output, T *input, uint32_t num_entries) {
+__global__ void addition(T *output, T *input_1, T *input_2,
+                         uint32_t num_entries) {
 
   int tid = threadIdx.x;
   if (tid < num_entries) {
     int index = blockIdx.x * blockDim.x + tid;
     // Here we take advantage of the wrapping behaviour of uint
-    output[index] = -input[index];
+    output[index] = input_1[index] + input_2[index];
   }
 }
 
 template <typename T>
-__host__ void host_negation(void *v_stream, uint32_t gpu_index, T *output,
-                            T *input, uint32_t input_lwe_dimension,
+__host__ void host_addition(void *v_stream, uint32_t gpu_index, T *output,
+                            T *input_1, T *input_2,
+                            uint32_t input_lwe_dimension,
                             uint32_t input_lwe_ciphertext_count) {
 
   cudaSetDevice(gpu_index);
@@ -38,9 +40,9 @@ __host__ void host_negation(void *v_stream, uint32_t gpu_index, T *output,
   dim3 thds(num_threads, 1, 1);
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
-  negation<<<grid, thds, 0, *stream>>>(output, input, num_entries);
+  addition<<<grid, thds, 0, *stream>>>(output, input_1, input_2, num_entries);
 
   cudaStreamSynchronize(*stream);
 }
 
-#endif // CUDA_NEGATE_H
+#endif // CUDA_ADD_H

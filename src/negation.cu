@@ -1,5 +1,4 @@
 #include "negation.cuh"
-#include "negation.h"
 
 void cuda_negate_lwe_ciphertext_vector_32(void *v_stream, uint32_t gpu_index,
                                           void *lwe_array_out,

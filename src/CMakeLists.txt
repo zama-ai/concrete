@@ -1,6 +1,6 @@
 set(SOURCES ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/bootstrap.h
         ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/keyswitch.h
-        ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/negation.h)
+        ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/linear_algebra.h)
 file(GLOB SOURCES
      "*.cu"
      "*.h"
