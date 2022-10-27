@@ -165,8 +165,7 @@ class GraphConverter:
                     for idx, pred in enumerate(graph.ordered_preds_of(node))
                     if not pred.operation == Operation.Constant
                 ]
-                if len(variable_input_indices) != 1:
-                    return "only single input table lookups are supported"
+                assert_that(len(variable_input_indices) == 1)
 
             if len(inputs) > 0 and all(input.is_clear for input in inputs):
                 return "one of the operands must be encrypted"

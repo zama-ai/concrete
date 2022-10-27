@@ -312,26 +312,6 @@ return %1
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x, y: np.maximum(x, y),
-            {"x": "encrypted", "y": "clear"},
-            [
-                (np.random.randint(0, 2, size=(1,)), np.random.randint(0, 2, size=(1,)))
-                for _ in range(100)
-            ],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be converted to MLIR
-
-%0 = x                      # EncryptedTensor<uint1, shape=(1,)>
-%1 = y                      # ClearTensor<uint1, shape=(1,)>
-%2 = maximum(%0, %1)        # EncryptedTensor<uint1, shape=(1,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only single input table lookups are supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
             lambda x: np.maximum(x, np.array([3])),
             {"x": "clear"},
             [np.random.randint(0, 2, size=(1,)) for _ in range(100)],
