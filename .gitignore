@@ -51,3 +51,5 @@ _build/
 
 
 compiler/tests/TestLib/out/
+compiler/lib/Bindings/Rust/target/
+compiler/lib/Bindings/Rust/Cargo.lock

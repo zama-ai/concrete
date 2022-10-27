@@ -1,0 +1,11 @@
+[package]
+name = "concrete_compiler_rust"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+bindgen = "0.60.1"
+
+[dev-dependencies]
+stdio-override = "0.1.3"
+tempfile = "3.3.0"
