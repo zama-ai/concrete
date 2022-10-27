@@ -232,15 +232,15 @@ def test_compiler_virtual_compile(helpers):
 
     configuration = helpers.configuration()
 
-    def f(x):
-        return x + 400
+    def f(x, y):
+        return x * y
 
-    compiler = Compiler(f, {"x": "encrypted"})
+    compiler = Compiler(f, {"x": "encrypted", "y": "encrypted"})
 
-    inputset = (i for i in range(400))
+    inputset = [(100_000, 1_000_000)]
     circuit = compiler.compile(inputset, configuration=configuration, virtual=True)
 
-    assert circuit.encrypt_run_decrypt(200) == 600
+    assert circuit.encrypt_run_decrypt(100_000, 1_000_000) == 100_000_000_000
 
 
 def test_compiler_compile_bad_inputset(helpers):
