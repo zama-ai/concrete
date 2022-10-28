@@ -154,7 +154,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
         continue;
       }
       auto res = lambda.call(a, b);
-      ASSERT_EQ_OUTCOME(res, a + b);
+      ASSERT_EQ_OUTCOME(res, (scalar_out)a + b);
     }
 }
 
@@ -332,7 +332,7 @@ func.func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>, %arg1: tensor<2x3x1x!FHE.eint
   for (size_t i = 0; i < v.size(); i++) {
     for (size_t j = 0; j < v[i].size(); j++) {
       for (size_t k = 0; k < v[i][j].size(); k++) {
-        EXPECT_EQ(v[i][j][k], 2 * ta[i][j][k]);
+        EXPECT_EQ(v[i][j][k], (scalar_out)2 * ta[i][j][k]);
       }
     }
   }
@@ -400,6 +400,6 @@ func.func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<3>) -> !FHE.eint<6> {
   for (auto a : values_6bits())
     for (auto b : values_3bits()) {
       auto res = lambda.call(a, b);
-      ASSERT_EQ_OUTCOME(res, a + b);
+      ASSERT_EQ_OUTCOME(res, (scalar_out)a + b);
     }
 }

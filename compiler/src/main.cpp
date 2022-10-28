@@ -229,7 +229,7 @@ llvm::cl::list<size_t> v0Constraint(
         "Force the compiler to use the given v0 constraint [p, norm2]"),
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 
-llvm::cl::list<int64_t> v0Parameter(
+llvm::cl::list<size_t> v0Parameter(
     "v0-parameter",
     llvm::cl::desc(
         "Force to apply the given v0 parameters [glweDimension, "
@@ -316,11 +316,10 @@ cmdlineCompilationOptions() {
           "The v0-parameter option expect a list of size 7",
           llvm::inconvertibleErrorCode());
     }
-    options.v0Parameter = mlir::concretelang::V0Parameter(
-        cmdline::v0Parameter[0], cmdline::v0Parameter[1],
-        cmdline::v0Parameter[2], cmdline::v0Parameter[3],
-        cmdline::v0Parameter[4], cmdline::v0Parameter[5],
-        cmdline::v0Parameter[6]);
+    options.v0Parameter = {cmdline::v0Parameter[0], cmdline::v0Parameter[1],
+                           cmdline::v0Parameter[2], cmdline::v0Parameter[3],
+                           cmdline::v0Parameter[4], cmdline::v0Parameter[5],
+                           cmdline::v0Parameter[6], llvm::None};
   }
 
   // Setup the large integer options

@@ -397,19 +397,19 @@ struct BufferizableWithSyncCallOpInterface
 template <>
 void pushAdditionalArgs(BConcrete::AddPlaintextLweBufferOp op,
                         mlir::SmallVector<mlir::Value> &operands,
-                        RewriterBase &rewriter){};
+                        RewriterBase &rewriter) {}
 template <>
 void pushAdditionalArgs(BConcrete::AddLweBuffersOp op,
                         mlir::SmallVector<mlir::Value> &operands,
-                        RewriterBase &rewriter){};
+                        RewriterBase &rewriter) {}
 template <>
 void pushAdditionalArgs(BConcrete::MulCleartextLweBufferOp op,
                         mlir::SmallVector<mlir::Value> &operands,
-                        RewriterBase &rewriter){};
+                        RewriterBase &rewriter) {}
 template <>
 void pushAdditionalArgs(BConcrete::NegateLweBufferOp op,
                         mlir::SmallVector<mlir::Value> &operands,
-                        RewriterBase &rewriter){};
+                        RewriterBase &rewriter) {}
 
 template <>
 void pushAdditionalArgs(BConcrete::KeySwitchLweBufferOp op,
@@ -429,7 +429,7 @@ void pushAdditionalArgs(BConcrete::KeySwitchLweBufferOp op,
       op.getLoc(), op.lwe_dim_outAttr()));
   // context
   operands.push_back(getContextArgument(op));
-};
+}
 
 template <>
 void pushAdditionalArgs(BConcrete::BootstrapLweBufferOp op,
@@ -455,7 +455,7 @@ void pushAdditionalArgs(BConcrete::BootstrapLweBufferOp op,
       op.getLoc(), op.outPrecisionAttr()));
   // context
   operands.push_back(getContextArgument(op));
-};
+}
 
 template <>
 void pushAdditionalArgs(BConcrete::KeySwitchLweBufferAsyncOffloadOp op,
@@ -463,7 +463,7 @@ void pushAdditionalArgs(BConcrete::KeySwitchLweBufferAsyncOffloadOp op,
                         RewriterBase &rewriter) {
   // context
   operands.push_back(getContextArgument(op));
-};
+}
 
 template <>
 void pushAdditionalArgs(BConcrete::BootstrapLweBufferAsyncOffloadOp op,
@@ -489,7 +489,7 @@ void pushAdditionalArgs(BConcrete::BootstrapLweBufferAsyncOffloadOp op,
       op.getLoc(), op.outPrecisionAttr()));
   // context
   operands.push_back(getContextArgument(op));
-};
+}
 
 template <>
 void pushAdditionalArgs(BConcrete::WopPBSCRTLweBufferOp op,
@@ -524,7 +524,7 @@ void pushAdditionalArgs(BConcrete::WopPBSCRTLweBufferOp op,
       op.getLoc(), op.packingKeySwitchoutputPolynomialSizeAttr()));
   // context
   operands.push_back(getContextArgument(op));
-};
+}
 } // namespace
 
 void mlir::concretelang::BConcrete::

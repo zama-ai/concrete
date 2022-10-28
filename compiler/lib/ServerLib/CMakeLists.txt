@@ -1,13 +1,7 @@
-add_compile_options( -Werror )
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  # using Clang
-  add_compile_options( -Wno-error=pessimizing-move -Wno-pessimizing-move )
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # using GCC
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0)
     add_compile_options( -Wno-error=cast-function-type -Wno-cast-function-type)
-    add_compile_options( -Werror -Wno-error=pessimizing-move -Wno-pessimizing-move )
   endif()
 endif()
 

@@ -106,7 +106,7 @@ TEST(ParallelizeAndRunFHE, nn_small_parallel) {
   std::vector<uint8_t> input;
   input.reserve(dim0 * dim1);
 
-  for (int i = 0; i < dim0 * dim1; ++i)
+  for (size_t i = 0; i < dim0 * dim1; ++i)
     input.push_back(i % 17 % 4);
 
   mlir::concretelang::TensorLambdaArgument<
@@ -148,7 +148,7 @@ TEST(ParallelizeAndRunFHE, nn_small_sequential) {
     std::vector<uint8_t> input;
     input.reserve(dim0 * dim1);
 
-    for (int i = 0; i < dim0 * dim1; ++i)
+    for (size_t i = 0; i < dim0 * dim1; ++i)
       input.push_back(i % 17 % 4);
 
     mlir::concretelang::TensorLambdaArgument<

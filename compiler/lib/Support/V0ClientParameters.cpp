@@ -59,22 +59,22 @@ llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
   }
   if (auto lweTy = type.dyn_cast_or_null<
                    mlir::concretelang::Concrete::LweCiphertextType>()) {
+    bool sign = lweTy.isSignedInteger();
     return CircuitGate{
         /* .encryption = */ llvm::Optional<EncryptionGate>({
             /* .secretKeyID = */ secretKeyID,
             /* .variance = */ variance,
             /* .encoding = */
             {
-                /* .precision = */ lweTy.getP(),
+                /* .precision = */ (size_t)lweTy.getP(),
                 /* .crt = */ lweTy.getCrtDecomposition().vec(),
             },
         }),
         /*.shape = */
-        {
-            /*.width = */ lweTy.getP(),
-            /*.dimensions = */ std::vector<int64_t>(),
-            /*.size = */ 0,
-        },
+        {/*.width = */ (size_t)lweTy.getP(),
+         /*.dimensions = */ std::vector<int64_t>(),
+         /*.size = */ 0,
+         /* .sign */ sign},
     };
   }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
@@ -99,7 +99,7 @@ llvm::Expected<ClientParameters>
 createClientParametersForV0(V0FHEContext fheContext,
                             llvm::StringRef functionName,
                             mlir::ModuleOp module) {
-  auto v0Param = fheContext.parameter;
+  V0Parameter &v0Param = fheContext.parameter;
   Variance inputVariance =
       v0Curve->getVariance(1, v0Param.getNBigLweDimension(), 64);
 

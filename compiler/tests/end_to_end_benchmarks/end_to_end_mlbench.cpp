@@ -151,8 +151,8 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
 }
 
 int main(int argc, char **argv) {
-  char *bench_name = "MLBench";
-  char *file_name =
+  char const *bench_name = "MLBench";
+  char const *file_name =
       "tests/end_to_end_benchmarks/mlbench/end_to_end_mlbench.yaml";
   size_t stack_size = 0;
 

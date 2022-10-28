@@ -48,11 +48,7 @@ struct ConcreteToBConcretePass
     : public ConcreteToBConcreteBase<ConcreteToBConcretePass> {
   void runOnOperation() final;
   ConcreteToBConcretePass() = delete;
-  ConcreteToBConcretePass(bool loopParallelize)
-      : loopParallelize(loopParallelize){};
-
-private:
-  bool loopParallelize;
+  ConcreteToBConcretePass(bool _loopParallelize){};
 };
 } // namespace
 

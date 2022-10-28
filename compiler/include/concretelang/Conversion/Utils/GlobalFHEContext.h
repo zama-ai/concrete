@@ -54,15 +54,6 @@ struct V0Parameter {
 
   llvm::Optional<LargeIntegerParameter> largeInteger;
 
-  V0Parameter() {}
-
-  V0Parameter(size_t glweDimension, size_t logPolynomialSize, size_t nSmall,
-              size_t brLevel, size_t brLogBase, size_t ksLevel,
-              size_t ksLogBase)
-      : glweDimension(glweDimension), logPolynomialSize(logPolynomialSize),
-        nSmall(nSmall), brLevel(brLevel), brLogBase(brLogBase),
-        ksLevel(ksLevel), ksLogBase(ksLogBase) {}
-
   // TODO remove the shift when we have true polynomial size
   size_t getPolynomialSize() { return 1 << logPolynomialSize; }
 

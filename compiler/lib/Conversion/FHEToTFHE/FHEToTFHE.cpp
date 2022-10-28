@@ -245,7 +245,7 @@ struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
   FHEToTFHEPass(mlir::concretelang::ApplyLookupTableLowering lutLowerStrategy)
       : lutLowerStrategy(lutLowerStrategy) {}
 
-  void runOnOperation() {
+  void runOnOperation() override {
     auto op = this->getOperation();
 
     mlir::ConversionTarget target(getContext());

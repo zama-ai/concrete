@@ -316,9 +316,10 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
                     "[glweDimension, logPolynomialSize, nSmall, brLevel, "
                     "brLobBase, ksLevel, ksLogBase]");
       }
-      desc.v0Parameter = mlir::concretelang::V0Parameter(
-          v0parameter[0], v0parameter[1], v0parameter[2], v0parameter[3],
-          v0parameter[4], v0parameter[5], v0parameter[6]);
+      desc.v0Parameter = {(size_t)v0parameter[0], (size_t)v0parameter[1],
+                          (size_t)v0parameter[2], (size_t)v0parameter[3],
+                          (size_t)v0parameter[4], (size_t)v0parameter[5],
+                          (size_t)v0parameter[6], llvm::None};
     }
     std::vector<int64_t> v0constraint;
     io.mapOptional("v0-constraint", v0constraint);

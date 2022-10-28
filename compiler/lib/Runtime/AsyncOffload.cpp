@@ -22,7 +22,7 @@ void async_keyswitch(
           get_engine(context), get_keyswitch_key_u64(context),
           out_aligned + out_offset, ct0_aligned + ct0_offset));
   promise.set_value(concretelang::clientlib::MemRefDescriptor<1>{
-      out_allocated, out_aligned, out_offset, out_size, out_stride});
+      out_allocated, out_aligned, out_offset, {out_size}, {out_stride}});
 }
 
 void *memref_keyswitch_async_lwe_u64(
@@ -71,7 +71,7 @@ void async_bootstrap(
           get_fftw_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
           ct0_aligned + ct0_offset, glwe_ct));
   promise.set_value(concretelang::clientlib::MemRefDescriptor<1>{
-      out_allocated, out_aligned, out_offset, out_size, out_stride});
+      out_allocated, out_aligned, out_offset, {out_size}, {out_stride}});
   free(glwe_ct);
 }
 

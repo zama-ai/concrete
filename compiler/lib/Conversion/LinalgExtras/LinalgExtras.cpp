@@ -30,8 +30,8 @@ public:
 
   LinalgRewritePattern(::mlir::MLIRContext *context, bool parallelizeLoops,
                        mlir::PatternBenefit benefit = 0)
-      : parallelizeLoops(parallelizeLoops),
-        ::mlir::OpRewritePattern<mlir::linalg::GenericOp>(context, benefit) {}
+      : ::mlir::OpRewritePattern<mlir::linalg::GenericOp>(context, benefit),
+        parallelizeLoops(parallelizeLoops) {}
 
   mlir::LogicalResult
   matchAndRewrite(mlir::linalg::GenericOp linalgOp,

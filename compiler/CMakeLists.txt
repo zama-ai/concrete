@@ -9,7 +9,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Wouldn't be able to compile LLVM without this on Mac (using either Clang or AppleClang)
 if(APPLE)
-  add_definitions("-Wno-narrowing -Wno-dollar-in-identifier-extension")
+  add_definitions("-Wno-narrowing -Wno-dollar-in-identifier-extension -Wno-string-conversion -Wno-pessimizing-move")
+else()
+  add_definitions("-Wall -Wno-pessimizing-move")
+  add_definitions("-Werror ")
 endif()
 
 # If we are trying to build the compiler with LLVM/MLIR as libraries

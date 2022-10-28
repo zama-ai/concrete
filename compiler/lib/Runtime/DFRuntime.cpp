@@ -32,7 +32,9 @@ static std::vector<GenericComputeClient> gcc;
 static hpx::lcos::barrier *_dfr_jit_phase_barrier;
 static hpx::lcos::barrier *_dfr_startup_barrier;
 static size_t num_nodes = 0;
+#if CONCRETELANG_TIMING_ENABLED
 static struct timespec init_timer, broadcast_timer, compute_timer, whole_timer;
+#endif
 } // namespace
 } // namespace dfr
 } // namespace concretelang
@@ -1292,7 +1294,9 @@ namespace {
 static bool is_jit_p = false;
 static bool use_omp_p = false;
 static size_t num_nodes = 1;
+#if CONCRETELANG_TIMING_ENABLED
 static struct timespec compute_timer;
+#endif
 } // namespace
 
 void _dfr_set_required(bool is_required) {}

@@ -209,6 +209,7 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
   params.brLogBase = sol.br_decomposition_base_log;
   params.ksLevel = sol.ks_decomposition_level_count;
   params.ksLogBase = sol.ks_decomposition_base_log;
+  params.largeInteger = llvm::None;
 
   if (sol.use_wop_pbs) {
     if (sol.crt_decomposition.empty()) {

@@ -36,9 +36,9 @@ func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>) -> tensor<3x!FHE.eint<4>> {
 
   ASSERT_EQ(res->size(), (size_t)3);
 
-  EXPECT_EQ((*res)[0], 1);
-  EXPECT_EQ((*res)[1], 3);
-  EXPECT_EQ((*res)[2], 5);
+  EXPECT_EQ((*res)[0], (uint64_t)1);
+  EXPECT_EQ((*res)[1], (uint64_t)3);
+  EXPECT_EQ((*res)[2], (uint64_t)5);
 }
 
 TEST(End2EndJit_FHELinalg, extract_slice_nonzero_offset_regression) {
@@ -65,9 +65,9 @@ func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>) -> tensor<3x!FHE.eint<4>> {
 
   ASSERT_EQ(res->size(), (size_t)3);
 
-  EXPECT_EQ((*res)[0], 2);
-  EXPECT_EQ((*res)[1], 4);
-  EXPECT_EQ((*res)[2], 6);
+  EXPECT_EQ((*res)[0], (uint64_t)2);
+  EXPECT_EQ((*res)[1], (uint64_t)4);
+  EXPECT_EQ((*res)[2], (uint64_t)6);
 }
 
 // Same as add_eint_int_term_to_term test above, but returning a lambda argument

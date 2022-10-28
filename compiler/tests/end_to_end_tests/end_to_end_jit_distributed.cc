@@ -89,7 +89,7 @@ func.func @main(%arg0: tensor<200x4x!FHE.eint<4>>) -> tensor<200x8x!FHE.eint<4>>
   std::vector<uint8_t> input;
   input.reserve(dim0 * dim1);
 
-  for (int i = 0; i < dim0 * dim1; ++i)
+  for (size_t i = 0; i < dim0 * dim1; ++i)
     input.push_back(i % 17 % 4);
 
   mlir::concretelang::TensorLambdaArgument<
@@ -130,7 +130,7 @@ TEST(Distributed, nn_med_sequential) {
     std::vector<uint8_t> input;
     input.reserve(dim0 * dim1);
 
-    for (int i = 0; i < dim0 * dim1; ++i)
+    for (size_t i = 0; i < dim0 * dim1; ++i)
       input.push_back(i % 17 % 4);
 
     mlir::concretelang::TensorLambdaArgument<
