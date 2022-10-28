@@ -187,6 +187,9 @@ class NodeConverter:
             elif name == "matmul":
                 result = self._convert_matmul()
 
+            elif name == "maxpool":
+                result = self._convert_maxpool()
+
             elif name == "multiply":
                 result = self._convert_mul()
 
@@ -515,6 +518,17 @@ class NodeConverter:
             result = fhelinalg.MatMulEintIntOp(resulting_type, *preds).result
 
         return result
+
+    def _convert_maxpool(self) -> OpResult:
+        """
+        Convert "maxpool" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        raise NotImplementedError("MaxPool operation cannot be compiled yet")
 
     def _convert_mul(self) -> OpResult:
         """

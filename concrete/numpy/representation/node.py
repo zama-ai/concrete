@@ -329,6 +329,7 @@ class Node:
             "expand_dims",
             "index.static",
             "matmul",
+            "maxpool",
             "multiply",
             "negative",
             "ones",
