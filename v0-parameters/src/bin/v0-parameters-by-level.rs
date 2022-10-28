@@ -40,6 +40,6 @@ fn main() {
         args.security_level = security_level;
         let file = File::create(&filename_date).unwrap();
         compute_print_results(file, &args).unwrap();
-        std::fs::copy(&filename_date, &filename_last).expect("Copy to last failed");
+        std::fs::copy(&filename_date, filename_last).expect("Copy to last failed");
     }
 }

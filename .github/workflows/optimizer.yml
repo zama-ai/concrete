@@ -37,3 +37,27 @@ jobs:
         run: |
           cargo test --release --no-fail-fast --all-targets
           make -C concrete-optimizer-cpp test-ci
+
+  nightly-check-concrete-optimizer:
+    runs-on: ubuntu-20.04
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v3
+      - name: Rust install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      # A SSH private key is required as some dependencies are from private repos
+      - name: Set ssh keys
+        uses: webfactory/ssh-agent@v0.6.0
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+      - name: Formatting
+        run: cargo fmt --check
+
+      - name: Lint
+        run: cargo clippy --release --all-targets
+
