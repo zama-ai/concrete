@@ -22,7 +22,7 @@ constexpr double NO_GLOBAL_P_ERROR = NAN;   // will fallback on p error
 constexpr uint DEFAULT_SECURITY = 128;
 constexpr uint DEFAULT_FALLBACK_LOG_NORM_WOPPBS = 8;
 constexpr bool DEFAULT_DISPLAY = false;
-constexpr bool DEFAULT_STARTEGY_V0 = false;
+constexpr bool DEFAULT_STRATEGY_V0 = false;
 constexpr bool DEFAULT_USE_GPU_CONSTRAINTS = false;
 
 struct Config {
@@ -38,7 +38,7 @@ struct Config {
 constexpr Config DEFAULT_CONFIG = {UNSPECIFIED_P_ERROR,
                                    NO_GLOBAL_P_ERROR,
                                    DEFAULT_DISPLAY,
-                                   DEFAULT_STARTEGY_V0,
+                                   DEFAULT_STRATEGY_V0,
                                    DEFAULT_SECURITY,
                                    DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
                                    DEFAULT_USE_GPU_CONSTRAINTS};
