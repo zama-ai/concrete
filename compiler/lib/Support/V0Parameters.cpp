@@ -30,6 +30,7 @@ concrete_optimizer::Options options_from_config(optimizer::Config config) {
       /* .default_log_norm2_woppbs = */ config.fallback_log_norm_woppbs,
       /* .use_gpu_constraints = */ config.use_gpu_constraints,
       /* .encoding = */ config.encoding,
+      /* .cache_on_disk = */ config.cache_on_disk,
   };
   return options;
 }

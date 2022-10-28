@@ -249,6 +249,12 @@ llvm::cl::opt<concrete_optimizer::Encoding> optimizerEncoding(
     llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Native, "crt",
                                 "Chineese Reminder Theorem representation")));
 
+llvm::cl::opt<bool> optimizerNoCacheOnDisk(
+    "optimizer-no-cache-on-disk",
+    llvm::cl::desc("Optimizer cache is sync from/to disk. Usefull to debug "
+                   "cache issues."),
+    llvm::cl::init(false));
+
 llvm::cl::list<int64_t> fhelinalgTileSizes(
     "fhelinalg-tile-sizes",
     llvm::cl::desc(
@@ -401,6 +407,7 @@ cmdlineCompilationOptions() {
   options.optimizerConfig.display = cmdline::displayOptimizerChoice;
   options.optimizerConfig.strategy_v0 = cmdline::optimizerV0;
   options.optimizerConfig.encoding = cmdline::optimizerEncoding;
+  options.optimizerConfig.cache_on_disk = !cmdline::optimizerNoCacheOnDisk;
 
   if (!std::isnan(options.optimizerConfig.global_p_error) &&
       options.optimizerConfig.strategy_v0) {

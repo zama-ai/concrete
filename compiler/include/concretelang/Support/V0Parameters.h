@@ -26,6 +26,7 @@ constexpr bool DEFAULT_STRATEGY_V0 = false;
 constexpr bool DEFAULT_USE_GPU_CONSTRAINTS = false;
 constexpr concrete_optimizer::Encoding DEFAULT_ENCODING =
     concrete_optimizer::Encoding::Auto;
+constexpr bool DEFAULT_CACHE_ON_DISK = true;
 
 struct Config {
   double p_error;
@@ -36,6 +37,7 @@ struct Config {
   double fallback_log_norm_woppbs;
   bool use_gpu_constraints;
   concrete_optimizer::Encoding encoding;
+  bool cache_on_disk;
 };
 
 constexpr Config DEFAULT_CONFIG = {
@@ -47,6 +49,7 @@ constexpr Config DEFAULT_CONFIG = {
     DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
     DEFAULT_USE_GPU_CONSTRAINTS,
     DEFAULT_ENCODING,
+    DEFAULT_CACHE_ON_DISK,
 };
 
 using Dag = rust::Box<concrete_optimizer::OperationDag>;
