@@ -121,6 +121,7 @@ impl WopbsKey {
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
     /// use concrete_shortint::parameters::parameters_wopbs_message_carry::WOPBS_PARAM_MESSAGE_2_CARRY_2;
+    /// use concrete_shortint::wopbs::WopbsKey;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
@@ -158,16 +159,17 @@ impl WopbsKey {
     /// use concrete_shortint::ciphertext::Ciphertext;
     /// use concrete_shortint::gen_keys;
     /// use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_3_NORM2_2;
+    /// use concrete_shortint::wopbs::WopbsKey;
     /// use rand::Rng;
     ///
     /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys(WOPBS_PARAM_MESSAGE_3_NORM2_2);
-    /// let mut wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
+    /// let (cks, sks) = gen_keys(WOPBS_PARAM_MESSAGE_3_NORM2_2);
+    /// let wopbs_key = WopbsKey::new_wopbs_key_only_for_wopbs(&cks, &sks);
     /// let message_modulus = 5;
     /// let m = 2;
     /// let mut ct = cks.encrypt_native_crt(m, message_modulus);
-    /// let lut = wopbs_key.generate_lut_without_padding_crt(&ct, |x| x * x % message_modulus as u64);
-    /// let ct_res = wopbs_key.programmable_bootstrapping_without_padding_crt(&mut sks, &mut ct, &lut);
+    /// let lut = wopbs_key.generate_lut_native_crt(&ct, |x| x * x % message_modulus as u64);
+    /// let ct_res = wopbs_key.programmable_bootstrapping_native_crt(&mut ct, &lut);
     /// let res = cks.decrypt_message_native_crt(&ct_res, message_modulus);
     /// assert_eq!(res, (m * m) % message_modulus as u64);
     /// ```
@@ -209,7 +211,7 @@ impl WopbsKey {
     /// let mut rng = rand::thread_rng();
     /// let message_modulus = WOPBS_PARAM_MESSAGE_2_CARRY_2.message_modulus.0;
     /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus as u64);
-    /// let lut = vec![(1_u64 << 61); wopbs_key.param.polynomial_size.0];
+    /// let lut = vec![(1_u64 << 59); wopbs_key.param.polynomial_size.0];
     /// let ct_res = wopbs_key.programmable_bootstrapping(&sks, &ct, &lut);
     /// let res = cks.decrypt_message_and_carry(&ct_res);
     /// assert_eq!(res, 1);
@@ -247,7 +249,7 @@ impl WopbsKey {
     /// let mut rng = rand::thread_rng();
     /// let message_modulus = WOPBS_PARAM_MESSAGE_2_CARRY_2.message_modulus.0;
     /// let ct = cks.encrypt(rng.gen::<u64>() % message_modulus as u64);
-    /// let lut = vec![(1_u64 << 61); wopbs_key.param.polynomial_size.0];
+    /// let lut = vec![(1_u64 << 59); wopbs_key.param.polynomial_size.0];
     /// let ct_res = wopbs_key.wopbs(&ct, &lut);
     /// let res = cks.decrypt_message_and_carry(&ct_res);
     /// assert_eq!(res, 1);
