@@ -89,6 +89,32 @@ jobs:
           cd compiler
           make concrete-optimizer-lib
 
+      - name: Create build dir
+        run: mkdir build
+
+      - name: Build compiler
+        uses: addnab/docker-run-action@v3
+        id: build-compiler
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            rm -rf /build/*
+            pip install pytest
+            sed "s/pytest/python -m pytest/g" -i Makefile
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all build-end-to-end-dataflow-tests
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
       - name: Download KeySetCache
         if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
         continue-on-error: true
@@ -100,9 +126,8 @@ jobs:
         run: |
           touch keysetcache.timestamp
 
-      - name: Build and test compiler
+      - name: Test compiler
         uses: addnab/docker-run-action@v3
-        id: build-compiler
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -112,16 +137,13 @@ jobs:
             -v ${{ github.workspace }}/llvm-project:/llvm-project
             -v ${{ github.workspace }}/compiler:/compiler
             -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+            -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
             cd /compiler
-            rm -rf /build
             pip install pytest
-            sed "s/pytest/python -m pytest/g" -i Makefile
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all run-tests run-end-to-end-dataflow-tests run-rust-tests
-            echo "Debug: ccache statistics (after the build):"
-            ccache -s
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Prune KeySetCache
