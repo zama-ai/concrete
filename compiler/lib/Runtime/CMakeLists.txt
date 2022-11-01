@@ -1,4 +1,4 @@
-add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp seeder.cpp)
+add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp seeder.cpp)
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PRIVATE HPX::hpx HPX::iostreams_component)
