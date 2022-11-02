@@ -41,7 +41,6 @@ jobs:
         uses: fernandrone/linelint@0.0.4
         id: linelint
 
-
   CheckLicense:
     runs-on: ubuntu-latest
     steps:
@@ -204,6 +203,12 @@ jobs:
         with:
           toolchain: stable
 
+      # MacOS now comes with 3.11 which we don't yet support because of pybind11 (2.10.1 supports it)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
       - name: Install Deps
         run: |
           brew install ninja ccache
@@ -240,7 +245,7 @@ jobs:
           cd compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
-          make all run-check-tests
+          make Python3_EXECUTABLE=$(which python) all run-check-tests
           echo "Debug: ccache statistics (after the build):"
           ccache -s
 
