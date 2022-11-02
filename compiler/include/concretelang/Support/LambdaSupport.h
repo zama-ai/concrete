@@ -50,42 +50,42 @@ inline llvm::Expected<T> typedScalarResult(clientlib::KeySet &keySet,
 template <>
 inline llvm::Expected<uint64_t> typedResult(clientlib::KeySet &keySet,
                                             clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<uint64_t>(keySet, result));
+  return typedScalarResult<uint64_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<int64_t> typedResult(clientlib::KeySet &keySet,
                                            clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<int64_t>(keySet, result));
+  return typedScalarResult<int64_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<uint32_t> typedResult(clientlib::KeySet &keySet,
                                             clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<uint32_t>(keySet, result));
+  return typedScalarResult<uint32_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<int32_t> typedResult(clientlib::KeySet &keySet,
                                            clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<int32_t>(keySet, result));
+  return typedScalarResult<int32_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<uint16_t> typedResult(clientlib::KeySet &keySet,
                                             clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<uint16_t>(keySet, result));
+  return typedScalarResult<uint16_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<int16_t> typedResult(clientlib::KeySet &keySet,
                                            clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<int16_t>(keySet, result));
+  return typedScalarResult<int16_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<uint8_t> typedResult(clientlib::KeySet &keySet,
                                            clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<uint8_t>(keySet, result));
+  return typedScalarResult<uint8_t>(keySet, result);
 }
 template <>
 inline llvm::Expected<int8_t> typedResult(clientlib::KeySet &keySet,
                                           clientlib::PublicResult &result) {
-  return std::move(typedScalarResult<int8_t>(keySet, result));
+  return typedScalarResult<int8_t>(keySet, result);
 }
 
 template <typename T>

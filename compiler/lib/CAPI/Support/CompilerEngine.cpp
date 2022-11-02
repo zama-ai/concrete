@@ -165,7 +165,7 @@ decrypt_result(concretelang::clientlib::KeySet &keySet,
                   std::unique_ptr<mlir::concretelang::LambdaArgument>>(
                   keySet, publicResult));
   lambdaArgument result_{std::move(*result)};
-  return std::move(result_);
+  return result_;
 }
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
@@ -270,8 +270,7 @@ std::string roundTrip(const char *module) {
       retOrErr = ce.compile(
           module, mlir::concretelang::CompilerEngine::Target::ROUND_TRIP);
   if (!retOrErr) {
-    os << "MLIR parsing failed: "
-       << llvm::toString(std::move(retOrErr.takeError()));
+    os << "MLIR parsing failed: " << llvm::toString(retOrErr.takeError());
     throw std::runtime_error(os.str());
   }
 
@@ -320,7 +319,7 @@ std::vector<uint64_t> lambdaArgumentGetTensorData(lambdaArgument &lambda_arg) {
       std::string backingString;
       llvm::raw_string_ostream os(backingString);
       os << "Couldn't get size of tensor: "
-         << llvm::toString(std::move(sizeOrErr.takeError()));
+         << llvm::toString(sizeOrErr.takeError());
       throw std::runtime_error(os.str());
     }
     std::vector<uint64_t> data(arg->getValue(), arg->getValue() + *sizeOrErr);
