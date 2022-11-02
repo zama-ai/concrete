@@ -47,8 +47,6 @@ namespace {
 struct ConcreteToBConcretePass
     : public ConcreteToBConcreteBase<ConcreteToBConcretePass> {
   void runOnOperation() final;
-  ConcreteToBConcretePass() = delete;
-  ConcreteToBConcretePass(bool _loopParallelize){};
 };
 } // namespace
 
@@ -1065,8 +1063,8 @@ void ConcreteToBConcretePass::runOnOperation() {
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertConcreteToBConcretePass(bool loopParallelize) {
-  return std::make_unique<ConcreteToBConcretePass>(loopParallelize);
+createConvertConcreteToBConcretePass() {
+  return std::make_unique<ConcreteToBConcretePass>();
 }
 } // namespace concretelang
 } // namespace mlir

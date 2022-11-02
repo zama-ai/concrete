@@ -247,8 +247,7 @@ lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
   pipelinePrinting("ConcreteToBConcrete", pm, context);
 
   std::unique_ptr<Pass> conversionPass =
-      mlir::concretelang::createConvertConcreteToBConcretePass(
-          parallelizeLoops);
+      mlir::concretelang::createConvertConcreteToBConcretePass();
 
   bool passEnabled = enablePass(conversionPass.get());
 
