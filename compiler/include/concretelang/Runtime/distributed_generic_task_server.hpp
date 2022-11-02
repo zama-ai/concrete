@@ -259,10 +259,6 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
         inputs.wfn_name);
     std::vector<void *> outputs;
 
-    _dfr_debug_print_task(inputs.wfn_name.c_str(), inputs.params.size(),
-                          inputs.output_sizes.size());
-    hpx::cout << std::flush;
-
     switch (inputs.output_sizes.size()) {
     case 1: {
       void *output;
