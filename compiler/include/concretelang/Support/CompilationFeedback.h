@@ -23,19 +23,19 @@ struct CompilationFeedback {
   double complexity;
 
   /// @brief the total number of bytes of secret keys
-  size_t totalSecretKeysSize;
+  uint64_t totalSecretKeysSize;
 
   /// @brief the total number of bytes of bootstrap keys
-  size_t totalBootstrapKeysSize;
+  uint64_t totalBootstrapKeysSize;
 
   /// @brief the total number of bytes of keyswitch keys
-  size_t totalKeyswitchKeysSize;
+  uint64_t totalKeyswitchKeysSize;
 
   /// @brief the total number of bytes of inputs
-  size_t totalInputsSize;
+  uint64_t totalInputsSize;
 
   /// @brief the total number of bytes of outputs
-  size_t totalOutputsSize;
+  uint64_t totalOutputsSize;
 
   /// Fill the sizes from the client parameters.
   void

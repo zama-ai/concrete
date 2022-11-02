@@ -42,10 +42,10 @@ const std::string KEYSWITCH_KEY = "ksk_v0";
 
 const std::string CLIENT_PARAMETERS_EXT = ".concrete.params.json";
 
-typedef size_t DecompositionLevelCount;
-typedef size_t DecompositionBaseLog;
-typedef size_t PolynomialSize;
-typedef size_t Precision;
+typedef uint64_t DecompositionLevelCount;
+typedef uint64_t DecompositionBaseLog;
+typedef uint64_t PolynomialSize;
+typedef uint64_t Precision;
 typedef double Variance;
 typedef std::vector<int64_t> CRTDecomposition;
 
@@ -117,8 +117,8 @@ struct PackingKeySwitchParam {
   LweSecretKeyID inputSecretKeyID;
   LweSecretKeyID outputSecretKeyID;
   BootstrapKeyID bootstrapKeyID;
-  size_t level;
-  size_t baseLog;
+  DecompositionLevelCount level;
+  DecompositionBaseLog baseLog;
   Variance variance;
 
   void hash(size_t &seed);
@@ -151,11 +151,11 @@ static inline bool operator==(const EncryptionGate &lhs,
 
 struct CircuitGateShape {
   /// Width of the scalar value
-  size_t width;
+  uint64_t width;
   /// Dimensions of the tensor, empty if scalar
   std::vector<int64_t> dimensions;
   /// Size of the buffer containing the tensor
-  size_t size;
+  uint64_t size;
   // Indicated whether elements are signed
   bool sign;
 };
