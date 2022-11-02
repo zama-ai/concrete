@@ -180,8 +180,9 @@ void memref_bootstrap_lwe_cuda_u64(
   // run gpu bootstrap
   cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
       stream, out_gpu, test_vector_gpu, test_vector_idxes_gpu, ct0_gpu,
-      fbsk_gpu, input_lwe_dim, poly_size, base_log, level, num_samples,
-      num_test_vectors, lwe_idx, cuda_get_max_shared_memory(gpu_idx));
+      fbsk_gpu, input_lwe_dim, glwe_dim, poly_size, base_log, level,
+      num_samples, num_test_vectors, lwe_idx,
+      cuda_get_max_shared_memory(gpu_idx));
   // copy output ciphertext back to cpu
   memcpy_async_ct_to_cpu(out_allocated, out_aligned, out_offset, out_size,
                          out_stride, out_gpu, out_size, gpu_idx, stream);

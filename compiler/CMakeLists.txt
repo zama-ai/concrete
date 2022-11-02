@@ -19,17 +19,17 @@ endif()
 
 # CMake library generation settings.
 set(BUILD_SHARED_LIBS
-    OFF
-    CACHE BOOL "Default to building a static mondo-lib")
+  OFF
+  CACHE BOOL "Default to building a static mondo-lib")
 set(CMAKE_PLATFORM_NO_VERSIONED_SONAME
-    ON
-    CACHE BOOL "Python soname linked libraries are bad")
+  ON
+  CACHE BOOL "Python soname linked libraries are bad")
 set(CMAKE_VISIBILITY_INLINES_HIDDEN
-    ON
-    CACHE BOOL "Hide inlines")
+  ON
+  CACHE BOOL "Hide inlines")
 
 # The -fvisibility=hidden option only works for static builds.
-if(BUILD_SHARED_LIBS AND (CMAKE_CXX_VISIBILITY_PRESET STREQUAL "hidden"))
+if(BUILD_SHARED_LIBS AND(CMAKE_CXX_VISIBILITY_PRESET STREQUAL "hidden"))
   message(FATAL_ERROR "CMAKE_CXX_VISIBILITY_PRESET=hidden is incompatible \
                         with BUILD_SHARED_LIBS.")
 endif()
@@ -75,10 +75,8 @@ if(CONCRETELANG_CUDA_SUPPORT)
   message(STATUS "Found CUDA version: ${CUDAToolkit_VERSION}")
   message(STATUS "Found CUDA library dir: ${CUDAToolkit_LIBRARY_DIR}")
   link_directories(${CUDAToolkit_LIBRARY_DIR})
+  add_subdirectory(${CONCRETE_CORE_PATH}/concrete-cuda/cuda)
   include_directories(${CONCRETE_CORE_PATH}/concrete-cuda/cuda/include)
-  add_library(ConcreteCUDA STATIC IMPORTED)
-  set_target_properties(ConcreteCUDA PROPERTIES IMPORTED_LOCATION
-                                                ${CONCRETE_CORE_PATH}/concrete-cuda/cuda/build/src/libconcrete_cuda.a)
   add_compile_options(-DCONCRETELANG_CUDA_SUPPORT)
 endif()
 
@@ -110,7 +108,7 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   include_directories(SYSTEM ${HPX_INCLUDE_DIRS})
   list(APPEND CMAKE_MODULE_PATH "${HPX_CMAKE_DIR}")
   add_compile_options(-DCONCRETELANG_DATAFLOW_EXECUTION_ENABLED
-                      -DHPX_DEFAULT_CONFIG_FILE="${PROJECT_SOURCE_DIR}/hpx.ini")
+    -DHPX_DEFAULT_CONFIG_FILE="${PROJECT_SOURCE_DIR}/hpx.ini")
 
 else()
   message(STATUS "ConcreteLang dataflow execution disabled.")

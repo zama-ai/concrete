@@ -6,8 +6,8 @@ DATAFLOW_EXECUTION_ENABLED=OFF
 TIMING_ENABLED=OFF
 CC_COMPILER=
 CXX_COMPILER=
-CUDA_SUPPORT=OFF
-CONCRETE_CORE_PATH?=
+CUDA_SUPPORT?=OFF
+CONCRETE_CORE_PATH?= $(shell pwd)/concrete-core
 
 CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/concrete-optimizer
 
@@ -82,10 +82,6 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
-ifneq ($(CONCRETE_CORE_PATH),)
-	CONCRETE_CORE_PATH_OPTION=-DCONCRETE_CORE_PATH=$(CONCRETE_CORE_PATH)
-endif
-
 all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
 
 # concrete-core-ffi #######################################
@@ -149,7 +145,7 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETE_OPTIMIZER_DIR=${CONCRETE_OPTIMIZER_DIR} \
-	$(CONCRETE_CORE_PATH_OPTION) \
+	-DCONCRETE_CORE_PATH=$(CONCRETE_CORE_PATH) \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT}
 	touch $@
 

@@ -6,3 +6,7 @@
 	path = compiler/concrete-optimizer
 	url = git@github.com:zama-ai/concrete-optimizer.git
 	shallow = true
+[submodule "compiler/concrete-core"]
+	path = compiler/concrete-core
+	url = git@github.com:zama-ai/concrete-core.git
+	shallow = true
