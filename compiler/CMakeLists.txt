@@ -58,14 +58,16 @@ include_directories(${CONCRETE_FFI_RELEASE})
 add_library(Concrete STATIC IMPORTED)
 set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEASE}/libconcrete_core_ffi.a)
 
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # Concrete Cuda Configuration
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 option(CONCRETELANG_CUDA_SUPPORT "Support Concrete CUDA Execution." OFF)
+
 if(CONCRETELANG_CUDA_SUPPORT)
-  if (NOT DEFINED CONCRETE_CORE_PATH)
+  if(NOT DEFINED CONCRETE_CORE_PATH)
     message(FATAL_ERROR "Compiling with CUDA support requires setting CONCRETE_CORE_PATH")
   endif()
+
   message(STATUS "Building with Concrete CUDA execution support")
   find_package(CUDAToolkit REQUIRED)
   message(STATUS "Found CUDA version: ${CUDAToolkit_VERSION}")
@@ -73,11 +75,11 @@ if(CONCRETELANG_CUDA_SUPPORT)
   link_directories(${CUDAToolkit_LIBRARY_DIR})
   include_directories(${CONCRETE_CORE_PATH}/concrete-cuda/cuda/include)
   add_library(ConcreteCUDA STATIC IMPORTED)
-  set_target_properties(ConcreteCUDA PROPERTIES IMPORTED_LOCATION ${CONCRETE_CORE_PATH}/concrete-cuda/cuda/build/src/libconcrete_cuda.a )
+  set_target_properties(ConcreteCUDA PROPERTIES IMPORTED_LOCATION ${CONCRETE_CORE_PATH}/concrete-cuda/cuda/build/src/libconcrete_cuda.a)
   add_compile_options(-DCONCRETELANG_CUDA_SUPPORT)
 endif()
 
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # Python Configuration
 # -------------------------------------------------------------------------------
 option(CONCRETELANG_BINDINGS_PYTHON_ENABLED "Enables ConcreteLang Python bindings." ON)
