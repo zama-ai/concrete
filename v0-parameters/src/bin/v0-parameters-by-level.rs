@@ -4,7 +4,7 @@
 
 use chrono::{Datelike, Utc};
 use clap::Parser;
-use concrete_optimizer::security::security_weights::SECURITY_WEIGHTS_TABLE;
+use concrete_optimizer::security::security_weights::supported_security_levels;
 use std::fs::File;
 use v0_parameters::{compute_print_results, Args};
 
@@ -26,7 +26,7 @@ fn main() {
         args.max_precision = 9;
     }
 
-    for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
+    for security_level in supported_security_levels() {
         let filename_date = if args.wop_pbs {
             format!("ref/wop_pbs_{year}-{month}-{day}_{security_level}")
         } else {

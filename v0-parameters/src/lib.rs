@@ -235,27 +235,27 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use concrete_optimizer::security::security_weights::SECURITY_WEIGHTS_TABLE;
+    use concrete_optimizer::security::security_weights::supported_security_levels;
 
-    fn security_levels_to_test() -> Vec<u64> {
-        SECURITY_WEIGHTS_TABLE.keys().copied().collect()
-    }
+    use super::*;
 
     #[test]
     fn test_reference_output() {
-        check_reference_output_on_levels(&security_levels_to_test(), false);
+        check_reference_output_on_levels(supported_security_levels(), false);
     }
 
     #[test]
     fn test_reference_output_dag() {
-        check_reference_output_on_levels(&security_levels_to_test(), true);
+        check_reference_output_on_levels(supported_security_levels(), true);
     }
 
-    fn check_reference_output_on_levels(security_levels: &[u64], simulate_dag: bool) {
+    fn check_reference_output_on_levels(
+        security_levels: impl std::iter::Iterator<Item = u64>,
+        simulate_dag: bool,
+    ) {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
-        for &security_level in security_levels {
+        for security_level in security_levels {
             let ref_file: &str = &format!("ref/v0_last_{security_level}");
             let args: Args = Args {
                 min_precision: 1,
@@ -289,13 +289,13 @@ mod tests {
 
     #[test]
     fn test_reference_wop_output() {
-        check_reference_wop_output_on_levels(&security_levels_to_test());
+        check_reference_wop_output_on_levels(supported_security_levels());
     }
 
-    fn check_reference_wop_output_on_levels(security_levels: &[u64]) {
+    fn check_reference_wop_output_on_levels(security_levels: impl std::iter::Iterator<Item = u64>) {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
-        for &security_level in security_levels {
+        for security_level in security_levels {
             let ref_file: &str = &format!("ref/wop_pbs_last_{security_level}");
 
             let args = Args {

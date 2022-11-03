@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-
-use static_init::dynamic;
-
+#[derive(Clone, Copy)]
 pub struct SecurityWeights {
     slope: f64,
     bias: f64,
@@ -102,6 +99,18 @@ const SECURITY_WEIGHTS_ARRAY: [(u64, SecurityWeights); 9] = [
     ),
 ];
 
-#[dynamic(lazy)]
-pub static SECURITY_WEIGHTS_TABLE: HashMap<u64, SecurityWeights> =
-    HashMap::from(SECURITY_WEIGHTS_ARRAY);
+pub fn supported_security_levels() -> impl std::iter::Iterator<Item = u64> {
+    SECURITY_WEIGHTS_ARRAY
+        .iter()
+        .map(|(security_level, _)| *security_level)
+}
+
+pub fn security_weight(security_level: u64) -> Option<SecurityWeights> {
+    let index = SECURITY_WEIGHTS_ARRAY
+        .binary_search_by_key(&security_level, |(security_level, _weights)| {
+            *security_level
+        })
+        .ok()?;
+
+    Some(SECURITY_WEIGHTS_ARRAY[index].1)
+}

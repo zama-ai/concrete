@@ -1,5 +1,5 @@
+use super::security_weights::security_weight;
 use crate::parameters::GlweParameters;
-use crate::security::security_weights::SECURITY_WEIGHTS_TABLE;
 use concrete_commons::dispersion::Variance;
 
 /// Noise ensuring security
@@ -9,9 +9,9 @@ pub fn minimal_variance(
     security_level: u64,
 ) -> Variance {
     let equiv_lwe_dimension = glwe_params.glwe_dimension * glwe_params.polynomial_size();
-    let security_weights = SECURITY_WEIGHTS_TABLE
-        .get(&security_level)
+    let security_weights = security_weight(security_level)
         .unwrap_or_else(|| panic!("{security_level} bits of security is not supported"));
+
     let secure_log2_std =
         security_weights.secure_log2_std(equiv_lwe_dimension, ciphertext_modulus_log as f64);
     let log2_var = 2.0 * secure_log2_std;
