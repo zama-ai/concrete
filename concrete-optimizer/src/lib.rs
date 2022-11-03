@@ -24,7 +24,6 @@ pub mod global_parameters;
 pub mod noise_estimator;
 pub mod optimization;
 pub mod parameters;
-pub mod pareto;
 pub mod security;
 pub mod utils;
 pub mod weight;
