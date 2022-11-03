@@ -4,11 +4,11 @@ use crate::utils::square;
 
 pub fn sigma_scale_of_error_probability(p_error: f64) -> f64 {
     // https://en.wikipedia.org/wiki/Error_function#Applications
-    statrs::function::erf::erfc_inv(p_error) * 2_f64.sqrt()
+    puruspe::inverfc(p_error) * 2_f64.sqrt()
 }
 
 pub fn error_probability_of_sigma_scale(sigma_scale: f64) -> f64 {
-    statrs::function::erf::erfc(sigma_scale / 2_f64.sqrt())
+    puruspe::erfc(sigma_scale / 2_f64.sqrt())
 }
 
 const LEFT_PADDING_BITS: u64 = 1;
