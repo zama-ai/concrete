@@ -203,17 +203,11 @@ jobs:
         with:
           toolchain: stable
 
-      # MacOS now comes with 3.11 which we don't yet support because of pybind11 (2.10.1 supports it)
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
       - name: Install Deps
         run: |
           brew install ninja ccache
-          pip3 install numpy pybind11==2.8 wheel delocate
-          pip3 install pytest
+          pip3.10 install numpy pybind11==2.8 wheel delocate
+          pip3.10 install pytest
 
       - name: Cache compilation (push)
         if: github.event_name == 'push'
@@ -245,7 +239,7 @@ jobs:
           cd compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
-          make Python3_EXECUTABLE=$(which python) all run-check-tests
+          make Python3_EXECUTABLE=$(which python3.10) all run-check-tests
           echo "Debug: ccache statistics (after the build):"
           ccache -s
 
@@ -263,9 +257,9 @@ jobs:
           echo "Debug: ccache statistics (prior to the tests):"
           ccache -s
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
-          pip3 wheel --no-deps -w ${{ github.workspace }}/wheels .
+          pip3.10 wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
-          pip3 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
+          pip3.10 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
           make run-tests
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
