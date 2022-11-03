@@ -1025,7 +1025,6 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
 
     std::vector<char *> parameters;
     parameters.push_back(const_cast<char *>("__dummy_dfr_HPX_program_name__"));
-    parameters.push_back(const_cast<char *>("--hpx:print-bind"));
 
     hwloc_topology_t topology;
     hwloc_topology_init(&topology);
