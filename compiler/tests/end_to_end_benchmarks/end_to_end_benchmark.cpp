@@ -132,9 +132,12 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   setCurrentStackLimit(stackSizeRequirement);
   mlir::concretelang::CompilationOptions defaul;
   registe("default", defaul);
-  mlir::concretelang::CompilationOptions loop;
-  loop.loopParallelize = true;
-  registe("loop", loop);
+  // Run only parallelized benchmarks to take advantage of hardware with lots of
+  // CPU cores.
+  defaul.loopParallelize = true;
+  // mlir::concretelang::CompilationOptions loop;
+  // loop.loopParallelize = true;
+  // registe("loop", loop);
 #ifdef CONCRETELANG_CUDA_SUPPORT
   mlir::concretelang::CompilationOptions gpu;
   gpu.emitGPUOps = true;
@@ -155,9 +158,6 @@ auto _ = {
         "tests/end_to_end_fixture/end_to_end_encrypted_tensor.yaml"),
     registerEndToEndTestFromFile(
         "FHELinalg", "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml"),
-    registerEndToEndTestFromFile(
-        "FHELinalg", "tests/end_to_end_fixture/end_to_end_programs.yaml",
-        0x8000000),
     registerEndToEndTestFromFile(
         "FHETLU",
         "tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml"),

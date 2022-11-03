@@ -1,6 +1,6 @@
 BUILD_TYPE?=Release
 BUILD_DIR?=./build
-Python3_EXECUTABLE?=
+Python3_EXECUTABLE?=python3
 BINDINGS_PYTHON_ENABLED=ON
 DATAFLOW_EXECUTION_ENABLED=OFF
 TIMING_ENABLED=OFF
@@ -253,13 +253,13 @@ run-end-to-end-gpu-tests: build-end-to-end-gpu-tests
 # benchmark
 
 generate-benchmarks:
-	python ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py &> tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml
+	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py > tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml
 
 build-benchmarks: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
 
 run-benchmarks: build-benchmarks generate-benchmarks
-	$(BUILD_DIR)/bin/end_to_end_benchmark --benchmark_out=benchmarks_results.json --benchmark_out_format=json  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true
+	$(BUILD_DIR)/bin/end_to_end_benchmark --benchmark_out=benchmarks_results.json --benchmark_out_format=json
 
 build-mlbench: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_mlbench
@@ -270,7 +270,7 @@ generate-mlbench:
 	unzip tests/end_to_end_benchmarks/mlbench.zip -d tests/end_to_end_benchmarks/mlbench
 	rm -f tests/end_to_end_benchmarks/mlbench/**/*\=*
 	find tests/end_to_end_benchmarks/mlbench -name "*.mlir" -exec sed -e '1d' -e 's/ func / func.func /g' -e 's/ linalg.tensor_/ tensor./g' -e '$$d' -i {} \;
-	python tests/end_to_end_benchmarks/generate_bench_yaml.py tests/end_to_end_benchmarks/mlbench tests/end_to_end_benchmarks/mlbench/end_to_end_mlbench
+	$(Python3_EXECUTABLE) tests/end_to_end_benchmarks/generate_bench_yaml.py tests/end_to_end_benchmarks/mlbench tests/end_to_end_benchmarks/mlbench/end_to_end_mlbench
 
 run-mlbench: build-mlbench generate-mlbench
 	tests/end_to_end_benchmarks/end_to_end_mlbench.sh tests/end_to_end_benchmarks/mlbench/ $(BUILD_DIR)/bin/end_to_end_mlbench

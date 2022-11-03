@@ -38,10 +38,6 @@ def parse_results(raw_results):
     result_values = list()
     raw_results = json.loads(raw_results.read_text())
     for res in raw_results["benchmarks"]:
-        if not res.get("aggregate_name", None):
-            # Skipping iterations and focus only on aggregated results.
-            continue
-
         bench_class, action, option_class, application = res["run_name"].split("/")
 
         for measurement in ("real_time", "cpu_time"):
@@ -49,7 +45,6 @@ def parse_results(raw_results):
                     "action": action,
                     "option_class": option_class,
                     "application": application,
-                    "stat": res["aggregate_name"],
                     "measurement": measurement}
             result_values.append({"value": res[measurement], "tags": tags})
 

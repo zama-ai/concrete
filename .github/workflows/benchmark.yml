@@ -123,6 +123,12 @@ jobs:
           cd compiler
           make BINDINGS_PYTHON_ENABLED=OFF run-benchmarks
 
+      - name: Upload raw results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.sha }}_raw
+          path: compiler/benchmarks_results.json
+
       - name: Parse results
         shell: bash
         run: |
@@ -131,13 +137,12 @@ jobs:
           --series-name compiler_end_to_end_benchmarks \
           --series-help "Concrete compiler end-to-end benchmarks timings" \
           --series-tags "{\"compiler_hash\": \"${{ github.sha }}\", \"branch\": \"${{ github.ref_name }}\", \"optimizer_hash\": \"${OPTIMIZER_HASH}\", \"hardware\": \"aws ${{ env.EC2_INSTANCE_TYPE }}\"}"
-          gzip -k ${{ env.RESULTS_FILENAME }}
 
-      - name: Upload compressed results artifact
+      - name: Upload parsed results artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}
-          path: ${{ env.RESULTS_FILENAME }}.gz
+          path: ${{ env.RESULTS_FILENAME }}
 
       - name: Checkout Slab repo
         uses: actions/checkout@v3
