@@ -90,6 +90,8 @@ impl From<&ffi::Solution> for ffi::DagSolution {
             use_wop_pbs: false,
             cb_decomposition_level_count: 0,
             cb_decomposition_base_log: 0,
+            pp_decomposition_level_count: 0,
+            pp_decomposition_base_log: 0,
             crt_decomposition: vec![],
         }
     }
@@ -132,6 +134,8 @@ impl From<DagSolution> for ffi::DagSolution {
                 use_wop_pbs: false,
                 cb_decomposition_level_count: 0,
                 cb_decomposition_base_log: 0,
+                pp_decomposition_level_count: 0,
+                pp_decomposition_base_log: 0,
                 crt_decomposition: vec![],
             },
             DagSolution::WopSolution(sol) => Self {
@@ -150,6 +154,8 @@ impl From<DagSolution> for ffi::DagSolution {
                 use_wop_pbs: true,
                 cb_decomposition_level_count: sol.cb_decomposition_level_count,
                 cb_decomposition_base_log: sol.cb_decomposition_base_log,
+                pp_decomposition_level_count: sol.pp_decomposition_level_count,
+                pp_decomposition_base_log: sol.pp_decomposition_base_log,
                 crt_decomposition: sol.crt_decomposition,
             },
         }
@@ -423,6 +429,8 @@ mod ffi {
         pub use_wop_pbs: bool,
         pub cb_decomposition_level_count: u64,
         pub cb_decomposition_base_log: u64,
+        pub pp_decomposition_level_count: u64,
+        pub pp_decomposition_base_log: u64,
         pub crt_decomposition: Vec<u64>,
     }
 

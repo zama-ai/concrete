@@ -1049,6 +1049,8 @@ struct DagSolution final {
   bool use_wop_pbs;
   ::std::uint64_t cb_decomposition_level_count;
   ::std::uint64_t cb_decomposition_base_log;
+  ::std::uint64_t pp_decomposition_level_count;
+  ::std::uint64_t pp_decomposition_base_log;
   ::rust::Vec<::std::uint64_t> crt_decomposition;
 
   using IsRelocatable = ::std::true_type;
