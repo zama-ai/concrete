@@ -4,7 +4,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 # clang is needed for rust bindings
 RUN dnf install -y epel-release
 RUN dnf update -y
-RUN dnf install -y ninja-build hwloc-devel ccache clang
+RUN dnf install -y ninja-build hwloc-devel ccache clang ncurses-devel
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
