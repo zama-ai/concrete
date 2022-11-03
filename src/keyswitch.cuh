@@ -17,6 +17,75 @@ __device__ Torus *get_ith_block(Torus *ksk, int i, int level,
   return ptr;
 }
 
+// blockIdx.y represents single lwe ciphertext
+// blockIdx.x represents chunk of lwe ciphertext,
+// chunk_count = glwe_size * polynomial_size / threads.
+// each threads will responsible to process only lwe_size times multiplication
+template <typename Torus>
+__global__ void
+fp_keyswitch(Torus *glwe_array_out, Torus *lwe_array_in, Torus *fp_ksk_array,
+             uint32_t lwe_dimension_in, uint32_t glwe_dimension,
+             uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+             uint32_t number_of_input_lwe, uint32_t number_of_keys) {
+  size_t tid = threadIdx.x;
+
+  size_t glwe_size = (glwe_dimension + 1);
+  size_t lwe_size = (lwe_dimension_in + 1);
+
+  // number of coefficients in a single fp-ksk
+  size_t ksk_size = lwe_size * level_count * glwe_size * polynomial_size;
+
+  // number of coefficients inside fp-ksk block for each lwe_input coefficient
+  size_t ksk_block_size = glwe_size * polynomial_size * level_count;
+
+  size_t ciphertext_id = blockIdx.y;
+  // number of coefficients processed inside single block
+  size_t coef_per_block = blockDim.x;
+  size_t chunk_id = blockIdx.x;
+  size_t ksk_id = ciphertext_id % number_of_keys;
+
+  extern __shared__ char sharedmem[];
+
+  // result accumulator, shared memory is used because of frequent access
+  Torus *local_glwe_chunk = (Torus *)sharedmem;
+
+  // current input lwe ciphertext
+  auto cur_input_lwe = &lwe_array_in[ciphertext_id * lwe_size];
+  // current output glwe ciphertext
+  auto cur_output_glwe =
+      &glwe_array_out[ciphertext_id * glwe_size * polynomial_size];
+  // current out glwe chunk, will be processed inside single block
+  auto cur_glwe_chunk = &cur_output_glwe[chunk_id * coef_per_block];
+
+  // fp key used for current ciphertext
+  auto cur_ksk = &fp_ksk_array[ksk_id * ksk_size];
+
+  // set shared mem accumulator to 0
+  local_glwe_chunk[tid] = 0;
+
+  // iterate through each coefficient of  input lwe
+  for (size_t i = 0; i <= lwe_dimension_in; i++) {
+    Torus a_i =
+        round_to_closest_multiple(cur_input_lwe[i], base_log, level_count);
+
+    Torus state = a_i >> (sizeof(Torus) * 8 - base_log * level_count);
+    Torus mod_b_mask = (1ll << base_log) - 1ll;
+
+    // block of key for current lwe coefficient (cur_input_lwe[i])
+    auto ksk_block = &cur_ksk[i * ksk_block_size];
+
+    // iterate through levels, calculating decomposition in reverse order
+    for (size_t j = 0; j < level_count; j++) {
+      auto ksk_glwe =
+          &ksk_block[(level_count - j - 1) * glwe_size * polynomial_size];
+      auto ksk_glwe_chunk = &ksk_glwe[chunk_id * coef_per_block];
+      Torus decomposed = decompose_one<Torus>(state, mod_b_mask, base_log);
+      local_glwe_chunk[tid] -= decomposed * ksk_glwe_chunk[tid];
+    }
+  }
+  cur_glwe_chunk[tid] = local_glwe_chunk[tid];
+}
+
 /*
  * keyswitch kernel
  * Each thread handles a piece of the following equation:
@@ -134,6 +203,26 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(
       lwe_array_out, lwe_array_in, ksk, lwe_dimension_in, lwe_dimension_out,
       base_log, level_count, lwe_lower, lwe_upper, cutoff);
   checkCudaErrors(cudaGetLastError());
+
+  cudaStreamSynchronize(*stream);
+}
+
+template <typename Torus>
+__host__ void cuda_fp_keyswitch_lwe_to_glwe(
+    void *v_stream, Torus *glwe_array_out, Torus *lwe_array_in,
+    Torus *fp_ksk_array, uint32_t lwe_dimension_in, uint32_t glwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+    uint32_t number_of_input_lwe, uint32_t number_of_keys) {
+  int threads = 256;
+  int glwe_accumulator_size = (glwe_dimension + 1) * polynomial_size;
+  dim3 blocks(glwe_accumulator_size / threads, number_of_input_lwe, 1);
+
+  int shared_mem = sizeof(Torus) * threads;
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  fp_keyswitch<<<blocks, threads, shared_mem, *stream>>>(
+      glwe_array_out, lwe_array_in, fp_ksk_array, lwe_dimension_in,
+      glwe_dimension, polynomial_size, base_log, level_count,
+      number_of_input_lwe, number_of_keys);
 
   cudaStreamSynchronize(*stream);
 }

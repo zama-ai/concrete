@@ -43,3 +43,36 @@ void cuda_keyswitch_lwe_ciphertext_vector_64(
       static_cast<uint64_t *>(lwe_array_in), static_cast<uint64_t *>(ksk),
       lwe_dimension_in, lwe_dimension_out, base_log, level_count, num_samples);
 }
+
+void cuda_fp_keyswitch_lwe_to_glwe_32(void *v_stream, void *glwe_array_out,
+                                      void *lwe_array_in, void *fp_ksk_array,
+                                      uint32_t input_lwe_dimension,
+                                      uint32_t output_glwe_dimension,
+                                      uint32_t output_polynomial_size,
+                                      uint32_t base_log, uint32_t level_count,
+                                      uint32_t number_of_input_lwe,
+                                      uint32_t number_of_keys) {
+
+  cuda_fp_keyswitch_lwe_to_glwe(
+      v_stream, static_cast<uint32_t *>(glwe_array_out),
+      static_cast<uint32_t *>(lwe_array_in),
+      static_cast<uint32_t *>(fp_ksk_array), input_lwe_dimension,
+      output_glwe_dimension, output_polynomial_size, base_log, level_count,
+      number_of_input_lwe, number_of_keys);
+}
+void cuda_fp_keyswitch_lwe_to_glwe_64(void *v_stream, void *glwe_array_out,
+                                      void *lwe_array_in, void *fp_ksk_array,
+                                      uint32_t input_lwe_dimension,
+                                      uint32_t output_glwe_dimension,
+                                      uint32_t output_polynomial_size,
+                                      uint32_t base_log, uint32_t level_count,
+                                      uint32_t number_of_input_lwe,
+                                      uint32_t number_of_keys) {
+
+  cuda_fp_keyswitch_lwe_to_glwe(
+      v_stream, static_cast<uint64_t *>(glwe_array_out),
+      static_cast<uint64_t *>(lwe_array_in),
+      static_cast<uint64_t *>(fp_ksk_array), input_lwe_dimension,
+      output_glwe_dimension, output_polynomial_size, base_log, level_count,
+      number_of_input_lwe, number_of_keys);
+}
