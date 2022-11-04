@@ -60,6 +60,6 @@ mlir::Value getContextArgument(mlir::Operation *op) {
     }
     block = block->getParentOp()->getBlock();
   }
-  assert("can't find a function that enclose the op");
+  assert(false); // can't find a function that enclose the op
   return nullptr;
 }

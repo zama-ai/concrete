@@ -12,7 +12,7 @@ add_definitions("-Wno-dollar-in-identifier-extension")
 
 # Wouldn't be able to compile LLVM without this on Mac (using either Clang or AppleClang)
 if(APPLE)
-  add_definitions("-Wno-narrowing -Wno-string-conversion")
+  add_definitions("-Wno-narrowing")
 else()
   add_definitions("-Wall -Werror")
 endif()
