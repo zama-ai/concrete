@@ -147,9 +147,12 @@ python-bindings: build-initialized
 # MLIRCAPIRegistration is currently required for linking rust bindings
 # This may fade if we can represent it somewhere else, mainly, we may be able to define a single
 # lib that the rust bindings need to link to, while that lib contains all necessary libs
-rust-bindings: build-initialized concretecompiler
+rust-bindings: build-initialized concretecompiler CAPI
 	cmake --build $(BUILD_DIR) --target MLIRCAPIRegistration
 	cd lib/Bindings/Rust && CONCRETE_COMPILER_BUILD_DIR=$(abspath $(BUILD_DIR)) cargo build --release
+
+CAPI:
+	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG
 
 clientlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangClientLib

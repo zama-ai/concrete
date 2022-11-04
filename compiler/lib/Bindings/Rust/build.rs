@@ -230,6 +230,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     if let Some(name) = get_system_libcpp() {
         println!("cargo:rustc-link-lib={}", name);
     }
+    // concrete-compiler libs
+    println!("cargo:rustc-link-lib=static=CONCRETELANGCAPIFHE");
+    println!("cargo:rustc-link-lib=static=FHEDialect");
 
     println!("cargo:rerun-if-changed=api.h");
     bindgen::builder()
