@@ -4,7 +4,6 @@
 #![allow(clippy::cast_lossless)]
 #![allow(clippy::cast_precision_loss)] // u64 to f64
 #![allow(clippy::cast_possible_truncation)] // u64 to usize
-#![allow(clippy::inline_always)] // needed by delegate
 #![allow(clippy::match_wildcard_for_single_variants)]
 #![allow(clippy::manual_range_contains)]
 #![allow(clippy::missing_panics_doc)]

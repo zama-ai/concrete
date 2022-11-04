@@ -1,8 +1,6 @@
 use std::iter::Sum;
 use std::ops::Mul;
 
-use delegate::delegate;
-
 use crate::utils::square_ref;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -86,13 +84,20 @@ where
         }
     }
 
-    delegate! {
-        to self.shape {
-            pub fn is_number(&self) -> bool;
-            pub fn is_vector(&self) -> bool;
-            pub fn flat_size(&self) -> u64;
-            pub fn rank(&self) -> usize;
-        }
+    pub fn is_number(&self) -> bool {
+        self.shape.is_number()
+    }
+
+    pub fn is_vector(&self) -> bool {
+        self.shape.is_vector()
+    }
+
+    pub fn flat_size(&self) -> u64 {
+        self.shape.flat_size()
+    }
+
+    pub fn rank(&self) -> usize {
+        self.shape.rank()
     }
 
     pub fn square_norm2(&self) -> W {
