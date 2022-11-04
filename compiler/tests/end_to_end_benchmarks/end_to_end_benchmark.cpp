@@ -130,15 +130,10 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
     });
   };
   setCurrentStackLimit(stackSizeRequirement);
-  mlir::concretelang::CompilationOptions defaul;
-  defaul.loopParallelize = true;
+  mlir::concretelang::CompilationOptions cpu;
+  cpu.loopParallelize = true;
+  registe("cpu", cpu);
 
-  registe("default", defaul);
-  // Run only parallelized benchmarks to take advantage of hardware with lots of
-  // CPU cores.
-  // mlir::concretelang::CompilationOptions loop;
-  // loop.loopParallelize = true;
-  // registe("loop", loop);
 #ifdef CONCRETELANG_CUDA_SUPPORT
   mlir::concretelang::CompilationOptions gpu;
   gpu.emitGPUOps = true;
