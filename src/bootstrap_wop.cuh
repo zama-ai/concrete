@@ -261,7 +261,7 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
                     uint32_t polynomial_size, uint32_t base_log,
                     uint32_t level_count, uint32_t r,
                     uint32_t max_shared_memory) {
-
+  // This should be refactored to pass the gpu index as a parameter
   uint32_t gpu_index = 0;
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
@@ -281,11 +281,11 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   dim3 thds(polynomial_size / params::opt, 1, 1);
 
   //////////////////////
-  int ggsw_size = r * polynomial_size * (glwe_dimension + 1) *
+  int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
 
   double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
-      ggsw_size * sizeof(double), *stream, gpu_index);
+      r * ggsw_size * sizeof(double), *stream, gpu_index);
 
   batch_fft_ggsw_vector<Torus, STorus, params>(v_stream, d_ggsw_fft_in, ggsw_in,
                                                r, glwe_dimension,
@@ -525,6 +525,172 @@ __host__ void host_extract_bits(
         lwe_array_out_pbs_buffer, 1ll << (delta_log - 1 + bit_idx),
         1ll << (ciphertext_n_bits - delta_log - bit_idx - 2));
   }
+}
+
+/*
+ * Receives "tau" GLWE ciphertexts as LUTs and "mbr_size" GGSWs. Each block
+ * computes the blind rotation loop + sample extraction for a single LUT.
+ * Writes the lwe output to lwe_out.
+ *
+ * This function needs polynomial_size/params::opt threads per block and tau
+ * blocks
+ *
+ * - lwe_out: An array of lwe ciphertexts. The outcome is written here.
+ * - glwe_in: An array of "tau" GLWE ciphertexts. These are the LUTs.
+ * - ggsw_in: An array of "mbr_size" GGSWs in the fourier domain.
+ * - mbr_size: The number of GGSWs.
+ * - glwe_dim: This is k.
+ * - polynomial_size: size of the polynomials. This is N.
+ * - base_log: log base used for the gadget matrix - B = 2^base_log (~8)
+ * - l_gadget: number of decomposition levels in the gadget matrix (~4)
+ * - device_memory_size_per_sample: Amount of (shared/global) memory used for
+ * the accumulators.
+ * - device_mem: An array to be used for the accumulators. Can be in the shared
+ * memory or global memory.
+ */
+template <typename Torus, typename STorus, class params, sharedMemDegree SMD>
+__global__ void device_blind_rotation_and_sample_extraction(
+    Torus *lwe_out, Torus *glwe_in, double2 *ggsw_in, // m^BR
+    uint32_t mbr_size, uint32_t glwe_dim, uint32_t polynomial_size,
+    uint32_t base_log, uint32_t l_gadget, size_t device_memory_size_per_sample,
+    char *device_mem) {
+
+  // We use shared memory for intermediate result
+  extern __shared__ char sharedmem[];
+  char *selected_memory;
+
+  if constexpr (SMD == FULLSM)
+    selected_memory = sharedmem;
+  else
+    selected_memory = &device_mem[blockIdx.x * device_memory_size_per_sample];
+
+  Torus *accumulator_c0 = (Torus *)selected_memory;
+  Torus *accumulator_c1 = (Torus *)accumulator_c0 + 2 * polynomial_size;
+
+  // Input LUT
+  auto mi = &glwe_in[blockIdx.x * (glwe_dim + 1) * polynomial_size];
+  int tid = threadIdx.x;
+  for (int i = 0; i < params::opt; i++) {
+    accumulator_c0[tid] = mi[tid];
+    accumulator_c0[tid + params::degree] = mi[tid + params::degree];
+    tid += params::degree / params::opt;
+  }
+
+  int monomial_degree = 0;
+  for (int i = mbr_size - 1; i >= 0; i--) {
+    synchronize_threads_in_block();
+
+    // Compute x^ai * ACC
+    // Body
+    divide_by_monomial_negacyclic_inplace<Torus, params::opt,
+                                          params::degree / params::opt>(
+        accumulator_c1, accumulator_c0, (1 << monomial_degree), false);
+    // Mask
+    divide_by_monomial_negacyclic_inplace<Torus, params::opt,
+                                          params::degree / params::opt>(
+        accumulator_c1 + polynomial_size, accumulator_c0 + polynomial_size,
+        (1 << monomial_degree), false);
+
+    monomial_degree += 1;
+
+    // ACC = CMUX ( Ci, x^ai * ACC, ACC )
+    synchronize_threads_in_block();
+    cmux<Torus, STorus, params>(accumulator_c0, accumulator_c0, ggsw_in,
+                                (char *)(accumulator_c0 + 4 * polynomial_size),
+                                0, 0, 1, glwe_dim, polynomial_size, base_log,
+                                l_gadget, i);
+  }
+  synchronize_threads_in_block();
+
+  // Write the output
+  auto block_lwe_out = &lwe_out[blockIdx.x * (polynomial_size + 1)];
+
+  // The blind rotation for this block is over
+  // Now we can perform the sample extraction: for the body it's just
+  // the resulting constant coefficient of the accumulator
+  // For the mask it's more complicated
+  sample_extract_mask<Torus, params>(block_lwe_out, accumulator_c0);
+  sample_extract_body<Torus, params>(block_lwe_out,
+                                     accumulator_c0 + polynomial_size);
+}
+
+template <typename Torus, typename STorus, class params>
+void host_blind_rotate_and_sample_extraction(
+    void *v_stream, Torus *lwe_out, Torus *ggsw_in, Torus *lut_vector,
+    uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t l_gadget,
+    uint32_t max_shared_memory) {
+  // This should be refactored to pass the gpu index as a parameter
+  uint32_t gpu_index = 0;
+
+  assert(glwe_dimension ==
+         1); // For larger k we will need to adjust the mask size
+
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+
+  int memory_needed_per_block =
+      sizeof(Torus) * polynomial_size +       // accumulator_c0 mask
+      sizeof(Torus) * polynomial_size +       // accumulator_c0 body
+      sizeof(Torus) * polynomial_size +       // accumulator_c1 mask
+      sizeof(Torus) * polynomial_size +       // accumulator_c1 body
+      sizeof(Torus) * polynomial_size +       // glwe_sub_mask
+      sizeof(Torus) * polynomial_size +       // glwe_sub_body
+      sizeof(int16_t) * polynomial_size +     // glwe_mask_decomposed
+      sizeof(int16_t) * polynomial_size +     // glwe_body_decomposed
+      sizeof(double2) * polynomial_size / 2 + // mask_res_fft
+      sizeof(double2) * polynomial_size / 2 + // body_res_fft
+      sizeof(double2) * polynomial_size / 2;  // glwe_fft
+
+  char *d_mem;
+  if (max_shared_memory < memory_needed_per_block)
+    d_mem = (char *)cuda_malloc_async(memory_needed_per_block * tau, *stream,
+                                      gpu_index);
+  else {
+    checkCudaErrors(cudaFuncSetAttribute(
+        device_blind_rotation_and_sample_extraction<Torus, STorus, params,
+                                                    FULLSM>,
+        cudaFuncAttributeMaxDynamicSharedMemorySize, memory_needed_per_block));
+    checkCudaErrors(cudaFuncSetCacheConfig(
+        device_blind_rotation_and_sample_extraction<Torus, STorus, params,
+                                                    FULLSM>,
+        cudaFuncCachePreferShared));
+  }
+
+  // Applying the FFT on m^br
+  int ggsw_size =
+      polynomial_size * (glwe_dimension + 1) * (glwe_dimension + 1) * l_gadget;
+  double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
+      mbr_size * ggsw_size * sizeof(double), *stream, gpu_index);
+
+  batch_fft_ggsw_vector<Torus, STorus, params>(v_stream, d_ggsw_fft_in, ggsw_in,
+                                               mbr_size, glwe_dimension,
+                                               polynomial_size, l_gadget);
+  checkCudaErrors(cudaGetLastError());
+
+  //
+  dim3 thds(polynomial_size / params::opt, 1, 1);
+  dim3 grid(tau, 1, 1);
+
+  if (max_shared_memory < memory_needed_per_block)
+    device_blind_rotation_and_sample_extraction<Torus, STorus, params, NOSM>
+        <<<grid, thds, 0, *stream>>>(lwe_out, lut_vector, d_ggsw_fft_in,
+                                     mbr_size,
+                                     glwe_dimension, // k
+                                     polynomial_size, base_log, l_gadget,
+                                     memory_needed_per_block, d_mem);
+  else
+    device_blind_rotation_and_sample_extraction<Torus, STorus, params, FULLSM>
+        <<<grid, thds, memory_needed_per_block, *stream>>>(
+            lwe_out, lut_vector, d_ggsw_fft_in, mbr_size,
+            glwe_dimension, // k
+            polynomial_size, base_log, l_gadget, memory_needed_per_block,
+            d_mem);
+  checkCudaErrors(cudaGetLastError());
+
+  //
+  cuda_drop_async(d_ggsw_fft_in, *stream, gpu_index);
+  if (max_shared_memory < memory_needed_per_block)
+    cuda_drop_async(d_mem, *stream, gpu_index);
 }
 
 #endif // WO_PBS_H

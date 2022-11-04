@@ -251,3 +251,43 @@ void cuda_extract_bits_64(
     break;
   }
 }
+
+void cuda_blind_rotate_and_sample_extraction_64(
+    void *v_stream, void *lwe_out, void *ggsw_in, void *lut_vector,
+    uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t l_gadget,
+    uint32_t max_shared_memory) {
+
+  switch (polynomial_size) {
+  case 512:
+    host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<512>>(
+        v_stream, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
+        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
+        base_log, l_gadget, max_shared_memory);
+    break;
+  case 1024:
+    host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<1024>>(
+        v_stream, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
+        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
+        base_log, l_gadget, max_shared_memory);
+    break;
+  case 2048:
+    host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<2048>>(
+        v_stream, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
+        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
+        base_log, l_gadget, max_shared_memory);
+    break;
+  case 4096:
+    host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<4096>>(
+        v_stream, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
+        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
+        base_log, l_gadget, max_shared_memory);
+    break;
+  case 8192:
+    host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<8192>>(
+        v_stream, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
+        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
+        base_log, l_gadget, max_shared_memory);
+    break;
+  }
+}

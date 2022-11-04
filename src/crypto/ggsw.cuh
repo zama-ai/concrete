@@ -12,6 +12,7 @@ __global__ void batch_fft_ggsw_vectors(double2 *dest, T *src) {
   int offset = blockIdx.x * blockDim.x;
   int tid = threadIdx.x;
   int log_2_opt = params::opt >> 1;
+
 #pragma unroll
   for (int i = 0; i < log_2_opt; i++) {
     ST x = src[(2 * tid) + params::opt * offset];
@@ -31,6 +32,7 @@ __global__ void batch_fft_ggsw_vectors(double2 *dest, T *src) {
 
   // Write the output to global memory
   tid = threadIdx.x;
+#pragma unroll
   for (int j = 0; j < log_2_opt; j++) {
     dest[tid + (params::opt >> 1) * offset] = shared_output[tid];
     tid += params::degree / params::opt;
@@ -50,8 +52,8 @@ void batch_fft_ggsw_vector(void *v_stream, double2 *dest, T *src, uint32_t r,
 
   int shared_memory_size = sizeof(double) * polynomial_size;
 
-  int total_polynomials = r * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
-  int gridSize = total_polynomials;
+  int gridSize = r * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
+  ;
   int blockSize = polynomial_size / params::opt;
 
   batch_fft_ggsw_vectors<T, ST, params>
