@@ -10,11 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Needed on linux with clang 15 and on MacOS because cxx emits dollars in the optimizer C++ API
 add_definitions("-Wno-dollar-in-identifier-extension")
 
-# Wouldn't be able to compile LLVM without this on Mac (using either Clang or AppleClang)
-if(APPLE)
-else()
-  add_definitions("-Wall -Werror")
-endif()
+add_definitions("-Wall -Werror")
 
 # If we are trying to build the compiler with LLVM/MLIR as libraries
 if(NOT DEFINED LLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR)
