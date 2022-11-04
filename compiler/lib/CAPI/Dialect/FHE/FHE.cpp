@@ -10,6 +10,7 @@
 #include "mlir/CAPI/IR.h"
 #include "mlir/CAPI/Registration.h"
 #include "mlir/CAPI/Support.h"
+#include "mlir/IR/StorageUniquerSupport.h"
 
 using namespace mlir::concretelang::FHE;
 
@@ -27,8 +28,23 @@ bool fheTypeIsAnEncryptedIntegerType(MlirType type) {
   return unwrap(type).isa<EncryptedIntegerType>();
 }
 
-MlirType fheEncryptedIntegerTypeGetChecked(
-    MlirContext ctx, unsigned width,
-    mlir::function_ref<mlir::InFlightDiagnostic()> emitError) {
-  return wrap(EncryptedIntegerType::getChecked(emitError, unwrap(ctx), width));
+MlirTypeOrError fheEncryptedIntegerTypeGetChecked(MlirContext ctx,
+                                                  unsigned width) {
+  MlirTypeOrError type = {{NULL}, false};
+  auto catchError = [&]() -> mlir::InFlightDiagnostic {
+    type.isError = true;
+    mlir::DiagnosticEngine &engine = unwrap(ctx)->getDiagEngine();
+    // The goal here is to make getChecked working, but we don't want the CAPI
+    // to stop execution due to an error, and leave the error handling logic to
+    // the user of the CAPI
+    return engine.emit(mlir::UnknownLoc::get(unwrap(ctx)),
+                       mlir::DiagnosticSeverity::Warning);
+  };
+  EncryptedIntegerType eint =
+      EncryptedIntegerType::getChecked(catchError, unwrap(ctx), width);
+  if (type.isError) {
+    return type;
+  }
+  type.type = wrap(eint);
+  return type;
 }

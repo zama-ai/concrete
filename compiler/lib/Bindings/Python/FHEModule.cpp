@@ -28,12 +28,11 @@ void mlir::concretelang::python::populateDialectFHESubmodule(
   mlir_type_subclass(m, "EncryptedIntegerType", fheTypeIsAnEncryptedIntegerType)
       .def_classmethod("get", [](pybind11::object cls, MlirContext ctx,
                                  unsigned width) {
-        // We want the user to receive a python exception for not being able to
-        // create the eint
-        auto emitException = []() -> mlir::InFlightDiagnostic {
+        MlirTypeOrError typeOrError =
+            fheEncryptedIntegerTypeGetChecked(ctx, width);
+        if (typeOrError.isError) {
           throw std::invalid_argument("can't create eint with the given width");
-        };
-        return cls(
-            fheEncryptedIntegerTypeGetChecked(ctx, width, emitException));
+        }
+        return cls(typeOrError.type);
       });
 }
