@@ -78,7 +78,7 @@ void cuda_extract_bits_64(
     uint32_t lwe_dimension_out, uint32_t glwe_dimension, uint32_t base_log_bsk,
     uint32_t level_count_bsk, uint32_t base_log_ksk, uint32_t level_count_ksk,
     uint32_t number_of_samples);
-};
+}
 
 #ifdef __CUDACC__
 __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
