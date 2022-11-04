@@ -6,8 +6,6 @@ use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use std::time::Instant;
 
 use file_lock::{FileLock, FileOptions};
-use rmp_serde::{Deserializer, Serializer};
-use serde::Serialize;
 
 use super::ephemeral;
 use super::ephemeral::{EphemeralCache, KeyValueFunction};
@@ -202,8 +200,9 @@ where
             }
         };
         let mut buf = BufReader::new(&filelock.file);
-        let mut deserializer = Deserializer::new(buf.borrow_mut());
-        let disk_version = <String as serde::Deserialize>::deserialize(&mut deserializer);
+
+        let disk_version: Result<String, _> = bincode::deserialize_from(buf.borrow_mut());
+
         match disk_version {
             Ok(disk_version) => {
                 if disk_version != *version {
@@ -221,7 +220,7 @@ where
                 return None;
             }
         }
-        match <ROC as serde::Deserialize>::deserialize(&mut deserializer) {
+        match bincode::deserialize_from(buf.borrow_mut()) {
             Ok(content) => Some(content),
             Err(error) => {
                 println!(
@@ -257,9 +256,9 @@ where
         }
         let file = &mut filelock.file;
         let mut buf = BufWriter::new(file);
-        let mut serializer = Serializer::new(&mut buf);
-        self.version.serialize(&mut serializer).unwrap();
-        content.serialize(&mut serializer).unwrap();
+
+        bincode::serialize_into(&mut buf, &self.version).unwrap();
+        bincode::serialize_into(&mut buf, content).unwrap();
     }
 
     pub fn clear_file(path: &str) {
