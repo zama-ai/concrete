@@ -155,8 +155,11 @@ auto _ = {
     registerEndToEndTestFromFile(
         "FHELinalg", "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml"),
     registerEndToEndTestFromFile(
-        "FHETLU",
+        "FHELinalgTLU",
         "tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml"),
+    registerEndToEndTestFromFile(
+        "FHELinalgLeveled",
+        "tests/end_to_end_fixture/end_to_end_linalg_leveled.yaml"),
 };
 
 BENCHMARK_MAIN();

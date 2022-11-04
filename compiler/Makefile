@@ -254,6 +254,7 @@ run-end-to-end-gpu-tests: build-end-to-end-gpu-tests
 
 generate-benchmarks:
 	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py > tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml
+	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_leveled_gen.py > tests/end_to_end_fixture/end_to_end_linalg_leveled.yaml
 
 build-benchmarks: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
