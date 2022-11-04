@@ -131,10 +131,11 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   };
   setCurrentStackLimit(stackSizeRequirement);
   mlir::concretelang::CompilationOptions defaul;
+  defaul.loopParallelize = true;
+
   registe("default", defaul);
   // Run only parallelized benchmarks to take advantage of hardware with lots of
   // CPU cores.
-  defaul.loopParallelize = true;
   // mlir::concretelang::CompilationOptions loop;
   // loop.loopParallelize = true;
   // registe("loop", loop);
