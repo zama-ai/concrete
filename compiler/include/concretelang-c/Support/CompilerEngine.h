@@ -13,9 +13,10 @@
 #include "mlir-c/IR.h"
 #include "mlir-c/Registration.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// TODO: make this file C-compatible and uncomment the 3 following lines
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
 
 /// C wrapper of the mlir::concretelang::LambdaArgument
 struct lambdaArgument {
@@ -179,8 +180,8 @@ MLIR_CAPI_EXPORTED uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg);
 MLIR_CAPI_EXPORTED std::string library(std::string libraryPath,
                                        std::vector<std::string> modules);
 
-#ifdef __cplusplus
-}
-#endif
+// #ifdef __cplusplus
+// }
+// #endif
 
 #endif // CONCRETELANG_C_SUPPORT_COMPILER_ENGINE_H
