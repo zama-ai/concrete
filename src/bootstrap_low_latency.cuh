@@ -36,7 +36,7 @@ mul_ggsw_glwe(Torus *accumulator, double2 *fft, int16_t *glwe_decomposed,
               int iteration, grid_group &grid) {
 
   // Put the decomposed GLWE sample in the Fourier domain
-  real_to_complex_compressed<int16_t, params>(glwe_decomposed, fft);
+  real_to_complex_compressed<params>(glwe_decomposed, fft);
   synchronize_threads_in_block();
 
   // Switch to the FFT space
@@ -184,8 +184,9 @@ __global__ void device_bootstrap_low_latency(
   GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   // Put "b" in [0, 2N[
-  Torus b_hat = rescale_torus_element(block_lwe_array_in[lwe_dimension],
-                                      2 * params::degree);
+  Torus b_hat = 0;
+  rescale_torus_element(block_lwe_array_in[lwe_dimension], b_hat,
+                        2 * params::degree);
 
   if (blockIdx.y == 0) {
     divide_by_monomial_negacyclic_inplace<Torus, params::opt,
@@ -201,9 +202,9 @@ __global__ void device_bootstrap_low_latency(
     synchronize_threads_in_block();
 
     // Put "a" in [0, 2N[
-    Torus a_hat = rescale_torus_element(
-        block_lwe_array_in[i],
-        2 * params::degree); // 2 * params::log2_degree + 1);
+    Torus a_hat = 0;
+    rescale_torus_element(block_lwe_array_in[i], a_hat,
+                          2 * params::degree); // 2 * params::log2_degree + 1);
 
     // Perform ACC * (X^ä - 1)
     multiply_by_monomial_negacyclic_and_sub_polynomial<

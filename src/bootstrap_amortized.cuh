@@ -103,9 +103,9 @@ __global__ void device_bootstrap_amortized(
   GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   // Put "b", the body, in [0, 2N[
-  Torus b_hat = rescale_torus_element(
-      block_lwe_array_in[lwe_dimension],
-      2 * params::degree); // 2 * params::log2_degree + 1);
+  Torus b_hat = 0;
+  rescale_torus_element(block_lwe_array_in[lwe_dimension], b_hat,
+                        2 * params::degree); // 2 * params::log2_degree + 1);
 
   divide_by_monomial_negacyclic_inplace<Torus, params::opt,
                                         params::degree / params::opt>(
@@ -123,9 +123,9 @@ __global__ void device_bootstrap_amortized(
     synchronize_threads_in_block();
 
     // Put "a" in [0, 2N[ instead of Zq
-    Torus a_hat = rescale_torus_element(
-        block_lwe_array_in[iteration],
-        2 * params::degree); // 2 * params::log2_degree + 1);
+    Torus a_hat = 0;
+    rescale_torus_element(block_lwe_array_in[iteration], a_hat,
+                          2 * params::degree); // 2 * params::log2_degree + 1);
 
     // Perform ACC * (X^ä - 1)
     multiply_by_monomial_negacyclic_and_sub_polynomial<
@@ -176,8 +176,8 @@ __global__ void device_bootstrap_amortized(
 
       // Reduce the size of the FFT to be performed by storing
       // the real-valued polynomial into a complex polynomial
-      real_to_complex_compressed<int16_t, params>(accumulator_mask_decomposed,
-                                                  accumulator_fft);
+      real_to_complex_compressed<params>(accumulator_mask_decomposed,
+                                         accumulator_fft);
 
       synchronize_threads_in_block();
       // Switch to the FFT space
@@ -208,8 +208,8 @@ __global__ void device_bootstrap_amortized(
 
       // Now handle the polynomial multiplication for the body
       // in the same way
-      real_to_complex_compressed<int16_t, params>(accumulator_body_decomposed,
-                                                  accumulator_fft);
+      real_to_complex_compressed<params>(accumulator_body_decomposed,
+                                         accumulator_fft);
       synchronize_threads_in_block();
 
       NSMFFT_direct<HalfDegree<params>>(accumulator_fft);

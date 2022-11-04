@@ -6,29 +6,13 @@
 /*
  *  function compresses decomposed buffer into half size complex buffer for fft
  */
-template <typename T, class params>
-__device__ void real_to_complex_compressed(T *src, double2 *dst) {
+template <class params>
+__device__ void real_to_complex_compressed(int16_t *src, double2 *dst) {
   int tid = threadIdx.x;
 #pragma unroll
   for (int i = 0; i < params::opt / 2; i++) {
-    dst[tid].x = (double)src[2 * tid];
-    dst[tid].y = (double)src[2 * tid + 1];
-    tid += params::degree / params::opt;
-  }
-}
-
-template <typename T, typename ST, class params>
-__device__ void real_to_complex_compressed(T *src, double2 *dst) {
-  int tid = threadIdx.x;
-
-#pragma unroll
-  for (int i = 0; i < params::opt / 2; i++) {
-    ST x = src[2 * tid];
-    ST y = src[2 * tid + 1];
-
-    dst[tid].x = x / (double)std::numeric_limits<T>::max();
-    dst[tid].y = y / (double)std::numeric_limits<T>::max();
-
+    dst[tid].x = __int2double_rn(src[2 * tid]);
+    dst[tid].y = __int2double_rn(src[2 * tid + 1]);
     tid += params::degree / params::opt;
   }
 }
@@ -175,14 +159,16 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
     double carry = frac - floor(frac);
     frac += (carry >= 0.5);
 
-    Torus V1 = typecast_double_to_torus<Torus>(frac);
+    Torus V1 = 0;
+    typecast_double_to_torus<Torus>(frac, V1);
 
     frac = v2 - floor(v2);
     frac *= mx;
     carry = frac - floor(v2);
     frac += (carry >= 0.5);
 
-    Torus V2 = typecast_double_to_torus<Torus>(frac);
+    Torus V2 = 0;
+    typecast_double_to_torus<Torus>(frac, V2);
 
     result[tid * 2] += V1;
     result[tid * 2 + 1] += V2;

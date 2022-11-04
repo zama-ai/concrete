@@ -4,21 +4,26 @@
 #include "types/int128.cuh"
 #include <limits>
 
-template <typename Torus>
-__device__ inline Torus typecast_double_to_torus(double x) {
-  if constexpr (sizeof(Torus) < 8) {
-    // this simple cast works up to 32 bits, afterwards we must do it manually
-    long long ret = x;
-    return (Torus)ret;
-  } else {
-    int128 nnnn = make_int128_from_float(x);
-    uint64_t lll = nnnn.lo_;
-    return lll;
-  }
-  // nvcc doesn't get it that the if {} else {} above should always return
-  // something, and complains that this function might return nothing, so we
-  // put this useless return here
-  return 0;
+template <typename T>
+__device__ inline void typecast_double_to_torus(double x, T &r) {
+  r = T(x);
+}
+
+template <>
+__device__ inline void typecast_double_to_torus<uint32_t>(double x,
+                                                          uint32_t &r) {
+  r = __double2uint_rn(x);
+}
+
+template <>
+__device__ inline void typecast_double_to_torus<uint64_t>(double x,
+                                                          uint64_t &r) {
+  // The ull intrinsic does not behave in the same way on all architectures and
+  // on some platforms this causes the cmux tree test to fail
+  // Hence the intrinsic is not used here
+  uint128 nnnn = make_uint128_from_float(x);
+  uint64_t lll = nnnn.lo_;
+  r = lll;
 }
 
 template <typename T>
@@ -34,10 +39,30 @@ __device__ inline T round_to_closest_multiple(T x, uint32_t base_log,
 }
 
 template <typename T>
-__device__ __forceinline__ T rescale_torus_element(T element,
-                                                   uint32_t log_shift) {
-  return round((double)element / (double(std::numeric_limits<T>::max()) + 1.0) *
-               (double)log_shift);
+__device__ __forceinline__ void rescale_torus_element(T element, T &output,
+                                                      uint32_t log_shift) {
+  output =
+      round((double)element / (double(std::numeric_limits<T>::max()) + 1.0) *
+            (double)log_shift);
+  ;
 }
 
+template <>
+__device__ __forceinline__ void
+rescale_torus_element<uint32_t>(uint32_t element, uint32_t &output,
+                                uint32_t log_shift) {
+  output =
+      round(__uint2double_rn(element) /
+            (__uint2double_rn(std::numeric_limits<uint32_t>::max()) + 1.0) *
+            __uint2double_rn(log_shift));
+}
+
+template <>
+__device__ __forceinline__ void
+rescale_torus_element<uint64_t>(uint64_t element, uint64_t &output,
+                                uint32_t log_shift) {
+  output = round(__ull2double_rn(element) /
+                 (__ull2double_rn(std::numeric_limits<uint64_t>::max()) + 1.0) *
+                 __uint2double_rn(log_shift));
+}
 #endif // CNCRT_TORUS_H

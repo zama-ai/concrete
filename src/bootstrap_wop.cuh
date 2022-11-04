@@ -21,30 +21,12 @@
 #include "utils/memory.cuh"
 #include "utils/timer.cuh"
 
-template <typename T, class params>
-__device__ void fft(double2 *output, T *input) {
+template <class params> __device__ void fft(double2 *output, int16_t *input) {
   synchronize_threads_in_block();
 
   // Reduce the size of the FFT to be performed by storing
   // the real-valued polynomial into a complex polynomial
-  real_to_complex_compressed<T, params>(input, output);
-  synchronize_threads_in_block();
-
-  // Switch to the FFT space
-  NSMFFT_direct<HalfDegree<params>>(output);
-  synchronize_threads_in_block();
-
-  correction_direct_fft_inplace<params>(output);
-  synchronize_threads_in_block();
-}
-
-template <typename T, typename ST, class params>
-__device__ void fft(double2 *output, T *input) {
-  synchronize_threads_in_block();
-
-  // Reduce the size of the FFT to be performed by storing
-  // the real-valued polynomial into a complex polynomial
-  real_to_complex_compressed<T, ST, params>(input, output);
+  real_to_complex_compressed<params>(input, output);
   synchronize_threads_in_block();
 
   // Switch to the FFT space
@@ -154,7 +136,7 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
 
     // First, perform the polynomial multiplication for the mask
     synchronize_threads_in_block();
-    fft<int16_t, params>(glwe_fft, glwe_mask_decomposed);
+    fft<params>(glwe_fft, glwe_mask_decomposed);
 
     // External product and accumulate
     // Get the piece necessary for the multiplication
@@ -175,7 +157,7 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
     // Now handle the polynomial multiplication for the body
     // in the same way
     synchronize_threads_in_block();
-    fft<int16_t, params>(glwe_fft, glwe_body_decomposed);
+    fft<params>(glwe_fft, glwe_body_decomposed);
 
     // External product and accumulate
     // Get the piece necessary for the multiplication
