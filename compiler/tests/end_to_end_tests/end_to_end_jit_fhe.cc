@@ -42,6 +42,7 @@ void compile_and_run(EndToEndDesc desc,
   } else {
     for (auto test_error_rate : desc.test_error_rates) {
       options.optimizerConfig.global_p_error = test_error_rate.global_p_error;
+      options.optimizerConfig.p_error = test_error_rate.global_p_error;
       compile_and_run_for_config(desc, support, options, test_error_rate);
     }
   }
