@@ -12,8 +12,6 @@ def main():
     np.random.seed(0)
     for n_ct in N_CT:
         for p in range(MIN_PRECISON, MAX_PRECISION+1):
-            if p != 1:
-                print("---")
             max_value = (2 ** p) - 1
             random_lut = np.random.randint(max_value+1, size=2**p)
             # identity_apply_lookup_table
@@ -38,6 +36,7 @@ def main():
             print("    outputs:")
             print("    - tensor: [{0}]".format(','.join(map(str, outputs))))
             print("      shape: [{0}]".format(n_ct))
+            print("---")
 
 
 main()
