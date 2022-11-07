@@ -10,6 +10,7 @@
 #include "cooperative_groups.h"
 
 #include "../include/helper_cuda.h"
+#include "device.h"
 #include "bootstrap.h"
 #include "complex/operations.cuh"
 #include "crypto/gadget.cuh"
@@ -261,10 +262,8 @@ host_bootstrap_low_latency(void *v_stream, Torus *lwe_array_out,
 
   int buffer_size_per_gpu =
       level_count * num_samples * polynomial_size / 2 * sizeof(double2);
-  double2 *mask_buffer_fft;
-  double2 *body_buffer_fft;
-  checkCudaErrors(cudaMalloc((void **)&mask_buffer_fft, buffer_size_per_gpu));
-  checkCudaErrors(cudaMalloc((void **)&body_buffer_fft, buffer_size_per_gpu));
+  double2 *mask_buffer_fft = (double2*) cuda_malloc_async(buffer_size_per_gpu, *stream);
+  double2 *body_buffer_fft = (double2*) cuda_malloc_async(buffer_size_per_gpu, *stream);
 
   int bytes_needed = sizeof(int16_t) * polynomial_size + // accumulator_decomp
                      sizeof(Torus) * polynomial_size +   // accumulator
@@ -298,8 +297,8 @@ host_bootstrap_low_latency(void *v_stream, Torus *lwe_array_out,
   // Synchronize the streams before copying the result to lwe_array_out at the
   // right place
   cudaStreamSynchronize(*stream);
-  cudaFree(mask_buffer_fft);
-  cudaFree(body_buffer_fft);
+  cuda_drop_async(mask_buffer_fft, *stream);
+  cuda_drop_async(body_buffer_fft, *stream);
 }
 
 #endif // LOWLAT_PBS_H
