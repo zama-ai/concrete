@@ -133,19 +133,19 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
     });
   };
   setCurrentStackLimit(stackSizeRequirement);
-  mlir::concretelang::CompilationOptions cpu;
-  cpu.loopParallelize = true;
-  registe("cpu", cpu);
 
-#ifdef CONCRETELANG_CUDA_SUPPORT
+#ifndef CONCRETELANG_CUDA_SUPPORT
+  // Run only parallelized benchmarks to take advantage of hardware with lots of
+  // CPU cores.
+  mlir::concretelang::CompilationOptions cpu;
+  registe("cpu", cpu);
+  cpu.loopParallelize = true;
+#else
   mlir::concretelang::CompilationOptions gpu;
   gpu.emitGPUOps = true;
   gpu.loopParallelize = true;
   registe("gpu", gpu);
 #endif
-  // mlir::concretelang::CompilationOptions dataflow;
-  // dataflow.dataflowParallelize = true;
-  // registe("dataflow", dataflow);
 
   return 1;
 }

@@ -7,6 +7,14 @@ on:
       - 'main'
   workflow_dispatch:
     inputs:
+      backend:
+        description: 'Backend type'
+        required: true
+        default: 'cpu'
+        type: choice
+        options:
+          - cpu
+          - gpu
       ec2-instance-type:
         description: 'EC2 instance type'
         required: true
@@ -20,6 +28,8 @@ env:
   CARGO_TERM_COLOR: always
   RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
   EC2_INSTANCE_TYPE: ${{ inputs.ec2-instance-type || 'm6i.metal' }}
+  CUDA_PATH: /usr/local/cuda-11.3
+  GCC_VERSION: 8
 
 jobs:
   start-runner:
@@ -43,6 +53,15 @@ jobs:
           echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
           echo "EC2_IMAGE_ID=ami-0afb83d80b3b060d8" >> $GITHUB_ENV
           echo "SUBNET_ID=subnet-da319dd4" >> $GITHUB_ENV
+          echo "SECURITY_GROUP_ID=sg-0f8b52622a2669491" >> $GITHUB_ENV
+
+      - name: Sets env vars for p3.2xlarge
+        if: ${{ inputs.backend == 'gpu' }}
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+          echo "EC2_INSTANCE_TYPE=p3.2xlarge" >> $GITHUB_ENV
+          echo "EC2_IMAGE_ID=ami-03deb184ab492226b" >> $GITHUB_ENV
+          echo "SUBNET_ID=subnet-8123c9e7" >> $GITHUB_ENV
           echo "SECURITY_GROUP_ID=sg-0f8b52622a2669491" >> $GITHUB_ENV
 
       - name: Configure AWS credentials
@@ -93,17 +112,41 @@ jobs:
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
+      - name: Export CUDA variables
+        if: ${{ inputs.backend == 'gpu' }}
+        run: |
+          echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
+          echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
+          echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
+
+      # Specify the correct host compilers
+      - name: Export gcc and g++ variables
+        if: ${{ inputs.backend == 'gpu' }}
+        run: |
+          echo "CC=/usr/bin/gcc-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
+          echo "CXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
+          echo "CUDAHOSTCXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
+          echo "CUDACXX=$CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
+
       - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
 
-      - name: Build compiler and end-to-end benchmarks
+      - name: Build compiler and end-to-end benchmarks (CPU)
+        if: ${{ inputs.backend == 'cpu' }}
         run: |
           set -e
           cd compiler
           make BINDINGS_PYTHON_ENABLED=OFF build-benchmarks generate-cpu-benchmarks
+
+      - name: Build compiler and run end-to-end benchmarks (GPU)
+        if: ${{ inputs.backend == 'gpu' }}
+        run: |
+          set -e
+          cd compiler
+          make BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=ON build-benchmarks generate-benchmarks
 
       - name: Download KeySetCache
         if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
@@ -112,7 +155,11 @@ jobs:
           cd compiler
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
-      - name: Run end-to-end benchmarks
+      - name: Mark KeySetCache
+        run: |
+          touch keysetcache.timestamp
+
+      - name: Build compiler and run end-to-end benchmarks
         run: |
           set -e
           cd compiler
@@ -179,6 +226,11 @@ jobs:
 
       - name: Sets AWS region for c6a.metal
         if: ${{ env.EC2_INSTANCE_TYPE == 'c6a.metal' }}
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+
+      - name: Sets AWS region for p3.2xlarge
+        if: ${{ inputs.backend == 'gpu' }}
         run: |
           echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
 
