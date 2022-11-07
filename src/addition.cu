@@ -24,3 +24,25 @@ void cuda_add_lwe_ciphertext_vector_64(void *v_stream, uint32_t gpu_index,
                 static_cast<uint64_t *>(lwe_array_in_2), input_lwe_dimension,
                 input_lwe_ciphertext_count);
 }
+void cuda_add_lwe_ciphertext_vector_plaintext_vector_32(
+    void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lwe_array_in,
+    void *plaintext_array_in, uint32_t input_lwe_dimension,
+    uint32_t input_lwe_ciphertext_count) {
+
+  host_addition_plaintext(v_stream, gpu_index,
+                          static_cast<uint32_t *>(lwe_array_out),
+                          static_cast<uint32_t *>(lwe_array_in),
+                          static_cast<uint32_t *>(plaintext_array_in),
+                          input_lwe_dimension, input_lwe_ciphertext_count);
+}
+void cuda_add_lwe_ciphertext_vector_plaintext_vector_64(
+    void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lwe_array_in,
+    void *plaintext_array_in, uint32_t input_lwe_dimension,
+    uint32_t input_lwe_ciphertext_count) {
+
+  host_addition_plaintext(v_stream, gpu_index,
+                          static_cast<uint64_t *>(lwe_array_out),
+                          static_cast<uint64_t *>(lwe_array_in),
+                          static_cast<uint64_t *>(plaintext_array_in),
+                          input_lwe_dimension, input_lwe_ciphertext_count);
+}

@@ -14,8 +14,8 @@ template <typename T>
 __global__ void negation(T *output, T *input, uint32_t num_entries) {
 
   int tid = threadIdx.x;
-  if (tid < num_entries) {
-    int index = blockIdx.x * blockDim.x + tid;
+  int index = blockIdx.x * blockDim.x + tid;
+  if (index < num_entries) {
     // Here we take advantage of the wrapping behaviour of uint
     output[index] = -input[index];
   }
