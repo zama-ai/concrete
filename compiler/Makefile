@@ -211,7 +211,7 @@ run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-python-tests
 ## check-tests
 
 run-check-tests: concretecompiler file-check not
-	$(BUILD_DIR)/bin/llvm-lit -v tests/
+	$(BUILD_DIR)/bin/llvm-lit -v tests/check_tests
 
 ## unit-tests
 
