@@ -779,7 +779,7 @@ return %4
         return np.abs(np.sin(x)).transpose().astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
-        inputset = [np.random.randint(0, 2**7, size=(2, 2)) for _ in range(100)]
+        inputset = [[[0, 1], [2, 3]]]
         function3.compile(inputset, configuration)
 
     helpers.check_str(
@@ -788,7 +788,7 @@ return %4
 
 A subgraph within the function you are trying to compile cannot be fused because of a node, which is marked explicitly as non-fusable
 
-%0 = x                             # EncryptedTensor<uint7, shape=(2, 2)>
+%0 = x                             # EncryptedTensor<uint2, shape=(2, 2)>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ with this input node
 %1 = sin(%0)                       # EncryptedTensor<float64, shape=(2, 2)>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
