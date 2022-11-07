@@ -1,4 +1,5 @@
-use derive_more::{Add, AddAssign, Sum};
+use std::iter::Sum;
+
 /**
  * A variance that is represented as a linear combination of base variances.
  * Only the linear coefficient are known.
@@ -12,7 +13,7 @@ use derive_more::{Add, AddAssign, Sum};
  * Each linear coefficient is a variance factor.
  * There are homogenious to squared weight (or summed square weights or squared norm2).
  */
-#[derive(Clone, Copy, Add, AddAssign, Sum, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct SymbolicVariance {
     pub lut_coeff: f64,
     pub input_coeff: f64,
@@ -29,6 +30,36 @@ pub enum VarianceOrigin {
     Input,
     Lut,
     Mixed,
+}
+
+impl std::ops::Add for SymbolicVariance {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            lut_coeff: self.lut_coeff + rhs.lut_coeff,
+            input_coeff: self.input_coeff + rhs.input_coeff,
+        }
+    }
+}
+
+impl std::ops::AddAssign for SymbolicVariance {
+    fn add_assign(&mut self, rhs: Self) {
+        self.lut_coeff += rhs.lut_coeff;
+        self.input_coeff += rhs.input_coeff;
+    }
+}
+
+impl Sum for SymbolicVariance {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut accumulator = Self::ZERO;
+
+        for item in iter {
+            accumulator += item;
+        }
+
+        accumulator
+    }
 }
 
 impl std::ops::Mul<f64> for SymbolicVariance {

@@ -1,5 +1,4 @@
 use crate::dag::operator::tensor::{ClearTensor, Shape};
-use derive_more::{Add, AddAssign};
 
 pub type Weights = ClearTensor<i64>;
 
@@ -12,7 +11,7 @@ impl FunctionTable {
     pub const UNKWOWN: Self = Self { values: vec![] };
 }
 
-#[derive(Clone, Copy, PartialEq, Add, AddAssign, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct LevelledComplexity {
     pub lwe_dim_cost_factor: f64,
     pub fixed_cost: f64,
@@ -32,6 +31,24 @@ impl LevelledComplexity {
 impl LevelledComplexity {
     pub fn cost(&self, lwe_dimension: u64) -> f64 {
         self.lwe_dim_cost_factor * (lwe_dimension as f64) + self.fixed_cost
+    }
+}
+
+impl std::ops::Add for LevelledComplexity {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            lwe_dim_cost_factor: self.lwe_dim_cost_factor + rhs.lwe_dim_cost_factor,
+            fixed_cost: self.fixed_cost + rhs.fixed_cost,
+        }
+    }
+}
+
+impl std::ops::AddAssign for LevelledComplexity {
+    fn add_assign(&mut self, rhs: Self) {
+        self.lwe_dim_cost_factor += rhs.lwe_dim_cost_factor;
+        self.fixed_cost += rhs.fixed_cost;
     }
 }
 
