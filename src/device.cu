@@ -31,6 +31,19 @@ void *cuda_malloc(uint64_t size, uint32_t gpu_index) {
   return ptr;
 }
 
+///
+void *cuda_malloc_async(uint64_t size, void *v_stream) {
+  void *ptr;
+
+  #if (CUDART_VERSION < 11020)
+  checkCudaErrors(cudaMalloc((void **)&ptr, size));
+  #else
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  checkCudaErrors(cudaMallocAsync((void **)&ptr, size, *stream));
+  #endif
+  return ptr;
+}
+
 /// Checks that allocation is valid
 /// 0: valid
 /// -1: invalid, not enough memory in device
@@ -137,6 +150,13 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
   }
   cudaSetDevice(gpu_index);
   checkCudaErrors(cudaFree(ptr));
+  return 0;
+}
+
+/// Drop a cuda array
+int cuda_drop_async(void *ptr, void *v_stream) {
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  checkCudaErrors(cudaFreeAsync(ptr, *stream));
   return 0;
 }
 

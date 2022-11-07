@@ -4,6 +4,7 @@
 #include "cooperative_groups.h"
 
 #include "../include/helper_cuda.h"
+#include "device.h"
 #include "bootstrap.h"
 #include "bootstrap_low_latency.cuh"
 #include "complex/operations.cuh"
@@ -296,17 +297,10 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   dim3 thds(polynomial_size / params::opt, 1, 1);
 
   //////////////////////
-  double2 *d_ggsw_fft_in;
   int ggsw_size = r * polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
 
-#if (CUDART_VERSION < 11020)
-  checkCudaErrors(
-      cudaMalloc((void **)&d_ggsw_fft_in, ggsw_size * sizeof(double)));
-#else
-  checkCudaErrors(cudaMallocAsync((void **)&d_ggsw_fft_in,
-                                  ggsw_size * sizeof(double), *stream));
-#endif
+  double2 *d_ggsw_fft_in = (double2*) cuda_malloc_async(ggsw_size * sizeof(double), v_stream);
 
   batch_fft_ggsw_vector<Torus, STorus, params>(v_stream, d_ggsw_fft_in, ggsw_in,
                                                r, glwe_dimension,
@@ -317,13 +311,7 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   // Allocate global memory in case parameters are too large
   char *d_mem;
   if (max_shared_memory < memory_needed_per_block) {
-#if (CUDART_VERSION < 11020)
-    checkCudaErrors(
-        cudaMalloc((void **)&d_mem, memory_needed_per_block * (1 << (r - 1))));
-#else
-    checkCudaErrors(cudaMallocAsync(
-        (void **)&d_mem, memory_needed_per_block * (1 << (r - 1)), *stream));
-#endif
+    d_mem = (char*) cuda_malloc_async(memory_needed_per_block * (1 << (r - 1)), v_stream);
   } else {
     checkCudaErrors(cudaFuncSetAttribute(
         device_batch_cmux<Torus, STorus, params, FULLSM>,
@@ -335,19 +323,10 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
 
   // Allocate buffers
   int glwe_size = (glwe_dimension + 1) * polynomial_size;
-  Torus *d_buffer1, *d_buffer2;
 
-#if (CUDART_VERSION < 11020)
-  checkCudaErrors(
-      cudaMalloc((void **)&d_buffer1, num_lut * glwe_size * sizeof(Torus)));
-  checkCudaErrors(
-      cudaMalloc((void **)&d_buffer2, num_lut * glwe_size * sizeof(Torus)));
-#else
-  checkCudaErrors(cudaMallocAsync(
-      (void **)&d_buffer1, num_lut * glwe_size * sizeof(Torus), *stream));
-  checkCudaErrors(cudaMallocAsync(
-      (void **)&d_buffer2, num_lut * glwe_size * sizeof(Torus), *stream));
-#endif
+  Torus *d_buffer1 = (Torus*) cuda_malloc_async(num_lut * glwe_size * sizeof(Torus), v_stream);
+  Torus *d_buffer2 = (Torus*) cuda_malloc_async(num_lut * glwe_size * sizeof(Torus), v_stream);
+
   checkCudaErrors(cudaMemcpyAsync(d_buffer1, lut_vector,
                                   num_lut * glwe_size * sizeof(Torus),
                                   cudaMemcpyDeviceToDevice, *stream));
@@ -391,19 +370,11 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   checkCudaErrors(cudaStreamSynchronize(*stream));
 
 // Free memory
-#if (CUDART_VERSION < 11020)
-  checkCudaErrors(cudaFree(d_ggsw_fft_in));
-  checkCudaErrors(cudaFree(d_buffer1));
-  checkCudaErrors(cudaFree(d_buffer2));
+  cuda_drop_async(d_ggsw_fft_in, v_stream);
+  cuda_drop_async(d_buffer1, v_stream);
+  cuda_drop_async(d_buffer2, v_stream);
   if (max_shared_memory < memory_needed_per_block)
-    checkCudaErrors(cudaFree(d_mem));
-#else
-  checkCudaErrors(cudaFreeAsync(d_ggsw_fft_in, *stream));
-  checkCudaErrors(cudaFreeAsync(d_buffer1, *stream));
-  checkCudaErrors(cudaFreeAsync(d_buffer2, *stream));
-  if (max_shared_memory < memory_needed_per_block)
-    checkCudaErrors(cudaFreeAsync(d_mem, *stream));
-#endif
+    cuda_drop_async(d_mem, v_stream);
 }
 
 // only works for big lwe for ks+bs case
