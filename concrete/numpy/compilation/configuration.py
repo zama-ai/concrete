@@ -29,6 +29,7 @@ class Configuration:
     p_error: Optional[float]
     global_p_error: float
     insecure_key_cache_location: Optional[str]
+    auto_adjust_rounders: bool
 
     # pylint: enable=too-many-instance-attributes
 
@@ -73,6 +74,7 @@ class Configuration:
         jit: bool = False,
         p_error: Optional[float] = None,
         global_p_error: float = (1 / 100_000),
+        auto_adjust_rounders: bool = False,
     ):
         self.verbose = verbose
         self.show_graph = show_graph
@@ -91,6 +93,7 @@ class Configuration:
         self.jit = jit
         self.p_error = p_error
         self.global_p_error = global_p_error
+        self.auto_adjust_rounders = auto_adjust_rounders
 
         self._validate()
 

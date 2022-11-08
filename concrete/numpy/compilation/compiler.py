@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
+from ..extensions import AutoRounder
 from ..mlir import GraphConverter
 from ..representation import Graph
 from ..tracing import Tracer
@@ -261,6 +262,9 @@ class Compiler:
                         f"(expected {expected} got {actual})"
                     )
 
+        if self.configuration.auto_adjust_rounders:
+            AutoRounder.adjust(self.function, self.inputset)
+
         if self.graph is None:
             try:
                 first_sample = next(iter(self.inputset))
@@ -431,7 +435,6 @@ class Compiler:
         )
 
         try:
-
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 

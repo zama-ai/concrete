@@ -60,8 +60,12 @@ Additional kwarg to `compile` function have higher precedence. So if you set an 
 
 * **verbose**: bool = False
   * Whether to print computation graph and MLIR during compilation.
+  
 * **dump\_artifacts\_on\_unexpected\_failures**: bool = True
   * Whether to export debugging artifacts automatically on compilation failures.
+
+* **auto_adjust_rounders**: bool = False
+    * Whether to adjust rounders automatically.
 
 * **p_error**: Optional[float] = None
   * Error probability for individual table lookups.  Overwrites **global_p_error** if set.
