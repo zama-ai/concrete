@@ -22,7 +22,7 @@ where
     // path on disk
     path: String,
     // version to invalidate no longer valid cache
-    version: String,
+    version: u64,
     // content: the HashMap is read-only, but it can be a new HashMap
     content: RwLock<Arc<ROC>>, // the HashMap is read once, never modified and shared
     content_changed: AtomicBool, // true if the content changed since loading from disk
@@ -47,7 +47,7 @@ where
 {
     pub fn new(
         path: &str,
-        version: &str,
+        version: u64,
         function: impl 'static + Send + Sync + Fn(ROC::K) -> ROC::V,
     ) -> Self {
         let t0 = Instant::now();
@@ -61,7 +61,6 @@ where
             );
         }
         let path = path.into();
-        let version = version.into();
         let content = RwLock::new(Arc::new(content));
         let content_changed = AtomicBool::new(false);
         Self {
@@ -117,7 +116,7 @@ where
         (lock, content)
     }
 
-    fn read_from_disk(path: &str, version: &str) -> Option<ROC> {
+    fn read_from_disk(path: &str, version: u64) -> Option<ROC> {
         if DISABLE_CACHE {
             return None;
         }
@@ -170,7 +169,7 @@ where
                 return;
             }
         };
-        let maybe_disk_content = Self::read_given_lock(&filelock, &self.path, &self.version);
+        let maybe_disk_content = Self::read_given_lock(&filelock, &self.path, self.version);
         if let Some(disk_content) = maybe_disk_content {
             self.update_with(|content| ROC::merge(content, disk_content));
         }
@@ -184,7 +183,7 @@ where
         self.content_changed.store(false, Ordering::Relaxed);
     }
 
-    fn read_given_lock(filelock: &FileLock, path: &str, version: &str) -> Option<ROC> {
+    fn read_given_lock(filelock: &FileLock, path: &str, version: u64) -> Option<ROC> {
         match filelock.file.metadata() {
             Ok(metadata) => {
                 if metadata.size() == 0 {
@@ -201,11 +200,11 @@ where
         };
         let mut buf = BufReader::new(&filelock.file);
 
-        let disk_version: Result<String, _> = bincode::deserialize_from(buf.borrow_mut());
+        let disk_version: Result<u64, _> = bincode::deserialize_from(buf.borrow_mut());
 
         match disk_version {
             Ok(disk_version) => {
-                if disk_version != *version {
+                if disk_version != version {
                     println!("PersistentCache:: Invalid version {path}: cleaning");
                     Self::clear_file(path);
                     return None;
@@ -298,21 +297,21 @@ mod tests {
         let f = move |_key| value1;
         {
             PCache::clear_file(path);
-            let disk_cache = PCache::new(path, "v0", f);
+            let disk_cache = PCache::new(path, 0, f);
             let mut mem_cache = disk_cache.cache();
             let res = mem_cache.get(key1);
             assert_eq!(res, &value1);
             disk_cache.backport(mem_cache);
         }
         {
-            let cache_later = PCache::new(path, "v0", f);
+            let cache_later = PCache::new(path, 0, f);
             let mut mem_cache = cache_later.cache();
             let res = mem_cache.get(key1);
             assert_eq!(res, &value1);
             assert!(CacheHashMap::own_new_entries(mem_cache).is_empty());
         }
         {
-            let cache_later = PCache::new(path, "v1", f);
+            let cache_later = PCache::new(path, 1, f);
             let mut mem_cache = cache_later.cache();
             let res = mem_cache.get(key1);
             assert_eq!(res, &value1);

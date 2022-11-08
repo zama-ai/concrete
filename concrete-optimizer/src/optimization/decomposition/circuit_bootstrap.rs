@@ -11,6 +11,8 @@ use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::PersistentCacheHashMap;
 use crate::utils::square;
 
+use super::common::VERSION;
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct CbComplexityNoise {
     pub decomp: BrDecompositionParameters,
@@ -111,5 +113,5 @@ pub fn cache(
             glwe_params,
         )
     };
-    PersistentCacheHashMap::new(&path, "v0", function)
+    PersistentCacheHashMap::new(&path, VERSION, function)
 }

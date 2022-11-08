@@ -15,7 +15,7 @@ use crate::utils::cache::persistent::PersistentCacheHashMap;
 use crate::{config, security};
 
 use super::blind_rotate;
-use super::common::MacroParam;
+use super::common::{MacroParam, VERSION};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PpSwitchComplexityNoise {
@@ -117,5 +117,5 @@ pub fn cache(
             &br,
         )
     };
-    PersistentCacheHashMap::new(&path, "v0", function)
+    PersistentCacheHashMap::new(&path, VERSION, function)
 }
