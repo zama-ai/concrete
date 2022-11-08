@@ -31,15 +31,16 @@ void *cuda_malloc(uint64_t size, uint32_t gpu_index) {
   return ptr;
 }
 
-/// Allocates a size-byte array at the device memory. Tries to do it asynchronously.
+/// Allocates a size-byte array at the device memory. Tries to do it
+/// asynchronously.
 void *cuda_malloc_async(uint64_t size, cudaStream_t stream) {
   void *ptr;
 
-  #if (CUDART_VERSION < 11020)
+#if (CUDART_VERSION < 11020)
   checkCudaErrors(cudaMalloc((void **)&ptr, size));
-  #else
+#else
   checkCudaErrors(cudaMallocAsync((void **)&ptr, size, stream));
-  #endif
+#endif
   return ptr;
 }
 
@@ -155,11 +156,11 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
 /// Drop a cuda array. Tries to do it asynchronously
 int cuda_drop_async(void *ptr, cudaStream_t stream) {
 
-  #if (CUDART_VERSION < 11020)
+#if (CUDART_VERSION < 11020)
   checkCudaErrors(cudaFree(ptr));
-  #else
+#else
   checkCudaErrors(cudaFreeAsync(ptr, stream));
-  #endif
+#endif
   return 0;
 }
 

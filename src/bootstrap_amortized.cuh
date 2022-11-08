@@ -10,11 +10,11 @@
 #include "cooperative_groups.h"
 
 #include "../include/helper_cuda.h"
-#include "device.h"
 #include "bootstrap.h"
 #include "complex/operations.cuh"
 #include "crypto/gadget.cuh"
 #include "crypto/torus.cuh"
+#include "device.h"
 #include "fft/bnsmfft.cuh"
 #include "fft/smfft.cuh"
 #include "fft/twiddles.cuh"
@@ -338,7 +338,8 @@ __host__ void host_bootstrap_amortized(
   // from one of three templates (no use, partial use or full use
   // of shared memory)
   if (max_shared_memory < SM_PART) {
-    d_mem = (char*) cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count, *stream);
+    d_mem = (char *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count,
+                                      *stream);
     device_bootstrap_amortized<Torus, params, NOSM><<<grid, thds, 0, *stream>>>(
         lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
         bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
@@ -348,7 +349,8 @@ __host__ void host_bootstrap_amortized(
                          cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART);
     cudaFuncSetCacheConfig(device_bootstrap_amortized<Torus, params, PARTIALSM>,
                            cudaFuncCachePreferShared);
-    d_mem = (char*) cuda_malloc_async(DM_PART * input_lwe_ciphertext_count, *stream);
+    d_mem = (char *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count,
+                                      *stream);
     device_bootstrap_amortized<Torus, params, PARTIALSM>
         <<<grid, thds, SM_PART, *stream>>>(
             lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
@@ -366,7 +368,7 @@ __host__ void host_bootstrap_amortized(
     checkCudaErrors(cudaFuncSetCacheConfig(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncCachePreferShared));
-    d_mem = (char*) cuda_malloc_async(0, *stream);
+    d_mem = (char *)cuda_malloc_async(0, *stream);
 
     device_bootstrap_amortized<Torus, params, FULLSM>
         <<<grid, thds, SM_FULL, *stream>>>(

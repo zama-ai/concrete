@@ -10,11 +10,11 @@
 #include "cooperative_groups.h"
 
 #include "../include/helper_cuda.h"
-#include "device.h"
 #include "bootstrap.h"
 #include "complex/operations.cuh"
 #include "crypto/gadget.cuh"
 #include "crypto/torus.cuh"
+#include "device.h"
 #include "fft/bnsmfft.cuh"
 #include "fft/smfft.cuh"
 #include "fft/twiddles.cuh"
@@ -262,8 +262,10 @@ host_bootstrap_low_latency(void *v_stream, Torus *lwe_array_out,
 
   int buffer_size_per_gpu =
       level_count * num_samples * polynomial_size / 2 * sizeof(double2);
-  double2 *mask_buffer_fft = (double2*) cuda_malloc_async(buffer_size_per_gpu, *stream);
-  double2 *body_buffer_fft = (double2*) cuda_malloc_async(buffer_size_per_gpu, *stream);
+  double2 *mask_buffer_fft =
+      (double2 *)cuda_malloc_async(buffer_size_per_gpu, *stream);
+  double2 *body_buffer_fft =
+      (double2 *)cuda_malloc_async(buffer_size_per_gpu, *stream);
 
   int bytes_needed = sizeof(int16_t) * polynomial_size + // accumulator_decomp
                      sizeof(Torus) * polynomial_size +   // accumulator
