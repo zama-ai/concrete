@@ -6,10 +6,10 @@ use crate::noise_estimator::error::{
 };
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::optimization::atomic_pattern;
-use crate::optimization::atomic_pattern::{Caches, OptimizationDecompositionsConsts};
+use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
 
 use crate::optimization::config::{Config, SearchSpace};
-use crate::optimization::decomposition::PersistDecompCache;
+use crate::optimization::decomposition::{DecompCaches, PersistDecompCaches};
 use crate::parameters::{GlweParameters, LweDimension, PbsParameters};
 use crate::utils::square;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
@@ -102,7 +102,7 @@ fn update_state_with_best_decompositions(
     internal_dim: u64,
     n_functions: u64,
     partitionning: &[u64],
-    caches: &mut Caches,
+    caches: &mut DecompCaches,
 ) {
     let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
     let precisions_sum = partitionning.iter().copied().sum();
@@ -326,7 +326,7 @@ fn optimize_raw(
     search_space: &SearchSpace,
     n_functions: u64, // Many functions at the same time, stay at 1 for start
     partitionning: &[u64],
-    cache: &PersistDecompCache,
+    persistent_caches: &PersistDecompCaches,
 ) -> OptimizationState {
     assert!(0.0 < config.maximum_acceptable_error_probability);
     assert!(config.maximum_acceptable_error_probability < 1.0);
@@ -354,7 +354,7 @@ fn optimize_raw(
         safe_variance: safe_variance_bound,
     };
 
-    let mut caches = Caches::new(cache);
+    let mut caches = persistent_caches.caches();
 
     for &glwe_dim in &search_space.glwe_dimensions {
         for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
@@ -382,7 +382,7 @@ fn optimize_raw(
             }
         }
     }
-    caches.backport_to(cache);
+    persistent_caches.backport(caches);
 
     state
 }
@@ -392,7 +392,7 @@ pub fn optimize_one(
     config: Config,
     log_norm: f64,
     search_space: &SearchSpace,
-    cache: &PersistDecompCache,
+    caches: &PersistDecompCaches,
 ) -> OptimizationState {
     let coprimes = crt_decomposition::default_coprimes(precision as Precision);
     let partitionning = crt_decomposition::precisions_from_coprimes(&coprimes);
@@ -403,7 +403,7 @@ pub fn optimize_one(
         search_space,
         n_functions,
         &partitionning,
-        cache,
+        caches,
     );
     state.best_solution = state.best_solution.map(|mut sol| -> Solution {
         sol.crt_decomposition = coprimes;
@@ -418,7 +418,7 @@ pub fn optimize_one_compat(
     config: Config,
     noise_factor: f64,
     search_space: &SearchSpace,
-    cache: &PersistDecompCache,
+    cache: &PersistDecompCaches,
 ) -> atomic_pattern::OptimizationState {
     let log_norm = noise_factor.log2();
     let result = optimize_one(precision, config, log_norm, search_space, cache);

@@ -4,10 +4,10 @@ use crate::dag::unparametrized;
 use crate::noise_estimator::error;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::optimization::atomic_pattern::{
-    Caches, OptimizationDecompositionsConsts, OptimizationState, Solution,
+    OptimizationDecompositionsConsts, OptimizationState, Solution,
 };
 use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
-use crate::optimization::decomposition::PersistDecompCache;
+use crate::optimization::decomposition::{DecompCaches, PersistDecompCaches};
 use crate::parameters::GlweParameters;
 use crate::security;
 
@@ -22,7 +22,7 @@ fn update_best_solution_with_best_decompositions(
     glwe_params: GlweParameters,
     input_noise_out: f64,
     noise_modulus_switching: f64,
-    caches: &mut Caches,
+    caches: &mut DecompCaches,
 ) {
     assert!(dag.nb_luts > 0);
     let glwe_poly_size = glwe_params.polynomial_size();
@@ -231,7 +231,7 @@ pub fn optimize(
     dag: &unparametrized::OperationDag,
     config: Config,
     search_space: &SearchSpace,
-    cache: &PersistDecompCache,
+    persistent_caches: &PersistDecompCaches,
 ) -> OptimizationState {
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
     let security_level = config.security_level;
@@ -267,7 +267,7 @@ pub fn optimize(
     if dag.nb_luts == 0 {
         return optimize_no_luts(state, &consts, &dag, search_space);
     }
-    let mut caches = Caches::new(cache);
+    let mut caches = persistent_caches.caches();
 
     let noise_modulus_switching = |glwe_poly_size, internal_lwe_dimensions| {
         noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key(
@@ -313,7 +313,7 @@ pub fn optimize(
         }
     }
 
-    caches.backport_to(cache);
+    persistent_caches.backport(caches);
 
     if let Some(sol) = state.best_solution {
         assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);
@@ -331,7 +331,7 @@ pub fn optimize_v0(
     config: Config,
     noise_factor: f64,
     search_space: &SearchSpace,
-    cache: &PersistDecompCache,
+    cache: &PersistDecompCaches,
 ) -> OptimizationState {
     use crate::dag::operator::{FunctionTable, Shape};
     let same_scale_manp = 0.0;
@@ -390,7 +390,7 @@ mod tests {
 
     const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 
-    static SHARED_CACHES: Lazy<PersistDecompCache> = Lazy::new(|| {
+    static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
         let processing_unit = config::ProcessingUnit::Cpu;
         decomposition::cache(128, processing_unit, None)
     });

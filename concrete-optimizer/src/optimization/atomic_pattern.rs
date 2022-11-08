@@ -5,9 +5,8 @@ use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositi
 use crate::utils::square;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 
-use super::decomposition;
 use super::decomposition::{
-    blind_rotate, circuit_bootstrap, keyswitch, pp_switch, PersistDecompCache,
+    blind_rotate, circuit_bootstrap, keyswitch, pp_switch, DecompCaches, PersistDecompCaches,
 };
 
 // Ref time for v0 table 1 thread: 950ms
@@ -49,30 +48,13 @@ pub struct Caches {
     pub cb_pbs: circuit_bootstrap::Cache,
 }
 
-impl Caches {
-    pub fn new(cache: &decomposition::PersistDecompCache) -> Self {
-        Self {
-            blind_rotate: cache.br.cache(),
-            keyswitch: cache.ks.cache(),
-            pp_switch: cache.pp.cache(),
-            cb_pbs: cache.cb.cache(),
-        }
-    }
-    pub fn backport_to(self, cache: &decomposition::PersistDecompCache) {
-        cache.ks.backport(self.keyswitch);
-        cache.br.backport(self.blind_rotate);
-        cache.pp.backport(self.pp_switch);
-        cache.cb.backport(self.cb_pbs);
-    }
-}
-
 #[allow(clippy::too_many_lines)]
 fn update_state_with_best_decompositions(
     state: &mut OptimizationState,
     consts: &OptimizationDecompositionsConsts,
     internal_dim: u64,
     glwe_params: GlweParameters,
-    caches: &mut Caches,
+    caches: &mut DecompCaches,
 ) {
     let glwe_poly_size = glwe_params.polynomial_size();
     let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
@@ -171,7 +153,7 @@ pub fn optimize_one(
     config: Config,
     noise_factor: f64,
     search_space: &SearchSpace,
-    cache: &PersistDecompCache,
+    persistent_caches: &PersistDecompCaches,
 ) -> OptimizationState {
     assert!(0 < precision && precision <= 16);
     assert!(1.0 <= noise_factor);
@@ -217,7 +199,7 @@ pub fn optimize_one(
             > consts.safe_variance
     };
 
-    let mut caches = Caches::new(cache);
+    let mut caches = persistent_caches.caches();
 
     for &glwe_dim in &search_space.glwe_dimensions {
         for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
@@ -246,7 +228,7 @@ pub fn optimize_one(
         }
     }
 
-    caches.backport_to(cache);
+    persistent_caches.backport(caches);
 
     if let Some(sol) = state.best_solution {
         assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);
