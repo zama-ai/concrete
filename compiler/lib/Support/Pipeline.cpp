@@ -293,15 +293,13 @@ lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            enablePass);
   addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
                            enablePass);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertBConcreteToCAPIPass(), enablePass);
   return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       std::function<bool(mlir::Pass *)> enablePass,
-                      bool parallelizeLoops) {
+                      bool parallelizeLoops, bool gpu) {
   mlir::PassManager pm(&context);
   pipelinePrinting("StdToLLVM", pm, context);
 
@@ -344,6 +342,10 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFixupBufferDeallocationPass(), enablePass);
+
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createConvertBConcreteToCAPIPass(gpu),
+      enablePass);
 
   // Convert to MLIR LLVM Dialect
   addPotentiallyNestedPass(

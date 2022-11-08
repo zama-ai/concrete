@@ -273,16 +273,16 @@ struct BConcreteCRTBinaryOpPattern
 //     scf.yield %res : tensor<nbBlocksxlweSizexi64>
 // }
 // ```
-struct AddPlaintextCRTLweBufferOpPattern
-    : public mlir::OpRewritePattern<BConcrete::AddPlaintextCRTLweBufferOp> {
-  AddPlaintextCRTLweBufferOpPattern(mlir::MLIRContext *context,
+struct AddPlaintextCRTLweTensorOpPattern
+    : public mlir::OpRewritePattern<BConcrete::AddPlaintextCRTLweTensorOp> {
+  AddPlaintextCRTLweTensorOpPattern(mlir::MLIRContext *context,
                                     mlir::PatternBenefit benefit = 1)
-      : mlir::OpRewritePattern<BConcrete::AddPlaintextCRTLweBufferOp>(context,
+      : mlir::OpRewritePattern<BConcrete::AddPlaintextCRTLweTensorOp>(context,
                                                                       benefit) {
   }
 
   mlir::LogicalResult
-  matchAndRewrite(BConcrete::AddPlaintextCRTLweBufferOp op,
+  matchAndRewrite(BConcrete::AddPlaintextCRTLweTensorOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto resultTy =
         ((mlir::Type)op.getResult().getType()).cast<mlir::RankedTensorType>();
@@ -381,7 +381,7 @@ struct AddPlaintextCRTLweBufferOpPattern
           auto blockArg1 = builder.create<tensor::ExtractOp>(loc, x_decomp, i);
           // %tmp = "BConcreteOp"(%blockArg0, %blockArg1)
           //      : (tensor<lweSizexi64>, i64) -> (tensor<lweSizexi64>)
-          auto tmp = builder.create<BConcrete::AddPlaintextLweBufferOp>(
+          auto tmp = builder.create<BConcrete::AddPlaintextLweTensorOp>(
               loc, blockTy, blockArg0, blockArg1);
 
           // %res = tensor.insert_slice %tmp into %acc[%i, 0] [1, lweSize] [1,
@@ -436,16 +436,16 @@ struct AddPlaintextCRTLweBufferOpPattern
 //     scf.yield %res : tensor<nbBlocksxlweSizexi64>
 // }
 // ```
-struct MulCleartextCRTLweBufferOpPattern
-    : public mlir::OpRewritePattern<BConcrete::MulCleartextCRTLweBufferOp> {
-  MulCleartextCRTLweBufferOpPattern(mlir::MLIRContext *context,
+struct MulCleartextCRTLweTensorOpPattern
+    : public mlir::OpRewritePattern<BConcrete::MulCleartextCRTLweTensorOp> {
+  MulCleartextCRTLweTensorOpPattern(mlir::MLIRContext *context,
                                     mlir::PatternBenefit benefit = 1)
-      : mlir::OpRewritePattern<BConcrete::MulCleartextCRTLweBufferOp>(context,
+      : mlir::OpRewritePattern<BConcrete::MulCleartextCRTLweTensorOp>(context,
                                                                       benefit) {
   }
 
   mlir::LogicalResult
-  matchAndRewrite(BConcrete::MulCleartextCRTLweBufferOp op,
+  matchAndRewrite(BConcrete::MulCleartextCRTLweTensorOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto resultTy =
         ((mlir::Type)op.getResult().getType()).cast<mlir::RankedTensorType>();
@@ -494,7 +494,7 @@ struct MulCleartextCRTLweBufferOpPattern
 
           // %tmp = BConcrete.mul_cleartext_lwe_buffer(%blockArg0, %x)
           //      : (tensor<lweSizexi64>, i64) -> (tensor<lweSizexi64>)
-          auto tmp = builder.create<BConcrete::MulCleartextLweBufferOp>(
+          auto tmp = builder.create<BConcrete::MulCleartextLweTensorOp>(
               loc, blockTy, blockArg0, rhs);
 
           // %res = tensor.insert_slice %tmp into %acc[%i, 0] [1, lweSize] [1,
@@ -520,22 +520,22 @@ void EliminateCRTOpsPass::runOnOperation() {
   mlir::RewritePatternSet patterns(&getContext());
 
   // add_crt_lwe_buffers
-  target.addIllegalOp<BConcrete::AddCRTLweBuffersOp>();
-  patterns.add<BConcreteCRTBinaryOpPattern<BConcrete::AddCRTLweBuffersOp,
-                                           BConcrete::AddLweBuffersOp>>(
+  target.addIllegalOp<BConcrete::AddCRTLweTensorOp>();
+  patterns.add<BConcreteCRTBinaryOpPattern<BConcrete::AddCRTLweTensorOp,
+                                           BConcrete::AddLweTensorOp>>(
       &getContext());
 
   // add_plaintext_crt_lwe_buffers
-  target.addIllegalOp<BConcrete::AddPlaintextCRTLweBufferOp>();
-  patterns.add<AddPlaintextCRTLweBufferOpPattern>(&getContext());
+  target.addIllegalOp<BConcrete::AddPlaintextCRTLweTensorOp>();
+  patterns.add<AddPlaintextCRTLweTensorOpPattern>(&getContext());
 
   // mul_cleartext_crt_lwe_buffer
-  target.addIllegalOp<BConcrete::MulCleartextCRTLweBufferOp>();
-  patterns.add<MulCleartextCRTLweBufferOpPattern>(&getContext());
+  target.addIllegalOp<BConcrete::MulCleartextCRTLweTensorOp>();
+  patterns.add<MulCleartextCRTLweTensorOpPattern>(&getContext());
 
-  target.addIllegalOp<BConcrete::NegateCRTLweBufferOp>();
-  patterns.add<BConcreteCRTUnaryOpPattern<BConcrete::NegateCRTLweBufferOp,
-                                          BConcrete::NegateLweBufferOp>>(
+  target.addIllegalOp<BConcrete::NegateCRTLweTensorOp>();
+  patterns.add<BConcreteCRTUnaryOpPattern<BConcrete::NegateCRTLweTensorOp,
+                                          BConcrete::NegateLweTensorOp>>(
       &getContext());
 
   // This dialect are used to transforms crt ops to bconcrete ops

@@ -11,7 +11,8 @@
 namespace mlir {
 namespace concretelang {
 /// Create a pass to convert `BConcrete` dialect to CAPI calls.
-std::unique_ptr<OperationPass<ModuleOp>> createConvertBConcreteToCAPIPass();
+std::unique_ptr<OperationPass<ModuleOp>>
+createConvertBConcreteToCAPIPass(bool gpu);
 } // namespace concretelang
 } // namespace mlir
 

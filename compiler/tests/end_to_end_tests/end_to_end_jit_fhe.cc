@@ -266,7 +266,8 @@ INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
     JitTest, {defaultOptions()}, mlir::concretelang::JITSupport())
 
 std::vector<mlir::concretelang::CompilationOptions> allOptions{
-    defaultOptions(),  loopOptions(), asyncOptions(),
+    defaultOptions(),
+    loopOptions(),
 #ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
     dataflowOptions(),
 #endif

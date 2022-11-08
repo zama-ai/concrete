@@ -22,12 +22,12 @@ void AsyncOffloadPass::runOnOperation() {
   auto module = getOperation();
   std::vector<mlir::Operation *> ops;
 
-  module.walk([&](mlir::concretelang::BConcrete::KeySwitchLweBufferOp op) {
+  module.walk([&](mlir::concretelang::BConcrete::KeySwitchLweTensorOp op) {
     mlir::OpBuilder builder(op);
     mlir::Type futType =
         mlir::concretelang::RT::FutureType::get(op.getResult().getType());
     mlir::Value future = builder.create<
-        mlir::concretelang::BConcrete::KeySwitchLweBufferAsyncOffloadOp>(
+        mlir::concretelang::BConcrete::KeySwitchLweTensorAsyncOffloadOp>(
         op.getLoc(), mlir::TypeRange{futType}, op.getOperand(), op->getAttrs());
 
     assert(op.getResult().hasOneUse() &&
@@ -43,12 +43,12 @@ void AsyncOffloadPass::runOnOperation() {
     }
     ops.push_back(op);
   });
-  module.walk([&](mlir::concretelang::BConcrete::BootstrapLweBufferOp op) {
+  module.walk([&](mlir::concretelang::BConcrete::BootstrapLweTensorOp op) {
     mlir::OpBuilder builder(op);
     mlir::Type futType =
         mlir::concretelang::RT::FutureType::get(op.getResult().getType());
     mlir::Value future = builder.create<
-        mlir::concretelang::BConcrete::BootstrapLweBufferAsyncOffloadOp>(
+        mlir::concretelang::BConcrete::BootstrapLweTensorAsyncOffloadOp>(
         op.getLoc(), mlir::TypeRange{futType}, op.getOperands(),
         op->getAttrs());
 

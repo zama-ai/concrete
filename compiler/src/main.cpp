@@ -300,6 +300,7 @@ cmdlineCompilationOptions() {
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.batchConcreteOps = cmdline::batchConcreteOps;
+  options.asyncOffload = cmdline::asyncOffload;
   options.optimizeConcrete = cmdline::optimizeConcrete;
   options.emitGPUOps = cmdline::emitGPUOps;
 

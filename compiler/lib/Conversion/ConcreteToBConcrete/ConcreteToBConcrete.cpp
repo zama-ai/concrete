@@ -216,7 +216,7 @@ struct LowerKeySwitch : public mlir::OpRewritePattern<
         rewriter.getI32IntegerAttr(inputType.getDimension());
 
     mlir::Operation *bKeySwitchOp = rewriter.replaceOpWithNewOp<
-        mlir::concretelang::BConcrete::KeySwitchLweBufferOp>(
+        mlir::concretelang::BConcrete::KeySwitchLweTensorOp>(
         ksOp, outType, ksOp.ciphertext(), ksOp.levelAttr(), ksOp.baseLogAttr(),
         inputDimAttr, outDimAttr);
 
@@ -261,7 +261,7 @@ struct LowerBatchedKeySwitch
         rewriter.getI32IntegerAttr(inputType.getDimension());
 
     mlir::Operation *bBatchedKeySwitchOp = rewriter.replaceOpWithNewOp<
-        mlir::concretelang::BConcrete::BatchedKeySwitchLweBufferOp>(
+        mlir::concretelang::BConcrete::BatchedKeySwitchLweTensorOp>(
         bksOp, bksOp.getType(), bksOp.ciphertexts(), bksOp.levelAttr(),
         bksOp.baseLogAttr(), inputDimAttr, outDimAttr);
 
@@ -293,7 +293,7 @@ struct LowerBootstrap : public mlir::OpRewritePattern<
     auto inputDimAttr = rewriter.getI32IntegerAttr(inputType.getDimension());
     auto outputPrecisionAttr = rewriter.getI32IntegerAttr(outType.getP());
     mlir::Operation *bBootstrapOp = rewriter.replaceOpWithNewOp<
-        mlir::concretelang::BConcrete::BootstrapLweBufferOp>(
+        mlir::concretelang::BConcrete::BootstrapLweTensorOp>(
         bsOp, outType, bsOp.input_ciphertext(), bsOp.lookup_table(),
         inputDimAttr, bsOp.polySizeAttr(), bsOp.levelAttr(), bsOp.baseLogAttr(),
         bsOp.glweDimensionAttr(), outputPrecisionAttr);
@@ -338,7 +338,7 @@ struct LowerBatchedBootstrap
     auto outputPrecisionAttr = rewriter.getI32IntegerAttr(outType.getP());
 
     mlir::Operation *bBatchedBootstrapOp = rewriter.replaceOpWithNewOp<
-        mlir::concretelang::BConcrete::BatchedBootstrapLweBufferOp>(
+        mlir::concretelang::BConcrete::BatchedBootstrapLweTensorOp>(
         bbsOp, bbsOp.getType(), bbsOp.input_ciphertexts(), bbsOp.lookup_table(),
         inputDimAttr, bbsOp.polySizeAttr(), bbsOp.levelAttr(),
         bbsOp.baseLogAttr(), bbsOp.glweDimensionAttr(), outputPrecisionAttr);
@@ -385,7 +385,7 @@ struct AddPlaintextLweCiphertextOpPattern
       auto encoded = rewriter.create<mlir::arith::ShLIOp>(
           loc, rewriter.getI64Type(), castedInt, constantShiftOp);
       bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::AddPlaintextLweBufferOp>(
+          rewriter.replaceOpWithNewOp<BConcrete::AddPlaintextLweTensorOp>(
               concreteOp, newResultTy,
               mlir::ValueRange{concreteOp.lhs(), encoded}, attributes);
     } else {
@@ -394,7 +394,7 @@ struct AddPlaintextLweCiphertextOpPattern
       newAttributes.push_back(rewriter.getNamedAttr(
           "crtDecomposition", rewriter.getI64ArrayAttr(crt)));
       bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::AddPlaintextCRTLweBufferOp>(
+          rewriter.replaceOpWithNewOp<BConcrete::AddPlaintextCRTLweTensorOp>(
               concreteOp, newResultTy, concreteOp.getOperation()->getOperands(),
               newAttributes);
     }
@@ -436,7 +436,7 @@ struct MulCleartextLweCiphertextOpPattern
       mlir::Value castedInt = rewriter.create<mlir::arith::ExtUIOp>(
           loc, rewriter.getIntegerType(64), concreteOp.rhs());
       bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::MulCleartextLweBufferOp>(
+          rewriter.replaceOpWithNewOp<BConcrete::MulCleartextLweTensorOp>(
               concreteOp, newResultTy,
               mlir::ValueRange{concreteOp.lhs(), castedInt}, attributes);
     } else {
@@ -444,7 +444,7 @@ struct MulCleartextLweCiphertextOpPattern
       newAttributes.push_back(rewriter.getNamedAttr(
           "crtDecomposition", rewriter.getI64ArrayAttr(crt)));
       bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::MulCleartextCRTLweBufferOp>(
+          rewriter.replaceOpWithNewOp<BConcrete::MulCleartextCRTLweTensorOp>(
               concreteOp, newResultTy, concreteOp.getOperation()->getOperands(),
               newAttributes);
     }
@@ -1022,14 +1022,14 @@ void ConcreteToBConcretePass::runOnOperation() {
         LowerBootstrap, LowerBatchedBootstrap, LowerKeySwitch,
         LowerBatchedKeySwitch,
         LowToBConcrete<mlir::concretelang::Concrete::AddLweCiphertextsOp,
-                       mlir::concretelang::BConcrete::AddLweBuffersOp,
-                       BConcrete::AddCRTLweBuffersOp>,
+                       mlir::concretelang::BConcrete::AddLweTensorOp,
+                       BConcrete::AddCRTLweTensorOp>,
         AddPlaintextLweCiphertextOpPattern, MulCleartextLweCiphertextOpPattern,
         LowToBConcrete<mlir::concretelang::Concrete::NegateLweCiphertextOp,
-                       mlir::concretelang::BConcrete::NegateLweBufferOp,
-                       BConcrete::NegateCRTLweBufferOp>,
-        LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweBufferOp,
-                       BConcrete::WopPBSCRTLweBufferOp>>(&getContext());
+                       mlir::concretelang::BConcrete::NegateLweTensorOp,
+                       BConcrete::NegateCRTLweTensorOp>,
+        LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweTensorOp,
+                       BConcrete::WopPBSCRTLweTensorOp>>(&getContext());
 
     // Add patterns to rewrite tensor operators that works on encrypted
     // tensors
