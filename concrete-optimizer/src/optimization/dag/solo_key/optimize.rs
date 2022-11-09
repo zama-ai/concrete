@@ -1,17 +1,15 @@
+use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+
 use super::analyze;
 use crate::dag::operator::{LevelledComplexity, Precision};
 use crate::dag::unparametrized;
 use crate::noise_estimator::error;
-use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::optimization::atomic_pattern::{
     OptimizationDecompositionsConsts, OptimizationState, Solution,
 };
 use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
 use crate::optimization::decomposition::{DecompCaches, PersistDecompCaches};
 use crate::parameters::GlweParameters;
-use crate::security;
-
-use concrete_commons::dispersion::DispersionParameter;
 
 #[allow(clippy::too_many_lines)]
 fn update_best_solution_with_best_decompositions(
@@ -195,12 +193,7 @@ fn update_no_luts_solution(
 }
 
 fn minimal_variance(config: &Config, glwe_params: GlweParameters) -> f64 {
-    security::glwe::minimal_variance(
-        glwe_params,
-        config.ciphertext_modulus_log,
-        config.security_level,
-    )
-    .get_variance()
+    glwe_params.minimal_variance(config.ciphertext_modulus_log, config.security_level)
 }
 
 fn optimize_no_luts(
@@ -269,13 +262,12 @@ pub fn optimize(
     }
     let mut caches = persistent_caches.caches();
 
-    let noise_modulus_switching = |glwe_poly_size, internal_lwe_dimensions| {
-        noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key(
+    let noise_modulus_switching = |glwe_log2_poly_size, internal_lwe_dimensions| {
+        estimate_modulus_switching_noise_with_binary_key(
             internal_lwe_dimensions,
-            glwe_poly_size,
+            glwe_log2_poly_size,
             ciphertext_modulus_log,
         )
-        .get_variance()
     };
 
     let not_feasible = |input_noise_out, noise_modulus_switching| {
@@ -290,8 +282,8 @@ pub fn optimize(
             };
             let input_noise_out = minimal_variance(&config, glwe_params);
             for &internal_dim in &search_space.internal_lwe_dimensions {
-                let glwe_poly_size = 1 << glwe_log_poly_size;
-                let noise_modulus_switching = noise_modulus_switching(glwe_poly_size, internal_dim);
+                let noise_modulus_switching =
+                    noise_modulus_switching(glwe_log_poly_size, internal_dim);
                 if not_feasible(input_noise_out, noise_modulus_switching) {
                     // noise_modulus_switching is increasing with internal_dim
                     break;

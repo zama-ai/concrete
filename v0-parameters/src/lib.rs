@@ -240,9 +240,8 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
 
 #[cfg(test)]
 mod tests {
-    use concrete_optimizer::security::security_weights::supported_security_levels;
-
     use super::*;
+    use concrete_optimizer::supported_security_levels;
 
     #[test]
     fn test_reference_output() {

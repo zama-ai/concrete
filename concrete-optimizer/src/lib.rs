@@ -24,6 +24,7 @@ pub mod global_parameters;
 pub mod noise_estimator;
 pub mod optimization;
 pub mod parameters;
-pub mod security;
 pub mod utils;
 pub mod weight;
+
+pub use concrete_cpu_noise_model::gaussian_noise::security::supported_security_levels;

@@ -1,15 +1,11 @@
-use std::sync::Arc;
-
-use serde::{Deserialize, Serialize};
-
-use concrete_commons::dispersion::DispersionParameter;
-
 use crate::computing_cost::complexity_model::ComplexityModel;
-use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
+use crate::config;
 use crate::parameters::{BrDecompositionParameters, GlweParameters, LweDimension, PbsParameters};
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
-use crate::{config, security};
+use concrete_cpu_noise_model::gaussian_noise::noise::blind_rotate::variance_blind_rotate;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use super::common::{MacroParam, VERSION};
 
@@ -30,16 +26,8 @@ pub fn pareto_quantities(
     max_log2_base: u64,
 ) -> Vec<BrComplexityNoise> {
     assert!(ciphertext_modulus_log == 64);
-    let pbs_param = |level, log2_base| {
-        let br_decomposition_parameter = BrDecompositionParameters { level, log2_base };
-        PbsParameters {
-            internal_lwe_dimension: LweDimension(internal_dim),
-            br_decomposition_parameter,
-            output_glwe_params: glwe_params,
-        }
-    };
-    let variance_bsk =
-        security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
+
+    let variance_bsk = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
 
     let mut quantities = Vec::with_capacity(max_log2_base as usize);
     let mut increasing_complexity = 0.0;
@@ -58,12 +46,15 @@ pub fn pareto_quantities(
         let range = (1..=prev_best_log2_base).rev();
 
         for log2_base in range {
-            let base_noise = noise_atomic_pattern::variance_bootstrap(
-                pbs_param(level, log2_base),
+            let base_noise = variance_blind_rotate(
+                internal_dim,
+                glwe_params.glwe_dimension,
+                glwe_params.polynomial_size(),
+                log2_base,
+                level,
                 ciphertext_modulus_log,
                 variance_bsk,
-            )
-            .get_variance();
+            );
             if base_noise > level_decreasing_base_noise {
                 break;
             }
@@ -81,7 +72,17 @@ pub fn pareto_quantities(
             }
             continue;
         }
-        let params = pbs_param(level, best_log2_base);
+
+        let br_decomposition_parameter = BrDecompositionParameters {
+            level,
+            log2_base: best_log2_base,
+        };
+        let params = PbsParameters {
+            internal_lwe_dimension: LweDimension(internal_dim),
+            br_decomposition_parameter,
+            output_glwe_params: glwe_params,
+        };
+
         let complexity_pbs = complexity_model.pbs_complexity(params, ciphertext_modulus_log);
 
         quantities.push(BrComplexityNoise {

@@ -1,19 +1,15 @@
-use std::sync::Arc;
-
-use serde::{Deserialize, Serialize};
-
-use concrete_commons::dispersion::DispersionParameter;
-
+use super::common::{MacroParam, VERSION};
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
-use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::parameters::{
     GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension,
 };
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
-
-use super::common::{MacroParam, VERSION};
+use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch::variance_keyswitch;
+use concrete_cpu_noise_model::gaussian_noise::security::minimal_variance_lwe;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct KsComplexityNoise {
@@ -41,8 +37,7 @@ pub fn pareto_quantities(
             ks_decomposition_parameter,
         }
     };
-    let variance_ksk =
-        noise_atomic_pattern::variance_ksk(internal_dim, ciphertext_modulus_log, security_level);
+    let variance_ksk = minimal_variance_lwe(internal_dim, ciphertext_modulus_log, security_level);
 
     let mut quantities = Vec::with_capacity(64);
     let mut increasing_complexity = 0.0;
@@ -61,12 +56,13 @@ pub fn pareto_quantities(
         let range = (1..=prev_best_log2_base).rev();
 
         for log2_base in range {
-            let noise_keyswitch = noise_atomic_pattern::variance_keyswitch(
-                ks_param(level, log2_base),
+            let noise_keyswitch = variance_keyswitch(
+                input_lwe_dimension,
+                log2_base,
+                level,
                 ciphertext_modulus_log,
                 variance_ksk,
-            )
-            .get_variance();
+            );
             if noise_keyswitch > level_decreasing_base_noise {
                 break;
             }

@@ -1,9 +1,10 @@
+use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+
 use super::config::{Config, SearchSpace};
+use super::wop_atomic_pattern::optimize::find_p_error;
 use crate::noise_estimator::error;
-use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositionParameters};
 use crate::utils::square;
-use concrete_commons::dispersion::{DispersionParameter, Variance};
 
 use super::decomposition::{
     blind_rotate, circuit_bootstrap, keyswitch, pp_switch, DecompCaches, PersistDecompCaches,
@@ -58,13 +59,11 @@ fn update_state_with_best_decompositions(
 ) {
     let glwe_poly_size = glwe_params.polynomial_size();
     let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
-    let noise_modulus_switching =
-        noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key(
-            internal_dim,
-            glwe_poly_size,
-            consts.config.ciphertext_modulus_log,
-        )
-        .get_variance();
+    let noise_modulus_switching = estimate_modulus_switching_noise_with_binary_key(
+        internal_dim,
+        glwe_params.log2_polynomial_size,
+        consts.config.ciphertext_modulus_log,
+    );
     let safe_variance = consts.safe_variance;
     if CUTS && noise_modulus_switching > safe_variance {
         return;
@@ -111,9 +110,7 @@ fn update_state_with_best_decompositions(
             }
             // feasible and at least as good complexity
             if complexity < best_complexity || noise_max < best_variance {
-                let sigma = Variance(safe_variance).get_standard_dev() * consts.kappa;
-                let sigma_scale = sigma / Variance(noise_max).get_standard_dev();
-                let p_error = error::error_probability_of_sigma_scale(sigma_scale);
+                let p_error = find_p_error(consts.kappa, safe_variance, noise_max);
 
                 let BrDecompositionParameters {
                     level: br_l,
@@ -188,15 +185,13 @@ pub fn optimize_one(
     // cut only on glwe_poly_size based of modulus switching noise
     // assume this noise is increasing with lwe_intern_dim
     let min_internal_lwe_dimensions = search_space.internal_lwe_dimensions[0];
-    let lower_bound_cut = |glwe_poly_size| {
+    let lower_bound_cut = |glwe_log_poly_size| {
         // TODO: cut if min complexity is higher than current best
-        CUTS && noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key(
+        CUTS && estimate_modulus_switching_noise_with_binary_key(
             min_internal_lwe_dimensions,
-            glwe_poly_size,
+            glwe_log_poly_size,
             ciphertext_modulus_log,
-        )
-        .get_variance()
-            > consts.safe_variance
+        ) > consts.safe_variance
     };
 
     let mut caches = persistent_caches.caches();
@@ -205,8 +200,7 @@ pub fn optimize_one(
         for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
             assert!(8 <= glwe_log_poly_size);
             assert!(glwe_log_poly_size < 18);
-            let glwe_poly_size = 1 << glwe_log_poly_size;
-            if lower_bound_cut(glwe_poly_size) {
+            if lower_bound_cut(glwe_log_poly_size) {
                 continue;
             }
 

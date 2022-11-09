@@ -1,21 +1,16 @@
-use std::sync::Arc;
-
-use concrete_commons::dispersion::{DispersionParameter, Variance};
-use serde::{Deserialize, Serialize};
-
+use super::blind_rotate;
+use super::common::{MacroParam, VERSION};
 use crate::computing_cost::complexity_model::ComplexityModel;
-
-use crate::noise_estimator::operators::wop_atomic_pattern::estimate_packing_private_keyswitch;
+use crate::config;
 use crate::parameters::{
-    BrDecompositionParameters, CmuxParameters, GlweParameters, KeyswitchParameters,
-    KsDecompositionParameters, LweDimension,
+    BrDecompositionParameters, GlweParameters, KeyswitchParameters, KsDecompositionParameters,
+    LweDimension,
 };
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
-use crate::{config, security};
-
-use super::blind_rotate;
-use super::common::{MacroParam, VERSION};
+use concrete_cpu_noise_model::gaussian_noise::noise::private_packing_keyswitch::estimate_packing_private_keyswitch;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PpSwitchComplexityNoise {
@@ -46,24 +41,22 @@ pub fn pareto_quantities(
     glwe_params: GlweParameters,
     br_quantities: &[blind_rotate::BrComplexityNoise],
 ) -> Vec<PpSwitchComplexityNoise> {
-    let variance_bsk =
-        security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
+    let variance_bsk = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
     let mut result = Vec::with_capacity(br_quantities.len());
     for br in br_quantities {
         let pp_ks_decomposition_parameter = br.decomp;
-        let ppks_parameter = CmuxParameters {
-            br_decomposition_parameter: pp_ks_decomposition_parameter,
-            output_glwe_params: glwe_params,
-        };
+
         // We assume the packing KS and the external product in a PBSto have
         // the same parameters (base, level)
-        let variance_private_packing_ks = estimate_packing_private_keyswitch::<u64>(
-            Variance(0.),
+        let variance_private_packing_ks = estimate_packing_private_keyswitch(
+            0.,
             variance_bsk,
-            ppks_parameter,
+            pp_ks_decomposition_parameter.log2_base,
+            pp_ks_decomposition_parameter.level,
+            glwe_params.glwe_dimension,
+            glwe_params.polynomial_size(),
             ciphertext_modulus_log,
-        )
-        .get_variance();
+        );
 
         let sample_extract_lwe_dimension = LweDimension(glwe_params.sample_extract_lwe_dimension());
         let ppks_parameter_complexity = KeyswitchParameters {

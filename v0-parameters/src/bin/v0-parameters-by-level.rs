@@ -4,7 +4,7 @@
 
 use chrono::{Datelike, Utc};
 use clap::Parser;
-use concrete_optimizer::security::security_weights::supported_security_levels;
+use concrete_optimizer::supported_security_levels;
 use std::fs::File;
 use v0_parameters::{compute_print_results, Args};
 

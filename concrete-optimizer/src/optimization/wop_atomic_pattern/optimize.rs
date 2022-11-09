@@ -1,10 +1,12 @@
+use concrete_cpu_noise_model::gaussian_noise::conversion::variance_to_std_dev;
+use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+
 use super::crt_decomposition;
 use crate::dag::operator::Precision;
 use crate::noise_estimator::error::{
     error_probability_of_sigma_scale, safe_variance_bound_product_1padbit,
     sigma_scale_of_error_probability,
 };
-use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::optimization::atomic_pattern;
 use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
 
@@ -12,11 +14,11 @@ use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::decomposition::circuit_bootstrap::CbComplexityNoise;
 use crate::optimization::decomposition::{DecompCaches, PersistDecompCaches};
 use crate::parameters::{BrDecompositionParameters, GlweParameters};
-use concrete_commons::dispersion::{DispersionParameter, Variance};
+use crate::utils::square;
 
 pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64) -> f64 {
-    let sigma = Variance(variance_bound).get_standard_dev() * kappa;
-    let sigma_scale = sigma / Variance(current_maximum_noise).get_standard_dev();
+    let sigma = variance_to_std_dev(variance_bound) * kappa;
+    let sigma_scale = sigma / variance_to_std_dev(current_maximum_noise);
     error_probability_of_sigma_scale(sigma_scale)
 }
 
@@ -104,14 +106,14 @@ fn estimate_variance(
     cb_decomp: &CbComplexityNoise,
     ks_variance: f64,
     variance_modulus_switching: f64,
-    log_norm: f64,
+    norm: f64,
     precisions_sum: u64,
     max_precision: u64,
 ) -> f64 {
     assert!(max_precision <= precisions_sum);
     let variance_ggsw = pp_variance + br_variance / 2.;
     let variance_coeff_1_cmux_tree =
-        2_f64.powf(2. * log_norm)            // variance_coeff for the multisum
+        square(norm)            // variance_coeff for the multisum
         * (precisions_sum                    // for hybrid packing
         << (2 * (max_precision - 1))) as f64 // for left shift
     ;
@@ -197,15 +199,13 @@ fn update_state_with_best_decompositions(
     let nb_blocks = partitionning.len() as u64;
 
     let safe_variance_bound = consts.safe_variance;
-    let log_norm = consts.noise_factor.log2();
+    let norm = consts.noise_factor;
 
-    let variance_modulus_switching =
-        noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key(
-            internal_dim,
-            glwe_params.polynomial_size(),
-            ciphertext_modulus_log,
-        )
-        .get_variance();
+    let variance_modulus_switching = estimate_modulus_switching_noise_with_binary_key(
+        internal_dim,
+        glwe_params.log2_polynomial_size,
+        ciphertext_modulus_log,
+    );
 
     if variance_modulus_switching > consts.safe_variance {
         return;
@@ -285,7 +285,7 @@ fn update_state_with_best_decompositions(
             cb_decomp,
             ks_variance,
             variance_modulus_switching,
-            log_norm,
+            norm,
             precisions_sum,
             max_precision,
         )

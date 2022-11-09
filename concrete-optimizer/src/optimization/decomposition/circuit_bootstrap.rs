@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use concrete_commons::dispersion::{DispersionParameter, Variance};
+use concrete_cpu_noise_model::gaussian_noise::noise::cmux::variance_cmux;
 use serde::{Deserialize, Serialize};
 
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
-use crate::noise_estimator::operators::atomic_pattern::variance_cmux;
 use crate::parameters::{BrDecompositionParameters, CmuxParameters, GlweParameters};
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
@@ -62,8 +61,14 @@ pub fn pareto_quantities(
 
             // Compute bias and slove for variance_one_external_product_for_cmux_tree_bias
             let variance = |variance_bsk| {
-                let variance_bsk = Variance::from_variance(variance_bsk);
-                variance_cmux(params, ciphertext_modulus_log, variance_bsk).get_variance()
+                variance_cmux(
+                    glwe_params.glwe_dimension,
+                    glwe_params.polynomial_size(),
+                    log2_base,
+                    level,
+                    ciphertext_modulus_log,
+                    variance_bsk,
+                )
             };
             let variance_at_0 = variance(0.0);
             let variance_at_1 = variance(1.0);

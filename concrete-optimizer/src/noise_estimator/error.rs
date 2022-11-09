@@ -1,4 +1,4 @@
-use concrete_commons::dispersion::{DispersionParameter, Variance};
+use concrete_cpu_noise_model::gaussian_noise::conversion::modular_variance_to_variance;
 
 use crate::utils::square;
 
@@ -33,7 +33,7 @@ fn safe_variance_bound_from_p_error(
     let safe_sigma = fatal_noise_limit / kappa;
     let modular_variance = square(safe_sigma);
 
-    Variance::from_modular_variance(modular_variance, ciphertext_modulus_log).get_variance()
+    modular_variance_to_variance(modular_variance, ciphertext_modulus_log)
 }
 
 pub fn safe_variance_bound_2padbits(

@@ -3,6 +3,7 @@ pub use individual::*;
 pub use range::*;
 
 mod individual {
+    use concrete_cpu_noise_model::gaussian_noise::security::minimal_variance_glwe;
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
@@ -29,6 +30,15 @@ mod individual {
         }
         pub fn sample_extract_lwe_dimension(self) -> u64 {
             self.glwe_dimension << self.log2_polynomial_size
+        }
+
+        pub fn minimal_variance(self, ciphertext_modulus_log: u32, security_level: u64) -> f64 {
+            minimal_variance_glwe(
+                self.glwe_dimension,
+                self.polynomial_size(),
+                ciphertext_modulus_log,
+                security_level,
+            )
         }
     }
 
