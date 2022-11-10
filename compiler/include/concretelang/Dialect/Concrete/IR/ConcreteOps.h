@@ -13,6 +13,7 @@
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
+#include "concretelang/Interfaces/BatchableInterface.h"
 
 #define GET_OP_CLASSES
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h.inc"
