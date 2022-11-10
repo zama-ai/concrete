@@ -302,8 +302,8 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   int ggsw_size = r * polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
 
-  double2 *d_ggsw_fft_in =
-      (double2 *)cuda_malloc_async(ggsw_size * sizeof(double), *stream, gpu_index);
+  double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
+      ggsw_size * sizeof(double), *stream, gpu_index);
 
   batch_fft_ggsw_vector<Torus, STorus, params>(v_stream, d_ggsw_fft_in, ggsw_in,
                                                r, glwe_dimension,
@@ -328,10 +328,10 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   // Allocate buffers
   int glwe_size = (glwe_dimension + 1) * polynomial_size;
 
-  Torus *d_buffer1 =
-      (Torus *)cuda_malloc_async(num_lut * glwe_size * sizeof(Torus), *stream, gpu_index);
-  Torus *d_buffer2 =
-      (Torus *)cuda_malloc_async(num_lut * glwe_size * sizeof(Torus), *stream, gpu_index);
+  Torus *d_buffer1 = (Torus *)cuda_malloc_async(
+      num_lut * glwe_size * sizeof(Torus), *stream, gpu_index);
+  Torus *d_buffer2 = (Torus *)cuda_malloc_async(
+      num_lut * glwe_size * sizeof(Torus), *stream, gpu_index);
 
   checkCudaErrors(cudaMemcpyAsync(d_buffer1, lut_vector,
                                   num_lut * glwe_size * sizeof(Torus),

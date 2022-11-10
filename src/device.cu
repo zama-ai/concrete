@@ -33,14 +33,15 @@ void *cuda_malloc(uint64_t size, uint32_t gpu_index) {
 
 /// Allocates a size-byte array at the device memory. Tries to do it
 /// asynchronously.
-void *cuda_malloc_async(uint64_t size, cudaStream_t stream, uint32_t gpu_index) {
+void *cuda_malloc_async(uint64_t size, cudaStream_t stream,
+                        uint32_t gpu_index) {
   void *ptr;
 
   int support_async_alloc;
-  checkCudaErrors(cudaDeviceGetAttribute(&support_async_alloc, cudaDevAttrMemoryPoolsSupported,
-                                         gpu_index));
+  checkCudaErrors(cudaDeviceGetAttribute(
+      &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
 
-  if(support_async_alloc)
+  if (support_async_alloc)
     checkCudaErrors(cudaMallocAsync((void **)&ptr, size, stream));
   else
     checkCudaErrors(cudaMalloc((void **)&ptr, size));
@@ -160,10 +161,10 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
 int cuda_drop_async(void *ptr, cudaStream_t stream, uint32_t gpu_index) {
 
   int support_async_alloc;
-  checkCudaErrors(cudaDeviceGetAttribute(&support_async_alloc, cudaDevAttrMemoryPoolsSupported,
-                                         gpu_index));
+  checkCudaErrors(cudaDeviceGetAttribute(
+      &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
 
-  if(support_async_alloc)
+  if (support_async_alloc)
     checkCudaErrors(cudaFreeAsync(ptr, stream));
   else
     checkCudaErrors(cudaFree(ptr));
