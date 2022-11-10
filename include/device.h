@@ -7,7 +7,7 @@ int cuda_destroy_stream(void *v_stream, uint32_t gpu_index);
 
 void *cuda_malloc(uint64_t size, uint32_t gpu_index);
 
-void *cuda_malloc_async(uint64_t size, cudaStream_t stream);
+void *cuda_malloc_async(uint64_t size, cudaStream_t stream, uint32_t gpu_index);
 
 int cuda_check_valid_malloc(uint64_t size, uint32_t gpu_index);
 
@@ -28,7 +28,7 @@ int cuda_synchronize_device(uint32_t gpu_index);
 
 int cuda_drop(void *ptr, uint32_t gpu_index);
 
-int cuda_drop_async(void *ptr, cudaStream_t stream);
+int cuda_drop_async(void *ptr, cudaStream_t stream, uint32_t gpu_index);
 
 int cuda_get_max_shared_memory(uint32_t gpu_index);
 }
