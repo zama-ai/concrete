@@ -240,25 +240,36 @@ optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
+lowerConcreteLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                           std::function<bool(mlir::Pass *)> enablePass,
+                           bool parallelizeLoops, bool batchOperations) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("ConcreteLinalgToLoops", pm, context);
+
+  addPotentiallyNestedPass(
+      pm,
+      mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
+          parallelizeLoops),
+      enablePass);
+
+  if (batchOperations) {
+    addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
+                             enablePass);
+  }
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
 lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass,
                          bool parallelizeLoops) {
   mlir::PassManager pm(&context);
   pipelinePrinting("ConcreteToBConcrete", pm, context);
 
-  std::unique_ptr<Pass> conversionPass =
-      mlir::concretelang::createConvertConcreteToBConcretePass();
-
-  bool passEnabled = enablePass(conversionPass.get());
-
   addPotentiallyNestedPass(
-      pm,
-      mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
-          parallelizeLoops),
-      [&](mlir::Pass *) { return passEnabled; });
-
-  addPotentiallyNestedPass(pm, std::move(conversionPass),
-                           [&](mlir::Pass *) { return passEnabled; });
+      pm, mlir::concretelang::createConvertConcreteToBConcretePass(),
+      enablePass);
 
   return pm.run(module.getOperation());
 }

@@ -18,6 +18,7 @@ target_link_libraries(concretecompiler
   TFHEDialect
   FHEDialect
   ConcretelangSupport
+  ConcretelangTransforms
 
   MLIRIR
   MLIRLLVMIRTransforms

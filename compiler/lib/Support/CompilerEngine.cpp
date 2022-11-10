@@ -366,6 +366,19 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     }
   }
 
+  // Concrete with linalg ops -> Concrete with loop ops
+  if (mlir::concretelang::pipeline::lowerConcreteLinalgToLoops(
+          mlirContext, module, this->enablePass, loopParallelize,
+          options.batchConcreteOps)
+          .failed()) {
+    return StreamStringError(
+        "Lowering from Concrete with linalg ops to Concrete with loops failed");
+  }
+
+  if (target == Target::CONCRETEWITHLOOPS) {
+    return std::move(res);
+  }
+
   // Concrete -> BConcrete
   if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
           mlirContext, module, this->enablePass, loopParallelize)

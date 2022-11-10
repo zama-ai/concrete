@@ -48,6 +48,7 @@ enum Action {
   DUMP_FHE,
   DUMP_TFHE,
   DUMP_CONCRETE,
+  DUMP_CONCRETEWITHLOOPS,
   DUMP_BCONCRETE,
   DUMP_STD,
   DUMP_LLVM_DIALECT,
@@ -121,6 +122,9 @@ static llvm::cl::opt<enum Action> action(
                                 "Lower to TFHE and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_CONCRETE, "dump-concrete",
                                 "Lower to Concrete and dump result")),
+    llvm::cl::values(clEnumValN(
+        Action::DUMP_CONCRETEWITHLOOPS, "dump-concrete-with-loops",
+        "Lower to Concrete, replace linalg ops with loops and dump result")),
     llvm::cl::values(
         clEnumValN(Action::DUMP_BCONCRETE, "dump-bconcrete",
                    "Lower to Bufferized Concrete and dump result")),
@@ -160,6 +164,13 @@ llvm::cl::opt<bool> loopParallelize(
     "parallelize-loops",
     llvm::cl::desc(
         "Generate (and execute if JIT) parallel loops from Linalg operations"),
+    llvm::cl::init(false));
+
+llvm::cl::opt<bool> batchConcreteOps(
+    "batch-concrete-ops",
+    llvm::cl::desc(
+        "Hoist scalar Concrete operations with corresponding batched "
+        "operations out of loop nests as batched operations"),
     llvm::cl::init(false));
 
 llvm::cl::opt<bool> dataflowParallelize(
@@ -288,6 +299,7 @@ cmdlineCompilationOptions() {
   options.autoParallelize = cmdline::autoParallelize;
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
+  options.batchConcreteOps = cmdline::batchConcreteOps;
   options.optimizeConcrete = cmdline::optimizeConcrete;
   options.emitGPUOps = cmdline::emitGPUOps;
 
@@ -456,6 +468,9 @@ mlir::LogicalResult processInputBuffer(
       break;
     case Action::DUMP_CONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
+      break;
+    case Action::DUMP_CONCRETEWITHLOOPS:
+      target = mlir::concretelang::CompilerEngine::Target::CONCRETEWITHLOOPS;
       break;
     case Action::DUMP_BCONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::BCONCRETE;

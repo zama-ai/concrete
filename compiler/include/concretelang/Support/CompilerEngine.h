@@ -53,6 +53,7 @@ struct CompilationOptions {
 
   bool autoParallelize;
   bool loopParallelize;
+  bool batchConcreteOps;
   bool dataflowParallelize;
   bool asyncOffload;
   bool optimizeConcrete;
@@ -66,7 +67,7 @@ struct CompilationOptions {
 
   CompilationOptions()
       : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
-        autoParallelize(false), loopParallelize(false),
+        autoParallelize(false), loopParallelize(false), batchConcreteOps(false),
         dataflowParallelize(false), asyncOffload(false), optimizeConcrete(true),
         emitGPUOps(false), clientParametersFuncName(llvm::None),
         optimizerConfig(optimizer::DEFAULT_CONFIG){};
@@ -174,6 +175,10 @@ public:
     /// Read sources and lower all FHE and TFHE operations to Concrete
     /// operations
     CONCRETE,
+
+    /// Read sources and lower all FHE and TFHE operations to Concrete
+    /// operations with all linalg ops replaced by loops
+    CONCRETEWITHLOOPS,
 
     /// Read sources and lower all FHE, TFHE and Concrete operations to
     /// BConcrete operations
