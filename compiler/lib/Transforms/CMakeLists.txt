@@ -1,4 +1,5 @@
 add_mlir_library(ConcretelangTransforms
+  Batching.cpp
   ForLoopToParallel.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -7,10 +8,12 @@ add_mlir_library(ConcretelangTransforms
   DEPENDS
   MLIRTransforms
   ConcretelangTransformsBufferizePassIncGen
+  ConcretelangInterfaces
   mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR
   MLIRMemRefDialect
   MLIRTransforms
+  ConcretelangInterfaces
 )
