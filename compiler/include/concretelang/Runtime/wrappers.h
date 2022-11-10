@@ -21,16 +21,33 @@ extern "C" {
 /// \param out_MESSAGE_BITS number of bits of message to be used
 /// \param lut original LUT
 /// \param lut_size
-void encode_and_expand_lut(uint64_t *output, size_t output_size,
-                           size_t out_MESSAGE_BITS, const uint64_t *lut,
-                           size_t lut_size);
+void memref_encode_expand_lut_for_bootstrap(
+    uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
+    uint64_t output_lut_offset, uint64_t output_lut_size,
+    uint64_t output_lut_stride, uint64_t *input_lut_allocated,
+    uint64_t *input_lut_aligned, uint64_t input_lut_offset,
+    uint64_t input_lut_size, uint64_t input_lut_stride, uint32_t poly_size,
+    uint32_t out_MESSAGE_BITS);
 
-void memref_expand_lut_in_trivial_glwe_ct_u64(
-    uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
-    uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
-    uint32_t poly_size, uint32_t glwe_dimension, uint32_t out_precision,
-    uint64_t *lut_allocated, uint64_t *lut_aligned, uint64_t lut_offset,
-    uint64_t lut_size, uint64_t lut_stride);
+void memref_encode_expand_lut_for_woppbs(
+    uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
+    uint64_t output_lut_offset, uint64_t output_lut_size,
+    uint64_t output_lut_stride, uint64_t *input_lut_allocated,
+    uint64_t *input_lut_aligned, uint64_t input_lut_offset,
+    uint64_t input_lut_size, uint64_t input_lut_stride,
+    uint64_t *crt_decomposition_allocated, uint64_t *crt_decomposition_aligned,
+    uint64_t crt_decomposition_offset, uint64_t crt_decomposition_size,
+    uint64_t crt_decomposition_stride, uint64_t *crt_bits_allocated,
+    uint64_t *crt_bits_aligned, uint64_t crt_bits_offset,
+    uint64_t crt_bits_size, uint64_t crt_bits_stride, uint32_t poly_size,
+    uint32_t modulus_product);
+
+void memref_encode_plaintext_with_crt(
+    uint64_t *output_allocated, uint64_t *output_aligned,
+    uint64_t output_offset, uint64_t output_size, uint64_t output_stride,
+    uint64_t input, uint64_t *mods_allocated, uint64_t *output_lut_aligned,
+    uint64_t mods_offset, uint64_t output_lut_size, uint64_t mods_stride,
+    uint64_t mods_product);
 
 void memref_add_lwe_ciphertexts_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,

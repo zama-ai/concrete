@@ -68,10 +68,6 @@ public:
     addConversion([&](mlir::concretelang::Concrete::LweCiphertextType type) {
       assert(type.getDimension() != -1);
       llvm::SmallVector<int64_t, 2> shape;
-      auto crt = type.getCrtDecomposition();
-      if (!crt.empty()) {
-        shape.push_back(crt.size());
-      }
       shape.push_back(type.getDimension() + 1);
       return mlir::RankedTensorType::get(
           shape, mlir::IntegerType::get(type.getContext(), 64));
@@ -95,10 +91,6 @@ public:
       mlir::SmallVector<int64_t> newShape;
       newShape.reserve(type.getShape().size() + 1);
       newShape.append(type.getShape().begin(), type.getShape().end());
-      auto crt = lwe.getCrtDecomposition();
-      if (!crt.empty()) {
-        newShape.push_back(crt.size());
-      }
       newShape.push_back(lwe.getDimension() + 1);
       mlir::Type r = mlir::RankedTensorType::get(
           newShape, mlir::IntegerType::get(type.getContext(), 64));
@@ -146,7 +138,7 @@ struct ZeroOpPattern : public mlir::OpRewritePattern<ZeroOp> {
   };
 };
 
-template <typename ConcreteOp, typename BConcreteOp, typename BConcreteCRTOp>
+template <typename ConcreteOp, typename BConcreteOp>
 struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   LowToBConcrete(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
       : ::mlir::OpRewritePattern<ConcreteOp>(context, benefit) {}
@@ -161,29 +153,9 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
         concreteOp.getOperation()->getAttrs();
 
     mlir::Operation *bConcreteOp;
-    if (resultTyRange.size() == 1 &&
-        resultTyRange.front()
-            .isa<mlir::concretelang::Concrete::LweCiphertextType>()) {
-      auto crt = resultTyRange.front()
-                     .cast<mlir::concretelang::Concrete::LweCiphertextType>()
-                     .getCrtDecomposition();
-      if (crt.empty()) {
-        bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteOp>(
-            concreteOp, resultTyRange, concreteOp.getOperation()->getOperands(),
-            attributes);
-      } else {
-        auto newAttributes = attributes.vec();
-        newAttributes.push_back(rewriter.getNamedAttr(
-            "crtDecomposition", rewriter.getI64ArrayAttr(crt)));
-        bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteCRTOp>(
-            concreteOp, resultTyRange, concreteOp.getOperation()->getOperands(),
-            newAttributes);
-      }
-    } else {
-      bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteOp>(
-          concreteOp, resultTyRange, concreteOp.getOperation()->getOperands(),
-          attributes);
-    }
+    bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteOp>(
+        concreteOp, resultTyRange, concreteOp.getOperation()->getOperands(),
+        attributes);
 
     mlir::concretelang::convertOperandAndResultTypes(
         rewriter, bConcreteOp, [&](mlir::MLIRContext *, mlir::Type t) {
@@ -361,7 +333,6 @@ struct AddPlaintextLweCiphertextOpPattern
   matchAndRewrite(Concrete::AddPlaintextLweCiphertextOp concreteOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
-    auto loc = concreteOp.getLoc();
     mlir::concretelang::Concrete::LweCiphertextType resultTy =
         ((mlir::Type)concreteOp->getResult(0).getType())
             .cast<mlir::concretelang::Concrete::LweCiphertextType>();
@@ -371,31 +342,11 @@ struct AddPlaintextLweCiphertextOpPattern
     llvm::ArrayRef<::mlir::NamedAttribute> attributes =
         concreteOp.getOperation()->getAttrs();
 
-    auto crt = resultTy.getCrtDecomposition();
     mlir::Operation *bConcreteOp;
-    if (crt.empty()) {
-      // Encode the plaintext value
-      mlir::Value castedInt = rewriter.create<mlir::arith::ExtUIOp>(
-          loc, rewriter.getIntegerType(64), concreteOp.rhs());
-      mlir::Value constantShiftOp = rewriter.create<mlir::arith::ConstantOp>(
-          loc,
-          rewriter.getI64IntegerAttr(64 - concreteOp.getType().getP() - 1));
-      auto encoded = rewriter.create<mlir::arith::ShLIOp>(
-          loc, rewriter.getI64Type(), castedInt, constantShiftOp);
-      bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::AddPlaintextLweTensorOp>(
-              concreteOp, newResultTy,
-              mlir::ValueRange{concreteOp.lhs(), encoded}, attributes);
-    } else {
-      // The encoding is done when we eliminate CRT ops
-      auto newAttributes = attributes.vec();
-      newAttributes.push_back(rewriter.getNamedAttr(
-          "crtDecomposition", rewriter.getI64ArrayAttr(crt)));
-      bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::AddPlaintextCRTLweTensorOp>(
-              concreteOp, newResultTy, concreteOp.getOperation()->getOperands(),
-              newAttributes);
-    }
+    bConcreteOp =
+        rewriter.replaceOpWithNewOp<BConcrete::AddPlaintextLweTensorOp>(
+            concreteOp, newResultTy,
+            mlir::ValueRange{concreteOp.lhs(), concreteOp.rhs()}, attributes);
 
     mlir::concretelang::convertOperandAndResultTypes(
         rewriter, bConcreteOp, [&](mlir::MLIRContext *, mlir::Type t) {
@@ -417,7 +368,6 @@ struct MulCleartextLweCiphertextOpPattern
   matchAndRewrite(Concrete::MulCleartextLweCiphertextOp concreteOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
-    auto loc = concreteOp.getLoc();
     mlir::concretelang::Concrete::LweCiphertextType resultTy =
         ((mlir::Type)concreteOp->getResult(0).getType())
             .cast<mlir::concretelang::Concrete::LweCiphertextType>();
@@ -427,25 +377,11 @@ struct MulCleartextLweCiphertextOpPattern
     llvm::ArrayRef<::mlir::NamedAttribute> attributes =
         concreteOp.getOperation()->getAttrs();
 
-    auto crt = resultTy.getCrtDecomposition();
     mlir::Operation *bConcreteOp;
-    if (crt.empty()) {
-      // Encode the plaintext value
-      mlir::Value castedInt = rewriter.create<mlir::arith::ExtUIOp>(
-          loc, rewriter.getIntegerType(64), concreteOp.rhs());
-      bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::MulCleartextLweTensorOp>(
-              concreteOp, newResultTy,
-              mlir::ValueRange{concreteOp.lhs(), castedInt}, attributes);
-    } else {
-      auto newAttributes = attributes.vec();
-      newAttributes.push_back(rewriter.getNamedAttr(
-          "crtDecomposition", rewriter.getI64ArrayAttr(crt)));
-      bConcreteOp =
-          rewriter.replaceOpWithNewOp<BConcrete::MulCleartextCRTLweTensorOp>(
-              concreteOp, newResultTy, concreteOp.getOperation()->getOperands(),
-              newAttributes);
-    }
+    bConcreteOp =
+        rewriter.replaceOpWithNewOp<BConcrete::MulCleartextLweTensorOp>(
+            concreteOp, newResultTy,
+            mlir::ValueRange{concreteOp.lhs(), concreteOp.rhs()}, attributes);
 
     mlir::concretelang::convertOperandAndResultTypes(
         rewriter, bConcreteOp, [&](mlir::MLIRContext *, mlir::Type t) {
@@ -468,11 +404,6 @@ struct ExtractSliceOpPattern
                   ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
     auto resultTy = extractSliceOp.result().getType();
-    auto lweResultTy =
-        resultTy.cast<mlir::RankedTensorType>()
-            .getElementType()
-            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
-    auto nbBlock = lweResultTy.getCrtDecomposition().size();
     auto newResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
 
@@ -480,19 +411,12 @@ struct ExtractSliceOpPattern
     mlir::SmallVector<mlir::Attribute> staticOffsets;
     staticOffsets.append(extractSliceOp.static_offsets().begin(),
                          extractSliceOp.static_offsets().end());
-    if (nbBlock != 0) {
-      staticOffsets.push_back(rewriter.getI64IntegerAttr(0));
-    }
     staticOffsets.push_back(rewriter.getI64IntegerAttr(0));
 
     // add the lweSize to the sizes
     mlir::SmallVector<mlir::Attribute> staticSizes;
     staticSizes.append(extractSliceOp.static_sizes().begin(),
                        extractSliceOp.static_sizes().end());
-    if (nbBlock != 0) {
-      staticSizes.push_back(rewriter.getI64IntegerAttr(
-          newResultTy.getDimSize(newResultTy.getRank() - 2)));
-    }
     staticSizes.push_back(rewriter.getI64IntegerAttr(
         newResultTy.getDimSize(newResultTy.getRank() - 1)));
 
@@ -500,9 +424,6 @@ struct ExtractSliceOpPattern
     mlir::SmallVector<mlir::Attribute> staticStrides;
     staticStrides.append(extractSliceOp.static_strides().begin(),
                          extractSliceOp.static_strides().end());
-    if (nbBlock != 0) {
-      staticStrides.push_back(rewriter.getI64IntegerAttr(1));
-    }
     staticStrides.push_back(rewriter.getI64IntegerAttr(1));
 
     // replace tensor.extract_slice to the new one
@@ -545,29 +466,20 @@ struct ExtractOpPattern
     if (lweResultTy == nullptr) {
       return mlir::failure();
     }
-    auto nbBlock = lweResultTy.getCrtDecomposition().size();
     auto newResultTy =
         converter.convertType(lweResultTy).cast<mlir::RankedTensorType>();
-    auto rankOfResult = extractOp.indices().size() +
-                        /* for the lwe dimension */ 1 +
-                        /* for the block dimension */
-                        (nbBlock == 0 ? 0 : 1);
+    auto rankOfResult = extractOp.indices().size() + 1;
+
     // [min..., 0] for static_offsets ()
     mlir::SmallVector<mlir::Attribute> staticOffsets(
         rankOfResult,
         rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::min()));
-    if (nbBlock != 0) {
-      staticOffsets[staticOffsets.size() - 2] = rewriter.getI64IntegerAttr(0);
-    }
     staticOffsets[staticOffsets.size() - 1] = rewriter.getI64IntegerAttr(0);
 
     // [1..., lweDimension+1] for static_sizes or
     // [1..., nbBlock, lweDimension+1]
     mlir::SmallVector<mlir::Attribute> staticSizes(
         rankOfResult, rewriter.getI64IntegerAttr(1));
-    if (nbBlock != 0) {
-      staticSizes[staticSizes.size() - 2] = rewriter.getI64IntegerAttr(nbBlock);
-    }
     staticSizes[staticSizes.size() - 1] = rewriter.getI64IntegerAttr(
         newResultTy.getDimSize(newResultTy.getRank() - 1));
 
@@ -577,14 +489,8 @@ struct ExtractOpPattern
 
     // replace tensor.extract_slice to the new one
     mlir::SmallVector<int64_t> extractedSliceShape(rankOfResult, 1);
-    if (nbBlock != 0) {
-      extractedSliceShape[extractedSliceShape.size() - 2] = nbBlock;
-      extractedSliceShape[extractedSliceShape.size() - 1] =
-          newResultTy.getDimSize(1);
-    } else {
-      extractedSliceShape[extractedSliceShape.size() - 1] =
-          newResultTy.getDimSize(0);
-    }
+    extractedSliceShape[extractedSliceShape.size() - 1] =
+        newResultTy.getDimSize(0);
 
     auto extractedSliceType =
         mlir::RankedTensorType::get(extractedSliceShape, rewriter.getI64Type());
@@ -601,16 +507,11 @@ struct ExtractOpPattern
         });
 
     mlir::ReassociationIndices reassociation;
-    for (int64_t i = 0;
-         i < extractedSliceType.getRank() - (nbBlock == 0 ? 0 : 1); i++) {
+    for (int64_t i = 0; i < extractedSliceType.getRank(); i++) {
       reassociation.push_back(i);
     }
 
     mlir::SmallVector<mlir::ReassociationIndices> reassocs{reassociation};
-
-    if (nbBlock != 0) {
-      reassocs.push_back({extractedSliceType.getRank() - 1});
-    }
 
     mlir::tensor::CollapseShapeOp collapseOp =
         rewriter.replaceOpWithNewOp<mlir::tensor::CollapseShapeOp>(
@@ -644,7 +545,6 @@ struct InsertSliceOpPattern
     if (lweResultTy == nullptr) {
       return mlir::failure();
     }
-    auto nbBlock = lweResultTy.getCrtDecomposition().size();
     auto newResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
 
@@ -652,19 +552,12 @@ struct InsertSliceOpPattern
     mlir::SmallVector<mlir::Attribute> staticOffsets;
     staticOffsets.append(insertSliceOp.static_offsets().begin(),
                          insertSliceOp.static_offsets().end());
-    if (nbBlock != 0) {
-      staticOffsets.push_back(rewriter.getI64IntegerAttr(0));
-    }
     staticOffsets.push_back(rewriter.getI64IntegerAttr(0));
 
     // add lweDimension+1 to static_sizes
     mlir::SmallVector<mlir::Attribute> staticSizes;
     staticSizes.append(insertSliceOp.static_sizes().begin(),
                        insertSliceOp.static_sizes().end());
-    if (nbBlock != 0) {
-      staticSizes.push_back(rewriter.getI64IntegerAttr(
-          newResultTy.getDimSize(newResultTy.getRank() - 2)));
-    }
     staticSizes.push_back(rewriter.getI64IntegerAttr(
         newResultTy.getDimSize(newResultTy.getRank() - 1)));
 
@@ -672,9 +565,6 @@ struct InsertSliceOpPattern
     mlir::SmallVector<mlir::Attribute> staticStrides;
     staticStrides.append(insertSliceOp.static_strides().begin(),
                          insertSliceOp.static_strides().end());
-    if (nbBlock != 0) {
-      staticStrides.push_back(rewriter.getI64IntegerAttr(1));
-    }
     staticStrides.push_back(rewriter.getI64IntegerAttr(1));
 
     // replace tensor.insert_slice with the new one
@@ -710,7 +600,6 @@ struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
     if (lweResultTy == nullptr) {
       return mlir::failure();
     };
-    auto hasBlock = lweResultTy.getCrtDecomposition().size() != 0;
     mlir::RankedTensorType newResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
 
@@ -718,9 +607,6 @@ struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
     mlir::SmallVector<mlir::OpFoldResult> offsets;
     offsets.append(insertOp.indices().begin(), insertOp.indices().end());
     offsets.push_back(rewriter.getIndexAttr(0));
-    if (hasBlock) {
-      offsets.push_back(rewriter.getIndexAttr(0));
-    }
 
     // Inserting a smaller tensor into a (potentially) bigger one. Set
     // dimensions for all leading dimensions of the target tensor not
@@ -729,10 +615,6 @@ struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
                                                 rewriter.getI64IntegerAttr(1));
 
     // Add size for the bufferized source element
-    if (hasBlock) {
-      sizes.push_back(rewriter.getI64IntegerAttr(
-          newResultTy.getDimSize(newResultTy.getRank() - 2)));
-    }
     sizes.push_back(rewriter.getI64IntegerAttr(
         newResultTy.getDimSize(newResultTy.getRank() - 1)));
 
@@ -871,9 +753,6 @@ struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
                   ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
     auto resultTy = ((mlir::Type)shapeOp.result().getType()).cast<VecTy>();
-    auto lweResultTy =
-        ((mlir::Type)resultTy.getElementType())
-            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
 
     auto newResultTy =
         ((mlir::Type)converter.convertType(resultTy)).cast<VecTy>();
@@ -886,12 +765,6 @@ struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
     auto oldReassocs = shapeOp.getReassociationIndices();
     mlir::SmallVector<mlir::ReassociationIndices> newReassocs;
     newReassocs.append(oldReassocs.begin(), oldReassocs.end());
-    // add [rank-1] to reassociations if crt decomp
-    if (!lweResultTy.getCrtDecomposition().empty()) {
-      mlir::ReassociationIndices lweAssoc;
-      lweAssoc.push_back(reassocTy.getRank() - 2);
-      newReassocs.push_back(lweAssoc);
-    }
 
     // add [rank] to reassociations
     {
@@ -1020,14 +893,21 @@ void ConcreteToBConcretePass::runOnOperation() {
         LowerBootstrap, LowerBatchedBootstrap, LowerKeySwitch,
         LowerBatchedKeySwitch,
         LowToBConcrete<mlir::concretelang::Concrete::AddLweCiphertextsOp,
-                       mlir::concretelang::BConcrete::AddLweTensorOp,
-                       BConcrete::AddCRTLweTensorOp>,
+                       mlir::concretelang::BConcrete::AddLweTensorOp>,
         AddPlaintextLweCiphertextOpPattern, MulCleartextLweCiphertextOpPattern,
+        LowToBConcrete<
+            mlir::concretelang::Concrete::EncodeExpandLutForBootstrapOp,
+            mlir::concretelang::BConcrete::EncodeExpandLutForBootstrapTensorOp>,
+        LowToBConcrete<
+            mlir::concretelang::Concrete::EncodeExpandLutForWopPBSOp,
+            mlir::concretelang::BConcrete::EncodeExpandLutForWopPBSTensorOp>,
+        LowToBConcrete<
+            mlir::concretelang::Concrete::EncodePlaintextWithCrtOp,
+            mlir::concretelang::BConcrete::EncodePlaintextWithCrtTensorOp>,
         LowToBConcrete<mlir::concretelang::Concrete::NegateLweCiphertextOp,
-                       mlir::concretelang::BConcrete::NegateLweTensorOp,
-                       BConcrete::NegateCRTLweTensorOp>,
-        LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweTensorOp,
-                       BConcrete::WopPBSCRTLweTensorOp>>(&getContext());
+                       mlir::concretelang::BConcrete::NegateLweTensorOp>,
+        LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweTensorOp>>(
+        &getContext());
 
     // Add patterns to rewrite tensor operators that works on encrypted
     // tensors

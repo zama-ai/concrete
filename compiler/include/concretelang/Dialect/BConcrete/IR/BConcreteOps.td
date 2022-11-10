@@ -25,27 +25,9 @@ def BConcrete_AddLweTensorOp : BConcrete_Op<"add_lwe_tensor", [NoSideEffect]> {
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_AddCRTLweTensorOp : BConcrete_Op<"add_crt_lwe_tensor", [NoSideEffect]> {
-    let arguments = (ins
-        2DTensorOf<[I64]>:$lhs,
-        2DTensorOf<[I64]>:$rhs,
-        I64ArrayAttr:$crtDecomposition
-    );
-    let results = (outs 2DTensorOf<[I64]>:$result);
-}
-
 def BConcrete_AddPlaintextLweTensorOp : BConcrete_Op<"add_plaintext_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins 1DTensorOf<[I64]>:$lhs, I64:$rhs);
     let results = (outs 1DTensorOf<[I64]>:$result);
-}
-
-def BConcrete_AddPlaintextCRTLweTensorOp : BConcrete_Op<"add_plaintext_crt_lwe_tensor", [NoSideEffect]> {
-    let arguments = (ins
-        2DTensorOf<[I64]>:$lhs,
-        AnyInteger:$rhs,
-        I64ArrayAttr:$crtDecomposition
-    );
-    let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
 def BConcrete_MulCleartextLweTensorOp : BConcrete_Op<"mul_cleartext_lwe_tensor", [NoSideEffect]> {
@@ -53,26 +35,9 @@ def BConcrete_MulCleartextLweTensorOp : BConcrete_Op<"mul_cleartext_lwe_tensor",
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_MulCleartextCRTLweTensorOp : BConcrete_Op<"mul_cleartext_crt_lwe_tensor", [NoSideEffect]> {
-    let arguments = (ins
-        2DTensorOf<[I64]>:$lhs,
-        AnyInteger:$rhs,
-        I64ArrayAttr:$crtDecomposition
-    );
-    let results = (outs 2DTensorOf<[I64]>:$result);
-}
-
 def BConcrete_NegateLweTensorOp : BConcrete_Op<"negate_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins 1DTensorOf<[I64]>:$ciphertext);
     let results = (outs 1DTensorOf<[I64]>:$result);
-}
-
-def BConcrete_NegateCRTLweTensorOp : BConcrete_Op<"negate_crt_lwe_tensor", [NoSideEffect]> {
-    let arguments = (ins
-        2DTensorOf<[I64]>:$ciphertext,
-        I64ArrayAttr:$crtDecomposition
-    );
-    let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
 def BConcrete_KeySwitchLweTensorOp : BConcrete_Op<"keyswitch_lwe_tensor", [NoSideEffect]> {
@@ -98,6 +63,49 @@ def BConcrete_BatchedKeySwitchLweTensorOp : BConcrete_Op<"batched_keyswitch_lwe_
     );
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
+
+def BConcrete_EncodeExpandLutForBootstrapTensorOp : BConcrete_Op<"encode_expand_lut_for_bootstrap_tensor", [NoSideEffect]> {
+    let summary =
+    "Encode and expand a lookup table so that it can be used for a bootstrap.";
+
+    let arguments = (ins
+        1DTensorOf<[I64]> : $input_lookup_table,
+        I32Attr: $polySize,
+        I32Attr: $outputBits
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
+def BConcrete_EncodeExpandLutForWopPBSTensorOp : BConcrete_Op<"encode_expand_lut_for_woppbs_tensor", [NoSideEffect]> {
+    let summary =
+        "Encode and expand a lookup table so that it can be used for a wop pbs.";
+
+    let arguments = (ins
+        1DTensorOf<[I64]> : $input_lookup_table,
+        I64ArrayAttr: $crtDecomposition,
+        I64ArrayAttr: $crtBits,
+        I32Attr : $polySize,
+        I32Attr : $modulusProduct
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
+
+def BConcrete_EncodePlaintextWithCrtTensorOp : BConcrete_Op<"encode_plaintext_with_crt_tensor", [NoSideEffect]> {
+    let summary =
+        "Encodes a plaintext by decomposing it on a crt basis.";
+
+    let arguments = (ins
+        I64 : $input,
+        I64ArrayAttr: $mods,
+        I64Attr: $modsProd
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
 
 def BConcrete_BootstrapLweTensorOp : BConcrete_Op<"bootstrap_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
@@ -144,8 +152,7 @@ def BConcrete_WopPBSCRTLweTensorOp : BConcrete_Op<"wop_pbs_crt_lwe_tensor", [NoS
         I32Attr : $packingKeySwitchBaseLog,
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
-        I32Attr : $circuitBootstrapBaseLog,
-        I64ArrayAttr:$crtDecomposition
+        I32Attr : $circuitBootstrapBaseLog
     );
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
@@ -153,6 +160,8 @@ def BConcrete_WopPBSCRTLweTensorOp : BConcrete_Op<"wop_pbs_crt_lwe_tensor", [NoS
 // BConcrete memref operators /////////////////////////////////////////////////
 
 def BConcrete_LweBuffer : MemRefRankOf<[I64], [1]>;
+def BConcrete_LutBuffer : MemRefRankOf<[I64], [1]>;
+def BConcrete_CrtPlaintextBuffer : MemRefRankOf<[I64], [1]>;
 def BConcrete_LweCRTBuffer : MemRefRankOf<[I64], [2]>;
 def BConcrete_BatchLweBuffer : MemRefRankOf<[I64], [2]>;
 
@@ -209,11 +218,49 @@ def BConcrete_BatchedKeySwitchLweBufferOp : BConcrete_Op<"batched_keyswitch_lwe_
     );
 }
 
+def BConcrete_EncodeExpandLutForBootstrapBufferOp : BConcrete_Op<"encode_expand_lut_for_bootstrap_buffer"> {
+    let summary =
+        "Encode and expand a lookup table so that it can be used for a bootstrap.";
+
+    let arguments = (ins
+        BConcrete_LutBuffer: $result,
+        BConcrete_LutBuffer: $input_lookup_table,
+        I32Attr: $polySize,
+        I32Attr: $outputBits
+    );
+}
+
+def BConcrete_EncodeExpandLutForWopPBSBufferOp : BConcrete_Op<"encode_expand_lut_for_woppbs_buffer"> {
+    let summary =
+        "Encode and expand a lookup table so that it can be used for a wop pbs.";
+
+    let arguments = (ins
+        BConcrete_LutBuffer : $result,
+        BConcrete_LutBuffer : $input_lookup_table,
+        I64ArrayAttr: $crtDecomposition,
+        I64ArrayAttr: $crtBits,
+        I32Attr : $polySize,
+        I32Attr : $modulusProduct
+    );
+}
+
+def BConcrete_EncodePlaintextWithCrtBufferOp : BConcrete_Op<"encode_plaintext_with_crt_buffer"> {
+    let summary =
+        "Encodes a plaintext by decomposing it on a crt basis.";
+
+    let arguments = (ins
+        BConcrete_CrtPlaintextBuffer: $result,
+        I64 : $input,
+        I64ArrayAttr: $mods,
+        I64Attr: $modsProd
+    );
+}
+
 def BConcrete_BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
     let arguments = (ins
         BConcrete_LweBuffer:$result,
         BConcrete_LweBuffer:$input_ciphertext,
-        MemRefRankOf<[I64], [1]>:$lookup_table,
+        BConcrete_LutBuffer:$lookup_table,
         I32Attr:$inputLweDim,
         I32Attr:$polySize,
         I32Attr:$level,
@@ -227,7 +274,7 @@ def BConcrete_BatchedBootstrapLweBufferOp : BConcrete_Op<"batched_bootstrap_lwe_
     let arguments = (ins
         BConcrete_BatchLweBuffer:$result,
         BConcrete_BatchLweBuffer:$input_ciphertext,
-        MemRefRankOf<[I64], [1]>:$lookup_table,
+        BConcrete_LutBuffer:$lookup_table,
         I32Attr:$inputLweDim,
         I32Attr:$polySize,
         I32Attr:$level,
@@ -241,7 +288,7 @@ def BConcrete_WopPBSCRTLweBufferOp : BConcrete_Op<"wop_pbs_crt_lwe_buffer"> {
     let arguments = (ins
         BConcrete_LweCRTBuffer:$result,
         BConcrete_LweCRTBuffer:$ciphertext,
-        MemRefRankOf<[I64], [1]>:$lookup_table,
+        BConcrete_LutBuffer:$lookup_table,
         // Bootstrap parameters
         I32Attr : $bootstrapLevel,
         I32Attr : $bootstrapBaseLog,

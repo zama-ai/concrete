@@ -1,4 +1,5 @@
-add_subdirectory(FHEToTFHE)
+add_subdirectory(FHEToTFHEScalar)
+add_subdirectory(FHEToTFHECrt)
 add_subdirectory(TFHEGlobalParametrization)
 add_subdirectory(TFHEToConcrete)
 add_subdirectory(FHETensorOpsToLinalg)

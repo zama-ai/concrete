@@ -184,26 +184,55 @@ markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
+lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                    llvm::Optional<V0FHEContext> &fheContext,
+                    std::function<bool(mlir::Pass *)> enablePass,
+                    bool parallelizeLoops, bool batchOperations) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("FHELinalgToFHE", pm, context);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createConvertFHETensorOpsToLinalg(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::createLinalgGeneralizationPass(),
+                           enablePass);
+  addPotentiallyNestedPass(
+      pm,
+      mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
+          parallelizeLoops),
+      enablePass);
+
+  if (batchOperations) {
+    addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
+                             enablePass);
+  }
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                llvm::Optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("FHEToTFHE", pm, context);
 
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertFHETensorOpsToLinalg(), enablePass);
-  // FHETensorOpsToLinalg does generate linalg named ops that need to be lowered
-  // to linalg.generic operations
-  addPotentiallyNestedPass(pm, mlir::createLinalgGeneralizationPass(),
-                           enablePass);
-  mlir::concretelang::ApplyLookupTableLowering lowerStrategy =
-      mlir::concretelang::KeySwitchBoostrapLowering;
   if (fheContext.hasValue() && fheContext->parameter.largeInteger.hasValue()) {
-    lowerStrategy = mlir::concretelang::WopPBSLowering;
+    pipelinePrinting("FHEToTFHECrt", pm, context);
+    auto dec =
+        fheContext.value().parameter.largeInteger.value().crtDecomposition;
+    auto mods = mlir::SmallVector<int64_t>(dec.begin(), dec.end());
+    auto polySize = fheContext.value().parameter.getPolynomialSize();
+    addPotentiallyNestedPass(
+        pm,
+        mlir::concretelang::createConvertFHEToTFHECrtPass(
+            mlir::concretelang::CrtLoweringParameters(mods, polySize)),
+        enablePass);
+  } else if (fheContext.hasValue()) {
+    pipelinePrinting("FHEToTFHEScalar", pm, context);
+    size_t polySize = fheContext.value().parameter.getPolynomialSize();
+    addPotentiallyNestedPass(
+        pm,
+        mlir::concretelang::createConvertFHEToTFHEScalarPass(
+            mlir::concretelang::ScalarLoweringParameters(polySize)),
+        enablePass);
   }
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertFHEToTFHEPass(lowerStrategy),
-      enablePass);
 
   return pm.run(module.getOperation());
 }
@@ -241,27 +270,6 @@ optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-lowerConcreteLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                           std::function<bool(mlir::Pass *)> enablePass,
-                           bool parallelizeLoops, bool batchOperations) {
-  mlir::PassManager pm(&context);
-  pipelinePrinting("ConcreteLinalgToLoops", pm, context);
-
-  addPotentiallyNestedPass(
-      pm,
-      mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
-          parallelizeLoops),
-      enablePass);
-
-  if (batchOperations) {
-    addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
-                             enablePass);
-  }
-
-  return pm.run(module.getOperation());
-}
-
-mlir::LogicalResult
 lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass,
                          bool parallelizeLoops) {
@@ -293,8 +301,6 @@ lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("BConcreteToStd", pm, context);
-  addPotentiallyNestedPass(pm, mlir::concretelang::createEliminateCRTOps(),
-                           enablePass);
   addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
                            enablePass);
   return pm.run(module.getOperation());

@@ -25,9 +25,7 @@ def TFHE_GLWECipherTextType
         // Number of bits of the ciphertext
         "signed":$bits,
         // Number of bits of the plain text representation
-        "signed":$p,
-        // CRT decomposition for large integers
-        ArrayRefParameter<"int64_t", "CRT decomposition">:$crtDecomposition
+        "signed":$p
     );
 
   let hasCustomAssemblyFormat = 1;

@@ -18,16 +18,6 @@ void printSigned(mlir::AsmPrinter &p, signed i) {
 
 void GLWECipherTextType::print(mlir::AsmPrinter &p) const {
   p << "<";
-  auto crt = getCrtDecomposition();
-  if (!crt.empty()) {
-    p << "crt=[";
-    for (auto c : crt.drop_back(1)) {
-      printSigned(p, c);
-      p << ",";
-    }
-    printSigned(p, crt.back());
-    p << "]";
-  }
   p << "{";
   printSigned(p, getDimension());
   p << ",";
@@ -44,27 +34,6 @@ void GLWECipherTextType::print(mlir::AsmPrinter &p) const {
 mlir::Type GLWECipherTextType::parse(AsmParser &parser) {
   if (parser.parseLess())
     return mlir::Type();
-
-  // Parse for the crt decomposition if any
-  std::vector<int64_t> crtDecomposition;
-  if (!parser.parseOptionalKeyword("crt")) {
-    if (parser.parseEqual() || parser.parseLSquare())
-      return mlir::Type();
-    while (true) {
-      signed c = -1;
-      if (parser.parseOptionalKeyword("_") && parser.parseInteger(c)) {
-        return mlir::Type();
-      }
-      crtDecomposition.push_back(c);
-      if (parser.parseOptionalComma()) {
-        if (parser.parseRSquare()) {
-          return mlir::Type();
-        } else {
-          break;
-        }
-      }
-    }
-  }
 
   if (parser.parseLBrace())
     return mlir::Type();
@@ -98,8 +67,7 @@ mlir::Type GLWECipherTextType::parse(AsmParser &parser) {
   if (parser.parseGreater())
     return mlir::Type();
   Location loc = parser.getEncodedSourceLoc(parser.getNameLoc());
-  return getChecked(loc, loc.getContext(), dimension, polynomialSize, bits, p,
-                    llvm::ArrayRef<int64_t>(crtDecomposition));
+  return getChecked(loc, loc.getContext(), dimension, polynomialSize, bits, p);
 }
 } // namespace TFHE
 } // namespace concretelang

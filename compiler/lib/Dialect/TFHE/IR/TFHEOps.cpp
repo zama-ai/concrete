@@ -40,16 +40,14 @@ mlir::LogicalResult _verifyGLWEIntegerOperator(mlir::OpState &op,
     emitOpErrorForIncompatibleGLWEParameter(op, "p");
     return mlir::failure();
   }
-  if (a.getCrtDecomposition() != result.getCrtDecomposition()) {
-    emitOpErrorForIncompatibleGLWEParameter(op, "crt");
-    return mlir::failure();
-  }
 
+  if ((int)b.getWidth() != 64) {
+    op.emitOpError() << "should have the width of `b` equals to 64.";
+  }
   // verify consistency of width of inputs
-  if ((int)b.getWidth() > a.getP() + 1) {
-    op.emitOpError()
-        << "should have the width of `b` equals or less than 'p'+1: "
-        << b.getWidth() << " <= " << a.getP() << "+ 1";
+  if ((int)b.getWidth() != 64) {
+    op.emitOpError() << "should have the width of `b` equals 64 : "
+                     << b.getWidth() << " != 64";
     return mlir::failure();
   }
   return mlir::success();
@@ -111,11 +109,6 @@ mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
     emitOpErrorForIncompatibleGLWEParameter(op, "p");
     return mlir::failure();
   }
-  if (a.getCrtDecomposition() != b.getCrtDecomposition() ||
-      a.getCrtDecomposition() != result.getCrtDecomposition()) {
-    emitOpErrorForIncompatibleGLWEParameter(op, "crt");
-    return mlir::failure();
-  }
 
   return mlir::success();
 }
@@ -144,10 +137,6 @@ mlir::LogicalResult verifyUnaryGLWEOperator(Operator &op) {
   }
   if (a.getP() != result.getP()) {
     emitOpErrorForIncompatibleGLWEParameter(op, "p");
-    return mlir::failure();
-  }
-  if (a.getCrtDecomposition() != result.getCrtDecomposition()) {
-    emitOpErrorForIncompatibleGLWEParameter(op, "crt");
     return mlir::failure();
   }
 

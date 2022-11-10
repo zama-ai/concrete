@@ -32,8 +32,7 @@ void TFHEDialect::initialize() {
 /// - The bits parameter is 64 (we support only this for v0)
 ::mlir::LogicalResult GLWECipherTextType::verify(
     ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
-    signed dimension, signed polynomialSize, signed bits, signed p,
-    llvm::ArrayRef<int64_t>) {
+    signed dimension, signed polynomialSize, signed bits, signed p) {
   if (bits != -1 && bits != 64) {
     emitError() << "GLWE bits parameter can only be 64";
     return ::mlir::failure();

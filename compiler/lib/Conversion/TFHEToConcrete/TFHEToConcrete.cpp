@@ -108,7 +108,7 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
     mlir::Type resultType = converter.convertType(wopOp.getType());
 
     auto newOp = rewriter.replaceOpWithNewOp<Concrete::WopPBSLweOp>(
-        wopOp, resultType, wopOp.ciphertext(), wopOp.lookupTable(),
+        wopOp, resultType, wopOp.ciphertexts(), wopOp.lookupTable(),
         // Bootstrap parameters
         wopOp.bootstrapLevel(), wopOp.bootstrapBaseLog(),
         // Keyswitch parameters
@@ -118,12 +118,14 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
         wopOp.packingKeySwitchoutputPolynomialSize(),
         wopOp.packingKeySwitchLevel(), wopOp.packingKeySwitchBaseLog(),
         // Circuit bootstrap parameters
-        wopOp.circuitBootstrapLevel(), wopOp.circuitBootstrapBaseLog());
+        wopOp.circuitBootstrapLevel(), wopOp.circuitBootstrapBaseLog(),
+        // Crt Decomposition
+        wopOp.crtDecomposition());
 
     rewriter.startRootUpdate(newOp);
 
-    newOp.ciphertext().setType(
-        converter.convertType(wopOp.ciphertext().getType()));
+    newOp.ciphertexts().setType(
+        converter.convertType(wopOp.ciphertexts().getType()));
 
     rewriter.finalizeRootUpdate(newOp);
     return ::mlir::success();
@@ -179,6 +181,18 @@ void TFHEToConcretePass::runOnOperation() {
   patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
       mlir::concretelang::TFHE::ZeroTensorGLWEOp,
       mlir::concretelang::Concrete::ZeroTensorLWEOp>>(&getContext(), converter);
+  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+      mlir::concretelang::TFHE::EncodeExpandLutForBootstrapOp,
+      mlir::concretelang::Concrete::EncodeExpandLutForBootstrapOp>>(
+      &getContext(), converter);
+  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+      mlir::concretelang::TFHE::EncodeExpandLutForWopPBSOp,
+      mlir::concretelang::Concrete::EncodeExpandLutForWopPBSOp>>(&getContext(),
+                                                                 converter);
+  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+      mlir::concretelang::TFHE::EncodePlaintextWithCrtOp,
+      mlir::concretelang::Concrete::EncodePlaintextWithCrtOp>>(&getContext(),
+                                                               converter);
   patterns.add<BootstrapGLWEOpPattern>(&getContext(), converter);
   patterns.add<WopPBSGLWEOpPattern>(&getContext(), converter);
   target.addDynamicallyLegalOp<Concrete::BootstrapLweOp>(

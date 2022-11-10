@@ -46,9 +46,9 @@ namespace clientlib = concretelang::clientlib;
 enum Action {
   ROUND_TRIP,
   DUMP_FHE,
+  DUMP_FHE_NO_LINALG,
   DUMP_TFHE,
   DUMP_CONCRETE,
-  DUMP_CONCRETEWITHLOOPS,
   DUMP_BCONCRETE,
   DUMP_SDFG,
   DUMP_STD,
@@ -119,13 +119,13 @@ static llvm::cl::opt<enum Action> action(
                    "Parse input module and regenerate textual representation")),
     llvm::cl::values(clEnumValN(Action::DUMP_FHE, "dump-fhe",
                                 "Dump FHE module")),
+    llvm::cl::values(clEnumValN(Action::DUMP_FHE_NO_LINALG,
+                                "dump-fhe-no-linalg",
+                                "Lower FHELinalg to FHE and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_TFHE, "dump-tfhe",
                                 "Lower to TFHE and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_CONCRETE, "dump-concrete",
                                 "Lower to Concrete and dump result")),
-    llvm::cl::values(clEnumValN(
-        Action::DUMP_CONCRETEWITHLOOPS, "dump-concrete-with-loops",
-        "Lower to Concrete, replace linalg ops with loops and dump result")),
     llvm::cl::values(
         clEnumValN(Action::DUMP_BCONCRETE, "dump-bconcrete",
                    "Lower to Bufferized Concrete and dump result")),
@@ -369,9 +369,9 @@ cmdlineCompilationOptions() {
           "The large-integers options should all be set",
           llvm::inconvertibleErrorCode());
     }
-    if (cmdline::largeIntegerPackingKeyswitch.size() != 5) {
+    if (cmdline::largeIntegerPackingKeyswitch.size() != 4) {
       return llvm::make_error<llvm::StringError>(
-          "The large-integers-packing-keyswitch must be a list of 5 integer",
+          "The large-integers-packing-keyswitch must be a list of 4 integer",
           llvm::inconvertibleErrorCode());
     }
     if (cmdline::largeIntegerCircuitBootstrap.size() != 2) {
@@ -488,14 +488,14 @@ mlir::LogicalResult processInputBuffer(
     case Action::DUMP_FHE:
       target = mlir::concretelang::CompilerEngine::Target::FHE;
       break;
+    case Action::DUMP_FHE_NO_LINALG:
+      target = mlir::concretelang::CompilerEngine::Target::FHE_NO_LINALG;
+      break;
     case Action::DUMP_TFHE:
       target = mlir::concretelang::CompilerEngine::Target::TFHE;
       break;
     case Action::DUMP_CONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
-      break;
-    case Action::DUMP_CONCRETEWITHLOOPS:
-      target = mlir::concretelang::CompilerEngine::Target::CONCRETEWITHLOOPS;
       break;
     case Action::DUMP_BCONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::BCONCRETE;

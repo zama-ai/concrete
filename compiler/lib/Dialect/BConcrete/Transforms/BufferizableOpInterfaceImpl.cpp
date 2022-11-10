@@ -135,5 +135,19 @@ void mlir::concretelang::BConcrete::
     BConcrete::WopPBSCRTLweTensorOp::attachInterface<TensorToMemrefOp<
         BConcrete::WopPBSCRTLweTensorOp, BConcrete::WopPBSCRTLweBufferOp>>(
         *ctx);
+    // encode_plaintext_with_crt_tensor => encode_plaintext_with_crt_buffer
+    BConcrete::EncodePlaintextWithCrtTensorOp::attachInterface<
+        TensorToMemrefOp<BConcrete::EncodePlaintextWithCrtTensorOp,
+                         BConcrete::EncodePlaintextWithCrtBufferOp>>(*ctx);
+    // encode_expand_lut_for_bootstrap_tensor =>
+    // encode_expand_lut_for_bootstrap_buffer
+    BConcrete::EncodeExpandLutForBootstrapTensorOp::attachInterface<
+        TensorToMemrefOp<BConcrete::EncodeExpandLutForBootstrapTensorOp,
+                         BConcrete::EncodeExpandLutForBootstrapBufferOp>>(*ctx);
+    // encode_expand_lut_for_woppbs_tensor =>
+    // encode_expand_lut_for_woppbs_buffer
+    BConcrete::EncodeExpandLutForWopPBSTensorOp::attachInterface<
+        TensorToMemrefOp<BConcrete::EncodeExpandLutForWopPBSTensorOp,
+                         BConcrete::EncodeExpandLutForWopPBSBufferOp>>(*ctx);
   });
 }

@@ -14,6 +14,7 @@
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
+#include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/V0Curves.h"
 
@@ -34,7 +35,8 @@ const auto keyFormat = KEY_FORMAT_BINARY;
 const auto v0Curve = getV0Curves(securityLevel, keyFormat);
 
 /// For the v0 the secretKeyID and precision are the same for all gates.
-llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
+llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
+                                             LweSecretKeyID secretKeyID,
                                              Variance variance,
                                              mlir::Type type) {
   if (type.isIntOrIndex()) {
@@ -58,29 +60,35 @@ llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
     };
   }
   if (auto lweTy = type.dyn_cast_or_null<
-                   mlir::concretelang::Concrete::LweCiphertextType>()) {
+                   mlir::concretelang::FHE::EncryptedIntegerType>()) {
     bool sign = lweTy.isSignedInteger();
+    std::vector<int64_t> crt;
+    if (fheContext.parameter.largeInteger.has_value()) {
+      crt = fheContext.parameter.largeInteger.value().crtDecomposition;
+    }
     return CircuitGate{
         /* .encryption = */ llvm::Optional<EncryptionGate>({
             /* .secretKeyID = */ secretKeyID,
             /* .variance = */ variance,
             /* .encoding = */
             {
-                /* .precision = */ (size_t)lweTy.getP(),
-                /* .crt = */ lweTy.getCrtDecomposition().vec(),
+                /* .precision = */ lweTy.getWidth(),
+                /* .crt = */ crt,
             },
         }),
         /*.shape = */
-        {/*.width = */ (size_t)lweTy.getP(),
-         /*.dimensions = */ std::vector<int64_t>(),
-         /*.size = */ 0,
-         /* .sign */ sign},
+        {
+            /*.width = */ (size_t)lweTy.getWidth(),
+            /*.dimensions = */ std::vector<int64_t>(),
+            /*.size = */ 0,
+            /*.sign = */ sign,
+        },
     };
   }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
   if (tensor != nullptr) {
-    auto gate =
-        gateFromMLIRType(secretKeyID, variance, tensor.getElementType());
+    auto gate = gateFromMLIRType(fheContext, secretKeyID, variance,
+                                 tensor.getElementType());
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
@@ -179,14 +187,13 @@ createClientParametersForV0(V0FHEContext fheContext,
   auto funcType = (*funcOp).getFunctionType();
 
   auto inputs = funcType.getInputs();
-
   bool hasContext =
       inputs.empty()
           ? false
           : inputs.back().isa<mlir::concretelang::Concrete::ContextType>();
 
   auto gateFromType = [&](mlir::Type ty) {
-    return gateFromMLIRType(clientlib::BIG_KEY, inputVariance, ty);
+    return gateFromMLIRType(fheContext, clientlib::BIG_KEY, inputVariance, ty);
   };
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {

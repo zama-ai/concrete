@@ -9,10 +9,18 @@ def FHETensorOpsToLinalg : Pass<"fhe-tensor-ops-to-linalg", "::mlir::func::FuncO
   let dependentDialects = ["mlir::linalg::LinalgDialect"];
 }
 
-def FHEToTFHE : Pass<"fhe-to-tfhe", "mlir::ModuleOp"> {
-  let summary = "Lowers operations from the FHE dialect to TFHE";
+def FHEToTFHEScalar : Pass<"fhe-to-tfhe-scalar", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the FHE dialect to TFHE using the scalar strategy.";
   let description = [{ Lowers operations from the FHE dialect to Std + Math }];
-  let constructor = "mlir::concretelang::createConvertFHEToTFHEPass()";
+  let constructor = "mlir::concretelang::createConvertFHEToTFHEScalarPass()";
+  let options = [];
+  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+}
+
+def FHEToTFHECrt : Pass<"fhe-to-tfhe-crt", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the FHE dialect to TFHE using the crt strategy.";
+  let description = [{ Lowers operations from the FHE dialect to Std + Math }];
+  let constructor = "mlir::concretelang::createConvertFHEToTFHECrtPass()";
   let options = [];
   let dependentDialects = ["mlir::linalg::LinalgDialect"];
 }

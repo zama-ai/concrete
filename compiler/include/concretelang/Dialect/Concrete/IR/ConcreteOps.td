@@ -53,6 +53,47 @@ def Concrete_NegateLweCiphertextOp : Concrete_Op<"negate_lwe_ciphertext"> {
     let results = (outs Concrete_LweCiphertextType:$result);
 }
 
+def Concrete_EncodeExpandLutForBootstrapOp : Concrete_Op<"encode_expand_lut_for_bootstrap"> {
+    let summary =
+      "Encode and expand a lookup table so that it can be used for a bootstrap.";
+
+    let arguments = (ins
+      1DTensorOf<[I64]> : $input_lookup_table,
+      I32Attr: $polySize,
+      I32Attr: $outputBits
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
+def Concrete_EncodeExpandLutForWopPBSOp : Concrete_Op<"encode_expand_lut_for_woppbs"> {
+let summary =
+    "Encode and expand a lookup table so that it can be used for a wop pbs.";
+
+    let arguments = (ins
+        1DTensorOf<[I64]> : $input_lookup_table,
+        I64ArrayAttr: $crtDecomposition,
+        I64ArrayAttr: $crtBits,
+        I32Attr : $polySize,
+        I32Attr : $modulusProduct
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
+def Concrete_EncodePlaintextWithCrtOp : Concrete_Op<"encode_plaintext_with_crt"> {
+    let summary =
+        "Encodes a plaintext by decomposing it on a crt basis.";
+
+    let arguments = (ins
+        I64 : $input,
+        I64ArrayAttr: $mods,
+        I64Attr: $modsProd
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
 def Concrete_BootstrapLweOp : Concrete_Op<"bootstrap_lwe", [BatchableOpInterface]> {
     let summary = "Bootstraps a LWE ciphertext with a GLWE trivial encryption of the lookup table";
 
@@ -153,7 +194,7 @@ def Concrete_WopPBSLweOp : Concrete_Op<"wop_pbs_lwe"> {
     let summary = "";
 
     let arguments = (ins
-        Concrete_LweCiphertextType:$ciphertext,
+        Type<And<[TensorOf<[Concrete_LweCiphertextType]>.predicate, HasStaticShapePred]>>:$ciphertexts,
         1DTensorOf<[I64]>:$accumulator,
         // Bootstrap parameters
         I32Attr : $bootstrapLevel,
@@ -168,9 +209,11 @@ def Concrete_WopPBSLweOp : Concrete_Op<"wop_pbs_lwe"> {
         I32Attr : $packingKeySwitchBaseLog,
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
-        I32Attr : $circuitBootstrapBaseLog
+        I32Attr : $circuitBootstrapBaseLog,
+        // Crt decomposition
+        I64ArrayAttr: $crtDecomposition
     );
-    let results = (outs Concrete_LweCiphertextType:$result);
+    let results = (outs Type<And<[TensorOf<[Concrete_LweCiphertextType]>.predicate, HasStaticShapePred]>>:$result);
 }
 
 #endif

@@ -1,4 +1,4 @@
-// RUN: concretecompiler --split-input-file --action=dump-concrete-with-loops --batch-concrete-ops %s 2>&1| FileCheck %s
+// RUN: concretecompiler --split-input-file --action=dump-concrete --batch-concrete-ops %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: func.func @batch_continuous_slice_keyswitch(%arg0: tensor<2x3x4x!Concrete.lwe_ciphertext<572,2>>) -> tensor<2x3x4x!Concrete.lwe_ciphertext<572,2>> {
 func.func @batch_continuous_slice_keyswitch(%arg0: tensor<2x3x4x!Concrete.lwe_ciphertext<572,2>>) -> tensor<2x3x4x!Concrete.lwe_ciphertext<572,2>> {

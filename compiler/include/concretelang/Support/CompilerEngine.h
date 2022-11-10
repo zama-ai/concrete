@@ -192,6 +192,10 @@ public:
     /// Read sources and exit before any lowering
     FHE,
 
+    /// Read sources and lower all the FHELinalg operations to FHE operations
+    /// and scf loops
+    FHE_NO_LINALG,
+
     /// Read sources and lower all FHE operations to TFHE
     /// operations
     TFHE,
@@ -199,10 +203,6 @@ public:
     /// Read sources and lower all FHE and TFHE operations to Concrete
     /// operations
     CONCRETE,
-
-    /// Read sources and lower all FHE and TFHE operations to Concrete
-    /// operations with all linalg ops replaced by loops
-    CONCRETEWITHLOOPS,
 
     /// Read sources and lower all FHE, TFHE and Concrete operations to
     /// BConcrete operations

@@ -19,6 +19,48 @@ include "concretelang/Dialect/TFHE/IR/TFHETypes.td"
 class TFHE_Op<string mnemonic, list<Trait> traits = []>
     : Op<TFHE_Dialect, mnemonic, traits>;
 
+def TFHE_EncodeExpandLutForBootstrapOp : TFHE_Op<"encode_expand_lut_for_bootstrap"> {
+    let summary =
+        "Encode and expand a lookup table so that it can be used for a bootstrap.";
+
+    let arguments = (ins
+        1DTensorOf<[I64]> : $input_lookup_table,
+        I32Attr: $polySize,
+        I32Attr: $outputBits
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
+def TFHE_EncodeExpandLutForWopPBSOp : TFHE_Op<"encode_expand_lut_for_woppbs"> {
+    let summary =
+        "Encode and expand a lookup table so that it can be used for a wop pbs.";
+
+    let arguments = (ins
+        1DTensorOf<[I64]> : $input_lookup_table,
+        I64ArrayAttr: $crtDecomposition,
+        I64ArrayAttr: $crtBits,
+        I32Attr : $polySize,
+        I32Attr : $modulusProduct
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
+def TFHE_EncodePlaintextWithCrtOp : TFHE_Op<"encode_plaintext_with_crt"> {
+    let summary =
+        "Encodes a plaintext by decomposing it on a crt basis.";
+
+    let arguments = (ins
+        I64 : $input,
+        I64ArrayAttr: $mods,
+        I64Attr: $modsProd
+    );
+
+    let results = (outs 1DTensorOf<[I64]> : $result);
+}
+
+
 def TFHE_ZeroGLWEOp : TFHE_Op<"zero"> {
   let summary = "Returns a trivial encyption of 0";
 
@@ -92,6 +134,7 @@ def TFHE_KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe"> {
   let results = (outs TFHE_GLWECipherTextType : $result);
 }
 
+
 def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
   let summary =
       "Programmable bootstraping of a GLWE ciphertext with a lookup table";
@@ -112,7 +155,7 @@ def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe"> {
     let summary = "";
 
     let arguments = (ins
-        TFHE_GLWECipherTextType : $ciphertext,
+        Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>: $ciphertexts,
         1DTensorOf<[I64]> : $lookupTable,
         // Bootstrap parameters
         I32Attr : $bootstrapLevel,
@@ -127,9 +170,11 @@ def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe"> {
         I32Attr : $packingKeySwitchBaseLog,
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
-        I32Attr : $circuitBootstrapBaseLog
+        I32Attr : $circuitBootstrapBaseLog,
+        // Crt decomposition
+        I64ArrayAttr: $crtDecomposition
     );
-    let results = (outs TFHE_GLWECipherTextType:$result);
+    let results = (outs Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>:$result);
 }
 
 #endif

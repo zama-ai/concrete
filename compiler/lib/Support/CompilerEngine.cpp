@@ -311,31 +311,14 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::FHE)
     return std::move(res);
 
-  // FHE -> TFHE
-  if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,
-                                                   res.fheContext, enablePass)
+  // FHELinalg -> FHE
+  if (mlir::concretelang::pipeline::lowerFHELinalgToFHE(
+          mlirContext, module, res.fheContext, enablePass, loopParallelize,
+          options.batchConcreteOps)
           .failed()) {
-    return errorDiag("Lowering from FHE to TFHE failed");
+    return errorDiag("Lowering from FHELinalg to FHE failed");
   }
-  if (target == Target::TFHE)
-    return std::move(res);
-
-  // TFHE -> Concrete
-  if (mlir::concretelang::pipeline::lowerTFHEToConcrete(
-          mlirContext, module, res.fheContext, this->enablePass)
-          .failed()) {
-    return errorDiag("Lowering from TFHE to Concrete failed");
-  }
-
-  // Optimizing Concrete
-  if (this->compilerOptions.optimizeConcrete &&
-      mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
-                                                     this->enablePass)
-          .failed()) {
-    return errorDiag("Optimizing Concrete failed");
-  }
-
-  if (target == Target::CONCRETE)
+  if (target == Target::FHE_NO_LINALG)
     return std::move(res);
 
   // Generate client parameters if requested
@@ -371,18 +354,32 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     }
   }
 
-  // Concrete with linalg ops -> Concrete with loop ops
-  if (mlir::concretelang::pipeline::lowerConcreteLinalgToLoops(
-          mlirContext, module, this->enablePass, loopParallelize,
-          options.batchConcreteOps)
+  // FHE -> TFHE
+  if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,
+                                                   res.fheContext, enablePass)
           .failed()) {
-    return StreamStringError(
-        "Lowering from Concrete with linalg ops to Concrete with loops failed");
+    return errorDiag("Lowering from FHE to TFHE failed");
+  }
+  if (target == Target::TFHE)
+    return std::move(res);
+
+  // TFHE -> Concrete
+  if (mlir::concretelang::pipeline::lowerTFHEToConcrete(
+          mlirContext, module, res.fheContext, this->enablePass)
+          .failed()) {
+    return errorDiag("Lowering from TFHE to Concrete failed");
   }
 
-  if (target == Target::CONCRETEWITHLOOPS) {
-    return std::move(res);
+  // Optimizing Concrete
+  if (this->compilerOptions.optimizeConcrete &&
+      mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
+                                                     this->enablePass)
+          .failed()) {
+    return errorDiag("Optimizing Concrete failed");
   }
+
+  if (target == Target::CONCRETE)
+    return std::move(res);
 
   // Concrete -> BConcrete
   if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(

@@ -23,34 +23,6 @@ DefaultEngine *get_levelled_engine() {
   return levelled_engine;
 }
 
-void encode_and_expand_lut(uint64_t *output, size_t output_size,
-                           size_t out_MESSAGE_BITS, const uint64_t *lut,
-                           size_t lut_size) {
-  assert((output_size % lut_size) == 0);
-
-  size_t mega_case_size = output_size / lut_size;
-
-  assert((mega_case_size % 2) == 0);
-
-  for (size_t idx = 0; idx < mega_case_size / 2; ++idx) {
-    output[idx] = lut[0] << (64 - out_MESSAGE_BITS - 1);
-  }
-
-  for (size_t idx = (lut_size - 1) * mega_case_size + mega_case_size / 2;
-       idx < output_size; ++idx) {
-    output[idx] = -(lut[0] << (64 - out_MESSAGE_BITS - 1));
-  }
-
-  for (size_t lut_idx = 1; lut_idx < lut_size; ++lut_idx) {
-    uint64_t lut_value = lut[lut_idx] << (64 - out_MESSAGE_BITS - 1);
-    size_t start = mega_case_size * (lut_idx - 1) + mega_case_size / 2;
-    for (size_t output_idx = start; output_idx < start + mega_case_size;
-         ++output_idx) {
-      output[output_idx] = lut_value;
-    }
-  }
-}
-
 #include "concretelang/ClientLib/CRT.h"
 #include "concretelang/Runtime/wrappers.h"
 
@@ -217,13 +189,11 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   uint64_t glwe_ct_len = poly_size * (glwe_dim + 1);
   uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
   uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size);
-  std::vector<uint64_t> expanded_tabulated_function_array(poly_size);
-  encode_and_expand_lut(expanded_tabulated_function_array.data(), poly_size,
-                        precision, tlu_aligned + tlu_offset, tlu_size);
+
   CAPI_ASSERT_ERROR(
       default_engine_discard_trivially_encrypt_glwe_ciphertext_u64_raw_ptr_buffers(
-          get_levelled_engine(), glwe_ct, glwe_ct_len,
-          expanded_tabulated_function_array.data(), poly_size));
+          get_levelled_engine(), glwe_ct, glwe_ct_len, tlu_aligned + tlu_offset,
+          poly_size));
 
   // Move the glwe accumulator to the GPU
   void *glwe_ct_gpu =
@@ -261,32 +231,115 @@ void memref_batched_bootstrap_lwe_cuda_u64(
 
 #endif
 
-void memref_expand_lut_in_trivial_glwe_ct_u64(
-    uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
-    uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
-    uint32_t poly_size, uint32_t glwe_dimension, uint32_t out_precision,
-    uint64_t *lut_allocated, uint64_t *lut_aligned, uint64_t lut_offset,
-    uint64_t lut_size, uint64_t lut_stride) {
+void memref_encode_plaintext_with_crt(
+    uint64_t *output_allocated, uint64_t *output_aligned,
+    uint64_t output_offset, uint64_t output_size, uint64_t output_stride,
+    uint64_t input, uint64_t *mods_allocated, uint64_t *mods_aligned,
+    uint64_t mods_offset, uint64_t mods_size, uint64_t mods_stride,
+    uint64_t mods_product) {
 
-  assert(lut_stride == 1 && "Runtime: stride not equal to 1, check "
-                            "memref_expand_lut_in_trivial_glwe_ct_u64");
+  assert(output_stride == 1 && "Runtime: stride not equal to 1, check "
+                               "memref_encode_plaintext_with_crt");
 
-  assert(glwe_ct_stride == 1 && "Runtime: stride not equal to 1, check "
-                                "memref_expand_lut_in_trivial_glwe_ct_u64");
+  assert(mods_stride == 1 && "Runtime: stride not equal to 1, check "
+                             "memref_encode_plaintext_with_crt");
 
-  assert(glwe_ct_size == poly_size * (glwe_dimension + 1));
-
-  std::vector<uint64_t> expanded_tabulated_function_array(poly_size);
-
-  encode_and_expand_lut(expanded_tabulated_function_array.data(), poly_size,
-                        out_precision, lut_aligned + lut_offset, lut_size);
-
-  CAPI_ASSERT_ERROR(
-      default_engine_discard_trivially_encrypt_glwe_ciphertext_u64_raw_ptr_buffers(
-          get_levelled_engine(), glwe_ct_aligned + glwe_ct_offset, glwe_ct_size,
-          expanded_tabulated_function_array.data(), poly_size));
+  for (size_t i = 0; i < (size_t)mods_size; ++i) {
+    output_aligned[output_offset + i] =
+        encode_crt(input, mods_aligned[mods_offset + i], mods_product);
+  }
 
   return;
+}
+
+void memref_encode_expand_lut_for_bootstrap(
+    uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
+    uint64_t output_lut_offset, uint64_t output_lut_size,
+    uint64_t output_lut_stride, uint64_t *input_lut_allocated,
+    uint64_t *input_lut_aligned, uint64_t input_lut_offset,
+    uint64_t input_lut_size, uint64_t input_lut_stride, uint32_t poly_size,
+    uint32_t out_MESSAGE_BITS) {
+
+  assert(input_lut_stride == 1 && "Runtime: stride not equal to 1, check "
+                                  "memref_encode_expand_lut_bootstrap");
+
+  assert(output_lut_stride == 1 && "Runtime: stride not equal to 1, check "
+                                   "memref_encode_expand_lut_bootstrap");
+
+  size_t mega_case_size = output_lut_size / input_lut_size;
+
+  assert((mega_case_size % 2) == 0);
+
+  for (size_t idx = 0; idx < mega_case_size / 2; ++idx) {
+    output_lut_aligned[output_lut_offset + idx] =
+        input_lut_aligned[input_lut_offset] << (64 - out_MESSAGE_BITS - 1);
+  }
+
+  for (size_t idx = (input_lut_size - 1) * mega_case_size + mega_case_size / 2;
+       idx < output_lut_size; ++idx) {
+    output_lut_aligned[output_lut_offset + idx] =
+        -(input_lut_aligned[input_lut_offset] << (64 - out_MESSAGE_BITS - 1));
+  }
+
+  for (size_t lut_idx = 1; lut_idx < input_lut_size; ++lut_idx) {
+    uint64_t lut_value = input_lut_aligned[input_lut_offset + lut_idx]
+                         << (64 - out_MESSAGE_BITS - 1);
+    size_t start = mega_case_size * (lut_idx - 1) + mega_case_size / 2;
+    for (size_t output_idx = start; output_idx < start + mega_case_size;
+         ++output_idx) {
+      output_lut_aligned[output_lut_offset + output_idx] = lut_value;
+    }
+  }
+
+  return;
+}
+
+void memref_encode_expand_lut_for_woppbs(
+    // Output encoded/expanded lut
+    uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
+    uint64_t output_lut_offset, uint64_t output_lut_size,
+    uint64_t output_lut_stride,
+    // Input lut
+    uint64_t *input_lut_allocated, uint64_t *input_lut_aligned,
+    uint64_t input_lut_offset, uint64_t input_lut_size,
+    uint64_t input_lut_stride,
+    // Crt coprimes
+    uint64_t *crt_decomposition_allocated, uint64_t *crt_decomposition_aligned,
+    uint64_t crt_decomposition_offset, uint64_t crt_decomposition_size,
+    uint64_t crt_decomposition_stride,
+    // Crt number of bits
+    uint64_t *crt_bits_allocated, uint64_t *crt_bits_aligned,
+    uint64_t crt_bits_offset, uint64_t crt_bits_size, uint64_t crt_bits_stride,
+    // Crypto parameters
+    uint32_t poly_size, uint32_t modulus_product) {
+
+  assert(input_lut_stride == 1 && "Runtime: stride not equal to 1, check "
+                                  "memref_encode_expand_lut_woppbs");
+  assert(output_lut_stride == 1 && "Runtime: stride not equal to 1, check "
+                                   "memref_encode_expand_lut_woppbs");
+  assert(modulus_product > input_lut_size);
+
+  uint64_t lut_crt_size = output_lut_size / crt_decomposition_size;
+
+  for (uint64_t value = 0; value < input_lut_size; value++) {
+    uint64_t index_lut = 0;
+    uint64_t tmp = 1;
+
+    for (size_t block = 0; block < crt_decomposition_size; block++) {
+      auto base = crt_decomposition_aligned[crt_decomposition_offset + block];
+      auto bits = crt_bits_aligned[crt_bits_offset + block];
+      index_lut += (((value % base) << bits) / base) * tmp;
+      tmp <<= bits;
+    }
+
+    for (size_t block = 0; block < crt_decomposition_size; block++) {
+      auto base = crt_decomposition_aligned[crt_decomposition_offset + block];
+      auto v = encode_crt(input_lut_aligned[input_lut_offset + value], base,
+                          modulus_product);
+      output_lut_aligned[output_lut_offset + block * lut_crt_size + index_lut] =
+          v;
+    }
+  }
 }
 
 void memref_add_lwe_ciphertexts_u64(
@@ -387,15 +440,10 @@ void memref_bootstrap_lwe_u64(
   uint64_t glwe_ct_size = poly_size * (glwe_dim + 1);
   uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
 
-  std::vector<uint64_t> expanded_tabulated_function_array(poly_size);
-
-  encode_and_expand_lut(expanded_tabulated_function_array.data(), poly_size,
-                        precision, tlu_aligned + tlu_offset, tlu_size);
-
   CAPI_ASSERT_ERROR(
       default_engine_discard_trivially_encrypt_glwe_ciphertext_u64_raw_ptr_buffers(
           get_levelled_engine(), glwe_ct, glwe_ct_size,
-          expanded_tabulated_function_array.data(), poly_size));
+          tlu_aligned + tlu_offset, poly_size));
 
   CAPI_ASSERT_ERROR(
       fft_engine_lwe_ciphertext_discarding_bootstrap_u64_raw_ptr_buffers(
@@ -428,40 +476,6 @@ void memref_batched_bootstrap_lwe_u64(
 
 uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product) {
   return concretelang::clientlib::crt::encode(plaintext, modulus, product);
-}
-
-void generate_luts_crt_without_padding(
-    uint64_t *&luts_crt, uint64_t &total_luts_crt_size, uint64_t *crt_decomp,
-    uint64_t *number_of_bits_per_block, size_t crt_size, uint64_t *lut,
-    uint64_t lut_size, uint64_t total_number_of_bits, uint64_t modulus,
-    uint64_t polynomialSize) {
-
-  uint64_t lut_crt_size = uint64_t(1) << total_number_of_bits;
-  lut_crt_size = std::max(lut_crt_size, polynomialSize);
-
-  total_luts_crt_size = crt_size * lut_crt_size;
-  luts_crt = (uint64_t *)aligned_alloc(U64_ALIGNMENT,
-                                       sizeof(uint64_t) * total_luts_crt_size);
-
-  assert(modulus > lut_size);
-  for (uint64_t value = 0; value < lut_size; value++) {
-    uint64_t index_lut = 0;
-
-    uint64_t tmp = 1;
-
-    for (size_t block = 0; block < crt_size; block++) {
-      auto base = crt_decomp[block];
-      auto bits = number_of_bits_per_block[block];
-      index_lut += (((value % base) << bits) / base) * tmp;
-      tmp <<= bits;
-    }
-
-    for (size_t block = 0; block < crt_size; block++) {
-      auto base = crt_decomp[block];
-      auto v = encode_crt(lut[value], base, modulus);
-      luts_crt[block * lut_crt_size + index_lut] = v;
-    }
-  }
 }
 
 void memref_wop_pbs_crt_buffer(
@@ -543,23 +557,14 @@ void memref_wop_pbs_crt_buffer(
             in_block, nb_bits_to_extract, delta_log));
   }
 
-  uint64_t *luts_crt;
-  uint64_t luts_crt_size;
-  generate_luts_crt_without_padding(
-      luts_crt, luts_crt_size, crt_decomp_aligned, number_of_bits_per_block,
-      crt_decomp_size, lut_ct_aligned, lut_ct_size,
-      total_number_of_bits_per_block, message_modulus, polynomial_size);
-
   // Vertical packing
   CAPI_ASSERT_ERROR(
       fft_engine_lwe_ciphertext_vector_discarding_circuit_bootstrap_boolean_vertical_packing_u64_raw_ptr_buffers(
           context->get_fft_engine(), context->get_default_engine(),
           context->get_fft_fourier_bsk(), out_aligned, lwe_big_size,
           crt_decomp_size, extract_bits_output_buffer, lwe_small_size,
-          total_number_of_bits_per_block, luts_crt, luts_crt_size,
-          cbs_level_count, cbs_base_log, context->get_fpksk()));
-
-  free(luts_crt);
+          total_number_of_bits_per_block, lut_ct_aligned + lut_ct_offset,
+          lut_ct_size, cbs_level_count, cbs_base_log, context->get_fpksk()));
 }
 
 void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,

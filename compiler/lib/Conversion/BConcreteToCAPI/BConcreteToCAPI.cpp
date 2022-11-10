@@ -43,6 +43,12 @@ char memref_expand_lut_in_trivial_glwe_ct_u64[] =
 
 char memref_wop_pbs_crt_buffer[] = "memref_wop_pbs_crt_buffer";
 
+char memref_encode_plaintext_with_crt[] = "memref_encode_plaintext_with_crt";
+char memref_encode_expand_lut_for_bootstrap[] =
+    "memref_encode_expand_lut_for_bootstrap";
+char memref_encode_expand_lut_for_woppbs[] =
+    "memref_encode_expand_lut_for_woppbs";
+
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
   std::vector<int64_t> shape(rank, -1);
@@ -161,6 +167,24 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                            contextType,
                                        },
                                        {});
+
+  } else if (funcName == memref_encode_plaintext_with_crt) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref1DType, rewriter.getI64Type(),
+                                        memref1DType, rewriter.getI64Type()},
+                                       {});
+  } else if (funcName == memref_encode_expand_lut_for_bootstrap) {
+    funcType =
+        mlir::FunctionType::get(rewriter.getContext(),
+                                {memref1DType, memref1DType,
+                                 rewriter.getI32Type(), rewriter.getI32Type()},
+                                {});
+  } else if (funcName == memref_encode_expand_lut_for_woppbs) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref1DType, memref1DType, memref1DType, memref1DType,
+         rewriter.getI32Type(), rewriter.getI32Type()},
+        {});
   } else {
     op->emitError("unknwon external function") << funcName;
     return mlir::failure();
@@ -301,6 +325,92 @@ void wopPBSAddOperands(BConcrete::WopPBSCRTLweBufferOp op,
   operands.push_back(getContextArgument(op));
 }
 
+void encodePlaintextWithCrtAddOperands(
+    BConcrete::EncodePlaintextWithCrtBufferOp op,
+    mlir::SmallVector<mlir::Value> &operands, mlir::RewriterBase &rewriter) {
+  // mods
+  mlir::Type modsType = mlir::RankedTensorType::get({(int)op.modsAttr().size()},
+                                                    rewriter.getI64Type());
+  std::vector<int64_t> modsValues;
+  for (auto a : op.mods()) {
+    modsValues.push_back(a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
+  }
+  auto modsAttr = rewriter.getI64TensorAttr(modsValues);
+  auto modsOp =
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), modsAttr, modsType);
+  auto modsGlobalMemref = mlir::bufferization::getGlobalFor(modsOp, 0);
+  rewriter.eraseOp(modsOp);
+  assert(!failed(modsGlobalMemref));
+  auto modsGlobalRef = rewriter.create<memref::GetGlobalOp>(
+      op.getLoc(), (*modsGlobalMemref).type(), (*modsGlobalMemref).getName());
+  operands.push_back(getCastedMemRef(rewriter, modsGlobalRef));
+
+  // mods_prod
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.modsProdAttr()));
+}
+
+void encodeExpandLutForBootstrapAddOperands(
+    BConcrete::EncodeExpandLutForBootstrapBufferOp op,
+    mlir::SmallVector<mlir::Value> &operands, mlir::RewriterBase &rewriter) {
+  // poly_size
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
+  // output bits
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.outputBitsAttr()));
+}
+
+void encodeExpandLutForWopPBSAddOperands(
+    BConcrete::EncodeExpandLutForWopPBSBufferOp op,
+    mlir::SmallVector<mlir::Value> &operands, mlir::RewriterBase &rewriter) {
+
+  // crt_decomposition
+  mlir::Type crtDecompositionType = mlir::RankedTensorType::get(
+      {(int)op.crtDecompositionAttr().size()}, rewriter.getI64Type());
+  std::vector<int64_t> crtDecompositionValues;
+  for (auto a : op.crtDecomposition()) {
+    crtDecompositionValues.push_back(
+        a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
+  }
+  auto crtDecompositionAttr = rewriter.getI64TensorAttr(crtDecompositionValues);
+  auto crtDecompositionOp = rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), crtDecompositionAttr, crtDecompositionType);
+  auto crtDecompositionGlobalMemref =
+      mlir::bufferization::getGlobalFor(crtDecompositionOp, 0);
+  rewriter.eraseOp(crtDecompositionOp);
+  assert(!failed(crtDecompositionGlobalMemref));
+  auto crtDecompositionGlobalRef = rewriter.create<memref::GetGlobalOp>(
+      op.getLoc(), (*crtDecompositionGlobalMemref).type(),
+      (*crtDecompositionGlobalMemref).getName());
+  operands.push_back(getCastedMemRef(rewriter, crtDecompositionGlobalRef));
+
+  // crt_bits
+  mlir::Type crtBitsType = mlir::RankedTensorType::get(
+      {(int)op.crtBitsAttr().size()}, rewriter.getI64Type());
+  std::vector<int64_t> crtBitsValues;
+  for (auto a : op.crtBits()) {
+    crtBitsValues.push_back(
+        a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
+  }
+  auto crtBitsAttr = rewriter.getI64TensorAttr(crtBitsValues);
+  auto crtBitsOp = rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), crtBitsAttr, crtBitsType);
+  auto crtBitsGlobalMemref = mlir::bufferization::getGlobalFor(crtBitsOp, 0);
+  rewriter.eraseOp(crtBitsOp);
+  assert(!failed(crtBitsGlobalMemref));
+  auto crtBitsGlobalRef = rewriter.create<memref::GetGlobalOp>(
+      op.getLoc(), (*crtBitsGlobalMemref).type(),
+      (*crtBitsGlobalMemref).getName());
+  operands.push_back(getCastedMemRef(rewriter, crtBitsGlobalRef));
+  // poly_size
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
+  // modulus_product
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.modulusProductAttr()));
+}
+
 struct BConcreteToCAPIPass : public BConcreteToCAPIBase<BConcreteToCAPIPass> {
 
   BConcreteToCAPIPass(bool gpu) : gpu(gpu) {}
@@ -334,6 +444,18 @@ struct BConcreteToCAPIPass : public BConcreteToCAPIBase<BConcreteToCAPIPass> {
     patterns.add<BConcreteToCAPICallPattern<BConcrete::NegateLweBufferOp,
                                             memref_negate_lwe_ciphertext_u64>>(
         &getContext());
+    patterns.add<
+        BConcreteToCAPICallPattern<BConcrete::EncodePlaintextWithCrtBufferOp,
+                                   memref_encode_plaintext_with_crt>>(
+        &getContext(), encodePlaintextWithCrtAddOperands);
+    patterns.add<BConcreteToCAPICallPattern<
+        BConcrete::EncodeExpandLutForBootstrapBufferOp,
+        memref_encode_expand_lut_for_bootstrap>>(
+        &getContext(), encodeExpandLutForBootstrapAddOperands);
+    patterns.add<
+        BConcreteToCAPICallPattern<BConcrete::EncodeExpandLutForWopPBSBufferOp,
+                                   memref_encode_expand_lut_for_woppbs>>(
+        &getContext(), encodeExpandLutForWopPBSAddOperands);
     if (gpu) {
       patterns.add<BConcreteToCAPICallPattern<BConcrete::KeySwitchLweBufferOp,
                                               memref_keyswitch_lwe_cuda_u64>>(

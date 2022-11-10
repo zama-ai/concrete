@@ -67,18 +67,6 @@ void GlweCiphertextType::print(mlir::AsmPrinter &p) const {
 
 void LweCiphertextType::print(mlir::AsmPrinter &p) const {
   p << "<";
-  // decomposition parameters if any
-  auto crt = getCrtDecomposition();
-  if (!crt.empty()) {
-    p << "crt=[";
-    for (auto c : crt.drop_back(1)) {
-      printSigned(p, c);
-      p << ",";
-    }
-    printSigned(p, crt.back());
-    p << "]";
-    p << ",";
-  }
   printSigned(p, getDimension());
   p << ",";
   printSigned(p, getP());
@@ -88,29 +76,6 @@ void LweCiphertextType::print(mlir::AsmPrinter &p) const {
 mlir::Type LweCiphertextType::parse(mlir::AsmParser &parser) {
   if (parser.parseLess())
     return mlir::Type();
-
-  // Parse for the crt decomposition if any
-  std::vector<int64_t> crtDecomposition;
-  if (!parser.parseOptionalKeyword("crt")) {
-    if (parser.parseEqual() || parser.parseLSquare())
-      return mlir::Type();
-    while (true) {
-      int64_t c = -1;
-      if (parser.parseOptionalKeyword("_") && parser.parseInteger(c)) {
-        return mlir::Type();
-      }
-      crtDecomposition.push_back(c);
-      if (parser.parseOptionalComma()) {
-        if (parser.parseRSquare()) {
-          return mlir::Type();
-        } else {
-          break;
-        }
-      }
-    }
-    if (parser.parseComma())
-      return mlir::Type();
-  }
 
   int dimension = -1;
   if (parser.parseOptionalKeyword("_") && parser.parseInteger(dimension))
@@ -125,7 +90,7 @@ mlir::Type LweCiphertextType::parse(mlir::AsmParser &parser) {
 
   mlir::Location loc = parser.getEncodedSourceLoc(parser.getNameLoc());
 
-  return getChecked(loc, loc.getContext(), dimension, p, crtDecomposition);
+  return getChecked(loc, loc.getContext(), dimension, p);
 }
 
 void CleartextType::print(mlir::AsmPrinter &p) const {
