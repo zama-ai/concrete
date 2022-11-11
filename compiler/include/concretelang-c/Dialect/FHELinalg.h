@@ -8,8 +8,6 @@
 
 #include "mlir-c/IR.h"
 #include "mlir-c/Registration.h"
-#include "mlir/IR/Diagnostics.h"
-#include "mlir/Support/LLVM.h"
 
 #ifdef __cplusplus
 extern "C" {

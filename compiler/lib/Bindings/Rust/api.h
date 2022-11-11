@@ -4,6 +4,7 @@
 // for license information.
 
 #include <concretelang-c/Dialect/FHE.h>
+#include <concretelang-c/Dialect/FHELinalg.h>
 #include <mlir-c/AffineExpr.h>
 #include <mlir-c/AffineMap.h>
 #include <mlir-c/BuiltinAttributes.h>

@@ -233,6 +233,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     // concrete-compiler libs
     println!("cargo:rustc-link-lib=static=CONCRETELANGCAPIFHE");
     println!("cargo:rustc-link-lib=static=FHEDialect");
+    println!("cargo:rustc-link-lib=static=CONCRETELANGCAPIFHELINALG");
+    println!("cargo:rustc-link-lib=static=FHELinalgDialect");
 
     println!("cargo:rerun-if-changed=api.h");
     bindgen::builder()

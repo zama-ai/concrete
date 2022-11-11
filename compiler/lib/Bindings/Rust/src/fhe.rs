@@ -135,13 +135,13 @@ pub fn create_fhe_apply_lut_op(
     context: MlirContext,
     eint: MlirValue,
     lut: MlirValue,
-    out_type: MlirType,
+    result_type: MlirType,
 ) -> MlirOperation {
     create_op(
         context,
         "FHE.apply_lookup_table",
         &[eint, lut],
-        [out_type].as_slice(),
+        [result_type].as_slice(),
         &[],
         false,
     )
@@ -177,16 +177,26 @@ pub fn create_fhe_to_unsigned_op(context: MlirContext, esint: MlirValue) -> Mlir
     }
 }
 
-pub fn create_fhe_zero_eint_op(context: MlirContext, out_type: MlirType) -> MlirOperation {
-    create_op(context, "FHE.zero", &[], [out_type].as_slice(), &[], false)
+pub fn create_fhe_zero_eint_op(context: MlirContext, result_type: MlirType) -> MlirOperation {
+    create_op(
+        context,
+        "FHE.zero",
+        &[],
+        [result_type].as_slice(),
+        &[],
+        false,
+    )
 }
 
-pub fn create_fhe_zero_eint_tensor_op(context: MlirContext, out_type: MlirType) -> MlirOperation {
+pub fn create_fhe_zero_eint_tensor_op(
+    context: MlirContext,
+    result_type: MlirType,
+) -> MlirOperation {
     create_op(
         context,
         "FHE.zero_tensor",
         &[],
-        [out_type].as_slice(),
+        [result_type].as_slice(),
         &[],
         false,
     )
