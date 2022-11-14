@@ -24,12 +24,8 @@ MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(FHE, fhe, FHEDialect)
 // Type API.
 //===----------------------------------------------------------------------===//
 
-bool fheTypeIsAnEncryptedIntegerType(MlirType type) {
-  return unwrap(type).isa<EncryptedIntegerType>();
-}
-
-MlirTypeOrError fheEncryptedIntegerTypeGetChecked(MlirContext ctx,
-                                                  unsigned width) {
+template <typename T>
+MlirTypeOrError IntegerTypeGetChecked(MlirContext ctx, unsigned width) {
   MlirTypeOrError type = {{NULL}, false};
   auto catchError = [&]() -> mlir::InFlightDiagnostic {
     type.isError = true;
@@ -40,11 +36,28 @@ MlirTypeOrError fheEncryptedIntegerTypeGetChecked(MlirContext ctx,
     return engine.emit(mlir::UnknownLoc::get(unwrap(ctx)),
                        mlir::DiagnosticSeverity::Warning);
   };
-  EncryptedIntegerType eint =
-      EncryptedIntegerType::getChecked(catchError, unwrap(ctx), width);
+  T integerType = T::getChecked(catchError, unwrap(ctx), width);
   if (type.isError) {
     return type;
   }
-  type.type = wrap(eint);
+  type.type = wrap(integerType);
   return type;
+}
+
+bool fheTypeIsAnEncryptedIntegerType(MlirType type) {
+  return unwrap(type).isa<EncryptedIntegerType>();
+}
+
+MlirTypeOrError fheEncryptedIntegerTypeGetChecked(MlirContext ctx,
+                                                  unsigned width) {
+  return IntegerTypeGetChecked<EncryptedIntegerType>(ctx, width);
+}
+
+bool fheTypeIsAnEncryptedSignedIntegerType(MlirType type) {
+  return unwrap(type).isa<EncryptedSignedIntegerType>();
+}
+
+MlirTypeOrError fheEncryptedSignedIntegerTypeGetChecked(MlirContext ctx,
+                                                        unsigned width) {
+  return IntegerTypeGetChecked<EncryptedSignedIntegerType>(ctx, width);
 }

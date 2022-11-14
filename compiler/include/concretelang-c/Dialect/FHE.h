@@ -29,6 +29,13 @@ fheEncryptedIntegerTypeGetChecked(MlirContext context, unsigned width);
 /// If the type is an EncryptedInteger
 MLIR_CAPI_EXPORTED bool fheTypeIsAnEncryptedIntegerType(MlirType);
 
+/// Creates an encrypted signed integer type of `width` bits
+MLIR_CAPI_EXPORTED MlirTypeOrError
+fheEncryptedSignedIntegerTypeGetChecked(MlirContext context, unsigned width);
+
+/// If the type is an EncryptedSignedInteger
+MLIR_CAPI_EXPORTED bool fheTypeIsAnEncryptedSignedIntegerType(MlirType);
+
 #ifdef __cplusplus
 }
 #endif
