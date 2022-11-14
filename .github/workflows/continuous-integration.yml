@@ -26,6 +26,8 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
       - name: Format with clang-format (Cpp)
         run: sudo apt install moreutils && .github/workflows/scripts/format_cpp.sh
+      - name: Format with cmake-format (Cmake)
+        run: pip3 install cmakelang && .github/workflows/scripts/format_cmake.sh 
       - name: Format with black (Python)
         run: |
           cd compiler
