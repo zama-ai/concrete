@@ -392,7 +392,8 @@ fn radmodint_unchecked_mul_many_sizes(c: &mut Criterion) {
     //At most 4bits
     let max_message_space = 4;
 
-    for msg_space in [16] {
+    let message_spaces = [16];
+    for msg_space in message_spaces {
         let dec = radix_decomposition(msg_space, 2, max_message_space);
         println!("radix decomposition = {:?}", dec);
         for rad_decomp in dec.iter() {
@@ -448,7 +449,8 @@ fn radmodint_wopbs(c: &mut Criterion) {
     //At most 4bits
     let max_message_space = 4;
 
-    for msg_space in [16] {
+    let message_spaces = [16];
+    for msg_space in message_spaces {
         let dec = radix_decomposition(msg_space, 2, max_message_space);
         println!("radix decomposition = {:?}", dec);
         //for rad_decomp in dec.iter() {
