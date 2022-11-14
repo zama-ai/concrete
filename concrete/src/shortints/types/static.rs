@@ -1,3 +1,8 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "serde")]
+use std::fmt::Formatter;
+
 use concrete_shortint::parameters::{
     CarryModulus, DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension,
     MessageModulus, Parameters, PolynomialSize, StandardDev,
@@ -86,8 +91,45 @@ impl<const MESSAGE_BITS: u8> From<ShortIntegerParameterSet<MESSAGE_BITS>> for Pa
 }
 
 /// The Id that is used to identify and retrieve the corresponding keys
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
 pub struct ShorIntId<const MESSAGE_BITS: u8>;
+
+#[cfg(feature = "serde")]
+impl<const MESSAGE_BITS: u8> Serialize for ShorIntId<MESSAGE_BITS> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_unit_struct("ShorIntId")
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, const MESSAGE_BITS: u8> Deserialize<'de> for ShorIntId<MESSAGE_BITS> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor<const MESSAGE_BITS: u8>;
+
+        impl<'de, const MESSAGE_BITS: u8> serde::de::Visitor<'de> for Visitor<MESSAGE_BITS> {
+            type Value = ShorIntId<MESSAGE_BITS>;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                formatter.write_str("struct ShorIntId")
+            }
+
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(ShorIntId::<MESSAGE_BITS>)
+            }
+        }
+
+        deserializer.deserialize_unit_struct("ShorIntId", Visitor::<MESSAGE_BITS>)
+    }
+}
 
 impl<const MESSAGE_BITS: u8> ShortIntegerParameter for ShortIntegerParameterSet<MESSAGE_BITS> {
     type Id = ShorIntId<MESSAGE_BITS>;
@@ -276,5 +318,23 @@ impl FheUint4Parameters {
 impl Default for FheUint4Parameters {
     fn default() -> Self {
         Self::with_carry_4()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[cfg(feature = "serde")]
+    use super::*;
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn can_serialize_deserialize_shortint_id() {
+        let id = ShorIntId::<2>;
+        let mut cursor = std::io::Cursor::new(Vec::<u8>::new());
+        bincode::serialize_into(&mut cursor, &id).unwrap();
+        cursor.set_position(0);
+        let id2: ShorIntId<2> = bincode::deserialize_from(cursor).unwrap();
+
+        assert_eq!(id, id2);
     }
 }
