@@ -106,6 +106,12 @@ jobs:
           cd compiler
           make concrete-optimizer-lib
 
+      - name: Build compiler and end-to-end benchmarks
+        run: |
+          set -e
+          cd compiler
+          make BINDINGS_PYTHON_ENABLED=OFF build-benchmarks generate-benchmarks
+
       - name: Download KeySetCache
         if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
         continue-on-error: true
@@ -113,11 +119,7 @@ jobs:
           cd compiler
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
-      - name: Mark KeySetCache
-        run: |
-          touch keysetcache.timestamp
-
-      - name: Build compiler and run end-to-end benchmarks
+      - name: Run end-to-end benchmarks
         run: |
           set -e
           cd compiler
