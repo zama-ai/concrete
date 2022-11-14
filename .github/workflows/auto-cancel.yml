@@ -10,5 +10,5 @@ jobs:
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
         with:
-          workflow_id: all
+          workflow_id: continuous-integration.yml
           access_token: ${{ github.token }}
