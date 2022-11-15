@@ -85,6 +85,18 @@ def BConcrete_KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
+def BConcrete_BatchedKeySwitchLweBufferOp : BConcrete_Op<"batched_keyswitch_lwe_buffer"> {
+    let arguments = (ins
+        // LweKeySwitchKeyType:$keyswitch_key,
+        2DTensorOf<[I64]>:$ciphertext,
+        I32Attr:$level,
+        I32Attr:$baseLog,
+        I32Attr:$lwe_dim_in,
+        I32Attr:$lwe_dim_out
+    );
+    let results = (outs 2DTensorOf<[I64]>:$result);
+}
+
 def BConcrete_BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
     let arguments = (ins
         1DTensorOf<[I64]>:$input_ciphertext,
@@ -97,6 +109,20 @@ def BConcrete_BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
         I32Attr:$outPrecision
     );
     let results = (outs 1DTensorOf<[I64]>:$result);
+}
+
+def BConcrete_BatchedBootstrapLweBufferOp : BConcrete_Op<"batched_bootstrap_lwe_buffer"> {
+    let arguments = (ins
+        2DTensorOf<[I64]>:$input_ciphertext,
+        1DTensorOf<[I64]>:$lookup_table,
+        I32Attr:$inputLweDim,
+        I32Attr:$polySize,
+        I32Attr:$level,
+        I32Attr:$baseLog,
+        I32Attr:$glweDimension,
+        I32Attr:$outPrecision
+    );
+    let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
 // TODO(16bits): hack
