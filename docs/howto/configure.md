@@ -58,6 +58,9 @@ Additional kwarg to `compile` function have higher precedence. So if you set an 
 * **show\_mlir**: bool = False
   * Whether to print MLIR during compilation.
 
+* **show\_optimizer**: bool = False
+  * Whether to print optimizer output during compilation.
+
 * **verbose**: bool = False
   * Whether to print computation graph and MLIR during compilation.
   
