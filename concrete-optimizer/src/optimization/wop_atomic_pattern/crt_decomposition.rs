@@ -12,7 +12,8 @@ pub fn default_coprimes(precision: Precision) -> Vec<u64> {
         8 => vec![5, 7, 8],                   // 3,3,3 bits
         9 => vec![5, 7, 16],                  // 3,3,4 bits
         10 => vec![7, 15, 16],                // 3,4,4 bits
-        11 | 12 => vec![13, 15, 16],          // 4,4,4 bits
+        11 => vec![13, 15, 16],               // 4,4,4 bits
+        12 => vec![7, 13, 15, 16],            // 3,4,4,4 bits
         13 | 14 | 15 => vec![11, 13, 15, 16], // 4,4,4,4 bits
         16 => vec![7, 8, 9, 11, 13],          // 4,4,4,4,4 bits
         0 => panic!("Precision cannot be zero"),
@@ -32,4 +33,18 @@ pub fn precisions_from_coprimes(coprimes: &[u64]) -> Vec<u64> {
         .copied()
         .map(|coprime| bitwidth(coprime) as u64)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_coprimes() {
+        for precision in 1..=16 {
+            let coprimes = default_coprimes(precision);
+            let prod: u64 = coprimes.iter().product();
+            println!("{precision} {prod}");
+            assert!((1 << precision) <= prod);
+        }
+    }
 }
