@@ -107,17 +107,20 @@ static void display(optimizer::Description &descr,
   auto constraint = descr.constraint;
   auto complexity_label =
       descr.dag ? "for the full circuit" : "for each Pbs call";
+  double mops = int(10 * sol.complexity / (1000 * 1000)) / 10.0;
   auto o = llvm::outs;
   o() << "--- Circuit\n"
       << "  " << constraint.p << " bits integers\n"
       << "  " << constraint.norm2 << " manp (maxi log2 norm2)\n"
       << "  " << duration.count() << "ms to solve\n"
-      << "--- Optimizer config\n"
-      << "  " << optimizerConfig.p_error << " error per pbs call\n"
-      << "  " << optimizerConfig.global_p_error << " error per circuit call\n"
-      << "--- Complexity " << complexity_label << "\n"
-      << "  " << (long)sol.complexity / (1000 * 1000)
-      << " Millions Operations\n"
+      << "--- User config\n"
+      << "  " << optimizerConfig.p_error << " error per pbs call\n";
+  if (!std::isnan(optimizerConfig.global_p_error)) {
+    o() << "  " << optimizerConfig.global_p_error
+        << " error per circuit call\n";
+  }
+  o() << "--- Complexity " << complexity_label << "\n"
+      << "  " << mops << " Millions Operations\n"
       << "--- Correctness for each Pbs call\n"
       << "  1/" << int(1.0 / sol.p_error) << " errors (" << sol.p_error
       << ")\n";
