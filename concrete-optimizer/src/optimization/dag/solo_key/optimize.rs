@@ -912,6 +912,7 @@ mod tests {
         precision: Precision,
         rounded_precision: Precision,
         weight: i64,
+        check_linear_speedup: bool,
     ) {
         let dag_no_rounded = circuit_with_rounded_lut(precision, precision, weight);
         let dag_rounded = circuit_with_rounded_lut(rounded_precision, precision, weight);
@@ -944,10 +945,12 @@ mod tests {
             assert!(best_reduced.complexity < best_rounded.complexity);
         }
         // linear speedup
-        assert!(
-            best_rounded.complexity * (precision - rounded_precision) as f64
-                <= best_no_rounded_complexity
-        );
+        if check_linear_speedup {
+            assert!(
+                best_rounded.complexity * (precision - rounded_precision) as f64
+                    <= best_no_rounded_complexity
+            );
+        }
     }
 
     #[allow(clippy::unnecessary_cast)] // clippy bug refusing as Precision on const
@@ -955,7 +958,7 @@ mod tests {
     fn test_global_p_error_rounded_lut() {
         let precision = 8 as Precision;
         for rounded_precision in 4..9 {
-            check_global_p_error_rounded_lut(precision, rounded_precision, 1);
+            check_global_p_error_rounded_lut(precision, rounded_precision, 1, true);
         }
     }
 
@@ -966,7 +969,7 @@ mod tests {
         for precision in [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] {
             for weight in [1, 2, 4, 8, 16, 32, 64, 128] {
                 println!("{precision} {weight}");
-                check_global_p_error_rounded_lut(precision, rounded_precision, weight);
+                check_global_p_error_rounded_lut(precision, rounded_precision, weight, false);
             }
         }
     }
