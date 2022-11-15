@@ -36,6 +36,12 @@ fheEncryptedSignedIntegerTypeGetChecked(MlirContext context, unsigned width);
 /// If the type is an EncryptedSignedInteger
 MLIR_CAPI_EXPORTED bool fheTypeIsAnEncryptedSignedIntegerType(MlirType);
 
+/// \brief Get bitwidth of the encrypted integer type.
+///
+/// \return bitwidth of the encrypted integer or 0 if it's not an encrypted
+/// integer
+MLIR_CAPI_EXPORTED unsigned fheTypeIntegerWidthGet(MlirType);
+
 #ifdef __cplusplus
 }
 #endif

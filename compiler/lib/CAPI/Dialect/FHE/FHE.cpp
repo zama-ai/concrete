@@ -61,3 +61,16 @@ MlirTypeOrError fheEncryptedSignedIntegerTypeGetChecked(MlirContext ctx,
                                                         unsigned width) {
   return IntegerTypeGetChecked<EncryptedSignedIntegerType>(ctx, width);
 }
+
+unsigned fheTypeIntegerWidthGet(MlirType integerType) {
+  mlir::Type type = unwrap(integerType);
+  auto eint = type.dyn_cast_or_null<EncryptedIntegerType>();
+  if (eint) {
+    return eint.getWidth();
+  }
+  auto esint = type.dyn_cast_or_null<EncryptedSignedIntegerType>();
+  if (esint) {
+    return esint.getWidth();
+  }
+  return 0;
+}
