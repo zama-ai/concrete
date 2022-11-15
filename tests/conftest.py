@@ -3,6 +3,7 @@ Configuration of `pytest`.
 """
 
 import json
+import os
 import random
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union
@@ -11,6 +12,10 @@ import numpy as np
 import pytest
 
 import concrete.numpy as cnp
+import tests
+
+tests_directory = os.path.dirname(tests.__file__)
+
 
 INSECURE_KEY_CACHE_LOCATION = None
 
@@ -278,6 +283,14 @@ Actual Output
             actual (str):
                 actual str
         """
+
+        # remove error line information
+        # there are explicit tests to make sure the line information is correct
+        # however, it would have been very hard to keep the other tests up to date
+
+        actual = "\n".join(
+            line for line in actual.splitlines() if not line.strip().startswith(tests_directory)
+        )
 
         assert (
             actual.strip() == expected.strip()

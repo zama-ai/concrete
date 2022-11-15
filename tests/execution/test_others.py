@@ -702,31 +702,31 @@ def test_others_bad_fusing(helpers):
 
 A subgraph within the function you are trying to compile cannot be fused because it has multiple input nodes
 
- %0 = 10                             # ClearScalar<uint4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
- %1 = 10                             # ClearScalar<uint4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
- %2 = 2                              # ClearScalar<uint2>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
+ %0 = x                              # EncryptedScalar<uint1>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this is one of the input nodes
+ %1 = y                              # ClearScalar<uint1>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this is one of the input nodes
+ %2 = sin(%0)                        # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
  %3 = 2                              # ClearScalar<uint2>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
- %4 = x                              # EncryptedScalar<uint1>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this is one of the input nodes
- %5 = y                              # ClearScalar<uint1>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this is one of the input nodes
- %6 = sin(%4)                        # EncryptedScalar<float64>
+ %4 = power(%2, %3)                  # EncryptedScalar<float64>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
- %7 = cos(%5)                        # ClearScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
- %8 = power(%6, %2)                  # EncryptedScalar<float64>
+ %5 = 10                             # ClearScalar<uint4>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
+ %6 = multiply(%5, %4)               # EncryptedScalar<float64>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
- %9 = power(%7, %3)                  # ClearScalar<float64>
+ %7 = cos(%1)                        # ClearScalar<float64>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
-%10 = multiply(%0, %8)               # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
-%11 = multiply(%1, %9)               # ClearScalar<float64>
+ %8 = 2                              # ClearScalar<uint2>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
+ %9 = power(%7, %8)                  # ClearScalar<float64>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
-%12 = add(%10, %11)                  # EncryptedScalar<float64>
+%10 = 10                             # ClearScalar<uint4>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
+%11 = multiply(%10, %9)              # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
+%12 = add(%6, %11)                   # EncryptedScalar<float64>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph
 %13 = astype(%12, dtype=int_)        # EncryptedScalar<uint1>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within this subgraph

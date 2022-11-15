@@ -43,7 +43,6 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "3.after-fusing.graph.txt").exists()
         assert (tmpdir / "4.final.graph.txt").exists()
 
-        assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()
         assert (tmpdir / "client_parameters.json").exists()
 
@@ -60,6 +59,5 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "3.after-fusing.graph.txt").exists()
         assert (tmpdir / "4.final.graph.txt").exists()
 
-        assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()
         assert (tmpdir / "client_parameters.json").exists()

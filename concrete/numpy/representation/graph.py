@@ -2,6 +2,7 @@
 Declaration of `Graph` class.
 """
 
+import re
 from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -25,11 +26,14 @@ class Graph:
 
     input_indices: Dict[Node, int]
 
+    is_direct: bool
+
     def __init__(
         self,
         graph: nx.MultiDiGraph,
         input_nodes: Dict[int, Node],
         output_nodes: Dict[int, Node],
+        is_direct: bool = False,
     ):
         self.graph = graph
 
@@ -37,6 +41,8 @@ class Graph:
         self.output_nodes = output_nodes
 
         self.input_indices = {node: index for index, node in input_nodes.items()}
+
+        self.is_direct = is_direct
 
         self.prune_useless_nodes()
 
@@ -82,7 +88,10 @@ class Graph:
             except Exception as error:
                 raise RuntimeError(
                     "Evaluation of the graph failed\n\n"
-                    + self.format(highlighted_nodes={node: ["evaluation of this node failed"]})
+                    + self.format(
+                        highlighted_nodes={node: ["evaluation of this node failed"]},
+                        show_bounds=False,
+                    )
                 ) from error
 
         return node_results
@@ -91,6 +100,10 @@ class Graph:
         self,
         maximum_constant_length: int = 25,
         highlighted_nodes: Optional[Dict[Node, List[str]]] = None,
+        show_types: bool = True,
+        show_bounds: bool = True,
+        show_tags: bool = True,
+        show_locations: bool = False,
     ) -> str:
         """
         Get the textual representation of the `Graph`.
@@ -102,10 +115,27 @@ class Graph:
             highlighted_nodes (Optional[Dict[Node, List[str]]], default = None):
                 nodes to be highlighted and their corresponding messages
 
+            show_types (bool, default = True):
+                whether to show types of nodes
+
+            show_bounds (bool, default = True):
+                whether to show bounds of nodes
+
+            show_tags (bool, default = True):
+                whether to show tags of nodes
+
+            show_locations (bool, default = False):
+                whether to show line information of nodes
+
         Returns:
             str:
                 textual representation of the `Graph`
         """
+
+        # pylint: disable=too-many-branches,too-many-locals,too-many-statements
+
+        if self.is_direct:
+            show_bounds = False
 
         # node -> identifier
         # e.g., id_map[node1] = 2
@@ -115,9 +145,9 @@ class Graph:
         # lines that will be merged at the end
         lines: List[str] = []
 
-        # type information to add to each line
-        # (for alingment, this is done after lines are determined)
-        type_informations: List[str] = []
+        # metadata to add to each line
+        # (for alignment, this is done after lines are determined)
+        line_metadata: List[Dict[str, str]] = []
 
         # default highlighted nodes is empty
         highlighted_nodes = highlighted_nodes if highlighted_nodes is not None else {}
@@ -130,7 +160,7 @@ class Graph:
         subgraphs: Dict[str, Graph] = {}
 
         # format nodes
-        for node in nx.topological_sort(self.graph):
+        for node in nx.lexicographical_topological_sort(self.graph):
             # assign a unique id to outputs of node
             id_map[node] = len(id_map)
 
@@ -160,8 +190,17 @@ class Graph:
             if node.operation == Operation.Generic and "subgraph" in node.properties["kwargs"]:
                 subgraphs[line] = node.properties["kwargs"]["subgraph"]
 
-            # remember type information of the node
-            type_informations.append(str(node.output))
+            # remember metadata of the node
+            line_metadata.append(
+                {
+                    "type": f"# {node.output}",
+                    "bounds": (
+                        f"∈ [{node.bounds[0]}, {node.bounds[1]}]" if node.bounds is not None else ""
+                    ),
+                    "tag": (f"@ {node.tag}" if node.tag != "" else ""),
+                    "location": node.location,
+                },
+            )
 
         # align = signs
         #
@@ -182,11 +221,28 @@ class Graph:
                 " " * (longest_length_before_equals_sign - length_before_equals_sign)
             ) + line
 
-        # add type information
-        longest_line_length = max(len(line) for line in lines)
-        for i, line in enumerate(lines):
-            lines[i] += " " * (longest_line_length - len(line))
-            lines[i] += f"        # {type_informations[i]}"
+        # determine which metadata to show
+        shown_metadata_keys = []
+        if show_types:
+            shown_metadata_keys.append("type")
+        if show_bounds:
+            shown_metadata_keys.append("bounds")
+        if show_tags:
+            shown_metadata_keys.append("tag")
+        if show_locations:
+            shown_metadata_keys.append("location")
+
+        # show requested metadata
+        indent = 8
+        for metadata_key in shown_metadata_keys:
+            longest_line_length = max(len(line) for line in lines)
+            lines = [
+                line + (" " * ((longest_line_length - len(line)) + indent)) + metadata[metadata_key]
+                for line, metadata in zip(lines, line_metadata)
+            ]
+
+        # strip whitespaces
+        lines = [line.rstrip() for line in lines]
 
         # add highlights (this is done in reverse to keep indices consistent)
         for i in reversed(range(len(lines))):
@@ -209,12 +265,22 @@ class Graph:
             result += "\n\n"
             result += "Subgraphs:"
             for line, subgraph in subgraphs.items():
-                subgraph_lines = subgraph.format(maximum_constant_length).split("\n")
+                subgraph_lines = subgraph.format(
+                    maximum_constant_length=maximum_constant_length,
+                    highlighted_nodes={},
+                    show_types=show_types,
+                    show_bounds=False,  # doesn't make sense as we don't measure bounds in subgraphs
+                    show_tags=show_tags,
+                    show_locations=show_locations,
+                ).split("\n")
+
                 result += "\n\n"
                 result += f"    {line}:\n\n"
                 result += "\n".join(f"        {line}" for line in subgraph_lines)
 
         return result
+
+        # pylint: enable=too-many-branches,too-many-locals,too-many-statements
 
     def measure_bounds(
         self,
@@ -300,6 +366,8 @@ class Graph:
                 min_bound = bounds[node]["min"]
                 max_bound = bounds[node]["max"]
 
+                node.bounds = (min_bound, max_bound)
+
                 new_value = deepcopy(node.output)
 
                 if isinstance(min_bound, np.integer):
@@ -384,17 +452,135 @@ class Graph:
         useless_nodes = [node for node in self.graph.nodes() if node not in useful_nodes]
         self.graph.remove_nodes_from(useless_nodes)
 
-    def maximum_integer_bit_width(self) -> int:
+    def query_nodes(
+        self,
+        tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+    ) -> List[Node]:
+        """
+        Query nodes within the graph.
+
+        Filters work like so:
+            str -> nodes without exact match is skipped
+            List[str] -> nodes without exact match with one of the strings in the list is skipped
+            re.Pattern -> nodes without pattern match is skipped
+
+        Args:
+            tag_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
+                filter for tags
+
+            operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
+                filter for operations
+
+        Returns:
+            List[Node]:
+                filtered nodes
+        """
+
+        def match_text_filter(text_filter, text):
+            if text_filter is None:
+                return True
+
+            if isinstance(text_filter, str):
+                return text == text_filter
+
+            if isinstance(text_filter, re.Pattern):
+                return text_filter.match(text)
+
+            return any(text == alternative for alternative in text_filter)
+
+        def get_operation_name(node):
+            result: str
+
+            if node.operation == Operation.Input:
+                result = "input"
+            elif node.operation == Operation.Constant:
+                result = "constant"
+            else:
+                result = node.properties["name"]
+
+            return result
+
+        return [
+            node
+            for node in self.graph.nodes()
+            if (
+                match_text_filter(tag_filter, node.tag)
+                and match_text_filter(operation_filter, get_operation_name(node))
+            )
+        ]
+
+    def maximum_integer_bit_width(
+        self,
+        tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+    ) -> int:
         """
         Get maximum integer bit-width within the graph.
 
+        Only nodes after filtering will be used to calculate the result.
+
+        Args:
+            tag_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
+                filter for tags
+
+            operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
+                filter for operations
+
         Returns:
             int:
-                maximum integer bit-width within the graph (-1 is there are no integer nodes)
+                maximum integer bit-width within the graph
+                if there are no integer nodes matching the query, result is -1
         """
 
-        result = -1
-        for node in self.graph.nodes():
-            if isinstance(node.output.dtype, Integer):
-                result = max(result, node.output.dtype.bit_width)
+        filtered_bit_widths = (
+            node.output.dtype.bit_width
+            for node in self.query_nodes(tag_filter, operation_filter)
+            if isinstance(node.output.dtype, Integer)
+        )
+        return max(filtered_bit_widths, default=-1)
+
+    def integer_range(
+        self,
+        tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+    ) -> Optional[Tuple[int, int]]:
+        """
+        Get integer range of the graph.
+
+        Only nodes after filtering will be used to calculate the result.
+
+        Args:
+            tag_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
+                filter for tags
+
+            operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
+                filter for operations
+
+        Returns:
+            Optional[Tuple[int, int]]:
+                minimum and maximum integer value observed during inputset evaluation
+                if there are no integer nodes matching the query, result is None
+        """
+
+        result: Optional[Tuple[int, int]] = None
+
+        if not self.is_direct:
+            filtered_bounds = (
+                node.bounds
+                for node in self.query_nodes(tag_filter, operation_filter)
+                if isinstance(node.output.dtype, Integer) and node.bounds is not None
+            )
+            for min_bound, max_bound in filtered_bounds:
+                assert isinstance(min_bound, np.integer) and isinstance(max_bound, np.integer)
+
+                if result is None:
+                    result = (int(min_bound), int(max_bound))
+                else:
+                    old_min_bound, old_max_bound = result  # pylint: disable=unpacking-non-sequence
+                    result = (
+                        min(old_min_bound, int(min_bound)),
+                        max(old_max_bound, int(max_bound)),
+                    )
+
         return result

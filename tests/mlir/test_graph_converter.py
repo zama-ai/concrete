@@ -26,18 +26,18 @@ def assign(x):
         pytest.param(
             lambda x, y: (x - y, x + y),
             {"x": "encrypted", "y": "clear"},
-            [(np.random.randint(0, 2**3), np.random.randint(0, 2**3)) for _ in range(100)],
+            [(0, 0), (7, 7), (0, 7), (7, 0)],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                       # EncryptedScalar<uint3>
-%1 = y                       # ClearScalar<uint3>
-%2 = subtract(%0, %1)        # EncryptedScalar<int4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only a single output is supported
-%3 = add(%0, %1)             # EncryptedScalar<uint4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only a single output is supported
+%0 = x                       # EncryptedScalar<uint3>        ∈ [0, 7]
+%1 = y                       # ClearScalar<uint3>            ∈ [0, 7]
+%2 = subtract(%0, %1)        # EncryptedScalar<int4>         ∈ [-7, 7]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only a single output is supported
+%3 = add(%0, %1)             # EncryptedScalar<uint4>        ∈ [0, 14]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only a single output is supported
 return (%2, %3)
 
             """,  # noqa: E501
@@ -51,8 +51,8 @@ return (%2, %3)
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x        # ClearScalar<int5>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted signed integer inputs are supported
+%0 = x        # ClearScalar<int5>        ∈ [-10, 9]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted signed integer inputs are supported
 return %0
 
             """,  # noqa: E501
@@ -66,12 +66,12 @@ return %0
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                       # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer inputs are supported
-%1 = 1.5                     # ClearScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
-%2 = multiply(%0, %1)        # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+%0 = x                       # EncryptedScalar<float64>        ∈ [0.0, 247.5]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer inputs are supported
+%1 = 1.5                     # ClearScalar<float64>            ∈ [1.5, 1.5]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
+%2 = multiply(%0, %1)        # EncryptedScalar<float64>        ∈ [0.0, 371.25]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
 return %2
 
             """,  # noqa: E501
@@ -85,9 +85,9 @@ return %2
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x              # EncryptedScalar<uint7>
-%1 = sin(%0)        # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+%0 = x              # EncryptedScalar<uint7>          ∈ [0, 99]
+%1 = sin(%0)        # EncryptedScalar<float64>        ∈ [-0.9999902065507035, 0.9999118601072672]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
 return %1
 
             """,  # noqa: E501
@@ -107,10 +107,10 @@ return %1
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                            # EncryptedTensor<uint3, shape=(3, 2)>
-%1 = y                            # ClearTensor<uint3, shape=(3, 2)>
-%2 = concatenate((%0, %1))        # EncryptedTensor<uint3, shape=(6, 2)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only all encrypted concatenate is supported
+%0 = x                            # EncryptedTensor<uint3, shape=(3, 2)>        ∈ [0, 7]
+%1 = y                            # ClearTensor<uint3, shape=(3, 2)>            ∈ [0, 7]
+%2 = concatenate((%0, %1))        # EncryptedTensor<uint3, shape=(6, 2)>        ∈ [0, 7]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only all encrypted concatenate is supported
 return %2
 
             """,  # noqa: E501
@@ -130,10 +130,10 @@ return %2
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                                                                              # EncryptedTensor<uint1, shape=(1, 1, 4)>
-%1 = w                                                                              # EncryptedTensor<uint1, shape=(1, 1, 1)>
-%2 = conv1d(%0, %1, [0], pads=(0, 0), strides=(1,), dilations=(1,), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv1d with encrypted input and clear weight is supported
+%0 = x                                                                              # EncryptedTensor<uint1, shape=(1, 1, 4)>        ∈ [0, 1]
+%1 = w                                                                              # EncryptedTensor<uint1, shape=(1, 1, 1)>        ∈ [0, 1]
+%2 = conv1d(%0, %1, [0], pads=(0, 0), strides=(1,), dilations=(1,), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4)>        ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv1d with encrypted input and clear weight is supported
 return %2
 
             """,  # noqa: E501
@@ -153,10 +153,10 @@ return %2
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                                                                                        # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>
-%1 = w                                                                                        # EncryptedTensor<uint1, shape=(1, 1, 1, 1)>
-%2 = conv2d(%0, %1, [0], pads=(0, 0, 0, 0), strides=(1, 1), dilations=(1, 1), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv2d with encrypted input and clear weight is supported
+%0 = x                                                                                        # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>        ∈ [0, 1]
+%1 = w                                                                                        # EncryptedTensor<uint1, shape=(1, 1, 1, 1)>        ∈ [0, 1]
+%2 = conv2d(%0, %1, [0], pads=(0, 0, 0, 0), strides=(1, 1), dilations=(1, 1), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>        ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv2d with encrypted input and clear weight is supported
 return %2
 
             """,  # noqa: E501
@@ -176,10 +176,10 @@ return %2
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                                                                                                    # EncryptedTensor<uint1, shape=(1, 1, 4, 4, 4)>
-%1 = w                                                                                                    # EncryptedTensor<uint1, shape=(1, 1, 1, 1, 1)>
-%2 = conv3d(%0, %1, [0], pads=(0, 0, 0, 0, 0, 0), strides=(1, 1, 1), dilations=(1, 1, 1), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4, 4, 4)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv3d with encrypted input and clear weight is supported
+%0 = x                                                                                                    # EncryptedTensor<uint1, shape=(1, 1, 4, 4, 4)>        ∈ [0, 1]
+%1 = w                                                                                                    # EncryptedTensor<uint1, shape=(1, 1, 1, 1, 1)>        ∈ [0, 1]
+%2 = conv3d(%0, %1, [0], pads=(0, 0, 0, 0, 0, 0), strides=(1, 1, 1), dilations=(1, 1, 1), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4, 4, 4)>        ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv3d with encrypted input and clear weight is supported
 return %2
 
             """,  # noqa: E501
@@ -187,22 +187,16 @@ return %2
         pytest.param(
             lambda x, y: np.dot(x, y),
             {"x": "encrypted", "y": "encrypted"},
-            [
-                (
-                    np.random.randint(0, 2**2, size=(1,)),
-                    np.random.randint(0, 2**2, size=(1,)),
-                )
-                for _ in range(100)
-            ],
+            [([0], [0]), ([3], [3]), ([3], [0]), ([0], [3]), ([1], [1])],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                  # EncryptedTensor<uint2, shape=(1,)>
-%1 = y                  # EncryptedTensor<uint2, shape=(1,)>
-%2 = dot(%0, %1)        # EncryptedScalar<uint4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only dot product between encrypted and clear is supported
+%0 = x                  # EncryptedTensor<uint2, shape=(1,)>        ∈ [0, 3]
+%1 = y                  # EncryptedTensor<uint2, shape=(1,)>        ∈ [0, 3]
+%2 = dot(%0, %1)        # EncryptedScalar<uint4>                    ∈ [0, 9]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only dot product between encrypted and clear is supported
 return %2
 
             """,  # noqa: E501
@@ -210,15 +204,15 @@ return %2
         pytest.param(
             lambda x: x[0],
             {"x": "clear"},
-            [np.random.randint(0, 2**3, size=(4,)) for _ in range(100)],
+            [[0, 1, 2, 3], [7, 6, 5, 4]],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x            # ClearTensor<uint3, shape=(4,)>
-%1 = %0[0]        # ClearScalar<uint3>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted indexing supported
+%0 = x            # ClearTensor<uint3, shape=(4,)>        ∈ [0, 7]
+%1 = %0[0]        # ClearScalar<uint3>                    ∈ [0, 7]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted indexing supported
 return %1
 
             """,  # noqa: E501
@@ -228,8 +222,8 @@ return %1
             {"x": "encrypted", "y": "encrypted"},
             [
                 (
-                    np.random.randint(0, 2**2, size=(1, 1)),
-                    np.random.randint(0, 2**2, size=(1, 1)),
+                    np.random.randint(0, 2**1, size=(1, 1)),
+                    np.random.randint(0, 2**1, size=(1, 1)),
                 )
                 for _ in range(100)
             ],
@@ -238,10 +232,10 @@ return %1
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                     # EncryptedTensor<uint2, shape=(1, 1)>
-%1 = y                     # EncryptedTensor<uint2, shape=(1, 1)>
-%2 = matmul(%0, %1)        # EncryptedTensor<uint4, shape=(1, 1)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only matrix multiplication between encrypted and clear is supported
+%0 = x                     # EncryptedTensor<uint1, shape=(1, 1)>        ∈ [0, 1]
+%1 = y                     # EncryptedTensor<uint1, shape=(1, 1)>        ∈ [0, 1]
+%2 = matmul(%0, %1)        # EncryptedTensor<uint1, shape=(1, 1)>        ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only matrix multiplication between encrypted and clear is supported
 return %2
 
             """,  # noqa: E501
@@ -249,16 +243,16 @@ return %2
         pytest.param(
             lambda x, y: x * y,
             {"x": "encrypted", "y": "encrypted"},
-            [(np.random.randint(0, 2**3), np.random.randint(0, 2**3)) for _ in range(100)],
+            [(0, 0), (7, 7), (0, 7), (7, 0)],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                       # EncryptedScalar<uint3>
-%1 = y                       # EncryptedScalar<uint3>
-%2 = multiply(%0, %1)        # EncryptedScalar<uint6>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only multiplication between encrypted and clear is supported
+%0 = x                       # EncryptedScalar<uint3>        ∈ [0, 7]
+%1 = y                       # EncryptedScalar<uint3>        ∈ [0, 7]
+%2 = multiply(%0, %1)        # EncryptedScalar<uint6>        ∈ [0, 49]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only multiplication between encrypted and clear is supported
 return %2
 
             """,  # noqa: E501
@@ -266,15 +260,15 @@ return %2
         pytest.param(
             lambda x: -x,
             {"x": "clear"},
-            [np.random.randint(0, 2**3) for _ in range(100)],
+            [0, 7],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                   # ClearScalar<uint3>
-%1 = negative(%0)        # ClearScalar<int4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted negation is supported
+%0 = x                   # ClearScalar<uint3>        ∈ [0, 7]
+%1 = negative(%0)        # ClearScalar<int4>         ∈ [-7, 0]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted negation is supported
 return %1
 
             """,  # noqa: E501
@@ -288,9 +282,9 @@ return %1
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                                   # ClearTensor<uint3, shape=(2, 3)>
-%1 = reshape(%0, newshape=(3, 2))        # ClearTensor<uint3, shape=(3, 2)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted reshape is supported
+%0 = x                                   # ClearTensor<uint3, shape=(2, 3)>        ∈ [0, 7]
+%1 = reshape(%0, newshape=(3, 2))        # ClearTensor<uint3, shape=(3, 2)>        ∈ [0, 7]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted reshape is supported
 return %1
 
             """,  # noqa: E501
@@ -304,9 +298,9 @@ return %1
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x              # ClearTensor<uint1, shape=(1,)>
-%1 = sum(%0)        # ClearScalar<uint1>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted sum is supported
+%0 = x              # ClearTensor<uint1, shape=(1,)>        ∈ [0, 1]
+%1 = sum(%0)        # ClearScalar<uint1>                    ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted sum is supported
 return %1
 
             """,  # noqa: E501
@@ -314,16 +308,16 @@ return %1
         pytest.param(
             lambda x: np.maximum(x, np.array([3])),
             {"x": "clear"},
-            [np.random.randint(0, 2, size=(1,)) for _ in range(100)],
+            [[0], [1]],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                      # ClearTensor<uint1, shape=(1,)>
-%1 = [3]                    # ClearTensor<uint2, shape=(1,)>
-%2 = maximum(%0, %1)        # ClearTensor<uint2, shape=(1,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of the operands must be encrypted
+%0 = x                      # ClearTensor<uint1, shape=(1,)>        ∈ [0, 1]
+%1 = [3]                    # ClearTensor<uint2, shape=(1,)>        ∈ [3, 3]
+%2 = maximum(%0, %1)        # ClearTensor<uint2, shape=(1,)>        ∈ [3, 3]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of the operands must be encrypted
 return %2
 
             """,  # noqa: E501
@@ -331,15 +325,15 @@ return %2
         pytest.param(
             lambda x: np.transpose(x),
             {"x": "clear"},
-            [np.random.randint(0, 2, size=(3, 2)) for _ in range(100)],
+            [np.random.randint(0, 2, size=(3, 2)) for _ in range(10)],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                    # ClearTensor<uint1, shape=(3, 2)>
-%1 = transpose(%0)        # ClearTensor<uint1, shape=(2, 3)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted transpose is supported
+%0 = x                    # ClearTensor<uint1, shape=(3, 2)>        ∈ [0, 1]
+%1 = transpose(%0)        # ClearTensor<uint1, shape=(2, 3)>        ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted transpose is supported
 return %1
 
             """,  # noqa: E501
@@ -347,15 +341,15 @@ return %1
         pytest.param(
             lambda x: np.broadcast_to(x, shape=(3, 2)),
             {"x": "clear"},
-            [np.random.randint(0, 2, size=(2,)) for _ in range(100)],
+            [np.random.randint(0, 2, size=(2,)) for _ in range(10)],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                                     # ClearTensor<uint1, shape=(2,)>
-%1 = broadcast_to(%0, shape=(3, 2))        # ClearTensor<uint1, shape=(3, 2)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted broadcasting is supported
+%0 = x                                     # ClearTensor<uint1, shape=(2,)>          ∈ [0, 1]
+%1 = broadcast_to(%0, shape=(3, 2))        # ClearTensor<uint1, shape=(3, 2)>        ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted broadcasting is supported
 return %1
 
             """,  # noqa: E501
@@ -363,18 +357,17 @@ return %1
         pytest.param(
             assign,
             {"x": "clear"},
-            [np.random.randint(0, 2, size=(3,)) for _ in range(100)],
+            [np.random.randint(0, 2, size=(3,)) for _ in range(10)],
             RuntimeError,
             """
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                   # ClearTensor<uint1, shape=(3,)>
-%1 = 0                   # ClearScalar<uint1>
-%2 = (%0[0] = %1)        # ClearTensor<uint1, shape=(3,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only assignment to encrypted tensors are supported
+%0 = x                   # ClearTensor<uint1, shape=(3,)>        ∈ [0, 1]
+%1 = 0                   # ClearScalar<uint1>                    ∈ [0, 0]
+%2 = (%0[0] = %1)        # ClearTensor<uint1, shape=(3,)>        ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only assignment to encrypted tensors are supported
 return %2
-
 
             """,  # noqa: E501
         ),
@@ -387,21 +380,21 @@ return %2
 
 Function you are trying to compile cannot be converted to MLIR:
 
-%0 = x                   # EncryptedScalar<uint18>
-%1 = 300                 # ClearScalar<uint9>
-%2 = add(%0, %1)         # EncryptedScalar<uint18>
-%3 = subgraph(%2)        # EncryptedScalar<uint4>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
+%0 = x                   # EncryptedScalar<uint18>        ∈ [200000, 200000]
+%1 = 300                 # ClearScalar<uint9>             ∈ [300, 300]
+%2 = add(%0, %1)         # EncryptedScalar<uint18>        ∈ [200300, 200300]
+%3 = subgraph(%2)        # EncryptedScalar<uint4>         ∈ [9, 9]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
 return %3
 
 Subgraphs:
 
     %3 = subgraph(%2):
 
-        %0 = 10                            # ClearScalar<uint4>
-        %1 = input                         # EncryptedScalar<uint2>
-        %2 = sin(%1)                       # EncryptedScalar<float64>
-        %3 = multiply(%0, %2)              # EncryptedScalar<float64>
+        %0 = input                         # EncryptedScalar<uint2>
+        %1 = sin(%0)                       # EncryptedScalar<float64>
+        %2 = 10                            # ClearScalar<uint4>
+        %3 = multiply(%2, %1)              # EncryptedScalar<float64>
         %4 = absolute(%3)                  # EncryptedScalar<float64>
         %5 = astype(%4, dtype=int_)        # EncryptedScalar<uint1>
         return %5
@@ -417,21 +410,21 @@ Subgraphs:
 
 Function you are trying to compile cannot be converted to MLIR:
 
-%0 = x                   # EncryptedScalar<uint11>
-%1 = 300                 # ClearScalar<uint9>
-%2 = add(%0, %1)         # EncryptedScalar<uint12>
-%3 = subgraph(%2)        # EncryptedScalar<int5>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integers are only supported up to 8-bits on circuits with table lookups
+%0 = x                   # EncryptedScalar<uint11>        ∈ [1024, 2047]
+%1 = 300                 # ClearScalar<uint9>             ∈ [300, 300]
+%2 = add(%0, %1)         # EncryptedScalar<uint12>        ∈ [1324, 2347]
+%3 = subgraph(%2)        # EncryptedScalar<int5>          ∈ [-9, 9]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integers are only supported up to 8-bits on circuits with table lookups
 return %3
 
 Subgraphs:
 
     %3 = subgraph(%2):
 
-        %0 = 10                            # ClearScalar<uint4>
-        %1 = input                         # EncryptedScalar<uint2>
-        %2 = sin(%1)                       # EncryptedScalar<float64>
-        %3 = multiply(%0, %2)              # EncryptedScalar<float64>
+        %0 = input                         # EncryptedScalar<uint2>
+        %1 = sin(%0)                       # EncryptedScalar<float64>
+        %2 = 10                            # ClearScalar<uint4>
+        %3 = multiply(%2, %1)              # EncryptedScalar<float64>
         %4 = astype(%3, dtype=int_)        # EncryptedScalar<uint1>
         return %4
 

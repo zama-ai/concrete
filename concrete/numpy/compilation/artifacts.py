@@ -7,11 +7,9 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
-import networkx as nx
-
-from ..representation import Graph, Node
+from ..representation import Graph
 
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
 
@@ -25,14 +23,9 @@ class DebugArtifacts:
 
     source_code: Optional[str]
     parameter_encryption_statuses: Dict[str, str]
-
     textual_representations_of_graphs: Dict[str, List[str]]
-
     final_graph: Optional[Graph]
-    bounds_of_the_final_graph: Optional[Dict[Node, Dict[str, Any]]]
-
     mlir_to_compile: Optional[str]
-
     client_parameters: Optional[bytes]
 
     def __init__(self, output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY):
@@ -40,14 +33,9 @@ class DebugArtifacts:
 
         self.source_code = None
         self.parameter_encryption_statuses = {}
-
         self.textual_representations_of_graphs = {}
-
         self.final_graph = None
-        self.bounds_of_the_final_graph = None
-
         self.mlir_to_compile = None
-
         self.client_parameters = None
 
     def add_source_code(self, function: Union[str, Callable]):
@@ -99,18 +87,6 @@ class DebugArtifacts:
         self.textual_representations_of_graphs[name].append(textual_representation)
 
         self.final_graph = graph
-
-    def add_final_graph_bounds(self, bounds: Dict[Node, Dict[str, Any]]):
-        """
-        Add bounds of the latest computation graph.
-
-        Args:
-            bounds (Dict[Node, Dict[str, Any]]):
-                bounds of the latest computation graph
-        """
-
-        assert self.final_graph is not None
-        self.bounds_of_the_final_graph = bounds
 
     def add_mlir_to_compile(self, mlir: str):
         """
@@ -200,13 +176,6 @@ class DebugArtifacts:
                 output_path = output_directory.joinpath(f"{identifier}.{name}.graph.txt")
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(f"{representation}\n")
-
-        if self.bounds_of_the_final_graph is not None:
-            assert self.final_graph is not None
-            with open(output_directory.joinpath("bounds.txt"), "w", encoding="utf-8") as f:
-                for index, node in enumerate(nx.topological_sort(self.final_graph.graph)):
-                    bounds = self.bounds_of_the_final_graph.get(node)
-                    f.write(f"%{index} :: [{bounds['min']}, {bounds['max']}]\n")
 
         if self.mlir_to_compile is not None:
             assert self.final_graph is not None

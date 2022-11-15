@@ -262,9 +262,8 @@ def test_compiler_compile_bad_inputset(helpers):
 
     assert str(excinfo.value) == "Bound measurement using inputset[0] failed"
 
-    assert (
-        str(excinfo.value.__cause__).strip()
-        == """
+    helpers.check_str(
+        """
 
 Evaluation of the graph failed
 
@@ -277,29 +276,30 @@ Subgraphs:
 
     %1 = subgraph(%0):
 
-        %0 = inf                           # ClearScalar<float64>
-        %1 = input                         # EncryptedScalar<uint1>
-        %2 = add(%1, %0)                   # EncryptedScalar<float64>
+        %0 = input                         # EncryptedScalar<uint1>
+        %1 = inf                           # ClearScalar<float64>
+        %2 = add(%0, %1)                   # EncryptedScalar<float64>
         %3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
         return %3
 
-    """.strip()
+    """.strip(),
+        str(excinfo.value.__cause__).strip(),
     )
 
-    assert (
-        str(excinfo.value.__cause__.__cause__).strip()
-        == """
+    helpers.check_str(
+        """
 
 Evaluation of the graph failed
 
-%0 = inf                           # ClearScalar<float64>
-%1 = input                         # EncryptedScalar<uint1>
-%2 = add(%1, %0)                   # EncryptedScalar<float64>
+%0 = input                         # EncryptedScalar<uint1>
+%1 = inf                           # ClearScalar<float64>
+%2 = add(%0, %1)                   # EncryptedScalar<float64>
 %3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of this node failed
 return %3
 
-    """.strip()
+    """.strip(),
+        str(excinfo.value.__cause__.__cause__).strip(),
     )
 
     assert (
@@ -319,9 +319,8 @@ return %3
 
     assert str(excinfo.value) == "Bound measurement using inputset[0] failed"
 
-    assert (
-        str(excinfo.value.__cause__).strip()
-        == """
+    helpers.check_str(
+        """
 
 Evaluation of the graph failed
 
@@ -334,29 +333,30 @@ Subgraphs:
 
     %1 = subgraph(%0):
 
-        %0 = nan                           # ClearScalar<float64>
-        %1 = input                         # EncryptedScalar<uint1>
-        %2 = add(%1, %0)                   # EncryptedScalar<float64>
+        %0 = input                         # EncryptedScalar<uint1>
+        %1 = nan                           # ClearScalar<float64>
+        %2 = add(%0, %1)                   # EncryptedScalar<float64>
         %3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
         return %3
 
-    """.strip()
+    """.strip(),
+        str(excinfo.value.__cause__).strip(),
     )
 
-    assert (
-        str(excinfo.value.__cause__.__cause__).strip()
-        == """
+    helpers.check_str(
+        """
 
 Evaluation of the graph failed
 
-%0 = nan                           # ClearScalar<float64>
-%1 = input                         # EncryptedScalar<uint1>
-%2 = add(%1, %0)                   # EncryptedScalar<float64>
+%0 = input                         # EncryptedScalar<uint1>
+%1 = nan                           # ClearScalar<float64>
+%2 = add(%0, %1)                   # EncryptedScalar<float64>
 %3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of this node failed
 return %3
 
-    """.strip()
+    """.strip(),
+        str(excinfo.value.__cause__.__cause__).strip(),
     )
 
     assert (

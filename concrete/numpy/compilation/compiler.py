@@ -278,10 +278,8 @@ class Compiler:
             assert self.graph is not None
 
         bounds = self.graph.measure_bounds(self.inputset)
-        if self.artifacts is not None:
-            self.artifacts.add_final_graph_bounds(bounds)
-
         self.graph.update_with_bounds(bounds)
+
         if self.artifacts is not None:
             self.artifacts.add_graph("final", self.graph)
 

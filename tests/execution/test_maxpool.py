@@ -338,7 +338,7 @@ def test_bad_maxpool_special(helpers):
     def clear_input(x):
         return connx.maxpool(x, kernel_shape=(4, 3, 2))
 
-    inputset = [np.random.randint(0, 10, size=(1, 1, 10, 10, 10)) for i in range(100)]
+    inputset = [np.zeros((1, 1, 10, 10, 10), dtype=np.int64)]
     with pytest.raises(RuntimeError) as excinfo:
         clear_input.compile(inputset, helpers.configuration())
 
@@ -348,9 +348,9 @@ def test_bad_maxpool_special(helpers):
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                                                                                                                            # ClearTensor<uint4, shape=(1, 1, 10, 10, 10)>
-%1 = maxpool(%0, kernel_shape=(4, 3, 2), strides=(1, 1, 1), pads=(0, 0, 0, 0, 0, 0), dilations=(1, 1, 1), ceil_mode=False)        # ClearTensor<uint4, shape=(1, 1, 7, 8, 9)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted maxpool is supported
+%0 = x                                                                                                                            # ClearTensor<uint1, shape=(1, 1, 10, 10, 10)>        ∈ [0, 0]
+%1 = maxpool(%0, kernel_shape=(4, 3, 2), strides=(1, 1, 1), pads=(0, 0, 0, 0, 0, 0), dilations=(1, 1, 1), ceil_mode=False)        # ClearTensor<uint1, shape=(1, 1, 7, 8, 9)>           ∈ [0, 0]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted maxpool is supported
 return %1
 
         """.strip(),  # noqa: E501

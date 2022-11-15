@@ -151,7 +151,7 @@ class Tracer:
             output_idx: tracer.computation for output_idx, tracer in enumerate(output_tracers)
         }
 
-        return Graph(graph, input_nodes, output_nodes)
+        return Graph(graph, input_nodes, output_nodes, is_direct)
 
     def __init__(self, computation: Node, input_tracers: List["Tracer"]):
         self.computation = computation

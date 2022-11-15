@@ -48,9 +48,9 @@ def test_compiler_verbose_trace(helpers, capsys):
         f"""
 
 Computation Graph
-------------------------------------------------
+------------------------------------------------------------------
 {str(list(artifacts.textual_representations_of_graphs.values())[-1][-1])}
-------------------------------------------------
+------------------------------------------------------------------
 
         """.strip()
     )
@@ -112,19 +112,19 @@ def test_compiler_verbose_virtual_compile(helpers, capsys):
         f"""
 
 Computation Graph
-------------------------------------------------
+------------------------------------------------------------------
 {list(artifacts.textual_representations_of_graphs.values())[-1][-1]}
-------------------------------------------------
+------------------------------------------------------------------
 
 MLIR
-------------------------------------------------
+------------------------------------------------------------------
 Virtual circuits don't have MLIR.
-------------------------------------------------
+------------------------------------------------------------------
 
 Optimizer
-------------------------------------------------
+------------------------------------------------------------------
 Virtual circuits don't have optimizer output.
-------------------------------------------------
+------------------------------------------------------------------
 
         """.strip()
     )
@@ -140,7 +140,6 @@ def test_circuit(helpers):
         return x + 42
 
     helpers.check_str(
-        str(circuit1),
         """
 
 %0 = x                  # EncryptedScalar<uint2>
@@ -149,6 +148,7 @@ def test_circuit(helpers):
 return %2
 
         """.strip(),
+        str(circuit1),
     )
 
     # ======================================================================
@@ -158,7 +158,6 @@ return %2
         return x + 42
 
     helpers.check_str(
-        str(circuit2),
         """
 
 %0 = x                  # EncryptedTensor<uint2, shape=(3, 2)>
@@ -167,6 +166,7 @@ return %2
 return %2
 
         """.strip(),
+        str(circuit2),
     )
 
     # ======================================================================
@@ -179,7 +179,6 @@ return %2
         return cnp.univariate(square, outputs=cnp.uint7)(x)
 
     helpers.check_str(
-        str(circuit3),
         """
 
 %0 = x                 # EncryptedScalar<uint3>
@@ -187,6 +186,7 @@ return %2
 return %1
 
         """.strip(),
+        str(circuit3),
     )
 
     # ======================================================================
@@ -196,7 +196,6 @@ return %1
         return ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(cnp.uint3)
 
     helpers.check_str(
-        str(circuit4),
         """
 
 %0 = x                   # EncryptedScalar<uint3>
@@ -207,18 +206,19 @@ Subgraphs:
 
     %1 = subgraph(%0):
 
-        %0 = 2                    # ClearScalar<uint2>
-        %1 = 2                    # ClearScalar<uint2>
-        %2 = input                # EncryptedScalar<uint3>
-        %3 = sin(%2)              # EncryptedScalar<float64>
-        %4 = cos(%2)              # EncryptedScalar<float64>
-        %5 = power(%3, %0)        # EncryptedScalar<float64>
-        %6 = power(%4, %1)        # EncryptedScalar<float64>
-        %7 = add(%5, %6)          # EncryptedScalar<float64>
+        %0 = input                # EncryptedScalar<uint3>
+        %1 = sin(%0)              # EncryptedScalar<float64>
+        %2 = 2                    # ClearScalar<uint2>
+        %3 = power(%1, %2)        # EncryptedScalar<float64>
+        %4 = cos(%0)              # EncryptedScalar<float64>
+        %5 = 2                    # ClearScalar<uint2>
+        %6 = power(%4, %5)        # EncryptedScalar<float64>
+        %7 = add(%3, %6)          # EncryptedScalar<float64>
         %8 = astype(%7)           # EncryptedScalar<uint3>
         return %8
 
         """.strip(),
+        str(circuit4),
     )
 
     # ======================================================================
@@ -228,7 +228,6 @@ Subgraphs:
         return x + 42
 
     helpers.check_str(
-        str(circuit5),
         """
 
 %0 = x                  # EncryptedScalar<int2>
@@ -237,6 +236,7 @@ Subgraphs:
 return %2
 
         """.strip(),
+        str(circuit5),
     )
 
 

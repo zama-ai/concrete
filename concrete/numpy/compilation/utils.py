@@ -557,14 +557,19 @@ def convert_subgraph_to_subgraph_node(
 
     variable_input_nodes = [node for node in start_nodes if node.operation != Operation.Constant]
     if len(variable_input_nodes) != 1:
-        base_highlighted_nodes = {node: ["within this subgraph"] for node in all_nodes}
+        base_highlighted_nodes = {
+            node: ["within this subgraph", node.location] for node in all_nodes
+        }
         for variable_input_node in variable_input_nodes:
-            base_highlighted_nodes[variable_input_node] = ["this is one of the input nodes"]
+            base_highlighted_nodes[variable_input_node] = [
+                "this is one of the input nodes",
+                variable_input_node.location,
+            ]
 
         raise RuntimeError(
             "A subgraph within the function you are trying to compile cannot be fused "
             "because it has multiple input nodes\n\n"
-            + graph.format(highlighted_nodes=base_highlighted_nodes)
+            + graph.format(highlighted_nodes=base_highlighted_nodes, show_bounds=False)
         )
 
     variable_input_node = variable_input_nodes[0]
@@ -576,6 +581,10 @@ def convert_subgraph_to_subgraph_node(
 
     subgraph_variable_input_node = Node.input("input", deepcopy(variable_input_node.output))
     nx_subgraph.add_node(subgraph_variable_input_node)
+
+    subgraph_variable_input_node.location = variable_input_node.location
+    subgraph_variable_input_node.tag = variable_input_node.tag
+    subgraph_variable_input_node.created_at = variable_input_node.created_at
 
     variable_input_node_successors = {
         node: None for node in all_nodes if node in nx_graph.succ[variable_input_node]
@@ -592,6 +601,10 @@ def convert_subgraph_to_subgraph_node(
                 **new_edge_data,
             )
 
+    original_location = terminal_node.location
+    original_tag = terminal_node.tag
+    original_created_at = terminal_node.created_at
+
     subgraph = Graph(nx_subgraph, {0: subgraph_variable_input_node}, {0: terminal_node})
     subgraph_node = Node.generic(
         "subgraph",
@@ -603,6 +616,10 @@ def convert_subgraph_to_subgraph_node(
             "terminal_node": terminal_node,
         },
     )
+
+    subgraph_node.location = original_location
+    subgraph_node.tag = original_tag
+    subgraph_node.created_at = original_created_at
 
     return subgraph_node, variable_input_node
 
@@ -635,8 +652,11 @@ def check_subgraph_fusability(
             if subgraph is not fusable
     """
 
-    base_highlighted_nodes = {node: ["within this subgraph"] for node in all_nodes}
-    base_highlighted_nodes[variable_input_node] = ["with this input node"]
+    base_highlighted_nodes = {node: ["within this subgraph", node.location] for node in all_nodes}
+    base_highlighted_nodes[variable_input_node] = [
+        "with this input node",
+        variable_input_node.location,
+    ]
 
     non_constant_nodes = (node for node in all_nodes if node.operation != Operation.Constant)
     for node in non_constant_nodes:
@@ -644,19 +664,22 @@ def check_subgraph_fusability(
             continue
 
         if not node.is_fusable:
-            base_highlighted_nodes[node] = ["this node is not fusable"]
+            base_highlighted_nodes[node] = ["this node is not fusable", node.location]
             raise RuntimeError(
                 "A subgraph within the function you are trying to compile cannot be fused "
                 "because of a node, which is marked explicitly as non-fusable\n\n"
-                + graph.format(highlighted_nodes=base_highlighted_nodes)
+                + graph.format(highlighted_nodes=base_highlighted_nodes, show_bounds=False)
             )
 
         if node.output.shape != variable_input_node.output.shape:
-            base_highlighted_nodes[node] = ["this node has a different shape than the input node"]
+            base_highlighted_nodes[node] = [
+                "this node has a different shape than the input node",
+                node.location,
+            ]
             raise RuntimeError(
                 "A subgraph within the function you are trying to compile cannot be fused "
                 "because of a node, which is has a different shape than the input node\n\n"
-                + graph.format(highlighted_nodes=base_highlighted_nodes)
+                + graph.format(highlighted_nodes=base_highlighted_nodes, show_bounds=False)
             )
 
     return True

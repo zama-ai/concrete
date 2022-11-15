@@ -22,6 +22,7 @@ from .extensions import (
     one,
     ones,
     round_bit_pattern,
+    tag,
     univariate,
     zero,
     zeros,

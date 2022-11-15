@@ -201,7 +201,7 @@ def test_auto_rounding(helpers):
 return %4
 
         """,
-        str(circuit3),
+        str(circuit3.graph.format(show_bounds=False)),
     )
 
 

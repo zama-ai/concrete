@@ -2,6 +2,9 @@
 Declaration of `Node` class.
 """
 
+import os
+import time
+import traceback
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -25,7 +28,12 @@ class Node:
     operation: Operation
     evaluator: Callable
 
+    bounds: Optional[Tuple[Union[int, float], Union[int, float]]]
     properties: Dict[str, Any]
+
+    location: str
+    tag: str
+    created_at: float
 
     @staticmethod
     def constant(constant: Any) -> "Node":
@@ -145,7 +153,43 @@ class Node:
         self.operation = operation
         self.evaluator = evaluator  # type: ignore
 
+        self.bounds = None
         self.properties = properties if properties is not None else {}
+
+        # pylint: disable=cyclic-import,import-outside-toplevel
+
+        import concrete.numpy as cnp
+
+        cnp_directory = os.path.dirname(cnp.__file__)
+
+        import concrete.onnx as coonx
+
+        coonx_directory = os.path.dirname(coonx.__file__)
+
+        # pylint: enable=cyclic-import,import-outside-toplevel
+
+        for frame in reversed(traceback.extract_stack()):
+            if frame.filename == "<__array_function__ internals>":
+                continue
+
+            if frame.filename.startswith(cnp_directory):
+                continue
+
+            if frame.filename.startswith(coonx_directory):
+                continue
+
+            self.location = f"{frame.filename}:{frame.lineno}"
+            break
+
+        # pylint: disable=cyclic-import,import-outside-toplevel
+
+        from ..extensions.tag import tag_context
+
+        self.tag = ".".join(tag_context.stack)
+
+        # pylint: enable=cyclic-import,import-outside-toplevel
+
+        self.created_at = time.time()
 
     def __call__(self, *args: List[Any]) -> Union[np.bool_, np.integer, np.floating, np.ndarray]:
         def generic_error_message() -> str:
@@ -361,3 +405,6 @@ class Node:
             "subtract",
             "zeros",
         ]
+
+    def __lt__(self, other) -> bool:
+        return self.created_at < other.created_at

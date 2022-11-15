@@ -25,16 +25,7 @@ def test_circuit_str(helpers):
     inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
     circuit = f.compile(inputset, configuration.fork(p_error=6e-5))
 
-    assert str(circuit) == (
-        """
-
-%0 = x                  # EncryptedScalar<uint4>
-%1 = y                  # EncryptedScalar<uint5>
-%2 = add(%0, %1)        # EncryptedScalar<uint6>
-return %2
-
-        """.strip()
-    )
+    assert str(circuit) == circuit.graph.format()
 
 
 def test_circuit_feedback(helpers):

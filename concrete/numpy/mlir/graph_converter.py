@@ -204,7 +204,7 @@ class GraphConverter:
         if len(graph.output_nodes) > 1:
             offending_nodes.update(
                 {
-                    node: ["only a single output is supported"]
+                    node: ["only a single output is supported", node.location]
                     for node in graph.output_nodes.values()
                 }
             )
@@ -213,7 +213,7 @@ class GraphConverter:
             for node in graph.graph.nodes:
                 reason = GraphConverter._check_node_convertibility(graph, node, virtual)
                 if reason is not None:
-                    offending_nodes[node] = [reason]
+                    offending_nodes[node] = [reason, node.location]
 
         if len(offending_nodes) != 0:
             raise RuntimeError(
@@ -257,14 +257,16 @@ class GraphConverter:
             if max_bit_width > MAXIMUM_TLU_BIT_WIDTH:
                 offending_nodes[first_tlu_node] = [
                     f"table lookups are only supported on circuits with "
-                    f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers"
+                    f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers",
+                    first_tlu_node.location,
                 ]
 
             if first_signed_node is not None and max_bit_width > MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS:
                 offending_nodes[first_signed_node] = [
                     f"signed integers are only supported "
                     f"up to {MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS}-bits "
-                    f"on circuits with table lookups"
+                    f"on circuits with table lookups",
+                    first_signed_node.location,
                 ]
 
         if len(offending_nodes) != 0:
