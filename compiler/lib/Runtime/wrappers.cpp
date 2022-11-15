@@ -336,6 +336,23 @@ void memref_keyswitch_lwe_u64(uint64_t *out_allocated, uint64_t *out_aligned,
           out_aligned + out_offset, ct0_aligned + ct0_offset));
 }
 
+void memref_batched_keyswitch_lwe_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint32_t level,
+    uint32_t base_log, uint32_t input_lwe_dim, uint32_t output_lwe_dim,
+    mlir::concretelang::RuntimeContext *context) {
+  for (size_t i = 0; i < ct0_size0; i++) {
+    memref_keyswitch_lwe_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated + i * ct0_size1,
+        ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1, level,
+        base_log, input_lwe_dim, output_lwe_dim, context);
+  }
+}
+
 void memref_bootstrap_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
@@ -365,6 +382,27 @@ void memref_bootstrap_lwe_u64(
           get_fft_fourier_bootstrap_key_u64(context), out_aligned + out_offset,
           ct0_aligned + ct0_offset, glwe_ct));
   free(glwe_ct);
+}
+
+void memref_batched_bootstrap_lwe_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *tlu_allocated,
+    uint64_t *tlu_aligned, uint64_t tlu_offset, uint64_t tlu_size,
+    uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t poly_size,
+    uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
+    mlir::concretelang::RuntimeContext *context) {
+
+  for (size_t i = 0; i < out_size0; i++) {
+    memref_bootstrap_lwe_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated, ct0_aligned + i * ct0_size1,
+        ct0_offset, ct0_size1, ct0_stride1, tlu_allocated, tlu_aligned,
+        tlu_offset, tlu_size, tlu_stride, input_lwe_dim, poly_size, level,
+        base_log, glwe_dim, precision, context);
+  }
 }
 
 uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product) {

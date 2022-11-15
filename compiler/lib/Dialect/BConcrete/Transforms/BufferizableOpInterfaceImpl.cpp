@@ -73,7 +73,9 @@ char memref_mul_cleartext_lwe_ciphertext_u64[] =
     "memref_mul_cleartext_lwe_ciphertext_u64";
 char memref_negate_lwe_ciphertext_u64[] = "memref_negate_lwe_ciphertext_u64";
 char memref_keyswitch_lwe_u64[] = "memref_keyswitch_lwe_u64";
+char memref_batched_keyswitch_lwe_u64[] = "memref_batched_keyswitch_lwe_u64";
 char memref_bootstrap_lwe_u64[] = "memref_bootstrap_lwe_u64";
+char memref_batched_bootstrap_lwe_u64[] = "memref_batched_bootstrap_lwe_u64";
 char memref_keyswitch_async_lwe_u64[] = "memref_keyswitch_async_lwe_u64";
 char memref_bootstrap_async_lwe_u64[] = "memref_bootstrap_async_lwe_u64";
 char memref_await_future[] = "memref_await_future";
@@ -117,10 +119,21 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                        {memref1DType, memref1DType, i32Type,
                                         i32Type, i32Type, i32Type, contextType},
                                        {});
+  } else if (funcName == memref_batched_keyswitch_lwe_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref2DType, memref2DType, i32Type,
+                                        i32Type, i32Type, i32Type, contextType},
+                                       {});
   } else if (funcName == memref_bootstrap_lwe_u64 ||
              funcName == memref_bootstrap_lwe_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
+                                        memref1DType, i32Type, i32Type, i32Type,
+                                        i32Type, i32Type, i32Type, contextType},
+                                       {});
+  } else if (funcName == memref_batched_bootstrap_lwe_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref2DType, memref2DType,
                                         memref1DType, i32Type, i32Type, i32Type,
                                         i32Type, i32Type, i32Type, contextType},
                                        {});
@@ -432,7 +445,53 @@ void pushAdditionalArgs(BConcrete::KeySwitchLweBufferOp op,
 }
 
 template <>
+void pushAdditionalArgs(BConcrete::BatchedKeySwitchLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter) {
+  // level
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.levelAttr()));
+  // base_log
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.baseLogAttr()));
+  // lwe_dim_in
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.lwe_dim_inAttr()));
+  // lwe_dim_out
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.lwe_dim_outAttr()));
+  // context
+  operands.push_back(getContextArgument(op));
+}
+
+template <>
 void pushAdditionalArgs(BConcrete::BootstrapLweBufferOp op,
+                        mlir::SmallVector<mlir::Value> &operands,
+                        RewriterBase &rewriter) {
+  // input_lwe_dim
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.inputLweDimAttr()));
+  // poly_size
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
+  // level
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.levelAttr()));
+  // base_log
+  operands.push_back(
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.baseLogAttr()));
+  // glwe_dim
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.glweDimensionAttr()));
+  // out_precision
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.outPrecisionAttr()));
+  // context
+  operands.push_back(getContextArgument(op));
+}
+
+template <>
+void pushAdditionalArgs(BConcrete::BatchedBootstrapLweBufferOp op,
                         mlir::SmallVector<mlir::Value> &operands,
                         RewriterBase &rewriter) {
   // input_lwe_dim
@@ -556,9 +615,17 @@ void mlir::concretelang::BConcrete::
       BConcrete::KeySwitchLweBufferOp::attachInterface<
           BufferizableWithCallOpInterface<BConcrete::KeySwitchLweBufferOp,
                                           memref_keyswitch_lwe_u64>>(*ctx);
+      BConcrete::BatchedKeySwitchLweBufferOp::attachInterface<
+          BufferizableWithCallOpInterface<
+              BConcrete::BatchedKeySwitchLweBufferOp,
+              memref_batched_keyswitch_lwe_u64>>(*ctx);
       BConcrete::BootstrapLweBufferOp::attachInterface<
           BufferizableWithCallOpInterface<BConcrete::BootstrapLweBufferOp,
                                           memref_bootstrap_lwe_u64>>(*ctx);
+      BConcrete::BatchedBootstrapLweBufferOp::attachInterface<
+          BufferizableWithCallOpInterface<
+              BConcrete::BatchedBootstrapLweBufferOp,
+              memref_batched_bootstrap_lwe_u64>>(*ctx);
     }
     BConcrete::WopPBSCRTLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::WopPBSCRTLweBufferOp,
