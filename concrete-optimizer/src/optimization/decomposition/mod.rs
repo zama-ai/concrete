@@ -16,6 +16,7 @@ pub struct PersistDecompCaches {
     pub br: blind_rotate::PersistDecompCache,
     pub pp: pp_switch::PersistDecompCache,
     pub cb: circuit_bootstrap::PersistDecompCache,
+    pub cache_on_disk: bool,
 }
 
 pub struct DecompCaches {
@@ -29,8 +30,14 @@ pub fn cache(
     security_level: u64,
     processing_unit: config::ProcessingUnit,
     complexity_model: Option<Arc<dyn ComplexityModel>>,
+    cache_on_disk: bool,
 ) -> PersistDecompCaches {
-    PersistDecompCaches::new(security_level, processing_unit, complexity_model)
+    PersistDecompCaches::new(
+        security_level,
+        processing_unit,
+        complexity_model,
+        cache_on_disk,
+    )
 }
 
 impl PersistDecompCaches {
@@ -38,18 +45,30 @@ impl PersistDecompCaches {
         security_level: u64,
         processing_unit: config::ProcessingUnit,
         complexity_model: Option<Arc<dyn ComplexityModel>>,
+        cache_on_disk: bool,
     ) -> Self {
         let complexity_model =
             complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
-        Self {
+        let res = Self {
             ks: keyswitch::cache(security_level, processing_unit, complexity_model.clone()),
             br: blind_rotate::cache(security_level, processing_unit, complexity_model.clone()),
             pp: pp_switch::cache(security_level, processing_unit, complexity_model.clone()),
             cb: circuit_bootstrap::cache(security_level, processing_unit, complexity_model.clone()),
+            cache_on_disk,
+        };
+        if cache_on_disk {
+            res.ks.read();
+            res.br.read();
+            res.pp.read();
+            res.cb.read();
         }
+        res
     }
 
     pub fn backport(&self, cache: DecompCaches) {
+        if !self.cache_on_disk {
+            return;
+        }
         self.ks.backport(cache.keyswitch);
         self.br.backport(cache.blind_rotate);
         self.pp.backport(cache.pp_switch);

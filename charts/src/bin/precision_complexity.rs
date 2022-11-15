@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(security_level, processing_unit, None);
+    let cache = decomposition::cache(security_level, processing_unit, None, true);
 
     let solutions: Vec<_> = precisions
         .clone()

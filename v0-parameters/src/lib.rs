@@ -36,6 +36,7 @@ pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end - 1;
 /// Find parameters for classical PBS and new WoP-PBS
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Args {
     #[clap(long, default_value_t = 1, help = "1..16")]
     pub min_precision: u64,
@@ -82,6 +83,9 @@ pub struct Args {
 
     #[clap(long)]
     pub simulate_dag: bool,
+
+    #[clap(long, default_value_t = true)]
+    pub cache_on_disk: bool,
 }
 
 pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
@@ -89,6 +93,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
     let sum_size = args.sum_size;
     let maximum_acceptable_error_probability = args.p_error;
     let security_level = args.security_level;
+    let cache_on_disk = args.cache_on_disk;
 
     let search_space = SearchSpace {
         glwe_log_polynomial_sizes: (args.min_log_poly_size..=args.max_log_poly_size).collect(),
@@ -110,7 +115,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(config.security_level, processing_unit, None);
+    let cache = decomposition::cache(security_level, processing_unit, None, cache_on_disk);
 
     precisions_iter
         .map(|precision| {
@@ -272,6 +277,7 @@ mod tests {
                 no_parallelize: false,
                 wop_pbs: false,
                 simulate_dag,
+                cache_on_disk: true,
             };
 
             let mut actual_output = Vec::<u8>::new();
@@ -313,6 +319,7 @@ mod tests {
                 no_parallelize: false,
                 wop_pbs: true,
                 simulate_dag: false,
+                cache_on_disk: true,
             };
 
             let mut actual_output = Vec::<u8>::new();

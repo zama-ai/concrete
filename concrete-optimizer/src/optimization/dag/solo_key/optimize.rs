@@ -392,7 +392,7 @@ mod tests {
 
     static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
         let processing_unit = config::ProcessingUnit::Cpu;
-        decomposition::cache(128, processing_unit, None)
+        decomposition::cache(128, processing_unit, None, true)
     });
 
     fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {

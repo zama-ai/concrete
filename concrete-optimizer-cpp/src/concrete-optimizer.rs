@@ -10,6 +10,7 @@ use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
 use concrete_optimizer::optimization::decomposition;
+use concrete_optimizer::utils::cache::persistent::default_cache_dir;
 
 fn no_solution() -> ffi::Solution {
     ffi::Solution {
@@ -23,6 +24,21 @@ fn no_dag_solution() -> ffi::DagSolution {
         p_error: 1.0, // error probability to signal an impossible solution
         ..ffi::DagSolution::default()
     }
+}
+
+fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
+    if !options.cache_on_disk {
+        println!("optimizer: Using stateless cache.");
+        let cache_dir = default_cache_dir();
+        println!("optimizer: To clear the cache, remove directory {cache_dir}");
+    }
+    let processing_unit = processing_unit(options);
+    decomposition::cache(
+        options.security_level,
+        processing_unit,
+        Some(ProcessingUnit::Cpu.complexity_model()),
+        options.cache_on_disk,
+    )
 }
 
 fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) -> ffi::Solution {
@@ -45,11 +61,7 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
         config,
         noise_factor,
         &search_space,
-        &decomposition::cache(
-            options.security_level,
-            processing_unit,
-            Some(ProcessingUnit::Cpu.complexity_model()),
-        ),
+        &caches_from(options),
     );
     result
         .best_solution
@@ -232,11 +244,7 @@ impl OperationDag {
             &self.0,
             config,
             &search_space,
-            &decomposition::cache(
-                options.security_level,
-                processing_unit,
-                Some(ProcessingUnit::Cpu.complexity_model()),
-            ),
+            &caches_from(options),
         );
         result
             .best_solution
@@ -253,11 +261,7 @@ impl OperationDag {
         };
 
         let search_space = SearchSpace::default(processing_unit);
-        let cache = decomposition::cache(
-            options.security_level,
-            processing_unit,
-            Some(ProcessingUnit::Cpu.complexity_model()),
-        );
+
         let encoding = options.encoding.into();
         let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
             &self.0,
@@ -265,7 +269,7 @@ impl OperationDag {
             &search_space,
             encoding,
             options.default_log_norm2_woppbs,
-            &cache,
+            &caches_from(options),
         );
         result.map_or_else(no_dag_solution, |solution| solution.into())
     }
@@ -430,6 +434,7 @@ mod ffi {
         pub default_log_norm2_woppbs: f64,
         pub use_gpu_constraints: bool,
         pub encoding: Encoding,
+        pub cache_on_disk: bool,
     }
 }
 

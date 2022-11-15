@@ -17,6 +17,7 @@ fn pbs_benchmark(c: &mut Criterion) {
         no_parallelize: true,
         wop_pbs: false,
         simulate_dag: true,
+        cache_on_disk: true,
     };
 
     c.bench_function("PBS table generation", |b| {
@@ -40,6 +41,7 @@ fn wop_pbs_benchmark(c: &mut Criterion) {
         no_parallelize: true,
         wop_pbs: true,
         simulate_dag: false,
+        cache_on_disk: true,
     };
 
     c.bench_function("WoP-PBS table generation", |b| {

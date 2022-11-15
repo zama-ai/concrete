@@ -11,7 +11,7 @@ use crate::parameters::{
     KsDecompositionParameters, LweDimension,
 };
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
-use crate::utils::cache::persistent::PersistentCacheHashMap;
+use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
 use crate::{config, security};
 
 use super::blind_rotate;
@@ -90,15 +90,12 @@ pub fn cache(
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
 ) -> PersistDecompCache {
-    let max_log2_base = processing_unit.max_br_base_log();
+    let cache_dir: String = default_cache_dir();
     let ciphertext_modulus_log = 64;
-    let tmp: String = std::env::temp_dir()
-        .to_str()
-        .expect("Invalid tmp dir")
-        .into();
     let hardware = processing_unit.br_to_string();
-    let path = format!("{tmp}/optimizer/cache/bc-decomp-{hardware}-64-{security_level}");
+    let path = format!("{cache_dir}/bc-decomp-{hardware}-64-{security_level}");
 
+    let max_log2_base = processing_unit.max_br_base_log();
     let function = move |(glwe_params, internal_dim): MacroParam| {
         let br = blind_rotate::pareto_quantities(
             complexity_model.as_ref(),
@@ -117,5 +114,5 @@ pub fn cache(
             &br,
         )
     };
-    PersistentCacheHashMap::new(&path, VERSION, function)
+    PersistentCacheHashMap::new_no_read(&path, VERSION, function)
 }

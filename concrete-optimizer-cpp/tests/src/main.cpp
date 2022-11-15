@@ -23,7 +23,8 @@ concrete_optimizer::Options default_options() {
     .maximum_acceptable_error_probability = P_ERROR,
     .default_log_norm2_woppbs = WOP_FALLBACK_LOG_NORM,
     .use_gpu_constraints = false,
-    .encoding = concrete_optimizer::Encoding::Auto
+    .encoding = concrete_optimizer::Encoding::Auto,
+    .cache_on_disk = true,
   };
 }
 

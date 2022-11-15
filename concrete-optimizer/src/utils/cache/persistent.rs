@@ -50,18 +50,18 @@ where
         version: u64,
         function: impl 'static + Send + Sync + Fn(ROC::K) -> ROC::V,
     ) -> Self {
-        let t0 = Instant::now();
-        let content = Self::read_from_disk(path, version).unwrap_or_default();
-        if SHOW_DISK_ACCESS {
-            println!(
-                "PersistentCache: {}, reading time {} msec, {} entries",
-                path,
-                t0.elapsed().as_millis(),
-                content.len()
-            );
-        }
+        let cache = Self::new_no_read(path, version, function);
+        cache.read();
+        cache
+    }
+
+    pub fn new_no_read(
+        path: &str,
+        version: u64,
+        function: impl 'static + Send + Sync + Fn(ROC::K) -> ROC::V,
+    ) -> Self {
         let path = path.into();
-        let content = RwLock::new(Arc::new(content));
+        let content = RwLock::new(Arc::new(ROC::default()));
         let content_changed = AtomicBool::new(false);
         Self {
             path,
@@ -70,6 +70,21 @@ where
             version,
             function: Arc::new(function),
         }
+    }
+
+    pub fn read(&self) {
+        let t0 = Instant::now();
+        let content = Self::read_from_disk(&self.path, self.version).unwrap_or_default();
+        if SHOW_DISK_ACCESS {
+            println!(
+                "PersistentCache: {}, reading time {} msec, {} entries",
+                self.path,
+                t0.elapsed().as_millis(),
+                content.len()
+            );
+        }
+        self.update_with(|_| content);
+        self.content_changed.store(false, Ordering::Relaxed);
     }
 
     pub fn cache(&self) -> ephemeral::Cache<ROC> {
@@ -268,6 +283,13 @@ where
 }
 
 pub type PersistentCacheHashMap<K, V> = PersistentCache<Map<K, V>>;
+
+pub fn default_cache_dir() -> String {
+    let mut cache_dir = std::env::temp_dir();
+    cache_dir.push("optimizer");
+    cache_dir.push("cache");
+    cache_dir.to_str().expect("Invalid tmp dir").into()
+}
 
 #[cfg(test)]
 mod tests {

@@ -8,7 +8,7 @@ use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::parameters::{BrDecompositionParameters, GlweParameters, LweDimension, PbsParameters};
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
-use crate::utils::cache::persistent::PersistentCacheHashMap;
+use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
 use crate::{config, security};
 
 use super::common::{MacroParam, VERSION};
@@ -115,18 +115,12 @@ pub fn cache(
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
 ) -> PersistDecompCache {
-    let max_log2_base = processing_unit.max_br_base_log();
-
+    let cache_dir: String = default_cache_dir();
     let ciphertext_modulus_log = 64;
-    let tmp: String = std::env::temp_dir()
-        .to_str()
-        .expect("Invalid tmp dir")
-        .into();
-
     let hardware = processing_unit.br_to_string();
+    let path = format!("{cache_dir}/br-decomp-{hardware}-64-{security_level}");
 
-    let path = format!("{tmp}/optimizer/cache/br-decomp-{hardware}-64-{security_level}");
-
+    let max_log2_base = processing_unit.max_br_base_log();
     let function = move |(glwe_params, internal_dim): MacroParam| {
         pareto_quantities(
             complexity_model.as_ref(),
@@ -137,5 +131,5 @@ pub fn cache(
             max_log2_base,
         )
     };
-    PersistentCacheHashMap::new(&path, VERSION, function)
+    PersistentCacheHashMap::new_no_read(&path, VERSION, function)
 }

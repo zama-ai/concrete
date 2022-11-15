@@ -11,7 +11,7 @@ use crate::parameters::{
     GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension,
 };
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
-use crate::utils::cache::persistent::PersistentCacheHashMap;
+use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
 
 use super::common::{MacroParam, VERSION};
 
@@ -118,15 +118,10 @@ pub fn cache(
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
 ) -> PersistDecompCache {
+    let cache_dir: String = default_cache_dir();
     let ciphertext_modulus_log = 64;
-    let tmp: String = std::env::temp_dir()
-        .to_str()
-        .expect("Invalid tmp dir")
-        .into();
-
     let hardware = processing_unit.ks_to_string();
-
-    let path = format!("{tmp}/optimizer/cache/ks-decomp-{hardware}-64-{security_level}");
+    let path = format!("{cache_dir}/ks-decomp-{hardware}-64-{security_level}");
 
     let function = move |(glwe_params, internal_dim): MacroParam| {
         pareto_quantities(
@@ -137,5 +132,5 @@ pub fn cache(
             glwe_params,
         )
     };
-    PersistentCacheHashMap::new(&path, VERSION, function)
+    PersistentCacheHashMap::new_no_read(&path, VERSION, function)
 }

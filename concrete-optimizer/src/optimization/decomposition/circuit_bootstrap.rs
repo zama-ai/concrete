@@ -8,7 +8,7 @@ use crate::config;
 use crate::noise_estimator::operators::atomic_pattern::variance_cmux;
 use crate::parameters::{BrDecompositionParameters, CmuxParameters, GlweParameters};
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
-use crate::utils::cache::persistent::PersistentCacheHashMap;
+use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
 use crate::utils::square;
 
 use super::common::VERSION;
@@ -97,15 +97,11 @@ pub fn cache(
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
 ) -> PersistDecompCache {
+    let cache_dir: String = default_cache_dir();
     let ciphertext_modulus_log = 64;
-    let tmp: String = std::env::temp_dir()
-        .to_str()
-        .expect("Invalid tmp dir")
-        .into();
     let hardware = processing_unit.br_to_string();
-    let path = format!(
-        "{tmp}/optimizer/cache/cb-decomp-{hardware}-{ciphertext_modulus_log}-{security_level}"
-    );
+    let path =
+        format!("{cache_dir}/cb-decomp-{hardware}-{ciphertext_modulus_log}-{security_level}");
     let function = move |glwe_params| {
         pareto_quantities(
             complexity_model.as_ref(),
@@ -113,5 +109,5 @@ pub fn cache(
             glwe_params,
         )
     };
-    PersistentCacheHashMap::new(&path, VERSION, function)
+    PersistentCacheHashMap::new_no_read(&path, VERSION, function)
 }

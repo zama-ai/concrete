@@ -1064,6 +1064,7 @@ struct Options final {
   double default_log_norm2_woppbs;
   bool use_gpu_constraints;
   ::concrete_optimizer::Encoding encoding;
+  bool cache_on_disk;
 
   using IsRelocatable = ::std::true_type;
 };
