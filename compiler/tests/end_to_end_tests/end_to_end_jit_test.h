@@ -20,7 +20,8 @@ inline llvm::Expected<
 internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false,
                    bool dataflowParallelize = false,
-                   bool loopParallelize = false) {
+                   bool loopParallelize = false,
+                   bool batchConcreteOps = false) {
 
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
@@ -39,6 +40,7 @@ internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
   options.dataflowParallelize = dataflowParallelize;
 #endif
 #endif
+  options.batchConcreteOps = batchConcreteOps;
 
   auto lambdaOrErr =
       mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::create(

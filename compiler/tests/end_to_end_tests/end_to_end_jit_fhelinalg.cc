@@ -1459,6 +1459,49 @@ TEST(End2EndJit_FHELinalg, apply_lookup_table) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// FHELinalg apply_lookup_table with batching /////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_FHELinalg, apply_lookup_table_batched) {
+  checkedJit(lambda, R"XXX(
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
+      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
+      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!FHE.eint<3>>
+      return %res : tensor<3x3x!FHE.eint<3>>
+    }
+)XXX",
+             "main", false, false, false, true);
+  const uint8_t t[3][3]{
+      {0, 1, 2},
+      {3, 0, 1},
+      {2, 3, 0},
+  };
+  const uint8_t expected[3][3]{
+      {1, 3, 5},
+      {7, 1, 3},
+      {5, 7, 1},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      tArg(llvm::ArrayRef<uint8_t>((const uint8_t *)t, 3 * 3), {3, 3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&tArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // FHELinalg apply_multi_lookup_table /////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
