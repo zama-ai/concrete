@@ -203,6 +203,71 @@ pub fn create_ret_op(context: MlirContext, ret_value: MlirValue) -> MlirOperatio
     create_op(context, "func.return", &[ret_value], &[], &[], false)
 }
 
+pub fn create_constant_int_op(context: MlirContext, cst_value: i64, width: u32) -> MlirOperation {
+    unsafe {
+        let result_type = mlirIntegerTypeGet(context, width);
+        let value_str = CString::new("value").unwrap();
+        let value_attr = mlirNamedAttributeGet(
+            mlirIdentifierGet(context, mlirStringRefCreateFromCString(value_str.as_ptr())),
+            mlirIntegerAttrGet(result_type, cst_value),
+        );
+        create_op(
+            context,
+            "arith.constant",
+            &[],
+            &[result_type],
+            &[value_attr],
+            true,
+        )
+    }
+}
+
+pub fn create_constant_flat_tensor_op(
+    context: MlirContext,
+    cst_table: &[i64],
+    bitwidth: u32,
+) -> MlirOperation {
+    let shape = [cst_table.len().try_into().unwrap()];
+    create_constant_tensor_op(context, &shape, cst_table, bitwidth)
+}
+
+pub fn create_constant_tensor_op(
+    context: MlirContext,
+    shape: &[i64],
+    cst_table: &[i64],
+    bitwidth: u32,
+) -> MlirOperation {
+    unsafe {
+        let result_type = mlirRankedTensorTypeGet(
+            shape.len().try_into().unwrap(),
+            shape.as_ptr(),
+            mlirIntegerTypeGet(context, bitwidth),
+            mlirAttributeGetNull(),
+        );
+        let cst_table_attrs: Vec<MlirAttribute> = cst_table
+            .into_iter()
+            .map(|value| mlirIntegerAttrGet(mlirIntegerTypeGet(context, bitwidth), *value))
+            .collect();
+        let value_str = CString::new("value").unwrap();
+        let value_attr = mlirNamedAttributeGet(
+            mlirIdentifierGet(context, mlirStringRefCreateFromCString(value_str.as_ptr())),
+            mlirDenseElementsAttrGet(
+                result_type,
+                cst_table.len().try_into().unwrap(),
+                cst_table_attrs.as_ptr(),
+            ),
+        );
+        create_op(
+            context,
+            "arith.constant",
+            &[],
+            &[result_type],
+            &[value_attr],
+            true,
+        )
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -299,6 +364,66 @@ module {
                 "left: \n{}, right: \n{}",
                 printed_module, expected_module
             );
+        }
+    }
+
+    #[test]
+    fn test_constant_flat_tensor() {
+        unsafe {
+            let context = mlirContextCreate();
+            mlirRegisterAllDialects(context);
+
+            // create a constant flat tensor
+            let contant_flat_tensor_op = create_constant_flat_tensor_op(context, &[0, 1, 2, 3], 64);
+
+            let printed_op = print_mlir_operation_to_string(contant_flat_tensor_op);
+            let expected_op = "%cst = arith.constant dense<[0, 1, 2, 3]> : tensor<4xi64>\n";
+            assert_eq!(printed_op, expected_op);
+        }
+    }
+
+    #[test]
+    fn test_constant_tensor() {
+        unsafe {
+            let context = mlirContextCreate();
+            mlirRegisterAllDialects(context);
+
+            // create a constant tensor
+            let contant_tensor_op = create_constant_tensor_op(context, &[2, 2], &[0, 1, 2, 3], 64);
+
+            let printed_op = print_mlir_operation_to_string(contant_tensor_op);
+            let expected_op = "%cst = arith.constant dense<[[0, 1], [2, 3]]> : tensor<2x2xi64>\n";
+            assert_eq!(printed_op, expected_op);
+        }
+    }
+
+    #[test]
+    fn test_constant_tensor_with_signle_elem() {
+        unsafe {
+            let context = mlirContextCreate();
+            mlirRegisterAllDialects(context);
+
+            // create a constant tensor
+            let contant_tensor_op = create_constant_tensor_op(context, &[2, 2], &[0], 7);
+
+            let printed_op = print_mlir_operation_to_string(contant_tensor_op);
+            let expected_op = "%cst = arith.constant dense<0> : tensor<2x2xi7>\n";
+            assert_eq!(printed_op, expected_op);
+        }
+    }
+
+    #[test]
+    fn test_constant_int() {
+        unsafe {
+            let context = mlirContextCreate();
+            mlirRegisterAllDialects(context);
+
+            // create a constant flat tensor
+            let contant_int_op = create_constant_int_op(context, 73, 10);
+
+            let printed_op = print_mlir_operation_to_string(contant_int_op);
+            let expected_op = "%c73_i10 = arith.constant 73 : i10\n";
+            assert_eq!(printed_op, expected_op);
         }
     }
 }
