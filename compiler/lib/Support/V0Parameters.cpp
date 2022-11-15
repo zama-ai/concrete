@@ -144,7 +144,9 @@ static void display(optimizer::Description &descr,
       << "  wopPbs : " << (sol.use_wop_pbs ? "true" : "false") << "\n";
   if (sol.use_wop_pbs) {
     o() << "    |cb_decomp l,b=" << sol.cb_decomposition_level_count << ","
-        << sol.cb_decomposition_base_log << "\n";
+        << sol.cb_decomposition_base_log << "\n"
+        << "    |pp_decomp l,b=" << sol.pp_decomposition_level_count << ","
+        << sol.pp_decomposition_base_log << "\n";
   }
   o() << "---\n";
 
@@ -236,16 +238,12 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
     }
     lParams.wopPBS.circuitBootstrap.baseLog = sol.cb_decomposition_base_log;
     lParams.wopPBS.circuitBootstrap.level = sol.cb_decomposition_level_count;
-    // FIXME: For now the packing keyswitch parameter are the same than the
-    // blind rotate one. But that should be done on the optimizer size and
-    // moreover this assumption could change.
-    // TODO - change
     lParams.wopPBS.packingKeySwitch.inputLweDimension =
         sol.internal_ks_output_lwe_dimension + 1;
     lParams.wopPBS.packingKeySwitch.outputPolynomialSize =
         sol.glwe_polynomial_size;
-    lParams.wopPBS.packingKeySwitch.level = sol.br_decomposition_level_count;
-    lParams.wopPBS.packingKeySwitch.baseLog = sol.br_decomposition_base_log;
+    lParams.wopPBS.packingKeySwitch.level = sol.pp_decomposition_level_count;
+    lParams.wopPBS.packingKeySwitch.baseLog = sol.pp_decomposition_base_log;
 
     params.largeInteger = lParams;
   }
