@@ -3,7 +3,6 @@ use std::sync::Arc;
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::computing_cost::cpu::CpuComplexity;
 use crate::computing_cost::gpu::GpuComplexity;
-use crate::optimization::config::{MAX_LOG2_BASE_CPU, MAX_LOG2_BASE_GPU};
 
 #[derive(Clone, Copy)]
 pub enum ProcessingUnit {
@@ -21,13 +20,6 @@ pub enum GpuPbsType {
 }
 
 impl ProcessingUnit {
-    pub fn max_br_base_log(self) -> u64 {
-        match self {
-            Self::Cpu => MAX_LOG2_BASE_CPU,
-            Self::Gpu { .. } => MAX_LOG2_BASE_GPU,
-        }
-    }
-
     pub fn ks_to_string(self) -> &'static str {
         match self {
             Self::Cpu => "cpu",

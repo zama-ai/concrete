@@ -86,9 +86,3 @@ impl SearchSpace {
         }
     }
 }
-
-// https://github.com/zama-ai/concrete-core/blob/6b52182ab44c4b39ddebca1c457e1096fb687801/concrete-cuda/cuda/src/bootstrap_amortized.cu#L77
-// https://github.com/zama-ai/concrete-core/blob/6b52182ab44c4b39ddebca1c457e1096fb687801/concrete-cuda/cuda/src/bootstrap_low_latency.cu#L153
-pub const MAX_LOG2_BASE_GPU: u64 = 64;
-
-pub const MAX_LOG2_BASE_CPU: u64 = 64;

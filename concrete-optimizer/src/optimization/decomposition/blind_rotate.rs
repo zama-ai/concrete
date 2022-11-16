@@ -23,18 +23,17 @@ pub fn pareto_quantities(
     security_level: u64,
     internal_dim: u64,
     glwe_params: GlweParameters,
-    max_log2_base: u64,
 ) -> Vec<BrComplexityNoise> {
     assert!(ciphertext_modulus_log == 64);
 
     let variance_bsk = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
 
-    let mut quantities = Vec::with_capacity(max_log2_base as usize);
+    let mut quantities = Vec::with_capacity(ciphertext_modulus_log as usize);
     let mut increasing_complexity = 0.0;
     let mut decreasing_variance = f64::INFINITY;
     let mut counting_no_progress = 0;
 
-    let mut prev_best_log2_base = max_log2_base;
+    let mut prev_best_log2_base = ciphertext_modulus_log as u64;
 
     for level in 1..=ciphertext_modulus_log as u64 {
         // detect increasing noise
@@ -121,7 +120,6 @@ pub fn cache(
     let hardware = processing_unit.br_to_string();
     let path = format!("{cache_dir}/br-decomp-{hardware}-64-{security_level}");
 
-    let max_log2_base = processing_unit.max_br_base_log();
     let function = move |(glwe_params, internal_dim): MacroParam| {
         pareto_quantities(
             complexity_model.as_ref(),
@@ -129,7 +127,6 @@ pub fn cache(
             security_level,
             internal_dim,
             glwe_params,
-            max_log2_base,
         )
     };
     PersistentCacheHashMap::new_no_read(&path, VERSION, function)

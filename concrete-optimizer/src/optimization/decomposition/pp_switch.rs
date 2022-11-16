@@ -88,7 +88,6 @@ pub fn cache(
     let hardware = processing_unit.br_to_string();
     let path = format!("{cache_dir}/bc-decomp-{hardware}-64-{security_level}");
 
-    let max_log2_base = processing_unit.max_br_base_log();
     let function = move |(glwe_params, internal_dim): MacroParam| {
         let br = blind_rotate::pareto_quantities(
             complexity_model.as_ref(),
@@ -96,7 +95,6 @@ pub fn cache(
             security_level,
             internal_dim,
             glwe_params,
-            max_log2_base,
         );
         pareto_quantities(
             complexity_model.as_ref(),
