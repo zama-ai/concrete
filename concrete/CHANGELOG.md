@@ -1,4 +1,12 @@
-# Unreleased (Target 0.2.0)
+# 0.2.1
+
+## Fixed
+ 
+ - Implemented missing `serde::{Serialize, Deserialize}` for ShortIntid
+
+---
+
+# 0.2.0
 
 ## Added
  

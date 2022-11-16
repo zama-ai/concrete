@@ -1,3 +1,12 @@
+# 0.1.1
+
+## Fixed
+
+  - Fix builds on aarch64 due to missing concrete-core feature activation
+  - Bump to rust edition 2021
+
+---
+
 # 0.1.0
 
 ## Added

@@ -1,3 +1,11 @@
+# 0.1.1
+
+## Fixed
+
+- Bump to rust edition 2021
+
+---
+
 # 0.1.0
 
 ## Added
