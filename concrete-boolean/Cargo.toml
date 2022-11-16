@@ -10,8 +10,7 @@ documentation = "https://docs.zama.ai/concrete/boolean-lib"
 repository = "https://github.com/zama-ai/concrete"
 readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+exclude = ["/docs/"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

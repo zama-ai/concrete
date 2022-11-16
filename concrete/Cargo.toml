@@ -9,6 +9,7 @@ documentation = "https://docs.zama.ai/concrete/"
 repository = "https://github.com/zama-ai/concrete"
 license = "BSD-3-Clause-Clear"
 description = "Concrete is a fully homomorphic encryption (FHE) library that implements Zama's variant of TFHE."
+exclude = ["/docs/"]
 
 [dev-dependencies]
 criterion = "0.3.5"
