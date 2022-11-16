@@ -3,8 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "CompilerAPIModule.h"
-#include "concretelang-c/Support/CompilerEngine.h"
+#include "concretelang/Bindings/Python/CompilerAPIModule.h"
+#include "concretelang/Bindings/Python/CompilerEngine.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
@@ -95,34 +95,34 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   pybind11::class_<mlir::concretelang::JITLambda,
                    std::shared_ptr<mlir::concretelang::JITLambda>>(m,
                                                                    "JITLambda");
-  pybind11::class_<JITSupport_C>(m, "JITSupport")
+  pybind11::class_<JITSupport_Py>(m, "JITSupport")
       .def(pybind11::init([](std::string runtimeLibPath) {
         return jit_support(runtimeLibPath);
       }))
       .def("compile",
-           [](JITSupport_C &support, std::string mlir_program,
+           [](JITSupport_Py &support, std::string mlir_program,
               CompilationOptions options) {
              return jit_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
-           [](JITSupport_C &support,
+           [](JITSupport_Py &support,
               mlir::concretelang::JitCompilationResult &result) {
              return jit_load_client_parameters(support, result);
            })
       .def("load_compilation_feedback",
-           [](JITSupport_C &support,
+           [](JITSupport_Py &support,
               mlir::concretelang::JitCompilationResult &result) {
              return jit_load_compilation_feedback(support, result);
            })
       .def(
           "load_server_lambda",
-          [](JITSupport_C &support,
+          [](JITSupport_Py &support,
              mlir::concretelang::JitCompilationResult &result) {
             return jit_load_server_lambda(support, result);
           },
           pybind11::return_value_policy::reference)
       .def("server_call",
-           [](JITSupport_C &support, concretelang::JITLambda &lambda,
+           [](JITSupport_Py &support, concretelang::JITLambda &lambda,
               clientlib::PublicArguments &publicArguments,
               clientlib::EvaluationKeys &evaluationKeys) {
              return jit_server_call(support, lambda, publicArguments,
@@ -138,7 +138,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
         };
       }));
   pybind11::class_<concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
-  pybind11::class_<LibrarySupport_C>(m, "LibrarySupport")
+  pybind11::class_<LibrarySupport_Py>(m, "LibrarySupport")
       .def(pybind11::init(
           [](std::string outputPath, std::string runtimeLibraryPath,
              bool generateSharedLib, bool generateStaticLib,
@@ -150,39 +150,39 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                 generateCompilationFeedback, generateCppHeader);
           }))
       .def("compile",
-           [](LibrarySupport_C &support, std::string mlir_program,
+           [](LibrarySupport_Py &support, std::string mlir_program,
               mlir::concretelang::CompilationOptions options) {
              return library_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
-           [](LibrarySupport_C &support,
+           [](LibrarySupport_Py &support,
               mlir::concretelang::LibraryCompilationResult &result) {
              return library_load_client_parameters(support, result);
            })
       .def("load_compilation_feedback",
-           [](LibrarySupport_C &support,
+           [](LibrarySupport_Py &support,
               mlir::concretelang::LibraryCompilationResult &result) {
              return library_load_compilation_feedback(support, result);
            })
       .def(
           "load_server_lambda",
-          [](LibrarySupport_C &support,
+          [](LibrarySupport_Py &support,
              mlir::concretelang::LibraryCompilationResult &result) {
             return library_load_server_lambda(support, result);
           },
           pybind11::return_value_policy::reference)
       .def("server_call",
-           [](LibrarySupport_C &support, serverlib::ServerLambda lambda,
+           [](LibrarySupport_Py &support, serverlib::ServerLambda lambda,
               clientlib::PublicArguments &publicArguments,
               clientlib::EvaluationKeys &evaluationKeys) {
              return library_server_call(support, lambda, publicArguments,
                                         evaluationKeys);
            })
       .def("get_shared_lib_path",
-           [](LibrarySupport_C &support) {
+           [](LibrarySupport_Py &support) {
              return library_get_shared_lib_path(support);
            })
-      .def("get_client_parameters_path", [](LibrarySupport_C &support) {
+      .def("get_client_parameters_path", [](LibrarySupport_Py &support) {
         return library_get_client_parameters_path(support);
       });
 

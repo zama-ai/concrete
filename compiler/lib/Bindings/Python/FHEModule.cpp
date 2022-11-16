@@ -3,9 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "DialectModules.h"
-
 #include "concretelang-c/Dialect/FHE.h"
+#include "concretelang/Bindings/Python/DialectModules.h"
 
 #include "mlir-c/BuiltinAttributes.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"

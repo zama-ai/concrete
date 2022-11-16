@@ -1,5 +1,15 @@
 include(AddMLIRPython)
 
+# Python bindings need to throw exceptions for proper handling of errors on the python-side
+add_compile_options(-fexceptions)
+
+# ######################################################################################################################
+# Support wrapper library for Python
+# ######################################################################################################################
+set(LLVM_OPTIONAL_SOURCES CompilerAPIModule.cpp ConcretelangModule.cpp FHEModule.cpp)
+
+add_mlir_public_c_api_library(CONCRETELANGPySupport CompilerEngine.cpp LINK_LIBS PUBLIC MLIRCAPIIR ConcretelangSupport)
+
 # ######################################################################################################################
 # Decalare native Python extension
 # ######################################################################################################################
@@ -19,7 +29,7 @@ declare_mlir_python_extension(
   EMBED_CAPI_LINK_LIBS
   CONCRETELANGCAPIFHE
   CONCRETELANGCAPIFHELINALG
-  CONCRETELANGCAPISupport)
+  CONCRETELANGPySupport)
 
 # ######################################################################################################################
 # Declare python sources

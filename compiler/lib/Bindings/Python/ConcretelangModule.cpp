@@ -3,11 +3,10 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "CompilerAPIModule.h"
-#include "DialectModules.h"
-
 #include "concretelang-c/Dialect/FHE.h"
 #include "concretelang-c/Dialect/FHELinalg.h"
+#include "concretelang/Bindings/Python/CompilerAPIModule.h"
+#include "concretelang/Bindings/Python/DialectModules.h"
 #include "concretelang/Support/Constants.h"
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/Registration.h"
