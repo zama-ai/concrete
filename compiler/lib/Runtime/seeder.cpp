@@ -12,13 +12,25 @@
 
 SeederBuilder *get_best_seeder() {
   SeederBuilder *builder = NULL;
+
+#if defined(__x86_64__) || defined(_M_X64)
   bool rdseed_seeder_available = false;
   CAPI_ASSERT_ERROR(rdseed_seeder_is_available(&rdseed_seeder_available));
-
   if (rdseed_seeder_available) {
     CAPI_ASSERT_ERROR(get_rdseed_seeder_builder(&builder));
     return builder;
   }
+#endif
+
+#if __APPLE__
+  bool apple_seeder_available = false;
+  CAPI_ASSERT_ERROR(
+      apple_secure_enclave_seeder_is_available(&apple_seeder_available));
+  if (apple_seeder_available) {
+    CAPI_ASSERT_ERROR(get_apple_secure_enclave_seeder_builder(&builder));
+    return builder;
+  }
+#endif
 
   bool unix_seeder_available = false;
   CAPI_ASSERT_ERROR(unix_seeder_is_available(&unix_seeder_available));

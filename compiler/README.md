@@ -120,6 +120,8 @@ pybind11 is required to build the python package, you can install it in your cur
 $ pip install pybind11
 ```
 
+To specify which python executable to target you can specify the `Python3_EXECUTABLE` environment variable.
+
 #### Build wheels in your environment
 
 Building the wheels is actually simple.

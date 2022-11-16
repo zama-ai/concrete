@@ -1,6 +1,6 @@
 BUILD_TYPE?=Release
 BUILD_DIR?=./build
-Python3_EXECUTABLE?=python3
+Python3_EXECUTABLE?=$(shell which python3)
 BINDINGS_PYTHON_ENABLED=ON
 DATAFLOW_EXECUTION_ENABLED=OFF
 TIMING_ENABLED=OFF
@@ -22,11 +22,22 @@ HPX_LOCAL_DIR=$(shell pwd)/hpx-$(HPX_VERSION)
 HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)/build
 
 CONCRETE_CORE_FFI_VERSION?=0.2.0
+
+OS=undefined
 ifeq ($(shell uname), Linux)
-	CONCRETE_CORE_FFI_TARBALL=concrete-core-ffi_$(CONCRETE_CORE_FFI_VERSION)_linux_amd64.tar.gz
-else
-	CONCRETE_CORE_FFI_TARBALL=concrete-core-ffi_$(CONCRETE_CORE_FFI_VERSION)_darwin_amd64.tar.gz
+	OS=linux
+else ifeq ($(shell uname), Darwin)
+	OS=darwin
 endif
+
+ARCHITECTURE=undefined
+ifeq ($(shell uname -m), arm64)
+	ARCHITECTURE=aarch64
+else 
+	ARCHITECTURE=amd64
+endif
+
+CONCRETE_CORE_FFI_TARBALL=concrete-core-ffi_$(CONCRETE_CORE_FFI_VERSION)_$(OS)_$(ARCHITECTURE).tar.gz
 
 export PATH := $(abspath $(BUILD_DIR))/bin:$(PATH)
 
