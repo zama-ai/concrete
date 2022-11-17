@@ -151,7 +151,7 @@ class Circuit:
         """
 
         if self.configuration.virtual:
-            return self.graph(*args)
+            return self.graph(*args, p_error=self.configuration.p_error)
 
         return self.decrypt(self.run(self.encrypt(*args)))
 

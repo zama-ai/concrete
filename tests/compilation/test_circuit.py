@@ -292,3 +292,42 @@ def test_bad_server_save(helpers):
         circuit.server.save("test.zip")
 
     assert str(excinfo.value) == "Just-in-Time compilation cannot be saved"
+
+
+@pytest.mark.parametrize("p_error", [0.5, 0.1, 0.01])
+@pytest.mark.parametrize("bit_width", [10])
+@pytest.mark.parametrize("sample_size", [100_000])
+@pytest.mark.parametrize("tolerance", [0.05])
+def test_virtual_p_error(p_error, bit_width, sample_size, tolerance, helpers):
+    """
+    Test virtual circuits with p_error.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted"})
+    def function(x):
+        return x**2
+
+    inputset = [np.random.randint(0, 2**bit_width, size=(sample_size,)) for _ in range(100)]
+    circuit = function.compile(inputset, configuration=configuration, virtual=True, p_error=p_error)
+
+    sample = np.random.randint(0, 2**bit_width, size=(sample_size,))
+    output = circuit.encrypt_run_decrypt(sample)
+
+    errors = 0
+    for i in range(sample_size):
+        if output[i] != sample[i] ** 2:
+            possible_inputs = [
+                (sample[i] + 1) if sample[i] != (2**bit_width) - 1 else 0,
+                (sample[i] - 1) if sample[i] != 0 else (2**bit_width) - 1,
+            ]
+            assert output[i] in [possible_inputs[0] ** 2, possible_inputs[1] ** 2]
+            errors += 1
+
+    expected_number_of_errors_on_average = sample_size * p_error
+    acceptable_number_of_errors = [
+        expected_number_of_errors_on_average - (expected_number_of_errors_on_average * tolerance),
+        expected_number_of_errors_on_average + (expected_number_of_errors_on_average * tolerance),
+    ]
+    assert acceptable_number_of_errors[0] < errors < acceptable_number_of_errors[1]

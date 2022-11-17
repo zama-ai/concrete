@@ -49,6 +49,7 @@ class Graph:
     def __call__(
         self,
         *args: Any,
+        p_error: Optional[float] = None,
     ) -> Union[
         np.bool_,
         np.integer,
@@ -56,13 +57,14 @@ class Graph:
         np.ndarray,
         Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
     ]:
-        evaluation = self.evaluate(*args)
+        evaluation = self.evaluate(*args, p_error=p_error)
         result = tuple(evaluation[node] for node in self.ordered_outputs())
         return result if len(result) > 1 else result[0]
 
     def evaluate(
         self,
         *args: Any,
+        p_error: Optional[float] = None,
     ) -> Dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]]:
         r"""
         Perform the computation `Graph` represents and get resulting values for all nodes.
@@ -71,10 +73,18 @@ class Graph:
             *args (List[Any]):
                 inputs to the computation
 
+            p_error (Optional[float]):
+                probability of error for table lookups
+
         Returns:
             Dict[Node, Union[np.bool\_, np.integer, np.floating, np.ndarray]]:
                 nodes and their values during computation
         """
+
+        if p_error is None:
+            p_error = 0.0
+
+        assert isinstance(p_error, float)
 
         node_results: Dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]] = {}
         for node in nx.topological_sort(self.graph):
@@ -83,6 +93,32 @@ class Graph:
                 continue
 
             pred_results = [node_results[pred] for pred in self.ordered_preds_of(node)]
+
+            if p_error > 0.0 and node.converted_to_table_lookup:
+                variable_input_indices = [
+                    idx
+                    for idx, pred in enumerate(self.ordered_preds_of(node))
+                    if not pred.operation == Operation.Constant
+                ]
+
+                for index in variable_input_indices:
+                    dtype = node.inputs[index].dtype
+                    if isinstance(dtype, Integer):
+                        # this is fine as we only call the function in the loop, and it's tested
+
+                        # pylint: disable=cell-var-from-loop
+
+                        def introduce_error(value):
+                            if np.random.rand() < p_error:
+                                value += 1 if np.random.rand() < 0.5 else -1
+                                value = value if value >= dtype.min() else dtype.max()
+                                value = value if value <= dtype.max() else dtype.min()
+                            return value
+
+                        # pylint: enable=cell-var-from-loop
+
+                        pred_results[index] = np.vectorize(introduce_error)(pred_results[index])
+
             try:
                 node_results[node] = node(*pred_results)
             except Exception as error:
