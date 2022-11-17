@@ -21,14 +21,7 @@
 #include "utils/memory.cuh"
 #include "utils/timer.cuh"
 
-template <class params> __device__ void fft(double2 *output, int16_t *input) {
-  synchronize_threads_in_block();
-
-  // Reduce the size of the FFT to be performed by storing
-  // the real-valued polynomial into a complex polynomial
-  real_to_complex_compressed<params>(input, output);
-  synchronize_threads_in_block();
-
+template <class params> __device__ void fft(double2 *output) {
   // Switch to the FFT space
   NSMFFT_direct<HalfDegree<params>>(output);
   synchronize_threads_in_block();
@@ -81,18 +74,13 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
   Torus *glwe_sub_mask = (Torus *)selected_memory;
   Torus *glwe_sub_body = (Torus *)glwe_sub_mask + (ptrdiff_t)polynomial_size;
 
-  int16_t *glwe_mask_decomposed = (int16_t *)(glwe_sub_body + polynomial_size);
-  int16_t *glwe_body_decomposed =
-      (int16_t *)glwe_mask_decomposed + (ptrdiff_t)polynomial_size;
-
-  double2 *mask_res_fft = (double2 *)(glwe_body_decomposed + polynomial_size);
+  double2 *mask_res_fft = (double2 *)glwe_sub_body +
+                          polynomial_size / (sizeof(double2) / sizeof(Torus));
   double2 *body_res_fft =
       (double2 *)mask_res_fft + (ptrdiff_t)polynomial_size / 2;
 
   double2 *glwe_fft =
       (double2 *)body_res_fft + (ptrdiff_t)(polynomial_size / 2);
-
-  GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   /////////////////////////////////////
 
@@ -125,18 +113,18 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
     pos += params::degree / params::opt;
   }
 
+  GadgetMatrix<Torus, params> gadget_mask(base_log, level_count, glwe_sub_mask);
+  GadgetMatrix<Torus, params> gadget_body(base_log, level_count, glwe_sub_body);
   // Subtract each glwe operand, decompose the resulting
   // polynomial coefficients to multiply each decomposed level
   // with the corresponding part of the LUT
-  for (int level = 0; level < level_count; level++) {
+  for (int level = level_count - 1; level >= 0; level--) {
 
     // Decomposition
-    gadget.decompose_one_level(glwe_mask_decomposed, glwe_sub_mask, level);
-    gadget.decompose_one_level(glwe_body_decomposed, glwe_sub_body, level);
+    gadget_mask.decompose_and_compress_next(glwe_fft);
 
     // First, perform the polynomial multiplication for the mask
-    synchronize_threads_in_block();
-    fft<params>(glwe_fft, glwe_mask_decomposed);
+    fft<params>(glwe_fft);
 
     // External product and accumulate
     // Get the piece necessary for the multiplication
@@ -157,7 +145,9 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
     // Now handle the polynomial multiplication for the body
     // in the same way
     synchronize_threads_in_block();
-    fft<params>(glwe_fft, glwe_body_decomposed);
+
+    gadget_body.decompose_and_compress_next(glwe_fft);
+    fft<params>(glwe_fft);
 
     // External product and accumulate
     // Get the piece necessary for the multiplication
@@ -272,8 +262,6 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   int memory_needed_per_block =
       sizeof(Torus) * polynomial_size +       // glwe_sub_mask
       sizeof(Torus) * polynomial_size +       // glwe_sub_body
-      sizeof(int16_t) * polynomial_size +     // glwe_mask_decomposed
-      sizeof(int16_t) * polynomial_size +     // glwe_body_decomposed
       sizeof(double2) * polynomial_size / 2 + // mask_res_fft
       sizeof(double2) * polynomial_size / 2 + // body_res_fft
       sizeof(double2) * polynomial_size / 2;  // glwe_fft
@@ -331,11 +319,11 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
     // walks horizontally through the leafs
     if (max_shared_memory < memory_needed_per_block)
       device_batch_cmux<Torus, STorus, params, NOSM>
-          <<<grid, thds, memory_needed_per_block, *stream>>>(
-              output, input, d_ggsw_fft_in, d_mem, memory_needed_per_block,
-              glwe_dimension, // k
-              polynomial_size, base_log, level_count,
-              layer_idx // r
+          <<<grid, thds, 0, *stream>>>(output, input, d_ggsw_fft_in, d_mem,
+                                       memory_needed_per_block,
+                                       glwe_dimension, // k
+                                       polynomial_size, base_log, level_count,
+                                       layer_idx // r
           );
     else
       device_batch_cmux<Torus, STorus, params, FULLSM>
@@ -640,8 +628,6 @@ void host_blind_rotate_and_sample_extraction(
       sizeof(Torus) * polynomial_size +       // accumulator_c1 body
       sizeof(Torus) * polynomial_size +       // glwe_sub_mask
       sizeof(Torus) * polynomial_size +       // glwe_sub_body
-      sizeof(int16_t) * polynomial_size +     // glwe_mask_decomposed
-      sizeof(int16_t) * polynomial_size +     // glwe_body_decomposed
       sizeof(double2) * polynomial_size / 2 + // mask_res_fft
       sizeof(double2) * polynomial_size / 2 + // body_res_fft
       sizeof(double2) * polynomial_size / 2;  // glwe_fft

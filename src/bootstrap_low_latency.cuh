@@ -30,14 +30,10 @@ namespace cg = cooperative_groups;
 
 template <typename Torus, class params>
 __device__ void
-mul_ggsw_glwe(Torus *accumulator, double2 *fft, int16_t *glwe_decomposed,
-              double2 *mask_join_buffer, double2 *body_join_buffer,
-              double2 *bootstrapping_key, int polynomial_size, int level_count,
-              int iteration, grid_group &grid) {
-
-  // Put the decomposed GLWE sample in the Fourier domain
-  real_to_complex_compressed<params>(glwe_decomposed, fft);
-  synchronize_threads_in_block();
+mul_ggsw_glwe(Torus *accumulator, double2 *fft, double2 *mask_join_buffer,
+              double2 *body_join_buffer, double2 *bootstrapping_key,
+              int polynomial_size, int level_count, int iteration,
+              grid_group &grid) {
 
   // Switch to the FFT space
   NSMFFT_direct<HalfDegree<params>>(fft);
@@ -157,15 +153,12 @@ __global__ void device_bootstrap_low_latency(
 
   char *selected_memory = sharedmem;
 
-  int16_t *accumulator_decomposed = (int16_t *)selected_memory;
-  Torus *accumulator = (Torus *)accumulator_decomposed +
-                       polynomial_size / (sizeof(Torus) / sizeof(int16_t));
+  Torus *accumulator = (Torus *)selected_memory;
+  Torus *accumulator_rotated =
+      (Torus *)accumulator + (ptrdiff_t)polynomial_size;
   double2 *accumulator_fft =
-      (double2 *)accumulator +
+      (double2 *)accumulator_rotated +
       polynomial_size / (sizeof(double2) / sizeof(Torus));
-
-  // Reuse memory from accumulator_fft for accumulator_rotated
-  Torus *accumulator_rotated = (Torus *)accumulator_fft;
 
   // The third dimension of the block is used to determine on which ciphertext
   // this block is operating, in the case of batch bootstraps
@@ -181,7 +174,6 @@ __global__ void device_bootstrap_low_latency(
   // Since the space is L1 cache is small, we use the same memory location for
   // the rotated accumulator and the fft accumulator, since we know that the
   // rotated array is not in use anymore by the time we perform the fft
-  GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   // Put "b" in [0, 2N[
   Torus b_hat = 0;
@@ -217,11 +209,14 @@ __global__ void device_bootstrap_low_latency(
                                       params::degree / params::opt>(
         accumulator_rotated, base_log, level_count);
 
+    synchronize_threads_in_block();
+
     // Decompose the accumulator. Each block gets one level of the
     // decomposition, for the mask and the body (so block 0 will have the
     // accumulator decomposed at level 0, 1 at 1, etc.)
-    gadget.decompose_one_level(accumulator_decomposed, accumulator_rotated,
-                               blockIdx.x);
+    GadgetMatrix<Torus, params> gadget_acc(base_log, level_count,
+                                           accumulator_rotated);
+    gadget_acc.decompose_and_compress_level(accumulator_fft, blockIdx.x);
 
     // We are using the same memory space for accumulator_fft and
     // accumulator_rotated, so we need to synchronize here to make sure they
@@ -229,9 +224,9 @@ __global__ void device_bootstrap_low_latency(
     synchronize_threads_in_block();
     // Perform G^-1(ACC) * GGSW -> GLWE
     mul_ggsw_glwe<Torus, params>(accumulator, accumulator_fft,
-                                 accumulator_decomposed, block_mask_join_buffer,
-                                 block_body_join_buffer, bootstrapping_key,
-                                 polynomial_size, level_count, i, grid);
+                                 block_mask_join_buffer, block_body_join_buffer,
+                                 bootstrapping_key, polynomial_size,
+                                 level_count, i, grid);
   }
 
   auto block_lwe_array_out = &lwe_array_out[blockIdx.z * (polynomial_size + 1)];
@@ -270,8 +265,8 @@ host_bootstrap_low_latency(void *v_stream, Torus *lwe_array_out,
   double2 *body_buffer_fft =
       (double2 *)cuda_malloc_async(buffer_size_per_gpu, *stream, gpu_index);
 
-  int bytes_needed = sizeof(int16_t) * polynomial_size + // accumulator_decomp
-                     sizeof(Torus) * polynomial_size +   // accumulator
+  int bytes_needed = sizeof(Torus) * polynomial_size + // accumulator_rotated
+                     sizeof(Torus) * polynomial_size + // accumulator
                      sizeof(double2) * polynomial_size / 2; // accumulator fft
 
   int thds = polynomial_size / params::opt;

@@ -72,14 +72,8 @@ __global__ void device_bootstrap_amortized(
     selected_memory = &device_mem[blockIdx.x * device_memory_size_per_sample];
 
   // For GPU bootstrapping the GLWE dimension is hard-set to 1: there is only
-  // one mask polynomial and 1 body to handle Also, since the decomposed
-  // polynomials take coefficients between -B/2 and B/2 they can be represented
-  // with only 16 bits, assuming the base log does not exceed 2^16
-  int16_t *accumulator_mask_decomposed = (int16_t *)selected_memory;
-  int16_t *accumulator_body_decomposed =
-      (int16_t *)accumulator_mask_decomposed + polynomial_size;
-  Torus *accumulator_mask = (Torus *)accumulator_body_decomposed +
-                            polynomial_size / (sizeof(Torus) / sizeof(int16_t));
+  // one mask polynomial and 1 body to handle.
+  Torus *accumulator_mask = (Torus *)selected_memory;
   Torus *accumulator_body =
       (Torus *)accumulator_mask + (ptrdiff_t)polynomial_size;
   Torus *accumulator_mask_rotated =
@@ -99,8 +93,6 @@ __global__ void device_bootstrap_amortized(
   Torus *block_lut_vector =
       &lut_vector[lut_vector_indexes[lwe_idx + blockIdx.x] * params::degree *
                   2];
-
-  GadgetMatrix<Torus, params> gadget(base_log, level_count);
 
   // Put "b", the body, in [0, 2N[
   Torus b_hat = 0;
@@ -159,27 +151,17 @@ __global__ void device_bootstrap_amortized(
       pos += params::degree / params::opt;
     }
 
+    GadgetMatrix<Torus, params> gadget_mask(base_log, level_count,
+                                            accumulator_mask_rotated);
+    GadgetMatrix<Torus, params> gadget_body(base_log, level_count,
+                                            accumulator_body_rotated);
+
     // Now that the rotation is done, decompose the resulting polynomial
     // coefficients so as to multiply each decomposed level with the
     // corresponding part of the bootstrapping key
-    for (int level = 0; level < level_count; level++) {
+    for (int level = level_count - 1; level >= 0; level--) {
 
-      gadget.decompose_one_level(accumulator_mask_decomposed,
-                                 accumulator_mask_rotated, level);
-
-      gadget.decompose_one_level(accumulator_body_decomposed,
-                                 accumulator_body_rotated, level);
-
-      synchronize_threads_in_block();
-
-      // First, perform the polynomial multiplication for the mask
-
-      // Reduce the size of the FFT to be performed by storing
-      // the real-valued polynomial into a complex polynomial
-      real_to_complex_compressed<params>(accumulator_mask_decomposed,
-                                         accumulator_fft);
-
-      synchronize_threads_in_block();
+      gadget_mask.decompose_and_compress_next(accumulator_fft);
       // Switch to the FFT space
       NSMFFT_direct<HalfDegree<params>>(accumulator_fft);
       synchronize_threads_in_block();
@@ -205,12 +187,10 @@ __global__ void device_bootstrap_amortized(
           body_res_fft, accumulator_fft, bsk_body_slice);
 
       synchronize_threads_in_block();
+      gadget_body.decompose_and_compress_next(accumulator_fft);
 
       // Now handle the polynomial multiplication for the body
       // in the same way
-      real_to_complex_compressed<params>(accumulator_body_decomposed,
-                                         accumulator_fft);
-      synchronize_threads_in_block();
 
       NSMFFT_direct<HalfDegree<params>>(accumulator_fft);
       synchronize_threads_in_block();
@@ -306,12 +286,10 @@ __host__ void host_bootstrap_amortized(
 
   uint32_t gpu_index = 0;
 
-  int SM_FULL = sizeof(Torus) * polynomial_size +   // accumulator mask
-                sizeof(Torus) * polynomial_size +   // accumulator body
-                sizeof(Torus) * polynomial_size +   // accumulator mask rotated
-                sizeof(Torus) * polynomial_size +   // accumulator body rotated
-                sizeof(int16_t) * polynomial_size + // accumulator_dec mask
-                sizeof(int16_t) * polynomial_size + // accumulator_dec_body
+  int SM_FULL = sizeof(Torus) * polynomial_size + // accumulator mask
+                sizeof(Torus) * polynomial_size + // accumulator body
+                sizeof(Torus) * polynomial_size + // accumulator mask rotated
+                sizeof(Torus) * polynomial_size + // accumulator body rotated
                 sizeof(double2) * polynomial_size / 2 + // accumulator fft mask
                 sizeof(double2) * polynomial_size / 2 + // accumulator fft body
                 sizeof(double2) * polynomial_size / 2;  // calculate buffer fft
