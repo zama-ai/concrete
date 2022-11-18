@@ -16,7 +16,7 @@ namespace mlir {
 namespace concretelang {
 
 namespace optimizer {
-constexpr double P_ERROR_4_SIGMA = 1.0 - 0.999936657516;
+constexpr double DEFAULT_P_ERROR = 1.0 / 100000.0;
 constexpr double UNSPECIFIED_P_ERROR = NAN; // will use the default p error
 constexpr double NO_GLOBAL_P_ERROR = NAN;   // will fallback on p error
 constexpr uint DEFAULT_SECURITY = 128;

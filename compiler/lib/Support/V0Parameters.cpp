@@ -172,12 +172,19 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
                                          optimizer::Config config) {
   namespace chrono = std::chrono;
   auto start = chrono::high_resolution_clock::now();
-
   auto naive_user =
       std::isnan(config.p_error) && std::isnan(config.global_p_error);
-  if (std::isnan(config.p_error)) {
-    config.p_error = optimizer::P_ERROR_4_SIGMA;
+
+  if (naive_user) {
+    config.global_p_error = optimizer::DEFAULT_P_ERROR;
   }
+  if (std::isnan(config.p_error)) {
+    // We always need a valid p-error
+    // getV0Parameter relies only on p_error
+    // getV1Parameter relies on p-error and if set global-p-error
+    config.p_error = config.global_p_error;
+  }
+
   auto sol = (!descr.dag || config.strategy_v0)
                  ? getV0Parameter(descr.constraint, config)
                  : getV1Parameter(descr.dag.getValue(), config);

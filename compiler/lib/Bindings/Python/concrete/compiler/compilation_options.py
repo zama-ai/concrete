@@ -142,14 +142,14 @@ class CompilationOptions(WrapperCpp):
 
         Raises:
             TypeError: if the value to set is not float
-            ValueError: if the value to set is not in interval ]0; 1[
+            ValueError: if the value to set is not in interval ]0; 1]
         """
         if not isinstance(p_error, float):
             raise TypeError("can't set p_error to a non-float value")
-        if p_error in (0.0, 1.0):
-            raise ValueError("p_error cannot be 0 or 1")
+        if p_error == 0.0:
+            raise ValueError("p_error cannot be 0")
         if not 0.0 <= p_error <= 1.0:
-            raise ValueError("p_error should be a probability in ]0; 1[")
+            raise ValueError("p_error should be a probability in ]0; 1]")
         self.cpp().set_p_error(p_error)
 
     def set_display_optimizer_choice(self, display: bool):
@@ -186,12 +186,12 @@ class CompilationOptions(WrapperCpp):
 
         Raises:
             TypeError: if the value to set is not float
-            ValueError: if the value to set is not in interval ]0; 1[
+            ValueError: if the value to set is not in interval ]0; 1]
         """
         if not isinstance(global_p_error, float):
             raise TypeError("can't set global_p_error to a non-float value")
-        if global_p_error in (0.0, 1.0):
-            raise ValueError("global_p_error cannot be 0 or 1")
+        if global_p_error == 0.0:
+            raise ValueError("global_p_error cannot be 0")
         if not 0.0 <= global_p_error <= 1.0:
-            raise ValueError("global_p_error be a probability in ]0; 1[")
+            raise ValueError("global_p_error be a probability in ]0; 1]")
         self.cpp().set_global_p_error(global_p_error)
