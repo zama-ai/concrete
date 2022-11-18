@@ -94,10 +94,21 @@ class Server:
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
-        if configuration.p_error is not None:
-            options.set_p_error(configuration.p_error)
-        else:
+
+        global_p_error_is_set = configuration.global_p_error is not None
+        p_error_is_set = configuration.p_error is not None
+
+        if global_p_error_is_set and p_error_is_set:  # pragma: no cover
             options.set_global_p_error(configuration.global_p_error)
+            options.set_p_error(configuration.p_error)
+
+        elif global_p_error_is_set:  # pragma: no cover
+            options.set_global_p_error(configuration.global_p_error)
+            options.set_p_error(1.0)
+
+        elif p_error_is_set:  # pragma: no cover
+            options.set_global_p_error(1.0)
+            options.set_p_error(configuration.p_error)
 
         show_optimizer = (
             configuration.show_optimizer

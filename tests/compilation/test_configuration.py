@@ -81,6 +81,12 @@ def test_configuration_fork():
             "(expected 'Optional[float]', got 'str')",
         ),
         pytest.param(
+            {"global_p_error": "mamma mia"},
+            TypeError,
+            "Unexpected type for keyword argument 'global_p_error' "
+            "(expected 'Optional[float]', got 'str')",
+        ),
+        pytest.param(
             {"show_optimizer": "please"},
             TypeError,
             "Unexpected type for keyword argument 'show_optimizer' "

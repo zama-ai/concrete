@@ -27,7 +27,7 @@ class Configuration:
     auto_parallelize: bool
     jit: bool
     p_error: Optional[float]
-    global_p_error: float
+    global_p_error: Optional[float]
     insecure_key_cache_location: Optional[str]
     auto_adjust_rounders: bool
 
@@ -73,7 +73,7 @@ class Configuration:
         auto_parallelize: bool = False,
         jit: bool = False,
         p_error: Optional[float] = None,
-        global_p_error: float = (1 / 100_000),
+        global_p_error: Optional[float] = (1 / 100_000),
         auto_adjust_rounders: bool = False,
     ):
         self.verbose = verbose
@@ -112,6 +112,8 @@ class Configuration:
                 configuration that is forked from self and updated using kwargs
         """
 
+        # pylint: disable=too-many-branches
+
         result = deepcopy(self)
 
         hints = get_type_hints(Configuration)
@@ -129,6 +131,11 @@ class Configuration:
                     expected = "Optional[str]"
 
             elif name == "p_error":
+                if not (value is None or isinstance(value, float)):
+                    is_correctly_typed = False
+                    expected = "Optional[float]"
+
+            elif name == "global_p_error":
                 if not (value is None or isinstance(value, float)):
                     is_correctly_typed = False
                     expected = "Optional[float]"
@@ -156,3 +163,5 @@ class Configuration:
         # pylint: enable=protected-access
 
         return result
+
+        # pylint: enable=too-many-branches
