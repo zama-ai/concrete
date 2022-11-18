@@ -18,4 +18,4 @@ void populateCompilerAPISubmodule(pybind11::module &m);
 } // namespace concretelang
 } // namespace mlir
 
-#endif // CONCRETELANG_PYTHON_DIALECTMODULES_H
+#endif // CONCRETELANG_BINDINGS_PYTHON_COMPILER_API_MODULE_H

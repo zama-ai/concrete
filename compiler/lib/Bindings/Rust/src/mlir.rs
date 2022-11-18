@@ -4,8 +4,11 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+pub mod ffi {
+    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+}
 
+use ffi::*;
 use std::ffi::CString;
 use std::ops::AddAssign;
 
@@ -53,6 +56,7 @@ pub fn print_mlir_type_to_string(mlir_type: MlirType) -> String {
 /// # Examples
 /// ```
 /// use concrete_compiler_rust::mlir::*;
+/// use concrete_compiler_rust::mlir::ffi::*;
 /// unsafe{
 ///     let context = mlirContextCreate();
 ///     mlirRegisterAllDialects(context);

@@ -1,5 +1,6 @@
 //! FHE dialect module
 
+use crate::mlir::ffi::*;
 use crate::mlir::*;
 
 pub fn create_fhe_add_eint_op(

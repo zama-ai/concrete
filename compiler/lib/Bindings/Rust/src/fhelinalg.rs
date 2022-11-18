@@ -2,6 +2,7 @@
 
 use crate::{
     fhe::{convert_eint_to_esint_type, convert_esint_to_eint_type},
+    mlir::ffi::*,
     mlir::*,
 };
 use std::ffi::CString;
