@@ -7,24 +7,20 @@ get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
 
 add_dependencies(concretecompiler mlir-headers)
 
-target_link_libraries(concretecompiler
-  PRIVATE
-  ${dialect_libs}
-  ${conversion_libs}
-
-  MLIRTransforms
-  BConcreteDialect
-  ConcreteDialect
-  TFHEDialect
-  FHEDialect
-  ConcretelangSupport
-  ConcretelangTransforms
-
-  MLIRIR
-  MLIRLLVMIRTransforms
-  MLIRLLVMToLLVMIRTranslation
-  RTDialect
-
-)
+target_link_libraries(
+  concretecompiler
+  PRIVATE ${dialect_libs}
+          ${conversion_libs}
+          MLIRTransforms
+          BConcreteDialect
+          ConcreteDialect
+          TFHEDialect
+          FHEDialect
+          ConcretelangSupport
+          ConcretelangTransforms
+          MLIRIR
+          MLIRLLVMIRTransforms
+          MLIRLLVMToLLVMIRTranslation
+          RTDialect)
 
 mlir_check_all_link_libraries(concretecompiler)

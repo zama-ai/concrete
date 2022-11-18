@@ -1,4 +1,5 @@
-add_mlir_library(ConcretelangSupport
+add_mlir_library(
+  ConcretelangSupport
   Pipeline.cpp
   Jit.cpp
   CompilationFeedback.cpp
@@ -11,14 +12,12 @@ add_mlir_library(ConcretelangSupport
   logging.cpp
   Jit.cpp
   LLVMEmitFile.cpp
-
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Support
-
   DEPENDS
   mlir-headers
-
-  LINK_LIBS PUBLIC
+  LINK_LIBS
+  PUBLIC
   FHELinalgDialect
   FHELinalgDialectTransforms
   FHETensorOpsToLinalg
@@ -31,12 +30,9 @@ add_mlir_library(ConcretelangSupport
   LinalgExtras
   ConcreteDialectTransforms
   concrete_optimizer
-
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
-
   ConcretelangRuntime
   ConcretelangClientLib
   ConcretelangServerLib
-  Concrete
-)
+  Concrete)

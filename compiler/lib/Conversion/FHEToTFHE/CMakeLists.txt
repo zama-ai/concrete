@@ -1,14 +1,13 @@
-add_mlir_dialect_library(FHEToTFHE
+add_mlir_dialect_library(
+  FHEToTFHE
   FHEToTFHE.cpp
-
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/FHE
-
   DEPENDS
   FHEDialect
   mlir-headers
-
-  LINK_LIBS PUBLIC
+  LINK_LIBS
+  PUBLIC
   MLIRIR
   MLIRTransforms
   MLIRMathDialect)

@@ -1,12 +1,10 @@
-add_mlir_library(ConcretelangInterfaces
+add_mlir_library(
+  ConcretelangInterfaces
   BatchableInterface.cpp
-
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/concretelang/Interfaces
-
   DEPENDS
   mlir-headers
-
-  LINK_LIBS PUBLIC
-  MLIRIR
-)
+  LINK_LIBS
+  PUBLIC
+  MLIRIR)

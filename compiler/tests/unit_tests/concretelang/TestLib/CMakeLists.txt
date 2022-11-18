@@ -10,19 +10,13 @@ endfunction()
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   link_libraries(
-
     # usefull for old gcc versions
-    -Wl,--allow-multiple-definition #  static concrete-optimizer and concrete shares some code
+    -Wl,--allow-multiple-definition # static concrete-optimizer and concrete shares some code
   )
 endif()
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
-  add_compile_options(
-    -DCONCRETELANG_DATAFLOW_TESTING_ENABLED
-  )
+  add_compile_options(-DCONCRETELANG_DATAFLOW_TESTING_ENABLED)
 endif()
 
-add_concretecompiler_lib_test(
-  unit_tests_concretelang_testlib
-  testlib_unit_test.cpp
-)
+add_concretecompiler_lib_test(unit_tests_concretelang_testlib testlib_unit_test.cpp)

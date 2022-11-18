@@ -7,9 +7,4 @@ add_subdirectory(BConcreteToCAPI)
 add_subdirectory(MLIRLowerableDialectsToLLVM)
 add_subdirectory(LinalgExtras)
 
-add_mlir_library(ConcretelangConversion
-  Tools.cpp
-
-  LINK_LIBS PUBLIC
-  MLIRIR
-)
+add_mlir_library(ConcretelangConversion Tools.cpp LINK_LIBS PUBLIC MLIRIR)

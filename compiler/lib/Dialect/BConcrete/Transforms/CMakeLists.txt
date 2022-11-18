@@ -1,17 +1,16 @@
-add_mlir_dialect_library(ConcretelangBConcreteTransforms
+add_mlir_dialect_library(
+  ConcretelangBConcreteTransforms
   BufferizableOpInterfaceImpl.cpp
   AddRuntimeContext.cpp
   EliminateCRTOps.cpp
   AsyncOffload.cpp
-
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/BConcrete
-
   DEPENDS
   BConcreteTransformsIncGen
   mlir-headers
-
-  LINK_LIBS PUBLIC
+  LINK_LIBS
+  PUBLIC
   ConcretelangConversion
   MLIRArithmeticDialect
   MLIRBufferizationDialect
@@ -19,5 +18,4 @@ add_mlir_dialect_library(ConcretelangBConcreteTransforms
   MLIRIR
   MLIRMemRefDialect
   MLIRPass
-  MLIRTransforms
-)
+  MLIRTransforms)

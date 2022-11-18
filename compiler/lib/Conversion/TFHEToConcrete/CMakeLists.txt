@@ -1,15 +1,14 @@
-add_mlir_dialect_library(TFHEToConcrete
+add_mlir_dialect_library(
+  TFHEToConcrete
   TFHEToConcrete.cpp
-
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/TFHE
-
   DEPENDS
   TFHEDialect
   ConcreteDialect
   mlir-headers
-
-  LINK_LIBS PUBLIC
+  LINK_LIBS
+  PUBLIC
   MLIRIR
   MLIRTransforms
   MLIRMathDialect)
