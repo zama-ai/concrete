@@ -3,7 +3,7 @@ import numpy as np
 
 MIN_PRECISON = 1
 MAX_PRECISION = 16
-N_CT = [1, 10, 100, 200]
+N_CT = [1, 64, 128, 1024]
 
 
 def main():
