@@ -15,13 +15,6 @@ on:
         options:
           - m6i.metal
           - c6a.metal
-  # Have a weekly benchmark run on main branch to be available on Monday morning (Paris time)
-# TODO: uncomment this section once MLBenchmarks are implemented
-#  schedule:
-#    # * is a special character in YAML so you have to quote this string
-#    # At 1:00 every Thursday
-#    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
-#    - cron: '0 1 * * THU'
 
 env:
   CARGO_TERM_COLOR: always

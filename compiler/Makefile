@@ -23,6 +23,8 @@ HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)/build
 
 CONCRETE_CORE_FFI_VERSION?=0.2.0
 
+ML_BENCH_SUBSET_ID=
+
 OS=undefined
 ifeq ($(shell uname), Linux)
 	OS=linux
@@ -289,6 +291,10 @@ generate-mlbench:
 
 run-mlbench: build-mlbench generate-mlbench
 	tests/end_to_end_benchmarks/end_to_end_mlbench.sh tests/end_to_end_benchmarks/mlbench/ $(BUILD_DIR)/bin/end_to_end_mlbench
+
+run-mlbench-subset: build-mlbench generate-mlbench
+	@[ "${ML_BENCH_SUBSET_ID}" ] || ( echo "ML_BENCH_SUBSET_ID is not set"; exit 1 )
+	tests/end_to_end_benchmarks/end_to_end_mlbench.sh tests/end_to_end_benchmarks/mlbench/end_to_end_mlbench_$(ML_BENCH_SUBSET_ID).yaml $(BUILD_DIR)/bin/end_to_end_mlbench
 
 show-stress-tests-summary:
 	@echo '------ Stress tests summary ------'
