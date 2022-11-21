@@ -31,6 +31,27 @@ func.func @batch_continuous_slice_keyswitch(%arg0: tensor<2x3x4x!Concrete.lwe_ci
 
 // -----
 
+// CHECK-LABEL: func.func @batch_continuous_slice_keyswitch_1dim(%arg0: tensor<4x!Concrete.lwe_ciphertext<572,2>>) -> tensor<4x!Concrete.lwe_ciphertext<572,2>> {
+func.func @batch_continuous_slice_keyswitch_1dim(%arg0: tensor<4x!Concrete.lwe_ciphertext<572,2>>) -> tensor<4x!Concrete.lwe_ciphertext<572,2>> {
+  %c4 = arith.constant 4 : index
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+
+  %0 = bufferization.alloc_tensor() : tensor<4x!Concrete.lwe_ciphertext<572,2>>
+  // CHECK: %[[V0:.*]] = "Concrete.batched_keyswitch_lwe"(%[[ARG:.*]]) {baseLog = 2 : i32, level = 5 : i32} : (tensor<4x!Concrete.lwe_ciphertext<572,2>>) -> tensor<4x!Concrete.lwe_ciphertext<572,2>>
+  // CHECK: return %[[V0]]
+
+  %1 = scf.for %arg2 = %c0 to %c4 step %c1 iter_args(%arg3 = %0) -> (tensor<4x!Concrete.lwe_ciphertext<572,2>>) {
+    %2 = tensor.extract %arg0[%arg2] : tensor<4x!Concrete.lwe_ciphertext<572,2>>
+    %3 = "Concrete.keyswitch_lwe"(%2) {baseLog = 2 : i32, level = 5 : i32} : (!Concrete.lwe_ciphertext<572,2>) -> !Concrete.lwe_ciphertext<572,2>
+    %4 = tensor.insert %3 into %arg3[%arg2] : tensor<4x!Concrete.lwe_ciphertext<572,2>>
+    scf.yield %4 : tensor<4x!Concrete.lwe_ciphertext<572,2>>
+  }
+  return %1 : tensor<4x!Concrete.lwe_ciphertext<572,2>>
+}
+
+// -----
+
 // CHECK-LABEL: func.func @batch_continuous_slice_bootstrap(%arg0: tensor<2x3x4x!Concrete.lwe_ciphertext<572,2>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!Concrete.lwe_ciphertext<1024,2>> {
 func.func @batch_continuous_slice_bootstrap(%arg0: tensor<2x3x4x!Concrete.lwe_ciphertext<572,2>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!Concrete.lwe_ciphertext<1024,2>> {
   %c2 = arith.constant 2 : index

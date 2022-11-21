@@ -649,16 +649,22 @@ public:
     mlir::RankedTensorType sliceType =
         slice.getType().cast<mlir::RankedTensorType>();
 
-    // Flatten the tensor with the batched operands, so that they can
-    // be passed as a one-dimensional tensor to the batched operation
+    mlir::Value flattenedSlice;
     mlir::ReassociationIndices indices;
-    for (int64_t i = 0; i < sliceType.getRank(); i++)
-      indices.push_back(i);
 
-    mlir::tensor::CollapseShapeOp flattenedSlice =
-        rewriter.create<mlir::tensor::CollapseShapeOp>(
-            targetExtractOp.getLoc(), slice,
-            llvm::SmallVector<mlir::ReassociationIndices>{indices});
+    if (sliceType.getRank() == 1) {
+      flattenedSlice = slice;
+    } else {
+      // Flatten the tensor with the batched operands, so that they
+      // can be passed as a one-dimensional tensor to the batched
+      // operation
+      for (int64_t i = 0; i < sliceType.getRank(); i++)
+        indices.push_back(i);
+
+      flattenedSlice = rewriter.create<mlir::tensor::CollapseShapeOp>(
+          targetExtractOp.getLoc(), slice,
+          llvm::SmallVector<mlir::ReassociationIndices>{indices});
+    }
 
     // Create the batched operation and pass flattened, batched
     // operands
@@ -666,18 +672,23 @@ public:
     mlir::Value batchedOpResult =
         targetOp.createBatchedOperation(ilob, flattenedSlice);
 
-    // Restore original shape of the batched operands for the result
-    // of the batched operation. Dimensions, result from indexing with
-    // non-loop-IVs are collapsed.
-    mlir::Type expandedBatchResultType = mlir::RankedTensorType::get(
-        sliceType.getShape(), batchedOpResult.getType()
-                                  .dyn_cast<mlir::RankedTensorType>()
-                                  .getElementType());
+    mlir::Value expandedBatchResultTensor;
 
-    mlir::Value expandedBatchResultTensor =
-        rewriter.create<mlir::tensor::ExpandShapeOp>(
-            targetExtractOp.getLoc(), expandedBatchResultType, batchedOpResult,
-            llvm::SmallVector<mlir::ReassociationIndices>{indices});
+    if (sliceType.getRank() == 1) {
+      expandedBatchResultTensor = batchedOpResult;
+    } else {
+      // Restore original shape of the batched operands for the result
+      // of the batched operation. Dimensions, result from indexing
+      // with non-loop-IVs are collapsed.
+      mlir::Type expandedBatchResultType = mlir::RankedTensorType::get(
+          sliceType.getShape(), batchedOpResult.getType()
+                                    .dyn_cast<mlir::RankedTensorType>()
+                                    .getElementType());
+
+      expandedBatchResultTensor = rewriter.create<mlir::tensor::ExpandShapeOp>(
+          targetExtractOp.getLoc(), expandedBatchResultType, batchedOpResult,
+          llvm::SmallVector<mlir::ReassociationIndices>{indices});
+    }
 
     // Collect all loop IVs from the extract op. These will be used to
     // index the batched result tensor within the loop for consumers
