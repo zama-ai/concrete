@@ -187,6 +187,92 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRArithmeticToLLVM",
 ];
 
+const LLVM_STATIC_LIBS: [&str; 51] = [
+    "LLVMAggressiveInstCombine",
+    "LLVMAnalysis",
+    "LLVMAsmParser",
+    "LLVMAsmPrinter",
+    "LLVMBinaryFormat",
+    "LLVMBitReader",
+    "LLVMBitstreamReader",
+    "LLVMBitWriter",
+    "LLVMCFGuard",
+    "LLVMCodeGen",
+    "LLVMCore",
+    "LLVMCoroutines",
+    "LLVMDebugInfoCodeView",
+    "LLVMDebugInfoDWARF",
+    "LLVMDebugInfoMSF",
+    "LLVMDebugInfoPDB",
+    "LLVMDemangle",
+    "LLVMExecutionEngine",
+    "LLVMFrontendOpenMP",
+    "LLVMGlobalISel",
+    "LLVMInstCombine",
+    "LLVMInstrumentation",
+    "LLVMipo",
+    "LLVMIRReader",
+    "LLVMJITLink",
+    "LLVMLinker",
+    "LLVMMC",
+    "LLVMMCDisassembler",
+    "LLVMMCParser",
+    "LLVMObjCARCOpts",
+    "LLVMObject",
+    "LLVMOrcJIT",
+    "LLVMOrcShared",
+    "LLVMOrcTargetProcess",
+    "LLVMPasses",
+    "LLVMProfileData",
+    "LLVMRemarks",
+    "LLVMRuntimeDyld",
+    "LLVMScalarOpts",
+    "LLVMSelectionDAG",
+    "LLVMSupport",
+    "LLVMSymbolize",
+    "LLVMTableGen",
+    "LLVMTableGenGlobalISel",
+    "LLVMTarget",
+    "LLVMTextAPI",
+    "LLVMTransformUtils",
+    "LLVMVectorize",
+    "LLVMX86CodeGen",
+    "LLVMX86Desc",
+    "LLVMX86Info",
+];
+
+const CONCRETE_COMPILER_LIBS: [&str; 29] = [
+    "RTDialect",
+    "RTDialectTransforms",
+    "ConcretelangSupport",
+    "BConcreteToCAPI",
+    "ConcretelangConversion",
+    "ConcretelangTransforms",
+    "FHETensorOpsToLinalg",
+    "ConcretelangServerLib",
+    "ConcreteToBConcrete",
+    "CONCRETELANGCAPIFHE",
+    "TFHEGlobalParametrization",
+    "ConcretelangClientLib",
+    "ConcretelangBConcreteTransforms",
+    "CONCRETELANGCAPISupport",
+    "FHELinalgDialect",
+    "ConcretelangInterfaces",
+    "TFHEDialect",
+    "CONCRETELANGCAPIFHELINALG",
+    "FHELinalgDialectTransforms",
+    "FHEDialect",
+    "TFHEToConcrete",
+    "FHEToTFHE",
+    "ConcreteDialectTransforms",
+    "BConcreteDialect",
+    "concrete_optimizer",
+    "LinalgExtras",
+    "FHEDialectAnalysis",
+    "ConcreteDialect",
+    "RTDialectAnalysis",
+];
+
 fn main() {
     if let Err(error) = run() {
         eprintln!("{}", error);
@@ -195,13 +281,21 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+    let root = std::fs::canonicalize("../../../../")?;
     // library paths
     let build_dir = get_build_dir();
     let lib_dir = build_dir.join("lib");
+    // compiler build libs
     println!("cargo:rustc-link-search={}", lib_dir.to_str().unwrap());
+    // concrete optimizer lib
+    println!(
+        "cargo:rustc-link-search={}",
+        root.join("compiler/concrete-optimizer/target/release")
+            .to_str()
+            .unwrap()
+    );
 
     // include paths
-    let root = std::fs::canonicalize("../../../../")?;
     let include_paths = [
         // compiler build
         build_dir.join("tools/concretelang/include/"),
@@ -220,21 +314,30 @@ fn run() -> Result<(), Box<dyn Error>> {
     ];
 
     // linking
+    // concrete-compiler libs
+    for concrete_compiler_lib in CONCRETE_COMPILER_LIBS {
+        println!("cargo:rustc-link-lib=static={}", concrete_compiler_lib);
+    }
+    // concrete compiler runtime
+    println!("cargo:rustc-link-lib=ConcretelangRuntime");
+    // concrete optimizer
+    // `-bundle` serve to not have multiple definition issues
+    println!("cargo:rustc-link-lib=static:-bundle=concrete_optimizer_cpp");
+    // mlir libs
     for mlir_static_lib in MLIR_STATIC_LIBS {
         println!("cargo:rustc-link-lib=static={}", mlir_static_lib);
     }
-    println!("cargo:rustc-link-lib=static=LLVMSupport");
-    println!("cargo:rustc-link-lib=static=LLVMCore");
+    // llvm libs
+    for llvm_static_lib in LLVM_STATIC_LIBS {
+        println!("cargo:rustc-link-lib=static={}", llvm_static_lib);
+    }
     // required by llvm
     println!("cargo:rustc-link-lib=tinfo");
     if let Some(name) = get_system_libcpp() {
         println!("cargo:rustc-link-lib={}", name);
     }
-    // concrete-compiler libs
-    println!("cargo:rustc-link-lib=static=CONCRETELANGCAPIFHE");
-    println!("cargo:rustc-link-lib=static=FHEDialect");
-    println!("cargo:rustc-link-lib=static=CONCRETELANGCAPIFHELINALG");
-    println!("cargo:rustc-link-lib=static=FHELinalgDialect");
+    // zlib
+    println!("cargo:rustc-link-lib=z");
 
     println!("cargo:rerun-if-changed=api.h");
     bindgen::builder()
@@ -272,7 +375,9 @@ fn get_build_dir() -> PathBuf {
             .join("..")
             .join("..")
             .join("..")
-            .join("build"),
+            .join("build")
+            .canonicalize()
+            .unwrap(),
     };
     return build_dir;
 }

@@ -5,6 +5,7 @@
 
 #include <concretelang-c/Dialect/FHE.h>
 #include <concretelang-c/Dialect/FHELinalg.h>
+#include <concretelang-c/Support/CompilerEngine.h>
 #include <mlir-c/AffineExpr.h>
 #include <mlir-c/AffineMap.h>
 #include <mlir-c/BuiltinAttributes.h>
