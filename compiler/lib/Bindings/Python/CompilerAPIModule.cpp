@@ -88,7 +88,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_readonly("total_inputs_size",
                     &mlir::concretelang::CompilationFeedback::totalInputsSize)
       .def_readonly("total_output_size",
-                    &mlir::concretelang::CompilationFeedback::totalOutputsSize);
+                    &mlir::concretelang::CompilationFeedback::totalOutputsSize)
+      .def_readonly(
+          "crt_decompositions_of_outputs",
+          &mlir::concretelang::CompilationFeedback::crtDecompositionsOfOutputs);
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");

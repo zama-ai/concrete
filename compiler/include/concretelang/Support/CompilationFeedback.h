@@ -37,6 +37,9 @@ struct CompilationFeedback {
   /// @brief the total number of bytes of outputs
   uint64_t totalOutputsSize;
 
+  /// @brief crt decomposition of outputs, if crt is not used, empty vectors
+  std::vector<std::vector<int64_t>> crtDecompositionsOfOutputs;
+
   /// Fill the sizes from the client parameters.
   void
   fillFromClientParameters(::concretelang::clientlib::ClientParameters params);

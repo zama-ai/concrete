@@ -374,3 +374,22 @@ def test_compile_invalid(mlir_input):
         RuntimeError, match=r"Could not find existing crypto parameters for"
     ):
         engine.compile(mlir_input)
+
+
+def test_crt_decomposition_feedback():
+    mlir = """
+    
+func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
+    %tlu = arith.constant dense<60000> : tensor<65536xi64>
+    %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<16>, tensor<65536xi64>) -> (!FHE.eint<16>)
+    return %1: !FHE.eint<16>
+}
+
+    """
+
+    engine = JITSupport.new()
+    compilation_result = engine.compile(mlir, options=CompilationOptions.new("main"))
+    compilation_feedback = engine.load_compilation_feedback(compilation_result)
+
+    assert isinstance(compilation_feedback, CompilationFeedback)
+    assert compilation_feedback.crt_decompositions_of_outputs == [[7, 8, 9, 11, 13]]

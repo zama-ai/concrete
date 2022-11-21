@@ -53,6 +53,15 @@ void CompilationFeedback::fillFromClientParameters(
   for (auto gate : params.outputs) {
     totalOutputsSize += gate.byteSize(params.secretKeys);
   }
+  // Extract CRT decomposition
+  crtDecompositionsOfOutputs = {};
+  for (auto gate : params.outputs) {
+    std::vector<int64_t> decomposition;
+    if (gate.encryption.hasValue()) {
+      decomposition = gate.encryption->encoding.crt;
+    }
+    crtDecompositionsOfOutputs.push_back(decomposition);
+  }
 }
 
 outcome::checked<CompilationFeedback, StringError>
@@ -80,6 +89,7 @@ llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &v) {
       {"totalKeyswitchKeysSize", v.totalKeyswitchKeysSize},
       {"totalInputsSize", v.totalInputsSize},
       {"totalOutputsSize", v.totalOutputsSize},
+      {"crtDecompositionsOfOutputs", v.crtDecompositionsOfOutputs},
   };
   return object;
 }
@@ -92,7 +102,8 @@ bool fromJSON(const llvm::json::Value j,
          O.map("totalBootstrapKeysSize", v.totalBootstrapKeysSize) &&
          O.map("totalKeyswitchKeysSize", v.totalKeyswitchKeysSize) &&
          O.map("totalInputsSize", v.totalInputsSize) &&
-         O.map("totalOutputsSize", v.totalOutputsSize);
+         O.map("totalOutputsSize", v.totalOutputsSize) &&
+         O.map("crtDecompositionsOfOutputs", v.crtDecompositionsOfOutputs);
 }
 
 } // namespace concretelang

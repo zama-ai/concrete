@@ -36,5 +36,8 @@ class CompilationFeedback(WrapperCpp):
         self.total_keyswitch_keys_size = compilation_feedback.total_keyswitch_keys_size
         self.total_inputs_size = compilation_feedback.total_inputs_size
         self.total_output_size = compilation_feedback.total_output_size
+        self.crt_decompositions_of_outputs = (
+            compilation_feedback.crt_decompositions_of_outputs
+        )
 
         super().__init__(compilation_feedback)
