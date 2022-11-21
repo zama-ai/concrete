@@ -27,7 +27,7 @@ from .extensions import (
     zero,
     zeros,
 )
-from .mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS, MAXIMUM_TLU_BIT_WIDTH
+from .mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from .representation import Graph
 from .tracing.typing import (
     f32,

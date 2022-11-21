@@ -635,6 +635,13 @@ def deterministic_unary_function(x):
             },
             id="np.expand_dims(x, axis=(0, 1, 2))",
         ),
+        pytest.param(
+            lambda x: x**3,
+            {
+                "x": {"status": "encrypted", "range": [-30, 30]},
+            },
+            id="x ** 3",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):

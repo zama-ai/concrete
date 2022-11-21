@@ -28,7 +28,7 @@ from ..internal.utils import assert_that
 from ..representation import Graph, Node, Operation
 from ..values import ClearScalar, EncryptedScalar
 from .node_converter import NodeConverter
-from .utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS, MAXIMUM_TLU_BIT_WIDTH
+from .utils import MAXIMUM_TLU_BIT_WIDTH
 
 # pylint: enable=no-member,no-name-in-module
 
@@ -259,14 +259,6 @@ class GraphConverter:
                     f"table lookups are only supported on circuits with "
                     f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers",
                     first_tlu_node.location,
-                ]
-
-            if first_signed_node is not None and max_bit_width > MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS:
-                offending_nodes[first_signed_node] = [
-                    f"signed integers are only supported "
-                    f"up to {MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS}-bits "
-                    f"on circuits with table lookups",
-                    first_signed_node.location,
                 ]
 
         if len(offending_nodes) != 0:

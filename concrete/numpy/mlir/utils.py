@@ -14,7 +14,6 @@ from ..internal.utils import assert_that
 from ..representation import Node, Operation
 
 MAXIMUM_TLU_BIT_WIDTH = 16
-MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS = 8
 
 
 class HashableNdarray:

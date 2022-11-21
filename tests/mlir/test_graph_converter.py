@@ -401,35 +401,6 @@ Subgraphs:
 
             """,  # noqa: E501
         ),
-        pytest.param(
-            lambda x: (10 * np.sin(x + 300)).astype(np.int64),
-            {"x": "encrypted"},
-            range(2**10, 2**11),
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be converted to MLIR:
-
-%0 = x                   # EncryptedScalar<uint11>        ∈ [1024, 2047]
-%1 = 300                 # ClearScalar<uint9>             ∈ [300, 300]
-%2 = add(%0, %1)         # EncryptedScalar<uint12>        ∈ [1324, 2347]
-%3 = subgraph(%2)        # EncryptedScalar<int5>          ∈ [-9, 9]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integers are only supported up to 8-bits on circuits with table lookups
-return %3
-
-Subgraphs:
-
-    %3 = subgraph(%2):
-
-        %0 = input                         # EncryptedScalar<uint2>
-        %1 = sin(%0)                       # EncryptedScalar<float64>
-        %2 = 10                            # ClearScalar<uint4>
-        %3 = multiply(%2, %1)              # EncryptedScalar<float64>
-        %4 = astype(%3, dtype=int_)        # EncryptedScalar<uint1>
-        return %4
-
-            """,  # noqa: E501
-        ),
     ],
 )
 def test_graph_converter_bad_convert(

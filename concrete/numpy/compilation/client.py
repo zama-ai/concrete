@@ -197,37 +197,58 @@ class Client:
         """
 
         self.keygen(force=False)
-        results = ClientSupport.decrypt_result(self._keyset, result)
-        if not isinstance(results, tuple):
-            results = (results,)
+        outputs = ClientSupport.decrypt_result(self._keyset, result)
+        if not isinstance(outputs, tuple):
+            outputs = (outputs,)
 
-        sanitized_results: List[Union[int, np.ndarray]] = []
+        sanitized_outputs: List[Union[int, np.ndarray]] = []
 
         client_parameters_json = json.loads(self.specs.client_parameters.serialize())
         assert_that("outputs" in client_parameters_json)
         output_specs = client_parameters_json["outputs"]
 
-        for index, spec in enumerate(output_specs):
-            n = spec["shape"]["width"]
-            expected_dtype = (
-                SignedInteger(n) if self.specs.output_signs[index] else UnsignedInteger(n)
+        for index, output in enumerate(outputs):
+            is_signed = self.specs.output_signs[index]
+            crt_decomposition = (
+                output_specs[index].get("encryption", {}).get("encoding", {}).get("crt", [])
             )
 
-            result = results[index] % (2**n)
-            if expected_dtype.is_signed:
-                if isinstance(result, int):
-                    sanititzed_result = result if result < (2 ** (n - 1)) else result - (2**n)
-                    sanitized_results.append(sanititzed_result)
+            if is_signed:
+                if crt_decomposition:
+                    if isinstance(output, int):
+                        sanititzed_output = (
+                            output
+                            if output < (int(np.prod(crt_decomposition)) // 2)
+                            else -int(np.prod(crt_decomposition)) + output
+                        )
+                    else:
+                        output = output.astype(np.longlong)  # to prevent overflows in numpy
+                        sanititzed_output = np.where(
+                            output < (np.prod(crt_decomposition) // 2),
+                            output,
+                            -np.prod(crt_decomposition) + output,
+                        ).astype(np.int64)
+
+                    sanitized_outputs.append(sanititzed_output)
+
                 else:
-                    result = result.astype(np.longlong)  # to prevent overflows in numpy
-                    sanititzed_result = np.where(result < (2 ** (n - 1)), result, result - (2**n))
-                    sanitized_results.append(sanititzed_result.astype(np.int64))
+                    n = output_specs[index]["shape"]["width"]
+                    output %= 2**n
+                    if isinstance(output, int):
+                        sanititzed_output = output if output < (2 ** (n - 1)) else output - (2**n)
+                        sanitized_outputs.append(sanititzed_output)
+                    else:
+                        output = output.astype(np.longlong)  # to prevent overflows in numpy
+                        sanititzed_output = np.where(
+                            output < (2 ** (n - 1)), output, output - (2**n)
+                        ).astype(np.int64)
+                        sanitized_outputs.append(sanititzed_output)
             else:
-                sanitized_results.append(
-                    result if isinstance(result, int) else result.astype(np.uint64)
+                sanitized_outputs.append(
+                    output if isinstance(output, int) else output.astype(np.uint64)
                 )
 
-        return sanitized_results[0] if len(sanitized_results) == 1 else tuple(sanitized_results)
+        return sanitized_outputs[0] if len(sanitized_outputs) == 1 else tuple(sanitized_outputs)
 
     @property
     def evaluation_keys(self) -> EvaluationKeys:
