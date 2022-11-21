@@ -165,7 +165,7 @@ rust-bindings: build-initialized concretecompiler CAPI
 	cd lib/Bindings/Rust && CONCRETE_COMPILER_BUILD_DIR=$(abspath $(BUILD_DIR)) cargo build --release
 
 CAPI:
-	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG
+	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG CONCRETELANGCAPISupport
 
 clientlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangClientLib
