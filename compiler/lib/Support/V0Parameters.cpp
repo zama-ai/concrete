@@ -176,7 +176,7 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
       std::isnan(config.p_error) && std::isnan(config.global_p_error);
 
   if (naive_user) {
-    config.global_p_error = optimizer::DEFAULT_P_ERROR;
+    config.global_p_error = optimizer::DEFAULT_GLOBAL_P_ERROR;
   }
   if (std::isnan(config.p_error)) {
     // We always need a valid p-error

@@ -8,6 +8,12 @@
 #include "tests_tools/StackSize.h"
 #include "tests_tools/keySetCache.h"
 
+#define check(expr)                                                            \
+  if (auto E = expr.takeError()) {                                             \
+    std::cerr << "Error: " << llvm::toString(std::move(E)) << "\n";            \
+    assert(false && "See error above");                                        \
+  }
+
 /// Benchmark time of the compilation
 template <typename LambdaSupport>
 static void BM_Compile(benchmark::State &state, EndToEndDesc description,
@@ -25,13 +31,13 @@ static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
                       LambdaSupport support,
                       mlir::concretelang::CompilationOptions options) {
   auto compilationResult = support.compile(description.program, options);
-  assert(compilationResult);
+  check(compilationResult);
 
   auto clientParameters = support.loadClientParameters(**compilationResult);
-  assert(clientParameters);
+  check(clientParameters);
 
   for (auto _ : state) {
-    assert(support.keySet(*clientParameters, llvm::None));
+    check(support.keySet(*clientParameters, llvm::None));
   }
 }
 
@@ -41,13 +47,13 @@ static void BM_ExportArguments(benchmark::State &state,
                                EndToEndDesc description, LambdaSupport support,
                                mlir::concretelang::CompilationOptions options) {
   auto compilationResult = support.compile(description.program, options);
-  assert(compilationResult);
+  check(compilationResult);
 
   auto clientParameters = support.loadClientParameters(**compilationResult);
-  assert(clientParameters);
+  check(clientParameters);
 
   auto keySet = support.keySet(*clientParameters, getTestKeySetCache());
-  assert(keySet);
+  check(keySet);
 
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
@@ -58,8 +64,7 @@ static void BM_ExportArguments(benchmark::State &state,
   }
 
   for (auto _ : state) {
-    assert(
-        support.exportArguments(*clientParameters, **keySet, inputArguments));
+    check(support.exportArguments(*clientParameters, **keySet, inputArguments));
   }
 }
 
@@ -68,15 +73,13 @@ template <typename LambdaSupport>
 static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
                         LambdaSupport support,
                         mlir::concretelang::CompilationOptions options) {
+  options.optimizerConfig.display = true;
   auto compilationResult = support.compile(description.program, options);
-  assert(compilationResult);
-
+  check(compilationResult);
   auto clientParameters = support.loadClientParameters(**compilationResult);
-  assert(clientParameters);
-
+  check(clientParameters);
   auto keySet = support.keySet(*clientParameters, getTestKeySetCache());
-  assert(keySet);
-
+  check(keySet);
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
   std::vector<const mlir::concretelang::LambdaArgument *> inputArguments;
@@ -84,21 +87,19 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   for (auto input : test.inputs) {
     inputArguments.push_back(&input.getValue());
   }
-
   auto publicArguments =
       support.exportArguments(*clientParameters, **keySet, inputArguments);
-  assert(publicArguments);
+  check(publicArguments);
 
   auto serverLambda = support.loadServerLambda(**compilationResult);
-  assert(serverLambda);
+  check(serverLambda);
   auto evaluationKeys = (*keySet)->evaluationKeys();
 
   // Warmup
   assert(support.serverCall(*serverLambda, **publicArguments, evaluationKeys));
 
   for (auto _ : state) {
-    assert(
-        support.serverCall(*serverLambda, **publicArguments, evaluationKeys));
+    check(support.serverCall(*serverLambda, **publicArguments, evaluationKeys));
   }
 }
 
