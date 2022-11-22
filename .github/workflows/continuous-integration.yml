@@ -150,16 +150,12 @@ jobs:
 
       - name: Prune KeySetCache
         run: |
-          TO_CLEAN=$(find KeySetCache/* -maxdepth 1 -mindepth 1 -not -newer keysetcache.timestamp -type d)
-          if [ -n "${TO_CLEAN}" ]
-          then
-            echo "Cleaning ${TO_CLEAN}"
-            rm -rf "${TO_CLEAN}"
-            echo New cache size is
-            du -sh KeySetCache
-          else
-            echo Nothing to clean
-          fi
+          echo "Previous cache size is"
+          du -sh KeySetCache
+          echo "Cleaning"
+          find KeySetCache/* -maxdepth 1 -mindepth 1 -not -newer keysetcache.timestamp -type d -exec rm -vr {} \;
+          echo "New cache size is"
+          du -sh KeySetCache
 
       - name: Upload KeySetCache
         if: ${{ github.ref == 'refs/heads/main' }}
