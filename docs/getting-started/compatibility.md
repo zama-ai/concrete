@@ -164,28 +164,14 @@ Some of these operations are not supported between two encrypted values. A detai
 
 ## Limitations
 
-### Operational constraints.
+### Control flow constraints.
 
 Some Python control flow statements are not supported. For example, you cannot have an `if` statement or a `while` statement for which the condition depends on an encrypted value. However, such statements are supported with constant values (e.g., `for i in range(SOME_CONSTANT)`, `if os.environ.get("SOME_FEATURE") == "ON":`).
+
+### Type constraints.
 
 Another constraint is that you cannot have floating-point inputs or floating-point outputs. You can have floating-point intermediate values as long as they can be converted to an integer Table Lookup (e.g., `(60 * np.sin(x)).astype(np.int64)`).
 
 ### Bit width constraints.
 
 There is a limit on the bit width of encrypted values. We are constantly working on increasing this bit width. If you go above the limit, you will get an error.
-
-### Computation constraints.
-
-One of the most common operations in **Concrete-Numpy** is `Table Lookups` (TLUs). TLUs are performed with an FHE operation called `Programmable Bootstrapping` (PBS). PBSes have a certain probability of error, which, when triggered, result in inaccurate results.
-
-Let's say you have the table:
-
-```python
-[1, 4, 9, 16, 25, 36, 49, 64]
-```
-
-And you performed a table lookup using `4`. The result you should get is `16`, but because of the possibility of error, you can sometimes get `9` or `25`.
-
-{% hint style="info" %}
-The probability of this error can be configured through the `p_error` configuration option, which has the default value of `0.000063342483999973` (i.e., probability of success is `99.993`%). Keep in mind that changing it could affect compilation and key generation times.
-{% endhint %}

@@ -63,6 +63,10 @@ It should be an iterable, yielding tuples of the same length as the number of ar
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]
 ```
 
+{% hint style="warning" %}
+All inputs in the inputset will be evaluated in the graph, which takes time. If you're experiencing long compilation times, consider providing a smaller inputset.
+{% endhint %}
+
 ## Compiling the function
 
 You can use the `compile` method of a `Compiler` class with an inputset to perform the compilation and get the resulting circuit back:

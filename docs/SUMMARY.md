@@ -7,14 +7,20 @@
 * [Installation](getting-started/installing.md)
 * [Quick Start](getting-started/quick\_start.md)
 * [Compatibility](getting-started/compatibility.md)
+* [Exactness](getting-started/exactness.md)
+* [Performance](getting-started/performance.md)
 
 ## Tutorials
 
 * [Decorator](tutorial/decorator.md)
+* [Formatting](tutorial/formatting.md)
+* [Tagging](tutorial/tagging.md)
 * [Extensions](tutorial/extensions.md)
-* [Table Lookups](tutorial/table\_lookup.md)
+* [Table Lookups](tutorial/table\_lookups.md)
+* [Rounded Table Lookups](tutorial/rounded\_table\_lookups.md)
 * [Floating Points](tutorial/floating\_points.md)
-* [Format](tutorial/formatting.md)
+* [Virtual Circuits](tutorial/virtual\_circuits.md)
+* [Direct Circuits](tutorial/direct\_circuits.md)
 
 ## How To
 

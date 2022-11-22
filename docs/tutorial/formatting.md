@@ -1,8 +1,4 @@
-# Format
-
-Sometimes, it can be useful to print circuits. We provide methods to just do that.
-
-## Formatting
+# Formatting
 
 You can convert your compiled circuit into its textual representation by converting it to string:
 
@@ -17,3 +13,7 @@ If you just want to see the output on your terminal, you can directly print it a
 ```python
 print(circuit)
 ```
+
+{% hint style="warning" %}
+Formatting is just for debugging. It's not possible to serialize the circuit back from its textual representation. See [How to Deploy](../howto/deploy.md) if that's your goal.
+{% endhint %}
