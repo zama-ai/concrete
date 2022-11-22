@@ -223,7 +223,7 @@ test-compiler-file-output: concretecompiler
 
 ## rust-tests
 run-rust-tests: rust-bindings
-	cd lib/Bindings/Rust && CONCRETE_COMPILER_BUILD_DIR=$(abspath $(BUILD_DIR)) cargo test --release
+	cd lib/Bindings/Rust && CONCRETE_COMPILER_BUILD_DIR=$(abspath $(BUILD_DIR)) LD_LIBRARY_PATH=$(abspath $(BUILD_DIR))/lib cargo test --release
 
 ## end-to-end-tests
 
