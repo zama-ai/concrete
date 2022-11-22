@@ -145,7 +145,7 @@ jobs:
             set -e
             cd /compiler
             pip install pytest
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests run-rust-tests
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Prune KeySetCache
