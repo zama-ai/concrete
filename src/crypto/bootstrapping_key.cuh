@@ -2,6 +2,7 @@
 #define CNCRT_BSK_H
 
 #include "bootstrap.h"
+#include "device.h"
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
 #include <atomic>
@@ -112,32 +113,79 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   cudaMemcpy(d_bsk, h_bsk, buffer_size, cudaMemcpyHostToDevice);
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
+  double2 *buffer;
   switch (polynomial_size) {
   case 512:
-    batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>>
-        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
+                                                                 buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(d_bsk, dest, buffer);
+    }
     break;
   case 1024:
-    batch_NSMFFT<FFTDegree<Degree<1024>, ForwardFFT>>
-        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<1024>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
+                                                                 buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<1024>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(d_bsk, dest, buffer);
+    }
     break;
   case 2048:
-    batch_NSMFFT<FFTDegree<Degree<2048>, ForwardFFT>>
-        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<2048>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
+                                                                 buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<2048>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(d_bsk, dest, buffer);
+    }
     break;
   case 4096:
-    batch_NSMFFT<FFTDegree<Degree<4096>, ForwardFFT>>
-        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<4096>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
+                                                                 buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<4096>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(d_bsk, dest, buffer);
+    }
     break;
   case 8192:
-    batch_NSMFFT<FFTDegree<Degree<8192>, ForwardFFT>>
-        <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest);
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<8192>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
+                                                                 buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, *stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<8192>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(d_bsk, dest, buffer);
+    }
     break;
   default:
     break;
   }
 
-  cudaFree(d_bsk);
+  cuda_drop_async(d_bsk, *stream, gpu_index);
+  cuda_drop_async(buffer, *stream, gpu_index);
   free(h_bsk);
 }
 

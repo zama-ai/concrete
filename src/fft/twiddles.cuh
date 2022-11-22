@@ -2,8 +2,8 @@
 #ifndef GPU_BOOTSTRAP_TWIDDLES_CUH
 #define GPU_BOOTSTRAP_TWIDDLES_CUH
 
-extern __constant__ short SW1[2048];
-extern __constant__ short SW2[2048];
+extern __constant__ short SW1[4096];
+extern __constant__ short SW2[4096];
 
 extern __constant__ double2 negTwids3[4];
 extern __constant__ double2 negTwids4[8];

@@ -1,7 +1,7 @@
 #include "cuComplex.h"
 
-__constant__ short SW1[2048];
-__constant__ short SW2[2048];
+__constant__ short SW1[4096];
+__constant__ short SW2[4096];
 
 __constant__ double2 negTwids3[4] = {
     {0.923879532511286738483136105060, 0.382683432365089781779232680492},

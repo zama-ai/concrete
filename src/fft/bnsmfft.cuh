@@ -718,10 +718,14 @@ __device__ void correction_inverse_fft_inplace(double2 *x) {
  * this function must be called with actual degree
  * function takes as input already compressed input
  */
-template <class params>
-__global__ void batch_NSMFFT(double2 *d_input, double2 *d_output) {
-  extern __shared__ double2 sharedMemoryFFT[];
-  double2 *fft = sharedMemoryFFT;
+template <class params, sharedMemDegree SMD>
+__global__ void batch_NSMFFT(double2 *d_input, double2 *d_output,
+                             double2 *buffer) {
+  double2 *fft = &buffer[blockIdx.x * params::degree / 2];
+  if constexpr (SMD != NOSM) {
+    extern __shared__ double2 sharedMemoryFFT[];
+    fft = sharedMemoryFFT;
+  }
 
   int tid = threadIdx.x;
 
