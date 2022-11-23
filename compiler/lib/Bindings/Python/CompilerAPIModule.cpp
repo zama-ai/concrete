@@ -76,6 +76,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       m, "CompilationFeedback")
       .def_readonly("complexity",
                     &mlir::concretelang::CompilationFeedback::complexity)
+      .def_readonly("p_error", &mlir::concretelang::CompilationFeedback::pError)
+      .def_readonly("global_p_error",
+                    &mlir::concretelang::CompilationFeedback::globalPError)
       .def_readonly(
           "total_secret_keys_size",
           &mlir::concretelang::CompilationFeedback::totalSecretKeysSize)

@@ -22,6 +22,12 @@ using StringError = ::concretelang::error::StringError;
 struct CompilationFeedback {
   double complexity;
 
+  /// @brief Probability of error for every PBS.
+  double pError;
+
+  /// @brief Probability of error for the whole programs.
+  double globalPError;
+
   /// @brief the total number of bytes of secret keys
   uint64_t totalSecretKeysSize;
 

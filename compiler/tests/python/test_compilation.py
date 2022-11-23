@@ -30,6 +30,14 @@ def run(engine, args, compilation_result, keyset_cache):
     # Dev
     compilation_feedback = engine.load_compilation_feedback(compilation_result)
     assert isinstance(compilation_feedback, CompilationFeedback)
+    assert isinstance(compilation_feedback.complexity, float)
+    assert isinstance(compilation_feedback.p_error, float)
+    assert isinstance(compilation_feedback.global_p_error, float)
+    assert isinstance(compilation_feedback.total_secret_keys_size, int)
+    assert isinstance(compilation_feedback.total_bootstrap_keys_size, int)
+    assert isinstance(compilation_feedback.total_inputs_size, int)
+    assert isinstance(compilation_feedback.total_output_size, int)
+
     # Client
     client_parameters = engine.load_client_parameters(compilation_result)
     key_set = ClientSupport.key_set(client_parameters, keyset_cache)

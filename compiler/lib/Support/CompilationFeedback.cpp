@@ -84,6 +84,8 @@ CompilationFeedback::load(std::string jsonPath) {
 llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &v) {
   llvm::json::Object object{
       {"complexity", v.complexity},
+      {"pError", v.pError},
+      {"globalPError", v.globalPError},
       {"totalSecretKeysSize", v.totalSecretKeysSize},
       {"totalBootstrapKeysSize", v.totalBootstrapKeysSize},
       {"totalKeyswitchKeysSize", v.totalKeyswitchKeysSize},
@@ -97,7 +99,8 @@ llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &v) {
 bool fromJSON(const llvm::json::Value j,
               mlir::concretelang::CompilationFeedback &v, llvm::json::Path p) {
   llvm::json::ObjectMapper O(j, p);
-  return O && O.map("complexity", v.complexity) &&
+  return O && O.map("complexity", v.complexity) && O.map("pError", v.pError) &&
+         O.map("globalPError", v.globalPError) &&
          O.map("totalSecretKeysSize", v.totalSecretKeysSize) &&
          O.map("totalBootstrapKeysSize", v.totalBootstrapKeysSize) &&
          O.map("totalKeyswitchKeysSize", v.totalKeyswitchKeysSize) &&

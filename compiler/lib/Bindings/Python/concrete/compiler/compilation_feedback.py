@@ -31,6 +31,8 @@ class CompilationFeedback(WrapperCpp):
             )
 
         self.complexity = compilation_feedback.complexity
+        self.p_error = compilation_feedback.p_error
+        self.global_p_error = compilation_feedback.global_p_error
         self.total_secret_keys_size = compilation_feedback.total_secret_keys_size
         self.total_bootstrap_keys_size = compilation_feedback.total_bootstrap_keys_size
         self.total_keyswitch_keys_size = compilation_feedback.total_keyswitch_keys_size

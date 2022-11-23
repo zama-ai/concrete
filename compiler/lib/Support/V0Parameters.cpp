@@ -241,6 +241,9 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
   }
 
   feedback.complexity = sol.complexity;
+  feedback.pError = sol.p_error;
+  feedback.globalPError =
+      std::isnan(sol.global_p_error) ? 0 : sol.global_p_error;
 
   return params;
 }
