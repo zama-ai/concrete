@@ -130,7 +130,7 @@ jobs:
           COMMIT_DATE="$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})"
           COMMIT_HASH="$(git describe --tags --dirty)"
           python3 ./ci/benchmark_parser.py compiler/benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
-          --schema compiler_benchmarks \
+          --database compiler_benchmarks \
           --hardware ${{ env.EC2_INSTANCE_TYPE }} \
           --project-version ${COMMIT_HASH} \
           --branch ${{ github.ref_name }} \

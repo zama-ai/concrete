@@ -16,8 +16,8 @@ parser.add_argument('results_path',
                           'In a case of a directory, this script will attempt to parse all the'
                           'files containing a .json extension'))
 parser.add_argument('output_file', help='File storing parsed results')
-parser.add_argument('-s', '--schema', dest='schema', required=True,
-                    help='Name of the database schema used to store results')
+parser.add_argument('-d', '--database', dest='database', required=True,
+                    help='Name of the database used to store results')
 parser.add_argument('-w', '--hardware', dest='hardware', required=True,
                     help='Hardware reference used to perform benchmark')
 parser.add_argument('-V', '--project-version', dest='project_version', required=True,
@@ -74,7 +74,7 @@ def dump_results(parsed_results, filename, input_args):
     """
     filename.parent.mkdir(parents=True, exist_ok=True)
     series = {
-        "schema": input_args.schema,
+        "database": input_args.database,
         "hardware": input_args.hardware,
         "project_version": input_args.project_version,
         "branch": input_args.branch,
