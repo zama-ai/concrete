@@ -275,9 +275,9 @@ void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
   double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
       r * ggsw_size * sizeof(double), *stream, gpu_index);
 
-  batch_fft_ggsw_vector<Torus, STorus, params>(v_stream, d_ggsw_fft_in, ggsw_in,
-                                               r, glwe_dimension,
-                                               polynomial_size, level_count);
+  batch_fft_ggsw_vector<Torus, STorus, params>(
+      v_stream, d_ggsw_fft_in, ggsw_in, r, glwe_dimension, polynomial_size,
+      level_count, gpu_index, max_shared_memory);
 
   //////////////////////
 
@@ -653,9 +653,9 @@ void host_blind_rotate_and_sample_extraction(
   double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
       mbr_size * ggsw_size * sizeof(double), *stream, gpu_index);
 
-  batch_fft_ggsw_vector<Torus, STorus, params>(v_stream, d_ggsw_fft_in, ggsw_in,
-                                               mbr_size, glwe_dimension,
-                                               polynomial_size, l_gadget);
+  batch_fft_ggsw_vector<Torus, STorus, params>(
+      v_stream, d_ggsw_fft_in, ggsw_in, mbr_size, glwe_dimension,
+      polynomial_size, l_gadget, gpu_index, max_shared_memory);
   checkCudaErrors(cudaGetLastError());
 
   //
