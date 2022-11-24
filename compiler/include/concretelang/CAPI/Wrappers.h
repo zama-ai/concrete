@@ -8,10 +8,20 @@
 
 #include "concretelang-c/Support/CompilerEngine.h"
 #include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/LibrarySupport.h"
 #include "mlir/CAPI/Wrap.h"
 
 DEFINE_C_API_PTR_METHODS(CompilerEngine, mlir::concretelang::CompilerEngine)
+DEFINE_C_API_PTR_METHODS(CompilationContext,
+                         mlir::concretelang::CompilationContext)
 DEFINE_C_API_PTR_METHODS(CompilationResult,
                          mlir::concretelang::CompilerEngine::CompilationResult)
+DEFINE_C_API_PTR_METHODS(Library, mlir::concretelang::CompilerEngine::Library)
+DEFINE_C_API_PTR_METHODS(LibraryCompilationResult,
+                         mlir::concretelang::LibraryCompilationResult)
+DEFINE_C_API_PTR_METHODS(LibrarySupport, mlir::concretelang::LibrarySupport)
+DEFINE_C_API_PTR_METHODS(CompilationOptions,
+                         mlir::concretelang::CompilationOptions)
+DEFINE_C_API_PTR_METHODS(OptimizerConfig, mlir::concretelang::optimizer::Config)
 
 #endif
