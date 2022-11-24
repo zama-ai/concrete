@@ -256,6 +256,7 @@ jobs:
       # and will at least give minimum confidence that the compiler works in PRs
       - name: Build
         run: |
+          set -e
           cd compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
@@ -273,6 +274,7 @@ jobs:
       - name: Test
         if: github.event_name == 'push'
         run: |
+          set -e
           cd compiler
           echo "Debug: ccache statistics (prior to the tests):"
           ccache -s

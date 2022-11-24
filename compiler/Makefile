@@ -25,11 +25,19 @@ CONCRETE_CORE_FFI_VERSION?=0.2.0
 
 ML_BENCH_SUBSET_ID=
 
+# Find OS
 OS=undefined
 ifeq ($(shell uname), Linux)
 	OS=linux
 else ifeq ($(shell uname), Darwin)
 	OS=darwin
+endif
+
+# Setup find arguments for MacOS
+ifeq ($(OS), darwin)
+FIND_EXECUTABLE_ARG=-perm +111
+else
+FIND_EXECUTABLE_ARG=-executable
 endif
 
 ARCHITECTURE=undefined
@@ -211,7 +219,7 @@ build-unit-tests: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangUnitTests
 
 run-unit-tests: build-unit-tests
-	find $(BUILD_DIR)/tools/concretelang/tests/unit_tests -name unit_tests_concretelang* -executable -type f | xargs -n1 ./run_test_bin.sh
+	find $(BUILD_DIR)/tools/concretelang/tests/unit_tests -name unit_tests_concretelang* $(FIND_EXECUTABLE_ARG) -type f | xargs -n1 ./run_test_bin.sh
 
 ## python-tests
 
@@ -230,7 +238,7 @@ run-rust-tests: rust-bindings
 build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-jit-fhe build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
 
 run-end-to-end-tests: build-end-to-end-tests
-	find $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests -name end_to_end* -executable -type f | xargs -n1 ./run_test_bin.sh
+	find $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests -name end_to_end* $(FIND_EXECUTABLE_ARG) -type f | xargs -n1 ./run_test_bin.sh
 
 build-end-to-end-jit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
