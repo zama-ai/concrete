@@ -3,7 +3,6 @@ add_mlir_dialect_library(
   BufferizableOpInterfaceImpl.cpp
   AddRuntimeContext.cpp
   EliminateCRTOps.cpp
-  AsyncOffload.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/BConcrete
   DEPENDS

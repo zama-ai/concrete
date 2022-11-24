@@ -127,7 +127,6 @@ def BConcrete_BatchedBootstrapLweTensorOp : BConcrete_Op<"batched_bootstrap_lwe_
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-// TODO(16bits): hack
 def BConcrete_WopPBSCRTLweTensorOp : BConcrete_Op<"wop_pbs_crt_lwe_tensor"> {
     let arguments = (ins
         2DTensorOf<[I64]>:$ciphertext,
@@ -149,31 +148,6 @@ def BConcrete_WopPBSCRTLweTensorOp : BConcrete_Op<"wop_pbs_crt_lwe_tensor"> {
         I64ArrayAttr:$crtDecomposition
     );
     let results = (outs 2DTensorOf<[I64]>:$result);
-}
-
-def BConcrete_KeySwitchLweTensorAsyncOffloadOp :
-    BConcrete_Op<"keyswitch_lwe_tensor_async_offload"> {
-    let arguments = (ins
-        1DTensorOf<[I64]>:$ciphertext,
-        I32Attr:$level,
-        I32Attr:$baseLog
-    );
-    let results = (outs RT_Future : $result);
-}
-
-def BConcrete_BootstrapLweTensorAsyncOffloadOp :
-    BConcrete_Op<"bootstrap_lwe_tensor_async_offload"> {
-    let arguments = (ins
-        1DTensorOf<[I64]>:$input_ciphertext,
-        1DTensorOf<[I64]>:$lookup_table,
-        I32Attr:$inputLweDim,
-        I32Attr:$polySize,
-        I32Attr:$level,
-        I32Attr:$baseLog,
-        I32Attr:$glweDimension,
-        I32Attr:$outPrecision
-    );
-    let results = (outs RT_Future : $result);
 }
 
 // BConcrete memref operators /////////////////////////////////////////////////
@@ -263,7 +237,6 @@ def BConcrete_BatchedBootstrapLweBufferOp : BConcrete_Op<"batched_bootstrap_lwe_
     );
 }
 
-// TODO(16bits): hack
 def BConcrete_WopPBSCRTLweBufferOp : BConcrete_Op<"wop_pbs_crt_lwe_buffer"> {
     let arguments = (ins
         BConcrete_LweCRTBuffer:$result,
@@ -285,16 +258,6 @@ def BConcrete_WopPBSCRTLweBufferOp : BConcrete_Op<"wop_pbs_crt_lwe_buffer"> {
         I32Attr : $circuitBootstrapBaseLog,
         I64ArrayAttr:$crtDecomposition
     );
-}
-
-// TODO
-
-
-
-def BConcrete_AwaitFutureOp :
-    BConcrete_Op<"await_future"> {
-    let arguments = (ins RT_Future : $future);
-    let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
 #endif

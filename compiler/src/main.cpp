@@ -179,11 +179,6 @@ llvm::cl::opt<bool> dataflowParallelize(
         "Generate (and execute if JIT) the program as a dataflow graph"),
     llvm::cl::init(false));
 
-llvm::cl::opt<bool> asyncOffload(
-    "async-offload",
-    llvm::cl::desc("Use asynchronous interface for keyswitch and bootstrap."),
-    llvm::cl::init(false));
-
 llvm::cl::opt<std::string>
     funcName("funcname",
              llvm::cl::desc("Name of the function to compile, default 'main'"),
@@ -300,7 +295,6 @@ cmdlineCompilationOptions() {
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.batchConcreteOps = cmdline::batchConcreteOps;
-  options.asyncOffload = cmdline::asyncOffload;
   options.optimizeConcrete = cmdline::optimizeConcrete;
   options.emitGPUOps = cmdline::emitGPUOps;
 

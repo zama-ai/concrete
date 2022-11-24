@@ -399,16 +399,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
         "Lowering from Bufferized Concrete to canonical MLIR dialects failed");
   }
 
-  // Make keyswitch and bootstrap asynchronous
-  if (options.asyncOffload) {
-    if (mlir::concretelang::pipeline::asyncOffload(mlirContext, module,
-                                                   enablePass)
-            .failed()) {
-      return errorDiag("Converting Keyswitch and Bootstrap to asynchronous "
-                       "operations failed.");
-    }
-  }
-
   if (target == Target::STD)
     return std::move(res);
 

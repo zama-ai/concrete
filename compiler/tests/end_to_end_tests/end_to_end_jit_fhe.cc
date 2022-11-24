@@ -153,8 +153,6 @@ std::string printEndToEndDesc(const testing::TestParamInfo<TestParam> desc) {
   std::ostringstream opt;
   if (options.loopParallelize)
     opt << "_loop";
-  if (options.asyncOffload)
-    opt << "_async";
   if (options.dataflowParallelize)
     opt << "_dataflow";
   if (options.emitGPUOps)
@@ -236,12 +234,6 @@ mlir::concretelang::CompilationOptions defaultOptions() {
 mlir::concretelang::CompilationOptions loopOptions() {
   mlir::concretelang::CompilationOptions o("main");
   o.loopParallelize = true;
-  return o;
-}
-
-mlir::concretelang::CompilationOptions asyncOptions() {
-  mlir::concretelang::CompilationOptions o("main");
-  o.asyncOffload = true;
   return o;
 }
 

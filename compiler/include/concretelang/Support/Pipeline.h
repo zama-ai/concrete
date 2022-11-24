@@ -58,10 +58,6 @@ mlir::LogicalResult
 optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                  std::function<bool(mlir::Pass *)> enablePass);
 
-mlir::LogicalResult asyncOffload(mlir::MLIRContext &context,
-                                 mlir::ModuleOp &module,
-                                 std::function<bool(mlir::Pass *)> enablePass);
-
 mlir::LogicalResult
 lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);

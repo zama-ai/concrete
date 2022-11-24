@@ -16,14 +16,10 @@ def AddRuntimeContext : Pass<"add-runtime-context", "mlir::ModuleOp"> {
   let constructor = "mlir::concretelang::createAddRuntimeContext()";
 }
 
-def EliminateCRTOps : Pass<"eliminate-bconcrete-crt-ops", "mlir::func::FuncOp"> {
+def EliminateCRTOps
+    : Pass<"eliminate-bconcrete-crt-ops", "mlir::func::FuncOp"> {
   let summary = "Eliminate the crt bconcrete operators.";
   let constructor = "mlir::concretelang::createEliminateCRTOpsPass()";
-}
-
-def AsyncOffload : Pass<"async-offload", "mlir::ModuleOp"> {
-  let summary = "Replace keyswitch and bootstrap operations by async versions and add synchronisation.";
-  let constructor = "mlir::concretelang::createAsyncOffload()";
 }
 
 #endif // MLIR_DIALECT_TENSOR_TRANSFORMS_PASSES
