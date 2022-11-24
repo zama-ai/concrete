@@ -777,6 +777,8 @@ struct FromElementsOpPattern
     if (converter.isLegal(resultTy)) {
       return mlir::failure();
     }
+    auto oldTensorResultTy = resultTy.cast<mlir::RankedTensorType>();
+    auto oldRank = oldTensorResultTy.getRank();
 
     auto newTensorResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
@@ -786,11 +788,12 @@ struct FromElementsOpPattern
     mlir::Value tensor = rewriter.create<mlir::bufferization::AllocTensorOp>(
         fromElementsOp.getLoc(), newTensorResultTy, mlir::ValueRange{});
 
-    // sizes are [1, ..., 1, lweSize]
-    llvm::SmallVector<mlir::OpFoldResult> sizes(newRank - 1,
+    // sizes are [1, ..., 1, diffShape...]
+    llvm::SmallVector<mlir::OpFoldResult> sizes(oldRank,
                                                 rewriter.getI64IntegerAttr(1));
-    sizes.push_back(
-        rewriter.getI64IntegerAttr(*(newTensorResultTy.getShape().end() - 1)));
+    for (auto i = newRank - oldRank; i > 0; i--) {
+      sizes.push_back(rewriter.getI64IntegerAttr(*(newShape.end() - i)));
+    }
 
     // strides are [1, ..., 1]
     llvm::SmallVector<mlir::OpFoldResult> oneStrides(
