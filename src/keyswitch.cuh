@@ -96,9 +96,10 @@ __global__ void keyswitch(Torus *lwe_array_out, Torus *lwe_array_in, Torus *ksk,
 /// assume lwe_array_in in the gpu
 template <typename Torus>
 __host__ void cuda_keyswitch_lwe_ciphertext_vector(
-    void *v_stream, Torus *lwe_array_out, Torus *lwe_array_in, Torus *ksk,
-    uint32_t lwe_dimension_in, uint32_t lwe_dimension_out, uint32_t base_log,
-    uint32_t level_count, uint32_t num_samples) {
+    void *v_stream, uint32_t gpu_index, Torus *lwe_array_out,
+    Torus *lwe_array_in, Torus *ksk, uint32_t lwe_dimension_in,
+    uint32_t lwe_dimension_out, uint32_t base_log, uint32_t level_count,
+    uint32_t num_samples) {
 
   constexpr int ideal_threads = 128;
 

@@ -246,13 +246,11 @@ device_batch_cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
  *  - r: Number of layers in the tree.
  */
 template <typename Torus, typename STorus, class params>
-void host_cmux_tree(void *v_stream, Torus *glwe_array_out, Torus *ggsw_in,
-                    Torus *lut_vector, uint32_t glwe_dimension,
+void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
+                    Torus *ggsw_in, Torus *lut_vector, uint32_t glwe_dimension,
                     uint32_t polynomial_size, uint32_t base_log,
                     uint32_t level_count, uint32_t r,
                     uint32_t max_shared_memory) {
-  // This should be refactored to pass the gpu index as a parameter
-  uint32_t gpu_index = 0;
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   int num_lut = (1 << r);
@@ -463,14 +461,15 @@ __global__ void add_sub_and_mul_lwe(Torus *shifted_lwe, Torus *state_lwe,
 
 template <typename Torus, class params>
 __host__ void host_extract_bits(
-    void *v_stream, Torus *list_lwe_array_out, Torus *lwe_array_in,
-    Torus *lwe_array_in_buffer, Torus *lwe_array_in_shifted_buffer,
-    Torus *lwe_array_out_ks_buffer, Torus *lwe_array_out_pbs_buffer,
-    Torus *lut_pbs, uint32_t *lut_vector_indexes, Torus *ksk,
-    double2 *fourier_bsk, uint32_t number_of_bits, uint32_t delta_log,
-    uint32_t lwe_dimension_in, uint32_t lwe_dimension_out,
-    uint32_t base_log_bsk, uint32_t level_count_bsk, uint32_t base_log_ksk,
-    uint32_t level_count_ksk, uint32_t number_of_samples) {
+    void *v_stream, uint32_t gpu_index, Torus *list_lwe_array_out,
+    Torus *lwe_array_in, Torus *lwe_array_in_buffer,
+    Torus *lwe_array_in_shifted_buffer, Torus *lwe_array_out_ks_buffer,
+    Torus *lwe_array_out_pbs_buffer, Torus *lut_pbs,
+    uint32_t *lut_vector_indexes, Torus *ksk, double2 *fourier_bsk,
+    uint32_t number_of_bits, uint32_t delta_log, uint32_t lwe_dimension_in,
+    uint32_t lwe_dimension_out, uint32_t base_log_bsk, uint32_t level_count_bsk,
+    uint32_t base_log_ksk, uint32_t level_count_ksk,
+    uint32_t number_of_samples) {
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   uint32_t ciphertext_n_bits = sizeof(Torus) * 8;
@@ -485,8 +484,9 @@ __host__ void host_extract_bits(
 
   for (int bit_idx = 0; bit_idx < number_of_bits; bit_idx++) {
     cuda_keyswitch_lwe_ciphertext_vector(
-        v_stream, lwe_array_out_ks_buffer, lwe_array_in_shifted_buffer, ksk,
-        lwe_dimension_in, lwe_dimension_out, base_log_ksk, level_count_ksk, 1);
+        v_stream, gpu_index, lwe_array_out_ks_buffer,
+        lwe_array_in_shifted_buffer, ksk, lwe_dimension_in, lwe_dimension_out,
+        base_log_ksk, level_count_ksk, 1);
 
     copy_small_lwe<<<1, 256, 0, *stream>>>(
         list_lwe_array_out, lwe_array_out_ks_buffer, lwe_dimension_out + 1,
@@ -508,9 +508,10 @@ __host__ void host_extract_bits(
     checkCudaErrors(cudaGetLastError());
 
     host_bootstrap_low_latency<Torus, params>(
-        v_stream, lwe_array_out_pbs_buffer, lut_pbs, lut_vector_indexes,
-        lwe_array_out_ks_buffer, fourier_bsk, lwe_dimension_out,
-        lwe_dimension_in, base_log_bsk, level_count_bsk, number_of_samples, 1);
+        v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_pbs,
+        lut_vector_indexes, lwe_array_out_ks_buffer, fourier_bsk,
+        lwe_dimension_out, lwe_dimension_in, base_log_bsk, level_count_bsk,
+        number_of_samples, 1);
 
     add_sub_and_mul_lwe<Torus, params><<<1, threads, 0, *stream>>>(
         lwe_array_in_shifted_buffer, lwe_array_in_buffer,
@@ -609,12 +610,10 @@ __global__ void device_blind_rotation_and_sample_extraction(
 
 template <typename Torus, typename STorus, class params>
 void host_blind_rotate_and_sample_extraction(
-    void *v_stream, Torus *lwe_out, Torus *ggsw_in, Torus *lut_vector,
-    uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
+    void *v_stream, uint32_t gpu_index, Torus *lwe_out, Torus *ggsw_in,
+    Torus *lut_vector, uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
     uint32_t polynomial_size, uint32_t base_log, uint32_t l_gadget,
     uint32_t max_shared_memory) {
-  // This should be refactored to pass the gpu index as a parameter
-  uint32_t gpu_index = 0;
 
   assert(glwe_dimension ==
          1); // For larger k we will need to adjust the mask size
