@@ -23,5 +23,7 @@ DEFINE_C_API_PTR_METHODS(LibrarySupport, mlir::concretelang::LibrarySupport)
 DEFINE_C_API_PTR_METHODS(CompilationOptions,
                          mlir::concretelang::CompilationOptions)
 DEFINE_C_API_PTR_METHODS(OptimizerConfig, mlir::concretelang::optimizer::Config)
+DEFINE_C_API_PTR_METHODS(ServerLambda,
+                         mlir::concretelang::serverlib::ServerLambda)
 
 #endif

@@ -188,3 +188,18 @@ LibraryCompilationResult librarySupportCompile(LibrarySupport support,
   return wrap(new mlir::concretelang::LibraryCompilationResult(
       *retOrError.get().get()));
 }
+
+ServerLambda librarySupportLoadServerLambda(LibrarySupport support,
+                                            LibraryCompilationResult result) {
+  auto serverLambdaOrError = unwrap(support)->loadServerLambda(*unwrap(result));
+  if (!serverLambdaOrError) {
+    llvm::errs() << llvm::toString(serverLambdaOrError.takeError());
+    return wrap((mlir::concretelang::serverlib::ServerLambda *)NULL);
+  }
+  return wrap(new mlir::concretelang::serverlib::ServerLambda(
+      serverLambdaOrError.get()));
+}
+
+/// ********** ServerLamda CAPI ************************************************
+
+void serverLambdaDestroy(ServerLambda server) { delete unwrap(server); }

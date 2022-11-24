@@ -5,6 +5,9 @@ use crate::mlir::ffi::*;
 #[derive(Debug)]
 pub struct CompilationError(String);
 
+#[derive(Debug)]
+pub struct ServerLambdaLoadError(String);
+
 /// Parse the MLIR code and returns it.
 ///
 /// The function parse the provided MLIR textual representation and returns it. It would fail with
@@ -100,6 +103,24 @@ impl LibrarySupport {
             Ok(result)
         }
     }
+
+    /// Load server lambda from a compilation result.
+    ///
+    /// This can be used for executing the compiled function.
+    pub fn load_server_lambda(
+        &self,
+        result: LibraryCompilationResult,
+    ) -> Result<ServerLambda, ServerLambdaLoadError> {
+        unsafe {
+            let server = librarySupportLoadServerLambda(self.support, result);
+            if serverLambdaIsNull(server) {
+                return Err(ServerLambdaLoadError(
+                    "loading server lambda failed".to_string(),
+                ));
+            }
+            Ok(server)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -167,6 +188,31 @@ mod test {
                 ptr: std::ptr::null_mut(),
             };
             assert!(libraryIsNull(lib));
+        }
+    }
+
+    #[test]
+    fn test_compiler_load_server_lambda() {
+        unsafe {
+            let module_to_compile = "
+            func.func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
+                    %0 = \"FHE.add_eint\"(%arg0, %arg1) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
+                    return %0 : !FHE.eint<5>
+                }";
+            let runtime_library_path = match env::var("CONCRETE_COMPILER_BUILD_DIR") {
+                Ok(val) => val + "/lib/libConcretelangRuntime.so",
+                Err(_e) => "".to_string(),
+            };
+            let temp_dir = TempDir::new("rust_test_compiler_load_server_lambda").unwrap();
+            let support = LibrarySupport::new(
+                temp_dir.path().to_str().unwrap(),
+                runtime_library_path.as_str(),
+            );
+            let result = support.compile(module_to_compile, None).unwrap();
+            let server = support.load_server_lambda(result).unwrap();
+            assert!(!serverLambdaIsNull(server));
+            libraryCompilationResultDestroy(result);
+            serverLambdaDestroy(server);
         }
     }
 }

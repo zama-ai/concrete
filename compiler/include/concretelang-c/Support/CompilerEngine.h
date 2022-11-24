@@ -32,6 +32,7 @@ DEFINE_C_API_STRUCT(LibraryCompilationResult, void);
 DEFINE_C_API_STRUCT(LibrarySupport, void);
 DEFINE_C_API_STRUCT(CompilationOptions, void);
 DEFINE_C_API_STRUCT(OptimizerConfig, void);
+DEFINE_C_API_STRUCT(ServerLambda, void);
 
 #undef DEFINE_C_API_STRUCT
 
@@ -49,6 +50,7 @@ DEFINE_NULL_PTR_CHECKER(libraryCompilationResultIsNull,
 DEFINE_NULL_PTR_CHECKER(librarySupportIsNull, LibrarySupport);
 DEFINE_NULL_PTR_CHECKER(compilationOptionsIsNull, CompilationOptions);
 DEFINE_NULL_PTR_CHECKER(optimizerConfigIsNull, OptimizerConfig);
+DEFINE_NULL_PTR_CHECKER(serverLambdaIsNull, ServerLambda);
 
 #undef DEFINE_NULL_PTR_CHECKER
 
@@ -125,6 +127,7 @@ MLIR_CAPI_EXPORTED void
 libraryCompilationResultDestroy(LibraryCompilationResult result);
 
 /// ********** LibrarySupport CAPI *********************************************
+
 MLIR_CAPI_EXPORTED LibrarySupport
 librarySupportCreate(MlirStringRef outputDirPath,
                      MlirStringRef runtimeLibraryPath, bool generateSharedLib,
@@ -139,6 +142,13 @@ MLIR_CAPI_EXPORTED LibrarySupport librarySupportCreateDefault(
 
 MLIR_CAPI_EXPORTED LibraryCompilationResult librarySupportCompile(
     LibrarySupport support, MlirStringRef module, CompilationOptions options);
+
+MLIR_CAPI_EXPORTED ServerLambda librarySupportLoadServerLambda(
+    LibrarySupport support, LibraryCompilationResult result);
+
+/// ********** ServerLamda CAPI ************************************************
+
+MLIR_CAPI_EXPORTED void serverLambdaDestroy(ServerLambda server);
 
 #ifdef __cplusplus
 }
