@@ -34,6 +34,7 @@
 #include <concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h>
+#include <concretelang/Dialect/SDFG/IR/SDFGDialect.h>
 #include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
 #include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/CompilerEngine.h>
@@ -69,16 +70,16 @@ CompilationContext::~CompilationContext() {
 mlir::MLIRContext *CompilationContext::getMLIRContext() {
   if (this->mlirContext == nullptr) {
     mlir::DialectRegistry registry;
-    registry.insert<mlir::concretelang::RT::RTDialect,
-                    mlir::concretelang::FHE::FHEDialect,
-                    mlir::concretelang::TFHE::TFHEDialect,
-                    mlir::concretelang::FHELinalg::FHELinalgDialect,
-                    mlir::concretelang::Concrete::ConcreteDialect,
-                    mlir::concretelang::BConcrete::BConcreteDialect,
-                    mlir::func::FuncDialect, mlir::memref::MemRefDialect,
-                    mlir::linalg::LinalgDialect, mlir::LLVM::LLVMDialect,
-                    mlir::scf::SCFDialect, mlir::omp::OpenMPDialect,
-                    mlir::bufferization::BufferizationDialect>();
+    registry.insert<
+        mlir::concretelang::RT::RTDialect, mlir::concretelang::FHE::FHEDialect,
+        mlir::concretelang::TFHE::TFHEDialect,
+        mlir::concretelang::FHELinalg::FHELinalgDialect,
+        mlir::concretelang::Concrete::ConcreteDialect,
+        mlir::concretelang::BConcrete::BConcreteDialect,
+        mlir::concretelang::SDFG::SDFGDialect, mlir::func::FuncDialect,
+        mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect,
+        mlir::LLVM::LLVMDialect, mlir::scf::SCFDialect,
+        mlir::omp::OpenMPDialect, mlir::bufferization::BufferizationDialect>();
     BConcrete::registerBufferizableOpInterfaceExternalModels(registry);
     arith::registerBufferizableOpInterfaceExternalModels(registry);
     bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(
