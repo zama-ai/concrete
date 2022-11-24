@@ -143,6 +143,7 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(
   keyswitch<<<grid, threads, shared_mem, *stream>>>(
       lwe_array_out, lwe_array_in, ksk, lwe_dimension_in, lwe_dimension_out,
       base_log, level_count, lwe_lower, lwe_upper, cutoff);
+  checkCudaErrors(cudaGetLastError());
 
   cudaStreamSynchronize(*stream);
 }

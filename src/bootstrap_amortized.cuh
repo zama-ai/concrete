@@ -378,6 +378,8 @@ __host__ void host_bootstrap_amortized(
             bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
             base_log, level_count, lwe_idx, 0);
   }
+  checkCudaErrors(cudaGetLastError());
+
   // Synchronize the streams before copying the result to lwe_array_out at the
   // right place
   cudaStreamSynchronize(*stream);

@@ -7,6 +7,7 @@
 #include <helper_cuda.h>
 #endif
 
+#include "../include/helper_cuda.h"
 #include "linear_algebra.h"
 #include "utils/kernel_dimensions.cuh"
 
@@ -45,6 +46,7 @@ host_cleartext_multiplication(void *v_stream, uint32_t gpu_index, T *output,
   auto stream = static_cast<cudaStream_t *>(v_stream);
   cleartext_multiplication<<<grid, thds, 0, *stream>>>(
       output, lwe_input, cleartext_input, input_lwe_dimension, num_entries);
+  checkCudaErrors(cudaGetLastError());
 
   cudaStreamSynchronize(*stream);
 }

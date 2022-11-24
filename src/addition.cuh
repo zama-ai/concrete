@@ -58,6 +58,7 @@ __host__ void host_addition(void *v_stream, uint32_t gpu_index, T *output,
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   addition<<<grid, thds, 0, *stream>>>(output, input_1, input_2, num_entries);
+  checkCudaErrors(cudaGetLastError());
 
   cudaStreamSynchronize(*stream);
 }
@@ -84,6 +85,7 @@ __host__ void host_addition_plaintext(void *v_stream, uint32_t gpu_index,
                                   cudaMemcpyDeviceToDevice, *stream));
   plaintext_addition<<<grid, thds, 0, *stream>>>(
       output, lwe_input, plaintext_input, input_lwe_dimension, num_entries);
+  checkCudaErrors(cudaGetLastError());
 
   cudaStreamSynchronize(*stream);
 }

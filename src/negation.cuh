@@ -7,8 +7,10 @@
 #include <helper_cuda.h>
 #endif
 
+#include "../include/helper_cuda.h"
 #include "linear_algebra.h"
 #include "utils/kernel_dimensions.cuh"
+
 
 template <typename T>
 __global__ void negation(T *output, T *input, uint32_t num_entries) {
@@ -39,6 +41,7 @@ __host__ void host_negation(void *v_stream, uint32_t gpu_index, T *output,
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   negation<<<grid, thds, 0, *stream>>>(output, input, num_entries);
+  checkCudaErrors(cudaGetLastError());
 
   cudaStreamSynchronize(*stream);
 }
