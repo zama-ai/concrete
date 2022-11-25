@@ -33,6 +33,13 @@ DEFINE_C_API_STRUCT(LibrarySupport, void);
 DEFINE_C_API_STRUCT(CompilationOptions, void);
 DEFINE_C_API_STRUCT(OptimizerConfig, void);
 DEFINE_C_API_STRUCT(ServerLambda, void);
+DEFINE_C_API_STRUCT(ClientParameters, void);
+DEFINE_C_API_STRUCT(KeySet, void);
+DEFINE_C_API_STRUCT(KeySetCache, void);
+DEFINE_C_API_STRUCT(EvaluationKeys, void);
+DEFINE_C_API_STRUCT(LambdaArgument, void);
+DEFINE_C_API_STRUCT(PublicArguments, void);
+DEFINE_C_API_STRUCT(PublicResult, void);
 
 #undef DEFINE_C_API_STRUCT
 
@@ -51,6 +58,13 @@ DEFINE_NULL_PTR_CHECKER(librarySupportIsNull, LibrarySupport);
 DEFINE_NULL_PTR_CHECKER(compilationOptionsIsNull, CompilationOptions);
 DEFINE_NULL_PTR_CHECKER(optimizerConfigIsNull, OptimizerConfig);
 DEFINE_NULL_PTR_CHECKER(serverLambdaIsNull, ServerLambda);
+DEFINE_NULL_PTR_CHECKER(clientParametersIsNull, ClientParameters);
+DEFINE_NULL_PTR_CHECKER(keySetIsNull, KeySet);
+DEFINE_NULL_PTR_CHECKER(keySetCacheIsNull, KeySetCache);
+DEFINE_NULL_PTR_CHECKER(evaluationKeysIsNull, EvaluationKeys);
+DEFINE_NULL_PTR_CHECKER(lambdaArgumentIsNull, LambdaArgument);
+DEFINE_NULL_PTR_CHECKER(publicArgumentsIsNull, PublicArguments);
+DEFINE_NULL_PTR_CHECKER(publicResultIsNull, PublicResult);
 
 #undef DEFINE_NULL_PTR_CHECKER
 
@@ -146,9 +160,80 @@ MLIR_CAPI_EXPORTED LibraryCompilationResult librarySupportCompile(
 MLIR_CAPI_EXPORTED ServerLambda librarySupportLoadServerLambda(
     LibrarySupport support, LibraryCompilationResult result);
 
+MLIR_CAPI_EXPORTED ClientParameters librarySupportLoadClientParameters(
+    LibrarySupport support, LibraryCompilationResult result);
+
+MLIR_CAPI_EXPORTED PublicResult
+librarySupportServerCall(LibrarySupport support, ServerLambda server,
+                         PublicArguments args, EvaluationKeys evalKeys);
+
+MLIR_CAPI_EXPORTED void librarySupportDestroy(LibrarySupport support);
+
 /// ********** ServerLamda CAPI ************************************************
 
 MLIR_CAPI_EXPORTED void serverLambdaDestroy(ServerLambda server);
+
+/// ********** ClientParameters CAPI *******************************************
+
+MLIR_CAPI_EXPORTED void clientParametersDestroy(ClientParameters params);
+
+/// ********** KeySet CAPI *****************************************************
+
+MLIR_CAPI_EXPORTED KeySet keySetGenerate(ClientParameters params,
+                                         uint64_t seed_msb, uint64_t seed_lsb);
+
+MLIR_CAPI_EXPORTED EvaluationKeys keySetGetEvaluationKeys(KeySet keySet);
+
+MLIR_CAPI_EXPORTED void keySetDestroy(KeySet keySet);
+
+/// ********** KeySetCache CAPI ************************************************
+
+MLIR_CAPI_EXPORTED KeySetCache keySetCacheCreate(MlirStringRef cachePath);
+
+MLIR_CAPI_EXPORTED KeySet
+keySetCacheLoadOrGenerateKeySet(KeySetCache cache, ClientParameters params,
+                                uint64_t seed_msb, uint64_t seed_lsb);
+
+MLIR_CAPI_EXPORTED void keySetCacheDestroy(KeySetCache keySetCache);
+
+/// ********** EvaluationKeys CAPI *********************************************
+
+MLIR_CAPI_EXPORTED void evaluationKeysDestroy(EvaluationKeys evaluationKeys);
+
+/// ********** LambdaArgument CAPI *********************************************
+
+MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromScalar(uint64_t value);
+
+MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU64(uint64_t *data,
+                                                              int64_t *dims,
+                                                              size_t rank);
+
+MLIR_CAPI_EXPORTED bool lambdaArgumentIsScalar(LambdaArgument lambdaArg);
+MLIR_CAPI_EXPORTED uint64_t lambdaArgumentGetScalar(LambdaArgument lambdaArg);
+
+MLIR_CAPI_EXPORTED bool lambdaArgumentIsTensor(LambdaArgument lambdaArg);
+MLIR_CAPI_EXPORTED uint64_t *
+lambdaArgumentGetTensorData(LambdaArgument lambdaArg);
+MLIR_CAPI_EXPORTED size_t lambdaArgumentGetTensorRank(LambdaArgument lambdaArg);
+MLIR_CAPI_EXPORTED int64_t *
+lambdaArgumentGetTensorDims(LambdaArgument lambdaArg);
+
+MLIR_CAPI_EXPORTED PublicArguments
+lambdaArgumentEncrypt(const LambdaArgument *lambdaArgs, size_t argNumber,
+                      ClientParameters params, KeySet keySet);
+
+MLIR_CAPI_EXPORTED void lambdaArgumentDestroy(LambdaArgument lambdaArg);
+
+/// ********** PublicArguments CAPI ********************************************
+
+MLIR_CAPI_EXPORTED void publicArgumentsDestroy(PublicArguments publicArgs);
+
+/// ********** PublicResult CAPI ***********************************************
+
+MLIR_CAPI_EXPORTED LambdaArgument publicResultDecrypt(PublicResult publicResult,
+                                                      KeySet keySet);
+
+MLIR_CAPI_EXPORTED void publicResultDestroy(PublicResult publicResult);
 
 #ifdef __cplusplus
 }

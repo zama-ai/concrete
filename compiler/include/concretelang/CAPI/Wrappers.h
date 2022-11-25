@@ -25,5 +25,17 @@ DEFINE_C_API_PTR_METHODS(CompilationOptions,
 DEFINE_C_API_PTR_METHODS(OptimizerConfig, mlir::concretelang::optimizer::Config)
 DEFINE_C_API_PTR_METHODS(ServerLambda,
                          mlir::concretelang::serverlib::ServerLambda)
+DEFINE_C_API_PTR_METHODS(ClientParameters,
+                         mlir::concretelang::clientlib::ClientParameters)
+DEFINE_C_API_PTR_METHODS(KeySet, mlir::concretelang::clientlib::KeySet)
+DEFINE_C_API_PTR_METHODS(KeySetCache,
+                         mlir::concretelang::clientlib::KeySetCache)
+DEFINE_C_API_PTR_METHODS(EvaluationKeys,
+                         mlir::concretelang::clientlib::EvaluationKeys)
+DEFINE_C_API_PTR_METHODS(LambdaArgument, mlir::concretelang::LambdaArgument)
+DEFINE_C_API_PTR_METHODS(PublicArguments,
+                         mlir::concretelang::clientlib::PublicArguments)
+DEFINE_C_API_PTR_METHODS(PublicResult,
+                         mlir::concretelang::clientlib::PublicResult)
 
 #endif

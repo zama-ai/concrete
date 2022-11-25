@@ -353,5 +353,11 @@ KeySetCache::generate(std::shared_ptr<KeySetCache> cache,
                : KeySet::generate(params, seed_msb, seed_lsb);
 }
 
+outcome::checked<std::unique_ptr<KeySet>, StringError>
+KeySetCache::generate(ClientParameters &params, uint64_t seed_msb,
+                      uint64_t seed_lsb) {
+  return loadOrGenerateSave(params, seed_msb, seed_lsb);
+}
+
 } // namespace clientlib
 } // namespace concretelang

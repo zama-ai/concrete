@@ -7,6 +7,7 @@
 #include "concretelang/CAPI/Wrappers.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
+#include "concretelang/Support/LambdaSupport.h"
 #include "mlir/IR/Diagnostics.h"
 #include "llvm/Support/SourceMgr.h"
 
@@ -186,7 +187,7 @@ LibraryCompilationResult librarySupportCompile(LibrarySupport support,
     return wrap((mlir::concretelang::LibraryCompilationResult *)NULL);
   }
   return wrap(new mlir::concretelang::LibraryCompilationResult(
-      *retOrError.get().get()));
+      *retOrError.get().release()));
 }
 
 ServerLambda librarySupportLoadServerLambda(LibrarySupport support,
@@ -200,6 +201,169 @@ ServerLambda librarySupportLoadServerLambda(LibrarySupport support,
       serverLambdaOrError.get()));
 }
 
+ClientParameters
+librarySupportLoadClientParameters(LibrarySupport support,
+                                   LibraryCompilationResult result) {
+  auto paramsOrError = unwrap(support)->loadClientParameters(*unwrap(result));
+  if (!paramsOrError) {
+    llvm::errs() << llvm::toString(paramsOrError.takeError());
+    return wrap((mlir::concretelang::clientlib::ClientParameters *)NULL);
+  }
+  return wrap(
+      new mlir::concretelang::clientlib::ClientParameters(paramsOrError.get()));
+}
+
+PublicResult librarySupportServerCall(LibrarySupport support,
+                                      ServerLambda server_lambda,
+                                      PublicArguments args,
+                                      EvaluationKeys evalKeys) {
+  auto resultOrError = unwrap(support)->serverCall(
+      *unwrap(server_lambda), *unwrap(args), *unwrap(evalKeys));
+  if (!resultOrError) {
+    llvm::errs() << llvm::toString(resultOrError.takeError());
+    return wrap((mlir::concretelang::clientlib::PublicResult *)NULL);
+  }
+  return wrap(resultOrError.get().release());
+}
+
+void librarySupportDestroy(LibrarySupport support) { delete unwrap(support); }
+
 /// ********** ServerLamda CAPI ************************************************
 
 void serverLambdaDestroy(ServerLambda server) { delete unwrap(server); }
+
+/// ********** ClientParameters CAPI *******************************************
+
+void clientParametersDestroy(ClientParameters params) { delete unwrap(params); }
+
+/// ********** KeySet CAPI *****************************************************
+
+KeySet keySetGenerate(ClientParameters params, uint64_t seed_msb,
+                      uint64_t seed_lsb) {
+  auto keySet = mlir::concretelang::clientlib::KeySet::generate(
+      *unwrap(params), seed_msb, seed_lsb);
+  if (keySet.has_error()) {
+    llvm::errs() << keySet.error().mesg;
+    return wrap((mlir::concretelang::clientlib::KeySet *)NULL);
+  }
+  return wrap(keySet.value().release());
+}
+
+EvaluationKeys keySetGetEvaluationKeys(KeySet keySet) {
+  return wrap(new mlir::concretelang::clientlib::EvaluationKeys(
+      unwrap(keySet)->evaluationKeys()));
+}
+
+void keySetDestroy(KeySet keySet) { delete unwrap(keySet); }
+
+/// ********** KeySetCache CAPI ************************************************
+
+KeySetCache keySetCacheCreate(MlirStringRef cachePath) {
+  std::string cachePathStr(cachePath.data, cachePath.length);
+  return wrap(new mlir::concretelang::clientlib::KeySetCache(cachePathStr));
+}
+
+KeySet keySetCacheLoadOrGenerateKeySet(KeySetCache cache,
+                                       ClientParameters params,
+                                       uint64_t seed_msb, uint64_t seed_lsb) {
+  auto keySetOrError =
+      unwrap(cache)->generate(*unwrap(params), seed_msb, seed_lsb);
+  if (keySetOrError.has_error()) {
+    llvm::errs() << keySetOrError.error().mesg;
+    return wrap((mlir::concretelang::clientlib::KeySet *)NULL);
+  }
+  return wrap(keySetOrError.value().release());
+}
+
+void keySetCacheDestroy(KeySetCache keySetCache) { delete unwrap(keySetCache); }
+
+/// ********** EvaluationKeys CAPI *********************************************
+
+void evaluationKeysDestroy(EvaluationKeys evaluationKeys) {
+  delete unwrap(evaluationKeys);
+}
+
+/// ********** LambdaArgument CAPI *********************************************
+
+LambdaArgument lambdaArgumentFromScalar(uint64_t value) {
+  return wrap(new mlir::concretelang::IntLambdaArgument<uint64_t>(value));
+}
+
+// LambdaArgument lambdaArgumentFromTensorU64(uint64_t *data, int64_t *dims,
+//                                            size_t rank);
+
+bool lambdaArgumentIsScalar(LambdaArgument lambdaArg) {
+  return unwrap(lambdaArg)
+      ->isa<mlir::concretelang::IntLambdaArgument<uint64_t>>();
+}
+
+uint64_t lambdaArgumentGetScalar(LambdaArgument lambdaArg) {
+  mlir::concretelang::IntLambdaArgument<uint64_t> *arg =
+      unwrap(lambdaArg)
+          ->dyn_cast<mlir::concretelang::IntLambdaArgument<uint64_t>>();
+  assert(arg != nullptr && "lambda argument isn't a scalar");
+  return arg->getValue();
+}
+
+bool lambdaArgumentIsTensor(LambdaArgument lambdaArg) {
+  return unwrap(lambdaArg)
+             ->isa<mlir::concretelang::TensorLambdaArgument<
+                 mlir::concretelang::IntLambdaArgument<uint8_t>>>() ||
+         unwrap(lambdaArg)
+             ->isa<mlir::concretelang::TensorLambdaArgument<
+                 mlir::concretelang::IntLambdaArgument<uint16_t>>>() ||
+         unwrap(lambdaArg)
+             ->isa<mlir::concretelang::TensorLambdaArgument<
+                 mlir::concretelang::IntLambdaArgument<uint32_t>>>() ||
+         unwrap(lambdaArg)
+             ->isa<mlir::concretelang::TensorLambdaArgument<
+                 mlir::concretelang::IntLambdaArgument<uint64_t>>>();
+}
+
+// uint64_t *lambdaArgumentGetTensorData(LambdaArgument lambdaArg);
+// size_t lambdaArgumentGetTensorRank(LambdaArgument lambdaArg);
+// int64_t *lambdaArgumentGetTensorDims(LambdaArgument lambdaArg);
+
+PublicArguments lambdaArgumentEncrypt(const LambdaArgument *lambdaArgs,
+                                      size_t argNumber, ClientParameters params,
+                                      KeySet keySet) {
+  std::vector<const mlir::concretelang::LambdaArgument *> args;
+  for (size_t i = 0; i < argNumber; i++)
+    args.push_back(unwrap(lambdaArgs[i]));
+  auto publicArgsOrError =
+      mlir::concretelang::LambdaSupport<int, int>::exportArguments(
+          *unwrap(params), *unwrap(keySet), args);
+  if (!publicArgsOrError) {
+    llvm::errs() << llvm::toString(publicArgsOrError.takeError());
+    return wrap((mlir::concretelang::clientlib::PublicArguments *)NULL);
+  }
+  return wrap(publicArgsOrError.get().release());
+}
+
+void lambdaArgumentDestroy(LambdaArgument lambdaArg) {
+  delete unwrap(lambdaArg);
+}
+
+/// ********** PublicArguments CAPI ********************************************
+
+void publicArgumentsDestroy(PublicArguments publicArgs) {
+  delete unwrap(publicArgs);
+}
+
+/// ********** PublicResult CAPI ***********************************************
+
+LambdaArgument publicResultDecrypt(PublicResult publicResult, KeySet keySet) {
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>>
+      lambdaArgOrError = mlir::concretelang::typedResult<
+          std::unique_ptr<mlir::concretelang::LambdaArgument>>(
+          *unwrap(keySet), *unwrap(publicResult));
+  if (!lambdaArgOrError) {
+    llvm::errs() << llvm::toString(lambdaArgOrError.takeError());
+    return wrap((mlir::concretelang::LambdaArgument *)NULL);
+  }
+  return wrap(lambdaArgOrError.get().release());
+}
+
+void publicResultDestroy(PublicResult publicResult) {
+  delete unwrap(publicResult);
+}

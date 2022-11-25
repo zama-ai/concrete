@@ -24,6 +24,9 @@ public:
   generate(std::shared_ptr<KeySetCache> optionalCache, ClientParameters &params,
            uint64_t seed_msb, uint64_t seed_lsb);
 
+  outcome::checked<std::unique_ptr<KeySet>, StringError>
+  generate(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb);
+
 private:
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
   loadKeys(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb,
