@@ -27,6 +27,7 @@ add_mlir_library(
   RTDialectAnalysis
   ConcretelangTransforms
   ConcretelangBConcreteTransforms
+  ConcretelangSDFGInterfaces
   LinalgExtras
   ConcreteDialectTransforms
   concrete_optimizer
