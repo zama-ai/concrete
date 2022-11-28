@@ -111,14 +111,19 @@ llvm::Error checkResult(const mlir::concretelang::TensorLambdaArgument<
   if (!expectedNumElts)
     return expectedNumElts.takeError();
 
+  auto hasError = false;
+  StreamStringError err("result value differ");
   for (size_t i = 0; i < *expectedNumElts; i++) {
+
     if (resValues[i] != expectedValues[i]) {
-      return StreamStringError("result value differ at pos(")
-             << i << "), got " << resValues[i] << " expected "
-             << expectedValues[i];
+      hasError = true;
+      err << " [pos(" << i << "), got " << resValues[i] << " expected "
+          << expectedValues[i] << "]";
     }
   }
-
+  if (hasError) {
+    return err;
+  }
   return llvm::Error::success();
 }
 

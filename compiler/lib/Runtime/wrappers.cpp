@@ -507,7 +507,7 @@ void memref_wop_pbs_crt_buffer(
     auto nb_bits_to_extract = number_of_bits_per_block[i];
 
     auto delta_log = 64 - nb_bits_to_extract;
-    auto in_block = &in_aligned[lwe_big_size * i];
+    auto in_block = &in_aligned[lwe_big_size * i + in_offset];
 
     // trick ( ct - delta/2 + delta/2^4  )
     uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -

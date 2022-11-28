@@ -220,7 +220,13 @@ testParam(std::vector<EndToEndDesc> descs,
       "tests/end_to_end_fixture/end_to_end_leveled.yaml")                      \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
       FHEApplyLookupTable, suite, options, lambdasupport,                      \
-      "tests/end_to_end_fixture/end_to_end_apply_lookup_table.yaml")
+      "tests/end_to_end_fixture/end_to_end_apply_lookup_table.yaml")           \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      FHELinalgLookupTable, suite, options, lambdasupport,                     \
+      "tests/end_to_end_fixture/end_to_end_linalg_2_apply_lookup_table.yaml")  \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      BugReport000, suite, options, lambdasupport,                             \
+      "tests/end_to_end_fixture/bug_report.yaml")
 
 mlir::concretelang::CompilationOptions defaultOptions() {
   mlir::concretelang::CompilationOptions o("main");
