@@ -11,7 +11,6 @@
 #include "linear_algebra.h"
 #include "utils/kernel_dimensions.cuh"
 
-
 template <typename T>
 __global__ void negation(T *output, T *input, uint32_t num_entries) {
 

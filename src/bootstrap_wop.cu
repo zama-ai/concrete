@@ -6,7 +6,7 @@ void cuda_cmux_tree_32(void *v_stream, void *glwe_array_out, void *ggsw_in,
                        uint32_t level_count, uint32_t r,
                        uint32_t max_shared_memory) {
 
-  assert(("Error (GPU Cmux tree): base log should be <= 16", base_log <= 16));
+  assert(("Error (GPU Cmux tree): base log should be <= 32", base_log <= 32));
   assert(("Error (GPU Cmux tree): polynomial size should be one of 512, 1024, "
           "2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||
@@ -61,7 +61,7 @@ void cuda_cmux_tree_64(void *v_stream, void *glwe_array_out, void *ggsw_in,
                        uint32_t level_count, uint32_t r,
                        uint32_t max_shared_memory) {
 
-  assert(("Error (GPU Cmux tree): base log should be <= 16", base_log <= 16));
+  assert(("Error (GPU Cmux tree): base log should be <= 64", base_log <= 64));
   assert(("Error (GPU Cmux tree): polynomial size should be one of 512, 1024, "
           "2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||
@@ -119,8 +119,8 @@ void cuda_extract_bits_32(
     uint32_t lwe_dimension_out, uint32_t glwe_dimension, uint32_t base_log_bsk,
     uint32_t level_count_bsk, uint32_t base_log_ksk, uint32_t level_count_ksk,
     uint32_t number_of_samples) {
-  assert(("Error (GPU extract bits): base log should be <= 16",
-          base_log_bsk <= 16));
+  assert(("Error (GPU extract bits): base log should be <= 32",
+          base_log_bsk <= 32));
   assert(("Error (GPU extract bits): glwe_dimension should be equal to 1",
           glwe_dimension == 1));
   assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
@@ -190,8 +190,8 @@ void cuda_extract_bits_64(
     uint32_t lwe_dimension_out, uint32_t glwe_dimension, uint32_t base_log_bsk,
     uint32_t level_count_bsk, uint32_t base_log_ksk, uint32_t level_count_ksk,
     uint32_t number_of_samples) {
-  assert(("Error (GPU extract bits): base log should be <= 16",
-          base_log_bsk <= 16));
+  assert(("Error (GPU extract bits): base log should be <= 64",
+          base_log_bsk <= 64));
   assert(("Error (GPU extract bits): glwe_dimension should be equal to 1",
           glwe_dimension == 1));
   assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
