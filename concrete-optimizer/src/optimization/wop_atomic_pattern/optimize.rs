@@ -510,7 +510,11 @@ pub fn optimize_one(
     search_space: &SearchSpace,
     caches: &PersistDecompCaches,
 ) -> OptimizationState {
-    let coprimes = crt_decomposition::default_coprimes(precision as Precision);
+    let Ok(coprimes) = crt_decomposition::default_coprimes(precision as Precision) else {
+        return OptimizationState {
+            best_solution: None,
+        }
+    };
     let partitionning = crt_decomposition::precisions_from_coprimes(&coprimes);
     let n_functions = 1;
     let mut state = optimize_raw(

@@ -1,8 +1,8 @@
 use crate::dag::operator::Precision;
 
 // Default heuristic to split in several word
-pub fn default_coprimes(precision: Precision) -> Vec<u64> {
-    match precision {
+pub fn default_coprimes(precision: Precision) -> Result<Vec<u64>, String> {
+    Ok(match precision {
         1 => vec![2],                         // 1 bit
         2 => vec![4],                         // 2 bit
         3 => vec![8],                         // 3 bit
@@ -16,9 +16,9 @@ pub fn default_coprimes(precision: Precision) -> Vec<u64> {
         12 => vec![7, 13, 15, 16],            // 3,4,4,4 bits
         13 | 14 | 15 => vec![11, 13, 15, 16], // 4,4,4,4 bits
         16 => vec![7, 8, 9, 11, 13],          // 4,4,4,4,4 bits
-        0 => panic!("Precision cannot be zero"),
-        _ => panic!("Precision is limited to 16-bits"),
-    }
+        0 => return Err("Precision cannot be zero".into()),
+        _ => return Err("Precision is limited to 16-bits".into()),
+    })
 }
 
 #[allow(clippy::cast_sign_loss)]
@@ -42,9 +42,11 @@ mod tests {
     fn test_coprimes() {
         for precision in 1..=16 {
             let coprimes = default_coprimes(precision);
-            let prod: u64 = coprimes.iter().product();
+            assert!(coprimes.is_ok());
+            let prod: u64 = coprimes.unwrap().iter().product();
             println!("{precision} {prod}");
             assert!((1 << precision) <= prod);
         }
+        assert!(default_coprimes(17).is_err());
     }
 }
