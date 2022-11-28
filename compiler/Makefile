@@ -184,9 +184,9 @@ serverlib: build-initialized
 
 
 GITHUB_URL=https://api.github.com/repos/zama-ai/concrete-compiler-internal
-GITHUB_URL_LIST_ARTIFACTS="${GITHUB_URL}/actions/artifacts"
+GITHUB_URL_LIST_ARTIFACTS="${GITHUB_URL}/actions/artifacts?name=${KEYSETCACHENAME}&per_page=1"
 CURL=curl -H"Accept: application/vnd.github.v3+json" -H"authorization: Bearer ${GITHUB_TOKEN}"
-keysetcache.zip: REDIRECT_URL = $(shell ${CURL} -s ${GITHUB_URL_LIST_ARTIFACTS} | grep -A 10 ${KEYSETCACHENAME} | grep archive_download_url | head -n 1 | grep -o 'http[^"]\+')
+keysetcache.zip: REDIRECT_URL = $(shell ${CURL} -s ${GITHUB_URL_LIST_ARTIFACTS} | grep archive_download_url | grep -o 'http[^"]\+')
 keysetcache.zip:
 	${CURL} --location -o keysetcache.zip ${REDIRECT_URL}
 	du -h keysetcache.zip
