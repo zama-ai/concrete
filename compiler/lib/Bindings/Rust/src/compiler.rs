@@ -1,11 +1,47 @@
 //! Compiler module
 
-use std::path::Path;
+use std::{ffi::CStr, path::Path};
 
 use crate::mlir::ffi::*;
 
 #[derive(Debug)]
 pub struct CompilerError(String);
+
+/// Retreive buffer of the error message from a C struct.
+trait CStructErrorMsg {
+    fn error_msg(&self) -> *mut i8;
+}
+
+/// All C struct can return a pointer to the allocated error message.
+macro_rules! impl_CStructErrorMsg {
+    ([$($t:ty),+]) => {
+        $(impl CStructErrorMsg for $t {
+            fn error_msg(&self) -> *mut i8 {
+                self.error
+            }
+        })*
+    }
+}
+impl_CStructErrorMsg! {[
+    crate::mlir::ffi::LibrarySupport,
+    CompilationResult,
+    LibraryCompilationResult,
+    ServerLambda,
+    ClientParameters,
+    PublicArguments,
+    PublicResult,
+    KeySet,
+    KeySetCache,
+    LambdaArgument
+]}
+
+/// Construct a rust error message from a buffer in the C struct.
+fn get_error_msg_from_ctype<T: CStructErrorMsg>(c_struct: T) -> String {
+    unsafe {
+        let error_msg_cstr = CStr::from_ptr(c_struct.error_msg());
+        String::from(error_msg_cstr.to_str().unwrap())
+    }
+}
 
 /// Parse the MLIR code and returns it.
 ///
@@ -37,7 +73,12 @@ pub fn round_trip(mlir_code: &str) -> Result<String, CompilerError> {
             CompilationTarget_ROUND_TRIP,
         );
         if compilationResultIsNull(compilation_result) {
-            return Err(CompilerError("roundtrip error".to_string()));
+            let error_msg = get_error_msg_from_ctype(compilation_result);
+            compilationResultDestroy(compilation_result);
+            return Err(CompilerError(format!(
+                "Error in compiler (check logs for more info): {}",
+                error_msg
+            )));
         }
         let module_compiled = compilationResultGetModuleString(compilation_result);
         let result_str = String::from_utf8_lossy(std::slice::from_raw_parts(
@@ -86,7 +127,12 @@ impl LibrarySupport {
                 },
             );
             if librarySupportIsNull(support) {
-                return Err(CompilerError("failed creating library support".to_string()));
+                let error_msg = get_error_msg_from_ctype(support);
+                librarySupportDestroy(support);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(LibrarySupport { support })
         }
@@ -110,7 +156,12 @@ impl LibrarySupport {
                 options,
             );
             if libraryCompilationResultIsNull(result) {
-                return Err(CompilerError("library compilation failed".to_string()));
+                let error_msg = get_error_msg_from_ctype(result);
+                libraryCompilationResultDestroy(result);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(result)
         }
@@ -126,7 +177,12 @@ impl LibrarySupport {
         unsafe {
             let server = librarySupportLoadServerLambda(self.support, result);
             if serverLambdaIsNull(server) {
-                return Err(CompilerError("loading server lambda failed".to_string()));
+                let error_msg = get_error_msg_from_ctype(server);
+                serverLambdaDestroy(server);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(server)
         }
@@ -142,9 +198,12 @@ impl LibrarySupport {
         unsafe {
             let params = librarySupportLoadClientParameters(self.support, result);
             if clientParametersIsNull(params) {
-                return Err(CompilerError(
-                    "loading client parameters failed".to_string(),
-                ));
+                let error_msg = get_error_msg_from_ctype(params);
+                clientParametersDestroy(params);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(params)
         }
@@ -160,7 +219,12 @@ impl LibrarySupport {
         unsafe {
             let result = librarySupportServerCall(self.support, server_lambda, args, eval_keys);
             if publicResultIsNull(result) {
-                return Err(CompilerError("failed calling server lambda".to_string()));
+                let error_msg = get_error_msg_from_ctype(result);
+                publicResultDestroy(result);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(result)
         }
@@ -201,9 +265,12 @@ impl ClientSupport {
                         length: cache_path_buffer.len() as size_t,
                     });
                     if keySetCacheIsNull(cache) {
-                        return Err(CompilerError(
-                            "failed creating keyset cache from path".to_string(),
-                        ));
+                        let error_msg = get_error_msg_from_ctype(cache);
+                        keySetCacheDestroy(cache);
+                        return Err(CompilerError(format!(
+                            "Error in compiler (check logs for more info): {}",
+                            error_msg
+                        )));
                     }
                     Some(cache)
                 }
@@ -240,7 +307,12 @@ impl ClientSupport {
                 ),
             };
             if keySetIsNull(key_set) {
-                return Err(CompilerError("getting keyset failed".to_string()));
+                let error_msg = get_error_msg_from_ctype(key_set);
+                keySetDestroy(key_set);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(key_set)
         }
@@ -260,7 +332,12 @@ impl ClientSupport {
                 key_set,
             );
             if publicArgumentsIsNull(public_args) {
-                return Err(CompilerError("encryption failed".to_string()));
+                let error_msg = get_error_msg_from_ctype(public_args);
+                publicArgumentsDestroy(public_args);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(public_args)
         }
@@ -274,7 +351,12 @@ impl ClientSupport {
         unsafe {
             let arg = publicResultDecrypt(result, key_set);
             if lambdaArgumentIsNull(arg) {
-                return Err(CompilerError("decryption failed".to_string()));
+                let error_msg = get_error_msg_from_ctype(arg);
+                lambdaArgumentDestroy(arg);
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    error_msg
+                )));
             }
             Ok(arg)
         }
@@ -310,7 +392,9 @@ mod test {
     fn test_compiler_round_trip_invalid_mlir() {
         let module_to_compile = "bla bla bla";
         let result_str = round_trip(module_to_compile);
-        assert!(matches!(result_str, Err(CompilerError(_))));
+        assert!(
+            matches!(result_str, Err(CompilerError(err)) if err == "Error in compiler (check logs for more info): Could not parse source\n")
+        );
     }
 
     #[test]
@@ -345,6 +429,7 @@ mod test {
         unsafe {
             let lib = Library {
                 ptr: std::ptr::null_mut(),
+                error: std::ptr::null_mut(),
             };
             assert!(libraryIsNull(lib));
         }

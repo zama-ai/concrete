@@ -11,6 +11,14 @@
 #include "mlir/IR/Diagnostics.h"
 #include "llvm/Support/SourceMgr.h"
 
+#define C_STRUCT_CLEANER(c_struct)                                             \
+  auto *cpp = unwrap(c_struct);                                                \
+  if (cpp != NULL)                                                             \
+    delete cpp;                                                                \
+  char *error = getErrorPtr(c_struct);                                         \
+  if (error != NULL)                                                           \
+    delete[] error;
+
 /// ********** CompilationOptions CAPI *****************************************
 
 CompilationOptions
@@ -66,11 +74,11 @@ CompilerEngine compilerEngineCreate() {
   return wrap(engine);
 }
 
-void compilerEngineDestroy(CompilerEngine engine) { delete unwrap(engine); }
+void compilerEngineDestroy(CompilerEngine engine){C_STRUCT_CLEANER(engine)}
 
 /// Map C compilationTarget to Cpp
-llvm::Expected<mlir::concretelang::CompilerEngine::Target>
-targetConvertToCppFromC(CompilationTarget target) {
+llvm::Expected<mlir::concretelang::CompilerEngine::
+                   Target> targetConvertToCppFromC(CompilationTarget target) {
   switch (target) {
   case ROUND_TRIP:
     return mlir::concretelang::CompilerEngine::Target::ROUND_TRIP;
@@ -104,13 +112,13 @@ CompilationResult compilerEngineCompile(CompilerEngine engine,
   std::string module_str(module.data, module.length);
   auto targetCppOrError = targetConvertToCppFromC(target);
   if (!targetCppOrError) { // invalid target
-    llvm::errs() << llvm::toString(targetCppOrError.takeError());
-    return wrap((mlir::concretelang::CompilerEngine::CompilationResult *)NULL);
+    return wrap((mlir::concretelang::CompilerEngine::CompilationResult *)NULL,
+                llvm::toString(targetCppOrError.takeError()));
   }
   auto retOrError = unwrap(engine)->compile(module_str, targetCppOrError.get());
   if (!retOrError) { // compilation error
-    llvm::errs() << llvm::toString(retOrError.takeError());
-    return wrap((mlir::concretelang::CompilerEngine::CompilationResult *)NULL);
+    return wrap((mlir::concretelang::CompilerEngine::CompilationResult *)NULL,
+                llvm::toString(retOrError.takeError()));
   }
   return wrap(new mlir::concretelang::CompilerEngine::CompilationResult(
       std::move(retOrError.get())));
@@ -138,9 +146,8 @@ void compilationResultDestroyModuleString(MlirStringRef str) {
   delete str.data;
 }
 
-void compilationResultDestroy(CompilationResult result) {
-  delete unwrap(result);
-}
+void compilationResultDestroy(CompilationResult result){
+    C_STRUCT_CLEANER(result)}
 
 /// ********** Library CAPI ****************************************************
 
@@ -153,21 +160,22 @@ Library libraryCreate(MlirStringRef outputDirPath,
       outputDirPathStr, runtimeLibraryPathStr, cleanUp));
 }
 
-void libraryDestroy(Library lib) { delete unwrap(lib); }
+void libraryDestroy(Library lib) { C_STRUCT_CLEANER(lib) }
 
 /// ********** LibraryCompilationResult CAPI ***********************************
 
-void libraryCompilationResultDestroy(LibraryCompilationResult result) {
-  delete unwrap(result);
-}
+void libraryCompilationResultDestroy(LibraryCompilationResult result){
+    C_STRUCT_CLEANER(result)}
 
 /// ********** LibrarySupport CAPI *********************************************
 
 LibrarySupport
-librarySupportCreate(MlirStringRef outputDirPath,
-                     MlirStringRef runtimeLibraryPath, bool generateSharedLib,
-                     bool generateStaticLib, bool generateClientParameters,
-                     bool generateCompilationFeedback, bool generateCppHeader) {
+    librarySupportCreate(MlirStringRef outputDirPath,
+                         MlirStringRef runtimeLibraryPath,
+                         bool generateSharedLib, bool generateStaticLib,
+                         bool generateClientParameters,
+                         bool generateCompilationFeedback,
+                         bool generateCppHeader) {
   std::string outputDirPathStr(outputDirPath.data, outputDirPath.length);
   std::string runtimeLibraryPathStr(runtimeLibraryPath.data,
                                     runtimeLibraryPath.length);
@@ -183,8 +191,8 @@ LibraryCompilationResult librarySupportCompile(LibrarySupport support,
   std::string moduleStr(module.data, module.length);
   auto retOrError = unwrap(support)->compile(moduleStr, *unwrap(options));
   if (!retOrError) {
-    llvm::errs() << llvm::toString(retOrError.takeError());
-    return wrap((mlir::concretelang::LibraryCompilationResult *)NULL);
+    return wrap((mlir::concretelang::LibraryCompilationResult *)NULL,
+                llvm::toString(retOrError.takeError()));
   }
   return wrap(new mlir::concretelang::LibraryCompilationResult(
       *retOrError.get().release()));
@@ -194,8 +202,8 @@ ServerLambda librarySupportLoadServerLambda(LibrarySupport support,
                                             LibraryCompilationResult result) {
   auto serverLambdaOrError = unwrap(support)->loadServerLambda(*unwrap(result));
   if (!serverLambdaOrError) {
-    llvm::errs() << llvm::toString(serverLambdaOrError.takeError());
-    return wrap((mlir::concretelang::serverlib::ServerLambda *)NULL);
+    return wrap((mlir::concretelang::serverlib::ServerLambda *)NULL,
+                llvm::toString(serverLambdaOrError.takeError()));
   }
   return wrap(new mlir::concretelang::serverlib::ServerLambda(
       serverLambdaOrError.get()));
@@ -206,8 +214,8 @@ librarySupportLoadClientParameters(LibrarySupport support,
                                    LibraryCompilationResult result) {
   auto paramsOrError = unwrap(support)->loadClientParameters(*unwrap(result));
   if (!paramsOrError) {
-    llvm::errs() << llvm::toString(paramsOrError.takeError());
-    return wrap((mlir::concretelang::clientlib::ClientParameters *)NULL);
+    return wrap((mlir::concretelang::clientlib::ClientParameters *)NULL,
+                llvm::toString(paramsOrError.takeError()));
   }
   return wrap(
       new mlir::concretelang::clientlib::ClientParameters(paramsOrError.get()));
@@ -220,21 +228,21 @@ PublicResult librarySupportServerCall(LibrarySupport support,
   auto resultOrError = unwrap(support)->serverCall(
       *unwrap(server_lambda), *unwrap(args), *unwrap(evalKeys));
   if (!resultOrError) {
-    llvm::errs() << llvm::toString(resultOrError.takeError());
-    return wrap((mlir::concretelang::clientlib::PublicResult *)NULL);
+    return wrap((mlir::concretelang::clientlib::PublicResult *)NULL,
+                llvm::toString(resultOrError.takeError()));
   }
   return wrap(resultOrError.get().release());
 }
 
-void librarySupportDestroy(LibrarySupport support) { delete unwrap(support); }
+void librarySupportDestroy(LibrarySupport support) { C_STRUCT_CLEANER(support) }
 
 /// ********** ServerLamda CAPI ************************************************
 
-void serverLambdaDestroy(ServerLambda server) { delete unwrap(server); }
+void serverLambdaDestroy(ServerLambda server) { C_STRUCT_CLEANER(server) }
 
 /// ********** ClientParameters CAPI *******************************************
 
-void clientParametersDestroy(ClientParameters params) { delete unwrap(params); }
+void clientParametersDestroy(ClientParameters params){C_STRUCT_CLEANER(params)}
 
 /// ********** KeySet CAPI *****************************************************
 
@@ -243,8 +251,8 @@ KeySet keySetGenerate(ClientParameters params, uint64_t seed_msb,
   auto keySet = mlir::concretelang::clientlib::KeySet::generate(
       *unwrap(params), seed_msb, seed_lsb);
   if (keySet.has_error()) {
-    llvm::errs() << keySet.error().mesg;
-    return wrap((mlir::concretelang::clientlib::KeySet *)NULL);
+    return wrap((mlir::concretelang::clientlib::KeySet *)NULL,
+                keySet.error().mesg);
   }
   return wrap(keySet.value().release());
 }
@@ -254,7 +262,7 @@ EvaluationKeys keySetGetEvaluationKeys(KeySet keySet) {
       unwrap(keySet)->evaluationKeys()));
 }
 
-void keySetDestroy(KeySet keySet) { delete unwrap(keySet); }
+void keySetDestroy(KeySet keySet){C_STRUCT_CLEANER(keySet)}
 
 /// ********** KeySetCache CAPI ************************************************
 
@@ -269,18 +277,20 @@ KeySet keySetCacheLoadOrGenerateKeySet(KeySetCache cache,
   auto keySetOrError =
       unwrap(cache)->generate(*unwrap(params), seed_msb, seed_lsb);
   if (keySetOrError.has_error()) {
-    llvm::errs() << keySetOrError.error().mesg;
-    return wrap((mlir::concretelang::clientlib::KeySet *)NULL);
+    return wrap((mlir::concretelang::clientlib::KeySet *)NULL,
+                keySetOrError.error().mesg);
   }
   return wrap(keySetOrError.value().release());
 }
 
-void keySetCacheDestroy(KeySetCache keySetCache) { delete unwrap(keySetCache); }
+void keySetCacheDestroy(KeySetCache keySetCache) {
+  C_STRUCT_CLEANER(keySetCache)
+}
 
 /// ********** EvaluationKeys CAPI *********************************************
 
 void evaluationKeysDestroy(EvaluationKeys evaluationKeys) {
-  delete unwrap(evaluationKeys);
+  C_STRUCT_CLEANER(evaluationKeys);
 }
 
 /// ********** LambdaArgument CAPI *********************************************
@@ -334,21 +344,20 @@ PublicArguments lambdaArgumentEncrypt(const LambdaArgument *lambdaArgs,
       mlir::concretelang::LambdaSupport<int, int>::exportArguments(
           *unwrap(params), *unwrap(keySet), args);
   if (!publicArgsOrError) {
-    llvm::errs() << llvm::toString(publicArgsOrError.takeError());
-    return wrap((mlir::concretelang::clientlib::PublicArguments *)NULL);
+    return wrap((mlir::concretelang::clientlib::PublicArguments *)NULL,
+                llvm::toString(publicArgsOrError.takeError()));
   }
   return wrap(publicArgsOrError.get().release());
 }
 
 void lambdaArgumentDestroy(LambdaArgument lambdaArg) {
-  delete unwrap(lambdaArg);
+  C_STRUCT_CLEANER(lambdaArg)
 }
 
 /// ********** PublicArguments CAPI ********************************************
 
-void publicArgumentsDestroy(PublicArguments publicArgs) {
-  delete unwrap(publicArgs);
-}
+void publicArgumentsDestroy(PublicArguments publicArgs){
+    C_STRUCT_CLEANER(publicArgs)}
 
 /// ********** PublicResult CAPI ***********************************************
 
@@ -358,12 +367,12 @@ LambdaArgument publicResultDecrypt(PublicResult publicResult, KeySet keySet) {
           std::unique_ptr<mlir::concretelang::LambdaArgument>>(
           *unwrap(keySet), *unwrap(publicResult));
   if (!lambdaArgOrError) {
-    llvm::errs() << llvm::toString(lambdaArgOrError.takeError());
-    return wrap((mlir::concretelang::LambdaArgument *)NULL);
+    return wrap((mlir::concretelang::LambdaArgument *)NULL,
+                llvm::toString(lambdaArgOrError.takeError()));
   }
   return wrap(lambdaArgOrError.get().release());
 }
 
 void publicResultDestroy(PublicResult publicResult) {
-  delete unwrap(publicResult);
+  C_STRUCT_CLEANER(publicResult)
 }

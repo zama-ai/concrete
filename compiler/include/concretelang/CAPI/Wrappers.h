@@ -9,33 +9,54 @@
 #include "concretelang-c/Support/CompilerEngine.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/LibrarySupport.h"
-#include "mlir/CAPI/Wrap.h"
 
-DEFINE_C_API_PTR_METHODS(CompilerEngine, mlir::concretelang::CompilerEngine)
-DEFINE_C_API_PTR_METHODS(CompilationContext,
-                         mlir::concretelang::CompilationContext)
-DEFINE_C_API_PTR_METHODS(CompilationResult,
-                         mlir::concretelang::CompilerEngine::CompilationResult)
-DEFINE_C_API_PTR_METHODS(Library, mlir::concretelang::CompilerEngine::Library)
-DEFINE_C_API_PTR_METHODS(LibraryCompilationResult,
-                         mlir::concretelang::LibraryCompilationResult)
-DEFINE_C_API_PTR_METHODS(LibrarySupport, mlir::concretelang::LibrarySupport)
-DEFINE_C_API_PTR_METHODS(CompilationOptions,
-                         mlir::concretelang::CompilationOptions)
-DEFINE_C_API_PTR_METHODS(OptimizerConfig, mlir::concretelang::optimizer::Config)
-DEFINE_C_API_PTR_METHODS(ServerLambda,
-                         mlir::concretelang::serverlib::ServerLambda)
-DEFINE_C_API_PTR_METHODS(ClientParameters,
-                         mlir::concretelang::clientlib::ClientParameters)
-DEFINE_C_API_PTR_METHODS(KeySet, mlir::concretelang::clientlib::KeySet)
-DEFINE_C_API_PTR_METHODS(KeySetCache,
-                         mlir::concretelang::clientlib::KeySetCache)
-DEFINE_C_API_PTR_METHODS(EvaluationKeys,
-                         mlir::concretelang::clientlib::EvaluationKeys)
-DEFINE_C_API_PTR_METHODS(LambdaArgument, mlir::concretelang::LambdaArgument)
-DEFINE_C_API_PTR_METHODS(PublicArguments,
-                         mlir::concretelang::clientlib::PublicArguments)
-DEFINE_C_API_PTR_METHODS(PublicResult,
-                         mlir::concretelang::clientlib::PublicResult)
+/// Add a mechanism to go from Cpp objects to C-struct, with the ability to
+/// represent errors. Also the other way arround.
+#define DEFINE_C_API_PTR_METHODS_WITH_ERROR(name, cpptype)                     \
+  static inline name wrap(cpptype *cpp) { return name{cpp, (char *)NULL}; }    \
+  static inline name wrap(cpptype *cpp, std::string errorStr) {                \
+    char *error = new char[errorStr.size()];                                   \
+    strcpy(error, errorStr.c_str());                                           \
+    return name{(cpptype *)NULL, error};                                       \
+  }                                                                            \
+  static inline cpptype *unwrap(name c) {                                      \
+    return static_cast<cpptype *>(c.ptr);                                      \
+  }                                                                            \
+  static inline char *getErrorPtr(name c) { return c.error; }
+
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(CompilerEngine,
+                                    mlir::concretelang::CompilerEngine)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(CompilationContext,
+                                    mlir::concretelang::CompilationContext)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(
+    CompilationResult, mlir::concretelang::CompilerEngine::CompilationResult)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(Library,
+                                    mlir::concretelang::CompilerEngine::Library)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(
+    LibraryCompilationResult, mlir::concretelang::LibraryCompilationResult)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(LibrarySupport,
+                                    mlir::concretelang::LibrarySupport)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(CompilationOptions,
+                                    mlir::concretelang::CompilationOptions)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(OptimizerConfig,
+                                    mlir::concretelang::optimizer::Config)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(ServerLambda,
+                                    mlir::concretelang::serverlib::ServerLambda)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(
+    ClientParameters, mlir::concretelang::clientlib::ClientParameters)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(KeySet,
+                                    mlir::concretelang::clientlib::KeySet)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(KeySetCache,
+                                    mlir::concretelang::clientlib::KeySetCache)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(
+    EvaluationKeys, mlir::concretelang::clientlib::EvaluationKeys)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(LambdaArgument,
+                                    mlir::concretelang::LambdaArgument)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(
+    PublicArguments, mlir::concretelang::clientlib::PublicArguments)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(PublicResult,
+                                    mlir::concretelang::clientlib::PublicResult)
+
+#undef DEFINE_C_API_PTR_METHODS_WITH_ERROR
 
 #endif

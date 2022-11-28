@@ -12,15 +12,15 @@
 extern "C" {
 #endif
 
-// TODO: add a char* to the struct that can return an error message in case of
-// an error (where ptr would be null). Error messages can be returned using
-// llvm::toString(error.takeError()) and allocating a buffer for the message and
-// copy it. The buffer can later be freed during struct destruction.
-/// Opaque type declarations. Refer to llvm-project/mlir/include/mlir-c/IR.h for
-/// more info
+/// Opaque type declarations. Inspired from
+/// llvm-project/mlir/include/mlir-c/IR.h
+///
+/// Adds an error pointer to an allocated buffer holding the error message if
+/// any.
 #define DEFINE_C_API_STRUCT(name, storage)                                     \
   struct name {                                                                \
     storage *ptr;                                                              \
+    char *error;                                                               \
   };                                                                           \
   typedef struct name name
 
