@@ -262,8 +262,8 @@ KeySet::generatePackingKey(PackingKeySwitchID id, PackingKeySwitchParam param) {
   // Allocate the packing keyswitch key
   LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *fpksk;
   CAPI_ASSERT_ERROR(
-      default_engine_generate_new_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_unchecked_u64(
-          engine, inputSk->second.second, output_glwe_sk, param.baseLog,
+      default_parallel_engine_generate_new_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_unchecked_u64(
+          par_engine, inputSk->second.second, output_glwe_sk, param.baseLog,
           param.level, param.variance, &fpksk));
 
   // Store the keyswitch key
