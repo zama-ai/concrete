@@ -91,6 +91,9 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   assert(serverLambda);
   auto evaluationKeys = (*keySet)->evaluationKeys();
 
+  // Warmup
+  assert(support.serverCall(*serverLambda, **publicArguments, evaluationKeys));
+
   for (auto _ : state) {
     assert(
         support.serverCall(*serverLambda, **publicArguments, evaluationKeys));
