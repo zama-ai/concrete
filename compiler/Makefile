@@ -295,7 +295,7 @@ $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 $(BENCHMARK_CPU_DIR):
 	mkdir -p $@
 
-generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml
+generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_leveled.yaml
 
 build-benchmarks: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_benchmark

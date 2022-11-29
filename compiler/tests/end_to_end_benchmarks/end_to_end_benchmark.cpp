@@ -98,7 +98,8 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
 }
 
 static int registerEndToEndTestFromFile(std::string prefix, std::string path,
-                                        size_t stackSizeRequirement = 0) {
+                                        size_t stackSizeRequirement = 0,
+                                        bool only_evaluate = false) {
   auto registe = [&](std::string optionsName,
                      mlir::concretelang::CompilationOptions options) {
     llvm::for_each(loadEndToEndDesc(path), [&](EndToEndDesc &description) {
@@ -111,21 +112,23 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
         return s.str();
       };
       benchmark::RegisterBenchmark(
-          benchName("Compile").c_str(), [=](::benchmark::State &st) {
-            BM_Compile(st, description, support, options);
-          });
-      benchmark::RegisterBenchmark(
-          benchName("KeyGen").c_str(), [=](::benchmark::State &st) {
-            BM_KeyGen(st, description, support, options);
-          });
-      benchmark::RegisterBenchmark(
-          benchName("ExportArguments").c_str(), [=](::benchmark::State &st) {
-            BM_ExportArguments(st, description, support, options);
-          });
-      benchmark::RegisterBenchmark(
           benchName("Evaluate").c_str(), [=](::benchmark::State &st) {
             BM_Evaluate(st, description, support, options);
           });
+      if (!only_evaluate) {
+        benchmark::RegisterBenchmark(
+            benchName("Compile").c_str(), [=](::benchmark::State &st) {
+              BM_Compile(st, description, support, options);
+            });
+        benchmark::RegisterBenchmark(
+            benchName("KeyGen").c_str(), [=](::benchmark::State &st) {
+              BM_KeyGen(st, description, support, options);
+            });
+        benchmark::RegisterBenchmark(
+            benchName("ExportArguments").c_str(), [=](::benchmark::State &st) {
+              BM_ExportArguments(st, description, support, options);
+            });
+      }
       return;
     });
   };
@@ -146,11 +149,28 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   return 1;
 }
 
-auto _ = {registerEndToEndTestFromFile(
-              "FHELinalg", "tests/end_to_end_fixture/benchmarks_cpu/"
-                           "end_to_end_apply_lookup_table.yaml"),
-          registerEndToEndTestFromFile(
-              "FHELinalgTLU", "tests/end_to_end_fixture/benchmarks_cpu/"
-                              "end_to_end_linalg_apply_lookup_table.yaml")};
+auto stackSizeRequirement = 0;
+auto _ = {
+    registerEndToEndTestFromFile("FHELinalgLeveled",
+                                 "tests/end_to_end_fixture/benchmarks_cpu/"
+                                 "end_to_end_leveled.yaml",
+                                 stackSizeRequirement,
+                                 /* only_evaluate = */ false),
+    // For lookup table bench we only bench the keygen time on simple lookup
+    // table bench, to avoid
+    // bench the same keygen several times as it take times
+    registerEndToEndTestFromFile("FHELinalg",
+                                 "tests/end_to_end_fixture/benchmarks_cpu/"
+                                 "end_to_end_apply_lookup_table.yaml",
+                                 stackSizeRequirement,
+                                 /* only_evaluate = */ false),
+    // So for the other lookup table benchmarks we only test the evaluataion
+    // times
+    registerEndToEndTestFromFile("FHELinalgTLU",
+                                 "tests/end_to_end_fixture/benchmarks_cpu/"
+                                 "end_to_end_linalg_apply_lookup_table.yaml",
+                                 stackSizeRequirement,
+                                 /* only_evaluate = */ true),
+};
 
 BENCHMARK_MAIN();
