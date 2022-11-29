@@ -293,6 +293,11 @@ $(BENCHMARK_CPU_DIR):
 
 generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_leveled.yaml
 
+generate-gpu-benchmarks:
+	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py \
+	--min_bitwidth 1 --max_bitwidth 7 --n_ct 1 128 1024 2048 8192 \
+	 > tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml
+
 build-benchmarks: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
 
