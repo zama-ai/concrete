@@ -44,6 +44,7 @@ DEFINE_C_API_STRUCT(EvaluationKeys, void);
 DEFINE_C_API_STRUCT(LambdaArgument, void);
 DEFINE_C_API_STRUCT(PublicArguments, void);
 DEFINE_C_API_STRUCT(PublicResult, void);
+DEFINE_C_API_STRUCT(CompilationFeedback, void);
 
 #undef DEFINE_C_API_STRUCT
 
@@ -69,6 +70,7 @@ DEFINE_NULL_PTR_CHECKER(evaluationKeysIsNull, EvaluationKeys);
 DEFINE_NULL_PTR_CHECKER(lambdaArgumentIsNull, LambdaArgument);
 DEFINE_NULL_PTR_CHECKER(publicArgumentsIsNull, PublicArguments);
 DEFINE_NULL_PTR_CHECKER(publicResultIsNull, PublicResult);
+DEFINE_NULL_PTR_CHECKER(compilationFeedbackIsNull, CompilationFeedback);
 
 #undef DEFINE_NULL_PTR_CHECKER
 
@@ -167,6 +169,9 @@ MLIR_CAPI_EXPORTED ServerLambda librarySupportLoadServerLambda(
 MLIR_CAPI_EXPORTED ClientParameters librarySupportLoadClientParameters(
     LibrarySupport support, LibraryCompilationResult result);
 
+MLIR_CAPI_EXPORTED CompilationFeedback librarySupportLoadCompilationFeedback(
+    LibrarySupport support, LibraryCompilationResult result);
+
 MLIR_CAPI_EXPORTED PublicResult
 librarySupportServerCall(LibrarySupport support, ServerLambda server,
                          PublicArguments args, EvaluationKeys evalKeys);
@@ -249,6 +254,35 @@ MLIR_CAPI_EXPORTED LambdaArgument publicResultDecrypt(PublicResult publicResult,
                                                       KeySet keySet);
 
 MLIR_CAPI_EXPORTED void publicResultDestroy(PublicResult publicResult);
+
+/// ********** CompilationFeedback CAPI ****************************************
+
+MLIR_CAPI_EXPORTED double
+compilationFeedbackGetComplexity(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED double
+compilationFeedbackGetPError(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED double
+compilationFeedbackGetGlobalPError(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED uint64_t
+compilationFeedbackGetTotalSecretKeysSize(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED uint64_t
+compilationFeedbackGetTotalBootstrapKeysSize(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED uint64_t
+compilationFeedbackGetTotalKeyswitchKeysSize(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED uint64_t
+compilationFeedbackGetTotalInputsSize(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED uint64_t
+compilationFeedbackGetTotalOutputsSize(CompilationFeedback feedback);
+
+MLIR_CAPI_EXPORTED void
+compilationFeedbackDestroy(CompilationFeedback feedback);
 
 #ifdef __cplusplus
 }

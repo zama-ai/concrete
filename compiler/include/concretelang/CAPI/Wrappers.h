@@ -56,6 +56,8 @@ DEFINE_C_API_PTR_METHODS_WITH_ERROR(
     PublicArguments, mlir::concretelang::clientlib::PublicArguments)
 DEFINE_C_API_PTR_METHODS_WITH_ERROR(PublicResult,
                                     mlir::concretelang::clientlib::PublicResult)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(CompilationFeedback,
+                                    mlir::concretelang::CompilationFeedback)
 
 #undef DEFINE_C_API_PTR_METHODS_WITH_ERROR
 

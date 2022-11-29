@@ -21,6 +21,10 @@
   if (error != NULL)                                                           \
     delete[] error;
 
+/// ********** Utilities *******************************************************
+
+void mlirStringRefDestroy(MlirStringRef str) { delete[] str.data; }
+
 /// ********** CompilationOptions CAPI *****************************************
 
 CompilationOptions
@@ -145,7 +149,7 @@ MlirStringRef compilationResultGetModuleString(CompilationResult result) {
 }
 
 void compilationResultDestroyModuleString(MlirStringRef str) {
-  delete str.data;
+  mlirStringRefDestroy(str);
 }
 
 void compilationResultDestroy(CompilationResult result){
@@ -221,6 +225,19 @@ librarySupportLoadClientParameters(LibrarySupport support,
   }
   return wrap(
       new mlir::concretelang::clientlib::ClientParameters(paramsOrError.get()));
+}
+
+CompilationFeedback
+librarySupportLoadCompilationFeedback(LibrarySupport support,
+                                      LibraryCompilationResult result) {
+  auto feedbackOrError =
+      unwrap(support)->loadCompilationFeedback(*unwrap(result));
+  if (!feedbackOrError) {
+    return wrap((mlir::concretelang::CompilationFeedback *)NULL,
+                llvm::toString(feedbackOrError.takeError()));
+  }
+  return wrap(
+      new mlir::concretelang::CompilationFeedback(feedbackOrError.get()));
 }
 
 PublicResult librarySupportServerCall(LibrarySupport support,
@@ -532,4 +549,45 @@ LambdaArgument publicResultDecrypt(PublicResult publicResult, KeySet keySet) {
 
 void publicResultDestroy(PublicResult publicResult) {
   C_STRUCT_CLEANER(publicResult)
+}
+
+/// ********** CompilationFeedback CAPI ****************************************
+
+double compilationFeedbackGetComplexity(CompilationFeedback feedback) {
+  return unwrap(feedback)->complexity;
+}
+
+double compilationFeedbackGetPError(CompilationFeedback feedback) {
+  return unwrap(feedback)->pError;
+}
+
+double compilationFeedbackGetGlobalPError(CompilationFeedback feedback) {
+  return unwrap(feedback)->globalPError;
+}
+
+uint64_t
+compilationFeedbackGetTotalSecretKeysSize(CompilationFeedback feedback) {
+  return unwrap(feedback)->totalSecretKeysSize;
+}
+
+uint64_t
+compilationFeedbackGetTotalBootstrapKeysSize(CompilationFeedback feedback) {
+  return unwrap(feedback)->totalBootstrapKeysSize;
+}
+
+uint64_t
+compilationFeedbackGetTotalKeyswitchKeysSize(CompilationFeedback feedback) {
+  return unwrap(feedback)->totalKeyswitchKeysSize;
+}
+
+uint64_t compilationFeedbackGetTotalInputsSize(CompilationFeedback feedback) {
+  return unwrap(feedback)->totalInputsSize;
+}
+
+uint64_t compilationFeedbackGetTotalOutputsSize(CompilationFeedback feedback) {
+  return unwrap(feedback)->totalOutputsSize;
+}
+
+void compilationFeedbackDestroy(CompilationFeedback feedback) {
+  C_STRUCT_CLEANER(feedback)
 }
