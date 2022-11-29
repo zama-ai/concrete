@@ -509,4 +509,88 @@ mod test {
             assert_eq!(result, 6);
         }
     }
+
+    #[test]
+    fn test_tensor_lambda_argument() {
+        unsafe {
+            let mut tensor_data = [1, 2, 3, 73u64];
+            let mut tensor_dims = [2, 2i64];
+            let tensor_arg =
+                lambdaArgumentFromTensorU64(tensor_data.as_mut_ptr(), tensor_dims.as_mut_ptr(), 2);
+            assert!(!lambdaArgumentIsNull(tensor_arg));
+            assert!(!lambdaArgumentIsScalar(tensor_arg));
+            assert!(lambdaArgumentIsTensor(tensor_arg));
+            assert_eq!(lambdaArgumentGetTensorRank(tensor_arg), 2);
+            assert_eq!(lambdaArgumentGetTensorDataSize(tensor_arg), 4);
+            let mut dims: [i64; 2] = [0, 0];
+            assert_eq!(
+                lambdaArgumentGetTensorDims(tensor_arg, dims.as_mut_ptr()),
+                true
+            );
+            assert_eq!(dims, tensor_dims);
+
+            let mut data: [u64; 4] = [0; 4];
+            assert_eq!(
+                lambdaArgumentGetTensorData(tensor_arg, data.as_mut_ptr()),
+                true
+            );
+            assert_eq!(data, tensor_data);
+            lambdaArgumentDestroy(tensor_arg);
+        }
+    }
+
+    #[test]
+    fn test_compiler_compile_and_exec_tensor_args() {
+        unsafe {
+            let module_to_compile = "
+            func.func @main(%arg0: tensor<2x3x!FHE.eint<5>>, %arg1: tensor<2x3x!FHE.eint<5>>) -> tensor<2x3x!FHE.eint<5>> {
+                    %0 = \"FHELinalg.add_eint\"(%arg0, %arg1) : (tensor<2x3x!FHE.eint<5>>, tensor<2x3x!FHE.eint<5>>) -> tensor<2x3x!FHE.eint<5>>
+                    return %0 : tensor<2x3x!FHE.eint<5>>
+                }";
+            let runtime_library_path = match env::var("CONCRETE_COMPILER_BUILD_DIR") {
+                Ok(val) => val + "/lib/libConcretelangRuntime.so",
+                Err(_e) => "".to_string(),
+            };
+            let temp_dir = TempDir::new("rust_test_compiler_compile_and_exec_tensor_args").unwrap();
+            let lib_support = LibrarySupport::new(
+                temp_dir.path().to_str().unwrap(),
+                runtime_library_path.as_str(),
+            )
+            .unwrap();
+            // compile
+            let result = lib_support.compile(module_to_compile, None).unwrap();
+            // loading materials from compilation
+            // - server_lambda: used for execution
+            // - client_parameters: used for keygen, encryption, and evaluation keys
+            let server_lambda = lib_support.load_server_lambda(result).unwrap();
+            let client_params = lib_support.load_client_parameters(result).unwrap();
+            let client_support = ClientSupport::new(client_params, None).unwrap();
+            let key_set = client_support.keyset(None, None).unwrap();
+            let eval_keys = keySetGetEvaluationKeys(key_set);
+            // build lambda arguments from scalar and encrypt them
+            let args = [
+                lambdaArgumentFromTensorU8([1, 2, 3, 4, 5, 6].as_mut_ptr(), [2, 3].as_mut_ptr(), 2),
+                lambdaArgumentFromTensorU8([1, 4, 7, 4, 2, 9].as_mut_ptr(), [2, 3].as_mut_ptr(), 2),
+            ];
+            let encrypted_args = client_support.encrypt_args(&args, key_set).unwrap();
+            // execute the compiled function on the encrypted arguments
+            let encrypted_result = lib_support
+                .server_lambda_call(server_lambda, encrypted_args, eval_keys)
+                .unwrap();
+            // decrypt the result of execution
+            let result_arg = client_support
+                .decrypt_result(encrypted_result, key_set)
+                .unwrap();
+            // check the tensor dims value from the result lambda argument
+            assert_eq!(lambdaArgumentGetTensorRank(result_arg), 2);
+            assert_eq!(lambdaArgumentGetTensorDataSize(result_arg), 6);
+            let mut dims = [0, 0];
+            assert!(lambdaArgumentGetTensorDims(result_arg, dims.as_mut_ptr()));
+            assert_eq!(dims, [2, 3]);
+            // check the tensor data from the result lambda argument
+            let mut data = [0; 6];
+            assert!(lambdaArgumentGetTensorData(result_arg, data.as_mut_ptr()));
+            assert_eq!(data, [2, 6, 10, 8, 7, 15]);
+        }
+    }
 }
