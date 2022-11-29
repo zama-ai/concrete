@@ -78,6 +78,14 @@ DEFINE_NULL_PTR_CHECKER(compilationFeedbackIsNull, CompilationFeedback);
 /// Cpp object referenced, and a destroy function that does free this allocated
 /// memory.
 
+/// ********** Utilities *******************************************************
+
+/// Destroy string references created by the compiler.
+///
+/// This is not supposed to destroy any string ref, but only the ones we have
+/// allocated memory for and know how to free.
+MLIR_CAPI_EXPORTED void mlirStringRefDestroy(MlirStringRef str);
+
 /// ********** CompilationTarget CAPI ******************************************
 
 enum CompilationTarget {
@@ -124,12 +132,9 @@ compilerEngineCompileSetOptions(CompilerEngine engine,
 
 /// Get a string reference holding the textual representation of the compiled
 /// module. The returned `MlirStringRef` should be destroyed using
-/// `compilationResultDestroyModuleString` to free memory.
+/// `mlirStringRefDestroy` to free memory.
 MLIR_CAPI_EXPORTED MlirStringRef
 compilationResultGetModuleString(CompilationResult result);
-
-/// Free memory allocated for the module string.
-MLIR_CAPI_EXPORTED void compilationResultDestroyModuleString(MlirStringRef str);
 
 MLIR_CAPI_EXPORTED void compilationResultDestroy(CompilationResult result);
 
@@ -175,6 +180,12 @@ MLIR_CAPI_EXPORTED CompilationFeedback librarySupportLoadCompilationFeedback(
 MLIR_CAPI_EXPORTED PublicResult
 librarySupportServerCall(LibrarySupport support, ServerLambda server,
                          PublicArguments args, EvaluationKeys evalKeys);
+
+MLIR_CAPI_EXPORTED MlirStringRef
+librarySupportGetSharedLibPath(LibrarySupport support);
+
+MLIR_CAPI_EXPORTED MlirStringRef
+librarySupportGetClientParametersPath(LibrarySupport support);
 
 MLIR_CAPI_EXPORTED void librarySupportDestroy(LibrarySupport support);
 

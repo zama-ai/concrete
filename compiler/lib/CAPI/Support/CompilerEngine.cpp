@@ -253,6 +253,22 @@ PublicResult librarySupportServerCall(LibrarySupport support,
   return wrap(resultOrError.get().release());
 }
 
+MlirStringRef librarySupportGetSharedLibPath(LibrarySupport support) {
+  auto path = unwrap(support)->getSharedLibPath();
+  // allocate buffer and copy module string
+  char *buffer = new char[path.length() + 1];
+  strcpy(buffer, path.c_str());
+  return mlirStringRefCreate(buffer, path.length());
+}
+
+MlirStringRef librarySupportGetClientParametersPath(LibrarySupport support) {
+  auto path = unwrap(support)->getClientParametersPath();
+  // allocate buffer and copy module string
+  char *buffer = new char[path.length() + 1];
+  strcpy(buffer, path.c_str());
+  return mlirStringRefCreate(buffer, path.length());
+}
+
 void librarySupportDestroy(LibrarySupport support) { C_STRUCT_CLEANER(support) }
 
 /// ********** ServerLamda CAPI ************************************************

@@ -43,6 +43,21 @@ fn get_error_msg_from_ctype<T: CStructErrorMsg>(c_struct: T) -> String {
     }
 }
 
+/// Create string from an MlirStringRef and free its memory.
+///
+/// # SAFETY
+///
+/// This should only be used with string refs returned by the compiler.
+unsafe fn mlir_string_ref_to_string(str_ref: MlirStringRef) -> String {
+    let result = String::from_utf8_lossy(std::slice::from_raw_parts(
+        str_ref.data as *const u8,
+        str_ref.length as usize,
+    ))
+    .to_string();
+    mlirStringRefDestroy(str_ref);
+    result
+}
+
 /// Parse the MLIR code and returns it.
 ///
 /// The function parse the provided MLIR textual representation and returns it. It would fail with
@@ -81,12 +96,7 @@ pub fn round_trip(mlir_code: &str) -> Result<String, CompilerError> {
             )));
         }
         let module_compiled = compilationResultGetModuleString(compilation_result);
-        let result_str = String::from_utf8_lossy(std::slice::from_raw_parts(
-            module_compiled.data as *const u8,
-            module_compiled.length as usize,
-        ))
-        .to_string();
-        compilationResultDestroyModuleString(module_compiled);
+        let result_str = mlir_string_ref_to_string(module_compiled);
         compilerEngineDestroy(engine);
         Ok(result_str)
     }
@@ -228,6 +238,16 @@ impl LibrarySupport {
             }
             Ok(result)
         }
+    }
+
+    /// Get path to the compiled shared library
+    pub fn get_shared_lib_path(&self) -> String {
+        unsafe { mlir_string_ref_to_string(librarySupportGetSharedLibPath(self.support)) }
+    }
+
+    /// Get path to the client parameters
+    pub fn get_client_parameters_path(&self) -> String {
+        unsafe { mlir_string_ref_to_string(librarySupportGetClientParametersPath(self.support)) }
     }
 }
 
@@ -419,7 +439,8 @@ mod test {
             assert!(!libraryCompilationResultIsNull(lib));
             libraryCompilationResultDestroy(lib);
             // the sharedlib should be enough as a sign that the compilation worked
-            assert!(temp_dir.path().join("sharedlib.so").exists());
+            assert!(Path::new(support.get_shared_lib_path().as_str()).exists());
+            assert!(Path::new(support.get_client_parameters_path().as_str()).exists());
         }
     }
 
