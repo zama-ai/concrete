@@ -145,6 +145,7 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   cpu.loopParallelize = true;
 #else
   mlir::concretelang::CompilationOptions gpu;
+  gpu.batchConcreteOps = true;
   gpu.emitGPUOps = true;
   gpu.loopParallelize = true;
   registe("gpu", gpu);
