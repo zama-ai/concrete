@@ -10,7 +10,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Needed on linux with clang 15 and on MacOS because cxx emits dollars in the optimizer C++ API
 add_definitions("-Wno-dollar-in-identifier-extension")
 
-add_definitions("-Wall -Werror")
+add_definitions("-Wall ")
+add_definitions("-Werror ")
 
 # If we are trying to build the compiler with LLVM/MLIR as libraries
 if(NOT DEFINED LLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR)
@@ -69,7 +70,7 @@ if(CONCRETELANG_CUDA_SUPPORT)
   if(NOT DEFINED CONCRETE_CORE_PATH)
     message(FATAL_ERROR "Compiling with CUDA support requires setting CONCRETE_CORE_PATH")
   endif()
-
+  remove_definitions("-Werror ")
   message(STATUS "Building with Concrete CUDA execution support")
   find_package(CUDAToolkit REQUIRED)
   message(STATUS "Found CUDA version: ${CUDAToolkit_VERSION}")
