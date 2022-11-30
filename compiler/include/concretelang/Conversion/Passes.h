@@ -20,6 +20,7 @@
 #include "concretelang/Conversion/FHEToTFHE/Pass.h"
 #include "concretelang/Conversion/LinalgExtras/Passes.h"
 #include "concretelang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h"
+#include "concretelang/Conversion/SDFGToStreamEmulator/Pass.h"
 #include "concretelang/Conversion/TFHEGlobalParametrization/Pass.h"
 #include "concretelang/Conversion/TFHEToConcrete/Pass.h"
 #include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"

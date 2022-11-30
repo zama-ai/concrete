@@ -67,6 +67,10 @@ lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       std::function<bool(mlir::Pass *)> enablePass,
                       bool parallelizeLoops, bool gpu);

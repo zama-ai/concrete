@@ -32,6 +32,7 @@
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Dialect/RT/Analysis/Autopar.h"
 #include "concretelang/Dialect/RT/IR/RTTypes.h"
+#include "concretelang/Dialect/SDFG/IR/SDFGTypes.h"
 
 namespace {
 struct MLIRLowerableDialectsToLLVMPass
@@ -155,7 +156,9 @@ MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
   if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
       type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
       type.isa<mlir::concretelang::Concrete::ContextType>() ||
-      type.isa<mlir::concretelang::RT::FutureType>()) {
+      type.isa<mlir::concretelang::RT::FutureType>() ||
+      type.isa<mlir::concretelang::SDFG::DFGType>() ||
+      type.isa<mlir::concretelang::SDFG::StreamType>()) {
     return mlir::LLVM::LLVMPointerType::get(
         mlir::IntegerType::get(type.getContext(), 64));
   }

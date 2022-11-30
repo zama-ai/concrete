@@ -297,6 +297,17 @@ lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
+lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("SDFGToStd", pm, context);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createConvertSDFGToStreamEmulatorPass(),
+      enablePass);
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       std::function<bool(mlir::Pass *)> enablePass,
                       bool parallelizeLoops, bool gpu) {

@@ -61,6 +61,13 @@ def BConcreteToCAPI : Pass<"bconcrete-to-capi", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::concretelang::BConcrete::BConcreteDialect"];
 }
 
+def SDFGToStreamEmulator : Pass<"sdfg-to-stream-emulator", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the SDFG dialect to Stream Emulator calls";
+  let description = [{ Lowers operations from the SDFG dialect to Stream Emulator calls }];
+  let constructor = "mlir::concretelang::createConvertSDFGToStreamEmulatorPass()";
+  let dependentDialects = ["mlir::concretelang::SDFG::SDFGDialect"];
+}
+
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
   let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
   let constructor = "mlir::concretelang::createConvertMLIRLowerableDialectsToLLVMPass()";

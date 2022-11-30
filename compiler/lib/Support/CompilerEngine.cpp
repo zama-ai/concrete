@@ -35,6 +35,7 @@
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/SDFG/IR/SDFGDialect.h>
+#include <concretelang/Dialect/SDFG/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/SDFG/Transforms/SDFGConvertibleOpInterfaceImpl.h>
 #include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
 #include <concretelang/Runtime/DFRuntime.hpp>
@@ -83,6 +84,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
         mlir::omp::OpenMPDialect, mlir::bufferization::BufferizationDialect>();
     BConcrete::registerBufferizableOpInterfaceExternalModels(registry);
     SDFG::registerSDFGConvertibleOpInterfaceExternalModels(registry);
+    SDFG::registerBufferizableOpInterfaceExternalModels(registry);
     arith::registerBufferizableOpInterfaceExternalModels(registry);
     bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(
         registry);
@@ -415,6 +417,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
           .failed()) {
     return errorDiag(
         "Lowering from Bufferized Concrete to canonical MLIR dialects failed");
+  }
+
+  // SDFG -> Canonical dialects
+  if (mlir::concretelang::pipeline::lowerSDFGToStd(mlirContext, module,
+                                                   enablePass)
+          .failed()) {
+    return errorDiag("Lowering from SDFG to canonical MLIR dialects failed");
   }
 
   if (target == Target::STD)

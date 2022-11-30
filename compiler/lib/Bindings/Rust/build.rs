@@ -241,7 +241,7 @@ const LLVM_STATIC_LIBS: [&str; 51] = [
     "LLVMX86Info",
 ];
 
-const CONCRETE_COMPILER_LIBS: [&str; 33] = [
+const CONCRETE_COMPILER_LIBS: [&str; 34] = [
     "RTDialect",
     "RTDialectTransforms",
     "ConcretelangSupport",
@@ -274,7 +274,8 @@ const CONCRETE_COMPILER_LIBS: [&str; 33] = [
     "ConcreteDialect",
     "RTDialectAnalysis",
     "SDFGDialect",
-    "ExtractSDFGOps"
+    "ExtractSDFGOps",
+    "SDFGToStreamEmulator",
 ];
 
 fn main() {
