@@ -35,6 +35,7 @@
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/SDFG/IR/SDFGDialect.h>
+#include <concretelang/Dialect/SDFG/Transforms/SDFGConvertibleOpInterfaceImpl.h>
 #include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
 #include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/CompilerEngine.h>
@@ -81,6 +82,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
         mlir::LLVM::LLVMDialect, mlir::scf::SCFDialect,
         mlir::omp::OpenMPDialect, mlir::bufferization::BufferizationDialect>();
     BConcrete::registerBufferizableOpInterfaceExternalModels(registry);
+    SDFG::registerSDFGConvertibleOpInterfaceExternalModels(registry);
     arith::registerBufferizableOpInterfaceExternalModels(registry);
     bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(
         registry);
@@ -390,6 +392,17 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   if (target == Target::BCONCRETE) {
     return std::move(res);
+  }
+
+  // Extract SDFG data flow graph from BConcrete representation
+
+  if (options.emitSDFGOps) {
+    if (mlir::concretelang::pipeline::extractSDFGOps(mlirContext, module,
+                                                     enablePass)
+            .failed()) {
+      return errorDiag(
+          "Extraction of SDFG operations from BConcrete representation failed");
+    }
   }
 
   // BConcrete -> Canonical dialects

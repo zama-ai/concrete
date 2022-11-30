@@ -275,6 +275,16 @@ lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
+extractSDFGOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("extract SDFG ops from BConcrete", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createExtractSDFGOpsPass(),
+                           enablePass);
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
 lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);

@@ -22,11 +22,13 @@ add_mlir_library(
   FHELinalgDialectTransforms
   FHETensorOpsToLinalg
   FHEToTFHE
+  ExtractSDFGOps
   MLIRLowerableDialectsToLLVM
   FHEDialectAnalysis
   RTDialectAnalysis
   ConcretelangTransforms
   ConcretelangBConcreteTransforms
+  ConcretelangSDFGTransforms
   ConcretelangSDFGInterfaces
   LinalgExtras
   ConcreteDialectTransforms

@@ -241,7 +241,7 @@ const LLVM_STATIC_LIBS: [&str; 51] = [
     "LLVMX86Info",
 ];
 
-const CONCRETE_COMPILER_LIBS: [&str; 31] = [
+const CONCRETE_COMPILER_LIBS: [&str; 33] = [
     "RTDialect",
     "RTDialectTransforms",
     "ConcretelangSupport",
@@ -256,6 +256,7 @@ const CONCRETE_COMPILER_LIBS: [&str; 31] = [
     "ConcretelangClientLib",
     "ConcretelangBConcreteTransforms",
     "ConcretelangSDFGInterfaces",
+    "ConcretelangSDFGTransforms",
     "CONCRETELANGCAPISupport",
     "FHELinalgDialect",
     "ConcretelangInterfaces",
@@ -272,7 +273,8 @@ const CONCRETE_COMPILER_LIBS: [&str; 31] = [
     "FHEDialectAnalysis",
     "ConcreteDialect",
     "RTDialectAnalysis",
-    "SDFGDialect"
+    "SDFGDialect",
+    "ExtractSDFGOps"
 ];
 
 fn main() {

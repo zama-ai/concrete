@@ -1,0 +1,18 @@
+add_mlir_dialect_library(
+  ConcretelangSDFGTransforms
+  SDFGConvertibleOpInterfaceImpl.cpp
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/BConcrete
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/SDFG
+  DEPENDS
+  mlir-headers
+  SDFGDialect
+  ConcretelangSDFGInterfaces
+  LINK_LIBS
+  PUBLIC
+  SDFGDialect
+  ConcretelangSDFGInterfaces
+  MLIRIR
+  MLIRMemRefDialect
+  MLIRPass
+  MLIRTransforms)

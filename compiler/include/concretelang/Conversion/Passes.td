@@ -47,6 +47,13 @@ def ConcreteToBConcrete : Pass<"concrete-to-bconcrete", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::Concrete::ConcreteDialect", "mlir::concretelang::BConcrete::BConcreteDialect"];
 }
 
+def ExtractSDFGOps : Pass<"extract-sdfg-ops", "::mlir::func::FuncOp"> {
+  let summary = "Extracts SDFG ops and creates a static data flow graph";
+  let description = [{ Extracts SDFG ops and creates a static data flow graph }];
+  let constructor = "mlir::concretelang::createExtractSDFGOps()";
+  let dependentDialects = ["mlir::concretelang::SDFG::SDFGDialect"];
+}
+
 def BConcreteToCAPI : Pass<"bconcrete-to-capi", "mlir::ModuleOp"> {
   let summary = "Lowers operations from the BConcrete dialect to CAPI calls";
   let description = [{ Lowers operations from the BConcrete dialect to CAPI calls }];

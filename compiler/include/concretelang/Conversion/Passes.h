@@ -15,6 +15,7 @@
 
 #include "concretelang/Conversion/BConcreteToCAPI/Pass.h"
 #include "concretelang/Conversion/ConcreteToBConcrete/Pass.h"
+#include "concretelang/Conversion/ExtractSDFGOps/Pass.h"
 #include "concretelang/Conversion/FHETensorOpsToLinalg/Pass.h"
 #include "concretelang/Conversion/FHEToTFHE/Pass.h"
 #include "concretelang/Conversion/LinalgExtras/Passes.h"
@@ -24,6 +25,7 @@
 #include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
+#include "concretelang/Dialect/SDFG/IR/SDFGDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 
 #define GEN_PASS_CLASSES

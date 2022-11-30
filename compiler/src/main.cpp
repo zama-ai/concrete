@@ -173,6 +173,13 @@ llvm::cl::opt<bool> batchConcreteOps(
         "operations out of loop nests as batched operations"),
     llvm::cl::init(false));
 
+llvm::cl::opt<bool> emitSDFGOps(
+    "emit-sdfg-ops",
+    llvm::cl::desc(
+        "Extract operations supported by the SDFG dialect for static data flow"
+        " graphs and emit them."),
+    llvm::cl::init(false));
+
 llvm::cl::opt<bool> dataflowParallelize(
     "parallelize-dataflow",
     llvm::cl::desc(
@@ -305,6 +312,7 @@ cmdlineCompilationOptions() {
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.batchConcreteOps = cmdline::batchConcreteOps;
+  options.emitSDFGOps = cmdline::emitSDFGOps;
   options.optimizeConcrete = cmdline::optimizeConcrete;
   options.emitGPUOps = cmdline::emitGPUOps;
 
