@@ -17,7 +17,7 @@ class BConcrete_Op<string mnemonic, list<Trait> traits = []> :
 
 // BConcrete tensor operators /////////////////////////////////////////////////
 
-def BConcrete_AddLweTensorOp : BConcrete_Op<"add_lwe_tensor"> {
+def BConcrete_AddLweTensorOp : BConcrete_Op<"add_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         1DTensorOf<[I64]>:$lhs,
         1DTensorOf<[I64]>:$rhs
@@ -25,7 +25,7 @@ def BConcrete_AddLweTensorOp : BConcrete_Op<"add_lwe_tensor"> {
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_AddCRTLweTensorOp : BConcrete_Op<"add_crt_lwe_tensor"> {
+def BConcrete_AddCRTLweTensorOp : BConcrete_Op<"add_crt_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         2DTensorOf<[I64]>:$lhs,
         2DTensorOf<[I64]>:$rhs,
@@ -34,12 +34,12 @@ def BConcrete_AddCRTLweTensorOp : BConcrete_Op<"add_crt_lwe_tensor"> {
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_AddPlaintextLweTensorOp : BConcrete_Op<"add_plaintext_lwe_tensor"> {
+def BConcrete_AddPlaintextLweTensorOp : BConcrete_Op<"add_plaintext_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins 1DTensorOf<[I64]>:$lhs, I64:$rhs);
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_AddPlaintextCRTLweTensorOp : BConcrete_Op<"add_plaintext_crt_lwe_tensor"> {
+def BConcrete_AddPlaintextCRTLweTensorOp : BConcrete_Op<"add_plaintext_crt_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         2DTensorOf<[I64]>:$lhs,
         AnyInteger:$rhs,
@@ -48,12 +48,12 @@ def BConcrete_AddPlaintextCRTLweTensorOp : BConcrete_Op<"add_plaintext_crt_lwe_t
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_MulCleartextLweTensorOp : BConcrete_Op<"mul_cleartext_lwe_tensor"> {
+def BConcrete_MulCleartextLweTensorOp : BConcrete_Op<"mul_cleartext_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins 1DTensorOf<[I64]>:$lhs, I64:$rhs);
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_MulCleartextCRTLweTensorOp : BConcrete_Op<"mul_cleartext_crt_lwe_tensor"> {
+def BConcrete_MulCleartextCRTLweTensorOp : BConcrete_Op<"mul_cleartext_crt_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         2DTensorOf<[I64]>:$lhs,
         AnyInteger:$rhs,
@@ -62,12 +62,12 @@ def BConcrete_MulCleartextCRTLweTensorOp : BConcrete_Op<"mul_cleartext_crt_lwe_t
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_NegateLweTensorOp : BConcrete_Op<"negate_lwe_tensor"> {
+def BConcrete_NegateLweTensorOp : BConcrete_Op<"negate_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins 1DTensorOf<[I64]>:$ciphertext);
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_NegateCRTLweTensorOp : BConcrete_Op<"negate_crt_lwe_tensor"> {
+def BConcrete_NegateCRTLweTensorOp : BConcrete_Op<"negate_crt_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         2DTensorOf<[I64]>:$ciphertext,
         I64ArrayAttr:$crtDecomposition
@@ -75,7 +75,7 @@ def BConcrete_NegateCRTLweTensorOp : BConcrete_Op<"negate_crt_lwe_tensor"> {
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_KeySwitchLweTensorOp : BConcrete_Op<"keyswitch_lwe_tensor"> {
+def BConcrete_KeySwitchLweTensorOp : BConcrete_Op<"keyswitch_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         // LweKeySwitchKeyType:$keyswitch_key,
         1DTensorOf<[I64]>:$ciphertext,
@@ -87,7 +87,7 @@ def BConcrete_KeySwitchLweTensorOp : BConcrete_Op<"keyswitch_lwe_tensor"> {
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_BatchedKeySwitchLweTensorOp : BConcrete_Op<"batched_keyswitch_lwe_tensor"> {
+def BConcrete_BatchedKeySwitchLweTensorOp : BConcrete_Op<"batched_keyswitch_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         // LweKeySwitchKeyType:$keyswitch_key,
         2DTensorOf<[I64]>:$ciphertext,
@@ -99,7 +99,7 @@ def BConcrete_BatchedKeySwitchLweTensorOp : BConcrete_Op<"batched_keyswitch_lwe_
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_BootstrapLweTensorOp : BConcrete_Op<"bootstrap_lwe_tensor"> {
+def BConcrete_BootstrapLweTensorOp : BConcrete_Op<"bootstrap_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         1DTensorOf<[I64]>:$input_ciphertext,
         1DTensorOf<[I64]>:$lookup_table,
@@ -113,7 +113,7 @@ def BConcrete_BootstrapLweTensorOp : BConcrete_Op<"bootstrap_lwe_tensor"> {
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_BatchedBootstrapLweTensorOp : BConcrete_Op<"batched_bootstrap_lwe_tensor"> {
+def BConcrete_BatchedBootstrapLweTensorOp : BConcrete_Op<"batched_bootstrap_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         2DTensorOf<[I64]>:$input_ciphertext,
         1DTensorOf<[I64]>:$lookup_table,
@@ -127,7 +127,7 @@ def BConcrete_BatchedBootstrapLweTensorOp : BConcrete_Op<"batched_bootstrap_lwe_
     let results = (outs 2DTensorOf<[I64]>:$result);
 }
 
-def BConcrete_WopPBSCRTLweTensorOp : BConcrete_Op<"wop_pbs_crt_lwe_tensor"> {
+def BConcrete_WopPBSCRTLweTensorOp : BConcrete_Op<"wop_pbs_crt_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         2DTensorOf<[I64]>:$ciphertext,
         1DTensorOf<[I64]>:$lookupTable,
