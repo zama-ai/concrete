@@ -46,6 +46,7 @@ template <int degree> __device__ double2 negacyclic_twiddle(int j) {
     break;
   case 8192:
     twid = negTwids13[j];
+    break;
   default:
     twid.x = 0;
     twid.y = 0;
@@ -721,12 +722,9 @@ __device__ void correction_inverse_fft_inplace(double2 *x) {
 template <class params, sharedMemDegree SMD>
 __global__ void batch_NSMFFT(double2 *d_input, double2 *d_output,
                              double2 *buffer) {
-  double2 *fft = &buffer[blockIdx.x * params::degree / 2];
-  if constexpr (SMD != NOSM) {
-    extern __shared__ double2 sharedMemoryFFT[];
-    fft = sharedMemoryFFT;
-  }
-
+  extern __shared__ double2 sharedMemoryFFT[];
+  double2 *fft = (SMD == NOSM) ? &buffer[blockIdx.x * params::degree / 2]
+                               : sharedMemoryFFT;
   int tid = threadIdx.x;
 
 #pragma unroll

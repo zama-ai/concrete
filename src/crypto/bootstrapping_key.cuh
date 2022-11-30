@@ -118,6 +118,12 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   case 512:
     if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
       buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      checkCudaErrors(cudaFuncSetAttribute(
+          batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      checkCudaErrors(cudaFuncSetCacheConfig(
+          batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
       batch_NSMFFT<FFTDegree<Degree<512>, ForwardFFT>, FULLSM>
           <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
                                                                  buffer);
@@ -131,6 +137,12 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   case 1024:
     if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
       buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      checkCudaErrors(cudaFuncSetAttribute(
+          batch_NSMFFT<FFTDegree<Degree<1024>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      checkCudaErrors(cudaFuncSetCacheConfig(
+          batch_NSMFFT<FFTDegree<Degree<1024>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
       batch_NSMFFT<FFTDegree<Degree<1024>, ForwardFFT>, FULLSM>
           <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
                                                                  buffer);
@@ -144,6 +156,12 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   case 2048:
     if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
       buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      checkCudaErrors(cudaFuncSetAttribute(
+          batch_NSMFFT<FFTDegree<Degree<2048>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      checkCudaErrors(cudaFuncSetCacheConfig(
+          batch_NSMFFT<FFTDegree<Degree<2048>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
       batch_NSMFFT<FFTDegree<Degree<2048>, ForwardFFT>, FULLSM>
           <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
                                                                  buffer);
@@ -157,6 +175,12 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   case 4096:
     if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
       buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      checkCudaErrors(cudaFuncSetAttribute(
+          batch_NSMFFT<FFTDegree<Degree<4096>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      checkCudaErrors(cudaFuncSetCacheConfig(
+          batch_NSMFFT<FFTDegree<Degree<4096>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
       batch_NSMFFT<FFTDegree<Degree<4096>, ForwardFFT>, FULLSM>
           <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
                                                                  buffer);
@@ -170,6 +194,12 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   case 8192:
     if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
       buffer = (double2 *)cuda_malloc_async(0, *stream, gpu_index);
+      checkCudaErrors(cudaFuncSetAttribute(
+          batch_NSMFFT<FFTDegree<Degree<8192>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      checkCudaErrors(cudaFuncSetCacheConfig(
+          batch_NSMFFT<FFTDegree<Degree<8192>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
       batch_NSMFFT<FFTDegree<Degree<8192>, ForwardFFT>, FULLSM>
           <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
                                                                  buffer);
