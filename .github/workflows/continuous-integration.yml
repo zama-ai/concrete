@@ -282,7 +282,7 @@ jobs:
           pip3.10 wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
           pip3.10 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
-          make run-tests
+          make Python3_EXECUTABLE=$(which python3.10) run-tests
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
 
