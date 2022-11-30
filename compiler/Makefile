@@ -246,7 +246,7 @@ build-end-to-end-jit-test: build-initialized
 generate-end-to-end-tests:
 	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py \
 	--n-lut 2 --n-ct 4 \
-	&> ./tests/end_to_end_fixture/end_to_end_linalg_2_apply_lookup_table.yaml
+	> ./tests/end_to_end_fixture/end_to_end_linalg_2_apply_lookup_table.yaml
 	unzip -o tests/end_to_end_fixture/bug_report.zip -d tests/end_to_end_fixture/
 
 build-end-to-end-jit-fhe: build-initialized generate-end-to-end-tests
