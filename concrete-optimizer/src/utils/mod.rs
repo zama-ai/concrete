@@ -1,4 +1,5 @@
 pub mod cache;
+pub mod hasher_builder;
 
 pub fn square<V>(v: V) -> V
 where

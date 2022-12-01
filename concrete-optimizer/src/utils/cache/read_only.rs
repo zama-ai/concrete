@@ -1,12 +1,10 @@
-use std::cmp::Eq;
-use std::collections::hash_map::RandomState;
+use crate::utils::hasher_builder::FxRandomState;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-
-pub type Map<K, V> = HashMap<K, V, RandomState>;
+pub type Map<K, V> = HashMap<K, V, FxRandomState>;
 
 #[allow(clippy::len_without_is_empty)]
 pub trait ReadOnlyCache: Clone + Serialize + DeserializeOwned + Default {
