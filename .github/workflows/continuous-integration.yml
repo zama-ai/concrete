@@ -18,7 +18,7 @@ jobs:
   ########################
 
   FormattingAndLinting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -44,14 +44,14 @@ jobs:
         id: linelint
 
   CheckLicense:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
       - name: Check if sources include the license header
         run: .github/workflows/scripts/check_for_license.sh
 
   BuildAndTest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     # We want to always run the tests unless cancelled, but after the docker image build job.
     # If there is no new build then we use the old image, else we use the new image.
     if: ${{ !cancelled() }}
@@ -288,7 +288,7 @@ jobs:
 
   BlockMerge:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -342,7 +342,7 @@ jobs:
           DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
 
   CreateRelease:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [BuildAndTest, BuildAndTestMacOS]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
@@ -359,7 +359,7 @@ jobs:
           generate_release_notes: true
 
   BuildAndPushPythonPackagesLinux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         include:
@@ -451,7 +451,7 @@ jobs:
           asset_content_type: application/zip
 
   BuildAndPushTarballLinux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: CreateRelease
     steps:
       # A SSH private key is required as some dependencies are from private repos
@@ -605,7 +605,7 @@ jobs:
           asset_content_type: application/tar+gzip
 
   TestPythonPackageLinux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [BuildAndPushPythonPackagesLinux, CreateRelease]
     strategy:
       matrix:
@@ -704,7 +704,7 @@ jobs:
     if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') || needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' }}
     needs: [BuildAndPublishHPXDockerImage]
     name: Build & Publish Docker Images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         include:
@@ -754,7 +754,7 @@ jobs:
 
   BuildAndPublishHPXDockerImage:
     name: Build & Publish HPX Docker Image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       IMAGE: ghcr.io/zama-ai/hpx
     outputs:
