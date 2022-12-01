@@ -235,22 +235,31 @@ run-rust-tests: rust-bindings
 
 ## end-to-end-tests
 
-build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-jit-fhe build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+FIXTURE_CPU_DIR=tests/end_to_end_fixture/tests_cpu
 
-run-end-to-end-tests: build-end-to-end-tests
-	find $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests -name end_to_end* $(FIND_EXECUTABLE_ARG) -type f | xargs -n1 ./run_test_bin.sh
+$(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
+	mkdir -p $(FIXTURE_CPU_DIR)
+	$(Python3_EXECUTABLE) $< > $@
+
+$(FIXTURE_CPU_DIR)/bug_report.yaml:
+	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
+
+generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml
+
+build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-test build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+
+run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_test
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_encrypted_tensor
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_fhelinalg
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_lambda
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test --loop-parallelize --jit $(FIXTURE_CPU_DIR)/*.yaml
 
 build-end-to-end-jit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
 
-generate-end-to-end-tests:
-	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py \
-	--n-lut 2 --n-ct 4 \
-	> ./tests/end_to_end_fixture/end_to_end_linalg_2_apply_lookup_table.yaml
-	unzip -o tests/end_to_end_fixture/bug_report.zip -d tests/end_to_end_fixture/
-
-build-end-to-end-jit-fhe: build-initialized generate-end-to-end-tests
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_fhe
+build-end-to-end-test: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_test
 
 build-end-to-end-jit-encrypted-tensor: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_encrypted_tensor
@@ -272,24 +281,26 @@ run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
 
-## GPU tests
-
-build-end-to-end-gpu-tests: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_gpu_test
-
-run-end-to-end-gpu-tests: build-end-to-end-gpu-tests
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_gpu_test
-
 # benchmark
 
-generate-benchmarks:
-	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py > tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml
-	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_leveled_gen.py > tests/end_to_end_fixture/end_to_end_linalg_leveled.yaml
+BENCHMARK_CPU_DIR=tests/end_to_end_fixture/benchmarks_cpu
+
+$(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
+	$(Python3_EXECUTABLE) $< --n-ct 64 128 1024 > $@
+
+$(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
+	mkdir -p $(FIXTURE_CPU_DIR)
+	$(Python3_EXECUTABLE) $< > $@
+
+$(BENCHMARK_CPU_DIR):
+	mkdir -p $@
+
+generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml
 
 build-benchmarks: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
 
-run-benchmarks: build-benchmarks generate-benchmarks
+run-benchmarks: build-benchmarks generate-cpu-benchmarks
 	$(BUILD_DIR)/bin/end_to_end_benchmark --benchmark_out=benchmarks_results.json --benchmark_out_format=json
 
 build-mlbench: build-initialized

@@ -7,15 +7,14 @@ MAX_PRECISION = 16
 
 def main():
     print("# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
-    print("# /!\ THIS FILE HAS BEEN GENERATED THANKS THE end_to_end_levelled_gen.py scripts")
+    print("# /!\ THIS FILE HAS BEEN GENERATED")
     np.random.seed(0)
     for p in range(MIN_PRECISON, MAX_PRECISION+1):
         if p != 1:
             print("---")
         max_value = (2 ** p) - 1
         random_lut = np.random.randint(max_value+1, size=2**p)
-        # identity_apply_lookup_table
-        print("description: identity_apply_lookup_table_{0}bits".format(p))
+        print("description: apply_lookup_table_{0}bits".format(p))
         print("program: |")
         print(
             "  func.func @main(%arg0: !FHE.eint<{0}>) -> !FHE.eint<{0}> {{".format(p))

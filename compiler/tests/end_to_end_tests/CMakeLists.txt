@@ -24,7 +24,7 @@ add_concretecompiler_unittest(end_to_end_jit_test end_to_end_jit_test.cc globals
 
 add_concretecompiler_unittest(end_to_end_jit_encrypted_tensor end_to_end_jit_encrypted_tensor.cc globals.cc)
 
-add_concretecompiler_unittest(end_to_end_jit_fhe end_to_end_jit_fhe.cc globals.cc)
+add_concretecompiler_unittest(end_to_end_test end_to_end_test.cc globals.cc)
 
 add_concretecompiler_unittest(end_to_end_jit_fhelinalg end_to_end_jit_fhelinalg.cc globals.cc)
 

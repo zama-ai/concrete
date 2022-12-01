@@ -146,20 +146,11 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   return 1;
 }
 
-auto _ = {
-    registerEndToEndTestFromFile(
-        "FHE", "tests/end_to_end_fixture/end_to_end_fhe.yaml"),
-    registerEndToEndTestFromFile(
-        "EncryptedTensor",
-        "tests/end_to_end_fixture/end_to_end_encrypted_tensor.yaml"),
-    registerEndToEndTestFromFile(
-        "FHELinalg", "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml"),
-    registerEndToEndTestFromFile(
-        "FHELinalgTLU",
-        "tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml"),
-    registerEndToEndTestFromFile(
-        "FHELinalgLeveled",
-        "tests/end_to_end_fixture/end_to_end_linalg_leveled.yaml"),
-};
+auto _ = {registerEndToEndTestFromFile(
+              "FHELinalg", "tests/end_to_end_fixture/benchmarks_cpu/"
+                           "end_to_end_apply_lookup_table.yaml"),
+          registerEndToEndTestFromFile(
+              "FHELinalgTLU", "tests/end_to_end_fixture/benchmarks_cpu/"
+                              "end_to_end_linalg_apply_lookup_table.yaml")};
 
 BENCHMARK_MAIN();
