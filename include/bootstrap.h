@@ -73,8 +73,8 @@ void cuda_extract_bits_32(
     void *ksk, void *fourier_bsk, uint32_t number_of_bits, uint32_t delta_log,
     uint32_t lwe_dimension_in, uint32_t lwe_dimension_out,
     uint32_t glwe_dimension, uint32_t base_log_bsk, uint32_t level_count_bsk,
-    uint32_t base_log_ksk, uint32_t level_count_ksk,
-    uint32_t number_of_samples);
+    uint32_t base_log_ksk, uint32_t level_count_ksk, uint32_t number_of_samples,
+    uint32_t max_shared_memory);
 
 void cuda_extract_bits_64(
     void *v_stream, uint32_t gpu_index, void *list_lwe_array_out,
@@ -84,8 +84,8 @@ void cuda_extract_bits_64(
     void *ksk, void *fourier_bsk, uint32_t number_of_bits, uint32_t delta_log,
     uint32_t lwe_dimension_in, uint32_t lwe_dimension_out,
     uint32_t glwe_dimension, uint32_t base_log_bsk, uint32_t level_count_bsk,
-    uint32_t base_log_ksk, uint32_t level_count_ksk,
-    uint32_t number_of_samples);
+    uint32_t base_log_ksk, uint32_t level_count_ksk, uint32_t number_of_samples,
+    uint32_t max_shared_memory);
 }
 
 #ifdef __CUDACC__

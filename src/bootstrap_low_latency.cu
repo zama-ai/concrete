@@ -68,9 +68,10 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
   assert(("Error (GPU low latency PBS): glwe_dimension should be equal to 1",
           glwe_dimension == 1));
   assert(("Error (GPU low latency PBS): polynomial size should be one of 512, "
-          "1024, 2048",
+          "1024, 2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||
-              polynomial_size == 2048));
+              polynomial_size == 2048 || polynomial_size == 4096 ||
+              polynomial_size == 8192));
   // The number of samples should be lower than SM/(4 * (k + 1) * l) (the
   // factor 4 being related to the occupancy of 50%). The only supported
   // value for k is 1, so k + 1 = 2 for now.
@@ -88,21 +89,35 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
-        level_count, num_samples, num_lut_vectors);
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 1024:
     host_bootstrap_low_latency<uint32_t, Degree<1024>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
-        level_count, num_samples, num_lut_vectors);
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 2048:
     host_bootstrap_low_latency<uint32_t, Degree<2048>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
-        level_count, num_samples, num_lut_vectors);
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
+    break;
+  case 4096:
+    host_bootstrap_low_latency<uint32_t, Degree<4096>>(
+        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
+        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
+    break;
+  case 8192:
+    host_bootstrap_low_latency<uint32_t, Degree<8192>>(
+        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
+        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
     break;
   default:
     break;
@@ -121,9 +136,10 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
   assert(("Error (GPU low latency PBS): glwe_dimension should be equal to 1",
           glwe_dimension == 1));
   assert(("Error (GPU low latency PBS): polynomial size should be one of 512, "
-          "1024, 2048",
+          "1024, 2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||
-              polynomial_size == 2048));
+              polynomial_size == 2048 || polynomial_size == 4096 ||
+              polynomial_size == 8192));
   // The number of samples should be lower than SM/(4 * (k + 1) * l) (the
   // factor 4 being related to the occupancy of 50%). The only supported
   // value for k is 1, so k + 1 = 2 for now.
@@ -141,21 +157,35 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
-        level_count, num_samples, num_lut_vectors);
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 1024:
     host_bootstrap_low_latency<uint64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
-        level_count, num_samples, num_lut_vectors);
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 2048:
     host_bootstrap_low_latency<uint64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
-        level_count, num_samples, num_lut_vectors);
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
+    break;
+  case 4096:
+    host_bootstrap_low_latency<uint64_t, Degree<4096>>(
+        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
+        (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
+    break;
+  case 8192:
+    host_bootstrap_low_latency<uint64_t, Degree<8192>>(
+        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
+        (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (double2 *)bootstrapping_key, lwe_dimension, polynomial_size, base_log,
+        level_count, num_samples, num_lut_vectors, max_shared_memory);
     break;
   default:
     break;
