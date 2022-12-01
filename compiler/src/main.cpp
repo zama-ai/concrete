@@ -50,6 +50,7 @@ enum Action {
   DUMP_CONCRETE,
   DUMP_CONCRETEWITHLOOPS,
   DUMP_BCONCRETE,
+  DUMP_SDFG,
   DUMP_STD,
   DUMP_LLVM_DIALECT,
   DUMP_LLVM_IR,
@@ -128,6 +129,8 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(
         clEnumValN(Action::DUMP_BCONCRETE, "dump-bconcrete",
                    "Lower to Bufferized Concrete and dump result")),
+    llvm::cl::values(clEnumValN(Action::DUMP_SDFG, "dump-sdfg",
+                                "Lower to SDFG operations annd dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_STD, "dump-std",
                                 "Lower to std and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_LLVM_DIALECT, "dump-llvm-dialect",
@@ -488,6 +491,9 @@ mlir::LogicalResult processInputBuffer(
       break;
     case Action::DUMP_BCONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::BCONCRETE;
+      break;
+    case Action::DUMP_SDFG:
+      target = mlir::concretelang::CompilerEngine::Target::SDFG;
       break;
     case Action::DUMP_STD:
       target = mlir::concretelang::CompilerEngine::Target::STD;

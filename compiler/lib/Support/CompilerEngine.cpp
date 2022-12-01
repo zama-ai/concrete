@@ -405,6 +405,10 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     }
   }
 
+  if (target == Target::SDFG) {
+    return std::move(res);
+  }
+
   // BConcrete -> Canonical dialects
   if (mlir::concretelang::pipeline::lowerBConcreteToStd(mlirContext, module,
                                                         enablePass)
