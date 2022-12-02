@@ -6,7 +6,9 @@ use concrete_optimizer::dag::operator::{
 };
 use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
-use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution as DagSolution;
+use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
+    Encoding, Solution as DagSolution,
+};
 use concrete_optimizer::optimization::decomposition;
 
 fn no_solution() -> ffi::Solution {
@@ -248,11 +250,12 @@ impl OperationDag {
             processing_unit,
             Some(ProcessingUnit::Cpu.complexity_model()),
         );
-
+        let encoding = options.encoding.into();
         let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
             &self.0,
             config,
             &search_space,
+            encoding,
             options.default_log_norm2_woppbs,
             &cache,
         );
@@ -280,6 +283,18 @@ impl From<OperatorIndex> for ffi::OperatorIndex {
 impl Into<OperatorIndex> for ffi::OperatorIndex {
     fn into(self) -> OperatorIndex {
         OperatorIndex { i: self.index }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<Encoding> for ffi::Encoding {
+    fn into(self) -> Encoding {
+        match self {
+            Self::Auto => Encoding::Auto,
+            Self::Native => Encoding::Native,
+            Self::Crt => Encoding::Crt,
+            _ => unreachable!("Internal error: Invalid encoding"),
+        }
     }
 }
 
@@ -342,6 +357,14 @@ mod ffi {
         fn vector(weights: &[i64]) -> Box<Weights>;
     }
 
+    #[derive(Debug, Clone, Copy)]
+    #[namespace = "concrete_optimizer"]
+    pub enum Encoding {
+        Auto,
+        Native,
+        Crt,
+    }
+
     #[derive(Clone, Copy)]
     #[namespace = "concrete_optimizer::dag"]
     struct OperatorIndex {
@@ -386,12 +409,13 @@ mod ffi {
     }
 
     #[namespace = "concrete_optimizer"]
-    #[derive(Debug, Clone, Copy, Default)]
+    #[derive(Debug, Clone, Copy)]
     pub struct Options {
         pub security_level: u64,
         pub maximum_acceptable_error_probability: f64,
         pub default_log_norm2_woppbs: f64,
         pub use_gpu_constraints: bool,
+        pub encoding: Encoding,
     }
 }
 

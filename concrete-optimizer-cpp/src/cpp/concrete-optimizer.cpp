@@ -941,6 +941,7 @@ union MaybeUninit {
 namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
+  enum class Encoding : ::std::uint8_t;
   struct Options;
   namespace dag {
     struct OperatorIndex;
@@ -986,6 +987,15 @@ private:
   };
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Weights
+
+#ifndef CXXBRIDGE1_ENUM_concrete_optimizer$Encoding
+#define CXXBRIDGE1_ENUM_concrete_optimizer$Encoding
+enum class Encoding : ::std::uint8_t {
+  Auto = 0,
+  Native = 1,
+  Crt = 2,
+};
+#endif // CXXBRIDGE1_ENUM_concrete_optimizer$Encoding
 
 namespace dag {
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$OperatorIndex
@@ -1052,6 +1062,7 @@ struct Options final {
   double maximum_acceptable_error_probability;
   double default_log_norm2_woppbs;
   bool use_gpu_constraints;
+  ::concrete_optimizer::Encoding encoding;
 
   using IsRelocatable = ::std::true_type;
 };
