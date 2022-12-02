@@ -72,7 +72,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
           polynomial_size == 512 || polynomial_size == 1024 ||
               polynomial_size == 2048 || polynomial_size == 4096 ||
               polynomial_size == 8192));
-  // The number of samples should be lower than SM/(4 * (k + 1) * l) (the
+  // The number of samples should be lower than 4 * SM/((k + 1) * l) (the
   // factor 4 being related to the occupancy of 50%). The only supported
   // value for k is 1, so k + 1 = 2 for now.
   int number_of_sm = 0;
@@ -81,7 +81,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
           "or equal to the "
           "number of streaming multiprocessors on the device divided by 8 * "
           "level_count",
-          num_samples <= number_of_sm / 4. / 2. / level_count));
+          num_samples <= number_of_sm * 4. / 2. / level_count));
 
   switch (polynomial_size) {
   case 512:
@@ -140,7 +140,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
           polynomial_size == 512 || polynomial_size == 1024 ||
               polynomial_size == 2048 || polynomial_size == 4096 ||
               polynomial_size == 8192));
-  // The number of samples should be lower than SM/(4 * (k + 1) * l) (the
+  // The number of samples should be lower than 4 * SM/((k + 1) * l) (the
   // factor 4 being related to the occupancy of 50%). The only supported
   // value for k is 1, so k + 1 = 2 for now.
   int number_of_sm = 0;
@@ -149,7 +149,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
           "or equal to the "
           "number of streaming multiprocessors on the device divided by 8 * "
           "level_count",
-          num_samples <= number_of_sm / 4. / 2. / level_count));
+          num_samples <= number_of_sm * 4. / 2. / level_count));
 
   switch (polynomial_size) {
   case 512:

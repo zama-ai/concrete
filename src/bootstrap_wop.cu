@@ -129,8 +129,8 @@ void cuda_extract_bits_32(
           lwe_dimension_in == 512 || lwe_dimension_in == 1024 ||
               lwe_dimension_in == 2048 || lwe_dimension_in == 4096 ||
               lwe_dimension_in == 8192));
-  // The number of samples should be lower than the number of streaming
-  // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
+  // The number of samples should be lower than 4 time the number of streaming
+  // multiprocessors divided by ((k + 1) * l) (the factor 4 being related
   // to the occupancy of 50%). The only supported value for k is 1, so
   // k + 1 = 2 for now.
   int number_of_sm = 0;
@@ -139,7 +139,7 @@ void cuda_extract_bits_32(
           "equal to the "
           "number of streaming multiprocessors on the device divided by 8 * "
           "level_count_bsk",
-          number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
+          number_of_samples <= number_of_sm * 4. / 2. / level_count_bsk));
 
   switch (lwe_dimension_in) {
   case 512:
@@ -226,9 +226,9 @@ void cuda_extract_bits_64(
           lwe_dimension_in == 512 || lwe_dimension_in == 1024 ||
               lwe_dimension_in == 2048 || lwe_dimension_in == 4096 ||
               lwe_dimension_in == 8192));
-  // The number of samples should be lower than the number of streaming
-  // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
-  // to the occupancy of 50%). The only supported value for k is 1, so
+  // The number of samples should be lower than four time the number of
+  // streaming multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being
+  // related to the occupancy of 50%). The only supported value for k is 1, so
   // k + 1 = 2 for now.
   int number_of_sm = 0;
   cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
@@ -236,7 +236,7 @@ void cuda_extract_bits_64(
           "equal to the "
           "number of streaming multiprocessors on the device divided by 8 * "
           "level_count_bsk",
-          number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
+          number_of_samples <= number_of_sm * 4. / 2. / level_count_bsk));
 
   switch (lwe_dimension_in) {
   case 512:
