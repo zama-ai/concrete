@@ -165,7 +165,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-artifact@v3
         with:
-          name: KeySetCacheV3
+          name: KeySetCaCheV4
           path: KeySetCache
           retention-days: 90
 
@@ -173,7 +173,7 @@ jobs:
         uses: Remagpie/gha-remove-artifact@v1
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
-          only-name: KeySetCacheV3
+          only-name: KeySetCaCheV4
           max-count: 1
 
       - name: Build the documentation

@@ -337,6 +337,18 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
       desc.v0Constraint->p = v0constraint[0];
       desc.v0Constraint->norm2 = v0constraint[1];
     }
+    std::string str_encoding = "auto";
+    io.mapOptional("encoding", str_encoding);
+    if (str_encoding == "auto") {
+      desc.encoding = concrete_optimizer::Encoding::Auto;
+    } else if (str_encoding == "native") {
+      desc.encoding = concrete_optimizer::Encoding::Native;
+    } else if (str_encoding == "crt") {
+      desc.encoding = concrete_optimizer::Encoding::Crt;
+    } else {
+      io.setError("encoding can only be native or crt");
+    }
+
     mlir::concretelang::LargeIntegerParameter largeInterger;
     io.mapOptional("large-integer-crt-decomposition",
                    largeInterger.crtDecomposition);

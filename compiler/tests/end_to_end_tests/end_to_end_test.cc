@@ -185,6 +185,7 @@ void registerEndToEnd(std::string suiteName, std::string libpath,
   if (desc.v0Constraint.hasValue()) {
     options.v0FHEConstraints = desc.v0Constraint;
   }
+  options.optimizerConfig.encoding = desc.encoding;
   auto i = 0;
   for (auto test : desc.tests) {
     auto valueName = std::to_string(i);

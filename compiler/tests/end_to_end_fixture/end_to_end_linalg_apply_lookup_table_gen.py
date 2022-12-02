@@ -2,6 +2,7 @@ from platform import mac_ver
 import numpy as np
 import argparse
 
+PRECISION_FORCE_CRT = 9
 
 def generate(args):
     print("# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
@@ -23,6 +24,8 @@ def generate(args):
                     print(f"        (tensor<{n_ct}x!FHE.eint<{p}>>, tensor<{2**p}xi64>) -> (tensor<{n_ct}x!FHE.eint<{p}>>)")
                 print(f"    return %{n_lut}: tensor<{n_ct}x!FHE.eint<{p}>>")
                 print("  }")
+                if p >= PRECISION_FORCE_CRT:
+                    print("encoding: crt")
                 random_input = np.random.randint(max_value+1, size=n_ct)
                 print("tests:")
                 print("  - inputs:")

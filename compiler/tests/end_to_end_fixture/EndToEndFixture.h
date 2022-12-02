@@ -51,6 +51,7 @@ struct EndToEndDesc {
   std::vector<TestDescription> tests;
   llvm::Optional<mlir::concretelang::V0Parameter> v0Parameter;
   llvm::Optional<mlir::concretelang::V0FHEConstraint> v0Constraint;
+  concrete_optimizer::Encoding encoding;
   llvm::Optional<mlir::concretelang::LargeIntegerParameter>
       largeIntegerParameter;
   std::vector<TestErrorRate> test_error_rates;

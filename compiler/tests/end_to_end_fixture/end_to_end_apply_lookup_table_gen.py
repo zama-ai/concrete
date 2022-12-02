@@ -6,6 +6,7 @@ import argparse
 MIN_PRECISON = 1
 MAX_PRECISION = 16
 
+PRECISION_FORCE_CRT = 9
 
 def generate(args):
     print("# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
@@ -23,6 +24,8 @@ def generate(args):
             f"    %1 = \"FHE.apply_lookup_table\"(%arg0, %tlu): (!FHE.eint<{p}>, tensor<{2**p}xi64>) -> (!FHE.eint<{p}>)")
         print(f"    return %1: !FHE.eint<{p}>")
         print("  }")
+        if p >= PRECISION_FORCE_CRT:
+            print("encoding: crt")
         print("tests:")
         print("  - inputs:")
         print("    - scalar: 0")
