@@ -17,13 +17,47 @@
   auto *cpp = unwrap(c_struct);                                                \
   if (cpp != NULL)                                                             \
     delete cpp;                                                                \
-  char *error = getErrorPtr(c_struct);                                         \
+  const char *error = getErrorPtr(c_struct);                                   \
   if (error != NULL)                                                           \
     delete[] error;
+
+/// ********** BufferRef CAPI **************************************************
+
+BufferRef bufferRefCreate(const char *buffer, size_t length) {
+  return BufferRef{buffer, length, NULL};
+}
+
+BufferRef bufferRefFromString(std::string str) {
+  char *buffer = new char[str.size()];
+  memcpy(buffer, str.c_str(), str.size());
+  return bufferRefCreate(buffer, str.size());
+}
+
+BufferRef bufferRefFromStringError(std::string error) {
+  char *buffer = new char[error.size()];
+  memcpy(buffer, error.c_str(), error.size());
+  return BufferRef{NULL, 0, buffer};
+}
+
+void bufferRefDestroy(BufferRef buffer) {
+  if (buffer.data != NULL)
+    delete[] buffer.data;
+  if (buffer.error != NULL)
+    delete[] buffer.error;
+}
 
 /// ********** Utilities *******************************************************
 
 void mlirStringRefDestroy(MlirStringRef str) { delete[] str.data; }
+
+template <typename T> BufferRef serialize(T toSerialize) {
+  std::ostringstream ostream(std::ios::binary);
+  auto voidOrError = unwrap(toSerialize)->serialize(ostream);
+  if (voidOrError.has_error()) {
+    return bufferRefFromStringError(voidOrError.error().mesg);
+  }
+  return bufferRefFromString(ostream.str());
+}
 
 /// ********** CompilationOptions CAPI *****************************************
 
@@ -273,9 +307,30 @@ void librarySupportDestroy(LibrarySupport support) { C_STRUCT_CLEANER(support) }
 
 /// ********** ServerLamda CAPI ************************************************
 
-void serverLambdaDestroy(ServerLambda server) { C_STRUCT_CLEANER(server) }
+void serverLambdaDestroy(ServerLambda server){C_STRUCT_CLEANER(server)}
 
 /// ********** ClientParameters CAPI *******************************************
+
+BufferRef clientParametersSerialize(ClientParameters params) {
+  llvm::json::Value value(*unwrap(params));
+  std::string jsonParams;
+  llvm::raw_string_ostream ostream(jsonParams);
+  ostream << value;
+  char *buffer = new char[jsonParams.size() + 1];
+  strcpy(buffer, jsonParams.c_str());
+  return bufferRefCreate(buffer, jsonParams.size());
+}
+
+ClientParameters clientParametersUnserialize(BufferRef buffer) {
+  std::string json(buffer.data, buffer.length);
+  auto paramsOrError =
+      llvm::json::parse<mlir::concretelang::ClientParameters>(json);
+  if (!paramsOrError) {
+    return wrap((mlir::concretelang::ClientParameters *)NULL,
+                llvm::toString(paramsOrError.takeError()));
+  }
+  return wrap(new mlir::concretelang::ClientParameters(paramsOrError.get()));
+}
 
 void clientParametersDestroy(ClientParameters params){C_STRUCT_CLEANER(params)}
 
@@ -318,11 +373,30 @@ KeySet keySetCacheLoadOrGenerateKeySet(KeySetCache cache,
   return wrap(keySetOrError.value().release());
 }
 
-void keySetCacheDestroy(KeySetCache keySetCache) {
-  C_STRUCT_CLEANER(keySetCache)
-}
+void keySetCacheDestroy(KeySetCache keySetCache){C_STRUCT_CLEANER(keySetCache)}
 
 /// ********** EvaluationKeys CAPI *********************************************
+
+BufferRef evaluationKeysSerialize(EvaluationKeys keys) {
+  std::ostringstream ostream(std::ios::binary);
+  concretelang::clientlib::operator<<(ostream, *unwrap(keys));
+  if (ostream.fail()) {
+    return bufferRefFromStringError(
+        "output stream failure during evaluation keys serialization");
+  }
+  return bufferRefFromString(ostream.str());
+}
+
+EvaluationKeys evaluationKeysUnserialize(BufferRef buffer) {
+  std::stringstream istream(std::string(buffer.data, buffer.length));
+  concretelang::clientlib::EvaluationKeys evaluationKeys;
+  concretelang::clientlib::operator>>(istream, evaluationKeys);
+  if (istream.fail()) {
+    return wrap((concretelang::clientlib::EvaluationKeys *)NULL,
+                "input stream failure during evaluation keys unserialization");
+  }
+  return wrap(new concretelang::clientlib::EvaluationKeys(evaluationKeys));
+}
 
 void evaluationKeysDestroy(EvaluationKeys evaluationKeys) {
   C_STRUCT_CLEANER(evaluationKeys);
@@ -540,11 +614,26 @@ PublicArguments lambdaArgumentEncrypt(const LambdaArgument *lambdaArgs,
   return wrap(publicArgsOrError.get().release());
 }
 
-void lambdaArgumentDestroy(LambdaArgument lambdaArg) {
-  C_STRUCT_CLEANER(lambdaArg)
-}
+void lambdaArgumentDestroy(LambdaArgument lambdaArg){
+    C_STRUCT_CLEANER(lambdaArg)}
 
 /// ********** PublicArguments CAPI ********************************************
+
+BufferRef publicArgumentsSerialize(PublicArguments args) {
+  return serialize(args);
+}
+
+PublicArguments publicArgumentsUnserialize(BufferRef buffer,
+                                           ClientParameters params) {
+  std::stringstream istream(std::string(buffer.data, buffer.length));
+  auto argsOrError = concretelang::clientlib::PublicArguments::unserialize(
+      *unwrap(params), istream);
+  if (!argsOrError) {
+    return wrap((concretelang::clientlib::PublicArguments *)NULL,
+                argsOrError.error().mesg);
+  }
+  return wrap(argsOrError.value().release());
+}
 
 void publicArgumentsDestroy(PublicArguments publicArgs){
     C_STRUCT_CLEANER(publicArgs)}
@@ -561,6 +650,22 @@ LambdaArgument publicResultDecrypt(PublicResult publicResult, KeySet keySet) {
                 llvm::toString(lambdaArgOrError.takeError()));
   }
   return wrap(lambdaArgOrError.get().release());
+}
+
+BufferRef publicResultSerialize(PublicResult result) {
+  return serialize(result);
+}
+
+PublicResult publicResultUnserialize(BufferRef buffer,
+                                     ClientParameters params) {
+  std::stringstream istream(std::string(buffer.data, buffer.length));
+  auto resultOrError = concretelang::clientlib::PublicResult::unserialize(
+      *unwrap(params), istream);
+  if (!resultOrError) {
+    return wrap((concretelang::clientlib::PublicResult *)NULL,
+                resultOrError.error().mesg);
+  }
+  return wrap(resultOrError.value().release());
 }
 
 void publicResultDestroy(PublicResult publicResult) {

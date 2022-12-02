@@ -1,22 +1,22 @@
 //! Compiler module
 
-use std::{ffi::CStr, path::Path};
-
 use crate::mlir::ffi::*;
+use std::os::raw::c_char;
+use std::{ffi::CStr, path::Path};
 
 #[derive(Debug)]
 pub struct CompilerError(String);
 
 /// Retreive buffer of the error message from a C struct.
 trait CStructErrorMsg {
-    fn error_msg(&self) -> *mut i8;
+    fn error_msg(&self) -> *const i8;
 }
 
 /// All C struct can return a pointer to the allocated error message.
 macro_rules! impl_CStructErrorMsg {
     ([$($t:ty),+]) => {
         $(impl CStructErrorMsg for $t {
-            fn error_msg(&self) -> *mut i8 {
+            fn error_msg(&self) -> *const i8 {
                 self.error
             }
         })*
@@ -32,7 +32,9 @@ impl_CStructErrorMsg! {[
     PublicResult,
     KeySet,
     KeySetCache,
-    LambdaArgument
+    LambdaArgument,
+    BufferRef,
+    EvaluationKeys
 ]}
 
 /// Construct a rust error message from a buffer in the C struct.
@@ -55,6 +57,19 @@ unsafe fn mlir_string_ref_to_string(str_ref: MlirStringRef) -> String {
     ))
     .to_string();
     mlirStringRefDestroy(str_ref);
+    result
+}
+
+/// Create a vector of bytes from a BufferRef and free its memory.
+///
+/// # SAFETY
+///
+/// This should only be used with string refs returned by the compiler.
+unsafe fn buffer_ref_to_bytes(buffer_ref: BufferRef) -> Vec<c_char> {
+    let result =
+        std::slice::from_raw_parts(buffer_ref.data as *const c_char, buffer_ref.length as usize)
+            .to_vec();
+    bufferRefDestroy(buffer_ref);
     result
 }
 
@@ -82,7 +97,7 @@ pub fn round_trip(mlir_code: &str) -> Result<String, CompilerError> {
         let compilation_result = compilerEngineCompile(
             engine,
             MlirStringRef {
-                data: mlir_code_buffer.as_ptr() as *const std::os::raw::c_char,
+                data: mlir_code_buffer.as_ptr() as *const c_char,
                 length: mlir_code_buffer.len() as size_t,
             },
             CompilationTarget_ROUND_TRIP,
@@ -128,11 +143,11 @@ impl LibrarySupport {
             let runtime_library_path_buffer = runtime_library_path.as_bytes();
             let support = librarySupportCreateDefault(
                 MlirStringRef {
-                    data: output_dir_path_buffer.as_ptr() as *const std::os::raw::c_char,
+                    data: output_dir_path_buffer.as_ptr() as *const c_char,
                     length: output_dir_path_buffer.len() as size_t,
                 },
                 MlirStringRef {
-                    data: runtime_library_path_buffer.as_ptr() as *const std::os::raw::c_char,
+                    data: runtime_library_path_buffer.as_ptr() as *const c_char,
                     length: runtime_library_path_buffer.len() as size_t,
                 },
             );
@@ -160,7 +175,7 @@ impl LibrarySupport {
             let result = librarySupportCompile(
                 self.support,
                 MlirStringRef {
-                    data: mlir_code_buffer.as_ptr() as *const std::os::raw::c_char,
+                    data: mlir_code_buffer.as_ptr() as *const c_char,
                     length: mlir_code_buffer.len() as size_t,
                 },
                 options,
@@ -281,7 +296,7 @@ impl ClientSupport {
                 Some(path) => {
                     let cache_path_buffer = path.to_str().unwrap().as_bytes();
                     let cache = keySetCacheCreate(MlirStringRef {
-                        data: cache_path_buffer.as_ptr() as *const std::os::raw::c_char,
+                        data: cache_path_buffer.as_ptr() as *const c_char,
                         length: cache_path_buffer.len() as size_t,
                     });
                     if keySetCacheIsNull(cache) {
@@ -379,6 +394,174 @@ impl ClientSupport {
                 )));
             }
             Ok(arg)
+        }
+    }
+}
+
+// TODO: implement traits for C Struct that are serializable and reduce code for serialization and maybe refactor other functions.
+// destroy and is_null could be implemented for other struct as well.
+//
+// trait Serializable {
+//     fn into_buffer_ref(self) -> BufferRef;
+//     fn from_buffer_ref(buff: BufferRef, params: Option<ClientParameters>) -> Self;
+//     fn is_null(self) -> bool;
+//     fn destroy(self);
+// }
+
+// fn serialize<T: Serializable>(to_serialize: T) -> Result<Vec<c_char>, CompilerError> {
+//     unsafe {
+//         let serialized_ref = to_serialize.into_buffer_ref();
+//         if bufferRefIsNull(serialized_ref) {
+//             let error_msg = get_error_msg_from_ctype(serialized_ref);
+//             bufferRefDestroy(serialized_ref);
+//             return Err(CompilerError(error_msg));
+//         }
+//         let serialized = buffer_ref_to_bytes(serialized_ref);
+//         Ok(serialized)
+//     }
+// }
+
+// fn unserialize<T: Serializable + CStructErrorMsg>(
+//     serialized: &Vec<c_char>,
+//     client_parameters: Option<ClientParameters>,
+// ) -> Result<T, CompilerError> {
+//     unsafe {
+//         let serialized_ref = bufferRefCreate(
+//             serialized.as_ptr() as *const c_char,
+//             serialized.len().try_into().unwrap(),
+//         );
+//         let serialized = T::from_buffer_ref(serialized_ref, client_parameters);
+//         if serialized.is_null() {
+//             let error_msg = get_error_msg_from_ctype(serialized);
+//             serialized.destroy();
+//             return Err(CompilerError(error_msg));
+//         }
+//         Ok(serialized)
+//     }
+// }
+
+impl PublicArguments {
+    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+        unsafe {
+            let serialized_ref = publicArgumentsSerialize(self);
+            if bufferRefIsNull(serialized_ref) {
+                let error_msg = get_error_msg_from_ctype(serialized_ref);
+                bufferRefDestroy(serialized_ref);
+                return Err(CompilerError(error_msg));
+            }
+            let serialized = buffer_ref_to_bytes(serialized_ref);
+            Ok(serialized)
+        }
+    }
+    pub fn unserialize(
+        serialized: &Vec<c_char>,
+        client_parameters: ClientParameters,
+    ) -> Result<PublicArguments, CompilerError> {
+        unsafe {
+            let serialized_ref = bufferRefCreate(
+                serialized.as_ptr() as *const c_char,
+                serialized.len().try_into().unwrap(),
+            );
+            let public_args = publicArgumentsUnserialize(serialized_ref, client_parameters);
+            if publicArgumentsIsNull(public_args) {
+                let error_msg = get_error_msg_from_ctype(public_args);
+                publicArgumentsDestroy(public_args);
+                return Err(CompilerError(error_msg));
+            }
+            Ok(public_args)
+        }
+    }
+}
+
+impl PublicResult {
+    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+        unsafe {
+            let serialized_ref = publicResultSerialize(self);
+            if bufferRefIsNull(serialized_ref) {
+                let error_msg = get_error_msg_from_ctype(serialized_ref);
+                bufferRefDestroy(serialized_ref);
+                return Err(CompilerError(error_msg));
+            }
+            let serialized = buffer_ref_to_bytes(serialized_ref);
+            Ok(serialized)
+        }
+    }
+    pub fn unserialize(
+        serialized: &Vec<c_char>,
+        client_parameters: ClientParameters,
+    ) -> Result<PublicResult, CompilerError> {
+        unsafe {
+            let serialized_ref = bufferRefCreate(
+                serialized.as_ptr() as *const c_char,
+                serialized.len().try_into().unwrap(),
+            );
+            let public_result = publicResultUnserialize(serialized_ref, client_parameters);
+            if publicResultIsNull(public_result) {
+                let error_msg = get_error_msg_from_ctype(public_result);
+                publicResultDestroy(public_result);
+                return Err(CompilerError(error_msg));
+            }
+            Ok(public_result)
+        }
+    }
+}
+
+impl EvaluationKeys {
+    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+        unsafe {
+            let serialized_ref = evaluationKeysSerialize(self);
+            if bufferRefIsNull(serialized_ref) {
+                let error_msg = get_error_msg_from_ctype(serialized_ref);
+                bufferRefDestroy(serialized_ref);
+                return Err(CompilerError(error_msg));
+            }
+            let serialized = buffer_ref_to_bytes(serialized_ref);
+            Ok(serialized)
+        }
+    }
+    pub fn unserialize(serialized: &Vec<c_char>) -> Result<EvaluationKeys, CompilerError> {
+        unsafe {
+            let serialized_ref = bufferRefCreate(
+                serialized.as_ptr() as *const c_char,
+                serialized.len().try_into().unwrap(),
+            );
+            let eval_keys = evaluationKeysUnserialize(serialized_ref);
+            if evaluationKeysIsNull(eval_keys) {
+                let error_msg = get_error_msg_from_ctype(eval_keys);
+                evaluationKeysDestroy(eval_keys);
+                return Err(CompilerError(error_msg));
+            }
+            Ok(eval_keys)
+        }
+    }
+}
+
+impl ClientParameters {
+    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+        unsafe {
+            let serialized_ref = clientParametersSerialize(self);
+            if bufferRefIsNull(serialized_ref) {
+                let error_msg = get_error_msg_from_ctype(serialized_ref);
+                bufferRefDestroy(serialized_ref);
+                return Err(CompilerError(error_msg));
+            }
+            let serialized = buffer_ref_to_bytes(serialized_ref);
+            Ok(serialized)
+        }
+    }
+    pub fn unserialize(serialized: &Vec<c_char>) -> Result<ClientParameters, CompilerError> {
+        unsafe {
+            let serialized_ref = bufferRefCreate(
+                serialized.as_ptr() as *const c_char,
+                serialized.len().try_into().unwrap(),
+            );
+            let params = clientParametersUnserialize(serialized_ref);
+            if clientParametersIsNull(params) {
+                let error_msg = get_error_msg_from_ctype(params);
+                clientParametersDestroy(params);
+                return Err(CompilerError(error_msg));
+            }
+            Ok(params)
         }
     }
 }
@@ -521,6 +704,69 @@ mod test {
             let encrypted_result = lib_support
                 .server_lambda_call(server_lambda, encrypted_args, eval_keys)
                 .unwrap();
+            // decrypt the result of execution
+            let result_arg = client_support
+                .decrypt_result(encrypted_result, key_set)
+                .unwrap();
+            // get the scalar value from the result lambda argument
+            let result = lambdaArgumentGetScalar(result_arg);
+            assert_eq!(result, 6);
+        }
+    }
+
+    #[test]
+    fn test_compiler_compile_and_exec_with_serialization() {
+        unsafe {
+            let module_to_compile = "
+            func.func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
+                    %0 = \"FHE.add_eint\"(%arg0, %arg1) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
+                    return %0 : !FHE.eint<5>
+                }";
+            let runtime_library_path = match env::var("CONCRETE_COMPILER_BUILD_DIR") {
+                Ok(val) => val + "/lib/libConcretelangRuntime.so",
+                Err(_e) => "".to_string(),
+            };
+            let temp_dir =
+                TempDir::new("rust_test_compiler_compile_and_exec_with_serialization").unwrap();
+            let lib_support = LibrarySupport::new(
+                temp_dir.path().to_str().unwrap(),
+                runtime_library_path.as_str(),
+            )
+            .unwrap();
+            // compile
+            let result = lib_support.compile(module_to_compile, None).unwrap();
+            // loading materials from compilation
+            // - server_lambda: used for execution
+            // - client_parameters: used for keygen, encryption, and evaluation keys
+            let server_lambda = lib_support.load_server_lambda(result).unwrap();
+            let client_params = lib_support.load_client_parameters(result).unwrap();
+            // serialize client parameters
+            let serialized_params = client_params.serialize().unwrap();
+            let client_params = ClientParameters::unserialize(&serialized_params).unwrap();
+            // create client support
+            let client_support = ClientSupport::new(client_params, None).unwrap();
+            let key_set = client_support.keyset(None, None).unwrap();
+            let eval_keys = keySetGetEvaluationKeys(key_set);
+            // serialize eval keys
+            let serialized_eval_keys = eval_keys.serialize().unwrap();
+            let eval_keys = EvaluationKeys::unserialize(&serialized_eval_keys).unwrap();
+            // build lambda arguments from scalar and encrypt them
+            let args = [lambdaArgumentFromScalar(4), lambdaArgumentFromScalar(2)];
+            let encrypted_args = client_support.encrypt_args(&args, key_set).unwrap();
+            // free args
+            args.map(|arg| lambdaArgumentDestroy(arg));
+            // serialize args
+            let serialized_encrypted_args = encrypted_args.serialize().unwrap();
+            let encrypted_args =
+                PublicArguments::unserialize(&serialized_encrypted_args, client_params).unwrap();
+            // execute the compiled function on the encrypted arguments
+            let encrypted_result = lib_support
+                .server_lambda_call(server_lambda, encrypted_args, eval_keys)
+                .unwrap();
+            // serialize result
+            let serialized_encrypted_result = encrypted_result.serialize().unwrap();
+            let encrypted_result =
+                PublicResult::unserialize(&serialized_encrypted_result, client_params).unwrap();
             // decrypt the result of execution
             let result_arg = client_support
                 .decrypt_result(encrypted_result, key_set)

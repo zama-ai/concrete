@@ -24,7 +24,7 @@ extern "C" {
 #define DEFINE_C_API_STRUCT(name, storage)                                     \
   struct name {                                                                \
     storage *ptr;                                                              \
-    char *error;                                                               \
+    const char *error;                                                         \
   };                                                                           \
   typedef struct name name
 
@@ -85,6 +85,31 @@ DEFINE_NULL_PTR_CHECKER(compilationFeedbackIsNull, CompilationFeedback);
 /// This is not supposed to destroy any string ref, but only the ones we have
 /// allocated memory for and know how to free.
 MLIR_CAPI_EXPORTED void mlirStringRefDestroy(MlirStringRef str);
+
+MLIR_CAPI_EXPORTED bool mlirStringRefIsNull(MlirStringRef str) {
+  return str.data == NULL;
+}
+
+/// ********** BufferRef CAPI **************************************************
+
+/// A struct for binary buffers.
+///
+/// Contraty to MlirStringRef, it doesn't assume the pointer point to a null
+/// terminated string and the data should be considered as is in binary form.
+/// Useful for serialized objects.
+typedef struct BufferRef {
+  const char *data;
+  size_t length;
+  const char *error;
+} BufferRef;
+
+MLIR_CAPI_EXPORTED void bufferRefDestroy(BufferRef buffer);
+
+MLIR_CAPI_EXPORTED bool bufferRefIsNull(BufferRef buffer) {
+  return buffer.data == NULL;
+}
+
+MLIR_CAPI_EXPORTED BufferRef bufferRefCreate(const char *buffer, size_t length);
 
 /// ********** CompilationTarget CAPI ******************************************
 
@@ -195,6 +220,11 @@ MLIR_CAPI_EXPORTED void serverLambdaDestroy(ServerLambda server);
 
 /// ********** ClientParameters CAPI *******************************************
 
+MLIR_CAPI_EXPORTED BufferRef clientParametersSerialize(ClientParameters params);
+
+MLIR_CAPI_EXPORTED ClientParameters
+clientParametersUnserialize(BufferRef buffer);
+
 MLIR_CAPI_EXPORTED void clientParametersDestroy(ClientParameters params);
 
 /// ********** KeySet CAPI *****************************************************
@@ -217,6 +247,10 @@ keySetCacheLoadOrGenerateKeySet(KeySetCache cache, ClientParameters params,
 MLIR_CAPI_EXPORTED void keySetCacheDestroy(KeySetCache keySetCache);
 
 /// ********** EvaluationKeys CAPI *********************************************
+
+MLIR_CAPI_EXPORTED BufferRef evaluationKeysSerialize(EvaluationKeys keys);
+
+MLIR_CAPI_EXPORTED EvaluationKeys evaluationKeysUnserialize(BufferRef buffer);
 
 MLIR_CAPI_EXPORTED void evaluationKeysDestroy(EvaluationKeys evaluationKeys);
 
@@ -257,12 +291,22 @@ MLIR_CAPI_EXPORTED void lambdaArgumentDestroy(LambdaArgument lambdaArg);
 
 /// ********** PublicArguments CAPI ********************************************
 
+MLIR_CAPI_EXPORTED BufferRef publicArgumentsSerialize(PublicArguments args);
+
+MLIR_CAPI_EXPORTED PublicArguments
+publicArgumentsUnserialize(BufferRef buffer, ClientParameters params);
+
 MLIR_CAPI_EXPORTED void publicArgumentsDestroy(PublicArguments publicArgs);
 
 /// ********** PublicResult CAPI ***********************************************
 
 MLIR_CAPI_EXPORTED LambdaArgument publicResultDecrypt(PublicResult publicResult,
                                                       KeySet keySet);
+
+MLIR_CAPI_EXPORTED BufferRef publicResultSerialize(PublicResult result);
+
+MLIR_CAPI_EXPORTED PublicResult
+publicResultUnserialize(BufferRef buffer, ClientParameters params);
 
 MLIR_CAPI_EXPORTED void publicResultDestroy(PublicResult publicResult);
 

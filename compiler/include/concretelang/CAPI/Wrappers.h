@@ -22,7 +22,7 @@
   static inline cpptype *unwrap(name c) {                                      \
     return static_cast<cpptype *>(c.ptr);                                      \
   }                                                                            \
-  static inline char *getErrorPtr(name c) { return c.error; }
+  static inline const char *getErrorPtr(name c) { return c.error; }
 
 DEFINE_C_API_PTR_METHODS_WITH_ERROR(CompilerEngine,
                                     mlir::concretelang::CompilerEngine)
