@@ -223,6 +223,16 @@ llvm::cl::opt<double> fallbackLogNormWoppbs(
     llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG
                        .fallback_log_norm_woppbs));
 
+llvm::cl::opt<concrete_optimizer::Encoding> optimizerEncoding(
+    "force-encoding", llvm::cl::desc("Choose cyphertext encoding."),
+    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.encoding),
+    llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Auto, "auto",
+                                "Pick the best [default]")),
+    llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Native, "native",
+                                "native")),
+    llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Native, "crt",
+                                "Chineese Reminder Theorem representation")));
+
 llvm::cl::list<int64_t> fhelinalgTileSizes(
     "fhelinalg-tile-sizes",
     llvm::cl::desc(
@@ -371,6 +381,7 @@ cmdlineCompilationOptions() {
   options.optimizerConfig.p_error = cmdline::pbsErrorProbability;
   options.optimizerConfig.display = cmdline::displayOptimizerChoice;
   options.optimizerConfig.strategy_v0 = cmdline::optimizerV0;
+  options.optimizerConfig.encoding = cmdline::optimizerEncoding;
 
   if (!std::isnan(options.optimizerConfig.global_p_error) &&
       options.optimizerConfig.strategy_v0) {

@@ -24,11 +24,13 @@ namespace mlir {
 namespace concretelang {
 
 concrete_optimizer::Options options_from_config(optimizer::Config config) {
-  concrete_optimizer::Options options;
-  options.security_level = config.security;
-  options.maximum_acceptable_error_probability = config.p_error;
-  options.default_log_norm2_woppbs = config.fallback_log_norm_woppbs;
-  options.use_gpu_constraints = config.use_gpu_constraints;
+  concrete_optimizer::Options options = {
+      /* .security_level = */ config.security,
+      /* .maximum_acceptable_error_probability = */ config.p_error,
+      /* .default_log_norm2_woppbs = */ config.fallback_log_norm_woppbs,
+      /* .use_gpu_constraints = */ config.use_gpu_constraints,
+      /* .encoding = */ config.encoding,
+  };
   return options;
 }
 

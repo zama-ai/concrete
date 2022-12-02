@@ -24,6 +24,8 @@ constexpr uint DEFAULT_FALLBACK_LOG_NORM_WOPPBS = 8;
 constexpr bool DEFAULT_DISPLAY = false;
 constexpr bool DEFAULT_STRATEGY_V0 = false;
 constexpr bool DEFAULT_USE_GPU_CONSTRAINTS = false;
+constexpr concrete_optimizer::Encoding DEFAULT_ENCODING =
+    concrete_optimizer::Encoding::Auto;
 
 struct Config {
   double p_error;
@@ -33,15 +35,19 @@ struct Config {
   std::uint64_t security;
   double fallback_log_norm_woppbs;
   bool use_gpu_constraints;
+  concrete_optimizer::Encoding encoding;
 };
 
-constexpr Config DEFAULT_CONFIG = {UNSPECIFIED_P_ERROR,
-                                   NO_GLOBAL_P_ERROR,
-                                   DEFAULT_DISPLAY,
-                                   DEFAULT_STRATEGY_V0,
-                                   DEFAULT_SECURITY,
-                                   DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
-                                   DEFAULT_USE_GPU_CONSTRAINTS};
+constexpr Config DEFAULT_CONFIG = {
+    UNSPECIFIED_P_ERROR,
+    NO_GLOBAL_P_ERROR,
+    DEFAULT_DISPLAY,
+    DEFAULT_STRATEGY_V0,
+    DEFAULT_SECURITY,
+    DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
+    DEFAULT_USE_GPU_CONSTRAINTS,
+    DEFAULT_ENCODING,
+};
 
 using Dag = rust::Box<concrete_optimizer::OperationDag>;
 using Solution = concrete_optimizer::v0::Solution;
