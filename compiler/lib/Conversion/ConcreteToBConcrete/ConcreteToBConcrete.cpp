@@ -208,12 +208,10 @@ struct LowerKeySwitch : public mlir::OpRewritePattern<
     // construct attributes for in/out dimensions
     mlir::concretelang::Concrete::LweCiphertextType outType = ksOp.getType();
     auto outDimAttr = rewriter.getI32IntegerAttr(outType.getDimension());
-    auto inputType =
-        ksOp.ciphertext()
-            .getType()
-            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
-    mlir::IntegerAttr inputDimAttr =
-        rewriter.getI32IntegerAttr(inputType.getDimension());
+    auto inputType = converter.convertType(ksOp.ciphertext().getType())
+                         .cast<mlir::RankedTensorType>();
+    auto inputDimension = inputType.getShape().back() - 1;
+    mlir::IntegerAttr inputDimAttr = rewriter.getI32IntegerAttr(inputDimension);
 
     mlir::Operation *bKeySwitchOp = rewriter.replaceOpWithNewOp<
         mlir::concretelang::BConcrete::KeySwitchLweTensorOp>(
@@ -286,11 +284,11 @@ struct LowerBootstrap : public mlir::OpRewritePattern<
     ConcreteToBConcreteTypeConverter converter;
 
     mlir::concretelang::Concrete::LweCiphertextType outType = bsOp.getType();
-    auto inputType =
-        bsOp.input_ciphertext()
-            .getType()
-            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
-    auto inputDimAttr = rewriter.getI32IntegerAttr(inputType.getDimension());
+    auto inputType = converter.convertType(bsOp.input_ciphertext().getType())
+                         .cast<mlir::RankedTensorType>();
+    auto inputDimension = inputType.getShape().back() - 1;
+    mlir::IntegerAttr inputDimAttr = rewriter.getI32IntegerAttr(inputDimension);
+
     auto outputPrecisionAttr = rewriter.getI32IntegerAttr(outType.getP());
     mlir::Operation *bBootstrapOp = rewriter.replaceOpWithNewOp<
         mlir::concretelang::BConcrete::BootstrapLweTensorOp>(
