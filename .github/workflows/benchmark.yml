@@ -103,7 +103,7 @@ jobs:
         run: |
           set -e
           cd compiler
-          make BINDINGS_PYTHON_ENABLED=OFF build-benchmarks generate-benchmarks
+          make BINDINGS_PYTHON_ENABLED=OFF build-benchmarks generate-cpu-benchmarks
 
       - name: Download KeySetCache
         if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
