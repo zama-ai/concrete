@@ -231,26 +231,6 @@ run-rust-tests: rust-bindings
 
 ## end-to-end-tests
 
-FIXTURE_CPU_DIR=tests/end_to_end_fixture/tests_cpu
-
-$(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
-	mkdir -p $(FIXTURE_CPU_DIR)
-	$(Python3_EXECUTABLE) $< > $@
-
-$(FIXTURE_CPU_DIR)/bug_report.yaml:
-	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
-
-generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml
-
-build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-test build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
-
-run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_test
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_encrypted_tensor
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_fhelinalg
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_lambda
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test --loop-parallelize --jit $(FIXTURE_CPU_DIR)/*.yaml
-
 build-end-to-end-jit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
 
@@ -265,6 +245,40 @@ build-end-to-end-jit-fhelinalg: build-initialized
 
 build-end-to-end-jit-lambda: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_lambda
+
+build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-test build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+
+### end-to-end-tests CPU
+
+FIXTURE_CPU_DIR=tests/end_to_end_fixture/tests_cpu
+
+$(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
+	mkdir -p $(FIXTURE_CPU_DIR)
+	$(Python3_EXECUTABLE) $< > $@
+
+$(FIXTURE_CPU_DIR)/bug_report.yaml:
+	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
+
+generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml
+
+### end-to-end-tests GPU
+
+FIXTURE_GPU_DIR=tests/end_to_end_fixture/tests_gpu
+
+$(FIXTURE_GPU_DIR):
+	mkdir -p $(FIXTURE_GPU_DIR)
+
+$(FIXTURE_GPU_DIR)/end_to_end_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_apply_lookup_table_gen.py
+	$(Python3_EXECUTABLE) $< --bitwidth 1 2 3 4 5 6 7 > $@
+
+$(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
+	$(Python3_EXECUTABLE) $< --bitwidth 1 2 3 4 5 6 7 > $@
+
+generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml
+
+run-end-to-end-tests-gpu: build-end-to-end-test generate-gpu-tests
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test --emit-gpu-ops --library /tmp/concrete_compiler/gpu_tests/ $(FIXTURE_CPU_DIR)/*.yaml
+
 
 ## end-to-end-dataflow-tests
 
