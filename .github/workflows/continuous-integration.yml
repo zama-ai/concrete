@@ -701,8 +701,8 @@ jobs:
   #################
 
   BuildAndPushDockerImages:
-    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') || needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' }}
-    needs: [BuildAndPublishHPXDockerImage]
+    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') || needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' || needs.BuildAndPublishCUDADockerImage.outputs.image_built == 'true' }}
+    needs: [BuildAndPublishHPXDockerImage, BuildAndPublishCUDADockerImage]
     name: Build & Publish Docker Images
     runs-on: ubuntu-20.04
     strategy:
@@ -783,3 +783,38 @@ jobs:
       - name: Is Image Built
         id: is-built
         run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env') }}"
+
+  BuildAndPublishCUDADockerImage:
+    name: Build & Publish CUDA Docker Image
+    runs-on: ubuntu-20.04
+    env:
+      IMAGE: ghcr.io/zama-ai/cuda
+      TAG: "11-7"
+    outputs:
+      image_built: ${{ steps.is-built.outputs.IMAGE_BUILT }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v32
+
+      - name: Login
+        id: login
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.cuda-env')
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      - name: Build Tag and Publish
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        run: |
+          docker build -t "${IMAGE}" -f builders/Dockerfile.cuda-env .
+          docker image tag "${IMAGE}" "${IMAGE}:${TAG}"
+          docker push "${IMAGE}:latest"
+          docker push "${IMAGE}:${TAG}"
+
+      - name: Is Image Built
+        id: is-built
+        run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.cuda-env') }}"
