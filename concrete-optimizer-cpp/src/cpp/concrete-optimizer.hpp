@@ -936,10 +936,10 @@ namespace concrete_optimizer {
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$OperationDag
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$OperationDag
 struct OperationDag final : public ::rust::Opaque {
-  ::concrete_optimizer::dag::OperatorIndex add_input(::std::uint8_t out_precision, ::rust::Slice<const ::std::uint64_t> out_shape) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<const ::std::uint64_t> table, ::std::uint8_t out_precision) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<const ::std::uint64_t> out_shape, ::rust::Str comment) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_input(::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
   ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
@@ -1043,7 +1043,7 @@ namespace v0 {
 } // namespace v0
 
 namespace utils {
-::concrete_optimizer::dag::DagSolution convert_to_dag_solution(const ::concrete_optimizer::v0::Solution &solution) noexcept;
+::concrete_optimizer::dag::DagSolution convert_to_dag_solution(::concrete_optimizer::v0::Solution const &solution) noexcept;
 } // namespace utils
 
 namespace dag {
@@ -1051,6 +1051,6 @@ namespace dag {
 } // namespace dag
 
 namespace weights {
-::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<const ::std::int64_t> weights) noexcept;
+::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<::std::int64_t const> weights) noexcept;
 } // namespace weights
 } // namespace concrete_optimizer
