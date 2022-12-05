@@ -225,8 +225,7 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
             } else {
                 writeln!(
                     writer,
-                    "    # no solution starting from log norm2 = {}",
-                    no_solution_at
+                    "    # no solution starting from log norm2 = {no_solution_at}"
                 )?;
             }
         }

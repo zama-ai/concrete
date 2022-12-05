@@ -129,10 +129,7 @@ where
         let filelock = match FileLock::lock(path, is_blocking, options) {
             Ok(lock) => lock,
             Err(error) => {
-                println!(
-                    "PersistentCache::read_from_disk: Cannot lock cache file {}: {}",
-                    path, error
-                );
+                println!("PersistentCache::read_from_disk: Cannot lock cache file {path}: {error}");
                 return None;
             }
         };
@@ -153,7 +150,7 @@ where
             Ok(()) => (),
             Err(err) => {
                 let path = &self.path;
-                println!("PersistentCache::sync_to_disk: Cannot create directory {path}, {err}",);
+                println!("PersistentCache::sync_to_disk: Cannot create directory {path}, {err}");
                 return;
             }
         };
@@ -191,10 +188,7 @@ where
                 }
             }
             Err(err) => {
-                println!(
-                    "PersistentCache::read_from_disk: cannot read size {} {}",
-                    path, err
-                );
+                println!("PersistentCache::read_from_disk: cannot read size {path} {err}");
                 return None;
             }
         };
@@ -211,10 +205,7 @@ where
                 }
             }
             Err(error) => {
-                println!(
-                    "PersistentCache::read_given_lock: Cannot read version {}: {}",
-                    path, error
-                );
+                println!("PersistentCache::read_given_lock: Cannot read version {path}: {error}");
                 Self::clear_file(path);
                 return None;
             }
@@ -222,10 +213,7 @@ where
         match bincode::deserialize_from(buf.borrow_mut()) {
             Ok(content) => Some(content),
             Err(error) => {
-                println!(
-                    "PersistentCache::read_given_lock: Cannot read hashmap {}: {}",
-                    path, error
-                );
+                println!("PersistentCache::read_given_lock: Cannot read hashmap {path}: {error}");
                 Self::clear_file(path);
                 None
             }
