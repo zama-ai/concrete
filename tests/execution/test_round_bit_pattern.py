@@ -162,7 +162,7 @@ def test_auto_rounding(helpers):
     # we have 4-bit inputs for this table, and we only want to use first 2-bits
     for i in range(0, 2**4, 2**2):
         # so we set every 4th entry to an 8-bit value
-        entries4[i] = np.random.randint(0, 2**8)
+        entries4[i] = np.random.randint(2**7, 2**8)
     # when this tlu is applied to a 4-bit value with 2-bit msb rounding, result will be 8-bits
     table4 = cnp.LookupTable(entries4)
     # and this is the rounder for table2, which should have lsbs_to_remove of 2

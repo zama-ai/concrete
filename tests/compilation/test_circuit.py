@@ -297,7 +297,7 @@ def test_bad_server_save(helpers):
 @pytest.mark.parametrize("p_error", [0.5, 0.1, 0.01])
 @pytest.mark.parametrize("bit_width", [10])
 @pytest.mark.parametrize("sample_size", [100_000])
-@pytest.mark.parametrize("tolerance", [0.05])
+@pytest.mark.parametrize("tolerance", [0.075])
 def test_virtual_p_error(p_error, bit_width, sample_size, tolerance, helpers):
     """
     Test virtual circuits with p_error.
