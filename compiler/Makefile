@@ -261,6 +261,13 @@ $(FIXTURE_CPU_DIR)/bug_report.yaml:
 
 generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml
 
+run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_test
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_encrypted_tensor
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_fhelinalg
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_lambda
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test --loop-parallelize --jit $(FIXTURE_CPU_DIR)/*.yaml
+
 ### end-to-end-tests GPU
 
 FIXTURE_GPU_DIR=tests/end_to_end_fixture/tests_gpu
@@ -277,7 +284,9 @@ $(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_f
 generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml
 
 run-end-to-end-tests-gpu: build-end-to-end-test generate-gpu-tests
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test --emit-gpu-ops --library /tmp/concrete_compiler/gpu_tests/ $(FIXTURE_CPU_DIR)/*.yaml
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	--emit-gpu-ops --batch-concrete-ops --library /tmp/concrete_compiler/gpu_tests/ \
+	$(FIXTURE_GPU_DIR)/*.yaml
 
 
 ## end-to-end-dataflow-tests

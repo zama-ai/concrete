@@ -248,6 +248,11 @@ int main(int argc, char **argv) {
       "emit-gpu-ops",
       llvm::cl::desc("Set the emitGPUOps compilation options to run the tests"),
       llvm::cl::init(false));
+  llvm::cl::opt<bool> batchConcreteOps(
+      "batch-concrete-ops",
+      llvm::cl::desc(
+          "Set the batchConcreteOps compilation options to run the tests"),
+      llvm::cl::init(false));
 
   // Optimizer options
   llvm::cl::opt<bool> optimizerDisplay(
@@ -275,7 +280,8 @@ int main(int argc, char **argv) {
   compilationOptions.loopParallelize = loopParallelize.getValue();
   compilationOptions.dataflowParallelize = dataflowParallelize.getValue();
   compilationOptions.emitGPUOps = emitGPUOps.getValue();
-  compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
+  compilationOptions.batchConcreteOps =
+      compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
 
   for (auto descFile : descriptionFiles) {
     auto desc = loadEndToEndDesc(descFile);
