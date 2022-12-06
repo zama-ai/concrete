@@ -43,7 +43,7 @@ CLI.add_argument(
     help="Specify the list of bitwidth to generate",
     nargs="+",
     type=int,
-    default=list(range(1,16)),
+    default=list(range(1,17)),
 )
 CLI.add_argument(
     "--n-ct",
