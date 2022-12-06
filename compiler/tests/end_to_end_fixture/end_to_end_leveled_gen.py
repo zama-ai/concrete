@@ -1,4 +1,6 @@
 MIN_PRECISON = 1
+from end_to_end_linalg_leveled_gen import P_ERROR
+
 MAX_PRECISION = 57
 
 TEST_ERROR_RATES = """\
@@ -251,6 +253,8 @@ def main():
             "    %1 = \"FHE.mul_eint_int\"(%arg0, %0): (!FHE.eint<{0}>, i{1}) -> (!FHE.eint<{0}>)".format(p, integer_bitwidth))
         print("    return %1: !FHE.eint<{0}>".format(p))
         print("  }")
+        if p <= 57:
+            print(f"p-error: {P_ERROR}")
         print("tests:")
         print("  - inputs:")
         print("    - scalar: 0")
@@ -298,5 +302,5 @@ def main():
             may_check_error_rate()
             print("---")
 
-
-main()
+if __name__ == "__main__":
+    main()

@@ -1,10 +1,9 @@
-from platform import mac_ver
-import numpy as np
 import argparse
+from platform import mac_ver
 
+import numpy as np
 
-MIN_PRECISON = 1
-MAX_PRECISION = 16
+from end_to_end_linalg_leveled_gen import P_ERROR
 
 PRECISION_FORCE_CRT = 9
 
@@ -26,6 +25,7 @@ def generate(args):
         print("  }")
         if p >= PRECISION_FORCE_CRT:
             print("encoding: crt")
+        print(f"p-error: {P_ERROR}")
         print("tests:")
         print("  - inputs:")
         print("    - scalar: 0")
@@ -42,12 +42,13 @@ def generate(args):
         print(f"    - scalar: {random_lut[max_value]}")
         print("---")
 
-CLI = argparse.ArgumentParser()
-CLI.add_argument(
-    "--bitwidth",
-    help="Specify the list of bitwidth to generate",
-    nargs="+",
-    type=int,
-    default=list(range(1,16)),
-)
-generate(CLI.parse_args())
+if __name__ == "__main__":
+    CLI = argparse.ArgumentParser()
+    CLI.add_argument(
+        "--bitwidth",
+        help="Specify the list of bitwidth to generate",
+        nargs="+",
+        type=int,
+        default=list(range(1,17)),
+    )
+    generate(CLI.parse_args())

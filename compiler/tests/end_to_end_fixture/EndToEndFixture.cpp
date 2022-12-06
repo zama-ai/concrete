@@ -305,8 +305,8 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
   static void mapping(IO &io, EndToEndDesc &desc) {
     io.mapRequired("description", desc.description);
     io.mapRequired("program", desc.program);
+    io.mapOptional("p-error", desc.p_error);
     io.mapRequired("tests", desc.tests);
-
     bool use_default_fhe_constraints = false;
     io.mapOptional("use_default_fhe_constraints", use_default_fhe_constraints);
 

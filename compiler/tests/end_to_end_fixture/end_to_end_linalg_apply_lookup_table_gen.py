@@ -1,6 +1,9 @@
-from platform import mac_ver
-import numpy as np
 import argparse
+from platform import mac_ver
+
+import numpy as np
+
+from end_to_end_linalg_leveled_gen import P_ERROR
 
 PRECISION_FORCE_CRT = 9
 
@@ -26,6 +29,7 @@ def generate(args):
                 print("  }")
                 if p >= PRECISION_FORCE_CRT:
                     print("encoding: crt")
+                print(f"p-error: {P_ERROR}")
                 random_input = np.random.randint(max_value+1, size=n_ct)
                 print("tests:")
                 print("  - inputs:")
@@ -62,4 +66,6 @@ CLI.add_argument(
     type=int,
     default=[1,2],
 )
-generate(CLI.parse_args())
+
+if __name__ == "__main__":
+    generate(CLI.parse_args())

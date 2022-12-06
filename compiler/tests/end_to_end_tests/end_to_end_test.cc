@@ -186,6 +186,10 @@ void registerEndToEnd(std::string suiteName, std::string libpath,
     options.v0FHEConstraints = desc.v0Constraint;
   }
   options.optimizerConfig.encoding = desc.encoding;
+  if (desc.p_error.hasValue()) {
+    options.optimizerConfig.p_error = *desc.p_error;
+    options.optimizerConfig.global_p_error = NAN;
+  }
   auto i = 0;
   for (auto test : desc.tests) {
     auto valueName = std::to_string(i);

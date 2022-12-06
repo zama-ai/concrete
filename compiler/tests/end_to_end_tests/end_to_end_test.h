@@ -12,6 +12,8 @@ static inline uint16_t operator"" _u16(unsigned long long int v) { return v; }
 static inline uint32_t operator"" _u32(unsigned long long int v) { return v; }
 static inline uint64_t operator"" _u64(unsigned long long int v) { return v; }
 
+const double TEST_ERROR_RATE = 1.0 - 0.999936657516;
+
 // Evaluates to the number of elements of a statically initialized
 // array
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))

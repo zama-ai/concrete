@@ -133,6 +133,10 @@ void registerEndToEndBenchmark(std::string suiteName,
   auto optionsName = getOptionsName(options);
   for (auto description : descriptions) {
     options.clientParametersFuncName = "main";
+    if (description.p_error) {
+      assert(std::isnan(options.optimizerConfig.global_p_error));
+      options.optimizerConfig.p_error = description.p_error.value();
+    }
     mlir::concretelang::JITSupport support;
     auto benchName = [&](std::string name) {
       std::ostringstream s;

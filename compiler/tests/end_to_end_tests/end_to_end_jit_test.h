@@ -20,11 +20,12 @@ inline llvm::Expected<
 internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false,
                    bool dataflowParallelize = false,
-                   bool loopParallelize = false,
-                   bool batchConcreteOps = false) {
+                   bool loopParallelize = false, bool batchConcreteOps = false,
+                   double global_p_error = TEST_ERROR_RATE) {
 
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
+  options.optimizerConfig.global_p_error = global_p_error;
   if (useDefaultFHEConstraints) {
     options.v0FHEConstraints = defaultV0Constraints;
     options.optimizerConfig.strategy_v0 = true;

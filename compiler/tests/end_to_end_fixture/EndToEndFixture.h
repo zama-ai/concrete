@@ -48,6 +48,7 @@ struct TestErrorRate {
 struct EndToEndDesc {
   std::string description;
   std::string program;
+  llvm::Optional<double> p_error; // force the test in local p-error
   std::vector<TestDescription> tests;
   llvm::Optional<mlir::concretelang::V0Parameter> v0Parameter;
   llvm::Optional<mlir::concretelang::V0FHEConstraint> v0Constraint;

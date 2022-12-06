@@ -2,6 +2,7 @@ import numpy as np
 
 PRECISIONS_TO_BENCH = [1, 2, 5, 8, 9, 12, 16, 24, 32, 40, 48, 56]
 N_CT = [100, 1000, 100000]
+P_ERROR = 1.0 - 0.999936657516
 
 
 def main():
@@ -25,6 +26,7 @@ def main():
                 "    %1 = \"FHELinalg.add_eint_int\"(%arg0, %0): (tensor<{1}x!FHE.eint<{0}>>, tensor<{1}xi{2}>) -> (tensor<{1}x!FHE.eint<{0}>>)".format(p, n_ct, integer_bitwidth))
             print("    return %1: tensor<{1}x!FHE.eint<{0}>>".format(p, n_ct))
             print("  }")
+            print(f"p-error: {P_ERROR}")
             print("tests:")
             print("  - inputs:")
             print(
@@ -41,6 +43,7 @@ def main():
                 "    %1 = \"FHELinalg.add_eint\"(%arg0, %arg1): (tensor<{1}x!FHE.eint<{0}>>, tensor<{1}x!FHE.eint<{0}>>) -> (tensor<{1}x!FHE.eint<{0}>>)".format(p, n_ct, integer_bitwidth))
             print("    return %1: tensor<{1}x!FHE.eint<{0}>>".format(p, n_ct))
             print("  }")
+            print(f"p-error: {P_ERROR}")
             print("tests:")
             print("  - inputs:")
             print(
@@ -63,6 +66,7 @@ def main():
             print("    return %1: tensor<{1}x!FHE.eint<{0}>>".format(
                 p, n_ct, integer_bitwidth))
             print("  }")
+            print(f"p-error: {P_ERROR}")
             print("tests:")
             print("  - inputs:")
             print(
@@ -70,5 +74,5 @@ def main():
             print("      shape: [{0}]".format(n_ct))
             print("---")
 
-
-main()
+if __name__ == "__main__":
+    main()
