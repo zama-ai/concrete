@@ -1,0 +1,205 @@
+# Build on an AWS instance.
+name: AWS EC2 build
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
+      matrix_item:
+        description: 'Build matrix item'
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
+  CUDA_SUPPORT: OFF
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+
+jobs:
+  BuildAndTest:
+    name: Build and test compiler in EC2
+    concurrency:
+      group: ${{ github.ref }}_${{ github.event.inputs.instance_image_id }}_${{ github.event.inputs.instance_type }}
+      cancel-in-progress: true
+    runs-on: ${{ github.event.inputs.runner_name }}
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Instance configuration used
+        run: |
+          echo "IDs: ${{ inputs.instance_id }}"
+          echo "AMI: ${{ inputs.instance_image_id }}"
+          echo "Type: ${{ inputs.instance_type }}"
+          echo "Request ID: ${{ inputs.request_id }}"
+          echo "Matrix item: ${{ inputs.matrix_item }}"
+
+      - name: Set up home
+        # "Install rust" step require root user to have a HOME directory which is not set.
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
+      - name: Set up GPU support build option
+        if: ${{ startsWith(inputs.instance_type, 'p3.') }}
+        run: |
+          echo "CUDA_SUPPORT=ON" >> "${GITHUB_ENV}"
+
+      # Free 4Gb of workspace
+      - name: Freeing space
+        run: |
+          df -h
+          for image in ubuntu:{16,18}.04 \
+              node:{12,14,16}{-alpine,} \
+              buildpack-deps:{stretch,buster,bullseye} \
+              debian:{9,10,11} alpine:3.{12,13,14} \
+              moby/buildkit:latest docker:20.10
+          do
+            docker image rm $image || echo Please clean remove it from this step
+          done
+          df -h
+
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Concrete-Optimizer
+        run: |
+          cd compiler
+          make concrete-optimizer-lib
+
+      - name: Create build dir
+        run: mkdir build
+
+      - name: Build compiler
+        uses: addnab/docker-run-action@v3
+        id: build-compiler
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            rm -rf /build/*
+            pip install pytest
+            sed "s/pytest/python -m pytest/g" -i Makefile
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=${{ CUDA_SUPPORT }} all build-end-to-end-dataflow-tests
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
+      - name: Download KeySetCache
+        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
+        continue-on-error: true
+        run: |
+          cd compiler
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
+
+      - name: Mark KeySetCache
+        run: |
+          touch keysetcache.timestamp
+
+      - name: Test compiler
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            pip install pytest
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests run-rust-tests
+            chmod -R ugo+rwx /tmp/KeySetCache
+
+      - name: Prune KeySetCache
+        run: |
+          echo "Previous cache size is"
+          du -sh KeySetCache
+          echo "Cleaning"
+          find KeySetCache/* -maxdepth 1 -mindepth 1 -not -newer keysetcache.timestamp -type d -exec rm -vr {} \;
+          echo "New cache size is"
+          du -sh KeySetCache
+
+      - name: Upload KeySetCache
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: KeySetCacheV2
+          path: KeySetCache
+          retention-days: 90
+
+      - name: Cleanup Old KeySetCache
+        uses: Remagpie/gha-remove-artifact@v1
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          only-name: KeySetCacheV2
+          max-count: 1
+
+      - name: Build the documentation
+        id: build-doc
+        if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/docs:/docs
+          shell: bash
+          run: |
+            set -e
+            rm -rf /build
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
+            cd /docs
+            pip install -r requirements.txt
+            pip install -r ../llvm-project/mlir/python/requirements.txt
+            dnf install -y doxygen
+            sed "s/sphinx-apidoc/python -m sphinx.ext.apidoc/g" -i Makefile
+            sed "s/sphinx-build/python -m sphinx.cmd.build/g" -i Makefile
+            make COMPILER_BUILD_DIR=/build/ doc
+
+      - name: Archive docs artifacts
+        if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: html-docs
+          path: docs/_build/html
