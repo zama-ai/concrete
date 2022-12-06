@@ -8,6 +8,9 @@ CC_COMPILER=
 CXX_COMPILER=
 CUDA_SUPPORT?=OFF
 CONCRETE_CORE_PATH?= $(shell pwd)/concrete-core
+INSTALL_PREFIX?=/usr/local/
+INSTALL_PATH=$(abspath $(INSTALL_PREFIX))/concretecompiler/
+MAKEFILE_ROOT_DIR=$(shell pwd)
 
 CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/concrete-optimizer
 
@@ -383,10 +386,6 @@ mlir-opt: build-initialized
 mlir-translate: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-translate
 
-release-tarballs:
-	docker image build -t concrete-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
-	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concrete-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
-
 update-python-version:
 	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/version.txt
 
@@ -405,6 +404,21 @@ check-rust-format:
 rust-format:
 	cd lib/Bindings/Rust && cargo fmt 
 
+install: concretecompiler concrete-optimizer-lib CAPI
+	$(info Install prefix set to $(INSTALL_PREFIX))
+	$(info Installing under $(INSTALL_PATH))
+	mkdir -p $(INSTALL_PATH)/include
+	cp -R $(abspath $(BUILD_DIR))/bin $(INSTALL_PATH)
+	cp -R $(abspath $(BUILD_DIR))/lib $(INSTALL_PATH)
+	cp $(LIB_CONCRETE_OPTIMIZER_CPP) $(INSTALL_PATH)/lib/
+	cp $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp/src/cpp/concrete-optimizer.hpp $(INSTALL_PATH)/include
+	cd $(MAKEFILE_ROOT_DIR)/include && find . -iregex '^.*\.\(h\|hpp\|td\)$$' -exec cp --parents {} $(INSTALL_PATH)/include \;
+	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/llvm/include && find . -iregex '^.*\.\(h\|hpp\|td\)$$' -exec cp --parents {} $(INSTALL_PATH)/include \;
+	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/mlir/include && find . -iregex '^.*\.\(h\|hpp\|td\)$$' -exec cp --parents {} $(INSTALL_PATH)/include \;
+	cd $(abspath $(BUILD_DIR))/include && find . -iname '*.inc' -exec cp --parents {} $(INSTALL_PATH)/include \;
+	cd $(abspath $(BUILD_DIR))/tools/concretelang/include && find . -iname '*.inc' -exec cp --parents {} $(INSTALL_PATH)/include \;
+	cd $(abspath $(BUILD_DIR))/tools/mlir/include && find . -iname '*.inc' -exec cp --parents {} $(INSTALL_PATH)/include \;
+
 .PHONY: build-initialized \
 	build-end-to-end-jit \
 	concretecompiler \
@@ -412,7 +426,6 @@ rust-format:
 	add-deps \
 	file-check \
 	not \
-	release-tarballs \
 	update-python-version \
 	python-lint \
 	python-format \

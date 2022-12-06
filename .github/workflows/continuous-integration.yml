@@ -481,12 +481,33 @@ jobs:
       - name: Login to Github Container Registry
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
-      - name: Build
-        id: build-tarball
-        run: |
-          cd compiler
-          make release-tarballs
+      - name: Build Tarball
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/tarballs:/tarballs
+            -v ${{ github.workspace }}/.github/workflows/assets/Installation.md:/Installation.md
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            rm -rf /build
+            make  BINDINGS_PYTHON_ENABLED=OFF BUILD_DIR=/build INSTALL_PREFIX=/tarballs/ install
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+            # package installation file and make tarball
+            cp /Installation.md /tarballs/concretecompiler/
+            cd /tarballs && tar -czvf concretecompiler.tar.gz concretecompiler
 
+      - name: Tag Tarball
+        id: tag-tarball
+        run: |
           TAG="$(git describe --tags --abbrev=0)"
 
           sudo cp "${{ github.workspace }}/tarballs/concretecompiler.tar.gz" "${{ github.workspace }}/tarballs/concretecompiler-${TAG}-x86_64-linux-gnu.tar.gz"
@@ -498,8 +519,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
         with:
           upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/tarballs/${{ steps.build-tarball.outputs.ASSET_NAME }}
-          asset_name: ${{ steps.build-tarball.outputs.ASSET_NAME }}
+          asset_path: ${{ github.workspace }}/tarballs/${{ steps.tag-tarball.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.tag-tarball.outputs.ASSET_NAME }}
           asset_content_type: application/tar+gzip
 
   BuildAndPushPackagesMacOS:
