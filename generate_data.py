@@ -1,5 +1,6 @@
 import sys
-from estimator_new import *
+sys.path.insert(1, '../lattice-estimator')
+from estimator import *
 from sage.all import oo, save, load, ceil
 from math import log2
 import multiprocessing
