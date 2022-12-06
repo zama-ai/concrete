@@ -27,7 +27,7 @@ def old_models(security_level, sd, logq=32):
 
     a = curves[j][0]
     b = curves[j][1] + logq
-    
+
     n_est = evaluate_model(a, b, sd)
 
     return round(n_est)
@@ -191,8 +191,9 @@ def generate_zama_curves64(
 
 # The script runs the following commands
 # grab values of the command-line input arguments
-a = int(sys.argv[1])
-b = int(sys.argv[2])
-c = int(sys.argv[3])
+security = int(sys.argv[1])
+sd_min = int(sys.argv[2])
+sd_max = int(sys.argv[3])
+margin = int(sys.argv[4])
 # run the code
-generate_zama_curves64(sd_range=(b, c), target_security_levels=[a], name="{}".format(a))
+generate_zama_curves64(sd_range=(sd_min, sd_max), target_security_levels=[security + margin], name="security_{}_margin_{} ".format(security, margin))
