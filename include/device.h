@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cuda_runtime.h>
 
 extern "C" {
 void *cuda_create_stream(uint32_t gpu_index);
