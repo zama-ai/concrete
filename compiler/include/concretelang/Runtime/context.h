@@ -18,13 +18,6 @@
 #include "concretelang/Common/Error.h"
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
-// We need to define the double2 struct from the CUDA backend header files
-// This shouldn't be defined here, but included along with concrete-cuda header
-// files
-typedef struct double2 {
-  double x, y;
-} double2;
-// From concrete-cuda
 #include "bootstrap.h"
 #include "device.h"
 #include "keyswitch.h"

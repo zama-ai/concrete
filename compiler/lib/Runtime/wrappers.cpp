@@ -146,8 +146,8 @@ void memref_batched_keyswitch_lwe_cuda_u64(
     uint32_t base_log, uint32_t input_lwe_dim, uint32_t output_lwe_dim,
     mlir::concretelang::RuntimeContext *context) {
   assert(out_size0 == ct0_size0);
-  assert(out_size1 == output_lwe_dim+1);
-  assert(ct0_size1 == input_lwe_dim+1);
+  assert(out_size1 == output_lwe_dim + 1);
+  assert(ct0_size1 == input_lwe_dim + 1);
   // TODO: Multi GPU
   uint32_t gpu_idx = 0;
   uint32_t num_samples = out_size0;
@@ -167,9 +167,9 @@ void memref_batched_keyswitch_lwe_cuda_u64(
   void *out_gpu = alloc_and_memcpy_async_to_gpu(
       out_aligned, out_offset, out_batch_size, gpu_idx, stream);
   // Run the keyswitch kernel on the GPU
-  cuda_keyswitch_lwe_ciphertext_vector_64(stream, out_gpu, ct0_gpu, ksk_gpu,
-                                          input_lwe_dim, output_lwe_dim,
-                                          base_log, level, num_samples);
+  cuda_keyswitch_lwe_ciphertext_vector_64(
+      stream, gpu_idx, out_gpu, ct0_gpu, ksk_gpu, input_lwe_dim, output_lwe_dim,
+      base_log, level, num_samples);
   // Copy the output batch of ciphertext back to CPU
   memcpy_async_to_cpu(out_aligned, out_offset, out_batch_size, out_gpu, gpu_idx,
                       stream);
@@ -242,12 +242,13 @@ void memref_batched_bootstrap_lwe_cuda_u64(
                            test_vector_idxes_size, stream, gpu_idx);
   // Run the bootstrap kernel on the GPU
   cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
-      stream, out_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu, fbsk_gpu,
-      input_lwe_dim, glwe_dim, poly_size, base_log, level, num_samples,
-      num_test_vectors, lwe_idx, cuda_get_max_shared_memory(gpu_idx));
+      stream, gpu_idx, out_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu,
+      fbsk_gpu, input_lwe_dim, glwe_dim, poly_size, base_log, level,
+      num_samples, num_test_vectors, lwe_idx,
+      cuda_get_max_shared_memory(gpu_idx));
   // Copy the output batch of ciphertext back to CPU
-  memcpy_async_to_cpu(out_aligned, out_offset, out_batch_size, out_gpu,
-                         gpu_idx, stream);
+  memcpy_async_to_cpu(out_aligned, out_offset, out_batch_size, out_gpu, gpu_idx,
+                      stream);
   cuda_synchronize_device(gpu_idx);
   // free memory that we allocated on gpu
   cuda_drop(ct0_gpu, gpu_idx);

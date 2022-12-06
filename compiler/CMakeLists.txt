@@ -78,6 +78,7 @@ if(CONCRETELANG_CUDA_SUPPORT)
   link_directories(${CUDAToolkit_LIBRARY_DIR})
   add_subdirectory(${CONCRETE_CORE_PATH}/concrete-cuda/cuda)
   include_directories(${CONCRETE_CORE_PATH}/concrete-cuda/cuda/include)
+  include_directories(${CUDAToolkit_INCLUDE_DIRS})
   add_compile_options(-DCONCRETELANG_CUDA_SUPPORT)
 endif()
 
