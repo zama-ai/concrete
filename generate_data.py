@@ -17,22 +17,17 @@ def old_models(security_level, sd, logq=32):
     def evaluate_model(a, b, stddev=sd):
         return (stddev - b) / a
 
-    models = dict()
+    def get_index(sec, curves):
+        for i in range(len(curves)):
+            if curves[i][2] == sec:
+                return i
 
-    models["80"] = (-0.04049295502947623, 1.1288318226557081 + logq)
-    models["96"] = (-0.03416314056943681, 1.4704806061716345 + logq)
-    models["112"] = (-0.02970984362676178, 1.7848907787798667 + logq)
-    models["128"] = (-0.026361288425133814, 2.0014671315214696 + logq)
-    models["144"] = (-0.023744534465622812, 2.1710601038230712 + logq)
-    models["160"] = (-0.021667220727651954, 2.3565507936475476 + logq)
-    models["176"] = (-0.019947662046189942, 2.5109588704235803 + logq)
-    models["192"] = (-0.018552804646747204, 2.7168913723130816 + logq)
-    models["208"] = (-0.017291091126923574, 2.7956961446214326 + logq)
-    models["224"] = (-0.016257546811508806, 2.9582401000615226 + logq)
-    models["240"] = (-0.015329741032015766, 3.0744579055889782 + logq)
-    models["256"] = (-0.014530554319171845, 3.2094375376751745 + logq)
+    curves = load("verified_curves.sobj")
+    j = get_index(security_level, curves)
 
-    (a, b) = models["{}".format(security_level)]
+    a = curves[j][0]
+    b = curves[j][1] + logq
+    
     n_est = evaluate_model(a, b, sd)
 
     return round(n_est)
