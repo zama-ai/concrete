@@ -7,8 +7,4 @@ add_subdirectory(ClientLib)
 add_subdirectory(Bindings)
 add_subdirectory(ServerLib)
 add_subdirectory(Interfaces)
-
-# CAPI needed only for python bindings
-if(CONCRETELANG_BINDINGS_PYTHON_ENABLED)
-  add_subdirectory(CAPI)
-endif()
+add_subdirectory(CAPI)
