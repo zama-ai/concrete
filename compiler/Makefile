@@ -375,6 +375,12 @@ python-format:
 python-lint:
 	pylint --rcfile=../pylintrc lib/Bindings/Python/concrete/compiler
 
+check-rust-format:
+	cd lib/Bindings/Rust && cargo fmt  --check
+
+rust-format:
+	cd lib/Bindings/Rust && cargo fmt 
+
 .PHONY: build-initialized \
 	build-end-to-end-jit \
 	concretecompiler \

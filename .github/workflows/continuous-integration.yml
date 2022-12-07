@@ -39,6 +39,10 @@ jobs:
           # compiler requirements to lint
           pip install numpy
           make python-lint
+      - name: Format with rustfmt (Rust)
+        run: |
+          cd compiler
+          make check-rust-format
       - name: Linelint
         uses: fernandrone/linelint@0.0.4
         id: linelint
