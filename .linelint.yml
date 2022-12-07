@@ -6,6 +6,7 @@ ignore:
   - .git/
   - llvm-project/
   - compiler/concrete-optimizer
+  - compiler/concrete-core
   - google-benchmark
 
 rules:
