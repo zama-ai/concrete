@@ -19,6 +19,7 @@
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
 #include "polynomial/polynomial_math.cuh"
+#include "utils/kernel_dimensions.cuh"
 #include "utils/memory.cuh"
 #include "utils/timer.cuh"
 
@@ -187,6 +188,21 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
   add_to_torus<Torus, params>(body_res_fft, mb_body);
 }
 
+template <typename Torus, class params>
+__global__ void device_build_lut(Torus *lut_out, Torus *lut_in,
+                                 uint32_t glwe_dimension, uint32_t lut_number) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index < glwe_dimension * params::degree * lut_number) {
+    int lut_index = index / (glwe_dimension * params::degree);
+    for (int j = 0; j < glwe_dimension; j++) {
+      lut_out[index + lut_index * (glwe_dimension + 1) * params::degree +
+              j * params::degree] = 0;
+    }
+    lut_out[index + lut_index * (glwe_dimension + 1) * params::degree +
+            glwe_dimension * params::degree] = lut_in[index];
+  }
+}
+
 /**
  * Computes several CMUXes using an array of GLWE ciphertexts and a single GGSW
  * ciphertext. The GLWE ciphertexts are picked two-by-two in sequence. Each
@@ -252,10 +268,18 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
                     uint32_t polynomial_size, uint32_t base_log,
                     uint32_t level_count, uint32_t r,
                     uint32_t max_shared_memory) {
-
   auto stream = static_cast<cudaStream_t *>(v_stream);
-  int num_lut = (1 << r);
 
+  int num_lut = (1 << r);
+  if (r == 0) {
+    // Just copy the LUT
+    checkCudaErrors(
+        cudaMemcpyAsync(glwe_array_out, lut_vector,
+                        (glwe_dimension + 1) * polynomial_size * sizeof(Torus),
+                        cudaMemcpyDeviceToDevice, *stream));
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+    return;
+  }
   cuda_initialize_twiddles(polynomial_size, 0);
 
   int memory_needed_per_block =
@@ -315,7 +339,7 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
     int num_cmuxes = (1 << (r - 1 - layer_idx));
     dim3 grid(num_cmuxes, 1, 1);
 
-    // walks horizontally through the leafs
+    // walks horizontally through the leaves
     if (max_shared_memory < memory_needed_per_block)
       device_batch_cmux<Torus, STorus, params, NOSM>
           <<<grid, thds, 0, *stream>>>(output, input, d_ggsw_fft_in, d_mem,
@@ -334,10 +358,9 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
           );
   }
 
-  checkCudaErrors(
-      cudaMemcpyAsync(glwe_array_out, output,
-                      (glwe_dimension + 1) * polynomial_size * sizeof(Torus),
-                      cudaMemcpyDeviceToDevice, *stream));
+  checkCudaErrors(cudaMemcpyAsync(glwe_array_out, output,
+                                  glwe_size * sizeof(Torus),
+                                  cudaMemcpyDeviceToDevice, *stream));
 
   // We only need synchronization to assert that data is in glwe_array_out
   // before returning. Memory release can be added to the stream and processed
@@ -466,29 +489,31 @@ __global__ void fill_lut_body_for_cbs(Torus *lut, uint32_t ciphertext_n_bits,
   for (int i = 0; i < params::opt; i++) {
     cur_mask[tid] = 0;
     cur_poly[tid] =
-        0ll - 1ll << (ciphertext_n_bits - 1 - base_log_cbs * (blockIdx.x + 1));
+        0ll -
+        (1ll << (ciphertext_n_bits - 1 - base_log_cbs * (blockIdx.x + 1)));
     tid += params::degree / params::opt;
   }
 }
 
 template <typename Torus, class params>
-__global__ void copy_add_lwe_cbs(Torus *lwe_dst, Torus *lwe_src, Torus value) {
-
+__global__ void copy_add_lwe_cbs(Torus *lwe_dst, Torus *lwe_src,
+                                 uint32_t ciphertext_n_bits,
+                                 uint32_t base_log_cbs, uint32_t level_cbs) {
   size_t tid = threadIdx.x;
-  size_t src_lwe_id = blockIdx.y;
   size_t dst_lwe_id = blockIdx.x;
+  size_t src_lwe_id = dst_lwe_id / 2;
+  size_t cur_cbs_level = src_lwe_id % level_cbs + 1;
 
   auto cur_src = &lwe_src[src_lwe_id * (params::degree + 1)];
   auto cur_dst = &lwe_dst[dst_lwe_id * (params::degree + 1)];
-
 #pragma unroll
   for (int i = 0; i < params::opt; i++) {
     cur_dst[tid] = cur_src[tid];
     tid += params::degree / params::opt;
   }
-
+  Torus val = 1ll << (ciphertext_n_bits - 1 - base_log_cbs * cur_cbs_level);
   if (threadIdx.x == 0) {
-    cur_dst[params::degree] = cur_src[params::degree] + value;
+    cur_dst[params::degree] = cur_src[params::degree] + val;
   }
 }
 
@@ -683,7 +708,6 @@ void host_blind_rotate_and_sample_extraction(
 
   assert(glwe_dimension ==
          1); // For larger k we will need to adjust the mask size
-
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int memory_needed_per_block =
@@ -794,14 +818,13 @@ __host__ void host_circuit_bootstrap(
       lwe_dimension, polynomial_size, base_log_bsk, level_bsk, pbs_count,
       level_cbs, 0, max_shared_memory);
 
-  dim3 copy_grid(pbs_count * (glwe_dimension + 1), pbs_count, 1);
+  dim3 copy_grid(pbs_count * (glwe_dimension + 1), 1, 1);
   dim3 copy_block(params::degree / params::opt, 1, 1);
-
   // Add q/4 to center the error while computing a negacyclic LUT
   // copy pbs result (glwe_dimension + 1) times to be an input of fp-ks
   copy_add_lwe_cbs<Torus, params><<<copy_grid, copy_block>>>(
-      lwe_array_in_fp_ks_buffer, lwe_array_out_pbs_buffer,
-      1ll << (ciphertext_n_bits - 1 - base_log_cbs * level_cbs));
+      lwe_array_in_fp_ks_buffer, lwe_array_out_pbs_buffer, ciphertext_n_bits,
+      base_log_cbs, level_cbs);
 
   cuda_fp_keyswitch_lwe_to_glwe(
       v_stream, ggsw_out, lwe_array_in_fp_ks_buffer, fp_ksk_array,
@@ -809,4 +832,138 @@ __host__ void host_circuit_bootstrap(
       level_pksk, pbs_count * (glwe_dimension + 1), glwe_dimension + 1);
 }
 
-#endif // WO_PBS_H
+// number_of_inputs is the total number of LWE ciphertexts passed to CBS + VP,
+// i.e. tau * p where tau is the number of LUTs (the original number of LWEs
+// before bit extraction) and p is the number of extracted bits
+template <typename Torus, typename STorus, class params>
+__host__ void host_circuit_bootstrap_vertical_packing(
+    void *v_stream, uint32_t gpu_index, Torus *lwe_array_out,
+    Torus *lwe_array_in, Torus *lut_vector, double2 *fourier_bsk,
+    Torus *cbs_fpksk, uint32_t glwe_dimension, uint32_t lwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log_bsk, uint32_t level_count_bsk,
+    uint32_t base_log_pksk, uint32_t level_count_pksk, uint32_t base_log_cbs,
+    uint32_t level_count_cbs, uint32_t number_of_inputs, uint32_t lut_number,
+    uint32_t max_shared_memory) {
+
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+
+  // allocate and initialize device pointers for circuit bootstrap
+  // output ggsw array for cbs
+  int ggsw_size = level_count_cbs * (glwe_dimension + 1) *
+                  (glwe_dimension + 1) * polynomial_size;
+  Torus *ggsw_out = (Torus *)cuda_malloc_async(
+      number_of_inputs * ggsw_size * sizeof(Torus), *stream, gpu_index);
+  // input lwe array for fp-ks
+  Torus *lwe_array_in_fp_ks_buffer = (Torus *)cuda_malloc_async(
+      number_of_inputs * level_count_cbs * (glwe_dimension + 1) *
+          (polynomial_size + 1) * sizeof(Torus),
+      *stream, gpu_index);
+  // buffer for pbs output
+  Torus *lwe_array_out_pbs_buffer =
+      (Torus *)cuda_malloc_async(number_of_inputs * level_count_cbs *
+                                     (polynomial_size + 1) * sizeof(Torus),
+                                 *stream, gpu_index);
+  // vector for shifted lwe input
+  Torus *lwe_array_in_shifted_buffer = (Torus *)cuda_malloc_async(
+      number_of_inputs * level_count_cbs * (lwe_dimension + 1) * sizeof(Torus),
+      *stream, gpu_index);
+  // lut vector buffer for cbs
+  Torus *lut_vector_cbs = (Torus *)cuda_malloc_async(
+      level_count_cbs * (glwe_dimension + 1) * polynomial_size * sizeof(Torus),
+      *stream, gpu_index);
+  // indexes of lut vectors for cbs
+  uint32_t *h_lut_vector_indexes =
+      (uint32_t *)malloc(number_of_inputs * level_count_cbs * sizeof(uint32_t));
+  for (uint index = 0; index < level_count_cbs * number_of_inputs; index++) {
+    h_lut_vector_indexes[index] = index % level_count_cbs;
+  }
+  uint32_t *lut_vector_indexes = (uint32_t *)cuda_malloc_async(
+      number_of_inputs * level_count_cbs * sizeof(uint32_t), *stream,
+      gpu_index);
+  cuda_memcpy_async_to_gpu(lut_vector_indexes, h_lut_vector_indexes,
+                           number_of_inputs * level_count_cbs *
+                               sizeof(uint32_t),
+                           v_stream, gpu_index);
+  checkCudaErrors(cudaGetLastError());
+
+  uint32_t bits = sizeof(Torus) * 8;
+  uint32_t delta_log = (bits - 1);
+
+  host_circuit_bootstrap<Torus, params>(
+      v_stream, gpu_index, ggsw_out, lwe_array_in, fourier_bsk, cbs_fpksk,
+      lwe_array_in_shifted_buffer, lut_vector_cbs, lut_vector_indexes,
+      lwe_array_out_pbs_buffer, lwe_array_in_fp_ks_buffer, delta_log,
+      polynomial_size, glwe_dimension, lwe_dimension, level_count_bsk,
+      base_log_bsk, level_count_pksk, base_log_pksk, level_count_cbs,
+      base_log_cbs, number_of_inputs, max_shared_memory);
+  checkCudaErrors(cudaGetLastError());
+  // Free memory
+  cuda_drop_async(lwe_array_in_fp_ks_buffer, *stream, gpu_index);
+  cuda_drop_async(lwe_array_in_shifted_buffer, *stream, gpu_index);
+  cuda_drop_async(lwe_array_out_pbs_buffer, *stream, gpu_index);
+  cuda_drop_async(lut_vector_cbs, *stream, gpu_index);
+  cuda_drop_async(lut_vector_indexes, *stream, gpu_index);
+  free(h_lut_vector_indexes);
+
+  // we need to expand the lut to fill the masks with zeros
+  Torus *lut_vector_glwe = (Torus *)cuda_malloc_async(
+      (glwe_dimension + 1) * lut_number * polynomial_size * sizeof(Torus),
+      *stream, gpu_index);
+  int num_blocks = 0, num_threads = 0;
+  int num_entries = glwe_dimension * polynomial_size * lut_number;
+  getNumBlocksAndThreads(num_entries, 512, num_blocks, num_threads);
+  device_build_lut<Torus, params><<<num_blocks, num_threads, 0, *stream>>>(
+      lut_vector_glwe, lut_vector, glwe_dimension, lut_number);
+  checkCudaErrors(cudaGetLastError());
+  // number_of_inputs = tau * p is the total number of GGSWs
+  if (number_of_inputs > params::log2_degree) {
+    // split the vec of GGSW in two, the msb GGSW is for the CMux tree and the
+    // lsb GGSW is for the last blind rotation.
+    uint32_t r = number_of_inputs - params::log2_degree;
+    Torus *br_ggsw = (Torus *)ggsw_out +
+                     (ptrdiff_t)(r * level_count_cbs * (glwe_dimension + 1) *
+                                 (glwe_dimension + 1) * polynomial_size);
+    for (uint i = 0; i < lut_number; i++) {
+      Torus *lut_glwe = (Torus *)lut_vector_glwe +
+                        (ptrdiff_t)(i * (glwe_dimension + 1) * polynomial_size);
+      // CMUX Tree
+      Torus *glwe_array_out = (Torus *)cuda_malloc_async(
+          (glwe_dimension + 1) * polynomial_size * sizeof(Torus), *stream,
+          gpu_index);
+      checkCudaErrors(cudaGetLastError());
+      // r = tau * p - log2(N)
+      host_cmux_tree<Torus, STorus, params>(
+          v_stream, gpu_index, glwe_array_out, ggsw_out, lut_glwe,
+          glwe_dimension, polynomial_size, base_log_cbs, level_count_cbs, r,
+          max_shared_memory);
+      checkCudaErrors(cudaGetLastError());
+
+      // Blind rotation + sample extraction
+      // mbr = tau * p - r = log2(N)
+      Torus *lwe_out =
+          (Torus *)lwe_array_out + (ptrdiff_t)(i * (lwe_dimension + 1));
+      host_blind_rotate_and_sample_extraction<Torus, STorus, params>(
+          v_stream, gpu_index, lwe_out, br_ggsw, glwe_array_out,
+          number_of_inputs - r, 1, glwe_dimension, polynomial_size,
+          base_log_cbs, level_count_cbs, max_shared_memory);
+
+      cuda_drop_async(glwe_array_out, *stream, gpu_index);
+    }
+
+  } else {
+    // Blind rotation + sample extraction
+    for (uint i = 0; i < lut_number; i++) {
+      Torus *lut_glwe = (Torus *)lut_vector_glwe +
+                        (ptrdiff_t)(i * (glwe_dimension + 1) * polynomial_size);
+      Torus *lwe_out =
+          (Torus *)lwe_array_out + (ptrdiff_t)(i * (lwe_dimension + 1));
+      host_blind_rotate_and_sample_extraction<Torus, STorus, params>(
+          v_stream, gpu_index, lwe_out, ggsw_out, lut_glwe, number_of_inputs, 1,
+          glwe_dimension, polynomial_size, base_log_cbs, level_count_cbs,
+          max_shared_memory);
+    }
+  }
+  cuda_drop_async(ggsw_out, *stream, gpu_index);
+}
+
+#endif // WOP_PBS_H
