@@ -52,17 +52,20 @@ Additional kwarg to `compile` function have higher precedence. So if you set an 
 
 ## Options
 
-* **show\_graph**: bool = False
+* **show\_graph**: Optional[bool] = None
   * Whether to print computation graph during compilation.
+    `True` means always to print, `False` means always to not print, `None` means print depending on verbose configuration below.
 
-* **show\_mlir**: bool = False
+* **show\_mlir**: Optional[bool] = None
   * Whether to print MLIR during compilation.
+    `True` means always to print, `False` means always to not print, `None` means print depending on verbose configuration below.
 
-* **show\_optimizer**: bool = False
+* **show\_optimizer**: Optional[bool] = None
   * Whether to print optimizer output during compilation.
+    `True` means always to print, `False` means always to not print, `None` means print depending on verbose configuration below.
 
 * **verbose**: bool = False
-  * Whether to print computation graph and MLIR during compilation.
+  * Whether to print details related to compilation.
   
 * **dump\_artifacts\_on\_unexpected\_failures**: bool = True
   * Whether to export debugging artifacts automatically on compilation failures.

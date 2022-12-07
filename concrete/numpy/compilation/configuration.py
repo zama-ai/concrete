@@ -15,9 +15,9 @@ class Configuration:
     # pylint: disable=too-many-instance-attributes
 
     verbose: bool
-    show_graph: bool
-    show_mlir: bool
-    show_optimizer: bool
+    show_graph: Optional[bool]
+    show_mlir: Optional[bool]
+    show_optimizer: Optional[bool]
     dump_artifacts_on_unexpected_failures: bool
     enable_unsafe_features: bool
     virtual: bool
@@ -60,9 +60,9 @@ class Configuration:
     def __init__(
         self,
         verbose: bool = False,
-        show_graph: bool = False,
-        show_mlir: bool = False,
-        show_optimizer: bool = False,
+        show_graph: Optional[bool] = None,
+        show_mlir: Optional[bool] = None,
+        show_optimizer: Optional[bool] = None,
         dump_artifacts_on_unexpected_failures: bool = True,
         enable_unsafe_features: bool = False,
         virtual: bool = False,
@@ -132,6 +132,11 @@ class Configuration:
                 if not (value is None or isinstance(value, float)):
                     is_correctly_typed = False
                     expected = "Optional[float]"
+
+            elif name in ["show_graph", "show_mlir", "show_optimizer"]:
+                if not (value is None or isinstance(value, bool)):
+                    is_correctly_typed = False
+                    expected = "Optional[bool]"
 
             elif not isinstance(value, hint):  # type: ignore
                 is_correctly_typed = False

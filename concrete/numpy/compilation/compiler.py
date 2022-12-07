@@ -440,9 +440,21 @@ class Compiler:
             if self.artifacts is not None:
                 self.artifacts.add_mlir_to_compile(mlir)
 
-            show_graph = self.configuration.verbose or self.configuration.show_graph
-            show_mlir = self.configuration.verbose or self.configuration.show_mlir
-            show_optimizer = self.configuration.verbose or self.configuration.show_optimizer
+            show_graph = (
+                self.configuration.show_graph
+                if self.configuration.show_graph is not None
+                else self.configuration.verbose
+            )
+            show_mlir = (
+                self.configuration.show_mlir
+                if self.configuration.show_mlir is not None
+                else self.configuration.verbose
+            )
+            show_optimizer = (
+                self.configuration.show_optimizer
+                if self.configuration.show_optimizer is not None
+                else self.configuration.verbose
+            )
 
             columns = 0
             if show_graph or show_mlir or show_optimizer:

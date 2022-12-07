@@ -98,7 +98,13 @@ class Server:
             options.set_p_error(configuration.p_error)
         else:
             options.set_global_p_error(configuration.global_p_error)
-        options.set_display_optimizer_choice(configuration.verbose or configuration.show_optimizer)
+
+        show_optimizer = (
+            configuration.show_optimizer
+            if configuration.show_optimizer is not None
+            else configuration.verbose
+        )
+        options.set_display_optimizer_choice(show_optimizer)
 
         if configuration.jit:
 
