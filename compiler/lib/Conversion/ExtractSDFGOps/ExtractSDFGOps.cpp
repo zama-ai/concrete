@@ -9,6 +9,7 @@
 #include "concretelang/Dialect/SDFG/IR/SDFGTypes.h"
 #include "concretelang/Dialect/SDFG/Interfaces/SDFGConvertibleInterface.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/SCF/Utils/Utils.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/Visitors.h"
 #include "mlir/Pass/Pass.h"
@@ -18,6 +19,8 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Casting.h"
+#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 
 namespace SDFG = mlir::concretelang::SDFG;
 
@@ -32,6 +35,51 @@ SDFG::MakeStream makeStream(mlir::ImplicitLocOpBuilder &builder,
                                                 llvm::Twine(streamNumber++));
 
   return builder.create<SDFG::MakeStream>(streamType, dfg, name, kind);
+}
+
+/// Unrolls entirely all scf loops, which directly contain an
+/// SDFG-convertible operation and whose bounds are static.
+void unrollLoopsWithSDFGConvertibleOps(mlir::func::FuncOp func) {
+  mlir::DenseSet<mlir::scf::ForOp> unrollCandidates;
+
+  // Identify loops with SDFG-convertible ops
+  func.walk([&](SDFG::SDFGConvertibleOpInterface convertible) {
+    for (mlir::Operation *parent = convertible->getParentOp(); parent;
+         parent = parent->getParentOp()) {
+      if (mlir::scf::ForOp forOp = llvm::dyn_cast<mlir::scf::ForOp>(parent)) {
+        unrollCandidates.insert(forOp);
+      }
+    }
+  });
+
+  // Fully unroll all the loops if its bounds are static
+  for (mlir::scf::ForOp forOp : unrollCandidates) {
+    mlir::arith::ConstantIndexOp lb =
+        forOp.getLowerBound().getDefiningOp<mlir::arith::ConstantIndexOp>();
+    mlir::arith::ConstantIndexOp ub =
+        forOp.getUpperBound().getDefiningOp<mlir::arith::ConstantIndexOp>();
+    mlir::arith::ConstantIndexOp step =
+        forOp.getStep().getDefiningOp<mlir::arith::ConstantIndexOp>();
+
+    if (!lb || !ub || !step)
+      continue;
+
+    int64_t ilb = lb.value();
+    int64_t iub = ub.value();
+    int64_t istep = step.value();
+
+    // Unrolling requires positive bounds and step
+    if (ilb < 0 || iub < 0 || istep <= 0)
+      continue;
+
+    int64_t unrollFactor = ((iub - ilb) + (istep - 1)) / istep;
+
+    if (unrollFactor == 0)
+      continue;
+
+    if (mlir::loopUnrollByFactor(forOp, (uint64_t)unrollFactor).failed())
+      continue;
+  }
 }
 
 StreamMappingKind determineStreamMappingKind(mlir::Value v) {
@@ -90,11 +138,16 @@ void setInsertionPointAfterValueOrRestore(mlir::OpBuilder &builder,
 }
 
 struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
+  bool unroll;
 
-  ExtractSDFGOpsPass() {}
+  ExtractSDFGOpsPass(bool unroll) : unroll(unroll) {}
 
   void runOnOperation() override {
     mlir::func::FuncOp func = getOperation();
+
+    if (unroll)
+      unrollLoopsWithSDFGConvertibleOps(func);
+
     mlir::IRRewriter rewriter(func.getContext());
 
     mlir::DenseMap<mlir::Value, SDFG::MakeStream> processOutMapping;
@@ -205,8 +258,9 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
 namespace mlir {
 namespace concretelang {
 
-std::unique_ptr<OperationPass<mlir::func::FuncOp>> createExtractSDFGOpsPass() {
-  return std::make_unique<ExtractSDFGOpsPass>();
+std::unique_ptr<OperationPass<mlir::func::FuncOp>>
+createExtractSDFGOpsPass(bool unroll) {
+  return std::make_unique<ExtractSDFGOpsPass>(unroll);
 }
 } // namespace concretelang
 } // namespace mlir

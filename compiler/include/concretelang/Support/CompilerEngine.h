@@ -60,6 +60,7 @@ struct CompilationOptions {
   bool loopParallelize;
   bool batchConcreteOps;
   bool emitSDFGOps;
+  bool unrollLoopsWithSDFGConvertibleOps;
   bool dataflowParallelize;
   bool optimizeConcrete;
   /// use GPU during execution by generating GPU operations if possible
@@ -73,8 +74,9 @@ struct CompilationOptions {
   CompilationOptions()
       : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchConcreteOps(false),
-        emitSDFGOps(false), dataflowParallelize(false), optimizeConcrete(true),
-        emitGPUOps(false), clientParametersFuncName(llvm::None),
+        emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
+        dataflowParallelize(false), optimizeConcrete(true), emitGPUOps(false),
+        clientParametersFuncName(llvm::None),
         optimizerConfig(optimizer::DEFAULT_CONFIG){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {

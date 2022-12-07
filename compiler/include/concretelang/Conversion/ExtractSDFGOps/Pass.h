@@ -11,7 +11,8 @@
 
 namespace mlir {
 namespace concretelang {
-std::unique_ptr<OperationPass<mlir::func::FuncOp>> createExtractSDFGOpsPass();
+std::unique_ptr<OperationPass<mlir::func::FuncOp>>
+createExtractSDFGOpsPass(bool unroll);
 } // namespace concretelang
 } // namespace mlir
 

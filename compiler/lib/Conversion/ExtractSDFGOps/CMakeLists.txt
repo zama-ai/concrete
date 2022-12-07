@@ -12,6 +12,7 @@ add_mlir_dialect_library(
   ConcretelangSDFGInterfaces
   PUBLIC
   MLIRIR
+  MLIRSCFUtils
   MLIRTransforms)
 
 target_link_libraries(ExtractSDFGOps PUBLIC MLIRIR)

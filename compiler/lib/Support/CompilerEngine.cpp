@@ -399,8 +399,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   // Extract SDFG data flow graph from BConcrete representation
 
   if (options.emitSDFGOps) {
-    if (mlir::concretelang::pipeline::extractSDFGOps(mlirContext, module,
-                                                     enablePass)
+    if (mlir::concretelang::pipeline::extractSDFGOps(
+            mlirContext, module, enablePass,
+            options.unrollLoopsWithSDFGConvertibleOps)
             .failed()) {
       return errorDiag(
           "Extraction of SDFG operations from BConcrete representation failed");

@@ -183,6 +183,12 @@ llvm::cl::opt<bool> emitSDFGOps(
         " graphs and emit them."),
     llvm::cl::init(false));
 
+llvm::cl::opt<bool> unrollLoopsWithSDFGConvertibleOps(
+    "unroll-loops-with-sdfg-convertible-ops",
+    llvm::cl::desc("Causes loops containing SDFG-convertible operations to be "
+                   "fully unrolled."),
+    llvm::cl::init(false));
+
 llvm::cl::opt<bool> dataflowParallelize(
     "parallelize-dataflow",
     llvm::cl::desc(
@@ -316,6 +322,8 @@ cmdlineCompilationOptions() {
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.batchConcreteOps = cmdline::batchConcreteOps;
   options.emitSDFGOps = cmdline::emitSDFGOps;
+  options.unrollLoopsWithSDFGConvertibleOps =
+      cmdline::unrollLoopsWithSDFGConvertibleOps;
   options.optimizeConcrete = cmdline::optimizeConcrete;
   options.emitGPUOps = cmdline::emitGPUOps;
 
