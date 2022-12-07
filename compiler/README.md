@@ -70,6 +70,16 @@ Run the compiler
 ./build-Release/bin/concretecompiler
 ```
 
+### Installation from source
+
+You can install libs, bins, and include files into a specific directory by running:
+
+```sh
+make INSTALL_PREFIX=/your/directory install
+```
+
+You will then find `lib`, `bin`, and `include` under `/your/directory/concretecompiler`.
+
 ### Tests
 
 You can build all the tests with the following command:
@@ -102,12 +112,7 @@ make run-benchmarks
 
 ### Build tarball
 
-The final tarball contains intallation instructions. We only support Linux x86_64 for the moment. You can find the output tarball under `/tarballs`.
-
-```bash
-$ cd compiler
-$ make release-tarballs
-```
+You can create a tarball containing libs, bins, and include files for the tools of the compiler, by following previous steps of [installation from source](#installation-from-source), then creating a tar archive from the installation directory.
 
 ### Build the Python Package
 
