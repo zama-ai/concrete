@@ -408,7 +408,7 @@ LambdaArgument lambdaArgumentFromScalar(uint64_t value) {
   return wrap(new mlir::concretelang::IntLambdaArgument<uint64_t>(value));
 }
 
-int64_t getSizeFromRankAndDims(size_t rank, int64_t *dims) {
+int64_t getSizeFromRankAndDims(size_t rank, const int64_t *dims) {
   if (rank == 0) // not a tensor
     return 1;
   auto size = dims[0];
@@ -417,8 +417,8 @@ int64_t getSizeFromRankAndDims(size_t rank, int64_t *dims) {
   return size;
 }
 
-LambdaArgument lambdaArgumentFromTensorU8(uint8_t *data, int64_t *dims,
-                                          size_t rank) {
+LambdaArgument lambdaArgumentFromTensorU8(const uint8_t *data,
+                                          const int64_t *dims, size_t rank) {
 
   std::vector<uint8_t> data_vector(data,
                                    data + getSizeFromRankAndDims(rank, dims));
@@ -428,8 +428,8 @@ LambdaArgument lambdaArgumentFromTensorU8(uint8_t *data, int64_t *dims,
                                                               dims_vector));
 }
 
-LambdaArgument lambdaArgumentFromTensorU16(uint16_t *data, int64_t *dims,
-                                           size_t rank) {
+LambdaArgument lambdaArgumentFromTensorU16(const uint16_t *data,
+                                           const int64_t *dims, size_t rank) {
 
   std::vector<uint16_t> data_vector(data,
                                     data + getSizeFromRankAndDims(rank, dims));
@@ -439,8 +439,8 @@ LambdaArgument lambdaArgumentFromTensorU16(uint16_t *data, int64_t *dims,
                                                                dims_vector));
 }
 
-LambdaArgument lambdaArgumentFromTensorU32(uint32_t *data, int64_t *dims,
-                                           size_t rank) {
+LambdaArgument lambdaArgumentFromTensorU32(const uint32_t *data,
+                                           const int64_t *dims, size_t rank) {
 
   std::vector<uint32_t> data_vector(data,
                                     data + getSizeFromRankAndDims(rank, dims));
@@ -450,8 +450,8 @@ LambdaArgument lambdaArgumentFromTensorU32(uint32_t *data, int64_t *dims,
                                                                dims_vector));
 }
 
-LambdaArgument lambdaArgumentFromTensorU64(uint64_t *data, int64_t *dims,
-                                           size_t rank) {
+LambdaArgument lambdaArgumentFromTensorU64(const uint64_t *data,
+                                           const int64_t *dims, size_t rank) {
 
   std::vector<uint64_t> data_vector(data,
                                     data + getSizeFromRankAndDims(rank, dims));

@@ -258,18 +258,14 @@ MLIR_CAPI_EXPORTED void evaluationKeysDestroy(EvaluationKeys evaluationKeys);
 
 MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromScalar(uint64_t value);
 
-MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU8(uint8_t *data,
-                                                             int64_t *dims,
-                                                             size_t rank);
-MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU16(uint16_t *data,
-                                                              int64_t *dims,
-                                                              size_t rank);
-MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU32(uint32_t *data,
-                                                              int64_t *dims,
-                                                              size_t rank);
-MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU64(uint64_t *data,
-                                                              int64_t *dims,
-                                                              size_t rank);
+MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU8(
+    const uint8_t *data, const int64_t *dims, size_t rank);
+MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU16(
+    const uint16_t *data, const int64_t *dims, size_t rank);
+MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU32(
+    const uint32_t *data, const int64_t *dims, size_t rank);
+MLIR_CAPI_EXPORTED LambdaArgument lambdaArgumentFromTensorU64(
+    const uint64_t *data, const int64_t *dims, size_t rank);
 
 MLIR_CAPI_EXPORTED bool lambdaArgumentIsScalar(LambdaArgument lambdaArg);
 MLIR_CAPI_EXPORTED uint64_t lambdaArgumentGetScalar(LambdaArgument lambdaArg);

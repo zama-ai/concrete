@@ -780,10 +780,10 @@ mod test {
     #[test]
     fn test_tensor_lambda_argument() {
         unsafe {
-            let mut tensor_data = [1, 2, 3, 73u64];
-            let mut tensor_dims = [2, 2i64];
+            let tensor_data = [1, 2, 3, 73u64];
+            let tensor_dims = [2, 2i64];
             let tensor_arg =
-                lambdaArgumentFromTensorU64(tensor_data.as_mut_ptr(), tensor_dims.as_mut_ptr(), 2);
+                lambdaArgumentFromTensorU64(tensor_data.as_ptr(), tensor_dims.as_ptr(), 2);
             assert!(!lambdaArgumentIsNull(tensor_arg));
             assert!(!lambdaArgumentIsScalar(tensor_arg));
             assert!(lambdaArgumentIsTensor(tensor_arg));
@@ -836,8 +836,8 @@ mod test {
             let eval_keys = keySetGetEvaluationKeys(key_set);
             // build lambda arguments from scalar and encrypt them
             let args = [
-                lambdaArgumentFromTensorU8([1, 2, 3, 4, 5, 6].as_mut_ptr(), [2, 3].as_mut_ptr(), 2),
-                lambdaArgumentFromTensorU8([1, 4, 7, 4, 2, 9].as_mut_ptr(), [2, 3].as_mut_ptr(), 2),
+                lambdaArgumentFromTensorU8([1, 2, 3, 4, 5, 6].as_ptr(), [2, 3].as_ptr(), 2),
+                lambdaArgumentFromTensorU8([1, 4, 7, 4, 2, 9].as_ptr(), [2, 3].as_ptr(), 2),
             ];
             let encrypted_args = client_support.encrypt_args(&args, key_set).unwrap();
             // execute the compiled function on the encrypted arguments
