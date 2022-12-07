@@ -2,7 +2,7 @@ extern crate bindgen;
 
 use std::env;
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::exit;
 
 const MLIR_STATIC_LIBS: [&str; 179] = [
@@ -281,38 +281,18 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
-    let root = std::fs::canonicalize("../../../../")?;
-    // library paths
-    let build_dir = get_build_dir();
-    let lib_dir = build_dir.join("lib");
-    // compiler build libs
-    println!("cargo:rustc-link-search={}", lib_dir.to_str().unwrap());
-    // concrete optimizer lib
-    println!(
-        "cargo:rustc-link-search={}",
-        root.join("compiler/concrete-optimizer/target/release")
-            .to_str()
-            .unwrap()
-    );
-
-    // include paths
-    let include_paths = [
-        // compiler build
-        build_dir.join("tools/concretelang/include/"),
-        // mlir build
-        build_dir.join("tools/mlir/include"),
-        // llvm build
-        build_dir.join("include"),
-        // compiler
-        root.join("compiler/include/"),
-        // mlir
-        root.join("llvm-project/mlir/include/"),
-        // llvm
-        root.join("llvm-project/llvm/include/"),
-        // concrete-optimizer
-        root.join("compiler/concrete-optimizer/concrete-optimizer-cpp/src/cpp/"),
-    ];
-
+    let mut include_paths = Vec::new();
+    // if set, use installation path of concrete compiler to lookup libraries and include files
+    match env::var("CONCRETE_COMPILER_INSTALL_DIR") {
+        Ok(install_dir) => {
+            println!("cargo:rustc-link-search={}/lib/", install_dir);
+            include_paths.push(Path::new(&format!("{}/include/", install_dir)).to_path_buf());
+        }
+        Err(_e) => println!(
+            "cargo:warning=You are not setting CONCRETE_COMPILER_INSTALL_DIR, \
+so your compiler/linker will have to lookup libs and include dirs on their own"
+        ),
+    }
     // linking
     // concrete-compiler libs
     for concrete_compiler_lib in CONCRETE_COMPILER_LIBS {
@@ -363,21 +343,4 @@ fn get_system_libcpp() -> Option<&'static str> {
     } else {
         Some("stdc++")
     }
-}
-
-fn get_build_dir() -> PathBuf {
-    // this env variable can be used to point to a different build directory
-    let build_dir = match env::var("CONCRETE_COMPILER_BUILD_DIR") {
-        Ok(val) => std::path::Path::new(&val).to_path_buf(),
-        Err(_e) => std::path::Path::new(".")
-            .parent()
-            .unwrap()
-            .join("..")
-            .join("..")
-            .join("..")
-            .join("build")
-            .canonicalize()
-            .unwrap(),
-    };
-    return build_dir;
 }

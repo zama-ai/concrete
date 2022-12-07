@@ -8,7 +8,7 @@ CC_COMPILER=
 CXX_COMPILER=
 CUDA_SUPPORT?=OFF
 CONCRETE_CORE_PATH?= $(shell pwd)/concrete-core
-INSTALL_PREFIX?=/usr/local/
+INSTALL_PREFIX?=$(abspath $(BUILD_DIR))/install
 INSTALL_PATH=$(abspath $(INSTALL_PREFIX))/concretecompiler/
 MAKEFILE_ROOT_DIR=$(shell pwd)
 
@@ -164,12 +164,8 @@ python-bindings: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangMLIRPythonModules
 	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
 
-# MLIRCAPIRegistration is currently required for linking rust bindings
-# This may fade if we can represent it somewhere else, mainly, we may be able to define a single
-# lib that the rust bindings need to link to, while that lib contains all necessary libs
-rust-bindings: build-initialized concretecompiler CAPI
-	cmake --build $(BUILD_DIR) --target MLIRCAPIRegistration
-	cd lib/Bindings/Rust && CONCRETE_COMPILER_BUILD_DIR=$(abspath $(BUILD_DIR)) cargo build --release
+rust-bindings: install
+	cd lib/Bindings/Rust && CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) cargo build --release
 
 CAPI:
 	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG CONCRETELANGCAPISupport
@@ -230,7 +226,7 @@ test-compiler-file-output: concretecompiler
 
 ## rust-tests
 run-rust-tests: rust-bindings
-	cd lib/Bindings/Rust && CONCRETE_COMPILER_BUILD_DIR=$(abspath $(BUILD_DIR)) LD_LIBRARY_PATH=$(abspath $(BUILD_DIR))/lib cargo test --release
+	cd lib/Bindings/Rust && CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) LD_LIBRARY_PATH=$(INSTALL_PATH)/lib cargo test --release
 
 ## end-to-end-tests
 
@@ -404,7 +400,11 @@ check-rust-format:
 rust-format:
 	cd lib/Bindings/Rust && cargo fmt 
 
-install: concretecompiler concrete-optimizer-lib CAPI
+# libraries we want to have in the installation that aren't already a deps of other targets
+install-deps:
+	cmake --build $(BUILD_DIR) --target MLIRCAPIRegistration
+
+install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))
 	$(info Installing under $(INSTALL_PATH))
 	mkdir -p $(INSTALL_PATH)/include
