@@ -6,10 +6,7 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
 endif()
 
 if(CONCRETELANG_CUDA_SUPPORT)
-  target_link_libraries(
-    ConcretelangRuntime
-    PRIVATE
-    concrete_cuda)
+  target_link_libraries(ConcretelangRuntime PRIVATE concrete_cuda)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
