@@ -1,7 +1,9 @@
-#include "end_to_end_fixture/EndToEndFixture.h"
+#include "../end_to_end_tests/end_to_end_test.h"
+
+#include <benchmark/benchmark.h>
+
 #define BENCHMARK_HAS_CXX11
 #include "llvm/Support/Path.h"
-#include <benchmark/benchmark.h>
 
 #include "tests_tools/StackSize.h"
 #include "tests_tools/keySetCache.h"
@@ -100,82 +102,112 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   }
 }
 
-static int registerEndToEndTestFromFile(std::string prefix, std::string path,
-                                        size_t stackSizeRequirement = 0,
-                                        bool only_evaluate = false) {
-  auto registe = [&](std::string optionsName,
-                     mlir::concretelang::CompilationOptions options) {
-    llvm::for_each(loadEndToEndDesc(path), [&](EndToEndDesc &description) {
-      options.clientParametersFuncName = "main";
-      mlir::concretelang::JITSupport support;
-      auto benchName = [&](std::string name) {
-        std::ostringstream s;
-        s << prefix << "/" << name << "/" << optionsName << "/"
-          << description.description;
-        return s.str();
-      };
-      benchmark::RegisterBenchmark(
-          benchName("Evaluate").c_str(), [=](::benchmark::State &st) {
-            BM_Evaluate(st, description, support, options);
-          });
-      if (!only_evaluate) {
-        benchmark::RegisterBenchmark(
-            benchName("Compile").c_str(), [=](::benchmark::State &st) {
-              BM_Compile(st, description, support, options);
-            });
-        benchmark::RegisterBenchmark(
-            benchName("KeyGen").c_str(), [=](::benchmark::State &st) {
-              BM_KeyGen(st, description, support, options);
-            });
-        benchmark::RegisterBenchmark(
-            benchName("ExportArguments").c_str(), [=](::benchmark::State &st) {
-              BM_ExportArguments(st, description, support, options);
-            });
-      }
-      return;
-    });
-  };
-  setCurrentStackLimit(stackSizeRequirement);
-
-#ifndef CONCRETELANG_CUDA_SUPPORT
-  // Run only parallelized benchmarks to take advantage of hardware with lots of
-  // CPU cores.
-  mlir::concretelang::CompilationOptions cpu;
-  registe("cpu", cpu);
-  cpu.loopParallelize = true;
-#else
-  mlir::concretelang::CompilationOptions gpu;
-  gpu.batchConcreteOps = true;
-  gpu.emitGPUOps = true;
-  gpu.loopParallelize = true;
-  registe("gpu", gpu);
-#endif
-
-  return 1;
+std::string getOptionsName(mlir::concretelang::CompilationOptions options) {
+  std::ostringstream os;
+  if (options.loopParallelize)
+    os << "_loop";
+  if (options.dataflowParallelize)
+    os << "_dataflow";
+  if (options.emitGPUOps)
+    os << "_gpu";
+  auto ostr = os.str();
+  if (ostr.size() == 0) {
+    os << "_default";
+  }
+  return os.str().substr(1);
 }
 
-auto stackSizeRequirement = 0;
-auto _ = {
-    registerEndToEndTestFromFile("FHELinalgLeveled",
-                                 "tests/end_to_end_fixture/benchmarks_cpu/"
-                                 "end_to_end_leveled.yaml",
-                                 stackSizeRequirement,
-                                 /* only_evaluate = */ false),
-    // For lookup table bench we only bench the keygen time on simple lookup
-    // table bench, to avoid
-    // bench the same keygen several times as it take times
-    registerEndToEndTestFromFile("FHELinalg",
-                                 "tests/end_to_end_fixture/benchmarks_cpu/"
-                                 "end_to_end_apply_lookup_table.yaml",
-                                 stackSizeRequirement,
-                                 /* only_evaluate = */ false),
-    // So for the other lookup table benchmarks we only test the evaluataion
-    // times
-    registerEndToEndTestFromFile("FHELinalgTLU",
-                                 "tests/end_to_end_fixture/benchmarks_cpu/"
-                                 "end_to_end_linalg_apply_lookup_table.yaml",
-                                 stackSizeRequirement,
-                                 /* only_evaluate = */ true),
+enum Action {
+  COMPILE,
+  KEYGEN,
+  ENCRYPT,
+  EVALUATE,
 };
 
-BENCHMARK_MAIN();
+void registerEndToEndBenchmark(std::string suiteName,
+                               std::vector<EndToEndDesc> descriptions,
+                               mlir::concretelang::CompilationOptions options,
+                               std::vector<enum Action> actions,
+                               size_t stackSizeRequirement = 0) {
+  auto optionsName = getOptionsName(options);
+  for (auto description : descriptions) {
+    options.clientParametersFuncName = "main";
+    mlir::concretelang::JITSupport support;
+    auto benchName = [&](std::string name) {
+      std::ostringstream s;
+      s << suiteName << "/" << name << "/" << optionsName << "/"
+        << description.description;
+      return s.str();
+    };
+    for (auto action : actions) {
+      switch (action) {
+      case Action::COMPILE:
+        benchmark::RegisterBenchmark(
+            benchName("compile").c_str(), [=](::benchmark::State &st) {
+              BM_Compile(st, description, support, options);
+            });
+        break;
+      case Action::KEYGEN:
+        benchmark::RegisterBenchmark(
+            benchName("keygen").c_str(), [=](::benchmark::State &st) {
+              BM_KeyGen(st, description, support, options);
+            });
+        break;
+      case Action::ENCRYPT:
+        benchmark::RegisterBenchmark(
+            benchName("encrypt").c_str(), [=](::benchmark::State &st) {
+              BM_ExportArguments(st, description, support, options);
+            });
+        break;
+      case Action::EVALUATE:
+        benchmark::RegisterBenchmark(
+            benchName("evaluate").c_str(), [=](::benchmark::State &st) {
+              BM_Evaluate(st, description, support, options);
+            });
+        break;
+      }
+    }
+  }
+  setCurrentStackLimit(stackSizeRequirement);
+}
+
+int main(int argc, char **argv) {
+  // Parse google benchmark options
+  ::benchmark::Initialize(&argc, argv);
+
+  llvm::cl::list<enum Action> clActions(
+      "b", "bench",
+      llvm::cl::desc("Specify benchmark cases to run, if no benchmarks speci"),
+      llvm::cl::values(
+          clEnumValN(Action::COMPILE, "compile", "Run compile benchmark")),
+      llvm::cl::values(
+          clEnumValN(Action::KEYGEN, "keygen", "Run keygen benchmark")),
+      llvm::cl::values(
+          clEnumValN(Action::ENCRYPT, "encrypt", "Run encrypt benchmark")),
+      llvm::cl::values(
+          clEnumValN(Action::EVALUATE, "evaluate", "Run evaluate benchmark")));
+
+  // parse end to end test compiler options
+  auto options = parseEndToEndCommandLine(argc, argv);
+
+  auto compilationOptions = std::get<0>(options);
+  auto libpath = std::get<1>(options);
+  auto descriptionFiles = std::get<2>(options);
+
+  std::vector<enum Action> actions = clActions;
+  if (actions.empty()) {
+    actions = {Action::COMPILE, Action::KEYGEN, Action::ENCRYPT,
+               Action::EVALUATE};
+  }
+
+  auto stackSizeRequirement = 0;
+  for (auto descFile : descriptionFiles) {
+    auto suiteName = llvm::sys::path::stem(descFile.path).str();
+    registerEndToEndBenchmark(suiteName, descFile.descriptions,
+                              compilationOptions, actions,
+                              stackSizeRequirement);
+  }
+  ::benchmark::RunSpecifiedBenchmarks();
+  ::benchmark::Shutdown();
+  return 0;
+}

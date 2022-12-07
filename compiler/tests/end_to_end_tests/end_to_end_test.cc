@@ -226,78 +226,23 @@ int main(int argc, char **argv) {
   // Parse google test options, update argc and argv by removing gtest options
   ::testing::InitGoogleTest(&argc, argv);
 
-  // Main command line options
-  llvm::cl::ResetCommandLineParser();
+  // parse end to end test compiler options
 
-  llvm::cl::list<std::string> descriptionFiles(
-      llvm::cl::Positional, llvm::cl::desc("<End to end description Files>"),
-      llvm::cl::OneOrMore);
+  auto options = parseEndToEndCommandLine(argc, argv);
 
-  // Compilation options
-  llvm::cl::opt<bool> loopParallelize(
-      "loop-parallelize",
-      llvm::cl::desc(
-          "Set the loopParallelize compilation options to run the tests"),
-      llvm::cl::init(false));
-  llvm::cl::opt<bool> dataflowParallelize(
-      "dataflow-parallelize",
-      llvm::cl::desc(
-          "Set the loopParallelize compilation options to run the tests"),
-      llvm::cl::init(false));
-  llvm::cl::opt<bool> emitGPUOps(
-      "emit-gpu-ops",
-      llvm::cl::desc("Set the emitGPUOps compilation options to run the tests"),
-      llvm::cl::init(false));
-  llvm::cl::opt<bool> batchConcreteOps(
-      "batch-concrete-ops",
-      llvm::cl::desc(
-          "Set the batchConcreteOps compilation options to run the tests"),
-      llvm::cl::init(false));
-
-  // Optimizer options
-  llvm::cl::opt<bool> optimizerDisplay(
-      "optimizer-display",
-      llvm::cl::desc("Set the optimizerConfig.display compilation options to "
-                     "run the tests"),
-      llvm::cl::init(false));
-
-  // JIT or Library support
-  llvm::cl::opt<bool> jit(
-      "jit",
-      llvm::cl::desc("Use JIT support to run the tests (default, overwritten "
-                     "if --library is set"),
-      llvm::cl::init(true));
-  llvm::cl::opt<std::string> library(
-      "library",
-      llvm::cl::desc("Use library support to run the tests and specify the "
-                     "prefix for compilation artifacts"),
-      llvm::cl::init<std::string>(""));
-
-  llvm::cl::ParseCommandLineOptions(argc, argv);
-
-  // Build compilation options
-  mlir::concretelang::CompilationOptions compilationOptions("main");
-  compilationOptions.loopParallelize = loopParallelize.getValue();
-  compilationOptions.dataflowParallelize = dataflowParallelize.getValue();
-  compilationOptions.emitGPUOps = emitGPUOps.getValue();
-  compilationOptions.batchConcreteOps =
-      compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
+  auto compilationOptions = std::get<0>(options);
+  auto libpath = std::get<1>(options);
+  auto descriptionFiles = std::get<2>(options);
 
   for (auto descFile : descriptionFiles) {
-    auto desc = loadEndToEndDesc(descFile);
-    auto suiteName = path::stem(descFile).str();
-    auto libpath = library.getValue();
-    if (libpath.empty() && !jit.getValue()) {
-      llvm::errs()
-          << "You must specify the library path or use jit to run the test";
-      return 1;
-    }
+    auto suiteName = path::stem(descFile.path).str();
     if (libpath.empty()) {
       suiteName = suiteName + ".jit";
     } else {
       suiteName = suiteName + ".library";
     }
-    registerEndToEndSuite(suiteName, libpath, desc, compilationOptions);
+    registerEndToEndSuite(suiteName, libpath, descFile.descriptions,
+                          compilationOptions);
   }
   return RUN_ALL_TESTS();
 }

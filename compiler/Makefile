@@ -265,7 +265,8 @@ run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_encrypted_tensor
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_fhelinalg
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_lambda
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test --loop-parallelize --jit $(FIXTURE_CPU_DIR)/*.yaml
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	--backend=cpu --jit $(FIXTURE_CPU_DIR)/*.yaml
 
 ### end-to-end-tests GPU
 
@@ -284,9 +285,8 @@ generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_looku
 
 run-end-to-end-tests-gpu: build-end-to-end-test generate-gpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	--emit-gpu-ops --batch-concrete-ops --library /tmp/concrete_compiler/gpu_tests/ \
+	--backend=gpu --library /tmp/concrete_compiler/gpu_tests/ \
 	$(FIXTURE_GPU_DIR)/*.yaml
-
 
 ## end-to-end-dataflow-tests
 
@@ -301,30 +301,51 @@ run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
 
 # benchmark
 
+build-benchmarks: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
+
+## benchmark CPU
+
 BENCHMARK_CPU_DIR=tests/end_to_end_fixture/benchmarks_cpu
+
+$(BENCHMARK_CPU_DIR):
+	mkdir -p $@
 
 $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
 	$(Python3_EXECUTABLE) $< --n-ct 64 128 1024 > $@
 
 $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
-	mkdir -p $(FIXTURE_CPU_DIR)
 	$(Python3_EXECUTABLE) $< > $@
-
-$(BENCHMARK_CPU_DIR):
-	mkdir -p $@
 
 generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_leveled.yaml
 
-generate-gpu-benchmarks:
-	$(Python3_EXECUTABLE) ./tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py \
-	--min_bitwidth 1 --max_bitwidth 7 --n_ct 1 128 1024 2048 8192 \
-	 > tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml
+run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
+	$(BUILD_DIR)/bin/end_to_end_benchmark \
+	--backend=cpu \
+	--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
+	$(BENCHMARK_CPU_DIR)/*.yaml
 
-build-benchmarks: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
+## benchmark GPU
 
-run-benchmarks: build-benchmarks generate-cpu-benchmarks
-	$(BUILD_DIR)/bin/end_to_end_benchmark --benchmark_out=benchmarks_results.json --benchmark_out_format=json
+BENCHMARK_GPU_DIR=tests/end_to_end_fixture/benchmarks_gpu
+
+$(BENCHMARK_GPU_DIR):
+	mkdir -p $@
+
+$(BENCHMARK_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
+	$(Python3_EXECUTABLE) $< \
+	--bitwidth 1 2 3 4 5 6 7 --n-ct 1 128 1024 2048 8192
+
+
+generate-gpu-benchmarks: $(BENCHMARK_GPU_DIR) $(BENCHMARK_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml
+
+run-gpu-benchmarks: build-benchmarks generate-cpu-benchmarks
+	$(BUILD_DIR)/bin/end_to_end_benchmark \
+	--backend=gpu \
+	--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
+	$(BENCHMARK_CPU_DIR)/*.yaml
+
+
 
 build-mlbench: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_mlbench

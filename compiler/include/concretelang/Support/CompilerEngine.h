@@ -38,6 +38,11 @@ protected:
   llvm::LLVMContext *llvmContext;
 };
 
+enum Backend {
+  CPU,
+  GPU,
+};
+
 /// Compilation options allows to configure the compilation pipeline.
 struct CompilationOptions {
   llvm::Optional<mlir::concretelang::V0FHEConstraint> v0FHEConstraints;
@@ -74,6 +79,23 @@ struct CompilationOptions {
 
   CompilationOptions(std::string funcname) : CompilationOptions() {
     clientParametersFuncName = funcname;
+  }
+
+  /// @brief Constructor for CompilationOptions with default parameters for a
+  /// specific backend.
+  /// @param funcname The name of the function to compile.
+  /// @param backend The backend to target.
+  CompilationOptions(std::string funcname, enum Backend backend)
+      : CompilationOptions(funcname) {
+    switch (backend) {
+    case Backend::CPU:
+      loopParallelize = true;
+      break;
+    case Backend::GPU:
+      batchConcreteOps = true;
+      emitGPUOps = true;
+      break;
+    }
   }
 };
 

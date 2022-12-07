@@ -56,6 +56,11 @@ struct EndToEndDesc {
   std::vector<TestErrorRate> test_error_rates;
 };
 
+struct EndToEndDescFile {
+  std::string path;
+  std::vector<EndToEndDesc> descriptions;
+};
+
 llvm::Error checkResult(ValueDescription &desc,
                         mlir::concretelang::LambdaArgument &res);
 
