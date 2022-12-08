@@ -129,15 +129,26 @@ typedef enum CompilationTarget CompilationTarget;
 
 /// ********** CompilationOptions CAPI *****************************************
 
-MLIR_CAPI_EXPORTED CompilationOptions compilationOptionsCreate();
+MLIR_CAPI_EXPORTED CompilationOptions compilationOptionsCreate(
+    MlirStringRef funcName, bool autoParallelize, bool batchConcreteOps,
+    bool dataflowParallelize, bool emitGPUOps, bool loopParallelize,
+    bool optimizeConcrete, OptimizerConfig optimizerConfig,
+    bool verifyDiagnostics);
 
 MLIR_CAPI_EXPORTED CompilationOptions compilationOptionsCreateDefault();
 
+MLIR_CAPI_EXPORTED void compilationOptionsDestroy(CompilationOptions options);
+
 /// ********** OptimizerConfig CAPI ********************************************
 
-MLIR_CAPI_EXPORTED OptimizerConfig optimizerConfigCreate();
+MLIR_CAPI_EXPORTED OptimizerConfig
+optimizerConfigCreate(bool display, double fallback_log_norm_woppbs,
+                      double global_p_error, double p_error, uint64_t security,
+                      bool strategy_v0, bool use_gpu_constraints);
 
 MLIR_CAPI_EXPORTED OptimizerConfig optimizerConfigCreateDefault();
+
+MLIR_CAPI_EXPORTED void optimizerConfigDestroy(OptimizerConfig config);
 
 /// ********** CompilerEngine CAPI *********************************************
 
@@ -223,6 +234,9 @@ MLIR_CAPI_EXPORTED BufferRef clientParametersSerialize(ClientParameters params);
 
 MLIR_CAPI_EXPORTED ClientParameters
 clientParametersUnserialize(BufferRef buffer);
+
+MLIR_CAPI_EXPORTED ClientParameters
+clientParametersCopy(ClientParameters params);
 
 MLIR_CAPI_EXPORTED void clientParametersDestroy(ClientParameters params);
 

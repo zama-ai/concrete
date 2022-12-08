@@ -84,13 +84,16 @@ CompilationOptions compilationOptionsCreateDefault() {
   return wrap(new mlir::concretelang::CompilationOptions("main"));
 }
 
+void compilationOptionsDestroy(CompilationOptions options){
+    C_STRUCT_CLEANER(options)}
+
 /// ********** OptimizerConfig CAPI ********************************************
 
-OptimizerConfig optimizerConfigCreate(bool display,
-                                      double fallback_log_norm_woppbs,
-                                      double global_p_error, double p_error,
-                                      uint64_t security, bool strategy_v0,
-                                      bool use_gpu_constraints) {
+OptimizerConfig
+    optimizerConfigCreate(bool display, double fallback_log_norm_woppbs,
+                          double global_p_error, double p_error,
+                          uint64_t security, bool strategy_v0,
+                          bool use_gpu_constraints) {
   auto config = new mlir::concretelang::optimizer::Config();
   config->display = display;
   config->fallback_log_norm_woppbs = fallback_log_norm_woppbs;
@@ -105,6 +108,8 @@ OptimizerConfig optimizerConfigCreate(bool display,
 OptimizerConfig optimizerConfigCreateDefault() {
   return wrap(new mlir::concretelang::optimizer::Config());
 }
+
+void optimizerConfigDestroy(OptimizerConfig config){C_STRUCT_CLEANER(config)}
 
 /// ********** CompilerEngine CAPI *********************************************
 
@@ -328,6 +333,10 @@ ClientParameters clientParametersUnserialize(BufferRef buffer) {
                 llvm::toString(paramsOrError.takeError()));
   }
   return wrap(new mlir::concretelang::ClientParameters(paramsOrError.get()));
+}
+
+ClientParameters clientParametersCopy(ClientParameters params) {
+  return wrap(new mlir::concretelang::ClientParameters(*unwrap(params)));
 }
 
 void clientParametersDestroy(ClientParameters params){C_STRUCT_CLEANER(params)}
