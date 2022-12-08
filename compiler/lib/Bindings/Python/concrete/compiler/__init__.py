@@ -6,7 +6,8 @@ import atexit
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
-    terminate_parallelization as _terminate_parallelization,
+    terminate_df_parallelization as _terminate_df_parallelization,
+    init_df_parallelization as _init_df_parallelization,
 )
 from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
 
@@ -30,8 +31,18 @@ from .library_support import LibrarySupport
 from .evaluation_keys import EvaluationKeys
 
 
-# Terminate parallelization in the compiler (if init) during cleanup
-atexit.register(_terminate_parallelization)
+def init_dfr():
+    """Initialize dataflow parallelization.
+
+    It is not always required to initialize the dataflow runtime as it can be implicitely done
+    during compilation. However, it is required in case no compilation has previously been done
+    and the runtime is needed"""
+    _init_df_parallelization()
+
+
+# Cleanly terminate the dataflow runtime if it has been initialized
+# (does nothing otherwise)
+atexit.register(_terminate_df_parallelization)
 
 
 def round_trip(mlir_str: str) -> str:

@@ -30,7 +30,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   m.def("round_trip",
         [](std::string mlir_input) { return roundTrip(mlir_input.c_str()); });
 
-  m.def("terminate_parallelization", &terminateParallelization);
+  m.def("terminate_df_parallelization", &terminateDataflowParallelization);
+
+  m.def("init_df_parallelization", &initDataflowParallelization);
 
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
       .def(pybind11::init(

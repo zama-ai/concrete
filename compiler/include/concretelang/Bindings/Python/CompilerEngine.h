@@ -147,8 +147,9 @@ MLIR_CAPI_EXPORTED std::string evaluationKeysSerialize(
 /// Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 
-/// Terminate parallelization
-MLIR_CAPI_EXPORTED void terminateParallelization();
+/// Terminate/Init dataflow parallelization
+MLIR_CAPI_EXPORTED void terminateDataflowParallelization();
+MLIR_CAPI_EXPORTED void initDataflowParallelization();
 
 /// Create a lambdaArgument from a tensor of different data types
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU8(

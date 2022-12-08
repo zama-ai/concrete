@@ -252,10 +252,10 @@ clientParametersSerialize(mlir::concretelang::ClientParameters &params) {
   return jsonParams;
 }
 
-MLIR_CAPI_EXPORTED void terminateParallelization() {
-#ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
-  _dfr_terminate();
-#endif
+MLIR_CAPI_EXPORTED void terminateDataflowParallelization() { _dfr_terminate(); }
+
+MLIR_CAPI_EXPORTED void initDataflowParallelization() {
+  mlir::concretelang::dfr::_dfr_set_required(true);
 }
 
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module) {
