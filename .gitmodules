@@ -5,7 +5,7 @@
 [submodule "compiler/concrete-optimizer"]
 	path = compiler/concrete-optimizer
 	url = git@github.com:zama-ai/concrete-optimizer.git
-	shallow = true
+	shallow = false
 [submodule "compiler/concrete-core"]
 	path = compiler/concrete-core
 	url = git@github.com:zama-ai/concrete-core.git
