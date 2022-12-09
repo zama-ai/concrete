@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'test-bench-ci'
   workflow_dispatch:
     inputs:
       backend:
@@ -30,6 +31,7 @@ env:
   EC2_INSTANCE_TYPE: ${{ inputs.ec2-instance-type || 'm6i.metal' }}
   CUDA_PATH: /usr/local/cuda-11.3
   GCC_VERSION: 8
+  BACKEND: ${{ inputs.backend || 'cpu' }}
 
 jobs:
   start-runner:
@@ -56,7 +58,7 @@ jobs:
           echo "SECURITY_GROUP_ID=sg-0f8b52622a2669491" >> $GITHUB_ENV
 
       - name: Sets env vars for p3.2xlarge
-        if: ${{ inputs.backend == 'gpu' }}
+        if: ${{ env.BACKEND == 'gpu' }}
         run: |
           echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
           echo "EC2_INSTANCE_TYPE=p3.2xlarge" >> $GITHUB_ENV
@@ -113,13 +115,13 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Export specific variables (CPU)
-        if: ${{ inputs.backend == 'cpu' }}
+        if: ${{ env.BACKEND == 'cpu' }}
         run: |
           echo "CUDA_SUPPORT=OFF" >> "${GITHUB_ENV}"
           echo "BENCHMARK_TARGET=run-cpu-benchmarks" >> "${GITHUB_ENV}"
 
       - name: Export specific variables (GPU)
-        if: ${{ inputs.backend == 'gpu' }}
+        if: ${{ env.BACKEND == 'gpu' }}
         run: |
           echo "CUDA_SUPPORT=ON" >> "${GITHUB_ENV}"
           echo "BENCHMARK_TARGET=run-gpu-benchmarks" >> "${GITHUB_ENV}"
@@ -221,7 +223,7 @@ jobs:
           echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
 
       - name: Sets AWS region for p3.2xlarge
-        if: ${{ inputs.backend == 'gpu' }}
+        if: ${{ env.BACKEND == 'gpu' }}
         run: |
           echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
 
