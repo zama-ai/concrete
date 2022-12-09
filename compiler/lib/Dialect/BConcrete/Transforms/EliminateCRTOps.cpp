@@ -464,7 +464,7 @@ struct MulCleartextCRTLweTensorOpPattern
     mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
         op.getLoc(), resultTy, mlir::ValueRange{});
 
-    auto rhs = rewriter.create<arith::ExtUIOp>(op.getLoc(),
+    auto rhs = rewriter.create<arith::ExtSIOp>(op.getLoc(),
                                                rewriter.getI64Type(), op.rhs());
 
     // %0 = scf.for %i = %c0 to %cB step %c1 iter_args(%acc = %init) ->
