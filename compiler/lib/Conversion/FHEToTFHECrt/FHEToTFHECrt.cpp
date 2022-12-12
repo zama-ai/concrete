@@ -123,41 +123,6 @@ template <typename T> struct CrtOpPattern : public mlir::OpRewritePattern<T> {
       : mlir::OpRewritePattern<T>(context, benefit),
         loweringParameters(params) {}
 
-  /// Writes an `scf::for` that loops over the crt dimension of two tensors and
-  /// execute the input lambda to write the loop body. Returns the first result
-  /// of the op.
-  ///
-  /// Note:
-  /// -----
-  ///
-  /// + The type of `firstArgTensor` type is used as output type.
-  mlir::Value writeBinaryTensorLoop(
-      mlir::Location location, mlir::Value firstTensor,
-      mlir::Value secondTensor, mlir::PatternRewriter &rewriter,
-      mlir::function_ref<void(mlir::OpBuilder &, mlir::Location, mlir::Value,
-                              mlir::ValueRange)>
-          body) const {
-
-    // Create the loop
-    mlir::arith::ConstantOp zeroConstantOp =
-        rewriter.create<mlir::arith::ConstantIndexOp>(location, 0);
-    mlir::arith::ConstantOp oneConstantOp =
-        rewriter.create<mlir::arith::ConstantIndexOp>(location, 1);
-    mlir::arith::ConstantOp crtSizeConstantOp =
-        rewriter.create<mlir::arith::ConstantIndexOp>(location,
-                                                      loweringParameters.nMods);
-    mlir::scf::ForOp newOp = rewriter.create<mlir::scf::ForOp>(
-        location, zeroConstantOp, crtSizeConstantOp, oneConstantOp,
-        mlir::ValueRange{firstTensor, secondTensor}, body);
-
-    // Convert the types of the new operation
-    typing::TypeConverter converter(loweringParameters);
-    concretelang::convertOperandAndResultTypes(rewriter, newOp,
-                                               converter.getConversionLambda());
-
-    return newOp.getResult(0);
-  }
-
   /// Writes an `scf::for` that loops over the crt dimension of one tensor and
   /// execute the input lambda to write the loop body. Returns the first result
   /// of the op.
@@ -167,11 +132,15 @@ template <typename T> struct CrtOpPattern : public mlir::OpRewritePattern<T> {
   ///
   /// + The type of `firstArgTensor` type is used as output type.
   mlir::Value writeUnaryTensorLoop(
-      mlir::Location location, mlir::Value tensor,
+      mlir::Location location, mlir::Type returnType,
       mlir::PatternRewriter &rewriter,
       mlir::function_ref<void(mlir::OpBuilder &, mlir::Location, mlir::Value,
                               mlir::ValueRange)>
           body) const {
+
+    mlir::Value tensor = rewriter.create<mlir::bufferization::AllocTensorOp>(
+        location, returnType.cast<mlir::RankedTensorType>(),
+        mlir::ValueRange{});
 
     // Create the loop
     mlir::arith::ConstantOp zeroConstantOp =
@@ -239,20 +208,19 @@ struct AddEintIntOpPattern : public CrtOpPattern<FHE::AddEintIntOp> {
         converter.convertType(eintOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
-    mlir::Value output = writeBinaryTensorLoop(
-        location, eintOperand, encodedPlaintextTensor, rewriter,
+    mlir::Value output = writeUnaryTensorLoop(
+        location, eintOperand.getType(), rewriter,
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           mlir::Value extractedEint =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[0], iter);
-          mlir::Value extractedInt =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[1], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, eintOperand, iter);
+          mlir::Value extractedInt = builder.create<mlir::tensor::ExtractOp>(
+              loc, encodedPlaintextTensor, iter);
           mlir::Value output = builder.create<TFHE::AddGLWEIntOp>(
               loc, ciphertextScalarType, extractedEint, extractedInt);
           mlir::Value newTensor = builder.create<mlir::tensor::InsertOp>(
               loc, output, args[0], iter);
-          builder.create<mlir::scf::YieldOp>(
-              loc, mlir::ValueRange{newTensor, args[1]});
+          builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newTensor});
         });
 
     // Rewrite original op.
@@ -292,20 +260,19 @@ struct SubIntEintOpPattern : public CrtOpPattern<FHE::SubIntEintOp> {
         converter.convertType(eintOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
-    mlir::Value output = writeBinaryTensorLoop(
-        location, eintOperand, encodedPlaintextTensor, rewriter,
+    mlir::Value output = writeUnaryTensorLoop(
+        location, eintOperand.getType(), rewriter,
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           mlir::Value extractedEint =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[0], iter);
-          mlir::Value extractedInt =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[1], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, eintOperand, iter);
+          mlir::Value extractedInt = builder.create<mlir::tensor::ExtractOp>(
+              loc, encodedPlaintextTensor, iter);
           mlir::Value output = builder.create<TFHE::SubGLWEIntOp>(
               loc, ciphertextScalarType, extractedInt, extractedEint);
           mlir::Value newTensor = builder.create<mlir::tensor::InsertOp>(
               loc, output, args[0], iter);
-          builder.create<mlir::scf::YieldOp>(
-              loc, mlir::ValueRange{newTensor, args[1]});
+          builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newTensor});
         });
 
     // Rewrite original op.
@@ -355,20 +322,19 @@ struct SubEintIntOpPattern : public CrtOpPattern<FHE::SubEintIntOp> {
         converter.convertType(eintOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
-    mlir::Value output = writeBinaryTensorLoop(
-        location, eintOperand, encodedPlaintextTensor, rewriter,
+    mlir::Value output = writeUnaryTensorLoop(
+        location, eintOperand.getType(), rewriter,
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           mlir::Value extractedEint =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[0], iter);
-          mlir::Value extractedInt =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[1], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, eintOperand, iter);
+          mlir::Value extractedInt = builder.create<mlir::tensor::ExtractOp>(
+              loc, encodedPlaintextTensor, iter);
           mlir::Value output = builder.create<TFHE::AddGLWEIntOp>(
               loc, ciphertextScalarType, extractedEint, extractedInt);
           mlir::Value newTensor = builder.create<mlir::tensor::InsertOp>(
               loc, output, args[0], iter);
-          builder.create<mlir::scf::YieldOp>(
-              loc, mlir::ValueRange{newTensor, args[1]});
+          builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newTensor});
         });
 
     // Rewrite original op.
@@ -404,20 +370,19 @@ struct AddEintOpPattern : CrtOpPattern<FHE::AddEintOp> {
         converter.convertType(lhsOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
-    mlir::Value output = writeBinaryTensorLoop(
-        location, lhsOperand, rhsOperand, rewriter,
+    mlir::Value output = writeUnaryTensorLoop(
+        location, lhsOperand.getType(), rewriter,
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           mlir::Value extractedLhs =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[0], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, lhsOperand, iter);
           mlir::Value extractedRhs =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[1], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, rhsOperand, iter);
           mlir::Value output = builder.create<TFHE::AddGLWEOp>(
               loc, ciphertextScalarType, extractedLhs, extractedRhs);
           mlir::Value newTensor = builder.create<mlir::tensor::InsertOp>(
               loc, output, args[0], iter);
-          builder.create<mlir::scf::YieldOp>(
-              loc, mlir::ValueRange{newTensor, args[1]});
+          builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newTensor});
         });
 
     // Rewrite original op.
@@ -453,22 +418,21 @@ struct SubEintOpPattern : CrtOpPattern<FHE::SubEintOp> {
         converter.convertType(lhsOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
-    mlir::Value output = writeBinaryTensorLoop(
-        location, lhsOperand, rhsOperand, rewriter,
+    mlir::Value output = writeUnaryTensorLoop(
+        location, lhsOperand.getType(), rewriter,
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           mlir::Value extractedLhs =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[0], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, lhsOperand, iter);
           mlir::Value extractedRhs =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[1], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, rhsOperand, iter);
           mlir::Value negatedRhs = builder.create<TFHE::NegGLWEOp>(
               loc, ciphertextScalarType, extractedRhs);
           mlir::Value output = builder.create<TFHE::AddGLWEOp>(
               loc, ciphertextScalarType, extractedLhs, negatedRhs);
           mlir::Value newTensor = builder.create<mlir::tensor::InsertOp>(
               loc, output, args[0], iter);
-          builder.create<mlir::scf::YieldOp>(
-              loc, mlir::ValueRange{newTensor, args[1]});
+          builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newTensor});
         });
 
     // Rewrite original op.
@@ -502,11 +466,11 @@ struct NegEintOpPattern : CrtOpPattern<FHE::NegEintOp> {
                                           .cast<mlir::RankedTensorType>()
                                           .getElementType();
     mlir::Value loopRes = writeUnaryTensorLoop(
-        location, operand, rewriter,
+        location, operand.getType(), rewriter,
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           mlir::Value extractedCiphertext =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[0], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, operand, iter);
           mlir::Value negatedCiphertext = builder.create<TFHE::NegGLWEOp>(
               loc, ciphertextScalarType, extractedCiphertext);
           mlir::Value newTensor = builder.create<mlir::tensor::InsertOp>(
@@ -551,11 +515,11 @@ struct MulEintIntOpPattern : CrtOpPattern<FHE::MulEintIntOp> {
             .cast<mlir::RankedTensorType>()
             .getElementType();
     mlir::Value loopRes = writeUnaryTensorLoop(
-        location, eintOperand, rewriter,
+        location, eintOperand.getType(), rewriter,
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           mlir::Value extractedCiphertext =
-              builder.create<mlir::tensor::ExtractOp>(loc, args[0], iter);
+              builder.create<mlir::tensor::ExtractOp>(loc, eintOperand, iter);
           mlir::Value negatedCiphertext = builder.create<TFHE::MulGLWEIntOp>(
               loc, ciphertextScalarType, extractedCiphertext, encodedCleartext);
           mlir::Value newTensor = builder.create<mlir::tensor::InsertOp>(
