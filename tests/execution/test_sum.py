@@ -18,6 +18,12 @@ import concrete.numpy as cnp
             },
         ),
         pytest.param(
+            lambda x: np.sum(x, axis=None),  # type: ignore
+            {
+                "x": {"shape": (3, 2), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
+        pytest.param(
             lambda x: np.sum(x, axis=0),
             {
                 "x": {"shape": (3, 2), "range": [0, 10], "status": "encrypted"},

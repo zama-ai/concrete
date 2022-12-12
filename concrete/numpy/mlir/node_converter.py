@@ -924,7 +924,9 @@ class NodeConverter:
         axes = self.node.properties["kwargs"].get("axis", [])
         keep_dims = self.node.properties["kwargs"].get("keepdims", False)
 
-        if isinstance(axes, int):
+        if axes is None:
+            axes = []
+        elif isinstance(axes, int):
             axes = [axes]
         elif isinstance(axes, tuple):
             axes = list(axes)
