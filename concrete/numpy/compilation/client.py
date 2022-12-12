@@ -158,14 +158,13 @@ class Client:
                 )
 
                 if is_valid:
-                    if isinstance(arg, int) and arg < 0:
-                        sanitized_args[index] = 2 * (expected_max + 1) + arg
+                    is_signed = self.specs.input_signs[index]
+                    sanitizer = 0 if not is_signed else 2 ** (width - 1)
+
+                    if isinstance(arg, int):
+                        sanitized_args[index] = arg + sanitizer
                     else:
-                        sanitized_args[index] = np.where(
-                            arg >= 0,
-                            arg,
-                            2 * (expected_max + 1) + arg,
-                        ).astype(np.uint64)
+                        sanitized_args[index] = (arg + sanitizer).astype(np.uint64)
 
             if not is_valid:
                 actual_value = Value.of(arg, is_encrypted=is_encrypted)
