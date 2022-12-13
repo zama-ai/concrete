@@ -118,7 +118,6 @@ enum CompilationTarget {
   FHE,
   TFHE,
   CONCRETE,
-  CONCRETEWITHLOOPS,
   BCONCRETE,
   STD,
   LLVM,

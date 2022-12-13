@@ -128,8 +128,6 @@ llvm::Expected<mlir::concretelang::CompilerEngine::
     return mlir::concretelang::CompilerEngine::Target::TFHE;
   case CONCRETE:
     return mlir::concretelang::CompilerEngine::Target::CONCRETE;
-  case CONCRETEWITHLOOPS:
-    return mlir::concretelang::CompilerEngine::Target::CONCRETEWITHLOOPS;
   case BCONCRETE:
     return mlir::concretelang::CompilerEngine::Target::BCONCRETE;
   case STD:

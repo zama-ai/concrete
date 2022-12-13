@@ -241,7 +241,7 @@ const LLVM_STATIC_LIBS: [&str; 51] = [
     "LLVMX86Info",
 ];
 
-const CONCRETE_COMPILER_LIBS: [&str; 34] = [
+const CONCRETE_COMPILER_LIBS: [&str; 35] = [
     "RTDialect",
     "RTDialectTransforms",
     "ConcretelangSupport",
@@ -265,7 +265,8 @@ const CONCRETE_COMPILER_LIBS: [&str; 34] = [
     "FHELinalgDialectTransforms",
     "FHEDialect",
     "TFHEToConcrete",
-    "FHEToTFHE",
+    "FHEToTFHECrt",
+    "FHEToTFHEScalar",
     "ConcreteDialectTransforms",
     "BConcreteDialect",
     "concrete_optimizer",
