@@ -12,6 +12,7 @@
 #include <mlir/Dialect/Func/Transforms/Passes.h>
 #include <mlir/Transforms/Passes.h>
 
+#include <mlir/Dialect/Affine/Passes.h>
 #include <mlir/Dialect/Arithmetic/Transforms/Passes.h>
 #include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
 #include <mlir/Dialect/Bufferization/Transforms/Passes.h>
@@ -334,6 +335,7 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
 
   if (parallelizeLoops) {
+    addPotentiallyNestedPass(pm, mlir::createLoopCoalescingPass(), enablePass);
     addPotentiallyNestedPass(pm, mlir::concretelang::createForLoopToParallel(),
                              enablePass);
   }
