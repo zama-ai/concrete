@@ -21,5 +21,5 @@ RUN cd build && cmake \
 		-DHPX_WITH_MALLOC=system ..
 RUN cd build && make -j2
 
-FROM quay.io/pypa/manylinux_2_28_x86_64
+FROM scratch
 COPY --from=0 /hpx/ /hpx/
