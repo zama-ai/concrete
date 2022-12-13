@@ -12,7 +12,10 @@ RUN git clone https://github.com/STEllAR-GROUP/hpx.git /hpx
 WORKDIR /hpx
 RUN git checkout 1.7.1
 RUN mkdir build
+# empty HPX_WITH_MAX_CPU_COUNT = dynamic
+# ref https://github.com/STEllAR-GROUP/hpx/blob/1.7.1/CMakeLists.txt#L759
 RUN cd build && cmake \
+		-DHPX_WITH_MAX_CPU_COUNT="" \
 		-DHPX_WITH_FETCH_ASIO=on \
 		-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
 		-DHPX_WITH_MALLOC=system ..
