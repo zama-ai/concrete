@@ -1,5 +1,6 @@
 import numpy as np
 from sage.all import save, load, ceil
+import json
 
 
 def sort_data(security_level):
@@ -60,37 +61,49 @@ def verify_curve(security_level, a=None, b=None):
 
     # step 3. for each n, check whether we satisfy the table
     n_min = max(2 * security_level, 450, X["{}".format(security_level)][-1][0])
-    print(n_min)
-    print(n_max)
+    #print(n_min)
+    #print(n_max)
 
     for n in range(n_max, n_min, -1):
         model_sd = f_model(a, b, n)
         table_sd = f_table(X["{}".format(security_level)], n)
-        print(n, table_sd, model_sd, model_sd >= table_sd)
+        #print(n, table_sd, model_sd, model_sd >= table_sd)
 
         if table_sd > model_sd:
-            print("MODEL FAILS at n = {}".format(n))
-            return "FAIL"
+            #print("MODEL FAILS at n = {}".format(n))
+            return False
 
-    return "PASS", n_min
+    return True, n_min
 
 
 def generate_and_verify(security_levels, log_q, name="verified_curves"):
 
-    data = []
+    success = []
+
+    fail = []
 
     for sec in security_levels:
-        print("WE GO FOR {}".format(sec))
+        #print("WE GO FOR {}".format(sec))
         # generate the model for security level sec
         (a_sec, b_sec) = generate_curve(sec)
         # verify the model for security level sec
-        res = verify_curve(sec, a_sec, b_sec)
+        (status, n_alpha) = verify_curve(sec, a_sec, b_sec)
         # append the information into a list
-        data.append((a_sec, b_sec - log_q, sec, res[0], res[1]))
-        save(data, "{}.sobj".format(name))
+        x = {"slope": a_sec, "bias": b_sec - log_q, "security_level": sec, "minimal_lwe_dimension": n_alpha}
+        if status:
+            success.append(x)
+        else:
+            fail.append(x)
 
-    return data
+    save(success, "{}.sobj".format(name))
+
+    return success, fail
 
 
-data = generate_and_verify([80, 96, 112, 128, 144, 160, 176, 192, 256], log_q=64)
-print(data)
+(success, fail) = generate_and_verify([80, 96, 112, 128, 144, 160, 176, 192, 256], log_q=64)
+if (fail):
+    print("FAILURE: Fail to verify the following curves")
+    print(json.dumps(fail))
+    exit(1)
+
+print(json.dumps(success))
