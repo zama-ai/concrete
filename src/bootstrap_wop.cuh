@@ -296,10 +296,10 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
                   (glwe_dimension + 1) * level_count;
 
   double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
-      r * ggsw_size * sizeof(double), *stream, gpu_index);
+      r * ggsw_size * sizeof(double), stream, gpu_index);
 
   batch_fft_ggsw_vector<Torus, STorus, params>(
-      v_stream, d_ggsw_fft_in, ggsw_in, r, glwe_dimension, polynomial_size,
+      stream, d_ggsw_fft_in, ggsw_in, r, glwe_dimension, polynomial_size,
       level_count, gpu_index, max_shared_memory);
 
   //////////////////////
@@ -308,7 +308,7 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
   char *d_mem;
   if (max_shared_memory < memory_needed_per_block) {
     d_mem = (char *)cuda_malloc_async(memory_needed_per_block * (1 << (r - 1)),
-                                      *stream, gpu_index);
+                                      stream, gpu_index);
   } else {
     checkCudaErrors(cudaFuncSetAttribute(
         device_batch_cmux<Torus, STorus, params, FULLSM>,
@@ -322,9 +322,9 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
   int glwe_size = (glwe_dimension + 1) * polynomial_size;
 
   Torus *d_buffer1 = (Torus *)cuda_malloc_async(
-      num_lut * glwe_size * sizeof(Torus), *stream, gpu_index);
+      num_lut * glwe_size * sizeof(Torus), stream, gpu_index);
   Torus *d_buffer2 = (Torus *)cuda_malloc_async(
-      num_lut * glwe_size * sizeof(Torus), *stream, gpu_index);
+      num_lut * glwe_size * sizeof(Torus), stream, gpu_index);
 
   checkCudaErrors(cudaMemcpyAsync(d_buffer1, lut_vector,
                                   num_lut * glwe_size * sizeof(Torus),
@@ -368,11 +368,11 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
   checkCudaErrors(cudaStreamSynchronize(*stream));
 
   // Free memory
-  cuda_drop_async(d_ggsw_fft_in, *stream, gpu_index);
-  cuda_drop_async(d_buffer1, *stream, gpu_index);
-  cuda_drop_async(d_buffer2, *stream, gpu_index);
+  cuda_drop_async(d_ggsw_fft_in, stream, gpu_index);
+  cuda_drop_async(d_buffer1, stream, gpu_index);
+  cuda_drop_async(d_buffer2, stream, gpu_index);
   if (max_shared_memory < memory_needed_per_block)
-    cuda_drop_async(d_mem, *stream, gpu_index);
+    cuda_drop_async(d_mem, stream, gpu_index);
 }
 
 // only works for big lwe for ks+bs case
@@ -723,7 +723,7 @@ void host_blind_rotate_and_sample_extraction(
 
   char *d_mem;
   if (max_shared_memory < memory_needed_per_block)
-    d_mem = (char *)cuda_malloc_async(memory_needed_per_block * tau, *stream,
+    d_mem = (char *)cuda_malloc_async(memory_needed_per_block * tau, stream,
                                       gpu_index);
   else {
     checkCudaErrors(cudaFuncSetAttribute(
@@ -740,11 +740,11 @@ void host_blind_rotate_and_sample_extraction(
   int ggsw_size =
       polynomial_size * (glwe_dimension + 1) * (glwe_dimension + 1) * l_gadget;
   double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
-      mbr_size * ggsw_size * sizeof(double), *stream, gpu_index);
+      mbr_size * ggsw_size * sizeof(double), stream, gpu_index);
 
   batch_fft_ggsw_vector<Torus, STorus, params>(
-      v_stream, d_ggsw_fft_in, ggsw_in, mbr_size, glwe_dimension,
-      polynomial_size, l_gadget, gpu_index, max_shared_memory);
+      stream, d_ggsw_fft_in, ggsw_in, mbr_size, glwe_dimension, polynomial_size,
+      l_gadget, gpu_index, max_shared_memory);
   checkCudaErrors(cudaGetLastError());
 
   //
@@ -768,9 +768,9 @@ void host_blind_rotate_and_sample_extraction(
   checkCudaErrors(cudaGetLastError());
 
   //
-  cuda_drop_async(d_ggsw_fft_in, *stream, gpu_index);
+  cuda_drop_async(d_ggsw_fft_in, stream, gpu_index);
   if (max_shared_memory < memory_needed_per_block)
-    cuda_drop_async(d_mem, *stream, gpu_index);
+    cuda_drop_async(d_mem, stream, gpu_index);
 }
 
 template <typename Torus, class params>
@@ -852,25 +852,25 @@ __host__ void host_circuit_bootstrap_vertical_packing(
   int ggsw_size = level_count_cbs * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * polynomial_size;
   Torus *ggsw_out = (Torus *)cuda_malloc_async(
-      number_of_inputs * ggsw_size * sizeof(Torus), *stream, gpu_index);
+      number_of_inputs * ggsw_size * sizeof(Torus), stream, gpu_index);
   // input lwe array for fp-ks
   Torus *lwe_array_in_fp_ks_buffer = (Torus *)cuda_malloc_async(
       number_of_inputs * level_count_cbs * (glwe_dimension + 1) *
           (polynomial_size + 1) * sizeof(Torus),
-      *stream, gpu_index);
+      stream, gpu_index);
   // buffer for pbs output
   Torus *lwe_array_out_pbs_buffer =
       (Torus *)cuda_malloc_async(number_of_inputs * level_count_cbs *
                                      (polynomial_size + 1) * sizeof(Torus),
-                                 *stream, gpu_index);
+                                 stream, gpu_index);
   // vector for shifted lwe input
   Torus *lwe_array_in_shifted_buffer = (Torus *)cuda_malloc_async(
       number_of_inputs * level_count_cbs * (lwe_dimension + 1) * sizeof(Torus),
-      *stream, gpu_index);
+      stream, gpu_index);
   // lut vector buffer for cbs
   Torus *lut_vector_cbs = (Torus *)cuda_malloc_async(
       level_count_cbs * (glwe_dimension + 1) * polynomial_size * sizeof(Torus),
-      *stream, gpu_index);
+      stream, gpu_index);
   // indexes of lut vectors for cbs
   uint32_t *h_lut_vector_indexes =
       (uint32_t *)malloc(number_of_inputs * level_count_cbs * sizeof(uint32_t));
@@ -878,12 +878,10 @@ __host__ void host_circuit_bootstrap_vertical_packing(
     h_lut_vector_indexes[index] = index % level_count_cbs;
   }
   uint32_t *lut_vector_indexes = (uint32_t *)cuda_malloc_async(
-      number_of_inputs * level_count_cbs * sizeof(uint32_t), *stream,
-      gpu_index);
-  cuda_memcpy_async_to_gpu(lut_vector_indexes, h_lut_vector_indexes,
-                           number_of_inputs * level_count_cbs *
-                               sizeof(uint32_t),
-                           v_stream, gpu_index);
+      number_of_inputs * level_count_cbs * sizeof(uint32_t), stream, gpu_index);
+  cuda_memcpy_async_to_gpu(
+      lut_vector_indexes, h_lut_vector_indexes,
+      number_of_inputs * level_count_cbs * sizeof(uint32_t), stream, gpu_index);
   checkCudaErrors(cudaGetLastError());
 
   uint32_t bits = sizeof(Torus) * 8;
@@ -898,17 +896,17 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       base_log_cbs, number_of_inputs, max_shared_memory);
   checkCudaErrors(cudaGetLastError());
   // Free memory
-  cuda_drop_async(lwe_array_in_fp_ks_buffer, *stream, gpu_index);
-  cuda_drop_async(lwe_array_in_shifted_buffer, *stream, gpu_index);
-  cuda_drop_async(lwe_array_out_pbs_buffer, *stream, gpu_index);
-  cuda_drop_async(lut_vector_cbs, *stream, gpu_index);
-  cuda_drop_async(lut_vector_indexes, *stream, gpu_index);
+  cuda_drop_async(lwe_array_in_fp_ks_buffer, stream, gpu_index);
+  cuda_drop_async(lwe_array_in_shifted_buffer, stream, gpu_index);
+  cuda_drop_async(lwe_array_out_pbs_buffer, stream, gpu_index);
+  cuda_drop_async(lut_vector_cbs, stream, gpu_index);
+  cuda_drop_async(lut_vector_indexes, stream, gpu_index);
   free(h_lut_vector_indexes);
 
   // we need to expand the lut to fill the masks with zeros
   Torus *lut_vector_glwe = (Torus *)cuda_malloc_async(
       (glwe_dimension + 1) * lut_number * polynomial_size * sizeof(Torus),
-      *stream, gpu_index);
+      stream, gpu_index);
   int num_blocks = 0, num_threads = 0;
   int num_entries = glwe_dimension * polynomial_size * lut_number;
   getNumBlocksAndThreads(num_entries, 512, num_blocks, num_threads);
@@ -928,7 +926,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
                         (ptrdiff_t)(i * (glwe_dimension + 1) * polynomial_size);
       // CMUX Tree
       Torus *glwe_array_out = (Torus *)cuda_malloc_async(
-          (glwe_dimension + 1) * polynomial_size * sizeof(Torus), *stream,
+          (glwe_dimension + 1) * polynomial_size * sizeof(Torus), stream,
           gpu_index);
       checkCudaErrors(cudaGetLastError());
       // r = tau * p - log2(N)
@@ -947,7 +945,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
           number_of_inputs - r, 1, glwe_dimension, polynomial_size,
           base_log_cbs, level_count_cbs, max_shared_memory);
 
-      cuda_drop_async(glwe_array_out, *stream, gpu_index);
+      cuda_drop_async(glwe_array_out, stream, gpu_index);
     }
 
   } else {
@@ -963,7 +961,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
           max_shared_memory);
     }
   }
-  cuda_drop_async(ggsw_out, *stream, gpu_index);
+  cuda_drop_async(ggsw_out, stream, gpu_index);
 }
 
 #endif // WOP_PBS_H

@@ -317,7 +317,7 @@ __host__ void host_bootstrap_amortized(
   // of shared memory)
   if (max_shared_memory < SM_PART) {
     d_mem = (char *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count,
-                                      *stream, gpu_index);
+                                      stream, gpu_index);
     device_bootstrap_amortized<Torus, params, NOSM><<<grid, thds, 0, *stream>>>(
         lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
         bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
@@ -328,7 +328,7 @@ __host__ void host_bootstrap_amortized(
     cudaFuncSetCacheConfig(device_bootstrap_amortized<Torus, params, PARTIALSM>,
                            cudaFuncCachePreferShared);
     d_mem = (char *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count,
-                                      *stream, gpu_index);
+                                      stream, gpu_index);
     device_bootstrap_amortized<Torus, params, PARTIALSM>
         <<<grid, thds, SM_PART, *stream>>>(
             lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
@@ -346,7 +346,7 @@ __host__ void host_bootstrap_amortized(
     checkCudaErrors(cudaFuncSetCacheConfig(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncCachePreferShared));
-    d_mem = (char *)cuda_malloc_async(0, *stream, gpu_index);
+    d_mem = (char *)cuda_malloc_async(0, stream, gpu_index);
 
     device_bootstrap_amortized<Torus, params, FULLSM>
         <<<grid, thds, SM_FULL, *stream>>>(
@@ -359,7 +359,7 @@ __host__ void host_bootstrap_amortized(
   // Synchronize the streams before copying the result to lwe_array_out at the
   // right place
   cudaStreamSynchronize(*stream);
-  cuda_drop_async(d_mem, *stream, gpu_index);
+  cuda_drop_async(d_mem, stream, gpu_index);
 }
 
 template <typename Torus, class params>

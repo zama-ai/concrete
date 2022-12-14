@@ -5,7 +5,7 @@
 #include <helper_cuda.h>
 
 /// Unsafe function to create a CUDA stream, must check first that GPU exists
-void *cuda_create_stream(uint32_t gpu_index) {
+cudaStream_t *cuda_create_stream(uint32_t gpu_index) {
   cudaSetDevice(gpu_index);
   cudaStream_t *stream = new cudaStream_t;
   cudaStreamCreate(stream);
@@ -13,9 +13,8 @@ void *cuda_create_stream(uint32_t gpu_index) {
 }
 
 /// Unsafe function to destroy CUDA stream, must check first the GPU exists
-int cuda_destroy_stream(void *v_stream, uint32_t gpu_index) {
+int cuda_destroy_stream(cudaStream_t *stream, uint32_t gpu_index) {
   cudaSetDevice(gpu_index);
-  auto stream = static_cast<cudaStream_t *>(v_stream);
   cudaStreamDestroy(*stream);
   return 0;
 }
@@ -33,7 +32,7 @@ void *cuda_malloc(uint64_t size, uint32_t gpu_index) {
 
 /// Allocates a size-byte array at the device memory. Tries to do it
 /// asynchronously.
-void *cuda_malloc_async(uint64_t size, cudaStream_t stream,
+void *cuda_malloc_async(uint64_t size, cudaStream_t *stream,
                         uint32_t gpu_index) {
   void *ptr;
 
@@ -42,7 +41,7 @@ void *cuda_malloc_async(uint64_t size, cudaStream_t stream,
       &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
 
   if (support_async_alloc)
-    checkCudaErrors(cudaMallocAsync((void **)&ptr, size, stream));
+    checkCudaErrors(cudaMallocAsync((void **)&ptr, size, *stream));
   else
     checkCudaErrors(cudaMalloc((void **)&ptr, size));
   return ptr;
@@ -74,7 +73,7 @@ int cuda_check_valid_malloc(uint64_t size, uint32_t gpu_index) {
 /// -2: error, gpu index doesn't exist
 /// -3: error, zero copy size
 int cuda_memcpy_async_to_gpu(void *dest, void *src, uint64_t size,
-                             void *v_stream, uint32_t gpu_index) {
+                             cudaStream_t *stream, uint32_t gpu_index) {
   if (size == 0) {
     // error code: zero copy size
     return -3;
@@ -90,7 +89,7 @@ int cuda_memcpy_async_to_gpu(void *dest, void *src, uint64_t size,
     // error code: invalid device pointer
     return -1;
   }
-  auto stream = static_cast<cudaStream_t *>(v_stream);
+
   cudaSetDevice(gpu_index);
   checkCudaErrors(
       cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, *stream));
@@ -116,7 +115,7 @@ int cuda_synchronize_device(uint32_t gpu_index) {
 /// -2: error, gpu index doesn't exist
 /// -3: error, zero copy size
 int cuda_memcpy_async_to_cpu(void *dest, const void *src, uint64_t size,
-                             void *v_stream, uint32_t gpu_index) {
+                             cudaStream_t *stream, uint32_t gpu_index) {
   if (size == 0) {
     // error code: zero copy size
     return -3;
@@ -132,7 +131,7 @@ int cuda_memcpy_async_to_cpu(void *dest, const void *src, uint64_t size,
     // error code: invalid device pointer
     return -1;
   }
-  auto stream = static_cast<cudaStream_t *>(v_stream);
+
   cudaSetDevice(gpu_index);
   checkCudaErrors(
       cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToHost, *stream));
@@ -158,14 +157,14 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
 }
 
 /// Drop a cuda array. Tries to do it asynchronously
-int cuda_drop_async(void *ptr, cudaStream_t stream, uint32_t gpu_index) {
+int cuda_drop_async(void *ptr, cudaStream_t *stream, uint32_t gpu_index) {
 
   int support_async_alloc;
   checkCudaErrors(cudaDeviceGetAttribute(
       &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
 
   if (support_async_alloc)
-    checkCudaErrors(cudaFreeAsync(ptr, stream));
+    checkCudaErrors(cudaFreeAsync(ptr, *stream));
   else
     checkCudaErrors(cudaFree(ptr));
   return 0;

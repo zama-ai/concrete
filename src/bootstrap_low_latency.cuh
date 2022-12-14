@@ -268,9 +268,9 @@ __host__ void host_bootstrap_low_latency(
   int buffer_size_per_gpu = level_count * input_lwe_ciphertext_count *
                             polynomial_size / 2 * sizeof(double2);
   double2 *mask_buffer_fft =
-      (double2 *)cuda_malloc_async(buffer_size_per_gpu, *stream, gpu_index);
+      (double2 *)cuda_malloc_async(buffer_size_per_gpu, stream, gpu_index);
   double2 *body_buffer_fft =
-      (double2 *)cuda_malloc_async(buffer_size_per_gpu, *stream, gpu_index);
+      (double2 *)cuda_malloc_async(buffer_size_per_gpu, stream, gpu_index);
 
   // With SM each block corresponds to either the mask or body, no need to
   // duplicate data for each
@@ -308,7 +308,7 @@ __host__ void host_bootstrap_low_latency(
     checkCudaErrors(cudaGetLastError());
     d_mem = (char *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count *
                                           level_count * 2,
-                                      *stream, gpu_index);
+                                      stream, gpu_index);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaLaunchCooperativeKernel(
         (void *)device_bootstrap_low_latency<Torus, params, NOSM>, grid, thds,
@@ -317,7 +317,7 @@ __host__ void host_bootstrap_low_latency(
     kernel_args[11] = &DM_PART;
     d_mem = (char *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count *
                                           level_count * 2,
-                                      *stream, gpu_index);
+                                      stream, gpu_index);
     checkCudaErrors(cudaFuncSetAttribute(
         device_bootstrap_low_latency<Torus, params, PARTIALSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART));
@@ -332,7 +332,7 @@ __host__ void host_bootstrap_low_latency(
   } else {
     int DM_NONE = 0;
     kernel_args[11] = &DM_NONE;
-    d_mem = (char *)cuda_malloc_async(0, *stream, gpu_index);
+    d_mem = (char *)cuda_malloc_async(0, stream, gpu_index);
     checkCudaErrors(cudaFuncSetAttribute(
         device_bootstrap_low_latency<Torus, params, FULLSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_FULL));
@@ -347,9 +347,9 @@ __host__ void host_bootstrap_low_latency(
   // Synchronize the streams before copying the result to lwe_array_out at the
   // right place
   cudaStreamSynchronize(*stream);
-  cuda_drop_async(mask_buffer_fft, *stream, gpu_index);
-  cuda_drop_async(body_buffer_fft, *stream, gpu_index);
-  cuda_drop_async(d_mem, *stream, gpu_index);
+  cuda_drop_async(mask_buffer_fft, stream, gpu_index);
+  cuda_drop_async(body_buffer_fft, stream, gpu_index);
+  cuda_drop_async(d_mem, stream, gpu_index);
 }
 
 #endif // LOWLAT_PBS_H
