@@ -15,7 +15,7 @@ pub fn estimate_packing_private_keyswitch(
     let expectation_key_coefficient_binary: f64 = 1. / 2.;
 
     let l = level as f64;
-    let b = (1 << log2_base) as f64;
+    let b = 2f64.powi(log2_base as i32);
     let n = (output_glwe_dimension * output_polynomial_size) as f64; // param.internal_lwe_dimension.0 as f64;
     let b2l = f64::powi(b, 2 * level as i32);
     let var_s_w = 1. / 4.;
