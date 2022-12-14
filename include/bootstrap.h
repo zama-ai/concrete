@@ -50,13 +50,13 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
 void cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
                        void *ggsw_in, void *lut_vector, uint32_t glwe_dimension,
                        uint32_t polynomial_size, uint32_t base_log,
-                       uint32_t level_count, uint32_t r,
+                       uint32_t level_count, uint32_t r, uint32_t tau,
                        uint32_t max_shared_memory);
 
 void cuda_cmux_tree_64(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
                        void *ggsw_in, void *lut_vector, uint32_t glwe_dimension,
                        uint32_t polynomial_size, uint32_t base_log,
-                       uint32_t level_count, uint32_t r,
+                       uint32_t level_count, uint32_t r, uint32_t tau,
                        uint32_t max_shared_memory);
 
 void cuda_blind_rotate_and_sample_extraction_64(
