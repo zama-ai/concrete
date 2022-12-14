@@ -106,14 +106,6 @@ void cuda_circuit_bootstrap_64(
     uint32_t base_log_pksk, uint32_t level_cbs, uint32_t base_log_cbs,
     uint32_t number_of_samples, uint32_t max_shared_memory);
 
-void cuda_circuit_bootstrap_vertical_packing_32(
-    void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lwe_array_in,
-    void *fourier_bsk, void *cbs_fpksk, void *lut_vector,
-    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t level_count_bsk, uint32_t base_log_bsk, uint32_t level_count_pksk,
-    uint32_t base_log_pksk, uint32_t level_count_cbs, uint32_t base_log_cbs,
-    uint32_t number_of_inputs, uint32_t lut_number, uint32_t max_shared_memory);
-
 void cuda_circuit_bootstrap_vertical_packing_64(
     void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lwe_array_in,
     void *fourier_bsk, void *cbs_fpksk, void *lut_vector,
