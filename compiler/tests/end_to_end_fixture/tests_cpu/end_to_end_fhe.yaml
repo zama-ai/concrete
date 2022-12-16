@@ -166,3 +166,20 @@ tests:
     outputs:
     # -4 mod 11×13×15×16 = -4 mod 34320 = 34316
     - scalar: 34316
+---
+# https://github.com/zama-ai/concrete-compiler-internal/issues/846
+description: bug_846
+program: |
+  func.func @main(%arg0: tensor<2x!FHE.eint<5>>, %arg1: tensor<4x2x3xi6>) -> tensor<4x3x!FHE.eint<5>> {
+    %0 = "FHELinalg.matmul_eint_int"(%arg0, %arg1) : (tensor<2x!FHE.eint<5>>, tensor<4x2x3xi6>) -> tensor<4x3x!FHE.eint<5>>
+    return %0 : tensor<4x3x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2]
+      shape: [2]
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+      shape: [4,2,3]
+    outputs:
+    - tensor: [9,4,7,7,10,9,9,4,7,7,10,9]
+      shape: [4,3]
