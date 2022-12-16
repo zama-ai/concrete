@@ -1,6 +1,9 @@
 #ifndef CONCRETE_CORE_GGSW_CUH
 #define CONCRETE_CORE_GGSW_CUH
 
+#include "device.h"
+#include "polynomial/parameters.cuh"
+
 template <typename T, typename ST, class params, sharedMemDegree SMD>
 __global__ void device_batch_fft_ggsw_vector(double2 *dest, T *src,
                                              char *device_mem) {
