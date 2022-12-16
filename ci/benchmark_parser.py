@@ -40,7 +40,7 @@ def parse_results(raw_results):
     """
     raw_results = json.loads(raw_results.read_text())
     return [
-        {"value": res["cpu_time"], "test": res["run_name"]}
+        {"value": res["cpu_time"], "test": res["name"]}
         for res in raw_results["benchmarks"]
     ]
 
