@@ -188,12 +188,12 @@ def generate_zama_curves64(
 
     return "done"
 
-
-# The script runs the following commands
-# grab values of the command-line input arguments
-security = int(sys.argv[1])
-sd_min = int(sys.argv[2])
-sd_max = int(sys.argv[3])
-margin = int(sys.argv[4])
-# run the code
-generate_zama_curves64(sd_range=(sd_min, sd_max), target_security_levels=[security + margin], name="security_{}_margin_{} ".format(security, margin))
+if __name__ == "__main__":
+    # The script runs the following commands
+    # grab values of the command-line input arguments
+    security = int(sys.argv[1])
+    sd_min = int(sys.argv[2])
+    sd_max = int(sys.argv[3])
+    margin = int(sys.argv[4])
+    # run the code
+    generate_zama_curves64(sd_range=(sd_min, sd_max), target_security_levels=[security + margin], name="security_{}_margin_{} ".format(security, margin))
