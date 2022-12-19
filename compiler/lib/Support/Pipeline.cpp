@@ -341,7 +341,8 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
 
   if (parallelizeLoops) {
-    addPotentiallyNestedPass(pm, mlir::createLoopCoalescingPass(), enablePass);
+    addPotentiallyNestedPass(
+        pm, mlir::concretelang::createCollapseParallelLoops(), enablePass);
     addPotentiallyNestedPass(pm, mlir::concretelang::createForLoopToParallel(),
                              enablePass);
   }

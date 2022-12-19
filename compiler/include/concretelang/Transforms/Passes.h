@@ -17,6 +17,8 @@
 namespace mlir {
 namespace concretelang {
 
+std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
+createCollapseParallelLoops();
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>> createForLoopToParallel();
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>> createBatchingPass();
 } // namespace concretelang
