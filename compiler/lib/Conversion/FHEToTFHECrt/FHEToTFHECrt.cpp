@@ -164,7 +164,7 @@ struct CrtOpPattern : public mlir::OpConversionPattern<T> {
   mlir::Value writePlaintextCrtEncoding(mlir::Location location,
                                         mlir::Value rawPlaintext,
                                         mlir::PatternRewriter &rewriter) const {
-    mlir::Value castedPlaintext = rewriter.create<mlir::arith::ExtUIOp>(
+    mlir::Value castedPlaintext = rewriter.create<mlir::arith::ExtSIOp>(
         location, rewriter.getI64Type(), rawPlaintext);
     return rewriter.create<TFHE::EncodePlaintextWithCrtOp>(
         location,

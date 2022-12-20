@@ -15,7 +15,7 @@
 // CHECK-NEXT:          %5 = scf.for %arg9 = %c0 to %c15 step %c1 iter_args(%arg10 = %arg8) -> (tensor<100x4x15x15x!TFHE.glwe<{_,_,_}{2}>>) {
 // CHECK-NEXT:            %6 = tensor.extract %arg2[%arg5] : tensor<4xi3>
 // CHECK-NEXT:            %7 = tensor.extract %0[%arg3, %arg5, %arg7, %arg9] : tensor<100x4x15x15x!TFHE.glwe<{_,_,_}{2}>>
-// CHECK-NEXT:            %8 = arith.extui %6 : i3 to i64
+// CHECK-NEXT:            %8 = arith.extsi %6 : i3 to i64
 // CHECK-NEXT:            %c61_i64 = arith.constant 61 : i64
 // CHECK-NEXT:            %9 = arith.shli %8, %c61_i64 : i64
 // CHECK-NEXT:            %10 = "TFHE.add_glwe_int"(%7, %9) : (!TFHE.glwe<{_,_,_}{2}>, i64) -> !TFHE.glwe<{_,_,_}{2}>

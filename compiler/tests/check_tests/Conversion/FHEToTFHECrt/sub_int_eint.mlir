@@ -2,7 +2,7 @@
 
 // CHECK-LABEL:  func.func @sub_int_eint(%arg0: tensor<5x!TFHE.glwe<{_,_,_}{7}>>) -> tensor<5x!TFHE.glwe<{_,_,_}{7}>> {
 // CHECK-NEXT:    %c1_i8 = arith.constant 1 : i8
-// CHECK-NEXT:    %0 = arith.extui %c1_i8 : i8 to i64
+// CHECK-NEXT:    %0 = arith.extsi %c1_i8 : i8 to i64
 // CHECK-NEXT:    %1 = "TFHE.encode_plaintext_with_crt"(%0) {mods = [2, 3, 5, 7, 11], modsProd = 2310 : i64} : (i64) -> tensor<5xi64>
 // CHECK-NEXT:    %2 = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{7}>>
 // CHECK-NEXT:    %c0 = arith.constant 0 : index

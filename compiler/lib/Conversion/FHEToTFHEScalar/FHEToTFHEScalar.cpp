@@ -122,7 +122,7 @@ struct ScalarOpPattern : public mlir::OpConversionPattern<T> {
                               int64_t encryptedWidth,
                               mlir::ConversionPatternRewriter &rewriter) const {
     int64_t intShift = 64 - 1 - encryptedWidth;
-    mlir::Value castedInt = rewriter.create<mlir::arith::ExtUIOp>(
+    mlir::Value castedInt = rewriter.create<mlir::arith::ExtSIOp>(
         location, rewriter.getIntegerType(64), rawPlaintext);
     mlir::Value constantShiftOp = rewriter.create<mlir::arith::ConstantOp>(
         location, rewriter.getI64IntegerAttr(intShift));

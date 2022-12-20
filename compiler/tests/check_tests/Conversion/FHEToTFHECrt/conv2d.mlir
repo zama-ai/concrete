@@ -17,7 +17,7 @@
 //CHECK-NEXT:            %6 = tensor.extract %arg2[%arg5] : tensor<4xi3>
 //CHECK-NEXT:            %c0_0 = arith.constant 0 : index
 //CHECK-NEXT:            %7 = tensor.extract_slice %0[%arg3, %arg5, %arg7, %arg9, %c0_0] [1, 1, 1, 1, 5] [1, 1, 1, 1, 1] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>> to tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:            %8 = arith.extui %6 : i3 to i64
+//CHECK-NEXT:            %8 = arith.extsi %6 : i3 to i64
 //CHECK-NEXT:            %9 = "TFHE.encode_plaintext_with_crt"(%8) {mods = [2, 3, 5, 7, 11], modsProd = 2310 : i64} : (i64) -> tensor<5xi64>
 //CHECK-NEXT:            %10 = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:            %c0_1 = arith.constant 0 : index

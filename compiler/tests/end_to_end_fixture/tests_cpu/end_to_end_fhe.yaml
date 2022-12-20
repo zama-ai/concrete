@@ -184,6 +184,26 @@ tests:
     - tensor: [9,4,7,7,10,9,9,4,7,7,10,9]
       shape: [4,3]
 ---
+# Minimized bug 847 (CRT)
+# https://github.com/zama-ai/concrete-compiler-internal/issues/847
+description: bug_847_crt
+program: |
+  func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
+    %c32768_i17 = arith.constant 32768 : i17
+    %0 = "FHE.sub_eint_int"(%arg0, %c32768_i17) : (!FHE.eint<16>, i17) -> !FHE.eint<16>
+    return %0 : !FHE.eint<16>
+  }
+encoding: crt
+tests:
+  - inputs:
+    - scalar: 32769
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 32770
+    outputs:
+    - scalar: 2
+---
 description: boolean_and
 program: |
   func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
