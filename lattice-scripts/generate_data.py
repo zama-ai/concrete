@@ -1,11 +1,12 @@
-import sys
-sys.path.insert(1, 'lattice-estimator')
-from estimator import *
-from sage.all import oo, save, load, ceil
+from estimator import RC, LWE, ND
+from sage.all import oo, save, load
 from math import log2
 import multiprocessing
 import argparse
 import os
+import sys
+sys.path.insert(1, 'lattice-estimator')
+
 
 old_models_sobj = ""
 
@@ -149,8 +150,8 @@ def generate_parameter_matrix(
     (sd_min, sd_max) = sd_range
     for lam in target_security_levels:
         for sd in range(sd_min, sd_max + 1):
-            print("run for {}".format(lam, sd))
-            Xe_new = nd.NoiseDistribution.DiscreteGaussian(2 ** sd)
+            print(f"run for {lam} {sd}")
+            Xe_new = ND.NoiseDistribution.DiscreteGaussian(2 ** sd)
             (params_out, sec) = automated_param_select_n(
                 params_in.updated(Xe=Xe_new), target_security=lam
             )
@@ -190,7 +191,7 @@ def generate_zama_curves64(
         inputs = [
             (init_params, (val, val), target_security_levels, name) for val in vals
         ]
-        res = pool.starmap(generate_parameter_matrix, inputs)
+        _res = pool.starmap(generate_parameter_matrix, inputs)
 
     return "done"
 

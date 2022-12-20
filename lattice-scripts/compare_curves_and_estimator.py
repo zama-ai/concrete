@@ -1,10 +1,10 @@
-import sys
-sys.path.insert(1, 'lattice-estimator')
-from estimator import *
-from sage.all import oo, save, load, ceil, floor
+from estimator import LWE, ND
+from sage.all import oo, load, floor
 from generate_data import estimate, get_security_level
 import argparse
 import os
+import sys
+sys.path.insert(1, 'lattice-estimator')
 
 
 LOG_N_MAX = 17 + 1
@@ -98,13 +98,13 @@ def compare_curve_and_estimator(security_level, log_q, curves_dir):
 
     # step 2. check security of those points
     for lwe_dim in lwe_dimensions:
-        print(f"-------------------------")
+        print("-------------------------")
         # (i) get stddev with current curves
         predicted_stddev = estimate_stddev_with_current_curve(curve, lwe_dim, log_q)
         # (ii) estimate up-to-date security
         predicted_security = estimate_security_with_lattice_estimator(lwe_dim, predicted_stddev, log_q)
 
-        print(f"-------------------------")
+        print("-------------------------")
         print(f"lwe dim: {lwe_dim}")
         print(f"stddev: {predicted_stddev}")
         print(f"Security: {predicted_security}")

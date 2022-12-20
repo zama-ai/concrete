@@ -95,7 +95,7 @@ def generate_and_verify(security_levels, log_q, curves_dir, name="verified_curve
             json.append({"slope": a_sec, "bias": b_sec - log_q, "security_level": sec, "minimal_lwe_dimension": n_alpha})
             success.append((a_sec, b_sec - log_q, sec, a_sec, b_sec))
         else:
-            fail.append(x)
+            fail.append(sec)
 
     save(success, os.path.join(curves_dir, name))
 
