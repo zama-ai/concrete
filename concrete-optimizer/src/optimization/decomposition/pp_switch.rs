@@ -1,5 +1,5 @@
 use super::cmux;
-use super::common::{MacroParam, VERSION};
+use super::common::VERSION;
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
 use crate::parameters::{
@@ -19,25 +19,20 @@ pub struct PpSwitchComplexityNoise {
     pub noise: f64,
 }
 
-pub type Cache = CacheHashMap<MacroParam, Vec<PpSwitchComplexityNoise>>;
+pub type Cache = CacheHashMap<GlweParameters, Vec<PpSwitchComplexityNoise>>;
 
 impl Cache {
-    pub fn pareto_quantities(
-        &mut self,
-        glwe_params: GlweParameters,
-        internal_dim: u64,
-    ) -> &[PpSwitchComplexityNoise] {
-        self.get((glwe_params, internal_dim))
+    pub fn pareto_quantities(&mut self, glwe_params: GlweParameters) -> &[PpSwitchComplexityNoise] {
+        self.get(glwe_params)
     }
 }
 
-pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<PpSwitchComplexityNoise>>;
+pub type PersistDecompCache = PersistentCacheHashMap<GlweParameters, Vec<PpSwitchComplexityNoise>>;
 
 pub fn pareto_quantities(
     complexity_model: &dyn ComplexityModel,
     ciphertext_modulus_log: u32,
     security_level: u64,
-    _internal_dim: u64,
     glwe_params: GlweParameters,
     cmux_quantities: &[cmux::CmuxComplexityNoise],
 ) -> Vec<PpSwitchComplexityNoise> {
@@ -88,7 +83,7 @@ pub fn cache(
     let hardware = processing_unit.br_to_string();
     let path = format!("{cache_dir}/bc-decomp-{hardware}-64-{security_level}");
 
-    let function = move |(glwe_params, internal_dim): MacroParam| {
+    let function = move |glwe_params: GlweParameters| {
         let br = cmux::pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
@@ -99,7 +94,6 @@ pub fn cache(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
             security_level,
-            internal_dim,
             glwe_params,
             &br,
         )

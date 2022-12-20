@@ -228,9 +228,7 @@ fn update_state_with_best_decompositions(
 
     let pareto_keyswitch = caches.keyswitch.pareto_quantities(internal_dim);
 
-    let pp_switch = caches
-        .pp_switch
-        .pareto_quantities(glwe_params, internal_dim);
+    let pp_switch = caches.pp_switch.pareto_quantities(glwe_params);
 
     let pareto_cb = caches.cb_pbs.pareto_quantities(glwe_params);
 
