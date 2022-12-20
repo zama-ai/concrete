@@ -1,5 +1,5 @@
-pub mod blind_rotate;
 pub mod circuit_bootstrap;
+pub mod cmux;
 pub mod common;
 pub mod keyswitch;
 pub mod pp_switch;
@@ -13,14 +13,14 @@ use std::sync::Arc;
 
 pub struct PersistDecompCaches {
     pub ks: keyswitch::PersistDecompCache,
-    pub br: blind_rotate::PersistDecompCache,
+    pub cmux: cmux::PersistDecompCache,
     pub pp: pp_switch::PersistDecompCache,
     pub cb: circuit_bootstrap::PersistDecompCache,
     pub cache_on_disk: bool,
 }
 
 pub struct DecompCaches {
-    pub blind_rotate: blind_rotate::Cache,
+    pub cmux: cmux::Cache,
     pub keyswitch: keyswitch::Cache,
     pub pp_switch: pp_switch::Cache,
     pub cb_pbs: circuit_bootstrap::Cache,
@@ -51,14 +51,14 @@ impl PersistDecompCaches {
             complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
         let res = Self {
             ks: keyswitch::cache(security_level, processing_unit, complexity_model.clone()),
-            br: blind_rotate::cache(security_level, processing_unit, complexity_model.clone()),
+            cmux: cmux::cache(security_level, processing_unit, complexity_model.clone()),
             pp: pp_switch::cache(security_level, processing_unit, complexity_model.clone()),
             cb: circuit_bootstrap::cache(security_level, processing_unit, complexity_model.clone()),
             cache_on_disk,
         };
         if cache_on_disk {
             res.ks.read();
-            res.br.read();
+            res.cmux.read();
             res.pp.read();
             res.cb.read();
         }
@@ -70,14 +70,14 @@ impl PersistDecompCaches {
             return;
         }
         self.ks.backport(cache.keyswitch);
-        self.br.backport(cache.blind_rotate);
+        self.cmux.backport(cache.cmux);
         self.pp.backport(cache.pp_switch);
         self.cb.backport(cache.cb_pbs);
     }
 
     pub fn caches(&self) -> DecompCaches {
         DecompCaches {
-            blind_rotate: self.br.cache(),
+            cmux: self.cmux.cache(),
             keyswitch: self.ks.cache(),
             pp_switch: self.pp.cache(),
             cb_pbs: self.cb.cache(),

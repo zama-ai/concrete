@@ -1,12 +1,10 @@
-use super::common::{MacroParam, VERSION};
+use super::common::VERSION;
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
-use crate::parameters::{
-    GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension,
-};
+use crate::parameters::{KeyswitchParameters, KsDecompositionParameters, LweDimension};
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
-use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch::variance_keyswitch;
+use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch_one_bit::variance_keyswitch_one_bit;
 use concrete_cpu_noise_model::gaussian_noise::security::minimal_variance_lwe;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -14,8 +12,18 @@ use std::sync::Arc;
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct KsComplexityNoise {
     pub decomp: KsDecompositionParameters,
-    pub complexity: f64,
+    pub complexity_bias: f64,
+    pub complexity_slope: f64,
     pub noise: f64,
+}
+
+impl KsComplexityNoise {
+    pub fn complexity(&self, in_lwe_dim: u64) -> f64 {
+        self.complexity_bias + in_lwe_dim as f64 * self.complexity_slope
+    }
+    pub fn noise(&self, in_lwe_dim: u64) -> f64 {
+        in_lwe_dim as f64 * self.noise
+    }
 }
 
 /* This is stricly variance decreasing and strictly complexity increasing */
@@ -24,23 +32,12 @@ pub fn pareto_quantities(
     ciphertext_modulus_log: u32,
     security_level: u64,
     internal_dim: u64,
-    glwe_params: GlweParameters,
 ) -> Vec<KsComplexityNoise> {
     assert!(ciphertext_modulus_log == 64);
-    let glwe_poly_size = glwe_params.polynomial_size();
-    let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
-    let ks_param = |level, log2_base| {
-        let ks_decomposition_parameter = KsDecompositionParameters { level, log2_base };
-        KeyswitchParameters {
-            input_lwe_dimension: LweDimension(input_lwe_dimension),
-            output_lwe_dimension: LweDimension(internal_dim),
-            ks_decomposition_parameter,
-        }
-    };
     let variance_ksk = minimal_variance_lwe(internal_dim, ciphertext_modulus_log, security_level);
 
     let mut quantities = Vec::with_capacity(64);
-    let mut increasing_complexity = 0.0;
+    let mut increasing_complexity_slope = 0.0;
     let mut decreasing_variance = f64::INFINITY;
     let mut counting_no_progress = 0;
     let mut prev_best_log2_base = ciphertext_modulus_log as u64;
@@ -56,13 +53,8 @@ pub fn pareto_quantities(
         let range = (1..=prev_best_log2_base).rev();
 
         for log2_base in range {
-            let noise_keyswitch = variance_keyswitch(
-                input_lwe_dimension,
-                log2_base,
-                level,
-                ciphertext_modulus_log,
-                variance_ksk,
-            );
+            let noise_keyswitch =
+                variance_keyswitch_one_bit(log2_base, level, ciphertext_modulus_log, variance_ksk);
             if noise_keyswitch > level_decreasing_base_noise {
                 break;
             }
@@ -80,34 +72,52 @@ pub fn pareto_quantities(
             }
             continue;
         }
-        let ks_params = ks_param(level, best_log2_base);
-        let complexity_keyswitch =
-            complexity_model.ks_complexity(ks_params, ciphertext_modulus_log);
+
+        let decomp = KsDecompositionParameters {
+            level,
+            log2_base: best_log2_base,
+        };
+
+        let complexity_at = |in_lwe_dim| {
+            complexity_model.ks_complexity(
+                KeyswitchParameters {
+                    input_lwe_dimension: LweDimension(in_lwe_dim),
+                    output_lwe_dimension: LweDimension(internal_dim),
+                    ks_decomposition_parameter: decomp,
+                },
+                ciphertext_modulus_log,
+            )
+        };
+
+        let complexity_at_0 = complexity_at(0);
+        let complexity_at_1 = complexity_at(1);
+
+        let complexity_bias = complexity_at_0;
+
+        let complexity_slope = complexity_at_1 - complexity_at_0;
+
         quantities.push(KsComplexityNoise {
-            decomp: ks_params.ks_decomposition_parameter,
+            decomp,
             noise: level_decreasing_base_noise,
-            complexity: complexity_keyswitch,
+            complexity_slope,
+            complexity_bias,
         });
-        assert!(increasing_complexity < complexity_keyswitch);
-        increasing_complexity = complexity_keyswitch;
+        assert!(increasing_complexity_slope < complexity_slope);
+        increasing_complexity_slope = complexity_slope;
         decreasing_variance = level_decreasing_base_noise;
     }
     quantities
 }
 
-pub type Cache = CacheHashMap<MacroParam, Vec<KsComplexityNoise>>;
+pub type Cache = CacheHashMap<u64, Vec<KsComplexityNoise>>;
 
 impl Cache {
-    pub fn pareto_quantities(
-        &mut self,
-        glwe_params: GlweParameters,
-        internal_dim: u64,
-    ) -> &[KsComplexityNoise] {
-        self.get((glwe_params, internal_dim))
+    pub fn pareto_quantities(&mut self, internal_dim: u64) -> &[KsComplexityNoise] {
+        self.get(internal_dim)
     }
 }
 
-pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<KsComplexityNoise>>;
+pub type PersistDecompCache = PersistentCacheHashMap<u64, Vec<KsComplexityNoise>>;
 
 pub fn cache(
     security_level: u64,
@@ -119,13 +129,12 @@ pub fn cache(
     let hardware = processing_unit.ks_to_string();
     let path = format!("{cache_dir}/ks-decomp-{hardware}-64-{security_level}");
 
-    let function = move |(glwe_params, internal_dim): MacroParam| {
+    let function = move |internal_dim: u64| {
         pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
             security_level,
             internal_dim,
-            glwe_params,
         )
     };
     PersistentCacheHashMap::new_no_read(&path, VERSION, function)

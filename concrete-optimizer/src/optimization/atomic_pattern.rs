@@ -7,7 +7,7 @@ use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositi
 use crate::utils::square;
 
 use super::decomposition::{
-    blind_rotate, circuit_bootstrap, keyswitch, pp_switch, DecompCaches, PersistDecompCaches,
+    circuit_bootstrap, cmux, keyswitch, pp_switch, DecompCaches, PersistDecompCaches,
 };
 
 // Ref time for v0 table 1 thread: 950ms
@@ -43,7 +43,7 @@ pub struct OptimizationState {
 }
 
 pub struct Caches {
-    pub blind_rotate: blind_rotate::Cache,
+    pub cmux: cmux::Cache,
     pub keyswitch: keyswitch::Cache,
     pub pp_switch: pp_switch::Cache,
     pub cb_pbs: circuit_bootstrap::Cache,
@@ -57,8 +57,7 @@ fn update_state_with_best_decompositions(
     glwe_params: GlweParameters,
     caches: &mut DecompCaches,
 ) {
-    let glwe_poly_size = glwe_params.polynomial_size();
-    let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
+    let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
     let noise_modulus_switching = estimate_modulus_switching_noise_with_binary_key(
         internal_dim,
         glwe_params.log2_polynomial_size,
@@ -73,36 +72,32 @@ fn update_state_with_best_decompositions(
     let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
 
     let complexity_multisum = (consts.sum_size * input_lwe_dimension) as f64;
-    let br_quantities = caches
-        .blind_rotate
-        .pareto_quantities(glwe_params, internal_dim);
+    let cmux_quantities = caches.cmux.pareto_quantities(glwe_params);
 
-    let ks_quantities = caches
-        .keyswitch
-        .pareto_quantities(glwe_params, internal_dim);
+    let ks_quantities = caches.keyswitch.pareto_quantities(internal_dim);
 
     let square_noise_factor = square(consts.noise_factor);
-    for br_quantity in br_quantities {
+    for cmux_quantity in cmux_quantities {
         // increasing complexity, decreasing variance
-        let noise_in = br_quantity.noise * square_noise_factor;
+        let noise_in = cmux_quantity.noise_br(internal_dim) * square_noise_factor;
         let noise_max = noise_in + noise_modulus_switching;
         if noise_max > safe_variance && CUTS {
             continue;
         }
-        let complexity_pbs = br_quantity.complexity;
+        let complexity_pbs = cmux_quantity.complexity_br(internal_dim);
         let complexity = complexity_multisum + complexity_pbs;
         if complexity > best_complexity {
             // As best can evolves it is complementary to blind_rotate_quantities cuts.
             break;
         }
         for &ks_quantity in ks_quantities.iter().rev() {
-            let complexity_keyswitch = ks_quantity.complexity;
+            let complexity_keyswitch = ks_quantity.complexity(input_lwe_dimension);
             let complexity = complexity_multisum + complexity_keyswitch + complexity_pbs;
             if complexity > best_complexity {
                 continue;
             }
             // increasing variance, decreasing complexity
-            let noise_keyswitch = ks_quantity.noise;
+            let noise_keyswitch = ks_quantity.noise(input_lwe_dimension);
             let noise_max = noise_in + noise_keyswitch + noise_modulus_switching;
             if noise_max > safe_variance {
                 // increasing variance => we can skip all remaining
@@ -115,7 +110,7 @@ fn update_state_with_best_decompositions(
                 let BrDecompositionParameters {
                     level: br_l,
                     log2_base: br_b,
-                } = br_quantity.decomp;
+                } = cmux_quantity.decomp;
                 let KsDecompositionParameters {
                     level: ks_l,
                     log2_base: ks_b,

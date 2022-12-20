@@ -1,19 +1,28 @@
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
-use crate::parameters::{BrDecompositionParameters, GlweParameters, LweDimension, PbsParameters};
+use crate::parameters::{BrDecompositionParameters, CmuxParameters, GlweParameters};
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
-use concrete_cpu_noise_model::gaussian_noise::noise::blind_rotate::variance_blind_rotate;
+use concrete_cpu_noise_model::gaussian_noise::noise::cmux::variance_cmux;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use super::common::{MacroParam, VERSION};
+use super::common::VERSION;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct BrComplexityNoise {
+pub struct CmuxComplexityNoise {
     pub decomp: BrDecompositionParameters,
     pub complexity: f64,
     pub noise: f64,
+}
+
+impl CmuxComplexityNoise {
+    pub fn complexity_br(&self, in_lwe_dim: u64) -> f64 {
+        in_lwe_dim as f64 * self.complexity
+    }
+    pub fn noise_br(&self, in_lwe_dim: u64) -> f64 {
+        in_lwe_dim as f64 * self.noise
+    }
 }
 
 /* This is stricly variance decreasing and strictly complexity increasing */
@@ -21,9 +30,8 @@ pub fn pareto_quantities(
     complexity_model: &dyn ComplexityModel,
     ciphertext_modulus_log: u32,
     security_level: u64,
-    internal_dim: u64,
     glwe_params: GlweParameters,
-) -> Vec<BrComplexityNoise> {
+) -> Vec<CmuxComplexityNoise> {
     assert!(ciphertext_modulus_log == 64);
 
     let variance_bsk = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
@@ -45,8 +53,7 @@ pub fn pareto_quantities(
         let range = (1..=prev_best_log2_base).rev();
 
         for log2_base in range {
-            let base_noise = variance_blind_rotate(
-                internal_dim,
+            let base_noise = variance_cmux(
                 glwe_params.glwe_dimension,
                 glwe_params.polynomial_size(),
                 log2_base,
@@ -76,39 +83,34 @@ pub fn pareto_quantities(
             level,
             log2_base: best_log2_base,
         };
-        let params = PbsParameters {
-            internal_lwe_dimension: LweDimension(internal_dim),
+        let params = CmuxParameters {
             br_decomposition_parameter,
             output_glwe_params: glwe_params,
         };
 
-        let complexity_pbs = complexity_model.pbs_complexity(params, ciphertext_modulus_log);
+        let complexity = complexity_model.cmux_complexity(params, ciphertext_modulus_log);
 
-        quantities.push(BrComplexityNoise {
+        quantities.push(CmuxComplexityNoise {
             decomp: params.br_decomposition_parameter,
             noise: level_decreasing_base_noise,
-            complexity: complexity_pbs,
+            complexity,
         });
-        assert!(increasing_complexity < complexity_pbs);
-        increasing_complexity = complexity_pbs;
+        assert!(increasing_complexity < complexity);
+        increasing_complexity = complexity;
         decreasing_variance = level_decreasing_base_noise;
     }
     quantities
 }
 
-pub type Cache = CacheHashMap<MacroParam, Vec<BrComplexityNoise>>;
+pub type Cache = CacheHashMap<GlweParameters, Vec<CmuxComplexityNoise>>;
 
 impl Cache {
-    pub fn pareto_quantities(
-        &mut self,
-        glwe_params: GlweParameters,
-        internal_dim: u64,
-    ) -> &[BrComplexityNoise] {
-        self.get((glwe_params, internal_dim))
+    pub fn pareto_quantities(&mut self, glwe_params: GlweParameters) -> &[CmuxComplexityNoise] {
+        self.get(glwe_params)
     }
 }
 
-pub type PersistDecompCache = PersistentCacheHashMap<MacroParam, Vec<BrComplexityNoise>>;
+pub type PersistDecompCache = PersistentCacheHashMap<GlweParameters, Vec<CmuxComplexityNoise>>;
 
 pub fn cache(
     security_level: u64,
@@ -118,14 +120,13 @@ pub fn cache(
     let cache_dir: String = default_cache_dir();
     let ciphertext_modulus_log = 64;
     let hardware = processing_unit.br_to_string();
-    let path = format!("{cache_dir}/br-decomp-{hardware}-64-{security_level}");
+    let path = format!("{cache_dir}/cmux-decomp-{hardware}-64-{security_level}");
 
-    let function = move |(glwe_params, internal_dim): MacroParam| {
+    let function = move |glwe_params: GlweParameters| {
         pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
             security_level,
-            internal_dim,
             glwe_params,
         )
     };

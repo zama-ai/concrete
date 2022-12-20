@@ -23,55 +23,52 @@ fn update_best_solution_with_best_decompositions(
     caches: &mut DecompCaches,
 ) {
     assert!(dag.nb_luts > 0);
-    let glwe_poly_size = glwe_params.polynomial_size();
-    let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
+    let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
 
     let mut best_complexity = state.best_solution.map_or(f64::INFINITY, |s| s.complexity);
     let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
     let mut best_p_error = state.best_solution.map_or(f64::INFINITY, |s| s.p_error);
 
-    let br_pareto = caches
-        .blind_rotate
-        .pareto_quantities(glwe_params, internal_dim);
+    let cmux_pareto = caches.cmux.pareto_quantities(glwe_params);
 
-    let ks_pareto = caches
-        .keyswitch
-        .pareto_quantities(glwe_params, internal_dim);
+    let ks_pareto = caches.keyswitch.pareto_quantities(internal_dim);
 
     // by constructon br_pareto and ks_pareto are non-empty
-    let mut best_br = br_pareto[0];
+    let mut best_cmux = cmux_pareto[0];
     let mut best_ks = ks_pareto[0];
     let mut update_best_solution = false;
 
-    for &br_quantity in br_pareto {
+    for &cmux_quantity in cmux_pareto {
+        let pbs_cost = cmux_quantity.complexity_br(internal_dim);
         // increasing complexity, decreasing variance
-        let one_lut_cost = br_quantity.complexity;
-        let complexity = dag.complexity(input_lwe_dimension, one_lut_cost);
+        let complexity = dag.complexity(input_lwe_dimension, pbs_cost);
         if complexity > best_complexity {
             // Since br_pareto is scanned by increasing complexity, we can stop
             break;
         }
-        let not_feasible = !dag.feasible(
-            input_noise_out,
-            br_quantity.noise,
-            0.0,
-            noise_modulus_switching,
-        );
+
+        let br_variance = cmux_quantity.noise_br(internal_dim);
+
+        let not_feasible =
+            !dag.feasible(input_noise_out, br_variance, 0.0, noise_modulus_switching);
         if not_feasible {
             continue;
         }
         for &ks_quantity in ks_pareto {
-            let one_lut_cost = ks_quantity.complexity + br_quantity.complexity;
+            let complexity_keyswitch = ks_quantity.complexity(input_lwe_dimension);
+            let one_lut_cost = complexity_keyswitch + pbs_cost;
             let complexity = dag.complexity(input_lwe_dimension, one_lut_cost);
             let worse_complexity = complexity > best_complexity;
             if worse_complexity {
                 // Since ks_pareto is scanned by increasing complexity, we can stop
                 break;
             }
+            let ks_variance = ks_quantity.noise(input_lwe_dimension);
+
             let not_feasible = !dag.feasible(
                 input_noise_out,
-                br_quantity.noise,
-                ks_quantity.noise,
+                br_variance,
+                ks_variance,
                 noise_modulus_switching,
             );
             if not_feasible {
@@ -80,8 +77,8 @@ fn update_best_solution_with_best_decompositions(
 
             let (peek_p_error, variance) = dag.peek_p_error(
                 input_noise_out,
-                br_quantity.noise,
-                ks_quantity.noise,
+                br_variance,
+                ks_variance,
                 noise_modulus_switching,
                 consts.kappa,
             );
@@ -97,10 +94,14 @@ fn update_best_solution_with_best_decompositions(
             best_complexity = complexity;
             best_p_error = peek_p_error;
             best_variance = variance;
-            best_br = br_quantity;
+            best_cmux = cmux_quantity;
             best_ks = ks_quantity;
         }
     } // br ks
+
+    let ks_variance = best_ks.noise(input_lwe_dimension);
+
+    let br_variance = best_cmux.noise_br(internal_dim);
 
     if update_best_solution {
         state.best_solution = Some(Solution {
@@ -110,14 +111,14 @@ fn update_best_solution_with_best_decompositions(
             ks_decomposition_base_log: best_ks.decomp.log2_base,
             glwe_polynomial_size: glwe_params.polynomial_size(),
             glwe_dimension: glwe_params.glwe_dimension,
-            br_decomposition_level_count: best_br.decomp.level,
-            br_decomposition_base_log: best_br.decomp.log2_base,
+            br_decomposition_level_count: best_cmux.decomp.level,
+            br_decomposition_base_log: best_cmux.decomp.log2_base,
             complexity: best_complexity,
             p_error: best_p_error,
             global_p_error: dag.global_p_error(
                 input_noise_out,
-                best_br.noise,
-                best_ks.noise,
+                br_variance,
+                ks_variance,
                 noise_modulus_switching,
                 consts.kappa,
             ),

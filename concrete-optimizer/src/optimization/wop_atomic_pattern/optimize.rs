@@ -12,6 +12,8 @@ use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
 
 use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::decomposition::circuit_bootstrap::CbComplexityNoise;
+use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
+use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::{DecompCaches, PersistDecompCaches};
 use crate::parameters::{BrDecompositionParameters, GlweParameters};
 use crate::utils::square;
@@ -198,6 +200,8 @@ fn update_state_with_best_decompositions(
     let max_precision = partitionning.iter().copied().max().unwrap();
     let nb_blocks = partitionning.len() as u64;
 
+    let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
+
     let safe_variance_bound = consts.safe_variance;
     let norm = consts.noise_factor;
 
@@ -220,13 +224,9 @@ fn update_state_with_best_decompositions(
         .as_ref()
         .map_or(f64::INFINITY, |s| s.noise_max);
 
-    let pareto_blind_rotate = caches
-        .blind_rotate
-        .pareto_quantities(glwe_params, internal_dim);
+    let pareto_cmux = caches.cmux.pareto_quantities(glwe_params);
 
-    let pareto_keyswitch = caches
-        .keyswitch
-        .pareto_quantities(glwe_params, internal_dim);
+    let pareto_keyswitch = caches.keyswitch.pareto_quantities(internal_dim);
 
     let pp_switch = caches
         .pp_switch
@@ -234,8 +234,8 @@ fn update_state_with_best_decompositions(
 
     let pareto_cb = caches.cb_pbs.pareto_quantities(glwe_params);
 
-    let lower_bound_variance_blind_rotate = pareto_blind_rotate.last().unwrap().noise;
-    let lower_bound_variance_keyswitch = pareto_keyswitch.last().unwrap().noise;
+    let lower_bound_variance_br = pareto_cmux.last().unwrap().noise_br(internal_dim);
+    let lower_bound_variance_ks = pareto_keyswitch.last().unwrap().noise(input_lwe_dimension);
     let lower_bound_variance_private_packing = pp_switch.last().unwrap().noise;
     let lower_pareto_cb_bias = pareto_cb
         .iter()
@@ -247,8 +247,8 @@ fn update_state_with_best_decompositions(
         .map(|cb| cb.variance_ggsw_factor)
         .reduce(f64::min)
         .unwrap();
-    let lower_bound_cost_blind_rotate = pareto_blind_rotate[0].complexity;
-    let lower_bound_cost_keyswitch = pareto_keyswitch[0].complexity;
+    let lower_bound_cost_br = pareto_cmux[0].complexity_br(internal_dim);
+    let lower_bound_cost_ks = pareto_keyswitch[0].complexity(input_lwe_dimension);
     let lower_bound_cost_pp = pp_switch[0].complexity;
     let lower_bound_cost_cb_complexity_1_cmux_hp = pareto_cb
         .iter()
@@ -271,14 +271,19 @@ fn update_state_with_best_decompositions(
         variance_ggsw_factor: lower_pareto_cb_slope,
     };
 
-    let variance = |br_variance: Option<_>,
+    let variance = |cmux_quantity: Option<CmuxComplexityNoise>,
                     pp_variance: Option<_>,
                     cb_decomp: Option<&CbComplexityNoise>,
-                    ks_variance: Option<_>| {
-        let br_variance = br_variance.unwrap_or(lower_bound_variance_blind_rotate);
+                    ks_quantity: Option<KsComplexityNoise>| {
+        let br_variance = cmux_quantity.map_or(lower_bound_variance_br, |quantity| {
+            quantity.noise_br(internal_dim)
+        });
         let pp_variance = pp_variance.unwrap_or(lower_bound_variance_private_packing);
         let cb_decomp = cb_decomp.unwrap_or(&lower_bound_cb);
-        let ks_variance = ks_variance.unwrap_or(lower_bound_variance_keyswitch);
+        let ks_variance = ks_quantity.map_or(lower_bound_variance_ks, |quantity| {
+            quantity.noise(input_lwe_dimension)
+        });
+
         estimate_variance(
             br_variance,
             pp_variance,
@@ -297,13 +302,17 @@ fn update_state_with_best_decompositions(
         return;
     }
 
-    let complexity = |br_cost: Option<_>,
+    let complexity = |cmux_cost: Option<CmuxComplexityNoise>,
                       pp_cost: Option<_>,
                       cb_decomp: Option<&CbComplexityNoise>,
-                      ks_cost: Option<_>| {
+                      ks_quantity: Option<KsComplexityNoise>| {
         // Pbs dans BitExtract et Circuit BS et FP-KS (partagés)
-        let br_cost = br_cost.unwrap_or(lower_bound_cost_blind_rotate);
-        let ks_cost = ks_cost.unwrap_or(lower_bound_cost_keyswitch);
+        let br_cost = cmux_cost.map_or(lower_bound_cost_br, |quantity| {
+            quantity.complexity_br(internal_dim)
+        });
+        let ks_cost = ks_quantity.map_or(lower_bound_cost_ks, |pareto| {
+            pareto.complexity(input_lwe_dimension)
+        });
         let pp_cost = pp_cost.unwrap_or(lower_bound_cost_pp);
         let cb_decomp = cb_decomp.unwrap_or(&lower_bound_cb);
         estimate_complexity(
@@ -319,8 +328,8 @@ fn update_state_with_best_decompositions(
     };
 
     // BlindRotate dans Circuit BS
-    for (br_i, shared_br_decomp) in pareto_blind_rotate.iter().enumerate() {
-        let lower_bound_variance = variance(Some(shared_br_decomp.noise), None, None, None);
+    for (cmux_i, &shared_cmux_decomp) in pareto_cmux.iter().enumerate() {
+        let lower_bound_variance = variance(Some(shared_cmux_decomp), None, None, None);
 
         if lower_bound_variance > consts.safe_variance {
             // saves 20%
@@ -329,11 +338,11 @@ fn update_state_with_best_decompositions(
 
         // Circuit Boostrap
         // private packing keyswitch, <=> FP-KS
-        let pp_switching_index = br_i;
+        let pp_switching_index = cmux_i;
         let pp_switching = pp_switch[pp_switching_index];
 
         let lower_bound_variance = variance(
-            Some(shared_br_decomp.noise),
+            Some(shared_cmux_decomp),
             Some(pp_switching.noise),
             None,
             None,
@@ -342,7 +351,7 @@ fn update_state_with_best_decompositions(
             continue;
         }
         let lower_bound_complexity = complexity(
-            Some(shared_br_decomp.complexity),
+            Some(shared_cmux_decomp),
             Some(pp_switching.complexity),
             None,
             None,
@@ -357,7 +366,7 @@ fn update_state_with_best_decompositions(
         // for &circuit_pbs_decomposition in pareto_circuit_pbs {
         for cb_decomp in pareto_cb {
             let lower_bound_variance = variance(
-                Some(shared_br_decomp.noise),
+                Some(shared_cmux_decomp),
                 Some(pp_switching.noise),
                 Some(cb_decomp),
                 None,
@@ -366,7 +375,7 @@ fn update_state_with_best_decompositions(
                 continue;
             }
             let lower_bound_complexity = complexity(
-                Some(shared_br_decomp.complexity),
+                Some(shared_cmux_decomp),
                 Some(pp_switching.complexity),
                 Some(cb_decomp),
                 None,
@@ -377,12 +386,12 @@ fn update_state_with_best_decompositions(
                 break;
             }
             // Shared by all pbs (like brs)
-            for ks_decomp in pareto_keyswitch.iter().rev() {
+            for &ks_decomp in pareto_keyswitch.iter().rev() {
                 let variance_max = variance(
-                    Some(shared_br_decomp.noise),
+                    Some(shared_cmux_decomp),
                     Some(pp_switching.noise),
                     Some(cb_decomp),
-                    Some(ks_decomp.noise),
+                    Some(ks_decomp),
                 );
                 if variance_max > safe_variance_bound {
                     // saves 40%
@@ -390,10 +399,10 @@ fn update_state_with_best_decompositions(
                 }
 
                 let complexity = complexity(
-                    Some(shared_br_decomp.complexity),
+                    Some(shared_cmux_decomp),
                     Some(pp_switching.complexity),
                     Some(cb_decomp),
-                    Some(ks_decomp.complexity),
+                    Some(ks_decomp),
                 );
 
                 if complexity > best_complexity {
@@ -410,14 +419,14 @@ fn update_state_with_best_decompositions(
                 best_variance = variance_max;
                 let p_error = find_p_error(kappa, safe_variance_bound, variance_max);
                 state.best_solution = Some(Solution {
-                    input_lwe_dimension: glwe_params.sample_extract_lwe_dimension(),
+                    input_lwe_dimension,
                     internal_ks_output_lwe_dimension: internal_dim,
                     ks_decomposition_level_count: ks_decomp.decomp.level,
                     ks_decomposition_base_log: ks_decomp.decomp.log2_base,
                     glwe_polynomial_size: glwe_params.polynomial_size(),
                     glwe_dimension: glwe_params.glwe_dimension,
-                    br_decomposition_level_count: shared_br_decomp.decomp.level,
-                    br_decomposition_base_log: shared_br_decomp.decomp.log2_base,
+                    br_decomposition_level_count: shared_cmux_decomp.decomp.level,
+                    br_decomposition_base_log: shared_cmux_decomp.decomp.log2_base,
                     noise_max: variance_max,
                     complexity,
                     p_error,

@@ -1,4 +1,4 @@
-use super::blind_rotate;
+use super::cmux;
 use super::common::{MacroParam, VERSION};
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
@@ -39,12 +39,12 @@ pub fn pareto_quantities(
     security_level: u64,
     _internal_dim: u64,
     glwe_params: GlweParameters,
-    br_quantities: &[blind_rotate::BrComplexityNoise],
+    cmux_quantities: &[cmux::CmuxComplexityNoise],
 ) -> Vec<PpSwitchComplexityNoise> {
     let variance_bsk = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
-    let mut result = Vec::with_capacity(br_quantities.len());
-    for br in br_quantities {
-        let pp_ks_decomposition_parameter = br.decomp;
+    let mut result = Vec::with_capacity(cmux_quantities.len());
+    for cmux in cmux_quantities {
+        let pp_ks_decomposition_parameter = cmux.decomp;
 
         // We assume the packing KS and the external product in a PBSto have
         // the same parameters (base, level)
@@ -70,7 +70,7 @@ pub fn pareto_quantities(
         let complexity_ppks =
             complexity_model.ks_complexity(ppks_parameter_complexity, ciphertext_modulus_log);
         result.push(PpSwitchComplexityNoise {
-            decomp: br.decomp,
+            decomp: cmux.decomp,
             complexity: complexity_ppks,
             noise: variance_private_packing_ks,
         });
@@ -89,11 +89,10 @@ pub fn cache(
     let path = format!("{cache_dir}/bc-decomp-{hardware}-64-{security_level}");
 
     let function = move |(glwe_params, internal_dim): MacroParam| {
-        let br = blind_rotate::pareto_quantities(
+        let br = cmux::pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
             security_level,
-            internal_dim,
             glwe_params,
         );
         pareto_quantities(

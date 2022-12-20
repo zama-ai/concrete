@@ -5,6 +5,7 @@ use crate::parameters::KeyswitchParameters;
 pub struct KsComplexity;
 
 impl KsComplexity {
+    #[allow(clippy::cast_possible_wrap)]
     pub fn complexity(
         &self,
         params: KeyswitchParameters,
@@ -12,9 +13,9 @@ impl KsComplexity {
     ) -> Complexity {
         let _ = self;
         // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/keyswitch.py#L91
-        let input_lwe_dimension = params.input_lwe_dimension.0;
-        let output_lwe_dimension = params.output_lwe_dimension.0;
-        let level = params.ks_decomposition_parameter.level;
+        let input_lwe_dimension = params.input_lwe_dimension.0 as i64;
+        let output_lwe_dimension = params.output_lwe_dimension.0 as i64;
+        let level = params.ks_decomposition_parameter.level as i64;
 
         let output_lwe_size = output_lwe_dimension + 1;
         let count_decomposition = input_lwe_dimension * level;
