@@ -29,7 +29,7 @@ void cuda_extract_bits_32(
           "equal to the "
           "number of streaming multiprocessors on the device divided by 8 * "
           "level_count_bsk",
-          number_of_samples <= number_of_sm * 4. / 2. / level_count_bsk));
+          number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
 
   switch (lwe_dimension_in) {
   case 512:
@@ -126,7 +126,7 @@ void cuda_extract_bits_64(
           "equal to the "
           "number of streaming multiprocessors on the device divided by 8 * "
           "level_count_bsk",
-          number_of_samples <= number_of_sm * 4. / 2. / level_count_bsk));
+          number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
 
   switch (lwe_dimension_in) {
   case 512:
