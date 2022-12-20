@@ -1,4 +1,4 @@
-const SECURITY_WEIGHTS_ARRAY: [(u64, SecurityWeights); 9] = include!("./curves.gen.rs");
+const SECURITY_WEIGHTS_ARRAY: [(u64, SecurityWeights); 4] = include!("./curves.gen.rs");
 
 #[derive(Clone, Copy)]
 pub struct SecurityWeights {

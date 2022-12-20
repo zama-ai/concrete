@@ -1,13 +1,15 @@
 import numpy as np
 from sage.all import save, load, ceil
 import json
+import os
+import argparse
 
 
-def sort_data(security_level):
+def sort_data(security_level, curves_dir):
     from operator import itemgetter
 
     # step 1. load the data
-    X = load("{}.sobj".format(security_level))
+    X = load(os.path.join(curves_dir, f"{security_level}.sobj"))
 
     # step 2. sort by SD
     x = sorted(X["{}".format(security_level)], key=itemgetter(2))
@@ -18,10 +20,10 @@ def sort_data(security_level):
     return X
 
 
-def generate_curve(security_level):
+def generate_curve(security_level, curves_dir):
 
     # step 1. get the data
-    X = sort_data(security_level)
+    X = sort_data(security_level, curves_dir)
 
     # step 2. group the n and sigma data into lists
     N = []
@@ -36,10 +38,10 @@ def generate_curve(security_level):
     return a, b
 
 
-def verify_curve(security_level, a=None, b=None):
+def verify_curve(security_level, a, b, curves_dir):
 
     # step 1. get the table and max values of n, sd
-    X = sort_data(security_level)
+    X = sort_data(security_level, curves_dir)
     n_max = X["{}".format(security_level)][0][0]
 
     # step 2. a function to get model values
@@ -76,34 +78,55 @@ def verify_curve(security_level, a=None, b=None):
     return True, n_min
 
 
-def generate_and_verify(security_levels, log_q, name="verified_curves"):
-
+def generate_and_verify(security_levels, log_q, curves_dir, name="verified_curves.sobj"):
     success = []
+    json = []
 
     fail = []
 
     for sec in security_levels:
         #print("WE GO FOR {}".format(sec))
         # generate the model for security level sec
-        (a_sec, b_sec) = generate_curve(sec)
+        (a_sec, b_sec) = generate_curve(sec, curves_dir)
         # verify the model for security level sec
-        (status, n_alpha) = verify_curve(sec, a_sec, b_sec)
+        (status, n_alpha) = verify_curve(sec, a_sec, b_sec, curves_dir)
         # append the information into a list
-        x = {"slope": a_sec, "bias": b_sec - log_q, "security_level": sec, "minimal_lwe_dimension": n_alpha}
         if status:
-            success.append(x)
+            json.append({"slope": a_sec, "bias": b_sec - log_q, "security_level": sec, "minimal_lwe_dimension": n_alpha})
+            success.append((a_sec, b_sec - log_q, sec, a_sec, b_sec))
         else:
             fail.append(x)
 
-    save(success, "{}.sobj".format(name))
+    save(success, os.path.join(curves_dir, name))
 
-    return success, fail
+    return json, fail
 
 
-(success, fail) = generate_and_verify([80, 96, 112, 128, 144, 160, 176, 192, 256], log_q=64)
-if (fail):
-    print("FAILURE: Fail to verify the following curves")
-    print(json.dumps(fail))
-    exit(1)
+if __name__ == "__main__":
+    CLI = argparse.ArgumentParser()
+    CLI.add_argument(
+        "--curves-dir",
+        help="The directory where curves has been saved (sage object)",
+        type=str,
+        required=True,
+    )
+    CLI.add_argument(
+        "--security-levels",
+        help="The security levels to verify",
+        nargs="+",
+        type=int,
+        required=True
+    )
+    CLI.add_argument(
+        "--log-q",
+        type=int,
+        required=True
+    )
+    args = CLI.parse_args()
+    (success, fail) = generate_and_verify(args.security_levels, log_q=args.log_q, curves_dir=args.curves_dir)
+    if (fail):
+        print("FAILURE: Fail to verify the following curves")
+        print(json.dumps(fail))
+        exit(1)
 
-print(json.dumps(success))
+    print(json.dumps(success))

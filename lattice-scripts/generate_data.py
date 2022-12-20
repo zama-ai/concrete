@@ -1,10 +1,13 @@
 import sys
-sys.path.insert(1, '../lattice-estimator')
+sys.path.insert(1, 'lattice-estimator')
 from estimator import *
 from sage.all import oo, save, load, ceil
 from math import log2
 import multiprocessing
+import argparse
+import os
 
+old_models_sobj = ""
 
 def old_models(security_level, sd, logq=32):
     """
@@ -22,7 +25,10 @@ def old_models(security_level, sd, logq=32):
             if curves[i][2] == sec:
                 return i
 
-    curves = load("verified_curves.sobj")
+    if old_models_sobj is None or not(os.path.exists(old_models_sobj)):
+        return 450
+
+    curves = load(old_models_sobj)
     j = get_index(security_level, curves)
 
     a = curves[j][0]
@@ -189,11 +195,44 @@ def generate_zama_curves64(
     return "done"
 
 if __name__ == "__main__":
+    CLI = argparse.ArgumentParser()
+    CLI.add_argument(
+        "--security-level",
+        type=int,
+        required=True,
+    )
+    CLI.add_argument(
+        "--output",
+        type=str,
+        required=True,
+    )
+    CLI.add_argument(
+        "--old-models",
+        type=str,
+    )
+    CLI.add_argument(
+        "--sd-min",
+        type=int,
+        required=True,
+    )
+    CLI.add_argument(
+        "--sd-max",
+        type=int,
+        required=True,
+    )
+    CLI.add_argument(
+        "--margin",
+        type=int,
+        default=0,
+    )
+    args = CLI.parse_args()
     # The script runs the following commands
     # grab values of the command-line input arguments
-    security = int(sys.argv[1])
-    sd_min = int(sys.argv[2])
-    sd_max = int(sys.argv[3])
-    margin = int(sys.argv[4])
+    security = args.security_level
+    sd_min = args.sd_min
+    sd_max = args.sd_max
+    margin = args.margin
+    output = args.output
+    old_models_sobj = args.old_models
     # run the code
     generate_zama_curves64(sd_range=(sd_min, sd_max), target_security_levels=[security + margin], name="security_{}_margin_{} ".format(security, margin))

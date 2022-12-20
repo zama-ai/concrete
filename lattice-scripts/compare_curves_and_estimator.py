@@ -2,7 +2,9 @@ import sys
 sys.path.insert(1, 'lattice-estimator')
 from estimator import *
 from sage.all import oo, save, load, ceil, floor
-from generate_data import estimate, get_security_level, old_models
+from generate_data import estimate, get_security_level
+import argparse
+import os
 
 
 LOG_N_MAX = 17 + 1
@@ -67,7 +69,7 @@ def estimate_stddev_with_current_curve(curve, lwe_dimension, log_q):
     return stddev
 
 
-def compare_curve_and_estimator(security_level, log_q):
+def compare_curve_and_estimator(security_level, log_q, curves_dir):
     """
     For a subset of every lwe dimension possibles, estimate the security of those lwe dimension
     associated with the stddev recommanded by our current curve.
@@ -84,7 +86,7 @@ def compare_curve_and_estimator(security_level, log_q):
     print(f"Security Target: {security_level} bits")
 
     # step 0. loading the right curve
-    curves = load("verified_curves.sobj")
+    curves = load(os.path.join(curves_dir, "verified_curves.sobj"))
     j = get_index(security_level, curves)
     curve = curves[j]
 
@@ -113,4 +115,27 @@ def compare_curve_and_estimator(security_level, log_q):
     return True
 
 if __name__ == "__main__":
-    compare_curve_and_estimator(128, 64)
+    CLI = argparse.ArgumentParser()
+    CLI.add_argument(
+        "--curves-dir",
+        help="The directory where curves has been saved (sage object)",
+        type=str,
+        required=True,
+    )
+    CLI.add_argument(
+        "--security-levels",
+        help="The security levels to verify",
+        nargs="+",
+        type=int,
+        required=True
+    )
+    CLI.add_argument(
+        "--log-q",
+        type=int,
+        required=True
+    )
+    args = CLI.parse_args()
+    for security_level in args.security_levels:
+        if not(compare_curve_and_estimator(security_level, args.log_q, args.curves_dir)):
+            exit(1)
+    exit(0)
