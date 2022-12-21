@@ -11,21 +11,21 @@ generate-code: generate-cpp generate-rust
 # Generate CPP ########################
 
 $(CURVES_CPP_GEN_H): concrete-security-curves-cpp/gen_header.py $(CURVES_JSON_PATH)
-	cat $(CURVES_JSON_PATH) | python concrete-security-curves-cpp/gen_header.py > $(CURVES_CPP_GEN_H)
+	cat $(CURVES_JSON_PATH) | python3 concrete-security-curves-cpp/gen_header.py > $(CURVES_CPP_GEN_H)
 
 generate-cpp: $(CURVES_CPP_GEN_H)
 
 # Generate RUST ########################
 
 $(CURVES_RUST_GEN_TXT): concrete-security-curves-rust/gen_table.py $(CURVES_JSON_PATH)
-	cat $(CURVES_JSON_PATH) | python concrete-security-curves-rust/gen_table.py > $(CURVES_RUST_GEN_TXT)
+	cat $(CURVES_JSON_PATH) | python3 concrete-security-curves-rust/gen_table.py > $(CURVES_RUST_GEN_TXT)
 
 generate-rust: $(CURVES_RUST_GEN_TXT)
 
 # Compare curves #######################
 
 $(SAGE_OBJECT_DIR)/outdated_curves.timestamp: ./lattice-scripts/compare_curves_and_estimator.py
-	python ./lattice-scripts/compare_curves_and_estimator.py \
+	python3 ./lattice-scripts/compare_curves_and_estimator.py \
 	--curves-dir $(SAGE_OBJECT_DIR) --security-levels $(SECURITY_LEVELS) --log-q 64 \
 	|| touch $(SAGE_OBJECT_DIR)/outdated_curves.timestamp
 
@@ -42,7 +42,7 @@ generate-curves: $(SAGE_SECURITY_CURVES)
 # Verify curves #######################
 
 $(CURVES_JSON_PATH): ./lattice-scripts/verify_curves.py $(SAGE_SECURITY_CURVES)
-	python ./lattice-scripts/verify_curves.py \
+	python3 ./lattice-scripts/verify_curves.py \
 	--curves-dir $(SAGE_OBJECT_DIR) --security-levels $(SECURITY_LEVELS) --log-q 64 > $(CURVES_JSON_PATH)
 
 verify-curves: $(CURVES_JSON_PATH)
