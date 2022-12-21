@@ -307,7 +307,7 @@ def test_virtual_p_error(p_error, bit_width, sample_size, tolerance, helpers):
 
     @compiler({"x": "encrypted"})
     def function(x):
-        return x**2
+        return (-x) ** 2
 
     inputset = [np.random.randint(0, 2**bit_width, size=(sample_size,)) for _ in range(100)]
     circuit = function.compile(inputset, configuration=configuration, virtual=True, p_error=p_error)
@@ -317,12 +317,7 @@ def test_virtual_p_error(p_error, bit_width, sample_size, tolerance, helpers):
 
     errors = 0
     for i in range(sample_size):
-        if output[i] != sample[i] ** 2:
-            possible_inputs = [
-                (sample[i] + 1) if sample[i] != (2**bit_width) - 1 else 0,
-                (sample[i] - 1) if sample[i] != 0 else (2**bit_width) - 1,
-            ]
-            assert output[i] in [possible_inputs[0] ** 2, possible_inputs[1] ** 2]
+        if output[i] != (-sample[i]) ** 2:
             errors += 1
 
     expected_number_of_errors_on_average = sample_size * p_error
