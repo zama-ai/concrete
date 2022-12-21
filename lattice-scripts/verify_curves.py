@@ -1,23 +1,25 @@
-import numpy as np
-from sage.all import save, load, ceil
+import argparse
 import json
 import os
-import argparse
+import sys
+
+import numpy as np
+from sage.all import ceil, load, save
 
 
 def sort_data(security_level, curves_dir):
     from operator import itemgetter
 
     # step 1. load the data
-    X = load(os.path.join(curves_dir, f"{security_level}.sobj"))
+    x = load(os.path.join(curves_dir, f"{security_level}.sobj"))
 
     # step 2. sort by SD
-    x = sorted(X["{}".format(security_level)], key=itemgetter(2))
+    x = sorted(x["{}".format(security_level)], key=itemgetter(2))
 
     # step3. replace the sorted value
-    X["{}".format(security_level)] = x
+    x["{}".format(security_level)] = x
 
-    return X
+    return x
 
 
 def generate_curve(security_level, curves_dir):
@@ -63,16 +65,12 @@ def verify_curve(security_level, a, b, curves_dir):
 
     # step 3. for each n, check whether we satisfy the table
     n_min = max(2 * security_level, 450, X["{}".format(security_level)][-1][0])
-    #print(n_min)
-    #print(n_max)
 
     for n in range(n_max, n_min, -1):
         model_sd = f_model(a, b, n)
         table_sd = f_table(X["{}".format(security_level)], n)
-        #print(n, table_sd, model_sd, model_sd >= table_sd)
 
         if table_sd > model_sd:
-            #print("MODEL FAILS at n = {}".format(n))
             return False
 
     return True, n_min
@@ -85,7 +83,6 @@ def generate_and_verify(security_levels, log_q, curves_dir, name="verified_curve
     fail = []
 
     for sec in security_levels:
-        #print("WE GO FOR {}".format(sec))
         # generate the model for security level sec
         (a_sec, b_sec) = generate_curve(sec, curves_dir)
         # verify the model for security level sec
@@ -127,6 +124,6 @@ if __name__ == "__main__":
     if (fail):
         print("FAILURE: Fail to verify the following curves")
         print(json.dumps(fail))
-        exit(1)
+        sys.exit(1)
 
     print(json.dumps(success))

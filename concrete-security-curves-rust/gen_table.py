@@ -1,4 +1,6 @@
-import sys, json;
+import json
+import sys
+
 
 def print_curve(data):
     print(f'    ({data["security_level"]}, SecurityWeights {{ slope: {data["slope"]}, bias: {data["bias"]}, minimal_lwe_dimension: {data["minimal_lwe_dimension"]} }}),')

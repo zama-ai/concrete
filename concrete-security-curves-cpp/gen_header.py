@@ -1,4 +1,6 @@
-import sys, json;
+import json
+import sys
+
 
 def print_curve(data):
     print(f'\tSecurityCurve({data["security_level"]},{data["slope"]}, {data["bias"]}, {data["minimal_lwe_dimension"]}, KeyFormat::BINARY),')

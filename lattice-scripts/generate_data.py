@@ -1,11 +1,13 @@
-from estimator import RC, LWE, ND
-from sage.all import oo, save, load
-from math import log2
-import multiprocessing
 import argparse
+import multiprocessing
 import os
 import sys
-sys.path.insert(1, 'lattice-estimator')
+from math import log2
+
+from estimator import LWE, ND, RC
+from sage.all import load, oo, save
+
+sys.path.insert(1, "lattice-estimator")
 
 
 old_models_sobj = ""
@@ -25,6 +27,7 @@ def old_models(security_level, sd, logq=32):
         for i in range(len(curves)):
             if curves[i][2] == sec:
                 return i
+        return None
 
     if old_models_sobj is None or not(os.path.exists(old_models_sobj)):
         return 450
@@ -48,10 +51,7 @@ def estimate(params, red_cost_model=RC.BDGL16, skip=("arora-gb", "bkw")):
     :param skip: attacks to skip
     """
 
-    est = LWE.estimate(params, red_cost_model=red_cost_model, deny_list=skip)
-
-    return est
-
+    return LWE.estimate(params, red_cost_model=red_cost_model, deny_list=skip)
 
 def get_security_level(est, dp=2):
     """
@@ -64,10 +64,7 @@ def get_security_level(est, dp=2):
     for key in est:
         attack_costs.append(est[key]["rop"])
     # get the security level correct to 'dp' decimal places
-    security_level = round(log2(min(attack_costs)), dp)
-
-    return security_level
-
+    return round(log2(min(attack_costs)), dp)
 
 def inequality(x, y):
     """A utility function which compresses the conditions x < y and x > y into a single condition via a multiplier
@@ -79,6 +76,8 @@ def inequality(x, y):
 
     if x > y:
         return -1
+
+    return None
 
 
 def automated_param_select_n(params, target_security=128):
@@ -96,7 +95,6 @@ def automated_param_select_n(params, target_security=128):
     # get an estimate based on the prev. model
     print("n = {}".format(params.n))
     n_start = old_models(target_security, log2(params.Xe.stddev), log2(params.q))
-    # n_start = max(n_start, 450)
     # TODO: think about throwing an error if the required n < 450
 
     params = params.updated(n=n_start)
@@ -108,7 +106,6 @@ def automated_param_select_n(params, target_security=128):
     # (on binary key guessing)
     while z * security_level < z * target_security:
         # TODO: fill in this case! For n > 1024 we only need to consider every
-        # 256 (optimization)
         params = params.updated(n=params.n + z * 8)
         costs = estimate(params)
         security_level = get_security_level(costs, 2)
@@ -138,7 +135,7 @@ def automated_param_select_n(params, target_security=128):
 
 
 def generate_parameter_matrix(
-    params_in, sd_range, target_security_levels=[128], name="default_name"
+    params_in, sd_range, target_security_levels=(128), name="default_name"
 ):
     """
     :param params_in: a initial set of LWE parameters
@@ -159,7 +156,7 @@ def generate_parameter_matrix(
             try:
                 results = load("{}.sobj".format(name))
             except BaseException:
-                results = dict()
+                results = {}
                 results["{}".format(lam)] = []
 
             results["{}".format(lam)].append(
@@ -171,7 +168,7 @@ def generate_parameter_matrix(
 
 
 def generate_zama_curves64(
-    sd_range=[2, 58], target_security_levels=[128], name="default_name"
+    sd_range=(2, 58), target_security_levels=(128), name="default_name"
 ):
     """
     The top level function which we use to run the experiment
