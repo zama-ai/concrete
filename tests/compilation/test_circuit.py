@@ -35,12 +35,15 @@ def test_circuit_feedback(helpers):
 
     configuration = helpers.configuration()
 
+    p_error = 0.1
+    global_p_error = 0.05
+
     @compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):
-        return x + y
+        return np.sqrt(((x + y) ** 2) + 10).astype(np.int64)
 
-    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
-    circuit = f.compile(inputset, configuration)
+    inputset = [(np.random.randint(0, 2**2), np.random.randint(0, 2**2)) for _ in range(100)]
+    circuit = f.compile(inputset, configuration, p_error=p_error, global_p_error=global_p_error)
 
     assert isinstance(circuit.complexity, float)
     assert isinstance(circuit.size_of_secret_keys, int)
@@ -48,6 +51,11 @@ def test_circuit_feedback(helpers):
     assert isinstance(circuit.size_of_keyswitch_keys, int)
     assert isinstance(circuit.size_of_inputs, int)
     assert isinstance(circuit.size_of_outputs, int)
+    assert isinstance(circuit.p_error, float)
+    assert isinstance(circuit.global_p_error, float)
+
+    assert circuit.p_error <= p_error
+    assert circuit.global_p_error <= global_p_error
 
 
 def test_circuit_bad_run(helpers):

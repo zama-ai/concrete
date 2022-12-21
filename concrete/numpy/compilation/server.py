@@ -317,3 +317,17 @@ class Server:
         Get size of the outputs of the compiled program.
         """
         return self._compilation_feedback.total_output_size
+
+    @property
+    def p_error(self) -> int:
+        """
+        Get the probability of error for each simple TLU (on a scalar).
+        """
+        return self._compilation_feedback.p_error
+
+    @property
+    def global_p_error(self) -> int:
+        """
+        Get the probability of having at least one simple TLU error during the entire execution.
+        """
+        return self._compilation_feedback.global_p_error

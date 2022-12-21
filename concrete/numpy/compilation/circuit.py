@@ -203,3 +203,17 @@ class Circuit:
         Get size of the outputs of the circuit.
         """
         return self.server.size_of_outputs
+
+    @property
+    def p_error(self) -> int:
+        """
+        Get probability of error for each simple TLU (on a scalar).
+        """
+        return self.server.p_error
+
+    @property
+    def global_p_error(self) -> int:
+        """
+        Get the probability of having at least one simple TLU error during the entire execution.
+        """
+        return self.server.global_p_error
