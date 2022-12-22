@@ -86,6 +86,10 @@ else
 endif
 
 all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
+ifeq ($(OS), linux)
+# rust-bindings only compiles on Linux
+all: rust-bindings
+endif
 
 # concrete-core-ffi #######################################
 
