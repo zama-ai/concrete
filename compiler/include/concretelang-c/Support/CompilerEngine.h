@@ -53,24 +53,24 @@ DEFINE_C_API_STRUCT(CompilationFeedback, void);
 #define DEFINE_NULL_PTR_CHECKER(funcname, storage)                             \
   bool funcname(storage s) { return s.ptr == NULL; }
 
-DEFINE_NULL_PTR_CHECKER(compilerEngineIsNull, CompilerEngine);
-DEFINE_NULL_PTR_CHECKER(compilationContextIsNull, CompilationContext);
-DEFINE_NULL_PTR_CHECKER(compilationResultIsNull, CompilationResult);
-DEFINE_NULL_PTR_CHECKER(libraryIsNull, Library);
+DEFINE_NULL_PTR_CHECKER(compilerEngineIsNull, CompilerEngine)
+DEFINE_NULL_PTR_CHECKER(compilationContextIsNull, CompilationContext)
+DEFINE_NULL_PTR_CHECKER(compilationResultIsNull, CompilationResult)
+DEFINE_NULL_PTR_CHECKER(libraryIsNull, Library)
 DEFINE_NULL_PTR_CHECKER(libraryCompilationResultIsNull,
-                        LibraryCompilationResult);
-DEFINE_NULL_PTR_CHECKER(librarySupportIsNull, LibrarySupport);
-DEFINE_NULL_PTR_CHECKER(compilationOptionsIsNull, CompilationOptions);
-DEFINE_NULL_PTR_CHECKER(optimizerConfigIsNull, OptimizerConfig);
-DEFINE_NULL_PTR_CHECKER(serverLambdaIsNull, ServerLambda);
-DEFINE_NULL_PTR_CHECKER(clientParametersIsNull, ClientParameters);
-DEFINE_NULL_PTR_CHECKER(keySetIsNull, KeySet);
-DEFINE_NULL_PTR_CHECKER(keySetCacheIsNull, KeySetCache);
-DEFINE_NULL_PTR_CHECKER(evaluationKeysIsNull, EvaluationKeys);
-DEFINE_NULL_PTR_CHECKER(lambdaArgumentIsNull, LambdaArgument);
-DEFINE_NULL_PTR_CHECKER(publicArgumentsIsNull, PublicArguments);
-DEFINE_NULL_PTR_CHECKER(publicResultIsNull, PublicResult);
-DEFINE_NULL_PTR_CHECKER(compilationFeedbackIsNull, CompilationFeedback);
+                        LibraryCompilationResult)
+DEFINE_NULL_PTR_CHECKER(librarySupportIsNull, LibrarySupport)
+DEFINE_NULL_PTR_CHECKER(compilationOptionsIsNull, CompilationOptions)
+DEFINE_NULL_PTR_CHECKER(optimizerConfigIsNull, OptimizerConfig)
+DEFINE_NULL_PTR_CHECKER(serverLambdaIsNull, ServerLambda)
+DEFINE_NULL_PTR_CHECKER(clientParametersIsNull, ClientParameters)
+DEFINE_NULL_PTR_CHECKER(keySetIsNull, KeySet)
+DEFINE_NULL_PTR_CHECKER(keySetCacheIsNull, KeySetCache)
+DEFINE_NULL_PTR_CHECKER(evaluationKeysIsNull, EvaluationKeys)
+DEFINE_NULL_PTR_CHECKER(lambdaArgumentIsNull, LambdaArgument)
+DEFINE_NULL_PTR_CHECKER(publicArgumentsIsNull, PublicArguments)
+DEFINE_NULL_PTR_CHECKER(publicResultIsNull, PublicResult)
+DEFINE_NULL_PTR_CHECKER(compilationFeedbackIsNull, CompilationFeedback)
 
 #undef DEFINE_NULL_PTR_CHECKER
 
