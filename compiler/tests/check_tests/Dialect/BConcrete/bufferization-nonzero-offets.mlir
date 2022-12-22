@@ -1,4 +1,5 @@
-// RUN: concretecompiler --action=dump-llvm-dialect %s
+// RUN: concretecompiler --force-encoding native -action=dump-llvm-dialect %s
+// see https://github.com/zama-ai/concrete-compiler-internal/issues/858 for encoding crt
 
 // Extracted from the source referenced in Issue 663. This should
 // trigger the folding of memrefs of itermediate results to memrefs
