@@ -116,6 +116,7 @@ concrete-optimizer-lib:
 install-hpx-from-source: $(HPX_LOCAL_DIR)
 	mkdir -p $(HPX_LOCAL_DIR)/build
 	cd $(HPX_LOCAL_DIR)/build && cmake \
+		-DHPX_WITH_MAX_CPU_COUNT="" \
 		-DHPX_WITH_FETCH_ASIO=on \
 		-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
 		-DHPX_WITH_MALLOC=system ..
@@ -149,7 +150,8 @@ $(BUILD_DIR)/configured.stamp:
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETE_OPTIMIZER_DIR=${CONCRETE_OPTIMIZER_DIR} \
 	-DCONCRETE_CORE_PATH=$(CONCRETE_CORE_PATH) \
-	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT}
+	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
+	-DCUDAToolkit_ROOT=$(CUDA_PATH)
 	touch $@
 
 build-initialized: concrete-optimizer-lib concrete-core-ffi $(BUILD_DIR)/configured.stamp

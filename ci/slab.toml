@@ -1,6 +1,13 @@
 [profile.m6i]
 region = "eu-west-3"
-image_id = "ami-0a24aaee029d1295c"
+image_id = "ami-0a24aaee029d1295c" # Based on Ubuntu 22.4
+instance_type = "m6i.metal"
+subnet_id = "subnet-a886b4c1"
+security_group= ["sg-0bf1c1d79c97bc88f", ]
+
+[profile.m6i-old]
+region = "eu-west-3"
+image_id = "ami-05e4c0e628378ad6d" # Based on Ubuntu 20.4
 instance_type = "m6i.metal"
 subnet_id = "subnet-a886b4c1"
 security_group= ["sg-0bf1c1d79c97bc88f", ]
@@ -15,7 +22,7 @@ security_group= ["sg-0f8b52622a2669491", ]
 # Trigger CPU build
 [command.cpu-build]
 workflow = "aws_build.yml"
-profile = "m6i"
+profile = "m6i-old"
 check_run_name = "AWS CPU build (Slab)"
 
 # Trigger GPU build

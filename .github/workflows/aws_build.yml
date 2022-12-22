@@ -26,8 +26,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
-  CUDA_SUPPORT: OFF
+  MAKE_RULE_TESTS: run-tests run-end-to-end-dataflow-tests
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  CUDA_SUPPORT: OFF
+  CUDA_PATH: /usr/local/cuda-11.7
+  GCC_VERSION: 11
 
 jobs:
   BuildAndTest:
@@ -46,15 +49,24 @@ jobs:
           echo "Request ID: ${{ inputs.request_id }}"
           echo "Matrix item: ${{ inputs.matrix_item }}"
 
-      - name: Set up home
+      # A SSH private key is required as some dependencies are from private repos
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - name: Set up env
         # "Install rust" step require root user to have a HOME directory which is not set.
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
 
-      - name: Set up GPU support build option
+      - name: Set up GPU support
         if: ${{ startsWith(inputs.instance_type, 'p3.') }}
         run: |
           echo "CUDA_SUPPORT=ON" >> "${GITHUB_ENV}"
+          echo "MAKE_RULE_TESTS=run-end-to-end-tests-gpu" >> "${GITHUB_ENV}"
 
       # Free 4Gb of workspace
       - name: Freeing space
@@ -70,12 +82,8 @@ jobs:
           done
           df -h
 
-      # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.5.2
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
-
-      - uses: actions/checkout@v3
+      - name: Fetch repository
+        uses: actions/checkout@v3
         with:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
@@ -84,15 +92,12 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-
-      - name: Concrete-Optimizer
-        run: |
-          cd compiler
-          make concrete-optimizer-lib
+          override: true
 
       - name: Create build dir
         run: mkdir build
 
+      # FIXME: GPU is not supported yet, docker image has to be rebuilt with CUDA first.
       - name: Build compiler
         uses: addnab/docker-run-action@v3
         id: build-compiler
@@ -105,14 +110,23 @@ jobs:
             -v ${{ github.workspace }}/llvm-project:/llvm-project
             -v ${{ github.workspace }}/compiler:/compiler
             -v ${{ github.workspace }}/build:/build
+            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
+            -e SSH_AUTH_SOCK=/ssh.socket
           shell: bash
           run: |
+            export CUDA_PATH=$CUDA_PATH            
+            export LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH
+            export CC=$(which gcc)
+            export CXX=$(which g++)
+            export CUDAHOSTCXX=$CXX
+            export CUDACXX=$CUDA_PATH/bin/nvcc
+          
             set -e
             cd /compiler
             rm -rf /build/*
             pip install pytest
             sed "s/pytest/python -m pytest/g" -i Makefile
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=${{ CUDA_SUPPORT }} all build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} CUDA_PATH=${{ env.CUDA_PATH }} all build-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -144,7 +158,7 @@ jobs:
             set -e
             cd /compiler
             pip install pytest
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests run-rust-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build ${{ env.MAKE_RULE_TESTS }}
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Prune KeySetCache
