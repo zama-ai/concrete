@@ -246,7 +246,7 @@ llvm::cl::opt<concrete_optimizer::Encoding> optimizerEncoding(
                                 "Pick the best [default]")),
     llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Native, "native",
                                 "native")),
-    llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Native, "crt",
+    llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Crt, "crt",
                                 "Chineese Reminder Theorem representation")));
 
 llvm::cl::opt<bool> optimizerNoCacheOnDisk(
