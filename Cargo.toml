@@ -7,3 +7,9 @@ members = [
     "charts",
 ]
 
+
+[profile.test]
+overflow-checks = true
+
+[profile.release]
+overflow-checks = true
