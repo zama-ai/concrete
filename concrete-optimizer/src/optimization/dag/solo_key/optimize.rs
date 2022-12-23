@@ -8,7 +8,9 @@ use crate::optimization::atomic_pattern::{
     OptimizationDecompositionsConsts, OptimizationState, Solution,
 };
 use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
-use crate::optimization::decomposition::{DecompCaches, PersistDecompCaches};
+use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
+use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
+use crate::optimization::decomposition::PersistDecompCaches;
 use crate::parameters::GlweParameters;
 
 #[allow(clippy::too_many_lines)]
@@ -20,7 +22,8 @@ fn update_best_solution_with_best_decompositions(
     glwe_params: GlweParameters,
     input_noise_out: f64,
     noise_modulus_switching: f64,
-    caches: &mut DecompCaches,
+    cmux_pareto: &[CmuxComplexityNoise],
+    ks_pareto: &[KsComplexityNoise],
 ) {
     assert!(dag.nb_luts > 0);
     let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
@@ -28,10 +31,6 @@ fn update_best_solution_with_best_decompositions(
     let mut best_complexity = state.best_solution.map_or(f64::INFINITY, |s| s.complexity);
     let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
     let mut best_p_error = state.best_solution.map_or(f64::INFINITY, |s| s.p_error);
-
-    let cmux_pareto = caches.cmux.pareto_quantities(glwe_params);
-
-    let ks_pareto = caches.keyswitch.pareto_quantities(internal_dim);
 
     // by constructon br_pareto and ks_pareto are non-empty
     let mut best_cmux = cmux_pareto[0];
@@ -282,7 +281,12 @@ pub fn optimize(
                 glwe_dimension: glwe_dim,
             };
             let input_noise_out = minimal_variance(&config, glwe_params);
+
+            let cmux_pareto = caches.cmux.pareto_quantities(glwe_params);
+
             for &internal_dim in &search_space.internal_lwe_dimensions {
+                let ks_pareto = caches.keyswitch.pareto_quantities(internal_dim);
+
                 let noise_modulus_switching =
                     noise_modulus_switching(glwe_log_poly_size, internal_dim);
                 if not_feasible(input_noise_out, noise_modulus_switching) {
@@ -297,7 +301,8 @@ pub fn optimize(
                     glwe_params,
                     input_noise_out,
                     noise_modulus_switching,
-                    &mut caches,
+                    cmux_pareto,
+                    ks_pareto,
                 );
                 if dag.nb_luts == 0 && state.best_solution.is_some() {
                     return state;

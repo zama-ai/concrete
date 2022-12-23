@@ -14,7 +14,8 @@ use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::decomposition::circuit_bootstrap::CbComplexityNoise;
 use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
 use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
-use crate::optimization::decomposition::{DecompCaches, PersistDecompCaches};
+use crate::optimization::decomposition::pp_switch::PpSwitchComplexityNoise;
+use crate::optimization::decomposition::PersistDecompCaches;
 use crate::parameters::{BrDecompositionParameters, GlweParameters};
 use crate::utils::square;
 
@@ -193,7 +194,10 @@ fn update_state_with_best_decompositions(
     internal_dim: u64,
     n_functions: u64,
     partitionning: &[u64],
-    caches: &mut DecompCaches,
+    pareto_cmux: &[CmuxComplexityNoise],
+    pareto_keyswitch: &[KsComplexityNoise],
+    pp_switch: &[PpSwitchComplexityNoise],
+    pareto_cb: &[CbComplexityNoise],
 ) {
     let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
     let precisions_sum = partitionning.iter().copied().sum();
@@ -223,14 +227,6 @@ fn update_state_with_best_decompositions(
         .best_solution
         .as_ref()
         .map_or(f64::INFINITY, |s| s.noise_max);
-
-    let pareto_cmux = caches.cmux.pareto_quantities(glwe_params);
-
-    let pareto_keyswitch = caches.keyswitch.pareto_quantities(internal_dim);
-
-    let pp_switch = caches.pp_switch.pareto_quantities(glwe_params);
-
-    let pareto_cb = caches.cb_pbs.pareto_quantities(glwe_params);
 
     let lower_bound_variance_br = pareto_cmux.last().unwrap().noise_br(internal_dim);
     let lower_bound_variance_ks = pareto_keyswitch.last().unwrap().noise(input_lwe_dimension);
@@ -483,7 +479,15 @@ fn optimize_raw(
                 glwe_dimension: glwe_dim,
             };
 
+            let pareto_cmux = caches.cmux.pareto_quantities(glwe_params);
+
+            let pareto_pp_switch = caches.pp_switch.pareto_quantities(glwe_params);
+
+            let pareto_cb = caches.cb_pbs.pareto_quantities(glwe_params);
+
             for &internal_dim in &search_space.internal_lwe_dimensions {
+                let pareto_keyswitch = caches.keyswitch.pareto_quantities(internal_dim);
+
                 update_state_with_best_decompositions(
                     &mut state,
                     &consts,
@@ -491,7 +495,10 @@ fn optimize_raw(
                     internal_dim,
                     n_functions,
                     partitionning,
-                    &mut caches,
+                    pareto_cmux,
+                    pareto_keyswitch,
+                    pareto_pp_switch,
+                    pareto_cb,
                 );
             }
         }

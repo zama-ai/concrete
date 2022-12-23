@@ -1,14 +1,14 @@
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
 
 use super::config::{Config, SearchSpace};
+use super::decomposition::cmux::CmuxComplexityNoise;
+use super::decomposition::keyswitch::KsComplexityNoise;
 use super::wop_atomic_pattern::optimize::find_p_error;
 use crate::noise_estimator::error;
 use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositionParameters};
 use crate::utils::square;
 
-use super::decomposition::{
-    circuit_bootstrap, cmux, keyswitch, pp_switch, DecompCaches, PersistDecompCaches,
-};
+use super::decomposition::{circuit_bootstrap, cmux, keyswitch, pp_switch, PersistDecompCaches};
 
 // Ref time for v0 table 1 thread: 950ms
 const CUTS: bool = true; // 80ms
@@ -55,7 +55,8 @@ fn update_state_with_best_decompositions(
     consts: &OptimizationDecompositionsConsts,
     internal_dim: u64,
     glwe_params: GlweParameters,
-    caches: &mut DecompCaches,
+    cmux_quantities: &[CmuxComplexityNoise],
+    ks_quantities: &[KsComplexityNoise],
 ) {
     let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
     let noise_modulus_switching = estimate_modulus_switching_noise_with_binary_key(
@@ -72,9 +73,6 @@ fn update_state_with_best_decompositions(
     let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
 
     let complexity_multisum = (consts.sum_size * input_lwe_dimension) as f64;
-    let cmux_quantities = caches.cmux.pareto_quantities(glwe_params);
-
-    let ks_quantities = caches.keyswitch.pareto_quantities(internal_dim);
 
     let square_noise_factor = square(consts.noise_factor);
     for cmux_quantity in cmux_quantities {
@@ -204,14 +202,20 @@ pub fn optimize_one(
                 glwe_dimension: glwe_dim,
             };
 
+            let cmux_quantities = caches.cmux.pareto_quantities(glwe_params);
+
             for &internal_dim in &search_space.internal_lwe_dimensions {
                 assert!(256 < internal_dim);
+
+                let ks_quantities = caches.keyswitch.pareto_quantities(internal_dim);
+
                 update_state_with_best_decompositions(
                     &mut state,
                     &consts,
                     internal_dim,
                     glwe_params,
-                    &mut caches,
+                    cmux_quantities,
+                    ks_quantities,
                 );
             }
         }
