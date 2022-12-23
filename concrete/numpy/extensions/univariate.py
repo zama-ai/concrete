@@ -59,7 +59,8 @@ def univariate(
 
             output_value = Value.of(evaluation, is_encrypted=x.output.is_encrypted)
             if output_value.shape != x.output.shape:
-                raise ValueError(f"Function {function.__name__} cannot be used with cnp.univariate")
+                message = f"Function {function.__name__} cannot be used with cnp.univariate"
+                raise ValueError(message)
 
             # pylint: disable=protected-access
             is_direct = Tracer._is_direct
@@ -67,11 +68,12 @@ def univariate(
 
             if is_direct:
                 if outputs is None:
-                    raise ValueError(
+                    message = (
                         "Univariate extension requires "
                         "`outputs` argument for direct circuit definition "
                         "(e.g., cnp.univariate(function, outputs=cnp.uint4)(x))"
                     )
+                    raise ValueError(message)
                 output_value.dtype = outputs if isinstance(outputs, BaseDataType) else outputs.dtype
 
             computation = Node.generic(

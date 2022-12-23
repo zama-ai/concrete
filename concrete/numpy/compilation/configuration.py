@@ -41,19 +41,16 @@ class Configuration:
         if not self.enable_unsafe_features:
 
             if self.use_insecure_key_cache:
-                raise RuntimeError(
-                    "Insecure key cache cannot be used without enabling unsafe features"
-                )
+                message = "Insecure key cache cannot be used without enabling unsafe features"
+                raise RuntimeError(message)
 
             if self.virtual:
-                raise RuntimeError(
-                    "Virtual compilation is not allowed without enabling unsafe features"
-                )
+                message = "Virtual compilation is not allowed without enabling unsafe features"
+                raise RuntimeError(message)
 
         if self.use_insecure_key_cache and self.insecure_key_cache_location is None:
-            raise RuntimeError(
-                "Insecure key cache cannot be enabled without specifying its location"
-            )
+            message = "Insecure key cache cannot be enabled without specifying its location"
+            raise RuntimeError(message)
 
     # pylint: disable=too-many-arguments
 
@@ -119,7 +116,8 @@ class Configuration:
         hints = get_type_hints(Configuration)
         for name, value in kwargs.items():
             if name not in hints:
-                raise TypeError(f"Unexpected keyword argument '{name}'")
+                message = f"Unexpected keyword argument '{name}'"
+                raise TypeError(message)
 
             hint = hints[name]
             expected = None
@@ -151,10 +149,11 @@ class Configuration:
             if not is_correctly_typed:
                 if expected is None:
                     expected = hint.__name__ if hasattr(hint, "__name__") else str(hint)
-                raise TypeError(
+                message = (
                     f"Unexpected type for keyword argument '{name}' "
                     f"(expected '{expected}', got '{type(value).__name__}')"
                 )
+                raise TypeError(message)
 
             setattr(result, name, value)
 

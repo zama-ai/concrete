@@ -44,7 +44,8 @@ def array(values: Any) -> Union[np.ndarray, Tracer]:
             values[i] = Tracer.sanitize(value)
 
         if not values[i].output.is_scalar:
-            raise ValueError("Encrypted arrays can only be created from scalars")
+            message = "Encrypted arrays can only be created from scalars"
+            raise ValueError(message)
 
     dtype = combine_dtypes([value.output.dtype for value in values])
     is_encrypted = True

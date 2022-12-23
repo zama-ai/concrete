@@ -55,20 +55,22 @@ def get_code_blocks_for_file(md_file: Path) -> Dict[int, List[str]]:
                 line_idx, line = next(file_content_iterator)
                 if line == "":
                     # Reached EOF
-                    raise SyntaxError(
+                    message = (
                         "Reached EOF before finding the end of the current python block in "
                         f"{str(md_file)}"
                     )
+                    raise SyntaxError(message)
 
                 if line.strip() == BLOCK_END:
                     break
 
                 if line.startswith(BLOCK_STARTS):
-                    raise SyntaxError(
+                    message = (
                         f"Error at line {line_idx} in file {str(md_file)}, "
                         "python block was opened before the previous one was "
                         "closed (missing ``` ?)"
                     )
+                    raise SyntaxError(message)
                 current_python_code.append(line)
             python_block_continues = False
         else:
@@ -112,7 +114,7 @@ def main(args):
                 print(f"Testing block starting line #{line_idx} from {md_file_str}")
                 python_code = "".join(python_code)
                 compiled_code = compile(python_code, filename=md_file_str, mode="exec")
-                exec(compiled_code, {"__MODULE__": "__main__"})
+                exec(compiled_code, {"__MODULE__": "__main__"})  # noqa: S102
                 print("Success")
             except Exception:
                 print("Failed")

@@ -62,8 +62,12 @@ flake8:
 	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" \
 	$(SRC_DIR)/ tests/ script/
 
+.PHONY: ruff
+ruff:
+	poetry run ruff $(SRC_DIR)/ tests/ script/
+
 .PHONY: python_linting # Run python linters
-python_linting: pylint flake8
+python_linting: pylint flake8 ruff
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
 conformance: finalize_nb python_format supported_functions licenses

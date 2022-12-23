@@ -18,7 +18,7 @@ SUPPORTED_AUTO_PAD = {
 }
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches,too-many-statements
 
 
 def conv(
@@ -66,51 +66,63 @@ def conv(
     if kernel_shape is not None and (
         (weight.ndim - 2) != len(kernel_shape) or not np.all(weight.shape[2:] == kernel_shape)
     ):
-        raise ValueError(f"expected kernel_shape to be {weight.shape[2:]}, but got {kernel_shape}")
+        message = f"expected kernel_shape to be {weight.shape[2:]}, but got {kernel_shape}"
+        raise ValueError(message)
 
     if isinstance(x, np.ndarray):
         if not isinstance(weight, np.ndarray):
-            raise TypeError("expected weight to be of same type as x")
+            message = "expected weight to be of same type as x"
+            raise TypeError(message)
         if bias is not None and not isinstance(bias, np.ndarray):
-            raise TypeError("expected bias to be of same type as x")
+            message = "expected bias to be of same type as x"
+            raise TypeError(message)
     elif isinstance(x, Tracer):
         if not isinstance(weight, (Tracer, np.ndarray)):
-            raise TypeError("expected weight to be of type Tracer or ndarray")
+            message = "expected weight to be of type Tracer or ndarray"
+            raise TypeError(message)
         if bias is not None and not isinstance(bias, (Tracer, np.ndarray)):
-            raise TypeError("expected bias to be of type Tracer or ndarray")
+            message = "expected bias to be of type Tracer or ndarray"
+            raise TypeError(message)
 
     if x.ndim <= 2:
-        raise ValueError(
+        message = (
             f"expected input x to have at least 3 dimensions (N, C, D1, ...), but got {x.ndim}"
         )
+        raise ValueError(message)
 
     if weight.ndim <= 2:
-        raise ValueError(
+        message = (
             f"expected weight to have at least 3 dimensions (F, C / group, K1, ...), but got "
             f"{weight.ndim}"
         )
+        raise ValueError(message)
 
     if bias is not None and bias.ndim != 1:
-        raise ValueError(f"expected bias to have a single dimension (F,), but got {bias.ndim}")
+        message = f"expected bias to have a single dimension (F,), but got {bias.ndim}"
+        raise ValueError(message)
 
     if not isinstance(group, int) or group <= 0:
-        raise ValueError(f"expected group to be an integer > 0, but got {group}")
+        message = f"expected group to be an integer > 0, but got {group}"
+        raise ValueError(message)
 
     if auto_pad not in SUPPORTED_AUTO_PAD:
-        raise ValueError(f"auto_pad should be in {SUPPORTED_AUTO_PAD}, but got {repr(auto_pad)}")
+        message = f"auto_pad should be in {SUPPORTED_AUTO_PAD}, but got {repr(auto_pad)}"
+        raise ValueError(message)
 
     n_channels = x.shape[1]
     if weight.shape[1] != n_channels / group:
-        raise ValueError(
+        message = (
             f"expected number of channel in weight to be {n_channels / group} (C / group), but got "
             f"{weight.shape[1]}"
         )
+        raise ValueError(message)
 
     if weight.shape[0] % group != 0:
-        raise ValueError(
+        message = (
             f"expected number of feature maps ({weight.shape[0]}) to be a multiple of group "
             f"({group})"
         )
+        raise ValueError(message)
 
     dims = x.ndim - 2
     if dims == 1:
@@ -155,7 +167,9 @@ def conv(
             group=group,
             auto_pad=auto_pad,
         )
-    raise NotImplementedError("only 1D, 2D, and 3D convolutions are supported")
+
+    message = "only 1D, 2D, and 3D convolutions are supported"
+    raise NotImplementedError(message)
 
 
 # pylint: enable=too-many-branches
@@ -206,21 +220,24 @@ def _conv1d(
     )
 
     if len(pads) != 2:
-        raise ValueError(
+        message = (
             f"pads should be of form "
             f"(D_begin_pad, D_end_pad) when performing "
             f"1D convolution, but it's {pads}"
         )
+        raise ValueError(message)
     if len(strides) != 1:
-        raise ValueError(
+        message = (
             f"strides should be of form (D_stride,) when performing 1D "
             f"convolution, but it's {strides}"
         )
+        raise ValueError(message)
     if len(dilations) != 1:
-        raise ValueError(
+        message = (
             f"dilations should be of form (D_dilation,) when performing 1D "
             f"convolution, but it's {dilations}"
         )
+        raise ValueError(message)
 
     return _trace_or_eval(x, weight, bias, pads, strides, dilations, group)
 
@@ -270,21 +287,24 @@ def _conv2d(
     )
 
     if len(pads) != 4:
-        raise ValueError(
+        message = (
             f"pads should be of form "
             f"(height_begin_pad, width_begin_pad, height_end_pad, width_end_pad) when performing "
             f"2D convolution, but it's {pads}"
         )
+        raise ValueError(message)
     if len(strides) != 2:
-        raise ValueError(
+        message = (
             f"strides should be of form (height_stride, width_stride) when performing 2D "
             f"convolution, but it's {strides}"
         )
+        raise ValueError(message)
     if len(dilations) != 2:
-        raise ValueError(
+        message = (
             f"dilations should be of form (height_dilation, width_dilation) when performing 2D "
             f"convolution, but it's {dilations}"
         )
+        raise ValueError(message)
 
     return _trace_or_eval(x, weight, bias, pads, strides, dilations, group)
 
@@ -334,22 +354,25 @@ def _conv3d(
     )
 
     if len(pads) != 6:
-        raise ValueError(
+        message = (
             f"pads should be of form "
             f"(D_begin_pad, height_begin_pad, width_begin_pad, "
             f"D_end_pad, height_end_pad, width_end_pad) when performing "
             f"3D convolution, but it's {pads}"
         )
+        raise ValueError(message)
     if len(strides) != 3:
-        raise ValueError(
+        message = (
             f"strides should be of form (D_stride, height_stride, width_stride) when performing "
             f"3D convolution, but it's {strides}"
         )
+        raise ValueError(message)
     if len(dilations) != 3:
-        raise ValueError(
+        message = (
             f"dilations should be of form (D_dilation, height_dilation, width_dilation) when "
             f"performing 3D convolution, but it's {dilations}"
         )
+        raise ValueError(message)
 
     return _trace_or_eval(x, weight, bias, pads, strides, dilations, group)
 
@@ -632,11 +655,12 @@ def _evaluate_conv(
     torch_padding = []
     for dim in range(n_dim):
         if pads[dim] != pads[n_dim + dim]:
-            raise ValueError(
+            message = (
                 f"padding should be the same for the beginning of the dimension and its end, but "
                 f"got {pads[dim]} in the beginning, and {pads[n_dim + dim]} at the end for "
                 f"dimension {dim}"
             )
+            raise ValueError(message)
         torch_padding.append(pads[dim])
 
     dtype = (

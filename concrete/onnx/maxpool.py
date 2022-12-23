@@ -121,21 +121,22 @@ def maxpool(
             value = tuple(value)
 
         if not isinstance(value, tuple):
-            raise TypeError(
+            message = (
                 f"Expected {value_name} to be a tuple or a list but it's {type(value).__name__}"
             )
+            raise TypeError(message)
 
         for element in value:
             if not isinstance(element, int):
-                raise TypeError(
+                message = (
                     f"Expected {value_name} to consist of integers "
                     f"but it has an element of type {type(element).__name__}"
                 )
+                raise TypeError(message)
 
         if len(value) != size:
-            raise ValueError(
-                f"Expected {value_name} to have {size} elements but it has {len(value)}"
-            )
+            message = f"Expected {value_name} to have {size} elements but it has {len(value)}"
+            raise ValueError(message)
 
         return value
 
@@ -153,24 +154,28 @@ def maxpool(
             or np.issubdtype(x.dtype, np.floating)
             or np.issubdtype(x.dtype, np.bool_)
         ):
-            raise TypeError(
+            message = (
                 f"Expected input elements to be of type np.integer, np.floating, or np.bool_ "
                 f"but it's {type(x.dtype).__name__}"
             )
+            raise TypeError(message)
     elif not isinstance(x, Tracer):
-        raise TypeError(
+        message = (
             f"Expected input to be of type np.ndarray or Tracer "
             f"but it's {type(auto_pad).__name__}"
         )
+        raise TypeError(message)
 
     if x.ndim < 3:
-        raise ValueError(
+        message = (
             f"Expected input to have at least 3 dimensions (N, C, D1, ...) "
             f"but it only has {x.ndim}"
         )
+        raise ValueError(message)
 
     if x.ndim > 5:
-        raise NotImplementedError(f"{x.ndim - 2}D maximum pooling is not supported yet")
+        message = f"{x.ndim - 2}D maximum pooling is not supported yet"
+        raise NotImplementedError(message)
 
     # check kernel_shape
 
@@ -188,21 +193,20 @@ def maxpool(
     # check auto_pad
 
     if not isinstance(auto_pad, str):
-        raise TypeError(
-            f"Expected auto_pad to be of type str but it's {type(auto_pad).__name__}",
-        )
+        message = f"Expected auto_pad to be of type str but it's {type(auto_pad).__name__}"
+        raise TypeError(message)
 
     if auto_pad not in AVAILABLE_AUTO_PAD:
-        raise ValueError(
+        message = (
             f"Expected auto_pad to be one of "
             f"{', '.join(sorted(AVAILABLE_AUTO_PAD))} "
-            f"but it's {auto_pad}",
+            f"but it's {auto_pad}"
         )
+        raise ValueError(message)
 
     if auto_pad not in SUPPORTED_AUTO_PAD:
-        raise NotImplementedError(
-            f"Desired auto_pad of {auto_pad} is not supported yet",
-        )
+        message = f"Desired auto_pad of {auto_pad} is not supported yet"
+        raise NotImplementedError(message)
 
     # check pads
 
@@ -215,9 +219,8 @@ def maxpool(
         pad_begin = pads[i]
         pad_end = pads[i + len(pads) // 2]
         if pad_begin != pad_end:
-            raise NotImplementedError(
-                f"Desired pads of {pads} is not supported yet because of uneven padding"
-            )
+            message = f"Desired pads of {pads} is not supported yet because of uneven padding"
+            raise NotImplementedError(message)
 
     # check dilations
 
@@ -229,40 +232,40 @@ def maxpool(
     # check ceil_mode
 
     if not isinstance(ceil_mode, int):
-        raise TypeError(
-            f"Expected ceil_mode to be of type int but it's {type(ceil_mode).__name__}",
-        )
+        message = f"Expected ceil_mode to be of type int but it's {type(ceil_mode).__name__}"
+        raise TypeError(message)
 
     if ceil_mode not in AVAILABLE_CEIL_MODE:
-        raise ValueError(
+        message = (
             f"Expected ceil_mode to be one of "
             f"{', '.join(sorted(str(x) for x in AVAILABLE_CEIL_MODE))} "
-            f"but it's {ceil_mode}",
+            f"but it's {ceil_mode}"
         )
+        raise ValueError(message)
 
     if ceil_mode not in SUPPORTED_CEIL_MODE:
-        raise NotImplementedError(
-            f"Desired ceil_mode of {ceil_mode} is not supported yet",
-        )
+        message = f"Desired ceil_mode of {ceil_mode} is not supported yet"
+        raise NotImplementedError(message)
 
     # check storage_order
 
     if not isinstance(storage_order, int):
-        raise TypeError(
-            f"Expected storage_order to be of type int but it's {type(storage_order).__name__}",
+        message = (
+            f"Expected storage_order to be of type int but it's {type(storage_order).__name__}"
         )
+        raise TypeError(message)
 
     if storage_order not in AVAILABLE_STORAGE_ORDER:
-        raise ValueError(
+        message = (
             f"Expected storage_order to be one of "
             f"{', '.join(sorted(str(x) for x in AVAILABLE_STORAGE_ORDER))} "
-            f"but it's {storage_order}",
+            f"but it's {storage_order}"
         )
+        raise ValueError(message)
 
     if storage_order not in SUPPORTED_STORAGE_ORDER:
-        raise NotImplementedError(
-            f"Desired storage_order of {storage_order} is not supported yet",
-        )
+        message = f"Desired storage_order of {storage_order} is not supported yet"
+        raise NotImplementedError(message)
 
     # trace or evaluate
     return _trace_or_evaluate(x, kernel_shape, strides, pads, dilations, ceil_mode == 1)

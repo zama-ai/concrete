@@ -75,7 +75,8 @@ class Circuit:
         """
 
         if self.configuration.virtual:
-            raise RuntimeError("Virtual circuits cannot use `keygen` method")
+            message = "Virtual circuits cannot use `keygen` method"
+            raise RuntimeError(message)
 
         self.client.keygen(force)
 
@@ -93,7 +94,8 @@ class Circuit:
         """
 
         if self.configuration.virtual:
-            raise RuntimeError("Virtual circuits cannot use `encrypt` method")
+            message = "Virtual circuits cannot use `encrypt` method"
+            raise RuntimeError(message)
 
         return self.client.encrypt(*args)
 
@@ -111,7 +113,8 @@ class Circuit:
         """
 
         if self.configuration.virtual:
-            raise RuntimeError("Virtual circuits cannot use `run` method")
+            message = "Virtual circuits cannot use `run` method"
+            raise RuntimeError(message)
 
         self.keygen(force=False)
         return self.server.run(args, self.client.evaluation_keys)
@@ -133,7 +136,8 @@ class Circuit:
         """
 
         if self.configuration.virtual:
-            raise RuntimeError("Virtual circuits cannot use `decrypt` method")
+            message = "Virtual circuits cannot use `decrypt` method"
+            raise RuntimeError(message)
 
         return self.client.decrypt(result)
 

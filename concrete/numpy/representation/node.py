@@ -56,7 +56,8 @@ class Node:
         try:
             value = Value.of(constant)
         except Exception as error:
-            raise ValueError(f"Constant {repr(constant)} is not supported") from error
+            message = f"Constant {repr(constant)} is not supported"
+            raise ValueError(message) from error
 
         properties = {"constant": np.array(constant)}
         return Node([], value, Operation.Constant, ConstantEvaluator(properties), properties)
@@ -199,26 +200,25 @@ class Node:
             return result
 
         if len(args) != len(self.inputs):
-            raise ValueError(
-                f"{generic_error_message()} failed because of invalid number of arguments"
-            )
+            message = f"{generic_error_message()} failed because of invalid number of arguments"
+            raise ValueError(message)
 
         for arg, input_ in zip(args, self.inputs):
             try:
                 arg_value = Value.of(arg)
             except Exception as error:
                 arg_str = "the argument" if len(args) == 1 else f"argument {repr(arg)}"
-                raise ValueError(
-                    f"{generic_error_message()} failed because {arg_str} is not valid"
-                ) from error
+                message = f"{generic_error_message()} failed because {arg_str} is not valid"
+                raise ValueError(message) from error
 
             if input_.shape != arg_value.shape:
                 arg_str = "the argument" if len(args) == 1 else f"argument {repr(arg)}"
-                raise ValueError(
+                message = (
                     f"{generic_error_message()} failed because "
                     f"{arg_str} does not have the expected "
                     f"shape of {input_.shape}"
                 )
+                raise ValueError(message)
 
         result = self.evaluator(*args)
 
@@ -237,11 +237,12 @@ class Node:
                 pass
 
         if not isinstance(result, (np.bool_, np.integer, np.floating, np.ndarray)):
-            raise ValueError(
+            message = (
                 f"{generic_error_message()} resulted in {repr(result)} "
                 f"of type {result.__class__.__name__} "
                 f"which is not acceptable either because of the type or because of overflow"
             )
+            raise ValueError(message)
 
         if isinstance(result, np.ndarray):
             dtype = result.dtype
@@ -250,18 +251,20 @@ class Node:
                 and not np.issubdtype(dtype, np.floating)
                 and not np.issubdtype(dtype, np.bool_)
             ):
-                raise ValueError(
+                message = (
                     f"{generic_error_message()} resulted in {repr(result)} "
                     f"of type np.ndarray and of underlying type '{type(dtype).__name__}' "
                     f"which is not acceptable because of the underlying type"
                 )
+                raise ValueError(message)
 
         if result.shape != self.output.shape:
-            raise ValueError(
+            message = (
                 f"{generic_error_message()} resulted in {repr(result)} "
                 f"which does not have the expected "
                 f"shape of {self.output.shape}"
             )
+            raise ValueError(message)
 
         return result
 

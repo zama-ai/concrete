@@ -217,10 +217,11 @@ class GraphConverter:
                     offending_nodes[node] = [reason, node.location]
 
         if len(offending_nodes) != 0:
-            raise RuntimeError(
+            message = (
                 "Function you are trying to compile cannot be converted to MLIR\n\n"
                 + graph.format(highlighted_nodes=offending_nodes)
             )
+            raise RuntimeError(message)
 
     @staticmethod
     def _update_bit_widths(graph: Graph):
@@ -466,7 +467,7 @@ class GraphConverter:
                 assert len(node.inputs) in {1, 2}
 
                 if len(node.inputs) == 2:
-                    if set(inp.is_scalar for inp in node.inputs) != {True, False}:
+                    if {inp.is_scalar for inp in node.inputs} != {True, False}:
                         continue
                 else:
                     if not node.inputs[0].is_scalar:

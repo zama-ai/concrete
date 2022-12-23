@@ -36,7 +36,6 @@ def main(args):
             report.write("Found the following vulnerabilities:\n")
             assert len(json_content) == 1
             json_data = json.loads(json_content[0])
-            # print(json.dumps(json_data, indent=4))
             for entry in json_data:
                 vuln_entries = entry.get("vulns", [])
                 if vuln_entries:

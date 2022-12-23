@@ -53,11 +53,12 @@ def circuit(
             )
 
             if not (is_value or is_scalar_annotation):
-                raise ValueError(
+                message = (
                     f"Annotation {annotation} for argument '{name}' is not valid "
                     f"(please use a cnp type such as "
                     f"`cnp.uint4` or 'cnp.tensor[cnp.uint4, 3, 2]')"
                 )
+                raise ValueError(message)
 
             parameter_values[name] = (
                 annotation if is_value else Value(annotation.dtype, shape=(), is_encrypted=False)

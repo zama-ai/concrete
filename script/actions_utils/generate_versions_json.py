@@ -20,16 +20,16 @@ def main(args):
     prerelease = args.prerelease
 
     if not VersionInfo.isvalid(strip_leading_v(version)):
-        raise RuntimeError(f"Invalid version: {version}")
+        message = f"Invalid version: {version}"
+        raise RuntimeError(message)
 
     version_json_file_path = Path(args.versions_json_file).resolve()
     try:
         with open(version_json_file_path, "r", encoding="utf-8") as f:
             version_json = json.loads(f.read())
     except JSONDecodeError as err:
-        raise RuntimeError(
-            f"An error occurred while trying to load {str(version_json_file_path)}"
-        ) from err
+        message = f"An error occurred while trying to load {str(version_json_file_path)}"
+        raise RuntimeError(message) from err
 
     # Version json is composed by:
     #  all: list of all published versions

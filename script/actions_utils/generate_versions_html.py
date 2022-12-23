@@ -60,7 +60,8 @@ def main(args):
         if not VersionInfo.isvalid(strip_leading_v(version))
     ]
     if len(invalid_versions) > 0:
-        raise RuntimeError(f"Found invalid versions: {invalid_versions}")
+        message = f"Found invalid versions: {invalid_versions}"
+        raise RuntimeError(message)
 
     version_html = None
     version_html_file_path = Path(args.versions_html_file).resolve()
@@ -68,13 +69,15 @@ def main(args):
         version_html = BeautifulSoup(f, "html.parser")
 
     if version_html is None:
-        raise RuntimeError(f"An error occured while trying to load {str(version_html_file_path)}")
+        message = f"An error occured while trying to load {str(version_html_file_path)}"
+        raise RuntimeError(message)
 
     print(version_html)
 
     version_list = version_html.find(id=VERSIONS_LIST_ID)
     if version_list is None or version_list.name != "ul":
-        raise RuntimeError(f"Could not find <ul> tag with id {VERSIONS_LIST_ID}")
+        message = f"Could not find <ul> tag with id {VERSIONS_LIST_ID}"
+        raise RuntimeError(message)
 
     non_semver_versions = {}
     semver_versions = {}
@@ -103,10 +106,11 @@ def main(args):
 
     versions_already_in_html = set(parsed_versions).intersection(semver_versions.keys())
     if len(versions_already_in_html) > 0:
-        raise RuntimeError(
+        message = (
             "The following versions are already in the html: "
             f"{', '.join(str(ver) for ver in sorted(versions_already_in_html))}"
         )
+        raise RuntimeError(message)
 
     semver_versions.update(
         (

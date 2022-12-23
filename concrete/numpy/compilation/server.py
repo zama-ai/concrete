@@ -169,7 +169,8 @@ class Server:
 
         if via_mlir:
             if self._mlir is None or self._configuration is None:
-                raise RuntimeError("Loaded server objects cannot be saved again via MLIR")
+                message = "Loaded server objects cannot be saved again via MLIR"
+                raise RuntimeError(message)
 
             with tempfile.TemporaryDirectory() as tmp:
 
@@ -190,7 +191,8 @@ class Server:
             return
 
         if self._output_dir is None:
-            raise RuntimeError("Just-in-Time compilation cannot be saved")
+            message = "Just-in-Time compilation cannot be saved"
+            raise RuntimeError(message)
 
         with open(Path(self._output_dir.name) / "client.specs.json", "w", encoding="utf-8") as f:
             f.write(self.client_specs.serialize())

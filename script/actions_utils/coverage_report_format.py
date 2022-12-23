@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Helper script for github actions"""
 import argparse
 import json

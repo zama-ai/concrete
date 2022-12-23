@@ -2,6 +2,8 @@
 Declaration of various `Evaluator` classes, to make graphs picklable.
 """
 
+# ruff: noqa: ARG002
+
 
 class ConstantEvaluator:
     """

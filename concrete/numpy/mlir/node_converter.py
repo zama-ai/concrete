@@ -85,7 +85,8 @@ class NodeConverter:
         # the branch above is always taken due to compatibility checks
         # still, it's a good idea to raise an appropriate error, just in case
 
-        raise ValueError(f"{value} cannot be converted to MLIR")  # pragma: no cover
+        message = f"{value} cannot be converted to MLIR"  # pragma: no cover
+        raise ValueError(message)  # pragma: no cover
 
     @staticmethod
     def mlir_name(result: OpResult) -> str:
@@ -180,6 +181,8 @@ class NodeConverter:
 
         assert_that(self.node.converted_to_table_lookup)
         return self._convert_tlu()
+
+    # pylint: disable=no-self-use
 
     def _convert_add(self) -> OpResult:
         """
@@ -365,7 +368,8 @@ class NodeConverter:
                 in-memory MLIR representation corresponding to `self.node`
         """
 
-        raise NotImplementedError("conv1d conversion to MLIR is not yet implemented")
+        message = "conv1d conversion to MLIR is not yet implemented"
+        raise NotImplementedError(message)
 
     def _convert_conv2d(self) -> OpResult:
         """
@@ -425,7 +429,8 @@ class NodeConverter:
                 in-memory MLIR representation corresponding to `self.node`
         """
 
-        raise NotImplementedError("conv3d conversion to MLIR is not yet implemented")
+        message = "conv3d conversion to MLIR is not yet implemented"
+        raise NotImplementedError(message)
 
     def _convert_dot(self) -> OpResult:
         """
@@ -487,7 +492,8 @@ class NodeConverter:
                 in-memory MLIR representation corresponding to `self.node`
         """
 
-        raise NotImplementedError("MaxPool operation cannot be compiled yet")
+        message = "MaxPool operation cannot be compiled yet"
+        raise NotImplementedError(message)
 
     def _convert_mul(self) -> OpResult:
         """
@@ -1076,3 +1082,5 @@ class NodeConverter:
             # pylint: enable=too-many-function-args
             self.constant_cache[(mlir_type, mlir_attribute)] = result
         return result
+
+    # pylint: enable=no-self-use

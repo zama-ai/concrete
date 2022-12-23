@@ -257,8 +257,7 @@ class Helpers:
                 break
 
             if i == retries - 1:
-                raise AssertionError(
-                    f"""
+                message = f"""
 
 Expected Output
 ===============
@@ -269,7 +268,7 @@ Actual Output
 {actual}
 
                     """
-                )
+                raise AssertionError(message)
 
     @staticmethod
     def check_str(expected: str, actual: str):

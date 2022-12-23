@@ -73,6 +73,7 @@ pip-licenses = "^3.5.3"
 pip-audit = "^1.1.1"
 pytest-codeblocks = "^0.12.2"
 twine = "^3.7.1"
+ruff = "^0.0.191"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -90,3 +91,20 @@ filterwarnings = [
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
 upload_to_pypi = "False"
+
+[tool.ruff]
+target-version = "py37"
+line-length = 100
+select = [
+    "F", "E", "W", "C90", "I", "UP", "N", "YTT", "S", "BLE", "FBT", "B", "C4",
+    "T10", "EM", "ICN", "Q", "RET", "SIM", "TID", "ARG", "DTZ", "ERA", "PD", "PGH",
+    "PLC", "PLE", "PLR", "PLW", "RUF"
+]
+ignore = [
+    "A", "D", "FBT", "T20", "ANN", "N806", "ARG001", "S101", "BLE001", "RUF100",
+    "RET504", "TID252", "PD011", "I001", "UP015", "C901", "A001", "SIM118", "PGH003"
+]
+
+[tool.ruff.per-file-ignores]
+"**/__init__.py" = ["F401"]
+"tests/**" = ["PLC2201"]

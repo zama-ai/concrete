@@ -125,21 +125,22 @@ files = [
 
 [[package]]
 name = "attrs"
-version = "22.1.0"
+version = "22.2.0"
 description = "Classes Without Boilerplate"
 category = "dev"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.6"
 files = [
-    {file = "attrs-22.1.0-py2.py3-none-any.whl", hash = "sha256:86efa402f67bf2df34f51a335487cf46b1ec130d02b8d39fd248abfd30da551c"},
-    {file = "attrs-22.1.0.tar.gz", hash = "sha256:29adc2665447e5191d0e7c568fde78b21f9672d344281d0c6e1ab085429b22b6"},
+    {file = "attrs-22.2.0-py3-none-any.whl", hash = "sha256:29e95c7f6778868dbd49170f98f8818f78f3dc5e0e37c0b1f474e3561b240836"},
+    {file = "attrs-22.2.0.tar.gz", hash = "sha256:c9227bfc2f01993c03f68db37d1d15c9690188323c067c641f1a35ca58185f99"},
 ]
 
 [package.extras]
-dev = ["cloudpickle", "coverage[toml] (>=5.0.2)", "furo", "hypothesis", "mypy (>=0.900,!=0.940)", "pre-commit", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "sphinx", "sphinx-notfound-page", "zope.interface"]
-docs = ["furo", "sphinx", "sphinx-notfound-page", "zope.interface"]
-tests = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "zope.interface"]
-tests-no-zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
+cov = ["attrs[tests]", "coverage-enable-subprocess", "coverage[toml] (>=5.3)"]
+dev = ["attrs[docs,tests]"]
+docs = ["furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-towncrier", "towncrier", "zope.interface"]
+tests = ["attrs[tests-no-zope]", "zope.interface"]
+tests-no-zope = ["cloudpickle", "cloudpickle", "hypothesis", "hypothesis", "mypy (>=0.971,<0.990)", "mypy (>=0.971,<0.990)", "pympler", "pympler", "pytest (>=4.3.0)", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-mypy-plugins", "pytest-xdist[psutil]", "pytest-xdist[psutil]"]
 
 [[package]]
 name = "backcall"
@@ -955,14 +956,14 @@ files = [
 
 [[package]]
 name = "ipywidgets"
-version = "8.0.3"
+version = "8.0.4"
 description = "Jupyter interactive widgets"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "ipywidgets-8.0.3-py3-none-any.whl", hash = "sha256:db7dd35fb1217636cbdbe0ba0bd2216d91a7695cb28b5c1dca17e62cd51378de"},
-    {file = "ipywidgets-8.0.3.tar.gz", hash = "sha256:2ec50df8538a1d4ddd5d454830d010922ad1015e81ac23efb27c0908bbc1eece"},
+    {file = "ipywidgets-8.0.4-py3-none-any.whl", hash = "sha256:ebb195e743b16c3947fe8827190fb87b4d00979c0fbf685afe4d2c4927059fa1"},
+    {file = "ipywidgets-8.0.4.tar.gz", hash = "sha256:c0005a77a47d77889cafed892b58e33b4a2a96712154404c6548ec22272811ea"},
 ]
 
 [package.dependencies]
@@ -977,14 +978,14 @@ test = ["jsonschema", "pytest (>=3.6.0)", "pytest-cov", "pytz"]
 
 [[package]]
 name = "isort"
-version = "5.11.3"
+version = "5.11.4"
 description = "A Python utility / library to sort Python imports."
 category = "dev"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "isort-5.11.3-py3-none-any.whl", hash = "sha256:83155ffa936239d986b0f190347a3f2285f42a9b9e1725c89d865b27dd0627e5"},
-    {file = "isort-5.11.3.tar.gz", hash = "sha256:a8ca25fbfad0f7d5d8447a4314837298d9f6b23aed8618584c894574f626b64b"},
+    {file = "isort-5.11.4-py3-none-any.whl", hash = "sha256:c033fd0edb91000a7f09527fe5c75321878f98322a77ddcc81adbd83724afb7b"},
+    {file = "isort-5.11.4.tar.gz", hash = "sha256:6db30c5ded9815d813932c04c2f85a360bcdd35fed496f4d8f35495ef0a261b6"},
 ]
 
 [package.extras]
@@ -1224,14 +1225,14 @@ files = [
 
 [[package]]
 name = "jupyterlab-widgets"
-version = "3.0.4"
+version = "3.0.5"
 description = "Jupyter interactive widgets for JupyterLab"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "jupyterlab_widgets-3.0.4-py3-none-any.whl", hash = "sha256:4c9275daa6d20fc96c3aea45756ece7110850d035b0b93a6a40e918016b927da"},
-    {file = "jupyterlab_widgets-3.0.4.tar.gz", hash = "sha256:9a568e022b8bb53ab23291f6ddb52f8002b789c2c5763378cbc882be1d619be8"},
+    {file = "jupyterlab_widgets-3.0.5-py3-none-any.whl", hash = "sha256:a04a42e50231b355b7087e16a818f541e53589f7647144ea0344c4bf16f300e5"},
+    {file = "jupyterlab_widgets-3.0.5.tar.gz", hash = "sha256:eeaecdeaf6c03afc960ddae201ced88d5979b4ca9c3891bcb8f6631af705f5ef"},
 ]
 
 [[package]]
@@ -3053,6 +3054,32 @@ files = [
 idna2008 = ["idna"]
 
 [[package]]
+name = "ruff"
+version = "0.0.191"
+description = "An extremely fast Python linter, written in Rust."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "ruff-0.0.191-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:77aa90ab83f6ef663ad002708eec13b7931193dfa418c09564ab34df4766a11d"},
+    {file = "ruff-0.0.191-py3-none-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:75e8d628f4d1b0db216e8cb26a10f36a6c3db572e839aaad8ac0a51e0bd1c0ef"},
+    {file = "ruff-0.0.191-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0ce09e5c6253854ce907a42640c316f97ff49b8a3e35ce3e44524e1fc67bf3f3"},
+    {file = "ruff-0.0.191-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:0a230dad3805d70d4c2c9716e1cfe0939695979c8ef7b7b4791e3f5c26c5d965"},
+    {file = "ruff-0.0.191-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2727d02f9cacca0d945d1a4fa443ff9469a131c7791df1f8824b9c89721bd138"},
+    {file = "ruff-0.0.191-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:20b52da4ff1008f4401e4681c6b8552133aa0553cde17dfcd4d42d992242e578"},
+    {file = "ruff-0.0.191-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:1084aa3a448c5f98c567547de79eef2dba6f022232fd9c89876881d74de3d3cd"},
+    {file = "ruff-0.0.191-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:0d76b88b0dbd6dfa6ac3ceb08bd519e140ad6e4f7cf9cf2d88310a084af35e92"},
+    {file = "ruff-0.0.191-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:614106b64fefd70750a2eb3e50bfce7c9b56585d7be96f925fb3c13108552984"},
+    {file = "ruff-0.0.191-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:304b83f1ab6f91245a800b3c60e38083b89ee240cbdb3d1d8a98671265292c11"},
+    {file = "ruff-0.0.191-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:4bf38f1419b5d8b3bc299a2cba183a43ade4858af2160033fb94aa9e5a85c700"},
+    {file = "ruff-0.0.191-py3-none-musllinux_1_2_i686.whl", hash = "sha256:97c22a00daad210f03458e8993c62bee38ec98d2f0b8d50a671b31a96256cd5f"},
+    {file = "ruff-0.0.191-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:c2a5b7e2b7aa33e5ece2291dc655ad2023626114179fc166d382e3902f319dd5"},
+    {file = "ruff-0.0.191-py3-none-win32.whl", hash = "sha256:195da807f65e1b153379b7258086cbfb3b10143ecf93683275dfef561593c485"},
+    {file = "ruff-0.0.191-py3-none-win_amd64.whl", hash = "sha256:a25a7b9d56732df7f4887f3bd4a66dd54924be8c4d359e6a73bd5b1a8082f1bf"},
+    {file = "ruff-0.0.191.tar.gz", hash = "sha256:d698c4d5e3b2963cbbb7c2728f404091d5c47cdf8d94db3eb2f335e2a93a6b1b"},
+]
+
+[[package]]
 name = "secretstorage"
 version = "3.3.3"
 description = "Python bindings to FreeDesktop.org Secret Service API"
@@ -3511,14 +3538,14 @@ test = ["pytest (>=3.0.0)"]
 
 [[package]]
 name = "widgetsnbextension"
-version = "4.0.4"
+version = "4.0.5"
 description = "Jupyter interactive widgets for Jupyter Notebook"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "widgetsnbextension-4.0.4-py3-none-any.whl", hash = "sha256:fa0e840719ec95dd2ec85c3a48913f1a0c29d323eacbcdb0b29bfed0cc6da678"},
-    {file = "widgetsnbextension-4.0.4.tar.gz", hash = "sha256:44c69f18237af0f610557d6c1c7ef76853f5856a0e604c0a517f2320566bb775"},
+    {file = "widgetsnbextension-4.0.5-py3-none-any.whl", hash = "sha256:eaaaf434fb9b08bd197b2a14ffe45ddb5ac3897593d43c69287091e5f3147bf7"},
+    {file = "widgetsnbextension-4.0.5.tar.gz", hash = "sha256:003f716d930d385be3fd9de42dd9bf008e30053f73bddde235d14fbeaeff19af"},
 ]
 
 [[package]]
@@ -3601,4 +3628,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.11"
-content-hash = "7d1b41b63f4e8a218e5d5708a822387f9500dae55aa71f84966b0ff329749d78"
+content-hash = "a0ee23721d05e022e48ec1d4de5c7d955d0d896f82b580fef0fe29ed77372e4a"

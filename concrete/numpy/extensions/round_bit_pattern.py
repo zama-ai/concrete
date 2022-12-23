@@ -53,10 +53,11 @@ class AutoRounder:
     def __init__(self, target_msbs: int = MAXIMUM_TLU_BIT_WIDTH):
         # pylint: disable=protected-access
         if local._is_adjusting:
-            raise RuntimeError(
+            message = (
                 "AutoRounders cannot be constructed during adjustment, "
                 "please construct AutoRounders outside the function and reference it"
             )
+            raise RuntimeError(message)
         # pylint: enable=protected-access
 
         self.target_msbs = target_msbs
@@ -82,7 +83,8 @@ class AutoRounder:
             pass
 
         if local._is_adjusting:
-            raise RuntimeError("AutoRounders cannot be adjusted recursively")
+            message = "AutoRounders cannot be adjusted recursively"
+            raise RuntimeError(message)
 
         try:
             local._is_adjusting = True
@@ -111,7 +113,8 @@ class AutoRounder:
                         return
 
                 if rounder is None:
-                    raise ValueError("AutoRounders cannot be adjusted with an empty inputset")
+                    message = "AutoRounders cannot be adjusted with an empty inputset"
+                    raise ValueError(message)
 
                 rounder.is_adjusted = True
 
@@ -189,11 +192,12 @@ def round_bit_pattern(
                 raise Adjusting(lsbs_to_remove, int(np.min(x)), int(np.max(x)))
 
         elif not lsbs_to_remove.is_adjusted:
-            raise RuntimeError(
+            message = (
                 "AutoRounders cannot be used before adjustment, "
                 "please call AutoRounder.adjust with the function that will be compiled "
                 "and provide the exact inputset that will be used for compilation"
             )
+            raise RuntimeError(message)
 
         lsbs_to_remove = lsbs_to_remove.lsbs_to_remove
 
@@ -229,11 +233,13 @@ def round_bit_pattern(
 
     if isinstance(x, np.ndarray):
         if not np.issubdtype(x.dtype, np.integer):
-            raise TypeError(
+            message = (
                 f"Expected input elements to be integers but they are {type(x.dtype).__name__}"
             )
+            raise TypeError(message)
     elif not isinstance(x, (int, np.integer)):
-        raise TypeError(f"Expected input to be an int or a numpy array but it's {type(x).__name__}")
+        message = f"Expected input to be an int or a numpy array but it's {type(x).__name__}"
+        raise TypeError(message)
 
     return evaluator(x, lsbs_to_remove)
 

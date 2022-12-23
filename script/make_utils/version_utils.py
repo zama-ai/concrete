@@ -118,7 +118,8 @@ def set_version(args):
 
     version_str = strip_leading_v(args.version)
     if not VersionInfo.isvalid(version_str):
-        raise RuntimeError(f"Unable to validate version: {args.version}")
+        message = f"Unable to validate version: {args.version}"
+        raise RuntimeError(message)
 
     file_vars_set = load_file_vars_set(args.pyproject_file, args.file_vars)
 
@@ -132,7 +133,8 @@ def set_version(args):
         elif file_path.suffix == ".toml":
             update_variable_in_toml_file(file_path, var_name, version_str)
         else:
-            raise RuntimeError(f"Unsupported file extension: {file_path.suffix}")
+            message = f"Unsupported file extension: {file_path.suffix}"
+            raise RuntimeError(message)
 
 
 def get_variable_from_py_file(file_path: Path, var_name: str):

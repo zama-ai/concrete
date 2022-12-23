@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Helper script for github actions to combine job statuses"""
 import argparse
 import json

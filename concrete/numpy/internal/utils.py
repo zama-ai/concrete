@@ -28,4 +28,5 @@ def unreachable():
     Raise a RuntimeError to indicate unreachable code is entered.
     """
 
-    raise RuntimeError("Entered unreachable code")
+    message = "Entered unreachable code"
+    raise RuntimeError(message)

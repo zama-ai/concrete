@@ -181,6 +181,7 @@ class Graph:
         """
 
         # pylint: disable=too-many-branches,too-many-locals,too-many-statements
+        # ruff: noqa: ERA001
 
         if self.is_direct:
             show_bounds = False
@@ -396,7 +397,8 @@ class Graph:
                     }
 
         except Exception as error:
-            raise RuntimeError(f"Bound measurement using inputset[{index}] failed") from error
+            message = f"Bound measurement using inputset[{index}] failed"
+            raise RuntimeError(message) from error
 
         return bounds
 

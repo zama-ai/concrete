@@ -100,7 +100,7 @@ Traceback (most recent call last):
   File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/mlir/graph_converter.py", line 298, in convert
     GraphConverter._check_graph_convertibility(graph)
   File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/mlir/graph_converter.py", line 175, in _check_graph_convertibility
-    raise RuntimeError(
+    raise RuntimeError(message)
 RuntimeError: Function you are trying to compile cannot be converted to MLIR
 
 %0 = x              # EncryptedScalar<uint4>

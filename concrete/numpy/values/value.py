@@ -89,7 +89,8 @@ class Value:
             if np.issubdtype(value.dtype, np.float16):
                 return Value(dtype=Float(16), shape=value.shape, is_encrypted=is_encrypted)
 
-        raise ValueError(f"Value cannot represent {repr(value)}")
+        message = f"Value cannot represent {repr(value)}"
+        raise ValueError(message)
 
         # pylint: enable=too-many-branches,too-many-return-statements
 

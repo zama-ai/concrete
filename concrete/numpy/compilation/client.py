@@ -123,7 +123,8 @@ class Client:
         input_specs = client_parameters_json["inputs"]
 
         if len(args) != len(input_specs):
-            raise ValueError(f"Expected {len(input_specs)} inputs but got {len(args)}")
+            message = f"Expected {len(input_specs)} inputs but got {len(args)}"
+            raise ValueError(message)
 
         sanitized_args: Dict[int, Union[int, np.ndarray]] = {}
         for index, spec in enumerate(input_specs):
@@ -168,9 +169,10 @@ class Client:
 
             if not is_valid:
                 actual_value = Value.of(arg, is_encrypted=is_encrypted)
-                raise ValueError(
+                message = (
                     f"Expected argument {index} to be {expected_value} but it's {actual_value}"
                 )
+                raise ValueError(message)
 
         self.keygen(force=False)
         return ClientSupport.encrypt_arguments(

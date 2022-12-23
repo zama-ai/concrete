@@ -9,6 +9,7 @@ from ..values import Value
 from .tracer import ScalarAnnotation, TensorAnnotation
 
 # pylint: disable=function-redefined,invalid-name,no-self-use,too-many-lines,using-constant-test
+# ruff: noqa
 
 
 # We'll pull a little trick on mypy

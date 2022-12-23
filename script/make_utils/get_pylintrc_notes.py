@@ -11,7 +11,7 @@ def main(args):
     pylintrc_file_path = Path(args.pylintrc_path).resolve()
     config = configparser.ConfigParser()
     config.read(pylintrc_file_path)
-    notes = sorted(map(lambda x: x.strip(), config["MISCELLANEOUS"]["notes"].split(",")))
+    notes = sorted(x.strip() for x in config["MISCELLANEOUS"]["notes"].split(","))
     # Make sure we at least have todo in there without writing it otherwise we'll match
     notes.append("TO" + "DO")
     notes_for_grep_search = r"\|".join(notes)

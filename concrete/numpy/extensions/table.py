@@ -53,7 +53,8 @@ class LookupTable:
                 self.output_dtype = Integer.that_can_represent([minimum, maximum])
 
         if not is_valid:
-            raise ValueError(f"LookupTable cannot be constructed with {repr(table)}")
+            message = f"LookupTable cannot be constructed with {repr(table)}"
+            raise ValueError(message)
 
     def __repr__(self):
         return str(list(self.table))
@@ -63,17 +64,19 @@ class LookupTable:
             return LookupTable.apply(key, self.table)
 
         if not isinstance(key.output.dtype, Integer):
-            raise ValueError(f"LookupTable cannot be looked up with {key.output}")
+            message = f"LookupTable cannot be looked up with {key.output}"
+            raise ValueError(message)
 
         table = self.table
         if not np.issubdtype(self.table.dtype, np.integer):
             try:
                 table = np.broadcast_to(table, key.output.shape)
             except Exception as error:
-                raise ValueError(
+                message = (
                     f"LookupTable of shape {self.table.shape} "
                     f"cannot be looked up with {key.output}"
-                ) from error
+                )
+                raise ValueError(message) from error
 
         output = deepcopy(key.output)
         output.dtype = self.output_dtype
@@ -114,13 +117,15 @@ class LookupTable:
         if not isinstance(key, (int, np.integer, np.ndarray)) or (
             isinstance(key, np.ndarray) and not np.issubdtype(key.dtype, np.integer)
         ):
-            raise ValueError(f"LookupTable cannot be looked up with {key}")
+            message = f"LookupTable cannot be looked up with {key}"
+            raise ValueError(message)
 
         if np.issubdtype(table.dtype, np.integer):
             return table[key]
 
         if not isinstance(key, np.ndarray) or key.shape != table.shape:
-            raise ValueError(f"LookupTable of shape {table.shape} cannot be looked up with {key}")
+            message = f"LookupTable of shape {table.shape} cannot be looked up with {key}"
+            raise ValueError(message)
 
         flat_result = np.fromiter(
             (lt.table[k] for lt, k in zip(table.flat, key.flat)),

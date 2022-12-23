@@ -93,11 +93,12 @@ class Tracer:
             try:
                 sanitized_tracers.append(Tracer.sanitize(tracer))
             except Exception as error:
-                raise ValueError(
+                message = (
                     f"Function '{function.__name__}' "
                     f"returned '{tracer}', "
                     f"which is not supported"
-                ) from error
+                )
+                raise ValueError(message) from error
 
         output_tracers = tuple(sanitized_tracers)
 
@@ -133,10 +134,10 @@ class Tracer:
 
             assert_that(nx.algorithms.dag.is_directed_acyclic_graph(graph))
 
-            unique_edges = set(
+            unique_edges = {
                 (pred, succ, tuple((k, v) for k, v in edge_data.items()))
                 for pred, succ, edge_data in graph.edges(data=True)
-            )
+            }
             assert_that(len(unique_edges) == len(graph.edges))
 
             return graph
@@ -342,14 +343,16 @@ class Tracer:
         """
 
         if operation not in Tracer.SUPPORTED_NUMPY_OPERATORS:
-            raise RuntimeError(f"Function 'np.{operation.__name__}' is not supported")
+            message = f"Function 'np.{operation.__name__}' is not supported"
+            raise RuntimeError(message)
 
         supported_kwargs = Tracer.SUPPORTED_KWARGS.get(operation, set())
         for kwarg in kwargs:
             if kwarg not in supported_kwargs:
-                raise RuntimeError(
+                message = (
                     f"Function 'np.{operation.__name__}' is not supported with kwarg '{kwarg}'"
                 )
+                raise RuntimeError(message)
 
         if operation == np.ones_like:  # pylint: disable=comparison-with-callable
             dtype = kwargs.get("dtype", np.int64)
@@ -422,7 +425,8 @@ class Tracer:
             sanitized_args = [self.sanitize(arg) for arg in args]
             return Tracer._trace_numpy_operation(ufunc, *sanitized_args, **kwargs)
 
-        raise RuntimeError("Only __call__ hook is supported for numpy ufuncs")
+        message = "Only __call__ hook is supported for numpy ufuncs"
+        raise RuntimeError(message)
 
     def __array_function__(self, func, _types, args, kwargs):
         """
@@ -509,9 +513,10 @@ class Tracer:
         if ndigits is None:
             result = Tracer._trace_numpy_operation(np.around, self)
             if self._is_direct:
-                raise RuntimeError(
+                message = (
                     "'round(x)' cannot be used in direct definition (you may use np.around instead)"
                 )
+                raise RuntimeError(message)
             return result.astype(np.int64)
 
         return Tracer._trace_numpy_operation(np.around, self, decimals=ndigits)
@@ -586,10 +591,11 @@ class Tracer:
             if isinstance(dtype, type) and issubclass(dtype, ScalarAnnotation):
                 output_value.dtype = dtype.dtype
             else:
-                raise ValueError(
+                message = (
                     "`astype` method must be called with a concrete.numpy type "
                     "for direct circuit definition (e.g., value.astype(cnp.uint4))"
                 )
+                raise ValueError(message)
 
             computation = Node.generic(
                 "astype",
@@ -600,10 +606,11 @@ class Tracer:
             return Tracer(computation, [self])
 
         if isinstance(dtype, type) and issubclass(dtype, ScalarAnnotation):
-            raise ValueError(
+            message = (
                 "`astype` method must be called with a "
                 "numpy type for compilation (e.g., value.astype(np.int64))"
             )
+            raise ValueError(message)
 
         dtype = np.dtype(dtype).type
         if np.issubdtype(dtype, np.integer) and dtype != np.int64:
@@ -622,9 +629,11 @@ class Tracer:
 
             def evaluator(x, dtype):
                 if np.any(np.isnan(x)):
-                    raise ValueError("A `NaN` value is tried to be converted to integer")
+                    message = "A `NaN` value is tried to be converted to integer"
+                    raise ValueError(message)
                 if np.any(np.isinf(x)):
-                    raise ValueError("An `Inf` value is tried to be converted to integer")
+                    message = "An `Inf` value is tried to be converted to integer"
+                    raise ValueError(message)
                 return x.astype(dtype)
 
         else:
@@ -716,9 +725,10 @@ class Tracer:
                     valid = False
 
             if not valid:
-                raise ValueError(
+                message = (
                     f"Indexing with '{format_indexing_element(indexing_element)}' is not supported"
                 )
+                raise ValueError(message)
 
         output_value = deepcopy(self.output)
         output_value.shape = np.zeros(output_value.shape)[index].shape
@@ -761,9 +771,10 @@ class Tracer:
                     valid = False
 
             if not valid:
-                raise ValueError(
+                message = (
                     f"Assigning to '{format_indexing_element(indexing_element)}' is not supported"
                 )
+                raise ValueError(message)
 
         np.zeros(self.output.shape)[index] = 1
 
@@ -808,7 +819,7 @@ class Tracer:
         return self.output.size
 
     @property
-    def T(self) -> "Tracer":  # pylint: disable=invalid-name
+    def T(self) -> "Tracer":  # pylint: disable=invalid-name  # noqa: N802
         """
         Trace numpy.ndarray.T.
         """

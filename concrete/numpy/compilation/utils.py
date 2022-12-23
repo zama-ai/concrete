@@ -11,6 +11,8 @@ from ..dtypes import Float, Integer
 from ..representation import Graph, Node, Operation
 from .artifacts import DebugArtifacts
 
+# ruff: noqa: ERA001
+
 
 def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
     """
@@ -267,12 +269,12 @@ def find_single_lca(graph: Graph, nodes: List[Node]) -> Optional[Node]:
 
     # find common ancestors among `nodes`
     # if the single lca exists, it's in this set
-    common_ancestors = set(
+    common_ancestors = {
         node
         for node in nx_graph.nodes()
         if node.operation != Operation.Constant
         and all(node in ancestors for ancestors in all_ancestors)
-    )
+    }
 
     # iterate over every node in the graph reversed topological order
     # this is to ensure result, if found, is the single "lowest" common ancestor
@@ -344,9 +346,7 @@ def is_single_common_ancestor(
         #   - they don't affect fusability status
         predecessor_count_in_subgraph = len(list(subgraph.predecessors(node)))
         predecessor_count_in_nx_graph = len(
-            list(
-                pred for pred in nx_graph.predecessors(node) if pred.operation != Operation.Constant
-            )
+            [pred for pred in nx_graph.predecessors(node) if pred.operation != Operation.Constant]
         )
 
         # see if number of predecessors are different

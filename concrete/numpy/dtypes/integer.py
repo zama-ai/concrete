@@ -58,7 +58,8 @@ class Integer(BaseDataType):
             lower_bound = int(value.min())
             upper_bound = int(value.max())
         else:
-            raise ValueError(f"Integer cannot represent {repr(value)}")
+            message = f"Integer cannot represent {repr(value)}"
+            raise ValueError(message)
 
         def bits_to_represent_int(value: int, force_signed: bool) -> int:
             bits: int
@@ -92,10 +93,11 @@ class Integer(BaseDataType):
 
         if not isinstance(bit_width, int) or bit_width <= 0:
             integer_str = "SignedInteger" if is_signed else "UnsignedInteger"
-            raise ValueError(
+            message = (
                 f"{integer_str}({repr(bit_width)}) is not supported "
                 f"(bit width must be a positive integer)"
             )
+            raise ValueError(message)
 
         self.is_signed = is_signed
         self.bit_width = bit_width

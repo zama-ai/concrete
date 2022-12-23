@@ -149,7 +149,7 @@ class DebugArtifacts:
             next(dependencies)
 
             for dependency in dependencies:
-                tokens = [token for token in dependency.split(" ") if token != ""]
+                tokens = [token for token in dependency.split(" ") if token != ""]  # noqa: S105
                 if len(tokens) == 0:
                     continue
 

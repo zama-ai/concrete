@@ -115,12 +115,13 @@ class Compiler:
             if len(missing_args) != 1:
                 parameter_str += f" and {repr(missing_args[-1])}"
 
-            raise ValueError(
+            message = (
                 f"Encryption status{'es' if len(missing_args) > 1 else ''} "
                 f"of parameter{'s' if len(missing_args) > 1 else ''} "
                 f"{parameter_str} of function '{function.__name__}' "
                 f"{'are' if len(missing_args) > 1 else 'is'} not provided"
             )
+            raise ValueError(message)
 
         additional_args = list(parameter_encryption_statuses)
         for arg in signature.parameters.keys():
@@ -134,12 +135,13 @@ class Compiler:
             if len(additional_args) != 1:
                 parameter_str += f" and {repr(additional_args[-1])}"
 
-            raise ValueError(
+            message = (
                 f"Encryption status{'es' if len(additional_args) > 1 else ''} "
                 f"of {parameter_str} {'are' if len(additional_args) > 1 else 'is'} provided but "
                 f"{'they are' if len(additional_args) > 1 else 'it is'} not a parameter "
                 f"of function '{function.__name__}'"
             )
+            raise ValueError(message)
 
         self.function = function  # type: ignore
         self.parameter_encryption_statuses = {
@@ -168,9 +170,8 @@ class Compiler:
         Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
     ]:
         if len(kwargs) != 0:
-            raise RuntimeError(
-                f"Calling function '{self.function.__name__}' with kwargs is not supported"
-            )
+            message = f"Calling function '{self.function.__name__}' with kwargs is not supported"
+            raise RuntimeError(message)
 
         sample = args[0] if len(args) == 1 else args
 
@@ -257,10 +258,11 @@ class Compiler:
                         "a single value" if len(sample) == 1 else f"a tuple of {len(sample)} values"
                     )
 
-                    raise ValueError(
+                    message = (
                         f"Input #{index} of your inputset is not well formed "
                         f"(expected {expected} got {actual})"
                     )
+                    raise ValueError(message)
 
         if self.configuration.auto_adjust_rounders:
             AutoRounder.adjust(self.function, self.inputset)
@@ -269,10 +271,11 @@ class Compiler:
             try:
                 first_sample = next(iter(self.inputset))
             except StopIteration as error:
-                raise RuntimeError(
+                message = (
                     f"{action} function '{self.function.__name__}' "
                     f"without an inputset is not supported"
-                ) from error
+                )
+                raise RuntimeError(message) from error
 
             self._trace(first_sample)
             assert self.graph is not None
