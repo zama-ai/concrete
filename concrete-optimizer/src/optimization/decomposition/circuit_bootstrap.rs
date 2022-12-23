@@ -87,15 +87,24 @@ pub fn pareto_quantities(
     quantities
 }
 
-pub type Cache = CacheHashMap<GlweParameters, Vec<CbComplexityNoise>>;
+pub type Cache = CacheHashMap<GlweParameters, CbPareto>;
 
 impl Cache {
-    pub fn pareto_quantities(&mut self, glwe_params: GlweParameters) -> &[CbComplexityNoise] {
+    pub fn pareto_quantities(&mut self, glwe_params: GlweParameters) -> &CbPareto {
         self.get(glwe_params)
     }
 }
 
-pub type PersistDecompCache = PersistentCacheHashMap<GlweParameters, Vec<CbComplexityNoise>>;
+pub type PersistDecompCache = PersistentCacheHashMap<GlweParameters, CbPareto>;
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct CbPareto {
+    pub pareto: Vec<CbComplexityNoise>,
+    pub lower_pareto_cb_bias: f64,
+    pub lower_pareto_cb_slope: f64,
+    pub lower_bound_cost_cb_complexity_1_cmux_hp: f64,
+    pub lower_bound_cost_cb_complexity_1_ggsw_to_fft: f64,
+}
 
 pub fn cache(
     security_level: u64,
@@ -108,11 +117,40 @@ pub fn cache(
     let path =
         format!("{cache_dir}/cb-decomp-{hardware}-{ciphertext_modulus_log}-{security_level}");
     let function = move |glwe_params| {
-        pareto_quantities(
+        let pareto = pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
             glwe_params,
-        )
+        );
+
+        let lower_pareto_cb_bias = pareto
+            .iter()
+            .map(|cb| cb.variance_bias)
+            .reduce(f64::min)
+            .unwrap();
+        let lower_pareto_cb_slope = pareto
+            .iter()
+            .map(|cb| cb.variance_ggsw_factor)
+            .reduce(f64::min)
+            .unwrap();
+        let lower_bound_cost_cb_complexity_1_cmux_hp = pareto
+            .iter()
+            .map(|cb| cb.complexity_one_cmux_hp)
+            .reduce(f64::min)
+            .unwrap();
+        let lower_bound_cost_cb_complexity_1_ggsw_to_fft = pareto
+            .iter()
+            .map(|cb| cb.complexity_one_ggsw_to_fft)
+            .reduce(f64::min)
+            .unwrap();
+
+        CbPareto {
+            pareto,
+            lower_pareto_cb_bias,
+            lower_pareto_cb_slope,
+            lower_bound_cost_cb_complexity_1_cmux_hp,
+            lower_bound_cost_cb_complexity_1_ggsw_to_fft,
+        }
     };
     PersistentCacheHashMap::new_no_read(&path, VERSION, function)
 }
