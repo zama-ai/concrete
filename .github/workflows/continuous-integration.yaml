@@ -704,7 +704,7 @@ jobs:
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
-        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
         with:
           body_path: ${{ env.RELEASE_BODY_FILE }}
           prerelease: ${{ fromJSON(env.IS_PRERELEASE) }}
