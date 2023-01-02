@@ -236,18 +236,21 @@ class GraphConverter:
         offending_nodes: Dict[Node, List[str]] = {}
 
         max_bit_width = 0
+        max_bit_width_node = None
 
         first_tlu_node = None
         first_signed_node = None
 
-        for node in graph.graph.nodes:
+        for node in nx.lexicographical_topological_sort(graph.graph):
             dtype = node.output.dtype
             assert_that(isinstance(dtype, Integer))
 
             current_node_bit_width = (
                 dtype.bit_width - 1 if node.output.is_clear else dtype.bit_width
             )
-            max_bit_width = max(max_bit_width, current_node_bit_width)
+            if max_bit_width < current_node_bit_width:
+                max_bit_width = current_node_bit_width
+                max_bit_width_node = node
 
             if node.converted_to_table_lookup and first_tlu_node is None:
                 first_tlu_node = node
@@ -257,9 +260,20 @@ class GraphConverter:
 
         if first_tlu_node is not None:
             if max_bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                assert max_bit_width_node is not None
+                offending_nodes[max_bit_width_node] = [
+                    (
+                        {
+                            Operation.Input: f"this input is {max_bit_width}-bits",
+                            Operation.Constant: f"this constant is {max_bit_width}-bits",
+                            Operation.Generic: f"this operation results in {max_bit_width}-bits",
+                        }[max_bit_width_node.operation]
+                    ),
+                    max_bit_width_node.location,
+                ]
                 offending_nodes[first_tlu_node] = [
                     f"table lookups are only supported on circuits with "
-                    f"up to {MAXIMUM_TLU_BIT_WIDTH}-bit integers",
+                    f"up to {MAXIMUM_TLU_BIT_WIDTH}-bits",
                     first_tlu_node.location,
                 ]
 

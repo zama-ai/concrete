@@ -381,10 +381,11 @@ return %2
 Function you are trying to compile cannot be converted to MLIR:
 
 %0 = x                   # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this input is 18-bits
 %1 = 300                 # ClearScalar<uint9>             ∈ [300, 300]
 %2 = add(%0, %1)         # EncryptedScalar<uint18>        ∈ [200300, 200300]
 %3 = subgraph(%2)        # EncryptedScalar<uint4>         ∈ [9, 9]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bits
 return %3
 
 Subgraphs:
