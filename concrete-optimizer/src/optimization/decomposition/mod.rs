@@ -53,7 +53,7 @@ impl PersistDecompCaches {
             ks: keyswitch::cache(security_level, processing_unit, complexity_model.clone()),
             cmux: cmux::cache(security_level, processing_unit, complexity_model.clone()),
             pp: pp_switch::cache(security_level, processing_unit, complexity_model.clone()),
-            cb: circuit_bootstrap::cache(security_level, processing_unit, complexity_model.clone()),
+            cb: circuit_bootstrap::cache(security_level, processing_unit, complexity_model),
             cache_on_disk,
         };
         if cache_on_disk {

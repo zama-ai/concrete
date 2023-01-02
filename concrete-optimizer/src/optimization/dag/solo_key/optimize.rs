@@ -888,9 +888,9 @@ mod tests {
         let shape = Shape::number();
         let mut dag = unparametrized::OperationDag::new();
         let weight = Weights::number(weight);
-        let val = dag.add_input(precision, &shape);
+        let val = dag.add_input(precision, shape);
         let lut1 = dag.add_rounded_lut(val, FunctionTable::UNKWOWN, rounded_precision, precision);
-        let dot = dag.add_dot([lut1], &weight);
+        let dot = dag.add_dot([lut1], weight);
         let _lut2 = dag.add_rounded_lut(
             dot,
             FunctionTable::UNKWOWN,
