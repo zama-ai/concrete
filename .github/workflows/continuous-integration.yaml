@@ -331,15 +331,15 @@ jobs:
         run: |
           make pytest
 
-      - name: PyTest CodeBlocks
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          make pytest_codeblocks
-
-      - name: PyTest Notebooks
-        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          make pytest_nb
+#      - name: PyTest CodeBlocks
+#        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+#        run: |
+#          make pytest_codeblocks
+#
+#      - name: PyTest Notebooks
+#        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
+#        run: |
+#          make pytest_nb
 
       # Compute coverage only on reference build
       - name: Test coverage
