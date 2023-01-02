@@ -1,5 +1,5 @@
-#ifndef CUDA_ADD_H
-#define CUDA_ADD_H
+#ifndef CUDA_MULT_H
+#define CUDA_MULT_H
 
 #ifdef __CDT_PARSER__
 #undef __CUDA_RUNTIME_H__
@@ -51,4 +51,4 @@ host_cleartext_multiplication(void *v_stream, uint32_t gpu_index, T *output,
   cudaStreamSynchronize(*stream);
 }
 
-#endif // CUDA_ADD_H
+#endif // CUDA_MULT_H

@@ -1,3 +1,6 @@
+#ifndef KERNEL_DIMENSIONS_H
+#define KERNEL_DIMENSIONS_H
+
 inline int nextPow2(int x) {
   --x;
   x |= x >> 1;
@@ -14,3 +17,5 @@ inline void getNumBlocksAndThreads(const int n, const int maxBlockSize,
       (n < maxBlockSize * 2) ? max(128, nextPow2((n + 1) / 2)) : maxBlockSize;
   blocks = (n + threads - 1) / threads;
 }
+
+#endif // KERNEL_DIMENSIONS_H
