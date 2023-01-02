@@ -508,25 +508,7 @@ class GraphConverter:
     @staticmethod
     def _sanitize_signed_inputs(graph: Graph, args: List[Any], ctx: Context) -> List[Any]:
         """
-        Apply table lookup to signed inputs in the beginning of evaluation to sanitize them.
-
-        Sanitization in this context means to apply a table lookup to obtain proper input values.
-
-        "encrypt" method of "Client" class will convert negative inputs to their corresponding
-        unsigned value in 2s complement representation.
-
-        Here is an example for 3 bits:
-        000 = 0 represents 0
-        001 = 1 represents 1
-        010 = 2 represents 2
-        011 = 3 represents 3
-        100 = 4 represents -4
-        101 = 5 represents -3
-        110 = 6 represents -2
-        111 = 7 represents -1
-
-        And, the following table lookup is applied before anything else to sanitize the inputs:
-        [0, 1, 2, 3, -4, -3, -2, -1]
+        Use subtraction to sanitize signed inputs.
 
         Args:
             graph (Graph):
