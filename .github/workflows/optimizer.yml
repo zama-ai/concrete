@@ -37,6 +37,36 @@ jobs:
         run: |
           cargo test --release --no-fail-fast --all-targets
           make -C concrete-optimizer-cpp test-ci
+      
+  benchmark-concrete-optimizer:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Setup"
+        uses: ./.github/workflows/setup
+        with:
+          ssh_private_key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - name: Run benchmark
+        run: cargo bench -p v0-parameters -- --output-format bencher | tee bench_result.txt
+
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+          
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: bench_result.txt
+          external-data-json-path: ./cache/benchmark-data.json
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-always: true
 
   nightly-check-concrete-optimizer:
     runs-on: ubuntu-20.04

@@ -24,12 +24,15 @@ criterion = "0.4.0"
 crate-type= [
     "lib",       # rust
 ]
+bench = false
 
 [[bin]]
 name = "v0-parameters"
+bench = false
 
 [[bin]]
 name = "v0-parameters-by-level"
+bench = false
 
 [[bench]]
 name = "benchmark"
