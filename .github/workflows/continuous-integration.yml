@@ -11,6 +11,7 @@ on:
 # DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  THIS_FILE: .github/workflows/continuous-integration.yml
 
 jobs:
   ########################
@@ -731,7 +732,7 @@ jobs:
 
       - name: Login
         id: login
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env')
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Set up ssh auth in docker
@@ -771,7 +772,7 @@ jobs:
 
       - name: Login
         id: login
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.cuda-env')
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.cuda-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build Tag and Publish
