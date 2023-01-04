@@ -276,8 +276,8 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
   int num_lut = (1 << r);
   if (r == 0) {
     // Simply copy the LUTs
-    add_padding_to_lut_async<Torus, params>(
-        glwe_array_out, lut_vector, glwe_dimension, num_lut * tau, stream);
+    add_padding_to_lut_async<Torus, params>(glwe_array_out, lut_vector,
+                                            glwe_dimension, tau, stream);
     checkCudaErrors(cudaStreamSynchronize(*stream));
     return;
   }
