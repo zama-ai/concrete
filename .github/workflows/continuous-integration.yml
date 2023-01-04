@@ -689,16 +689,11 @@ jobs:
       - name: Login to Registry
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
-      - name: Set up ssh auth in docker
-        run: |
-          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-
       # label was initially a need from the frontend CI
       - name: Build Image
         run: |
-          docker image build --no-cache \
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket \
-            -e SSH_AUTH_SOCK=/ssh.socket \
+          DOCKER_BUILDKIT=1 docker build --no-cache \
+            --ssh default=${{ env.SSH_AUTH_SOCK }} \
             --label "commit-sha=${{ github.sha }}" -t ${{ matrix.image }} -f ${{ matrix.dockerfile }} .
 
       - name: Tag and Publish Image

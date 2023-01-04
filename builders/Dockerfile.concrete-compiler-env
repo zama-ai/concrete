@@ -5,6 +5,9 @@ FROM quay.io/pypa/manylinux_2_28_x86_64:2022-11-19-1b19e81
 RUN dnf install -y epel-release
 RUN dnf update -y
 RUN dnf install -y ninja-build hwloc-devel ccache clang ncurses-devel
+RUN dnf install -y openssh-clients
+RUN dnf clean all
+RUN mkdir -p ~/.ssh/ && ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
@@ -38,7 +41,7 @@ COPY /llvm-project /llvm-project
 COPY /compiler /compiler
 WORKDIR /compiler
 RUN mkdir -p /build
-RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
+RUN --mount=type=ssh make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
     Python3_EXECUTABLE=${PYTHON_EXEC} \
     concretecompiler python-bindings rust-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"
