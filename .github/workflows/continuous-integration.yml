@@ -735,17 +735,10 @@ jobs:
         if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
-      - name: Set up ssh auth in docker
-        run: |
-          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
-        run:
-          docker build \
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket  \
-            -e SSH_AUTH_SOCK=/ssh.socket \
-            -t "${IMAGE}" -f builders/Dockerfile.hpx-env .
+        run: |
+          docker build -t "${IMAGE}" -f builders/Dockerfile.hpx-env .
           docker push "${IMAGE}:latest"
 
       - name: Is Image Built
@@ -778,10 +771,7 @@ jobs:
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
-          docker build \
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket \
-            -e SSH_AUTH_SOCK=/ssh.socket \
-            -t "${IMAGE}" -f builders/Dockerfile.cuda-env .
+          docker build -t "${IMAGE}" -f builders/Dockerfile.cuda-env .
           docker image tag "${IMAGE}" "${IMAGE}:${TAG}"
           docker push "${IMAGE}:latest"
           docker push "${IMAGE}:${TAG}"
