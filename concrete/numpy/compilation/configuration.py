@@ -6,6 +6,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Optional, Union, get_type_hints
 
+DEFAULT_P_ERROR = None
+DEFAULT_GLOBAL_P_ERROR = 1 / 100_000
+
 
 class Configuration:
     """
@@ -70,7 +73,7 @@ class Configuration:
         auto_parallelize: bool = False,
         jit: bool = False,
         p_error: Optional[float] = None,
-        global_p_error: Optional[float] = (1 / 100_000),
+        global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
     ):
         self.verbose = verbose

@@ -74,10 +74,10 @@ Additional kwarg to `compile` function have higher precedence. So if you set an 
     * Whether to adjust rounders automatically.
 
 * **p_error**: Optional[float] = None
-  * Error probability for individual table lookups. If set, all table lookups will have the probability of non-exact result smaller than the set value.
+  * Error probability for individual table lookups. If set, all table lookups will have the probability of non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
 
-* **global_p_error**: Optional[float] = (1 / 100_000)
-    * Global error probability for the whole circuit. If set, the whole circuit will have the probability of non-exact result smaller than the set value.
+* **global_p_error**: Optional[float] = None
+    * Global error probability for the whole circuit. If set, the whole circuit will have the probability of non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
 
 * **jit**: bool = False
   * Whether to use JIT compilation.

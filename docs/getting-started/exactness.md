@@ -18,7 +18,7 @@ However, if you set `global_p_error` to `0.01`, the whole circuit will have 1% p
 
 If you set both of them, both will be satisfied. Essentially, the stricter one will be used.
 
-By default, `p_error` is set to `None` and `global_p_error` is set to `1 / 100_000`. Feel free to play with these configuration options to pick the one best suited for your needs! For example, in some machine learning use cases, off-by-one or off-by-two errors doesn't affect the result much, in such cases `p_error` could be set to increase performance without losing accuracy.
+By default, both `p_error` and `global_p_error` is set to `None`, which results in `global_p_error` of `1 / 100_000` being used. Feel free to play with these configuration options to pick the one best suited for your needs! For example, in some machine learning use cases, off-by-one or off-by-two errors doesn't affect the result much, in such cases `p_error` could be set to increase performance without losing accuracy.
 
 See [How to Configure](../howto/configure.md) to learn how you can set a custom `p_error` and/or `global_p_error`.
 

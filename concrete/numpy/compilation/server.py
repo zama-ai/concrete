@@ -23,7 +23,7 @@ from concrete.compiler import (
 )
 
 from ..internal.utils import assert_that
-from .configuration import Configuration
+from .configuration import DEFAULT_GLOBAL_P_ERROR, DEFAULT_P_ERROR, Configuration
 from .specs import ClientSpecs
 
 
@@ -109,6 +109,17 @@ class Server:
         elif p_error_is_set:  # pragma: no cover
             options.set_global_p_error(1.0)
             options.set_p_error(configuration.p_error)
+
+        else:  # pragma: no cover
+            if DEFAULT_GLOBAL_P_ERROR is not None:
+                options.set_global_p_error(DEFAULT_GLOBAL_P_ERROR)
+            else:
+                options.set_global_p_error(1.0)
+
+            if DEFAULT_P_ERROR is not None:
+                options.set_p_error(DEFAULT_P_ERROR)
+            else:
+                options.set_p_error(1.0)
 
         show_optimizer = (
             configuration.show_optimizer

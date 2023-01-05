@@ -5,6 +5,8 @@ Export everything that users might need.
 from concrete.compiler import EvaluationKeys, PublicArguments, PublicResult
 
 from .compilation import (
+    DEFAULT_GLOBAL_P_ERROR,
+    DEFAULT_P_ERROR,
     Circuit,
     Client,
     ClientSpecs,
