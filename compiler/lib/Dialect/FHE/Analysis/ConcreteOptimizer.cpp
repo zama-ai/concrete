@@ -183,7 +183,8 @@ struct FunctionToDag {
     auto smanp_int = op.getAttrOfType<mlir::IntegerAttr>("SMANP");
     auto loc = loc_to_string(op.getLoc());
     assert(smanp_int && "Missing manp value on a crypto operation");
-    double manp = sqrt((double)smanp_int.getValue().getZExtValue());
+    // TODO: use APIFloat.sqrt when it's available
+    double manp = sqrt(smanp_int.getValue().roundToDouble());
     auto comment = std::string(op.getName().getStringRef()) + " " + loc;
     index[val] =
         dag->add_levelled_op(slice(inputs), lwe_dim_cost_factor, fixed_cost,
