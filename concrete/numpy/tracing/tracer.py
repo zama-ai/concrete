@@ -54,6 +54,8 @@ class Tracer:
                 computation graph corresponding to `function`
         """
 
+        # pylint: disable=too-many-statements
+
         signature = inspect.signature(function)
 
         missing_args = list(signature.parameters)
@@ -102,7 +104,10 @@ class Tracer:
 
         output_tracers = tuple(sanitized_tracers)
 
-        def create_graph_from_output_tracers(output_tracers: Tuple[Tracer, ...]) -> nx.MultiDiGraph:
+        def create_graph_from_output_tracers(
+            arguments: Dict[str, Tracer],
+            output_tracers: Tuple[Tracer, ...],
+        ) -> nx.MultiDiGraph:
             graph = nx.MultiDiGraph()
 
             visited_tracers: Set[Tracer] = set()
@@ -140,9 +145,12 @@ class Tracer:
             }
             assert_that(len(unique_edges) == len(graph.edges))
 
+            for tracer in arguments.values():
+                graph.add_node(tracer.computation)
+
             return graph
 
-        graph = create_graph_from_output_tracers(output_tracers)
+        graph = create_graph_from_output_tracers(arguments, output_tracers)
         input_nodes = {
             input_indices[node]: node
             for node in graph.nodes()
@@ -153,6 +161,8 @@ class Tracer:
         }
 
         return Graph(graph, input_nodes, output_nodes, is_direct)
+
+        # pylint: enable=too-many-statements
 
     def __init__(self, computation: Node, input_tracers: List["Tracer"]):
         self.computation = computation

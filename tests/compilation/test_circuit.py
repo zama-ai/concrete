@@ -334,3 +334,27 @@ def test_virtual_p_error(p_error, bit_width, sample_size, tolerance, helpers):
         expected_number_of_errors_on_average + (expected_number_of_errors_on_average * tolerance),
     ]
     assert acceptable_number_of_errors[0] < errors < acceptable_number_of_errors[1]
+
+
+def test_circuit_run_with_unused_arg(helpers):
+    """
+    Test `encrypt_run_decrypt` method of `Circuit` class with unused arguments.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):  # pylint: disable=unused-argument
+        return x + 10
+
+    inputset = [
+        (np.random.randint(2**3, 2**4), np.random.randint(2**4, 2**5)) for _ in range(100)
+    ]
+    circuit = f.compile(inputset, configuration)
+
+    with pytest.raises(ValueError, match="Expected 2 inputs but got 1"):
+        circuit.encrypt_run_decrypt(10)
+
+    assert circuit.encrypt_run_decrypt(10, 0) == 20
+    assert circuit.encrypt_run_decrypt(10, 10) == 20
+    assert circuit.encrypt_run_decrypt(10, 20) == 20
