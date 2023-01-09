@@ -51,22 +51,38 @@ jobs:
       - name: Run benchmark
         run: cargo bench -p v0-parameters -- --output-format bencher | tee bench_result.txt
 
-      - name: Download previous benchmark data
-        uses: actions/cache@v1
+      - name: Download PR base benchmark data
+        if: ${{ github.event_name == 'pull_request' }}
+        # for artifacts restrictions see https://github.com/actions/download-artifact/issues/3
+        # for cache restrictions see https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache
+        # and  https://github.com/actions/cache/issues/692
+        uses: dawidd6/action-download-artifact@v2
         with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
-          
-      - name: Store benchmark result
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow_conclusion: success
+          commit: ${{ github.event.pull_request.base.sha }}
+          name: ${{ runner.os }}-benchmark
+          if_no_artifact_found: warn
+          path: ./benchmark
+      
+      - name: Save benchmark result to file
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'cargo'
           output-file-path: bench_result.txt
-          external-data-json-path: ./cache/benchmark-data.json
+          external-data-json-path: ./benchmark/benchmark-data.json
           # GitHub API token to make a commit comment
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Enable alert commit comment
           comment-always: true
+
+      - name: Upload benchmark data
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./benchmark
+          name: ${{ runner.os }}-benchmark
+          
+          
 
   nightly-check-concrete-optimizer:
     runs-on: ubuntu-20.04
