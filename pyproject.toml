@@ -42,7 +42,7 @@ networkx = "^2.6.3"
 matplotlib = "^3.5.1"
 numpy = "^1.21.0"
 Pillow = "^9.0.0"
-concrete-compiler = "^0.23.1"
+concrete-compiler = "^0.23.2"
 torch = "1.12.1"
 
 [tool.poetry.dev-dependencies]
