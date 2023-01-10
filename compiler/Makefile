@@ -85,11 +85,7 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
-all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
-ifeq ($(OS), linux)
-# rust-bindings only compiles on Linux
-all: rust-bindings
-endif
+all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc rust-bindings
 
 # concrete-core-ffi #######################################
 
@@ -169,7 +165,9 @@ python-bindings: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
 
 rust-bindings: install
-	cd lib/Bindings/Rust && CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) cargo build --release
+	cd lib/Bindings/Rust && \
+		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
+		cargo build --release
 
 CAPI:
 	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG CONCRETELANGCAPISupport
@@ -228,9 +226,13 @@ run-python-tests: python-bindings concretecompiler
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output
 
+
 ## rust-tests
 run-rust-tests: rust-bindings
-	cd lib/Bindings/Rust && CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) LD_LIBRARY_PATH=$(INSTALL_PATH)/lib cargo test --release
+	cd lib/Bindings/Rust && \
+		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
+		LD_LIBRARY_PATH=$(INSTALL_PATH)/lib \
+		cargo test --release
 
 ## end-to-end-tests
 
@@ -429,20 +431,42 @@ rust-format:
 install-deps:
 	cmake --build $(BUILD_DIR) --target MLIRCAPIRegistration
 
+ifeq ($(OS), darwin)
+# rsync should normally come pre-installed on macOS
+# and the --parents only exists for GNU's cp not BSD's cp
+HIERARCHY_PRESERVING_COPY=rsync -R
+else
+HIERARCHY_PRESERVING_COPY=cp --parents
+endif
+
 install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))
 	$(info Installing under $(INSTALL_PATH))
 	mkdir -p $(INSTALL_PATH)/include
 	cp -R $(abspath $(BUILD_DIR))/bin $(INSTALL_PATH)
 	cp -R $(abspath $(BUILD_DIR))/lib $(INSTALL_PATH)
-	cp $(LIB_CONCRETE_OPTIMIZER_CPP) $(INSTALL_PATH)/lib/
+	cp $(LIB_CONCRETE_OPTIMIZER_CPP)  $(INSTALL_PATH)/lib/
 	cp $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp/src/cpp/concrete-optimizer.hpp $(INSTALL_PATH)/include
-	cd $(MAKEFILE_ROOT_DIR)/include && find . -iregex '^.*\.\(h\|hpp\|td\)$$' -exec cp --parents {} $(INSTALL_PATH)/include \;
-	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/llvm/include && find . -iregex '^.*\.\(h\|hpp\|td\)$$' -exec cp --parents {} $(INSTALL_PATH)/include \;
-	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/mlir/include && find . -iregex '^.*\.\(h\|hpp\|td\)$$' -exec cp --parents {} $(INSTALL_PATH)/include \;
-	cd $(abspath $(BUILD_DIR))/include && find . -iname '*.inc' -exec cp --parents {} $(INSTALL_PATH)/include \;
-	cd $(abspath $(BUILD_DIR))/tools/concretelang/include && find . -iname '*.inc' -exec cp --parents {} $(INSTALL_PATH)/include \;
-	cd $(abspath $(BUILD_DIR))/tools/mlir/include && find . -iname '*.inc' -exec cp --parents {} $(INSTALL_PATH)/include \;
+
+    # Doing find + grep + while loop is a way to have portable behaviour between macOS and GNU/Linux
+    # as with `find . -regex "regex"`, the regex language is not the same / to have the same language, the
+    # command changes (macOs: `find -E . -regex`, GNU: `find . -regextype posix-extended "regex")
+	cd $(MAKEFILE_ROOT_DIR)/include && \
+	    find . | \
+	    grep "^.*\.\(h\|hpp\|td\)$$" | \
+        while read filepath; do $(HIERARCHY_PRESERVING_COPY) $$filepath $(INSTALL_PATH)/include; done
+	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/llvm/include && \
+	    find . | \
+	    grep "^.*\.\(h\|hpp\|td\)$$" | \
+        while read filepath; do $(HIERARCHY_PRESERVING_COPY) $$filepath $(INSTALL_PATH)/include; done
+	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/mlir/include && \
+	    find . | \
+	    grep "^.*\.\(h\|hpp\|td\)$$" | \
+        while read filepath; do $(HIERARCHY_PRESERVING_COPY) $$filepath $(INSTALL_PATH)/include; done
+
+	cd $(abspath $(BUILD_DIR))/include                    && find . -iname '*.inc' -exec $(HIERARCHY_PRESERVING_COPY) {} $(INSTALL_PATH)/include \;
+	cd $(abspath $(BUILD_DIR))/tools/concretelang/include && find . -iname '*.inc' -exec $(HIERARCHY_PRESERVING_COPY) {} $(INSTALL_PATH)/include \;
+	cd $(abspath $(BUILD_DIR))/tools/mlir/include         && find . -iname '*.inc' -exec $(HIERARCHY_PRESERVING_COPY) {} $(INSTALL_PATH)/include \;
 
 .PHONY: build-initialized \
 	build-end-to-end-jit \
