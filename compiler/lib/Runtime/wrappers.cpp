@@ -515,7 +515,6 @@ void memref_wop_pbs_crt_buffer(
 
   // Compute the numbers of bits to extract for each block and the total one.
   uint64_t total_number_of_bits_per_block = 0;
-  uint64_t message_modulus = 1;
   auto number_of_bits_per_block = new uint64_t[crt_decomp_size]();
   for (uint64_t i = 0; i < crt_decomp_size; i++) {
     uint64_t modulus = crt_decomp_aligned[i + crt_decomp_offset];
@@ -524,7 +523,6 @@ void memref_wop_pbs_crt_buffer(
     number_of_bits_per_block[i] = nb_bit_to_extract;
 
     total_number_of_bits_per_block += nb_bit_to_extract;
-    message_modulus *= modulus;
   }
 
   // Create the buffer of ciphertexts for storing the total number of bits to
