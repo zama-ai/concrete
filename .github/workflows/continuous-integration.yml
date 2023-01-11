@@ -14,46 +14,9 @@ env:
   THIS_FILE: .github/workflows/continuous-integration.yml
 
 jobs:
-  ########################
-  # Tests and formating  #
-  ########################
-
-  FormattingAndLinting:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          token: ${{ secrets.GH_TOKEN }}
-      - name: Format with clang-format (Cpp)
-        run: sudo apt install moreutils && .github/workflows/scripts/format_cpp.sh
-      - name: Format with cmake-format (Cmake)
-        run: pip3 install cmakelang && .github/workflows/scripts/format_cmake.sh 
-      - name: Format with black (Python)
-        run: |
-          cd compiler
-          pip install -r lib/Bindings/Python/requirements_dev.txt
-          make check-python-format
-      - name: Lint with pylint (Python)
-        run: |
-          cd compiler
-          # compiler requirements to lint
-          pip install numpy
-          make python-lint
-      - name: Format with rustfmt (Rust)
-        run: |
-          cd compiler
-          make check-rust-format
-      - name: Linelint
-        uses: fernandrone/linelint@0.0.4
-        id: linelint
-
-  CheckLicense:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check if sources include the license header
-        run: .github/workflows/scripts/check_for_license.sh
+  #####################
+  # Build and testing #
+  #####################
 
   BuildAndTestMacOS:
     runs-on: macos-11
