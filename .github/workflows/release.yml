@@ -262,15 +262,10 @@ jobs:
         id: build-mac-tarball
         run: |
           cd compiler
-          make concretecompiler
-          mkdir -p tarballs/concretecompiler/lib tarballs/concretecompiler/bin
-          cp build/bin/concretecompiler tarballs/concretecompiler/bin
-          cp build/lib/libConcretelangRuntime.dylib tarballs/concretecompiler/lib
-          cp ../.github/workflows/assets/Installation.md tarballs/concretecompiler/
-
+          make INSTALL_PREFIX=./tarballs/ install
+          cp ../.github/workflows/assets/Installation.md ./tarballs/concretecompiler/
           TAG=$(git describe --tags --abbrev=0)
-
-          cd tarballs && tar -czvf "concretecompiler-${TAG}-x86_64-macos-catalina.tar.gz" concretecompiler
+          cd ./tarballs && tar -czvf "concretecompiler-${TAG}-x86_64-macos-catalina.tar.gz" concretecompiler
           echo "::set-output name=ASSET_NAME::concretecompiler-${TAG}-x86_64-macos-catalina.tar.gz"
 
       - name: Upload Tarball
