@@ -1,4 +1,2 @@
 [tool.ruff]
 line-length = 169
-select = ["F", "E", "W", "C90", "I", "UP", "N", "YTT", "S", "BLE", "FBT", "B", "A", "C4", "T10", "EM", "ICN", "Q", "RET", "SIM", "TID", "ARG", "DTZ", "ERA", "PD", "PGH", "PLC", "PLE", "PLR", "PLW", "RUF"]
-ignore = ["D", "T20", "ANN", "N806", "ARG001", "S101", "BLE001"]

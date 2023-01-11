@@ -1,12 +1,10 @@
+from estimator import LWE, ND
+from sage.all import oo, load, floor
+from generate_data import estimate, get_security_level
 import argparse
 import os
 import sys
-
-from estimator import LWE, ND
-from generate_data import estimate, get_security_level
-from sage.all import floor, load, oo
-
-sys.path.insert(1, "lattice-estimator")
+sys.path.insert(1, 'lattice-estimator')
 
 
 LOG_N_MAX = 17 + 1
@@ -23,7 +21,6 @@ def get_index(sec, curves):
     for i in range(len(curves)):
         if curves[i][2] == sec:
             return i
-    return None 
 
 
 def estimate_security_with_lattice_estimator(lwe_dimension, std_dev, log_q):
@@ -48,8 +45,9 @@ def get_minimal_lwe_dimension(curve, security_level, log_q):
     :param security_level:
     :param log_q:
     :return:
-    """ 
-    return curve[-1]
+    """
+    minimal_lwe_dim = curve[-1]
+    return minimal_lwe_dim
 
 
 def estimate_stddev_with_current_curve(curve, lwe_dimension, log_q):
@@ -67,7 +65,8 @@ def estimate_stddev_with_current_curve(curve, lwe_dimension, log_q):
     a = curve[0]
     b = curve[1] + log_q
 
-    return minimal_stddev(a, b, lwe_dimension)
+    stddev = minimal_stddev(a, b, lwe_dimension)
+    return stddev
 
 
 def compare_curve_and_estimator(security_level, log_q, curves_dir):
@@ -138,5 +137,5 @@ if __name__ == "__main__":
     args = CLI.parse_args()
     for security_level in args.security_levels:
         if not(compare_curve_and_estimator(security_level, args.log_q, args.curves_dir)):
-            sys.exit(1)
-    sys.exit(0)
+            exit(1)
+    exit(0)
