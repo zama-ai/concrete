@@ -10,9 +10,11 @@
 #include "polynomial/parameters.cuh"
 #include "utils/timer.cuh"
 
-// works for lwe with generic sizes
-// shifted_lwe_buffer is scalar multiplication of lwe input
-// blockIdx.x refers to input ciphertext id
+/*
+ * scalar multiplication to value for batch of lwe_ciphertext
+ * works for any size of lwe input
+ * blockIdx.x refers to input ciphertext it
+ */
 template <typename Torus, class params>
 __global__ void shift_lwe_cbs(Torus *dst_shift, Torus *src, Torus value,
                               size_t lwe_size) {
@@ -35,9 +37,14 @@ __global__ void shift_lwe_cbs(Torus *dst_shift, Torus *src, Torus value,
     cur_dst[tid] = cur_src[tid] * value;
 }
 
-// Fill lut (equivalent to trivial encryption as mask is 0s)
-// The LUT is filled with -alpha in each coefficient where
-// alpha = 2^{log(q) - 1 - base_log * level}
+/*
+ * Fill lut, equivalent to trivial encryption as mask is 0s.
+ * The LUT is filled with -alpha in each coefficient where
+ * alpha = 2^{log(q) - 1 - base_log * level}
+ * blockIdx.x refers to lut id
+ * value is not passed and calculated inside function because lut id is one
+ * of the variable.
+ */
 template <typename Torus, class params>
 __global__ void fill_lut_body_for_cbs(Torus *lut, uint32_t ciphertext_n_bits,
                                       uint32_t base_log_cbs) {
@@ -55,6 +62,19 @@ __global__ void fill_lut_body_for_cbs(Torus *lut, uint32_t ciphertext_n_bits,
   }
 }
 
+/*
+ * copy pbs result (glwe_dimension + 1) times to be an input of fp-ks
+ * each of the input ciphertext from lwe_src is  copied (glwe_dimension + 1)
+ * times inside lwe_dst, and then value is added to the body.
+ * blockIdx.x refers to destination lwe ciphertext id: 'dst_lwe_id'
+ * 'src_lwe_id' = 'dst_lwe_id' / (glwe_dimension + 1)
+ *
+ * example: glwe_dimension = 1
+ *                 src_0         ...          src_n
+ *                  / \                        / \
+ *                 /   \                      /   \
+ *             dst_0  dst_1               dst_2n  dst_2n+1
+ */
 template <typename Torus, class params>
 __global__ void copy_add_lwe_cbs(Torus *lwe_dst, Torus *lwe_src,
                                  uint32_t ciphertext_n_bits,
@@ -77,6 +97,11 @@ __global__ void copy_add_lwe_cbs(Torus *lwe_dst, Torus *lwe_src,
   }
 }
 
+/*
+ * Host function for cuda circuit bootstrap.
+ * It executes device functions in specific order and manages
+ * parallelism
+ */
 template <typename Torus, class params>
 __host__ void host_circuit_bootstrap(
     void *v_stream, uint32_t gpu_index, Torus *ggsw_out, Torus *lwe_array_in,

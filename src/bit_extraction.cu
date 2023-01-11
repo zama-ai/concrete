@@ -1,5 +1,8 @@
 #include "bit_extraction.cuh"
 
+/* Perform bit extract on a batch of 32 bit LWE ciphertexts.
+ * See the corresponding function on 64 bit LWE ciphertexts for more details.
+ */
 void cuda_extract_bits_32(
     void *v_stream, uint32_t gpu_index, void *list_lwe_array_out,
     void *lwe_array_in, void *lwe_array_in_buffer,
@@ -97,6 +100,51 @@ void cuda_extract_bits_32(
   }
 }
 
+/* Perform bit extract on a batch of 64 bit lwe ciphertexts.
+ * - `v_stream` is a void pointer to the Cuda stream to be used in the kernel
+ * launch
+ * - `gpu_index` is the index of the GPU to be used in the kernel launch
+ *  - 'number_of_bits' will be extracted from each ciphertext
+ * starting at the bit number 'delta_log' (0-indexed) included.
+ * Output bits are ordered from the MSB to LSB. Every extracted bit is
+ * represented as an LWE ciphertext, containing the encryption of the bit scaled
+ * by q/2.
+ *  - 'list_lwe_array_out' output batch LWE ciphertexts for each bit of every
+ * input ciphertext
+ *  - 'lwe_array_in' batch of input LWE ciphertexts, with size -
+ * ('lwe_dimension_in' + 1) * number_of_samples * sizeof(u64)
+ * The following 5 parameters are used during calculations, they are not actual
+ * inputs of the function they are just allocated memory for calculation
+ * process, like this, memory can be allocated once and can be used as much
+ * as needed for different calls of extract_bit function.
+ *  - 'lwe_array_in_buffer' same size as 'lwe_array_in'
+ *  - 'lwe_array_in_shifted_buffer' same size as 'lwe_array_in'
+ *  - 'lwe_array_out_ks_buffer'  with size:
+ * ('lwe_dimension_out' + 1) * number_of_samples * sizeof(u64)
+ *  - 'lwe_array_out_pbs_buffer' same size as 'lwe_array_in'
+ *  - 'lut_pbs' with size:
+ * (glwe_dimension + 1) * (lwe_dimension_in + 1) * sizeof(u64)
+ * The other inputs are:
+ *  - 'lut_vector_indexes' stores the index corresponding to which test
+ * vector to use
+ *  - 'ksk' keyswitch key
+ *  - 'fourier_bsk'  complex compressed bsk in fourier domain
+ *  - 'lwe_dimension_in' input LWE ciphertext dimension, supported input
+ * dimensions are: {512, 1024,2048, 4096, 8192}
+ *  - 'lwe_dimension_out' output LWE ciphertext dimension
+ *  - 'glwe_dimension' GLWE dimension,  only glwe_dimension = 1 is supported
+ * for now
+ *  - 'base_log_bsk' base_log for bootstrapping
+ *  - 'level_count_bsk' decomposition level count for bootstrapping
+ *  - 'base_log_ksk' base_log for keyswitch
+ *  - 'level_count_ksk' decomposition level for keyswitch
+ *  - 'number_of_samples' number of input LWE ciphertexts
+ *  - 'max_shared_memory' maximum amount of shared memory to be used inside
+ * device functions
+ *
+ * This function will call corresponding template of wrapper host function which
+ * will manage the calls of device functions.
+ */
 void cuda_extract_bits_64(
     void *v_stream, uint32_t gpu_index, void *list_lwe_array_out,
     void *lwe_array_in, void *lwe_array_in_buffer,

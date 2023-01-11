@@ -1,5 +1,9 @@
 #include "circuit_bootstrap.cuh"
 
+/*
+ * Perform circuit bootstrapping for the batch of 32 bit LWE ciphertexts.
+ * Head out to the equivalent operation on 64 bits for more details.
+ */
 void cuda_circuit_bootstrap_32(
     void *v_stream, uint32_t gpu_index, void *ggsw_out, void *lwe_array_in,
     void *fourier_bsk, void *fp_ksk_array, void *lwe_array_in_shifted_buffer,
@@ -88,6 +92,42 @@ void cuda_circuit_bootstrap_32(
   }
 }
 
+/*
+ * Perform circuit bootstrapping on a batch of 64 bit input LWE ciphertexts.
+ * - `v_stream` is a void pointer to the Cuda stream to be used in the kernel
+ * launch
+ * - `gpu_index` is the index of the GPU to be used in the kernel launch
+ *  - 'ggsw_out' output batch of ggsw with size:
+ * 'number_of_samples' * 'level_cbs' * ('glwe_dimension' + 1)^2 *
+ * polynomial_size * sizeof(u64)
+ *  - 'lwe_array_in' input batch of lwe ciphertexts, with size:
+ * 'number_of_samples' * '(lwe_dimension' + 1) * sizeof(u64)
+ *  - 'fourier_bsk' bootstrapping key in fourier domain with size:
+ * 'lwe_dimension' * 'level_bsk' * ('glwe_dimension' + 1)^2 *
+ * 'polynomial_size' / 2 * sizeof(double2)
+ *  - 'fp_ksk_array' batch of fp-keyswitch keys with size:
+ * ('polynomial_size' + 1) * 'level_pksk' * ('glwe_dimension' + 1)^2 *
+ * 'polynomial_size' * sizeof(u64)
+ *  The following 5 parameters are used during calculations, they are not actual
+ *  inputs of the function, they are just allocated memory for calculation
+ *  process, like this, memory can be allocated once and can be used as much
+ *  as needed for different calls of circuit_bootstrap function
+ *  - 'lwe_array_in_shifted_buffer' with size:
+ * 'number_of_samples' * 'level_cbs' * ('lwe_dimension' + 1) * sizeof(u64)
+ *  - 'lut_vector' with size:
+ * 'level_cbs' * ('glwe_dimension' + 1) * 'polynomial_size' * sizeof(u64)
+ *  - 'lut_vector_indexes' stores the index corresponding to which test
+ *  vector to use
+ *  - 'lwe_array_out_pbs_buffer' with size
+ * 'number_of_samples' * 'level_cbs' * ('polynomial_size' + 1) * sizeof(u64)
+ *  - 'lwe_array_in_fp_ks_buffer' with size
+ * 'number_of_samples' * 'level_cbs' * ('glwe_dimension' + 1) *
+ * ('polynomial_size' + 1) * sizeof(u64)
+ *
+ * This function calls a wrapper to a device kernel that performs the
+ * circuit bootstrap. The kernel is templatized based on integer discretization
+ * and polynomial degree.
+ */
 void cuda_circuit_bootstrap_64(
     void *v_stream, uint32_t gpu_index, void *ggsw_out, void *lwe_array_in,
     void *fourier_bsk, void *fp_ksk_array, void *lwe_array_in_shifted_buffer,

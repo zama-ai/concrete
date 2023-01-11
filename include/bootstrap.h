@@ -86,6 +86,7 @@ void cuda_extract_bits_64(
     uint32_t glwe_dimension, uint32_t base_log_bsk, uint32_t level_count_bsk,
     uint32_t base_log_ksk, uint32_t level_count_ksk, uint32_t number_of_samples,
     uint32_t max_shared_memory);
+
 void cuda_circuit_bootstrap_32(
     void *v_stream, uint32_t gpu_index, void *ggsw_out, void *lwe_array_in,
     void *fourier_bsk, void *fp_ksk_array, void *lwe_array_in_shifted_buffer,

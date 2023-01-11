@@ -11,10 +11,12 @@
 #include "polynomial/parameters.cuh"
 #include "utils/timer.cuh"
 
-// only works for big lwe for ks+bs case
-// state_lwe_buffer is copied from big lwe input
-// shifted_lwe_buffer is scalar multiplication of lwe input
-// blockIdx.x refers to input ciphertext id
+/*
+ * Function copies batch lwe input to two different buffers,
+ * one is shifted by value
+ * one is copied without any modification
+ * works for ciphertexts with sizes supported by params::degree
+ */
 template <typename Torus, class params>
 __global__ void copy_and_shift_lwe(Torus *dst_copy, Torus *dst_shift,
                                    Torus *src, Torus value) {
@@ -37,8 +39,10 @@ __global__ void copy_and_shift_lwe(Torus *dst_copy, Torus *dst_shift,
   }
 }
 
-// only works for small lwe in ks+bs case
-// function copies lwe when length is not a power of two
+/*
+ * Function copies batch of lwe to lwe when size is not supported by
+ * params::degree
+ */
 template <typename Torus>
 __global__ void copy_small_lwe(Torus *dst, Torus *src, uint32_t small_lwe_size,
                                uint32_t number_of_bits, uint32_t lwe_id) {
@@ -62,24 +66,27 @@ __global__ void copy_small_lwe(Torus *dst, Torus *src, uint32_t small_lwe_size,
     cur_dst[tid] = cur_src[tid];
 }
 
-// only used in extract bits for one ciphertext
-// should be called with one block and one thread
-// NOTE: check if putting this functionality in copy_small_lwe or
-// fill_pbs_lut vector is faster
+/*
+ * Function used to wrapping add value on the body of ciphertexts,
+ * should be called with blocksize.x = 1;
+ * blickIdx.x refers id of ciphertext
+ * NOTE: check if putting thi functionality in copy_small_lwe or fill_pbs_lut
+ * is faster
+ */
 template <typename Torus>
 __global__ void add_to_body(Torus *lwe, size_t lwe_dimension, Torus value) {
   lwe[blockIdx.x * (lwe_dimension + 1) + lwe_dimension] += value;
 }
 
-// Add alpha where alpha = delta*2^{bit_idx-1} to end up with an encryption of 0
-// if the extracted bit was 0 and 1 in the other case
-//
-// Remove the extracted bit from the state LWE to get a 0 at the extracted bit
-// location.
-//
-// Shift on padding bit for next iteration, that's why
-// alpha= 1ll << (ciphertext_n_bits - delta_log - bit_idx - 2) is used
-// instead of alpha= 1ll << (ciphertext_n_bits - delta_log - bit_idx - 1)
+/*
+ * Add alpha where alpha = delta*2^{bit_idx-1} to end up with an encryption of 0
+ * if the extracted bit was 0 and 1 in the other case
+ * Remove the extracted bit from the state LWE to get a 0 at the extracted bit
+ * location.
+ * Shift on padding bit for next iteration, that's why
+ * alpha= 1ll << (ciphertext_n_bits - delta_log - bit_idx - 2) is used
+ * instead of alpha= 1ll << (ciphertext_n_bits - delta_log - bit_idx - 1)
+ */
 template <typename Torus, class params>
 __global__ void add_sub_and_mul_lwe(Torus *shifted_lwe, Torus *state_lwe,
                                     Torus *pbs_lwe_array_out, Torus add_value,
@@ -104,9 +111,11 @@ __global__ void add_sub_and_mul_lwe(Torus *shifted_lwe, Torus *state_lwe,
   }
 }
 
-// Fill lut(only body) for the current bit (equivalent to trivial encryption as
-// mask is 0s)
-// The LUT is filled with value
+/*
+ * Fill lut(only body) for the current bit, equivalent to trivial encryption as
+ * msk is 0s
+ * blockIdx.x refers id of lut vector
+ */
 template <typename Torus, class params>
 __global__ void fill_lut_body_for_current_bit(Torus *lut, Torus value) {
 
@@ -119,6 +128,11 @@ __global__ void fill_lut_body_for_current_bit(Torus *lut, Torus value) {
   }
 }
 
+/*
+ * Host function for cuda extract bits.
+ * it executes device functions in specific order and manages
+ * parallelism
+ */
 template <typename Torus, class params>
 __host__ void host_extract_bits(
     void *v_stream, uint32_t gpu_index, Torus *list_lwe_array_out,
@@ -137,6 +151,7 @@ __host__ void host_extract_bits(
   int blocks = 1;
   int threads = params::degree / params::opt;
 
+  // shift lwe on padding bit and copy in new buffer
   copy_and_shift_lwe<Torus, params><<<blocks, threads, 0, *stream>>>(
       lwe_array_in_buffer, lwe_array_in_shifted_buffer, lwe_array_in,
       1ll << (ciphertext_n_bits - delta_log - 1));
@@ -157,11 +172,15 @@ __host__ void host_extract_bits(
       break;
     }
 
+    // Add q/4 to center the error while computing a negacyclic LUT
     add_to_body<Torus><<<1, 1, 0, *stream>>>(lwe_array_out_ks_buffer,
                                              lwe_dimension_out,
                                              1ll << (ciphertext_n_bits - 2));
     checkCudaErrors(cudaGetLastError());
 
+    // Fill lut for the current bit (equivalent to trivial encryption as mask is
+    // 0s) The LUT is filled with -alpha in each coefficient where alpha =
+    // delta*2^{bit_idx-1}
     fill_lut_body_for_current_bit<Torus, params>
         <<<blocks, threads, 0, *stream>>>(
             lut_pbs, 0ll - 1ll << (delta_log - 1 + bit_idx));
@@ -173,6 +192,8 @@ __host__ void host_extract_bits(
         lwe_dimension_out, lwe_dimension_in, base_log_bsk, level_count_bsk,
         number_of_samples, 1, max_shared_memory);
 
+    // Add alpha where alpha = delta*2^{bit_idx-1} to end up with an encryption
+    // of 0 if the extracted bit was 0 and 1 in the other case
     add_sub_and_mul_lwe<Torus, params><<<1, threads, 0, *stream>>>(
         lwe_array_in_shifted_buffer, lwe_array_in_buffer,
         lwe_array_out_pbs_buffer, 1ll << (delta_log - 1 + bit_idx),

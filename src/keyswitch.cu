@@ -4,15 +4,8 @@
 
 #include <cstdint>
 
-/* Perform keyswitch on a batch of input LWE ciphertexts for 32 bits
- *
- *  - lwe_array_out: output batch of num_samples keyswitched ciphertexts c =
- * (a0,..an-1,b) where n is the LWE dimension
- *  - lwe_array_in: input batch of num_samples LWE ciphertexts, containing n
- *            mask values + 1 body value
- *
- * This function calls a wrapper to a device kernel that performs the keyswitch
- * 	- num_samples blocks of threads are launched
+/* Perform keyswitch on a batch of 32 bits input LWE ciphertexts.
+ * Head out to the equivalent operation on 64 bits for more details.
  */
 void cuda_keyswitch_lwe_ciphertext_vector_32(
     void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lwe_array_in,
@@ -24,12 +17,18 @@ void cuda_keyswitch_lwe_ciphertext_vector_32(
       lwe_dimension_in, lwe_dimension_out, base_log, level_count, num_samples);
 }
 
-/* Perform keyswitch on a batch of input LWE ciphertexts for 64 bits
+/* Perform keyswitch on a batch of 64 bits input LWE ciphertexts.
  *
+ * - `v_stream` is a void pointer to the Cuda stream to be used in the kernel
+ * launch
+ * - `gpu_index` is the index of the GPU to be used in the kernel launch
  *  - lwe_array_out: output batch of num_samples keyswitched ciphertexts c =
- * (a0,..an-1,b) where n is the LWE dimension
- *  - lwe_array_in: input batch of num_samples LWE ciphertexts, containing n
- *            mask values + 1 body value
+ * (a0,..an-1,b) where n is the output LWE dimension (lwe_dimension_out)
+ *  - lwe_array_in: input batch of num_samples LWE ciphertexts, containing
+ * lwe_dimension_in mask values + 1 body value
+ *  - ksk: the keyswitch key to be used in the operation
+ *  - base log: the log of the base used in the decomposition (should be the one
+ * used to create the ksk)
  *
  * This function calls a wrapper to a device kernel that performs the keyswitch
  * 	- num_samples blocks of threads are launched
@@ -44,6 +43,9 @@ void cuda_keyswitch_lwe_ciphertext_vector_64(
       lwe_dimension_in, lwe_dimension_out, base_log, level_count, num_samples);
 }
 
+/* Perform functional packing keyswitch on a batch of 32 bits input LWE
+ * ciphertexts. See the equivalent function on 64 bit inputs for more details.
+ */
 void cuda_fp_keyswitch_lwe_to_glwe_32(void *v_stream, void *glwe_array_out,
                                       void *lwe_array_in, void *fp_ksk_array,
                                       uint32_t input_lwe_dimension,
@@ -60,6 +62,27 @@ void cuda_fp_keyswitch_lwe_to_glwe_32(void *v_stream, void *glwe_array_out,
       output_glwe_dimension, output_polynomial_size, base_log, level_count,
       number_of_input_lwe, number_of_keys);
 }
+
+/* Perform functional packing keyswitch on a batch of 64 bits input LWE
+ * ciphertexts.
+ *
+ * - `v_stream` is a void pointer to the Cuda stream to be used in the kernel
+ * launch
+ * - `glwe_array_out`: output batch of keyswitched ciphertexts
+ * - `lwe_array_in`: input batch of num_samples LWE ciphertexts, containing
+ * lwe_dimension_in mask values + 1 body value
+ *  - `fp_ksk_array`: the functional packing keyswitch keys to be used in the
+ * operation
+ *  - `base log`: the log of the base used in the decomposition (should be the
+ * one used to create the ksk)
+ *  - `level_count`: the number of levels used in the decomposition (should be
+ * the one used to  create the fp_ksks).
+ *  - `number_of_input_lwe`: the number of inputs
+ *  - `number_of_keys`: the number of fp_ksks
+ *
+ * This function calls a wrapper to a device kernel that performs the functional
+ * packing keyswitch.
+ */
 void cuda_fp_keyswitch_lwe_to_glwe_64(void *v_stream, void *glwe_array_out,
                                       void *lwe_array_in, void *fp_ksk_array,
                                       uint32_t input_lwe_dimension,
