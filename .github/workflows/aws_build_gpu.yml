@@ -1,5 +1,5 @@
-# Build on an AWS instance.
-name: AwsEc2Build
+# Build on an AWS instance (GPU).
+name: AwsEc2BuildGpu
 
 on:
   workflow_dispatch:
@@ -24,18 +24,13 @@ on:
         type: string
 
 env:
-  CARGO_TERM_COLOR: always
-  RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
-  MAKE_RULE_TESTS: run-tests run-end-to-end-dataflow-tests
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-  DOCKER_GPU_OPTION:
-  CUDA_SUPPORT: OFF
   CUDA_PATH: /usr/local/cuda-11.7
   GCC_VERSION: 11
 
 jobs:
   BuildAndTest:
-    name: Build and test compiler in EC2
+    name: Build and test compiler in EC2 with CUDA support
     concurrency:
       group: ${{ github.ref }}_${{ github.event.inputs.instance_image_id }}_${{ github.event.inputs.instance_type }}
       cancel-in-progress: true
@@ -62,13 +57,6 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
           #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-
-      - name: Set up GPU support
-        if: ${{ startsWith(inputs.instance_type, 'p3.') }}
-        run: |
-          echo "CUDA_SUPPORT=ON" >> "${GITHUB_ENV}"
-          echo "MAKE_RULE_TESTS=run-end-to-end-tests-gpu" >> "${GITHUB_ENV}"
-          echo "DOCKER_GPU_OPTION=--gpus all" >> "${GITHUB_ENV}"
 
       # Free 4Gb of workspace
       - name: Freeing space
@@ -113,7 +101,7 @@ jobs:
             -v ${{ github.workspace }}/build:/build
             -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
             -e SSH_AUTH_SOCK=/ssh.socket
-            ${{ env.DOCKER_GPU_OPTION }}
+            --gpus all
           shell: bash
           run: |
             set -e
@@ -121,7 +109,7 @@ jobs:
             rm -rf /build/*
             pip install pytest
             sed "s/pytest/python -m pytest/g" -i Makefile
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} CUDA_PATH=${{ env.CUDA_PATH }} all build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} all build-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -148,14 +136,14 @@ jobs:
             -v ${{ github.workspace }}/compiler:/compiler
             -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
             -v ${{ github.workspace }}/build:/build
-            ${{ env.DOCKER_GPU_OPTION }}
+            --gpus all
           shell: bash
           run: |
             set -e
             cd /compiler
             pip install pytest
             mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build ${{ env.MAKE_RULE_TESTS }}
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-end-to-end-tests-gpu
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Prune KeySetCache
@@ -181,36 +169,3 @@ jobs:
         with:
           only-name: KeySetCacheV2
           max-count: 1
-
-      - name: Build the documentation
-        id: build-doc
-        if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
-        uses: addnab/docker-run-action@v3
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}/compiler:/compiler
-            -v ${{ github.workspace }}/llvm-project:/llvm-project
-            -v ${{ github.workspace }}/docs:/docs
-          shell: bash
-          run: |
-            set -e
-            rm -rf /build
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
-            cd /docs
-            pip install -r requirements.txt
-            pip install -r ../llvm-project/mlir/python/requirements.txt
-            dnf install -y doxygen
-            sed "s/sphinx-apidoc/python -m sphinx.ext.apidoc/g" -i Makefile
-            sed "s/sphinx-build/python -m sphinx.cmd.build/g" -i Makefile
-            make COMPILER_BUILD_DIR=/build/ doc
-
-      - name: Archive docs artifacts
-        if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: html-docs
-          path: docs/_build/html

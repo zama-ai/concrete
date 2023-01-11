@@ -21,13 +21,13 @@ security_group= ["sg-0f8b52622a2669491", ]
 
 # Trigger CPU build
 [command.cpu-build]
-workflow = "aws_build.yml"
+workflow = "aws_build_cpu.yml"
 profile = "m6i-old"
 check_run_name = "AWS CPU build (Slab)"
 
 # Trigger GPU build
 [command.gpu-build]
-workflow = "aws_build.yml"
+workflow = "aws_build_gpu.yml"
 profile = "gpu"
 check_run_name = "AWS GPU build (Slab)"
 
