@@ -78,7 +78,7 @@ def verify_curve(security_level, a, b, curves_dir):
     return True, n_min
 
 
-def generate_and_verify(security_levels, log_q, curves_dir, name="verified_curves.sobj"):
+def generate_and_verify(security_levels, log_q, curves_dir, verified_curves_path):
     success = []
     json = []
 
@@ -97,13 +97,19 @@ def generate_and_verify(security_levels, log_q, curves_dir, name="verified_curve
         else:
             fail.append(sec)
 
-    save(success, os.path.join(curves_dir, name))
+    save(success, verified_curves_path)
 
     return json, fail
 
 
 if __name__ == "__main__":
     CLI = argparse.ArgumentParser()
+    CLI.add_argument(
+        "--verified-curves-path",
+        help="The path to store the verified curves (sage object)",
+        type=str,
+        required=True,
+    )
     CLI.add_argument(
         "--curves-dir",
         help="The directory where curves has been saved (sage object)",
@@ -123,7 +129,7 @@ if __name__ == "__main__":
         required=True
     )
     args = CLI.parse_args()
-    (success, fail) = generate_and_verify(args.security_levels, log_q=args.log_q, curves_dir=args.curves_dir)
+    (success, fail) = generate_and_verify(args.security_levels, log_q=args.log_q, curves_dir=args.curves_dir, verified_curves_path=args.verified_curves_path)
     if (fail):
         print("FAILURE: Fail to verify the following curves")
         print(json.dumps(fail))
