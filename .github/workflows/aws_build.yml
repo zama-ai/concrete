@@ -1,5 +1,5 @@
 # Build on an AWS instance.
-name: AWS EC2 build
+name: AwsEc2Build
 
 on:
   workflow_dispatch:

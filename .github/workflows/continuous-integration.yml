@@ -96,44 +96,6 @@ jobs:
   # Releasing and Testing Packages #
   ##################################
 
-  PublishDoc:
-    needs: [BuildAndTest]
-
-    runs-on: ubuntu-20.04
-    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') }}
-
-    steps:
-      - name: Set env
-        id: vars
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> "${GITHUB_ENV}"
-      - name: Download Documentation
-        id: download
-        uses: actions/download-artifact@v3
-        with:
-          name: html-docs
-      - name: Publish Documentation to S3
-        id: publish
-        if: ${{ steps.download.outcome == 'success' && !cancelled() }}
-        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
-        with:
-          args: --acl public-read
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_PREPROD_REPO_DOCUMENTATION_BUCKET_NAME }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          SOURCE_DIR: '.'
-          DEST_DIR: 'concrete-compiler/${{ env.RELEASE_VERSION }}'
-      - name: Invalidate CloudFront Cache
-        if: ${{ steps.publish.outcome == 'success' }}
-        uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
-        env:
-          SOURCE_PATH: '/concrete-compiler/*'
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
-
   CreateRelease:
     runs-on: ubuntu-20.04
     needs: [BuildAndTest, BuildAndTestMacOS]
