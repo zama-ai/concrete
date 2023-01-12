@@ -7,7 +7,7 @@ RUN dnf update -y
 RUN dnf install -y ninja-build hwloc-devel ccache clang ncurses-devel
 RUN dnf install -y openssh-clients
 RUN dnf clean all
-RUN mkdir -p ~/.ssh/ && ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
