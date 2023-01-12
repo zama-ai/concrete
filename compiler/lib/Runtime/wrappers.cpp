@@ -536,13 +536,17 @@ void memref_wop_pbs_crt_buffer(
   auto extract_bits_output_buffer =
       new uint64_t[lwe_small_size * total_number_of_bits_per_block]{0};
 
+  // We make a private copy to apply a subtraction on the body
+  auto first_cyphertext = in_aligned + in_offset;
+  auto copy_size = crt_decomp_size * lwe_big_size;
+  std::vector<uint64_t> in_copy(first_cyphertext, first_cyphertext + copy_size);
   // Extraction of each bit for each block
   for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0; i >= 0;
        extract_bits_output_offset += number_of_bits_per_block[i--]) {
     auto nb_bits_to_extract = number_of_bits_per_block[i];
 
     auto delta_log = 64 - nb_bits_to_extract;
-    auto in_block = &in_aligned[lwe_big_size * i + in_offset];
+    auto in_block = &in_copy[lwe_big_size * i];
 
     // trick ( ct - delta/2 + delta/2^4  )
     uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -
