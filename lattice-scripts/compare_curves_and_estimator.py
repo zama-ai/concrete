@@ -33,7 +33,7 @@ def estimate_security_with_lattice_estimator(lwe_dimension, std_dev, log_q):
     :return:
     """
     params = LWE.Parameters(
-        n=lwe_dimension, q=2 ** log_q, Xs=ND.DiscreteGaussian(0.50, -0.50), Xe=ND.DiscreteGaussian(std_dev), m=oo, tag="params"
+        n=lwe_dimension, q=2 ** log_q, Xs=ND.UniformMod(2), Xe=ND.DiscreteGaussian(std_dev), m=oo, tag="params"
     )
     costs = estimate(params, red_cost_model = RC.BDGL16)
     return get_security_level(costs, 2)
