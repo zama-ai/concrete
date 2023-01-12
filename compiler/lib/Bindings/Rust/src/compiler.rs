@@ -555,7 +555,7 @@ impl LibrarySupport {
 impl ServerLambda {}
 
 impl ClientParameters {
-    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+    pub fn serialize(&self) -> Result<Vec<c_char>, CompilerError> {
         unsafe {
             let serialized_ref = BufferRef::wrap(ffi::clientParametersSerialize(self._c));
             if serialized_ref.is_null() {
@@ -696,7 +696,7 @@ impl KeySetCache {
 }
 
 impl EvaluationKeys {
-    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+    pub fn serialize(&self) -> Result<Vec<c_char>, CompilerError> {
         unsafe {
             let serialized_ref = BufferRef::wrap(ffi::evaluationKeysSerialize(self._c));
             if serialized_ref.is_null() {
@@ -843,7 +843,7 @@ impl LambdaArgument {
 }
 
 impl PublicArguments {
-    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+    pub fn serialize(&self) -> Result<Vec<c_char>, CompilerError> {
         unsafe {
             let serialized_ref = BufferRef::wrap(ffi::publicArgumentsSerialize(self._c));
             if serialized_ref.is_null() {
@@ -875,7 +875,7 @@ impl PublicArguments {
 }
 
 impl PublicResult {
-    pub fn serialize(self) -> Result<Vec<c_char>, CompilerError> {
+    pub fn serialize(&self) -> Result<Vec<c_char>, CompilerError> {
         unsafe {
             let serialized_ref = BufferRef::wrap(ffi::publicResultSerialize(self._c));
             if serialized_ref.is_null() {
