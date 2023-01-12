@@ -29,6 +29,11 @@
   </a>
 </p>
 
+> **Warning**
+>
+> Concrete repository is about to transition from our original TFHE library to our TFHE compiler.
+> For those seeking a TFHE library in Rust, we recommend switching to [TFHE-rs](https://github.com/zama-ai/tfhe-rs).
+
 The `concrete` ecosystem is a set of crates that implements Zama's variant of
 [TFHE](https://eprint.iacr.org/2018/421.pdf). In a nutshell,
 [fully homomorphic encryption (FHE)](https://en.wikipedia.org/wiki/Homomorphic_encryption), allows
