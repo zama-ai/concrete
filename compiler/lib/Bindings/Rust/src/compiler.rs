@@ -781,6 +781,34 @@ impl LambdaArgument {
         }
     }
 
+    pub fn from_tensor_u16(data: &[u16], dims: &[i64]) -> Result<LambdaArgument, CompilerError> {
+        unsafe {
+            let arg = LambdaArgument::wrap(ffi::lambdaArgumentFromTensorU16(
+                data.as_ptr(),
+                dims.as_ptr(),
+                dims.len().try_into().unwrap(),
+            ));
+            if arg.is_null() {
+                return Err(CompilerError(arg.error_msg()));
+            }
+            Ok(arg)
+        }
+    }
+
+    pub fn from_tensor_u32(data: &[u32], dims: &[i64]) -> Result<LambdaArgument, CompilerError> {
+        unsafe {
+            let arg = LambdaArgument::wrap(ffi::lambdaArgumentFromTensorU32(
+                data.as_ptr(),
+                dims.as_ptr(),
+                dims.len().try_into().unwrap(),
+            ));
+            if arg.is_null() {
+                return Err(CompilerError(arg.error_msg()));
+            }
+            Ok(arg)
+        }
+    }
+
     pub fn from_tensor_u64(data: &[u64], dims: &[i64]) -> Result<LambdaArgument, CompilerError> {
         unsafe {
             let arg = LambdaArgument::wrap(ffi::lambdaArgumentFromTensorU64(
