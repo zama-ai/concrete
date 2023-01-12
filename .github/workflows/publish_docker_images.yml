@@ -1,25 +1,19 @@
-name: Continuous Integration Pipeline
+# Build and publish Docker images for different applications.
+name: Publish Docker Images
 
 on:
   push:
-    branches: [main, test-ci]
+    branches:
+      - main
     tags:
-      - 'v*'
-  pull_request:
-    types: [opened, synchronize, reopened]
+      - v*
 
-# DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
 env:
-  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   THIS_FILE: .github/workflows/continuous-integration.yml
 
 jobs:
-  #################
-  # Docker Images #
-  #################
-
   BuildAndPushDockerImages:
-    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') || needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' || needs.BuildAndPublishCUDADockerImage.outputs.image_built == 'true' }}
+    if: ${{ needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' || needs.BuildAndPublishCUDADockerImage.outputs.image_built == 'true' }}
     needs: [BuildAndPublishHPXDockerImage, BuildAndPublishCUDADockerImage]
     name: Build & Publish Docker Images
     runs-on: ubuntu-20.04
@@ -31,7 +25,7 @@ jobs:
             dockerfile: builders/Dockerfile.concrete-compiler-env
 
     steps:
-      # A SSH private key is required as some dependencies are from private repos
+      # SSH private key is required as some dependencies are from private repos
       - uses: webfactory/ssh-agent@v0.6.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
