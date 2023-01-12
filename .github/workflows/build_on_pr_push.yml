@@ -3,8 +3,6 @@ name: PR AWS build trigger
 
 on:
   pull_request:
-    types:
-      - synchronize
 
 jobs:
   test:
