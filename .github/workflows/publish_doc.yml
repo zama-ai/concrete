@@ -2,16 +2,22 @@ name: Publish documentation
 
 on:
   workflow_run:
-    workflows: [AwsEc2BuildCpu]
+    workflows: [AwsEc2BuildCpu, AwsEc2BuildGpu]
     branches:
       - main
     types:
       - completed
 
 jobs:
+  WaitOnAllWorkflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ahmadnassri/action-workflow-run-wait@v1
+
   PublishDoc:
     runs-on: ubuntu-20.04
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: WaitOnAllWorkflows
     steps:
       - name: Download Documentation
         id: download
