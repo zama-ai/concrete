@@ -2,7 +2,9 @@ name: Publish documentation
 
 on:
   workflow_run:
-    workflows: [AwsEc2Build]
+    workflows: [AwsEc2BuildCpu]
+    branches:
+      - main
     types:
       - completed
 
