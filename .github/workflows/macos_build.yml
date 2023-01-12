@@ -1,0 +1,85 @@
+# Perform a build on MacOS platform with M1 chip.
+name: MacOsBuild
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+
+jobs:
+  BuildAndTestMacOS:
+    runs-on: macos-11
+    steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.6.0
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install Deps
+        run: |
+          brew install ninja ccache
+          pip3.10 install numpy pybind11==2.8 wheel delocate
+          pip3.10 install pytest
+
+      - name: Cache compilation (push)
+        if: github.event_name == 'push'
+        uses: actions/cache@v3
+        with:
+          path: /Users/runner/Library/Caches/ccache
+          key: ${{ runner.os }}-compilation-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-compilation-cache-
+
+      - name: Cache compilation (pull_request)
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@v3
+        with:
+          path: /Users/runner/Library/Caches/ccache
+          key: ${{ runner.os }}-compilation-cache-${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            ${{ runner.os }}-compilation-cache-
+
+      - name: Get tmpdir path
+        if: github.event_name == 'push'
+        id: tmpdir-path
+        run: echo "::set-output name=TMPDIR_PATH::$TMPDIR"
+
+      # We do run run-check-tests as part of the build, as they aren't that costly
+      # and will at least give minimum confidence that the compiler works in PRs
+      - name: Build
+        run: |
+          set -e
+          cd compiler
+          echo "Debug: ccache statistics (prior to the build):"
+          ccache -s
+          make Python3_EXECUTABLE=$(which python3.10) all run-check-tests
+          echo "Debug: ccache statistics (after the build):"
+          ccache -s
+
+      - name: Test
+        if: github.event_name == 'push'
+        run: |
+          set -e
+          cd compiler
+          echo "Debug: ccache statistics (prior to the tests):"
+          ccache -s
+          export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
+          pip3.10 wheel --no-deps -w ${{ github.workspace }}/wheels .
+          delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
+          pip3.10 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
+          make Python3_EXECUTABLE=$(which python3.10) run-tests
+          echo "Debug: ccache statistics (after the tests):"
+          ccache -s
