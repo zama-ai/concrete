@@ -113,17 +113,6 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
-      - name: Download KeySetCache
-        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
-        continue-on-error: true
-        run: |
-          cd compiler
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
-
-      - name: Mark KeySetCache
-        run: |
-          touch keysetcache.timestamp
-
       - name: Test compiler
         uses: addnab/docker-run-action@v3
         with:
@@ -134,7 +123,6 @@ jobs:
           options: >-
             -v ${{ github.workspace }}/llvm-project:/llvm-project
             -v ${{ github.workspace }}/compiler:/compiler
-            -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
             -v ${{ github.workspace }}/build:/build
             --gpus all
           shell: bash
@@ -145,27 +133,3 @@ jobs:
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-end-to-end-tests-gpu
             chmod -R ugo+rwx /tmp/KeySetCache
-
-      - name: Prune KeySetCache
-        run: |
-          echo "Previous cache size is"
-          du -sh KeySetCache
-          echo "Cleaning"
-          find KeySetCache/* -maxdepth 1 -mindepth 1 -not -newer keysetcache.timestamp -type d -exec rm -vr {} \;
-          echo "New cache size is"
-          du -sh KeySetCache
-
-      - name: Upload KeySetCache
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: KeySetCacheV2
-          path: KeySetCache
-          retention-days: 90
-
-      - name: Cleanup Old KeySetCache
-        uses: Remagpie/gha-remove-artifact@v1
-        if: ${{ github.ref == 'refs/heads/main' }}
-        with:
-          only-name: KeySetCacheV2
-          max-count: 1
