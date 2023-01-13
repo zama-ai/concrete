@@ -96,11 +96,14 @@ pub fn create_func_with_block(
 ) -> MlirOperation {
     unsafe {
         // create the main block of the function
-        let location = mlirLocationUnknownGet(context);
+        let locations = (0..func_input_types.len())
+            .into_iter()
+            .map(|_| mlirLocationUnknownGet(context))
+            .collect::<Vec<_>>();
         let func_block = mlirBlockCreate(
             func_input_types.len().try_into().unwrap(),
             func_input_types.as_ptr(),
-            &location,
+            locations.as_ptr(),
         );
 
         // create region to hold the previously created block
