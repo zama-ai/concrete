@@ -3,6 +3,10 @@ FROM ubuntu:20.04
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# Replace default archive.ubuntu.com with fr mirror
+# original archive showed performance issues and is farther away
+RUN sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+
 RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
 COPY docker/release_resources/release_requirements.txt .

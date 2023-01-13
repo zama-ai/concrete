@@ -213,7 +213,8 @@ jobs:
           TZ=Europe/Paris
           echo "TZ=${TZ}" >> "$GITHUB_ENV"
           ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-          apt update && apt install git -y
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git git-lfs -y
 
       - name: Checkout Code
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
