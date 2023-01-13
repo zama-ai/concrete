@@ -1046,29 +1046,8 @@ static llvm::APInt getSqMANP(
           ? weightCstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
           : nullptr;
 
-  mlir::DenseIntElementsAttr biasDenseVals = nullptr;
-  mlir::Type biasIntType;
-  bool hasBias = operandMANPs.size() == 3;
-  if (hasBias) {
-    biasIntType =
-        op.bias().getType().cast<mlir::RankedTensorType>().getElementType();
-    mlir::arith::ConstantOp biasCstOp =
-        llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
-            op->getOpOperand(2).get().getDefiningOp());
-    biasDenseVals =
-        biasCstOp
-            ? biasCstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
-            : nullptr;
-  }
-
-  // Initial value of the accumulator to 0, or the conservative norm of the bias
-  // if there is a non-const bias
-  llvm::APInt accNorm;
-  if (hasBias && biasDenseVals == nullptr) {
-    accNorm = conservativeIntNorm2Sq(biasIntType);
-  } else {
-    accNorm = llvm::APInt{0, 1, false};
-  }
+  // Initial value of the accumulator to 0
+  llvm::APInt accNorm = llvm::APInt{1, 0, false};
 
   // Weight shapes: Filter*Channel*Height*Width
   uint64_t F = weightTy.getShape()[0];
@@ -1080,12 +1059,8 @@ static llvm::APInt getSqMANP(
     // For a constant weight kernel use actual constant to calculate 2-norm
     // input windows are being multiplied by a kernel and summed up
     for (uint64_t f = 0; f < F; f++) {
-      llvm::APInt tmpNorm = accNorm;
-      // If there is a bias, start accumulating from its norm
-      if (hasBias && biasDenseVals) {
-        llvm::APInt cst = biasDenseVals.getValues<llvm::APInt>()[f];
-        tmpNorm = APIntWidthExtendSqForConstant(cst);
-      }
+      llvm::APInt tmpNorm = inputNorm;
+
       for (uint64_t c = 0; c < C; c++) {
         for (uint64_t h = 0; h < H; h++) {
           for (uint64_t w = 0; w < W; w++) {
@@ -1096,6 +1071,7 @@ static llvm::APInt getSqMANP(
           }
         }
       }
+      // Take the max of the 2-norm on the filter
       accNorm = APIntUMax(accNorm, tmpNorm);
     }
   } else {
@@ -1106,23 +1082,10 @@ static llvm::APInt getSqMANP(
     // FHE.mul_eint_int and FHE.add_eint operations for each elements of the
     // result
     int64_t n_mul = C * H * W;
-    llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
+    llvm::APInt mulNorm = APIntWidthExtendUMul(inputNorm, weightNorm);
     for (int64_t i = 0; i < n_mul; i++) {
-      llvm::APInt mulNorm = APIntWidthExtendUMul(inputNorm, weightNorm);
-      tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
+      accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
     }
-    if (hasBias && biasDenseVals) {
-      auto biasDenseValsAP = biasDenseVals.getValues<llvm::APInt>();
-      llvm::APInt maxNorm = tmpNorm;
-      for (uint64_t f = 0; f < F; f++) {
-        llvm::APInt cst = biasDenseValsAP[f];
-        llvm::APInt currentNorm = APIntWidthExtendSqForConstant(cst);
-        currentNorm = APIntWidthExtendUAdd(currentNorm, tmpNorm);
-        maxNorm = APIntUMax(currentNorm, maxNorm);
-      }
-      tmpNorm = maxNorm;
-    }
-    accNorm = APIntWidthExtendUAdd(accNorm, tmpNorm);
   }
   return accNorm;
 }
