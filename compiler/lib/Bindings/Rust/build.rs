@@ -318,7 +318,7 @@ so your compiler/linker will have to lookup libs and include dirs on their own"
         println!("cargo:rustc-link-lib=static={}", llvm_static_lib);
     }
     // required by llvm
-    println!("cargo:rustc-link-lib=tinfo");
+    println!("cargo:rustc-link-lib=ncurses");
     if let Some(name) = get_system_libcpp() {
         println!("cargo:rustc-link-lib={}", name);
     }
