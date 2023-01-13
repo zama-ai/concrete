@@ -1,22 +1,36 @@
-# Build and publish Docker images for different applications.
+# Build and publish Docker images for different applications using AWS EC2.
 name: Publish Docker Images
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - v*
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
+      matrix_item:
+        description: 'Build matrix item'
+        type: string
 
 env:
   THIS_FILE: .github/workflows/continuous-integration.yml
 
 jobs:
   BuildAndPushDockerImages:
-    if: ${{ needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' || needs.BuildAndPublishCUDADockerImage.outputs.image_built == 'true' }}
     needs: [BuildAndPublishHPXDockerImage, BuildAndPublishCUDADockerImage]
     name: Build & Publish Docker Images
-    runs-on: ubuntu-20.04
+    runs-on: ${{ github.event.inputs.runner_name }}
     strategy:
       matrix:
         include:
@@ -62,8 +76,6 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       IMAGE: ghcr.io/zama-ai/hpx
-    outputs:
-      image_built: ${{ steps.is-built.outputs.IMAGE_BUILT }}
 
     steps:
       - uses: actions/checkout@v3
@@ -85,18 +97,12 @@ jobs:
           docker build -t "${IMAGE}" -f builders/Dockerfile.hpx-env .
           docker push "${IMAGE}:latest"
 
-      - name: Is Image Built
-        id: is-built
-        run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env') }}"
-
   BuildAndPublishCUDADockerImage:
     name: Build & Publish CUDA Docker Image
     runs-on: ubuntu-20.04
     env:
       IMAGE: ghcr.io/zama-ai/cuda
       TAG: "11-7"
-    outputs:
-      image_built: ${{ steps.is-built.outputs.IMAGE_BUILT }}
 
     steps:
       - uses: actions/checkout@v3
@@ -119,7 +125,3 @@ jobs:
           docker image tag "${IMAGE}" "${IMAGE}:${TAG}"
           docker push "${IMAGE}:latest"
           docker push "${IMAGE}:${TAG}"
-
-      - name: Is Image Built
-        id: is-built
-        run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.cuda-env') }}"

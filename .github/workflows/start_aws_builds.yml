@@ -13,7 +13,7 @@ jobs:
   start-builds:
     strategy:
       matrix:
-        command: [cpu-build, gpu-build]
+        command: [cpu-build, gpu-build, docker-images-build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Slab repo

@@ -31,6 +31,12 @@ workflow = "aws_build_gpu.yml"
 profile = "gpu"
 check_run_name = "AWS GPU build (Slab)"
 
+# Trigger Docker images build
+[command.docker-images-build]
+workflow = "publish_docker_images.yml"
+profile = "m6i-old"
+check_run_name = "AWS Docker images build & publish (Slab)"
+
 # Trigger ML benchmarks by running each use cases subset in parallel.
 [command.ml-bench]
 workflow = "ml_benchmark_subset.yml"
