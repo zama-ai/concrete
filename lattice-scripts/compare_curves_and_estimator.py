@@ -1,10 +1,10 @@
-from estimator import LWE, ND
-from sage.all import oo, load, floor
-from generate_data import estimate, get_security_level
-import argparse
 import os
 import sys
-sys.path.insert(1, 'lattice-estimator')
+sys.path.insert(1, '../lattice-estimator')
+from estimator import LWE, ND, RC
+from sage.all import oo, load, floor, ceil
+from generate_data import estimate, get_security_level
+import argparse
 
 
 LOG_N_MAX = 17 + 1
@@ -60,7 +60,7 @@ def estimate_stddev_with_current_curve(curve, lwe_dimension, log_q):
     """
 
     def minimal_stddev(a, b, lwe_dim):
-        return 2. ** max(floor(a * lwe_dim + b), 2)
+        return 2. ** max(ceil(a * lwe_dim + b), 2)
 
     a = curve[0]
     b = curve[1] + log_q
