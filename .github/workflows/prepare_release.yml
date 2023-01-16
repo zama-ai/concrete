@@ -1,13 +1,10 @@
-# Release packages for GNU/Linux and MacOS.
-name: Release
+# Prepare release packages for GNU/Linux and MacOS on private stores.
+name: Prepare Release
 
 on:
-  workflow_run:
-    workflows: [AwsEc2BuildCpu, AwsEc2BuildGpu, MacOsBuild]
-    branches:
-      - main
-    types:
-      - completed
+  push:
+    tags:
+      - 'v[0-9]+.*'
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler

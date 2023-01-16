@@ -3,10 +3,8 @@ name: Start all AWS builds
 
 on:
   push:
-    branches:
+    branch:
       - 'main'
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
