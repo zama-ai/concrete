@@ -208,8 +208,7 @@ struct SubIntEintOpPattern : public ScalarOpPattern<FHE::SubIntEintOp> {
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
         op.getLoc(), adaptor.a(),
-        op.b().getType().cast<FHE::FheIntegerInterface>().getWidth(),
-        rewriter);
+        op.b().getType().cast<FHE::FheIntegerInterface>().getWidth(), rewriter);
 
     // Write the new op
     rewriter.replaceOpWithNewOp<TFHE::SubGLWEIntOp>(
@@ -331,7 +330,8 @@ struct ApplyLookupTableEintOpPattern
 
     // Insert keyswitch
     auto ksOp = rewriter.create<TFHE::KeySwitchGLWEOp>(
-        op.getLoc(), getTypeConverter()->convertType(adaptor.a().getType()), input, -1, -1);
+        op.getLoc(), getTypeConverter()->convertType(adaptor.a().getType()),
+        input, -1, -1);
 
     // Insert bootstrap
     rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(

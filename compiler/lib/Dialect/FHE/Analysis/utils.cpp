@@ -13,8 +13,9 @@ namespace utils {
 /// Returns `true` if the given value is a scalar or tensor argument of
 /// a function, for which a MANP of 1 can be assumed.
 bool isEncryptedValue(mlir::Value value) {
-  return (value.getType().isa<mlir::concretelang::FHE::FheIntegerInterface>() ||
-          value.getType().isa<mlir::concretelang::FHE::EncryptedBooleanType>() ||
+  return (
+      value.getType().isa<mlir::concretelang::FHE::FheIntegerInterface>() ||
+      value.getType().isa<mlir::concretelang::FHE::EncryptedBooleanType>() ||
       (value.getType().isa<mlir::TensorType>() &&
        value.getType()
            .cast<mlir::TensorType>()

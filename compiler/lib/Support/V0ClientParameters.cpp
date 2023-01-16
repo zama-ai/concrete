@@ -93,6 +93,7 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
             {
                 /* .precision = */ width,
                 /* .crt = */ std::vector<int64_t>(),
+                /* .sign = */ false,
             },
         }),
         /*.shape = */

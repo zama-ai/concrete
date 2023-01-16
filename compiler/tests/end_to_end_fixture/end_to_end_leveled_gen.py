@@ -700,6 +700,8 @@ def main():
         print("    %1 = \"FHE.mul_eint_int\"(%arg0, %0): (!FHE.esint<{0}>, i{1}) -> (!FHE.esint<{0}>)".format(p, integer_bitwidth))
         print("    return %1: !FHE.esint<{0}>".format(p))
         print("  }")
+        if p <= 57:
+            print(f"p-error: {P_ERROR}")
         print("tests:")
         print("  - inputs:")
         print("    - scalar: {0}".format(0))
