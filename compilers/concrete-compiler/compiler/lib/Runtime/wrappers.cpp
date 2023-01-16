@@ -43,9 +43,9 @@ void *alloc_and_memcpy_async_to_gpu(uint64_t *buf_ptr, uint64_t buf_offset,
                                     uint64_t buf_size, uint32_t gpu_idx,
                                     void *stream) {
   size_t buf_size_ = buf_size * sizeof(uint64_t);
-  void *ct_gpu = cuda_malloc(buf_size_, gpu_idx);
-  cuda_memcpy_async_to_gpu(ct_gpu, buf_ptr + buf_offset, buf_size_, stream,
-                           gpu_idx);
+  void *ct_gpu = cuda_malloc_async(buf_size_, (cudaStream_t *)stream, gpu_idx);
+  cuda_memcpy_async_to_gpu(ct_gpu, buf_ptr + buf_offset, buf_size_,
+                           (cudaStream_t *)stream, gpu_idx);
   return ct_gpu;
 }
 
@@ -53,7 +53,8 @@ void memcpy_async_to_cpu(uint64_t *buf_ptr, uint64_t buf_offset,
                          uint64_t buf_size, void *buf_gpu, uint32_t gpu_idx,
                          void *stream) {
   cuda_memcpy_async_to_cpu(buf_ptr + buf_offset, buf_gpu,
-                           buf_size * sizeof(uint64_t), stream, gpu_idx);
+                           buf_size * sizeof(uint64_t), (cudaStream_t *)stream,
+                           gpu_idx);
 }
 
 void free_from_gpu(void *gpu_ptr, uint32_t gpu_idx = 0) {
@@ -128,8 +129,9 @@ void memref_batched_keyswitch_lwe_cuda_u64(
   // Move the input and output batch of ciphertexts to the GPU
   // TODO: The allocation should be done by the compiler codegen
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
-      ct0_aligned, ct0_offset, ct0_batch_size, gpu_idx, stream);
-  void *out_gpu = cuda_malloc(out_batch_size * sizeof(uint64_t), gpu_idx);
+      ct0_aligned, ct0_offset, ct0_batch_size, gpu_idx, (cudaStream_t *)stream);
+  void *out_gpu = cuda_malloc_async(out_batch_size * sizeof(uint64_t),
+                                    (cudaStream_t *)stream, gpu_idx);
   // Run the keyswitch kernel on the GPU
   cuda_keyswitch_lwe_ciphertext_vector_64(
       stream, gpu_idx, out_gpu, ct0_gpu, ksk_gpu, input_lwe_dim, output_lwe_dim,
@@ -141,7 +143,7 @@ void memref_batched_keyswitch_lwe_cuda_u64(
   // free memory that we allocated on gpu
   cuda_drop(ct0_gpu, gpu_idx);
   cuda_drop(out_gpu, gpu_idx);
-  cuda_destroy_stream(stream, gpu_idx);
+  cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
 
 void memref_batched_bootstrap_lwe_cuda_u64(
@@ -155,11 +157,13 @@ void memref_batched_bootstrap_lwe_cuda_u64(
     uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
     mlir::concretelang::RuntimeContext *context) {
   assert(out_size0 == ct0_size0);
+  assert(out_size1 == glwe_dim * poly_size + 1);
   // TODO: Multi GPU
   uint32_t gpu_idx = 0;
   uint32_t num_samples = out_size0;
   uint64_t ct0_batch_size = ct0_size0 * ct0_size1;
   uint64_t out_batch_size = out_size0 * out_size1;
+  int8_t *pbs_buffer = nullptr;
 
   // Create the cuda stream
   // TODO: Should be created by the compiler codegen
@@ -170,8 +174,9 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   // Move the input and output batch of ciphertext to the GPU
   // TODO: The allocation should be done by the compiler codegen
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
-      ct0_aligned, ct0_offset, ct0_batch_size, gpu_idx, stream);
-  void *out_gpu = cuda_malloc(out_batch_size * sizeof(uint64_t), gpu_idx);
+      ct0_aligned, ct0_offset, ct0_batch_size, gpu_idx, (cudaStream_t *)stream);
+  void *out_gpu = cuda_malloc_async(out_batch_size * sizeof(uint64_t),
+                                    (cudaStream_t *)stream, gpu_idx);
   // Construct the glwe accumulator (on CPU)
   // TODO: Should be done outside of the bootstrap call, compile time if
   // possible. Refactor in progress
@@ -188,36 +193,42 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   }
 
   // Move the glwe accumulator to the GPU
-  void *glwe_ct_gpu =
-      alloc_and_memcpy_async_to_gpu(glwe_ct, 0, glwe_ct_size, gpu_idx, stream);
+  void *glwe_ct_gpu = alloc_and_memcpy_async_to_gpu(
+      glwe_ct, 0, glwe_ct_size, gpu_idx, (cudaStream_t *)stream);
 
   // Move test vector indexes to the GPU, the test vector indexes is set of 0
   uint32_t num_test_vectors = 1, lwe_idx = 0,
-           test_vector_idxes_size = num_samples * sizeof(uint32_t);
+           test_vector_idxes_size = num_samples * sizeof(uint64_t);
   void *test_vector_idxes = malloc(test_vector_idxes_size);
   memset(test_vector_idxes, 0, test_vector_idxes_size);
-  void *test_vector_idxes_gpu = cuda_malloc(test_vector_idxes_size, gpu_idx);
+  void *test_vector_idxes_gpu = cuda_malloc_async(
+      test_vector_idxes_size, (cudaStream_t *)stream, gpu_idx);
   cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, test_vector_idxes,
-                           test_vector_idxes_size, stream, gpu_idx);
+                           test_vector_idxes_size, (cudaStream_t *)stream,
+                           gpu_idx);
+  // Allocate PBS buffer on GPU
+  scratch_cuda_bootstrap_amortized_64(
+      stream, gpu_idx, &pbs_buffer, glwe_dim, poly_size, num_samples,
+      cuda_get_max_shared_memory(gpu_idx), true);
   // Run the bootstrap kernel on the GPU
   cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
       stream, gpu_idx, out_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu,
-      fbsk_gpu, input_lwe_dim, glwe_dim, poly_size, base_log, level,
+      fbsk_gpu, pbs_buffer, input_lwe_dim, glwe_dim, poly_size, base_log, level,
       num_samples, num_test_vectors, lwe_idx,
       cuda_get_max_shared_memory(gpu_idx));
+  cleanup_cuda_bootstrap_amortized(stream, gpu_idx, &pbs_buffer);
   // Copy the output batch of ciphertext back to CPU
   memcpy_async_to_cpu(out_aligned, out_offset, out_batch_size, out_gpu, gpu_idx,
                       stream);
-  cuda_synchronize_device(gpu_idx);
+  // free memory that we allocated on gpu
+  cuda_drop_async(ct0_gpu, (cudaStream_t *)stream, gpu_idx);
+  cuda_drop_async(out_gpu, (cudaStream_t *)stream, gpu_idx);
+  cuda_drop_async(glwe_ct_gpu, (cudaStream_t *)stream, gpu_idx);
+  cuda_drop_async(test_vector_idxes_gpu, (cudaStream_t *)stream, gpu_idx);
+  cudaStreamSynchronize(*(cudaStream_t *)stream);
   // Free the glwe accumulator (on CPU)
   free(glwe_ct);
-  // free memory that we allocated on gpu
-  cuda_drop(ct0_gpu, gpu_idx);
-  cuda_drop(out_gpu, gpu_idx);
-  cuda_drop(glwe_ct_gpu, gpu_idx);
-  cuda_drop(test_vector_idxes_gpu, gpu_idx);
-
-  cuda_destroy_stream(stream, gpu_idx);
+  cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
 
 #endif

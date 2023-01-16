@@ -1,4 +1,8 @@
-add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp)
+if(CONCRETELANG_CUDA_SUPPORT)
+  add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp GPUDFG.cpp)
+else()
+  add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp)
+endif()
 
 add_dependencies(ConcretelangRuntime concrete_cpu)
 
@@ -9,7 +13,7 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
 endif()
 
 if(CONCRETELANG_CUDA_SUPPORT)
-  target_link_libraries(ConcretelangRuntime PRIVATE concrete_cuda)
+  target_link_libraries(ConcretelangRuntime LINK_PUBLIC concrete_cuda)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -39,5 +43,9 @@ target_link_libraries(
          $<TARGET_OBJECTS:mlir_float16_utils>
          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
 
-install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
+if(CONCRETELANG_CUDA_SUPPORT)
+  install(TARGETS ConcretelangRuntime omp concrete_cuda EXPORT ConcretelangRuntime)
+else()
+  install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
+endif()
 install(EXPORT ConcretelangRuntime DESTINATION "./")

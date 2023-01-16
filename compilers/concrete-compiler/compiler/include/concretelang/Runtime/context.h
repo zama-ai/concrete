@@ -45,9 +45,9 @@ typedef struct RuntimeContext {
 #ifdef CONCRETELANG_CUDA_SUPPORT
     for (int i = 0; i < num_devices; ++i) {
       if (bsk_gpu[i] != nullptr)
-	cuda_drop(bsk_gpu[i], i);
+        cuda_drop(bsk_gpu[i], i);
       if (ksk_gpu[i] != nullptr)
-	cuda_drop(ksk_gpu[i], i);
+        cuda_drop(ksk_gpu[i], i);
     }
 #endif
   };
@@ -94,15 +94,15 @@ public:
     size_t bsk_buffer_len = bsk.size();
     size_t bsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
 
-    void *bsk_gpu_tmp = cuda_malloc(bsk_gpu_buffer_size, gpu_idx);
-    cuda_initialize_twiddles(poly_size, gpu_idx);
-    cuda_convert_lwe_bootstrap_key_64(bsk_gpu_tmp, (void *)bsk.buffer(), stream,
-                                      gpu_idx, input_lwe_dim, glwe_dim, level,
-                                      poly_size);
-    // This is currently not 100% async as
-    // we have to free CPU memory after
-    // conversion
-    cuda_synchronize_device(gpu_idx);
+    void *bsk_gpu_tmp =
+        cuda_malloc_async(bsk_gpu_buffer_size, (cudaStream_t *)stream, gpu_idx);
+    cuda_convert_lwe_bootstrap_key_64(
+        bsk_gpu_tmp, const_cast<uint64_t *>(bsk.buffer()),
+        (cudaStream_t *)stream, gpu_idx, input_lwe_dim, glwe_dim, level,
+        poly_size);
+    // Synchronization here is not optional as it works with mutex to
+    // prevent other GPU streams from reading partially copied keys.
+    cudaStreamSynchronize(*(cudaStream_t *)stream);
     bsk_gpu[gpu_idx] = bsk_gpu_tmp;
     return bsk_gpu[gpu_idx];
   }
@@ -122,11 +122,14 @@ public:
 
     size_t ksk_buffer_size = sizeof(uint64_t) * ksk.size();
 
-    void *ksk_gpu_tmp = cuda_malloc(ksk_buffer_size, gpu_idx);
+    void *ksk_gpu_tmp =
+        cuda_malloc_async(ksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
 
-    cuda_memcpy_async_to_gpu(ksk_gpu_tmp, (void *)ksk.buffer(), ksk_buffer_size,
-                             stream, gpu_idx);
-    cuda_synchronize_device(gpu_idx);
+    cuda_memcpy_async_to_gpu(ksk_gpu_tmp, const_cast<uint64_t *>(ksk.buffer()),
+                             ksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
+    // Synchronization here is not optional as it works with mutex to
+    // prevent other GPU streams from reading partially copied keys.
+    cudaStreamSynchronize(*(cudaStream_t *)stream);
     ksk_gpu[gpu_idx] = ksk_gpu_tmp;
     return ksk_gpu[gpu_idx];
   }

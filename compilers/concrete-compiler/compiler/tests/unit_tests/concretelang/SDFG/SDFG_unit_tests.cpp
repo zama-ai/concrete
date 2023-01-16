@@ -44,8 +44,11 @@ compile(std::string outputLib, std::string source,
   mlir::concretelang::CompilerEngine ce{ccx};
   mlir::concretelang::CompilationOptions options(funcname);
   options.emitSDFGOps = true;
+#ifdef CONCRETELANG_CUDA_SUPPORT
+  options.emitGPUOps = true;
+#endif
 #ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
-  // options.dataflowParallelize = true;
+  options.dataflowParallelize = true;
 #endif
   ce.setCompilationOptions(options);
   auto result = ce.compile(sources, outputLib);
@@ -187,5 +190,27 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   for (auto a : values_3bits()) {
     auto res = lambda.call(a);
     ASSERT_EQ_OUTCOME(res, (scalar_out)a);
+  }
+}
+
+TEST(SDFG_unit_tests, tlu_tree) {
+  std::string source = R"(
+func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+    %tlu_4 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]> : tensor<16xi64>
+    %1 = "FHE.apply_lookup_table"(%arg0, %tlu_4): (!FHE.eint<4>, tensor<16xi64>) -> (!FHE.eint<4>)
+    %2 = "FHE.apply_lookup_table"(%arg0, %tlu_4): (!FHE.eint<4>, tensor<16xi64>) -> (!FHE.eint<4>)
+    %3 = "FHE.apply_lookup_table"(%1, %tlu_4): (!FHE.eint<4>, tensor<16xi64>) -> (!FHE.eint<4>)
+    %4 = "FHE.apply_lookup_table"(%2, %tlu_4): (!FHE.eint<4>, tensor<16xi64>) -> (!FHE.eint<4>)
+    %5 = "FHE.add_eint"(%3, %4): (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+    %6 = "FHE.apply_lookup_table"(%5, %tlu_4): (!FHE.eint<4>, tensor<16xi64>) -> (!FHE.eint<4>)
+    return %6: !FHE.eint<4>
+}
+)";
+  std::string outputLib = outputLibFromThis(this->test_info_);
+  auto compiled = compile(outputLib, source);
+  auto lambda = load<TestTypedLambda<scalar_out, scalar_in>>(outputLib);
+  for (auto a : values_3bits()) {
+    auto res = lambda.call(a);
+    ASSERT_EQ_OUTCOME(res, (scalar_out)((a * 2) % 16));
   }
 }

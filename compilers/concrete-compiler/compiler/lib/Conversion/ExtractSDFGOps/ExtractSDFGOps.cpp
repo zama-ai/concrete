@@ -171,7 +171,7 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
         func.getLoc(), rewriter.getType<SDFG::DFGType>());
     SDFG::Start start = rewriter.create<SDFG::Start>(func.getLoc(), dfg);
 
-    rewriter.setInsertionPoint(func.getBlocks().front().getTerminator());
+    rewriter.setInsertionPoint(func.getBlocks().back().getTerminator());
     rewriter.create<SDFG::Shutdown>(func.getLoc(), dfg);
 
     mlir::ImplicitLocOpBuilder ilb(func.getLoc(), rewriter);
