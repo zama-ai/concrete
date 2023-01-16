@@ -1,21 +1,20 @@
 // RUN: concretecompiler %s --action=dump-tfhe --passes fhe-tensor-ops-to-linalg 2>&1 | FileCheck %s
 
-//CHECK: #map0 = affine_map<(d0, d1) -> (d0, d1)>
-//CHECK: #map1 = affine_map<(d0, d1) -> (d0, d1, 0)>
-//CHECK: #map2 = affine_map<(d0, d1) -> (d0, d1, 1)>
-//CHECK: #map3 = affine_map<(d0, d1) -> (d0, d1, 2)>
-//CHECK: #map4 = affine_map<(d0, d1) -> (d0, d1, 3)>
-//CHECK: func.func @multi_lut(%[[A0:.*]]: tensor<4x4x!FHE.eint<2>>, %[[A1:.*]]: tensor<4x4x4xi64>) -> tensor<4x4x!FHE.eint<2>> {
-//CHECK:   %[[V0:.*]] = bufferization.alloc_tensor() : tensor<4x4x!FHE.eint<2>>
-//CHECK:   %[[V1:.*]] = linalg.generic {indexing_maps = [#map0, #map1, #map2, #map3, #map4, #map0], iterator_types = ["parallel", "parallel"]} ins(%[[A0]], %[[A1]], %arg1, %arg1, %arg1 : tensor<4x4x!FHE.eint<2>>, tensor<4x4x4xi64>, tensor<4x4x4xi64>, tensor<4x4x4xi64>, tensor<4x4x4xi64>) outs(%[[V0]] : tensor<4x4x!FHE.eint<2>>) {
-//CHECK:   ^bb0(%[[A2:.*]]: !FHE.eint<2>, %[[A3:.*]]: i64, %[[A4:.*]]: i64, %[[A5:.*]]: i64, %[[A6:.*]]: i64, %[[A7:.*]]: !FHE.eint<2>):
-//CHECK:     %[[V2:.*]] = tensor.from_elements %[[A3]], %[[A4]], %[[A5]], %[[A6]] : tensor<4xi64>
-//CHECK:     %[[V3:.*]] = "FHE.apply_lookup_table"(%[[A2]], %[[V2]]) : (!FHE.eint<2>, tensor<4xi64>) -> !FHE.eint<2>
-//CHECK:     linalg.yield %[[V3]] : !FHE.eint<2>
+
+//CHECK: #map = affine_map<(d0, d1) -> (d0, d1)>
+//CHECK: func.func @multi_lut(%arg0: tensor<4x4x!FHE.eint<2>>, %[[LUTS:.*]]: tensor<4x4x4xi64>) -> tensor<4x4x!FHE.eint<2>> {
+//CHECK:   %[[MEM:.*]] = bufferization.alloc_tensor() : tensor<4x4x!FHE.eint<2>>
+//CHECK:   %[[R:.*]] = linalg.generic {indexing_maps = [#map, #map], iterator_types = ["parallel", "parallel"]} ins(%arg0 : tensor<4x4x!FHE.eint<2>>) outs(%[[MEM]] : tensor<4x4x!FHE.eint<2>>) {
+//CHECK:   ^bb0(%[[IN:.*]]: !FHE.eint<2>, %[[UNUSED:.*]]: !FHE.eint<2>):
+//CHECK:     %[[INDEXA:.*]] = linalg.index 0 : index
+//CHECK:     %[[INDEXB:.*]] = linalg.index 1 : index
+//CHECK:     %[[LUT:.*]] = tensor.extract_slice %[[LUTS]][%[[INDEXA]], %[[INDEXB]], 0] [1, 1, 4] [1, 1, 1] : tensor<4x4x4xi64> to tensor<4xi64>
+//CHECK:     %[[V:.*]] = "FHE.apply_lookup_table"(%[[IN]], %[[LUT]]) : (!FHE.eint<2>, tensor<4xi64>) -> !FHE.eint<2>
+//CHECK:     linalg.yield %[[V]] : !FHE.eint<2>
 //CHECK:   } -> tensor<4x4x!FHE.eint<2>>
-//CHECK:   return %[[V1]] : tensor<4x4x!FHE.eint<2>>
+//CHECK:   return %[[R]] : tensor<4x4x!FHE.eint<2>>
 //CHECK: }
-func.func @multi_lut(%arg0: tensor<4x4x!FHE.eint<2>>, %arg1: tensor<4x4x4xi64>) -> tensor<4x4x!FHE.eint<2>> {
-  %0 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<4x4x!FHE.eint<2>>, tensor<4x4x4xi64>) -> tensor<4x4x!FHE.eint<2>>
+func.func @multi_lut(%arg0: tensor<4x4x!FHE.eint<2>>, %luts: tensor<4x4x4xi64>) -> tensor<4x4x!FHE.eint<2>> {
+  %0 = "FHELinalg.apply_multi_lookup_table"(%arg0, %luts): (tensor<4x4x!FHE.eint<2>>, tensor<4x4x4xi64>) -> tensor<4x4x!FHE.eint<2>>
   return %0: tensor<4x4x!FHE.eint<2>>
 }
