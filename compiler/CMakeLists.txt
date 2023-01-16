@@ -55,6 +55,11 @@ include(AddConcretelangDoc)
 set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 # -------------------------------------------------------------------------------
+# Concrete Security curves Configuration
+# -------------------------------------------------------------------------------
+include_directories(${PROJECT_SOURCE_DIR}/parameter-curves/concrete-security-curves-cpp/include)
+
+# -------------------------------------------------------------------------------
 # Concrete FFI Configuration
 # -------------------------------------------------------------------------------
 include_directories(${CONCRETE_FFI_RELEASE})

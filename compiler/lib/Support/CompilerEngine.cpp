@@ -350,8 +350,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       res.clientParameters = emptyParams;
     } else {
       auto clientParametersOrErr =
-          mlir::concretelang::createClientParametersForV0(*res.fheContext,
-                                                          funcName, module);
+          mlir::concretelang::createClientParametersForV0(
+              *res.fheContext, funcName, module,
+              options.optimizerConfig.security);
       if (!clientParametersOrErr)
         return clientParametersOrErr.takeError();
 

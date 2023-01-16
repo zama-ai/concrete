@@ -268,13 +268,14 @@ $(FIXTURE_CPU_DIR)/bug_report.yaml:
 
 generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml
 
+SECURITY_TO_TEST=80 128
 run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_test
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_encrypted_tensor
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_fhelinalg
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_lambda
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	--backend=cpu --jit $(FIXTURE_CPU_DIR)/*.yaml
+	$(foreach security,$(SECURITY_TO_TEST),$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	--backend=cpu --security-level=$(security) --jit $(FIXTURE_CPU_DIR)/*.yaml;)
 
 ### end-to-end-tests GPU
 
@@ -327,11 +328,12 @@ $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 
 generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_leveled.yaml
 
+SECURITY_TO_BENCH=128
 run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
-	$(BUILD_DIR)/bin/end_to_end_benchmark \
-	--backend=cpu \
-	--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
-	$(BENCHMARK_CPU_DIR)/*.yaml
+	$(foreach security,$(SECURITY_TO_BENCH),$(BUILD_DIR)/bin/end_to_end_benchmark \
+		--backend=cpu --security-level=$(security)\
+		--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
+		$(BENCHMARK_CPU_DIR)/*.yaml;)
 
 ## benchmark GPU
 

@@ -64,6 +64,10 @@ parseEndToEndCommandLine(int argc, char **argv) {
       llvm::cl::init(llvm::None));
 
   // Optimizer options
+  llvm::cl::opt<int> securityLevel(
+      "security-level",
+      llvm::cl::desc("Set the number of bit of security to target"),
+      llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.security));
   llvm::cl::opt<bool> optimizerDisplay(
       "optimizer-display",
       llvm::cl::desc("Set the optimizerConfig.display compilation options to "
@@ -98,6 +102,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
     compilationOptions.batchConcreteOps =
         batchConcreteOps.getValue().getValue();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
+  compilationOptions.optimizerConfig.security = securityLevel.getValue();
 
   std::vector<EndToEndDescFile> parsedDescriptionFiles;
   for (auto descFile : descriptionFiles) {
@@ -113,6 +118,24 @@ parseEndToEndCommandLine(int argc, char **argv) {
     exit(1);
   }
   return std::make_tuple(compilationOptions, libpath, parsedDescriptionFiles);
+}
+
+std::string getOptionsName(mlir::concretelang::CompilationOptions options) {
+  std::ostringstream os;
+  if (options.loopParallelize)
+    os << "_loop";
+  if (options.dataflowParallelize)
+    os << "_dataflow";
+  if (options.emitGPUOps)
+    os << "_gpu";
+  auto ostr = os.str();
+  if (ostr.size() == 0) {
+    os << "_default";
+  }
+  if (options.optimizerConfig.security != 128) {
+    os << "_security" << options.optimizerConfig.security;
+  }
+  return os.str().substr(1);
 }
 
 #endif

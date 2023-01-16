@@ -195,3 +195,17 @@ class CompilationOptions(WrapperCpp):
         if not 0.0 <= global_p_error <= 1.0:
             raise ValueError("global_p_error be a probability in ]0; 1]")
         self.cpp().set_global_p_error(global_p_error)
+
+    def set_security_level(self, security_level: int):
+        """Set security level.
+
+        Args:
+            security_level (int): the target number of bits of security to compile the circuit
+
+        Raises:
+            TypeError: if the value to set is not int
+            ValueError: if the value to set is not in interval ]0; 1]
+        """
+        if not isinstance(security_level, int):
+            raise TypeError("can't set security_level to a non-int value")
+        self.cpp().set_security_level(security_level)

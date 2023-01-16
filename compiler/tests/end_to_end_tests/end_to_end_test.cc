@@ -138,17 +138,7 @@ std::string getTestName(EndToEndDesc desc,
                         mlir::concretelang::CompilationOptions options,
                         int testNum) {
   std::ostringstream os;
-  if (options.loopParallelize)
-    os << "_loop";
-  if (options.dataflowParallelize)
-    os << "_dataflow";
-  if (options.emitGPUOps)
-    os << "_gpu";
-  auto ostr = os.str();
-  if (ostr.size() == 0) {
-    os << "_default";
-  }
-  os << "." << desc.description << "." << testNum;
+  os << getOptionsName(options) << "." << desc.description << "." << testNum;
   return os.str().substr(1);
 }
 

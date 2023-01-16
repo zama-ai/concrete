@@ -7,13 +7,10 @@ add_mlir_library(
   JITSupport.cpp
   LambdaArgument.cpp
   V0Parameters.cpp
-  V0Curves.cpp
   V0ClientParameters.cpp
   logging.cpp
   Jit.cpp
   LLVMEmitFile.cpp
-  ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/concretelang/Support
   DEPENDS
   mlir-headers
   LINK_LIBS

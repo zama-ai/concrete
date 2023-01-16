@@ -19,7 +19,7 @@ using ::concretelang::clientlib::ClientParameters;
 
 llvm::Expected<ClientParameters>
 createClientParametersForV0(V0FHEContext context, llvm::StringRef functionName,
-                            mlir::ModuleOp module);
+                            mlir::ModuleOp module, int bitsOfSecurity);
 
 } // namespace concretelang
 } // namespace mlir

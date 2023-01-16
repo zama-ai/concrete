@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
+#include "concrete/curves.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EncryptedArguments.h"
-#include "concretelang/Support/V0Curves.h"
 #include "tests_tools/assert.h"
 
 namespace clientlib = concretelang::clientlib;
@@ -53,8 +53,8 @@ clientlib::ClientParameters generateClientParameterOneScalarOneScalar(
   params.secretKeys.insert({clientlib::SMALL_KEY, {/*.dimension =*/dimension}});
   // One input and output encryption gate on the same secret key and encoded
   // with the same precision
-  const auto v0Curve =
-      mlir::concretelang::getV0Curves(SECURITY_LEVEL_128, KEY_FORMAT_BINARY);
+  const auto v0Curve = concrete::getSecurityCurve(128, concrete::BINARY);
+
   clientlib::EncryptionGate encryption;
   encryption.secretKeyID = clientlib::SMALL_KEY;
   encryption.encoding.precision = precision;

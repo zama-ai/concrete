@@ -222,6 +222,12 @@ llvm::cl::opt<double> globalErrorProbability(
     llvm::cl::init(
         mlir::concretelang::optimizer::DEFAULT_CONFIG.global_p_error));
 
+llvm::cl::opt<double> securityLevel(
+    "security-level",
+    llvm::cl::desc(
+        "Specify the security level to target for compiling the program"),
+    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.security));
+
 llvm::cl::opt<bool> displayOptimizerChoice(
     "display-optimizer-choice",
     llvm::cl::desc("Display the information returned by the optimizer"),

@@ -11,12 +11,12 @@
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
+#include "concrete/curves.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Support/Error.h"
-#include "concretelang/Support/V0Curves.h"
 
 namespace mlir {
 namespace concretelang {
@@ -30,9 +30,7 @@ using ::concretelang::clientlib::LweSecretKeyID;
 using ::concretelang::clientlib::Precision;
 using ::concretelang::clientlib::Variance;
 
-const auto securityLevel = SECURITY_LEVEL_128;
-const auto keyFormat = KEY_FORMAT_BINARY;
-const auto v0Curve = getV0Curves(securityLevel, keyFormat);
+const auto keyFormat = concrete::BINARY;
 
 /// For the v0 the secretKeyID and precision are the same for all gates.
 llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
@@ -127,8 +125,15 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
 
 llvm::Expected<ClientParameters>
 createClientParametersForV0(V0FHEContext fheContext,
-                            llvm::StringRef functionName,
-                            mlir::ModuleOp module) {
+                            llvm::StringRef functionName, mlir::ModuleOp module,
+                            int bitsOfSecurity) {
+  const auto v0Curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
+
+  if (v0Curve == nullptr) {
+    return StreamStringError("Cannot find security curves for ")
+           << bitsOfSecurity << "bits";
+  }
+
   V0Parameter &v0Param = fheContext.parameter;
   Variance inputVariance =
       v0Curve->getVariance(1, v0Param.getNBigLweDimension(), 64);

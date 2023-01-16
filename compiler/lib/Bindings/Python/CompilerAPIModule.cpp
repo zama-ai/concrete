@@ -72,6 +72,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_global_p_error",
            [](CompilationOptions &options, double global_p_error) {
              options.optimizerConfig.global_p_error = global_p_error;
+           })
+      .def("set_security_level",
+           [](CompilationOptions &options, int security_level) {
+             options.optimizerConfig.security = security_level;
            });
 
   pybind11::class_<mlir::concretelang::CompilationFeedback>(

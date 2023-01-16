@@ -103,21 +103,6 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   }
 }
 
-std::string getOptionsName(mlir::concretelang::CompilationOptions options) {
-  std::ostringstream os;
-  if (options.loopParallelize)
-    os << "_loop";
-  if (options.dataflowParallelize)
-    os << "_dataflow";
-  if (options.emitGPUOps)
-    os << "_gpu";
-  auto ostr = os.str();
-  if (ostr.size() == 0) {
-    os << "_default";
-  }
-  return os.str().substr(1);
-}
-
 enum Action {
   COMPILE,
   KEYGEN,
