@@ -43,8 +43,7 @@ struct SecurityCurve {
   /// @param logQ The log of q
   /// @return The secure encryption variances
   double getVariance(int glweDimension, int polynomialSize, int logQ) {
-    auto a = std::pow(
-        2, (slope * glweDimension * polynomialSize + bias) * 2);
+    auto a = std::pow(2, (slope * glweDimension * polynomialSize + bias) * 2);
     auto b = std::pow(2, -2 * (logQ - 2));
     return a > b ? a : b;
   }
@@ -56,10 +55,12 @@ struct SecurityCurve {
 /// @param bitsOfSecurity The number of bits of security
 /// @param keyFormat The format of the key
 /// @return The security curve or nullptr if the curve is not found.
-SecurityCurve *getSecurtityCurve(int bitsOfSecurity, KeyFormat keyFormat) {
-  std::find_if(curves.begin(), curves.end(), [&](SecurityCurve c) {
-    return c.bits == bitsOfSecurity && c.keyFormat == keyFormat;
-  });
+SecurityCurve *getSecurityCurve(int bitsOfSecurity, KeyFormat keyFormat) {
+  for (size_t i = 0; i < curves.size(); i++) {
+    if (curves[i].bits == bitsOfSecurity && curves[i].keyFormat == keyFormat)
+      return &curves[i];
+  }
+  return nullptr;
 }
 
 } // namespace concrete
