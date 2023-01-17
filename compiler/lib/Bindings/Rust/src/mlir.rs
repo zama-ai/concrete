@@ -55,8 +55,8 @@ pub fn print_mlir_type_to_string(mlir_type: MlirType) -> String {
 ///
 /// # Examples
 /// ```
-/// use concrete_compiler_rust::mlir::*;
-/// use concrete_compiler_rust::mlir::ffi::*;
+/// use concrete_compiler::mlir::*;
+/// use concrete_compiler::mlir::ffi::*;
 /// unsafe{
 ///     let context = mlirContextCreate();
 ///     mlirRegisterAllDialects(context);

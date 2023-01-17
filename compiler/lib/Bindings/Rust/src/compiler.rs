@@ -1012,7 +1012,7 @@ impl CompilationFeedback {
 ///
 /// # Examples
 /// ```
-/// use concrete_compiler_rust::compiler::*;
+/// use concrete_compiler::compiler::*;
 ///
 /// let module_to_compile = "
 ///     func.func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
@@ -1078,6 +1078,7 @@ mod test {
                 }";
         let runtime_library_path = runtime_lib_path();
         let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
+        let temp_dir = TempDir::new("concrete_compiler_test").unwrap();
         let support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
         let lib = support.compile(module_to_compile, None).unwrap();
@@ -1107,7 +1108,7 @@ mod test {
                     return %0 : !FHE.eint<5>
                 }";
         let runtime_library_path = runtime_lib_path();
-        let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
+        let temp_dir = TempDir::new("concrete_compiler_test").unwrap();
         let support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
         let result = support.compile(module_to_compile, None).unwrap();
@@ -1125,7 +1126,7 @@ mod test {
                     return %0 : !FHE.eint<5>
                 }";
         let runtime_library_path = runtime_lib_path();
-        let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
+        let temp_dir = TempDir::new("concrete_compiler_test").unwrap();
         let lib_support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
         // compile
@@ -1162,7 +1163,7 @@ mod test {
                     return %0 : !FHE.eint<5>
                 }";
         let runtime_library_path = runtime_lib_path();
-        let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
+        let temp_dir = TempDir::new("concrete_compiler_test").unwrap();
         let lib_support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
         // compile
@@ -1228,7 +1229,7 @@ mod test {
                     return %0 : tensor<2x3x!FHE.eint<5>>
                 }";
         let runtime_library_path = runtime_lib_path();
-        let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
+        let temp_dir = TempDir::new("concrete_compiler_test").unwrap();
         let lib_support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
         // compile
