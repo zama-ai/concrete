@@ -5,7 +5,8 @@ def print_curve(data):
 
 
 def print_rust_curves_declaration(datas):
-    print(f"const SECURITY_WEIGHTS_ARRAY: [(u64, SecurityWeights); {len(datas)}] = [")
+    print("use super::security_weights::SecurityWeights;")
+    print(f"pub const SECURITY_WEIGHTS_ARRAY: [(u64, SecurityWeights); {len(datas)}] = [")
     for data in datas:
         print_curve(data)
     print("];")

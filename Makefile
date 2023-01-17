@@ -4,7 +4,7 @@ SAGE_SECURITY_CURVES=$(SECURITY_LEVELS:%=$(SAGE_OBJECT_DIR)/%.sobj)
 SAGE_VERIFIED_CURVES=$(SAGE_OBJECT_DIR)/verified_curves.sobj
 CURVES_JSON_PATH=json/curves.json
 CURVES_CPP_GEN_H=concrete-security-curves-cpp/include/concrete/curves.gen.h
-CURVES_RUST_GEN_TXT=concrete-security-curves-rust/src/curves.gen.rs
+CURVES_RUST_GEN_TXT=concrete-security-curves-rust/src/gaussian/curves_gen.rs
 
 generate-code: generate-cpp generate-rust
 
