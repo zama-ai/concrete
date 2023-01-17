@@ -235,25 +235,30 @@ def_CStructWrapper! {
 impl BufferRef {
     /// Create a reference to a buffer in memory.
     ///
-    /// The pointed memory will not get owned. The caller must make sure the pointer points
-    /// to a valid memory region of the provided length, and that the pointed memory outlive
-    /// the buffer reference.
-    pub fn new(ptr: *const c_char, length: ffi::size_t) -> Result<ffi::BufferRef, CompilerError> {
-        unsafe {
-            let buffer_ref = ffi::bufferRefCreate(ptr, length);
-            if ffi::bufferRefIsNull(buffer_ref) {
-                let error_msg = get_error_msg_from_ctype(&buffer_ref);
-                ffi::bufferRefDestroy(buffer_ref);
-                return Err(CompilerError(error_msg));
-            }
-            return Ok(buffer_ref);
+    /// # SAFETY
+    ///
+    /// - The pointed memory will not get owned.
+    /// - The caller must make sure the pointer points
+    ///   to a valid memory region of the provided length
+    /// - The caller must make sure that the pointed memory outlive
+    ///   the buffer reference.
+    unsafe fn new(
+        ptr: *const c_char,
+        length: ffi::size_t,
+    ) -> Result<ffi::BufferRef, CompilerError> {
+        let buffer_ref = ffi::bufferRefCreate(ptr, length);
+        if ffi::bufferRefIsNull(buffer_ref) {
+            let error_msg = get_error_msg_from_ctype(&buffer_ref);
+            ffi::bufferRefDestroy(buffer_ref);
+            return Err(CompilerError(error_msg));
         }
+        return Ok(buffer_ref);
     }
 
     /// Copy the content of the buffer into a new vector of bytes.
     ///
-    /// Returns an empty vector if the buffer reference a null pointer.
-    pub fn to_bytes(&self) -> Vec<c_char> {
+    /// Returns an empty vector if the buffer reference is a null pointer.
+    fn to_bytes(&self) -> Vec<c_char> {
         if self.is_null() {
             return Vec::new();
         }
@@ -283,6 +288,8 @@ impl CompilationOptions {
     ) -> Result<CompilationOptions, CompilerError> {
         unsafe {
             let options = CompilationOptions::wrap(ffi::compilationOptionsCreate(
+                // Its safe to give a string ref to the rust str
+                // as the `compilationOptionsCreate` function is going to copy the content.
                 MlirStringRef::from_rust_str(func_name),
                 auto_parallelize,
                 batch_concrete_ops,
