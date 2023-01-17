@@ -27,4 +27,4 @@ pub mod parameters;
 pub mod utils;
 pub mod weight;
 
-pub use concrete_cpu_noise_model::gaussian_noise::security::supported_security_levels;
+pub use concrete_security_curves::gaussian::security::supported_security_levels;

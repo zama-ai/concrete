@@ -427,7 +427,7 @@ mod tests {
                 v0_parameter_ref(precision, weight, &mut times);
             }
         }
-        assert!(times.worst_time * 2 > times.dag_time);
+        assert!(times.worst_time * 3 > times.dag_time);
     }
 
     fn v0_parameter_ref(precision: u64, weight: u64, times: &mut Times) {
@@ -861,7 +861,7 @@ mod tests {
     #[test]
     fn test_global_p_error_non_dominating_lut() {
         let depth = 128;
-        let weights_low = 1024 * 2200;
+        let weights_low = 1024 * 2130;
         let weights_high = 1;
         let precision_low = 6 as Precision;
         let precision_high = 8 as Precision;

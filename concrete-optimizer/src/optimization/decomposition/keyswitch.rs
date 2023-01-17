@@ -5,7 +5,7 @@ use crate::parameters::{KeyswitchParameters, KsDecompositionParameters, LweDimen
 use crate::utils::cache::ephemeral::{CacheHashMap, EphemeralCache};
 use crate::utils::cache::persistent::{default_cache_dir, PersistentCacheHashMap};
 use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch_one_bit::variance_keyswitch_one_bit;
-use concrete_cpu_noise_model::gaussian_noise::security::minimal_variance_lwe;
+use concrete_security_curves::gaussian::security::minimal_variance_lwe;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 

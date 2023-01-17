@@ -1,7 +1,7 @@
 use crate::parameters::AtomicPatternParameters;
 use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch::variance_keyswitch;
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
-use concrete_cpu_noise_model::gaussian_noise::security::minimal_variance_lwe;
+use concrete_security_curves::gaussian::security::minimal_variance_lwe;
 
 pub fn maximal_noise(
     input_variance: f64,

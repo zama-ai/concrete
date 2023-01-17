@@ -3,7 +3,7 @@ pub use individual::*;
 pub use range::*;
 
 mod individual {
-    use concrete_cpu_noise_model::gaussian_noise::security::minimal_variance_glwe;
+    use concrete_security_curves::gaussian::security::minimal_variance_glwe;
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
