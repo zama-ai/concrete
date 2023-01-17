@@ -4,10 +4,27 @@ use crate::mlir::ffi;
 use std::os::raw::c_char;
 use std::{ffi::CStr, path::Path};
 
-#[derive(Debug)]
 pub struct CompilerError(String);
 
-/// Retreive buffer of the error message from a C struct.
+// Manual implementation to use pretty formatting of line-breaks
+// contained in the String.
+impl std::fmt::Debug for CompilerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        writeln!(f, "CompilerError {{")?;
+        writeln!(f, "{:#}", self.0)?;
+        writeln!(f, "}}")
+    }
+}
+
+impl std::fmt::Display for CompilerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        <Self as std::fmt::Debug>::fmt(self, f)
+    }
+}
+
+impl std::error::Error for CompilerError {}
+
+/// Retrieve buffer of the error message from a C struct.
 trait CStructErrorMsg {
     fn error_msg(&self) -> *const i8;
 }
