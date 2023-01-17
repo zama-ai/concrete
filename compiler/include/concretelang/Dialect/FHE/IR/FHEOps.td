@@ -361,4 +361,180 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
+// FHE Boolean Operations
+
+def FHE_GenGateOp : FHE_Op<"gen_gate", [NoSideEffect]> {
+
+    let summary = "Applies a truth table based on two boolean inputs";
+
+    let description = [{
+        Applies a truth table based on two boolean inputs.
+
+        truth table must be a tensor of 4 boolean values.
+
+        Example:
+        ```mlir
+        // ok
+        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<4xi1>) -> (!FHE.ebool)
+
+        // error
+        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<4xi4>) -> (!FHE.ebool)
+        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<7xi1>) -> (!FHE.ebool)
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$left, FHE_EncryptedBooleanType:$right, TensorOf<[I1]>:$truth_table);
+    let results = (outs FHE_EncryptedBooleanType);
+    let hasVerifier = 1;
+}
+
+def FHE_MuxOp : FHE_Op<"mux", [NoSideEffect]> {
+
+    let summary = "Multiplexer for two encrypted boolean inputs, based on an encrypted condition";
+
+    let description = [{
+        Mutex between two encrypted boolean inputs, based on an encrypted condition.
+
+        Example:
+        ```mlir
+        "FHE.mux"(%cond, %c1, %c2): (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$cond, FHE_EncryptedBooleanType:$c1, FHE_EncryptedBooleanType:$c2);
+    let results = (outs FHE_EncryptedBooleanType);
+}
+
+
+
+def FHE_BoolAndOp : FHE_Op<"and", [NoSideEffect]> {
+
+    let summary = "Applies an AND gate to two encrypted boolean values";
+
+    let description = [{
+        Applies an AND gate to two encrypted boolean values.
+
+        Example:
+        ```mlir
+        "FHE.and"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$left, FHE_EncryptedBooleanType:$right);
+    let results = (outs FHE_EncryptedBooleanType);
+}
+
+def FHE_BoolOrOp : FHE_Op<"or", [NoSideEffect]> {
+
+    let summary = "Applies an OR gate to two encrypted boolean values";
+
+    let description = [{
+        Applies an OR gate to two encrypted boolean values.
+
+        Example:
+        ```mlir
+        "FHE.or"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$left, FHE_EncryptedBooleanType:$right);
+    let results = (outs FHE_EncryptedBooleanType);
+}
+
+def FHE_BoolNandOp : FHE_Op<"nand", [NoSideEffect]> {
+
+    let summary = "Applies a NAND gate to two encrypted boolean values";
+
+    let description = [{
+        Applies a NAND gate to two encrypted boolean values.
+
+        Example:
+        ```mlir
+        "FHE.nand"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$left, FHE_EncryptedBooleanType:$right);
+    let results = (outs FHE_EncryptedBooleanType);
+}
+
+def FHE_BoolXorOp : FHE_Op<"xor", [NoSideEffect]> {
+
+    let summary = "Applies a XOR gate to two encrypted boolean values";
+
+    let description = [{
+        Applies a XOR gate to two encrypted boolean values.
+
+        Example:
+        ```mlir
+        "FHE.xor"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$left, FHE_EncryptedBooleanType:$right);
+    let results = (outs FHE_EncryptedBooleanType);
+}
+
+def FHE_BoolNotOp : FHE_Op<"not", [NoSideEffect]> {
+
+    let summary = "Applies a NOT gate to an encrypted boolean value";
+
+    let description = [{
+        Applies a NOT gate to an encrypted boolean value.
+
+        Example:
+        ```mlir
+        "FHE.not"(%a): (!FHE.ebool) -> (!FHE.ebool)
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$value);
+    let results = (outs FHE_EncryptedBooleanType);
+}
+
+def FHE_ToBoolOp : FHE_Op<"to_bool", [NoSideEffect]> {
+    let summary = "Cast an unsigned integer to a boolean";
+
+    let description = [{
+        Cast an unsigned integer to a boolean.
+
+        The input must necessarily be of width 1, in order to put that single
+        bit into a boolean.
+
+        Examples:
+        ```mlir
+        // ok
+        "FHE.to_bool"(%x) : (!FHE.eint<1>) -> !FHE.ebool
+
+        // error
+        "FHE.to_bool"(%x) : (!FHE.eint<2>) -> !FHE.ebool
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedIntegerType:$input);
+    let results = (outs FHE_EncryptedBooleanType);
+
+    let hasVerifier = 1;
+}
+
+def FHE_FromBoolOp : FHE_Op<"from_bool", [NoSideEffect]> {
+    let summary = "Cast a boolean to an unsigned integer";
+
+    let description = [{
+        Cast a boolean to an unsigned integer.
+
+        Examples:
+        ```mlir
+        "FHE.from_bool"(%x) : (!FHE.ebool) -> !FHE.eint<1>
+        "FHE.from_bool"(%x) : (!FHE.ebool) -> !FHE.eint<2>
+        "FHE.from_bool"(%x) : (!FHE.ebool) -> !FHE.eint<4>
+        ```
+    }];
+
+    let arguments = (ins FHE_EncryptedBooleanType:$input);
+    let results = (outs FHE_EncryptedIntegerType);
+}
+
+
+
 #endif

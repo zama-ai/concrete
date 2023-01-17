@@ -213,3 +213,84 @@ func.func @apply_lookup_table(%arg0: !FHE.eint<2>, %arg1: tensor<4xi64>) -> !FHE
   %1 = "FHE.apply_lookup_table"(%arg0, %arg1): (!FHE.eint<2>, tensor<4xi64>) -> (!FHE.eint<2>)
   return %1: !FHE.eint<2>
 }
+
+// CHECK-LABEL: func.func @to_bool(%arg0: !FHE.eint<1>) -> !FHE.ebool
+func.func @to_bool(%arg0: !FHE.eint<1>) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.to_bool"(%arg0) : (!FHE.eint<1>) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.to_bool"(%arg0): (!FHE.eint<1>) -> (!FHE.ebool)
+  return %1: !FHE.ebool
+}
+
+// CHECK-LABEL: func.func @from_bool(%arg0: !FHE.ebool) -> !FHE.eint<1>
+func.func @from_bool(%arg0: !FHE.ebool) -> !FHE.eint<1> {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.from_bool"(%arg0) : (!FHE.ebool) -> !FHE.eint<1>
+  // CHECK-NEXT: return %[[V1]] : !FHE.eint<1>
+
+  %1 = "FHE.from_bool"(%arg0): (!FHE.ebool) -> (!FHE.eint<1>)
+  return %1: !FHE.eint<1>
+}
+
+// CHECK-LABEL: func.func @gen_gate(%arg0: !FHE.ebool, %arg1: !FHE.ebool, %arg2: tensor<4xi1>) -> !FHE.ebool
+func.func @gen_gate(%arg0: !FHE.ebool, %arg1: !FHE.ebool, %arg2: tensor<4xi1>) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.gen_gate"(%arg0, %arg1, %arg2) : (!FHE.ebool, !FHE.ebool, tensor<4xi1>) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.gen_gate"(%arg0, %arg1, %arg2) : (!FHE.ebool, !FHE.ebool, tensor<4xi1>) -> !FHE.ebool
+  return %1: !FHE.ebool
+}
+
+// CHECK-LABEL: func.func @mux(%arg0: !FHE.ebool, %arg1: !FHE.ebool, %arg2: !FHE.ebool) -> !FHE.ebool
+func.func @mux(%arg0: !FHE.ebool, %arg1: !FHE.ebool, %arg2: !FHE.ebool) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.mux"(%arg0, %arg1, %arg2) : (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.mux"(%arg0, %arg1, %arg2) : (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  return %1: !FHE.ebool
+}
+
+// CHECK-LABEL: func.func @and(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool
+func.func @and(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.and"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.and"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  return %1: !FHE.ebool
+}
+
+// CHECK-LABEL: func.func @or(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool
+func.func @or(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.or"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.or"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  return %1: !FHE.ebool
+}
+
+// CHECK-LABEL: func.func @nand(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool
+func.func @nand(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.nand"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.nand"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  return %1: !FHE.ebool
+}
+
+// CHECK-LABEL: func.func @xor(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool
+func.func @xor(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.xor"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.xor"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+  return %1: !FHE.ebool
+}
+
+// CHECK-LABEL: func.func @not(%arg0: !FHE.ebool) -> !FHE.ebool
+func.func @not(%arg0: !FHE.ebool) -> !FHE.ebool {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.not"(%arg0) : (!FHE.ebool) -> !FHE.ebool
+  // CHECK-NEXT: return %[[V1]] : !FHE.ebool
+
+  %1 = "FHE.not"(%arg0) : (!FHE.ebool) -> !FHE.ebool
+  return %1: !FHE.ebool
+}

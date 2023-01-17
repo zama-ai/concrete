@@ -203,6 +203,30 @@ mlir::LogicalResult ToUnsignedOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult ToBoolOp::verify() {
+  auto input = this->input().getType().cast<EncryptedIntegerType>();
+
+  if (input.getWidth() != 1) {
+    this->emitOpError(
+        "should have 1 as the width of encrypted input to cast to a boolean");
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
+mlir::LogicalResult GenGateOp::verify() {
+  auto truth_table = this->truth_table().getType().cast<TensorType>();
+
+  mlir::SmallVector<int64_t, 1> expectedShape{4};
+  if (!truth_table.hasStaticShape(expectedShape)) {
+    this->emitOpError("truth table should be a tensor of 4 boolean values");
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 ::mlir::LogicalResult ApplyLookupTableEintOp::verify() {
   auto ct = this->a().getType().cast<EncryptedIntegerType>();
   auto lut = this->lut().getType().cast<TensorType>();

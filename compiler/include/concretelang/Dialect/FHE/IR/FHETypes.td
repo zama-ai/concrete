@@ -69,4 +69,15 @@ def FHE_AnyEncryptedInteger : Type<Or<[
   FHE_EncryptedSignedIntegerType.predicate
 ]>>;
 
+def FHE_EncryptedBooleanType : FHE_Type<"EncryptedBoolean",
+        [MemRefElementTypeInterface]> {
+  let mnemonic = "ebool";
+
+  let summary = "An encrypted boolean";
+
+  let description = [{
+    An encrypted boolean.
+  }];
+}
+
 #endif
