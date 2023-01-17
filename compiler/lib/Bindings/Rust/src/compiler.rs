@@ -307,7 +307,7 @@ impl CompilationOptions {
         }
     }
 
-    pub fn get_default() -> Result<CompilationOptions, CompilerError> {
+    pub fn default() -> Result<CompilationOptions, CompilerError> {
         unsafe {
             let options = CompilationOptions::wrap(ffi::compilationOptionsCreateDefault());
             if options.is_null() {
@@ -345,7 +345,7 @@ impl OptimizerConfig {
         }
     }
 
-    pub fn get_default() -> Result<OptimizerConfig, CompilerError> {
+    pub fn default() -> Result<OptimizerConfig, CompilerError> {
         unsafe {
             let config = OptimizerConfig::wrap(ffi::optimizerConfigCreateDefault());
             if config.is_null() {
@@ -398,7 +398,7 @@ impl CompilerEngine {
     }
 }
 impl CompilationResult {
-    pub fn get_module_string(&self) -> Result<String, CompilerError> {
+    pub fn module_string(&self) -> Result<String, CompilerError> {
         unsafe { MlirStringRef(ffi::compilationResultGetModuleString(self._c)).to_string() }
     }
 }
@@ -460,7 +460,7 @@ impl LibrarySupport {
         options: Option<CompilationOptions>,
     ) -> Result<LibraryCompilationResult, CompilerError> {
         unsafe {
-            let options = options.unwrap_or_else(|| CompilationOptions::get_default().unwrap());
+            let options = options.unwrap_or_else(|| CompilationOptions::default().unwrap());
             let result = LibraryCompilationResult::wrap(ffi::librarySupportCompile(
                 self._c,
                 MlirStringRef::from_rust_str(mlir_code),
@@ -541,7 +541,7 @@ impl LibrarySupport {
     }
 
     /// Get path to the compiled shared library
-    pub fn get_shared_lib_path(&self) -> String {
+    pub fn shared_lib_path(&self) -> String {
         unsafe {
             MlirStringRef(ffi::librarySupportGetSharedLibPath(self._c))
                 .to_string()
@@ -550,7 +550,7 @@ impl LibrarySupport {
     }
 
     /// Get path to the client parameters
-    pub fn get_client_parameters_path(&self) -> String {
+    pub fn client_parameters_path(&self) -> String {
         unsafe {
             MlirStringRef(ffi::librarySupportGetClientParametersPath(self._c))
                 .to_string()
@@ -664,7 +664,7 @@ impl KeySet {
         }
     }
 
-    pub fn get_evaluation_keys(&self) -> Result<EvaluationKeys, CompilerError> {
+    pub fn evaluation_keys(&self) -> Result<EvaluationKeys, CompilerError> {
         unsafe {
             let eval_keys = EvaluationKeys::wrap(ffi::keySetGetEvaluationKeys(self.key_set._c));
             if eval_keys.is_null() {
@@ -765,7 +765,7 @@ impl LambdaArgument {
         unsafe { ffi::lambdaArgumentIsScalar(self._c) }
     }
 
-    pub fn get_scalar(&self) -> Result<u64, CompilerError> {
+    pub fn scalar(&self) -> Result<u64, CompilerError> {
         unsafe {
             if !self.is_scalar() {
                 return Err(CompilerError("argument is not a scalar".to_string()));
@@ -834,7 +834,7 @@ impl LambdaArgument {
         unsafe { ffi::lambdaArgumentIsTensor(self._c) }
     }
 
-    pub fn get_data_size(&self) -> Result<i64, CompilerError> {
+    pub fn data_size(&self) -> Result<i64, CompilerError> {
         unsafe {
             if !self.is_tensor() {
                 return Err(CompilerError("argument is not a tensor".to_string()));
@@ -843,7 +843,7 @@ impl LambdaArgument {
         }
     }
 
-    pub fn get_rank(&self) -> Result<ffi::size_t, CompilerError> {
+    pub fn rank(&self) -> Result<ffi::size_t, CompilerError> {
         unsafe {
             if !self.is_tensor() {
                 return Err(CompilerError("argument is not a tensor".to_string()));
@@ -852,9 +852,9 @@ impl LambdaArgument {
         }
     }
 
-    pub fn get_dims(&self) -> Result<Vec<i64>, CompilerError> {
+    pub fn dims(&self) -> Result<Vec<i64>, CompilerError> {
         unsafe {
-            let rank = self.get_rank().unwrap();
+            let rank = self.rank().unwrap();
             let mut dims = Vec::new();
             dims.resize(rank.try_into().unwrap(), 0);
             if !ffi::lambdaArgumentGetTensorDims(self._c, dims.as_mut_ptr()) {
@@ -864,9 +864,9 @@ impl LambdaArgument {
         }
     }
 
-    pub fn get_data(&self) -> Result<Vec<u64>, CompilerError> {
+    pub fn data(&self) -> Result<Vec<u64>, CompilerError> {
         unsafe {
-            let size = self.get_data_size().unwrap();
+            let size = self.data_size().unwrap();
             let mut data = Vec::new();
             data.resize(size.try_into().unwrap(), 0);
             if !ffi::lambdaArgumentGetTensorData(self._c, data.as_mut_ptr()) {
@@ -955,35 +955,35 @@ impl PublicResult {
 }
 
 impl CompilationFeedback {
-    pub fn get_complexity(&self) -> f64 {
+    pub fn complexity(&self) -> f64 {
         unsafe { ffi::compilationFeedbackGetComplexity(self._c) }
     }
 
-    pub fn get_p_error(&self) -> f64 {
+    pub fn p_error(&self) -> f64 {
         unsafe { ffi::compilationFeedbackGetPError(self._c) }
     }
 
-    pub fn get_global_p_error(&self) -> f64 {
+    pub fn global_p_error(&self) -> f64 {
         unsafe { ffi::compilationFeedbackGetGlobalPError(self._c) }
     }
 
-    pub fn get_total_secret_keys_size(&self) -> u64 {
+    pub fn total_secret_keys_size(&self) -> u64 {
         unsafe { ffi::compilationFeedbackGetTotalSecretKeysSize(self._c) }
     }
 
-    pub fn get_total_bootstrap_keys_size(&self) -> u64 {
+    pub fn total_bootstrap_keys_size(&self) -> u64 {
         unsafe { ffi::compilationFeedbackGetTotalBootstrapKeysSize(self._c) }
     }
 
-    pub fn get_total_keyswitch_keys_size(&self) -> u64 {
+    pub fn total_keyswitch_keys_size(&self) -> u64 {
         unsafe { ffi::compilationFeedbackGetTotalKeyswitchKeysSize(self._c) }
     }
 
-    pub fn get_total_inputs_size(&self) -> u64 {
+    pub fn total_inputs_size(&self) -> u64 {
         unsafe { ffi::compilationFeedbackGetTotalInputsSize(self._c) }
     }
 
-    pub fn get_total_outputs_size(&self) -> u64 {
+    pub fn total_outputs_size(&self) -> u64 {
         unsafe { ffi::compilationFeedbackGetTotalOutputsSize(self._c) }
     }
 }
@@ -1008,7 +1008,7 @@ impl CompilationFeedback {
 pub fn round_trip(mlir_code: &str) -> Result<String, CompilerError> {
     let engine = CompilerEngine::new(None).unwrap();
     let compilation_result = engine.compile(mlir_code, ffi::CompilationTarget_ROUND_TRIP)?;
-    compilation_result.get_module_string()
+    compilation_result.module_string()
 }
 
 #[cfg(test)]
@@ -1018,7 +1018,7 @@ mod test {
 
     use super::*;
 
-    fn get_runtime_lib_path() -> Option<String> {
+    fn runtime_lib_path() -> Option<String> {
         match env::var("CONCRETE_COMPILER_INSTALL_DIR") {
             Ok(val) => Some(val + "/lib/libConcretelangRuntime.so"),
             Err(_e) => None,
@@ -1059,15 +1059,15 @@ mod test {
                     %0 = \"FHE.add_eint\"(%arg0, %arg1) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
                     return %0 : !FHE.eint<5>
                 }";
-        let runtime_library_path = get_runtime_lib_path();
+        let runtime_library_path = runtime_lib_path();
         let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
         let support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
         let lib = support.compile(module_to_compile, None).unwrap();
         assert!(!lib.is_null());
         // the sharedlib should be enough as a sign that the compilation worked
-        assert!(Path::new(support.get_shared_lib_path().as_str()).exists());
-        assert!(Path::new(support.get_client_parameters_path().as_str()).exists());
+        assert!(Path::new(support.shared_lib_path().as_str()).exists());
+        assert!(Path::new(support.client_parameters_path().as_str()).exists());
     }
 
     /// We want to make sure setting a pointer to null in rust passes the nullptr check in C/Cpp
@@ -1089,7 +1089,7 @@ mod test {
                     %0 = \"FHE.add_eint\"(%arg0, %arg1) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
                     return %0 : !FHE.eint<5>
                 }";
-        let runtime_library_path = get_runtime_lib_path();
+        let runtime_library_path = runtime_lib_path();
         let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
         let support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
@@ -1107,7 +1107,7 @@ mod test {
                     %0 = \"FHE.add_eint\"(%arg0, %arg1) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
                     return %0 : !FHE.eint<5>
                 }";
-        let runtime_library_path = get_runtime_lib_path();
+        let runtime_library_path = runtime_lib_path();
         let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
         let lib_support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
@@ -1119,7 +1119,7 @@ mod test {
         let server_lambda = lib_support.load_server_lambda(&result).unwrap();
         let client_params = lib_support.load_client_parameters(&result).unwrap();
         let key_set = KeySet::new(&client_params, None, None, None).unwrap();
-        let eval_keys = key_set.get_evaluation_keys().unwrap();
+        let eval_keys = key_set.evaluation_keys().unwrap();
         // build lambda arguments from scalar and encrypt them
         let args = [
             LambdaArgument::from_scalar(4).unwrap(),
@@ -1133,7 +1133,7 @@ mod test {
         // decrypt the result of execution
         let result_arg = key_set.decrypt_result(&encrypted_result).unwrap();
         // get the scalar value from the result lambda argument
-        let result = result_arg.get_scalar().unwrap();
+        let result = result_arg.scalar().unwrap();
         assert_eq!(result, 6);
     }
 
@@ -1144,7 +1144,7 @@ mod test {
                     %0 = \"FHE.add_eint\"(%arg0, %arg1) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
                     return %0 : !FHE.eint<5>
                 }";
-        let runtime_library_path = get_runtime_lib_path();
+        let runtime_library_path = runtime_lib_path();
         let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
         let lib_support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
@@ -1160,7 +1160,7 @@ mod test {
         let client_params = ClientParameters::unserialize(&serialized_params).unwrap();
         // generate keys
         let key_set = KeySet::new(&client_params, None, None, None).unwrap();
-        let eval_keys = key_set.get_evaluation_keys().unwrap();
+        let eval_keys = key_set.evaluation_keys().unwrap();
         // serialize eval keys
         let serialized_eval_keys = eval_keys.serialize().unwrap();
         let eval_keys = EvaluationKeys::unserialize(&serialized_eval_keys).unwrap();
@@ -1185,7 +1185,7 @@ mod test {
         // decrypt the result of execution
         let result_arg = key_set.decrypt_result(&encrypted_result).unwrap();
         // get the scalar value from the result lambda argument
-        let result = result_arg.get_scalar().unwrap();
+        let result = result_arg.scalar().unwrap();
         assert_eq!(result, 6);
     }
 
@@ -1197,10 +1197,10 @@ mod test {
         assert!(!tensor_arg.is_null());
         assert!(!tensor_arg.is_scalar());
         assert!(tensor_arg.is_tensor());
-        assert_eq!(tensor_arg.get_rank().unwrap(), 2);
-        assert_eq!(tensor_arg.get_data_size().unwrap(), 4);
-        assert_eq!(tensor_arg.get_dims().unwrap(), tensor_dims);
-        assert_eq!(tensor_arg.get_data().unwrap(), tensor_data);
+        assert_eq!(tensor_arg.rank().unwrap(), 2);
+        assert_eq!(tensor_arg.data_size().unwrap(), 4);
+        assert_eq!(tensor_arg.dims().unwrap(), tensor_dims);
+        assert_eq!(tensor_arg.data().unwrap(), tensor_data);
     }
 
     #[test]
@@ -1210,7 +1210,7 @@ mod test {
                     %0 = \"FHELinalg.add_eint\"(%arg0, %arg1) : (tensor<2x3x!FHE.eint<5>>, tensor<2x3x!FHE.eint<5>>) -> tensor<2x3x!FHE.eint<5>>
                     return %0 : tensor<2x3x!FHE.eint<5>>
                 }";
-        let runtime_library_path = get_runtime_lib_path();
+        let runtime_library_path = runtime_lib_path();
         let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
         let lib_support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
@@ -1222,7 +1222,7 @@ mod test {
         let server_lambda = lib_support.load_server_lambda(&result).unwrap();
         let client_params = lib_support.load_client_parameters(&result).unwrap();
         let key_set = KeySet::new(&client_params, None, None, None).unwrap();
-        let eval_keys = key_set.get_evaluation_keys().unwrap();
+        let eval_keys = key_set.evaluation_keys().unwrap();
         // build lambda arguments from scalar and encrypt them
         let args = [
             LambdaArgument::from_tensor_u8(&[1, 2, 3, 4, 5, 6], &[2, 3]).unwrap(),
@@ -1236,10 +1236,10 @@ mod test {
         // decrypt the result of execution
         let result_arg = key_set.decrypt_result(&encrypted_result).unwrap();
         // check the tensor dims value from the result lambda argument
-        assert_eq!(result_arg.get_rank().unwrap(), 2);
-        assert_eq!(result_arg.get_data_size().unwrap(), 6);
-        assert_eq!(result_arg.get_dims().unwrap(), [2, 3]);
+        assert_eq!(result_arg.rank().unwrap(), 2);
+        assert_eq!(result_arg.data_size().unwrap(), 6);
+        assert_eq!(result_arg.dims().unwrap(), [2, 3]);
         // check the tensor data from the result lambda argument
-        assert_eq!(result_arg.get_data().unwrap(), [2, 6, 10, 8, 7, 15]);
+        assert_eq!(result_arg.data().unwrap(), [2, 6, 10, 8, 7, 15]);
     }
 }
