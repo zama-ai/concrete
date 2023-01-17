@@ -15,8 +15,9 @@ pub fn variance_keyswitch(
 #[cfg(test)]
 mod tests {
 
-    use crate::gaussian_noise::conversion::variance_to_modular_variance;
-    use crate::gaussian_noise::security::minimal_variance_lwe;
+    use crate::gaussian_noise::{
+        conversion::variance_to_modular_variance, security::minimal_variance_lwe,
+    };
 
     use super::*;
 

@@ -1,5 +1,4 @@
-use crate::gaussian_noise::conversion::modular_variance_to_variance;
-use crate::utils::square;
+use crate::{gaussian_noise::conversion::modular_variance_to_variance, utils::square};
 
 pub fn variance_external_product_glwe(
     glwe_dimension: u64,

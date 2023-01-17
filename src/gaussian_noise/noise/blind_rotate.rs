@@ -26,8 +26,9 @@ pub fn variance_blind_rotate(
 
 #[cfg(test)]
 mod tests {
-    use crate::gaussian_noise::conversion::variance_to_modular_variance;
-    use crate::gaussian_noise::security::minimal_variance_glwe;
+    use crate::gaussian_noise::{
+        conversion::variance_to_modular_variance, security::minimal_variance_glwe,
+    };
 
     use super::*;
 

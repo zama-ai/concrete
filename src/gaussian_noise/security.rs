@@ -30,8 +30,7 @@ pub fn minimal_variance_glwe(
 
 #[cfg(test)]
 mod tests {
-    use super::super::conversion::variance_to_std_dev;
-    use super::minimal_variance_glwe;
+    use super::{super::conversion::variance_to_std_dev, minimal_variance_glwe};
 
     #[test]
     fn golden_python_prototype_security_security_glwe_variance_low() {
