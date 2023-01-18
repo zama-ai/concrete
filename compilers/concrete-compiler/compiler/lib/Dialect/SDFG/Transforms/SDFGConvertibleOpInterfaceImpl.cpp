@@ -37,8 +37,13 @@ struct ReplaceWithProcessSDFGConversionInterface
         *symbolizeProcessKind(processName), dfg, streams);
 
     if (copyAttributes) {
+      auto outType =
+          op->getResult(0).getType().dyn_cast_or_null<mlir::TensorType>();
+      auto outSize = outType.getDimSize(outType.getRank() - 1);
+      auto attrList = mlir::NamedAttrList(op->getAttrs());
+      attrList.append("output_size", builder.getI32IntegerAttr(outSize));
       llvm::SmallVector<mlir::NamedAttribute> combinedAttrs =
-          llvm::to_vector(op->getAttrs());
+          llvm::to_vector(attrList);
 
       for (mlir::NamedAttribute attr : process->getAttrs()) {
         combinedAttrs.push_back(attr);

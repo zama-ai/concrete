@@ -196,6 +196,10 @@ struct LowerSDFGMakeProcess
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(),
           mpOp->getAttrOfType<mlir::IntegerAttr>("lwe_dim_out")));
+      // output_size
+      operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+          mpOp.getLoc(),
+          mpOp->getAttrOfType<mlir::IntegerAttr>("output_size")));
       // context
       operands.push_back(getContextArgument(mpOp));
       break;
@@ -222,6 +226,10 @@ struct LowerSDFGMakeProcess
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(),
           mpOp->getAttrOfType<mlir::IntegerAttr>("outPrecision")));
+      // output_size
+      operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+          mpOp.getLoc(),
+          mpOp->getAttrOfType<mlir::IntegerAttr>("output_size")));
       // context
       operands.push_back(getContextArgument(mpOp));
       break;

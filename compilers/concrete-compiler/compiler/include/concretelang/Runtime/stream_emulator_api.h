@@ -35,11 +35,12 @@ void stream_emulator_make_memref_negate_lwe_ciphertext_u64_process(void *dfg,
                                                                    void *sout);
 void stream_emulator_make_memref_keyswitch_lwe_u64_process(
     void *dfg, void *sin1, void *sout, uint32_t level, uint32_t base_log,
-    uint32_t input_lwe_dim, uint32_t output_lwe_dim, void *context);
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t output_size,
+    void *context);
 void stream_emulator_make_memref_bootstrap_lwe_u64_process(
     void *dfg, void *sin1, void *sin2, void *sout, uint32_t input_lwe_dim,
     uint32_t poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim,
-    uint32_t precision, void *context);
+    uint32_t precision, uint32_t output_size, void *context);
 
 void *stream_emulator_make_uint64_stream(const char *name, stream_type stype);
 void stream_emulator_put_uint64(void *stream, uint64_t e);

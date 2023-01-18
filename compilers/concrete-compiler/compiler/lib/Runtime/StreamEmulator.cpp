@@ -69,6 +69,7 @@ struct Process {
   Param poly_size;
   Param glwe_dim;
   Param precision;
+  Param output_size;
   Context ctx;
   void (*fun)(Process *);
 };
@@ -91,10 +92,12 @@ struct DFGraph {
 void memref_keyswitch_lwe_u64_process(Process *p) {
   while (!p->terminate_p) {
     MemRefDescriptor<1> ct0 = (p->input_streams[0]).memref_stream->get();
-    MemRefDescriptor<1> out = ct0;
-    out.allocated = out.aligned =
-        (uint64_t *)malloc(ct0.sizes[0] * sizeof(uint64_t));
+    MemRefDescriptor<1> out;
+    out.sizes[0] = p->output_size.val;
+    out.strides[0] = 1;
     out.offset = 0;
+    out.allocated = out.aligned =
+        (uint64_t *)malloc(out.sizes[0] * sizeof(uint64_t));
     memref_keyswitch_lwe_u64(
         out.allocated, out.aligned, out.offset, out.sizes[0], out.strides[0],
         ct0.allocated, ct0.aligned, ct0.offset, ct0.sizes[0], ct0.strides[0],
@@ -109,10 +112,12 @@ void memref_bootstrap_lwe_u64_process(Process *p) {
   while (!p->terminate_p) {
     MemRefDescriptor<1> ct0 = (p->input_streams[0]).memref_stream->get();
     MemRefDescriptor<1> tlu = (p->input_streams[1]).memref_stream->get();
-    MemRefDescriptor<1> out = ct0;
-    out.allocated = out.aligned =
-        (uint64_t *)malloc(ct0.sizes[0] * sizeof(uint64_t));
+    MemRefDescriptor<1> out;
+    out.sizes[0] = p->output_size.val;
+    out.strides[0] = 1;
     out.offset = 0;
+    out.allocated = out.aligned =
+        (uint64_t *)malloc(out.sizes[0] * sizeof(uint64_t));
     memref_bootstrap_lwe_u64(
         out.allocated, out.aligned, out.offset, out.sizes[0], out.strides[0],
         ct0.allocated, ct0.aligned, ct0.offset, ct0.sizes[0], ct0.strides[0],
@@ -272,7 +277,8 @@ void stream_emulator_make_memref_negate_lwe_ciphertext_u64_process(void *dfg,
 
 void stream_emulator_make_memref_keyswitch_lwe_u64_process(
     void *dfg, void *sin1, void *sout, uint32_t level, uint32_t base_log,
-    uint32_t input_lwe_dim, uint32_t output_lwe_dim, void *context) {
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t output_size,
+    void *context) {
   mlir::concretelang::stream_emulator::Process *p =
       new mlir::concretelang::stream_emulator::Process;
   p->input_streams.push_back(
@@ -285,6 +291,7 @@ void stream_emulator_make_memref_keyswitch_lwe_u64_process(
   p->base_log.val = base_log;
   p->input_lwe_dim.val = input_lwe_dim;
   p->output_lwe_dim.val = output_lwe_dim;
+  p->output_size.val = output_size;
   p->ctx.val = (mlir::concretelang::RuntimeContext *)context;
   p->fun =
       mlir::concretelang::stream_emulator::memref_keyswitch_lwe_u64_process;
@@ -295,7 +302,7 @@ void stream_emulator_make_memref_keyswitch_lwe_u64_process(
 void stream_emulator_make_memref_bootstrap_lwe_u64_process(
     void *dfg, void *sin1, void *sin2, void *sout, uint32_t input_lwe_dim,
     uint32_t poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim,
-    uint32_t precision, void *context) {
+    uint32_t precision, uint32_t output_size, void *context) {
   mlir::concretelang::stream_emulator::Process *p =
       new mlir::concretelang::stream_emulator::Process;
   p->input_streams.push_back(
@@ -313,6 +320,7 @@ void stream_emulator_make_memref_bootstrap_lwe_u64_process(
   p->base_log.val = base_log;
   p->glwe_dim.val = glwe_dim;
   p->precision.val = precision;
+  p->output_size.val = output_size;
   p->ctx.val = (mlir::concretelang::RuntimeContext *)context;
   p->fun =
       mlir::concretelang::stream_emulator::memref_bootstrap_lwe_u64_process;
