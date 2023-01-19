@@ -145,7 +145,7 @@ pub fn optimize_one(
     search_space: &SearchSpace,
     persistent_caches: &PersistDecompCaches,
 ) -> OptimizationState {
-    assert!(0 < precision && precision <= 16);
+    assert!(0 < precision);
     assert!(1.0 <= noise_factor);
     assert!(0.0 < config.maximum_acceptable_error_probability);
     assert!(config.maximum_acceptable_error_probability < 1.0);

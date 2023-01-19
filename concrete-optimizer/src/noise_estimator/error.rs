@@ -16,7 +16,7 @@ const RIGHT_PADDING_BITS: u64 = 1;
 
 pub fn fatal_variance_limit(padding_bits: u64, precision: u64, ciphertext_modulus_log: u32) -> f64 {
     let no_noise_bits = padding_bits + precision;
-    let noise_bits = ciphertext_modulus_log as u64 - no_noise_bits;
+    let noise_bits: i64 = ciphertext_modulus_log as i64 - i64::try_from(no_noise_bits).unwrap();
     2_f64.powi(noise_bits as i32)
 }
 
