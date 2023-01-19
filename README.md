@@ -27,13 +27,13 @@
 </p>
 
 
-**Concrete Numpy** is an open-source library which simplifies the use of fully homomorphic encryption (FHE).
+**Concrete Numpy** is an open-source library which simplifies the use of fully homomorphic encryption (FHE) in Python.
 
 FHE is a powerful cryptographic tool, which allows computation to be performed directly on encrypted data without needing to decrypt it first.
 
 With FHE, you can build services that preserve the privacy of the users. FHE is also great against data breaches as everything is done on encrypted data. Even if the server is compromised, in the end no sensitive data is leaked.
 
-## Main features.
+## Main features
 
 - Ability to compile Python functions (that may use NumPy within) to their FHE equivalents, to operate on encrypted data
 - Support for [large collection of operators](https://docs.zama.ai/concrete-numpy/getting-started/compatibility)
@@ -41,7 +41,7 @@ With FHE, you can build services that preserve the privacy of the users. FHE is 
 - Support for table lookups on integers
 - Support for integration with Client / Server architectures
 
-## Installation.
+## Installation
 
 |               OS / HW                | Available on Docker | Available on PyPI |
 | :----------------------------------: | :-----------------: | :--------------: |
@@ -66,7 +66,7 @@ docker pull zamafhe/concrete-numpy:v0.10.0
 
 You can find more detailed installation instructions in [installing.md](docs/getting-started/installing.md)
 
-## Getting started.
+## Getting started
 
 ```python
 import concrete.numpy as cnp
@@ -111,20 +111,20 @@ for example in examples:
     print(f"Evaluation of {' + '.join(map(str, example))} homomorphically = {result}")
 ```
 
-## Documentation.
+## Documentation
 
 Full, comprehensive documentation is available at [https://docs.zama.ai/concrete-numpy](https://docs.zama.ai/concrete-numpy).
 
-## Target audience.
+## Target users
 
-Concrete Numpy is a generic library that supports variety of use cases. Because of this flexibility,
+Concrete Numpy is a generic library that supports a variety of use cases. Because of this flexibility,
 it doesn't provide primitives for specific use cases.
 
 If you have a specific use case, or a specific field of computation, you may want to build abstractions on top of Concrete Numpy.
 
 One such example is [Concrete ML](https://github.com/zama-ai/concrete-ml), which is built on top of Concrete Numpy to simplify Machine Learning oriented use cases.
 
-## Tutorials.
+## Tutorials
 
 Various tutorials are proposed in the documentation to help you start writing homomorphic programs:
 
@@ -140,6 +140,6 @@ More generally, if you have built awesome projects using Concrete Numpy, feel fr
   <img src="https://user-images.githubusercontent.com/5758427/191792238-b132e413-05f9-4fee-bee3-1371f3d81c28.png">
 </a>
 
-## License.
+## License
 
 This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, please contact us at hello@zama.ai.
