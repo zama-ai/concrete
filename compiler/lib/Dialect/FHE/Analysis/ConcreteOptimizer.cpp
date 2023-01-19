@@ -136,6 +136,7 @@ struct FunctionToDag {
         addDot(dag, val, encrypted_inputs, weightsOpt.getValue());
         return;
       }
+      // If can't find weights return default leveled op
       DEBUG("Replace Dot by LevelledOp on " << op);
     }
     // default
@@ -229,13 +230,16 @@ struct FunctionToDag {
     return value.isa<mlir::BlockArgument>();
   }
 
-  std::vector<std::int64_t>
+  llvm::Optional<std::vector<std::int64_t>>
   resolveConstantVectorWeights(mlir::arith::ConstantOp &cstOp) {
     std::vector<std::int64_t> values;
     mlir::DenseIntElementsAttr denseVals =
         cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value");
 
     for (llvm::APInt val : denseVals.getValues<llvm::APInt>()) {
+      if (val.getActiveBits() > 64) {
+        return llvm::None;
+      }
       values.push_back(val.getSExtValue());
     }
     return values;

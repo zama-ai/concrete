@@ -94,24 +94,14 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            enablePass);
   addPotentiallyNestedPass(
       pm,
-      mlir::concretelang::createMaxMANPPass([&](const llvm::APInt &currMaxMANP,
-                                                unsigned currMaxWidth) {
-        assert((uint64_t)currMaxWidth < std::numeric_limits<size_t>::max() &&
-               "Maximum width does not fit into size_t");
+      mlir::concretelang::createMaxMANPPass(
+          [&](const uint64_t manp, unsigned width) {
+            if (!oMax2norm.hasValue() || oMax2norm.getValue() < manp)
+              oMax2norm.emplace(manp);
 
-        assert(sizeof(uint64_t) >= sizeof(size_t) &&
-               currMaxMANP.ult(std::numeric_limits<size_t>::max()) &&
-               "Maximum MANP does not fit into size_t");
-
-        size_t manp = (size_t)currMaxMANP.getZExtValue();
-        size_t width = (size_t)currMaxWidth;
-
-        if (!oMax2norm.hasValue() || oMax2norm.getValue() < manp)
-          oMax2norm.emplace(manp);
-
-        if (!oMaxWidth.hasValue() || oMaxWidth.getValue() < width)
-          oMaxWidth.emplace(width);
-      }),
+            if (!oMaxWidth.hasValue() || oMaxWidth.getValue() < width)
+              oMaxWidth.emplace(width);
+          }),
       enablePass);
   if (pm.run(module.getOperation()).failed()) {
     return llvm::make_error<llvm::StringError>(

@@ -16,7 +16,7 @@ unsigned int getEintPrecision(mlir::Value value);
 std::unique_ptr<mlir::Pass> createMANPPass(bool debug = false);
 
 std::unique_ptr<mlir::Pass>
-createMaxMANPPass(std::function<void(const llvm::APInt &, unsigned)> setMax);
+createMaxMANPPass(std::function<void(uint64_t, unsigned)> setMax);
 } // namespace concretelang
 } // namespace mlir
 
