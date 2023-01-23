@@ -1,0 +1,12 @@
+add_mlir_library(
+  FHEDialectTransforms
+  Boolean.cpp
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/FHE
+  DEPENDS
+  FHEDialect
+  mlir-headers
+  LINK_LIBS
+  PUBLIC
+  MLIRIR
+  FHEDialect)

@@ -206,9 +206,9 @@ mlir::LogicalResult ToUnsignedOp::verify() {
 mlir::LogicalResult ToBoolOp::verify() {
   auto input = this->input().getType().cast<EncryptedIntegerType>();
 
-  if (input.getWidth() != 1) {
-    this->emitOpError(
-        "should have 1 as the width of encrypted input to cast to a boolean");
+  if (input.getWidth() != 1 && input.getWidth() != 2) {
+    this->emitOpError("should have 1 or 2 as the width of encrypted input to "
+                      "cast to a boolean");
     return mlir::failure();
   }
 

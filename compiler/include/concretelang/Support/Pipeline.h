@@ -41,6 +41,10 @@ lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     bool parallelize, bool batch);
 
 mlir::LogicalResult
+transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                    std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                llvm::Optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass);

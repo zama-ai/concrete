@@ -413,6 +413,22 @@ static llvm::APInt getSqMANP(
 }
 
 /// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.not` operation.
+static llvm::APInt getSqMANP(
+    mlir::concretelang::FHE::BoolNotOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() == 1 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
+
+  return eNorm;
+}
+
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 /// that is equivalent to an `FHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::MulEintIntOp op,
@@ -1124,10 +1140,15 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     } else if (auto negEintOp =
                    llvm::dyn_cast<mlir::concretelang::FHE::NegEintOp>(op)) {
       norm2SqEquiv = getSqMANP(negEintOp, operands);
+    } else if (auto boolNotOp =
+                   llvm::dyn_cast<mlir::concretelang::FHE::BoolNotOp>(op)) {
+      norm2SqEquiv = getSqMANP(boolNotOp, operands);
     } else if (auto mulEintIntOp =
                    llvm::dyn_cast<mlir::concretelang::FHE::MulEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
     } else if (llvm::isa<mlir::concretelang::FHE::ZeroEintOp>(op) ||
+               llvm::isa<mlir::concretelang::FHE::ToBoolOp>(op) ||
+               llvm::isa<mlir::concretelang::FHE::FromBoolOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::ZeroTensorOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::ApplyLookupTableEintOp>(op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};

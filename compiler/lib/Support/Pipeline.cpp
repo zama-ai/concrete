@@ -35,6 +35,7 @@
 #include <concretelang/Dialect/Concrete/Transforms/Optimization.h>
 #include <concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
+#include <concretelang/Dialect/FHE/Transforms/Boolean.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Support/Pipeline.h>
@@ -204,6 +205,15 @@ lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
     addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
                              enablePass);
   }
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                    std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createFHEBooleanTransformPass(), enablePass);
   return pm.run(module.getOperation());
 }
 

@@ -283,6 +283,12 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::ROUND_TRIP)
     return std::move(res);
 
+  if (mlir::concretelang::pipeline::transformFHEBoolean(mlirContext, module,
+                                                        enablePass)
+          .failed()) {
+    return errorDiag("Transforming FHE boolean ops failed");
+  }
+
   // FHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);

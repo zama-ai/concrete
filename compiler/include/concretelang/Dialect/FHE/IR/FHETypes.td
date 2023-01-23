@@ -78,6 +78,11 @@ def FHE_EncryptedBooleanType : FHE_Type<"EncryptedBoolean",
   let description = [{
     An encrypted boolean.
   }];
+
+  let extraClassDeclaration = [{
+    /// Returns the required number of bits to represent an encrypted boolean
+    static size_t getWidth() { return 2; }
+  }];
 }
 
 #endif

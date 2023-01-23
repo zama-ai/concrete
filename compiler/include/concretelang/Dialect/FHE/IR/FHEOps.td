@@ -375,15 +375,17 @@ def FHE_GenGateOp : FHE_Op<"gen_gate", [NoSideEffect]> {
         Example:
         ```mlir
         // ok
-        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<4xi1>) -> (!FHE.ebool)
+        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<4xi64>) -> (!FHE.ebool)
 
         // error
-        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<4xi4>) -> (!FHE.ebool)
-        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<7xi1>) -> (!FHE.ebool)
+        "FHE.gen_gate"(%a, %b, %ttable): (!FHE.ebool, !FHE.ebool, tensor<7xi64>) -> (!FHE.ebool)
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedBooleanType:$left, FHE_EncryptedBooleanType:$right, TensorOf<[I1]>:$truth_table);
+    // The reason the truth table is of AnyInteger and not I1 is that in lowering passes, the truth_table is meant to be passed
+    // to an LUT operation which requires the table to be of type I64. Whenever lowering passes are no more restrictive, this
+    // can be set to I1 to reflect the boolean logic.
+    let arguments = (ins FHE_EncryptedBooleanType:$left, FHE_EncryptedBooleanType:$right, TensorOf<[AnyInteger]>:$truth_table);
     let results = (outs FHE_EncryptedBooleanType);
     let hasVerifier = 1;
 }
@@ -498,16 +500,17 @@ def FHE_ToBoolOp : FHE_Op<"to_bool", [NoSideEffect]> {
     let description = [{
         Cast an unsigned integer to a boolean.
 
-        The input must necessarily be of width 1, in order to put that single
-        bit into a boolean.
+        The input must necessarily be of width 1 or 2. 2 being the current representation
+        of an encrypted boolean, leaving one bit for the carry.
 
         Examples:
         ```mlir
         // ok
         "FHE.to_bool"(%x) : (!FHE.eint<1>) -> !FHE.ebool
+        "FHE.to_bool"(%x) : (!FHE.eint<2>) -> !FHE.ebool
 
         // error
-        "FHE.to_bool"(%x) : (!FHE.eint<2>) -> !FHE.ebool
+        "FHE.to_bool"(%x) : (!FHE.eint<3>) -> !FHE.ebool
         ```
     }];
 

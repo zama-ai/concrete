@@ -85,6 +85,28 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
         },
     };
   }
+  if (auto lweTy = type.dyn_cast_or_null<
+                   mlir::concretelang::FHE::EncryptedBooleanType>()) {
+    size_t width = mlir::concretelang::FHE::EncryptedBooleanType::getWidth();
+    return CircuitGate{
+        /* .encryption = */ llvm::Optional<EncryptionGate>({
+            /* .secretKeyID = */ secretKeyID,
+            /* .variance = */ variance,
+            /* .encoding = */
+            {
+                /* .precision = */ width,
+                /* .crt = */ std::vector<int64_t>(),
+            },
+        }),
+        /*.shape = */
+        {
+            /*.width = */ width,
+            /*.dimensions = */ std::vector<int64_t>(),
+            /*.size = */ 0,
+            /*.sign = */ false,
+        },
+    };
+  }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
   if (tensor != nullptr) {
     auto gate = gateFromMLIRType(fheContext, secretKeyID, variance,

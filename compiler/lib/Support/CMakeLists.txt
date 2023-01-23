@@ -21,6 +21,7 @@ add_mlir_library(
   FHELinalgDialect
   FHELinalgDialectTransforms
   FHETensorOpsToLinalg
+  FHEDialectTransforms
   FHEToTFHECrt
   FHEToTFHEScalar
   ExtractSDFGOps

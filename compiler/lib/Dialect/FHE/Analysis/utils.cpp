@@ -15,6 +15,7 @@ namespace utils {
 bool isEncryptedValue(mlir::Value value) {
   return (
       value.getType().isa<mlir::concretelang::FHE::EncryptedIntegerType>() ||
+      value.getType().isa<mlir::concretelang::FHE::EncryptedBooleanType>() ||
       (value.getType().isa<mlir::TensorType>() &&
        value.getType()
            .cast<mlir::TensorType>()
@@ -22,14 +23,20 @@ bool isEncryptedValue(mlir::Value value) {
            .isa<mlir::concretelang::FHE::EncryptedIntegerType>()));
 }
 
-/// Returns the bit width of `value` if `value` is an encrypted integer
-/// or the bit width of the elements if `value` is a tensor of
+/// Returns the bit width of `value` if `value` is an encrypted integer,
+/// or the number of bits to represent a boolean if `value` is an encrypted
+/// boolean, or the bit width of the elements if `value` is a tensor of
 /// encrypted integers.
 unsigned int getEintPrecision(mlir::Value value) {
   if (auto ty = value.getType()
                     .dyn_cast_or_null<
                         mlir::concretelang::FHE::EncryptedIntegerType>()) {
     return ty.getWidth();
+  }
+  if (auto ty = value.getType()
+                    .dyn_cast_or_null<
+                        mlir::concretelang::FHE::EncryptedBooleanType>()) {
+    return mlir::concretelang::FHE::EncryptedBooleanType::getWidth();
   } else if (auto tensorTy =
                  value.getType().dyn_cast_or_null<mlir::TensorType>()) {
     if (auto ty = tensorTy.getElementType()

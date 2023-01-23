@@ -78,6 +78,11 @@ public:
     addConversion([](FHE::EncryptedIntegerType type) {
       return convertEint(type.getContext(), type);
     });
+    addConversion([](FHE::EncryptedBooleanType type) {
+      return TFHE::GLWECipherTextType::get(
+          type.getContext(), -1, -1, -1,
+          mlir::concretelang::FHE::EncryptedBooleanType::getWidth());
+    });
     addConversion([](mlir::RankedTensorType type) {
       return maybeConvertEintTensor(type.getContext(), type);
     });
@@ -363,6 +368,51 @@ private:
   concretelang::ScalarLoweringParameters loweringParameters;
 };
 
+/// Rewriter for the `FHE::to_bool` operation.
+struct ToBoolOpPattern : public mlir::OpRewritePattern<FHE::ToBoolOp> {
+  ToBoolOpPattern(mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<FHE::ToBoolOp>(context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHE::ToBoolOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto width = op.input()
+                     .getType()
+                     .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
+                     .getWidth();
+    if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
+      rewriter.replaceOp(op, op.input());
+      return mlir::success();
+    }
+    // TODO
+    op->emitError("only support conversion with width 2 for the moment");
+    return mlir::failure();
+  }
+};
+
+/// Rewriter for the `FHE::from_bool` operation.
+struct FromBoolOpPattern : public mlir::OpRewritePattern<FHE::FromBoolOp> {
+  FromBoolOpPattern(mlir::MLIRContext *context,
+                    mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<FHE::FromBoolOp>(context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHE::FromBoolOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto width = op.getResult()
+                     .getType()
+                     .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
+                     .getWidth();
+    if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
+      rewriter.replaceOp(op, op.input());
+      return mlir::success();
+    }
+    // TODO
+    op->emitError("only support conversion with width 2 for the moment");
+    return mlir::failure();
+  }
+};
+
 } // namespace lowering
 
 struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
@@ -431,6 +481,9 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
         //    |_ `FHE::neg_eint`
         concretelang::GenericTypeAndOpConverterPattern<FHE::NegEintOp,
                                                        TFHE::NegGLWEOp>,
+        //    |_ `FHE::not`
+        concretelang::GenericTypeAndOpConverterPattern<FHE::BoolNotOp,
+                                                       TFHE::NegGLWEOp>,
         //    |_ `FHE::add_eint`
         concretelang::GenericTypeAndOpConverterPattern<FHE::AddEintOp,
                                                        TFHE::AddGLWEOp>>(
@@ -448,6 +501,10 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     //    |_ `FHE::apply_lookup_table`
     patterns.add<lowering::ApplyLookupTableEintOpPattern>(&getContext(),
                                                           loweringParameters);
+
+    // Patterns for boolean conversion ops
+    patterns.add<lowering::FromBoolOpPattern, lowering::ToBoolOpPattern>(
+        &getContext());
 
     // Patterns for the relics of the `FHELinalg` dialect operations.
     //    |_ `linalg::generic` turned to nested `scf::for`
