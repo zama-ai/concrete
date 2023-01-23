@@ -60,10 +60,17 @@ fn assert_dag_correctness(dag: &unparametrized::OperationDag) {
     }
 }
 
-fn assert_no_round(dag: &unparametrized::OperationDag) {
+pub fn has_round(dag: &unparametrized::OperationDag) -> bool {
     for op in &dag.operators {
-        assert!(!matches!(op, Op::Round { .. }));
+        if matches!(op, Op::Round { .. }) {
+            return true;
+        }
     }
+    false
+}
+
+fn assert_no_round(dag: &unparametrized::OperationDag) {
+    assert!(!has_round(dag));
 }
 
 fn assert_valid_variances(dag: &OperationDag) {
@@ -373,8 +380,9 @@ fn constraint_for_one_precision(
     }
 }
 
-pub fn worst_log_norm(dag: &unparametrized::OperationDag) -> f64 {
+pub fn worst_log_norm_for_wop(dag: &unparametrized::OperationDag) -> f64 {
     assert_dag_correctness(dag);
+    assert_no_round(dag);
     let out_variances = out_variances(dag);
     let in_luts_variance = in_luts_variance(dag, &out_variances);
     let coeffs = in_luts_variance

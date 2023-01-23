@@ -8,6 +8,8 @@ use crate::optimization::decomposition::PersistDecompCaches;
 use crate::optimization::wop_atomic_pattern::optimize::optimize_one as wop_optimize;
 use crate::optimization::wop_atomic_pattern::Solution as WopSolution;
 
+use super::analyze::has_round;
+
 pub enum Solution {
     WpSolution(WpSolution),
     WopSolution(WopSolution),
@@ -67,9 +69,12 @@ fn optimize_with_wop_pbs(
     default_log_norm2_woppbs: f64,
     caches: &PersistDecompCaches,
 ) -> Option<WopSolution> {
+    if has_round(dag) {
+        return None;
+    }
     let max_precision = max_precision(dag);
     let nb_luts = analyze::lut_count_from_dag(dag);
-    let worst_log_norm = analyze::worst_log_norm(dag);
+    let worst_log_norm = analyze::worst_log_norm_for_wop(dag);
     let log_norm = default_log_norm2_woppbs.min(worst_log_norm);
     wop_optimize(max_precision as u64, config, log_norm, search_space, caches)
         .best_solution
