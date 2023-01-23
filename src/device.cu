@@ -187,3 +187,9 @@ int cuda_get_max_shared_memory(uint32_t gpu_index) {
   }
   return max_shared_memory;
 }
+
+int cuda_synchronize_stream(void *v_stream) {
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  cudaStreamSynchronize(*stream);
+  return 0;
+}

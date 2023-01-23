@@ -1,11 +1,11 @@
 #ifndef CBS_H
 #define CBS_H
 
-#include "../include/helper_cuda.h"
 #include "bit_extraction.cuh"
 #include "bootstrap.h"
 #include "bootstrap_amortized.cuh"
 #include "device.h"
+#include "helper_cuda.h"
 #include "keyswitch.cuh"
 #include "polynomial/parameters.cuh"
 #include "utils/timer.cuh"
@@ -113,6 +113,7 @@ __host__ void host_circuit_bootstrap(
     uint32_t level_bsk, uint32_t base_log_bsk, uint32_t level_pksk,
     uint32_t base_log_pksk, uint32_t level_cbs, uint32_t base_log_cbs,
     uint32_t number_of_samples, uint32_t max_shared_memory) {
+  cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   uint32_t ciphertext_n_bits = sizeof(Torus) * 8;
@@ -151,12 +152,12 @@ __host__ void host_circuit_bootstrap(
   dim3 copy_block(params::degree / params::opt, 1, 1);
   // Add q/4 to center the error while computing a negacyclic LUT
   // copy pbs result (glwe_dimension + 1) times to be an input of fp-ks
-  copy_add_lwe_cbs<Torus, params><<<copy_grid, copy_block>>>(
+  copy_add_lwe_cbs<Torus, params><<<copy_grid, copy_block, 0, *stream>>>(
       lwe_array_in_fp_ks_buffer, lwe_array_out_pbs_buffer, ciphertext_n_bits,
       base_log_cbs, level_cbs);
 
   cuda_fp_keyswitch_lwe_to_glwe(
-      v_stream, ggsw_out, lwe_array_in_fp_ks_buffer, fp_ksk_array,
+      v_stream, gpu_index, ggsw_out, lwe_array_in_fp_ks_buffer, fp_ksk_array,
       polynomial_size, glwe_dimension, polynomial_size, base_log_pksk,
       level_pksk, pbs_count * (glwe_dimension + 1), glwe_dimension + 1);
 }

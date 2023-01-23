@@ -145,6 +145,7 @@ __host__ void host_extract_bits(
     uint32_t base_log_ksk, uint32_t level_count_ksk, uint32_t number_of_samples,
     uint32_t max_shared_memory) {
 
+  cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
   uint32_t ciphertext_n_bits = sizeof(Torus) * 8;
 

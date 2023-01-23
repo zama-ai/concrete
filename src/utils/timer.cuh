@@ -1,6 +1,7 @@
 #ifndef CNCRT_TIMER_H
 #define CNCRT_TIMER_H
 
+#include <iostream>
 #define synchronize_threads_in_block() __syncthreads()
 
 template <bool active> class CudaMeasureExecution {

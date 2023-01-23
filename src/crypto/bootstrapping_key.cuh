@@ -38,7 +38,8 @@ __device__ T *get_ith_body_kth_block(T *ptr, int i, int k, int level,
               polynomial_size / 2];
 }
 
-void cuda_initialize_twiddles(uint32_t polynomial_size, uint32_t gpu_index) {
+void cuda_initialize_twiddles(uint32_t polynomial_size, void *v_stream,
+                              uint32_t gpu_index) {
   cudaSetDevice(gpu_index);
   int sw_size = polynomial_size / 2;
   short *sw1_h, *sw2_h;
@@ -61,10 +62,11 @@ void cuda_initialize_twiddles(uint32_t polynomial_size, uint32_t gpu_index) {
       cnt++;
     }
   }
-  cudaMemcpyToSymbol(SW1, sw1_h, sw_size * sizeof(short), 0,
-                     cudaMemcpyHostToDevice);
-  cudaMemcpyToSymbol(SW2, sw2_h, sw_size * sizeof(short), 0,
-                     cudaMemcpyHostToDevice);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  cudaMemcpyToSymbolAsync(SW1, sw1_h, sw_size * sizeof(short), 0,
+                          cudaMemcpyHostToDevice, *stream);
+  cudaMemcpyToSymbolAsync(SW2, sw2_h, sw_size * sizeof(short), 0,
+                          cudaMemcpyHostToDevice, *stream);
   free(sw1_h);
   free(sw2_h);
 }
@@ -91,8 +93,8 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
   int blockSize = polynomial_size / choose_opt(polynomial_size);
 
   double2 *h_bsk = (double2 *)malloc(buffer_size);
-  double2 *d_bsk;
-  cudaMalloc((void **)&d_bsk, buffer_size);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  double2 *d_bsk = (double2 *)cuda_malloc_async(buffer_size, stream, gpu_index);
 
   // compress real bsk to complex and divide it on DOUBLE_MAX
   for (int i = 0; i < total_polynomials; i++) {
@@ -110,9 +112,8 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
     }
   }
 
-  cudaMemcpy(d_bsk, h_bsk, buffer_size, cudaMemcpyHostToDevice);
+  cuda_memcpy_async_to_gpu(d_bsk, h_bsk, buffer_size, stream, gpu_index);
 
-  auto stream = static_cast<cudaStream_t *>(v_stream);
   double2 *buffer;
   switch (polynomial_size) {
   case 512:

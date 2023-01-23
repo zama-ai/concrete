@@ -9,7 +9,6 @@
 
 #include "cooperative_groups.h"
 
-#include "../include/helper_cuda.h"
 #include "bootstrap.h"
 #include "complex/operations.cuh"
 #include "crypto/gadget.cuh"
@@ -18,10 +17,10 @@
 #include "fft/bnsmfft.cuh"
 #include "fft/smfft.cuh"
 #include "fft/twiddles.cuh"
+#include "helper_cuda.h"
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
 #include "polynomial/polynomial_math.cuh"
-#include "utils/memory.cuh"
 #include "utils/timer.cuh"
 
 // Cooperative groups are used in the low latency PBS
@@ -263,6 +262,7 @@ __host__ void host_bootstrap_low_latency(
     uint32_t input_lwe_ciphertext_count, uint32_t num_lut_vectors,
     uint32_t max_shared_memory) {
 
+  cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int buffer_size_per_gpu = level_count * input_lwe_ciphertext_count *
@@ -346,7 +346,6 @@ __host__ void host_bootstrap_low_latency(
   checkCudaErrors(cudaGetLastError());
   // Synchronize the streams before copying the result to lwe_array_out at the
   // right place
-  cudaStreamSynchronize(*stream);
   cuda_drop_async(mask_buffer_fft, stream, gpu_index);
   cuda_drop_async(body_buffer_fft, stream, gpu_index);
   cuda_drop_async(d_mem, stream, gpu_index);

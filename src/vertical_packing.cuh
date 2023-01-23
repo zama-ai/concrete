@@ -1,7 +1,6 @@
 #ifndef VERTICAL_PACKING_H
 #define VERTICAL_PACKING_H
 
-#include "../include/helper_cuda.h"
 #include "bootstrap.h"
 #include "complex/operations.cuh"
 #include "crypto/gadget.cuh"
@@ -11,11 +10,11 @@
 #include "fft/bnsmfft.cuh"
 #include "fft/smfft.cuh"
 #include "fft/twiddles.cuh"
+#include "helper_cuda.h"
 #include "polynomial/functions.cuh"
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
 #include "polynomial/polynomial_math.cuh"
-#include "utils/memory.cuh"
 #include "utils/timer.cuh"
 
 template <class params> __device__ void fft(double2 *output) {
@@ -266,11 +265,13 @@ __global__ void device_batch_cmux(Torus *glwe_array_out, Torus *glwe_array_in,
  *  - tau: The quantity of CMUX trees that should be executed
  */
 template <typename Torus, typename STorus, class params>
-void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
-                    Torus *ggsw_in, Torus *lut_vector, uint32_t glwe_dimension,
-                    uint32_t polynomial_size, uint32_t base_log,
-                    uint32_t level_count, uint32_t r, uint32_t tau,
-                    uint32_t max_shared_memory) {
+__host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
+                             Torus *glwe_array_out, Torus *ggsw_in,
+                             Torus *lut_vector, uint32_t glwe_dimension,
+                             uint32_t polynomial_size, uint32_t base_log,
+                             uint32_t level_count, uint32_t r, uint32_t tau,
+                             uint32_t max_shared_memory) {
+  cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int num_lut = (1 << r);
@@ -278,11 +279,8 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
     // Simply copy the LUTs
     add_padding_to_lut_async<Torus, params>(glwe_array_out, lut_vector,
                                             glwe_dimension, tau, stream);
-    checkCudaErrors(cudaStreamSynchronize(*stream));
     return;
   }
-
-  cuda_initialize_twiddles(polynomial_size, 0);
 
   int memory_needed_per_block =
       sizeof(Torus) * polynomial_size +       // glwe_sub_mask
@@ -364,11 +362,6 @@ void host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
     checkCudaErrors(cudaMemcpyAsync(
         glwe_array_out + i * glwe_size, output + i * num_lut * glwe_size,
         glwe_size * sizeof(Torus), cudaMemcpyDeviceToDevice, *stream));
-
-  // We only need synchronization to assert that data is in glwe_array_out
-  // before returning. Memory release can be added to the stream and processed
-  // later.
-  checkCudaErrors(cudaStreamSynchronize(*stream));
 
   // Free memory
   cuda_drop_async(d_ggsw_fft_in, stream, gpu_index);
@@ -466,12 +459,13 @@ __global__ void device_blind_rotation_and_sample_extraction(
 }
 
 template <typename Torus, typename STorus, class params>
-void host_blind_rotate_and_sample_extraction(
+__host__ void host_blind_rotate_and_sample_extraction(
     void *v_stream, uint32_t gpu_index, Torus *lwe_out, Torus *ggsw_in,
     Torus *lut_vector, uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
     uint32_t polynomial_size, uint32_t base_log, uint32_t l_gadget,
     uint32_t max_shared_memory) {
 
+  cudaSetDevice(gpu_index);
   assert(glwe_dimension ==
          1); // For larger k we will need to adjust the mask size
   auto stream = static_cast<cudaStream_t *>(v_stream);

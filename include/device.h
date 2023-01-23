@@ -33,4 +33,6 @@ int cuda_drop(void *ptr, uint32_t gpu_index);
 int cuda_drop_async(void *ptr, cudaStream_t *stream, uint32_t gpu_index);
 
 int cuda_get_max_shared_memory(uint32_t gpu_index);
+
+int cuda_synchronize_stream(void *v_stream);
 }

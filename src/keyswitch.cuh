@@ -170,6 +170,7 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(
     uint32_t lwe_dimension_out, uint32_t base_log, uint32_t level_count,
     uint32_t num_samples) {
 
+  cudaSetDevice(gpu_index);
   constexpr int ideal_threads = 128;
 
   int lwe_dim = lwe_dimension_out + 1;
@@ -190,7 +191,8 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(
 
   int shared_mem = sizeof(Torus) * (lwe_dimension_out + 1);
 
-  cudaMemset(lwe_array_out, 0, sizeof(Torus) * lwe_size_after);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  cudaMemsetAsync(lwe_array_out, 0, sizeof(Torus) * lwe_size_after, *stream);
 
   dim3 grid(num_samples, 1, 1);
   dim3 threads(ideal_threads, 1, 1);
@@ -198,21 +200,20 @@ __host__ void cuda_keyswitch_lwe_ciphertext_vector(
   cudaFuncSetAttribute(keyswitch<Torus>,
                        cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
 
-  auto stream = static_cast<cudaStream_t *>(v_stream);
   keyswitch<<<grid, threads, shared_mem, *stream>>>(
       lwe_array_out, lwe_array_in, ksk, lwe_dimension_in, lwe_dimension_out,
       base_log, level_count, lwe_lower, lwe_upper, cutoff);
   checkCudaErrors(cudaGetLastError());
-
-  cudaStreamSynchronize(*stream);
 }
 
 template <typename Torus>
 __host__ void cuda_fp_keyswitch_lwe_to_glwe(
-    void *v_stream, Torus *glwe_array_out, Torus *lwe_array_in,
-    Torus *fp_ksk_array, uint32_t lwe_dimension_in, uint32_t glwe_dimension,
-    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
-    uint32_t number_of_input_lwe, uint32_t number_of_keys) {
+    void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
+    Torus *lwe_array_in, Torus *fp_ksk_array, uint32_t lwe_dimension_in,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t base_log,
+    uint32_t level_count, uint32_t number_of_input_lwe,
+    uint32_t number_of_keys) {
+  cudaSetDevice(gpu_index);
   int threads = 256;
   int glwe_accumulator_size = (glwe_dimension + 1) * polynomial_size;
   dim3 blocks(glwe_accumulator_size / threads, number_of_input_lwe, 1);
@@ -223,8 +224,6 @@ __host__ void cuda_fp_keyswitch_lwe_to_glwe(
       glwe_array_out, lwe_array_in, fp_ksk_array, lwe_dimension_in,
       glwe_dimension, polynomial_size, base_log, level_count,
       number_of_input_lwe, number_of_keys);
-
-  cudaStreamSynchronize(*stream);
 }
 
 #endif

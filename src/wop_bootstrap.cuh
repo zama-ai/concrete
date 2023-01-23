@@ -3,12 +3,11 @@
 
 #include "cooperative_groups.h"
 
-#include "../include/helper_cuda.h"
 #include "bit_extraction.cuh"
 #include "bootstrap.h"
 #include "circuit_bootstrap.cuh"
+#include "helper_cuda.h"
 #include "utils/kernel_dimensions.cuh"
-#include "utils/memory.cuh"
 #include "utils/timer.cuh"
 #include "vertical_packing.cuh"
 
@@ -40,6 +39,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
     uint32_t level_count_cbs, uint32_t number_of_inputs, uint32_t tau,
     uint32_t max_shared_memory) {
 
+  cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   // allocate and initialize device pointers for circuit bootstrap
@@ -140,6 +140,7 @@ __host__ void host_wop_pbs(
     uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
     uint32_t max_shared_memory) {
 
+  cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   // let mut h_lut_vector_indexes = vec![0 as u32; 1];

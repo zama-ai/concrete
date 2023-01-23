@@ -5,8 +5,8 @@
 #include "crypto/torus.cuh"
 #include "fft/bnsmfft.cuh"
 #include "fft/smfft.cuh"
+#include "helper_cuda.h"
 #include "parameters.cuh"
-#include "utils/memory.cuh"
 #include "utils/timer.cuh"
 #include <cassert>
 #include <cstdint>
@@ -32,67 +32,6 @@ template <typename T, class params> class Vector;
 
 template <typename FT, class params> class Twiddles;
 
-template <typename T, class params> class VectorPolynomial {
-public:
-  T *m_data;
-  uint32_t m_num_polynomials;
-
-  __device__ VectorPolynomial(T *data, uint32_t num_polynomials)
-      : m_data(data), m_num_polynomials(num_polynomials) {}
-
-  __device__ VectorPolynomial<T, params> get_chunk(int chunk_num,
-                                                   int chunk_size) {
-    int pos = chunk_num * chunk_size;
-    T *ptr = &m_data[pos];
-
-    return VectorPolynomial<T, params>(ptr, chunk_size / params::degree);
-  }
-
-  __host__ VectorPolynomial() {}
-
-  __host__ VectorPolynomial(DeviceMemory &dmem, uint32_t num_polynomials,
-                            int device)
-      : m_num_polynomials(num_polynomials) {
-    dmem.get_allocation(&m_data, m_num_polynomials * params::degree, device);
-  }
-
-  __host__ VectorPolynomial(DeviceMemory &dmem, T *source,
-                            uint32_t num_polynomials, int device)
-      : m_num_polynomials(num_polynomials) {
-    dmem.get_allocation_and_copy_async(
-        &m_data, source, m_num_polynomials * params::degree, device);
-  }
-
-  __host__ void copy_to_host(T *dest) {
-    cudaMemcpyAsync(dest, m_data,
-                    sizeof(T) * m_num_polynomials * params::degree,
-                    cudaMemcpyDeviceToHost);
-  }
-
-  __device__ void copy_into(Polynomial<T, params> &dest,
-                            int polynomial_number = 0) {
-    int tid = threadIdx.x;
-    int begin = polynomial_number * params::degree;
-#pragma unroll
-    for (int i = 0; i < params::opt; i++) {
-      dest.coefficients[tid] = m_data[tid + begin];
-      tid = tid + params::degree / params::opt;
-    }
-    synchronize_threads_in_block();
-  }
-
-  __device__ void split_into_polynomials(Polynomial<T, params> &first,
-                                         Polynomial<T, params> &second) {
-    int tid = threadIdx.x;
-#pragma unroll
-    for (int i = 0; i < params::opt; i++) {
-      first.coefficients[tid] = m_data[tid];
-      second.coefficients[tid] = m_data[tid + params::degree];
-      tid = tid + params::degree / params::opt;
-    }
-  }
-};
-
 template <typename T, class params> class Polynomial {
 public:
   T *coefficients;
@@ -103,18 +42,6 @@ public:
 
   __device__ Polynomial(char *memory, uint32_t degree)
       : coefficients((T *)memory), degree(degree) {}
-
-  __host__ Polynomial(DeviceMemory &dmem, uint32_t degree, int device)
-      : degree(degree) {
-    dmem.get_allocation(&this->coefficients, params::degree, device);
-  }
-
-  __host__ Polynomial(DeviceMemory &dmem, T *source, uint32_t degree,
-                      int device)
-      : degree(degree) {
-    dmem.get_allocation_and_copy_async(&this->coefficients, source,
-                                       params::degree, device);
-  }
 
   __host__ void copy_to_host(T *dest) {
     cudaMemcpyAsync(dest, this->coefficients, sizeof(T) * params::degree,
@@ -400,22 +327,6 @@ public:
   __host__ void copy_to_device(T *source, uint32_t elements) {
     cudaMemcpyAsync(m_data, source, sizeof(T) * elements,
                     cudaMemcpyHostToDevice);
-  }
-
-  __host__ Vector(DeviceMemory &dmem, T *source, uint32_t size_source,
-                  int device)
-      : m_size(size_source) {
-    dmem.get_allocation_and_copy_async(&m_data, source, m_size, device);
-  }
-
-  __host__ Vector(DeviceMemory &dmem, T *source, uint32_t allocation_size,
-                  uint32_t copy_size, int device)
-      : m_size(allocation_size) {
-    if (copy_size > allocation_size) {
-      printf("warning: copying more than allocation");
-    }
-    dmem.get_allocation_and_copy_async(&m_data, source, m_size, copy_size,
-                                       device);
   }
 
   __host__ void copy_to_host(T *dest) {
