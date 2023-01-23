@@ -381,6 +381,7 @@ class Node:
             "negative",
             "ones",
             "reshape",
+            "squeeze",
             "subtract",
             "sum",
             "transpose",

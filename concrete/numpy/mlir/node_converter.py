@@ -170,6 +170,7 @@ class NodeConverter:
             "negative": self._convert_neg,
             "ones": self._convert_ones,
             "reshape": self._convert_reshape,
+            "squeeze": self._convert_squeeze,
             "subtract": self._convert_sub,
             "sum": self._convert_sum,
             "transpose": self._convert_transpose,
@@ -883,6 +884,27 @@ class NodeConverter:
                 ],
             ),
         ).result
+
+    def _convert_squeeze(self) -> OpResult:
+        """
+        Convert "squeeze" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        # because of the tracing logic, we have the correct output shape
+
+        # if the output shape is (), it means (1, 1, ..., 1, 1) is squeezed
+        # and the result is a scalar, so we need to do indexing, not reshape
+        if self.node.output.shape == ():
+            assert all(size == 1 for size in self.node.inputs[0].shape)
+            self.node.properties["kwargs"]["index"] = (0,) * self.node.inputs[0].ndim
+            return self._convert_static_indexing()
+
+        # otherwise, a simple reshape would work as we already have the correct shape
+        return self._convert_reshape()
 
     def _convert_sub(self) -> OpResult:
         """

@@ -287,6 +287,7 @@ class Tracer:
         np.spacing,
         np.sqrt,
         np.square,
+        np.squeeze,
         np.subtract,
         np.sum,
         np.tan,
@@ -319,6 +320,9 @@ class Tracer:
         },
         np.round_: {
             "decimals",
+        },
+        np.squeeze: {
+            "axis",
         },
         np.sum: {
             "axis",

@@ -642,6 +642,41 @@ def deterministic_unary_function(x):
             },
             id="x ** 3",
         ),
+        pytest.param(
+            lambda x: np.squeeze(x),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 2, 1, 3, 1, 4)},
+            },
+            id="np.squeeze(x)",
+        ),
+        pytest.param(
+            lambda x: np.squeeze(x, axis=2),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 2, 1, 3, 1, 4)},
+            },
+            id="np.squeeze(x, axis=2)",
+        ),
+        pytest.param(
+            lambda x: np.squeeze(x, axis=(0, 4)),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 2, 1, 3, 1, 4)},
+            },
+            id="np.squeeze(x, axis=(0, 4))",
+        ),
+        pytest.param(
+            lambda x: np.squeeze(x),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 1, 1)},
+            },
+            id="np.squeeze(x) where x.shape == (1, 1, 1)",
+        ),
+        pytest.param(
+            lambda x: np.squeeze(x, axis=1),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 1, 1)},
+            },
+            id="np.squeeze(x, axis=1) where x.shape == (1, 1, 1)",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):

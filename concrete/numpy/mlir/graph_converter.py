@@ -151,6 +151,9 @@ class GraphConverter:
                 if not inputs[0].is_encrypted:
                     return "only encrypted reshape is supported"
 
+            elif name == "squeeze":
+                assert_that(len(inputs) == 1)
+
             elif name == "subtract":
                 assert_that(len(inputs) == 2)
 
