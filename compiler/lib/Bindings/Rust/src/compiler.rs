@@ -49,6 +49,9 @@ impl_CStructErrorMsg! {[
     ffi::LibraryCompilationResult,
     ffi::LibrarySupport,
     ffi::ServerLambda,
+    ffi::CircuitGate,
+    ffi::EncryptionGate,
+    ffi::Encoding,
     ffi::ClientParameters,
     ffi::KeySet,
     ffi::KeySetCache,
@@ -218,6 +221,18 @@ def_CStructWrapper! {
     ServerLambda => {
         serverLambdaIsNull,
         serverLambdaDestroy,
+    },
+    CircuitGate => {
+        circuitGateIsNull,
+        circuitGateDestroy,
+    },
+    EncryptionGate => {
+        encryptionGateIsNull,
+        encryptionGateDestroy,
+    },
+    Encoding => {
+        encodingIsNull,
+        encodingDestroy,
     },
     ClientParameters => {
         clientParametersIsNull,
@@ -578,7 +593,71 @@ impl LibrarySupport {
 
 impl ServerLambda {}
 
+impl CircuitGate {
+    pub fn encryption_gate(self) -> Option<EncryptionGate> {
+        let inner = unsafe { ffi::circuitGateEncryptionGate(self._c) };
+        let gate = EncryptionGate::wrap(inner);
+        if gate.is_null() {
+            None
+        } else {
+            Some(gate)
+        }
+    }
+}
+
+impl EncryptionGate {
+    pub fn encoding(self) -> Encoding {
+        let inner = unsafe { ffi::encryptionGateEncoding(self._c) };
+
+        Encoding::wrap(inner)
+    }
+
+    pub fn variance(&self) -> f64 {
+        unsafe { ffi::encryptionGateVariance(self._c) }
+    }
+}
+
+impl Encoding {
+    pub fn precision(&self) -> u64 {
+        unsafe { ffi::encodingPrecision(self._c) }
+    }
+}
+
 impl ClientParameters {
+    pub fn num_inputs(&self) -> usize {
+        unsafe { ffi::clientParametersInputsSize(self._c) }
+            .try_into()
+            .unwrap()
+    }
+
+    pub fn input(&self, index: usize) -> Option<CircuitGate> {
+        if index >= self.num_inputs() {
+            None
+        } else {
+            let gate = unsafe {
+                ffi::clientParametersInputCircuitGate(self._c, index.try_into().unwrap())
+            };
+            Some(CircuitGate::wrap(gate))
+        }
+    }
+
+    pub fn num_outputs(&self) -> usize {
+        unsafe { ffi::clientParametersOutputsSize(self._c) }
+            .try_into()
+            .unwrap()
+    }
+
+    pub fn output(&self, index: usize) -> Option<CircuitGate> {
+        if index >= self.num_outputs() {
+            None
+        } else {
+            let gate = unsafe {
+                ffi::clientParametersOutputCircuitGate(self._c, index.try_into().unwrap())
+            };
+            Some(CircuitGate::wrap(gate))
+        }
+    }
+
     pub fn serialize(&self) -> Result<Vec<c_char>, CompilerError> {
         unsafe {
             let serialized_ref = BufferRef::wrap(ffi::clientParametersSerialize(self._c));
@@ -1116,6 +1195,35 @@ mod test {
         assert!(!server.is_null());
         let client_params = support.load_client_parameters(&result).unwrap();
         assert!(!client_params.is_null());
+
+        assert_eq!(client_params.num_inputs(), 2);
+        let input_bitwidth_0 = client_params
+            .input(0)
+            .unwrap()
+            .encryption_gate()
+            .unwrap()
+            .encoding()
+            .precision();
+        let input_bitwidth_1 = client_params
+            .input(1)
+            .unwrap()
+            .encryption_gate()
+            .unwrap()
+            .encoding()
+            .precision();
+
+        assert_eq!(input_bitwidth_0, 5);
+        assert_eq!(input_bitwidth_1, 5);
+
+        assert_eq!(client_params.num_outputs(), 1);
+        let output_bitwidth = client_params
+            .output(0)
+            .unwrap()
+            .encryption_gate()
+            .unwrap()
+            .encoding()
+            .precision();
+        assert_eq!(output_bitwidth, 5);
     }
 
     #[test]

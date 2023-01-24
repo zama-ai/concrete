@@ -58,6 +58,12 @@ DEFINE_C_API_PTR_METHODS_WITH_ERROR(PublicResult,
                                     mlir::concretelang::clientlib::PublicResult)
 DEFINE_C_API_PTR_METHODS_WITH_ERROR(CompilationFeedback,
                                     mlir::concretelang::CompilationFeedback)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(Encoding,
+                                    mlir::concretelang::clientlib::Encoding)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(
+    EncryptionGate, mlir::concretelang::clientlib::EncryptionGate)
+DEFINE_C_API_PTR_METHODS_WITH_ERROR(CircuitGate,
+                                    mlir::concretelang::clientlib::CircuitGate)
 
 #undef DEFINE_C_API_PTR_METHODS_WITH_ERROR
 

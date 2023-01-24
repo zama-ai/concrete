@@ -341,6 +341,57 @@ ClientParameters clientParametersCopy(ClientParameters params) {
 
 void clientParametersDestroy(ClientParameters params){C_STRUCT_CLEANER(params)}
 
+size_t clientParametersOutputsSize(ClientParameters params) {
+  return unwrap(params)->outputs.size();
+}
+
+size_t clientParametersInputsSize(ClientParameters params) {
+  return unwrap(params)->inputs.size();
+}
+
+CircuitGate clientParametersOutputCircuitGate(ClientParameters params,
+                                              size_t index) {
+  auto &cppGate = unwrap(params)->outputs[index];
+  auto *cppGateCopy = new mlir::concretelang::clientlib::CircuitGate(cppGate);
+  return wrap(cppGateCopy);
+}
+
+CircuitGate clientParametersInputCircuitGate(ClientParameters params,
+                                             size_t index) {
+  auto &cppGate = unwrap(params)->inputs[index];
+  auto *cppGateCopy = new mlir::concretelang::clientlib::CircuitGate(cppGate);
+  return wrap(cppGateCopy);
+}
+
+EncryptionGate circuitGateEncryptionGate(CircuitGate circuit_gate) {
+  auto &maybe_gate = unwrap(circuit_gate)->encryption;
+
+  if (maybe_gate) {
+    auto *copy = new mlir::concretelang::clientlib::EncryptionGate(*maybe_gate);
+    return wrap(copy);
+  }
+  return (static_cast<EncryptionGate (*)(
+              mlir::concretelang::clientlib::EncryptionGate *)>(wrap))(nullptr);
+}
+
+double encryptionGateVariance(EncryptionGate encryption_gate) {
+  return unwrap(encryption_gate)->variance;
+}
+
+Encoding encryptionGateEncoding(EncryptionGate encryption_gate) {
+  auto &cppEncoding = unwrap(encryption_gate)->encoding;
+  auto *copy = new mlir::concretelang::clientlib::Encoding(cppEncoding);
+  return wrap(copy);
+}
+
+uint64_t encodingPrecision(Encoding encoding) {
+  return unwrap(encoding)->precision;
+}
+
+void circuitGateDestroy(CircuitGate gate) { C_STRUCT_CLEANER(gate) }
+void encryptionGateDestroy(EncryptionGate gate) { C_STRUCT_CLEANER(gate) }
+void encodingDestroy(Encoding encoding){C_STRUCT_CLEANER(encoding)}
+
 /// ********** KeySet CAPI *****************************************************
 
 KeySet keySetGenerate(ClientParameters params, uint64_t seed_msb,

@@ -37,6 +37,9 @@ DEFINE_C_API_STRUCT(LibrarySupport, void);
 DEFINE_C_API_STRUCT(CompilationOptions, void);
 DEFINE_C_API_STRUCT(OptimizerConfig, void);
 DEFINE_C_API_STRUCT(ServerLambda, void);
+DEFINE_C_API_STRUCT(Encoding, void);
+DEFINE_C_API_STRUCT(EncryptionGate, void);
+DEFINE_C_API_STRUCT(CircuitGate, void);
 DEFINE_C_API_STRUCT(ClientParameters, void);
 DEFINE_C_API_STRUCT(KeySet, void);
 DEFINE_C_API_STRUCT(KeySetCache, void);
@@ -63,6 +66,9 @@ DEFINE_NULL_PTR_CHECKER(librarySupportIsNull, LibrarySupport)
 DEFINE_NULL_PTR_CHECKER(compilationOptionsIsNull, CompilationOptions)
 DEFINE_NULL_PTR_CHECKER(optimizerConfigIsNull, OptimizerConfig)
 DEFINE_NULL_PTR_CHECKER(serverLambdaIsNull, ServerLambda)
+DEFINE_NULL_PTR_CHECKER(circuitGateIsNull, CircuitGate)
+DEFINE_NULL_PTR_CHECKER(encodingIsNull, Encoding)
+DEFINE_NULL_PTR_CHECKER(encryptionGateIsNull, EncryptionGate)
 DEFINE_NULL_PTR_CHECKER(clientParametersIsNull, ClientParameters)
 DEFINE_NULL_PTR_CHECKER(keySetIsNull, KeySet)
 DEFINE_NULL_PTR_CHECKER(keySetCacheIsNull, KeySetCache)
@@ -239,6 +245,46 @@ MLIR_CAPI_EXPORTED ClientParameters
 clientParametersCopy(ClientParameters params);
 
 MLIR_CAPI_EXPORTED void clientParametersDestroy(ClientParameters params);
+
+/// Returns the number of output circuit gates
+MLIR_CAPI_EXPORTED size_t clientParametersOutputsSize(ClientParameters params);
+
+/// Returns the number of input circuit gates
+MLIR_CAPI_EXPORTED size_t clientParametersInputsSize(ClientParameters params);
+
+/// Returns the output circuit gate corresponding to the index
+///
+/// - `index` must be valid.
+MLIR_CAPI_EXPORTED CircuitGate
+clientParametersOutputCircuitGate(ClientParameters params, size_t index);
+
+/// Returns the input circuit gate corresponding to the index
+///
+/// - `index` must be valid.
+MLIR_CAPI_EXPORTED CircuitGate
+clientParametersInputCircuitGate(ClientParameters params, size_t index);
+
+/// Returns the EncryptionGate of the circuit gate.
+///
+/// - The returned gate will be null if the gate does not represent encrypted
+/// data
+MLIR_CAPI_EXPORTED EncryptionGate
+circuitGateEncryptionGate(CircuitGate circuit_gate);
+
+/// Returns the variance of the encryption gate
+MLIR_CAPI_EXPORTED double
+encryptionGateVariance(EncryptionGate encryption_gate);
+
+/// Returns the Encoding of the encryption gate.
+MLIR_CAPI_EXPORTED Encoding
+encryptionGateEncoding(EncryptionGate encryption_gate);
+
+/// Returns the precision (bit width) of the encoding
+MLIR_CAPI_EXPORTED uint64_t encodingPrecision(Encoding encoding);
+
+MLIR_CAPI_EXPORTED void circuitGateDestroy(CircuitGate gate);
+MLIR_CAPI_EXPORTED void encryptionGateDestroy(EncryptionGate gate);
+MLIR_CAPI_EXPORTED void encodingDestroy(Encoding encoding);
 
 /// ********** KeySet CAPI *****************************************************
 
