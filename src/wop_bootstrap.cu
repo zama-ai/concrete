@@ -1,6 +1,80 @@
 #include "wop_bootstrap.cuh"
 
 /*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the circuit bootstrap and vertical packing on 32 bits inputs, into
+ * `cbs_vp_buffer`. It also fills the value of delta_log to be used in the
+ * circuit bootstrap.
+ */
+void scratch_cuda_circuit_bootstrap_vertical_packing_32(
+    void *v_stream, uint32_t gpu_index, void **cbs_vp_buffer,
+    uint32_t *cbs_delta_log, uint32_t glwe_dimension, uint32_t lwe_dimension,
+    uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t number_of_inputs, uint32_t tau, bool allocate_gpu_memory) {
+
+  scratch_circuit_bootstrap_vertical_packing<uint32_t>(
+      v_stream, gpu_index, (uint32_t **)cbs_vp_buffer, cbs_delta_log,
+      glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
+      number_of_inputs, tau, allocate_gpu_memory);
+}
+
+/*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the circuit bootstrap and vertical packing on 64 bits inputs, into
+ * `cbs_vp_buffer`. It also fills the value of delta_log to be used in the
+ * circuit bootstrap.
+ */
+void scratch_cuda_circuit_bootstrap_vertical_packing_64(
+    void *v_stream, uint32_t gpu_index, void **cbs_vp_buffer,
+    uint32_t *cbs_delta_log, uint32_t glwe_dimension, uint32_t lwe_dimension,
+    uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t number_of_inputs, uint32_t tau, bool allocate_gpu_memory) {
+
+  scratch_circuit_bootstrap_vertical_packing<uint64_t>(
+      v_stream, gpu_index, (uint64_t **)cbs_vp_buffer, cbs_delta_log,
+      glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
+      number_of_inputs, tau, allocate_gpu_memory);
+}
+
+/*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the wop PBS on 32 bits inputs, into `wop_pbs_buffer`. It also fills the value
+ * of delta_log and cbs_delta_log to be used in the bit extract and circuit
+ * bootstrap.
+ */
+void scratch_cuda_wop_pbs_32(
+    void *v_stream, uint32_t gpu_index, void **wop_pbs_buffer,
+    uint32_t *delta_log, uint32_t *cbs_delta_log, uint32_t glwe_dimension,
+    uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t number_of_bits_of_message_including_padding,
+    uint32_t number_of_bits_to_extract, uint32_t number_of_inputs) {
+  scratch_wop_pbs<uint32_t>(v_stream, gpu_index, (uint32_t **)wop_pbs_buffer,
+                            delta_log, cbs_delta_log, glwe_dimension,
+                            lwe_dimension, polynomial_size, level_count_cbs,
+                            number_of_bits_of_message_including_padding,
+                            number_of_bits_to_extract, number_of_inputs);
+}
+
+/*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the wop PBS on 64 bits inputs, into `wop_pbs_buffer`. It also fills the value
+ * of delta_log and cbs_delta_log to be used in the bit extract and circuit
+ * bootstrap.
+ */
+void scratch_cuda_wop_pbs_64(
+    void *v_stream, uint32_t gpu_index, void **wop_pbs_buffer,
+    uint32_t *delta_log, uint32_t *cbs_delta_log, uint32_t glwe_dimension,
+    uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t number_of_bits_of_message_including_padding,
+    uint32_t number_of_bits_to_extract, uint32_t number_of_inputs) {
+  scratch_wop_pbs<uint64_t>(v_stream, gpu_index, (uint64_t **)wop_pbs_buffer,
+                            delta_log, cbs_delta_log, glwe_dimension,
+                            lwe_dimension, polynomial_size, level_count_cbs,
+                            number_of_bits_of_message_including_padding,
+                            number_of_bits_to_extract, number_of_inputs);
+}
+
+/*
  * Entry point for cuda circuit bootstrap + vertical packing for batches of
  * input 64 bit LWE ciphertexts.
  *  - `v_stream` is a void pointer to the Cuda stream to be used in the kernel
@@ -12,6 +86,7 @@
  * compressed complex key.
  *  - 'cbs_fpksk' list of private functional packing keyswitch keys
  *  - 'lut_vector' list of test vectors
+ *  - 'cbs_vp_buffer' a pre-allocated array to store intermediate results
  *  - 'polynomial_size' size of the test polynomial, supported sizes:
  * {512, 1024, 2048, 4096, 8192}
  *  - 'glwe_dimension' supported dimensions: {1}
@@ -29,11 +104,11 @@
  */
 void cuda_circuit_bootstrap_vertical_packing_64(
     void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lwe_array_in,
-    void *fourier_bsk, void *cbs_fpksk, void *lut_vector,
-    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t level_count_bsk, uint32_t base_log_bsk, uint32_t level_count_pksk,
-    uint32_t base_log_pksk, uint32_t level_count_cbs, uint32_t base_log_cbs,
-    uint32_t number_of_inputs, uint32_t lut_number,
+    void *fourier_bsk, void *cbs_fpksk, void *lut_vector, void *cbs_vp_buffer,
+    uint32_t cbs_delta_log, uint32_t polynomial_size, uint32_t glwe_dimension,
+    uint32_t lwe_dimension, uint32_t level_count_bsk, uint32_t base_log_bsk,
+    uint32_t level_count_pksk, uint32_t base_log_pksk, uint32_t level_count_cbs,
+    uint32_t base_log_cbs, uint32_t number_of_inputs, uint32_t lut_number,
     uint32_t max_shared_memory) {
   assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
           "512, 1024, 2048, 4096, 8192",
@@ -56,46 +131,51 @@ void cuda_circuit_bootstrap_vertical_packing_64(
     host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
-        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk, glwe_dimension,
-        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
-        base_log_pksk, level_count_pksk, base_log_cbs, level_count_cbs,
-        number_of_inputs, lut_number, max_shared_memory);
+        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk,
+        (uint64_t *)cbs_vp_buffer, cbs_delta_log, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log_bsk, level_count_bsk, base_log_pksk,
+        level_count_pksk, base_log_cbs, level_count_cbs, number_of_inputs,
+        lut_number, max_shared_memory);
     break;
   case 1024:
     host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
-        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk, glwe_dimension,
-        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
-        base_log_pksk, level_count_pksk, base_log_cbs, level_count_cbs,
-        number_of_inputs, lut_number, max_shared_memory);
+        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk,
+        (uint64_t *)cbs_vp_buffer, cbs_delta_log, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log_bsk, level_count_bsk, base_log_pksk,
+        level_count_pksk, base_log_cbs, level_count_cbs, number_of_inputs,
+        lut_number, max_shared_memory);
     break;
   case 2048:
     host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
-        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk, glwe_dimension,
-        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
-        base_log_pksk, level_count_pksk, base_log_cbs, level_count_cbs,
-        number_of_inputs, lut_number, max_shared_memory);
+        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk,
+        (uint64_t *)cbs_vp_buffer, cbs_delta_log, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log_bsk, level_count_bsk, base_log_pksk,
+        level_count_pksk, base_log_cbs, level_count_cbs, number_of_inputs,
+        lut_number, max_shared_memory);
     break;
   case 4096:
     host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
-        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk, glwe_dimension,
-        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
-        base_log_pksk, level_count_pksk, base_log_cbs, level_count_cbs,
-        number_of_inputs, lut_number, max_shared_memory);
+        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk,
+        (uint64_t *)cbs_vp_buffer, cbs_delta_log, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log_bsk, level_count_bsk, base_log_pksk,
+        level_count_pksk, base_log_cbs, level_count_cbs, number_of_inputs,
+        lut_number, max_shared_memory);
     break;
   case 8192:
     host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
-        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk, glwe_dimension,
-        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
-        base_log_pksk, level_count_pksk, base_log_cbs, level_count_cbs,
-        number_of_inputs, lut_number, max_shared_memory);
+        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk,
+        (uint64_t *)cbs_vp_buffer, cbs_delta_log, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log_bsk, level_count_bsk, base_log_pksk,
+        level_count_pksk, base_log_cbs, level_count_cbs, number_of_inputs,
+        lut_number, max_shared_memory);
     break;
   default:
     break;
@@ -115,6 +195,7 @@ void cuda_circuit_bootstrap_vertical_packing_64(
  * compressed complex key.
  *  - 'ksk' keyswitch key to use inside extract bits block
  *  - 'cbs_fpksk' list of fp-keyswitch keys
+ *  - 'wop_pbs_buffer' a pre-allocated array to store intermediate results
  *  - 'glwe_dimension' supported dimensions: {1}
  *  - 'lwe_dimension' dimension of input lwe ciphertexts
  *  - 'polynomial_size' size of the test polynomial, supported sizes:
@@ -138,14 +219,15 @@ void cuda_circuit_bootstrap_vertical_packing_64(
  */
 void cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index, void *lwe_array_out,
                      void *lwe_array_in, void *lut_vector, void *fourier_bsk,
-                     void *ksk, void *cbs_fpksk, uint32_t glwe_dimension,
+                     void *ksk, void *cbs_fpksk, void *wop_pbs_buffer,
+                     uint32_t cbs_delta_log, uint32_t glwe_dimension,
                      uint32_t lwe_dimension, uint32_t polynomial_size,
                      uint32_t base_log_bsk, uint32_t level_count_bsk,
                      uint32_t base_log_ksk, uint32_t level_count_ksk,
                      uint32_t base_log_pksk, uint32_t level_count_pksk,
                      uint32_t base_log_cbs, uint32_t level_count_cbs,
                      uint32_t number_of_bits_of_message_including_padding,
-                     uint32_t number_of_bits_to_extract,
+                     uint32_t number_of_bits_to_extract, uint32_t delta_log,
                      uint32_t number_of_inputs, uint32_t max_shared_memory) {
   assert(("Error (GPU WOP PBS): polynomial_size should be one of "
           "512, 1024, 2048, 4096, 8192",
@@ -169,57 +251,100 @@ void cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index, void *lwe_array_out,
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
         (double2 *)fourier_bsk, (uint64_t *)ksk, (uint64_t *)cbs_fpksk,
-        glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, base_log_pksk,
-        level_count_pksk, base_log_cbs, level_count_cbs,
+        (uint64_t *)wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
+        base_log_ksk, level_count_ksk, base_log_pksk, level_count_pksk,
+        base_log_cbs, level_count_cbs,
         number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        delta_log, number_of_inputs, max_shared_memory);
     break;
   case 1024:
     host_wop_pbs<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
         (double2 *)fourier_bsk, (uint64_t *)ksk, (uint64_t *)cbs_fpksk,
-        glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, base_log_pksk,
-        level_count_pksk, base_log_cbs, level_count_cbs,
+        (uint64_t *)wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
+        base_log_ksk, level_count_ksk, base_log_pksk, level_count_pksk,
+        base_log_cbs, level_count_cbs,
         number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        delta_log, number_of_inputs, max_shared_memory);
     break;
   case 2048:
     host_wop_pbs<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
         (double2 *)fourier_bsk, (uint64_t *)ksk, (uint64_t *)cbs_fpksk,
-        glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, base_log_pksk,
-        level_count_pksk, base_log_cbs, level_count_cbs,
+        (uint64_t *)wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
+        base_log_ksk, level_count_ksk, base_log_pksk, level_count_pksk,
+        base_log_cbs, level_count_cbs,
         number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        delta_log, number_of_inputs, max_shared_memory);
     break;
   case 4096:
     host_wop_pbs<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
         (double2 *)fourier_bsk, (uint64_t *)ksk, (uint64_t *)cbs_fpksk,
-        glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, base_log_pksk,
-        level_count_pksk, base_log_cbs, level_count_cbs,
+        (uint64_t *)wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
+        base_log_ksk, level_count_ksk, base_log_pksk, level_count_pksk,
+        base_log_cbs, level_count_cbs,
         number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        delta_log, number_of_inputs, max_shared_memory);
     break;
   case 8192:
     host_wop_pbs<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
         (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
         (double2 *)fourier_bsk, (uint64_t *)ksk, (uint64_t *)cbs_fpksk,
-        glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, base_log_pksk,
-        level_count_pksk, base_log_cbs, level_count_cbs,
+        (uint64_t *)wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+        lwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
+        base_log_ksk, level_count_ksk, base_log_pksk, level_count_pksk,
+        base_log_cbs, level_count_cbs,
         number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        delta_log, number_of_inputs, max_shared_memory);
     break;
   default:
     break;
   }
+}
+
+/*
+ * This cleanup function frees the data for the wop PBS on GPU in wop_pbs_buffer
+ * for 32 bits inputs.
+ */
+void cleanup_cuda_wop_pbs_32(void *v_stream, uint32_t gpu_index,
+                             void **wop_pbs_buffer) {
+  cleanup_wop_pbs<uint32_t>(v_stream, gpu_index, (uint32_t **)wop_pbs_buffer);
+}
+/*
+ * This cleanup function frees the data for the wop PBS on GPU in wop_pbs_buffer
+ * for 64 bits inputs.
+ */
+void cleanup_cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index,
+                             void **wop_pbs_buffer) {
+  cleanup_wop_pbs<uint64_t>(v_stream, gpu_index, (uint64_t **)wop_pbs_buffer);
+}
+
+/*
+ * This cleanup function frees the data for the circuit bootstrap and vertical
+ * packing on GPU in cbs_vp_buffer for 32 bits inputs.
+ */
+void cleanup_cuda_circuit_bootstrap_vertical_packing_32(void *v_stream,
+                                                        uint32_t gpu_index,
+                                                        void **cbs_vp_buffer) {
+  cleanup_circuit_bootstrap_vertical_packing<uint32_t>(
+      v_stream, gpu_index, (uint32_t **)cbs_vp_buffer);
+}
+/*
+ * This cleanup function frees the data for the circuit bootstrap and vertical
+ * packing on GPU in cbs_vp_buffer for 64 bits inputs.
+ */
+void cleanup_cuda_circuit_bootstrap_vertical_packing_64(void *v_stream,
+                                                        uint32_t gpu_index,
+                                                        void **cbs_vp_buffer) {
+  cleanup_circuit_bootstrap_vertical_packing<uint64_t>(
+      v_stream, gpu_index, (uint64_t **)cbs_vp_buffer);
 }
