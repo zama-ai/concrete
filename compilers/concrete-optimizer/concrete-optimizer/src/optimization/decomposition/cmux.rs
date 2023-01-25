@@ -102,6 +102,14 @@ pub fn pareto_quantities(
     quantities
 }
 
+pub fn lowest_noise_br(quantities: &[CmuxComplexityNoise], in_lwe_dim: u64) -> f64 {
+    quantities[quantities.len() - 1].noise_br(in_lwe_dim)
+}
+
+pub fn lowest_complexity_br(quantities: &[CmuxComplexityNoise], in_lwe_dim: u64) -> f64 {
+    quantities[0].complexity_br(in_lwe_dim)
+}
+
 pub type Cache = CacheHashMap<GlweParameters, Vec<CmuxComplexityNoise>>;
 
 impl Cache {

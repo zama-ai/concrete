@@ -8,8 +8,12 @@ use crate::optimization::atomic_pattern::{
     OptimizationDecompositionsConsts, OptimizationState, Solution,
 };
 use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
-use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
-use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
+use crate::optimization::decomposition::cmux::{
+    lowest_complexity_br, lowest_noise_br, CmuxComplexityNoise,
+};
+use crate::optimization::decomposition::keyswitch::{
+    lowest_complexity_ks, lowest_noise_ks, KsComplexityNoise,
+};
 use crate::optimization::decomposition::PersistDecompCaches;
 use crate::parameters::GlweParameters;
 
@@ -219,6 +223,45 @@ fn optimize_no_luts(
     state
 }
 
+fn not_feasible_macro_parameters(
+    dag: &analyze::OperationDag,
+    internal_dim: u64,
+    input_noise_out: f64,
+    noise_modulus_switching: f64,
+    cmux_pareto: &[CmuxComplexityNoise],
+    ks_pareto: &[KsComplexityNoise],
+) -> bool {
+    let lowest_noise_br = lowest_noise_br(cmux_pareto, internal_dim);
+    let lowest_noise_ks = lowest_noise_ks(ks_pareto, internal_dim);
+    !dag.feasible(
+        input_noise_out,
+        lowest_noise_br,
+        lowest_noise_ks,
+        noise_modulus_switching,
+    )
+}
+
+fn too_complex_macro_parameters(
+    state: &OptimizationState,
+    dag: &analyze::OperationDag,
+    internal_dim: u64,
+    glwe_params: GlweParameters,
+    cmux_pareto: &[CmuxComplexityNoise],
+    ks_pareto: &[KsComplexityNoise],
+) -> bool {
+    let best_complexity = if let Some(sol) = state.best_solution {
+        sol.complexity
+    } else {
+        return false;
+    };
+    let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
+    let lowest_complexity_br = lowest_complexity_br(cmux_pareto, internal_dim);
+    let lowest_complexity_ks = lowest_complexity_ks(ks_pareto, internal_dim);
+    let lower_one_lut_complexity = lowest_complexity_ks + lowest_complexity_br;
+
+    dag.complexity(input_lwe_dimension, lower_one_lut_complexity) > best_complexity
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn optimize(
     dag: &unparametrized::OperationDag,
@@ -292,6 +335,26 @@ pub fn optimize(
                 if not_feasible(input_noise_out, noise_modulus_switching) {
                     // noise_modulus_switching is increasing with internal_dim
                     break;
+                }
+                if too_complex_macro_parameters(
+                    &state,
+                    &dag,
+                    internal_dim,
+                    glwe_params,
+                    cmux_pareto,
+                    ks_pareto,
+                ) {
+                    break;
+                }
+                if not_feasible_macro_parameters(
+                    &dag,
+                    internal_dim,
+                    input_noise_out,
+                    noise_modulus_switching,
+                    cmux_pareto,
+                    ks_pareto,
+                ) {
+                    continue;
                 }
                 update_best_solution_with_best_decompositions(
                     &mut state,

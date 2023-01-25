@@ -109,6 +109,14 @@ pub fn pareto_quantities(
     quantities
 }
 
+pub fn lowest_noise_ks(quantities: &[KsComplexityNoise], in_lwe_dim: u64) -> f64 {
+    quantities[quantities.len() - 1].noise(in_lwe_dim)
+}
+
+pub fn lowest_complexity_ks(quantities: &[KsComplexityNoise], in_lwe_dim: u64) -> f64 {
+    quantities[0].complexity(in_lwe_dim)
+}
+
 pub type Cache = CacheHashMap<u64, Vec<KsComplexityNoise>>;
 
 impl Cache {
