@@ -21,6 +21,7 @@
 * [Floating Points](tutorial/floating\_points.md)
 * [Virtual Circuits](tutorial/virtual\_circuits.md)
 * [Direct Circuits](tutorial/direct\_circuits.md)
+* [Key Value Database](tutorial/key\_value\_database.md)
 
 ## How To
 
