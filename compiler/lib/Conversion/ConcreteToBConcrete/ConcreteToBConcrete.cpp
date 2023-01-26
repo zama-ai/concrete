@@ -27,6 +27,7 @@
 
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
+#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"

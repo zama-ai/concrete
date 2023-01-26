@@ -10,7 +10,8 @@
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
+#include "concretelang/Conversion/Utils/Dialects/Tensor.h"
+#include "concretelang/Conversion/Utils/Legality.h"
 
 namespace mlir {
 namespace concretelang {
@@ -20,37 +21,43 @@ populateWithTensorTypeConverterPatterns(mlir::RewritePatternSet &patterns,
                                         mlir::ConversionTarget &target,
                                         mlir::TypeConverter &typeConverter) {
   // ExtractOp
-  patterns.add<GenericTypeConverterPattern<mlir::tensor::ExtractOp>>(
+  patterns.add<TypeConvertingReinstantiationPattern<mlir::tensor::ExtractOp>>(
       patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::ExtractOp>(target, typeConverter);
+
   // ExtractSliceOp
-  patterns.add<GenericTypeConverterPattern<mlir::tensor::ExtractSliceOp>>(
+  patterns.add<
+      TypeConvertingReinstantiationPattern<mlir::tensor::ExtractSliceOp, true>>(
       patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::ExtractSliceOp>(target,
                                                           typeConverter);
 
   // InsertOp
-  patterns.add<GenericTypeConverterPattern<mlir::tensor::InsertOp>>(
+  patterns.add<TypeConvertingReinstantiationPattern<mlir::tensor::InsertOp>>(
       patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::InsertOp>(target, typeConverter);
   // InsertSliceOp
-  patterns.add<GenericTypeConverterPattern<mlir::tensor::InsertSliceOp>>(
+  patterns.add<
+      TypeConvertingReinstantiationPattern<mlir::tensor::InsertSliceOp, true>>(
       patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::InsertSliceOp>(target, typeConverter);
 
   // FromElementsOp
-  patterns.add<GenericTypeConverterPattern<mlir::tensor::FromElementsOp>>(
-      patterns.getContext(), typeConverter);
+  patterns
+      .add<TypeConvertingReinstantiationPattern<mlir::tensor::FromElementsOp>>(
+          patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::FromElementsOp>(target,
                                                           typeConverter);
   // TensorCollapseShapeOp
-  patterns.add<GenericTypeConverterPattern<mlir::tensor::CollapseShapeOp>>(
-      patterns.getContext(), typeConverter);
+  patterns
+      .add<TypeConvertingReinstantiationPattern<mlir::tensor::CollapseShapeOp>>(
+          patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::CollapseShapeOp>(target,
                                                            typeConverter);
   // TensorExpandShapeOp
-  patterns.add<GenericTypeConverterPattern<mlir::tensor::ExpandShapeOp>>(
-      patterns.getContext(), typeConverter);
+  patterns
+      .add<TypeConvertingReinstantiationPattern<mlir::tensor::ExpandShapeOp>>(
+          patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::ExpandShapeOp>(target, typeConverter);
 }
 } // namespace concretelang

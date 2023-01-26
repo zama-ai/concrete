@@ -15,6 +15,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include <concretelang/Conversion/Utils/FuncConstOpConversion.h>
 #include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
+#include <concretelang/Conversion/Utils/Legality.h>
 #include <llvm/IR/Instructions.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Bufferization/Transforms/Bufferize.h>

@@ -96,16 +96,6 @@ struct GenericTypeAndOpConverterPattern : public mlir::OpRewritePattern<OldOp> {
 private:
   mlir::TypeConverter &converter;
 };
-
-template <typename Op>
-void addDynamicallyLegalTypeOp(mlir::ConversionTarget &target,
-                               mlir::TypeConverter &typeConverter) {
-  target.addDynamicallyLegalOp<Op>([&](Op op) {
-    return typeConverter.isLegal(op->getOperandTypes()) &&
-           typeConverter.isLegal(op->getResultTypes());
-  });
-}
-
 } // namespace concretelang
 } // namespace mlir
 

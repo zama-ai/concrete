@@ -10,13 +10,15 @@
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/IR/Operation.h>
 
+#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
+#include "concretelang/Conversion/Utils/ReinstantiatingOpTypeConversion.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "concretelang/Conversion/FHEToTFHECrt/Pass.h"
 #include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/Dialects/SCF.h"
 #include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
-#include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
@@ -112,7 +114,8 @@ namespace lowering {
 
 /// A pattern rewriter superclass used by most op rewriters during the
 /// conversion.
-template <typename T> struct CrtOpPattern : public mlir::OpRewritePattern<T> {
+template <typename T>
+struct CrtOpPattern : public mlir::OpConversionPattern<T> {
 
   /// The lowering parameters are bound to the op rewriter.
   concretelang::CrtLoweringParameters loweringParameters;
@@ -120,8 +123,8 @@ template <typename T> struct CrtOpPattern : public mlir::OpRewritePattern<T> {
   CrtOpPattern(mlir::MLIRContext *context,
                concretelang::CrtLoweringParameters params,
                mlir::PatternBenefit benefit = 1)
-      : mlir::OpRewritePattern<T>(context, benefit),
-        loweringParameters(params) {}
+      : mlir::OpConversionPattern<T>(typeConverter, context, benefit),
+        loweringParameters(params), typeConverter(params) {}
 
   /// Writes an `scf::for` that loops over the crt dimension of one tensor and
   /// execute the input lambda to write the loop body. Returns the first result
@@ -154,11 +157,6 @@ template <typename T> struct CrtOpPattern : public mlir::OpRewritePattern<T> {
         location, zeroConstantOp, crtSizeConstantOp, oneConstantOp, tensor,
         body);
 
-    // Convert the types of the new operation
-    typing::TypeConverter converter(loweringParameters);
-    concretelang::convertOperandAndResultTypes(rewriter, newOp,
-                                               converter.getConversionLambda());
-
     return newOp.getResult(0);
   }
 
@@ -176,6 +174,9 @@ template <typename T> struct CrtOpPattern : public mlir::OpRewritePattern<T> {
         castedPlaintext, rewriter.getI64ArrayAttr(loweringParameters.mods),
         rewriter.getI64IntegerAttr(loweringParameters.modsProd));
   }
+
+protected:
+  typing::TypeConverter typeConverter;
 };
 
 /// Rewriter for the `FHE::add_eint_int` operation.
@@ -187,17 +188,12 @@ struct AddEintIntOpPattern : public CrtOpPattern<FHE::AddEintIntOp> {
       : CrtOpPattern<FHE::AddEintIntOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(FHE::AddEintIntOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+  matchAndRewrite(FHE::AddEintIntOp op, FHE::AddEintIntOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
     mlir::Location location = op.getLoc();
-    mlir::Value eintOperand = op.a();
-    mlir::Value intOperand = op.b();
-
-    // Convert operand type to glwe tensor.
-    typing::TypeConverter converter(loweringParameters);
-    intOperand.setType(converter.convertType(intOperand.getType()));
-    eintOperand.setType(converter.convertType(eintOperand.getType()));
+    mlir::Value eintOperand = adaptor.a();
+    mlir::Value intOperand = adaptor.b();
 
     // Write plaintext encoding
     mlir::Value encodedPlaintextTensor =
@@ -205,7 +201,7 @@ struct AddEintIntOpPattern : public CrtOpPattern<FHE::AddEintIntOp> {
 
     // Write add loop.
     mlir::Type ciphertextScalarType =
-        converter.convertType(eintOperand.getType())
+        converter->convertType(eintOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
     mlir::Value output = writeUnaryTensorLoop(
@@ -239,17 +235,12 @@ struct SubIntEintOpPattern : public CrtOpPattern<FHE::SubIntEintOp> {
       : CrtOpPattern<FHE::SubIntEintOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(FHE::SubIntEintOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+  matchAndRewrite(FHE::SubIntEintOp op, FHE::SubIntEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
     mlir::Location location = op.getLoc();
-    mlir::Value intOperand = op.a();
-    mlir::Value eintOperand = op.b();
-
-    // Convert operand type to glwe tensor.
-    typing::TypeConverter converter(loweringParameters);
-    intOperand.setType(converter.convertType(intOperand.getType()));
-    eintOperand.setType(converter.convertType(eintOperand.getType()));
+    mlir::Value intOperand = adaptor.a();
+    mlir::Value eintOperand = adaptor.b();
 
     // Write plaintext encoding
     mlir::Value encodedPlaintextTensor =
@@ -257,7 +248,7 @@ struct SubIntEintOpPattern : public CrtOpPattern<FHE::SubIntEintOp> {
 
     // Write add loop.
     mlir::Type ciphertextScalarType =
-        converter.convertType(eintOperand.getType())
+        converter->convertType(eintOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
     mlir::Value output = writeUnaryTensorLoop(
@@ -291,17 +282,12 @@ struct SubEintIntOpPattern : public CrtOpPattern<FHE::SubEintIntOp> {
       : CrtOpPattern<FHE::SubEintIntOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(FHE::SubEintIntOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+  matchAndRewrite(FHE::SubEintIntOp op, FHE::SubEintIntOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
     mlir::Location location = op.getLoc();
-    mlir::Value eintOperand = op.a();
-    mlir::Value intOperand = op.b();
-
-    // Convert operand type to glwe tensor.
-    typing::TypeConverter converter(loweringParameters);
-    intOperand.setType(converter.convertType(intOperand.getType()));
-    eintOperand.setType(converter.convertType(eintOperand.getType()));
+    mlir::Value eintOperand = adaptor.a();
+    mlir::Value intOperand = adaptor.b();
 
     // Write plaintext negation
     mlir::Type intType = intOperand.getType();
@@ -319,7 +305,7 @@ struct SubEintIntOpPattern : public CrtOpPattern<FHE::SubEintIntOp> {
 
     // Write add loop.
     mlir::Type ciphertextScalarType =
-        converter.convertType(eintOperand.getType())
+        converter->convertType(eintOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
     mlir::Value output = writeUnaryTensorLoop(
@@ -353,21 +339,16 @@ struct AddEintOpPattern : CrtOpPattern<FHE::AddEintOp> {
       : CrtOpPattern<FHE::AddEintOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(FHE::AddEintOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+  matchAndRewrite(FHE::AddEintOp op, FHE::AddEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
     mlir::Location location = op.getLoc();
-    mlir::Value lhsOperand = op.a();
-    mlir::Value rhsOperand = op.b();
-
-    // Convert operand type to glwe tensor.
-    typing::TypeConverter converter(loweringParameters);
-    lhsOperand.setType(converter.convertType(lhsOperand.getType()));
-    rhsOperand.setType(converter.convertType(rhsOperand.getType()));
+    mlir::Value lhsOperand = adaptor.a();
+    mlir::Value rhsOperand = adaptor.b();
 
     // Write add loop.
     mlir::Type ciphertextScalarType =
-        converter.convertType(lhsOperand.getType())
+        converter->convertType(lhsOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
     mlir::Value output = writeUnaryTensorLoop(
@@ -401,21 +382,16 @@ struct SubEintOpPattern : CrtOpPattern<FHE::SubEintOp> {
       : CrtOpPattern<FHE::SubEintOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(FHE::SubEintOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+  matchAndRewrite(FHE::SubEintOp op, FHE::SubEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
     mlir::Location location = op.getLoc();
-    mlir::Value lhsOperand = op.a();
-    mlir::Value rhsOperand = op.b();
-
-    // Convert operand type to glwe tensor.
-    typing::TypeConverter converter(loweringParameters);
-    lhsOperand.setType(converter.convertType(lhsOperand.getType()));
-    rhsOperand.setType(converter.convertType(rhsOperand.getType()));
+    mlir::Value lhsOperand = adaptor.a();
+    mlir::Value rhsOperand = adaptor.b();
 
     // Write sub loop.
     mlir::Type ciphertextScalarType =
-        converter.convertType(lhsOperand.getType())
+        converter->convertType(lhsOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
     mlir::Value output = writeUnaryTensorLoop(
@@ -451,18 +427,14 @@ struct NegEintOpPattern : CrtOpPattern<FHE::NegEintOp> {
       : CrtOpPattern<FHE::NegEintOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(FHE::NegEintOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+  matchAndRewrite(FHE::NegEintOp op, FHE::NegEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
     mlir::Location location = op.getLoc();
-    mlir::Value operand = op.a();
-
-    // Convert operand type to glwe tensor.
-    typing::TypeConverter converter{loweringParameters};
-    operand.setType(converter.convertType(operand.getType()));
+    mlir::Value operand = adaptor.a();
 
     // Write the loop nest.
-    mlir::Type ciphertextScalarType = converter.convertType(operand.getType())
+    mlir::Type ciphertextScalarType = converter->convertType(operand.getType())
                                           .cast<mlir::RankedTensorType>()
                                           .getElementType();
     mlir::Value loopRes = writeUnaryTensorLoop(
@@ -494,16 +466,12 @@ struct MulEintIntOpPattern : CrtOpPattern<FHE::MulEintIntOp> {
       : CrtOpPattern<FHE::MulEintIntOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(FHE::MulEintIntOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+  matchAndRewrite(FHE::MulEintIntOp op, FHE::MulEintIntOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
     mlir::Location location = op.getLoc();
-    mlir::Value eintOperand = op.a();
-    mlir::Value intOperand = op.b();
-
-    // Convert operand type to glwe tensor.
-    typing::TypeConverter converter{loweringParameters};
-    eintOperand.setType(converter.convertType(eintOperand.getType()));
+    mlir::Value eintOperand = adaptor.a();
+    mlir::Value intOperand = adaptor.b();
 
     // Write cleartext "encoding"
     mlir::Value encodedCleartext = rewriter.create<mlir::arith::ExtSIOp>(
@@ -511,7 +479,7 @@ struct MulEintIntOpPattern : CrtOpPattern<FHE::MulEintIntOp> {
 
     // Write the loop nest.
     mlir::Type ciphertextScalarType =
-        converter.convertType(eintOperand.getType())
+        converter->convertType(eintOperand.getType())
             .cast<mlir::RankedTensorType>()
             .getElementType();
     mlir::Value loopRes = writeUnaryTensorLoop(
@@ -545,9 +513,9 @@ struct ApplyLookupTableEintOpPattern
 
   ::mlir::LogicalResult
   matchAndRewrite(FHE::ApplyLookupTableEintOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
-    typing::TypeConverter converter(loweringParameters);
+                  FHE::ApplyLookupTableEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
 
     mlir::Value newLut =
         rewriter
@@ -556,7 +524,7 @@ struct ApplyLookupTableEintOpPattern
                 mlir::RankedTensorType::get(
                     mlir::ArrayRef<int64_t>(loweringParameters.lutSize),
                     rewriter.getI64Type()),
-                op.lut(),
+                adaptor.lut(),
                 rewriter.getI64ArrayAttr(
                     mlir::ArrayRef<int64_t>(loweringParameters.mods)),
                 rewriter.getI64ArrayAttr(
@@ -567,11 +535,9 @@ struct ApplyLookupTableEintOpPattern
 
     // Replace the lut with an encoded / expanded one.
     auto wopPBS = rewriter.create<TFHE::WopPBSGLWEOp>(
-        op.getLoc(), op.getType(), op.a(), newLut, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, rewriter.getI64ArrayAttr({}));
+        op.getLoc(), converter->convertType(op.getType()), adaptor.a(), newLut,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, rewriter.getI64ArrayAttr({}));
 
-    concretelang::convertOperandAndResultTypes(rewriter, wopPBS,
-                                               converter.getConversionLambda());
     rewriter.replaceOp(op, {wopPBS.getResult()});
     return ::mlir::success();
   };
@@ -587,7 +553,9 @@ struct TensorExtractOpPattern : public CrtOpPattern<mlir::tensor::ExtractOp> {
 
   ::mlir::LogicalResult
   matchAndRewrite(mlir::tensor::ExtractOp op,
-                  mlir::PatternRewriter &rewriter) const override {
+                  mlir::tensor::ExtractOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
 
     if (!op.getTensor()
              .getType()
@@ -601,7 +569,7 @@ struct TensorExtractOpPattern : public CrtOpPattern<mlir::tensor::ExtractOp> {
              .isa<TFHE::GLWECipherTextType>()) {
       return mlir::success();
     }
-    typing::TypeConverter converter{loweringParameters};
+
     mlir::SmallVector<mlir::OpFoldResult> offsets;
     mlir::SmallVector<mlir::OpFoldResult> sizes;
     mlir::SmallVector<mlir::OpFoldResult> strides;
@@ -617,11 +585,10 @@ struct TensorExtractOpPattern : public CrtOpPattern<mlir::tensor::ExtractOp> {
     strides.push_back(rewriter.getI64IntegerAttr(1));
     auto newOp = rewriter.create<mlir::tensor::ExtractSliceOp>(
         op.getLoc(),
-        converter.convertType(op.getResult().getType())
+        converter->convertType(op.getResult().getType())
             .cast<mlir::RankedTensorType>(),
-        op.getTensor(), offsets, sizes, strides);
-    concretelang::convertOperandAndResultTypes(rewriter, newOp,
-                                               converter.getConversionLambda());
+        adaptor.getTensor(), offsets, sizes, strides);
+
     rewriter.replaceOp(op, {newOp.getResult()});
     return mlir::success();
   }
@@ -637,8 +604,8 @@ struct TensorInsertOpPattern : public CrtOpPattern<mlir::tensor::InsertOp> {
 
   ::mlir::LogicalResult
   matchAndRewrite(mlir::tensor::InsertOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-
+                  mlir::tensor::InsertOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
     if (!op.getDest()
              .getType()
              .cast<mlir::TensorType>()
@@ -651,7 +618,7 @@ struct TensorInsertOpPattern : public CrtOpPattern<mlir::tensor::InsertOp> {
              .isa<TFHE::GLWECipherTextType>()) {
       return mlir::success();
     }
-    typing::TypeConverter converter{loweringParameters};
+
     mlir::SmallVector<mlir::OpFoldResult> offsets;
     mlir::SmallVector<mlir::OpFoldResult> sizes;
     mlir::SmallVector<mlir::OpFoldResult> strides;
@@ -666,9 +633,9 @@ struct TensorInsertOpPattern : public CrtOpPattern<mlir::tensor::InsertOp> {
     sizes.push_back(rewriter.getI64IntegerAttr(loweringParameters.nMods));
     strides.push_back(rewriter.getI64IntegerAttr(1));
     auto newOp = rewriter.create<mlir::tensor::InsertSliceOp>(
-        op.getLoc(), op.getScalar(), op.getDest(), offsets, sizes, strides);
-    concretelang::convertOperandAndResultTypes(rewriter, newOp,
-                                               converter.getConversionLambda());
+        op.getLoc(), adaptor.getScalar(), op.getDest(), offsets, sizes,
+        strides);
+
     rewriter.replaceOp(op, {newOp});
     return mlir::success();
   }
@@ -685,7 +652,10 @@ struct TensorFromElementsOpPattern
 
   ::mlir::LogicalResult
   matchAndRewrite(mlir::tensor::FromElementsOp op,
-                  mlir::PatternRewriter &rewriter) const override {
+                  mlir::tensor::FromElementsOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::TypeConverter *converter = this->getTypeConverter();
+
     if (!op.getResult()
              .getType()
              .cast<mlir::RankedTensorType>()
@@ -699,13 +669,11 @@ struct TensorFromElementsOpPattern
       return mlir::success();
     }
 
-    typing::TypeConverter converter{loweringParameters};
-
     // Create dest tensor allocation op
     mlir::Value outputTensor =
         rewriter.create<mlir::bufferization::AllocTensorOp>(
             op.getLoc(),
-            converter.convertType(op.getResult().getType())
+            converter->convertType(op.getResult().getType())
                 .cast<mlir::RankedTensorType>(),
             mlir::ValueRange{});
 
@@ -723,15 +691,13 @@ struct TensorFromElementsOpPattern
       strides.push_back(rewriter.getI64IntegerAttr(1));
       offsets.push_back(rewriter.getI64IntegerAttr(0));
     }
-    for (size_t insertionIndex = 0; insertionIndex < op.getElements().size();
-         ++insertionIndex) {
+    for (size_t insertionIndex = 0;
+         insertionIndex < adaptor.getElements().size(); ++insertionIndex) {
       offsets[0] = rewriter.getI64IntegerAttr(insertionIndex);
       mlir::tensor::InsertSliceOp insertOp =
           rewriter.create<mlir::tensor::InsertSliceOp>(
-              op.getLoc(), op.getElements()[insertionIndex], outputTensor,
+              op.getLoc(), adaptor.getElements()[insertionIndex], outputTensor,
               offsets, sizes, strides);
-      concretelang::convertOperandAndResultTypes(
-          rewriter, insertOp, converter.getConversionLambda());
       outputTensor = insertOp.getResult();
     }
     rewriter.replaceOp(op, {outputTensor});
@@ -780,7 +746,11 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
               op, converter);
         });
     target.addLegalOp<mlir::func::CallOp>();
-    target.addLegalOp<mlir::bufferization::AllocTensorOp>();
+
+    concretelang::addDynamicallyLegalTypeOp<mlir::bufferization::AllocTensorOp>(
+        target, converter);
+    concretelang::addDynamicallyLegalTypeOp<mlir::func::ReturnOp>(target,
+                                                                  converter);
     concretelang::addDynamicallyLegalTypeOp<mlir::tensor::ExtractSliceOp>(
         target, converter);
     concretelang::addDynamicallyLegalTypeOp<mlir::tensor::InsertSliceOp>(
@@ -812,15 +782,20 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
     //---------------------------------------------------------- Adding patterns
     mlir::RewritePatternSet patterns(&getContext());
 
+    // Patterns for `bufferization` dialect operations.
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+        mlir::bufferization::AllocTensorOp, true>>(patterns.getContext(),
+                                                   converter);
+
     // Patterns for the `FHE` dialect operations
     patterns.add<
         //    |_ `FHE::zero_eint`
-        concretelang::GenericTypeAndOpConverterPattern<FHE::ZeroEintOp,
-                                                       TFHE::ZeroGLWEOp>,
+        concretelang::GenericOneToOneOpConversionPattern<FHE::ZeroEintOp,
+                                                         TFHE::ZeroGLWEOp>,
         //    |_ `FHE::zero_tensor`
-        concretelang::GenericTypeAndOpConverterPattern<FHE::ZeroTensorOp,
-                                                       TFHE::ZeroTensorGLWEOp>>(
-        &getContext(), converter);
+        concretelang::GenericOneToOneOpConversionPattern<
+            FHE::ZeroTensorOp, TFHE::ZeroTensorGLWEOp>>(&getContext(),
+                                                        converter);
     //    |_ `FHE::add_eint_int`
     patterns.add<lowering::AddEintIntOpPattern,
                  //    |_ `FHE::add_eint`
@@ -841,37 +816,35 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
 
     // Patterns for the relics of the `FHELinalg` dialect operations.
     //    |_ `linalg::generic` turned to nested `scf::for`
-    patterns.add<concretelang::GenericTypeConverterPattern<mlir::scf::ForOp>>(
-        patterns.getContext(), converter);
-    patterns.add<concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>>(
+    patterns.add<
+        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::ForOp>>(
         patterns.getContext(), converter);
     patterns.add<
-        RegionOpTypeConverterPattern<mlir::scf::ForOp, typing::TypeConverter>>(
+        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::YieldOp>>(
+        patterns.getContext(), converter);
+    patterns.add<
+        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::ForOp>>(
         &getContext(), converter);
     patterns.add<lowering::TensorExtractOpPattern>(&getContext(),
                                                    loweringParameters);
     patterns.add<lowering::TensorInsertOpPattern>(&getContext(),
                                                   loweringParameters);
-    patterns.add<concretelang::GenericTypeConverterPattern<
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::ExtractSliceOp>>(patterns.getContext(), converter);
-    patterns.add<
-        concretelang::GenericTypeConverterPattern<mlir::tensor::InsertSliceOp>>(
-        patterns.getContext(), converter);
-    patterns.add<concretelang::GenericTypeConverterPattern<
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+        mlir::tensor::InsertSliceOp>>(patterns.getContext(), converter);
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::CollapseShapeOp>>(patterns.getContext(), converter);
-    patterns.add<
-        concretelang::GenericTypeConverterPattern<mlir::tensor::ExpandShapeOp>>(
-        patterns.getContext(), converter);
-    patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
-                                              typing::TypeConverter>>(
-        &getContext(), converter);
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+        mlir::tensor::ExpandShapeOp>>(patterns.getContext(), converter);
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+        mlir::tensor::GenerateOp, true>>(&getContext(), converter);
 
     // Patterns for `func` dialect operations.
     mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
         patterns, converter);
-    patterns
-        .add<concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>>(
-            patterns.getContext(), converter);
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+        mlir::func::ReturnOp>>(patterns.getContext(), converter);
     patterns.add<FunctionConstantOpConversion<typing::TypeConverter>>(
         &getContext(), converter);
 
@@ -880,26 +853,27 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
                                                         loweringParameters);
 
     // Patterns for the `RT` dialect operations.
-    patterns
-        .add<concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
-             concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::MakeReadyFutureOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::AwaitFutureOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::CreateAsyncTaskOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::BuildReturnPtrPlaceholderOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::DerefReturnPtrPlaceholderOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::WorkFunctionReturnOp>,
-             concretelang::GenericTypeConverterPattern<
-                 concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                                converter);
+    patterns.add<
+        // concretelang::TypeConvertingReinstantiationPattern<
+        //     mlir::func::ReturnOp>,
+        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::YieldOp>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::MakeReadyFutureOp>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::AwaitFutureOp>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::CreateAsyncTaskOp, true>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::BuildReturnPtrPlaceholderOp>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::DerefReturnPtrPlaceholderOp>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::WorkFunctionReturnOp>,
+        concretelang::TypeConvertingReinstantiationPattern<
+            concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
+                                                           converter);
 
     //--------------------------------------------------------- Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

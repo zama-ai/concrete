@@ -4,6 +4,7 @@
 // for license information.
 
 #include <iostream>
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -232,6 +233,8 @@ void TFHEToConcretePass::runOnOperation() {
       mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
       mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
       mlir::concretelang::GenericTypeConverterPattern<
+          mlir::bufferization::AllocTensorOp>,
+      mlir::concretelang::GenericTypeConverterPattern<
           mlir::concretelang::RT::MakeReadyFutureOp>,
       mlir::concretelang::GenericTypeConverterPattern<
           mlir::concretelang::RT::AwaitFutureOp>,
@@ -270,6 +273,8 @@ void TFHEToConcretePass::runOnOperation() {
       target, converter);
   mlir::concretelang::addDynamicallyLegalTypeOp<mlir::linalg::YieldOp>(
       target, converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<
+      mlir::bufferization::AllocTensorOp>(target, converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {

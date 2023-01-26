@@ -16,6 +16,7 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 #include "concretelang/Support/Constants.h"
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 
 namespace TFHE = mlir::concretelang::TFHE;
 
@@ -300,6 +301,12 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
 
     // Add all patterns to convert TFHE types
     populateWithTFHEOpTypeConversionPatterns(patterns, target, converter);
+
+    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+        mlir::bufferization::AllocTensorOp>>(&getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::bufferization::AllocTensorOp>(target, converter);
+
     patterns.add<RegionOpTypeConverterPattern<
         mlir::linalg::GenericOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
