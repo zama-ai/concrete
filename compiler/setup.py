@@ -72,6 +72,7 @@ setuptools.setup(
         where=build_dir() + "/tools/concretelang/python_packages/concretelang_core",
         include=["mlir", "mlir.*"],
     ),
+    setup_requires=['wheel'],
     install_requires=["numpy", "PyYAML", "setuptools"],
     package_dir={"": build_dir() + "/tools/concretelang/python_packages/concretelang_core"},
     include_package_data=True,
