@@ -92,6 +92,58 @@ private:
   llvm::SmallVector<uint64_t, 4> truth_table_vector;
 };
 
+/// Rewrite an `FHE.mux` op, into a series of boolean and arithmetic operations
+/// mux(cond, c1, c2) => c1 and not cond + c2 and cond
+class MuxOpPattern
+    : public mlir::OpRewritePattern<mlir::concretelang::FHE::MuxOp> {
+public:
+  MuxOpPattern(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<mlir::concretelang::FHE::MuxOp>(
+            context, ::mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::FHE::MuxOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto eint2 = mlir::concretelang::FHE::EncryptedIntegerType::get(
+        rewriter.getContext(), 2);
+    auto boolType = mlir::concretelang::FHE::EncryptedBooleanType::get(
+        rewriter.getContext());
+
+    // truth table for c1 and not cond
+    auto truth_table_attr = mlir::DenseElementsAttr::get(
+        mlir::RankedTensorType::get({4}, rewriter.getIntegerType(64)),
+        {llvm::APInt(1, 0, false), llvm::APInt(1, 0, false),
+         llvm::APInt(1, 1, false), llvm::APInt(1, 0, false)});
+    auto truth_table =
+        rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), truth_table_attr);
+    auto c1AndNotCond =
+        rewriter
+            .create<mlir::concretelang::FHE::GenGateOp>(
+                op.getLoc(), boolType, op.c1(), op.cond(), truth_table)
+            .getResult();
+    auto c2AndCond = rewriter
+                         .create<mlir::concretelang::FHE::BoolAndOp>(
+                             op.getLoc(), boolType, op.c2(), op.cond())
+                         .getResult();
+
+    auto c1AndNotCondBool = rewriter
+                                .create<mlir::concretelang::FHE::FromBoolOp>(
+                                    op.getLoc(), eint2, c1AndNotCond)
+                                .getResult();
+    auto c2AndCondBool = rewriter
+                             .create<mlir::concretelang::FHE::FromBoolOp>(
+                                 op.getLoc(), eint2, c2AndCond)
+                             .getResult();
+    auto result = rewriter
+                      .create<mlir::concretelang::FHE::AddEintOp>(
+                          op.getLoc(), c1AndNotCondBool, c2AndCondBool)
+                      .getResult();
+    rewriter.replaceOpWithNewOp<mlir::concretelang::FHE::ToBoolOp>(op, boolType,
+                                                                   result);
+    return mlir::success();
+  }
+};
+
 /// Perfoms the transformation of boolean operations
 class FHEBooleanTransformPass
     : public FHEBooleanTransformBase<FHEBooleanTransformPass> {
@@ -101,6 +153,7 @@ public:
 
     mlir::RewritePatternSet patterns(&getContext());
     patterns.add<GenGatePattern>(&getContext());
+    patterns.add<MuxOpPattern>(&getContext());
     patterns.add<GeneralizeGatePattern<mlir::concretelang::FHE::BoolAndOp>>(
         &getContext(), llvm::SmallVector<uint64_t, 4>({0, 0, 0, 1}));
     patterns.add<GeneralizeGatePattern<mlir::concretelang::FHE::BoolNandOp>>(

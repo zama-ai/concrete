@@ -351,3 +351,59 @@ tests:
       shape: [4]
     outputs:
     - scalar: 1
+---
+description: boolean_mux
+program: |
+  func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool, %arg2: !FHE.ebool) -> !FHE.ebool {
+    %1 = "FHE.mux"(%arg0, %arg1, %arg2) : (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> !FHE.ebool
+    return %1: !FHE.ebool
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
