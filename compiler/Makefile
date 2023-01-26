@@ -443,6 +443,17 @@ else
 HIERARCHY_PRESERVING_COPY=cp --parents
 endif
 
+python-package:
+	export GLIBC_VER=$(shell ldd --version | head -n 1 | grep -o '[^ ]*$$'|head|tr '.' '_')
+	$(Python3_EXECUTABLE) -m pip install wheel auditwheel
+	$(Python3_EXECUTABLE) -m pip wheel -vvv --no-deps -w $(BUILD_DIR)/wheels .
+	# We need to run it twice: the first will generate the directories, so that
+	# the second run can find the packages via find_namespace_packages
+	$(Python3_EXECUTABLE) -m pip wheel -vvv --no-deps -w $(BUILD_DIR)/wheels .
+	$(Python3_EXECUTABLE) -m auditwheel repair $(BUILD_DIR)/wheels/*.whl --plat manylinux_$(GLIBC_VER)_x86_64 -w $(BUILD_DIR)/wheels  || echo No repair to manylinux
+	$(Python3_EXECUTABLE) -m auditwheel repair $(BUILD_DIR)/wheels/*.whl --plat linux_x86_64 -w $(BUILD_DIR)/wheels || echo No repair
+	@echo The wheels: $(BUILD_DIR)/wheels/*.whl
+
 install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))
 	$(info Installing under $(INSTALL_PATH))

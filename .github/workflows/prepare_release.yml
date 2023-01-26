@@ -97,11 +97,9 @@ jobs:
             export CONCRETE_COMPILER_Python3_EXECUTABLE=$PYTHON_EXEC
             export CONCRETE_COMPILER_BUILD_DIR=/build
             export CONCRETE_COMPILER_CUDA_SUPPORT=ON
-            /opt/python/${{ matrix.python_dir }}/bin/pip wheel -vvv --no-deps -w /wheels .
-            # We need to run it twice: the first will generate the directories, so that
-            # the second run can find the packages via find_namespace_packages
-            /opt/python/${{ matrix.python_dir }}/bin/pip wheel -vvv --no-deps -w /wheels .
-            auditwheel repair /wheels/*.whl --plat manylinux_2_28_x86_64 -w /wheels
+            export PATH=/opt/python/${{ matrix.python_dir }}/bin:PATH$
+            make python-package
+            cp build/wheels/*.whl /wheels
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
