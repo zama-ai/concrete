@@ -34,16 +34,16 @@ public:
     int tid = threadIdx.x;
     current_level -= 1;
     for (int i = 0; i < params::opt / 2; i++) {
-      T res_re = state[tid * 2] & mask_mod_b;
-      T res_im = state[tid * 2 + 1] & mask_mod_b;
-      state[tid * 2] >>= base_log;
-      state[tid * 2 + 1] >>= base_log;
-      T carry_re = ((res_re - 1ll) | state[tid * 2]) & res_re;
-      T carry_im = ((res_im - 1ll) | state[tid * 2 + 1]) & res_im;
+      T res_re = state[tid] & mask_mod_b;
+      T res_im = state[tid + params::degree / 2] & mask_mod_b;
+      state[tid] >>= base_log;
+      state[tid + params::degree / 2] >>= base_log;
+      T carry_re = ((res_re - 1ll) | state[tid]) & res_re;
+      T carry_im = ((res_im - 1ll) | state[tid + params::degree / 2]) & res_im;
       carry_re >>= (base_log - 1);
       carry_im >>= (base_log - 1);
-      state[tid * 2] += carry_re;
-      state[tid * 2 + 1] += carry_im;
+      state[tid] += carry_re;
+      state[tid + params::degree / 2] += carry_im;
       res_re -= carry_re << base_log;
       res_im -= carry_im << base_log;
 

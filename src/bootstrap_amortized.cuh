@@ -165,8 +165,6 @@ __global__ void device_bootstrap_amortized(
       NSMFFT_direct<HalfDegree<params>>(accumulator_fft);
       synchronize_threads_in_block();
 
-      correction_direct_fft_inplace<params>(accumulator_fft);
-
       // Get the bootstrapping key piece necessary for the multiplication
       // It is already in the Fourier domain
       auto bsk_mask_slice =
@@ -194,8 +192,6 @@ __global__ void device_bootstrap_amortized(
       NSMFFT_direct<HalfDegree<params>>(accumulator_fft);
       synchronize_threads_in_block();
 
-      correction_direct_fft_inplace<params>(accumulator_fft);
-
       auto bsk_mask_slice_2 =
           get_ith_mask_kth_block(bootstrapping_key, iteration, 1, level,
                                  polynomial_size, 1, level_count);
@@ -215,10 +211,6 @@ __global__ void device_bootstrap_amortized(
     if constexpr (SMD == FULLSM || SMD == NOSM) {
       synchronize_threads_in_block();
 
-      correction_inverse_fft_inplace<params>(mask_res_fft);
-      correction_inverse_fft_inplace<params>(body_res_fft);
-      synchronize_threads_in_block();
-
       NSMFFT_inverse<HalfDegree<params>>(mask_res_fft);
       NSMFFT_inverse<HalfDegree<params>>(body_res_fft);
 
@@ -227,6 +219,7 @@ __global__ void device_bootstrap_amortized(
       add_to_torus<Torus, params>(mask_res_fft, accumulator_mask);
       add_to_torus<Torus, params>(body_res_fft, accumulator_body);
       synchronize_threads_in_block();
+
     } else {
       int tid = threadIdx.x;
 #pragma unroll
@@ -234,9 +227,6 @@ __global__ void device_bootstrap_amortized(
         accumulator_fft[tid] = mask_res_fft[tid];
         tid = tid + params::degree / params::opt;
       }
-      synchronize_threads_in_block();
-
-      correction_inverse_fft_inplace<params>(accumulator_fft);
       synchronize_threads_in_block();
 
       NSMFFT_inverse<HalfDegree<params>>(accumulator_fft);
@@ -251,9 +241,6 @@ __global__ void device_bootstrap_amortized(
         accumulator_fft[tid] = body_res_fft[tid];
         tid = tid + params::degree / params::opt;
       }
-      synchronize_threads_in_block();
-
-      correction_inverse_fft_inplace<params>(accumulator_fft);
       synchronize_threads_in_block();
 
       NSMFFT_inverse<HalfDegree<params>>(accumulator_fft);

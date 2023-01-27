@@ -23,8 +23,8 @@ __global__ void device_batch_fft_ggsw_vector(double2 *dest, T *src,
 
 #pragma unroll
   for (int i = 0; i < log_2_opt; i++) {
-    ST x = src[(2 * tid) + params::opt * offset];
-    ST y = src[(2 * tid + 1) + params::opt * offset];
+    ST x = src[(tid) + params::opt * offset];
+    ST y = src[(tid + params::degree / 2) + params::opt * offset];
     selected_memory[tid].x = x / (double)std::numeric_limits<T>::max();
     selected_memory[tid].y = y / (double)std::numeric_limits<T>::max();
     tid += params::degree / params::opt;
@@ -33,9 +33,6 @@ __global__ void device_batch_fft_ggsw_vector(double2 *dest, T *src,
 
   // Switch to the FFT space
   NSMFFT_direct<HalfDegree<params>>(selected_memory);
-  synchronize_threads_in_block();
-
-  correction_direct_fft_inplace<params>(selected_memory);
   synchronize_threads_in_block();
 
   // Write the output to global memory

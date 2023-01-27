@@ -21,15 +21,9 @@ template <class params> __device__ void fft(double2 *output) {
   // Switch to the FFT space
   NSMFFT_direct<HalfDegree<params>>(output);
   synchronize_threads_in_block();
-
-  correction_direct_fft_inplace<params>(output);
-  synchronize_threads_in_block();
 }
 
 template <class params> __device__ void ifft_inplace(double2 *data) {
-  synchronize_threads_in_block();
-
-  correction_inverse_fft_inplace<params>(data);
   synchronize_threads_in_block();
 
   NSMFFT_inverse<HalfDegree<params>>(data);

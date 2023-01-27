@@ -38,9 +38,6 @@ mul_ggsw_glwe(Torus *accumulator, double2 *fft, double2 *mask_join_buffer,
   NSMFFT_direct<HalfDegree<params>>(fft);
   synchronize_threads_in_block();
 
-  correction_direct_fft_inplace<params>(fft);
-  synchronize_threads_in_block();
-
   // Get the pieces of the bootstrapping key that will be needed for the
   // external product; blockIdx.x is the ID of the block that's executing
   // this function, so we end up getting the lines of the bootstrapping key
@@ -111,9 +108,6 @@ mul_ggsw_glwe(Torus *accumulator, double2 *fft, double2 *mask_join_buffer,
     }
   }
 
-  synchronize_threads_in_block();
-
-  correction_inverse_fft_inplace<params>(fft);
   synchronize_threads_in_block();
 
   // Perform the inverse FFT on the result of the GGSW x GLWE and add to the

@@ -38,39 +38,6 @@ __device__ T *get_ith_body_kth_block(T *ptr, int i, int k, int level,
               polynomial_size / 2];
 }
 
-void cuda_initialize_twiddles(uint32_t polynomial_size, void *v_stream,
-                              uint32_t gpu_index) {
-  cudaSetDevice(gpu_index);
-  int sw_size = polynomial_size / 2;
-  short *sw1_h, *sw2_h;
-
-  sw1_h = (short *)malloc(sizeof(short) * sw_size);
-  sw2_h = (short *)malloc(sizeof(short) * sw_size);
-
-  memset(sw1_h, 0, sw_size * sizeof(short));
-  memset(sw2_h, 0, sw_size * sizeof(short));
-  int cnt = 0;
-  for (int i = 1, j = 0; i < polynomial_size / 2; i++) {
-    int bit = (polynomial_size / 2) >> 1;
-    for (; j & bit; bit >>= 1)
-      j ^= bit;
-    j ^= bit;
-
-    if (i < j) {
-      sw1_h[cnt] = i;
-      sw2_h[cnt] = j;
-      cnt++;
-    }
-  }
-  auto stream = static_cast<cudaStream_t *>(v_stream);
-  cudaMemcpyToSymbolAsync(SW1, sw1_h, sw_size * sizeof(short), 0,
-                          cudaMemcpyHostToDevice, *stream);
-  cudaMemcpyToSymbolAsync(SW2, sw2_h, sw_size * sizeof(short), 0,
-                          cudaMemcpyHostToDevice, *stream);
-  free(sw1_h);
-  free(sw2_h);
-}
-
 template <typename T, typename ST>
 void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
                                     uint32_t gpu_index, uint32_t input_lwe_dim,
@@ -101,10 +68,9 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
     int complex_current_poly_idx = i * polynomial_size / 2;
     int torus_current_poly_idx = i * polynomial_size;
     for (int j = 0; j < polynomial_size / 2; j++) {
-      h_bsk[complex_current_poly_idx + j].x =
-          src[torus_current_poly_idx + 2 * j];
+      h_bsk[complex_current_poly_idx + j].x = src[torus_current_poly_idx + j];
       h_bsk[complex_current_poly_idx + j].y =
-          src[torus_current_poly_idx + 2 * j + 1];
+          src[torus_current_poly_idx + j + polynomial_size / 2];
       h_bsk[complex_current_poly_idx + j].x /=
           (double)std::numeric_limits<T>::max();
       h_bsk[complex_current_poly_idx + j].y /=

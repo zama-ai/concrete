@@ -5,9 +5,6 @@
 
 extern "C" {
 
-void cuda_initialize_twiddles(uint32_t polynomial_size, void *v_stream,
-                              uint32_t gpu_index);
-
 void cuda_convert_lwe_bootstrap_key_32(void *dest, void *src, void *v_stream,
                                        uint32_t gpu_index,
                                        uint32_t input_lwe_dim,

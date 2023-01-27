@@ -170,8 +170,8 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
     Torus V2 = 0;
     typecast_double_to_torus<Torus>(frac, V2);
 
-    result[tid * 2] += V1;
-    result[tid * 2 + 1] += V2;
+    result[tid] += V1;
+    result[tid + params::degree / 2] += V2;
     tid = tid + params::degree / params::opt;
   }
 }
