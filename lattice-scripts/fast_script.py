@@ -3,6 +3,14 @@ def n(sd):
 
 
 def ternary_search(params_in, sds):
+     """
+     A fast script to find a rough parameter curve for ternary secrets
+     
+     USAGE:
+     
+     SDs = range(4,62)
+     ternary_search(schemes.TFHE630, SDs)
+     """
 
     out = []
 
@@ -12,7 +20,13 @@ def ternary_search(params_in, sds):
             n_new = out[i-1][0]
         except:
             n_new = ceil(n(-1 * sd)) 
+               
+        # these are the parameters to edit if we want to try something new.
+        # Xe remains constant throughout the script (e.g. D(sigma)) but we could try
+        # new secret distributions or moduli using this script.
+        # to set the moduli, change the below line
         params_in = params_in.updated(q = 2**64)
+        # to set the secret distribution, change the below line
         params_in = params_in.updated(Xs = ND.UniformMod(3))
         params_in = params_in.updated(Xe = ND.DiscreteGaussian(2**sd))
         params_in = params_in.updated(n = n_new)
