@@ -136,8 +136,7 @@ void memref_batched_keyswitch_lwe_cuda_u64(
   // TODO: The allocation should be done by the compiler codegen
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
       ct0_aligned, ct0_offset, ct0_batch_size, gpu_idx, stream);
-  void *out_gpu = alloc_and_memcpy_async_to_gpu(
-      out_aligned, out_offset, out_batch_size, gpu_idx, stream);
+  void *out_gpu = cuda_malloc(out_batch_size * sizeof(uint64_t), gpu_idx);
   // Run the keyswitch kernel on the GPU
   cuda_keyswitch_lwe_ciphertext_vector_64(
       stream, gpu_idx, out_gpu, ct0_gpu, ksk_gpu, input_lwe_dim, output_lwe_dim,
@@ -179,9 +178,7 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   // TODO: The allocation should be done by the compiler codegen
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
       ct0_aligned, ct0_offset, ct0_batch_size, gpu_idx, stream);
-  void *out_gpu = alloc_and_memcpy_async_to_gpu(
-      out_aligned, out_offset, out_batch_size, gpu_idx, stream);
-
+  void *out_gpu = cuda_malloc(out_batch_size * sizeof(uint64_t), gpu_idx);
   // Construct the glwe accumulator (on CPU)
   // TODO: Should be done outside of the bootstrap call, compile time if
   // possible. Refactor in progress
