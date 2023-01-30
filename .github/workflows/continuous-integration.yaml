@@ -484,7 +484,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
-          sudo apt update && sudo apt install graphviz* -y
+          sudo apt update && sudo apt install sqlite3 -y
           make setup_env
 
       - name: Run pip-audit
@@ -529,73 +529,41 @@ jobs:
     name: Package and artifacts release
     runs-on: ubuntu-22.04
 
-    env:
-      PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy
-      PUBLIC_RELEASE_IMAGE_BASE: zamafhe/concrete-numpy
-
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
 
-      # See #570 To be updated to only install required dependencies group with poetry 1.2 and
-      # remove graphviz installs which are only required for the actual package and not dev tools
       - name: Install dependencies
         run: |
-          sudo apt-get install --no-install-recommends -y gnome-keyring
+          sudo apt-get install --no-install-recommends -y gnome-keyring sqlite3
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
 
-      - name: Set tag in env
-        # 'poetry version' cannot be piped properly so do it in 2 steps
-        # the project version does not have the leading v to be semver compatible
+      - name: Set common environment variables
         run: |
-          PROJECT_VERSION=$(poetry version)
-          PROJECT_VERSION=$(echo "$PROJECT_VERSION" | cut -d ' ' -f 2)
+          PROJECT_NAME_AND_VERSION=$(poetry version)
+          PROJECT_VERSION=$(echo "$PROJECT_NAME_AND_VERSION" | cut -d ' ' -f 2)
+          
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
-
-          if [[ "v${PROJECT_VERSION}" != "${GIT_TAG}" ]]; then
+          if [[ "${GIT_TAG}" != "v${PROJECT_VERSION}" ]]; then
             echo "Mismatch between tag and version: ${GIT_TAG}, v${PROJECT_VERSION}"
             exit 1
+          fi
+          
+          IMAGE_BASE="${{ secrets.IMAGE_BASE }}"
+          ALL_IMAGE_TAGS="${IMAGE_BASE}:${GIT_TAG}"
+
+          IS_LATEST=$(poetry run python script/make_utils/is_latest.py "${PROJECT_VERSION}")
+          if [[ "${IS_LATEST}" == "True" ]]; then
+            ALL_IMAGE_TAGS="${ALL_IMAGE_TAGS},${IMAGE_BASE}:latest"
           fi
 
           echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
-          PRIVATE_RELEASE_IMG_GIT_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:${GIT_TAG}"
-          echo "PRIVATE_RELEASE_IMG_GIT_TAG=${PRIVATE_RELEASE_IMG_GIT_TAG}" >> "$GITHUB_ENV"
-          RELEASE_IMG_TAGS_TO_PUSH="${PRIVATE_RELEASE_IMG_GIT_TAG}"
-
-          EXISTING_TAGS=$(curl \
-          -X GET \
-          -H "Authorization: Bearer $(echo ${{ secrets.BOT_TOKEN }} | base64)" \
-          https://ghcr.io/v2/zama-ai/concrete-numpy/tags/list | jq -rc '.tags | join(" ")')
-
-          # We want the space separated list of versions to be expanded
-          # shellcheck disable=SC2086
-          IS_LATEST_INFO=$(poetry run python script/make_utils/version_utils.py \
-          islatest \
-          --new-version "${GIT_TAG}" \
-          --existing-versions $EXISTING_TAGS)
-
-          IS_LATEST=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_latest')
           echo "IS_LATEST=${IS_LATEST}" >> "$GITHUB_ENV"
-          IS_PRERELEASE=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_prerelease')
-          echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
-
-          if [[ "${IS_LATEST}" == "true" ]]; then
-            RELEASE_IMG_LATEST_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:latest"
-            RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${RELEASE_IMG_LATEST_TAG}"
-          fi
-
-          if [[ "${IS_PRERELEASE}" == "false" ]]; then
-            PUBLIC_RELEASE_IMG_GIT_TAG="${PUBLIC_RELEASE_IMAGE_BASE}:${GIT_TAG}"
-            RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${PUBLIC_RELEASE_IMG_GIT_TAG}"
-            if [[ "${IS_LATEST}" == "true" ]]; then
-              PUBLIC_RELEASE_IMG_LATEST_TAG="${PUBLIC_RELEASE_IMAGE_BASE}:latest"
-              RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${PUBLIC_RELEASE_IMG_LATEST_TAG}"
-            fi
-          fi
-
-          echo "RELEASE_IMG_TAGS_TO_PUSH=${RELEASE_IMG_TAGS_TO_PUSH}" >> "$GITHUB_ENV"
+          
+          echo "ALL_IMAGE_TAGS=${ALL_IMAGE_TAGS}" >> "$GITHUB_ENV"
+          echo "VERSIONED_IMAGE_TAG=${IMAGE_BASE}:${GIT_TAG}" >> "$GITHUB_ENV"
 
       - name: Create directory for artifacts
         if: ${{ success() && !cancelled() }}
@@ -625,11 +593,13 @@ jobs:
           path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/
 
       - name: Copy wheel to docker build context
+        if: ${{ success() && !cancelled() }}
         run: |
           mkdir -p ./pkg
           cp "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl ./pkg
 
       - name: Login to GitHub Container Registry
+        if: ${{ success() && !cancelled() }}
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         with:
           registry: ghcr.io
@@ -637,7 +607,7 @@ jobs:
           password: ${{ secrets.BOT_TOKEN }}
 
       - name: Login to DockerHub
-        if: ${{ env.IS_PRERELEASE == 'false' }}
+        if: ${{ success() && !cancelled() }}
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
@@ -651,15 +621,15 @@ jobs:
           file: docker/Dockerfile.release
           load: true
           push: false
-          tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
+          tags: "${{ env.ALL_IMAGE_TAGS }}"
           no-cache: true
 
       - name: Release image sanity check
         if: ${{ success() && !cancelled() }}
         run: |
-          echo "Running sanity check for ${PRIVATE_RELEASE_IMG_GIT_TAG}"
+          echo "Running sanity check for ${VERSIONED_IMAGE_TAG}"
           docker run --rm -v "$(pwd)"/docker/release_resources:/data \
-          "${PRIVATE_RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
+          "${VERSIONED_IMAGE_TAG}" /bin/bash -c "python ./sanity_check.py"
 
       - name: Create ready to upload/packaged artifacts and release body
         if: ${{ success() && !cancelled() }}
@@ -674,8 +644,8 @@ jobs:
 
           cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
           {
-            echo "Docker Image: ${PRIVATE_RELEASE_IMG_GIT_TAG}";
-            echo "PyPI: https://pypi.org/project/concrete-numpy/${PROJECT_VERSION}";
+            echo "Docker Image: ${VERSIONED_IMAGE_TAG}";
+            echo "PyPI Package: https://pypi.org/project/concrete-numpy/${PROJECT_VERSION}";
             echo "";
           } >> "${RELEASE_BODY_FILE}"
           cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
@@ -683,17 +653,14 @@ jobs:
       - name: Push release docker image
         if: ${{ success() && !cancelled() }}
         run: |
-          docker image push --all-tags "${PRIVATE_RELEASE_IMAGE_BASE}"
-          if [[ "${IS_PRERELEASE}" == "false" ]]; then
-            docker image push --all-tags "${PUBLIC_RELEASE_IMAGE_BASE}"
-          fi
+          docker image push --all-tags "${{ secrets.IMAGE_BASE }}"
 
       - name: Push package to PyPi
         if: ${{ success() && !cancelled() }}
         run: |
           poetry run twine upload \
-          -u __token__ -p ${{ secrets.PYPI_BOT_TOKEN }} \
-          -r pypi "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
+          -u "${{ secrets.REPO_USERNAME }}" -p ${{ secrets.REPO_PASSWORD }} \
+          ${{ secrets.REPO_DETAILS }} "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}

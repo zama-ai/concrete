@@ -62,6 +62,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     ${SUDO_BIN:+$SUDO_BIN}apt-get install --no-install-recommends -y \
     build-essential \
     curl \
+    sqlite3 \
     ${PYTHON_PACKAGES:+$PYTHON_PACKAGES} \
     git \
     graphviz* \
@@ -80,7 +81,7 @@ elif [[ "${OS_NAME}" == "Darwin" ]]; then
     brew unlink git@2.35.1 | cat
     brew install git
 
-    brew install curl graphviz jq make pandoc shellcheck
+    brew install curl graphviz jq make pandoc shellcheck sqlite
     python3 -m pip install -U pip
     python3 -m pip install poetry
 
