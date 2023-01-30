@@ -443,16 +443,34 @@ else
 HIERARCHY_PRESERVING_COPY=cp --parents
 endif
 
-python-package:
-	export GLIBC_VER=$(shell ldd --version | head -n 1 | grep -o '[^ ]*$$'|head|tr '.' '_')
-	$(Python3_EXECUTABLE) -m pip install wheel auditwheel
-	$(Python3_EXECUTABLE) -m pip wheel -vvv --no-deps -w $(BUILD_DIR)/wheels .
+ifeq ($(OS),Windows_NT)
+    detected_OS := Windows
+else
+    detected_OS := $(shell sh -c 'uname 2>/dev/null || echo Unknown')
+endif
+
+PIP=$(Python3_EXECUTABLE) -m pip
+PIP_WHEEL=$(PIP) wheel --no-deps -w $(BUILD_DIR)/wheels .
+AUDIT_WHEEL_REPAIR=$(Python3_EXECUTABLE) -m auditwheel repair -w $(BUILD_DIR)/wheels
+
+linux-python-package:
+	$(PIP) install wheel auditwheel
 	# We need to run it twice: the first will generate the directories, so that
 	# the second run can find the packages via find_namespace_packages
-	$(Python3_EXECUTABLE) -m pip wheel -vvv --no-deps -w $(BUILD_DIR)/wheels .
-	$(Python3_EXECUTABLE) -m auditwheel repair $(BUILD_DIR)/wheels/*.whl --plat manylinux_$(GLIBC_VER)_x86_64 -w $(BUILD_DIR)/wheels  || echo No repair to manylinux
-	$(Python3_EXECUTABLE) -m auditwheel repair $(BUILD_DIR)/wheels/*.whl --plat linux_x86_64 -w $(BUILD_DIR)/wheels || echo No repair
-	@echo The wheels: $(BUILD_DIR)/wheels/*.whl
+	$(PIP_WHEEL)
+	$(PIP_WHEEL)
+	export GLIBC_VER=$(shell ldd --version | head -n 1 | grep -o '[^ ]*$$'|head|tr '.' '_')
+	for PLATFORM in manylinux_$(GLIBC_VER)_x86_64 linux_x86_64; do \
+		$(AUDIT_WHEEL_REPAIR) $(BUILD_DIR)/wheels/*.whl --plat $$PLATFORM || echo No repair with $(PLATFORM) ;\
+	done
+
+darwin-python-package:
+	$(PIP) install wheel delocate
+	$(PIP_WHEEL)
+	delocate-wheel -v $(BUILD_DIR)/wheels/*macosx*.whl
+
+python-package: python-bindings $(OS)-python-package
+	@echo The python package is: $(BUILD_DIR)/wheels/*.whl
 
 install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))

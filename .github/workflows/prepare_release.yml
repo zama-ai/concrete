@@ -8,6 +8,7 @@ on:
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  GLIB_VER: 2_28
 
 jobs:
   WaitOnAllWorkflows:
@@ -99,7 +100,7 @@ jobs:
             export CONCRETE_COMPILER_CUDA_SUPPORT=ON
             export PATH=/opt/python/${{ matrix.python_dir }}/bin:PATH$
             make python-package
-            cp build/wheels/*.whl /wheels
+            cp build/wheels/*manylinux_${{ env.GLIB_VER }}_x86_64.whl /wheels
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -237,8 +238,7 @@ jobs:
           cd compiler
           make Python3_EXECUTABLE=$(which python) DATAFLOW_EXECUTION_ENABLED=OFF python-bindings
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
-          pip wheel --no-deps -w ${{ github.workspace }}/wheels .
-          delocate-wheel -v $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
+          make python-package
           echo "::set-output name=ASSET_NAME::$(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl' | rev |cut -d "/" -f 1 |rev )"
           # used later for python package test
           echo "::set-output name=ASSET_NAME_PY$(echo ${{ matrix.python }} |tr -d '.')::$(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl' | rev |cut -d "/" -f 1 |rev )"

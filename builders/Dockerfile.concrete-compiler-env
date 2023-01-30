@@ -34,7 +34,7 @@ RUN ln -s /opt/python/${python_tag}/bin/pip /bin/pip
 RUN ln -s /opt/python/${python_tag}/bin/python /bin/python
 ENV PYTHON_EXEC=/opt/python/${python_tag}/bin/python
 # Install python deps
-RUN pip install numpy pybind11==2.8 PyYAML
+RUN pip install numpy pybind11==2.8 PyYAML pytest wheel auditwheel
 # Setup LLVM
 COPY /llvm-project /llvm-project
 # Setup and build compiler

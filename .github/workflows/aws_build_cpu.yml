@@ -25,6 +25,7 @@ on:
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  GLIB_VER: 2_28
 
 jobs:
   BuildAndTest:
@@ -83,6 +84,7 @@ jobs:
             -v ${{ github.workspace }}/llvm-project:/llvm-project
             -v ${{ github.workspace }}/compiler:/compiler
             -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/wheels:/wheels
             -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
             -e SSH_AUTH_SOCK=/ssh.socket
             ${{ env.DOCKER_GPU_OPTION }}
@@ -91,9 +93,7 @@ jobs:
             set -e
             cd /compiler
             rm -rf /build/*
-            pip install pytest
-            sed "s/pytest/python -m pytest/g" -i Makefile
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all python-package build-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -114,9 +114,17 @@ jobs:
             set -e
             cd /compiler
             pip install pytest
+            sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
             chmod -R ugo+rwx /tmp/KeySetCache
+
+      - name: Archive python package
+        uses: actions/upload-artifact@v3
+        with:
+          name: concrete-compiler.whl
+          path: build/wheels/concrete_compiler-*-manylinux_{{ env.GLIB_VER }}_x86_64.whl
+          retention-days: 14
 
       - name: Build the documentation
         id: build-doc

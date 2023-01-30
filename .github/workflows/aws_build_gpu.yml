@@ -85,6 +85,7 @@ jobs:
             -v ${{ github.workspace }}/llvm-project:/llvm-project
             -v ${{ github.workspace }}/compiler:/compiler
             -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/wheels:/wheels
             -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
             -e SSH_AUTH_SOCK=/ssh.socket
             --gpus all
@@ -93,11 +94,15 @@ jobs:
             set -e
             cd /compiler
             rm -rf /build/*
-            pip install pytest
-            sed "s/pytest/python -m pytest/g" -i Makefile
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} all build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} all python-package build-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
+
+      - name: Archive python package
+        uses: actions/upload-artifact@v3
+        with:
+          name: concrete-compiler-gpu
+          path: build/wheels/*.whl
 
       - name: Test compiler
         uses: addnab/docker-run-action@v3
@@ -116,6 +121,7 @@ jobs:
             set -e
             cd /compiler
             pip install pytest
+            sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-end-to-end-tests-gpu
             chmod -R ugo+rwx /tmp/KeySetCache
