@@ -8,7 +8,7 @@ env:
 jobs:
   perform:
     name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838

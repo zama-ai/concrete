@@ -28,7 +28,7 @@ env:
 
 jobs:
   matrix-preparation:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       linux-matrix: ${{ steps.set-matrix.outputs.linux-matrix }}
       macos-matrix: ${{ steps.set-matrix.outputs.macos-matrix }}
@@ -102,7 +102,7 @@ jobs:
   start-runner-linux:
     needs: [matrix-preparation]
     name: Start EC2 runner
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       label-37: ${{ steps.start-ec2-runner-37.outputs.label }}
       ec2-instance-id-37: ${{ steps.start-ec2-runner-37.outputs.ec2-instance-id || '' }}
@@ -197,7 +197,7 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
     container:
-      image: ubuntu:20.04
+      image: ubuntu:22.04
     defaults:
       run:
         shell: bash
@@ -363,7 +363,7 @@ jobs:
   linux-build-status:
     name: Linux build status
     needs: [build-linux]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ always() }}
     steps:
       - name: Fail on unsuccessful Linux build
@@ -388,7 +388,7 @@ jobs:
   stop-runner-linux:
     name: Stop EC2 runner
     needs: [build-linux, start-runner-linux]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
@@ -470,7 +470,7 @@ jobs:
 
   weekly-pip-audit:
     if: ${{ github.event_name == 'schedule' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
@@ -527,7 +527,7 @@ jobs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     name: Package and artifacts release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     env:
       PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy
@@ -743,7 +743,7 @@ jobs:
       ]
 
     name: Send Slack notification
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
 
