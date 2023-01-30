@@ -1,7 +1,7 @@
  Name                      Version     License
  Pillow                    9.4.0       Historical Permission Notice and Disclaimer (HPND)
  PyYAML                    6.0         MIT License
- concrete-compiler         0.23.3      BSD-3
+ concrete-compiler         0.23.4      BSD-3
  cycler                    0.11.0      BSD License
  fonttools                 4.38.0      MIT License
  kiwisolver                1.4.4       BSD License
