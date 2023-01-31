@@ -557,10 +557,14 @@ jobs:
           if [[ "${IS_LATEST}" == "True" ]]; then
             ALL_IMAGE_TAGS="${ALL_IMAGE_TAGS},${IMAGE_BASE}:latest"
           fi
+          
+          IS_PRERELEASE=$(poetry run python script/make_utils/is_prerelease.py "${PROJECT_VERSION}")
 
           echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
+
           echo "IS_LATEST=${IS_LATEST}" >> "$GITHUB_ENV"
+          echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
           
           echo "ALL_IMAGE_TAGS=${ALL_IMAGE_TAGS}" >> "$GITHUB_ENV"
           echo "VERSIONED_IMAGE_TAG=${IMAGE_BASE}:${GIT_TAG}" >> "$GITHUB_ENV"
