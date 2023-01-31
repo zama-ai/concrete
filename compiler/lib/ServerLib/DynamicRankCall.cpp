@@ -18,8 +18,12 @@ namespace serverlib {
 /// Helper class template that yields an unsigned integer type given a
 /// size in bytes
 template <std::size_t size> struct int_type_of_size {};
-template <> struct int_type_of_size<4> { typedef uint32_t type; };
-template <> struct int_type_of_size<8> { typedef uint64_t type; };
+template <> struct int_type_of_size<4> {
+  typedef uint32_t type;
+};
+template <> struct int_type_of_size<8> {
+  typedef uint64_t type;
+};
 
 /// Converts one function pointer into another
 // TODO: Not sure this is valid in all implementations / on all

@@ -705,6 +705,42 @@ struct TensorFromElementsOpPattern
   }
 };
 
+// Generic template for tensor operations that have reassociation map
+// attributes.
+template <typename Op, bool inRank>
+struct TensorReassociationOpPattern : public CrtOpPattern<Op> {
+  TensorReassociationOpPattern(mlir::MLIRContext *context,
+                               concretelang::CrtLoweringParameters params,
+                               mlir::PatternBenefit benefit = 1)
+      : CrtOpPattern<Op>(context, params, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(Op op, typename Op::Adaptor adaptor,
+                  ::mlir::ConversionPatternRewriter &rewriter) const override {
+
+    mlir::TypeConverter *converter = this->getTypeConverter();
+
+    auto reassocVal = (inRank ? adaptor.src() : op.result());
+    auto reassocTy = reassocVal.getType();
+    auto newReassocType = converter->convertType(reassocTy);
+
+    mlir::SmallVector<mlir::ReassociationIndices> oldReassocs =
+        op.getReassociationIndices();
+    mlir::SmallVector<mlir::ReassociationIndices> newReassocs{oldReassocs};
+    mlir::ReassociationIndices newReassocEnd;
+    newReassocEnd.push_back(
+        newReassocType.template cast<mlir::RankedTensorType>().getRank() - 1);
+    newReassocs.push_back(newReassocEnd);
+
+    auto newOp = rewriter.create<Op>(
+        op.getLoc(), converter->convertType(op.getResult().getType()),
+        adaptor.src(), newReassocs);
+    rewriter.replaceOp(op, {newOp});
+
+    return mlir::success();
+  };
+};
+
 } // namespace lowering
 
 struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
@@ -833,10 +869,12 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
         mlir::tensor::ExtractSliceOp>>(patterns.getContext(), converter);
     patterns.add<concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::InsertSliceOp>>(patterns.getContext(), converter);
-    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
-        mlir::tensor::CollapseShapeOp>>(patterns.getContext(), converter);
-    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
-        mlir::tensor::ExpandShapeOp>>(patterns.getContext(), converter);
+    patterns.add<lowering::TensorReassociationOpPattern<
+        mlir::tensor::CollapseShapeOp, true>>(patterns.getContext(),
+                                              loweringParameters);
+    patterns.add<lowering::TensorReassociationOpPattern<
+        mlir::tensor::ExpandShapeOp, false>>(patterns.getContext(),
+                                             loweringParameters);
     patterns.add<concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::GenerateOp, true>>(&getContext(), converter);
 
