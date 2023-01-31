@@ -28,11 +28,12 @@ tests:
                 0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
       shape: [2,10]
 ---
-description: identity_16bits
+description: identity_crt
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<2x10x!FHE.eint<16>> {
     return %t : tensor<2x10x!FHE.eint<16>>
   }
+encoding: crt
 tests:
   - inputs:
     - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
@@ -88,13 +89,14 @@ tests:
     outputs:
     - scalar: 9
 ---
-description: extract_16bits
+description: extract_crt
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<16>>, %i: index, %j: index) ->
   !FHE.eint<16> {
     %c = tensor.extract %t[%i, %j] : tensor<2x10x!FHE.eint<16>>
     return %c : !FHE.eint<16>
   }
+encoding: crt
 tests:
   - inputs:
     - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
@@ -181,12 +183,13 @@ tests:
                 42,  1,  2,  3,  4,  5,  6,  7,  8,  42]
       shape: [2,10]
 ---
-description: insert_16bits
+description: insert_crt
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<16>>, %i: index, %j: index, %x: !FHE.eint<16>) -> tensor<2x10x!FHE.eint<16>> {
     %r = tensor.insert %x into %t[%i, %j] : tensor<2x10x!FHE.eint<16>>
     return %r : tensor<2x10x!FHE.eint<16>>
   }
+encoding: crt
 tests:
   - inputs:
     - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
@@ -249,6 +252,22 @@ tests:
     - tensor: [ 5,  6,  7,  8,  9]
       shape: [1,5]
 ---
+description: extract_slice_crt
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<1x5x!FHE.eint<16>> {
+    %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<16>> to tensor<1x5x!FHE.eint<16>>
+    return %r : tensor<1x5x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+                 38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+        shape: [2,10]
+    outputs:
+      - tensor: [64814, 65491, 4271, 9294, 0]
+        shape: [1,5]
+---
 description: extract_slice_with_rank_reduction
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<5x!FHE.eint<6>> {
@@ -265,20 +284,21 @@ tests:
     - tensor: [ 5,  6,  7,  8,  9]
       shape: [5]
 ---
-description: extract_slice_16bits
+description: extract_slice_with_rank_reduction_crt
 program: |
-  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<1x5x!FHE.eint<16>> {
-    %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<16>> to tensor<1x5x!FHE.eint<16>>
-    return %r : tensor<1x5x!FHE.eint<16>>
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<5x!FHE.eint<16>> {
+    %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<16>> to tensor<5x!FHE.eint<16>>
+    return %r : tensor<5x!FHE.eint<16>>
   }
+encoding: crt
 tests:
   - inputs:
-    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
-               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
-      shape: [2,10]
+      - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+                 38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+        shape: [2,10]
     outputs:
-    - tensor: [64814, 65491, 4271, 9294, 0]
-      shape: [1,5]
+      - tensor: [64814, 65491, 4271, 9294, 0]
+        shape: [5]
 ---
 description: extract_slice_stride
 program: |
@@ -296,6 +316,22 @@ tests:
     - tensor: [0, 2, 4, 6, 8]
       shape: [1,5]
 ---
+description: extract_slice_stride_crt
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<1x5x!FHE.eint<16>> {
+    %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<16>> to tensor<1x5x!FHE.eint<16>>
+    return %r : tensor<1x5x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+                 38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+        shape: [2,10]
+    outputs:
+      - tensor: [38786, 65112, 60515, 65491, 9294]
+        shape: [1,5]
+---
 description: extract_slice_negative_stride
 program: |
   func.func @main(%arg0: tensor<3x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
@@ -311,20 +347,20 @@ tests:
     - tensor: [3, 2, 1]
       shape: [3]
 ---
-description: extract_slice_stride_16bits
+description: extract_slice_negative_stride_crt
 program: |
-  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<1x5x!FHE.eint<16>> {
-    %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<16>> to tensor<1x5x!FHE.eint<16>>
-    return %r : tensor<1x5x!FHE.eint<16>>
+  func.func @main(%arg0: tensor<3x!FHE.eint<16>>) -> tensor<3x!FHE.eint<16>> {
+    %0 = tensor.extract_slice %arg0[2] [3] [-1] : tensor<3x!FHE.eint<16>> to tensor<3x!FHE.eint<16>>
+    return %0 : tensor<3x!FHE.eint<16>>
   }
+encoding: crt
 tests:
   - inputs:
-    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
-               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
-      shape: [2,10]
+      - tensor: [38786, 65112, 60515]
+        shape: [3]
     outputs:
-    - tensor: [38786, 65112, 60515, 65491, 9294]
-      shape: [1,5]
+      - tensor: [60515, 65112, 38786]
+        shape: [3]
 ---
 description: insert_slice
 program: |
@@ -347,6 +383,26 @@ tests:
                0,  1,  2,  3,  4, 33, 34,  7,  8,  9]
       shape: [2,10]
 ---
+description: insert_slice_crt
+program: |
+  func.func @main(%t0: tensor<2x10x!FHE.eint<16>>, %t1: tensor<2x2x!FHE.eint<16>>) -> tensor<2x10x!FHE.eint<16>> {
+    %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!FHE.eint<16>> into tensor<2x10x!FHE.eint<16>>
+    return %r : tensor<2x10x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                 0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+        shape: [2,10]
+      - tensor: [31, 32,
+                 33, 34]
+        shape: [2,2]
+    outputs:
+      - tensor: [63, 12, 7, 43, 52, 31, 32, 34, 22,  0,
+                 0,  1,  2,  3,  4, 33, 34,  7,  8,  9]
+        shape: [2,10]
+---
 description: from_elements
 program: |
   func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>, %arg2: !FHE.eint<4>, %arg3: !FHE.eint<4>, %arg4: !FHE.eint<4>, %arg5: !FHE.eint<4>) -> tensor<6x!FHE.eint<4>> {
@@ -364,6 +420,25 @@ tests:
     outputs:
     - tensor: [0, 1, 2, 3, 4, 5]
       shape: [6]
+---
+description: from_elements_crt
+program: |
+  func.func @main(%arg0: !FHE.eint<16>, %arg1: !FHE.eint<16>, %arg2: !FHE.eint<16>, %arg3: !FHE.eint<16>, %arg4: !FHE.eint<16>, %arg5: !FHE.eint<16>) -> tensor<6x!FHE.eint<16>> {
+    %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<6x!FHE.eint<16>>
+    return %0 : tensor<6x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - scalar: 0
+      - scalar: 1
+      - scalar: 2
+      - scalar: 3
+      - scalar: 4
+      - scalar: 5
+    outputs:
+      - tensor: [0, 1, 2, 3, 4, 5]
+        shape: [6]
 ---
 description: from_elements_2D
 program: |
@@ -384,21 +459,141 @@ tests:
                3, 4, 5]
       shape: [2, 3]
 ---
-description: insert_slice_16bits
+description: from_elements_2D_crt
 program: |
-  func.func @main(%t0: tensor<2x10x!FHE.eint<16>>, %t1: tensor<2x2x!FHE.eint<16>>) -> tensor<2x10x!FHE.eint<16>> {
-    %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!FHE.eint<16>> into tensor<2x10x!FHE.eint<16>>
-    return %r : tensor<2x10x!FHE.eint<16>>
+  func.func @main(%arg0 : !FHE.eint<16>, %arg1 : !FHE.eint<16>, %arg2 : !FHE.eint<16>, %arg3 : !FHE.eint<16>, %arg4 : !FHE.eint<16>, %arg5 : !FHE.eint<16>) -> tensor<2x3x!FHE.eint<16>> {
+    %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<2x3x!FHE.eint<16>>
+    return %0 : tensor<2x3x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - scalar: 0
+      - scalar: 1
+      - scalar: 2
+      - scalar: 3
+      - scalar: 4
+      - scalar: 5
+    outputs:
+      - tensor: [0, 1, 2,
+                 3, 4, 5]
+        shape: [2, 3]
+---
+description: expand_shape
+program: |
+  func.func @main(%2: tensor<1x1x10x!FHE.eint<6>>) -> tensor<1x1x1x10x!FHE.eint<6>> {
+    %3 = tensor.expand_shape %2 [[0], [1], [2, 3]] : tensor<1x1x10x!FHE.eint<6>> into tensor<1x1x1x10x!FHE.eint<6>>
+    return %3 : tensor<1x1x1x10x!FHE.eint<6>>
   }
 tests:
   - inputs:
-    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
-               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
-      shape: [2,10]
-    - tensor: [1000, 1001,
-               1002, 1003]
-      shape: [2,2]
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,1,10]
     outputs:
-    - tensor: [65535, 46706, 18752, 55384, 55709, 1000, 1001, 57650, 45551, 5769,
-               38786, 36362, 65112, 5748, 60515, 1002, 1003, 4271, 9294, 0]
-      shape: [2,10]
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,1,1,10]
+---
+description: expand_shape_crt
+program: |
+  func.func @main(%2: tensor<1x1x10x!FHE.eint<16>>) -> tensor<1x1x1x10x!FHE.eint<16>> {
+    %3 = tensor.expand_shape %2 [[0], [1], [2, 3]] : tensor<1x1x10x!FHE.eint<16>> into tensor<1x1x1x10x!FHE.eint<16>>
+    return %3 : tensor<1x1x1x10x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,1,10]
+        width: 8
+    outputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,1,1,10]
+---
+description: expand_shape_2
+program: |
+  func.func @main(%2: tensor<2x5x!FHE.eint<6>>) -> tensor<1x2x1x5x1x!FHE.eint<6>> {
+    %3 = tensor.expand_shape %2 [[0,1], [2,3,4]] : tensor<2x5x!FHE.eint<6>> into tensor<1x2x1x5x1x!FHE.eint<6>>
+    return %3 : tensor<1x2x1x5x1x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [2,5]
+    outputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,2,1,5,1]
+---
+description: expand_shape_2_crt
+program: |
+  func.func @main(%2: tensor<2x5x!FHE.eint<16>>) -> tensor<1x2x1x5x1x!FHE.eint<16>> {
+    %3 = tensor.expand_shape %2 [[0,1], [2,3,4]] : tensor<2x5x!FHE.eint<16>> into tensor<1x2x1x5x1x!FHE.eint<16>>
+    return %3 : tensor<1x2x1x5x1x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [2,5]
+    outputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,2,1,5,1]
+---
+description: collapse_shape
+program: |
+  func.func @main(%2: tensor<1x1x10x!FHE.eint<6>>) -> tensor<1x10x!FHE.eint<6>> {
+    %3 = tensor.collapse_shape %2 [[0,1], [2]] : tensor<1x1x10x!FHE.eint<6>> into tensor<1x10x!FHE.eint<6>>
+    return %3 : tensor<1x10x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,1,10]
+        width: 8
+    outputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,10]
+---
+description: collapse_shape_crt
+program: |
+  func.func @main(%2: tensor<1x1x10x!FHE.eint<16>>) -> tensor<1x10x!FHE.eint<16>> {
+    %3 = tensor.collapse_shape %2 [[0,1], [2]] : tensor<1x1x10x!FHE.eint<16>> into tensor<1x10x!FHE.eint<16>>
+    return %3 : tensor<1x10x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,1,10]
+        width: 8
+    outputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,10]
+---
+description: collapse_shape_2
+program: |
+  func.func @main(%2: tensor<1x2x1x5x1x!FHE.eint<6>>) -> tensor<2x5x!FHE.eint<6>> {
+    %3 = tensor.collapse_shape %2 [[0,1], [2,3,4]] : tensor<1x2x1x5x1x!FHE.eint<6>> into tensor<2x5x!FHE.eint<6>>
+    return %3 : tensor<2x5x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,2,1,5,1]
+    outputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [2,5]
+---
+description: collapse_shape_2_crt
+program: |
+  func.func @main(%2: tensor<1x2x1x5x1x!FHE.eint<16>>) -> tensor<2x5x!FHE.eint<16>> {
+    %3 = tensor.collapse_shape %2 [[0,1], [2,3,4]] : tensor<1x2x1x5x1x!FHE.eint<16>> into tensor<2x5x!FHE.eint<16>>
+    return %3 : tensor<2x5x!FHE.eint<16>>
+  }
+encoding: crt
+tests:
+  - inputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [1,2,1,5,1]
+    outputs:
+      - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0]
+        shape: [2,5]

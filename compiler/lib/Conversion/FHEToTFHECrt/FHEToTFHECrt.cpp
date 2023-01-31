@@ -632,8 +632,9 @@ struct TensorInsertOpPattern : public CrtOpPattern<mlir::tensor::InsertOp> {
             .getResult());
     sizes.push_back(rewriter.getI64IntegerAttr(loweringParameters.nMods));
     strides.push_back(rewriter.getI64IntegerAttr(1));
+
     auto newOp = rewriter.create<mlir::tensor::InsertSliceOp>(
-        op.getLoc(), adaptor.getScalar(), op.getDest(), offsets, sizes,
+        op.getLoc(), adaptor.getScalar(), adaptor.getDest(), offsets, sizes,
         strides);
 
     rewriter.replaceOp(op, {newOp});
@@ -678,26 +679,36 @@ struct TensorFromElementsOpPattern
             mlir::ValueRange{});
 
     // Create insert_slice ops to insert the different pieces.
-    auto outputShape =
-        outputTensor.getType().cast<mlir::RankedTensorType>().getShape();
-    mlir::SmallVector<mlir::OpFoldResult> offsets{
-        rewriter.getI64IntegerAttr(0)};
-    mlir::SmallVector<mlir::OpFoldResult> sizes{rewriter.getI64IntegerAttr(1)};
+    auto oldOutputType = outputTensor.getType();
+    auto newOutputType = this->getTypeConverter()->convertType(oldOutputType);
+    auto newOutputShape =
+        newOutputType.cast<mlir::RankedTensorType>().getShape();
+    mlir::SmallVector<mlir::OpFoldResult> sizes(newOutputShape.size(),
+                                                rewriter.getI64IntegerAttr(1));
+    sizes[sizes.size() - 1] =
+        rewriter.getI64IntegerAttr(loweringParameters.nMods);
+    mlir::SmallVector<mlir::OpFoldResult> strides(
+        newOutputShape.size(), rewriter.getI64IntegerAttr(1));
 
-    mlir::SmallVector<mlir::OpFoldResult> strides{
-        rewriter.getI64IntegerAttr(1)};
-    for (size_t dimIndex = 1; dimIndex < outputShape.size(); ++dimIndex) {
-      sizes.push_back(rewriter.getI64IntegerAttr(outputShape[dimIndex]));
-      strides.push_back(rewriter.getI64IntegerAttr(1));
-      offsets.push_back(rewriter.getI64IntegerAttr(0));
-    }
+    auto offsetGenerator = [&](size_t index) {
+      mlir::SmallVector<mlir::OpFoldResult> offsets(
+          newOutputShape.size(), rewriter.getI64IntegerAttr(0));
+      size_t remainder = index * 5;
+      for (int rankIndex = newOutputShape.size() - 1; rankIndex >= 0;
+           --rankIndex) {
+        offsets[rankIndex] =
+            rewriter.getI64IntegerAttr(remainder % newOutputShape[rankIndex]);
+        remainder = remainder / newOutputShape[rankIndex];
+      }
+      return offsets;
+    };
+
     for (size_t insertionIndex = 0;
          insertionIndex < adaptor.getElements().size(); ++insertionIndex) {
-      offsets[0] = rewriter.getI64IntegerAttr(insertionIndex);
       mlir::tensor::InsertSliceOp insertOp =
           rewriter.create<mlir::tensor::InsertSliceOp>(
               op.getLoc(), adaptor.getElements()[insertionIndex], outputTensor,
-              offsets, sizes, strides);
+              offsetGenerator(insertionIndex), sizes, strides);
       outputTensor = insertOp.getResult();
     }
     rewriter.replaceOp(op, {outputTensor});
