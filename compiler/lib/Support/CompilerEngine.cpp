@@ -296,6 +296,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return StreamStringError("Rewriting of encrypted mul failed");
   }
 
+  if (mlir::concretelang::pipeline::transformFHEBigInt(
+          mlirContext, module, enablePass, options.chunkSize,
+          options.chunkWidth)
+          .failed()) {
+    return errorDiag("Transforming FHE big integer ops failed");
+  }
+
   // FHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);
@@ -414,8 +421,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
             mlirContext, module, enablePass,
             options.unrollLoopsWithSDFGConvertibleOps)
             .failed()) {
-      return errorDiag(
-          "Extraction of SDFG operations from BConcrete representation failed");
+      return errorDiag("Extraction of SDFG operations from BConcrete "
+                       "representation failed");
     }
   }
 
@@ -427,8 +434,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::lowerBConcreteToStd(mlirContext, module,
                                                         enablePass)
           .failed()) {
-    return errorDiag(
-        "Lowering from Bufferized Concrete to canonical MLIR dialects failed");
+    return errorDiag("Lowering from Bufferized Concrete to canonical MLIR "
+                     "dialects failed");
   }
 
   // SDFG -> Canonical dialects
@@ -595,16 +602,17 @@ CompilerEngine::Library::getCompilationFeedbackPath(std::string outputDirPath) {
 const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
 const std::string CompilerEngine::Library::LINKER = "ld";
 #ifdef __APPLE__
-// We need to tell the linker that some symbols will be missing during linking,
-// this symbols should be available during runtime however. This is the case
-// when JIT compiling, the JIT should either link to the runtime library that
-// has the missing symbols, or it would have been loaded even prior to that.
-// Starting from Mac 11 (Big Sur), it appears we need to add -L
-// /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem for the
-// sharedlib to link properly.
+// We need to tell the linker that some symbols will be missing during
+// linking, this symbols should be available during runtime however. This is
+// the case when JIT compiling, the JIT should either link to the runtime
+// library that has the missing symbols, or it would have been loaded even
+// prior to that. Starting from Mac 11 (Big Sur), it appears we need to add -L
+// /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem for
+// the sharedlib to link properly.
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT =
     " -dylib -undefined dynamic_lookup -L "
-    "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem -o ";
+    "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem "
+    "-o ";
 const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".dylib";
 #else // Linux
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";
@@ -798,7 +806,8 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
   std::vector<std::string> extraArgs;
   std::string fullRuntimeLibraryName = "";
 #ifdef __APPLE__
-  // to issue the command for fixing the runtime dependency of the generated lib
+  // to issue the command for fixing the runtime dependency of the generated
+  // lib
   bool fixRuntimeDep = false;
 #endif
   if (!runtimeLibraryPath.empty()) {
@@ -841,12 +850,13 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
     sharedLibraryPath = path.get();
 #ifdef __APPLE__
     // when dellocate is used to include dependencies in python wheels, the
-    // runtime library will have an id that is prefixed with /DLC, and that path
-    // doesn't exist. So when generated libraries won't be able to find it
-    // during load time. To solve this, we change the dep in the generated
-    // library to be relative to the rpath which should be set correctly during
-    // linking. This shouldn't have an impact when /DLC/concrete/.dylibs/* isn't
-    // a dependecy in the first place (when not using python).
+    // runtime library will have an id that is prefixed with /DLC, and that
+    // path doesn't exist. So when generated libraries won't be able to find
+    // it during load time. To solve this, we change the dep in the generated
+    // library to be relative to the rpath which should be set correctly
+    // during linking. This shouldn't have an impact when
+    // /DLC/concrete/.dylibs/* isn't a dependecy in the first place (when not
+    // using python).
     if (fixRuntimeDep) {
       std::string fixRuntimeDepCmd = "install_name_tool -change "
                                      "/DLC/concrete/.dylibs/" +

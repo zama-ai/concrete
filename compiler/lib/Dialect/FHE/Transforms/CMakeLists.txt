@@ -1,5 +1,6 @@
 add_mlir_library(
   FHEDialectTransforms
+  BigInt.cpp
   Boolean.cpp
   EncryptedMulToDoubleTLU.cpp
   ADDITIONAL_HEADER_DIRS

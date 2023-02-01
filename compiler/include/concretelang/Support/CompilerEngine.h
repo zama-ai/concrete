@@ -71,13 +71,20 @@ struct CompilationOptions {
 
   optimizer::Config optimizerConfig;
 
+  /// When decomposing big integers into chunks, chunkSize is the total number
+  /// of bits used for the message, including the carry, while chunkWidth is
+  /// only the number of bits used during encoding and decoding of a big integer
+  unsigned int chunkSize;
+  unsigned int chunkWidth;
+
   CompilationOptions()
       : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchConcreteOps(false),
         emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
         dataflowParallelize(false), optimizeConcrete(true), emitGPUOps(false),
         clientParametersFuncName(llvm::None),
-        optimizerConfig(optimizer::DEFAULT_CONFIG){};
+        optimizerConfig(optimizer::DEFAULT_CONFIG), chunkSize(4),
+        chunkWidth(2){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {
     clientParametersFuncName = funcname;

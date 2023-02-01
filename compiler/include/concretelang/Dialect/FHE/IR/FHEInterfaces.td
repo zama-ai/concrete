@@ -25,6 +25,11 @@ def FheIntegerInterface : TypeInterface<"FheIntegerInterface"> {
       /*description=*/"Get whether the integer is unsigned.",
       /*retTy=*/"bool",
       /*methodName=*/"isUnsigned"
+    >,
+    InterfaceMethod<
+      /*description=*/"Get whether the integer is chunked (composed of multiple smaller integers).",
+      /*retTy=*/"bool",
+      /*methodName=*/"isChunked"
     >
   ];
 }

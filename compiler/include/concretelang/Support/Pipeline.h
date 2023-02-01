@@ -49,6 +49,11 @@ transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+transformFHEBigInt(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   unsigned int chunkSize, unsigned int chunkWidth);
+
+mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                llvm::Optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass);

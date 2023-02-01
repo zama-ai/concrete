@@ -35,7 +35,8 @@
 #include <concretelang/Dialect/Concrete/Transforms/Optimization.h>
 #include <concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
-#include <concretelang/Dialect/FHE/Transforms/Boolean.h>
+#include <concretelang/Dialect/FHE/Transforms/BigInt/BigInt.h>
+#include <concretelang/Dialect/FHE/Transforms/Boolean/Boolean.h>
 #include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
@@ -215,6 +216,23 @@ transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,
   mlir::PassManager pm(&context);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFHEBooleanTransformPass(), enablePass);
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+transformFHEBigInt(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   unsigned int chunkSize, unsigned int chunkWidth) {
+  mlir::PassManager pm(&context);
+  addPotentiallyNestedPass(
+      pm,
+      mlir::concretelang::createFHEBigIntTransformPass(chunkSize, chunkWidth),
+      enablePass);
+  // We want to fully unroll for loops introduced by the BigInt transform since
+  // MANP doesn't support loops. This is a workaround that make the IR much
+  // bigger than it should be
+  addPotentiallyNestedPass(pm, mlir::createLoopUnrollPass(-1, false, true),
+                           enablePass);
   return pm.run(module.getOperation());
 }
 

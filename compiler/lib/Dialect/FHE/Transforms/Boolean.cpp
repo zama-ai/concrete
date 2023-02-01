@@ -9,7 +9,7 @@
 
 #include <concretelang/Dialect/FHE/IR/FHEOps.h>
 #include <concretelang/Dialect/FHE/IR/FHETypes.h>
-#include <concretelang/Dialect/FHE/Transforms/Boolean.h>
+#include <concretelang/Dialect/FHE/Transforms/Boolean/Boolean.h>
 #include <concretelang/Support/Constants.h>
 
 namespace mlir {

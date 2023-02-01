@@ -29,14 +29,25 @@ bool verifyEncryptedIntegerInputAndResultConsistency(
     return false;
   }
 
+  if (input.isChunked() != result.isChunked()) {
+    op.emitOpError("should have the same composition (chunked or not) of "
+                   "encrypted input and result");
+    return false;
+  }
+
   return true;
 }
 
 bool verifyEncryptedIntegerAndIntegerInputsConsistency(mlir::Operation &op,
                                                        FheIntegerInterface &a,
                                                        IntegerType &b) {
-
-  if (a.getWidth() + 1 != b.getWidth()) {
+  if (a.isChunked()) {
+    if (a.getWidth() != b.getWidth()) {
+      op.emitOpError("should have the width of plain input equal to width of "
+                     "encrypted input");
+      return false;
+    }
+  } else if (a.getWidth() + 1 != b.getWidth()) {
     op.emitOpError("should have the width of plain input equal to width of "
                    "encrypted input + 1");
     return false;
@@ -55,6 +66,12 @@ bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
 
   if (a.getWidth() != b.getWidth()) {
     op.emitOpError("should have the width of encrypted inputs equal");
+    return false;
+  }
+
+  if (a.isChunked() != b.isChunked()) {
+    op.emitOpError("should have the same composition (chunked or not) of "
+                   "encrypted inputs");
     return false;
   }
 

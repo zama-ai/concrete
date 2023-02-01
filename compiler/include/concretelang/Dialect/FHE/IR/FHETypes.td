@@ -33,6 +33,7 @@ def FHE_EncryptedIntegerType : FHE_Type<"EncryptedInteger",
   let extraClassDeclaration = [{
     bool isSigned() const { return false; }
     bool isUnsigned() const { return true; }
+    bool isChunked() const { return false; }
   }];
 }
 
@@ -61,12 +62,43 @@ def FHE_EncryptedSignedIntegerType : FHE_Type<"EncryptedSignedInteger",
   let extraClassDeclaration = [{
     bool isSigned() const { return true; }
     bool isUnsigned() const { return false; }
+    bool isChunked() const { return false; }
+  }];
+}
+
+def FHE_ChunkedEncryptedIntegerType : FHE_Type<"ChunkedEncryptedInteger",
+        [MemRefElementTypeInterface, FheIntegerInterface]> {
+  let mnemonic = "chunked_eint";
+
+  let summary = "An encrypted integer composed of multiple chunks";
+
+  let description = [{
+    An encrypted integer composed of multiple chunks.
+
+    Examples:
+    ```mlir
+    !FHE.chunked_eint<64>
+    !FHE.chunked_eint<32>
+    ```
+  }];
+
+  let parameters = (ins "unsigned":$width);
+
+  let hasCustomAssemblyFormat = 1;
+
+  let genVerifyDecl = true;
+
+  let extraClassDeclaration = [{
+    bool isSigned() const { return false; }
+    bool isUnsigned() const { return true; }
+    bool isChunked() const { return true; }
   }];
 }
 
 def FHE_AnyEncryptedInteger : Type<Or<[
   FHE_EncryptedIntegerType.predicate,
-  FHE_EncryptedSignedIntegerType.predicate
+  FHE_EncryptedSignedIntegerType.predicate,
+  FHE_ChunkedEncryptedIntegerType.predicate
 ]>>;
 
 def FHE_EncryptedBooleanType : FHE_Type<"EncryptedBoolean",

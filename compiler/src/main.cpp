@@ -206,6 +206,18 @@ llvm::cl::list<uint64_t>
             llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore,
             llvm::cl::MiscFlags::CommaSeparated);
 
+llvm::cl::opt<unsigned int> chunkSize(
+    "chunk-size",
+    llvm::cl::desc(
+        "Chunk size while decomposing big integers into chunks, default is 4"),
+    llvm::cl::init<unsigned int>(4));
+
+llvm::cl::opt<unsigned int> chunkWidth(
+    "chunk-width",
+    llvm::cl::desc(
+        "Chunk width while decomposing big integers into chunks, default is 2"),
+    llvm::cl::init<unsigned int>(2));
+
 llvm::cl::opt<std::string> jitKeySetCachePath(
     "jit-keyset-cache-path",
     llvm::cl::desc("Path to cache KeySet content (unsecure)"));
@@ -338,6 +350,8 @@ cmdlineCompilationOptions() {
       cmdline::unrollLoopsWithSDFGConvertibleOps;
   options.optimizeConcrete = cmdline::optimizeConcrete;
   options.emitGPUOps = cmdline::emitGPUOps;
+  options.chunkSize = cmdline::chunkSize;
+  options.chunkWidth = cmdline::chunkWidth;
 
   if (!cmdline::v0Constraint.empty()) {
     if (cmdline::v0Constraint.size() != 2) {
