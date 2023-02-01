@@ -179,5 +179,5 @@ You can adjust `target_msbs` depending on your requirements. If you set it to `4
 ![](../_static/rounded-tlu/4-bits-kept.png)
 
 {% hint style="warning" %}
-`AutoRounder`s should be defined outside the function being compiled. They are used to store the result of aqdjustment process, so they shouldn't be created each time the function is called.
+`AutoRounder`s should be defined outside the function being compiled. They are used to store the result of adjustment process, so they shouldn't be created each time the function is called.
 {% endhint %}
