@@ -18,11 +18,33 @@ EncryptedArguments::exportPublicArguments(ClientParameters clientParameters,
       clientParameters, std::move(preparedArgs), std::move(ciphertextBuffers));
 }
 
+/// Split the input integer into `size` chunks of `chunkWidth` bits each
+std::vector<uint64_t> chunkInput(uint64_t value, size_t size,
+                                 unsigned int chunkWidth) {
+  std::vector<uint64_t> chunks;
+  chunks.reserve(size);
+  uint64_t mask = (1 << chunkWidth) - 1;
+  for (size_t i = 0; i < size; i++) {
+    auto chunk = value & mask;
+    chunks.push_back((uint64_t)chunk);
+    value >>= chunkWidth;
+  }
+  return chunks;
+}
+
 outcome::checked<void, StringError>
 EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
   OUTCOME_TRYV(checkPushTooManyArgs(keySet));
+  OUTCOME_TRY(CircuitGate input, keySet.clientParameters().input(currentPos));
+  // a chunked input is represented as a tensor in lower levels, and need to to
+  // splitted into chunks and encrypted as such
+  if (input.chunkInfo.hasValue()) {
+    std::vector<uint64_t> chunks =
+        chunkInput(arg, input.shape.size, input.chunkInfo.getPointer()->width);
+    return this->pushArg(chunks.data(), input.shape.size, keySet);
+  }
+  // we only increment if we don't forward the call to another pushArg method
   auto pos = currentPos++;
-  OUTCOME_TRY(CircuitGate input, keySet.clientParameters().input(pos));
   if (input.shape.size != 0) {
     return StringError("argument #") << pos << " is not a scalar";
   }

@@ -363,10 +363,15 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       emptyParams.functionName = funcName;
       res.clientParameters = emptyParams;
     } else {
+      llvm::Optional<::concretelang::clientlib::ChunkInfo> chunkInfo =
+          llvm::None;
+      if (options.chunkIntegers) {
+        chunkInfo = ::concretelang::clientlib::ChunkInfo{4, 2};
+      }
       auto clientParametersOrErr =
           mlir::concretelang::createClientParametersForV0(
               *res.fheContext, funcName, module,
-              options.optimizerConfig.security);
+              options.optimizerConfig.security, chunkInfo);
       if (!clientParametersOrErr)
         return clientParametersOrErr.takeError();
 

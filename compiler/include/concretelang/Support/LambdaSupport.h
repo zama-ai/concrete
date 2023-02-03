@@ -206,6 +206,23 @@ typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
       return (sign) ? buildScalarLambdaResult<int8_t>(keySet, result)
                     : buildScalarLambdaResult<uint8_t>(keySet, result);
     }
+  } else if (gate.chunkInfo.hasValue()) {
+    // chunked scalar case
+    assert(gate.shape.dimensions.size() == 1);
+    width = gate.shape.size * gate.chunkInfo->width;
+    if (width > 32) {
+      return (sign) ? buildScalarLambdaResult<int64_t>(keySet, result)
+                    : buildScalarLambdaResult<uint64_t>(keySet, result);
+    } else if (width > 16) {
+      return (sign) ? buildScalarLambdaResult<int32_t>(keySet, result)
+                    : buildScalarLambdaResult<uint32_t>(keySet, result);
+    } else if (width > 8) {
+      return (sign) ? buildScalarLambdaResult<int16_t>(keySet, result)
+                    : buildScalarLambdaResult<uint16_t>(keySet, result);
+    } else if (width <= 8) {
+      return (sign) ? buildScalarLambdaResult<int8_t>(keySet, result)
+                    : buildScalarLambdaResult<uint8_t>(keySet, result);
+    }
   } else {
     // tensor case
     if (width > 32) {

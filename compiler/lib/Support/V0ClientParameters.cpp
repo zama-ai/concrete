@@ -22,6 +22,7 @@ namespace mlir {
 namespace concretelang {
 
 namespace clientlib = ::concretelang::clientlib;
+using ::concretelang::clientlib::ChunkInfo;
 using ::concretelang::clientlib::CircuitGate;
 using ::concretelang::clientlib::ClientParameters;
 using ::concretelang::clientlib::Encoding;
@@ -33,10 +34,10 @@ using ::concretelang::clientlib::Variance;
 const auto keyFormat = concrete::BINARY;
 
 /// For the v0 the secretKeyID and precision are the same for all gates.
-llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
-                                             LweSecretKeyID secretKeyID,
-                                             Variance variance,
-                                             mlir::Type type) {
+llvm::Expected<CircuitGate>
+gateFromMLIRType(V0FHEContext fheContext, LweSecretKeyID secretKeyID,
+                 Variance variance, llvm::Optional<ChunkInfo> chunkInfo,
+                 mlir::Type type) {
   if (type.isIntOrIndex()) {
     // TODO - The index type is dependant of the target architecture, so
     // actually we assume we target only 64 bits, we need to have some the size
@@ -55,6 +56,7 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
          /*.dimensions = */ std::vector<int64_t>(),
          /*.size = */ 0,
          /* .sign */ sign},
+        /*.chunkInfo = */ llvm::None,
     };
   }
   if (auto lweTy = type.dyn_cast_or_null<
@@ -64,22 +66,76 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
     if (fheContext.parameter.largeInteger.has_value()) {
       crt = fheContext.parameter.largeInteger.value().crtDecomposition;
     }
+    size_t width;
+    uint64_t size = 0;
+    std::vector<int64_t> dims;
+    if (chunkInfo.hasValue()) {
+      width = chunkInfo->size;
+      assert(lweTy.getWidth() % chunkInfo->width == 0);
+      size = lweTy.getWidth() / chunkInfo->width;
+      dims.push_back(size);
+    } else {
+      width = (size_t)lweTy.getWidth();
+    }
     return CircuitGate{
         /* .encryption = */ llvm::Optional<EncryptionGate>({
             /* .secretKeyID = */ secretKeyID,
             /* .variance = */ variance,
             /* .encoding = */
             {
-                /* .precision = */ lweTy.getWidth(),
+                /* .precision = */ width,
                 /* .crt = */ crt,
                 /*.sign = */ sign,
             },
         }),
         /*.shape = */
-        {/*.width = */ (size_t)lweTy.getWidth(),
-         /*.dimensions = */ std::vector<int64_t>(),
-         /*.size = */ 0,
-         /*.sign = */ sign},
+        {
+            /*.width = */ width,
+            /*.dimensions = */ dims,
+            /*.size = */ size,
+            /*.sign = */ sign,
+        },
+        /*.chunkInfo = */ chunkInfo,
+    };
+  }
+  // TODO: this a duplicate of the last if: should be removed when we remove
+  // chinked eint
+  if (auto lweTy = type.dyn_cast_or_null<
+                   mlir::concretelang::FHE::ChunkedEncryptedIntegerType>()) {
+    bool sign = lweTy.isSignedInteger();
+    std::vector<int64_t> crt;
+    if (fheContext.parameter.largeInteger.has_value()) {
+      crt = fheContext.parameter.largeInteger.value().crtDecomposition;
+    }
+    size_t width;
+    uint64_t size;
+    std::vector<int64_t> dims;
+    if (chunkInfo.hasValue()) {
+      width = chunkInfo->size;
+      assert(lweTy.getWidth() % chunkInfo->width == 0);
+      size = lweTy.getWidth() / chunkInfo->width;
+      dims.push_back(size);
+    } else {
+      width = (size_t)lweTy.getWidth();
+    }
+    return CircuitGate{
+        /* .encryption = */ llvm::Optional<EncryptionGate>({
+            /* .secretKeyID = */ secretKeyID,
+            /* .variance = */ variance,
+            /* .encoding = */
+            {
+                /* .precision = */ width,
+                /* .crt = */ crt,
+            },
+        }),
+        /*.shape = */
+        {
+            /*.width = */ width,
+            /*.dimensions = */ dims,
+            /*.size = */ size,
+            /*.sign = */ sign,
+        },
+        /*.chunkInfo = */ chunkInfo,
     };
   }
   if (auto lweTy = type.dyn_cast_or_null<
@@ -103,11 +159,12 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
             /*.size = */ 0,
             /*.sign = */ false,
         },
+        /*.chunkInfo = */ llvm::None,
     };
   }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
   if (tensor != nullptr) {
-    auto gate = gateFromMLIRType(fheContext, secretKeyID, variance,
+    auto gate = gateFromMLIRType(fheContext, secretKeyID, variance, chunkInfo,
                                  tensor.getElementType());
     if (auto err = gate.takeError()) {
       return std::move(err);
@@ -126,7 +183,8 @@ llvm::Expected<CircuitGate> gateFromMLIRType(V0FHEContext fheContext,
 llvm::Expected<ClientParameters>
 createClientParametersForV0(V0FHEContext fheContext,
                             llvm::StringRef functionName, mlir::ModuleOp module,
-                            int bitsOfSecurity) {
+                            int bitsOfSecurity,
+                            llvm::Optional<ChunkInfo> chunkInfo) {
   const auto v0Curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
 
   if (v0Curve == nullptr) {
@@ -216,7 +274,8 @@ createClientParametersForV0(V0FHEContext fheContext,
   auto inputs = funcType.getInputs();
 
   auto gateFromType = [&](mlir::Type ty) {
-    return gateFromMLIRType(fheContext, clientlib::BIG_KEY, inputVariance, ty);
+    return gateFromMLIRType(fheContext, clientlib::BIG_KEY, inputVariance,
+                            chunkInfo, ty);
   };
   for (auto inType : inputs) {
     auto gate = gateFromType(inType);

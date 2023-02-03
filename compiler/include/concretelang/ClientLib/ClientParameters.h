@@ -166,9 +166,21 @@ static inline bool operator==(const CircuitGateShape &lhs,
          lhs.size == rhs.size;
 }
 
+struct ChunkInfo {
+  /// total number of bits used for the chunk including the carry.
+  /// size should be at least width + 1
+  unsigned int size;
+  /// number of bits used for the chunk excluding the carry
+  unsigned int width;
+};
+static inline bool operator==(const ChunkInfo &lhs, const ChunkInfo &rhs) {
+  return lhs.width == rhs.width && lhs.size == rhs.size;
+}
+
 struct CircuitGate {
   llvm::Optional<EncryptionGate> encryption;
   CircuitGateShape shape;
+  llvm::Optional<ChunkInfo> chunkInfo;
 
   bool isEncrypted() { return encryption.hasValue(); }
 
@@ -186,7 +198,8 @@ struct CircuitGate {
   }
 };
 static inline bool operator==(const CircuitGate &lhs, const CircuitGate &rhs) {
-  return lhs.encryption == rhs.encryption && lhs.shape == rhs.shape;
+  return lhs.encryption == rhs.encryption && lhs.shape == rhs.shape &&
+         lhs.chunkInfo == rhs.chunkInfo;
 }
 
 struct ClientParameters {

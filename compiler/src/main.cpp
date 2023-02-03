@@ -206,6 +206,12 @@ llvm::cl::list<uint64_t>
             llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore,
             llvm::cl::MiscFlags::CommaSeparated);
 
+llvm::cl::opt<bool>
+    chunkIntegers("chunk-integers",
+                  llvm::cl::desc("Whether to decompose integer into chunks or "
+                                 "not, default is false (to not chunk)"),
+                  llvm::cl::init<bool>(false));
+
 llvm::cl::opt<unsigned int> chunkSize(
     "chunk-size",
     llvm::cl::desc(
@@ -350,6 +356,7 @@ cmdlineCompilationOptions() {
       cmdline::unrollLoopsWithSDFGConvertibleOps;
   options.optimizeConcrete = cmdline::optimizeConcrete;
   options.emitGPUOps = cmdline::emitGPUOps;
+  options.chunkIntegers = cmdline::chunkIntegers;
   options.chunkSize = cmdline::chunkSize;
   options.chunkWidth = cmdline::chunkWidth;
 

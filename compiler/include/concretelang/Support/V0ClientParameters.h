@@ -15,11 +15,13 @@
 namespace mlir {
 namespace concretelang {
 
+using ::concretelang::clientlib::ChunkInfo;
 using ::concretelang::clientlib::ClientParameters;
 
 llvm::Expected<ClientParameters>
 createClientParametersForV0(V0FHEContext context, llvm::StringRef functionName,
-                            mlir::ModuleOp module, int bitsOfSecurity);
+                            mlir::ModuleOp module, int bitsOfSecurity,
+                            llvm::Optional<ChunkInfo> chunkInfo = llvm::None);
 
 } // namespace concretelang
 } // namespace mlir

@@ -90,6 +90,18 @@ struct PublicResult {
   /// Serialize into an output stream.
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 
+  /// Get the original integer that was decomposed into chunks of `chunkWidth`
+  /// bits each
+  uint64_t fromChunks(std::vector<uint64_t> chunks, unsigned int chunkWidth) {
+    uint64_t value = 0;
+    uint64_t mask = (1 << chunkWidth) - 1;
+    for (size_t i = 0; i < chunks.size(); i++) {
+      auto chunk = chunks[i] & mask;
+      value += chunk << (chunkWidth * i);
+    }
+    return value;
+  }
+
   /// Get the result at `pos` as a scalar. Decryption happens if the
   /// result is encrypted.
   template <typename T>
@@ -98,6 +110,16 @@ struct PublicResult {
     OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
     if (!gate.isEncrypted())
       return buffers[pos].getScalar().getValue<T>();
+
+    // Chunked integers are represented as tensors at a lower level, so we need
+    // to deal with them as tensors, then build the resulting scalar out of the
+    // tensor values
+    if (gate.chunkInfo.hasValue()) {
+      OUTCOME_TRY(std::vector<uint64_t> decryptedChunks,
+                  this->asClearTextVector<uint64_t>(keySet, pos));
+      uint64_t decrypted = fromChunks(decryptedChunks, gate.chunkInfo->width);
+      return (T)decrypted;
+    }
 
     auto &buffer = buffers[pos].getTensor();
 
