@@ -35,10 +35,8 @@ namespace clientlib {
 
 using concretelang::error::StringError;
 
-const std::string SMALL_KEY = "small";
-const std::string BIG_KEY = "big";
-const std::string BOOTSTRAP_KEY = "bsk_v0";
-const std::string KEYSWITCH_KEY = "ksk_v0";
+const uint64_t SMALL_KEY = 1;
+const uint64_t BIG_KEY = 0;
 
 const std::string CLIENT_PARAMETERS_EXT = ".concrete.params.json";
 
@@ -52,7 +50,7 @@ typedef std::vector<int64_t> CRTDecomposition;
 typedef uint64_t LweDimension;
 typedef uint64_t GlweDimension;
 
-typedef std::string LweSecretKeyID;
+typedef uint64_t LweSecretKeyID;
 struct LweSecretKeyParam {
   LweDimension dimension;
 
@@ -66,7 +64,7 @@ static bool operator==(const LweSecretKeyParam &lhs,
   return lhs.dimension == rhs.dimension;
 }
 
-typedef std::string BootstrapKeyID;
+typedef uint64_t BootstrapKeyID;
 struct BootstrapKeyParam {
   LweSecretKeyID inputSecretKeyID;
   LweSecretKeyID outputSecretKeyID;
@@ -74,6 +72,8 @@ struct BootstrapKeyParam {
   DecompositionBaseLog baseLog;
   GlweDimension glweDimension;
   Variance variance;
+  PolynomialSize polynomialSize;
+  LweDimension inputLweDimension;
 
   void hash(size_t &seed);
 
@@ -90,7 +90,7 @@ static inline bool operator==(const BootstrapKeyParam &lhs,
          lhs.glweDimension == rhs.glweDimension && lhs.variance == rhs.variance;
 }
 
-typedef std::string KeyswitchKeyID;
+typedef uint64_t KeyswitchKeyID;
 struct KeyswitchKeyParam {
   LweSecretKeyID inputSecretKeyID;
   LweSecretKeyID outputSecretKeyID;
@@ -112,22 +112,28 @@ static inline bool operator==(const KeyswitchKeyParam &lhs,
          lhs.variance == rhs.variance;
 }
 
-typedef std::string PackingKeySwitchID;
-struct PackingKeySwitchParam {
+typedef uint64_t PackingKeyswitchKeyID;
+struct PackingKeyswitchKeyParam {
   LweSecretKeyID inputSecretKeyID;
   LweSecretKeyID outputSecretKeyID;
-  BootstrapKeyID bootstrapKeyID;
   DecompositionLevelCount level;
   DecompositionBaseLog baseLog;
+  GlweDimension glweDimension;
+  PolynomialSize polynomialSize;
+  LweDimension inputLweDimension;
   Variance variance;
 
   void hash(size_t &seed);
 };
-static inline bool operator==(const PackingKeySwitchParam &lhs,
-                              const PackingKeySwitchParam &rhs) {
+static inline bool operator==(const PackingKeyswitchKeyParam &lhs,
+                              const PackingKeyswitchKeyParam &rhs) {
   return lhs.inputSecretKeyID == rhs.inputSecretKeyID &&
          lhs.outputSecretKeyID == rhs.outputSecretKeyID &&
-         lhs.level == rhs.level && lhs.baseLog == rhs.baseLog;
+         lhs.level == rhs.level && lhs.baseLog == rhs.baseLog &&
+         lhs.glweDimension == rhs.glweDimension &&
+         lhs.polynomialSize == rhs.polynomialSize &&
+         lhs.variance == lhs.variance &&
+         lhs.inputLweDimension == rhs.inputLweDimension;
 }
 
 struct Encoding {
@@ -185,13 +191,13 @@ struct CircuitGate {
   bool isEncrypted() { return encryption.hasValue(); }
 
   /// byteSize returns the size in bytes for this gate.
-  size_t byteSize(std::map<LweSecretKeyID, LweSecretKeyParam> secretKeys) {
+  size_t byteSize(std::vector<LweSecretKeyParam> secretKeys) {
     auto width = shape.width;
     auto numElts = shape.size == 0 ? 1 : shape.size;
     if (isEncrypted()) {
-      auto skParam = secretKeys.find(encryption->secretKeyID);
-      assert(skParam != secretKeys.end());
-      return 8 * skParam->second.lweSize() * numElts;
+      assert(encryption->secretKeyID < secretKeys.size());
+      auto skParam = secretKeys[encryption->secretKeyID];
+      return 8 * skParam.lweSize() * numElts;
     }
     width = bitWidthAsWord(width) / 8;
     return width * numElts;
@@ -203,10 +209,10 @@ static inline bool operator==(const CircuitGate &lhs, const CircuitGate &rhs) {
 }
 
 struct ClientParameters {
-  std::map<LweSecretKeyID, LweSecretKeyParam> secretKeys;
-  std::map<BootstrapKeyID, BootstrapKeyParam> bootstrapKeys;
-  std::map<KeyswitchKeyID, KeyswitchKeyParam> keyswitchKeys;
-  std::map<PackingKeySwitchID, PackingKeySwitchParam> packingKeys;
+  std::vector<LweSecretKeyParam> secretKeys;
+  std::vector<BootstrapKeyParam> bootstrapKeys;
+  std::vector<KeyswitchKeyParam> keyswitchKeys;
+  std::vector<PackingKeyswitchKeyParam> packingKeyswitchKeys;
   std::vector<CircuitGate> inputs;
   std::vector<CircuitGate> outputs;
   std::string functionName;
@@ -237,12 +243,9 @@ struct ClientParameters {
     if (!gate.encryption.hasValue()) {
       return StringError("gate is not encrypted");
     }
-    auto secretKey = secretKeys.find(gate.encryption->secretKeyID);
-    if (secretKey == secretKeys.end()) {
-      return StringError("cannot find ")
-             << gate.encryption->secretKeyID << " in client parameters";
-    }
-    return secretKey->second;
+    assert(gate.encryption->secretKeyID < secretKeys.size());
+    auto secretKey = secretKeys[gate.encryption->secretKeyID];
+    return secretKey;
   }
 
   /// bufferSize returns the size of the whole buffer of a gate.
@@ -309,8 +312,8 @@ bool fromJSON(const llvm::json::Value, BootstrapKeyParam &, llvm::json::Path);
 llvm::json::Value toJSON(const KeyswitchKeyParam &);
 bool fromJSON(const llvm::json::Value, KeyswitchKeyParam &, llvm::json::Path);
 
-llvm::json::Value toJSON(const PackingKeySwitchParam &);
-bool fromJSON(const llvm::json::Value, PackingKeySwitchParam &,
+llvm::json::Value toJSON(const PackingKeyswitchKeyParam &);
+bool fromJSON(const llvm::json::Value, PackingKeyswitchKeyParam &,
               llvm::json::Path);
 
 llvm::json::Value toJSON(const Encoding &);

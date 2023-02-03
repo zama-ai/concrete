@@ -1,4 +1,6 @@
-add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp seeder.cpp)
+add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp)
+
+add_dependencies(ConcretelangRuntime concrete_cpu)
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PRIVATE HPX::hpx HPX::iostreams_component)
@@ -25,7 +27,8 @@ if(APPLE)
   target_link_libraries(ConcretelangRuntime LINK_PUBLIC ${SECURITY_FRAMEWORK})
 endif()
 
-target_link_libraries(ConcretelangRuntime PUBLIC Concrete ConcretelangClientLib pthread m dl
+target_include_directories(ConcretelangRuntime PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
+target_link_libraries(ConcretelangRuntime PUBLIC concrete_cpu ConcretelangClientLib pthread m dl
                                                  $<TARGET_OBJECTS:mlir_c_runner_utils>)
 
 install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)

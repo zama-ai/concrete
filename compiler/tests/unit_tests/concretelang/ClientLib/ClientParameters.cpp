@@ -1,3 +1,4 @@
+#include <cassert>
 #include <gtest/gtest.h>
 
 #include "concretelang/ClientLib/ClientParameters.h"
@@ -8,38 +9,42 @@ namespace clientlib = concretelang::clientlib;
 
 TEST(Support, client_parameters_json_serde) {
   clientlib::ClientParameters params0;
-  params0.secretKeys = {
-      {clientlib::SMALL_KEY, {/*.size = */ 12}},
-      {clientlib::BIG_KEY, {/*.size = */ 14}},
-  };
-  params0.bootstrapKeys = {
-      {clientlib::BOOTSTRAP_KEY,
-       {/*.inputSecretKeyID = */ clientlib::SMALL_KEY,
-        /*.outputSecretKeyID = */ clientlib::BIG_KEY,
-        /*.level = */ 1,
-        /*.baseLog = */ 2,
-        /*.glweDimension = */ 3,
-        /*.variance = */ 0.001}},
-      {"wtf_bsk_v0",
-       {
-           /*.inputSecretKeyID = */ clientlib::BIG_KEY,
-           /*.outputSecretKeyID = */ clientlib::SMALL_KEY,
-           /*.level = */ 3,
-           /*.baseLog = */ 2,
-           /*.glweDimension = */ 1,
-           /*.variance = */ 0.0001,
-       }},
-  };
-  params0.keyswitchKeys = {{clientlib::KEYSWITCH_KEY,
-                            {
-                                /*.inputSecretKeyID = */
-                                clientlib::BIG_KEY,
-                                /*.outputSecretKeyID = */
-                                clientlib::SMALL_KEY,
-                                /*.level = */ 1,
-                                /*.baseLog = */ 2,
-                                /*.variance = */ 3,
-                            }}};
+  assert(params0.secretKeys.size() == clientlib::BIG_KEY);
+  params0.secretKeys.push_back({14});
+
+  assert(params0.secretKeys.size() == clientlib::SMALL_KEY);
+  params0.secretKeys.push_back({12});
+
+  params0.bootstrapKeys.push_back({
+      /*.inputSecretKeyID = */ clientlib::SMALL_KEY,
+      /*.outputSecretKeyID = */ clientlib::BIG_KEY,
+      /*.level = */ 1,
+      /*.baseLog = */ 2,
+      /*.glweDimension = */ 3,
+      /*.variance = */ 0.001,
+      /*.polynomialSize = */ 1024,
+      /*.inputLweDimension = */ 600,
+  });
+
+  params0.bootstrapKeys.push_back({
+      /*.inputSecretKeyID = */ clientlib::BIG_KEY,
+      /*.outputSecretKeyID = */ clientlib::SMALL_KEY,
+      /*.level = */ 3,
+      /*.baseLog = */ 2,
+      /*.glweDimension = */ 1,
+      /*.variance = */ 0.0001,
+      /*.polynomialSize = */ 1024,
+      /*.inputLweDimension = */ 600,
+  });
+  params0.keyswitchKeys.push_back({
+      /*.inputSecretKeyID = */
+      clientlib::BIG_KEY,
+      /*.outputSecretKeyID = */
+      clientlib::SMALL_KEY,
+      /*.level = */ 1,
+      /*.baseLog = */ 2,
+      /*.variance = */ 3,
+  });
   params0.inputs = {
       {
           /*.encryption = */ {

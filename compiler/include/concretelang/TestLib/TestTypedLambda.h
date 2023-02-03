@@ -73,8 +73,7 @@ public:
     OUTCOME_TRY(auto encryptedArgs,
                 clientlib::EncryptedArguments::create(*keySet, args...));
     OUTCOME_TRY(auto publicArgument,
-                encryptedArgs->exportPublicArguments(this->clientParameters,
-                                                     keySet->runtimeContext()));
+                encryptedArgs->exportPublicArguments(this->clientParameters));
     // client argument serialization
     // publicArgument->serialize(clientOuput);
     // message = clientOuput.str();

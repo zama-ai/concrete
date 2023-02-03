@@ -13,10 +13,11 @@
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
 #include "concretelang/Common/BitsSize.h"
-#include <concretelang/Runtime/DFRuntime.hpp>
-#include <concretelang/Support/Error.h>
-#include <concretelang/Support/Jit.h>
-#include <concretelang/Support/logging.h>
+#include "concretelang/Runtime/DFRuntime.hpp"
+#include "concretelang/Runtime/context.h"
+#include "concretelang/Support/Error.h"
+#include "concretelang/Support/Jit.h"
+#include "concretelang/Support/logging.h"
 
 namespace mlir {
 namespace concretelang {
@@ -133,8 +134,7 @@ JITLambda::call(clientlib::PublicArguments &args,
     rawArgs[i++] = &arg;
   }
 
-  RuntimeContext runtimeContext;
-  runtimeContext.evaluationKeys = evaluationKeys;
+  mlir::concretelang::RuntimeContext runtimeContext(evaluationKeys);
   // Pointer on runtime context, the rawArgs take pointer on actual value that
   // is passed to the compiled function.
   auto rtCtxPtr = &runtimeContext;

@@ -15,12 +15,14 @@ include "concretelang/Dialect/RT/IR/RTTypes.td"
 
 def Concrete_LweTensor : 1DTensorOf<[I64]>;
 def Concrete_LutTensor : 1DTensorOf<[I64]>;
+def Concrete_CrtLutsTensor : 2DTensorOf<[I64]>;
 def Concrete_CrtPlaintextTensor : 1DTensorOf<[I64]>;
 def Concrete_LweCRTTensor : 2DTensorOf<[I64]>;
 def Concrete_BatchLweTensor : 2DTensorOf<[I64]>;
 
 def Concrete_LweBuffer : MemRefRankOf<[I64], [1]>;
 def Concrete_LutBuffer : MemRefRankOf<[I64], [1]>;
+def Concrete_CrtLutsBuffer : MemRefRankOf<[I64], [2]>;
 def Concrete_CrtPlaintextBuffer : MemRefRankOf<[I64], [1]>;
 def Concrete_LweCRTBuffer : MemRefRankOf<[I64], [2]>;
 def Concrete_BatchLweBuffer : MemRefRankOf<[I64], [2]>;
@@ -126,7 +128,7 @@ def Concrete_EncodeExpandLutForBootstrapBufferOp : Concrete_Op<"encode_expand_lu
     );
 }
 
-def Concrete_EncodeExpandLutForWopPBSTensorOp : Concrete_Op<"encode_expand_lut_for_woppbs_tensor", [NoSideEffect]> {
+def Concrete_EncodeLutForCrtWopPBSTensorOp : Concrete_Op<"encode_lut_for_crt_woppbs_tensor", [NoSideEffect]> {
     let summary =
         "Encode and expand a lookup table so that it can be used for a wop pbs";
 
@@ -134,24 +136,22 @@ def Concrete_EncodeExpandLutForWopPBSTensorOp : Concrete_Op<"encode_expand_lut_f
         Concrete_LutTensor : $input_lookup_table,
         I64ArrayAttr: $crtDecomposition,
         I64ArrayAttr: $crtBits,
-        I32Attr : $polySize,
         I32Attr : $modulusProduct,
         BoolAttr: $isSigned
     );
 
-    let results = (outs Concrete_LutTensor : $result);
+    let results = (outs Concrete_CrtLutsTensor : $result);
 }
 
-def Concrete_EncodeExpandLutForWopPBSBufferOp : Concrete_Op<"encode_expand_lut_for_woppbs_buffer"> {
+def Concrete_EncodeLutForCrtWopPBSBufferOp : Concrete_Op<"encode_lut_for_crt_woppbs_buffer"> {
     let summary =
-        "Encode and expand a lookup table so that it can be used for a wop pbs";
+        "Encode and expand a lookup table so that it can be used for a crt wop pbs";
 
     let arguments = (ins
-        Concrete_LutBuffer : $result,
+        Concrete_CrtLutsBuffer : $result,
         Concrete_LutBuffer : $input_lookup_table,
         I64ArrayAttr: $crtDecomposition,
         I64ArrayAttr: $crtBits,
-        I32Attr : $polySize,
         I32Attr : $modulusProduct,
         BoolAttr: $isSigned
     );
@@ -347,7 +347,7 @@ def Concrete_BatchedKeySwitchLweBufferOp : Concrete_Op<"batched_keyswitch_lwe_bu
 def Concrete_WopPBSCRTLweTensorOp : Concrete_Op<"wop_pbs_crt_lwe_tensor", [NoSideEffect]> {
     let arguments = (ins
         Concrete_LweCRTTensor:$ciphertext,
-        Concrete_LutTensor:$lookupTable,
+        Concrete_CrtLutsTensor:$lookupTable,
         // Bootstrap parameters
         I32Attr : $bootstrapLevel,
         I32Attr : $bootstrapBaseLog,
@@ -370,7 +370,7 @@ def Concrete_WopPBSCRTLweBufferOp : Concrete_Op<"wop_pbs_crt_lwe_buffer"> {
     let arguments = (ins
         Concrete_LweCRTBuffer:$result,
         Concrete_LweCRTBuffer:$ciphertext,
-        Concrete_LutBuffer:$lookup_table,
+        Concrete_CrtLutsBuffer:$lookup_table,
         // Bootstrap parameters
         I32Attr : $bootstrapLevel,
         I32Attr : $bootstrapBaseLog,

@@ -4,9 +4,6 @@ build*/
 *.mlir.script
 *.lit_test_times.txt
 
-# core ffi artifacts
-concrete-core-ffi*
-
 # Test-generated artifacts
 concrete-compiler_compilation_artifacts/
 py_test_lib_compile_and_run_custom_perror/

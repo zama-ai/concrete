@@ -664,8 +664,8 @@ void TFHEToConcretePass::runOnOperation() {
           mlir::concretelang::Concrete::EncodeExpandLutForBootstrapTensorOp,
           true>,
       mlir::concretelang::GenericOneToOneOpConversionPattern<
-          mlir::concretelang::TFHE::EncodeExpandLutForWopPBSOp,
-          mlir::concretelang::Concrete::EncodeExpandLutForWopPBSTensorOp, true>,
+          mlir::concretelang::TFHE::EncodeLutForCrtWopPBSOp,
+          mlir::concretelang::Concrete::EncodeLutForCrtWopPBSTensorOp, true>,
       mlir::concretelang::GenericOneToOneOpConversionPattern<
           mlir::concretelang::TFHE::EncodePlaintextWithCrtOp,
           mlir::concretelang::Concrete::EncodePlaintextWithCrtTensorOp, true>,

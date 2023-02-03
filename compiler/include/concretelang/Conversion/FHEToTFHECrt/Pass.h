@@ -8,6 +8,7 @@
 
 #include "mlir/Pass/Pass.h"
 #include "llvm/Support/Casting.h"
+#include <cstddef>
 #include <list>
 
 namespace mlir {
@@ -19,11 +20,9 @@ struct CrtLoweringParameters {
   size_t nMods;
   size_t modsProd;
   size_t bitsTotal;
-  size_t polynomialSize;
-  size_t lutSize;
+  size_t singleLutSize;
 
-  CrtLoweringParameters(mlir::SmallVector<int64_t> mods, size_t polySize)
-      : mods(mods), polynomialSize(polySize) {
+  CrtLoweringParameters(mlir::SmallVector<int64_t> mods) : mods(mods) {
     nMods = mods.size();
     modsProd = 1;
     bitsTotal = 0;
@@ -35,9 +34,7 @@ struct CrtLoweringParameters {
       bits.push_back(nbits);
       bitsTotal += nbits;
     }
-    size_t lutCrtSize = size_t(1) << bitsTotal;
-    lutCrtSize = std::max(lutCrtSize, polynomialSize);
-    lutSize = mods.size() * lutCrtSize;
+    singleLutSize = size_t(1) << bitsTotal;
   }
 };
 

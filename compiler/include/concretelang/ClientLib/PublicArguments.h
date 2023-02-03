@@ -14,7 +14,6 @@
 #include "concretelang/ClientLib/EncryptedArguments.h"
 #include "concretelang/ClientLib/Types.h"
 #include "concretelang/Common/Error.h"
-#include "concretelang/Runtime/context.h"
 
 namespace concretelang {
 namespace serverlib {

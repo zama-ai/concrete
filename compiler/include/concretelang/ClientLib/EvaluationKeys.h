@@ -6,113 +6,143 @@
 #ifndef CONCRETELANG_CLIENTLIB_EVALUATION_KEYS_H_
 #define CONCRETELANG_CLIENTLIB_EVALUATION_KEYS_H_
 
+#include <cassert>
 #include <memory>
+#include <vector>
 
-#include "concrete-core-ffi.h"
+#include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
 
-typedef struct LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64
-    LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64;
-
-int destroy_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
-    LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *);
+struct Csprng;
+struct CsprngVtable;
 
 namespace concretelang {
 namespace clientlib {
 
-// =============================================
+class CSPRNG {
+public:
+  struct Csprng *ptr;
+  const struct CsprngVtable *vtable;
 
-/// Wrapper for `LweKeyswitchKey64` so that it cleans up properly.
+  CSPRNG() = delete;
+  CSPRNG(CSPRNG &) = delete;
+
+  CSPRNG(CSPRNG &&other) : ptr(other.ptr), vtable(other.vtable) {
+    assert(ptr != nullptr);
+    other.ptr = nullptr;
+  };
+
+  CSPRNG(Csprng *ptr, const CsprngVtable *vtable) : ptr(ptr), vtable(vtable){};
+};
+
+class ConcreteCSPRNG : public CSPRNG {
+public:
+  ConcreteCSPRNG(__uint128_t seed);
+  ConcreteCSPRNG() = delete;
+  ConcreteCSPRNG(ConcreteCSPRNG &) = delete;
+  ConcreteCSPRNG(ConcreteCSPRNG &&other);
+  ~ConcreteCSPRNG();
+};
+
+/// @brief LweSecretKey implements tools for manipulating lwe secret key on
+/// client.
+class LweSecretKey {
+  std::shared_ptr<std::vector<uint64_t>> _buffer;
+  LweSecretKeyParam _parameters;
+
+public:
+  LweSecretKey() = delete;
+  LweSecretKey(LweSecretKeyParam &parameters, CSPRNG &csprng);
+  LweSecretKey(std::shared_ptr<std::vector<uint64_t>> buffer,
+               LweSecretKeyParam parameters)
+      : _buffer(buffer), _parameters(parameters){};
+
+  /// @brief Encrypt the plaintext to the lwe ciphertext buffer.
+  void encrypt(uint64_t *ciphertext, uint64_t plaintext, double variance,
+               CSPRNG &csprng) const;
+
+  /// @brief Decrypt the ciphertext to the plaintext
+  void decrypt(const uint64_t *ciphertext, uint64_t &plaintext) const;
+
+  /// @brief Returns the buffer that hold the keyswitch key.
+  const uint64_t *buffer() const { return _buffer->data(); }
+  size_t size() const { return _buffer->size(); }
+
+  /// @brief Returns the parameters of the keyswicth key.
+  LweSecretKeyParam parameters() const { return this->_parameters; }
+
+  /// @brief Returns the lwe dimension of the secret key.
+  size_t dimension() const { return parameters().dimension; }
+};
+
+/// @brief LweKeyswitchKey implements tools for manipulating keyswitch key on
+/// client.
 class LweKeyswitchKey {
 private:
-  LweKeyswitchKey64 *ksk;
-
-protected:
-  friend std::ostream &operator<<(std::ostream &ostream,
-                                  const LweKeyswitchKey &wrappedKsk);
-  friend std::istream &operator>>(std::istream &istream,
-                                  LweKeyswitchKey &wrappedKsk);
+  std::shared_ptr<std::vector<uint64_t>> _buffer;
+  KeyswitchKeyParam _parameters;
 
 public:
-  LweKeyswitchKey(LweKeyswitchKey64 *ksk) : ksk{ksk} {}
-  LweKeyswitchKey(LweKeyswitchKey &other) = delete;
-  LweKeyswitchKey(LweKeyswitchKey &&other) : ksk{other.ksk} {
-    other.ksk = nullptr;
-  }
-  ~LweKeyswitchKey() {
-    if (this->ksk != nullptr) {
-      CAPI_ASSERT_ERROR(destroy_lwe_keyswitch_key_u64(this->ksk));
+  LweKeyswitchKey() = delete;
+  LweKeyswitchKey(KeyswitchKeyParam &parameters, LweSecretKey &inputKey,
+                  LweSecretKey &outputKey, CSPRNG &csprng);
+  LweKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
+                  KeyswitchKeyParam parameters)
+      : _buffer(buffer), _parameters(parameters){};
 
-      this->ksk = nullptr;
-    }
-  }
+  /// @brief Returns the buffer that hold the keyswitch key.
+  const uint64_t *buffer() const { return _buffer->data(); }
+  size_t size() const { return _buffer->size(); }
 
-  LweKeyswitchKey64 *get() { return this->ksk; }
+  /// @brief Returns the parameters of the keyswicth key.
+  KeyswitchKeyParam parameters() const { return this->_parameters; }
 };
 
-// =============================================
-
-/// Wrapper for `LweBootstrapKey64` so that it cleans up properly.
+/// @brief LweBootstrapKey implements tools for manipulating bootstrap key on
+/// client.
 class LweBootstrapKey {
 private:
-  LweBootstrapKey64 *bsk;
-
-protected:
-  friend std::ostream &operator<<(std::ostream &ostream,
-                                  const LweBootstrapKey &wrappedBsk);
-  friend std::istream &operator>>(std::istream &istream,
-                                  LweBootstrapKey &wrappedBsk);
+  std::shared_ptr<std::vector<uint64_t>> _buffer;
+  BootstrapKeyParam _parameters;
 
 public:
-  LweBootstrapKey(LweBootstrapKey64 *bsk) : bsk{bsk} {}
-  LweBootstrapKey(LweBootstrapKey &other) = delete;
-  LweBootstrapKey(LweBootstrapKey &&other) : bsk{other.bsk} {
-    other.bsk = nullptr;
-  }
-  ~LweBootstrapKey() {
-    if (this->bsk != nullptr) {
-      CAPI_ASSERT_ERROR(destroy_lwe_bootstrap_key_u64(this->bsk));
-      this->bsk = nullptr;
-    }
-  }
+  LweBootstrapKey() = delete;
+  LweBootstrapKey(std::shared_ptr<std::vector<uint64_t>> buffer,
+                  BootstrapKeyParam &parameters)
+      : _buffer(buffer), _parameters(parameters){};
+  LweBootstrapKey(BootstrapKeyParam &parameters, LweSecretKey &inputKey,
+                  LweSecretKey &outputKey, CSPRNG &csprng);
 
-  LweBootstrapKey64 *get() { return this->bsk; }
+  ///// @brief Returns the buffer that hold the bootstrap key.
+  const uint64_t *buffer() const { return _buffer->data(); }
+  size_t size() const { return _buffer->size(); }
+
+  /// @brief Returns the parameters of the bootsrap key.
+  BootstrapKeyParam parameters() const { return this->_parameters; }
 };
 
-// =============================================
-
-/// Wrapper for `LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64` so
-/// that it cleans up properly.
+/// @brief PackingKeyswitchKey implements tools for manipulating privat packing
+/// keyswitch key on client.
 class PackingKeyswitchKey {
 private:
-  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *key;
-
-protected:
-  friend std::ostream &operator<<(std::ostream &ostream,
-                                  const PackingKeyswitchKey &wrappedFpksk);
-  friend std::istream &operator>>(std::istream &istream,
-                                  PackingKeyswitchKey &wrappedFpksk);
+  std::shared_ptr<std::vector<uint64_t>> _buffer;
+  PackingKeyswitchKeyParam _parameters;
 
 public:
-  PackingKeyswitchKey(
-      LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *key)
-      : key{key} {}
-  PackingKeyswitchKey(PackingKeyswitchKey &other) = delete;
-  PackingKeyswitchKey(PackingKeyswitchKey &&other) : key{other.key} {
-    other.key = nullptr;
-  }
-  ~PackingKeyswitchKey() {
-    if (this->key != nullptr) {
-      CAPI_ASSERT_ERROR(
-          destroy_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
-              this->key));
-      this->key = nullptr;
-    }
-  }
+  PackingKeyswitchKey() = delete;
+  PackingKeyswitchKey(PackingKeyswitchKeyParam &parameters,
+                      LweSecretKey &inputKey, LweSecretKey &outputKey,
+                      CSPRNG &csprng);
+  PackingKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
+                      PackingKeyswitchKeyParam parameters)
+      : _buffer(buffer), _parameters(parameters){};
 
-  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *get() {
-    return this->key;
-  }
+  /// @brief Returns the buffer that hold the keyswitch key.
+  const uint64_t *buffer() const { return _buffer->data(); }
+  size_t size() const { return _buffer->size(); }
+
+  /// @brief Returns the parameters of the keyswicth key.
+  PackingKeyswitchKeyParam parameters() const { return this->_parameters; }
 };
 
 // =============================================
@@ -120,31 +150,40 @@ public:
 /// Evalution keys required for execution.
 class EvaluationKeys {
 private:
-  std::shared_ptr<LweKeyswitchKey> sharedKsk;
-  std::shared_ptr<LweBootstrapKey> sharedBsk;
-  std::shared_ptr<PackingKeyswitchKey> sharedFpksk;
-
-protected:
-  friend std::ostream &operator<<(std::ostream &ostream,
-                                  const EvaluationKeys &evaluationKeys);
-  friend std::istream &operator>>(std::istream &istream,
-                                  EvaluationKeys &evaluationKeys);
+  std::vector<LweKeyswitchKey> keyswitchKeys;
+  std::vector<LweBootstrapKey> bootstrapKeys;
+  std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
 
 public:
-  EvaluationKeys()
-      : sharedKsk{std::shared_ptr<LweKeyswitchKey>(nullptr)},
-        sharedBsk{std::shared_ptr<LweBootstrapKey>(nullptr)} {}
+  EvaluationKeys() = delete;
 
-  EvaluationKeys(std::shared_ptr<LweKeyswitchKey> sharedKsk,
-                 std::shared_ptr<LweBootstrapKey> sharedBsk,
-                 std::shared_ptr<PackingKeyswitchKey> sharedFpksk)
-      : sharedKsk{sharedKsk}, sharedBsk{sharedBsk}, sharedFpksk{sharedFpksk} {}
+  EvaluationKeys(const std::vector<LweKeyswitchKey> keyswitchKeys,
+                 const std::vector<LweBootstrapKey> bootstrapKeys,
+                 const std::vector<PackingKeyswitchKey> packingKeyswitchKeys)
+      : keyswitchKeys(keyswitchKeys), bootstrapKeys(bootstrapKeys),
+        packingKeyswitchKeys(packingKeyswitchKeys) {}
 
-  LweKeyswitchKey64 *getKsk() { return this->sharedKsk->get(); }
-  LweBootstrapKey64 *getBsk() { return this->sharedBsk->get(); }
-  LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *getFpksk() {
-    return this->sharedFpksk->get();
+  const LweKeyswitchKey &getKeyswitchKey(size_t id) const {
+    return this->keyswitchKeys[id];
+  }
+  const std::vector<LweKeyswitchKey> getKeyswitchKeys() const {
+    return this->keyswitchKeys;
+  }
+
+  const LweBootstrapKey &getBootstrapKey(size_t id) const {
+    return bootstrapKeys[id];
+  }
+  const std::vector<LweBootstrapKey> getBootstrapKeys() const {
+    return this->bootstrapKeys;
+  }
+
+  const PackingKeyswitchKey &getPackingKeyswitchKey(size_t id) const {
+    return this->packingKeyswitchKeys[id];
   };
+
+  const std::vector<PackingKeyswitchKey> getPackingKeyswitchKeys() const {
+    return this->packingKeyswitchKeys;
+  }
 };
 
 // =============================================

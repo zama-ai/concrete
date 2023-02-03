@@ -10,53 +10,39 @@
 
 #include "boost/outcome.h"
 
-#include "concrete-core-ffi.h"
-#include "concretelang/Runtime/DFRuntime.hpp"
-#include "concretelang/Runtime/context.h"
-
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Runtime/DFRuntime.hpp"
 
 namespace concretelang {
 namespace clientlib {
 
 using concretelang::error::StringError;
-using RuntimeContext = mlir::concretelang::RuntimeContext;
 
 class KeySet {
 public:
-  KeySet();
-  ~KeySet();
+  KeySet(ClientParameters clientParameters, CSPRNG &&csprng)
+      : csprng(std::move(csprng)), _clientParameters(clientParameters){};
   KeySet(KeySet &other) = delete;
 
-  /// allocate a KeySet according the ClientParameters.
+  /// Generate a KeySet from a ClientParameters specification.
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
-  generate(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb);
+  generate(ClientParameters clientParameters, CSPRNG &&csprng);
+
+  /// Create a KeySet from a set of given keys
+  static outcome::checked<std::unique_ptr<KeySet>, StringError> fromKeys(
+      ClientParameters clientParameters, std::vector<LweSecretKey> secretKeys,
+      std::vector<LweBootstrapKey> bootstrapKeys,
+      std::vector<LweKeyswitchKey> keyswitchKeys,
+      std::vector<PackingKeyswitchKey> packingKeyswitchKeys, CSPRNG &&csprng);
 
   /// Returns the ClientParameters associated with the KeySet.
   ClientParameters clientParameters() { return _clientParameters; }
 
   // isInputEncrypted return true if the input at the given pos is encrypted.
   bool isInputEncrypted(size_t pos);
-
-  /// getInputLweSecretKeyParam returns the parameters of the lwe secret key for
-  /// the input at the given `pos`.
-  /// The input must be encrupted
-  LweSecretKeyParam getInputLweSecretKeyParam(size_t pos) {
-    auto gate = inputGate(pos);
-    auto inputSk = this->secretKeys.find(gate.encryption->secretKeyID);
-    return inputSk->second.first;
-  }
-
-  /// getOutputLweSecretKeyParam returns the parameters of the lwe secret key
-  /// for the given output.
-  LweSecretKeyParam getOutputLweSecretKeyParam(size_t pos) {
-    auto gate = outputGate(pos);
-    auto outputSk = this->secretKeys.find(gate.encryption->secretKeyID);
-    return outputSk->second.first;
-  }
 
   /// allocate a lwe ciphertext buffer for the argument at argPos, set the size
   /// of the allocated buffer.
@@ -80,103 +66,58 @@ public:
   CircuitGate inputGate(size_t pos) { return std::get<0>(inputs[pos]); }
   CircuitGate outputGate(size_t pos) { return std::get<0>(outputs[pos]); }
 
-  RuntimeContext runtimeContext() {
-    RuntimeContext context;
-    context.evaluationKeys = this->evaluationKeys();
-    return context;
-  }
+  /// @brief evaluationKeys returns the evaluation keys associate to this client
+  /// keyset. Those evaluations keys can be safely shared publicly
+  EvaluationKeys evaluationKeys();
 
-  EvaluationKeys evaluationKeys() {
-    if (this->bootstrapKeys.empty() && this->keyswitchKeys.empty()) {
-      return EvaluationKeys();
-    }
-    auto kskIt = this->keyswitchKeys.find(clientlib::KEYSWITCH_KEY);
-    auto bskIt = this->bootstrapKeys.find(clientlib::BOOTSTRAP_KEY);
-    auto fpkskIt = this->packingKeys.find("fpksk_v0");
-    if (kskIt != this->keyswitchKeys.end() &&
-        bskIt != this->bootstrapKeys.end()) {
-      auto sharedKsk = std::get<1>(kskIt->second);
-      auto sharedBsk = std::get<1>(bskIt->second);
-      auto sharedFpksk = fpkskIt == this->packingKeys.end()
-                             ? std::make_shared<PackingKeyswitchKey>(nullptr)
-                             : std::get<1>(fpkskIt->second);
-      return EvaluationKeys(sharedKsk, sharedBsk, sharedFpksk);
-    }
-    assert(!mlir::concretelang::dfr::_dfr_is_root_node() &&
-           "Evaluation keys missing in KeySet (on root node).");
-    return EvaluationKeys();
-  }
+  const std::vector<LweSecretKey> &getSecretKeys();
 
-  const std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
-      &getSecretKeys();
+  const std::vector<LweBootstrapKey> &getBootstrapKeys();
 
-  const std::map<LweSecretKeyID,
-                 std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
-      &getBootstrapKeys();
+  const std::vector<LweKeyswitchKey> &getKeyswitchKeys();
 
-  const std::map<LweSecretKeyID,
-                 std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
-      &getKeyswitchKeys();
-
-  const std::map<
-      LweSecretKeyID,
-      std::pair<PackingKeySwitchParam, std::shared_ptr<PackingKeyswitchKey>>> &
-  getPackingKeys();
+  const std::vector<PackingKeyswitchKey> &getPackingKeyswitchKeys();
 
 protected:
   outcome::checked<void, StringError>
-  generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param);
+  generateSecretKey(LweSecretKeyParam param);
 
   outcome::checked<void, StringError>
-  generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param);
+  generateBootstrapKey(BootstrapKeyParam param);
 
   outcome::checked<void, StringError>
-  generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param);
+  generateKeyswitchKey(KeyswitchKeyParam param);
 
   outcome::checked<void, StringError>
-  generatePackingKey(PackingKeySwitchID id, PackingKeySwitchParam param);
+  generatePackingKeyswitchKey(PackingKeyswitchKeyParam param);
 
-  outcome::checked<void, StringError>
-  generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
-                         uint64_t seed_lsb);
+  outcome::checked<void, StringError> generateKeysFromParams();
 
-  outcome::checked<void, StringError>
-  setupEncryptionMaterial(ClientParameters &params, uint64_t seed_msb,
-                          uint64_t seed_lsb);
+  outcome::checked<void, StringError> setupEncryptionMaterial();
 
   friend class KeySetCache;
 
 private:
-  DefaultEngine *engine;
-  DefaultParallelEngine *par_engine;
-  std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
-      secretKeys;
-  std::map<LweSecretKeyID,
-           std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
-      bootstrapKeys;
-  std::map<LweSecretKeyID,
-           std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
-      keyswitchKeys;
-  std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
-                                     std::shared_ptr<PackingKeyswitchKey>>>
-      packingKeys;
-  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *>>
-      inputs;
-  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *>>
-      outputs;
+  CSPRNG csprng;
 
-  void setKeys(
-      std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
-          secretKeys,
-      std::map<LweSecretKeyID,
-               std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
-          bootstrapKeys,
-      std::map<LweSecretKeyID,
-               std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
-          keyswitchKeys,
-      std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
-                                         std::shared_ptr<PackingKeyswitchKey>>>
-          packingKeys);
+  ///////////////////////////////////////////////
+  // Keys mappings
+  std::vector<LweSecretKey> secretKeys;
+  std::vector<LweBootstrapKey> bootstrapKeys;
+  std::vector<LweKeyswitchKey> keyswitchKeys;
+  std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
+
+  outcome::checked<LweSecretKey, StringError> findLweSecretKey(LweSecretKeyID);
+
+  ///////////////////////////////////////////////
+  // Convenient positional mapping between positional gate en secret key
+  typedef std::vector<std::pair<CircuitGate, llvm::Optional<LweSecretKey>>>
+      SecretKeyGateMapping;
+  outcome::checked<SecretKeyGateMapping, StringError>
+  mapCircuitGateLweSecretKey(std::vector<CircuitGate> gates);
+
+  SecretKeyGateMapping inputs;
+  SecretKeyGateMapping outputs;
 
   clientlib::ClientParameters _clientParameters;
 };

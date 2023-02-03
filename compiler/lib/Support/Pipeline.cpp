@@ -250,11 +250,10 @@ lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
     auto dec =
         fheContext.value().parameter.largeInteger.value().crtDecomposition;
     auto mods = mlir::SmallVector<int64_t>(dec.begin(), dec.end());
-    auto polySize = fheContext.value().parameter.getPolynomialSize();
     addPotentiallyNestedPass(
         pm,
         mlir::concretelang::createConvertFHEToTFHECrtPass(
-            mlir::concretelang::CrtLoweringParameters(mods, polySize)),
+            mlir::concretelang::CrtLoweringParameters(mods)),
         enablePass);
   } else if (fheContext.hasValue()) {
     pipelinePrinting("FHEToTFHEScalar", pm, context);

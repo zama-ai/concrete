@@ -61,8 +61,7 @@ public:
   /// arguments, i.e. move all buffers to the PublicArguments and reset the
   /// positional counter.
   outcome::checked<std::unique_ptr<PublicArguments>, StringError>
-  exportPublicArguments(ClientParameters clientParameters,
-                        RuntimeContext runtimeContext);
+  exportPublicArguments(ClientParameters clientParameters);
 
   /// Check that all arguments as been pushed.
   // TODO: Remove public method here

@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <cassert>
 #include <fstream>
 
 #include "boost/outcome.h"
@@ -18,30 +19,29 @@ void CompilationFeedback::fillFromClientParameters(
   // Compute the size of secret keys
   totalSecretKeysSize = 0;
   for (auto sk : params.secretKeys) {
-    totalSecretKeysSize += sk.second.byteSize();
+    totalSecretKeysSize += sk.byteSize();
   }
   // Compute the boostrap keys size
   totalBootstrapKeysSize = 0;
-  for (auto bsk : params.bootstrapKeys) {
-    auto bskParam = bsk.second;
-    auto inputKey = params.secretKeys.find(bskParam.inputSecretKeyID);
-    assert(inputKey != params.secretKeys.end());
-    auto outputKey = params.secretKeys.find(bskParam.outputSecretKeyID);
-    assert(outputKey != params.secretKeys.end());
+  for (auto bskParam : params.bootstrapKeys) {
+    assert(bskParam.inputSecretKeyID < params.secretKeys.size());
+    auto inputKey = params.secretKeys[bskParam.inputSecretKeyID];
 
-    totalBootstrapKeysSize += bskParam.byteSize(inputKey->second.lweSize(),
-                                                outputKey->second.lweSize());
+    assert(bskParam.outputSecretKeyID < params.secretKeys.size());
+    auto outputKey = params.secretKeys[bskParam.outputSecretKeyID];
+
+    totalBootstrapKeysSize +=
+        bskParam.byteSize(inputKey.lweSize(), outputKey.lweSize());
   }
   // Compute the keyswitch keys size
   totalKeyswitchKeysSize = 0;
-  for (auto ksk : params.keyswitchKeys) {
-    auto kskParam = ksk.second;
-    auto inputKey = params.secretKeys.find(kskParam.inputSecretKeyID);
-    assert(inputKey != params.secretKeys.end());
-    auto outputKey = params.secretKeys.find(kskParam.outputSecretKeyID);
-    assert(outputKey != params.secretKeys.end());
-    totalKeyswitchKeysSize += kskParam.byteSize(inputKey->second.lweSize(),
-                                                outputKey->second.lweSize());
+  for (auto kskParam : params.keyswitchKeys) {
+    assert(kskParam.inputSecretKeyID < params.secretKeys.size());
+    auto inputKey = params.secretKeys[kskParam.inputSecretKeyID];
+    assert(kskParam.outputSecretKeyID < params.secretKeys.size());
+    auto outputKey = params.secretKeys[kskParam.outputSecretKeyID];
+    totalKeyswitchKeysSize +=
+        kskParam.byteSize(inputKey.lweSize(), outputKey.lweSize());
   }
   // Compute the size of inputs
   totalInputsSize = 0;

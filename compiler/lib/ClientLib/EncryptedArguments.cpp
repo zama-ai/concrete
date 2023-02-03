@@ -12,8 +12,7 @@ namespace clientlib {
 using StringError = concretelang::error::StringError;
 
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
-EncryptedArguments::exportPublicArguments(ClientParameters clientParameters,
-                                          RuntimeContext runtimeContext) {
+EncryptedArguments::exportPublicArguments(ClientParameters clientParameters) {
   return std::make_unique<PublicArguments>(
       clientParameters, std::move(preparedArgs), std::move(ciphertextBuffers));
 }

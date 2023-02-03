@@ -7,6 +7,8 @@
 
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySetCache.h"
+#include "concretelang/ClientLib/Serializers.h"
+
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -16,216 +18,101 @@
 #include <string>
 #include <utime.h>
 
-#include "concrete-core-ffi.h"
-
 namespace concretelang {
 namespace clientlib {
 
 using StringError = concretelang::error::StringError;
 
-template <class Engine, class Key>
-outcome::checked<Key *, StringError>
-load(llvm::SmallString<0> &path,
-     int (*deser)(Engine *, BufferView buffer, Key **), Engine *engine) {
+template <class Key>
+outcome::checked<Key, StringError> loadKey(llvm::SmallString<0> &path,
+                                           Key(deser)(std::istream &istream)) {
   std::ifstream in((std::string)path, std::ofstream::binary);
   if (in.fail()) {
     return StringError("Cannot access " + (std::string)path);
   }
-  std::stringstream sbuffer;
-  sbuffer << in.rdbuf();
-  if (in.fail()) {
-    return StringError("Cannot read " + (std::string)path);
+  auto key = deser(in);
+  if (in.bad()) {
+    return StringError("Cannot load key at path(") << (std::string)path << ")";
   }
-  auto content = sbuffer.str();
-  BufferView buffer = {(const uint8_t *)content.c_str(), content.length()};
-  Key *result = nullptr;
-
-  int error_code = deser(engine, buffer, &result);
-
-  if (result == nullptr || error_code != 0) {
-    return StringError("Cannot deserialize " + (std::string)path);
-  }
-  return result;
+  return key;
 }
 
-static void writeFile(llvm::SmallString<0> &path, Buffer content) {
+template <class Key>
+outcome::checked<void, StringError> saveKey(llvm::SmallString<0> &path,
+                                            Key key) {
   std::ofstream out((std::string)path, std::ofstream::binary);
-  out.write((const char *)content.pointer, content.length);
+  if (out.fail()) {
+    return StringError("Cannot access " + (std::string)path);
+  }
+  out << key;
+  if (out.bad()) {
+    return StringError("Cannot save key at path(") << (std::string)path << ")";
+  }
   out.close();
-}
-
-outcome::checked<LweSecretKey64 *, StringError>
-loadSecretKey(llvm::SmallString<0> &path) {
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  return load(path, default_serialization_engine_deserialize_lwe_secret_key_u64,
-              engine);
-}
-
-outcome::checked<LweKeyswitchKey64 *, StringError>
-loadKeyswitchKey(llvm::SmallString<0> &path) {
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  return load(path,
-              default_serialization_engine_deserialize_lwe_keyswitch_key_u64,
-              engine);
-}
-
-outcome::checked<LweBootstrapKey64 *, StringError>
-loadBootstrapKey(llvm::SmallString<0> &path) {
-
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  return load(path,
-              default_serialization_engine_deserialize_lwe_bootstrap_key_u64,
-              engine);
-}
-
-outcome::checked<LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *,
-                 StringError>
-loadPackingKey(llvm::SmallString<0> &path) {
-
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  return load(
-      path,
-      default_serialization_engine_deserialize_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64,
-      engine);
-}
-
-void saveSecretKey(llvm::SmallString<0> &path, LweSecretKey64 *key) {
-
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  Buffer buffer;
-
-  CAPI_ASSERT_ERROR(default_serialization_engine_serialize_lwe_secret_key_u64(
-      engine, key, &buffer));
-
-  writeFile(path, buffer);
-  free(buffer.pointer);
-}
-
-void saveBootstrapKey(llvm::SmallString<0> &path, LweBootstrapKey64 *key) {
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  Buffer buffer;
-
-  CAPI_ASSERT_ERROR(
-      default_serialization_engine_serialize_lwe_bootstrap_key_u64(engine, key,
-                                                                   &buffer));
-  writeFile(path, buffer);
-  free(buffer.pointer);
-}
-
-void saveKeyswitchKey(llvm::SmallString<0> &path, LweKeyswitchKey64 *key) {
-
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  Buffer buffer;
-  CAPI_ASSERT_ERROR(
-      default_serialization_engine_serialize_lwe_keyswitch_key_u64(engine, key,
-                                                                   &buffer));
-  writeFile(path, buffer);
-  free(buffer.pointer);
-}
-
-void savePackingKey(
-    llvm::SmallString<0> &path,
-    LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *key) {
-
-  DefaultSerializationEngine *engine;
-
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  Buffer buffer;
-  CAPI_ASSERT_ERROR(
-      default_serialization_engine_serialize_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
-          engine, key, &buffer));
-
-  writeFile(path, buffer);
-  free(buffer.pointer);
+  return outcome::success();
 }
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
                       uint64_t seed_lsb, std::string folderPath) {
-  // TODO: text dump of all parameter in /hash
-  auto key_set = std::make_unique<KeySet>();
+
   // Mark the folder as recently use.
   // e.g. so the CI can do some cleanup of unused keys.
   utime(folderPath.c_str(), nullptr);
 
-  std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
-      secretKeys;
-  std::map<LweSecretKeyID,
-           std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
-      bootstrapKeys;
-  std::map<LweSecretKeyID,
-           std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
-      keyswitchKeys;
-  std::map<LweSecretKeyID, std::pair<PackingKeySwitchParam,
-                                     std::shared_ptr<PackingKeyswitchKey>>>
-      packingKeys;
+  std::vector<LweSecretKey> secretKeys;
+  std::vector<LweBootstrapKey> bootstrapKeys;
+  std::vector<LweKeyswitchKey> keyswitchKeys;
+  std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
 
-  // Load LWE secret keys
-  for (auto secretKeyParam : params.secretKeys) {
-    auto id = secretKeyParam.first;
-    auto param = secretKeyParam.second;
+  // Load secret keys
+  for (auto p : llvm::enumerate(params.secretKeys)) {
+    // TODO - Check parameters?
+    // auto param = secretKeyParam.second;
     llvm::SmallString<0> path(folderPath);
-    llvm::sys::path::append(path, "secretKey_" + id);
-    OUTCOME_TRY(LweSecretKey64 * sk, loadSecretKey(path));
-    secretKeys[id] = {param, sk};
+    llvm::sys::path::append(path, "secretKey_" + std::to_string(p.index()));
+    OUTCOME_TRY(auto key, loadKey(path, readLweSecretKey));
+    secretKeys.push_back(key);
   }
   // Load bootstrap keys
-  for (auto bootstrapKeyParam : params.bootstrapKeys) {
-    auto id = bootstrapKeyParam.first;
-    auto param = bootstrapKeyParam.second;
+  for (auto p : llvm::enumerate(params.bootstrapKeys)) {
+    // TODO - Check parameters?
+    // auto param = p.value();
     llvm::SmallString<0> path(folderPath);
-    llvm::sys::path::append(path, "pbsKey_" + id);
-    OUTCOME_TRY(LweBootstrapKey64 * bsk, loadBootstrapKey(path));
-    bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(bsk)};
+    llvm::sys::path::append(path, "pbsKey_" + std::to_string(p.index()));
+    OUTCOME_TRY(auto key, loadKey(path, readLweBootstrapKey));
+    bootstrapKeys.push_back(key);
   }
   // Load keyswitch keys
-  for (auto keyswitchParam : params.keyswitchKeys) {
-    auto id = keyswitchParam.first;
-    auto param = keyswitchParam.second;
+  for (auto p : llvm::enumerate(params.keyswitchKeys)) {
+    // TODO - Check parameters?
+    // auto param = p.value();
     llvm::SmallString<0> path(folderPath);
-    llvm::sys::path::append(path, "ksKey_" + id);
-    OUTCOME_TRY(LweKeyswitchKey64 * ksk, loadKeyswitchKey(path));
-    keyswitchKeys[id] = {param, std::make_shared<LweKeyswitchKey>(ksk)};
-  }
-  // Load packing keys
-  for (auto packingParam : params.packingKeys) {
-    auto id = packingParam.first;
-    auto param = packingParam.second;
-    llvm::SmallString<0> path(folderPath);
-    llvm::sys::path::append(path, "fpksKey_" + id);
-    OUTCOME_TRY(LweCircuitBootstrapPrivateFunctionalPackingKeyswitchKeys64 *
-                    ksk,
-                loadPackingKey(path));
-    packingKeys[id] = {param, std::make_shared<PackingKeyswitchKey>(ksk)};
+    llvm::sys::path::append(path, "ksKey_" + std::to_string(p.index()));
+    OUTCOME_TRY(auto key, loadKey(path, readLweKeyswitchKey));
+    keyswitchKeys.push_back(key);
   }
 
-  key_set->setKeys(secretKeys, bootstrapKeys, keyswitchKeys, packingKeys);
+  for (auto p : llvm::enumerate(params.packingKeyswitchKeys)) {
+    // TODO - Check parameters?
+    // auto param = p.value();
+    llvm::SmallString<0> path(folderPath);
+    llvm::sys::path::append(path, "pksKey_" + std::to_string(p.index()));
+    OUTCOME_TRY(auto key, loadKey(path, readPackingKeyswitchKey));
+    packingKeyswitchKeys.push_back(key);
+  }
 
-  OUTCOME_TRYV(key_set->setupEncryptionMaterial(params, seed_msb, seed_lsb));
+  __uint128_t seed = seed_msb;
+  seed <<= 64;
+  seed += seed_lsb;
 
-  return std::move(key_set);
+  auto csprng = ConcreteCSPRNG(seed);
+
+  OUTCOME_TRY(auto keySet,
+              KeySet::fromKeys(params, secretKeys, bootstrapKeys, keyswitchKeys,
+                               packingKeyswitchKeys, std::move(csprng)));
+
+  return std::move(keySet);
 }
 
 outcome::checked<void, StringError> saveKeys(KeySet &key_set,
@@ -239,38 +126,30 @@ outcome::checked<void, StringError> saveKeys(KeySet &key_set,
     return StringError("Cannot create directory \"")
            << std::string(folderIncompletePath) << "\": " << err.message();
   }
-
   // Save LWE secret keys
-  for (auto secretKeyParam : key_set.getSecretKeys()) {
-    auto id = secretKeyParam.first;
-    auto key = secretKeyParam.second.second;
+  for (auto p : llvm::enumerate(key_set.getSecretKeys())) {
+
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "secretKey_" + id);
-    saveSecretKey(path, key);
+    llvm::sys::path::append(path, "secretKey_" + std::to_string(p.index()));
+    OUTCOME_TRYV(saveKey(path, p.value()));
   }
   // Save bootstrap keys
-  for (auto bootstrapKeyParam : key_set.getBootstrapKeys()) {
-    auto id = bootstrapKeyParam.first;
-    auto key = bootstrapKeyParam.second.second;
+  for (auto p : llvm::enumerate(key_set.getBootstrapKeys())) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "pbsKey_" + id);
-    saveBootstrapKey(path, key->get());
+    llvm::sys::path::append(path, "pbsKey_" + std::to_string(p.index()));
+    OUTCOME_TRYV(saveKey(path, p.value()));
   }
   // Save keyswitch keys
-  for (auto keyswitchParam : key_set.getKeyswitchKeys()) {
-    auto id = keyswitchParam.first;
-    auto key = keyswitchParam.second.second;
+  for (auto p : llvm::enumerate(key_set.getKeyswitchKeys())) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "ksKey_" + id);
-    saveKeyswitchKey(path, key->get());
+    llvm::sys::path::append(path, "ksKey_" + std::to_string(p.index()));
+    OUTCOME_TRYV(saveKey(path, p.value()));
   }
-  // Save packing keys
-  for (auto keyswitchParam : key_set.getPackingKeys()) {
-    auto id = keyswitchParam.first;
-    auto key = keyswitchParam.second.second;
+  // Save packing keyswitch keys
+  for (auto p : llvm::enumerate(key_set.getPackingKeyswitchKeys())) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "fpksKey_" + id);
-    savePackingKey(path, key->get());
+    llvm::sys::path::append(path, "pksKey_" + std::to_string(p.index()));
+    OUTCOME_TRYV(saveKey(path, p.value()));
   }
 
   err = llvm::sys::fs::rename(folderIncompletePath, folderPath);
@@ -338,7 +217,14 @@ KeySetCache::loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
 
   std::cerr << "KeySetCache: miss, regenerating " << std::string(folderPath)
             << "\n";
-  OUTCOME_TRY(auto key_set, KeySet::generate(params, seed_msb, seed_lsb));
+
+  __uint128_t seed = seed_msb;
+  seed <<= 64;
+  seed += seed_lsb;
+
+  auto csprng = ConcreteCSPRNG(seed);
+
+  OUTCOME_TRY(auto key_set, KeySet::generate(params, std::move(csprng)));
 
   OUTCOME_TRYV(saveKeys(*key_set, folderPath));
 
@@ -349,8 +235,13 @@ outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::generate(std::shared_ptr<KeySetCache> cache,
                       ClientParameters &params, uint64_t seed_msb,
                       uint64_t seed_lsb) {
+  __uint128_t seed = seed_msb;
+  seed <<= 64;
+  seed += seed_lsb;
+
+  auto csprng = ConcreteCSPRNG(seed);
   return cache ? cache->loadOrGenerateSave(params, seed_msb, seed_lsb)
-               : KeySet::generate(params, seed_msb, seed_lsb);
+               : KeySet::generate(params, std::move(csprng));
 }
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>

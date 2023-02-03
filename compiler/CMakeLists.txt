@@ -61,11 +61,23 @@ set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/parameter-curves/concrete-security-curves-cpp/include)
 
 # -------------------------------------------------------------------------------
-# Concrete FFI Configuration
+# Concrete CPU Configuration
 # -------------------------------------------------------------------------------
-include_directories(${CONCRETE_FFI_RELEASE})
-add_library(Concrete STATIC IMPORTED)
-set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEASE}/libconcrete_core_ffi.a)
+set(CONCRETE_CPU_STATIC_LIB "${PROJECT_SOURCE_DIR}/concrete-cpu/target/release/libconcrete_cpu.a")
+ExternalProject_Add(
+  concrete_cpu_rust
+  DOWNLOAD_COMMAND ""
+  CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_CPU_STATIC_LIB}"
+  BUILD_COMMAND cargo build
+  COMMAND cargo build --release
+  BINARY_DIR "${PROJECT_SOURCE_DIR}/concrete-cpu"
+  INSTALL_COMMAND ""
+  LOG_BUILD ON)
+add_library(concrete_cpu STATIC IMPORTED)
+# TODO - Change that to a location in the release dir
+set(CONCRETE_CPU_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/concrete-cpu/concrete-cpu")
+set_target_properties(concrete_cpu PROPERTIES IMPORTED_LOCATION "${CONCRETE_CPU_STATIC_LIB}")
+add_dependencies(concrete_cpu concrete_cpu_rust)
 
 # --------------------------------------------------------------------------------
 # Concrete Cuda Configuration

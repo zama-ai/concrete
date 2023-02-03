@@ -337,8 +337,8 @@ public:
     if (check.has_error()) {
       return StreamStringError(check.error().mesg);
     }
-    auto publicArguments = encryptedArgs->exportPublicArguments(
-        clientParameters, keySet.runtimeContext());
+    auto publicArguments =
+        encryptedArgs->exportPublicArguments(clientParameters);
     if (publicArguments.has_error()) {
       return StreamStringError(publicArguments.error().mesg);
     }
@@ -485,8 +485,8 @@ public:
     if (encryptedArgs.has_error()) {
       return StreamStringError(encryptedArgs.error().mesg);
     }
-    auto publicArguments = encryptedArgs.value()->exportPublicArguments(
-        clientParameters, keySet->runtimeContext());
+    auto publicArguments =
+        encryptedArgs.value()->exportPublicArguments(clientParameters);
     if (!publicArguments.has_value()) {
       return StreamStringError(publicArguments.error().mesg);
     }
@@ -506,8 +506,8 @@ public:
     if (encryptedArgs.has_error()) {
       return StreamStringError(encryptedArgs.error().mesg);
     }
-    auto publicArguments = encryptedArgs.value()->exportPublicArguments(
-        clientParameters, keySet->runtimeContext());
+    auto publicArguments =
+        encryptedArgs.value()->exportPublicArguments(clientParameters);
     if (publicArguments.has_error()) {
       return StreamStringError(publicArguments.error().mesg);
     }

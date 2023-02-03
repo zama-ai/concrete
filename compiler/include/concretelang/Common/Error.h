@@ -7,12 +7,6 @@
 
 #include <string>
 
-#define CAPI_ASSERT_ERROR(instr)                                               \
-  {                                                                            \
-    int err = instr;                                                           \
-    assert(err == 0);                                                          \
-  }
-
 namespace concretelang {
 namespace error {
 

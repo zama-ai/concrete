@@ -7,8 +7,6 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "concrete-core-ffi.h"
-
 #include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Common/Error.h"
@@ -16,138 +14,225 @@
 namespace concretelang {
 namespace clientlib {
 
-template <typename Engine, typename Result>
-Result read_deser(std::istream &istream,
-                  int (*deser)(Engine *, BufferView, Result *),
-                  Engine *engine) {
-  size_t length;
-  readSize(istream, length);
-  // buffer is too big to be allocated on stack
-  // vector ensures everything is deallocated w.r.t. new
-  std::vector<uint8_t> buffer(length);
-  istream.read((char *)buffer.data(), length);
-  assert(istream.good());
-  Result result;
-
-  CAPI_ASSERT_ERROR(deser(engine, {buffer.data(), length}, &result));
-
-  return result;
-}
-
-template <typename BufferLike>
-std::ostream &writeBufferLike(std::ostream &ostream, BufferLike &buffer) {
-  writeSize(ostream, buffer.length);
-  ostream.write((const char *)buffer.pointer, buffer.length);
+template <typename Key>
+std::ostream &writeUInt64KeyBuffer(std::ostream &ostream, Key &buffer) {
+  writeSize(ostream, (uint64_t)buffer.size());
+  ostream.write((const char *)buffer.buffer(),
+                buffer.size() * sizeof(uint64_t));
   assert(ostream.good());
   return ostream;
 }
 
-std::ostream &operator<<(std::ostream &ostream, const LweKeyswitchKey64 *key) {
-  DefaultSerializationEngine *engine;
-
-  // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  Buffer b;
-
-  CAPI_ASSERT_ERROR(
-      default_serialization_engine_serialize_lwe_keyswitch_key_u64(engine, key,
-                                                                   &b));
-
-  writeBufferLike(ostream, b);
-  free((void *)b.pointer);
-  b.pointer = nullptr;
-  return ostream;
-}
-
-std::ostream &operator<<(std::ostream &ostream, const LweBootstrapKey64 *key) {
-  DefaultSerializationEngine *engine;
-
-  // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  Buffer b;
-
-  CAPI_ASSERT_ERROR(
-      default_serialization_engine_serialize_lwe_bootstrap_key_u64(engine, key,
-                                                                   &b))
-
-  writeBufferLike(ostream, b);
-  free((void *)b.pointer);
-  b.pointer = nullptr;
-  return ostream;
-}
-
-std::ostream &operator<<(std::ostream &ostream,
-                         const FftFourierLweBootstrapKey64 *key) {
-  FftSerializationEngine *engine;
-
-  // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_fft_serialization_engine(&engine));
-
-  Buffer b;
-
-  CAPI_ASSERT_ERROR(
-      fft_serialization_engine_serialize_fft_fourier_lwe_bootstrap_key_u64(
-          engine, key, &b))
-
-  writeBufferLike(ostream, b);
-  free((void *)b.pointer);
-  b.pointer = nullptr;
-  return ostream;
-}
-
-std::istream &operator>>(std::istream &istream, LweKeyswitchKey64 *&key) {
-  DefaultSerializationEngine *engine;
-
-  // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  key = read_deser(
-      istream, default_serialization_engine_deserialize_lwe_keyswitch_key_u64,
-      engine);
-  return istream;
-}
-
-std::istream &operator>>(std::istream &istream, LweBootstrapKey64 *&key) {
-  DefaultSerializationEngine *engine;
-
-  // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-  key = read_deser(
-      istream, default_serialization_engine_deserialize_lwe_bootstrap_key_u64,
-      engine);
-  return istream;
-}
-
 std::istream &operator>>(std::istream &istream,
-                         FftFourierLweBootstrapKey64 *&key) {
-  FftSerializationEngine *engine;
-
-  // No Freeing as it doesn't allocate anything.
-  CAPI_ASSERT_ERROR(new_fft_serialization_engine(&engine));
-
-  key = read_deser(
-      istream,
-      fft_serialization_engine_deserialize_fft_fourier_lwe_bootstrap_key_u64,
-      engine);
-  return istream;
-}
-
-std::istream &operator>>(std::istream &istream,
-                         RuntimeContext &runtimeContext) {
-  istream >> runtimeContext.evaluationKeys;
+                         std::shared_ptr<std::vector<uint64_t>> &vec) {
+  // TODO assertion on size?
+  uint64_t size;
+  readSize(istream, size);
+  vec->resize(size);
+  istream.read((char *)vec->data(), size * sizeof(uint64_t));
   assert(istream.good());
   return istream;
 }
 
+// LweSecretKey ////////////////////////////
+
+std::ostream &operator<<(std::ostream &ostream, const LweSecretKeyParam param) {
+  writeWord(ostream, param.dimension);
+  return ostream;
+}
+
+std::istream &operator>>(std::istream &istream, LweSecretKeyParam &param) {
+  readWord(istream, param.dimension);
+  return istream;
+}
+
+// LweSecretKey /////////////////////////////////
+
+std::ostream &operator<<(std::ostream &ostream, const LweSecretKey &key) {
+  ostream << key.parameters();
+  writeUInt64KeyBuffer(ostream, key);
+  return ostream;
+}
+
+LweSecretKey readLweSecretKey(std::istream &istream) {
+  LweSecretKeyParam param;
+  istream >> param;
+  auto buffer = std::make_shared<std::vector<uint64_t>>();
+  istream >> buffer;
+  return LweSecretKey(buffer, param);
+}
+
+// KeyswitchKeyParam ////////////////////////////
+
+std::ostream &operator<<(std::ostream &ostream, const KeyswitchKeyParam param) {
+  // TODO keys id
+  writeWord(ostream, param.level);
+  writeWord(ostream, param.baseLog);
+  writeWord(ostream, param.variance);
+  return ostream;
+}
+
+std::istream &operator>>(std::istream &istream, KeyswitchKeyParam &param) {
+  // TODO keys id
+  param.outputSecretKeyID = 1234;
+  param.inputSecretKeyID = 1234;
+  readWord(istream, param.level);
+  readWord(istream, param.baseLog);
+  readWord(istream, param.variance);
+  return istream;
+}
+
+// LweKeyswitchKey //////////////////////////////
+
+std::ostream &operator<<(std::ostream &ostream, const LweKeyswitchKey &key) {
+  ostream << key.parameters();
+  writeUInt64KeyBuffer(ostream, key);
+  return ostream;
+}
+
+LweKeyswitchKey readLweKeyswitchKey(std::istream &istream) {
+  KeyswitchKeyParam param;
+  istream >> param;
+  auto buffer = std::make_shared<std::vector<uint64_t>>();
+  istream >> buffer;
+  return LweKeyswitchKey(buffer, param);
+}
+
+// BootstrapKeyParam ////////////////////////////
+
+std::ostream &operator<<(std::ostream &ostream, const BootstrapKeyParam param) {
+  // TODO keys id
+  writeWord(ostream, param.level);
+  writeWord(ostream, param.baseLog);
+  writeWord(ostream, param.glweDimension);
+  writeWord(ostream, param.variance);
+  writeWord(ostream, param.polynomialSize);
+  writeWord(ostream, param.inputLweDimension);
+  return ostream;
+}
+
+std::istream &operator>>(std::istream &istream, BootstrapKeyParam &param) {
+  // TODO keys id
+  readWord(istream, param.level);
+  readWord(istream, param.baseLog);
+  readWord(istream, param.glweDimension);
+  readWord(istream, param.variance);
+  readWord(istream, param.polynomialSize);
+  readWord(istream, param.inputLweDimension);
+  return istream;
+}
+
+// LweBootstrapKey //////////////////////////////
+
+std::ostream &operator<<(std::ostream &ostream, const LweBootstrapKey &key) {
+  ostream << key.parameters();
+  writeUInt64KeyBuffer(ostream, key);
+  return ostream;
+}
+
+LweBootstrapKey readLweBootstrapKey(std::istream &istream) {
+  BootstrapKeyParam param;
+  istream >> param;
+  auto buffer = std::make_shared<std::vector<uint64_t>>();
+  istream >> buffer;
+  return LweBootstrapKey(buffer, param);
+}
+
+// PackingKeyswitchKeyParam ////////////////////////////
+
 std::ostream &operator<<(std::ostream &ostream,
-                         const RuntimeContext &runtimeContext) {
-  ostream << runtimeContext.evaluationKeys;
+                         const PackingKeyswitchKeyParam param) {
+
+  // TODO keys id
+  writeWord(ostream, param.level);
+  writeWord(ostream, param.baseLog);
+  writeWord(ostream, param.glweDimension);
+  writeWord(ostream, param.polynomialSize);
+  writeWord(ostream, param.inputLweDimension);
+  writeWord(ostream, param.variance);
+
+  return ostream;
+}
+
+std::istream &operator>>(std::istream &istream,
+                         PackingKeyswitchKeyParam &param) {
+
+  // TODO keys id
+  param.outputSecretKeyID = 1234;
+  param.inputSecretKeyID = 1234;
+  readWord(istream, param.level);
+  readWord(istream, param.baseLog);
+  readWord(istream, param.glweDimension);
+  readWord(istream, param.polynomialSize);
+  readWord(istream, param.inputLweDimension);
+  readWord(istream, param.variance);
+
+  return istream;
+}
+
+// PackingKeyswitchKey //////////////////////////////
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const PackingKeyswitchKey &key) {
+  ostream << key.parameters();
+  writeUInt64KeyBuffer(ostream, key);
+  return ostream;
+}
+
+PackingKeyswitchKey readPackingKeyswitchKey(std::istream &istream) {
+  PackingKeyswitchKeyParam param;
+  istream >> param;
+  auto buffer = std::make_shared<std::vector<uint64_t>>();
+  istream >> buffer;
+  auto b = PackingKeyswitchKey(buffer, param);
+
+  return b;
+}
+
+// EvaluationKey ////////////////////////////////
+
+EvaluationKeys readEvaluationKeys(std::istream &istream) {
+  uint64_t nbKey;
+  readSize(istream, nbKey);
+  std::vector<LweBootstrapKey> bootstrapKeys;
+  for (uint64_t i = 0; i < nbKey; i++) {
+    bootstrapKeys.push_back(readLweBootstrapKey(istream));
+  }
+  readSize(istream, nbKey);
+  std::vector<LweKeyswitchKey> keyswitchKeys;
+  for (uint64_t i = 0; i < nbKey; i++) {
+    keyswitchKeys.push_back(readLweKeyswitchKey(istream));
+  }
+  std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
+  readSize(istream, nbKey);
+  for (uint64_t i = 0; i < nbKey; i++) {
+    packingKeyswitchKeys.push_back(readPackingKeyswitchKey(istream));
+  }
+  return EvaluationKeys(keyswitchKeys, bootstrapKeys, packingKeyswitchKeys);
+}
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const EvaluationKeys &evaluationKeys) {
+  auto bootstrapKeys = evaluationKeys.getBootstrapKeys();
+  writeSize(ostream, bootstrapKeys.size());
+  for (auto bsk : bootstrapKeys) {
+    ostream << bsk;
+  }
+  auto keyswitchKeys = evaluationKeys.getKeyswitchKeys();
+  writeSize(ostream, keyswitchKeys.size());
+  for (auto ksk : keyswitchKeys) {
+    ostream << ksk;
+  }
+  auto packingKeyswitchKeys = evaluationKeys.getPackingKeyswitchKeys();
+  writeSize(ostream, packingKeyswitchKeys.size());
+  for (auto pksk : packingKeyswitchKeys) {
+    ostream << pksk;
+  }
   assert(ostream.good());
   return ostream;
 }
+
+// TensorData ///////////////////////////////////
 
 template <typename T>
 std::ostream &serializeScalarDataRaw(T value, std::ostream &ostream) {
@@ -397,71 +482,6 @@ unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
     else
       return ScalarOrTensorData(std::move(tdOrErr.value()));
   }
-}
-
-std::ostream &operator<<(std::ostream &ostream,
-                         const LweKeyswitchKey &wrappedKsk) {
-  ostream << wrappedKsk.ksk;
-  assert(ostream.good());
-  return ostream;
-}
-std::istream &operator>>(std::istream &istream, LweKeyswitchKey &wrappedKsk) {
-  istream >> wrappedKsk.ksk;
-  assert(istream.good());
-  return istream;
-}
-
-std::ostream &operator<<(std::ostream &ostream,
-                         const LweBootstrapKey &wrappedBsk) {
-  ostream << wrappedBsk.bsk;
-  assert(ostream.good());
-  return ostream;
-}
-std::istream &operator>>(std::istream &istream, LweBootstrapKey &wrappedBsk) {
-  istream >> wrappedBsk.bsk;
-  assert(istream.good());
-  return istream;
-}
-
-std::ostream &operator<<(std::ostream &ostream,
-                         const EvaluationKeys &evaluationKeys) {
-  bool has_ksk = (bool)evaluationKeys.sharedKsk;
-  writeWord(ostream, has_ksk);
-  if (has_ksk) {
-    ostream << *evaluationKeys.sharedKsk;
-  }
-
-  bool has_bsk = (bool)evaluationKeys.sharedBsk;
-  writeWord(ostream, has_bsk);
-  if (has_bsk) {
-    ostream << *evaluationKeys.sharedBsk;
-  }
-  assert(ostream.good());
-  return ostream;
-}
-
-std::istream &operator>>(std::istream &istream,
-                         EvaluationKeys &evaluationKeys) {
-  bool has_ksk;
-  readWord(istream, has_ksk);
-  if (has_ksk) {
-    auto sharedKsk = LweKeyswitchKey(nullptr);
-    istream >> sharedKsk;
-    evaluationKeys.sharedKsk =
-        std::make_shared<LweKeyswitchKey>(std::move(sharedKsk));
-  }
-
-  bool has_bsk;
-  readWord(istream, has_bsk);
-  if (has_bsk) {
-    auto sharedBsk = LweBootstrapKey(nullptr);
-    istream >> sharedBsk;
-    evaluationKeys.sharedBsk =
-        std::make_shared<LweBootstrapKey>(std::move(sharedBsk));
-  }
-
-  assert(istream.good());
-  return istream;
 }
 
 } // namespace clientlib

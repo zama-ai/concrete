@@ -143,10 +143,10 @@ void mlir::concretelang::Concrete::
     Concrete::EncodeExpandLutForBootstrapTensorOp::attachInterface<
         TensorToMemrefOp<Concrete::EncodeExpandLutForBootstrapTensorOp,
                          Concrete::EncodeExpandLutForBootstrapBufferOp>>(*ctx);
-    // encode_expand_lut_for_woppbs_tensor =>
-    // encode_expand_lut_for_woppbs_buffer
-    Concrete::EncodeExpandLutForWopPBSTensorOp::attachInterface<
-        TensorToMemrefOp<Concrete::EncodeExpandLutForWopPBSTensorOp,
-                         Concrete::EncodeExpandLutForWopPBSBufferOp>>(*ctx);
+    // encode_lut_for_crt_woppbs_tensor =>
+    // encode_lut_for_crt_woppbs_buffer
+    Concrete::EncodeLutForCrtWopPBSTensorOp::attachInterface<
+        TensorToMemrefOp<Concrete::EncodeLutForCrtWopPBSTensorOp,
+                         Concrete::EncodeLutForCrtWopPBSBufferOp>>(*ctx);
   });
 }

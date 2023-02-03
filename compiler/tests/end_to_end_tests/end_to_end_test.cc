@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
+#include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Support/CompilationFeedback.h"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/LibrarySupport.h"
@@ -72,6 +73,13 @@ public:
 
   void testOnce() {
     auto evaluationKeys = keySet->evaluationKeys();
+
+    /* Serialize and unserialize evaluation keys */
+    std::stringstream stream;
+    stream << evaluationKeys;
+    stream.seekg(0, std::ios::beg);
+    evaluationKeys = concretelang::clientlib::readEvaluationKeys(stream);
+
     /* Call the server lambda */
     auto publicResult =
         support.serverCall(serverLambda, *publicArguments, evaluationKeys);

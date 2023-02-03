@@ -3,6 +3,7 @@
 #include "concrete/curves.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EncryptedArguments.h"
+#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "tests_tools/assert.h"
 
 namespace clientlib = concretelang::clientlib;
@@ -19,9 +20,13 @@ TEST_P(KeySetTest, encrypt_decrypt) {
 
   auto clientParameters = GetParam();
 
+  __uint128_t seed = 0;
+
   // Generate the client keySet
   ASSERT_ASSIGN_OUTCOME_VALUE(
-      keySet, clientlib::KeySet::generate(clientParameters, 0, 0));
+      keySet,
+      clientlib::KeySet::generate(
+          clientParameters, concretelang::clientlib::ConcreteCSPRNG(seed)));
 
   // Allocate the ciphertext
   uint64_t *ciphertext = nullptr;
@@ -50,13 +55,13 @@ clientlib::ClientParameters generateClientParameterOneScalarOneScalar(
     clientlib::CRTDecomposition crtDecomposition) {
   // One secret key with the given dimension
   clientlib::ClientParameters params;
-  params.secretKeys.insert({clientlib::SMALL_KEY, {/*.dimension =*/dimension}});
+  params.secretKeys.push_back({/*.dimension =*/dimension});
   // One input and output encryption gate on the same secret key and encoded
   // with the same precision
   const auto v0Curve = concrete::getSecurityCurve(128, concrete::BINARY);
 
   clientlib::EncryptionGate encryption;
-  encryption.secretKeyID = clientlib::SMALL_KEY;
+  encryption.secretKeyID = clientlib::BIG_KEY;
   encryption.encoding.precision = precision;
   encryption.encoding.crt = crtDecomposition;
   encryption.variance = v0Curve->getVariance(1, dimension, 64);

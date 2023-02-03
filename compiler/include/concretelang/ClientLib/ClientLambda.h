@@ -92,8 +92,7 @@ public:
     OUTCOME_TRY(auto clientArguments,
                 EncryptedArguments::create(keySet, args...));
 
-    return clientArguments->exportPublicArguments(clientParameters,
-                                                  keySet.runtimeContext());
+    return clientArguments->exportPublicArguments(clientParameters);
   }
 
   outcome::checked<Result, StringError> decryptResult(KeySet &keySet,

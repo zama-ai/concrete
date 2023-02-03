@@ -2,6 +2,7 @@
 // Exceptions. See
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
+#include <cassert>
 #include <map>
 
 #include <llvm/ADT/Optional.h>
@@ -161,59 +162,56 @@ createClientParametersForV0(V0FHEContext fheContext,
   Variance keyswitchKeyVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
   ClientParameters c;
-  c.secretKeys = {
-      {clientlib::BIG_KEY, {/*.size = */ v0Param.getNBigLweDimension()}},
-  };
+
+  assert(c.secretKeys.size() == clientlib::BIG_KEY);
+  clientlib::LweSecretKeyParam skParam;
+  skParam.dimension = v0Param.getNBigLweDimension();
+  c.secretKeys.push_back(skParam);
+
   bool has_small_key = v0Param.nSmall != 0;
   bool has_bootstrap = v0Param.brLevel != 0;
   if (has_small_key) {
-    c.secretKeys.insert({clientlib::SMALL_KEY, {/*.size = */ v0Param.nSmall}});
+    assert(c.secretKeys.size() == clientlib::SMALL_KEY);
+    clientlib::LweSecretKeyParam skParam2;
+    skParam2.dimension = v0Param.nSmall;
+    c.secretKeys.push_back(skParam2);
   }
   if (has_bootstrap) {
     auto inputKey = (has_small_key) ? clientlib::SMALL_KEY : clientlib::BIG_KEY;
-    c.bootstrapKeys = {
-        {
-            clientlib::BOOTSTRAP_KEY,
-            {
-                /*.inputSecretKeyID = */ inputKey,
-                /*.outputSecretKeyID = */ clientlib::BIG_KEY,
-                /*.level = */ v0Param.brLevel,
-                /*.baseLog = */ v0Param.brLogBase,
-                /*.glweDimension = */ v0Param.glweDimension,
-                /*.variance = */ bootstrapKeyVariance,
-            },
-        },
-    };
+    clientlib::BootstrapKeyParam bskParam;
+    bskParam.inputSecretKeyID = inputKey;
+    bskParam.outputSecretKeyID = clientlib::BIG_KEY;
+    bskParam.level = v0Param.brLevel;
+    bskParam.baseLog = v0Param.brLogBase;
+    bskParam.glweDimension = v0Param.glweDimension;
+    bskParam.variance = bootstrapKeyVariance;
+    bskParam.polynomialSize = v0Param.getPolynomialSize();
+    bskParam.inputLweDimension = v0Param.nSmall;
+    c.bootstrapKeys.push_back(bskParam);
   }
   if (v0Param.largeInteger.hasValue()) {
-    clientlib::PackingKeySwitchParam param;
+    clientlib::PackingKeyswitchKeyParam param;
     param.inputSecretKeyID = clientlib::BIG_KEY;
     param.outputSecretKeyID = clientlib::BIG_KEY;
     param.level = v0Param.largeInteger->wopPBS.packingKeySwitch.level;
     param.baseLog = v0Param.largeInteger->wopPBS.packingKeySwitch.baseLog;
-    param.bootstrapKeyID = clientlib::BOOTSTRAP_KEY;
+
+    param.glweDimension = v0Param.glweDimension;
+    param.polynomialSize = v0Param.getPolynomialSize();
+    param.inputLweDimension = v0Param.getNBigLweDimension();
     param.variance = v0Curve->getVariance(v0Param.glweDimension,
                                           v0Param.getPolynomialSize(), 64);
-    c.packingKeys = {
-        {
-            "fpksk_v0",
-            param,
-        },
-    };
+
+    c.packingKeyswitchKeys.push_back(param);
   }
   if (has_small_key) {
-    c.keyswitchKeys = {
-        {
-            clientlib::KEYSWITCH_KEY,
-            {
-                /*.inputSecretKeyID = */ clientlib::BIG_KEY,
-                /*.outputSecretKeyID = */ clientlib::SMALL_KEY,
-                /*.level = */ v0Param.ksLevel,
-                /*.baseLog = */ v0Param.ksLogBase,
-                /*.variance = */ keyswitchKeyVariance,
-            },
-        },
-    };
+    clientlib::KeyswitchKeyParam kskParam;
+    kskParam.inputSecretKeyID = clientlib::BIG_KEY;
+    kskParam.outputSecretKeyID = clientlib::SMALL_KEY;
+    kskParam.level = v0Param.ksLevel;
+    kskParam.baseLog = v0Param.ksLogBase;
+    kskParam.variance = keyswitchKeyVariance;
+    c.keyswitchKeys.push_back(kskParam);
   }
 
   c.functionName = (std::string)functionName;

@@ -560,17 +560,18 @@ struct ApplyLookupTableEintOpPattern
 
     mlir::Value newLut =
         rewriter
-            .create<TFHE::EncodeExpandLutForWopPBSOp>(
+            .create<TFHE::EncodeLutForCrtWopPBSOp>(
                 op.getLoc(),
                 mlir::RankedTensorType::get(
-                    mlir::ArrayRef<int64_t>(loweringParameters.lutSize),
+                    mlir::ArrayRef<int64_t>{
+                        (int64_t)loweringParameters.nMods,
+                        (int64_t)loweringParameters.singleLutSize},
                     rewriter.getI64Type()),
                 adaptor.lut(),
                 rewriter.getI64ArrayAttr(
                     mlir::ArrayRef<int64_t>(loweringParameters.mods)),
                 rewriter.getI64ArrayAttr(
                     mlir::ArrayRef<int64_t>(loweringParameters.bits)),
-                rewriter.getI32IntegerAttr(loweringParameters.polynomialSize),
                 rewriter.getI32IntegerAttr(loweringParameters.modsProd),
                 rewriter.getBoolAttr(originalInputType.isSigned()))
             .getResult();

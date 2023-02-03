@@ -73,7 +73,7 @@ jobs:
       - name: Create build dir
         run: mkdir build
 
-      - name: Build compiler
+      - name: Build and test compiler
         uses: addnab/docker-run-action@v3
         id: build-compiler
         with:
@@ -94,34 +94,7 @@ jobs:
             set -e
             cd /compiler
             rm -rf /build/*
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} all python-package build-end-to-end-dataflow-tests
+            mkdir -p /tmp/concrete_compiler/gpu_tests/
+            make BINDINGS_PYTHON_ENABLED=OFF CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu
             echo "Debug: ccache statistics (after the build):"
             ccache -s
-
-      - name: Archive python package
-        uses: actions/upload-artifact@v3
-        with:
-          name: concrete-compiler-gpu
-          path: build/wheels/*.whl
-
-      - name: Test compiler
-        uses: addnab/docker-run-action@v3
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}/llvm-project:/llvm-project
-            -v ${{ github.workspace }}/compiler:/compiler
-            -v ${{ github.workspace }}/build:/build
-            --gpus all
-          shell: bash
-          run: |
-            set -e
-            cd /compiler
-            pip install pytest
-            sed "s/pytest/python -m pytest/g" -i Makefile
-            mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-end-to-end-tests-gpu
-            chmod -R ugo+rwx /tmp/KeySetCache

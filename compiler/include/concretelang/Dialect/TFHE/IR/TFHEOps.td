@@ -33,7 +33,7 @@ def TFHE_EncodeExpandLutForBootstrapOp : TFHE_Op<"encode_expand_lut_for_bootstra
     let results = (outs 1DTensorOf<[I64]> : $result);
 }
 
-def TFHE_EncodeExpandLutForWopPBSOp : TFHE_Op<"encode_expand_lut_for_woppbs"> {
+def TFHE_EncodeLutForCrtWopPBSOp : TFHE_Op<"encode_lut_for_crt_woppbs"> {
     let summary =
         "Encode and expand a lookup table so that it can be used for a wop pbs.";
 
@@ -41,12 +41,11 @@ def TFHE_EncodeExpandLutForWopPBSOp : TFHE_Op<"encode_expand_lut_for_woppbs"> {
         1DTensorOf<[I64]> : $input_lookup_table,
         I64ArrayAttr: $crtDecomposition,
         I64ArrayAttr: $crtBits,
-        I32Attr : $polySize,
         I32Attr : $modulusProduct,
         BoolAttr: $isSigned
     );
 
-    let results = (outs 1DTensorOf<[I64]> : $result);
+    let results = (outs 2DTensorOf<[I64]> : $result);
 }
 
 def TFHE_EncodePlaintextWithCrtOp : TFHE_Op<"encode_plaintext_with_crt"> {
@@ -158,7 +157,7 @@ def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe"> {
 
     let arguments = (ins
         Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>: $ciphertexts,
-        1DTensorOf<[I64]> : $lookupTable,
+        2DTensorOf<[I64]> : $lookupTable,
         // Bootstrap parameters
         I32Attr : $bootstrapLevel,
         I32Attr : $bootstrapBaseLog,

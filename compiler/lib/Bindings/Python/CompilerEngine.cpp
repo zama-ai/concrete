@@ -218,8 +218,8 @@ MLIR_CAPI_EXPORTED concretelang::clientlib::EvaluationKeys
 evaluationKeysUnserialize(const std::string &buffer) {
   std::stringstream istream(buffer);
 
-  concretelang::clientlib::EvaluationKeys evaluationKeys;
-  concretelang::clientlib::operator>>(istream, evaluationKeys);
+  concretelang::clientlib::EvaluationKeys evaluationKeys =
+      concretelang::clientlib::readEvaluationKeys(istream);
 
   if (istream.fail()) {
     throw std::runtime_error("Cannot read evaluation keys");

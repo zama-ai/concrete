@@ -9,6 +9,7 @@
 
 #include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Runtime/context.h"
 #include "concretelang/ServerLib/DynamicArityCall.h"
 #include "concretelang/ServerLib/DynamicModule.h"
 #include "concretelang/ServerLib/DynamicRankCall.h"
@@ -23,8 +24,8 @@ using concretelang::clientlib::CircuitGate;
 using concretelang::clientlib::CircuitGateShape;
 using concretelang::clientlib::EvaluationKeys;
 using concretelang::clientlib::PublicArguments;
-using concretelang::clientlib::RuntimeContext;
 using concretelang::error::StringError;
+using mlir::concretelang::RuntimeContext;
 
 outcome::checked<ServerLambda, StringError>
 ServerLambda::loadFromModule(std::shared_ptr<DynamicModule> module,
@@ -70,8 +71,7 @@ ServerLambda::call(PublicArguments &args, EvaluationKeys &evaluationKeys) {
   std::vector<void *> preparedArgs(args.preparedArgs.begin(),
                                    args.preparedArgs.end());
 
-  RuntimeContext runtimeContext;
-  runtimeContext.evaluationKeys = evaluationKeys;
+  RuntimeContext runtimeContext(evaluationKeys);
   preparedArgs.push_back((void *)&runtimeContext);
 
   assert(clientParameters.outputs.size() == 1 &&

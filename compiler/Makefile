@@ -24,8 +24,6 @@ HPX_TARBALL=$(shell pwd)/hpx-$(HPX_VERSION).tar.gz
 HPX_LOCAL_DIR=$(shell pwd)/hpx-$(HPX_VERSION)
 HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)/build
 
-CONCRETE_CORE_FFI_VERSION?=0.2.0
-
 ML_BENCH_SUBSET_ID=
 
 # Find OS
@@ -49,8 +47,6 @@ ifeq ($(shell uname -m), arm64)
 else 
 	ARCHITECTURE=amd64
 endif
-
-CONCRETE_CORE_FFI_TARBALL=concrete-core-ffi_$(CONCRETE_CORE_FFI_VERSION)_$(OS)_$(ARCHITECTURE).tar.gz
 
 export PATH := $(abspath $(BUILD_DIR))/bin:$(PATH)
 
@@ -86,23 +82,6 @@ else
 endif
 
 all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc rust-bindings
-
-# concrete-core-ffi #######################################
-
-CONCRETE_CORE_FFI_FOLDER = $(shell pwd)/concrete-core-ffi-$(CONCRETE_CORE_FFI_VERSION)
-
-CONCRETE_CORE_FFI_ARTIFACTS=$(CONCRETE_CORE_FFI_FOLDER)/libconcrete_core_ffi.a $(CONCRETE_CORE_FFI_FOLDER)/concrete-core-ffi.h
-
-concrete-core-ffi: $(CONCRETE_CORE_FFI_ARTIFACTS)
-
-$(CONCRETE_CORE_FFI_ARTIFACTS): $(CONCRETE_CORE_FFI_FOLDER)
-
-$(CONCRETE_CORE_FFI_FOLDER): $(CONCRETE_CORE_FFI_TARBALL)
-	mkdir -p $(CONCRETE_CORE_FFI_FOLDER)
-	tar -xvzf $(CONCRETE_CORE_FFI_TARBALL) --directory $(CONCRETE_CORE_FFI_FOLDER)
-
-$(CONCRETE_CORE_FFI_TARBALL):
-	curl -L https://github.com/zama-ai/concrete-core/releases/download/concrete-core-ffi-$(CONCRETE_CORE_FFI_VERSION)/$(CONCRETE_CORE_FFI_TARBALL) -o $(CONCRETE_CORE_FFI_TARBALL)
 
 # concrete-optimizer ######################################
 
@@ -143,7 +122,6 @@ $(BUILD_DIR)/configured.stamp:
 	-DCONCRETELANG_BINDINGS_PYTHON_ENABLED=$(BINDINGS_PYTHON_ENABLED) \
 	-DCONCRETELANG_DATAFLOW_EXECUTION_ENABLED=$(DATAFLOW_EXECUTION_ENABLED) \
 	-DCONCRETELANG_TIMING_ENABLED=$(TIMING_ENABLED) \
-	-DCONCRETE_FFI_RELEASE=$(CONCRETE_CORE_FFI_FOLDER) \
 	-DHPX_DIR=${HPX_INSTALL_DIR}/lib/cmake/HPX \
 	-DLLVM_EXTERNAL_PROJECTS=concretelang \
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
@@ -154,7 +132,7 @@ $(BUILD_DIR)/configured.stamp:
 	-DCUDAToolkit_ROOT=$(CUDA_PATH)
 	touch $@
 
-build-initialized: concrete-optimizer-lib concrete-core-ffi $(BUILD_DIR)/configured.stamp
+build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
@@ -330,7 +308,7 @@ $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end
 $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 	$(Python3_EXECUTABLE) $< > $@
 
-generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_leveled.yaml
+generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml
 
 SECURITY_TO_BENCH=128
 run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
@@ -530,7 +508,6 @@ install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	python-format \
 	check-python-format \
 	concrete-optimizer-lib \
-	concrete-core-ffi \
 	build-tests \
 	run-tests \
 	run-check-tests \
@@ -540,7 +517,6 @@ install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	build-end-to-end-tests \
 	build-end-to-end-dataflow-tests \
 	run-end-to-end-dataflow-tests \
-	concrete-core-ffi \
 	opt \
 	mlir-opt \
 	mlir-cpu-runner \

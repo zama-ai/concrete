@@ -13,3 +13,8 @@
 [submodule "compiler/parameter-curves"]
 	path = compiler/parameter-curves
 	url = git@github.com:zama-ai/parameter-curves.git
+	shallow = true
+[submodule "compiler/concrete-cpu"]
+	path = compiler/concrete-cpu
+	url = git@github.com:zama-ai/concrete-cpu.git
+	shallow = true

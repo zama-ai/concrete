@@ -47,8 +47,7 @@ char memref_wop_pbs_crt_buffer[] = "memref_wop_pbs_crt_buffer";
 char memref_encode_plaintext_with_crt[] = "memref_encode_plaintext_with_crt";
 char memref_encode_expand_lut_for_bootstrap[] =
     "memref_encode_expand_lut_for_bootstrap";
-char memref_encode_expand_lut_for_woppbs[] =
-    "memref_encode_expand_lut_for_woppbs";
+char memref_encode_lut_for_crt_woppbs[] = "memref_encode_lut_for_crt_woppbs";
 char memref_trace[] = "memref_trace";
 
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
@@ -160,8 +159,14 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                        {
                                            memref2DType,
                                            memref2DType,
+                                           memref2DType,
                                            memref1DType,
-                                           memref1DType,
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
                                            rewriter.getI32Type(),
                                            rewriter.getI32Type(),
                                            rewriter.getI32Type(),
@@ -181,11 +186,11 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
         {memref1DType, memref1DType, rewriter.getI32Type(),
          rewriter.getI32Type(), rewriter.getI1Type()},
         {});
-  } else if (funcName == memref_encode_expand_lut_for_woppbs) {
+  } else if (funcName == memref_encode_lut_for_crt_woppbs) {
     funcType = mlir::FunctionType::get(
         rewriter.getContext(),
-        {memref1DType, memref1DType, memref1DType, memref1DType,
-         rewriter.getI32Type(), rewriter.getI32Type(), rewriter.getI1Type()},
+        {memref2DType, memref1DType, memref1DType, memref1DType,
+         rewriter.getI32Type(), rewriter.getI1Type()},
         {});
   } else if (funcName == memref_trace) {
     funcType = mlir::FunctionType::get(
@@ -326,9 +331,32 @@ void wopPBSAddOperands(Concrete::WopPBSCRTLweBufferOp op,
   // cbs_base_log
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.circuitBootstrapBaseLogAttr()));
+
+  // ksk_level_count
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.keyswitchLevelAttr()));
+  // ksk_base_log
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.keyswitchBaseLogAttr()));
+
+  // bsk_level_count
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.bootstrapLevelAttr()));
+  // bsk_base_log
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.bootstrapBaseLogAttr()));
+
+  // fpksk_level_count
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.packingKeySwitchLevelAttr()));
+  // fpksk_base_log
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.packingKeySwitchBaseLogAttr()));
+
   // polynomial_size
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.packingKeySwitchoutputPolynomialSizeAttr()));
+
   // context
   operands.push_back(getContextArgument(op));
 }
@@ -372,9 +400,9 @@ void encodeExpandLutForBootstrapAddOperands(
       rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.isSignedAttr()));
 }
 
-void encodeExpandLutForWopPBSAddOperands(
-    Concrete::EncodeExpandLutForWopPBSBufferOp op,
-    mlir::SmallVector<mlir::Value> &operands, mlir::RewriterBase &rewriter) {
+void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
+                                   mlir::SmallVector<mlir::Value> &operands,
+                                   mlir::RewriterBase &rewriter) {
 
   // crt_decomposition
   mlir::Type crtDecompositionType = mlir::RankedTensorType::get(
@@ -414,9 +442,6 @@ void encodeExpandLutForWopPBSAddOperands(
       op.getLoc(), (*crtBitsGlobalMemref).type(),
       (*crtBitsGlobalMemref).getName());
   operands.push_back(getCastedMemRef(rewriter, crtBitsGlobalRef));
-  // poly_size
-  operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
   // modulus_product
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.modulusProductAttr()));
@@ -467,10 +492,10 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
         ConcreteToCAPICallPattern<Concrete::EncodeExpandLutForBootstrapBufferOp,
                                   memref_encode_expand_lut_for_bootstrap>>(
         &getContext(), encodeExpandLutForBootstrapAddOperands);
-    patterns.add<
-        ConcreteToCAPICallPattern<Concrete::EncodeExpandLutForWopPBSBufferOp,
-                                  memref_encode_expand_lut_for_woppbs>>(
-        &getContext(), encodeExpandLutForWopPBSAddOperands);
+    patterns
+        .add<ConcreteToCAPICallPattern<Concrete::EncodeLutForCrtWopPBSBufferOp,
+                                       memref_encode_lut_for_crt_woppbs>>(
+            &getContext(), encodeLutForWopPBSAddOperands);
     if (gpu) {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_cuda_u64>>(

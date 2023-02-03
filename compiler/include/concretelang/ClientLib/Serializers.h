@@ -12,12 +12,9 @@
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/Types.h"
-#include "concretelang/Runtime/context.h"
 
 namespace concretelang {
 namespace clientlib {
-
-using RuntimeContext = mlir::concretelang::RuntimeContext;
 
 // integers are not serialized as binary values even on a binary stream
 // so we cannot rely on << operator directly
@@ -62,10 +59,6 @@ template <typename Stream> bool incorrectMode(Stream &stream) {
   return !binary;
 }
 
-std::ostream &operator<<(std::ostream &ostream,
-                         const RuntimeContext &runtimeContext);
-std::istream &operator>>(std::istream &istream, RuntimeContext &runtimeContext);
-
 std::ostream &serializeScalarData(const ScalarData &sd, std::ostream &ostream);
 
 outcome::checked<ScalarData, StringError>
@@ -105,17 +98,24 @@ outcome::checked<ScalarOrTensorData, StringError>
 unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
                               std::istream &istream);
 
+std::ostream &operator<<(std::ostream &ostream, const LweSecretKey &wrappedKsk);
+LweSecretKey readLweSecretKey(std::istream &istream);
+
 std::ostream &operator<<(std::ostream &ostream,
                          const LweKeyswitchKey &wrappedKsk);
-std::istream &operator>>(std::istream &istream, LweKeyswitchKey &wrappedKsk);
+LweKeyswitchKey readLweKeyswitchKey(std::istream &istream);
 
 std::ostream &operator<<(std::ostream &ostream,
                          const LweBootstrapKey &wrappedBsk);
-std::istream &operator>>(std::istream &istream, LweBootstrapKey &wrappedBsk);
+LweBootstrapKey readLweBootstrapKey(std::istream &istream);
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const PackingKeyswitchKey &wrappedKsk);
+PackingKeyswitchKey readPackingKeyswitchKey(std::istream &istream);
 
 std::ostream &operator<<(std::ostream &ostream,
                          const EvaluationKeys &evaluationKeys);
-std::istream &operator>>(std::istream &istream, EvaluationKeys &evaluationKeys);
+EvaluationKeys readEvaluationKeys(std::istream &istream);
 
 } // namespace clientlib
 } // namespace concretelang

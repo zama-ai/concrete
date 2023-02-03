@@ -29,18 +29,19 @@ void memref_encode_expand_lut_for_bootstrap(
     uint64_t input_lut_size, uint64_t input_lut_stride, uint32_t poly_size,
     uint32_t out_MESSAGE_BITS, bool is_signed);
 
-void memref_encode_expand_lut_for_woppbs(
+void memref_encode_lut_for_crt_woppbs(
     uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
-    uint64_t output_lut_offset, uint64_t output_lut_size,
-    uint64_t output_lut_stride, uint64_t *input_lut_allocated,
+    uint64_t output_lut_offset, uint64_t output_lut_size0,
+    uint64_t output_lut_size1, uint64_t output_lut_stride0,
+    uint64_t output_lut_stride1, uint64_t *input_lut_allocated,
     uint64_t *input_lut_aligned, uint64_t input_lut_offset,
     uint64_t input_lut_size, uint64_t input_lut_stride,
     uint64_t *crt_decomposition_allocated, uint64_t *crt_decomposition_aligned,
     uint64_t crt_decomposition_offset, uint64_t crt_decomposition_size,
     uint64_t crt_decomposition_stride, uint64_t *crt_bits_allocated,
     uint64_t *crt_bits_aligned, uint64_t crt_bits_offset,
-    uint64_t crt_bits_size, uint64_t crt_bits_stride, uint32_t poly_size,
-    uint32_t modulus_product, bool is_signed);
+    uint64_t crt_bits_size, uint64_t crt_bits_stride, uint32_t modulus_product,
+    bool is_signed);
 
 void memref_encode_plaintext_with_crt(
     uint64_t *output_allocated, uint64_t *output_aligned,
@@ -149,13 +150,16 @@ void memref_wop_pbs_crt_buffer(
     uint64_t in_stride_1,
     // clear text lut
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
-    uint64_t lut_ct_offset, uint64_t lut_ct_size, uint64_t lut_ct_stride,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
+    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
     // CRT decomposition
     uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
     uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
     uint64_t crt_decomp_stride,
     // Additional crypto parameters
     uint32_t lwe_small_size, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
+    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
     uint32_t polynomial_size,
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context);

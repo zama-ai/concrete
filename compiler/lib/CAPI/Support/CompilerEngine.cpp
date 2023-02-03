@@ -394,8 +394,15 @@ void encodingDestroy(Encoding encoding){C_STRUCT_CLEANER(encoding)}
 
 KeySet keySetGenerate(ClientParameters params, uint64_t seed_msb,
                       uint64_t seed_lsb) {
+
+  __uint128_t seed = seed_msb;
+  seed <<= 64;
+  seed += seed_lsb;
+
+  auto csprng = concretelang::clientlib::ConcreteCSPRNG(seed);
+
   auto keySet = mlir::concretelang::clientlib::KeySet::generate(
-      *unwrap(params), seed_msb, seed_lsb);
+      *unwrap(params), std::move(csprng));
   if (keySet.has_error()) {
     return wrap((mlir::concretelang::clientlib::KeySet *)NULL,
                 keySet.error().mesg);
@@ -445,8 +452,8 @@ BufferRef evaluationKeysSerialize(EvaluationKeys keys) {
 
 EvaluationKeys evaluationKeysUnserialize(BufferRef buffer) {
   std::stringstream istream(std::string(buffer.data, buffer.length));
-  concretelang::clientlib::EvaluationKeys evaluationKeys;
-  concretelang::clientlib::operator>>(istream, evaluationKeys);
+  concretelang::clientlib::EvaluationKeys evaluationKeys =
+      concretelang::clientlib::readEvaluationKeys(istream);
   if (istream.fail()) {
     return wrap((concretelang::clientlib::EvaluationKeys *)NULL,
                 "input stream failure during evaluation keys unserialization");
