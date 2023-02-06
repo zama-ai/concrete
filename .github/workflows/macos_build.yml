@@ -75,7 +75,7 @@ jobs:
           echo "Debug: ccache statistics (prior to the tests):"
           ccache -s
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
-          pip3.10 install $(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl')
+          pip3.10 install build/wheels/*macosx*.whl
           make Python3_EXECUTABLE=$(which python3.10) run-tests
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
