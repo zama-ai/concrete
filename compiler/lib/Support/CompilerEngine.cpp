@@ -296,11 +296,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return StreamStringError("Rewriting of encrypted mul failed");
   }
 
-  if (mlir::concretelang::pipeline::transformFHEBigInt(
-          mlirContext, module, enablePass, options.chunkSize,
-          options.chunkWidth)
-          .failed()) {
-    return errorDiag("Transforming FHE big integer ops failed");
+  if (options.chunkIntegers) {
+    if (mlir::concretelang::pipeline::transformFHEBigInt(
+            mlirContext, module, enablePass, options.chunkSize,
+            options.chunkWidth)
+            .failed()) {
+      return errorDiag("Transforming FHE big integer ops failed");
+    }
   }
 
   // FHE High level pass to determine FHE parameters

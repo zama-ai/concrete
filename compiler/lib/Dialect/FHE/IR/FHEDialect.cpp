@@ -89,33 +89,3 @@ mlir::Type EncryptedSignedIntegerType::parse(mlir::AsmParser &p) {
 
   return getChecked(loc, loc.getContext(), width);
 }
-
-mlir::LogicalResult ChunkedEncryptedIntegerType::verify(
-    llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
-  if (p == 0) {
-    emitError() << "FHE.chunked_eint doesn't support precision of 0";
-    return mlir::failure();
-  }
-  return mlir::success();
-}
-
-void ChunkedEncryptedIntegerType::print(mlir::AsmPrinter &p) const {
-  p << "<" << getWidth() << ">";
-}
-
-mlir::Type ChunkedEncryptedIntegerType::parse(mlir::AsmParser &p) {
-  if (p.parseLess())
-    return mlir::Type();
-
-  int width;
-
-  if (p.parseInteger(width))
-    return mlir::Type();
-
-  if (p.parseGreater())
-    return mlir::Type();
-
-  mlir::Location loc = p.getEncodedSourceLoc(p.getNameLoc());
-
-  return getChecked(loc, loc.getContext(), width);
-}

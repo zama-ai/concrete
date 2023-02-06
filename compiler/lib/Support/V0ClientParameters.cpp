@@ -98,46 +98,6 @@ gateFromMLIRType(V0FHEContext fheContext, LweSecretKeyID secretKeyID,
         /*.chunkInfo = */ chunkInfo,
     };
   }
-  // TODO: this a duplicate of the last if: should be removed when we remove
-  // chinked eint
-  if (auto lweTy = type.dyn_cast_or_null<
-                   mlir::concretelang::FHE::ChunkedEncryptedIntegerType>()) {
-    bool sign = lweTy.isSignedInteger();
-    std::vector<int64_t> crt;
-    if (fheContext.parameter.largeInteger.has_value()) {
-      crt = fheContext.parameter.largeInteger.value().crtDecomposition;
-    }
-    size_t width;
-    uint64_t size;
-    std::vector<int64_t> dims;
-    if (chunkInfo.hasValue()) {
-      width = chunkInfo->size;
-      assert(lweTy.getWidth() % chunkInfo->width == 0);
-      size = lweTy.getWidth() / chunkInfo->width;
-      dims.push_back(size);
-    } else {
-      width = (size_t)lweTy.getWidth();
-    }
-    return CircuitGate{
-        /* .encryption = */ llvm::Optional<EncryptionGate>({
-            /* .secretKeyID = */ secretKeyID,
-            /* .variance = */ variance,
-            /* .encoding = */
-            {
-                /* .precision = */ width,
-                /* .crt = */ crt,
-            },
-        }),
-        /*.shape = */
-        {
-            /*.width = */ width,
-            /*.dimensions = */ dims,
-            /*.size = */ size,
-            /*.sign = */ sign,
-        },
-        /*.chunkInfo = */ chunkInfo,
-    };
-  }
   if (auto lweTy = type.dyn_cast_or_null<
                    mlir::concretelang::FHE::EncryptedBooleanType>()) {
     size_t width = mlir::concretelang::FHE::EncryptedBooleanType::getWidth();

@@ -49,10 +49,10 @@ namespace typing {
 
 /// Converts `FHE::ChunkedEncryptedInteger` into a tensor of
 /// `FHE::EncryptedInteger`.
-mlir::RankedTensorType
-convertChunkedEint(mlir::MLIRContext *context,
-                   FHE::ChunkedEncryptedIntegerType chunkedEint,
-                   unsigned int chunkSize, unsigned int chunkWidth) {
+mlir::RankedTensorType convertChunkedEint(mlir::MLIRContext *context,
+                                          FHE::EncryptedIntegerType chunkedEint,
+                                          unsigned int chunkSize,
+                                          unsigned int chunkWidth) {
   auto eint = FHE::EncryptedIntegerType::get(context, chunkSize);
   auto bigIntWidth = chunkedEint.getWidth();
   assert(bigIntWidth % chunkWidth == 0 &&
@@ -68,9 +68,13 @@ class TypeConverter : public mlir::TypeConverter {
 public:
   TypeConverter(unsigned int chunkSize, unsigned int chunkWidth) {
     addConversion([](mlir::Type type) { return type; });
-    addConversion([chunkSize,
-                   chunkWidth](FHE::ChunkedEncryptedIntegerType type) {
-      return convertChunkedEint(type.getContext(), type, chunkSize, chunkWidth);
+    addConversion([chunkSize, chunkWidth](FHE::EncryptedIntegerType type) {
+      if (type.getWidth() > chunkSize) {
+        return (mlir::Type)convertChunkedEint(type.getContext(), type,
+                                              chunkSize, chunkWidth);
+      } else {
+        return (mlir::Type)type;
+      }
     });
   }
 };
