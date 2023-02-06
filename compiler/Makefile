@@ -238,6 +238,9 @@ run-rust-tests: rust-bindings
 
 ## end-to-end-tests
 
+build-end-to-end-jit-chunked-int: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_chunked_int
+
 build-end-to-end-jit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
 
@@ -253,7 +256,7 @@ build-end-to-end-jit-fhelinalg: build-initialized
 build-end-to-end-jit-lambda: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_lambda
 
-build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-test build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+build-end-to-end-tests: build-end-to-end-jit-chunked-int build-end-to-end-jit-test build-end-to-end-test build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
 
 ### end-to-end-tests CPU
 
