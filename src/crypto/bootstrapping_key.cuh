@@ -15,6 +15,7 @@ __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
          level_count;
 }
 
+////////////////////////////////////////////////
 template <typename T>
 __device__ T *get_ith_mask_kth_block(T *ptr, int i, int k, int level,
                                      uint32_t polynomial_size,
@@ -35,8 +36,9 @@ __device__ T *get_ith_body_kth_block(T *ptr, int i, int k, int level,
               level * polynomial_size / 2 * (glwe_dimension + 1) *
                   (glwe_dimension + 1) +
               k * polynomial_size / 2 * (glwe_dimension + 1) +
-              polynomial_size / 2];
+              glwe_dimension * polynomial_size / 2];
 }
+////////////////////////////////////////////////
 
 template <typename T, typename ST>
 void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,

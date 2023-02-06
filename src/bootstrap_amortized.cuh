@@ -53,8 +53,8 @@ template <typename Torus, class params, sharedMemDegree SMD>
 __global__ void device_bootstrap_amortized(
     Torus *lwe_array_out, Torus *lut_vector, uint32_t *lut_vector_indexes,
     Torus *lwe_array_in, double2 *bootstrapping_key, char *device_mem,
-    uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t base_log,
-    uint32_t level_count, uint32_t lwe_idx,
+    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
+    uint32_t base_log, uint32_t level_count, uint32_t lwe_idx,
     size_t device_memory_size_per_sample) {
   // We use shared memory for the polynomials that are used often during the
   // bootstrap, since shared memory is kept in L1 cache and accessing it is
@@ -69,26 +69,22 @@ __global__ void device_bootstrap_amortized(
 
   // For GPU bootstrapping the GLWE dimension is hard-set to 1: there is only
   // one mask polynomial and 1 body to handle.
-  Torus *accumulator_mask = (Torus *)selected_memory;
-  Torus *accumulator_body =
-      (Torus *)accumulator_mask + (ptrdiff_t)polynomial_size;
-  Torus *accumulator_mask_rotated =
-      (Torus *)accumulator_body + (ptrdiff_t)polynomial_size;
-  Torus *accumulator_body_rotated =
-      (Torus *)accumulator_mask_rotated + (ptrdiff_t)polynomial_size;
-  double2 *mask_res_fft = (double2 *)accumulator_body_rotated +
-                          polynomial_size / (sizeof(double2) / sizeof(Torus));
-  double2 *body_res_fft =
-      (double2 *)mask_res_fft + (ptrdiff_t)polynomial_size / 2;
+  Torus *accumulator = (Torus *)selected_memory;
+  Torus *accumulator_rotated =
+      (Torus *)accumulator +
+      (ptrdiff_t)((glwe_dimension + 1) * polynomial_size);
+  double2 *res_fft =
+      (double2 *)accumulator_rotated + (glwe_dimension + 1) * polynomial_size /
+                                           (sizeof(double2) / sizeof(Torus));
   double2 *accumulator_fft = (double2 *)sharedmem;
   if constexpr (SMD != PARTIALSM)
-    accumulator_fft =
-        (double2 *)body_res_fft + (ptrdiff_t)(polynomial_size / 2);
+    accumulator_fft = (double2 *)res_fft +
+                      (ptrdiff_t)((glwe_dimension + 1) * polynomial_size / 2);
 
   auto block_lwe_array_in = &lwe_array_in[blockIdx.x * (lwe_dimension + 1)];
   Torus *block_lut_vector =
       &lut_vector[lut_vector_indexes[lwe_idx + blockIdx.x] * params::degree *
-                  2];
+                  (glwe_dimension + 1)];
 
   // Put "b", the body, in [0, 2N[
   Torus b_hat = 0;
@@ -97,11 +93,7 @@ __global__ void device_bootstrap_amortized(
 
   divide_by_monomial_negacyclic_inplace<Torus, params::opt,
                                         params::degree / params::opt>(
-      accumulator_mask, block_lut_vector, b_hat, false);
-
-  divide_by_monomial_negacyclic_inplace<Torus, params::opt,
-                                        params::degree / params::opt>(
-      accumulator_body, &block_lut_vector[params::degree], b_hat, false);
+      accumulator, block_lut_vector, b_hat, false, glwe_dimension + 1);
 
   // Loop over all the mask elements of the sample to accumulate
   // (X^a_i-1) multiplication, decomposition of the resulting polynomial
@@ -118,11 +110,7 @@ __global__ void device_bootstrap_amortized(
     // Perform ACC * (X^ä - 1)
     multiply_by_monomial_negacyclic_and_sub_polynomial<
         Torus, params::opt, params::degree / params::opt>(
-        accumulator_mask, accumulator_mask_rotated, a_hat);
-
-    multiply_by_monomial_negacyclic_and_sub_polynomial<
-        Torus, params::opt, params::degree / params::opt>(
-        accumulator_body, accumulator_body_rotated, a_hat);
+        accumulator, accumulator_rotated, a_hat, glwe_dimension + 1);
 
     synchronize_threads_in_block();
 
@@ -130,153 +118,122 @@ __global__ void device_bootstrap_amortized(
     // bootstrapped ciphertext
     round_to_closest_multiple_inplace<Torus, params::opt,
                                       params::degree / params::opt>(
-        accumulator_mask_rotated, base_log, level_count);
+        accumulator_rotated, base_log, level_count, glwe_dimension + 1);
 
-    round_to_closest_multiple_inplace<Torus, params::opt,
-                                      params::degree / params::opt>(
-        accumulator_body_rotated, base_log, level_count);
     // Initialize the polynomial multiplication via FFT arrays
     // The polynomial multiplications happens at the block level
     // and each thread handles two or more coefficients
     int pos = threadIdx.x;
-    for (int j = 0; j < params::opt / 2; j++) {
-      mask_res_fft[pos].x = 0;
-      mask_res_fft[pos].y = 0;
-      body_res_fft[pos].x = 0;
-      body_res_fft[pos].y = 0;
+    for (int j = 0; j < (glwe_dimension + 1) * params::opt / 2; j++) {
+      res_fft[pos].x = 0;
+      res_fft[pos].y = 0;
       pos += params::degree / params::opt;
     }
 
-    GadgetMatrix<Torus, params> gadget_mask(base_log, level_count,
-                                            accumulator_mask_rotated);
-    GadgetMatrix<Torus, params> gadget_body(base_log, level_count,
-                                            accumulator_body_rotated);
-
+    GadgetMatrix<Torus, params> gadget(base_log, level_count,
+                                       accumulator_rotated, glwe_dimension + 1);
     // Now that the rotation is done, decompose the resulting polynomial
     // coefficients so as to multiply each decomposed level with the
     // corresponding part of the bootstrapping key
     for (int level = level_count - 1; level >= 0; level--) {
+      gadget.decompose_and_compress_next(accumulator_fft);
+      for (int i = 0; i < (glwe_dimension + 1); i++) {
+        auto accumulator_fft_slice = accumulator_fft + i * params::degree / 2;
 
-      gadget_mask.decompose_and_compress_next(accumulator_fft);
-      // Switch to the FFT space
-      NSMFFT_direct<HalfDegree<params>>(accumulator_fft);
+        // Switch to the FFT space
+        NSMFFT_direct<HalfDegree<params>>(accumulator_fft_slice);
+        synchronize_threads_in_block();
+
+        // Get the bootstrapping key piece necessary for the multiplication
+        // It is already in the Fourier domain
+        auto bsk_slice = get_ith_mask_kth_block(bootstrapping_key, iteration, i,
+                                                level, polynomial_size,
+                                                glwe_dimension, level_count);
+        synchronize_threads_in_block();
+
+        // Perform the coefficient-wise product with the two pieces of
+        // bootstrapping key
+        for (int j = 0; j < (glwe_dimension + 1); j++) {
+          auto bsk_poly = bsk_slice + j * params::degree / 2;
+          auto res_fft_poly = res_fft + j * params::degree / 2;
+          polynomial_product_accumulate_in_fourier_domain<params, double2>(
+              res_fft_poly, accumulator_fft_slice, bsk_poly);
+        }
+      }
       synchronize_threads_in_block();
-
-      // Get the bootstrapping key piece necessary for the multiplication
-      // It is already in the Fourier domain
-      auto bsk_mask_slice =
-          get_ith_mask_kth_block(bootstrapping_key, iteration, 0, level,
-                                 polynomial_size, 1, level_count);
-      auto bsk_body_slice =
-          get_ith_body_kth_block(bootstrapping_key, iteration, 0, level,
-                                 polynomial_size, 1, level_count);
-
-      synchronize_threads_in_block();
-
-      // Perform the coefficient-wise product with the two pieces of
-      // bootstrapping key
-      polynomial_product_accumulate_in_fourier_domain<params, double2>(
-          mask_res_fft, accumulator_fft, bsk_mask_slice);
-      polynomial_product_accumulate_in_fourier_domain<params, double2>(
-          body_res_fft, accumulator_fft, bsk_body_slice);
-
-      synchronize_threads_in_block();
-      gadget_body.decompose_and_compress_next(accumulator_fft);
-
-      // Now handle the polynomial multiplication for the body
-      // in the same way
-
-      NSMFFT_direct<HalfDegree<params>>(accumulator_fft);
-      synchronize_threads_in_block();
-
-      auto bsk_mask_slice_2 =
-          get_ith_mask_kth_block(bootstrapping_key, iteration, 1, level,
-                                 polynomial_size, 1, level_count);
-      auto bsk_body_slice_2 =
-          get_ith_body_kth_block(bootstrapping_key, iteration, 1, level,
-                                 polynomial_size, 1, level_count);
-
-      synchronize_threads_in_block();
-
-      polynomial_product_accumulate_in_fourier_domain<params, double2>(
-          mask_res_fft, accumulator_fft, bsk_mask_slice_2);
-      polynomial_product_accumulate_in_fourier_domain<params, double2>(
-          body_res_fft, accumulator_fft, bsk_body_slice_2);
     }
 
     // Come back to the coefficient representation
     if constexpr (SMD == FULLSM || SMD == NOSM) {
       synchronize_threads_in_block();
 
-      NSMFFT_inverse<HalfDegree<params>>(mask_res_fft);
-      NSMFFT_inverse<HalfDegree<params>>(body_res_fft);
-
+      for (int i = 0; i < (glwe_dimension + 1); i++) {
+        auto res_fft_slice = res_fft + i * params::degree / 2;
+        NSMFFT_inverse<HalfDegree<params>>(res_fft_slice);
+      }
       synchronize_threads_in_block();
 
-      add_to_torus<Torus, params>(mask_res_fft, accumulator_mask);
-      add_to_torus<Torus, params>(body_res_fft, accumulator_body);
+      for (int i = 0; i < (glwe_dimension + 1); i++) {
+        auto accumulator_slice = accumulator + i * params::degree;
+        auto res_fft_slice = res_fft + i * params::degree / 2;
+        add_to_torus<Torus, params>(res_fft_slice, accumulator_slice);
+      }
       synchronize_threads_in_block();
-
     } else {
-      int tid = threadIdx.x;
 #pragma unroll
-      for (int i = 0; i < params::opt / 2; i++) {
-        accumulator_fft[tid] = mask_res_fft[tid];
-        tid = tid + params::degree / params::opt;
+      for (int i = 0; i < (glwe_dimension + 1); i++) {
+        auto accumulator_slice = accumulator + i * params::degree;
+        auto res_fft_slice = res_fft + i * params::degree / 2;
+        int tid = threadIdx.x;
+        for (int i = 0; i < params::opt / 2; i++) {
+          accumulator_fft[tid] = res_fft_slice[tid];
+          tid = tid + params::degree / params::opt;
+        }
+        synchronize_threads_in_block();
+
+        NSMFFT_inverse<HalfDegree<params>>(accumulator_fft);
+        synchronize_threads_in_block();
+
+        add_to_torus<Torus, params>(accumulator_fft, accumulator_slice);
       }
-      synchronize_threads_in_block();
-
-      NSMFFT_inverse<HalfDegree<params>>(accumulator_fft);
-      synchronize_threads_in_block();
-
-      add_to_torus<Torus, params>(accumulator_fft, accumulator_mask);
-      synchronize_threads_in_block();
-
-      tid = threadIdx.x;
-#pragma unroll
-      for (int i = 0; i < params::opt / 2; i++) {
-        accumulator_fft[tid] = body_res_fft[tid];
-        tid = tid + params::degree / params::opt;
-      }
-      synchronize_threads_in_block();
-
-      NSMFFT_inverse<HalfDegree<params>>(accumulator_fft);
-      synchronize_threads_in_block();
-
-      add_to_torus<Torus, params>(accumulator_fft, accumulator_body);
       synchronize_threads_in_block();
     }
   }
 
-  auto block_lwe_array_out = &lwe_array_out[blockIdx.x * (polynomial_size + 1)];
+  auto block_lwe_array_out =
+      &lwe_array_out[blockIdx.x * (glwe_dimension * polynomial_size + 1)];
 
   // The blind rotation for this block is over
   // Now we can perform the sample extraction: for the body it's just
   // the resulting constant coefficient of the accumulator
   // For the mask it's more complicated
-  sample_extract_mask<Torus, params>(block_lwe_array_out, accumulator_mask);
-  sample_extract_body<Torus, params>(block_lwe_array_out, accumulator_body);
+  sample_extract_mask<Torus, params>(block_lwe_array_out, accumulator,
+                                     glwe_dimension);
+  sample_extract_body<Torus, params>(block_lwe_array_out, accumulator,
+                                     glwe_dimension);
 }
 
 template <typename Torus, class params>
 __host__ void host_bootstrap_amortized(
     void *v_stream, uint32_t gpu_index, Torus *lwe_array_out, Torus *lut_vector,
     uint32_t *lut_vector_indexes, Torus *lwe_array_in,
-    double2 *bootstrapping_key, uint32_t input_lwe_dimension,
+    double2 *bootstrapping_key, uint32_t glwe_dimension, uint32_t lwe_dimension,
     uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t num_lut_vectors,
     uint32_t lwe_idx, uint32_t max_shared_memory) {
 
   cudaSetDevice(gpu_index);
-  int SM_FULL = sizeof(Torus) * polynomial_size + // accumulator mask
-                sizeof(Torus) * polynomial_size + // accumulator body
-                sizeof(Torus) * polynomial_size + // accumulator mask rotated
-                sizeof(Torus) * polynomial_size + // accumulator body rotated
-                sizeof(double2) * polynomial_size / 2 + // accumulator fft mask
-                sizeof(double2) * polynomial_size / 2 + // accumulator fft body
-                sizeof(double2) * polynomial_size / 2;  // calculate buffer fft
+  int SM_FULL =
+      sizeof(Torus) * polynomial_size * (glwe_dimension + 1) + // accumulator
+      sizeof(Torus) * polynomial_size *
+          (glwe_dimension + 1) + // accumulator rotated
+      sizeof(double2) * polynomial_size / 2 *
+          (glwe_dimension + 1) + // accumulator fft
+      sizeof(double2) * polynomial_size / 2 *
+          (glwe_dimension + 1); // calculate buffer fft
 
-  int SM_PART = sizeof(double2) * polynomial_size / 2; // calculate buffer fft
+  int SM_PART = sizeof(double2) * polynomial_size / 2 *
+                (glwe_dimension + 1); // calculate buffer fft
 
   int DM_PART = SM_FULL - SM_PART;
 
@@ -304,8 +261,8 @@ __host__ void host_bootstrap_amortized(
                                       stream, gpu_index);
     device_bootstrap_amortized<Torus, params, NOSM><<<grid, thds, 0, *stream>>>(
         lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
-        bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
-        base_log, level_count, lwe_idx, DM_FULL);
+        bootstrapping_key, d_mem, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log, level_count, lwe_idx, DM_FULL);
   } else if (max_shared_memory < SM_FULL) {
     cudaFuncSetAttribute(device_bootstrap_amortized<Torus, params, PARTIALSM>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART);
@@ -316,8 +273,8 @@ __host__ void host_bootstrap_amortized(
     device_bootstrap_amortized<Torus, params, PARTIALSM>
         <<<grid, thds, SM_PART, *stream>>>(
             lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
-            bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
-            base_log, level_count, lwe_idx, DM_PART);
+            bootstrapping_key, d_mem, glwe_dimension, lwe_dimension,
+            polynomial_size, base_log, level_count, lwe_idx, DM_PART);
   } else {
     // For devices with compute capability 7.x a single thread block can
     // address the full capacity of shared memory. Shared memory on the
@@ -335,11 +292,10 @@ __host__ void host_bootstrap_amortized(
     device_bootstrap_amortized<Torus, params, FULLSM>
         <<<grid, thds, SM_FULL, *stream>>>(
             lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
-            bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
-            base_log, level_count, lwe_idx, 0);
+            bootstrapping_key, d_mem, glwe_dimension, lwe_dimension,
+            polynomial_size, base_log, level_count, lwe_idx, 0);
   }
   check_cuda_error(cudaGetLastError());
-
   cuda_drop_async(d_mem, stream, gpu_index);
 }
 

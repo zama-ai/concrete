@@ -101,8 +101,10 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
     pos += params::degree / params::opt;
   }
 
-  GadgetMatrix<Torus, params> gadget_mask(base_log, level_count, glwe_sub_mask);
-  GadgetMatrix<Torus, params> gadget_body(base_log, level_count, glwe_sub_body);
+  GadgetMatrix<Torus, params> gadget_mask(base_log, level_count, glwe_sub_mask,
+                                          1);
+  GadgetMatrix<Torus, params> gadget_body(base_log, level_count, glwe_sub_body,
+                                          1);
   // Subtract each glwe operand, decompose the resulting
   // polynomial coefficients to multiply each decomposed level
   // with the corresponding part of the LUT
@@ -420,12 +422,12 @@ __global__ void device_blind_rotation_and_sample_extraction(
     // Body
     divide_by_monomial_negacyclic_inplace<Torus, params::opt,
                                           params::degree / params::opt>(
-        accumulator_c1, accumulator_c0, (1 << monomial_degree), false);
+        accumulator_c1, accumulator_c0, (1 << monomial_degree), false, 1);
     // Mask
     divide_by_monomial_negacyclic_inplace<Torus, params::opt,
                                           params::degree / params::opt>(
         accumulator_c1 + polynomial_size, accumulator_c0 + polynomial_size,
-        (1 << monomial_degree), false);
+        (1 << monomial_degree), false, 1);
 
     monomial_degree += 1;
 
@@ -445,9 +447,8 @@ __global__ void device_blind_rotation_and_sample_extraction(
   // Now we can perform the sample extraction: for the body it's just
   // the resulting constant coefficient of the accumulator
   // For the mask it's more complicated
-  sample_extract_mask<Torus, params>(block_lwe_out, accumulator_c0);
-  sample_extract_body<Torus, params>(block_lwe_out,
-                                     accumulator_c0 + polynomial_size);
+  sample_extract_mask<Torus, params>(block_lwe_out, accumulator_c0, 1);
+  sample_extract_body<Torus, params>(block_lwe_out, accumulator_c0, 1);
 }
 
 template <typename Torus, typename STorus, class params>

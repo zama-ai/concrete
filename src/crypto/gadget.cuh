@@ -4,6 +4,15 @@
 #include "polynomial/polynomial.cuh"
 #include <cstdint>
 
+/**
+ * GadgetMatrix implements the iterator design pattern to decompose a set of
+ * num_poly consecutive polynomials with degree params::degree. A total of
+ * level_count levels is expected and each call to decompose_and_compress_next()
+ * writes to the result the next level. It is also possible to advance an
+ * arbitrary amount of levels by using decompose_and_compress_level().
+ *
+ * This class always decomposes the entire set of num_poly polynomials.
+ */
 #pragma once
 template <typename T, class params> class GadgetMatrix {
 private:
@@ -11,19 +20,22 @@ private:
   uint32_t base_log;
   uint32_t mask;
   uint32_t halfbg;
+  uint32_t num_poly;
   T offset;
   int current_level;
   T mask_mod_b;
   T *state;
 
 public:
-  __device__ GadgetMatrix(uint32_t base_log, uint32_t level_count, T *state)
-      : base_log(base_log), level_count(level_count), state(state) {
+  __device__ GadgetMatrix(uint32_t base_log, uint32_t level_count, T *state,
+                          uint32_t num_poly)
+      : base_log(base_log), level_count(level_count), num_poly(num_poly),
+        state(state) {
 
     mask_mod_b = (1ll << base_log) - 1ll;
     current_level = level_count;
     int tid = threadIdx.x;
-    for (int i = 0; i < params::opt; i++) {
+    for (int i = 0; i < num_poly * params::opt; i++) {
       state[tid] >>= (sizeof(T) * 8 - base_log * level_count);
       tid += params::degree / params::opt;
     }
@@ -31,26 +43,31 @@ public:
   }
 
   __device__ void decompose_and_compress_next(double2 *result) {
-    int tid = threadIdx.x;
     current_level -= 1;
-    for (int i = 0; i < params::opt / 2; i++) {
-      T res_re = state[tid] & mask_mod_b;
-      T res_im = state[tid + params::degree / 2] & mask_mod_b;
-      state[tid] >>= base_log;
-      state[tid + params::degree / 2] >>= base_log;
-      T carry_re = ((res_re - 1ll) | state[tid]) & res_re;
-      T carry_im = ((res_im - 1ll) | state[tid + params::degree / 2]) & res_im;
-      carry_re >>= (base_log - 1);
-      carry_im >>= (base_log - 1);
-      state[tid] += carry_re;
-      state[tid + params::degree / 2] += carry_im;
-      res_re -= carry_re << base_log;
-      res_im -= carry_im << base_log;
+    for (int j = 0; j < num_poly; j++) {
+      int tid = threadIdx.x;
+      auto state_slice = state + j * params::degree;
+      auto result_slice = result + j * params::degree / 2;
+      for (int i = 0; i < params::opt / 2; i++) {
+        T res_re = state_slice[tid] & mask_mod_b;
+        T res_im = state_slice[tid + params::degree / 2] & mask_mod_b;
+        state_slice[tid] >>= base_log;
+        state_slice[tid + params::degree / 2] >>= base_log;
+        T carry_re = ((res_re - 1ll) | state_slice[tid]) & res_re;
+        T carry_im =
+            ((res_im - 1ll) | state_slice[tid + params::degree / 2]) & res_im;
+        carry_re >>= (base_log - 1);
+        carry_im >>= (base_log - 1);
+        state_slice[tid] += carry_re;
+        state_slice[tid + params::degree / 2] += carry_im;
+        res_re -= carry_re << base_log;
+        res_im -= carry_im << base_log;
 
-      result[tid].x = (int32_t)res_re;
-      result[tid].y = (int32_t)res_im;
+        result_slice[tid].x = (int32_t)res_re;
+        result_slice[tid].y = (int32_t)res_im;
 
-      tid += params::degree / params::opt;
+        tid += params::degree / params::opt;
+      }
     }
     synchronize_threads_in_block();
   }

@@ -144,8 +144,8 @@ __host__ void host_circuit_bootstrap(
   host_bootstrap_amortized<Torus, params>(
       v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_vector,
       lut_vector_indexes, lwe_array_in_shifted_buffer, fourier_bsk,
-      lwe_dimension, polynomial_size, base_log_bsk, level_bsk, pbs_count,
-      level_cbs, 0, max_shared_memory);
+      glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk, level_bsk,
+      pbs_count, level_cbs, 0, max_shared_memory);
 
   dim3 copy_grid(pbs_count * (glwe_dimension + 1), 1, 1);
   dim3 copy_block(params::degree / params::opt, 1, 1);
