@@ -15,6 +15,7 @@
  packaging                 23.0        Apache Software License; BSD License
  pyparsing                 3.0.9       MIT License
  python-dateutil           2.8.2       Apache Software License; BSD License
+ scipy                     1.7.3       BSD License
  six                       1.16.0      MIT License
  torch                     1.13.1      BSD License
  typing-extensions         3.10.0.2    Python Software Foundation License

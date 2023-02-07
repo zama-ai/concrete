@@ -2,16 +2,20 @@
 Declaration of `Graph` class.
 """
 
+import math
 import re
 from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
+import scipy.special
 
 from ..dtypes import Float, Integer, UnsignedInteger
 from .node import Node
 from .operation import Operation
+
+P_ERROR_PER_ERROR_SIZE_CACHE: Dict[float, Dict[int, float]] = {}
 
 
 class Graph:
@@ -81,6 +85,8 @@ class Graph:
                 nodes and their values during computation
         """
 
+        # pylint: disable=no-member,too-many-nested-blocks
+
         if p_error is None:
             p_error = 0.0
 
@@ -106,16 +112,46 @@ class Graph:
                     if pred_node.operation != Operation.Input:
                         dtype = node.inputs[index].dtype
                         if isinstance(dtype, Integer):
-                            # this is not the real behavior of FHE
-                            # it's a simplified model, and it will be replaced at one point
+                            # see https://github.com/zama-ai/concrete-numpy/blob/main/docs/_static/p_error_simulation.pdf  # noqa: E501  # pylint: disable=line-too-long
+                            # to learn more about the distribution of error
+
+                            if p_error not in P_ERROR_PER_ERROR_SIZE_CACHE:
+                                std_score = math.sqrt(2) * scipy.special.erfcinv(p_error)
+                                p_error_per_error_size = {}
+
+                                error_size = 1
+                                last_p = 1 - p_error
+                                while last_p != 1.0 or error_size == 1:
+                                    new_std_score = (2 * error_size + 1) * std_score
+                                    new_p = scipy.special.erf(new_std_score / math.sqrt(2))
+
+                                    p_error_per_error_size[error_size] = new_p - last_p
+
+                                    last_p = new_p
+                                    error_size += 1
+
+                                # ordering of `p_error_per_error_size` is relied on
+                                # during the introduction of the error below
+                                # thus we explicitly sort it to make sure it's ordered
+                                p_error_per_error_size = dict(
+                                    sorted(p_error_per_error_size.items())
+                                )
+
+                                P_ERROR_PER_ERROR_SIZE_CACHE[p_error] = p_error_per_error_size
+                            else:  # pragma: no cover
+                                p_error_per_error_size = P_ERROR_PER_ERROR_SIZE_CACHE[p_error]
 
                             error = np.random.rand(*pred_results[index].shape)
-                            error = np.where(error < p_error**3, 3, error)
-                            error = np.where(error < p_error**2, 2, error)
-                            error = np.where(error < p_error, 1, np.where(error > 1, error, 0))
+
+                            accumulated_p_error = 0.0
+                            for error_size, p_error_for_size in p_error_per_error_size.items():
+                                accumulated_p_error += p_error_for_size
+                                error = np.where(error < accumulated_p_error, error_size, error)
+
+                            error = np.where(error < 1, 0, error).astype(np.int64)
 
                             error_sign = np.random.rand(*pred_results[index].shape)
-                            error_sign = np.where(error < 0.5, 1, -1)
+                            error_sign = np.where(error_sign < 0.5, 1, -1).astype(np.int64)
 
                             new_results = pred_results[index] + (error * error_sign)
 
