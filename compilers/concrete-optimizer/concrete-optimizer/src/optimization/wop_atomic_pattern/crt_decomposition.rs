@@ -21,23 +21,27 @@ pub fn default_coprimes(precision: Precision) -> Result<Vec<u64>, String> {
     })
 }
 
-#[allow(clippy::cast_sign_loss)]
-fn bitwidth(v: u64) -> Precision {
+fn bitwidth(v: u64) -> f64 {
     assert!(v > 0);
-    (v as f64).log2().ceil() as Precision
+    (v as f64).log2()
 }
 
+pub fn fractional_precisions_from_coprimes(coprimes: &[u64]) -> Vec<f64> {
+    coprimes.iter().map(|&coprime| bitwidth(coprime)).collect()
+}
+
+#[allow(clippy::cast_sign_loss)]
 pub fn precisions_from_coprimes(coprimes: &[u64]) -> Vec<u64> {
     coprimes
         .iter()
-        .copied()
-        .map(|coprime| bitwidth(coprime) as u64)
+        .map(|&coprime| bitwidth(coprime).ceil() as u64)
         .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_coprimes() {
         for precision in 1..=16 {

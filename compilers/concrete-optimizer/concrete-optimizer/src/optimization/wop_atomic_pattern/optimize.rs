@@ -17,6 +17,7 @@ use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::pp_switch::PpSwitchComplexityNoise;
 use crate::optimization::decomposition::PersistDecompCaches;
 use crate::parameters::{BrDecompositionParameters, GlweParameters};
+use crate::utils::max::f64_max;
 use crate::utils::square;
 
 pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64) -> f64 {
@@ -193,16 +194,16 @@ fn update_state_with_best_decompositions(
     glwe_params: GlweParameters,
     internal_dim: u64,
     n_functions: u64,
-    partitionning: &[u64],
+    precisions: &[u64],
     pareto_cmux: &[CmuxComplexityNoise],
     pareto_keyswitch: &[KsComplexityNoise],
     pp_switch: &[PpSwitchComplexityNoise],
     pareto_cb: &CbPareto,
 ) {
     let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
-    let precisions_sum = partitionning.iter().copied().sum();
-    let max_precision = partitionning.iter().copied().max().unwrap();
-    let nb_blocks = partitionning.len() as u64;
+    let precisions_sum = precisions.iter().sum();
+    let max_precision = *precisions.iter().max().unwrap();
+    let nb_blocks = precisions.len() as u64;
 
     let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
 
@@ -412,21 +413,23 @@ fn optimize_raw(
     config: Config,
     search_space: &SearchSpace,
     n_functions: u64, // Many functions at the same time, stay at 1 for start
-    partitionning: &[u64],
+    coprimes: &[u64],
     persistent_caches: &PersistDecompCaches,
 ) -> OptimizationState {
+    let fractionnal_precisions = crt_decomposition::fractional_precisions_from_coprimes(coprimes);
+    let precisions = crt_decomposition::precisions_from_coprimes(coprimes);
     assert!(0.0 < config.maximum_acceptable_error_probability);
     assert!(config.maximum_acceptable_error_probability < 1.0);
-    assert!(!partitionning.is_empty());
+    assert!(!precisions.is_empty());
 
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
 
     // Circuit BS bound
     // 1 bit of message only here =)
     // Bound for first bit extract in BitExtract (dominate others)
-    let max_block_precision = *partitionning.iter().max().unwrap();
+    let max_block_fractional_precision = f64_max(&fractionnal_precisions, 0.0);
     let safe_variance_bound = safe_variance_bound_product_1padbit(
-        max_block_precision,
+        max_block_fractional_precision,
         ciphertext_modulus_log,
         config.maximum_acceptable_error_probability,
     );
@@ -474,7 +477,7 @@ fn optimize_raw(
                     glwe_params,
                     internal_dim,
                     n_functions,
-                    partitionning,
+                    &precisions,
                     pareto_cmux,
                     pareto_keyswitch,
                     pareto_pp_switch,
@@ -500,14 +503,13 @@ pub fn optimize_one(
             best_solution: None,
         }
     };
-    let partitionning = crt_decomposition::precisions_from_coprimes(&coprimes);
     let n_functions = 1;
     let mut state = optimize_raw(
         log_norm,
         config,
         search_space,
         n_functions,
-        &partitionning,
+        &coprimes,
         caches,
     );
     state.best_solution = state.best_solution.map(|mut sol| -> Solution {

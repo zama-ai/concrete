@@ -51,12 +51,12 @@ pub fn safe_variance_bound_2padbits(
 }
 
 pub fn safe_variance_bound_product_1padbit(
-    precision: u64,
+    precision: f64,
     ciphertext_modulus_log: u32,
     maximum_acceptable_error_probability: f64,
 ) -> f64 {
-    let noise_bits = ciphertext_modulus_log as u64 - precision - 2;
-    let fatal_noise_limit = 2_f64.powi(noise_bits as i32);
+    let noise_bits = ciphertext_modulus_log as f64 - precision - 2.;
+    let fatal_noise_limit = 2_f64.powf(noise_bits);
     safe_variance_bound_from_p_error(
         fatal_noise_limit,
         ciphertext_modulus_log,
