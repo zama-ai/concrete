@@ -8,9 +8,7 @@
 #include "crypto/torus.cuh"
 #include "device.h"
 #include "fft/bnsmfft.cuh"
-#include "fft/smfft.cuh"
 #include "fft/twiddles.cuh"
-#include "helper_cuda.h"
 #include "polynomial/functions.cuh"
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
@@ -181,12 +179,12 @@ template <typename Torus, class params>
 __host__ void add_padding_to_lut_async(Torus *lut_out, Torus *lut_in,
                                        uint32_t glwe_dimension,
                                        uint32_t num_lut, cudaStream_t *stream) {
-  checkCudaErrors(cudaMemsetAsync(lut_out, 0,
-                                  num_lut * (glwe_dimension + 1) *
-                                      params::degree * sizeof(Torus),
-                                  *stream));
+  check_cuda_error(cudaMemsetAsync(lut_out, 0,
+                                   num_lut * (glwe_dimension + 1) *
+                                       params::degree * sizeof(Torus),
+                                   *stream));
   for (int i = 0; i < num_lut; i++)
-    checkCudaErrors(cudaMemcpyAsync(
+    check_cuda_error(cudaMemcpyAsync(
         lut_out + (2 * i + 1) * params::degree, lut_in + i * params::degree,
         params::degree * sizeof(Torus), cudaMemcpyDeviceToDevice, *stream));
 }
@@ -304,10 +302,10 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
     d_mem = (char *)cuda_malloc_async(
         memory_needed_per_block * (1 << (r - 1)) * tau, stream, gpu_index);
   } else {
-    checkCudaErrors(cudaFuncSetAttribute(
+    check_cuda_error(cudaFuncSetAttribute(
         device_batch_cmux<Torus, STorus, params, FULLSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, memory_needed_per_block));
-    checkCudaErrors(
+    check_cuda_error(
         cudaFuncSetCacheConfig(device_batch_cmux<Torus, STorus, params, FULLSM>,
                                cudaFuncCachePreferShared));
   }
@@ -349,11 +347,11 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
               polynomial_size, base_log, level_count,
               layer_idx, // r
               num_lut);
-    checkCudaErrors(cudaGetLastError());
+    check_cuda_error(cudaGetLastError());
   }
 
   for (int i = 0; i < tau; i++)
-    checkCudaErrors(cudaMemcpyAsync(
+    check_cuda_error(cudaMemcpyAsync(
         glwe_array_out + i * glwe_size, output + i * num_lut * glwe_size,
         glwe_size * sizeof(Torus), cudaMemcpyDeviceToDevice, *stream));
 
@@ -480,11 +478,11 @@ __host__ void host_blind_rotate_and_sample_extraction(
     d_mem = (char *)cuda_malloc_async(memory_needed_per_block * tau, stream,
                                       gpu_index);
   else {
-    checkCudaErrors(cudaFuncSetAttribute(
+    check_cuda_error(cudaFuncSetAttribute(
         device_blind_rotation_and_sample_extraction<Torus, STorus, params,
                                                     FULLSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, memory_needed_per_block));
-    checkCudaErrors(cudaFuncSetCacheConfig(
+    check_cuda_error(cudaFuncSetCacheConfig(
         device_blind_rotation_and_sample_extraction<Torus, STorus, params,
                                                     FULLSM>,
         cudaFuncCachePreferShared));
@@ -499,7 +497,7 @@ __host__ void host_blind_rotate_and_sample_extraction(
   batch_fft_ggsw_vector<Torus, STorus, params>(
       stream, d_ggsw_fft_in, ggsw_in, mbr_size, glwe_dimension, polynomial_size,
       l_gadget, gpu_index, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   //
   dim3 thds(polynomial_size / params::opt, 1, 1);
@@ -519,7 +517,7 @@ __host__ void host_blind_rotate_and_sample_extraction(
             glwe_dimension, // k
             polynomial_size, base_log, l_gadget, memory_needed_per_block,
             d_mem);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   //
   cuda_drop_async(d_ggsw_fft_in, stream, gpu_index);

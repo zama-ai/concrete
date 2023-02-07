@@ -3,7 +3,6 @@
 
 #include "bootstrap.h"
 #include "device.h"
-#include "helper_cuda.h"
 #include "keyswitch.h"
 #include "linear_algebra.h"
 
@@ -48,7 +47,7 @@ extern "C" void cuda_boolean_and_32(
   cuda_memcpy_async_to_gpu(false_plaintext_array, h_false_plaintext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_2 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -76,7 +75,7 @@ extern "C" void cuda_boolean_and_32(
                            (glwe_dimension + 1) * polynomial_size *
                                sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *h_pbs_lut_indexes =
       (uint32_t *)malloc(input_lwe_ciphertext_count * sizeof(uint32_t));
   for (uint index = 0; index < input_lwe_ciphertext_count; index++) {
@@ -87,19 +86,19 @@ extern "C" void cuda_boolean_and_32(
   cuda_memcpy_async_to_gpu(pbs_lut_indexes, h_pbs_lut_indexes,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *lwe_pbs_buffer = (uint32_t *)cuda_malloc_async(
       (glwe_dimension * polynomial_size + 1) * input_lwe_ciphertext_count *
           sizeof(uint32_t),
       stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_2, bootstrapping_key, input_lwe_dimension, glwe_dimension,
       polynomial_size, pbs_base_log, pbs_level_count,
       input_lwe_ciphertext_count, 1, 0, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_drop_async(lwe_buffer_2, stream, gpu_index);
   cuda_drop_async(pbs_lut, stream, gpu_index);
@@ -151,7 +150,7 @@ extern "C" void cuda_boolean_nand_32(
   cuda_memcpy_async_to_gpu(true_plaintext_array, h_true_plaintext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_3 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -179,7 +178,7 @@ extern "C" void cuda_boolean_nand_32(
                            (glwe_dimension + 1) * polynomial_size *
                                sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *h_pbs_lut_indexes =
       (uint32_t *)malloc(input_lwe_ciphertext_count * sizeof(uint32_t));
   for (uint index = 0; index < input_lwe_ciphertext_count; index++) {
@@ -190,19 +189,19 @@ extern "C" void cuda_boolean_nand_32(
   cuda_memcpy_async_to_gpu(pbs_lut_indexes, h_pbs_lut_indexes,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *lwe_pbs_buffer = (uint32_t *)cuda_malloc_async(
       (glwe_dimension * polynomial_size + 1) * input_lwe_ciphertext_count *
           sizeof(uint32_t),
       stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_3, bootstrapping_key, input_lwe_dimension, glwe_dimension,
       polynomial_size, pbs_base_log, pbs_level_count,
       input_lwe_ciphertext_count, 1, 0, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_drop_async(lwe_buffer_3, stream, gpu_index);
   cuda_drop_async(pbs_lut, stream, gpu_index);
@@ -254,7 +253,7 @@ extern "C" void cuda_boolean_nor_32(
   cuda_memcpy_async_to_gpu(false_plaintext_array, h_false_plaintext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_3 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -282,7 +281,7 @@ extern "C" void cuda_boolean_nor_32(
                            (glwe_dimension + 1) * polynomial_size *
                                sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *h_pbs_lut_indexes =
       (uint32_t *)malloc(input_lwe_ciphertext_count * sizeof(uint32_t));
   for (uint index = 0; index < input_lwe_ciphertext_count; index++) {
@@ -293,19 +292,19 @@ extern "C" void cuda_boolean_nor_32(
   cuda_memcpy_async_to_gpu(pbs_lut_indexes, h_pbs_lut_indexes,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *lwe_pbs_buffer = (uint32_t *)cuda_malloc_async(
       (glwe_dimension * polynomial_size + 1) * input_lwe_ciphertext_count *
           sizeof(uint32_t),
       stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_3, bootstrapping_key, input_lwe_dimension, glwe_dimension,
       polynomial_size, pbs_base_log, pbs_level_count,
       input_lwe_ciphertext_count, 1, 0, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_drop_async(lwe_buffer_3, stream, gpu_index);
   cuda_drop_async(pbs_lut, stream, gpu_index);
@@ -349,7 +348,7 @@ extern "C" void cuda_boolean_or_32(
   cuda_memcpy_async_to_gpu(true_plaintext_array, h_true_plaintext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_2 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -377,7 +376,7 @@ extern "C" void cuda_boolean_or_32(
                            (glwe_dimension + 1) * polynomial_size *
                                sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *h_pbs_lut_indexes =
       (uint32_t *)malloc(input_lwe_ciphertext_count * sizeof(uint32_t));
   for (uint index = 0; index < input_lwe_ciphertext_count; index++) {
@@ -388,19 +387,19 @@ extern "C" void cuda_boolean_or_32(
   cuda_memcpy_async_to_gpu(pbs_lut_indexes, h_pbs_lut_indexes,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *lwe_pbs_buffer = (uint32_t *)cuda_malloc_async(
       (glwe_dimension * polynomial_size + 1) * input_lwe_ciphertext_count *
           sizeof(uint32_t),
       stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_2, bootstrapping_key, input_lwe_dimension, glwe_dimension,
       polynomial_size, pbs_base_log, pbs_level_count,
       input_lwe_ciphertext_count, 1, 0, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_drop_async(lwe_buffer_2, stream, gpu_index);
   cuda_drop_async(pbs_lut, stream, gpu_index);
@@ -444,7 +443,7 @@ extern "C" void cuda_boolean_xor_32(
   cuda_memcpy_async_to_gpu(true_plaintext_array, h_true_plaintext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_2 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -468,7 +467,7 @@ extern "C" void cuda_boolean_xor_32(
   cuda_memcpy_async_to_gpu(cleartext_array, h_cleartext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_3 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -493,7 +492,7 @@ extern "C" void cuda_boolean_xor_32(
                            (glwe_dimension + 1) * polynomial_size *
                                sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *h_pbs_lut_indexes =
       (uint32_t *)malloc(input_lwe_ciphertext_count * sizeof(uint32_t));
   for (uint index = 0; index < input_lwe_ciphertext_count; index++) {
@@ -504,19 +503,19 @@ extern "C" void cuda_boolean_xor_32(
   cuda_memcpy_async_to_gpu(pbs_lut_indexes, h_pbs_lut_indexes,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *lwe_pbs_buffer = (uint32_t *)cuda_malloc_async(
       (glwe_dimension * polynomial_size + 1) * input_lwe_ciphertext_count *
           sizeof(uint32_t),
       stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_3, bootstrapping_key, input_lwe_dimension, glwe_dimension,
       polynomial_size, pbs_base_log, pbs_level_count,
       input_lwe_ciphertext_count, 1, 0, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_drop_async(lwe_buffer_3, stream, gpu_index);
   cuda_drop_async(pbs_lut, stream, gpu_index);
@@ -560,7 +559,7 @@ extern "C" void cuda_boolean_xnor_32(
   cuda_memcpy_async_to_gpu(true_plaintext_array, h_true_plaintext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_2 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -591,7 +590,7 @@ extern "C" void cuda_boolean_xnor_32(
   cuda_memcpy_async_to_gpu(cleartext_array, h_cleartext_array,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t *lwe_buffer_4 = (uint32_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint32_t),
@@ -616,7 +615,7 @@ extern "C" void cuda_boolean_xnor_32(
                            (glwe_dimension + 1) * polynomial_size *
                                sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *h_pbs_lut_indexes =
       (uint32_t *)malloc(input_lwe_ciphertext_count * sizeof(uint32_t));
   for (uint index = 0; index < input_lwe_ciphertext_count; index++) {
@@ -627,19 +626,19 @@ extern "C" void cuda_boolean_xnor_32(
   cuda_memcpy_async_to_gpu(pbs_lut_indexes, h_pbs_lut_indexes,
                            input_lwe_ciphertext_count * sizeof(uint32_t),
                            stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   uint32_t *lwe_pbs_buffer = (uint32_t *)cuda_malloc_async(
       (glwe_dimension * polynomial_size + 1) * input_lwe_ciphertext_count *
           sizeof(uint32_t),
       stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_4, bootstrapping_key, input_lwe_dimension, glwe_dimension,
       polynomial_size, pbs_base_log, pbs_level_count,
       input_lwe_ciphertext_count, 1, 0, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_drop_async(lwe_buffer_4, stream, gpu_index);
   cuda_drop_async(pbs_lut, stream, gpu_index);

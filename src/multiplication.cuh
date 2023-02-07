@@ -4,10 +4,9 @@
 #ifdef __CDT_PARSER__
 #undef __CUDA_RUNTIME_H__
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
 #endif
 
-#include "../include/helper_cuda.h"
+#include "device.h"
 #include "linear_algebra.h"
 #include "utils/kernel_dimensions.cuh"
 
@@ -46,7 +45,7 @@ host_cleartext_multiplication(void *v_stream, uint32_t gpu_index, T *output,
   auto stream = static_cast<cudaStream_t *>(v_stream);
   cleartext_multiplication<<<grid, thds, 0, *stream>>>(
       output, lwe_input, cleartext_input, input_lwe_dimension, num_entries);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 }
 
 #endif // CUDA_MULT_H

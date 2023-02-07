@@ -5,7 +5,6 @@
 #include "bootstrap.h"
 #include "bootstrap_amortized.cuh"
 #include "device.h"
-#include "helper_cuda.h"
 #include "keyswitch.cuh"
 #include "polynomial/parameters.cuh"
 #include "utils/timer.cuh"

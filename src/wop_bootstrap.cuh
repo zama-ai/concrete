@@ -6,7 +6,7 @@
 #include "bit_extraction.cuh"
 #include "bootstrap.h"
 #include "circuit_bootstrap.cuh"
-#include "helper_cuda.h"
+#include "device.h"
 #include "utils/kernel_dimensions.cuh"
 #include "utils/timer.cuh"
 #include "vertical_packing.cuh"
@@ -77,7 +77,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
   cuda_memcpy_async_to_gpu(
       lut_vector_indexes, h_lut_vector_indexes,
       number_of_inputs * level_count_cbs * sizeof(uint32_t), stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   uint32_t bits = sizeof(Torus) * 8;
   uint32_t delta_log = (bits - 1);
@@ -89,7 +89,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       polynomial_size, glwe_dimension, lwe_dimension, level_count_bsk,
       base_log_bsk, level_count_pksk, base_log_pksk, level_count_cbs,
       base_log_cbs, number_of_inputs, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   // Free memory
   cuda_drop_async(lwe_array_in_fp_ks_buffer, stream, gpu_index);
@@ -112,7 +112,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       v_stream, gpu_index, glwe_array_out, ggsw_out, lut_vector, glwe_dimension,
       polynomial_size, base_log_cbs, level_count_cbs, r, tau,
       max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   // Blind rotation + sample extraction
   // mbr = tau * p - r = log2(N)
@@ -151,7 +151,7 @@ __host__ void host_wop_pbs(
       (uint32_t *)cuda_malloc_async(sizeof(uint32_t), stream, gpu_index);
   cuda_memcpy_async_to_gpu(lut_vector_indexes, h_lut_vector_indexes,
                            sizeof(uint32_t), stream, gpu_index);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   Torus *lut_pbs = (Torus *)cuda_malloc_async(
       (2 * polynomial_size) * sizeof(Torus), stream, gpu_index);
   Torus *lwe_array_in_buffer = (Torus *)cuda_malloc_async(
@@ -176,7 +176,7 @@ __host__ void host_wop_pbs(
       number_of_bits_to_extract, delta_log, polynomial_size, lwe_dimension,
       base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
       number_of_inputs, max_shared_memory);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   cuda_drop_async(lut_pbs, stream, gpu_index);
   cuda_drop_async(lut_vector_indexes, stream, gpu_index);
   cuda_drop_async(lwe_array_in_buffer, stream, gpu_index);
@@ -192,7 +192,7 @@ __host__ void host_wop_pbs(
       number_of_inputs * number_of_bits_to_extract, number_of_inputs,
       max_shared_memory);
 
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   cuda_drop_async(lwe_array_out_bit_extract, stream, gpu_index);
 }
 #endif // WOP_PBS_H

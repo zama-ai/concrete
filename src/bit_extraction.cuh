@@ -3,7 +3,6 @@
 
 #include "cooperative_groups.h"
 
-#include "../include/helper_cuda.h"
 #include "bootstrap.h"
 #include "bootstrap_low_latency.cuh"
 #include "device.h"
@@ -156,7 +155,7 @@ __host__ void host_extract_bits(
   copy_and_shift_lwe<Torus, params><<<blocks, threads, 0, *stream>>>(
       lwe_array_in_buffer, lwe_array_in_shifted_buffer, lwe_array_in,
       1ll << (ciphertext_n_bits - delta_log - 1));
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   for (int bit_idx = 0; bit_idx < number_of_bits; bit_idx++) {
     cuda_keyswitch_lwe_ciphertext_vector(
@@ -167,7 +166,7 @@ __host__ void host_extract_bits(
     copy_small_lwe<<<1, 256, 0, *stream>>>(
         list_lwe_array_out, lwe_array_out_ks_buffer, lwe_dimension_out + 1,
         number_of_bits, number_of_bits - bit_idx - 1);
-    checkCudaErrors(cudaGetLastError());
+    check_cuda_error(cudaGetLastError());
 
     if (bit_idx == number_of_bits - 1) {
       break;
@@ -177,7 +176,7 @@ __host__ void host_extract_bits(
     add_to_body<Torus><<<1, 1, 0, *stream>>>(lwe_array_out_ks_buffer,
                                              lwe_dimension_out,
                                              1ll << (ciphertext_n_bits - 2));
-    checkCudaErrors(cudaGetLastError());
+    check_cuda_error(cudaGetLastError());
 
     // Fill lut for the current bit (equivalent to trivial encryption as mask is
     // 0s) The LUT is filled with -alpha in each coefficient where alpha =
@@ -185,7 +184,7 @@ __host__ void host_extract_bits(
     fill_lut_body_for_current_bit<Torus, params>
         <<<blocks, threads, 0, *stream>>>(
             lut_pbs, 0ll - 1ll << (delta_log - 1 + bit_idx));
-    checkCudaErrors(cudaGetLastError());
+    check_cuda_error(cudaGetLastError());
 
     host_bootstrap_low_latency<Torus, params>(
         v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_pbs,
@@ -199,7 +198,7 @@ __host__ void host_extract_bits(
         lwe_array_in_shifted_buffer, lwe_array_in_buffer,
         lwe_array_out_pbs_buffer, 1ll << (delta_log - 1 + bit_idx),
         1ll << (ciphertext_n_bits - delta_log - bit_idx - 2));
-    checkCudaErrors(cudaGetLastError());
+    check_cuda_error(cudaGetLastError());
   }
 }
 

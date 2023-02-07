@@ -1,7 +1,6 @@
 #ifdef __CDT_PARSER__
 #undef __CUDA_RUNTIME_H__
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
 #endif
 
 #ifndef CNCRT_AMORTIZED_PBS_H
@@ -15,9 +14,7 @@
 #include "crypto/torus.cuh"
 #include "device.h"
 #include "fft/bnsmfft.cuh"
-#include "fft/smfft.cuh"
 #include "fft/twiddles.cuh"
-#include "helper_cuda.h"
 #include "polynomial/functions.cuh"
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
@@ -327,10 +324,10 @@ __host__ void host_bootstrap_amortized(
     // device then has to be allocated dynamically.
     // For lower compute capabilities, this call
     // just does nothing and the amount of shared memory used is 48 KB
-    checkCudaErrors(cudaFuncSetAttribute(
+    check_cuda_error(cudaFuncSetAttribute(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_FULL));
-    checkCudaErrors(cudaFuncSetCacheConfig(
+    check_cuda_error(cudaFuncSetCacheConfig(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncCachePreferShared));
     d_mem = (char *)cuda_malloc_async(0, stream, gpu_index);
@@ -341,7 +338,7 @@ __host__ void host_bootstrap_amortized(
             bootstrapping_key, d_mem, input_lwe_dimension, polynomial_size,
             base_log, level_count, lwe_idx, 0);
   }
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 
   cuda_drop_async(d_mem, stream, gpu_index);
 }

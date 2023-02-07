@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
 
 /// Unsafe function to create a CUDA stream, must check first that GPU exists
 cudaStream_t *cuda_create_stream(uint32_t gpu_index) {
@@ -25,7 +24,8 @@ int cuda_destroy_stream(cudaStream_t *stream, uint32_t gpu_index) {
 void *cuda_malloc(uint64_t size, uint32_t gpu_index) {
   cudaSetDevice(gpu_index);
   void *ptr;
-  checkCudaErrors(cudaMalloc((void **)&ptr, size));
+  cudaMalloc((void **)&ptr, size);
+  check_cuda_error(cudaGetLastError());
 
   return ptr;
 }
@@ -37,13 +37,14 @@ void *cuda_malloc_async(uint64_t size, cudaStream_t *stream,
   void *ptr;
 
   int support_async_alloc;
-  checkCudaErrors(cudaDeviceGetAttribute(
+  check_cuda_error(cudaDeviceGetAttribute(
       &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
 
-  if (support_async_alloc)
-    checkCudaErrors(cudaMallocAsync((void **)&ptr, size, *stream));
-  else
-    checkCudaErrors(cudaMalloc((void **)&ptr, size));
+  if (support_async_alloc) {
+    check_cuda_error(cudaMallocAsync((void **)&ptr, size, *stream));
+  } else {
+    check_cuda_error(cudaMalloc((void **)&ptr, size));
+  }
   return ptr;
 }
 
@@ -91,7 +92,7 @@ int cuda_memcpy_async_to_gpu(void *dest, void *src, uint64_t size,
   }
 
   cudaSetDevice(gpu_index);
-  checkCudaErrors(
+  check_cuda_error(
       cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, *stream));
   return 0;
 }
@@ -133,7 +134,7 @@ int cuda_memcpy_async_to_cpu(void *dest, const void *src, uint64_t size,
   }
 
   cudaSetDevice(gpu_index);
-  checkCudaErrors(
+  check_cuda_error(
       cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToHost, *stream));
   return 0;
 }
@@ -152,7 +153,7 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
     return -2;
   }
   cudaSetDevice(gpu_index);
-  checkCudaErrors(cudaFree(ptr));
+  check_cuda_error(cudaFree(ptr));
   return 0;
 }
 
@@ -160,13 +161,14 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
 int cuda_drop_async(void *ptr, cudaStream_t *stream, uint32_t gpu_index) {
 
   int support_async_alloc;
-  checkCudaErrors(cudaDeviceGetAttribute(
+  check_cuda_error(cudaDeviceGetAttribute(
       &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
 
-  if (support_async_alloc)
-    checkCudaErrors(cudaFreeAsync(ptr, *stream));
-  else
-    checkCudaErrors(cudaFree(ptr));
+  if (support_async_alloc) {
+    check_cuda_error(cudaFreeAsync(ptr, *stream));
+  } else {
+    check_cuda_error(cudaFree(ptr));
+  }
   return 0;
 }
 

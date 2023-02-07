@@ -1,5 +1,5 @@
-#ifndef GPU_BOOTSTRAP_FFT_1024_CUH
-#define GPU_BOOTSTRAP_FFT_1024_CUH
+#ifndef GPU_BOOTSTRAP_FFT_CUH
+#define GPU_BOOTSTRAP_FFT_CUH
 
 #include "complex/operations.cuh"
 #include "polynomial/functions.cuh"
@@ -21,9 +21,6 @@
  *     w_j,k = exp(-i pi j/2^k)
  *     is replaced with:
  *     \zeta_j,k = exp(-i pi (2j-1)/2^k)
- *   - this technique also implies a correction of the
- *     complex obtained after the FFT, which is done in the
- * forward_negacyclic_fft_inplace function of bootstrap.cuh
  */
 template <class params> __device__ void NSMFFT_direct(double2 *A) {
 
@@ -118,7 +115,7 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
 
   // none of the twiddles have equal real and imag part, so
   // complete complex multiplication has to be done
-  // here we have more than one twiddles
+  // here we have more than one twiddle
   while (m > 1) {
     tid = threadIdx.x;
     m >>= 1;
@@ -145,7 +142,7 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
 /*
  * global batch fft
  * does fft in half size
- * unrolling halfsize fft result in half size + 1 eleemnts
+ * unrolling half size fft result in half size + 1 elements
  * this function must be called with actual degree
  * function takes as input already compressed input
  */
@@ -174,4 +171,4 @@ __global__ void batch_NSMFFT(double2 *d_input, double2 *d_output,
   }
 }
 
-#endif // GPU_BOOTSTRAP_FFT_1024_CUH
+#endif // GPU_BOOTSTRAP_FFT_CUH

@@ -1,6 +1,6 @@
 #ifndef GPU_POLYNOMIAL_FUNCTIONS
 #define GPU_POLYNOMIAL_FUNCTIONS
-#include "helper_cuda.h"
+#include "device.h"
 #include "utils/timer.cuh"
 
 /*

@@ -3,9 +3,8 @@
 
 #include "complex/operations.cuh"
 #include "crypto/torus.cuh"
+#include "device.h"
 #include "fft/bnsmfft.cuh"
-#include "fft/smfft.cuh"
-#include "helper_cuda.h"
 #include "parameters.cuh"
 #include "utils/timer.cuh"
 #include <cassert>

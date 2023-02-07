@@ -4,10 +4,9 @@
 #ifdef __CDT_PARSER__
 #undef __CUDA_RUNTIME_H__
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
 #endif
 
-#include "../include/helper_cuda.h"
+#include "device.h"
 #include "linear_algebra.h"
 #include "utils/kernel_dimensions.cuh"
 #include <stdio.h>
@@ -58,7 +57,7 @@ __host__ void host_addition(void *v_stream, uint32_t gpu_index, T *output,
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
   addition<<<grid, thds, 0, *stream>>>(output, input_1, input_2, num_entries);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 }
 
 template <typename T>
@@ -77,12 +76,12 @@ __host__ void host_addition_plaintext(void *v_stream, uint32_t gpu_index,
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  checkCudaErrors(cudaMemcpyAsync(output, lwe_input,
-                                  (input_lwe_dimension + 1) *
-                                      input_lwe_ciphertext_count * sizeof(T),
-                                  cudaMemcpyDeviceToDevice, *stream));
+  check_cuda_error(cudaMemcpyAsync(output, lwe_input,
+                                   (input_lwe_dimension + 1) *
+                                       input_lwe_ciphertext_count * sizeof(T),
+                                   cudaMemcpyDeviceToDevice, *stream));
   plaintext_addition<<<grid, thds, 0, *stream>>>(
       output, lwe_input, plaintext_input, input_lwe_dimension, num_entries);
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
 }
 #endif // CUDA_ADD_H

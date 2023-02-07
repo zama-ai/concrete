@@ -1,7 +1,6 @@
 #ifdef __CDT_PARSER__
 #undef __CUDA_RUNTIME_H__
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
 #endif
 
 #ifndef LOWLAT_PBS_H
@@ -15,9 +14,7 @@
 #include "crypto/torus.cuh"
 #include "device.h"
 #include "fft/bnsmfft.cuh"
-#include "fft/smfft.cuh"
 #include "fft/twiddles.cuh"
-#include "helper_cuda.h"
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
 #include "polynomial/polynomial_math.cuh"
@@ -299,12 +296,12 @@ __host__ void host_bootstrap_low_latency(
 
   if (max_shared_memory < SM_PART) {
     kernel_args[11] = &DM_FULL;
-    checkCudaErrors(cudaGetLastError());
+    check_cuda_error(cudaGetLastError());
     d_mem = (char *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count *
                                           level_count * 2,
                                       stream, gpu_index);
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaLaunchCooperativeKernel(
+    check_cuda_error(cudaGetLastError());
+    check_cuda_error(cudaLaunchCooperativeKernel(
         (void *)device_bootstrap_low_latency<Torus, params, NOSM>, grid, thds,
         (void **)kernel_args, 0, *stream));
   } else if (max_shared_memory < SM_FULL) {
@@ -312,14 +309,14 @@ __host__ void host_bootstrap_low_latency(
     d_mem = (char *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count *
                                           level_count * 2,
                                       stream, gpu_index);
-    checkCudaErrors(cudaFuncSetAttribute(
+    check_cuda_error(cudaFuncSetAttribute(
         device_bootstrap_low_latency<Torus, params, PARTIALSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART));
     cudaFuncSetCacheConfig(
         device_bootstrap_low_latency<Torus, params, PARTIALSM>,
         cudaFuncCachePreferShared);
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaLaunchCooperativeKernel(
+    check_cuda_error(cudaGetLastError());
+    check_cuda_error(cudaLaunchCooperativeKernel(
         (void *)device_bootstrap_low_latency<Torus, params, PARTIALSM>, grid,
         thds, (void **)kernel_args, SM_PART, *stream));
 
@@ -327,17 +324,17 @@ __host__ void host_bootstrap_low_latency(
     int DM_NONE = 0;
     kernel_args[11] = &DM_NONE;
     d_mem = (char *)cuda_malloc_async(0, stream, gpu_index);
-    checkCudaErrors(cudaFuncSetAttribute(
+    check_cuda_error(cudaFuncSetAttribute(
         device_bootstrap_low_latency<Torus, params, FULLSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_FULL));
     cudaFuncSetCacheConfig(device_bootstrap_low_latency<Torus, params, FULLSM>,
                            cudaFuncCachePreferShared);
-    checkCudaErrors(cudaLaunchCooperativeKernel(
+    check_cuda_error(cudaLaunchCooperativeKernel(
         (void *)device_bootstrap_low_latency<Torus, params, FULLSM>, grid, thds,
         (void **)kernel_args, SM_FULL, *stream));
   }
 
-  checkCudaErrors(cudaGetLastError());
+  check_cuda_error(cudaGetLastError());
   // Synchronize the streams before copying the result to lwe_array_out at the
   // right place
   cuda_drop_async(mask_buffer_fft, stream, gpu_index);
