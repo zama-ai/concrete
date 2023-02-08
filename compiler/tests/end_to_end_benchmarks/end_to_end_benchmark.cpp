@@ -122,6 +122,7 @@ void registerEndToEndBenchmark(std::string suiteName,
       assert(std::isnan(options.optimizerConfig.global_p_error));
       options.optimizerConfig.p_error = description.p_error.value();
     }
+    options.optimizerConfig.encoding = description.encoding;
     mlir::concretelang::JITSupport support;
     auto benchName = [&](std::string name) {
       std::ostringstream s;
