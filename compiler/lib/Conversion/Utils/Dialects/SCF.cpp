@@ -20,6 +20,8 @@ TypeConvertingReinstantiationPattern<scf::ForOp, false>::matchAndRewrite(
       adaptor.getStep(), adaptor.getInitArgs(),
       [&](OpBuilder &builder, Location loc, Value iv, ValueRange args) {});
 
+  newForOp->setAttrs(adaptor.getAttributes());
+
   // Move operations from old for op to new one
   auto &newOperations = newForOp.getBody()->getOperations();
   mlir::Block *oldBody = oldOp.getBody();
