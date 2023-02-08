@@ -402,6 +402,40 @@ Subgraphs:
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y: x << y,
+            {"x": "encrypted", "y": "encrypted"},
+            [(-1, 1), (-2, 3)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x                         # EncryptedScalar<int2>         ∈ [-2, -1]
+%1 = y                         # EncryptedScalar<uint2>        ∈ [1, 3]
+%2 = left_shift(%0, %1)        # EncryptedScalar<int5>         ∈ [-16, -2]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned bitwise operations are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x << y,
+            {"x": "encrypted", "y": "encrypted"},
+            [(1, 20), (2, 10)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x                         # EncryptedScalar<uint2>         ∈ [1, 2]
+%1 = y                         # EncryptedScalar<uint5>         ∈ [10, 20]
+%2 = left_shift(%0, %1)        # EncryptedScalar<uint21>        ∈ [2048, 1048576]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only up to 4-bit shifts are supported
+return %2
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_graph_converter_bad_convert(

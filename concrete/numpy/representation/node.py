@@ -363,6 +363,26 @@ class Node:
                 True if the node is converted to a table lookup, False otherwise
         """
 
+        if (
+            all(value.is_encrypted for value in self.inputs)
+            and self.operation == Operation.Generic
+            and self.properties["name"]
+            in [
+                "bitwise_and",
+                "bitwise_or",
+                "bitwise_xor",
+                "equal",
+                "greater",
+                "greater_equal",
+                "left_shift",
+                "less",
+                "less_equal",
+                "not_equal",
+                "right_shift",
+            ]
+        ):
+            return False
+
         return self.operation == Operation.Generic and self.properties["name"] not in [
             "add",
             "array",

@@ -96,6 +96,21 @@ class GraphConverter:
                 if not inputs[0].is_encrypted:
                     return "only assignment to encrypted tensors are supported"
 
+            elif name in ["bitwise_and", "bitwise_or", "bitwise_xor", "left_shift", "right_shift"]:
+                assert_that(len(inputs) == 2)
+                if all(value.is_encrypted for value in node.inputs):
+                    pred_nodes = graph.ordered_preds_of(node)
+                    if (
+                        name in ["left_shift", "right_shift"]
+                        and cast(Integer, pred_nodes[1].output.dtype).bit_width > 4
+                    ):
+                        return "only up to 4-bit shifts are supported"
+
+                    for pred_node in pred_nodes:
+                        assert isinstance(pred_node.output.dtype, Integer)
+                        if pred_node.output.dtype.is_signed:
+                            return "only unsigned bitwise operations are supported"
+
             elif name == "broadcast_to":
                 assert_that(len(inputs) == 1)
                 if not inputs[0].is_encrypted:
@@ -114,6 +129,9 @@ class GraphConverter:
                 assert_that(len(inputs) == 2)
                 if inputs[0].is_encrypted and inputs[1].is_encrypted:
                     return "only dot product between encrypted and clear is supported"
+
+            elif name in ["equal", "greater", "greater_equal", "less", "less_equal", "not_equal"]:
+                assert_that(len(inputs) == 2)
 
             elif name == "expand_dims":
                 assert_that(len(inputs) == 1)
@@ -251,6 +269,20 @@ class GraphConverter:
             current_node_bit_width = (
                 dtype.bit_width - 1 if node.output.is_clear else dtype.bit_width
             )
+            if (
+                all(value.is_encrypted for value in node.inputs)
+                and node.operation == Operation.Generic
+                and node.properties["name"]
+                in [
+                    "greater",
+                    "greater_equal",
+                    "less",
+                    "less_equal",
+                ]
+            ):
+                # implementation of these operators require at least 4 bits
+                current_node_bit_width = max(current_node_bit_width, 4)
+
             if max_bit_width < current_node_bit_width:
                 max_bit_width = current_node_bit_width
                 max_bit_width_node = node
@@ -286,7 +318,10 @@ class GraphConverter:
                 + graph.format(highlighted_nodes=offending_nodes)
             )
 
-        for node in graph.graph.nodes:
+        for node in nx.topological_sort(graph.graph):
+            assert isinstance(node.output.dtype, Integer)
+            node.properties["original_bit_width"] = node.output.dtype.bit_width
+
             for value in node.inputs + [node.output]:
                 dtype = value.dtype
                 assert_that(isinstance(dtype, Integer))
@@ -335,8 +370,13 @@ class GraphConverter:
                 variable_input_bit_width = variable_input_dtype.bit_width
                 offset_constant_dtype = SignedInteger(variable_input_bit_width + 1)
 
-                offset_constant = Node.constant(abs(variable_input_dtype.min()))
+                offset_constant_value = abs(variable_input_dtype.min())
+
+                offset_constant = Node.constant(offset_constant_value)
                 offset_constant.output.dtype = offset_constant_dtype
+
+                original_bit_width = Integer.that_can_represent(offset_constant_value).bit_width
+                offset_constant.properties["original_bit_width"] = original_bit_width
 
                 add_offset = Node.generic(
                     "add",
@@ -344,6 +384,9 @@ class GraphConverter:
                     variable_input_value,
                     np.add,
                 )
+
+                original_bit_width = variable_input_node.properties["original_bit_width"]
+                add_offset.properties["original_bit_width"] = original_bit_width
 
                 nx_graph.remove_edge(variable_input_node, node)
 
@@ -412,6 +455,10 @@ class GraphConverter:
                             kwargs={"newshape": required_value_shape},
                         )
 
+                    modified_pred.properties["original_bit_width"] = pred_to_modify.properties[
+                        "original_bit_width"
+                    ]
+
                     nx_graph.add_edge(pred_to_modify, modified_pred, input_idx=0)
 
                     nx_graph.remove_edge(pred_to_modify, node)
@@ -448,12 +495,18 @@ class GraphConverter:
                         lambda: np.zeros((), dtype=np.int64),
                     )
 
+                    original_bit_width = 1
+                    zero.properties["original_bit_width"] = original_bit_width
+
                     new_assigned_pred = Node.generic(
                         "add",
                         [assigned_pred.output, zero.output],
                         new_assigned_pred_value,
                         np.add,
                     )
+
+                    original_bit_width = assigned_pred.properties["original_bit_width"]
+                    new_assigned_pred.properties["original_bit_width"] = original_bit_width
 
                     nx_graph.remove_edge(preds[1], node)
 
@@ -473,7 +526,24 @@ class GraphConverter:
         """
 
         # pylint: disable=invalid-name
-        OPS_TO_TENSORIZE = ["add", "broadcast_to", "dot", "multiply", "subtract"]
+        OPS_TO_TENSORIZE = [
+            "add",
+            "bitwise_and",
+            "bitwise_or",
+            "bitwise_xor",
+            "broadcast_to",
+            "dot",
+            "equal",
+            "greater",
+            "greater_equal",
+            "left_shift",
+            "less",
+            "less_equal",
+            "multiply",
+            "not_equal",
+            "right_shift",
+            "subtract",
+        ]
         # pylint: enable=invalid-name
 
         tensorized_scalars: Dict[Node, Node] = {}
@@ -489,6 +559,11 @@ class GraphConverter:
                 else:
                     if not node.inputs[0].is_scalar:
                         continue
+
+                # for bitwise and comparison operators that can have constants
+                # we don't need broadcasting here
+                if node.converted_to_table_lookup:
+                    continue
 
                 pred_to_tensorize: Optional[Node] = None
                 pred_to_tensorize_index = 0
@@ -513,14 +588,24 @@ class GraphConverter:
                         tensorized_value,
                         lambda *args: np.array(args),
                     )
-                    nx_graph.add_edge(pred_to_tensorize, tensorized_pred, input_idx=0)
 
+                    original_bit_width = pred_to_tensorize.properties["original_bit_width"]
+                    tensorized_pred.properties["original_bit_width"] = original_bit_width
+
+                    original_shape = ()
+                    tensorized_pred.properties["original_shape"] = original_shape
+
+                    nx_graph.add_edge(pred_to_tensorize, tensorized_pred, input_idx=0)
                     tensorized_scalars[pred_to_tensorize] = tensorized_pred
 
                 assert tensorized_pred is not None
 
                 nx_graph.remove_edge(pred_to_tensorize, node)
                 nx_graph.add_edge(tensorized_pred, node, input_idx=pred_to_tensorize_index)
+
+                new_input_value = deepcopy(node.inputs[pred_to_tensorize_index])
+                new_input_value.shape = (1,)
+                node.inputs[pred_to_tensorize_index] = new_input_value
 
     @staticmethod
     def _sanitize_signed_inputs(graph: Graph, args: List[Any], ctx: Context) -> List[Any]:

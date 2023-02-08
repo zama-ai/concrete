@@ -244,14 +244,24 @@ class Helpers:
         if not isinstance(sample, list):
             sample = [sample]
 
-        for i in range(retries):
-            expected = function(*sample)
-            actual = circuit.encrypt_run_decrypt(*sample)
+        def sanitize(values):
+            if not isinstance(values, tuple):
+                values = (values,)
 
-            if not isinstance(expected, tuple):
-                expected = (expected,)
-            if not isinstance(actual, tuple):
-                actual = (actual,)
+            result = []
+            for value in values:
+                if isinstance(value, (bool, np.bool_)):
+                    value = int(value)
+                elif isinstance(value, np.ndarray) and value.dtype == np.bool_:
+                    value = value.astype(np.int64)
+
+                result.append(value)
+
+            return tuple(result)
+
+        for i in range(retries):
+            expected = sanitize(function(*sample))
+            actual = sanitize(circuit.encrypt_run_decrypt(*sample))
 
             if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                 break
