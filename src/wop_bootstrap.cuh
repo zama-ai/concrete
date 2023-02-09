@@ -67,16 +67,16 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       level_count_cbs * (glwe_dimension + 1) * polynomial_size * sizeof(Torus),
       stream, gpu_index);
   // indexes of lut vectors for cbs
-  uint32_t *h_lut_vector_indexes =
-      (uint32_t *)malloc(number_of_inputs * level_count_cbs * sizeof(uint32_t));
+  Torus *h_lut_vector_indexes =
+      (Torus *)malloc(number_of_inputs * level_count_cbs * sizeof(Torus));
   for (uint index = 0; index < level_count_cbs * number_of_inputs; index++) {
     h_lut_vector_indexes[index] = index % level_count_cbs;
   }
-  uint32_t *lut_vector_indexes = (uint32_t *)cuda_malloc_async(
-      number_of_inputs * level_count_cbs * sizeof(uint32_t), stream, gpu_index);
+  Torus *lut_vector_indexes = (Torus *)cuda_malloc_async(
+      number_of_inputs * level_count_cbs * sizeof(Torus), stream, gpu_index);
   cuda_memcpy_async_to_gpu(
       lut_vector_indexes, h_lut_vector_indexes,
-      number_of_inputs * level_count_cbs * sizeof(uint32_t), stream, gpu_index);
+      number_of_inputs * level_count_cbs * sizeof(Torus), stream, gpu_index);
   check_cuda_error(cudaGetLastError());
 
   uint32_t bits = sizeof(Torus) * 8;
@@ -145,12 +145,12 @@ __host__ void host_wop_pbs(
 
   // let mut h_lut_vector_indexes = vec![0 as u32; 1];
   // indexes of lut vectors for bit extract
-  uint32_t *h_lut_vector_indexes = (uint32_t *)malloc(sizeof(uint32_t));
+  Torus *h_lut_vector_indexes = (Torus *)malloc(sizeof(Torus));
   h_lut_vector_indexes[0] = 0;
-  uint32_t *lut_vector_indexes =
-      (uint32_t *)cuda_malloc_async(sizeof(uint32_t), stream, gpu_index);
+  Torus *lut_vector_indexes =
+      (Torus *)cuda_malloc_async(sizeof(Torus), stream, gpu_index);
   cuda_memcpy_async_to_gpu(lut_vector_indexes, h_lut_vector_indexes,
-                           sizeof(uint32_t), stream, gpu_index);
+                           sizeof(Torus), stream, gpu_index);
   check_cuda_error(cudaGetLastError());
   Torus *lut_pbs = (Torus *)cuda_malloc_async(
       (2 * polynomial_size) * sizeof(Torus), stream, gpu_index);

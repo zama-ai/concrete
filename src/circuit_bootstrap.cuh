@@ -106,7 +106,7 @@ __host__ void host_circuit_bootstrap(
     void *v_stream, uint32_t gpu_index, Torus *ggsw_out, Torus *lwe_array_in,
     double2 *fourier_bsk, Torus *fp_ksk_array,
     Torus *lwe_array_in_shifted_buffer, Torus *lut_vector,
-    uint32_t *lut_vector_indexes, Torus *lwe_array_out_pbs_buffer,
+    Torus *lut_vector_indexes, Torus *lwe_array_out_pbs_buffer,
     Torus *lwe_array_in_fp_ks_buffer, uint32_t delta_log,
     uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t lwe_dimension,
     uint32_t level_bsk, uint32_t base_log_bsk, uint32_t level_pksk,

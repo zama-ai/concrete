@@ -248,7 +248,7 @@ __global__ void device_bootstrap_low_latency(
 template <typename Torus, class params>
 __host__ void host_bootstrap_low_latency(
     void *v_stream, uint32_t gpu_index, Torus *lwe_array_out, Torus *lut_vector,
-    uint32_t *lut_vector_indexes, Torus *lwe_array_in,
+    Torus *lut_vector_indexes, Torus *lwe_array_in,
     double2 *bootstrapping_key, uint32_t glwe_dimension, uint32_t lwe_dimension,
     uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t num_lut_vectors,

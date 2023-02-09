@@ -180,7 +180,7 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_in_shifted_buffer,
         (uint64_t *)lwe_array_out_ks_buffer,
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
         glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
         level_count_ksk, number_of_samples, max_shared_memory);
@@ -192,7 +192,7 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_in_shifted_buffer,
         (uint64_t *)lwe_array_out_ks_buffer,
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
         glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
         level_count_ksk, number_of_samples, max_shared_memory);
@@ -204,7 +204,7 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_in_shifted_buffer,
         (uint64_t *)lwe_array_out_ks_buffer,
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
         glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
         level_count_ksk, number_of_samples, max_shared_memory);
@@ -216,7 +216,7 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_in_shifted_buffer,
         (uint64_t *)lwe_array_out_ks_buffer,
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
         glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
         level_count_ksk, number_of_samples, max_shared_memory);
@@ -228,7 +228,7 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_in_shifted_buffer,
         (uint64_t *)lwe_array_out_ks_buffer,
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
         glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
         level_count_ksk, number_of_samples, max_shared_memory);

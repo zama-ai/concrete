@@ -51,7 +51,7 @@ template <typename Torus, class params, sharedMemDegree SMD>
  * is not FULLSM
  */
 __global__ void device_bootstrap_amortized(
-    Torus *lwe_array_out, Torus *lut_vector, uint32_t *lut_vector_indexes,
+    Torus *lwe_array_out, Torus *lut_vector, Torus *lut_vector_indexes,
     Torus *lwe_array_in, double2 *bootstrapping_key, char *device_mem,
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
     uint32_t base_log, uint32_t level_count, uint32_t lwe_idx,
@@ -216,9 +216,9 @@ __global__ void device_bootstrap_amortized(
 template <typename Torus, class params>
 __host__ void host_bootstrap_amortized(
     void *v_stream, uint32_t gpu_index, Torus *lwe_array_out, Torus *lut_vector,
-    uint32_t *lut_vector_indexes, Torus *lwe_array_in,
-    double2 *bootstrapping_key, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+    Torus *lut_vector_indexes, Torus *lwe_array_in, double2 *bootstrapping_key,
+    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
+    uint32_t base_log, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t num_lut_vectors,
     uint32_t lwe_idx, uint32_t max_shared_memory) {
 

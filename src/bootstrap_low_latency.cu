@@ -183,7 +183,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
   case 512:
     host_bootstrap_low_latency<uint64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
@@ -191,7 +191,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
   case 1024:
     host_bootstrap_low_latency<uint64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
@@ -199,7 +199,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
   case 2048:
     host_bootstrap_low_latency<uint64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
@@ -207,7 +207,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
   case 4096:
     host_bootstrap_low_latency<uint64_t, Degree<4096>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
@@ -215,7 +215,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
   case 8192:
     host_bootstrap_low_latency<uint64_t, Degree<8192>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);

@@ -138,7 +138,7 @@ __host__ void host_extract_bits(
     Torus *lwe_array_in, Torus *lwe_array_in_buffer,
     Torus *lwe_array_in_shifted_buffer, Torus *lwe_array_out_ks_buffer,
     Torus *lwe_array_out_pbs_buffer, Torus *lut_pbs,
-    uint32_t *lut_vector_indexes, Torus *ksk, double2 *fourier_bsk,
+    Torus *lut_vector_indexes, Torus *ksk, double2 *fourier_bsk,
     uint32_t number_of_bits, uint32_t delta_log, uint32_t lwe_dimension_in,
     uint32_t lwe_dimension_out, uint32_t glwe_dimension, uint32_t base_log_bsk,
     uint32_t level_count_bsk, uint32_t base_log_ksk, uint32_t level_count_ksk,
