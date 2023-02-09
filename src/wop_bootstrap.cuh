@@ -174,8 +174,8 @@ __host__ void host_wop_pbs(
       lwe_array_in_buffer, lwe_array_in_shifted_buffer, lwe_array_out_ks_buffer,
       lwe_array_out_pbs_buffer, lut_pbs, lut_vector_indexes, ksk, fourier_bsk,
       number_of_bits_to_extract, delta_log, polynomial_size, lwe_dimension,
-      base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-      number_of_inputs, max_shared_memory);
+      glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+      level_count_ksk, number_of_inputs, max_shared_memory);
   check_cuda_error(cudaGetLastError());
   cuda_drop_async(lut_pbs, stream, gpu_index);
   cuda_drop_async(lut_vector_indexes, stream, gpu_index);

@@ -17,8 +17,6 @@ void cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
               polynomial_size == 2048 || polynomial_size == 4096 ||
               polynomial_size == 8192));
   // For larger k we will need to adjust the mask size
-  assert(("Error (GPU Cmux tree): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU Cmux tree): r, the number of layers in the tree, should "
           "be >= 1 ",
           r >= 1));
@@ -99,8 +97,6 @@ void cuda_cmux_tree_64(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
               polynomial_size == 2048 || polynomial_size == 4096 ||
               polynomial_size == 8192));
   // For larger k we will need to adjust the mask size
-  assert(("Error (GPU Cmux tree): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU Cmux tree): r, the number of layers in the tree, should "
           "be >= 1 ",
           r >= 1));

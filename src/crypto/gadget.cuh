@@ -12,6 +12,7 @@
  * arbitrary amount of levels by using decompose_and_compress_level().
  *
  * This class always decomposes the entire set of num_poly polynomials.
+ * By default, it works on a single polynomial.
  */
 #pragma once
 template <typename T, class params> class GadgetMatrix {
@@ -28,7 +29,7 @@ private:
 
 public:
   __device__ GadgetMatrix(uint32_t base_log, uint32_t level_count, T *state,
-                          uint32_t num_poly)
+                          uint32_t num_poly = 1)
       : base_log(base_log), level_count(level_count), num_poly(num_poly),
         state(state) {
 

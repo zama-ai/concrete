@@ -15,8 +15,6 @@ void cuda_extract_bits_32(
     uint32_t max_shared_memory) {
   assert(("Error (GPU extract bits): base log should be <= 32",
           base_log_bsk <= 32));
-  assert(("Error (GPU extract bits): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
           "512, 1024, 2048, 4096, 8192",
           lwe_dimension_in == 512 || lwe_dimension_in == 1024 ||
@@ -44,8 +42,8 @@ void cuda_extract_bits_32(
         (uint32_t *)lwe_array_out_pbs_buffer, (uint32_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint32_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 1024:
     host_extract_bits<uint32_t, Degree<1024>>(
@@ -56,8 +54,8 @@ void cuda_extract_bits_32(
         (uint32_t *)lwe_array_out_pbs_buffer, (uint32_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint32_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 2048:
     host_extract_bits<uint32_t, Degree<2048>>(
@@ -68,8 +66,8 @@ void cuda_extract_bits_32(
         (uint32_t *)lwe_array_out_pbs_buffer, (uint32_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint32_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 4096:
     host_extract_bits<uint32_t, Degree<4096>>(
@@ -80,8 +78,8 @@ void cuda_extract_bits_32(
         (uint32_t *)lwe_array_out_pbs_buffer, (uint32_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint32_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 8192:
     host_extract_bits<uint32_t, Degree<8192>>(
@@ -92,8 +90,8 @@ void cuda_extract_bits_32(
         (uint32_t *)lwe_array_out_pbs_buffer, (uint32_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint32_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   default:
     break;
@@ -157,8 +155,6 @@ void cuda_extract_bits_64(
     uint32_t max_shared_memory) {
   assert(("Error (GPU extract bits): base log should be <= 64",
           base_log_bsk <= 64));
-  assert(("Error (GPU extract bits): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
           "512, 1024, 2048, 4096, 8192",
           lwe_dimension_in == 512 || lwe_dimension_in == 1024 ||
@@ -186,8 +182,8 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 1024:
     host_extract_bits<uint64_t, Degree<1024>>(
@@ -198,8 +194,8 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 2048:
     host_extract_bits<uint64_t, Degree<2048>>(
@@ -210,8 +206,8 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 4096:
     host_extract_bits<uint64_t, Degree<4096>>(
@@ -222,8 +218,8 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   case 8192:
     host_extract_bits<uint64_t, Degree<8192>>(
@@ -234,8 +230,8 @@ void cuda_extract_bits_64(
         (uint64_t *)lwe_array_out_pbs_buffer, (uint64_t *)lut_pbs,
         (uint32_t *)lut_vector_indexes, (uint64_t *)ksk, (double2 *)fourier_bsk,
         number_of_bits, delta_log, lwe_dimension_in, lwe_dimension_out,
-        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
-        number_of_samples, max_shared_memory);
+        glwe_dimension, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, number_of_samples, max_shared_memory);
     break;
   default:
     break;

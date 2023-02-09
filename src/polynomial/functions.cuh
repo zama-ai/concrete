@@ -61,11 +61,13 @@ __device__ void add_polynomial_inplace_low_lat(T *source, T *dst, int p_id) {
  * Performs acc = acc * (X^ä + 1) if zeroAcc = false
  * Performs acc = 0 if zeroAcc
  * takes single buffer and calculates inplace.
+ *
+ *  By default, it works on a single polynomial.
  */
 template <typename T, int elems_per_thread, int block_size>
 __device__ void divide_by_monomial_negacyclic_inplace(T *accumulator, T *input,
                                                       uint32_t j, bool zeroAcc,
-                                                      uint32_t num_poly) {
+                                                      uint32_t num_poly = 1) {
   constexpr int degree = block_size * elems_per_thread;
   for (int z = 0; z < num_poly; z++) {
     T *accumulator_slice = (T *)accumulator + (ptrdiff_t)(z * degree);
@@ -105,10 +107,12 @@ __device__ void divide_by_monomial_negacyclic_inplace(T *accumulator, T *input,
  *
  * Performs result_acc = acc * (X^ä - 1) - acc
  * takes single buffer as input and returns a single rotated buffer
+ *
+ *  By default, it works on a single polynomial.
  */
 template <typename T, int elems_per_thread, int block_size>
 __device__ void multiply_by_monomial_negacyclic_and_sub_polynomial(
-    T *acc, T *result_acc, uint32_t j, uint32_t num_poly) {
+    T *acc, T *result_acc, uint32_t j, uint32_t num_poly = 1) {
   constexpr int degree = block_size * elems_per_thread;
   for (int z = 0; z < num_poly; z++) {
     T *acc_slice = (T *)acc + (ptrdiff_t)(z * degree);
@@ -138,11 +142,13 @@ __device__ void multiply_by_monomial_negacyclic_and_sub_polynomial(
 /*
  * Receives num_poly  concatenated polynomials of type T. For each performs a
  * rounding to increase accuracy of the PBS. Calculates inplace.
+ *
+ *  By default, it works on a single polynomial.
  */
 template <typename T, int elems_per_thread, int block_size>
 __device__ void round_to_closest_multiple_inplace(T *rotated_acc, int base_log,
                                                   int level_count,
-                                                  uint32_t num_poly) {
+                                                  uint32_t num_poly = 1) {
   constexpr int degree = block_size * elems_per_thread;
   for (int z = 0; z < num_poly; z++) {
     T *rotated_acc_slice = (T *)rotated_acc + (ptrdiff_t)(z * degree);
@@ -192,20 +198,21 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
   }
 }
 
-// Extracts the body of a GLWE with dimension glwe_dimension
+// Extracts the body of a GLWE.
+// k is the offset to find the body element / polynomial in the lwe_array_out /
+// accumulator
 template <typename Torus, class params>
 __device__ void sample_extract_body(Torus *lwe_array_out, Torus *accumulator,
-                                    uint32_t glwe_dimension) {
+                                    uint32_t k) {
   // Set first coefficient of the accumulator as the body of the LWE sample
-  lwe_array_out[glwe_dimension * params::degree] =
-      accumulator[glwe_dimension * params::degree];
+  lwe_array_out[k * params::degree] = accumulator[k * params::degree];
 }
 
-// Extracts the mask of a GLWE with dimension glwe_dimension
+// Extracts the mask from num_poly polynomials individually
 template <typename Torus, class params>
 __device__ void sample_extract_mask(Torus *lwe_array_out, Torus *accumulator,
-                                    uint32_t glwe_dimension) {
-  for (int z = 0; z < glwe_dimension; z++) {
+                                    uint32_t num_poly = 1) {
+  for (int z = 0; z < num_poly; z++) {
     Torus *lwe_array_out_slice =
         (Torus *)lwe_array_out + (ptrdiff_t)(z * params::degree);
     Torus *accumulator_slice =

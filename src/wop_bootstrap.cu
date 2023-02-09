@@ -35,8 +35,6 @@ void cuda_circuit_bootstrap_vertical_packing_64(
     uint32_t base_log_pksk, uint32_t level_count_cbs, uint32_t base_log_cbs,
     uint32_t number_of_inputs, uint32_t lut_number,
     uint32_t max_shared_memory) {
-  assert(("Error (GPU circuit bootstrap): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
           "512, 1024, 2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||
@@ -149,8 +147,6 @@ void cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index, void *lwe_array_out,
                      uint32_t number_of_bits_of_message_including_padding,
                      uint32_t number_of_bits_to_extract,
                      uint32_t number_of_inputs, uint32_t max_shared_memory) {
-  assert(("Error (GPU WOP PBS): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU WOP PBS): polynomial_size should be one of "
           "512, 1024, 2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||

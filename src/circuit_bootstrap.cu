@@ -13,8 +13,6 @@ void cuda_circuit_bootstrap_32(
     uint32_t level_bsk, uint32_t base_log_bsk, uint32_t level_pksk,
     uint32_t base_log_pksk, uint32_t level_cbs, uint32_t base_log_cbs,
     uint32_t number_of_samples, uint32_t max_shared_memory) {
-  assert(("Error (GPU circuit bootstrap): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
           "512, 1024, 2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||
@@ -137,8 +135,6 @@ void cuda_circuit_bootstrap_64(
     uint32_t level_bsk, uint32_t base_log_bsk, uint32_t level_pksk,
     uint32_t base_log_pksk, uint32_t level_cbs, uint32_t base_log_cbs,
     uint32_t number_of_samples, uint32_t max_shared_memory) {
-  assert(("Error (GPU circuit bootstrap): glwe_dimension should be equal to 1",
-          glwe_dimension == 1));
   assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
           "512, 1024, 2048, 4096, 8192",
           polynomial_size == 512 || polynomial_size == 1024 ||

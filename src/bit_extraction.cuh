@@ -140,9 +140,9 @@ __host__ void host_extract_bits(
     Torus *lwe_array_out_pbs_buffer, Torus *lut_pbs,
     uint32_t *lut_vector_indexes, Torus *ksk, double2 *fourier_bsk,
     uint32_t number_of_bits, uint32_t delta_log, uint32_t lwe_dimension_in,
-    uint32_t lwe_dimension_out, uint32_t base_log_bsk, uint32_t level_count_bsk,
-    uint32_t base_log_ksk, uint32_t level_count_ksk, uint32_t number_of_samples,
-    uint32_t max_shared_memory) {
+    uint32_t lwe_dimension_out, uint32_t glwe_dimension, uint32_t base_log_bsk,
+    uint32_t level_count_bsk, uint32_t base_log_ksk, uint32_t level_count_ksk,
+    uint32_t number_of_samples, uint32_t max_shared_memory) {
 
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
@@ -189,8 +189,8 @@ __host__ void host_extract_bits(
     host_bootstrap_low_latency<Torus, params>(
         v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_pbs,
         lut_vector_indexes, lwe_array_out_ks_buffer, fourier_bsk,
-        lwe_dimension_out, lwe_dimension_in, base_log_bsk, level_count_bsk,
-        number_of_samples, 1, max_shared_memory);
+        glwe_dimension, lwe_dimension_out, lwe_dimension_in, base_log_bsk,
+        level_count_bsk, number_of_samples, 1, max_shared_memory);
 
     // Add alpha where alpha = delta*2^{bit_idx-1} to end up with an encryption
     // of 0 if the extracted bit was 0 and 1 in the other case
