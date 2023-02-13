@@ -13,13 +13,22 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
 
   assert(
       ("Error (GPU amortized PBS): base log should be <= 32", base_log <= 32));
-  assert(("Error (GPU amortized PBS): polynomial size should be one of 512, "
-          "1024, 2048, 4096, 8192",
-          polynomial_size == 512 || polynomial_size == 1024 ||
-              polynomial_size == 2048 || polynomial_size == 4096 ||
-              polynomial_size == 8192));
+  assert(
+      ("Error (GPU amortized PBS): polynomial size should be one of 256, 512, "
+       "1024, 2048, 4096, 8192",
+       polynomial_size == 256 || polynomial_size == 512 ||
+           polynomial_size == 1024 || polynomial_size == 2048 ||
+           polynomial_size == 4096 || polynomial_size == 8192));
 
   switch (polynomial_size) {
+  case 256:
+    host_bootstrap_amortized<uint32_t, Degree<256>>(
+        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
+        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
+        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
+        lwe_idx, max_shared_memory);
+    break;
   case 512:
     host_bootstrap_amortized<uint32_t, Degree<512>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
@@ -139,13 +148,22 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
 
   assert(
       ("Error (GPU amortized PBS): base log should be <= 64", base_log <= 64));
-  assert(("Error (GPU amortized PBS): polynomial size should be one of 512, "
-          "1024, 2048, 4096, 8192",
-          polynomial_size == 512 || polynomial_size == 1024 ||
-              polynomial_size == 2048 || polynomial_size == 4096 ||
-              polynomial_size == 8192));
+  assert(
+      ("Error (GPU amortized PBS): polynomial size should be one of 256, 512, "
+       "1024, 2048, 4096, 8192",
+       polynomial_size == 256 || polynomial_size == 512 ||
+           polynomial_size == 1024 || polynomial_size == 2048 ||
+           polynomial_size == 4096 || polynomial_size == 8192));
 
   switch (polynomial_size) {
+  case 256:
+    host_bootstrap_amortized<uint64_t, Degree<256>>(
+        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
+        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
+        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
+        lwe_idx, max_shared_memory);
+    break;
   case 512:
     host_bootstrap_amortized<uint64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,

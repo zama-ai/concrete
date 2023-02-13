@@ -84,6 +84,25 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
 
   double2 *buffer;
   switch (polynomial_size) {
+  case 256:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_NSMFFT<FFTDegree<Degree<256>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_NSMFFT<FFTDegree<Degree<256>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_NSMFFT<FFTDegree<Degree<256>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(d_bsk, dest,
+                                                                 buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_NSMFFT<FFTDegree<Degree<256>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(d_bsk, dest, buffer);
+    }
+    break;
   case 512:
     if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
       buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
