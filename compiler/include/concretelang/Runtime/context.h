@@ -111,18 +111,19 @@ typedef struct RuntimeContext {
     uint64_t *bsk_buffer =
         (uint64_t *)aligned_alloc(U64_ALIGNMENT, bsk_buffer_size);
     size_t bsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
-    bsk_gpu = cuda_malloc(bsk_gpu_buffer_size, gpu_idx);
+    void *bsk_gpu_tmp = cuda_malloc(bsk_gpu_buffer_size, gpu_idx);
     CAPI_ASSERT_ERROR(
         default_engine_discard_convert_lwe_bootstrap_key_to_lwe_bootstrap_key_mut_view_u64_raw_ptr_buffers(
             default_engine, bsk, bsk_buffer));
     cuda_initialize_twiddles(poly_size, gpu_idx);
-    cuda_convert_lwe_bootstrap_key_64(bsk_gpu, bsk_buffer, stream, gpu_idx,
+    cuda_convert_lwe_bootstrap_key_64(bsk_gpu_tmp, bsk_buffer, stream, gpu_idx,
                                       input_lwe_dim, glwe_dim, level,
                                       poly_size);
     // This is currently not 100% async as we have to free CPU memory after
     // conversion
     cuda_synchronize_device(gpu_idx);
     free(bsk_buffer);
+    bsk_gpu = bsk_gpu_tmp;
     return bsk_gpu;
   }
 
@@ -142,16 +143,17 @@ typedef struct RuntimeContext {
     size_t ksk_buffer_size = sizeof(uint64_t) * ksk_buffer_len;
     uint64_t *ksk_buffer =
         (uint64_t *)aligned_alloc(U64_ALIGNMENT, ksk_buffer_size);
-    void *ksk_gpu = cuda_malloc(ksk_buffer_size, gpu_idx);
+    void *ksk_gpu_tmp = cuda_malloc(ksk_buffer_size, gpu_idx);
     CAPI_ASSERT_ERROR(
         default_engine_discard_convert_lwe_keyswitch_key_to_lwe_keyswitch_key_mut_view_u64_raw_ptr_buffers(
             default_engine, ksk, ksk_buffer));
-    cuda_memcpy_async_to_gpu(ksk_gpu, ksk_buffer, ksk_buffer_size, stream,
+    cuda_memcpy_async_to_gpu(ksk_gpu_tmp, ksk_buffer, ksk_buffer_size, stream,
                              gpu_idx);
     // This is currently not 100% async as we have to free CPU memory after
     // conversion
     cuda_synchronize_device(gpu_idx);
     free(ksk_buffer);
+    ksk_gpu = ksk_gpu_tmp;
     return ksk_gpu;
   }
 #endif
