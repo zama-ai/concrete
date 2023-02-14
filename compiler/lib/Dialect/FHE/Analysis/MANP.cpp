@@ -160,7 +160,6 @@ static llvm::APInt APIntWidthExtendUnsignedSq(const llvm::APInt &i) {
   // `unsigned` argument of `zext`.
   assert(i.getBitWidth() < std::numeric_limits<unsigned>::max() / 2 &&
          "Required number of bits cannot be represented with an APInt");
-
   llvm::APInt ie = i.zext(2 * i.getBitWidth());
 
   return ie * ie;
@@ -168,7 +167,7 @@ static llvm::APInt APIntWidthExtendUnsignedSq(const llvm::APInt &i) {
 
 /// Calculates the square of the value of `i`.
 static llvm::APInt APIntWidthExtendSqForConstant(const llvm::APInt &i) {
-  llvm::APInt extI(2 * i.getActiveBits(), i.getSExtValue());
+  auto extI = i.sext(2 * i.getBitWidth());
   return extI * extI;
 }
 
