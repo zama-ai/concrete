@@ -146,6 +146,11 @@ import concrete.numpy as cnp
             lambda x: x[::-1],
             id="x[::-1] where x.shape == (3, 4)",
         ),
+        pytest.param(
+            (10,),
+            lambda x: x[slice(np.int64(8), np.int64(2), np.int64(-2))],
+            id="x[8:2:-2] where x.shape == (10,)",
+        ),
     ],
 )
 def test_static_indexing(shape, function, helpers):

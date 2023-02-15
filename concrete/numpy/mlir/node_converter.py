@@ -878,15 +878,15 @@ class NodeConverter:
         for indexing_element, dimension_size in zip(index, input_shape):
 
             if isinstance(indexing_element, slice):
-                size = np.zeros(dimension_size)[indexing_element].shape[0]
-                stride = indexing_element.step if isinstance(indexing_element.step, int) else 1
-                offset = (
+                size = int(np.zeros(dimension_size)[indexing_element].shape[0])
+                stride = int(indexing_element.step if indexing_element.step is not None else 1)
+                offset = int(
                     (
                         indexing_element.start
                         if indexing_element.start >= 0
                         else indexing_element.start + dimension_size
                     )
-                    if isinstance(indexing_element.start, int)
+                    if indexing_element.start is not None
                     else (0 if stride > 0 else dimension_size - 1)
                 )
 
@@ -950,15 +950,15 @@ class NodeConverter:
         for dimension, (indexing_element, dimension_size) in enumerate(zip(index, input_shape)):
 
             if isinstance(indexing_element, slice):
-                size = np.zeros(dimension_size)[indexing_element].shape[0]
-                stride = indexing_element.step if isinstance(indexing_element.step, int) else 1
-                offset = (
+                size = int(np.zeros(dimension_size)[indexing_element].shape[0])
+                stride = int(indexing_element.step if indexing_element.step is not None else 1)
+                offset = int(
                     (
                         indexing_element.start
                         if indexing_element.start >= 0
                         else indexing_element.start + dimension_size
                     )
-                    if isinstance(indexing_element.start, int)
+                    if indexing_element.start is not None
                     else (0 if stride > 0 else dimension_size - 1)
                 )
 
