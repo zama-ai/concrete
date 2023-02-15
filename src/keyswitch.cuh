@@ -44,7 +44,7 @@ fp_keyswitch(Torus *glwe_array_out, Torus *lwe_array_in, Torus *fp_ksk_array,
   size_t chunk_id = blockIdx.x;
   size_t ksk_id = ciphertext_id % number_of_keys;
 
-  extern __shared__ char sharedmem[];
+  extern __shared__ int8_t sharedmem[];
 
   // result accumulator, shared memory is used because of frequent access
   Torus *local_glwe_chunk = (Torus *)sharedmem;
@@ -106,7 +106,7 @@ __global__ void keyswitch(Torus *lwe_array_out, Torus *lwe_array_in, Torus *ksk,
                           int lwe_lower, int lwe_upper, int cutoff) {
   int tid = threadIdx.x;
 
-  extern __shared__ char sharedmem[];
+  extern __shared__ int8_t sharedmem[];
 
   Torus *local_lwe_array_out = (Torus *)sharedmem;
 

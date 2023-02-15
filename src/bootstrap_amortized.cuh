@@ -52,15 +52,15 @@ template <typename Torus, class params, sharedMemDegree SMD>
  */
 __global__ void device_bootstrap_amortized(
     Torus *lwe_array_out, Torus *lut_vector, Torus *lut_vector_indexes,
-    Torus *lwe_array_in, double2 *bootstrapping_key, char *device_mem,
+    Torus *lwe_array_in, double2 *bootstrapping_key, int8_t *device_mem,
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
     uint32_t base_log, uint32_t level_count, uint32_t lwe_idx,
     size_t device_memory_size_per_sample) {
   // We use shared memory for the polynomials that are used often during the
   // bootstrap, since shared memory is kept in L1 cache and accessing it is
   // much faster than global memory
-  extern __shared__ char sharedmem[];
-  char *selected_memory;
+  extern __shared__ int8_t sharedmem[];
+  int8_t *selected_memory;
 
   if constexpr (SMD == FULLSM)
     selected_memory = sharedmem;
@@ -241,7 +241,7 @@ __host__ void host_bootstrap_amortized(
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  char *d_mem;
+  int8_t *d_mem;
 
   // Create a 1-dimensional grid of threads
   // where each block handles 1 sample and each thread
@@ -257,8 +257,8 @@ __host__ void host_bootstrap_amortized(
   // from one of three templates (no use, partial use or full use
   // of shared memory)
   if (max_shared_memory < SM_PART) {
-    d_mem = (char *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count,
-                                      stream, gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count,
+                                        stream, gpu_index);
     device_bootstrap_amortized<Torus, params, NOSM><<<grid, thds, 0, *stream>>>(
         lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
         bootstrapping_key, d_mem, glwe_dimension, lwe_dimension,
@@ -268,8 +268,8 @@ __host__ void host_bootstrap_amortized(
                          cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART);
     cudaFuncSetCacheConfig(device_bootstrap_amortized<Torus, params, PARTIALSM>,
                            cudaFuncCachePreferShared);
-    d_mem = (char *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count,
-                                      stream, gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count,
+                                        stream, gpu_index);
     device_bootstrap_amortized<Torus, params, PARTIALSM>
         <<<grid, thds, SM_PART, *stream>>>(
             lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
@@ -287,7 +287,7 @@ __host__ void host_bootstrap_amortized(
     check_cuda_error(cudaFuncSetCacheConfig(
         device_bootstrap_amortized<Torus, params, FULLSM>,
         cudaFuncCachePreferShared));
-    d_mem = (char *)cuda_malloc_async(0, stream, gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(0, stream, gpu_index);
 
     device_bootstrap_amortized<Torus, params, FULLSM>
         <<<grid, thds, SM_FULL, *stream>>>(

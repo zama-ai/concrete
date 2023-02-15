@@ -54,7 +54,7 @@ template <class params> __device__ void ifft_inplace(double2 *data) {
 template <typename Torus, typename STorus, class params>
 __device__ void
 cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
-     char *selected_memory, uint32_t output_idx, uint32_t input_idx1,
+     int8_t *selected_memory, uint32_t output_idx, uint32_t input_idx1,
      uint32_t input_idx2, uint32_t glwe_dim, uint32_t polynomial_size,
      uint32_t base_log, uint32_t level_count, uint32_t ggsw_idx) {
 
@@ -211,7 +211,7 @@ __host__ void add_padding_to_lut_async(Torus *lut_out, Torus *lut_in,
  */
 template <typename Torus, typename STorus, class params, sharedMemDegree SMD>
 __global__ void device_batch_cmux(Torus *glwe_array_out, Torus *glwe_array_in,
-                                  double2 *ggsw_in, char *device_mem,
+                                  double2 *ggsw_in, int8_t *device_mem,
                                   size_t device_memory_size_per_block,
                                   uint32_t glwe_dim, uint32_t polynomial_size,
                                   uint32_t base_log, uint32_t level_count,
@@ -228,8 +228,8 @@ __global__ void device_batch_cmux(Torus *glwe_array_out, Torus *glwe_array_in,
   int input_idx2 = (cmux_idx << 1) + 1;
 
   // We use shared memory for intermediate result
-  extern __shared__ char sharedmem[];
-  char *selected_memory;
+  extern __shared__ int8_t sharedmem[];
+  int8_t *selected_memory;
 
   if constexpr (SMD == FULLSM)
     selected_memory = sharedmem;
@@ -299,9 +299,9 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
   //////////////////////
 
   // Allocate global memory in case parameters are too large
-  char *d_mem;
+  int8_t *d_mem;
   if (max_shared_memory < memory_needed_per_block) {
-    d_mem = (char *)cuda_malloc_async(
+    d_mem = (int8_t *)cuda_malloc_async(
         memory_needed_per_block * (1 << (r - 1)) * tau, stream, gpu_index);
   } else {
     check_cuda_error(cudaFuncSetAttribute(
@@ -380,7 +380,7 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
  * - glwe_dim: This is k.
  * - polynomial_size: size of the polynomials. This is N.
  * - base_log: log base used for the gadget matrix - B = 2^base_log (~8)
- * - l_gadget: number of decomposition levels in the gadget matrix (~4)
+ * - level_count: number of decomposition levels in the gadget matrix (~4)
  * - device_memory_size_per_sample: Amount of (shared/global) memory used for
  * the accumulators.
  * - device_mem: An array to be used for the accumulators. Can be in the shared
@@ -390,12 +390,12 @@ template <typename Torus, typename STorus, class params, sharedMemDegree SMD>
 __global__ void device_blind_rotation_and_sample_extraction(
     Torus *lwe_out, Torus *glwe_in, double2 *ggsw_in, // m^BR
     uint32_t mbr_size, uint32_t glwe_dim, uint32_t polynomial_size,
-    uint32_t base_log, uint32_t l_gadget, size_t device_memory_size_per_sample,
-    char *device_mem) {
+    uint32_t base_log, uint32_t level_count,
+    size_t device_memory_size_per_sample, int8_t *device_mem) {
 
   // We use shared memory for intermediate result
-  extern __shared__ char sharedmem[];
-  char *selected_memory;
+  extern __shared__ int8_t sharedmem[];
+  int8_t *selected_memory;
 
   if constexpr (SMD == FULLSM)
     selected_memory = sharedmem;
@@ -433,10 +433,10 @@ __global__ void device_blind_rotation_and_sample_extraction(
 
     // ACC = CMUX ( Ci, x^ai * ACC, ACC )
     synchronize_threads_in_block();
-    cmux<Torus, STorus, params>(accumulator_c0, accumulator_c0, ggsw_in,
-                                (char *)(accumulator_c0 + 4 * polynomial_size),
-                                0, 0, 1, glwe_dim, polynomial_size, base_log,
-                                l_gadget, i);
+    cmux<Torus, STorus, params>(
+        accumulator_c0, accumulator_c0, ggsw_in,
+        (int8_t *)(accumulator_c0 + 4 * polynomial_size), 0, 0, 1, glwe_dim,
+        polynomial_size, base_log, level_count, i);
   }
   synchronize_threads_in_block();
 
@@ -455,7 +455,7 @@ template <typename Torus, typename STorus, class params>
 __host__ void host_blind_rotate_and_sample_extraction(
     void *v_stream, uint32_t gpu_index, Torus *lwe_out, Torus *ggsw_in,
     Torus *lut_vector, uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
-    uint32_t polynomial_size, uint32_t base_log, uint32_t l_gadget,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
     uint32_t max_shared_memory) {
 
   cudaSetDevice(gpu_index);
@@ -474,10 +474,10 @@ __host__ void host_blind_rotate_and_sample_extraction(
       sizeof(double2) * polynomial_size / 2 + // body_res_fft
       sizeof(double2) * polynomial_size / 2;  // glwe_fft
 
-  char *d_mem;
+  int8_t *d_mem;
   if (max_shared_memory < memory_needed_per_block)
-    d_mem = (char *)cuda_malloc_async(memory_needed_per_block * tau, stream,
-                                      gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(memory_needed_per_block * tau, stream,
+                                        gpu_index);
   else {
     check_cuda_error(cudaFuncSetAttribute(
         device_blind_rotation_and_sample_extraction<Torus, STorus, params,
@@ -490,14 +490,14 @@ __host__ void host_blind_rotate_and_sample_extraction(
   }
 
   // Applying the FFT on m^br
-  int ggsw_size =
-      polynomial_size * (glwe_dimension + 1) * (glwe_dimension + 1) * l_gadget;
+  int ggsw_size = polynomial_size * (glwe_dimension + 1) *
+                  (glwe_dimension + 1) * level_count;
   double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
       mbr_size * ggsw_size * sizeof(double), stream, gpu_index);
 
   batch_fft_ggsw_vector<Torus, STorus, params>(
       stream, d_ggsw_fft_in, ggsw_in, mbr_size, glwe_dimension, polynomial_size,
-      l_gadget, gpu_index, max_shared_memory);
+      level_count, gpu_index, max_shared_memory);
   check_cuda_error(cudaGetLastError());
 
   //
@@ -509,14 +509,14 @@ __host__ void host_blind_rotate_and_sample_extraction(
         <<<grid, thds, 0, *stream>>>(lwe_out, lut_vector, d_ggsw_fft_in,
                                      mbr_size,
                                      glwe_dimension, // k
-                                     polynomial_size, base_log, l_gadget,
+                                     polynomial_size, base_log, level_count,
                                      memory_needed_per_block, d_mem);
   else
     device_blind_rotation_and_sample_extraction<Torus, STorus, params, FULLSM>
         <<<grid, thds, memory_needed_per_block, *stream>>>(
             lwe_out, lut_vector, d_ggsw_fft_in, mbr_size,
             glwe_dimension, // k
-            polynomial_size, base_log, l_gadget, memory_needed_per_block,
+            polynomial_size, base_log, level_count, memory_needed_per_block,
             d_mem);
   check_cuda_error(cudaGetLastError());
 

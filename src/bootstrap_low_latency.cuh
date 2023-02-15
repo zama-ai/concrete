@@ -134,15 +134,15 @@ __global__ void device_bootstrap_low_latency(
     Torus *lwe_array_out, Torus *lut_vector, Torus *lwe_array_in,
     double2 *bootstrapping_key, double2 *join_buffer, uint32_t lwe_dimension,
     uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
-    char *device_mem, int device_memory_size_per_block) {
+    int8_t *device_mem, int device_memory_size_per_block) {
 
   grid_group grid = this_grid();
 
   // We use shared memory for the polynomials that are used often during the
   // bootstrap, since shared memory is kept in L1 cache and accessing it is
   // much faster than global memory
-  extern __shared__ char sharedmem[];
-  char *selected_memory;
+  extern __shared__ int8_t sharedmem[];
+  int8_t *selected_memory;
   int block_index =
       blockIdx.x + blockIdx.y * gridDim.x + blockIdx.z * gridDim.x * gridDim.y;
   uint32_t glwe_dimension = gridDim.y - 1;
@@ -275,7 +275,7 @@ __host__ void host_bootstrap_low_latency(
 
   int DM_PART = DM_FULL - SM_PART;
 
-  char *d_mem;
+  int8_t *d_mem;
 
   int thds = polynomial_size / params::opt;
   dim3 grid(level_count, glwe_dimension + 1, input_lwe_ciphertext_count);
@@ -295,18 +295,18 @@ __host__ void host_bootstrap_low_latency(
   if (max_shared_memory < SM_PART) {
     kernel_args[10] = &DM_FULL;
     check_cuda_error(cudaGetLastError());
-    d_mem = (char *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count *
-                                          level_count * (glwe_dimension + 1),
-                                      stream, gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count *
+                                            level_count * (glwe_dimension + 1),
+                                        stream, gpu_index);
     check_cuda_error(cudaGetLastError());
     check_cuda_error(cudaLaunchCooperativeKernel(
         (void *)device_bootstrap_low_latency<Torus, params, NOSM>, grid, thds,
         (void **)kernel_args, 0, *stream));
   } else if (max_shared_memory < SM_FULL) {
     kernel_args[10] = &DM_PART;
-    d_mem = (char *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count *
-                                          level_count * (glwe_dimension + 1),
-                                      stream, gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count *
+                                            level_count * (glwe_dimension + 1),
+                                        stream, gpu_index);
     check_cuda_error(cudaFuncSetAttribute(
         device_bootstrap_low_latency<Torus, params, PARTIALSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART));
@@ -321,7 +321,7 @@ __host__ void host_bootstrap_low_latency(
   } else {
     int DM_NONE = 0;
     kernel_args[10] = &DM_NONE;
-    d_mem = (char *)cuda_malloc_async(0, stream, gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(0, stream, gpu_index);
     check_cuda_error(cudaFuncSetAttribute(
         device_bootstrap_low_latency<Torus, params, FULLSM>,
         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_FULL));

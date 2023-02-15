@@ -6,9 +6,9 @@
 
 template <typename T, typename ST, class params, sharedMemDegree SMD>
 __global__ void device_batch_fft_ggsw_vector(double2 *dest, T *src,
-                                             char *device_mem) {
+                                             int8_t *device_mem) {
 
-  extern __shared__ char sharedmem[];
+  extern __shared__ int8_t sharedmem[];
   double2 *selected_memory;
 
   if constexpr (SMD == FULLSM)
@@ -59,9 +59,9 @@ void batch_fft_ggsw_vector(cudaStream_t *stream, double2 *dest, T *src,
   int gridSize = r * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
   int blockSize = polynomial_size / params::opt;
 
-  char *d_mem;
+  int8_t *d_mem;
   if (max_shared_memory < shared_memory_size) {
-    d_mem = (char *)cuda_malloc_async(shared_memory_size, stream, gpu_index);
+    d_mem = (int8_t *)cuda_malloc_async(shared_memory_size, stream, gpu_index);
     device_batch_fft_ggsw_vector<T, ST, params, NOSM>
         <<<gridSize, blockSize, 0, *stream>>>(dest, src, d_mem);
     check_cuda_error(cudaGetLastError());

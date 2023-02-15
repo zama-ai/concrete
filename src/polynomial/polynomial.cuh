@@ -39,7 +39,7 @@ public:
   __device__ Polynomial(T *coefficients, uint32_t degree)
       : coefficients(coefficients), degree(degree) {}
 
-  __device__ Polynomial(char *memory, uint32_t degree)
+  __device__ Polynomial(int8_t *memory, uint32_t degree)
       : coefficients((T *)memory), degree(degree) {}
 
   __host__ void copy_to_host(T *dest) {
@@ -49,7 +49,7 @@ public:
 
   __device__ T get_coefficient(int i) { return this->coefficients[i]; }
 
-  __device__ char *reuse_memory() { return (char *)coefficients; }
+  __device__ int8_t *reuse_memory() { return (int8_t *)coefficients; }
 
   __device__ void copy_coefficients_from(Polynomial<T, params> &source,
                                          int begin_dest = 0,
