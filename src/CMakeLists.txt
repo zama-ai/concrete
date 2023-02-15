@@ -2,7 +2,8 @@ set(SOURCES
         ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/boolean_gates.h
         ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/bootstrap.h
         ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/keyswitch.h
-        ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/linear_algebra.h)
+        ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/linear_algebra.h
+        ${CMAKE_SOURCE_DIR}/${INCLUDE_DIR}/vertical_packing.h)
 file(GLOB SOURCES
      "*.cu"
      "*.h"

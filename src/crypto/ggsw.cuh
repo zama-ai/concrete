@@ -50,7 +50,7 @@ __global__ void device_batch_fft_ggsw_vector(double2 *dest, T *src,
  */
 template <typename T, typename ST, class params>
 void batch_fft_ggsw_vector(cudaStream_t *stream, double2 *dest, T *src,
-                           uint32_t r, uint32_t glwe_dim,
+                           int8_t *d_mem, uint32_t r, uint32_t glwe_dim,
                            uint32_t polynomial_size, uint32_t level_count,
                            uint32_t gpu_index, uint32_t max_shared_memory) {
 
@@ -59,19 +59,15 @@ void batch_fft_ggsw_vector(cudaStream_t *stream, double2 *dest, T *src,
   int gridSize = r * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
   int blockSize = polynomial_size / params::opt;
 
-  int8_t *d_mem;
   if (max_shared_memory < shared_memory_size) {
-    d_mem = (int8_t *)cuda_malloc_async(shared_memory_size, stream, gpu_index);
     device_batch_fft_ggsw_vector<T, ST, params, NOSM>
         <<<gridSize, blockSize, 0, *stream>>>(dest, src, d_mem);
-    check_cuda_error(cudaGetLastError());
-    cuda_drop_async(d_mem, stream, gpu_index);
   } else {
     device_batch_fft_ggsw_vector<T, ST, params, FULLSM>
         <<<gridSize, blockSize, shared_memory_size, *stream>>>(dest, src,
                                                                d_mem);
-    check_cuda_error(cudaGetLastError());
   }
+  check_cuda_error(cudaGetLastError());
 }
 
 #endif // CONCRETE_CORE_GGSW_CUH

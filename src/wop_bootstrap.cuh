@@ -68,9 +68,13 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
   // allocate and initialize device pointers for circuit bootstrap and vertical
   // packing
   if (allocate_gpu_memory) {
-    int buffer_size = get_buffer_size_cbs_vp<Torus>(
-        glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_inputs, tau);
+    int buffer_size =
+        get_buffer_size_cbs_vp<Torus>(glwe_dimension, lwe_dimension,
+                                      polynomial_size, level_count_cbs,
+                                      number_of_inputs, tau) +
+        get_buffer_size_cmux_tree<Torus>(glwe_dimension, polynomial_size,
+                                         level_count_cbs, r, tau,
+                                         max_shared_memory);
     *cbs_vp_buffer =
         (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
   }
@@ -88,6 +92,9 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
 
   uint32_t bits = sizeof(Torus) * 8;
   *cbs_delta_log = (bits - 1);
+  scratch_cmux_tree<Torus, STorus, params>(
+      v_stream, gpu_index, cbs_vp_buffer, glwe_dimension, polynomial_size,
+      level_count_cbs, r, tau, max_shared_memory, false);
 }
 
 /*
@@ -157,12 +164,15 @@ __host__ void host_circuit_bootstrap_vertical_packing(
   // split the vec of GGSW in two, the msb GGSW is for the CMux tree and the
   // lsb GGSW is for the last blind rotation.
   uint32_t r = number_of_inputs - params::log2_degree;
+  int8_t *cmux_tree_buffer =
+      (int8_t *)glwe_array_out +
+      tau * (glwe_dimension + 1) * polynomial_size * sizeof(Torus);
   // CMUX Tree
   // r = tau * p - log2(N)
   host_cmux_tree<Torus, STorus, params>(
-      v_stream, gpu_index, glwe_array_out, ggsw_out, lut_vector, glwe_dimension,
-      polynomial_size, base_log_cbs, level_count_cbs, r, tau,
-      max_shared_memory);
+      v_stream, gpu_index, glwe_array_out, ggsw_out, lut_vector,
+      cmux_tree_buffer, glwe_dimension, polynomial_size, base_log_cbs,
+      level_count_cbs, r, tau, max_shared_memory);
   check_cuda_error(cudaGetLastError());
 
   // Blind rotation + sample extraction
@@ -215,10 +225,14 @@ scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
       number_of_inputs * number_of_bits_to_extract;
   uint32_t tau = number_of_inputs;
   uint32_t r = cbs_vp_number_of_inputs - params::log2_degree;
-  int buffer_size = get_buffer_size_cbs_vp<Torus>(
-                        glwe_dimension, lwe_dimension, polynomial_size,
-                        level_count_cbs, cbs_vp_number_of_inputs, tau) +
-                    wop_pbs_buffer_size;
+  int buffer_size =
+      get_buffer_size_cbs_vp<Torus>(glwe_dimension, lwe_dimension,
+                                    polynomial_size, level_count_cbs,
+                                    cbs_vp_number_of_inputs, tau) +
+      get_buffer_size_cmux_tree<Torus>(glwe_dimension, polynomial_size,
+                                       level_count_cbs, r, tau,
+                                       max_shared_memory) +
+      wop_pbs_buffer_size;
 
   *wop_pbs_buffer = (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
 
