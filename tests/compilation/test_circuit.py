@@ -321,7 +321,7 @@ def test_virtual_p_error(p_error, bit_width, sample_size, tolerance, helpers):
     circuit = function.compile(inputset, configuration=configuration, virtual=True, p_error=p_error)
 
     sample = np.random.randint(0, 2**bit_width, size=(sample_size,))
-    output = circuit.encrypt_run_decrypt(sample)
+    output = circuit.simulate(sample)
 
     errors = 0
     for i in range(sample_size):
@@ -358,3 +358,30 @@ def test_circuit_run_with_unused_arg(helpers):
     assert circuit.encrypt_run_decrypt(10, 0) == 20
     assert circuit.encrypt_run_decrypt(10, 10) == 20
     assert circuit.encrypt_run_decrypt(10, 20) == 20
+
+
+def test_circuit_virtual_then_fhe(helpers):
+    """
+    Test compiling to virtual and then fhe.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
+    circuit = f.compile(inputset, configuration, virtual=True)
+
+    assert circuit.simulate(3, 5) == 8
+
+    circuit.enable_fhe()
+
+    assert circuit.simulate(3, 5) == 8
+    assert circuit.encrypt_run_decrypt(3, 5) == 8
+
+    circuit.enable_fhe()
+
+    assert circuit.simulate(3, 5) == 8
+    assert circuit.encrypt_run_decrypt(3, 5) == 8

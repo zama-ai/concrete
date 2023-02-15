@@ -2,6 +2,7 @@
 Declaration of `Circuit` class.
 """
 
+from copy import deepcopy
 from typing import Any, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -9,6 +10,7 @@ from concrete.compiler import PublicArguments, PublicResult
 
 from ..dtypes import Integer
 from ..internal.utils import assert_that
+from ..mlir import GraphConverter
 from ..representation import Graph
 from .client import Client
 from .configuration import Configuration
@@ -35,24 +37,26 @@ class Circuit:
         self.mlir = mlir
 
         if self.configuration.virtual:
-            assert_that(self.configuration.enable_unsafe_features)
             return
 
+        self._initialize_client_and_server()
+
+    def _initialize_client_and_server(self):
         input_signs = []
-        for i in range(len(graph.input_nodes)):  # pylint: disable=consider-using-enumerate
-            input_value = graph.input_nodes[i].output
+        for i in range(len(self.graph.input_nodes)):  # pylint: disable=consider-using-enumerate
+            input_value = self.graph.input_nodes[i].output
             assert_that(isinstance(input_value.dtype, Integer))
             input_dtype = cast(Integer, input_value.dtype)
             input_signs.append(input_dtype.is_signed)
 
         output_signs = []
-        for i in range(len(graph.output_nodes)):  # pylint: disable=consider-using-enumerate
-            output_value = graph.output_nodes[i].output
+        for i in range(len(self.graph.output_nodes)):  # pylint: disable=consider-using-enumerate
+            output_value = self.graph.output_nodes[i].output
             assert_that(isinstance(output_value.dtype, Integer))
             output_dtype = cast(Integer, output_value.dtype)
             output_signs.append(output_dtype.is_signed)
 
-        self.server = Server.create(mlir, input_signs, output_signs, self.configuration)
+        self.server = Server.create(self.mlir, input_signs, output_signs, self.configuration)
 
         keyset_cache_directory = None
         if self.configuration.use_insecure_key_cache:
@@ -64,6 +68,49 @@ class Circuit:
 
     def __str__(self):
         return self.graph.format()
+
+    def simulate(self, *args: Any) -> Any:
+        """
+        Simulate execution of the circuit.
+
+        Args:
+            *args (Any):
+                inputs to the circuit
+
+        Returns:
+            Any:
+                result of the simulation
+        """
+
+        p_error = self.p_error if not self.configuration.virtual else self.configuration.p_error
+        return self.graph(*args, p_error=p_error)
+
+    def enable_fhe(self):
+        """
+        Enable fully homomorphic encryption features.
+
+        When called on a virtual circuit, it'll enable access to the following methods:
+        - encrypt
+        - run
+        - decrypt
+        - encrypt_run_decrypt
+
+        When called on a normal circuit, it'll do nothing.
+
+        Raises:
+            RuntimeError:
+                if the circuit is not supported in fhe
+        """
+
+        if not self.configuration.virtual:
+            return
+
+        new_configuration = deepcopy(self.configuration)
+        new_configuration.virtual = False
+        self.configuration = new_configuration
+
+        self.mlir = GraphConverter.convert(self.graph)
+        self._initialize_client_and_server()
 
     def keygen(self, force: bool = False):
         """
@@ -153,9 +200,6 @@ class Circuit:
             Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
                 clear result of homomorphic evaluation
         """
-
-        if self.configuration.virtual:
-            return self.graph(*args, p_error=self.configuration.p_error)
 
         return self.decrypt(self.run(self.encrypt(*args)))
 

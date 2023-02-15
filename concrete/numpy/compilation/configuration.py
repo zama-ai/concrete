@@ -47,10 +47,6 @@ class Configuration:
                 message = "Insecure key cache cannot be used without enabling unsafe features"
                 raise RuntimeError(message)
 
-            if self.virtual:
-                message = "Virtual compilation is not allowed without enabling unsafe features"
-                raise RuntimeError(message)
-
         if self.use_insecure_key_cache and self.insecure_key_cache_location is None:
             message = "Insecure key cache cannot be enabled without specifying its location"
             raise RuntimeError(message)

@@ -261,7 +261,11 @@ class Helpers:
 
         for i in range(retries):
             expected = sanitize(function(*sample))
-            actual = sanitize(circuit.encrypt_run_decrypt(*sample))
+            actual = sanitize(
+                circuit.simulate(*sample)
+                if circuit.configuration.virtual
+                else circuit.encrypt_run_decrypt(*sample)
+            )
 
             if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                 break

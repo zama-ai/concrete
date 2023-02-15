@@ -209,21 +209,6 @@ def test_compiler_bad_compile(helpers):
         "(expected a tuple of 3 values got a tuple of 2 values)"
     )
 
-    # with bad configuration
-    # ----------------------
-
-    with pytest.raises(RuntimeError) as excinfo:
-        compiler = Compiler(lambda x: x, {"x": "encrypted"})
-        compiler.compile(
-            range(10),
-            configuration.fork(enable_unsafe_features=False, use_insecure_key_cache=False),
-            virtual=True,
-        )
-
-    assert str(excinfo.value) == (
-        "Virtual compilation is not allowed without enabling unsafe features"
-    )
-
 
 def test_compiler_virtual_compile(helpers):
     """
@@ -240,7 +225,7 @@ def test_compiler_virtual_compile(helpers):
     inputset = [(100_000, 1_000_000)]
     circuit = compiler.compile(inputset, configuration=configuration, virtual=True)
 
-    assert circuit.encrypt_run_decrypt(100_000, 1_000_000) == 100_000_000_000
+    assert circuit.simulate(100_000, 1_000_000) == 100_000_000_000
 
 
 def test_compiler_compile_bad_inputset(helpers):
