@@ -502,34 +502,55 @@ __global__ void device_blind_rotation_and_sample_extraction(
   sample_extract_body<Torus, params>(block_lwe_out, accumulator_c0, 1);
 }
 
-template <typename Torus, typename STorus, class params>
-__host__ void host_blind_rotate_and_sample_extraction(
-    void *v_stream, uint32_t gpu_index, Torus *lwe_out, Torus *ggsw_in,
-    Torus *lut_vector, uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
-    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
-    uint32_t max_shared_memory) {
+template <typename Torus>
+__host__ __device__ int
+get_memory_needed_per_block_blind_rotation_sample_extraction(
+    uint32_t polynomial_size) {
+  return sizeof(Torus) * polynomial_size +       // accumulator_c0 mask
+         sizeof(Torus) * polynomial_size +       // accumulator_c0 body
+         sizeof(Torus) * polynomial_size +       // accumulator_c1 mask
+         sizeof(Torus) * polynomial_size +       // accumulator_c1 body
+         sizeof(Torus) * polynomial_size +       // glwe_sub_mask
+         sizeof(Torus) * polynomial_size +       // glwe_sub_body
+         sizeof(double2) * polynomial_size / 2 + // mask_res_fft
+         sizeof(double2) * polynomial_size / 2 + // body_res_fft
+         sizeof(double2) * polynomial_size / 2;  // glwe_fft
+}
 
+template <typename Torus>
+__host__ __device__ int get_buffer_size_blind_rotation_sample_extraction(
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t mbr_size, uint32_t tau, uint32_t max_shared_memory) {
+
+  int memory_needed_per_block =
+      get_memory_needed_per_block_blind_rotation_sample_extraction<Torus>(
+          polynomial_size);
+  int device_mem = 0;
+  if (max_shared_memory < memory_needed_per_block) {
+    device_mem = memory_needed_per_block * tau;
+  }
+  if (max_shared_memory < polynomial_size * sizeof(double)) {
+    device_mem += polynomial_size * sizeof(double);
+  }
+  int ggsw_size = polynomial_size * (glwe_dimension + 1) *
+                  (glwe_dimension + 1) * level_count;
+  return mbr_size * ggsw_size * sizeof(double) // d_ggsw_fft_in
+         + device_mem;
+}
+
+template <typename Torus, typename STorus, typename params>
+__host__ void scratch_blind_rotation_sample_extraction(
+    void *v_stream, uint32_t gpu_index, int8_t **br_se_buffer,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t mbr_size, uint32_t tau, uint32_t max_shared_memory,
+    bool allocate_gpu_memory) {
   cudaSetDevice(gpu_index);
-  assert(glwe_dimension ==
-         1); // For larger k we will need to adjust the mask size
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int memory_needed_per_block =
-      sizeof(Torus) * polynomial_size +       // accumulator_c0 mask
-      sizeof(Torus) * polynomial_size +       // accumulator_c0 body
-      sizeof(Torus) * polynomial_size +       // accumulator_c1 mask
-      sizeof(Torus) * polynomial_size +       // accumulator_c1 body
-      sizeof(Torus) * polynomial_size +       // glwe_sub_mask
-      sizeof(Torus) * polynomial_size +       // glwe_sub_body
-      sizeof(double2) * polynomial_size / 2 + // mask_res_fft
-      sizeof(double2) * polynomial_size / 2 + // body_res_fft
-      sizeof(double2) * polynomial_size / 2;  // glwe_fft
-
-  int8_t *d_mem;
-  if (max_shared_memory < memory_needed_per_block)
-    d_mem = (int8_t *)cuda_malloc_async(memory_needed_per_block * tau, stream,
-                                        gpu_index);
-  else {
+      get_memory_needed_per_block_blind_rotation_sample_extraction<Torus>(
+          polynomial_size);
+  if (max_shared_memory >= memory_needed_per_block) {
     check_cuda_error(cudaFuncSetAttribute(
         device_blind_rotation_and_sample_extraction<Torus, STorus, params,
                                                     FULLSM>,
@@ -540,21 +561,47 @@ __host__ void host_blind_rotate_and_sample_extraction(
         cudaFuncCachePreferShared));
   }
 
-  // Applying the FFT on m^br
+  if (allocate_gpu_memory) {
+    int buffer_size = get_buffer_size_blind_rotation_sample_extraction<Torus>(
+        glwe_dimension, polynomial_size, level_count, mbr_size, tau,
+        max_shared_memory);
+    *br_se_buffer = (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
+    check_cuda_error(cudaGetLastError());
+  }
+}
+
+template <typename Torus, typename STorus, class params>
+__host__ void host_blind_rotate_and_sample_extraction(
+    void *v_stream, uint32_t gpu_index, Torus *lwe_out, Torus *ggsw_in,
+    Torus *lut_vector, int8_t *br_se_buffer, uint32_t mbr_size, uint32_t tau,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t base_log,
+    uint32_t level_count, uint32_t max_shared_memory) {
+
+  cudaSetDevice(gpu_index);
+  assert(glwe_dimension ==
+         1); // For larger k we will need to adjust the mask size
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+
+  int memory_needed_per_block =
+      get_memory_needed_per_block_blind_rotation_sample_extraction<Torus>(
+          polynomial_size);
+
+  // Prepare the buffers
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
-  double2 *d_ggsw_fft_in = (double2 *)cuda_malloc_async(
-      mbr_size * ggsw_size * sizeof(double), stream, gpu_index);
-
-  int8_t *d_mem_fft = (int8_t *)cuda_malloc_async(
-      polynomial_size * sizeof(double), stream, gpu_index);
+  double2 *d_ggsw_fft_in = (double2 *)br_se_buffer;
+  int8_t *d_mem_fft = (int8_t *)d_ggsw_fft_in +
+                      (ptrdiff_t)(mbr_size * ggsw_size * sizeof(double));
+  int8_t *d_mem = d_mem_fft;
+  if (max_shared_memory < polynomial_size * sizeof(double)) {
+    d_mem = d_mem_fft + (ptrdiff_t)(polynomial_size * sizeof(double));
+  }
+  // Apply the FFT on m^br
   batch_fft_ggsw_vector<Torus, STorus, params>(
       stream, d_ggsw_fft_in, ggsw_in, d_mem_fft, mbr_size, glwe_dimension,
       polynomial_size, level_count, gpu_index, max_shared_memory);
   check_cuda_error(cudaGetLastError());
-  cuda_drop_async(d_mem_fft, stream, gpu_index);
 
-  //
   dim3 thds(polynomial_size / params::opt, 1, 1);
   dim3 grid(tau, 1, 1);
 
@@ -573,10 +620,5 @@ __host__ void host_blind_rotate_and_sample_extraction(
             polynomial_size, base_log, level_count, memory_needed_per_block,
             d_mem);
   check_cuda_error(cudaGetLastError());
-
-  //
-  cuda_drop_async(d_ggsw_fft_in, stream, gpu_index);
-  if (max_shared_memory < memory_needed_per_block)
-    cuda_drop_async(d_mem, stream, gpu_index);
 }
 #endif // VERTICAL_PACKING_CUH

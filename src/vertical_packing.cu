@@ -240,6 +240,90 @@ void cleanup_cuda_cmux_tree(void *v_stream, uint32_t gpu_index,
 }
 
 /*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the Cmux tree on 32 bits inputs, into `br_se_buffer`. It also configures
+ * SM options on the GPU in case FULLSM mode is going to be used.
+ */
+void scratch_cuda_blind_rotation_sample_extraction_32(
+    void *v_stream, uint32_t gpu_index, int8_t **br_se_buffer,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t mbr_size, uint32_t tau, uint32_t max_shared_memory,
+    bool allocate_gpu_memory) {
+
+  switch (polynomial_size) {
+  case 512:
+    scratch_blind_rotation_sample_extraction<uint32_t, int32_t, Degree<512>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 1024:
+    scratch_blind_rotation_sample_extraction<uint32_t, int32_t, Degree<1024>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 2048:
+    scratch_blind_rotation_sample_extraction<uint32_t, int32_t, Degree<2048>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 4096:
+    scratch_blind_rotation_sample_extraction<uint32_t, int32_t, Degree<4096>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 8192:
+    scratch_blind_rotation_sample_extraction<uint32_t, int32_t, Degree<8192>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  default:
+    break;
+  }
+}
+
+/*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the Cmux tree on 64 bits inputs, into `br_se_buffer`. It also configures
+ * SM options on the GPU in case FULLSM mode is going to be used.
+ */
+void scratch_cuda_blind_rotation_sample_extraction_64(
+    void *v_stream, uint32_t gpu_index, int8_t **br_se_buffer,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t mbr_size, uint32_t tau, uint32_t max_shared_memory,
+    bool allocate_gpu_memory) {
+
+  switch (polynomial_size) {
+  case 512:
+    scratch_blind_rotation_sample_extraction<uint64_t, int64_t, Degree<512>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 1024:
+    scratch_blind_rotation_sample_extraction<uint64_t, int64_t, Degree<1024>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 2048:
+    scratch_blind_rotation_sample_extraction<uint64_t, int64_t, Degree<2048>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 4096:
+    scratch_blind_rotation_sample_extraction<uint64_t, int64_t, Degree<4096>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  case 8192:
+    scratch_blind_rotation_sample_extraction<uint64_t, int64_t, Degree<8192>>(
+        v_stream, gpu_index, br_se_buffer, glwe_dimension, polynomial_size,
+        level_count, mbr_size, tau, max_shared_memory, allocate_gpu_memory);
+    break;
+  default:
+    break;
+  }
+}
+
+/*
  * Performs blind rotation on batch of 64-bit input ggsw ciphertexts
  * - `v_stream` is a void pointer to the Cuda stream to be used in the kernel
  * launch
@@ -264,40 +348,52 @@ void cleanup_cuda_cmux_tree(void *v_stream, uint32_t gpu_index,
  */
 void cuda_blind_rotate_and_sample_extraction_64(
     void *v_stream, uint32_t gpu_index, void *lwe_out, void *ggsw_in,
-    void *lut_vector, uint32_t mbr_size, uint32_t tau, uint32_t glwe_dimension,
-    uint32_t polynomial_size, uint32_t base_log, uint32_t l_gadget,
-    uint32_t max_shared_memory) {
+    void *lut_vector, int8_t *br_se_buffer, uint32_t mbr_size, uint32_t tau,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t base_log,
+    uint32_t l_gadget, uint32_t max_shared_memory) {
 
   switch (polynomial_size) {
   case 512:
     host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
-        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
-        base_log, l_gadget, max_shared_memory);
+        (uint64_t *)lut_vector, br_se_buffer, mbr_size, tau, glwe_dimension,
+        polynomial_size, base_log, l_gadget, max_shared_memory);
     break;
   case 1024:
     host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
-        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
-        base_log, l_gadget, max_shared_memory);
+        (uint64_t *)lut_vector, br_se_buffer, mbr_size, tau, glwe_dimension,
+        polynomial_size, base_log, l_gadget, max_shared_memory);
     break;
   case 2048:
     host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
-        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
-        base_log, l_gadget, max_shared_memory);
+        (uint64_t *)lut_vector, br_se_buffer, mbr_size, tau, glwe_dimension,
+        polynomial_size, base_log, l_gadget, max_shared_memory);
     break;
   case 4096:
     host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
-        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
-        base_log, l_gadget, max_shared_memory);
+        (uint64_t *)lut_vector, br_se_buffer, mbr_size, tau, glwe_dimension,
+        polynomial_size, base_log, l_gadget, max_shared_memory);
     break;
   case 8192:
     host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, (uint64_t *)lwe_out, (uint64_t *)ggsw_in,
-        (uint64_t *)lut_vector, mbr_size, tau, glwe_dimension, polynomial_size,
-        base_log, l_gadget, max_shared_memory);
+        (uint64_t *)lut_vector, br_se_buffer, mbr_size, tau, glwe_dimension,
+        polynomial_size, base_log, l_gadget, max_shared_memory);
     break;
   }
+}
+
+/*
+ * This cleanup function frees the data for the blind rotation and sample
+ * extraction on GPU in br_se_buffer for 32 or 64 bits inputs.
+ */
+void cleanup_cuda_blind_rotation_sample_extraction(void *v_stream,
+                                                   uint32_t gpu_index,
+                                                   int8_t **br_se_buffer) {
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  // Free memory
+  cuda_drop_async(*br_se_buffer, stream, gpu_index);
 }
