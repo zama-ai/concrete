@@ -50,7 +50,7 @@ void scratch_cuda_circuit_bootstrap_32(
 
 /*
  * This scratch function allocates the necessary amount of data on the GPU for
- * the circuit bootstrap on 32 bits inputs, into `cbs_buffer`. It also
+ * the circuit bootstrap on 64 bits inputs, into `cbs_buffer`. It also
  * configures SM options on the GPU in case FULLSM mode is going to be used.
  */
 void scratch_cuda_circuit_bootstrap_64(

@@ -2,8 +2,9 @@
 
 /*
  * This scratch function allocates the necessary amount of data on the GPU for
- * the amortized PBS on 32 bits inputs, into `cmux_tree_buffer`. It also
- * configures SM options on the GPU in case FULLSM mode is going to be used.
+ * the amortized PBS on 32 bits inputs, into `pbs_buffer`. It also
+ * configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to
+ * be used.
  */
 void scratch_cuda_bootstrap_amortized_32(void *v_stream, uint32_t gpu_index,
                                          int8_t **pbs_buffer,
@@ -51,8 +52,9 @@ void scratch_cuda_bootstrap_amortized_32(void *v_stream, uint32_t gpu_index,
 
 /*
  * This scratch function allocates the necessary amount of data on the GPU for
- * the amortized PBS on 64 bits inputs, into `cmux_tree_buffer`. It also
- * configures SM options on the GPU in case FULLSM mode is going to be used.
+ * the amortized PBS on 64 bits inputs, into `pbs_buffer`. It also
+ * configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to
+ * be used.
  */
 void scratch_cuda_bootstrap_amortized_64(void *v_stream, uint32_t gpu_index,
                                          int8_t **pbs_buffer,

@@ -108,44 +108,50 @@ void scratch_cuda_wop_pbs_32(
     void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
     uint32_t *delta_log, uint32_t *cbs_delta_log, uint32_t glwe_dimension,
     uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t level_count_bsk,
     uint32_t number_of_bits_of_message_including_padding,
     uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
-    uint32_t max_shared_memory) {
+    uint32_t max_shared_memory, bool allocate_gpu_memory) {
   switch (polynomial_size) {
   case 512:
     scratch_wop_pbs<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 1024:
     scratch_wop_pbs<uint32_t, int32_t, Degree<1024>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 2048:
     scratch_wop_pbs<uint32_t, int32_t, Degree<2048>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 4096:
     scratch_wop_pbs<uint32_t, int32_t, Degree<4096>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 8192:
     scratch_wop_pbs<uint32_t, int32_t, Degree<8192>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   default:
     break;
@@ -162,44 +168,50 @@ void scratch_cuda_wop_pbs_64(
     void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
     uint32_t *delta_log, uint32_t *cbs_delta_log, uint32_t glwe_dimension,
     uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t level_count_bsk,
     uint32_t number_of_bits_of_message_including_padding,
     uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
-    uint32_t max_shared_memory) {
+    uint32_t max_shared_memory, bool allocate_gpu_memory) {
   switch (polynomial_size) {
   case 512:
     scratch_wop_pbs<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 1024:
     scratch_wop_pbs<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 2048:
     scratch_wop_pbs<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 4096:
     scratch_wop_pbs<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 8192:
     scratch_wop_pbs<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
         glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
-        number_of_bits_of_message_including_padding, number_of_bits_to_extract,
-        number_of_inputs, max_shared_memory);
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
     break;
   default:
     break;

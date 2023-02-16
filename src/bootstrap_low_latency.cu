@@ -1,5 +1,113 @@
 #include "bootstrap_low_latency.cuh"
 
+/*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the low latency PBS on 32 bits inputs, into `pbs_buffer`. It also
+ * configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to
+ * be used.
+ */
+void scratch_cuda_bootstrap_low_latency_32(
+    void *v_stream, uint32_t gpu_index, int8_t **pbs_buffer,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory,
+    bool allocate_gpu_memory) {
+
+  switch (polynomial_size) {
+  case 256:
+    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<256>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 512:
+    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<512>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 1024:
+    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<1024>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 2048:
+    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<2048>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 4096:
+    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<4096>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 8192:
+    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<8192>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  default:
+    break;
+  }
+}
+
+/*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the low_latency PBS on 64 bits inputs, into `pbs_buffer`. It also
+ * configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to
+ * be used.
+ */
+void scratch_cuda_bootstrap_low_latency_64(
+    void *v_stream, uint32_t gpu_index, int8_t **pbs_buffer,
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory,
+    bool allocate_gpu_memory) {
+
+  switch (polynomial_size) {
+  case 256:
+    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<256>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 512:
+    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<512>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 1024:
+    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<1024>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 2048:
+    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<2048>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 4096:
+    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<4096>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  case 8192:
+    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<8192>>(
+        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+        level_count, input_lwe_ciphertext_count, max_shared_memory,
+        allocate_gpu_memory);
+    break;
+  default:
+    break;
+  }
+}
+
 /* Perform bootstrapping on a batch of input u32 LWE ciphertexts.
  * This function performs best for small numbers of inputs. Beyond a certain
  * number of inputs (the exact number depends on the cryptographic parameters),
@@ -10,9 +118,10 @@
 void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lut_vector,
     void *lut_vector_indexes, void *lwe_array_in, void *bootstrapping_key,
-    uint32_t lwe_dimension, uint32_t glwe_dimension, uint32_t polynomial_size,
-    uint32_t base_log, uint32_t level_count, uint32_t num_samples,
-    uint32_t num_lut_vectors, uint32_t lwe_idx, uint32_t max_shared_memory) {
+    int8_t *pbs_buffer, uint32_t lwe_dimension, uint32_t glwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+    uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
+    uint32_t max_shared_memory) {
 
   assert(("Error (GPU low latency PBS): base log should be <= 32",
           base_log <= 32));
@@ -38,7 +147,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     host_bootstrap_low_latency<uint32_t, Degree<256>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -46,7 +155,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     host_bootstrap_low_latency<uint32_t, Degree<512>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -54,7 +163,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     host_bootstrap_low_latency<uint32_t, Degree<1024>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -62,7 +171,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     host_bootstrap_low_latency<uint32_t, Degree<2048>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -70,7 +179,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     host_bootstrap_low_latency<uint32_t, Degree<4096>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -78,7 +187,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     host_bootstrap_low_latency<uint32_t, Degree<8192>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -166,9 +275,10 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
 void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lut_vector,
     void *lut_vector_indexes, void *lwe_array_in, void *bootstrapping_key,
-    uint32_t lwe_dimension, uint32_t glwe_dimension, uint32_t polynomial_size,
-    uint32_t base_log, uint32_t level_count, uint32_t num_samples,
-    uint32_t num_lut_vectors, uint32_t lwe_idx, uint32_t max_shared_memory) {
+    int8_t *pbs_buffer, uint32_t lwe_dimension, uint32_t glwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+    uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
+    uint32_t max_shared_memory) {
 
   assert(("Error (GPU low latency PBS): base log should be <= 64",
           base_log <= 64));
@@ -194,7 +304,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     host_bootstrap_low_latency<uint64_t, Degree<256>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -202,7 +312,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     host_bootstrap_low_latency<uint64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -210,7 +320,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     host_bootstrap_low_latency<uint64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -218,7 +328,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     host_bootstrap_low_latency<uint64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -226,7 +336,7 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     host_bootstrap_low_latency<uint64_t, Degree<4096>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
@@ -234,11 +344,22 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     host_bootstrap_low_latency<uint64_t, Degree<8192>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, glwe_dimension, lwe_dimension,
+        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
         max_shared_memory);
     break;
   default:
     break;
   }
+}
+
+/*
+ * This cleanup function frees the data for the low latency PBS on GPU in
+ * pbs_buffer for 32 or 64 bits inputs.
+ */
+void cleanup_cuda_bootstrap_low_latency(void *v_stream, uint32_t gpu_index,
+                                        int8_t **pbs_buffer) {
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  // Free memory
+  cuda_drop_async(*pbs_buffer, stream, gpu_index);
 }

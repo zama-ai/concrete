@@ -2,7 +2,6 @@
 #define CBS_CUH
 
 #include "bit_extraction.cuh"
-#include "bootstrap.h"
 #include "bootstrap_amortized.cuh"
 #include "device.h"
 #include "keyswitch.cuh"
@@ -124,8 +123,7 @@ __host__ void scratch_circuit_bootstrap(
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int pbs_count = number_of_inputs * level_count_cbs;
-  // allocate and initialize device pointers for circuit bootstrap and vertical
-  // packing
+  // allocate and initialize device pointers for circuit bootstrap
   if (allocate_gpu_memory) {
     int buffer_size =
         get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
@@ -165,20 +163,24 @@ __host__ void host_circuit_bootstrap(
   dim3 blocks(level_cbs, number_of_inputs, 1);
   int threads = 256;
 
-  Torus *lwe_array_in_fp_ks_buffer = (Torus *)cbs_buffer;
+  // Always define the PBS buffer first, because it has the strongest memory
+  // alignment requirement (16 bytes for double2)
+  int8_t *pbs_buffer = (int8_t *)cbs_buffer;
   Torus *lwe_array_out_pbs_buffer =
-      (Torus *)lwe_array_in_fp_ks_buffer +
-      (ptrdiff_t)(number_of_inputs * level_cbs * (glwe_dimension + 1) *
-                  (polynomial_size + 1));
+      (Torus *)pbs_buffer +
+      (ptrdiff_t)(
+          get_buffer_size_bootstrap_amortized<Torus>(
+              glwe_dimension, polynomial_size, pbs_count, max_shared_memory) /
+          sizeof(Torus));
   Torus *lwe_array_in_shifted_buffer =
-      (Torus *)lwe_array_out_pbs_buffer +
+      lwe_array_out_pbs_buffer +
       (ptrdiff_t)(number_of_inputs * level_cbs * (polynomial_size + 1));
   Torus *lut_vector =
-      (Torus *)lwe_array_in_shifted_buffer +
+      lwe_array_in_shifted_buffer +
       (ptrdiff_t)(number_of_inputs * level_cbs * (lwe_dimension + 1));
-  int8_t *pbs_buffer =
-      (int8_t *)lut_vector + (ptrdiff_t)(level_cbs * (glwe_dimension + 1) *
-                                         polynomial_size * sizeof(Torus));
+  Torus *lwe_array_in_fp_ks_buffer =
+      lut_vector +
+      (ptrdiff_t)(level_cbs * (glwe_dimension + 1) * polynomial_size);
 
   // Shift message LSB on padding bit, at this point we expect to have messages
   // with only 1 bit of information
