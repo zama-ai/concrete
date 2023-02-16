@@ -20,7 +20,7 @@ Apple silicon users must use docker installation (explained below) as there is n
 You can also get the **Concrete-Numpy** docker image:
 
 ```shell
-docker pull zamafhe/concrete-numpy:v0.10.0
+docker pull zamafhe/concrete-numpy:v0.11.0
 ```
 
 ### Starting a Jupyter server.
@@ -28,13 +28,13 @@ docker pull zamafhe/concrete-numpy:v0.10.0
 By default, the entry point of the **Concrete-Numpy** docker image is a jupyter server that you can access from your browser:
 
 ```shell
-docker run --rm -it -p 8888:8888 zamafhe/concrete-numpy:v0.10.0
+docker run --rm -it -p 8888:8888 zamafhe/concrete-numpy:v0.11.0
 ```
 
 To save notebooks on host, you can use a local volume:
 
 ```shell
-docker run --rm -it -p 8888:8888 -v /path/to/notebooks:/data zamafhe/concrete-numpy:v0.10.0
+docker run --rm -it -p 8888:8888 -v /path/to/notebooks:/data zamafhe/concrete-numpy:v0.11.0
 ```
 
 ### Starting a Bash session.
