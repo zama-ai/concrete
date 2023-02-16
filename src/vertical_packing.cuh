@@ -1,7 +1,6 @@
 #ifndef VERTICAL_PACKING_CUH
 #define VERTICAL_PACKING_CUH
 
-#include "../include/vertical_packing.h"
 #include "bootstrap.h"
 #include "complex/operations.cuh"
 #include "crypto/gadget.cuh"

@@ -213,35 +213,106 @@ __global__ void device_bootstrap_amortized(
                                      glwe_dimension);
 }
 
+template <typename Torus>
+__host__ __device__ int
+get_buffer_size_full_sm_bootstrap_amortized(uint32_t polynomial_size,
+                                            uint32_t glwe_dimension) {
+  return sizeof(Torus) * polynomial_size * (glwe_dimension + 1) + // accumulator
+         sizeof(Torus) * polynomial_size *
+             (glwe_dimension + 1) + // accumulator rotated
+         sizeof(double2) * polynomial_size / 2 *
+             (glwe_dimension + 1) + // accumulator fft
+         sizeof(double2) * polynomial_size / 2 *
+             (glwe_dimension + 1); // calculate buffer fft
+}
+
+template <typename Torus>
+__host__ __device__ int
+get_buffer_size_partial_sm_bootstrap_amortized(uint32_t polynomial_size,
+                                               uint32_t glwe_dimension) {
+  return sizeof(double2) * polynomial_size / 2 *
+         (glwe_dimension + 1); // calculate buffer fft
+}
+
+template <typename Torus>
+__host__ __device__ int get_buffer_size_bootstrap_amortized(
+    uint32_t glwe_dimension, uint32_t polynomial_size,
+    uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory) {
+
+  int full_sm = get_buffer_size_full_sm_bootstrap_amortized<Torus>(
+      polynomial_size, glwe_dimension);
+  int partial_sm = get_buffer_size_partial_sm_bootstrap_amortized<Torus>(
+      polynomial_size, glwe_dimension);
+  int partial_dm = full_sm - partial_sm;
+  int full_dm = full_sm;
+  int device_mem = 0;
+  if (max_shared_memory < partial_sm) {
+    device_mem = full_dm * input_lwe_ciphertext_count;
+  } else if (max_shared_memory < full_sm) {
+    device_mem = partial_dm * input_lwe_ciphertext_count;
+  }
+  return device_mem;
+}
+
+template <typename Torus, typename STorus, typename params>
+__host__ void scratch_bootstrap_amortized(void *v_stream, uint32_t gpu_index,
+                                          int8_t **pbs_buffer,
+                                          uint32_t glwe_dimension,
+                                          uint32_t polynomial_size,
+                                          uint32_t input_lwe_ciphertext_count,
+                                          uint32_t max_shared_memory,
+                                          bool allocate_gpu_memory) {
+  cudaSetDevice(gpu_index);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+
+  int full_sm = get_buffer_size_full_sm_bootstrap_amortized<Torus>(
+      polynomial_size, glwe_dimension);
+  int partial_sm = get_buffer_size_partial_sm_bootstrap_amortized<Torus>(
+      polynomial_size, glwe_dimension);
+  if (max_shared_memory >= partial_sm && max_shared_memory < full_sm) {
+    cudaFuncSetAttribute(device_bootstrap_amortized<Torus, params, PARTIALSM>,
+                         cudaFuncAttributeMaxDynamicSharedMemorySize,
+                         partial_sm);
+    cudaFuncSetCacheConfig(device_bootstrap_amortized<Torus, params, PARTIALSM>,
+                           cudaFuncCachePreferShared);
+  } else if (max_shared_memory >= partial_sm) {
+    check_cuda_error(cudaFuncSetAttribute(
+        device_bootstrap_amortized<Torus, params, FULLSM>,
+        cudaFuncAttributeMaxDynamicSharedMemorySize, full_sm));
+    check_cuda_error(cudaFuncSetCacheConfig(
+        device_bootstrap_amortized<Torus, params, FULLSM>,
+        cudaFuncCachePreferShared));
+  }
+  if (allocate_gpu_memory) {
+    int buffer_size = get_buffer_size_bootstrap_amortized<Torus>(
+        glwe_dimension, polynomial_size, input_lwe_ciphertext_count,
+        max_shared_memory);
+    *pbs_buffer = (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
+    check_cuda_error(cudaGetLastError());
+  }
+}
+
 template <typename Torus, class params>
 __host__ void host_bootstrap_amortized(
     void *v_stream, uint32_t gpu_index, Torus *lwe_array_out, Torus *lut_vector,
     Torus *lut_vector_indexes, Torus *lwe_array_in, double2 *bootstrapping_key,
-    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t base_log, uint32_t level_count,
+    int8_t *pbs_buffer, uint32_t glwe_dimension, uint32_t lwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t num_lut_vectors,
     uint32_t lwe_idx, uint32_t max_shared_memory) {
 
   cudaSetDevice(gpu_index);
-  int SM_FULL =
-      sizeof(Torus) * polynomial_size * (glwe_dimension + 1) + // accumulator
-      sizeof(Torus) * polynomial_size *
-          (glwe_dimension + 1) + // accumulator rotated
-      sizeof(double2) * polynomial_size / 2 *
-          (glwe_dimension + 1) + // accumulator fft
-      sizeof(double2) * polynomial_size / 2 *
-          (glwe_dimension + 1); // calculate buffer fft
+  int SM_FULL = get_buffer_size_full_sm_bootstrap_amortized<Torus>(
+      polynomial_size, glwe_dimension);
 
-  int SM_PART = sizeof(double2) * polynomial_size / 2 *
-                (glwe_dimension + 1); // calculate buffer fft
+  int SM_PART = get_buffer_size_partial_sm_bootstrap_amortized<Torus>(
+      polynomial_size, glwe_dimension);
 
   int DM_PART = SM_FULL - SM_PART;
 
   int DM_FULL = SM_FULL;
 
   auto stream = static_cast<cudaStream_t *>(v_stream);
-
-  int8_t *d_mem;
 
   // Create a 1-dimensional grid of threads
   // where each block handles 1 sample and each thread
@@ -257,23 +328,15 @@ __host__ void host_bootstrap_amortized(
   // from one of three templates (no use, partial use or full use
   // of shared memory)
   if (max_shared_memory < SM_PART) {
-    d_mem = (int8_t *)cuda_malloc_async(DM_FULL * input_lwe_ciphertext_count,
-                                        stream, gpu_index);
     device_bootstrap_amortized<Torus, params, NOSM><<<grid, thds, 0, *stream>>>(
         lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
-        bootstrapping_key, d_mem, glwe_dimension, lwe_dimension,
+        bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
         polynomial_size, base_log, level_count, lwe_idx, DM_FULL);
   } else if (max_shared_memory < SM_FULL) {
-    cudaFuncSetAttribute(device_bootstrap_amortized<Torus, params, PARTIALSM>,
-                         cudaFuncAttributeMaxDynamicSharedMemorySize, SM_PART);
-    cudaFuncSetCacheConfig(device_bootstrap_amortized<Torus, params, PARTIALSM>,
-                           cudaFuncCachePreferShared);
-    d_mem = (int8_t *)cuda_malloc_async(DM_PART * input_lwe_ciphertext_count,
-                                        stream, gpu_index);
     device_bootstrap_amortized<Torus, params, PARTIALSM>
         <<<grid, thds, SM_PART, *stream>>>(
             lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
-            bootstrapping_key, d_mem, glwe_dimension, lwe_dimension,
+            bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
             polynomial_size, base_log, level_count, lwe_idx, DM_PART);
   } else {
     // For devices with compute capability 7.x a single thread block can
@@ -281,22 +344,13 @@ __host__ void host_bootstrap_amortized(
     // device then has to be allocated dynamically.
     // For lower compute capabilities, this call
     // just does nothing and the amount of shared memory used is 48 KB
-    check_cuda_error(cudaFuncSetAttribute(
-        device_bootstrap_amortized<Torus, params, FULLSM>,
-        cudaFuncAttributeMaxDynamicSharedMemorySize, SM_FULL));
-    check_cuda_error(cudaFuncSetCacheConfig(
-        device_bootstrap_amortized<Torus, params, FULLSM>,
-        cudaFuncCachePreferShared));
-    d_mem = (int8_t *)cuda_malloc_async(0, stream, gpu_index);
-
     device_bootstrap_amortized<Torus, params, FULLSM>
         <<<grid, thds, SM_FULL, *stream>>>(
             lwe_array_out, lut_vector, lut_vector_indexes, lwe_array_in,
-            bootstrapping_key, d_mem, glwe_dimension, lwe_dimension,
+            bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
             polynomial_size, base_log, level_count, lwe_idx, 0);
   }
   check_cuda_error(cudaGetLastError());
-  cuda_drop_async(d_mem, stream, gpu_index);
 }
 
 template <typename Torus, class params>

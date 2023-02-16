@@ -1,5 +1,5 @@
-#ifndef CBS_H
-#define CBS_H
+#ifndef CBS_CUH
+#define CBS_CUH
 
 #include "bit_extraction.cuh"
 #include "bootstrap.h"
@@ -96,6 +96,51 @@ __global__ void copy_add_lwe_cbs(Torus *lwe_dst, Torus *lwe_src,
   }
 }
 
+template <typename Torus>
+__host__ __device__ int
+get_buffer_size_cbs(uint32_t glwe_dimension, uint32_t lwe_dimension,
+                    uint32_t polynomial_size, uint32_t level_count_cbs,
+                    uint32_t number_of_inputs) {
+
+  return number_of_inputs * level_count_cbs * (glwe_dimension + 1) *
+             (polynomial_size + 1) *
+             sizeof(Torus) + // lwe_array_in_fp_ks_buffer
+         number_of_inputs * level_count_cbs * (polynomial_size + 1) *
+             sizeof(Torus) + // lwe_array_out_pbs_buffer
+         number_of_inputs * level_count_cbs * (lwe_dimension + 1) *
+             sizeof(Torus) + // lwe_array_in_shifted_buffer
+         level_count_cbs * (glwe_dimension + 1) * polynomial_size *
+             sizeof(Torus); // lut_vector_cbs
+}
+
+template <typename Torus, typename STorus, typename params>
+__host__ void scratch_circuit_bootstrap(
+    void *v_stream, uint32_t gpu_index, int8_t **cbs_buffer,
+    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
+    uint32_t level_count_cbs, uint32_t number_of_inputs,
+    uint32_t max_shared_memory, bool allocate_gpu_memory) {
+
+  cudaSetDevice(gpu_index);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+
+  int pbs_count = number_of_inputs * level_count_cbs;
+  // allocate and initialize device pointers for circuit bootstrap and vertical
+  // packing
+  if (allocate_gpu_memory) {
+    int buffer_size =
+        get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
+                                   polynomial_size, level_count_cbs,
+                                   number_of_inputs) +
+        get_buffer_size_bootstrap_amortized<Torus>(
+            glwe_dimension, polynomial_size, pbs_count, max_shared_memory);
+    *cbs_buffer = (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
+  }
+
+  scratch_bootstrap_amortized<Torus, STorus, params>(
+      v_stream, gpu_index, cbs_buffer, glwe_dimension, polynomial_size,
+      pbs_count, max_shared_memory, false);
+}
+
 /*
  * Host function for cuda circuit bootstrap.
  * It executes device functions in specific order and manages
@@ -104,23 +149,36 @@ __global__ void copy_add_lwe_cbs(Torus *lwe_dst, Torus *lwe_src,
 template <typename Torus, class params>
 __host__ void host_circuit_bootstrap(
     void *v_stream, uint32_t gpu_index, Torus *ggsw_out, Torus *lwe_array_in,
-    double2 *fourier_bsk, Torus *fp_ksk_array,
-    Torus *lwe_array_in_shifted_buffer, Torus *lut_vector,
-    Torus *lut_vector_indexes, Torus *lwe_array_out_pbs_buffer,
-    Torus *lwe_array_in_fp_ks_buffer, uint32_t delta_log,
-    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t level_bsk, uint32_t base_log_bsk, uint32_t level_pksk,
-    uint32_t base_log_pksk, uint32_t level_cbs, uint32_t base_log_cbs,
-    uint32_t number_of_samples, uint32_t max_shared_memory) {
+    double2 *fourier_bsk, Torus *fp_ksk_array, Torus *lut_vector_indexes,
+    int8_t *cbs_buffer, uint32_t delta_log, uint32_t polynomial_size,
+    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t level_bsk,
+    uint32_t base_log_bsk, uint32_t level_pksk, uint32_t base_log_pksk,
+    uint32_t level_cbs, uint32_t base_log_cbs, uint32_t number_of_inputs,
+    uint32_t max_shared_memory) {
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   uint32_t ciphertext_n_bits = sizeof(Torus) * 8;
   uint32_t lwe_size = lwe_dimension + 1;
-  int pbs_count = number_of_samples * level_cbs;
+  int pbs_count = number_of_inputs * level_cbs;
 
-  dim3 blocks(level_cbs, number_of_samples, 1);
+  dim3 blocks(level_cbs, number_of_inputs, 1);
   int threads = 256;
+
+  Torus *lwe_array_in_fp_ks_buffer = (Torus *)cbs_buffer;
+  Torus *lwe_array_out_pbs_buffer =
+      (Torus *)lwe_array_in_fp_ks_buffer +
+      (ptrdiff_t)(number_of_inputs * level_cbs * (glwe_dimension + 1) *
+                  (polynomial_size + 1));
+  Torus *lwe_array_in_shifted_buffer =
+      (Torus *)lwe_array_out_pbs_buffer +
+      (ptrdiff_t)(number_of_inputs * level_cbs * (polynomial_size + 1));
+  Torus *lut_vector =
+      (Torus *)lwe_array_in_shifted_buffer +
+      (ptrdiff_t)(number_of_inputs * level_cbs * (lwe_dimension + 1));
+  int8_t *pbs_buffer =
+      (int8_t *)lut_vector + (ptrdiff_t)(level_cbs * (glwe_dimension + 1) *
+                                         polynomial_size * sizeof(Torus));
 
   // Shift message LSB on padding bit, at this point we expect to have messages
   // with only 1 bit of information
@@ -143,7 +201,7 @@ __host__ void host_circuit_bootstrap(
   // MSB and no bit of padding
   host_bootstrap_amortized<Torus, params>(
       v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_vector,
-      lut_vector_indexes, lwe_array_in_shifted_buffer, fourier_bsk,
+      lut_vector_indexes, lwe_array_in_shifted_buffer, fourier_bsk, pbs_buffer,
       glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk, level_bsk,
       pbs_count, level_cbs, 0, max_shared_memory);
 
@@ -161,4 +219,4 @@ __host__ void host_circuit_bootstrap(
       level_pksk, pbs_count * (glwe_dimension + 1), glwe_dimension + 1);
 }
 
-#endif // CBS_H
+#endif // CBS_CUH

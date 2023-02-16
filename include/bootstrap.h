@@ -17,19 +17,40 @@ void cuda_convert_lwe_bootstrap_key_64(void *dest, void *src, void *v_stream,
                                        uint32_t glwe_dim, uint32_t level_count,
                                        uint32_t polynomial_size);
 
+void scratch_cuda_bootstrap_amortized_32(void *v_stream, uint32_t gpu_index,
+                                         int8_t **pbs_buffer,
+                                         uint32_t glwe_dimension,
+                                         uint32_t polynomial_size,
+                                         uint32_t input_lwe_ciphertext_count,
+                                         uint32_t max_shared_memory,
+                                         bool allocate_gpu_memory);
+
+void scratch_cuda_bootstrap_amortized_64(void *v_stream, uint32_t gpu_index,
+                                         int8_t **pbs_buffer,
+                                         uint32_t glwe_dimension,
+                                         uint32_t polynomial_size,
+                                         uint32_t input_lwe_ciphertext_count,
+                                         uint32_t max_shared_memory,
+                                         bool allocate_gpu_memory);
+
 void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
-    void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *test_vector,
-    void *test_vector_indexes, void *lwe_array_in, void *bootstrapping_key,
-    uint32_t lwe_dimension, uint32_t glwe_dimension, uint32_t polynomial_size,
-    uint32_t base_log, uint32_t level_count, uint32_t num_samples,
-    uint32_t num_test_vectors, uint32_t lwe_idx, uint32_t max_shared_memory);
+    void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lut_vector,
+    void *lut_vector_indexes, void *lwe_array_in, void *bootstrapping_key,
+    int8_t *pbs_buffer, uint32_t lwe_dimension, uint32_t glwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+    uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
+    uint32_t max_shared_memory);
 
 void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
-    void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *test_vector,
-    void *test_vector_indexes, void *lwe_array_in, void *bootstrapping_key,
-    uint32_t lwe_dimension, uint32_t glwe_dimension, uint32_t polynomial_size,
-    uint32_t base_log, uint32_t level_count, uint32_t num_samples,
-    uint32_t num_test_vectors, uint32_t lwe_idx, uint32_t max_shared_memory);
+    void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *lut_vector,
+    void *lut_vector_indexes, void *lwe_array_in, void *bootstrapping_key,
+    int8_t *pbs_buffer, uint32_t lwe_dimension, uint32_t glwe_dimension,
+    uint32_t polynomial_size, uint32_t base_log, uint32_t level_count,
+    uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
+    uint32_t max_shared_memory);
+
+void cleanup_cuda_bootstrap_amortized(void *v_stream, uint32_t gpu_index,
+                                      int8_t **pbs_buffer);
 
 void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     void *v_stream, uint32_t gpu_index, void *lwe_array_out, void *test_vector,
@@ -66,26 +87,6 @@ void cuda_extract_bits_64(
     uint32_t glwe_dimension, uint32_t base_log_bsk, uint32_t level_count_bsk,
     uint32_t base_log_ksk, uint32_t level_count_ksk, uint32_t number_of_samples,
     uint32_t max_shared_memory);
-
-void cuda_circuit_bootstrap_32(
-    void *v_stream, uint32_t gpu_index, void *ggsw_out, void *lwe_array_in,
-    void *fourier_bsk, void *fp_ksk_array, void *lwe_array_in_shifted_buffer,
-    void *lut_vector, void *lut_vector_indexes, void *lwe_array_out_pbs_buffer,
-    void *lwe_array_in_fp_ks_buffer, uint32_t delta_log,
-    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t level_bsk, uint32_t base_log_bsk, uint32_t level_pksk,
-    uint32_t base_log_pksk, uint32_t level_cbs, uint32_t base_log_cbs,
-    uint32_t number_of_samples, uint32_t max_shared_memory);
-
-void cuda_circuit_bootstrap_64(
-    void *v_stream, uint32_t gpu_index, void *ggsw_out, void *lwe_array_in,
-    void *fourier_bsk, void *fp_ksk_array, void *lwe_array_in_shifted_buffer,
-    void *lut_vector, void *lut_vector_indexes, void *lwe_array_out_pbs_buffer,
-    void *lwe_array_in_fp_ks_buffer, uint32_t delta_log,
-    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t level_bsk, uint32_t base_log_bsk, uint32_t level_pksk,
-    uint32_t base_log_pksk, uint32_t level_cbs, uint32_t base_log_cbs,
-    uint32_t number_of_samples, uint32_t max_shared_memory);
 
 void scratch_cuda_circuit_bootstrap_vertical_packing_32(
     void *v_stream, uint32_t gpu_index, int8_t **cbs_vp_buffer,
