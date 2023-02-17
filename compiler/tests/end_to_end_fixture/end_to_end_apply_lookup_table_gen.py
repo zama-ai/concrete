@@ -15,7 +15,7 @@ def generate(args):
     for p in args.bitwidth:
         max_value = (2 ** p) - 1
         random_lut = np.random.randint(max_value+1, size=2**p)
-        print(f"description: unsigned_apply_lookup_table_{p}bits")
+        print(f"description: apply_lookup_table_{p}bits")
         print("program: |")
         print(
             f"  func.func @main(%arg0: !FHE.eint<{p}>) -> !FHE.eint<{p}> {{")
