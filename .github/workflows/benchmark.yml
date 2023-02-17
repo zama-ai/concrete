@@ -16,6 +16,14 @@ on:
         options:
           - cpu
           - gpu
+      benchmark_name:
+        description: 'Benchmark name'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - standard
+          - application
       ec2-instance-type:
         description: 'EC2 instance type'
         required: true
@@ -132,6 +140,11 @@ jobs:
           echo "CXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
           echo "CUDAHOSTCXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
           echo "CUDACXX=$CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
+
+      - name: Setup environment variable for benchmark target
+        if: ${{ env.BENCHMARK_NAME != 'standard' }}
+        run |
+          echo "BENCHMARK_TARGET=${{ env.BENCHMARK_TARGET }}-${{ env.BENCHMARK_NAME }}" >> "${GITHUB_ENV}"
 
       - name: Install rust
         uses: actions-rs/toolchain@v1
