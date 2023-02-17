@@ -510,6 +510,30 @@ static llvm::APInt getSqMANP(
   return eNorm;
 }
 
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.max_eint` operation.
+static llvm::APInt getSqMANP(
+    mlir::concretelang::FHE::MaxEintOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+  assert(operandMANPs.size() == 2 &&
+         operandMANPs[0]->getValue().getMANP().hasValue() &&
+         operandMANPs[1]->getValue().getMANP().hasValue() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+
+  // max(x, y) = max(x - y, 0) + y
+
+  const llvm::APInt x = operandMANPs[0]->getValue().getMANP().getValue();
+  const llvm::APInt y = operandMANPs[1]->getValue().getMANP().getValue();
+
+  const llvm::APInt sub = APIntWidthExtendUAdd(x, y);
+  const llvm::APInt tlu = {1, 1, false};
+  const llvm::APInt add = APIntWidthExtendUAdd(tlu, y);
+
+  // this is not optimal as it can increase the resulting noise unnecessarily
+  return APIntUMax(add, sub);
+}
+
 /// Calculates the squared Minimal Arithmetic Noise Padding of an
 /// `FHELinalg.add_eint_int` operation.
 static llvm::APInt getSqMANP(
@@ -1153,6 +1177,28 @@ static llvm::APInt getSqMANP(
   return accNorm;
 }
 
+static llvm::APInt getSqMANP(
+    mlir::concretelang::FHELinalg::Maxpool2dOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  // maximum between two value is calculated using
+  // - max(x - y, 0) + y
+
+  // max is calculated with a TLU so MANP is {1, 1, false}
+  // y on the other hand comes from the input or from the previous result
+
+  // in the current implementation, it's the input
+  // so the resulting MANP is `{1, 1, false} + MANP input`
+
+  const llvm::APInt tlu = {1, 1, false};
+  const llvm::APInt input = operandMANPs[0]->getValue().getMANP().getValue();
+
+  const llvm::APInt forResult = APIntWidthExtendUAdd(tlu, input);
+  const llvm::APInt forIntermediate = APIntWidthExtendUAdd(forResult, input);
+
+  return APIntUMax(forIntermediate, forResult);
+}
+
 struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
   using ForwardDataFlowAnalysis<MANPLatticeValue>::ForwardDataFlowAnalysis;
   MANPAnalysis(mlir::MLIRContext *ctx, bool debug)
@@ -1202,6 +1248,9 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     } else if (auto roundOp =
                    llvm::dyn_cast<mlir::concretelang::FHE::RoundEintOp>(op)) {
       norm2SqEquiv = getSqMANP(roundOp, operands);
+    } else if (auto maxEintOp =
+                   llvm::dyn_cast<mlir::concretelang::FHE::MaxEintOp>(op)) {
+      norm2SqEquiv = getSqMANP(maxEintOp, operands);
     } else if (llvm::isa<mlir::concretelang::FHE::ZeroEintOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::ToBoolOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::FromBoolOp>(op) ||
@@ -1264,6 +1313,10 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::Conv2dOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(conv2dOp, operands);
+    } else if (auto maxpool2dOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::Maxpool2dOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(maxpool2dOp, operands);
     } else if (auto fromElementOp =
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::FromElementOp>(
                        op)) {

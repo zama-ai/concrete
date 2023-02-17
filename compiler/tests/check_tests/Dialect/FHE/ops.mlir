@@ -223,6 +223,24 @@ func.func @apply_lookup_table(%arg0: !FHE.eint<2>, %arg1: tensor<4xi64>) -> !FHE
   return %1: !FHE.eint<2>
 }
 
+// CHECK-LABEL: func.func @max_eint(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4>
+func.func @max_eint(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHE.max_eint"(%arg0, %arg1) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
+  %0 = "FHE.max_eint"(%arg0, %arg1): (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+
+  // CHECK-NEXT: return %[[v0]] : !FHE.eint<4>
+  return %0: !FHE.eint<4>
+}
+
+// CHECK-LABEL: func.func @max_esint(%arg0: !FHE.esint<4>, %arg1: !FHE.esint<4>) -> !FHE.esint<4>
+func.func @max_esint(%arg0: !FHE.esint<4>, %arg1: !FHE.esint<4>) -> !FHE.esint<4> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHE.max_eint"(%arg0, %arg1) : (!FHE.esint<4>, !FHE.esint<4>) -> !FHE.esint<4>
+  %0 = "FHE.max_eint"(%arg0, %arg1): (!FHE.esint<4>, !FHE.esint<4>) -> (!FHE.esint<4>)
+
+  // CHECK-NEXT: return %[[v0]] : !FHE.esint<4>
+  return %0: !FHE.esint<4>
+}
+
 // CHECK-LABEL: func.func @to_bool(%arg0: !FHE.eint<1>) -> !FHE.ebool
 func.func @to_bool(%arg0: !FHE.eint<1>) -> !FHE.ebool {
   // CHECK-NEXT: %[[V1:.*]] = "FHE.to_bool"(%arg0) : (!FHE.eint<1>) -> !FHE.ebool

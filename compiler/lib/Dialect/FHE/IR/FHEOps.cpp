@@ -192,6 +192,24 @@ mlir::LogicalResult MulEintOp::verify() {
   return ::mlir::success();
 }
 
+mlir::LogicalResult MaxEintOp::verify() {
+  auto xTy = this->x().getType().dyn_cast<FheIntegerInterface>();
+  auto yTy = this->y().getType().dyn_cast<FheIntegerInterface>();
+  auto outTy = this->getResult().getType().dyn_cast<FheIntegerInterface>();
+
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(),
+                                                       xTy, outTy)) {
+    return mlir::failure();
+  }
+
+  if (!verifyEncryptedIntegerInputsConsistency(*this->getOperation(), xTy,
+                                               yTy)) {
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 mlir::LogicalResult ToSignedOp::verify() {
   auto input = this->input().getType().cast<EncryptedIntegerType>();
   auto output = this->getResult().getType().cast<EncryptedSignedIntegerType>();

@@ -944,6 +944,18 @@ def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
   let hasVerifier = 1;
 }
 
+def FHELinalg_Maxpool2dOp : FHELinalg_Op<"maxpool2d", []> {
+  let summary = "Returns the 2D maxpool of a tensor in the form NCHW";
+  let arguments = (ins
+    Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input,
+    I64ElementsAttr:$kernel_shape,
+    OptionalAttr<I64ElementsAttr>:$strides,
+    OptionalAttr<I64ElementsAttr>:$dilations
+  );
+  let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
+  let hasVerifier = 1;
+}
+
 def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", []> {
     let summary = "Returns a tensor that contains the transposition of the input tensor.";
 

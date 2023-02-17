@@ -1048,6 +1048,154 @@ mlir::LogicalResult Conv2dOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult Maxpool2dOp::verify() {
+  const mlir::RankedTensorType inputTy =
+      this->input().getType().cast<mlir::RankedTensorType>();
+  const mlir::RankedTensorType outputTy =
+      this->getResult().getType().cast<mlir::RankedTensorType>();
+
+  const FHE::FheIntegerInterface inputElementTy = inputTy.getElementType();
+  const FHE::FheIntegerInterface outputElementTy = outputTy.getElementType();
+
+  if (inputElementTy != outputElementTy) {
+    this->emitOpError() << "expected output element type "
+                        << "(" << outputElementTy << ") "
+                        << "to be the same with input element type "
+                        << "(" << inputElementTy << ") "
+                        << "but it is not";
+    return mlir::failure();
+  }
+
+  const llvm::ArrayRef<int64_t> inputShape = inputTy.getShape();
+  const llvm::ArrayRef<int64_t> outputShape = outputTy.getShape();
+
+  if (inputShape.size() != 4) {
+    this->emitOpError() << "expected input to have 4 dimensions (N*C*H*W) "
+                        << "but it has " << inputShape.size();
+    return mlir::failure();
+  }
+  if (outputShape.size() != 4) {
+    this->emitOpError() << "expected output to have 4 dimensions (N*C*H*W) "
+                        << "but it has " << outputShape.size();
+    return mlir::failure();
+  }
+
+  const int64_t inputN = inputShape[0];
+  const int64_t inputC = inputShape[1];
+  const int64_t inputH = inputShape[2];
+  const int64_t inputW = inputShape[3];
+
+  const mlir::DenseIntElementsAttr kernelShapeAttr = this->kernel_shape();
+  const mlir::RankedTensorType kernelShapeAttrTy =
+      kernelShapeAttr.getType().cast<mlir::RankedTensorType>();
+  const llvm::ArrayRef<int64_t> kernelShapeAttrShape =
+      kernelShapeAttrTy.getShape();
+
+  if (kernelShapeAttrShape.size() != 1 || kernelShapeAttrShape[0] != 2) {
+    this->emitOpError() << "expected kernel shape to be of shape "
+                        << "(2) "
+                        << "but it is of shape "
+                        << "(" << kernelShapeAttrShape << ")";
+    return mlir::failure();
+  }
+
+  mlir::SmallVector<int64_t, 2> kernelShape;
+  kernelShape.append(kernelShapeAttr.value_begin<int64_t>(),
+                     kernelShapeAttr.value_end<int64_t>());
+
+  const int64_t kernelShapeH = kernelShape[0];
+  const int64_t kernelShapeW = kernelShape[1];
+
+  mlir::SmallVector<int64_t, 2> strides;
+  const llvm::Optional<mlir::DenseIntElementsAttr> maybeStridesAttr =
+      this->strides();
+  if (maybeStridesAttr.hasValue()) {
+    const mlir::DenseIntElementsAttr stridesAttr = maybeStridesAttr.getValue();
+    const mlir::RankedTensorType stridesAttrTy =
+        stridesAttr.getType().cast<mlir::RankedTensorType>();
+    const llvm::ArrayRef<int64_t> stridesAttrShape = stridesAttrTy.getShape();
+
+    if (stridesAttrShape.size() != 1 || stridesAttrShape[0] != 2) {
+      this->emitOpError() << "expected strides to be of shape "
+                          << "(2) "
+                          << "but it is of shape "
+                          << "(" << stridesAttrShape << ")";
+      return mlir::failure();
+    }
+
+    strides.append(stridesAttr.value_begin<int64_t>(),
+                   stridesAttr.value_end<int64_t>());
+  } else {
+    strides.append({1, 1});
+  }
+  for (size_t i = 0; i < 2; i++) {
+    if (strides[i] < 1) {
+      this->emitOpError() << "expected elements of strides to be positive "
+                          << "but strides[" << i << "] is " << strides[i];
+      return mlir::failure();
+    }
+  }
+
+  const int64_t stridesH = strides[0];
+  const int64_t stridesW = strides[1];
+
+  mlir::SmallVector<int64_t, 2> dilations;
+  const llvm::Optional<mlir::DenseIntElementsAttr> maybeDilationsAttr =
+      this->dilations();
+  if (maybeDilationsAttr.hasValue()) {
+    const mlir::DenseIntElementsAttr dilationsAttr =
+        maybeDilationsAttr.getValue();
+    const mlir::RankedTensorType dilationsAttrTy =
+        dilationsAttr.getType().cast<mlir::RankedTensorType>();
+    const llvm::ArrayRef<int64_t> dilationsAttrShape =
+        dilationsAttrTy.getShape();
+
+    if (dilationsAttrShape.size() != 1 || dilationsAttrShape[0] != 2) {
+      this->emitOpError() << "expected dilations to be of shape "
+                          << "(2) "
+                          << "but it is of shape "
+                          << "(" << dilationsAttrShape << ")";
+      return mlir::failure();
+    }
+
+    dilations.append(dilationsAttr.value_begin<int64_t>(),
+                     dilationsAttr.value_end<int64_t>());
+  } else {
+    dilations.append({1, 1});
+  }
+  for (size_t i = 0; i < 2; i++) {
+    if (dilations[i] < 1) {
+      this->emitOpError() << "expected elements of dilations to be positive "
+                          << "but dilations[" << i << "] is " << dilations[i];
+      return mlir::failure();
+    }
+  }
+
+  const int64_t dilationsH = dilations[0];
+  const int64_t dilationsW = dilations[1];
+
+  const int64_t expectedOutputH =
+      floor((inputH - dilationsH * (kernelShapeH - 1) - 1) / stridesH) + 1;
+  const int64_t expectedOutputW =
+      floor((inputW - dilationsW * (kernelShapeW - 1) - 1) / stridesW) + 1;
+  const mlir::SmallVector<int64_t, 4> expectedOutputShape = {
+      inputN,
+      inputC,
+      expectedOutputH,
+      expectedOutputW,
+  };
+
+  if (outputShape != llvm::makeArrayRef(expectedOutputShape)) {
+    this->emitOpError() << "expected output to be of shape "
+                        << "(" << expectedOutputShape << ") "
+                        << "but it is of shape "
+                        << "(" << outputShape << ")";
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 mlir::LogicalResult FromElementOp::verify() {
   mlir::Value in = this->getOperand();
   mlir::Value out = this->getResult();

@@ -293,13 +293,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Transforming FHE boolean ops failed");
   }
 
-  // Encrypted mul rewriting
-  if (mlir::concretelang::pipeline::transformHighLevelFHEOps(mlirContext,
-                                                             module, enablePass)
-          .failed()) {
-    return StreamStringError("Rewriting of encrypted mul failed");
-  }
-
   if (options.chunkIntegers) {
     if (mlir::concretelang::pipeline::transformFHEBigInt(
             mlirContext, module, enablePass, options.chunkSize,
@@ -344,6 +337,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
           .failed()) {
     return errorDiag("Lowering from FHELinalg to FHE failed");
   }
+
+  if (mlir::concretelang::pipeline::transformHighLevelFHEOps(mlirContext,
+                                                             module, enablePass)
+          .failed()) {
+    return StreamStringError("Rewriting of high level fhe ops failed");
+  }
+
   if (target == Target::FHE_NO_LINALG)
     return std::move(res);
 

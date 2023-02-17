@@ -380,3 +380,64 @@ tests:
         20, 32, 44, 20, 32, 44, 20, 32, 44,
         ]
       shape: [1, 3, 3, 3]
+---
+description: maxpool2d_unsigned_1x1x8x10_kernel_3x2
+program: |
+  func.func @main(%arg0: tensor<1x1x8x10x!FHE.eint<5>>) -> tensor<1x1x6x9x!FHE.eint<5>> {
+    %0 = "FHELinalg.maxpool2d"(%arg0) { kernel_shape = dense<[3, 2]> : tensor<2xi64> }
+        : (tensor<1x1x8x10x!FHE.eint<5>>) -> tensor<1x1x6x9x!FHE.eint<5>>
+    return %0 : tensor<1x1x6x9x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+      - tensor: [
+           3,  3, 11,  9,  0,  3, 14, 10,  5,  6,
+          10,  6,  4,  1, 10,  9, 11,  4,  0,  9,
+           8,  4, 10, 12, 11, 10,  9,  3, 10,  2,
+           8,  0, 11,  7,  5, 10,  8, 13,  9,  9,
+           9,  1, 15,  0,  6,  8,  6,  6,  6,  3,
+           6,  9, 10,  6,  0,  9, 13, 12,  6,  9,
+          12, 13,  7, 15,  7,  1,  9,  3, 13,  6,
+           2, 11, 14,  8, 11,  1, 11,  0,  0, 15,
+        ]
+        shape: [1, 1, 8, 10]
+    outputs:
+      - tensor: [
+          10, 11, 12, 12, 11, 14, 14, 10, 10,
+          10, 11, 12, 12, 11, 11, 13, 13, 10,
+           9, 15, 15, 12, 11, 10, 13, 13, 10,
+           9, 15, 15,  7, 10, 13, 13, 13,  9,
+          13, 15, 15, 15,  9, 13, 13, 13, 13,
+          13, 14, 15, 15, 11, 13, 13, 13, 15,
+        ]
+        shape: [1, 1, 6, 9]
+---
+description: maxpool2d_signed_1x1x6x5_kernel_2x3
+program: |
+  func.func @main(%arg0: tensor<1x1x6x5x!FHE.esint<6>>) -> tensor<1x1x5x3x!FHE.esint<6>> {
+    %0 = "FHELinalg.maxpool2d"(%arg0) { kernel_shape = dense<[2, 3]> : tensor<2xi64> }
+        : (tensor<1x1x6x5x!FHE.esint<6>>) -> tensor<1x1x5x3x!FHE.esint<6>>
+    return %0 : tensor<1x1x5x3x!FHE.esint<6>>
+  }
+tests:
+  - inputs:
+      - tensor: [
+           -8, -12,  -8, -12, -10,
+            1,  -9, -15, -16,  14,
+            9,  14,   2,   2, -15,
+            9, -12,   0,  -4,  -5,
+           -7, -11, -15,  -4,   6,
+           15,  -3,   7, -13, -13,
+        ]
+        shape: [1, 1, 6, 5]
+        signed: true
+    outputs:
+      - tensor: [
+           1, -8, 14,
+          14, 14, 14,
+          14, 14,  2,
+           9,  0,  6,
+          15,  7,  7,
+        ]
+        shape: [1, 1, 5, 3]
+        signed: true

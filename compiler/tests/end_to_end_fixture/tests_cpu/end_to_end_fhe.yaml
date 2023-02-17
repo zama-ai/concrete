@@ -1,3 +1,977 @@
+description: max_eint_unsigned
+program: |
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+    %0 = "FHE.max_eint"(%arg0, %arg1) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
+    return %0 : !FHE.eint<4>
+  }
+tests:
+  - inputs:
+      - scalar: 0
+      - scalar: 0
+    outputs:
+      - scalar: 0
+
+  - inputs:
+      - scalar: 0
+      - scalar: 1
+    outputs:
+      - scalar: 1
+
+  - inputs:
+      - scalar: 0
+      - scalar: 2
+    outputs:
+      - scalar: 2
+
+  - inputs:
+      - scalar: 0
+      - scalar: 3
+    outputs:
+      - scalar: 3
+
+  - inputs:
+      - scalar: 0
+      - scalar: 4
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 0
+      - scalar: 5
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 0
+      - scalar: 6
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 0
+      - scalar: 7
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 1
+      - scalar: 0
+    outputs:
+      - scalar: 1
+
+  - inputs:
+      - scalar: 1
+      - scalar: 1
+    outputs:
+      - scalar: 1
+
+  - inputs:
+      - scalar: 1
+      - scalar: 2
+    outputs:
+      - scalar: 2
+
+  - inputs:
+      - scalar: 1
+      - scalar: 3
+    outputs:
+      - scalar: 3
+
+  - inputs:
+      - scalar: 1
+      - scalar: 4
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 1
+      - scalar: 5
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 1
+      - scalar: 6
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 1
+      - scalar: 7
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 2
+      - scalar: 0
+    outputs:
+      - scalar: 2
+
+  - inputs:
+      - scalar: 2
+      - scalar: 1
+    outputs:
+      - scalar: 2
+
+  - inputs:
+      - scalar: 2
+      - scalar: 2
+    outputs:
+      - scalar: 2
+
+  - inputs:
+      - scalar: 2
+      - scalar: 3
+    outputs:
+      - scalar: 3
+
+  - inputs:
+      - scalar: 2
+      - scalar: 4
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 2
+      - scalar: 5
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 2
+      - scalar: 6
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 2
+      - scalar: 7
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 3
+      - scalar: 0
+    outputs:
+      - scalar: 3
+
+  - inputs:
+      - scalar: 3
+      - scalar: 1
+    outputs:
+      - scalar: 3
+
+  - inputs:
+      - scalar: 3
+      - scalar: 2
+    outputs:
+      - scalar: 3
+
+  - inputs:
+      - scalar: 3
+      - scalar: 3
+    outputs:
+      - scalar: 3
+
+  - inputs:
+      - scalar: 3
+      - scalar: 4
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 3
+      - scalar: 5
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 3
+      - scalar: 6
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 3
+      - scalar: 7
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 4
+      - scalar: 0
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 4
+      - scalar: 1
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 4
+      - scalar: 2
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 4
+      - scalar: 3
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 4
+      - scalar: 4
+    outputs:
+      - scalar: 4
+
+  - inputs:
+      - scalar: 4
+      - scalar: 5
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 4
+      - scalar: 6
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 4
+      - scalar: 7
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 5
+      - scalar: 0
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 5
+      - scalar: 1
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 5
+      - scalar: 2
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 5
+      - scalar: 3
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 5
+      - scalar: 4
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 5
+      - scalar: 5
+    outputs:
+      - scalar: 5
+
+  - inputs:
+      - scalar: 5
+      - scalar: 6
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 5
+      - scalar: 7
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 6
+      - scalar: 0
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 6
+      - scalar: 1
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 6
+      - scalar: 2
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 6
+      - scalar: 3
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 6
+      - scalar: 4
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 6
+      - scalar: 5
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 6
+      - scalar: 6
+    outputs:
+      - scalar: 6
+
+  - inputs:
+      - scalar: 6
+      - scalar: 7
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 0
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 1
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 2
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 3
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 4
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 5
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 6
+    outputs:
+      - scalar: 7
+
+  - inputs:
+      - scalar: 7
+      - scalar: 7
+    outputs:
+      - scalar: 7
+---
+description: max_eint_signed
+program: |
+  func.func @main(%arg0: !FHE.esint<4>, %arg1: !FHE.esint<4>) -> !FHE.esint<4> {
+    %0 = "FHE.max_eint"(%arg0, %arg1) : (!FHE.esint<4>, !FHE.esint<4>) -> !FHE.esint<4>
+    return %0 : !FHE.esint<4>
+  }
+tests:
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: -4
+        signed: true
+
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: -3
+        signed: true
+
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: -2
+        signed: true
+
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: -1
+        signed: true
+
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: -4
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: -3
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: -3
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: -2
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: -1
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: -3
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: -2
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: -2
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: -2
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: -1
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: -2
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: -1
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: -1
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: -1
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: -1
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: -1
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 0
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 0
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 1
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 1
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 2
+        signed: true
+
+  - inputs:
+      - scalar: 2
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: -4
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: -3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: -2
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: -1
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: 0
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: 1
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: 2
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+
+  - inputs:
+      - scalar: 3
+        signed: true
+      - scalar: 3
+        signed: true
+    outputs:
+      - scalar: 3
+        signed: true
+---
 # TODO: Rewrite/Remove
 # The FHE.neg_eint op doesn't come with a well defined semantics as FHE.eint
 # has an undefined behavior for under/overflow.

@@ -38,6 +38,7 @@
 #include <concretelang/Dialect/FHE/Transforms/BigInt/BigInt.h>
 #include <concretelang/Dialect/FHE/Transforms/Boolean/Boolean.h>
 #include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU.h>
+#include <concretelang/Dialect/FHE/Transforms/Max/Max.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Support/Pipeline.h>
@@ -181,7 +182,9 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("transformHighLevelFHEOps", pm, context);
+
   addPotentiallyNestedPass(pm, createEncryptedMulToDoubleTLUPass(), enablePass);
+  addPotentiallyNestedPass(pm, createFHEMaxTransformPass(), enablePass);
 
   return pm.run(module.getOperation());
 }

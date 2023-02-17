@@ -1771,6 +1771,81 @@ struct FHELinalgConv2dToLinalgConv2d
   };
 };
 
+/// This rewrite pattern transforms all instances
+/// of `FHELinalg.maxpool2d` to `linalg.pooling_ncw_max`.
+struct FHELinalgMaxpool2dToLinalgMaxpool2d
+    : public mlir::OpRewritePattern<FHELinalg::Maxpool2dOp> {
+
+  FHELinalgMaxpool2dToLinalgMaxpool2d(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<FHELinalg::Maxpool2dOp>(context) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHELinalg::Maxpool2dOp maxpool2dOp,
+                  mlir::PatternRewriter &rewriter) const override {
+
+    const mlir::Location loc = maxpool2dOp->getLoc();
+
+    const mlir::NamedAttribute maxOpAttr = rewriter.getNamedAttr(
+        "max_signed",
+        rewriter.getStringAttr(FHE::MaxEintOp::getOperationName()));
+
+    const auto outputTy =
+        maxpool2dOp->getResult(0).getType().cast<mlir::RankedTensorType>();
+    const auto outputElementTy =
+        outputTy.getElementType().cast<FHE::FheIntegerInterface>();
+
+    mlir::Value output =
+        rewriter.create<FHE::ZeroTensorOp>(loc, outputTy).getResult();
+
+    if (outputElementTy.isSigned()) {
+      const int64_t outputBitWidth = outputElementTy.getWidth();
+      const int64_t offsetValue = 1 << (outputBitWidth - 2);
+
+      const mlir::Type offsetType =
+          mlir::IntegerType::get(this->getContext(), outputBitWidth + 1);
+      const mlir::Type offsetTensorType =
+          mlir::RankedTensorType::get({1}, offsetType);
+
+      const llvm::SmallVector<mlir::Attribute> offsetTensorAttr = {
+          mlir::IntegerAttr::get(offsetType, offsetValue)};
+      const mlir::Attribute offsetAttr =
+          mlir::DenseElementsAttr::get(offsetTensorType, offsetTensorAttr);
+
+      const mlir::Value offset =
+          rewriter.create<mlir::arith::ConstantOp>(loc, offsetAttr);
+
+      output = rewriter.create<FHELinalg::SubEintIntOp>(loc, output, offset);
+    }
+
+    const mlir::DenseElementsAttr kernelShapeAttr = maxpool2dOp.kernel_shape();
+    const auto kernelShape =
+        llvm::SmallVector<int64_t, 2>(kernelShapeAttr.value_begin<int64_t>(),
+                                      kernelShapeAttr.value_end<int64_t>());
+
+    const mlir::Value kernel =
+        rewriter
+            .create<mlir::linalg::InitTensorOp>(
+                loc, kernelShape,
+                mlir::IntegerType::get(this->getContext(), 64))
+            .getResult();
+
+    const mlir::DenseIntElementsAttr defaultAttr =
+        rewriter.getI64VectorAttr({1, 1});
+
+    const mlir::DenseIntElementsAttr stridesAttr =
+        maxpool2dOp.dilations().getValueOr(defaultAttr);
+    const mlir::DenseIntElementsAttr dilationsAttr =
+        maxpool2dOp.dilations().getValueOr(defaultAttr);
+
+    rewriter.replaceOpWithNewOp<mlir::linalg::PoolingNchwMaxOp>(
+        maxpool2dOp, outputTy, mlir::ValueRange{maxpool2dOp.input(), kernel},
+        output, stridesAttr, dilationsAttr,
+        llvm::ArrayRef<mlir::NamedAttribute>({maxOpAttr}));
+
+    return mlir::success();
+  };
+};
+
 /// This template rewrite pattern transforms any instance of
 /// operators `FHELinalg.to_signed` to an instance of `linalg.generic` with an
 /// appropriate region using `FHE.to_signed` operation, an appropriate
@@ -2019,6 +2094,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<SumToLinalgGeneric>(&getContext());
   patterns.insert<ConcatRewritePattern>(&getContext());
   patterns.insert<FHELinalgConv2dToLinalgConv2d>(&getContext());
+  patterns.insert<FHELinalgMaxpool2dToLinalgMaxpool2d>(&getContext());
   patterns.insert<TransposeToLinalgGeneric>(&getContext());
   patterns.insert<FromElementToTensorFromElements>(&getContext());
   patterns.insert<FHELinalgToSignedToLinalgGeneric>(&getContext());

@@ -77,6 +77,10 @@ struct FunctionToDag {
     for (auto &bb : func.getBody().getBlocks()) {
       for (auto &op : bb.getOperations()) {
         addOperation(dag, op);
+      }
+    }
+    for (auto &bb : func.getBody().getBlocks()) {
+      for (auto &op : bb.getOperations()) {
         op.removeAttr("SMANP");
       }
     }
@@ -145,6 +149,14 @@ struct FunctionToDag {
       // If can't find weights return default leveled op
       DEBUG("Replace Dot by LevelledOp on " << op);
     }
+    if (auto max = asMax(op)) {
+      addMax(dag, max, encrypted_inputs, precision);
+      return;
+    }
+    if (auto maxpool2d = asMaxpool2d(op)) {
+      addMaxpool2d(dag, maxpool2d, encrypted_inputs, precision);
+      return;
+    }
     // default
     addLevelledOp(dag, op, encrypted_inputs);
   }
@@ -207,6 +219,103 @@ struct FunctionToDag {
                              manp, slice(out_shape), comment);
   }
 
+  void addMax(optimizer::Dag &dag, FHE::MaxEintOp &maxOp, Inputs &inputs,
+              int precision) {
+    mlir::Value result = maxOp.getResult();
+    const std::vector<uint64_t> resultShape = getShape(result);
+
+    Operation *xOp = maxOp.x().getDefiningOp();
+    Operation *yOp = maxOp.y().getDefiningOp();
+
+    const double fixedCost = NEGLIGIBLE_COMPLEXITY;
+    const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
+
+    llvm::APInt xSmanp = llvm::APInt{1, 1, false};
+    if (xOp != nullptr) {
+      const auto xSmanpAttr = xOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
+      assert(xSmanpAttr && "Missing SMANP value on a crypto operation");
+      xSmanp = xSmanpAttr.getValue();
+    }
+
+    llvm::APInt ySmanp = llvm::APInt{1, 1, false};
+    if (yOp != nullptr) {
+      const auto ySmanpAttr = yOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
+      assert(ySmanpAttr && "Missing SMANP value on a crypto operation");
+      ySmanp = ySmanpAttr.getValue();
+    }
+
+    const double subManp =
+        sqrt(xSmanp.roundToDouble() + ySmanp.roundToDouble());
+
+    auto loc = loc_to_string(maxOp.getLoc());
+    auto comment = std::string(maxOp->getName().getStringRef()) + " " + loc;
+
+    auto subNode =
+        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
+                             subManp, slice(resultShape), comment);
+
+    const double tluNodeManp = 1;
+    const std::vector<std::uint64_t> unknownFunction;
+    auto tluNode = dag->add_lut(subNode, slice(unknownFunction), precision);
+
+    const double addManp = sqrt(tluNodeManp + ySmanp.roundToDouble());
+    const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
+        tluNode, inputs[1]};
+    index[result] =
+        dag->add_levelled_op(slice(addInputs), lweDimCostFactor, fixedCost,
+                             addManp, slice(resultShape), comment);
+  }
+
+  void addMaxpool2d(optimizer::Dag &dag, FHELinalg::Maxpool2dOp &maxpool2dOp,
+                    Inputs &inputs, int precision) {
+    mlir::Value result = maxpool2dOp.getResult();
+    const std::vector<uint64_t> resultShape = getShape(result);
+
+    // all TLUs are flattened into a dimension
+    // to create a single TLU node in optimizer dag
+    std::vector<uint64_t> fakeShape = resultShape;
+
+    uint64_t numberOfComparisons = 1;
+    for (auto dimensionSize : maxpool2dOp.kernel_shape().getValues<int64_t>()) {
+      numberOfComparisons *= dimensionSize;
+    }
+    fakeShape.push_back(numberOfComparisons);
+
+    Operation *inputOp = maxpool2dOp.input().getDefiningOp();
+
+    const double fixedCost = NEGLIGIBLE_COMPLEXITY;
+    const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
+
+    llvm::APInt inputSmanp = llvm::APInt{1, 1, false};
+    if (inputOp != nullptr) {
+      const auto inputSmanpAttr =
+          inputOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
+      assert(inputSmanpAttr && "Missing SMANP value on a crypto operation");
+      inputSmanp = inputSmanpAttr.getValue();
+    }
+
+    const double subManp = sqrt(2 * inputSmanp.roundToDouble() + 1);
+
+    auto loc = loc_to_string(maxpool2dOp.getLoc());
+    auto comment =
+        std::string(maxpool2dOp->getName().getStringRef()) + " " + loc;
+
+    auto subNode =
+        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
+                             subManp, slice(fakeShape), comment);
+
+    const std::vector<std::uint64_t> unknownFunction;
+    auto tluNode = dag->add_lut(subNode, slice(unknownFunction), precision);
+
+    const double addManp = sqrt(inputSmanp.roundToDouble() + 1);
+    const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
+        tluNode, inputs[1]};
+
+    index[result] =
+        dag->add_levelled_op(slice(addInputs), lweDimCostFactor, fixedCost,
+                             addManp, slice(resultShape), comment);
+  }
+
   Inputs encryptedInputs(mlir::Operation &op) {
     Inputs inputs;
     for (auto operand : op.getOperands()) {
@@ -235,6 +344,14 @@ struct FunctionToDag {
 
   mlir::concretelang::FHELinalg::Dot asDot(mlir::Operation &op) {
     return llvm::dyn_cast<mlir::concretelang::FHELinalg::Dot>(op);
+  }
+
+  mlir::concretelang::FHE::MaxEintOp asMax(mlir::Operation &op) {
+    return llvm::dyn_cast<mlir::concretelang::FHE::MaxEintOp>(op);
+  }
+
+  mlir::concretelang::FHELinalg::Maxpool2dOp asMaxpool2d(mlir::Operation &op) {
+    return llvm::dyn_cast<mlir::concretelang::FHELinalg::Maxpool2dOp>(op);
   }
 
   bool isReturn(mlir::Operation &op) {

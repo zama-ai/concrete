@@ -323,6 +323,41 @@ def FHE_MulEintOp : FHE_Op<"mul_eint", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
+def FHE_MaxEintOp : FHE_Op<"max_eint", [NoSideEffect]> {
+    let summary = "Get maximum of two encrypted integers.";
+
+    let description = [{
+        Get maximum of two encrypted integers using the formula, 'max(x, y) == max(x - y, 0) + y'.
+        Type of inputs and the output should be the same.
+
+        If `x - y`` inside the max overflows or underflows, the behavior is undefined.
+        So to support the full range, you should increase the bit-width by 1 manually.
+
+        Example:
+        ```mlir
+        // ok
+        "FHE.max_eint"(%x, %y) : (!FHE.eint<2>, !FHE.eint<2>) -> !FHE.eint<2>
+        "FHE.max_eint"(%x, %y) : (!FHE.esint<3>, !FHE.esint<3>) -> !FHE.esint<3>
+
+        // error
+        "FHE.max_eint"(%x, %y) : (!FHE.eint<2>, !FHE.eint<3>) -> !FHE.eint<2>
+        "FHE.max_eint"(%x, %y) : (!FHE.eint<2>, !FHE.eint<2>) -> !FHE.esint<2>
+        "FHE.max_eint"(%x, %y) : (!FHE.esint<2>, !FHE.eint<2>) -> !FHE.eint<2>
+        ```
+    }];
+
+    let arguments = (ins FHE_AnyEncryptedInteger:$x, FHE_AnyEncryptedInteger:$y);
+    let results = (outs FHE_AnyEncryptedInteger);
+
+    let builders = [
+        OpBuilder<(ins "Value":$x, "Value":$y), [{
+         build($_builder, $_state, x.getType(), x, y);
+        }]>
+    ];
+
+    let hasVerifier = 1;
+}
+
 def FHE_ToSignedOp : FHE_Op<"to_signed", [NoSideEffect]> {
     let summary = "Cast an unsigned integer to a signed one";
 
