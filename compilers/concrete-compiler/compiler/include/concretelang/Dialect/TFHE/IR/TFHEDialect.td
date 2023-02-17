@@ -18,6 +18,7 @@ def TFHE_Dialect : Dialect {
     A dialect for representation of high level operation on fully homomorphic ciphertext.
   }];
   let useDefaultTypePrinterParser = 1;
+  let useDefaultAttributePrinterParser = 1;
   let cppNamespace = "::mlir::concretelang::TFHE";
 }
 

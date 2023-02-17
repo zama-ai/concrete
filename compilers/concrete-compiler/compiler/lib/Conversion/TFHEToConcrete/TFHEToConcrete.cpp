@@ -37,8 +37,8 @@ struct TFHEToConcretePass : public TFHEToConcreteBase<TFHEToConcretePass> {
 using mlir::concretelang::TFHE::GLWECipherTextType;
 
 /// TFHEToConcreteTypeConverter is a TypeConverter that transform
-/// `TFHE.glwe<{dimension,1,bits}{p}>` to `tensor<dimension+1, i64>>`
-/// `tensor<...xTFHE.glwe<{dimension,1,bits}{p}>>` to
+/// `TFHE.glwe<sk(id){dimension,1}>` to `tensor<dimension+1, i64>>`
+/// `tensor<...xTFHE.glwe<sk(id){dimension,1}>>` to
 /// `tensor<...xdimension+1, i64>>`
 class TFHEToConcreteTypeConverter : public mlir::TypeConverter {
 
@@ -46,11 +46,11 @@ public:
   TFHEToConcreteTypeConverter() {
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](GLWECipherTextType type) {
-      assert(type.getPolynomialSize() <= 1 &&
+      assert(!type.getKey().isNotParameterized());
+      assert(type.getKey().getPolySize().value() == 1 &&
              "converter doesn't support polynomialSize > 1");
-      assert(type.getDimension() != -1);
       llvm::SmallVector<int64_t, 2> shape;
-      shape.push_back(type.getDimension() + 1);
+      shape.push_back(type.getKey().getDimension().value() + 1);
       return mlir::RankedTensorType::get(
           shape, mlir::IntegerType::get(type.getContext(), 64));
     });
@@ -62,8 +62,8 @@ public:
       mlir::SmallVector<int64_t> newShape;
       newShape.reserve(type.getShape().size() + 1);
       newShape.append(type.getShape().begin(), type.getShape().end());
-      assert(glwe.getDimension() != -1);
-      newShape.push_back(glwe.getDimension() + 1);
+      assert(!glwe.getKey().isNotParameterized());
+      newShape.push_back(glwe.getKey().getDimension().value() + 1);
       mlir::Type r = mlir::RankedTensorType::get(
           newShape, mlir::IntegerType::get(type.getContext(), 64));
       return r;
@@ -124,11 +124,52 @@ struct BootstrapGLWEOpPattern
     TFHE::GLWECipherTextType inputType =
         bsOp.getCiphertext().getType().cast<TFHE::GLWECipherTextType>();
 
+    auto polySize = adaptor.getKey().getPolySize();
+    auto glweDimension = adaptor.getKey().getGlweDim();
+    auto levels = adaptor.getKey().getLevels();
+    auto baseLog = adaptor.getKey().getBaseLog();
+    auto inputLweDimension = inputType.getKey().getDimension().value();
+
     rewriter.replaceOpWithNewOp<Concrete::BootstrapLweTensorOp>(
         bsOp, this->getTypeConverter()->convertType(resultType),
-        adaptor.getCiphertext(), adaptor.getLookupTable(),
-        inputType.getDimension(), adaptor.getPolySize(), adaptor.getLevel(),
-        adaptor.getBaseLog(), adaptor.getGlweDimension());
+        adaptor.getCiphertext(), adaptor.getLookupTable(), inputLweDimension,
+        polySize, levels, baseLog, glweDimension);
+
+    return mlir::success();
+  }
+};
+
+struct WopPBSGLWEOpPattern
+    : public mlir::OpConversionPattern<TFHE::WopPBSGLWEOp> {
+
+  WopPBSGLWEOpPattern(mlir::MLIRContext *context,
+                      mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<TFHE::WopPBSGLWEOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::WopPBSGLWEOp op, TFHE::WopPBSGLWEOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    auto bsBaseLog = adaptor.getBsk().getBaseLog();
+    auto bsLevels = adaptor.getBsk().getLevels();
+    auto cbsBaseLog = adaptor.getCbsBaseLog();
+    auto cbsLevels = adaptor.getCbsLevels();
+    auto ksBaseLog = adaptor.getKsk().getBaseLog();
+    auto ksLevels = adaptor.getKsk().getLevels();
+    auto pksBaseLog = adaptor.getPksk().getBaseLog();
+    auto pksLevels = adaptor.getPksk().getLevels();
+    auto pksInputLweDim = adaptor.getPksk().getInputLweDim();
+    auto pksOutputPolySize = adaptor.getPksk().getOutputPolySize();
+    auto crtDecomposition = adaptor.getCrtDecompositionAttr();
+    auto resultType = op.getType();
+
+    rewriter.replaceOpWithNewOp<Concrete::WopPBSCRTLweTensorOp>(
+        op, this->getTypeConverter()->convertType(resultType),
+        adaptor.getCiphertexts(), adaptor.getLookupTable(), bsLevels, bsBaseLog,
+        ksLevels, ksBaseLog, pksInputLweDim, pksOutputPolySize, pksLevels,
+        pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition);
 
     return mlir::success();
   }
@@ -153,10 +194,14 @@ struct KeySwitchGLWEOpPattern
     TFHE::GLWECipherTextType inputType =
         ksOp.getCiphertext().getType().cast<TFHE::GLWECipherTextType>();
 
+    auto levels = adaptor.getKey().getLevels();
+    auto baseLog = adaptor.getKey().getBaseLog();
+    auto inputDim = inputType.getKey().getDimension().value();
+    auto outputDim = resultType.getKey().getDimension().value();
+
     rewriter.replaceOpWithNewOp<Concrete::KeySwitchLweTensorOp>(
         ksOp, this->getTypeConverter()->convertType(resultType),
-        adaptor.getCiphertext(), adaptor.getLevel(), adaptor.getBaseLog(),
-        inputType.getDimension(), resultType.getDimension());
+        adaptor.getCiphertext(), levels, baseLog, inputDim, outputDim);
 
     return mlir::success();
   }
@@ -521,8 +566,8 @@ struct FromElementsOpPattern
 //
 // ```mlir
 // %0 = "ShapeOp" %arg0 [reassocations...]
-//        : tensor<...x!TFHE.glwe<{dimension,1,bits}{p}>> into
-//          tensor<...x!TFHE.glwe<{dimension,1,bits}{p}>>
+//        : tensor<...x!TFHE.glwe<sk(id){dimension,1}>> into
+//          tensor<...x!TFHE.glwe<sk(id){dimension,1}>>
 // ```
 //
 // becomes:
@@ -663,17 +708,15 @@ void TFHEToConcretePass::runOnOperation() {
           mlir::concretelang::Concrete::EncodeLutForCrtWopPBSTensorOp, true>,
       mlir::concretelang::GenericOneToOneOpConversionPattern<
           mlir::concretelang::TFHE::EncodePlaintextWithCrtOp,
-          mlir::concretelang::Concrete::EncodePlaintextWithCrtTensorOp, true>,
-      mlir::concretelang::GenericOneToOneOpConversionPattern<
-          mlir::concretelang::TFHE::WopPBSGLWEOp,
-          mlir::concretelang::Concrete::WopPBSCRTLweTensorOp, true>>(
+          mlir::concretelang::Concrete::EncodePlaintextWithCrtTensorOp, true>>(
       &getContext(), converter);
   // pattern of remaining TFHE ops
   patterns.insert<ZeroOpPattern<mlir::concretelang::TFHE::ZeroGLWEOp>,
                   ZeroOpPattern<mlir::concretelang::TFHE::ZeroTensorGLWEOp>>(
       &getContext());
   patterns.insert<SubIntGLWEOpPattern, BootstrapGLWEOpPattern,
-                  KeySwitchGLWEOpPattern>(&getContext(), converter);
+                  KeySwitchGLWEOpPattern, WopPBSGLWEOpPattern>(&getContext(),
+                                                               converter);
 
   // Add patterns to rewrite tensor operators that works on tensors of TFHE GLWE
   // types

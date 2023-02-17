@@ -12,6 +12,7 @@
 #include <mlir/Interfaces/ControlFlowInterfaces.h>
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
+#include "concretelang/Dialect/TFHE/IR/TFHEAttrs.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 
 #define GET_OP_CLASSES

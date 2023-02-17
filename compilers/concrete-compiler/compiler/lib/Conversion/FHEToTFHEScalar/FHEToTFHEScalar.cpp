@@ -27,6 +27,7 @@
 #include "concretelang/Dialect/RT/IR/RTTypes.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
+#include "concretelang/Dialect/TFHE/IR/TFHEParameters.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 #include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 
@@ -42,7 +43,7 @@ namespace typing {
 /// Converts an encrypted integer into `TFHE::GlweCiphetext`.
 TFHE::GLWECipherTextType convertEncrypted(mlir::MLIRContext *context,
                                           FHE::FheIntegerInterface enc) {
-  return TFHE::GLWECipherTextType::get(context, -1, -1, -1, enc.getWidth());
+  return TFHE::GLWECipherTextType::get(context, TFHE::GLWESecretKey());
 }
 
 /// Converts `Tensor<FHE::AnyEncryptedInteger>` into a
@@ -54,12 +55,10 @@ maybeConvertEncryptedTensor(mlir::MLIRContext *context,
   if (!maybeEncryptedTensor.getElementType().isa<FHE::FheIntegerInterface>()) {
     return (mlir::Type)(maybeEncryptedTensor);
   }
-  auto enc =
-      maybeEncryptedTensor.getElementType().cast<FHE::FheIntegerInterface>();
   auto currentShape = maybeEncryptedTensor.getShape();
   return mlir::RankedTensorType::get(
       currentShape,
-      TFHE::GLWECipherTextType::get(context, -1, -1, -1, enc.getWidth()));
+      TFHE::GLWECipherTextType::get(context, TFHE::GLWESecretKey()));
 }
 
 /// Converts any encrypted type to `TFHE::GlweCiphetext` if the
@@ -81,9 +80,8 @@ public:
       return convertEncrypted(type.getContext(), type);
     });
     addConversion([](FHE::EncryptedBooleanType type) {
-      return TFHE::GLWECipherTextType::get(
-          type.getContext(), -1, -1, -1,
-          mlir::concretelang::FHE::EncryptedBooleanType::getWidth());
+      return TFHE::GLWECipherTextType::get(type.getContext(),
+                                           TFHE::GLWESecretKey());
     });
     addConversion([](mlir::RankedTensorType type) {
       return maybeConvertEncryptedTensor(type.getContext(), type);
@@ -369,12 +367,15 @@ struct ApplyLookupTableEintOpPattern
     // Insert keyswitch
     auto ksOp = rewriter.create<TFHE::KeySwitchGLWEOp>(
         op.getLoc(), getTypeConverter()->convertType(adaptor.getA().getType()),
-        input, -1, -1);
+        input,
+        TFHE::GLWEKeyswitchKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
+                                        TFHE::GLWESecretKey(), -1, -1));
 
     // Insert bootstrap
     rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
-        op, getTypeConverter()->convertType(op.getType()), ksOp, newLut, -1, -1,
-        -1, -1);
+        op, getTypeConverter()->convertType(op.getType()), ksOp, newLut,
+        TFHE::GLWEBootstrapKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
+                                        TFHE::GLWESecretKey(), -1, -1, -1, -1));
 
     return mlir::success();
   };
@@ -553,9 +554,15 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
       // The lookup is performed ...
 
       mlir::Value keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
-          op.getLoc(), truncationInputTy, shiftedRotatedInput, -1, -1);
+          op.getLoc(), truncationInputTy, shiftedRotatedInput,
+          TFHE::GLWEKeyswitchKeyAttr::get(op->getContext(),
+                                          TFHE::GLWESecretKey(),
+                                          TFHE::GLWESecretKey(), -1, -1));
       mlir::Value bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
-          op.getLoc(), truncationInputTy, keyswitched, lut, -1, -1, -1, -1);
+          op.getLoc(), truncationInputTy, keyswitched, lut,
+          TFHE::GLWEBootstrapKeyAttr::get(
+              op->getContext(), TFHE::GLWESecretKey(), TFHE::GLWESecretKey(),
+              -1, -1, -1, -1));
 
       //------------------------------------------------------------- CORRECTION
       // The correction is performed to achieve our right shift semantic.
@@ -571,8 +578,8 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
 
       mlir::Value minusIsolatedBit = rewriter.create<TFHE::NegGLWEOp>(
           op.getLoc(), truncationInputTy, extractedBit);
-      truncationInputTy = TFHE::GLWECipherTextType::get(
-          rewriter.getContext(), -1, -1, -1, truncationInputTy.getP() - 1);
+      truncationInputTy = TFHE::GLWECipherTextType::get(rewriter.getContext(),
+                                                        TFHE::GLWESecretKey());
       mlir::Value truncationOutput = rewriter.create<TFHE::AddGLWEOp>(
           op.getLoc(), truncationInputTy, previousOutput, minusIsolatedBit);
       previousOutput = truncationOutput;

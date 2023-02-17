@@ -46,7 +46,7 @@ mlir::RankedTensorType convertEncrypted(mlir::MLIRContext *context,
                                         uint64_t crtLength) {
   return mlir::RankedTensorType::get(
       mlir::ArrayRef<int64_t>((int64_t)crtLength),
-      TFHE::GLWECipherTextType::get(context, -1, -1, -1, enc.getWidth()));
+      TFHE::GLWECipherTextType::get(context, TFHE::GLWESecretKey()));
 }
 
 /// Converts `Tensor<FHE::AnyEncryptedInteger>` into a
@@ -59,15 +59,13 @@ maybeConvertEncryptedTensor(mlir::MLIRContext *context,
   if (!maybeEncryptedTensor.getElementType().isa<FHE::FheIntegerInterface>()) {
     return (mlir::Type)(maybeEncryptedTensor);
   }
-  auto encType =
-      maybeEncryptedTensor.getElementType().cast<FHE::FheIntegerInterface>();
   auto currentShape = maybeEncryptedTensor.getShape();
   mlir::SmallVector<int64_t> newShape =
       mlir::SmallVector<int64_t>(currentShape.begin(), currentShape.end());
   newShape.push_back((int64_t)crtLength);
   return mlir::RankedTensorType::get(
       llvm::ArrayRef<int64_t>(newShape),
-      TFHE::GLWECipherTextType::get(context, -1, -1, -1, encType.getWidth()));
+      TFHE::GLWECipherTextType::get(context, TFHE::GLWESecretKey()));
 }
 
 /// Converts any encrypted type to `TFHE::GlweCiphetext` if the
@@ -580,8 +578,16 @@ struct ApplyLookupTableEintOpPattern
     // Replace the lut with an encoded / expanded one.
     auto wopPBS = rewriter.create<TFHE::WopPBSGLWEOp>(
         op.getLoc(), converter->convertType(op.getType()), adaptor.getA(),
-        newLut, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        rewriter.getI64ArrayAttr({}));
+        newLut,
+        TFHE::GLWEKeyswitchKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
+                                        TFHE::GLWESecretKey(), -1, -1),
+        TFHE::GLWEBootstrapKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
+                                        TFHE::GLWESecretKey(), -1, -1, -1, -1),
+        TFHE::GLWEPackingKeyswitchKeyAttr::get(
+            op.getContext(), TFHE::GLWESecretKey(), TFHE::GLWESecretKey(), -1,
+            -1, -1, -1),
+        rewriter.getI64ArrayAttr({}), rewriter.getI32IntegerAttr(-1),
+        rewriter.getI32IntegerAttr(-1));
 
     rewriter.replaceOp(op, {wopPBS.getResult()});
     return ::mlir::success();

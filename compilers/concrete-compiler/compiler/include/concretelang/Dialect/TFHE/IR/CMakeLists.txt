@@ -1,3 +1,7 @@
+set(LLVM_TARGET_DEFINITIONS TFHEAttrs.td)
+mlir_tablegen(TFHEAttrs.h.inc -gen-attrdef-decls -attrdefs-dialect=TFHE)
+mlir_tablegen(TFHEAttrs.cpp.inc -gen-attrdef-defs -attrdefs-dialect=TFHE)
+
 set(LLVM_TARGET_DEFINITIONS TFHEOps.td)
 mlir_tablegen(TFHEOps.h.inc -gen-op-decls)
 mlir_tablegen(TFHEOps.cpp.inc -gen-op-defs)
@@ -10,4 +14,5 @@ add_dependencies(mlir-headers MLIRTFHEOpsIncGen)
 
 add_concretelang_doc(TFHEOps TFHEDialect concretelang/ -gen-dialect-doc -dialect=TFHE)
 add_concretelang_doc(TFHEOps TFHEOps concretelang/ -gen-op-doc)
+add_concretelang_doc(TFHEOps TFHEAttrs concretelang/ -gen-attrdef-doc)
 add_concretelang_doc(TFHETypes TFHETypes concretelang/ -gen-typedef-doc)

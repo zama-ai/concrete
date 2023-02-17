@@ -309,13 +309,13 @@ llvm::SmallVector<mlir::utils::IteratorType> parallelIteratorType(int n) {
 /// becomes:
 ///
 /// #map = affine_map<(d0, d1) -> (d0, d1)>
-/// %init = linalg.init_tensor [2, 3] : tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>
+/// %init = linalg.init_tensor [2, 3] : tensor<2x3x!TFHE.glwe<sk?>>
 /// %output = linalg.generic {indexing_maps = [#map, #map, #map], iterator_types
 /// = ["parallel", "parallel"]} ins(%arg0, %arg2 :
-/// tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>, tensor<2x3xindex>) outs(%0 :
-/// tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>) {
-///          ^bb0(%arg3: !TFHE.glwe<{_,_,_}{2}>, %lut_idx: index, %arg5:
-///          !TFHE.glwe<{_,_,_}{2}>):  // no predecessors
+/// tensor<2x3x!TFHE.glwe<sk?>>, tensor<2x3xindex>) outs(%0 :
+/// tensor<2x3x!TFHE.glwe<sk?>>) {
+///          ^bb0(%arg3: !TFHE.glwe<sk?>, %lut_idx: index, %arg5:
+///          !TFHE.glwe<sk?>):  // no predecessors
 ///          %lut = tensor.extract_slice %arg1[%[[LUTIDX]], 0] [1,4] [1, 1]
 ///                 : tensor<5x4xi64> to tensor<4xi64>
 ///          %res  = "TFHE.apply_lookup_table"(%arg3, %[[LUT]])
@@ -323,10 +323,10 @@ llvm::SmallVector<mlir::utils::IteratorType> parallelIteratorType(int n) {
 ///                    glweDimension = -1 : i32,
 ///                      levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS =
 ///                      -1 : i32, polynomialSize = -1 : i32}
-///                 : (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
-///          !TFHE.glwe<{_,_,_}{2}> linalg.yield %res :
-///          !TFHE.glwe<{_,_,_}{2}>
-/// } -> tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>
+///                 : (!TFHE.glwe<sk?>, tensor<4xi64>) ->
+///          !TFHE.glwe<sk?> linalg.yield %res :
+///          !TFHE.glwe<sk?>
+/// } -> tensor<2x3x!TFHE.glwe<sk?>>
 
 namespace FHELinalg = mlir::concretelang::FHELinalg;
 
@@ -450,8 +450,8 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
 ///             %lut) {baseLogBS = -1 : i32, baseLogKS = -1 : i32, glweDimension
 ///             = -1 : i32, levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS
 ///             = -1 : i32, polynomialSize = -1 : i32} :
-///             (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
-///             !TFHE.glwe<{_,_,_}{2}>
+///             (!TFHE.glwe<sk?>, tensor<4xi64>) ->
+///             !TFHE.glwe<sk?>
 ///         linalg.yield %0 : !FHE.eint<2>
 ///     }
 /// }

@@ -10,9 +10,9 @@
 // CHECK:   %[[V6:.*]] = tensor.insert_slice %[[A5]] into %[[V5]][5, 0] [1, 2049] [1, 1] : tensor<2049xi64> into tensor<6x2049xi64>
 // CHECK:   return %[[V6]] : tensor<6x2049xi64>
 // CHECK: }
-func.func @main(%arg0 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg1 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg2 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg3 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg4 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg5 : !TFHE.glwe<{2048, 1, 64}{4}>) -> tensor<6x!TFHE.glwe<{2048, 1, 64}{4}>> {
-  %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<6x!TFHE.glwe<{2048, 1, 64}{4}>>
-  return %0 : tensor<6x!TFHE.glwe<{2048, 1, 64}{4}>>
+func.func @main(%arg0 : !TFHE.glwe<sk[1]<1,2048>>, %arg1 : !TFHE.glwe<sk[1]<1,2048>>, %arg2 : !TFHE.glwe<sk[1]<1,2048>>, %arg3 : !TFHE.glwe<sk[1]<1,2048>>, %arg4 : !TFHE.glwe<sk[1]<1,2048>>, %arg5 : !TFHE.glwe<sk[1]<1,2048>>) -> tensor<6x!TFHE.glwe<sk[1]<1,2048>>> {
+  %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<6x!TFHE.glwe<sk[1]<1,2048>>>
+  return %0 : tensor<6x!TFHE.glwe<sk[1]<1,2048>>>
 }
 
 // -----
@@ -27,7 +27,7 @@ func.func @main(%arg0 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg1 : !TFHE.glwe<{2048, 
 // CHECK:   %[[V6:.*]] = tensor.insert_slice %[[A5]] into %[[V5]][1, 2, 0] [1, 1, 2049] [1, 1, 1] : tensor<2049xi64> into tensor<2x3x2049xi64>
 // CHECK:   return %[[V6]] : tensor<2x3x2049xi64>
 // CHECK: }
-func.func @main(%arg0 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg1 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg2 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg3 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg4 : !TFHE.glwe<{2048, 1, 64}{4}>, %arg5 : !TFHE.glwe<{2048, 1, 64}{4}>) -> tensor<2x3x!TFHE.glwe<{2048, 1, 64}{4}>> {
-  %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<2x3x!TFHE.glwe<{2048, 1, 64}{4}>>
-  return %0 : tensor<2x3x!TFHE.glwe<{2048, 1, 64}{4}>>
+func.func @main(%arg0 : !TFHE.glwe<sk[1]<1,2048>>, %arg1 : !TFHE.glwe<sk[1]<1,2048>>, %arg2 : !TFHE.glwe<sk[1]<1,2048>>, %arg3 : !TFHE.glwe<sk[1]<1,2048>>, %arg4 : !TFHE.glwe<sk[1]<1,2048>>, %arg5 : !TFHE.glwe<sk[1]<1,2048>>) -> tensor<2x3x!TFHE.glwe<sk[1]<1,2048>>> {
+  %0 = tensor.from_elements %arg0, %arg1, %arg2, %arg3, %arg4, %arg5 : tensor<2x3x!TFHE.glwe<sk[1]<1,2048>>>
+  return %0 : tensor<2x3x!TFHE.glwe<sk[1]<1,2048>>>
 }

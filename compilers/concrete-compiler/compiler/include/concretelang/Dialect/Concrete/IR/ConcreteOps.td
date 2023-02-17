@@ -357,7 +357,8 @@ def Concrete_WopPBSCRTLweTensorOp : Concrete_Op<"wop_pbs_crt_lwe_tensor", [Pure]
         I32Attr : $packingKeySwitchBaseLog,
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
-        I32Attr : $circuitBootstrapBaseLog
+        I32Attr : $circuitBootstrapBaseLog,
+        I64ArrayAttr:$crtDecomposition
     );
     let results = (outs Concrete_LweCRTTensor:$result);
 }

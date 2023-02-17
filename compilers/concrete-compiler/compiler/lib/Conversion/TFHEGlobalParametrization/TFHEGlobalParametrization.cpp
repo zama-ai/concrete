@@ -35,8 +35,8 @@ struct TFHEGlobalParametrizationPass
 using mlir::concretelang::TFHE::GLWECipherTextType;
 
 /// TFHEGlobalParametrizationTypeConverter is a TypeConverter that transform
-/// `TFHE.glwe<{_,_,_}{p}>` to
-/// `TFHE.glwe<{glweDimension,polynomialSize,bits}{p'}>`
+/// `TFHE.glwe<sk[?]>` to
+/// `TFHE.glwe<sk[id]<glweDimension,polynomialSize>>`
 class TFHEGlobalParametrizationTypeConverter : public mlir::TypeConverter {
 
 public:
@@ -67,35 +67,32 @@ public:
     });
   }
 
-  TFHE::GLWECipherTextType glweInterPBSType(GLWECipherTextType &type) {
-    auto bits = 64;
+  TFHE::GLWESecretKey getInterPBSKey() {
     auto dimension = cryptoParameters.getNBigLweDimension();
     auto polynomialSize = 1;
-    auto precision = (signed)type.getP();
-    if ((int)dimension == type.getDimension() &&
-        (int)polynomialSize == type.getPolynomialSize()) {
-      return type;
-    }
-    return TFHE::GLWECipherTextType::get(type.getContext(), dimension,
-                                         polynomialSize, bits, precision);
+    // Warning, for now we use hardcoded ids. Later on, we expect the optimizer
+    // to give the id.
+    auto id = 1;
+    return mlir::concretelang::TFHE::GLWESecretKey(dimension, polynomialSize,
+                                                   id);
   }
 
-  TFHE::GLWECipherTextType glweLookupTableType(GLWECipherTextType &type) {
-    auto bits = 64;
-    auto dimension = cryptoParameters.glweDimension;
-    auto polynomialSize = cryptoParameters.getPolynomialSize();
-    auto precision = (signed)type.getP();
-    return TFHE::GLWECipherTextType::get(type.getContext(), dimension,
-                                         polynomialSize, bits, precision);
+  TFHE::GLWECipherTextType glweInterPBSType(GLWECipherTextType &type) {
+    return TFHE::GLWECipherTextType::get(type.getContext(), getInterPBSKey());
+  }
+
+  TFHE::GLWESecretKey getIntraPBSKey() {
+    auto dimension = cryptoParameters.nSmall;
+    auto polynomialSize = 1;
+    // Warning, for now we use hardcoded ids. Later on, we expect the optimizer
+    // to give the id.
+    auto id = 3;
+    return mlir::concretelang::TFHE::GLWESecretKey(dimension, polynomialSize,
+                                                   id);
   }
 
   TFHE::GLWECipherTextType glweIntraPBSType(GLWECipherTextType &type) {
-    auto bits = 64;
-    auto dimension = cryptoParameters.nSmall;
-    auto polynomialSize = 1;
-    auto precision = (signed)type.getP();
-    return TFHE::GLWECipherTextType::get(type.getContext(), dimension,
-                                         polynomialSize, bits, precision);
+    return TFHE::GLWECipherTextType::get(type.getContext(), getIntraPBSKey());
   }
 
   mlir::concretelang::V0Parameter cryptoParameters;
@@ -120,9 +117,13 @@ struct KeySwitchGLWEOpPattern
                           .cast<mlir::concretelang::TFHE::GLWECipherTextType>();
     auto outputTy = ksOp.getResult().getType().cast<TFHE::GLWECipherTextType>();
     auto newOutputTy = converter.glweIntraPBSType(outputTy);
-    auto newOp = rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
-        ksOp, newOutputTy, ksOp.getCiphertext(), cryptoParameters.ksLevel,
+    auto newInputKey = converter.getInterPBSKey();
+    auto newOutputKey = converter.getIntraPBSKey();
+    auto keyswitchKey = TFHE::GLWEKeyswitchKeyAttr::get(
+        ksOp->getContext(), newInputKey, newOutputKey, cryptoParameters.ksLevel,
         cryptoParameters.ksLogBase);
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
+        ksOp, newOutputTy, ksOp.getCiphertext(), keyswitchKey);
     rewriter.startRootUpdate(newOp);
     newOp.getCiphertext().setType(newInputTy);
     rewriter.finalizeRootUpdate(newOp);
@@ -151,11 +152,17 @@ struct BootstrapGLWEOpPattern
         bsOp.getCiphertext().getType().cast<TFHE::GLWECipherTextType>();
     auto newInputTy = converter.glweIntraPBSType(inputTy);
     auto outputTy = bsOp.getResult().getType().cast<TFHE::GLWECipherTextType>();
-    auto newOutputTy = converter.convertType(outputTy);
+    auto newOutputTy =
+        converter.convertType(outputTy).cast<TFHE::GLWECipherTextType>();
+    auto newInputKey = converter.getIntraPBSKey();
+    auto newOutputKey = converter.getInterPBSKey();
+    auto bootstrapKey = TFHE::GLWEBootstrapKeyAttr::get(
+        bsOp->getContext(), newInputKey, newOutputKey,
+        cryptoParameters.getPolynomialSize(), cryptoParameters.glweDimension,
+        cryptoParameters.brLevel, cryptoParameters.brLogBase);
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         bsOp, newOutputTy, bsOp.getCiphertext(), bsOp.getLookupTable(),
-        cryptoParameters.brLevel, cryptoParameters.brLogBase,
-        cryptoParameters.getPolynomialSize(), cryptoParameters.glweDimension);
+        bootstrapKey);
     rewriter.startRootUpdate(newOp);
     newOp.getCiphertext().setType(newInputTy);
     rewriter.finalizeRootUpdate(newOp);
@@ -179,34 +186,41 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
   mlir::LogicalResult
   matchAndRewrite(TFHE::WopPBSGLWEOp wopPBSOp,
                   mlir::PatternRewriter &rewriter) const override {
-    auto newOp = rewriter.replaceOpWithNewOp<TFHE::WopPBSGLWEOp>(
-        wopPBSOp, converter.convertType(wopPBSOp.getResult().getType()),
-        wopPBSOp.getCiphertexts(), wopPBSOp.getLookupTable(),
-        // Bootstrap parameters
-        cryptoParameters.brLevel, cryptoParameters.brLogBase,
-        // Keyswitch parameters
-        cryptoParameters.ksLevel, cryptoParameters.ksLogBase,
-        // Packing keyswitch key parameters
-        cryptoParameters.largeInteger->wopPBS.packingKeySwitch
-            .inputLweDimension,
+    auto inputTy =
+        wopPBSOp.getCiphertexts().getType().cast<mlir::RankedTensorType>();
+    auto newInputTy =
+        converter.convertType(inputTy).cast<mlir::RankedTensorType>();
+    auto outputTy = wopPBSOp.getType().cast<mlir::RankedTensorType>();
+    auto newOutputType = converter.convertType(outputTy);
+    auto interKey = converter.getInterPBSKey();
+    auto intraKey = converter.getIntraPBSKey();
+    auto keyswitchKey = TFHE::GLWEKeyswitchKeyAttr::get(
+        wopPBSOp->getContext(), interKey, intraKey, cryptoParameters.ksLevel,
+        cryptoParameters.ksLogBase);
+    auto bootstrapKey = TFHE::GLWEBootstrapKeyAttr::get(
+        wopPBSOp->getContext(), intraKey, interKey,
+        cryptoParameters.getPolynomialSize(), cryptoParameters.glweDimension,
+        cryptoParameters.brLevel, cryptoParameters.brLogBase);
+    auto packingKeyswitchKey = TFHE::GLWEPackingKeyswitchKeyAttr::get(
+        wopPBSOp->getContext(), interKey, interKey,
         cryptoParameters.largeInteger->wopPBS.packingKeySwitch
             .outputPolynomialSize,
+        cryptoParameters.largeInteger->wopPBS.packingKeySwitch
+            .inputLweDimension,
         cryptoParameters.largeInteger->wopPBS.packingKeySwitch.level,
-        cryptoParameters.largeInteger->wopPBS.packingKeySwitch.baseLog,
-        // Circuit bootstrap parameters
-        cryptoParameters.largeInteger->wopPBS.circuitBootstrap.level,
-        cryptoParameters.largeInteger->wopPBS.circuitBootstrap.baseLog,
-        // Crt decomposition
+        cryptoParameters.largeInteger->wopPBS.packingKeySwitch.baseLog);
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::WopPBSGLWEOp>(
+        wopPBSOp, newOutputType, wopPBSOp.getCiphertexts(),
+        wopPBSOp.getLookupTable(), keyswitchKey, bootstrapKey,
+        packingKeyswitchKey,
         rewriter.getI64ArrayAttr(
-            cryptoParameters.largeInteger->crtDecomposition));
+            cryptoParameters.largeInteger->crtDecomposition),
+        rewriter.getI32IntegerAttr(
+            cryptoParameters.largeInteger->wopPBS.circuitBootstrap.level),
+        rewriter.getI32IntegerAttr(
+            cryptoParameters.largeInteger->wopPBS.circuitBootstrap.baseLog));
     rewriter.startRootUpdate(newOp);
-    auto ctType =
-        wopPBSOp.getCiphertexts().getType().cast<mlir::RankedTensorType>();
-    auto ciphertextType =
-        ctType.getElementType().cast<TFHE::GLWECipherTextType>();
-    auto newType = mlir::RankedTensorType::get(
-        ctType.getShape(), converter.glweInterPBSType(ciphertextType));
-    newOp.getCiphertexts().setType(newType);
+    newOp.getCiphertexts().setType(newInputTy);
     rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
@@ -282,8 +296,9 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
                                          cryptoParameters);
     target.addDynamicallyLegalOp<TFHE::KeySwitchGLWEOp>(
         [&](TFHE::KeySwitchGLWEOp op) {
-          return op.getLevel() != (uint32_t)-1 &&
-                 op.getBaseLog() != (uint32_t)-1;
+          return !op.getKey().getInputKey().isNotParameterized() &&
+                 !op.getKey().getOutputKey().isNotParameterized() &&
+                 op.getKey().getBaseLog() != 0 && op.getKey().getLevels() != 0;
         });
     patterns.add<BootstrapGLWEOpPattern>(&getContext(), converter,
                                          cryptoParameters);

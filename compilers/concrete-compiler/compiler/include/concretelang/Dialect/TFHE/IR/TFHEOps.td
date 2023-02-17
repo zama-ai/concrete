@@ -12,9 +12,9 @@
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
-
 include "concretelang/Dialect/TFHE/IR/TFHEDialect.td"
 include "concretelang/Dialect/TFHE/IR/TFHETypes.td"
+include "concretelang/Dialect/TFHE/IR/TFHEAttrs.td"
 
 class TFHE_Op<string mnemonic, list<Trait> traits = []>
     : Op<TFHE_Dialect, mnemonic, traits>;
@@ -125,12 +125,11 @@ def TFHE_KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe"> {
   let summary = "Change the encryption parameters of a glwe ciphertext by "
                 "applying a keyswitch";
 
-  let arguments = (ins 
+  let arguments = (ins
     TFHE_GLWECipherTextType : $ciphertext,
-    I32Attr : $level,
-    I32Attr : $baseLog
+    TFHE_KeyswitchKeyAttr : $key
   );
-  
+
 
   let results = (outs TFHE_GLWECipherTextType : $result);
 }
@@ -143,10 +142,7 @@ def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
   let arguments = (ins
     TFHE_GLWECipherTextType : $ciphertext,
     1DTensorOf<[I64]> : $lookup_table,
-    I32Attr : $level,
-    I32Attr : $baseLog,
-    I32Attr : $polySize,
-    I32Attr : $glweDimension
+    TFHE_BootstrapKeyAttr: $key
   );
 
   let results = (outs TFHE_GLWECipherTextType : $result);
@@ -158,23 +154,14 @@ def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe"> {
     let arguments = (ins
         Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>: $ciphertexts,
         2DTensorOf<[I64]> : $lookupTable,
-        // Bootstrap parameters
-        I32Attr : $bootstrapLevel,
-        I32Attr : $bootstrapBaseLog,
-        // Keyswitch parameters
-        I32Attr : $keyswitchLevel,
-        I32Attr : $keyswitchBaseLog,
-        // Packing keyswitch key parameters
-        I32Attr : $packingKeySwitchInputLweDimension,
-        I32Attr : $packingKeySwitchoutputPolynomialSize,
-        I32Attr : $packingKeySwitchLevel,
-        I32Attr : $packingKeySwitchBaseLog,
-        // Circuit bootstrap parameters
-        I32Attr : $circuitBootstrapLevel,
-        I32Attr : $circuitBootstrapBaseLog,
-        // Crt decomposition
-        I64ArrayAttr: $crtDecomposition
+        TFHE_KeyswitchKeyAttr: $ksk,
+        TFHE_BootstrapKeyAttr: $bsk,
+        TFHE_PackingKeyswitchKeyAttr: $pksk,
+        I64ArrayAttr: $crtDecomposition,
+        I32Attr: $cbsLevels,
+        I32Attr: $cbsBaseLog
     );
+
     let results = (outs Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>:$result);
 }
 

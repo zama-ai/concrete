@@ -1,4 +1,4 @@
-// RUN: concretecompiler --action=dump-llvm-ir %s
+// RUN: concretecompiler --action=dump-llvm-ir  %s
 // Just ensure that compile
 // https://github.com/zama-ai/concrete-compiler-internal/issues/785
 func.func @main(%arg0: !FHE.eint<15>, %cst: tensor<32768xi64>) -> tensor<1x!FHE.eint<15>> {

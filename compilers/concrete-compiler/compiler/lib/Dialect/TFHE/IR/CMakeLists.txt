@@ -3,6 +3,7 @@ add_mlir_dialect_library(
   TFHEDialect.cpp
   TFHEOps.cpp
   TFHETypes.cpp
+  TFHEParameters.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/TFHE
   DEPENDS
