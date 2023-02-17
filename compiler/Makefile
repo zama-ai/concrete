@@ -338,6 +338,14 @@ run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
 		--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
 		$(BENCHMARK_CPU_DIR)/*.yaml;)
 
+FIXTURE_APPLICATION_DIR=tests/end_to_end_fixture/application/
+
+run-cpu-application-benchmarks:
+	unzip $(FIXTURE_APPLICATION_DIR)/*.zip -d $(FIXTURE_APPLICATION_DIR)
+	$(BUILD_DIR)/bin/end_to_end_benchmark \
+		--backend=cpu --benchmark_out=benchmarks_results.json --benchmark_out_format=json \
+		$(FIXTURE_APPLICATION_DIR)*.yaml
+
 ## benchmark GPU
 
 BENCHMARK_GPU_DIR=tests/end_to_end_fixture/benchmarks_gpu
