@@ -1,0 +1,16 @@
+add_mlir_dialect_library(
+  TracingDialectTransforms
+  BufferizableOpInterfaceImpl.cpp
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/Tracing
+  DEPENDS
+  mlir-headers
+  LINK_LIBS
+  PUBLIC
+  MLIRArithmeticDialect
+  MLIRBufferizationDialect
+  MLIRBufferizationTransforms
+  MLIRIR
+  MLIRMemRefDialect
+  MLIRPass
+  MLIRTransforms)

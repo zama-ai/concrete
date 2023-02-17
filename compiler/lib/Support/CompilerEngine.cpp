@@ -38,6 +38,8 @@
 #include <concretelang/Dialect/SDFG/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/SDFG/Transforms/SDFGConvertibleOpInterfaceImpl.h>
 #include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
+#include <concretelang/Dialect/Tracing/IR/TracingDialect.h>
+#include <concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Error.h>
@@ -73,6 +75,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
   if (this->mlirContext == nullptr) {
     mlir::DialectRegistry registry;
     registry.insert<
+        mlir::concretelang::Tracing::TracingDialect,
         mlir::concretelang::RT::RTDialect, mlir::concretelang::FHE::FHEDialect,
         mlir::concretelang::TFHE::TFHEDialect,
         mlir::concretelang::FHELinalg::FHELinalgDialect,
@@ -83,6 +86,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
         mlir::LLVM::LLVMDialect, mlir::scf::SCFDialect,
         mlir::omp::OpenMPDialect, mlir::bufferization::BufferizationDialect>();
     BConcrete::registerBufferizableOpInterfaceExternalModels(registry);
+    Tracing::registerBufferizableOpInterfaceExternalModels(registry);
     SDFG::registerSDFGConvertibleOpInterfaceExternalModels(registry);
     SDFG::registerBufferizableOpInterfaceExternalModels(registry);
     arith::registerBufferizableOpInterfaceExternalModels(registry);

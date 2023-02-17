@@ -6,6 +6,7 @@
 #ifndef CONCRETELANG_DIALECT_FHE_IR_FHEOPS_H
 #define CONCRETELANG_DIALECT_FHE_IR_FHEOPS_H
 
+#include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/Interfaces/ControlFlowInterfaces.h>

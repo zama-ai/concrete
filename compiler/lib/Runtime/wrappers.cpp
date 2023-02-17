@@ -7,6 +7,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Runtime/seeder.h"
 #include <assert.h>
+#include <bitset>
 #include <cmath>
 #include <functional>
 #include <iostream>
@@ -657,4 +658,33 @@ void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
     dst_aligned[dst_offset + i * dst_stride] =
         src_aligned[src_offset + i * src_stride];
   }
+}
+
+void memref_trace_ciphertext(uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+                             uint64_t ct0_offset, uint64_t ct0_size,
+                             uint64_t ct0_stride, char *message_ptr,
+                             uint32_t message_len, uint32_t msb) {
+  std::string message{message_ptr, (size_t)message_len};
+  std::cout << message << " : ";
+  std::bitset<64> bits{ct0_aligned[ct0_offset + ct0_size - 1]};
+  std::string bitstring = bits.to_string();
+  bitstring.insert(msb, 1, ' ');
+  std::cout << bitstring << std::endl;
+}
+
+void memref_trace_plaintext(uint64_t input, uint64_t input_width,
+                            char *message_ptr, uint32_t message_len,
+                            uint32_t msb) {
+  std::string message{message_ptr, (size_t)message_len};
+  std::cout << message << " : ";
+  std::bitset<64> bits{input};
+  std::string bitstring = bits.to_string();
+  bitstring.erase(0, 64 - input_width);
+  bitstring.insert(msb, 1, ' ');
+  std::cout << bitstring << std::endl;
+}
+
+void memref_trace_message(char *message_ptr, uint32_t message_len) {
+  std::string message{message_ptr, (size_t)message_len};
+  std::cout << message << std::endl;
 }

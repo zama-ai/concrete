@@ -69,6 +69,13 @@ def BConcreteToCAPI : Pass<"bconcrete-to-capi", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::concretelang::BConcrete::BConcreteDialect"];
 }
 
+def TracingToCAPI : Pass<"tracing-to-capi", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the Tracing dialect to CAPI calls";
+  let description = [{ Lowers operations from the Tracing dialect to CAPI calls }];
+  let constructor = "mlir::concretelang::createConvertTracingToCAPIPass()";
+  let dependentDialects = ["mlir::concretelang::Tracing::TracingDialect"];
+}
+
 def SDFGToStreamEmulator : Pass<"sdfg-to-stream-emulator", "mlir::ModuleOp"> {
   let summary = "Lowers operations from the SDFG dialect to Stream Emulator calls";
   let description = [{ Lowers operations from the SDFG dialect to Stream Emulator calls }];

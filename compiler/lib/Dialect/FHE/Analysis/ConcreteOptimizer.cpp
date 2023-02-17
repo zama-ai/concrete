@@ -26,6 +26,7 @@
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 #include "concretelang/Support/V0Parameters.h"
 #include "concretelang/Support/logging.h"
 
@@ -120,7 +121,8 @@ struct FunctionToDag {
     auto encrypted_inputs = encryptedInputs(op);
     if (!hasEncryptedResult(op)) {
       // This op is unrelated to FHE
-      assert(encrypted_inputs.empty());
+      assert(encrypted_inputs.empty() ||
+             mlir::isa<mlir::concretelang::Tracing::TraceCiphertextOp>(op));
       return;
     }
     assert(op.getNumResults() == 1);

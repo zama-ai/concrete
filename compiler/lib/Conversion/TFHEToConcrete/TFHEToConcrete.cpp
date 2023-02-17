@@ -19,9 +19,11 @@
 #include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 
 namespace TFHE = mlir::concretelang::TFHE;
 namespace Concrete = mlir::concretelang::Concrete;
+namespace Tracing = mlir::concretelang::Tracing;
 
 namespace {
 struct TFHEToConcretePass : public TFHEToConcreteBase<TFHEToConcretePass> {
@@ -136,6 +138,31 @@ private:
   mlir::TypeConverter &converter;
 };
 
+struct TracePlaintextOpPattern
+    : public mlir::OpRewritePattern<Tracing::TracePlaintextOp> {
+  TracePlaintextOpPattern(mlir::MLIRContext *context,
+                          mlir::TypeConverter &converter,
+                          mlir::PatternBenefit benefit = 100)
+      : mlir::OpRewritePattern<Tracing::TracePlaintextOp>(context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(Tracing::TracePlaintextOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto inputWidth =
+        op.plaintext().getType().cast<mlir::IntegerType>().getWidth();
+    if (inputWidth == 64) {
+      op->setAttr("input_width", rewriter.getI64IntegerAttr(inputWidth));
+      return mlir::success();
+    }
+    auto extendedInput = rewriter.create<mlir::arith::ExtUIOp>(
+        op.getLoc(), rewriter.getI64Type(), op.plaintext());
+    auto newOp = rewriter.replaceOpWithNewOp<Tracing::TracePlaintextOp>(
+        op, extendedInput, op.msgAttr(), op.nmsbAttr());
+    newOp->setAttr("input_width", rewriter.getI64IntegerAttr(inputWidth));
+    return ::mlir::success();
+  }
+};
+
 void TFHEToConcretePass::runOnOperation() {
   auto op = this->getOperation();
 
@@ -171,6 +198,7 @@ void TFHEToConcretePass::runOnOperation() {
         return FunctionConstantOpConversion<
             TFHEToConcreteTypeConverter>::isLegal(op, converter);
       });
+
   // Add all patterns required to lower all ops from `TFHE` to
   // `Concrete`
   mlir::RewritePatternSet patterns(&getContext());
@@ -227,6 +255,19 @@ void TFHEToConcretePass::runOnOperation() {
                                                               converter);
   mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
       patterns, converter);
+
+  // Conversion of Tracing dialect
+  patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+      Tracing::TraceCiphertextOp>>(&getContext(), converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
+      target, converter);
+  patterns.add<TracePlaintextOpPattern>(&getContext(), converter);
+  target.addLegalOp<mlir::arith::ExtUIOp>();
+  target.addDynamicallyLegalOp<Tracing::TracePlaintextOp>(
+      [&](Tracing::TracePlaintextOp op) {
+        return (op.plaintext().getType().cast<mlir::IntegerType>().getWidth() ==
+                64);
+      });
 
   // Conversion of RT Dialect Ops
   patterns.add<

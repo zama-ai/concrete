@@ -215,5 +215,18 @@ void memref_batched_bootstrap_lwe_cuda_u64(
     uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t poly_size,
     uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
     mlir::concretelang::RuntimeContext *context);
+
+// Tracing ////////////////////////////////////////////////////////////////////
+void memref_trace_ciphertext(uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+                             uint64_t ct0_offset, uint64_t ct0_size,
+                             uint64_t ct0_stride, char *message_ptr,
+                             uint32_t message_len, uint32_t msb);
+
+void memref_trace_plaintext(uint64_t input, uint64_t input_width,
+                            char *message_ptr, uint32_t message_len,
+                            uint32_t msb);
+
+void memref_trace_message(char *message_ptr, uint32_t message_len);
 }
+
 #endif

@@ -24,11 +24,13 @@
 #include "concretelang/Conversion/SDFGToStreamEmulator/Pass.h"
 #include "concretelang/Conversion/TFHEGlobalParametrization/Pass.h"
 #include "concretelang/Conversion/TFHEToConcrete/Pass.h"
+#include "concretelang/Conversion/TracingToCAPI/Pass.h"
 #include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
+#include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
 
 #define GEN_PASS_CLASSES
 #include "concretelang/Conversion/Passes.h.inc"

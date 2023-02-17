@@ -48,6 +48,7 @@ char memref_encode_expand_lut_for_bootstrap[] =
     "memref_encode_expand_lut_for_bootstrap";
 char memref_encode_expand_lut_for_woppbs[] =
     "memref_encode_expand_lut_for_woppbs";
+char memref_trace[] = "memref_trace";
 
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
@@ -184,6 +185,12 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
         rewriter.getContext(),
         {memref1DType, memref1DType, memref1DType, memref1DType,
          rewriter.getI32Type(), rewriter.getI32Type(), rewriter.getI1Type()},
+        {});
+  } else if (funcName == memref_trace) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref1DType, mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type()),
+         rewriter.getI32Type(), rewriter.getI32Type()},
         {});
   } else {
     op->emitError("unknwon external function") << funcName;
@@ -431,6 +438,7 @@ struct BConcreteToCAPIPass : public BConcreteToCAPIBase<BConcreteToCAPIPass> {
     target.addLegalDialect<func::FuncDialect>();
     target.addLegalDialect<memref::MemRefDialect>();
     target.addLegalDialect<arith::ArithmeticDialect>();
+    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
 
     // Make sure that no ops from `FHE` remain after the lowering
     target.addIllegalDialect<BConcrete::BConcreteDialect>();

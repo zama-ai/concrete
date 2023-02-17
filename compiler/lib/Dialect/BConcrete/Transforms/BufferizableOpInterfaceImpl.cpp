@@ -18,6 +18,7 @@
 #include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
 #include "concretelang/Dialect/BConcrete/IR/BConcreteOps.h"
 #include "concretelang/Dialect/BConcrete/Transforms/BufferizableOpInterfaceImpl.h"
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include <mlir/IR/AffineExpr.h>
 #include <mlir/IR/AffineMap.h>
@@ -30,6 +31,7 @@ using namespace mlir::tensor;
 namespace {
 
 namespace BConcrete = mlir::concretelang::BConcrete;
+namespace Tracing = mlir::concretelang::Tracing;
 
 template <typename TensorOp, typename MemrefOp>
 struct TensorToMemrefOp : public BufferizableOpInterface::ExternalModel<

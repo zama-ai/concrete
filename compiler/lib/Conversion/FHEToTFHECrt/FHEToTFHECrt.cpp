@@ -7,7 +7,6 @@
 #include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/IR/Operation.h>
 
 #include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
@@ -29,9 +28,12 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
+#include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 
 namespace FHE = mlir::concretelang::FHE;
 namespace TFHE = mlir::concretelang::TFHE;
+namespace Tracing = mlir::concretelang::Tracing;
 namespace concretelang = mlir::concretelang;
 
 namespace fhe_to_tfhe_crt_conversion {
@@ -583,6 +585,45 @@ struct ApplyLookupTableEintOpPattern
   };
 };
 
+/// Rewriter for the `Tracing::trace_ciphertext` operation.
+struct TraceCiphertextOpPattern : CrtOpPattern<Tracing::TraceCiphertextOp> {
+
+  TraceCiphertextOpPattern(mlir::MLIRContext *context,
+                           concretelang::CrtLoweringParameters params,
+                           mlir::PatternBenefit benefit = 1)
+      : CrtOpPattern<Tracing::TraceCiphertextOp>(context, params, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(Tracing::TraceCiphertextOp op,
+                  Tracing::TraceCiphertextOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    typing::TypeConverter converter{loweringParameters};
+    mlir::Type ciphertextScalarType =
+        converter.convertType(op.ciphertext().getType())
+            .cast<mlir::RankedTensorType>()
+            .getElementType();
+
+    for (size_t i = 0; i < (loweringParameters.nMods - 1); ++i) {
+      auto extractedCiphertext = rewriter.create<mlir::tensor::ExtractOp>(
+          op.getLoc(), ciphertextScalarType, adaptor.ciphertext(),
+          mlir::ValueRange{rewriter.create<mlir::arith::ConstantOp>(
+              op.getLoc(), rewriter.getIndexAttr(i))});
+      rewriter.create<Tracing::TraceCiphertextOp>(
+          op.getLoc(), extractedCiphertext, op.msgAttr(), op.nmsbAttr());
+    }
+
+    auto extractedCiphertext = rewriter.create<mlir::tensor::ExtractOp>(
+        op.getLoc(), ciphertextScalarType, adaptor.ciphertext(),
+        mlir::ValueRange{rewriter.create<mlir::arith::ConstantOp>(
+            op.getLoc(), rewriter.getIndexAttr(loweringParameters.nMods - 1))});
+    rewriter.replaceOpWithNewOp<Tracing::TraceCiphertextOp>(
+        op, extractedCiphertext, op.msgAttr(), op.nmsbAttr());
+
+    return mlir::success();
+  }
+};
+
 /// Rewriter for the `tensor::extract` operation.
 struct TensorExtractOpPattern : public CrtOpPattern<mlir::tensor::ExtractOp> {
 
@@ -924,6 +965,8 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
         target, converter);
     concretelang::addDynamicallyLegalTypeOp<mlir::tensor::CollapseShapeOp>(
         target, converter);
+    concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
+        target, converter);
     concretelang::addDynamicallyLegalTypeOp<
         concretelang::RT::MakeReadyFutureOp>(target, converter);
     concretelang::addDynamicallyLegalTypeOp<concretelang::RT::AwaitFutureOp>(
@@ -1006,6 +1049,8 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
                                                   loweringParameters);
     patterns.add<lowering::InsertSliceOpPattern>(patterns.getContext(),
                                                  loweringParameters);
+    patterns.add<lowering::TraceCiphertextOpPattern>(patterns.getContext(),
+                                                     loweringParameters);
     patterns.add<concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::GenerateOp, true>>(&getContext(), converter);
 

@@ -398,6 +398,8 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertBConcreteToCAPIPass(gpu),
       enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createConvertTracingToCAPIPass(), enablePass);
 
   // Convert to MLIR LLVM Dialect
   addPotentiallyNestedPass(

@@ -28,9 +28,11 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 
 namespace FHE = mlir::concretelang::FHE;
 namespace TFHE = mlir::concretelang::TFHE;
+namespace Tracing = mlir::concretelang::Tracing;
 namespace concretelang = mlir::concretelang;
 
 namespace fhe_to_tfhe_scalar_conversion {
@@ -546,9 +548,14 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
                                                                 converter);
     concretelang::addDynamicallyLegalTypeOp<mlir::scf::ForOp>(target,
                                                               converter);
-
     patterns.add<FunctionConstantOpConversion<typing::TypeConverter>>(
         &getContext(), converter);
+
+    // Patterns for `tracing` dialect.
+    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+        Tracing::TraceCiphertextOp, true>>(&getContext(), converter);
+    concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
+        target, converter);
 
     // Patterns for `bufferization` dialect operations.
     patterns.add<concretelang::TypeConvertingReinstantiationPattern<

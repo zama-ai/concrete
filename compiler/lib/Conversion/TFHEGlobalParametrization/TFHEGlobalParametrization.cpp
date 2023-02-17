@@ -15,6 +15,7 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 #include "concretelang/Support/Constants.h"
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 
@@ -332,6 +333,8 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
 
     // Conversion of RT Dialect Ops
     patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::Tracing::TraceCiphertextOp>,
         mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
         mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
         mlir::concretelang::GenericTypeConverterPattern<
@@ -351,6 +354,8 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
         mlir::concretelang::GenericTypeConverterPattern<
             mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
                                                                  converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::Tracing::TraceCiphertextOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<

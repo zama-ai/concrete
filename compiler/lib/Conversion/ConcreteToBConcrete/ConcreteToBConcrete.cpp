@@ -36,6 +36,7 @@
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -43,6 +44,7 @@
 
 namespace Concrete = ::mlir::concretelang::Concrete;
 namespace BConcrete = ::mlir::concretelang::BConcrete;
+namespace Tracing = ::mlir::concretelang::Tracing;
 
 namespace {
 struct ConcreteToBConcretePass
@@ -985,6 +987,16 @@ void ConcreteToBConcretePass::runOnOperation() {
           return converter.isLegal(op->getResultTypes()) &&
                  converter.isLegal(op->getOperandTypes());
         });
+
+    // Conversion of Tracing dialect
+    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+                     Tracing::TraceCiphertextOp>,
+                 mlir::concretelang::GenericTypeConverterPattern<
+                     Tracing::TracePlaintextOp>>(&getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
+        target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<Tracing::TracePlaintextOp>(
+        target, converter);
 
     // Conversion of RT Dialect Ops
     patterns.add<
