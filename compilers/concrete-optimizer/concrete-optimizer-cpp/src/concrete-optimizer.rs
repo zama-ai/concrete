@@ -6,10 +6,12 @@ use concrete_optimizer::dag::operator::{
 };
 use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
+use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
 use concrete_optimizer::optimization::decomposition;
+use concrete_optimizer::parameters::{BrDecompositionParameters, KsDecompositionParameters};
 use concrete_optimizer::utils::cache::persistent::default_cache_dir;
 
 fn no_solution() -> ffi::Solution {
@@ -162,6 +164,145 @@ impl From<DagSolution> for ffi::DagSolution {
     }
 }
 
+impl ffi::CircuitSolution {
+    fn of(sol: ffi::DagSolution, dag: &OperationDag) -> Self {
+        let big_key = ffi::SecretLweKey {
+            identifier: 0,
+            polynomial_size: sol.glwe_polynomial_size,
+            glwe_dimension: sol.glwe_dimension,
+            description: "big representation".into(),
+        };
+        let small_key = ffi::SecretLweKey {
+            identifier: 1,
+            polynomial_size: sol.glwe_polynomial_size,
+            glwe_dimension: 1,
+            description: "small representation".into(),
+        };
+        let keyswitch_key = ffi::KeySwitchKey {
+            identifier: 0,
+            input_key: big_key.clone(),
+            output_key: small_key.clone(),
+            ks_decomposition_parameter: ffi::KsDecompositionParameters {
+                level: sol.ks_decomposition_level_count,
+                log2_base: sol.ks_decomposition_base_log,
+            },
+            description: "tlu keyswitch".into(),
+        };
+        let bootstrap_key = ffi::BootstrapKey {
+            identifier: 0,
+            input_key: small_key.clone(),
+            output_key: big_key.clone(),
+            br_decomposition_parameter: ffi::BrDecompositionParameters {
+                level: sol.br_decomposition_level_count,
+                log2_base: sol.br_decomposition_base_log,
+            },
+            description: "tlu bootsrap".into(),
+        };
+        let instruction_keys = ffi::InstructionKeys {
+            input_key: big_key.identifier,
+            tlu_keyswitch_key: keyswitch_key.identifier,
+            tlu_bootstrap_key: bootstrap_key.identifier,
+            output_key: big_key.identifier,
+            extra_conversion_keys: vec![],
+        };
+        let instructions_keys = vec![instruction_keys; dag.0.len()];
+        let circuit_keys = ffi::CircuitKeys {
+            secret_keys: [big_key, small_key].into(),
+            keyswitch_keys: [keyswitch_key].into(),
+            bootstrap_keys: [bootstrap_key].into(),
+            conversion_keyswitch_keys: [].into(),
+        };
+        ffi::CircuitSolution {
+            circuit_keys,
+            instructions_keys,
+            complexity: sol.complexity,
+            p_error: sol.p_error,
+            global_p_error: sol.global_p_error,
+        }
+    }
+}
+
+impl From<KsDecompositionParameters> for ffi::KsDecompositionParameters {
+    fn from(v: KsDecompositionParameters) -> Self {
+        ffi::KsDecompositionParameters {
+            level: v.level,
+            log2_base: v.log2_base,
+        }
+    }
+}
+
+impl From<BrDecompositionParameters> for ffi::BrDecompositionParameters {
+    fn from(v: BrDecompositionParameters) -> Self {
+        ffi::BrDecompositionParameters {
+            level: v.level,
+            log2_base: v.log2_base,
+        }
+    }
+}
+
+impl From<keys_spec::SecretLweKey> for ffi::SecretLweKey {
+    fn from(v: keys_spec::SecretLweKey) -> Self {
+        Self {
+            identifier: v.identifier,
+            polynomial_size: v.polynomial_size,
+            glwe_dimension: v.glwe_dimension,
+            description: v.description,
+        }
+    }
+}
+
+impl From<keys_spec::KeySwitchKey> for ffi::KeySwitchKey {
+    fn from(v: keys_spec::KeySwitchKey) -> Self {
+        Self {
+            identifier: v.identifier,
+            input_key: v.input_key.into(),
+            output_key: v.output_key.into(),
+            ks_decomposition_parameter: v.ks_decomposition_parameter.into(),
+            description: v.description,
+        }
+    }
+}
+
+impl From<keys_spec::ConversionKeySwitchKey> for ffi::ConversionKeySwitchKey {
+    fn from(v: keys_spec::ConversionKeySwitchKey) -> Self {
+        Self {
+            identifier: v.identifier,
+            input_key: v.input_key.into(),
+            output_key: v.output_key.into(),
+            ks_decomposition_parameter: v.ks_decomposition_parameter.into(),
+            description: v.description,
+            fast_keyswitch: v.fast_keyswitch,
+        }
+    }
+}
+
+impl From<keys_spec::BootstrapKey> for ffi::BootstrapKey {
+    fn from(v: keys_spec::BootstrapKey) -> Self {
+        Self {
+            identifier: v.identifier,
+            input_key: v.input_key.into(),
+            output_key: v.output_key.into(),
+            br_decomposition_parameter: v.br_decomposition_parameter.into(),
+            description: v.description,
+        }
+    }
+}
+
+fn vec_into<F, T: std::convert::From<F>>(vec: Vec<F>) -> Vec<T> {
+    vec.into_iter().map(|x| x.into()).collect()
+}
+
+impl From<keys_spec::CircuitKeys> for ffi::CircuitKeys {
+    fn from(v: keys_spec::CircuitKeys) -> Self {
+        Self {
+            secret_keys: vec_into(v.secret_keys),
+            keyswitch_keys: vec_into(v.keyswitch_keys),
+            bootstrap_keys: vec_into(v.bootstrap_keys),
+            conversion_keyswitch_keys: vec_into(v.conversion_keyswitch_keys),
+        }
+    }
+}
+
 pub struct OperationDag(unparametrized::OperationDag);
 
 fn empty() -> Box<OperationDag> {
@@ -283,6 +424,11 @@ impl OperationDag {
     fn dump(&self) -> String {
         self.0.dump()
     }
+
+    fn optimize_multi(&self, options: ffi::Options) -> Box<ffi::CircuitSolution> {
+        let single_parameter = self.optimize(options);
+        Box::new(ffi::CircuitSolution::of(single_parameter, self))
+    }
 }
 
 pub struct Weights(operator::Weights);
@@ -319,7 +465,6 @@ impl Into<Encoding> for ffi::Encoding {
 #[allow(unused_must_use)]
 #[cxx::bridge]
 mod ffi {
-
     #[namespace = "concrete_optimizer"]
     extern "Rust" {
 
@@ -379,6 +524,9 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::weights"]
         fn vector(weights: &[i64]) -> Box<Weights>;
+
+        fn optimize_multi(self: &OperationDag, _options: Options) -> Box<CircuitSolution>;
+
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -443,6 +591,82 @@ mod ffi {
         pub use_gpu_constraints: bool,
         pub encoding: Encoding,
         pub cache_on_disk: bool,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct BrDecompositionParameters {
+        pub level: u64,
+        pub log2_base: u64,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct KsDecompositionParameters {
+        pub level: u64,
+        pub log2_base: u64,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct SecretLweKey {
+        /* Big and small secret keys */
+        pub identifier: u64,
+        pub polynomial_size: u64,
+        pub glwe_dimension: u64,
+        pub description: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct BootstrapKey {
+        pub identifier: u64,
+        pub input_key: SecretLweKey,
+        pub output_key: SecretLweKey,
+        pub br_decomposition_parameter: BrDecompositionParameters,
+        pub description: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct KeySwitchKey {
+        pub identifier: u64,
+        pub input_key: SecretLweKey,
+        pub output_key: SecretLweKey,
+        pub ks_decomposition_parameter: KsDecompositionParameters,
+        pub description: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct ConversionKeySwitchKey {
+        pub identifier: u64,
+        pub input_key: SecretLweKey,
+        pub output_key: SecretLweKey,
+        pub ks_decomposition_parameter: KsDecompositionParameters,
+        pub fast_keyswitch: bool,
+        pub description: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct CircuitKeys {
+        /* All keys used in a circuit */
+        pub secret_keys: Vec<SecretLweKey>,
+        pub keyswitch_keys: Vec<KeySwitchKey>,
+        pub bootstrap_keys: Vec<BootstrapKey>,
+        pub conversion_keyswitch_keys: Vec<ConversionKeySwitchKey>,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct InstructionKeys {
+        pub input_key: u64,
+        pub tlu_keyswitch_key: u64,
+        pub tlu_bootstrap_key: u64,
+        pub output_key: u64,
+        pub extra_conversion_keys: Vec<u64>,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct CircuitSolution {
+        pub circuit_keys: CircuitKeys,
+        pub instructions_keys: Vec<InstructionKeys>,
+        pub complexity: f64,
+        pub p_error: f64,
+        pub global_p_error: f64,
     }
 }
 

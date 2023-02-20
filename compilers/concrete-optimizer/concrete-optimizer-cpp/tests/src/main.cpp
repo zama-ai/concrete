@@ -106,6 +106,24 @@ void test_dag_lut_force_wop() {
   options.encoding = concrete_optimizer::Encoding::Crt;
   auto solution = dag->optimize(options);
   assert(solution.use_wop_pbs);
+  assert(!solution.crt_decomposition.empty());
+}
+
+void test_multi_parameters() {
+  auto dag = concrete_optimizer::dag::empty();
+
+  std::vector<uint64_t> shape = {3};
+
+  concrete_optimizer::dag::OperatorIndex input =
+      dag->add_input(PRECISION_8B, slice(shape));
+
+  std::vector<u_int64_t> table = {};
+  dag->add_lut(input, slice(table), PRECISION_8B);
+
+  auto options = default_options();
+  auto circuit_solution = dag->optimize_multi(options);
+  auto secret_keys = circuit_solution->circuit_keys.keyswitch_keys;
+  assert(!secret_keys.empty());
 }
 
 int main() {
@@ -114,6 +132,7 @@ int main() {
   test_dag_lut();
   test_dag_lut_wop();
   test_dag_lut_force_wop();
+  test_multi_parameters();
 
   return 0;
 }

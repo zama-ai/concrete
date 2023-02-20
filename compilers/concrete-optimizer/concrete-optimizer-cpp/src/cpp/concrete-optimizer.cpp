@@ -938,6 +938,15 @@ union MaybeUninit {
 } // namespace cxxbridge1
 } // namespace rust
 
+struct BrDecompositionParameters;
+struct KsDecompositionParameters;
+struct SecretLweKey;
+struct BootstrapKey;
+struct KeySwitchKey;
+struct ConversionKeySwitchKey;
+struct CircuitKeys;
+struct InstructionKeys;
+struct CircuitSolution;
 namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
@@ -964,6 +973,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
+  ::rust::Box<::CircuitSolution> optimize_multi(::concrete_optimizer::Options _options) const noexcept;
   ~OperationDag() = delete;
 
 private:
@@ -1071,7 +1081,119 @@ struct Options final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+} // namespace concrete_optimizer
 
+#ifndef CXXBRIDGE1_STRUCT_BrDecompositionParameters
+#define CXXBRIDGE1_STRUCT_BrDecompositionParameters
+struct BrDecompositionParameters final {
+  ::std::uint64_t level;
+  ::std::uint64_t log2_base;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_BrDecompositionParameters
+
+#ifndef CXXBRIDGE1_STRUCT_KsDecompositionParameters
+#define CXXBRIDGE1_STRUCT_KsDecompositionParameters
+struct KsDecompositionParameters final {
+  ::std::uint64_t level;
+  ::std::uint64_t log2_base;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_KsDecompositionParameters
+
+#ifndef CXXBRIDGE1_STRUCT_SecretLweKey
+#define CXXBRIDGE1_STRUCT_SecretLweKey
+struct SecretLweKey final {
+  ::std::uint64_t identifier;
+  ::std::uint64_t polynomial_size;
+  ::std::uint64_t glwe_dimension;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_SecretLweKey
+
+#ifndef CXXBRIDGE1_STRUCT_BootstrapKey
+#define CXXBRIDGE1_STRUCT_BootstrapKey
+struct BootstrapKey final {
+  ::std::uint64_t identifier;
+  ::SecretLweKey input_key;
+  ::SecretLweKey output_key;
+  ::BrDecompositionParameters br_decomposition_parameter;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_BootstrapKey
+
+#ifndef CXXBRIDGE1_STRUCT_KeySwitchKey
+#define CXXBRIDGE1_STRUCT_KeySwitchKey
+struct KeySwitchKey final {
+  ::std::uint64_t identifier;
+  ::SecretLweKey input_key;
+  ::SecretLweKey output_key;
+  ::KsDecompositionParameters ks_decomposition_parameter;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_KeySwitchKey
+
+#ifndef CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+#define CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+struct ConversionKeySwitchKey final {
+  ::std::uint64_t identifier;
+  ::SecretLweKey input_key;
+  ::SecretLweKey output_key;
+  ::KsDecompositionParameters ks_decomposition_parameter;
+  bool fast_keyswitch;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+
+#ifndef CXXBRIDGE1_STRUCT_CircuitKeys
+#define CXXBRIDGE1_STRUCT_CircuitKeys
+struct CircuitKeys final {
+  ::rust::Vec<::SecretLweKey> secret_keys;
+  ::rust::Vec<::KeySwitchKey> keyswitch_keys;
+  ::rust::Vec<::BootstrapKey> bootstrap_keys;
+  ::rust::Vec<::ConversionKeySwitchKey> conversion_keyswitch_keys;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_CircuitKeys
+
+#ifndef CXXBRIDGE1_STRUCT_InstructionKeys
+#define CXXBRIDGE1_STRUCT_InstructionKeys
+struct InstructionKeys final {
+  ::std::uint64_t input_key;
+  ::std::uint64_t tlu_keyswitch_key;
+  ::std::uint64_t tlu_bootstrap_key;
+  ::std::uint64_t output_key;
+  ::rust::Vec<::std::uint64_t> extra_conversion_keys;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_InstructionKeys
+
+#ifndef CXXBRIDGE1_STRUCT_CircuitSolution
+#define CXXBRIDGE1_STRUCT_CircuitSolution
+struct CircuitSolution final {
+  ::CircuitKeys circuit_keys;
+  ::rust::Vec<::InstructionKeys> instructions_keys;
+  double complexity;
+  double p_error;
+  double global_p_error;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_CircuitSolution
+
+namespace concrete_optimizer {
 namespace v0 {
 extern "C" {
 ::concrete_optimizer::v0::Solution concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;
@@ -1120,6 +1242,10 @@ extern "C" {
 ::concrete_optimizer::Weights *concrete_optimizer$weights$cxxbridge1$vector(::rust::Slice<::std::int64_t const> weights) noexcept;
 } // extern "C"
 } // namespace weights
+
+extern "C" {
+::CircuitSolution *concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options _options) noexcept;
+} // extern "C"
 
 namespace v0 {
 ::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept {
@@ -1198,6 +1324,10 @@ namespace weights {
   return ::rust::Box<::concrete_optimizer::Weights>::from_raw(concrete_optimizer$weights$cxxbridge1$vector(weights));
 }
 } // namespace weights
+
+::rust::Box<::CircuitSolution> OperationDag::optimize_multi(::concrete_optimizer::Options _options) const noexcept {
+  return ::rust::Box<::CircuitSolution>::from_raw(concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(*this, _options));
+}
 } // namespace concrete_optimizer
 
 extern "C" {
@@ -1208,6 +1338,55 @@ void cxxbridge1$box$concrete_optimizer$OperationDag$drop(::rust::Box<::concrete_
 ::concrete_optimizer::Weights *cxxbridge1$box$concrete_optimizer$Weights$alloc() noexcept;
 void cxxbridge1$box$concrete_optimizer$Weights$dealloc(::concrete_optimizer::Weights *) noexcept;
 void cxxbridge1$box$concrete_optimizer$Weights$drop(::rust::Box<::concrete_optimizer::Weights> *ptr) noexcept;
+
+::CircuitSolution *cxxbridge1$box$CircuitSolution$alloc() noexcept;
+void cxxbridge1$box$CircuitSolution$dealloc(::CircuitSolution *) noexcept;
+void cxxbridge1$box$CircuitSolution$drop(::rust::Box<::CircuitSolution> *ptr) noexcept;
+
+void cxxbridge1$rust_vec$SecretLweKey$new(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$SecretLweKey$drop(::rust::Vec<::SecretLweKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$SecretLweKey$len(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$SecretLweKey$capacity(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
+::SecretLweKey const *cxxbridge1$rust_vec$SecretLweKey$data(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$SecretLweKey$reserve_total(::rust::Vec<::SecretLweKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$SecretLweKey$set_len(::rust::Vec<::SecretLweKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$SecretLweKey$truncate(::rust::Vec<::SecretLweKey> *ptr, ::std::size_t len) noexcept;
+
+void cxxbridge1$rust_vec$KeySwitchKey$new(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$KeySwitchKey$drop(::rust::Vec<::KeySwitchKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$KeySwitchKey$len(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$KeySwitchKey$capacity(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
+::KeySwitchKey const *cxxbridge1$rust_vec$KeySwitchKey$data(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$KeySwitchKey$reserve_total(::rust::Vec<::KeySwitchKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$KeySwitchKey$set_len(::rust::Vec<::KeySwitchKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$KeySwitchKey$truncate(::rust::Vec<::KeySwitchKey> *ptr, ::std::size_t len) noexcept;
+
+void cxxbridge1$rust_vec$BootstrapKey$new(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$BootstrapKey$drop(::rust::Vec<::BootstrapKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$BootstrapKey$len(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$BootstrapKey$capacity(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
+::BootstrapKey const *cxxbridge1$rust_vec$BootstrapKey$data(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$BootstrapKey$reserve_total(::rust::Vec<::BootstrapKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$BootstrapKey$set_len(::rust::Vec<::BootstrapKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$BootstrapKey$truncate(::rust::Vec<::BootstrapKey> *ptr, ::std::size_t len) noexcept;
+
+void cxxbridge1$rust_vec$ConversionKeySwitchKey$new(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$ConversionKeySwitchKey$drop(::rust::Vec<::ConversionKeySwitchKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$ConversionKeySwitchKey$len(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$ConversionKeySwitchKey$capacity(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
+::ConversionKeySwitchKey const *cxxbridge1$rust_vec$ConversionKeySwitchKey$data(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$ConversionKeySwitchKey$reserve_total(::rust::Vec<::ConversionKeySwitchKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$ConversionKeySwitchKey$set_len(::rust::Vec<::ConversionKeySwitchKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$ConversionKeySwitchKey$truncate(::rust::Vec<::ConversionKeySwitchKey> *ptr, ::std::size_t len) noexcept;
+
+void cxxbridge1$rust_vec$InstructionKeys$new(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
+void cxxbridge1$rust_vec$InstructionKeys$drop(::rust::Vec<::InstructionKeys> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$InstructionKeys$len(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$InstructionKeys$capacity(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
+::InstructionKeys const *cxxbridge1$rust_vec$InstructionKeys$data(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
+void cxxbridge1$rust_vec$InstructionKeys$reserve_total(::rust::Vec<::InstructionKeys> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$InstructionKeys$set_len(::rust::Vec<::InstructionKeys> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$InstructionKeys$truncate(::rust::Vec<::InstructionKeys> *ptr, ::std::size_t len) noexcept;
 } // extern "C"
 
 namespace rust {
@@ -1235,6 +1414,178 @@ void Box<::concrete_optimizer::Weights>::allocation::dealloc(::concrete_optimize
 template <>
 void Box<::concrete_optimizer::Weights>::drop() noexcept {
   cxxbridge1$box$concrete_optimizer$Weights$drop(this);
+}
+template <>
+::CircuitSolution *Box<::CircuitSolution>::allocation::alloc() noexcept {
+  return cxxbridge1$box$CircuitSolution$alloc();
+}
+template <>
+void Box<::CircuitSolution>::allocation::dealloc(::CircuitSolution *ptr) noexcept {
+  cxxbridge1$box$CircuitSolution$dealloc(ptr);
+}
+template <>
+void Box<::CircuitSolution>::drop() noexcept {
+  cxxbridge1$box$CircuitSolution$drop(this);
+}
+template <>
+Vec<::SecretLweKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$SecretLweKey$new(this);
+}
+template <>
+void Vec<::SecretLweKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$SecretLweKey$drop(this);
+}
+template <>
+::std::size_t Vec<::SecretLweKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$SecretLweKey$len(this);
+}
+template <>
+::std::size_t Vec<::SecretLweKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$SecretLweKey$capacity(this);
+}
+template <>
+::SecretLweKey const *Vec<::SecretLweKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$SecretLweKey$data(this);
+}
+template <>
+void Vec<::SecretLweKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$SecretLweKey$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::SecretLweKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$SecretLweKey$set_len(this, len);
+}
+template <>
+void Vec<::SecretLweKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$SecretLweKey$truncate(this, len);
+}
+template <>
+Vec<::KeySwitchKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$KeySwitchKey$new(this);
+}
+template <>
+void Vec<::KeySwitchKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$KeySwitchKey$drop(this);
+}
+template <>
+::std::size_t Vec<::KeySwitchKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$KeySwitchKey$len(this);
+}
+template <>
+::std::size_t Vec<::KeySwitchKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$KeySwitchKey$capacity(this);
+}
+template <>
+::KeySwitchKey const *Vec<::KeySwitchKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$KeySwitchKey$data(this);
+}
+template <>
+void Vec<::KeySwitchKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$KeySwitchKey$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::KeySwitchKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$KeySwitchKey$set_len(this, len);
+}
+template <>
+void Vec<::KeySwitchKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$KeySwitchKey$truncate(this, len);
+}
+template <>
+Vec<::BootstrapKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$BootstrapKey$new(this);
+}
+template <>
+void Vec<::BootstrapKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$BootstrapKey$drop(this);
+}
+template <>
+::std::size_t Vec<::BootstrapKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$BootstrapKey$len(this);
+}
+template <>
+::std::size_t Vec<::BootstrapKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$BootstrapKey$capacity(this);
+}
+template <>
+::BootstrapKey const *Vec<::BootstrapKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$BootstrapKey$data(this);
+}
+template <>
+void Vec<::BootstrapKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$BootstrapKey$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::BootstrapKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$BootstrapKey$set_len(this, len);
+}
+template <>
+void Vec<::BootstrapKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$BootstrapKey$truncate(this, len);
+}
+template <>
+Vec<::ConversionKeySwitchKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$ConversionKeySwitchKey$new(this);
+}
+template <>
+void Vec<::ConversionKeySwitchKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$ConversionKeySwitchKey$drop(this);
+}
+template <>
+::std::size_t Vec<::ConversionKeySwitchKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$ConversionKeySwitchKey$len(this);
+}
+template <>
+::std::size_t Vec<::ConversionKeySwitchKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$ConversionKeySwitchKey$capacity(this);
+}
+template <>
+::ConversionKeySwitchKey const *Vec<::ConversionKeySwitchKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$ConversionKeySwitchKey$data(this);
+}
+template <>
+void Vec<::ConversionKeySwitchKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$ConversionKeySwitchKey$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::ConversionKeySwitchKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$ConversionKeySwitchKey$set_len(this, len);
+}
+template <>
+void Vec<::ConversionKeySwitchKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$ConversionKeySwitchKey$truncate(this, len);
+}
+template <>
+Vec<::InstructionKeys>::Vec() noexcept {
+  cxxbridge1$rust_vec$InstructionKeys$new(this);
+}
+template <>
+void Vec<::InstructionKeys>::drop() noexcept {
+  return cxxbridge1$rust_vec$InstructionKeys$drop(this);
+}
+template <>
+::std::size_t Vec<::InstructionKeys>::size() const noexcept {
+  return cxxbridge1$rust_vec$InstructionKeys$len(this);
+}
+template <>
+::std::size_t Vec<::InstructionKeys>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$InstructionKeys$capacity(this);
+}
+template <>
+::InstructionKeys const *Vec<::InstructionKeys>::data() const noexcept {
+  return cxxbridge1$rust_vec$InstructionKeys$data(this);
+}
+template <>
+void Vec<::InstructionKeys>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$InstructionKeys$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::InstructionKeys>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$InstructionKeys$set_len(this, len);
+}
+template <>
+void Vec<::InstructionKeys>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$InstructionKeys$truncate(this, len);
 }
 } // namespace cxxbridge1
 } // namespace rust

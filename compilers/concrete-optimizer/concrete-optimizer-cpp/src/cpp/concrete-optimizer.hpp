@@ -919,6 +919,15 @@ std::size_t align_of() {
 } // namespace cxxbridge1
 } // namespace rust
 
+struct BrDecompositionParameters;
+struct KsDecompositionParameters;
+struct SecretLweKey;
+struct BootstrapKey;
+struct KeySwitchKey;
+struct ConversionKeySwitchKey;
+struct CircuitKeys;
+struct InstructionKeys;
+struct CircuitSolution;
 namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
@@ -945,6 +954,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
+  ::rust::Box<::CircuitSolution> optimize_multi(::concrete_optimizer::Options _options) const noexcept;
   ~OperationDag() = delete;
 
 private:
@@ -1052,7 +1062,119 @@ struct Options final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Options
+} // namespace concrete_optimizer
 
+#ifndef CXXBRIDGE1_STRUCT_BrDecompositionParameters
+#define CXXBRIDGE1_STRUCT_BrDecompositionParameters
+struct BrDecompositionParameters final {
+  ::std::uint64_t level;
+  ::std::uint64_t log2_base;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_BrDecompositionParameters
+
+#ifndef CXXBRIDGE1_STRUCT_KsDecompositionParameters
+#define CXXBRIDGE1_STRUCT_KsDecompositionParameters
+struct KsDecompositionParameters final {
+  ::std::uint64_t level;
+  ::std::uint64_t log2_base;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_KsDecompositionParameters
+
+#ifndef CXXBRIDGE1_STRUCT_SecretLweKey
+#define CXXBRIDGE1_STRUCT_SecretLweKey
+struct SecretLweKey final {
+  ::std::uint64_t identifier;
+  ::std::uint64_t polynomial_size;
+  ::std::uint64_t glwe_dimension;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_SecretLweKey
+
+#ifndef CXXBRIDGE1_STRUCT_BootstrapKey
+#define CXXBRIDGE1_STRUCT_BootstrapKey
+struct BootstrapKey final {
+  ::std::uint64_t identifier;
+  ::SecretLweKey input_key;
+  ::SecretLweKey output_key;
+  ::BrDecompositionParameters br_decomposition_parameter;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_BootstrapKey
+
+#ifndef CXXBRIDGE1_STRUCT_KeySwitchKey
+#define CXXBRIDGE1_STRUCT_KeySwitchKey
+struct KeySwitchKey final {
+  ::std::uint64_t identifier;
+  ::SecretLweKey input_key;
+  ::SecretLweKey output_key;
+  ::KsDecompositionParameters ks_decomposition_parameter;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_KeySwitchKey
+
+#ifndef CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+#define CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+struct ConversionKeySwitchKey final {
+  ::std::uint64_t identifier;
+  ::SecretLweKey input_key;
+  ::SecretLweKey output_key;
+  ::KsDecompositionParameters ks_decomposition_parameter;
+  bool fast_keyswitch;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+
+#ifndef CXXBRIDGE1_STRUCT_CircuitKeys
+#define CXXBRIDGE1_STRUCT_CircuitKeys
+struct CircuitKeys final {
+  ::rust::Vec<::SecretLweKey> secret_keys;
+  ::rust::Vec<::KeySwitchKey> keyswitch_keys;
+  ::rust::Vec<::BootstrapKey> bootstrap_keys;
+  ::rust::Vec<::ConversionKeySwitchKey> conversion_keyswitch_keys;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_CircuitKeys
+
+#ifndef CXXBRIDGE1_STRUCT_InstructionKeys
+#define CXXBRIDGE1_STRUCT_InstructionKeys
+struct InstructionKeys final {
+  ::std::uint64_t input_key;
+  ::std::uint64_t tlu_keyswitch_key;
+  ::std::uint64_t tlu_bootstrap_key;
+  ::std::uint64_t output_key;
+  ::rust::Vec<::std::uint64_t> extra_conversion_keys;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_InstructionKeys
+
+#ifndef CXXBRIDGE1_STRUCT_CircuitSolution
+#define CXXBRIDGE1_STRUCT_CircuitSolution
+struct CircuitSolution final {
+  ::CircuitKeys circuit_keys;
+  ::rust::Vec<::InstructionKeys> instructions_keys;
+  double complexity;
+  double p_error;
+  double global_p_error;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_CircuitSolution
+
+namespace concrete_optimizer {
 namespace v0 {
 ::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;
 } // namespace v0
