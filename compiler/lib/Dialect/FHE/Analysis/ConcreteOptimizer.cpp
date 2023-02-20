@@ -132,6 +132,10 @@ struct FunctionToDag {
       addLut(dag, val, encrypted_inputs, precision);
       return;
     }
+    if (isRound(op)) {
+      addRound(dag, val, encrypted_inputs, precision);
+      return;
+    }
     if (auto dot = asDot(op)) {
       auto weightsOpt = dotWeights(dot);
       if (weightsOpt) {
@@ -154,6 +158,15 @@ struct FunctionToDag {
     std::vector<std::uint64_t> unknowFunction;
     index[val] =
         dag->add_lut(encrypted_input, slice(unknowFunction), precision);
+  }
+
+  void addRound(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
+                int rounded_precision) {
+    assert(encrypted_inputs.size() == 1);
+    // No need to distinguish different lut kind until we do approximate
+    // paradigm on outputs
+    auto encrypted_input = encrypted_inputs[0];
+    index[val] = dag->add_round_op(encrypted_input, rounded_precision);
   }
 
   void addDot(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
@@ -214,6 +227,10 @@ struct FunctionToDag {
         mlir::concretelang::FHELinalg::ApplyLookupTableEintOp,
         mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp,
         mlir::concretelang::FHELinalg::ApplyMappedLookupTableEintOp>(op);
+  }
+
+  bool isRound(mlir::Operation &op) {
+    return llvm::isa<mlir::concretelang::FHE::RoundEintOp>(op);
   }
 
   mlir::concretelang::FHELinalg::Dot asDot(mlir::Operation &op) {

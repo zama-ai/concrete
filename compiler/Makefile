@@ -269,7 +269,7 @@ $(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 $(FIXTURE_CPU_DIR)/bug_report.yaml:
 	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
 
-generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml
+generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml $(FIXTURE_CPU_DIR)/end_to_end_round.yaml
 
 SECURITY_TO_TEST=80 128
 run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
@@ -292,6 +292,7 @@ $(FIXTURE_GPU_DIR)/end_to_end_apply_lookup_table.yaml: tests/end_to_end_fixture/
 
 $(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
 	$(Python3_EXECUTABLE) $< --bitwidth 1 2 3 4 5 6 7 > $@
+
 
 generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml
 

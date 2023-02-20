@@ -262,6 +262,25 @@ mlir::LogicalResult GenGateOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult RoundEintOp::verify() {
+  auto input = this->input().getType().cast<FheIntegerInterface>();
+  auto output = this->getResult().getType().cast<FheIntegerInterface>();
+
+  if (input.getWidth() <= output.getWidth()) {
+    this->emitOpError(
+        "should have the input width larger than the output width.");
+    return mlir::failure();
+  }
+
+  if (input.isSigned() != output.isSigned()) {
+    this->emitOpError(
+        "should have the signedness of encrypted inputs and result equal");
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 /// Avoid addition with constant 0
 OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
   assert(operands.size() == 2);

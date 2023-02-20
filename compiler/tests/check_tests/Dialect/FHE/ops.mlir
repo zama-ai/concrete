@@ -303,3 +303,12 @@ func.func @not(%arg0: !FHE.ebool) -> !FHE.ebool {
   %1 = "FHE.not"(%arg0) : (!FHE.ebool) -> !FHE.ebool
   return %1: !FHE.ebool
 }
+
+// CHECK-LABEL: func.func @round(%arg0: !FHE.eint<5>) -> !FHE.eint<3>
+func.func @round(%arg0: !FHE.eint<5>) -> !FHE.eint<3> {
+  // CHECK-NEXT: %[[V1:.*]] = "FHE.round"(%arg0) : (!FHE.eint<5>) -> !FHE.eint<3>
+  // CHECK-NEXT: return %[[V1]] : !FHE.eint<3>
+
+  %1 = "FHE.round"(%arg0) : (!FHE.eint<5>) -> !FHE.eint<3>
+  return %1: !FHE.eint<3>
+}

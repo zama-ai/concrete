@@ -105,10 +105,6 @@ mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
     emitOpErrorForIncompatibleGLWEParameter(op, "bits");
     return mlir::failure();
   }
-  if (a.getP() != b.getP() || a.getP() != result.getP()) {
-    emitOpErrorForIncompatibleGLWEParameter(op, "p");
-    return mlir::failure();
-  }
 
   return mlir::success();
 }

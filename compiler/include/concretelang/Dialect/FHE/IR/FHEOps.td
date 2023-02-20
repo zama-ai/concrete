@@ -399,6 +399,35 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
+def FHE_RoundEintOp: FHE_Op<"round", [NoSideEffect]> {
+
+    let summary = "Rounds a ciphertext to a smaller precision.";
+
+    let description = [{
+      Assuming a ciphertext whose message is implemented over `p` bits, this
+          operation rounds it to fit to `q` bits with `p>q`.
+
+      Example:
+      ```mlir
+       // ok
+       "FHE.round"(%a): (!FHE.eint<6>) -> (!FHE.eint<5>)
+       "FHE.round"(%a): (!FHE.eint<5>) -> (!FHE.eint<3>)
+       "FHE.round"(%a): (!FHE.eint<3>) -> (!FHE.eint<2>)
+       "FHE.round"(%a): (!FHE.esint<3>) -> (!FHE.esint<2>)
+
+    // error
+       "FHE.round"(%a): (!FHE.eint<6>) -> (!FHE.eint<6>)
+       "FHE.round"(%a): (!FHE.eint<4>) -> (!FHE.eint<5>)
+       "FHE.round"(%a): (!FHE.eint<4>) -> (!FHE.esint<5>)
+
+    ```
+    }];
+
+    let arguments = (ins FHE_AnyEncryptedInteger:$input);
+    let results = (outs FHE_AnyEncryptedInteger);
+    let hasVerifier = 1;
+}
+
 // FHE Boolean Operations
 
 def FHE_GenGateOp : FHE_Op<"gen_gate", [NoSideEffect]> {
@@ -444,8 +473,6 @@ def FHE_MuxOp : FHE_Op<"mux", [NoSideEffect]> {
     let arguments = (ins FHE_EncryptedBooleanType:$cond, FHE_EncryptedBooleanType:$c1, FHE_EncryptedBooleanType:$c2);
     let results = (outs FHE_EncryptedBooleanType);
 }
-
-
 
 def FHE_BoolAndOp : FHE_Op<"and", [NoSideEffect]> {
 

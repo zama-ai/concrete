@@ -382,6 +382,210 @@ private:
   concretelang::ScalarLoweringParameters loweringParameters;
 };
 
+struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
+  RoundEintOpPattern(mlir::TypeConverter &converter, mlir::MLIRContext *context,
+                     concretelang::ScalarLoweringParameters loweringParams,
+                     mlir::PatternBenefit benefit = 1)
+      : ScalarOpPattern<FHE::RoundEintOp>(converter, context, benefit),
+        loweringParameters(loweringParams) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(FHE::RoundEintOp op, FHE::RoundEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    // The round operator allows to move from a given precision to a smaller one
+    // by rounding the most significant bits of the message. For example a 5
+    // bits message:
+    //      101_11 (23)
+    // would be rounded to a 3 bit message:
+    //      110    (6)
+    //
+    // The following procedure can be homomorphically applied to implement this
+    // semantic:
+    //      1) Propagate the carry of the round around 2^(n_before-n_after)
+    //         performed with a homomorphic adddition.
+    //      2) For each bits to be discarded we truncate it:
+    //             -> Extract a ciphertext of only the bit to be discarded by
+    //                performing a left shift and a pbs.
+    //             -> Subtract this one from the input by performing a
+    //                homomorphic subtraction.
+
+    mlir::Value input = adaptor.input();
+    auto inputType = op.input().getType().cast<FHE::FheIntegerInterface>();
+    mlir::Value output = op.getResult();
+    uint64_t inputBitwidth = inputType.getWidth();
+    uint64_t outputBitwidth =
+        output.getType().cast<FHE::FheIntegerInterface>().getWidth();
+    uint64_t bitwidthDelta = inputBitwidth - outputBitwidth;
+
+    typing::TypeConverter converter;
+    auto inputTy =
+        converter.convertType(inputType).cast<TFHE::GLWECipherTextType>();
+
+    //-------------------------------------------------------- CARRY PROPAGATION
+    // The first step we take is to propagate the carry of the round in the
+    // msbs. This we perform with an addition of cleartext correctly encoded.
+    // Say we have a 5 bits message that we want to round for 3 bits, we
+    // perform the following addition:
+    //
+    //     input            = |0101|11| .... |
+    //     carryCst         = |0000|10| .... |
+    //     input + carryCst = |0110|01| .... |
+
+    uint64_t rawCarryCst = ((uint64_t)1) << (bitwidthDelta - 1);
+    mlir::Value carryCst = rewriter.create<mlir::arith::ConstantOp>(
+        op->getLoc(),
+        rewriter.getIntegerAttr(rewriter.getIntegerType(bitwidthDelta + 1),
+                                rawCarryCst));
+    mlir::Value encodedCarryCst = writePlaintextShiftEncoding(
+        op.getLoc(), carryCst, inputBitwidth, rewriter);
+    mlir::Value carryPropagatedVal = rewriter.create<TFHE::AddGLWEIntOp>(
+        op.getLoc(), inputTy, input, encodedCarryCst);
+
+    //--------------------------------------------------------------- TRUNCATION
+    // The second step is to truncate every lsbs to be removed, from the least
+    // significant one to the most significant one. For example:
+    //
+    //     previousOutput = |0110|01| .... | (t_0)
+    //     previousOutput = |0110|00| .... | (t_1)
+    //                             ^
+    //     previousOutput = |0110|00| .... | (t_2)
+    //                            ^
+    //
+    // For this, we have to generate a ciphertext that contains only the bit to
+    // be truncated:
+    //
+    //     bitToRemove = |0000|01| .... | (t_1)
+    //                          ^
+    //     bitToRemove = |0000|00| .... | (t_1)
+    //                         ^
+
+    mlir::Value previousOutput = carryPropagatedVal;
+    TFHE::GLWECipherTextType truncationInputTy = inputTy;
+    for (uint64_t i = 0; i < bitwidthDelta; ++i) {
+      //---------------------------------------------------------- BIT ISOLATION
+      // To extract the bit to truncate, we use a PBS that look up on the
+      // padding bit. We first begin by isolating the bit in question on the
+      // padding bit. This is performed with a homomorphic multiplication (left
+      // shift basically) of the proper amount. For example:
+      //
+      //     previousOutput            = |0110|01| .... |
+      //                                        ^
+      //     shiftCst                  = |        100000|
+      //     previousOutput * shiftCst = |1| ....       |
+
+      uint64_t rawShiftCst = ((uint64_t)1) << (inputBitwidth - i);
+      mlir::Value shiftCst = rewriter.create<mlir::arith::ConstantOp>(
+          op->getLoc(), rewriter.getI64IntegerAttr(rawShiftCst));
+      mlir::Value shiftedInput = rewriter.create<TFHE::MulGLWEIntOp>(
+          op.getLoc(), truncationInputTy, previousOutput, shiftCst);
+
+      //-------------------------------------------------------- LUT PREPARATION
+      // To perform the right shift (kind of), we use a PBS that acts on the
+      // padding bit. We expect is the following function to be applied (for the
+      // first round of our example):
+      //
+      //     f(|0| .... |) = |0000|00| .... |
+      //     f(|1| .... |) = |0000|01| .... |
+      //
+      // That being said, a PBS on the padding bit can only encode a symmetric
+      // function (that is f(1) = -f(0)), by encoding f(0) in the whole table.
+      // To implement our semantic, we then rely on a trick. We encode the
+      // following function in the bootstrap:
+      //
+      //     f(|0| .... |) = |1111|11|1 .... |
+      //     f(|1| .... |) = |0000|00|1 .... |
+      //
+      // And add a correction constant:
+      //
+      //     corrCst                 = |0000|00|1 .... |
+      //     f(|0| .... |) + corrCst = |0000|00| .... |
+      //     f(|1| .... |) + corrCst = |0000|01| .... |
+      //
+      // Hence the following constant lut.
+
+      llvm::SmallVector<int64_t> rawLut(loweringParameters.polynomialSize,
+                                        ((uint64_t)0 - 1)
+                                            << (64 - (inputBitwidth + 2 - i)));
+      mlir::Value lut = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(), mlir::DenseIntElementsAttr::get(
+                           mlir::RankedTensorType::get(
+                               rawLut.size(), rewriter.getIntegerType(64)),
+                           rawLut));
+
+      //-------------------------------------------------- CIPHERTEXT ALIGNEMENT
+      // In practice, TFHE ciphertexts are normally distributed around a value.
+      // That means that if the lookup is performed _as is_, we have almost .5
+      // probability to return the wrong value. Imagine a ciphertext centered
+      // around (|0| .... |):
+      //
+      //  |   0000001...  |   1111111...  |              Virtual lookup table
+      //                   _
+      //                  / \
+      //  _______________/   \_________________________  Ciphertext distribution
+      //
+      //              |0| ... |                          Ciphertexts mean
+      //
+      // If the error of the ciphertext is negative, this means that the lookup
+      // will wrap, and fall on the wrong mega-case...
+      //
+      // This is usually taken care of on the lookup table side, but we can also
+      // slightly shift the ciphertext to center its distribution with the
+      // center of the mega-case. That is, end up with a situation like this:
+
+      //
+      //  |   1111111...  |   0000001...  |              Virtual lookup table
+      //          _
+      //         / \
+      //  ______/   \_________________________           Ciphertext distribution
+      //
+      //      |0| ... |                                  Ciphertexts mean
+      //
+      // This is performed by adding |0|1 .... | to the ciphertext.
+
+      uint64_t rawRotationCst = (((uint64_t)1) << 62);
+      mlir::Value rotationCst = rewriter.create<mlir::arith::ConstantOp>(
+          op->getLoc(), rewriter.getI64IntegerAttr(rawRotationCst));
+      mlir::Value shiftedRotatedInput = rewriter.create<TFHE::AddGLWEIntOp>(
+          op.getLoc(), truncationInputTy, shiftedInput, rotationCst);
+
+      //-------------------------------------------------------------------- PBS
+      // The lookup is performed ...
+
+      mlir::Value keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
+          op.getLoc(), truncationInputTy, shiftedRotatedInput, -1, -1);
+      mlir::Value bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
+          op.getLoc(), truncationInputTy, keyswitched, lut, -1, -1, -1, -1);
+
+      //------------------------------------------------------------- CORRECTION
+      // The correction is performed to achieve our right shift semantic.
+
+      uint64_t rawCorrCst = ((uint64_t)1) << (64 - (inputBitwidth + 2 - i));
+      mlir::Value corrCst = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(), rewriter.getI64IntegerAttr(rawCorrCst));
+      mlir::Value extractedBit = rewriter.create<TFHE::AddGLWEIntOp>(
+          op.getLoc(), truncationInputTy, bootstrapped, corrCst);
+
+      //------------------------------------------------------------- TRUNCATION
+      // Finally, the extracted bit is subtracted from the input.
+
+      mlir::Value minusIsolatedBit = rewriter.create<TFHE::NegGLWEOp>(
+          op.getLoc(), truncationInputTy, extractedBit);
+      truncationInputTy = TFHE::GLWECipherTextType::get(
+          rewriter.getContext(), -1, -1, -1, truncationInputTy.getP() - 1);
+      mlir::Value truncationOutput = rewriter.create<TFHE::AddGLWEOp>(
+          op.getLoc(), truncationInputTy, previousOutput, minusIsolatedBit);
+      previousOutput = truncationOutput;
+    }
+
+    rewriter.replaceOp(op, {previousOutput});
+
+    return mlir::success();
+  };
+
+private:
+  concretelang::ScalarLoweringParameters loweringParameters;
+};
+
 /// Rewriter for the `FHE::to_bool` operation.
 struct ToBoolOpPattern : public mlir::OpRewritePattern<FHE::ToBoolOp> {
   ToBoolOpPattern(mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
@@ -517,8 +721,10 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
                  //    |_ `FHE::to_unsigned`
                  lowering::ToUnsignedOpPattern>(converter, &getContext());
     //    |_ `FHE::apply_lookup_table`
-    patterns.add<lowering::ApplyLookupTableEintOpPattern>(
-        converter, &getContext(), loweringParameters);
+    patterns.add<lowering::ApplyLookupTableEintOpPattern,
+                 //    |_ `FHE::round`
+                 lowering::RoundEintOpPattern>(converter, &getContext(),
+                                               loweringParameters);
 
     // Patterns for boolean conversion ops
     patterns.add<lowering::FromBoolOpPattern, lowering::ToBoolOpPattern>(

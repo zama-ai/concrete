@@ -487,6 +487,29 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUMul(sqNorm, eNorm);
 }
 
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.round` operation.
+static llvm::APInt getSqMANP(
+    mlir::concretelang::FHE::RoundEintOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() == 1 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  uint64_t inputWidth =
+      op.getOperand().getType().cast<FHE::FheIntegerInterface>().getWidth();
+  uint64_t outputWidth =
+      op.getResult().getType().cast<FHE::FheIntegerInterface>().getWidth();
+  uint64_t clearedBits = inputWidth - outputWidth;
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
+  eNorm += clearedBits;
+
+  return eNorm;
+}
+
 /// Calculates the squared Minimal Arithmetic Noise Padding of an
 /// `FHELinalg.add_eint_int` operation.
 static llvm::APInt getSqMANP(
@@ -1176,6 +1199,9 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     } else if (auto mulEintIntOp =
                    llvm::dyn_cast<mlir::concretelang::FHE::MulEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
+    } else if (auto roundOp =
+                   llvm::dyn_cast<mlir::concretelang::FHE::RoundEintOp>(op)) {
+      norm2SqEquiv = getSqMANP(roundOp, operands);
     } else if (llvm::isa<mlir::concretelang::FHE::ZeroEintOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::ToBoolOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::FromBoolOp>(op) ||
