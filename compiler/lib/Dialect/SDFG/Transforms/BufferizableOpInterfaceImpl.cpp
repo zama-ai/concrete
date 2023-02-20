@@ -15,8 +15,8 @@
 #include "mlir/IR/Operation.h"
 
 #include "concretelang/Conversion/Tools.h"
-#include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
-#include "concretelang/Dialect/BConcrete/IR/BConcreteOps.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGDialect.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGOps.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGTypes.h"

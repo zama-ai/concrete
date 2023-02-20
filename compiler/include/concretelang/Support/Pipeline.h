@@ -68,14 +68,9 @@ lowerConcreteLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            std::function<bool(mlir::Pass *)> enablePass,
                            bool parallelizeLoops, bool batchOperations);
 
-mlir::LogicalResult
-lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                         std::function<bool(mlir::Pass *)> enablePass,
-                         bool parallelizeLoops);
-
-mlir::LogicalResult
-optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                 std::function<bool(mlir::Pass *)> enablePass);
+mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
+                                 mlir::ModuleOp &module,
+                                 std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
                                    mlir::ModuleOp &module,
@@ -83,8 +78,8 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
                                    bool unrollLoops);
 
 mlir::LogicalResult
-lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass);
+lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,

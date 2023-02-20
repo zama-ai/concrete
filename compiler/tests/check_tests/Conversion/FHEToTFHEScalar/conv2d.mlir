@@ -1,4 +1,4 @@
-// RUN: concretecompiler %s --action=dump-tfhe 2>&1| FileCheck %s
+// RUN: concretecompiler %s --optimize-tfhe=false --action=dump-tfhe 2>&1| FileCheck %s
 
 //CHECK: func.func @conv2d(%arg0: tensor<100x3x28x28x!TFHE.glwe<{_,_,_}{2}>>, %arg1: tensor<4x3x14x14xi3>, %arg2: tensor<4xi3>) -> tensor<100x4x15x15x!TFHE.glwe<{_,_,_}{2}>>
 // CHECK-NEXT:    %c4 = arith.constant 4 : index

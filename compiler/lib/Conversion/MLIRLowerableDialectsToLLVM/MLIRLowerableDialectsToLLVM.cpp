@@ -111,14 +111,6 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::LowerToLLVMOptions options(&getContext());
   mlir::LLVMTypeConverter typeConverter(&getContext(), options);
   typeConverter.addConversion(convertTypes);
-  typeConverter.addConversion(
-      [&](mlir::concretelang::Concrete::PlaintextType type) {
-        return mlir::IntegerType::get(type.getContext(), 64);
-      });
-  typeConverter.addConversion(
-      [&](mlir::concretelang::Concrete::CleartextType type) {
-        return mlir::IntegerType::get(type.getContext(), 64);
-      });
 
   // Setup the set of the patterns rewriter. At this point we want to
   // convert the `scf` operations to `std` and `std` operations to `llvm`.
@@ -153,9 +145,7 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
 
 llvm::Optional<mlir::Type>
 MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
-  if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::ContextType>() ||
+  if (type.isa<mlir::concretelang::Concrete::ContextType>() ||
       type.isa<mlir::concretelang::RT::FutureType>() ||
       type.isa<mlir::concretelang::SDFG::DFGType>() ||
       type.isa<mlir::concretelang::SDFG::StreamType>()) {
@@ -166,14 +156,6 @@ MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
     mlir::LowerToLLVMOptions options(type.getContext());
     mlir::LLVMTypeConverter typeConverter(type.getContext(), options);
     typeConverter.addConversion(convertTypes);
-    typeConverter.addConversion(
-        [&](mlir::concretelang::Concrete::PlaintextType type) {
-          return mlir::IntegerType::get(type.getContext(), 64);
-        });
-    typeConverter.addConversion(
-        [&](mlir::concretelang::Concrete::CleartextType type) {
-          return mlir::IntegerType::get(type.getContext(), 64);
-        });
     mlir::Type subtype =
         type.dyn_cast<mlir::concretelang::RT::PointerType>().getElementType();
     mlir::Type convertedSubtype = typeConverter.convertType(subtype);

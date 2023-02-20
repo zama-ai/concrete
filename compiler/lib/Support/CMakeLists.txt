@@ -27,11 +27,11 @@ add_mlir_library(
   FHEDialectTransforms
   RTDialectAnalysis
   ConcretelangTransforms
-  ConcretelangBConcreteTransforms
+  ConcretelangConcreteTransforms
   ConcretelangSDFGTransforms
   ConcretelangSDFGInterfaces
   LinalgExtras
-  ConcreteDialectTransforms
+  TFHEDialectTransforms
   concrete_optimizer
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}

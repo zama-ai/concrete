@@ -3,8 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
-#include "concretelang/Dialect/BConcrete/IR/BConcreteOps.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGDialect.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGOps.h"
 #include "concretelang/Dialect/SDFG/Interfaces/SDFGConvertibleInterface.h"
@@ -54,33 +54,33 @@ struct ReplaceWithProcessSDFGConversionInterface
 void registerSDFGConvertibleOpInterfaceExternalModels(
     DialectRegistry &registry) {
   registry.addExtension(+[](MLIRContext *ctx,
-                            BConcrete::BConcreteDialect *dialect) {
-    mlir::concretelang::BConcrete::AddLweTensorOp::attachInterface<
+                            Concrete::ConcreteDialect *dialect) {
+    mlir::concretelang::Concrete::AddLweTensorOp::attachInterface<
         ReplaceWithProcessSDFGConversionInterface<
-            mlir::concretelang::BConcrete::AddLweTensorOp, add_eint>>(*ctx);
+            mlir::concretelang::Concrete::AddLweTensorOp, add_eint>>(*ctx);
 
-    mlir::concretelang::BConcrete::AddPlaintextLweTensorOp::attachInterface<
+    mlir::concretelang::Concrete::AddPlaintextLweTensorOp::attachInterface<
         ReplaceWithProcessSDFGConversionInterface<
-            mlir::concretelang::BConcrete::AddPlaintextLweTensorOp,
+            mlir::concretelang::Concrete::AddPlaintextLweTensorOp,
             add_eint_int>>(*ctx);
 
-    mlir::concretelang::BConcrete::MulCleartextLweTensorOp::attachInterface<
+    mlir::concretelang::Concrete::MulCleartextLweTensorOp::attachInterface<
         ReplaceWithProcessSDFGConversionInterface<
-            mlir::concretelang::BConcrete::MulCleartextLweTensorOp,
+            mlir::concretelang::Concrete::MulCleartextLweTensorOp,
             mul_eint_int>>(*ctx);
 
-    mlir::concretelang::BConcrete::NegateLweTensorOp::attachInterface<
+    mlir::concretelang::Concrete::NegateLweTensorOp::attachInterface<
         ReplaceWithProcessSDFGConversionInterface<
-            mlir::concretelang::BConcrete::NegateLweTensorOp, neg_eint>>(*ctx);
+            mlir::concretelang::Concrete::NegateLweTensorOp, neg_eint>>(*ctx);
 
-    mlir::concretelang::BConcrete::KeySwitchLweTensorOp::attachInterface<
+    mlir::concretelang::Concrete::KeySwitchLweTensorOp::attachInterface<
         ReplaceWithProcessSDFGConversionInterface<
-            mlir::concretelang::BConcrete::KeySwitchLweTensorOp, keyswitch,
+            mlir::concretelang::Concrete::KeySwitchLweTensorOp, keyswitch,
             true>>(*ctx);
 
-    mlir::concretelang::BConcrete::BootstrapLweTensorOp::attachInterface<
+    mlir::concretelang::Concrete::BootstrapLweTensorOp::attachInterface<
         ReplaceWithProcessSDFGConversionInterface<
-            mlir::concretelang::BConcrete::BootstrapLweTensorOp, bootstrap,
+            mlir::concretelang::Concrete::BootstrapLweTensorOp, bootstrap,
             true>>(*ctx);
   });
 }

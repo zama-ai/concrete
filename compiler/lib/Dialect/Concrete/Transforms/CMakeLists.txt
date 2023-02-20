@@ -1,12 +1,19 @@
-add_mlir_library(
-  ConcreteDialectTransforms
-  Optimization.cpp
+add_mlir_dialect_library(
+  ConcretelangConcreteTransforms
+  BufferizableOpInterfaceImpl.cpp
+  AddRuntimeContext.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/Concrete
   DEPENDS
-  ConcreteDialect
+  ConcreteTransformsIncGen
   mlir-headers
   LINK_LIBS
   PUBLIC
+  ConcretelangConversion
+  MLIRArithmeticDialect
+  MLIRBufferizationDialect
+  MLIRBufferizationTransforms
   MLIRIR
-  ConcreteDialect)
+  MLIRMemRefDialect
+  MLIRPass
+  MLIRTransforms)

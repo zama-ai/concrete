@@ -53,10 +53,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, bool b) {
              options.dataflowParallelize = b;
            })
-      .def("set_optimize_concrete",
-           [](CompilationOptions &options, bool b) {
-             options.optimizeConcrete = b;
-           })
+      .def("set_optimize_concrete", [](CompilationOptions &options,
+                                       bool b) { options.optimizeTFHE = b; })
       .def("set_p_error",
            [](CompilationOptions &options, double p_error) {
              options.optimizerConfig.p_error = p_error;

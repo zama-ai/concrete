@@ -368,8 +368,8 @@ void SDFGToStreamEmulatorPass::runOnOperation() {
 
   target.addIllegalOp<SDFG::Init, SDFG::Start, SDFG::Shutdown,
                       SDFG::MakeProcess, SDFG::MakeStream, SDFG::Put>();
-  // All BConcrete ops are legal after the conversion
-  target.addLegalDialect<mlir::concretelang::BConcrete::BConcreteDialect>();
+  // All Concrete ops are legal after the conversion
+  target.addLegalDialect<mlir::concretelang::Concrete::ConcreteDialect>();
   target.addLegalDialect<mlir::arith::ArithmeticDialect>();
   target.addLegalOp<mlir::func::ReturnOp, mlir::func::FuncOp,
                     mlir::func::CallOp, SDFG::Get, mlir::tensor::CastOp>();

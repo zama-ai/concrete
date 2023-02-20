@@ -49,7 +49,6 @@ enum Action {
   DUMP_FHE_NO_LINALG,
   DUMP_TFHE,
   DUMP_CONCRETE,
-  DUMP_BCONCRETE,
   DUMP_SDFG,
   DUMP_STD,
   DUMP_LLVM_DIALECT,
@@ -95,10 +94,10 @@ llvm::cl::opt<bool> verbose("verbose", llvm::cl::desc("verbose logs"),
                             llvm::cl::init<bool>(false));
 
 llvm::cl::opt<bool>
-    optimizeConcrete("optimize-concrete",
-                     llvm::cl::desc("enable/disable optimizations of concrete "
-                                    "dialects. (Enabled by default)"),
-                     llvm::cl::init<bool>(true));
+    optimizeTFHE("optimize-tfhe",
+                 llvm::cl::desc("enable/disable optimizations of TFHE "
+                                "dialects. (Enabled by default)"),
+                 llvm::cl::init<bool>(true));
 
 llvm::cl::opt<bool> emitGPUOps(
     "emit-gpu-ops",
@@ -126,9 +125,6 @@ static llvm::cl::opt<enum Action> action(
                                 "Lower to TFHE and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_CONCRETE, "dump-concrete",
                                 "Lower to Concrete and dump result")),
-    llvm::cl::values(
-        clEnumValN(Action::DUMP_BCONCRETE, "dump-bconcrete",
-                   "Lower to Bufferized Concrete and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_SDFG, "dump-sdfg",
                                 "Lower to SDFG operations annd dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_STD, "dump-std",
@@ -354,7 +350,7 @@ cmdlineCompilationOptions() {
   options.emitSDFGOps = cmdline::emitSDFGOps;
   options.unrollLoopsWithSDFGConvertibleOps =
       cmdline::unrollLoopsWithSDFGConvertibleOps;
-  options.optimizeConcrete = cmdline::optimizeConcrete;
+  options.optimizeTFHE = cmdline::optimizeTFHE;
   options.emitGPUOps = cmdline::emitGPUOps;
   options.chunkIntegers = cmdline::chunkIntegers;
   options.chunkSize = cmdline::chunkSize;
@@ -530,9 +526,6 @@ mlir::LogicalResult processInputBuffer(
       break;
     case Action::DUMP_CONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
-      break;
-    case Action::DUMP_BCONCRETE:
-      target = mlir::concretelang::CompilerEngine::Target::BCONCRETE;
       break;
     case Action::DUMP_SDFG:
       target = mlir::concretelang::CompilerEngine::Target::SDFG;

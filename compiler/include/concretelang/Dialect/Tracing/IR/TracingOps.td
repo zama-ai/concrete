@@ -29,7 +29,6 @@ def Tracing_TraceCiphertextOp : Tracing_Op<"trace_ciphertext"> {
             FHE_EncryptedIntegerType.predicate,
             FHE_EncryptedSignedIntegerType.predicate,
             TFHE_GLWECipherTextType.predicate,
-            Concrete_LweCiphertextType.predicate,
             1DTensorOf<[I64]>.predicate,
             MemRefRankOf<[I64], [1]>.predicate
         ]>>: $ciphertext,

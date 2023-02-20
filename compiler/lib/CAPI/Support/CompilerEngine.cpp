@@ -65,7 +65,7 @@ CompilationOptions
 compilationOptionsCreate(MlirStringRef funcName, bool autoParallelize,
                          bool batchConcreteOps, bool dataflowParallelize,
                          bool emitGPUOps, bool loopParallelize,
-                         bool optimizeConcrete, OptimizerConfig optimizerConfig,
+                         bool optimizeTFHE, OptimizerConfig optimizerConfig,
                          bool verifyDiagnostics) {
   std::string funcNameStr(funcName.data, funcName.length);
   auto options = new mlir::concretelang::CompilationOptions(funcNameStr);
@@ -74,7 +74,7 @@ compilationOptionsCreate(MlirStringRef funcName, bool autoParallelize,
   options->dataflowParallelize = dataflowParallelize;
   options->emitGPUOps = emitGPUOps;
   options->loopParallelize = loopParallelize;
-  options->optimizeConcrete = optimizeConcrete;
+  options->optimizeTFHE = optimizeTFHE;
   options->optimizerConfig = *unwrap(optimizerConfig);
   options->verifyDiagnostics = verifyDiagnostics;
   return wrap(options);
@@ -133,8 +133,6 @@ llvm::Expected<mlir::concretelang::CompilerEngine::
     return mlir::concretelang::CompilerEngine::Target::TFHE;
   case CONCRETE:
     return mlir::concretelang::CompilerEngine::Target::CONCRETE;
-  case BCONCRETE:
-    return mlir::concretelang::CompilerEngine::Target::BCONCRETE;
   case STD:
     return mlir::concretelang::CompilerEngine::Target::STD;
   case LLVM:

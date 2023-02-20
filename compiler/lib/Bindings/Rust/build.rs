@@ -241,20 +241,19 @@ const LLVM_STATIC_LIBS: [&str; 51] = [
     "LLVMX86Info",
 ];
 
-const CONCRETE_COMPILER_LIBS: [&str; 35] = [
+const CONCRETE_COMPILER_LIBS: [&str; 33] = [
     "RTDialect",
     "RTDialectTransforms",
     "ConcretelangSupport",
-    "BConcreteToCAPI",
+    "ConcreteToCAPI",
     "ConcretelangConversion",
     "ConcretelangTransforms",
     "FHETensorOpsToLinalg",
     "ConcretelangServerLib",
-    "ConcreteToBConcrete",
     "CONCRETELANGCAPIFHE",
     "TFHEGlobalParametrization",
     "ConcretelangClientLib",
-    "ConcretelangBConcreteTransforms",
+    "ConcretelangConcreteTransforms",
     "ConcretelangSDFGInterfaces",
     "ConcretelangSDFGTransforms",
     "CONCRETELANGCAPISupport",
@@ -267,8 +266,7 @@ const CONCRETE_COMPILER_LIBS: [&str; 35] = [
     "TFHEToConcrete",
     "FHEToTFHECrt",
     "FHEToTFHEScalar",
-    "ConcreteDialectTransforms",
-    "BConcreteDialect",
+    "TFHEDialectTransforms",
     "concrete_optimizer",
     "LinalgExtras",
     "FHEDialectAnalysis",

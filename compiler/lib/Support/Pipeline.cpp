@@ -31,8 +31,7 @@
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include <concretelang/Conversion/Passes.h>
-#include <concretelang/Dialect/BConcrete/Transforms/Passes.h>
-#include <concretelang/Dialect/Concrete/Transforms/Optimization.h>
+#include <concretelang/Dialect/Concrete/Transforms/Passes.h>
 #include <concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
 #include <concretelang/Dialect/FHE/Transforms/BigInt/BigInt.h>
@@ -41,6 +40,7 @@
 #include <concretelang/Dialect/FHE/Transforms/Max/Max.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
+#include <concretelang/Dialect/TFHE/Transforms/Optimization.h>
 #include <concretelang/Support/Pipeline.h>
 #include <concretelang/Support/logging.h>
 #include <concretelang/Support/math.h>
@@ -290,27 +290,13 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
   return pm.run(module.getOperation());
 }
 
-mlir::LogicalResult
-optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                 std::function<bool(mlir::Pass *)> enablePass) {
+mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
+                                 mlir::ModuleOp &module,
+                                 std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("ConcreteOptimization", pm, context);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConcreteOptimizationPass(), enablePass);
-
-  return pm.run(module.getOperation());
-}
-
-mlir::LogicalResult
-lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                         std::function<bool(mlir::Pass *)> enablePass,
-                         bool parallelizeLoops) {
-  mlir::PassManager pm(&context);
-  pipelinePrinting("ConcreteToBConcrete", pm, context);
-
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertConcreteToBConcretePass(),
-      enablePass);
+  pipelinePrinting("TFHEOptimization", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createTFHEOptimizationPass(),
+                           enablePass);
 
   return pm.run(module.getOperation());
 }
@@ -320,7 +306,7 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
                                    std::function<bool(mlir::Pass *)> enablePass,
                                    bool unroll) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("extract SDFG ops from BConcrete", pm, context);
+  pipelinePrinting("extract SDFG ops from Concrete", pm, context);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createExtractSDFGOpsPass(unroll), enablePass);
   LogicalResult res = pm.run(module.getOperation());
@@ -329,10 +315,10 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
 }
 
 mlir::LogicalResult
-lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass) {
+lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("BConcreteToStd", pm, context);
+  pipelinePrinting("ConcreteToStd", pm, context);
   addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
                            enablePass);
   return pm.run(module.getOperation());
@@ -399,8 +385,7 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm, mlir::concretelang::createFixupBufferDeallocationPass(), enablePass);
 
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertBConcreteToCAPIPass(gpu),
-      enablePass);
+      pm, mlir::concretelang::createConvertConcreteToCAPIPass(gpu), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertTracingToCAPIPass(), enablePass);
 

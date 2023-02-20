@@ -27,9 +27,8 @@
 
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include <concretelang/ClientLib/ClientParameters.h>
-#include <concretelang/Dialect/BConcrete/IR/BConcreteDialect.h>
-#include <concretelang/Dialect/BConcrete/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
+#include <concretelang/Dialect/Concrete/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
 #include <concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
@@ -80,13 +79,12 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
         mlir::concretelang::TFHE::TFHEDialect,
         mlir::concretelang::FHELinalg::FHELinalgDialect,
         mlir::concretelang::Concrete::ConcreteDialect,
-        mlir::concretelang::BConcrete::BConcreteDialect,
         mlir::concretelang::SDFG::SDFGDialect, mlir::func::FuncDialect,
         mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect,
         mlir::LLVM::LLVMDialect, mlir::scf::SCFDialect,
         mlir::omp::OpenMPDialect, mlir::bufferization::BufferizationDialect>();
-    BConcrete::registerBufferizableOpInterfaceExternalModels(registry);
     Tracing::registerBufferizableOpInterfaceExternalModels(registry);
+    Concrete::registerBufferizableOpInterfaceExternalModels(registry);
     SDFG::registerSDFGConvertibleOpInterfaceExternalModels(registry);
     SDFG::registerBufferizableOpInterfaceExternalModels(registry);
     arith::registerBufferizableOpInterfaceExternalModels(registry);
@@ -392,6 +390,15 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
           .failed()) {
     return errorDiag("Lowering from FHE to TFHE failed");
   }
+
+  // Optimizing TFHE
+  if (this->compilerOptions.optimizeTFHE &&
+      mlir::concretelang::pipeline::optimizeTFHE(mlirContext, module,
+                                                 this->enablePass)
+          .failed()) {
+    return errorDiag("Optimizing TFHE failed");
+  }
+
   if (target == Target::TFHE)
     return std::move(res);
 
@@ -402,37 +409,17 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Lowering from TFHE to Concrete failed");
   }
 
-  // Optimizing Concrete
-  if (this->compilerOptions.optimizeConcrete &&
-      mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
-                                                     this->enablePass)
-          .failed()) {
-    return errorDiag("Optimizing Concrete failed");
-  }
-
   if (target == Target::CONCRETE)
     return std::move(res);
 
-  // Concrete -> BConcrete
-  if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
-          mlirContext, module, this->enablePass, loopParallelize)
-          .failed()) {
-    return StreamStringError(
-        "Lowering from Concrete to Bufferized Concrete failed");
-  }
-
-  if (target == Target::BCONCRETE) {
-    return std::move(res);
-  }
-
-  // Extract SDFG data flow graph from BConcrete representation
+  // Extract SDFG data flow graph from Concrete representation
 
   if (options.emitSDFGOps) {
     if (mlir::concretelang::pipeline::extractSDFGOps(
             mlirContext, module, enablePass,
             options.unrollLoopsWithSDFGConvertibleOps)
             .failed()) {
-      return errorDiag("Extraction of SDFG operations from BConcrete "
+      return errorDiag("Extraction of SDFG operations from Concrete "
                        "representation failed");
     }
   }
@@ -441,9 +428,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return std::move(res);
   }
 
-  // BConcrete -> Canonical dialects
-  if (mlir::concretelang::pipeline::lowerBConcreteToStd(mlirContext, module,
-                                                        enablePass)
+  // Concrete -> Canonical dialects
+  if (mlir::concretelang::pipeline::lowerConcreteToStd(mlirContext, module,
+                                                       enablePass)
           .failed()) {
     return errorDiag("Lowering from Bufferized Concrete to canonical MLIR "
                      "dialects failed");

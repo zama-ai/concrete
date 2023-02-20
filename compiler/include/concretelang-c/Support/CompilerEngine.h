@@ -124,7 +124,6 @@ enum CompilationTarget {
   FHE,
   TFHE,
   CONCRETE,
-  BCONCRETE,
   STD,
   LLVM,
   LLVM_IR,
@@ -138,8 +137,7 @@ typedef enum CompilationTarget CompilationTarget;
 MLIR_CAPI_EXPORTED CompilationOptions compilationOptionsCreate(
     MlirStringRef funcName, bool autoParallelize, bool batchConcreteOps,
     bool dataflowParallelize, bool emitGPUOps, bool loopParallelize,
-    bool optimizeConcrete, OptimizerConfig optimizerConfig,
-    bool verifyDiagnostics);
+    bool optimizeTFHE, OptimizerConfig optimizerConfig, bool verifyDiagnostics);
 
 MLIR_CAPI_EXPORTED CompilationOptions compilationOptionsCreateDefault();
 

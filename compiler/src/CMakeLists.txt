@@ -12,7 +12,6 @@ target_link_libraries(
   PRIVATE ${dialect_libs}
           ${conversion_libs}
           MLIRTransforms
-          BConcreteDialect
           ConcreteDialect
           TFHEDialect
           FHEDialect

@@ -62,7 +62,7 @@ struct CompilationOptions {
   bool emitSDFGOps;
   bool unrollLoopsWithSDFGConvertibleOps;
   bool dataflowParallelize;
-  bool optimizeConcrete;
+  bool optimizeTFHE;
   /// use GPU during execution by generating GPU operations if possible
   bool emitGPUOps;
   llvm::Optional<std::vector<int64_t>> fhelinalgTileSizes;
@@ -82,7 +82,7 @@ struct CompilationOptions {
       : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchConcreteOps(false),
         emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
-        dataflowParallelize(false), optimizeConcrete(true), emitGPUOps(false),
+        dataflowParallelize(false), optimizeTFHE(true), emitGPUOps(false),
         clientParametersFuncName(llvm::None),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
         chunkSize(4), chunkWidth(2){};
@@ -212,12 +212,8 @@ public:
     /// operations
     CONCRETE,
 
-    /// Read sources and lower all FHE, TFHE and Concrete operations to
-    /// BConcrete operations
-    BCONCRETE,
-
-    /// Read sources and lower all FHE, TFHE and Concrete operations to
-    /// BConcrete, then extract SDFG operations
+    /// Read sources and lower all FHE and TFHE operations to Concrete
+    /// then extract SDFG operations
     SDFG,
 
     /// Read sources and lower all FHE, TFHE and Concrete
