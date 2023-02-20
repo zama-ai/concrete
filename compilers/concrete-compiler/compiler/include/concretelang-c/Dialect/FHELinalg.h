@@ -7,7 +7,6 @@
 #define CONCRETELANG_C_DIALECT_FHELINALG_H
 
 #include "mlir-c/IR.h"
-#include "mlir-c/Registration.h"
 
 #ifdef __cplusplus
 extern "C" {

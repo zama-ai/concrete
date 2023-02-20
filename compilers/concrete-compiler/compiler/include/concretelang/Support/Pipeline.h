@@ -20,7 +20,7 @@ namespace pipeline {
 mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
                             std::function<bool(mlir::Pass *)> enablePass);
 
-llvm::Expected<std::map<std::string, llvm::Optional<optimizer::Description>>>
+llvm::Expected<std::map<std::string, std::optional<optimizer::Description>>>
 getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      optimizer::Config config,
                      std::function<bool(mlir::Pass *)> enablePass);
@@ -40,7 +40,7 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    llvm::Optional<V0FHEContext> &fheContext,
+                    std::optional<V0FHEContext> &fheContext,
                     std::function<bool(mlir::Pass *)> enablePass,
                     bool parallelize, bool batch);
 
@@ -55,12 +55,12 @@ transformFHEBigInt(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-               llvm::Optional<V0FHEContext> &fheContext,
+               std::optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    llvm::Optional<V0FHEContext> &fheContext,
+                    std::optional<V0FHEContext> &fheContext,
                     std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult

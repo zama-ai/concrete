@@ -319,7 +319,7 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
       desc.v0Parameter = {(size_t)v0parameter[0], (size_t)v0parameter[1],
                           (size_t)v0parameter[2], (size_t)v0parameter[3],
                           (size_t)v0parameter[4], (size_t)v0parameter[5],
-                          (size_t)v0parameter[6], llvm::None};
+                          (size_t)v0parameter[6], std::nullopt};
     }
     std::vector<int64_t> v0constraint;
     io.mapOptional("v0-constraint", v0constraint);

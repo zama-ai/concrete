@@ -19,6 +19,7 @@ def FHE_Dialect : Dialect {
   }];
   let cppNamespace = "::mlir::concretelang::FHE";
   let useDefaultTypePrinterParser = 1;
+  let useFoldAPI = kEmitRawAttributesFolder;
 }
 
 #endif

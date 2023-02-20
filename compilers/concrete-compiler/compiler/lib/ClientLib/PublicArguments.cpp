@@ -37,7 +37,7 @@ PublicArguments::serialize(std::ostream &ostream) {
   for (auto gate : clientParameters.inputs) {
     iGate++;
     size_t rank = gate.shape.dimensions.size();
-    if (!gate.encryption.hasValue()) {
+    if (!gate.encryption.has_value()) {
       return StringError("PublicArguments::serialize: Clear arguments "
                          "are not yet supported. Argument ")
              << iGate;
@@ -78,7 +78,7 @@ PublicArguments::unserializeArgs(std::istream &istream) {
   int iGate = -1;
   for (auto gate : clientParameters.inputs) {
     iGate++;
-    if (!gate.encryption.hasValue()) {
+    if (!gate.encryption.has_value()) {
       return StringError("Clear values are not handled");
     }
     auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
@@ -135,7 +135,7 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
 outcome::checked<void, StringError>
 PublicResult::unserialize(std::istream &istream) {
   for (auto gate : clientParameters.outputs) {
-    if (!gate.encryption.hasValue()) {
+    if (!gate.encryption.has_value()) {
       return StringError("Clear values are not handled");
     }
     auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();

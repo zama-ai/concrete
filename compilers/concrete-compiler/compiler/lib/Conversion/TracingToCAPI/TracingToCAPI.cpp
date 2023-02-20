@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <mlir/IR/BuiltinTypeInterfaces.h>
 #include <mlir/Pass/Pass.h>
 #include <mlir/Transforms/DialectConversion.h>
 
@@ -24,7 +25,7 @@ char memref_trace_message[] = "memref_trace_message";
 
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
-  std::vector<int64_t> shape(rank, -1);
+  std::vector<int64_t> shape(rank, mlir::ShapedType::kDynamic);
   mlir::AffineExpr expr = rewriter.getAffineSymbolExpr(0);
   for (size_t i = 0; i < rank; i++) {
     expr = expr +
@@ -136,15 +137,15 @@ private:
 void traceCiphertextAddOperands(Tracing::TraceCiphertextOp op,
                                 mlir::SmallVector<mlir::Value> &operands,
                                 mlir::RewriterBase &rewriter) {
-  auto msg = op.msg().getValueOr("");
-  auto nmsb = op.nmsb().getValueOr(0);
+  auto msg = op.getMsg().value_or("");
+  auto nmsb = op.getNmsb().value_or(0);
   std::string msgName;
   std::stringstream stream;
   stream << rand();
   stream >> msgName;
-  auto messageVal =
-      mlir::LLVM::createGlobalString(op.getLoc(), rewriter, msgName, msg,
-                                     mlir::LLVM::linkage::Linkage::Linkonce);
+  auto messageVal = mlir::LLVM::createGlobalString(
+      op.getLoc(), rewriter, msgName, msg,
+      mlir::LLVM::linkage::Linkage::Linkonce, false);
   operands.push_back(messageVal);
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), rewriter.getI32IntegerAttr(msg.size())));
@@ -155,15 +156,15 @@ void traceCiphertextAddOperands(Tracing::TraceCiphertextOp op,
 void tracePlaintextAddOperands(Tracing::TracePlaintextOp op,
                                mlir::SmallVector<mlir::Value> &operands,
                                mlir::RewriterBase &rewriter) {
-  auto msg = op.msg().getValueOr("");
-  auto nmsb = op.nmsb().getValueOr(0);
+  auto msg = op.getMsg().value_or("");
+  auto nmsb = op.getNmsb().value_or(0);
   std::string msgName;
   std::stringstream stream;
   stream << rand();
   stream >> msgName;
-  auto messageVal =
-      mlir::LLVM::createGlobalString(op.getLoc(), rewriter, msgName, msg,
-                                     mlir::LLVM::linkage::Linkage::Linkonce);
+  auto messageVal = mlir::LLVM::createGlobalString(
+      op.getLoc(), rewriter, msgName, msg,
+      mlir::LLVM::linkage::Linkage::Linkonce, false);
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op->getAttr("input_width")));
   operands.push_back(messageVal);
@@ -176,14 +177,14 @@ void tracePlaintextAddOperands(Tracing::TracePlaintextOp op,
 void traceMessageAddOperands(Tracing::TraceMessageOp op,
                              mlir::SmallVector<mlir::Value> &operands,
                              mlir::RewriterBase &rewriter) {
-  auto msg = op.msg().getValueOr("");
+  auto msg = op.getMsg().value_or("");
   std::string msgName;
   std::stringstream stream;
   stream << rand();
   stream >> msgName;
-  auto messageVal =
-      mlir::LLVM::createGlobalString(op.getLoc(), rewriter, msgName, msg,
-                                     mlir::LLVM::linkage::Linkage::Linkonce);
+  auto messageVal = mlir::LLVM::createGlobalString(
+      op.getLoc(), rewriter, msgName, msg,
+      mlir::LLVM::linkage::Linkage::Linkonce, false);
   operands.push_back(messageVal);
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), rewriter.getI32IntegerAttr(msg.size())));
@@ -202,7 +203,7 @@ struct TracingToCAPIPass : public TracingToCAPIBase<TracingToCAPIPass> {
     // Mark ops from the target dialect as legal operations
     target.addLegalDialect<func::FuncDialect>();
     target.addLegalDialect<memref::MemRefDialect>();
-    target.addLegalDialect<arith::ArithmeticDialect>();
+    target.addLegalDialect<arith::ArithDialect>();
     target.addLegalDialect<mlir::LLVM::LLVMDialect>();
 
     // Make sure that no ops from `Tracing` remain after the lowering

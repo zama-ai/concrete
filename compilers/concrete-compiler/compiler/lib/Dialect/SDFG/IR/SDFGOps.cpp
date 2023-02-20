@@ -19,8 +19,8 @@ namespace concretelang {
 namespace SDFG {
 mlir::LogicalResult Put::verify() {
   mlir::Type streamElementType =
-      stream().getType().cast<StreamType>().getElementType();
-  mlir::Type elementType = data().getType();
+      getStream().getType().cast<StreamType>().getElementType();
+  mlir::Type elementType = getData().getType();
 
   if (streamElementType != elementType) {
     emitError()
@@ -34,10 +34,10 @@ mlir::LogicalResult Put::verify() {
 }
 
 mlir::LogicalResult MakeProcess::checkStreams(size_t numIn, size_t numOut) {
-  mlir::OperandRange streams = this->streams();
+  mlir::OperandRange streams = this->getStreams();
 
   if (streams.size() != numIn + numOut) {
-    emitError() << "Process `" << stringifyProcessKind(type())
+    emitError() << "Process `" << stringifyProcessKind(getType())
                 << "` expects 3 streams, but " << streams.size()
                 << " were given.";
     return mlir::failure();
@@ -48,7 +48,7 @@ mlir::LogicalResult MakeProcess::checkStreams(size_t numIn, size_t numOut) {
 
     if (in && !in.createsInputStream()) {
       emitError() << "Stream #" << (i + 1) << " of process `"
-                  << stringifyProcessKind(type())
+                  << stringifyProcessKind(getType())
                   << "` must be an input stream.";
       return mlir::failure();
     }
@@ -59,7 +59,7 @@ mlir::LogicalResult MakeProcess::checkStreams(size_t numIn, size_t numOut) {
 
     if (out && !out.createsOutputStream()) {
       emitError() << "Stream #" << (i + 1) << " of process `"
-                  << stringifyProcessKind(type())
+                  << stringifyProcessKind(getType())
                   << "` must be an output stream.";
       return mlir::failure();
     }
@@ -69,7 +69,7 @@ mlir::LogicalResult MakeProcess::checkStreams(size_t numIn, size_t numOut) {
 }
 
 mlir::LogicalResult MakeProcess::verify() {
-  switch (type()) {
+  switch (getType()) {
   case ProcessKind::add_eint:
     return checkStreams(2, 1);
   case ProcessKind::add_eint_int:

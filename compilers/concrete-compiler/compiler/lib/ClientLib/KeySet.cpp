@@ -45,15 +45,15 @@ outcome::checked<KeySet::SecretKeyGateMapping, StringError>
 KeySet::mapCircuitGateLweSecretKey(std::vector<CircuitGate> gates) {
   SecretKeyGateMapping mapping;
   for (auto gate : gates) {
-    if (gate.encryption.hasValue()) {
+    if (gate.encryption.has_value()) {
       assert(gate.encryption->secretKeyID < this->secretKeys.size());
       auto skIt = this->secretKeys[gate.encryption->secretKeyID];
 
-      std::pair<CircuitGate, llvm::Optional<LweSecretKey>> input = {gate, skIt};
+      std::pair<CircuitGate, std::optional<LweSecretKey>> input = {gate, skIt};
       mapping.push_back(input);
     } else {
-      std::pair<CircuitGate, llvm::Optional<LweSecretKey>> input = {gate,
-                                                                    llvm::None};
+      std::pair<CircuitGate, std::optional<LweSecretKey>> input = {
+          gate, std::nullopt};
       mapping.push_back(input);
     }
   }
@@ -152,7 +152,7 @@ KeySet::allocate_lwe(size_t argPos, uint64_t **ciphertext, uint64_t &size) {
   }
   auto inputSk = inputs[argPos];
   auto encryption = std::get<0>(inputSk).encryption;
-  if (!encryption.hasValue()) {
+  if (!encryption.has_value()) {
     return StringError("allocate_lwe argument #")
            << argPos << "is not encypeted";
   }
@@ -167,12 +167,12 @@ KeySet::allocate_lwe(size_t argPos, uint64_t **ciphertext, uint64_t &size) {
 
 bool KeySet::isInputEncrypted(size_t argPos) {
   return argPos < inputs.size() &&
-         std::get<0>(inputs[argPos]).encryption.hasValue();
+         std::get<0>(inputs[argPos]).encryption.has_value();
 }
 
 bool KeySet::isOutputEncrypted(size_t argPos) {
   return argPos < outputs.size() &&
-         std::get<0>(outputs[argPos]).encryption.hasValue();
+         std::get<0>(outputs[argPos]).encryption.has_value();
 }
 
 /// Return the number of bits to represents the given value
@@ -183,9 +183,9 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
   if (argPos >= inputs.size()) {
     return StringError("encrypt_lwe position of argument is too high");
   }
-  auto inputSk = inputs[argPos];
+  const auto &inputSk = inputs[argPos];
   auto encryption = std::get<0>(inputSk).encryption;
-  if (!encryption.hasValue()) {
+  if (!encryption.has_value()) {
     return StringError("encrypt_lwe the positional argument is not encrypted");
   }
   auto encoding = encryption->encoding;
@@ -221,7 +221,7 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
   auto lweSecretKey = *outputSk.second;
   auto lweSecretKeyParam = lweSecretKey.parameters();
   auto encryption = std::get<0>(outputSk).encryption;
-  if (!encryption.hasValue()) {
+  if (!encryption.has_value()) {
     return StringError("decrypt_lwe: the positional argument is not encrypted");
   }
 

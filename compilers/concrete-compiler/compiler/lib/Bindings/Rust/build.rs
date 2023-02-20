@@ -5,7 +5,7 @@ use std::error::Error;
 use std::path::Path;
 use std::process::exit;
 
-const MLIR_STATIC_LIBS: [&str; 179] = [
+const MLIR_STATIC_LIBS: [&str; 174] = [
     "MLIRMemRefDialect",
     "MLIRVectorToSPIRV",
     "MLIRControlFlowInterfaces",
@@ -37,7 +37,7 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRPresburger",
     "MLIRFuncDialect",
     "MLIRPDLToPDLInterp",
-    "MLIRArithmeticTransforms",
+    "MLIRArithTransforms",
     "MLIRViewLikeInterface",
     "MLIRTargetCpp",
     "MLIROpenMPToLLVM",
@@ -53,8 +53,8 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRTensorUtils",
     "MLIRSPIRVSerialization",
     "MLIRShapeToStandard",
-    "MLIRArithmeticToSPIRV",
-    "MLIRArithmeticDialect",
+    "MLIRArithToSPIRV",
+    "MLIRArithDialect",
     "MLIRFuncToSPIRV",
     "MLIRQuantUtils",
     "MLIRTensorTilingInterfaceImpl",
@@ -95,7 +95,7 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRRewrite",
     "MLIRAMXToLLVMIRTranslation",
     "MLIRInferIntRangeInterface",
-    "MLIRCAPIRegistration",
+    "MLIRCAPIRegisterEverything",
     "MLIRNVVMToLLVMIRTranslation",
     "MLIRAsyncTransforms",
     "MLIRPDLInterpDialect",
@@ -129,7 +129,6 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRSPIRVUtils",
     "MLIRCastInterfaces",
     "MLIRTosaToTensor",
-    "MLIRMemRefUtils",
     "MLIRGPUToSPIRV",
     "MLIRBufferizationDialect",
     "MLIRSCFToControlFlow",
@@ -139,7 +138,6 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRSparseTensorDialect",
     "MLIRTensorToSPIRV",
     "MLIRVectorToSCF",
-    "MLIRQuantTransforms",
     "MLIRLLVMToLLVMIRTranslation",
     "MLIRNVGPUDialect",
     "MLIRAsyncToLLVM",
@@ -158,11 +156,9 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRVectorToLLVM",
     "MLIRSPIRVDialect",
     "MLIRSideEffectInterfaces",
-    "MLIRVectorToROCDL",
     "MLIRQuantDialect",
     "MLIRSCFTransforms",
     "MLIRMLProgramDialect",
-    "MLIRLinalgToSPIRV",
     "MLIRDLTIDialect",
     "MLIRLinalgFrontend",
     "MLIRROCDLToLLVMIRTranslation",
@@ -177,14 +173,13 @@ const MLIR_STATIC_LIBS: [&str; 179] = [
     "MLIRSPIRVTransforms",
     "MLIRMemRefToLLVM",
     "MLIRSPIRVBinaryUtils",
-    "MLIRLinalgAnalysis",
-    "MLIRArithmeticUtils",
+    "MLIRArithUtils",
     "MLIRVectorInterfaces",
     "MLIRGPUOps",
     "MLIRComplexToLLVM",
     "MLIRShapeOpsTransforms",
     "MLIRX86VectorTransforms",
-    "MLIRArithmeticToLLVM",
+    "MLIRArithToLLVM",
 ];
 
 const LLVM_STATIC_LIBS: [&str; 51] = [

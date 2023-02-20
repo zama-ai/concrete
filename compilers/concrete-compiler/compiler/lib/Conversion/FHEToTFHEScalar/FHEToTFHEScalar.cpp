@@ -4,7 +4,7 @@
 // for license information.
 
 #include <iostream>
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
@@ -146,12 +146,12 @@ struct AddEintIntOpPattern : public ScalarOpPattern<FHE::AddEintIntOp> {
                   mlir::ConversionPatternRewriter &rewriter) const override {
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
-        op.getLoc(), adaptor.b(),
+        op.getLoc(), adaptor.getB(),
         op.getType().cast<FHE::FheIntegerInterface>().getWidth(), rewriter);
 
     // Write the new op
     rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
-        op, getTypeConverter()->convertType(op.getType()), adaptor.a(),
+        op, getTypeConverter()->convertType(op.getType()), adaptor.getA(),
         encodedInt);
 
     return mlir::success();
@@ -169,8 +169,8 @@ struct SubEintIntOpPattern : public ScalarOpPattern<FHE::SubEintIntOp> {
   matchAndRewrite(FHE::SubEintIntOp op, FHE::SubEintIntOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
     mlir::Location location = op.getLoc();
-    mlir::Value eintOperand = op.a();
-    mlir::Value intOperand = op.b();
+    mlir::Value eintOperand = op.getA();
+    mlir::Value intOperand = op.getB();
 
     // Write the integer negation
     mlir::Type intType = intOperand.getType();
@@ -190,7 +190,7 @@ struct SubEintIntOpPattern : public ScalarOpPattern<FHE::SubEintIntOp> {
 
     // Write the new op
     rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
-        op, getTypeConverter()->convertType(op.getType()), adaptor.a(),
+        op, getTypeConverter()->convertType(op.getType()), adaptor.getA(),
         encodedInt);
 
     return mlir::success();
@@ -209,13 +209,14 @@ struct SubIntEintOpPattern : public ScalarOpPattern<FHE::SubIntEintOp> {
                   mlir::ConversionPatternRewriter &rewriter) const override {
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
-        op.getLoc(), adaptor.a(),
-        op.b().getType().cast<FHE::FheIntegerInterface>().getWidth(), rewriter);
+        op.getLoc(), adaptor.getA(),
+        op.getB().getType().cast<FHE::FheIntegerInterface>().getWidth(),
+        rewriter);
 
     // Write the new op
     rewriter.replaceOpWithNewOp<TFHE::SubGLWEIntOp>(
         op, getTypeConverter()->convertType(op.getType()), encodedInt,
-        adaptor.b());
+        adaptor.getB());
 
     return mlir::success();
   };
@@ -231,8 +232,8 @@ struct SubEintOpPattern : public ScalarOpPattern<FHE::SubEintOp> {
   matchAndRewrite(FHE::SubEintOp op, FHE::SubEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
     mlir::Location location = op.getLoc();
-    mlir::Value lhsOperand = adaptor.a();
-    mlir::Value rhsOperand = adaptor.b();
+    mlir::Value lhsOperand = adaptor.getA();
+    mlir::Value rhsOperand = adaptor.getB();
 
     // Write rhs negation
     auto negative = rewriter.create<TFHE::NegGLWEOp>(
@@ -259,8 +260,8 @@ struct MulEintIntOpPattern : public ScalarOpPattern<FHE::MulEintIntOp> {
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
     mlir::Location location = op.getLoc();
-    mlir::Value eintOperand = adaptor.a();
-    mlir::Value intOperand = adaptor.b();
+    mlir::Value eintOperand = adaptor.getA();
+    mlir::Value intOperand = adaptor.getB();
 
     // Write the cleartext "encoding"
     mlir::Value castedCleartext = rewriter.create<mlir::arith::ExtSIOp>(
@@ -286,7 +287,7 @@ struct ToSignedOpPattern : public ScalarOpPattern<FHE::ToSignedOp> {
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
     typing::TypeConverter converter;
-    rewriter.replaceOp(op, {adaptor.input()});
+    rewriter.replaceOp(op, {adaptor.getInput()});
 
     return mlir::success();
   }
@@ -304,7 +305,7 @@ struct ToUnsignedOpPattern : public ScalarOpPattern<FHE::ToUnsignedOp> {
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
     typing::TypeConverter converter;
-    rewriter.replaceOp(op, {adaptor.input()});
+    rewriter.replaceOp(op, {adaptor.getInput()});
 
     return mlir::success();
   }
@@ -326,7 +327,7 @@ struct ApplyLookupTableEintOpPattern
                   FHE::ApplyLookupTableEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
-    auto inputType = op.a().getType().cast<FHE::FheIntegerInterface>();
+    auto inputType = op.getA().getType().cast<FHE::FheIntegerInterface>();
     size_t outputBits =
         op.getResult().getType().cast<FHE::FheIntegerInterface>().getWidth();
     mlir::Value newLut =
@@ -336,14 +337,14 @@ struct ApplyLookupTableEintOpPattern
                 mlir::RankedTensorType::get(
                     mlir::ArrayRef<int64_t>(loweringParameters.polynomialSize),
                     rewriter.getI64Type()),
-                op.lut(),
+                op.getLut(),
                 rewriter.getI32IntegerAttr(loweringParameters.polynomialSize),
                 rewriter.getI32IntegerAttr(outputBits),
                 rewriter.getBoolAttr(inputType.isSigned()))
             .getResult();
 
     typing::TypeConverter converter;
-    mlir::Value input = adaptor.a();
+    mlir::Value input = adaptor.getA();
 
     if (inputType.isSigned()) {
       // If the input is a signed integer, it comes to the bootstrap with a
@@ -367,7 +368,7 @@ struct ApplyLookupTableEintOpPattern
 
     // Insert keyswitch
     auto ksOp = rewriter.create<TFHE::KeySwitchGLWEOp>(
-        op.getLoc(), getTypeConverter()->convertType(adaptor.a().getType()),
+        op.getLoc(), getTypeConverter()->convertType(adaptor.getA().getType()),
         input, -1, -1);
 
     // Insert bootstrap
@@ -409,8 +410,8 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
     //             -> Subtract this one from the input by performing a
     //                homomorphic subtraction.
 
-    mlir::Value input = adaptor.input();
-    auto inputType = op.input().getType().cast<FHE::FheIntegerInterface>();
+    mlir::Value input = adaptor.getInput();
+    auto inputType = op.getInput().getType().cast<FHE::FheIntegerInterface>();
     mlir::Value output = op.getResult();
     uint64_t inputBitwidth = inputType.getWidth();
     uint64_t outputBitwidth =
@@ -594,12 +595,12 @@ struct ToBoolOpPattern : public mlir::OpRewritePattern<FHE::ToBoolOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::ToBoolOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto width = op.input()
+    auto width = op.getInput()
                      .getType()
                      .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
                      .getWidth();
     if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
-      rewriter.replaceOp(op, op.input());
+      rewriter.replaceOp(op, op.getInput());
       return mlir::success();
     }
     // TODO
@@ -622,7 +623,7 @@ struct FromBoolOpPattern : public mlir::OpRewritePattern<FHE::FromBoolOp> {
                      .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
                      .getWidth();
     if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
-      rewriter.replaceOp(op, op.input());
+      rewriter.replaceOp(op, op.getInput());
       return mlir::success();
     }
     // TODO
@@ -647,7 +648,7 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     //------------------------------------------- Marking legal/illegal dialects
     target.addIllegalDialect<FHE::FHEDialect>();
     target.addLegalDialect<TFHE::TFHEDialect>();
-    target.addLegalDialect<mlir::arith::ArithmeticDialect>();
+    target.addLegalDialect<mlir::arith::ArithDialect>();
     target.addDynamicallyLegalOp<mlir::linalg::GenericOp,
                                  mlir::tensor::GenerateOp>(
         [&](mlir::Operation *op) {

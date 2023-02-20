@@ -35,65 +35,65 @@ void DataflowTaskOp::getSuccessorRegions(
     Optional<unsigned> index, ArrayRef<Attribute> operands,
     SmallVectorImpl<RegionSuccessor> &regions) {}
 
-llvm::Optional<mlir::Operation *>
+std::optional<mlir::Operation *>
 DataflowTaskOp::buildDealloc(OpBuilder &builder, Value alloc) {
   return builder.create<DeallocateFutureOp>(alloc.getLoc(), alloc)
       .getOperation();
 }
-llvm::Optional<mlir::Value> DataflowTaskOp::buildClone(OpBuilder &builder,
-                                                       Value alloc) {
+std::optional<mlir::Value> DataflowTaskOp::buildClone(OpBuilder &builder,
+                                                      Value alloc) {
   return builder.create<CloneFutureOp>(alloc.getLoc(), alloc).getResult();
 }
 void DataflowTaskOp::getEffects(
     SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
         &effects) {
-  for (auto input : inputs())
+  for (auto input : getInputs())
     effects.emplace_back(MemoryEffects::Read::get(), input,
                          SideEffects::DefaultResource::get());
-  for (auto output : outputs())
+  for (auto output : getOutputs())
     effects.emplace_back(MemoryEffects::Write::get(), output,
                          SideEffects::DefaultResource::get());
-  for (auto output : outputs())
+  for (auto output : getOutputs())
     effects.emplace_back(MemoryEffects::Allocate::get(), output,
                          SideEffects::DefaultResource::get());
 }
 
-llvm::Optional<mlir::Operation *>
-CloneFutureOp::buildDealloc(OpBuilder &builder, Value alloc) {
+std::optional<mlir::Operation *> CloneFutureOp::buildDealloc(OpBuilder &builder,
+                                                             Value alloc) {
   return builder.create<DeallocateFutureOp>(alloc.getLoc(), alloc)
       .getOperation();
 }
-llvm::Optional<mlir::Value> CloneFutureOp::buildClone(OpBuilder &builder,
-                                                      Value alloc) {
+std::optional<mlir::Value> CloneFutureOp::buildClone(OpBuilder &builder,
+                                                     Value alloc) {
   return builder.create<CloneFutureOp>(alloc.getLoc(), alloc).getResult();
 }
 void CloneFutureOp::getEffects(
     SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
         &effects) {
-  effects.emplace_back(MemoryEffects::Read::get(), input(),
+  effects.emplace_back(MemoryEffects::Read::get(), getInput(),
                        SideEffects::DefaultResource::get());
-  effects.emplace_back(MemoryEffects::Write::get(), output(),
+  effects.emplace_back(MemoryEffects::Write::get(), getOutput(),
                        SideEffects::DefaultResource::get());
-  effects.emplace_back(MemoryEffects::Allocate::get(), output(),
+  effects.emplace_back(MemoryEffects::Allocate::get(), getOutput(),
                        SideEffects::DefaultResource::get());
 }
 
-llvm::Optional<mlir::Operation *>
+std::optional<mlir::Operation *>
 MakeReadyFutureOp::buildDealloc(OpBuilder &builder, Value alloc) {
   return builder.create<DeallocateFutureOp>(alloc.getLoc(), alloc)
       .getOperation();
 }
-llvm::Optional<mlir::Value> MakeReadyFutureOp::buildClone(OpBuilder &builder,
-                                                          Value alloc) {
+std::optional<mlir::Value> MakeReadyFutureOp::buildClone(OpBuilder &builder,
+                                                         Value alloc) {
   return builder.create<CloneFutureOp>(alloc.getLoc(), alloc).getResult();
 }
 void MakeReadyFutureOp::getEffects(
     SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
         &effects) {
-  effects.emplace_back(MemoryEffects::Read::get(), input(),
+  effects.emplace_back(MemoryEffects::Read::get(), getInput(),
                        SideEffects::DefaultResource::get());
-  effects.emplace_back(MemoryEffects::Write::get(), output(),
+  effects.emplace_back(MemoryEffects::Write::get(), getOutput(),
                        SideEffects::DefaultResource::get());
-  effects.emplace_back(MemoryEffects::Allocate::get(), output(),
+  effects.emplace_back(MemoryEffects::Allocate::get(), getOutput(),
                        SideEffects::DefaultResource::get());
 }

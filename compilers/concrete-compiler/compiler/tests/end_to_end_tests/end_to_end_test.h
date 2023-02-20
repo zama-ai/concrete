@@ -43,25 +43,25 @@ parseEndToEndCommandLine(int argc, char **argv) {
                                   "Target a GPU backend")),
       llvm::cl::init(mlir::concretelang::Backend::CPU));
 
-  llvm::cl::opt<llvm::Optional<bool>> loopParallelize(
+  llvm::cl::opt<std::optional<bool>> loopParallelize(
       "loop-parallelize",
       llvm::cl::desc(
           "Set the loopParallelize compilation options to run the tests"),
-      llvm::cl::init(llvm::None));
-  llvm::cl::opt<llvm::Optional<bool>> dataflowParallelize(
+      llvm::cl::init(std::nullopt));
+  llvm::cl::opt<std::optional<bool>> dataflowParallelize(
       "dataflow-parallelize",
       llvm::cl::desc(
           "Set the loopParallelize compilation options to run the tests"),
-      llvm::cl::init(llvm::None));
-  llvm::cl::opt<llvm::Optional<bool>> emitGPUOps(
+      llvm::cl::init(std::nullopt));
+  llvm::cl::opt<std::optional<bool>> emitGPUOps(
       "emit-gpu-ops",
       llvm::cl::desc("Set the emitGPUOps compilation options to run the tests"),
-      llvm::cl::init(llvm::None));
-  llvm::cl::opt<llvm::Optional<bool>> batchConcreteOps(
+      llvm::cl::init(std::nullopt));
+  llvm::cl::opt<std::optional<bool>> batchConcreteOps(
       "batch-concrete-ops",
       llvm::cl::desc(
           "Set the batchConcreteOps compilation options to run the tests"),
-      llvm::cl::init(llvm::None));
+      llvm::cl::init(std::nullopt));
 
   // Optimizer options
   llvm::cl::opt<int> securityLevel(
@@ -91,16 +91,15 @@ parseEndToEndCommandLine(int argc, char **argv) {
   // Build compilation options
   mlir::concretelang::CompilationOptions compilationOptions("main",
                                                             backend.getValue());
-  if (loopParallelize.hasValue())
-    compilationOptions.loopParallelize = loopParallelize.getValue().getValue();
-  if (dataflowParallelize.hasValue())
+  if (loopParallelize.has_value())
+    compilationOptions.loopParallelize = loopParallelize.getValue().value();
+  if (dataflowParallelize.has_value())
     compilationOptions.dataflowParallelize =
-        dataflowParallelize.getValue().getValue();
-  if (emitGPUOps.hasValue())
-    compilationOptions.emitGPUOps = emitGPUOps.getValue().getValue();
-  if (batchConcreteOps.hasValue())
-    compilationOptions.batchConcreteOps =
-        batchConcreteOps.getValue().getValue();
+        dataflowParallelize.getValue().value();
+  if (emitGPUOps.has_value())
+    compilationOptions.emitGPUOps = emitGPUOps.getValue().value();
+  if (batchConcreteOps.has_value())
+    compilationOptions.batchConcreteOps = batchConcreteOps.getValue().value();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
 

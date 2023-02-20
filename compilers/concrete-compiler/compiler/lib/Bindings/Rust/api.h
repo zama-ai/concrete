@@ -30,6 +30,5 @@
 #include <mlir-c/IntegerSet.h>
 #include <mlir-c/Interfaces.h>
 #include <mlir-c/Pass.h>
-#include <mlir-c/Registration.h>
 #include <mlir-c/Support.h>
 #include <mlir-c/Transforms.h>

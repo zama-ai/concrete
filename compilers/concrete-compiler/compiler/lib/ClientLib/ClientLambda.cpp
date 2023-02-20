@@ -29,7 +29,7 @@ ClientLambda::load(std::string functionName, std::string jsonPath) {
            << std::to_string(param->outputs.size()) << ") != 1 is not supprted";
   }
 
-  if (!param->outputs[0].encryption.hasValue()) {
+  if (!param->outputs[0].encryption.has_value()) {
     return StringError("ClientLambda: clear output is not yet supported");
   }
   ClientLambda lambda;

@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
@@ -17,7 +17,7 @@ namespace concretelang {
 namespace {
 
 /// Get the constant integer that the cleartext was created from if it exists.
-llvm::Optional<IntegerAttr>
+std::optional<IntegerAttr>
 getConstantIntFromCleartextIfExists(mlir::Value cleartext) {
   auto constantOp = cleartext.getDefiningOp();
   if (constantOp == nullptr)
@@ -46,8 +46,8 @@ public:
     auto cleartext = op.getOperand(1);
     auto constIntToMul = getConstantIntFromCleartextIfExists(cleartext);
     // Constant integer
-    if (constIntToMul.hasValue()) {
-      auto toMul = constIntToMul.getValue().getInt();
+    if (constIntToMul.has_value()) {
+      auto toMul = constIntToMul.value().getInt();
       if (toMul == 0) {
         rewriter.replaceOpWithNewOp<mlir::concretelang::TFHE::ZeroGLWEOp>(
             op, op.getResult().getType());

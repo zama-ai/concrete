@@ -96,11 +96,11 @@ struct SubIntGLWEOpPattern
   matchAndRewrite(TFHE::SubGLWEIntOp subOp, TFHE::SubGLWEIntOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
     mlir::Value negated = rewriter.create<Concrete::NegateLweTensorOp>(
-        subOp.getLoc(), adaptor.b().getType(), adaptor.b());
+        subOp.getLoc(), adaptor.getB().getType(), adaptor.getB());
 
     rewriter.replaceOpWithNewOp<Concrete::AddPlaintextLweTensorOp>(
         subOp, this->getTypeConverter()->convertType(subOp.getType()), negated,
-        subOp.a());
+        subOp.getA());
 
     return mlir::success();
   }
@@ -119,17 +119,16 @@ struct BootstrapGLWEOpPattern
   matchAndRewrite(TFHE::BootstrapGLWEOp bsOp,
                   TFHE::BootstrapGLWEOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
-
     TFHE::GLWECipherTextType resultType =
         bsOp.getType().cast<TFHE::GLWECipherTextType>();
     TFHE::GLWECipherTextType inputType =
-        bsOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
+        bsOp.getCiphertext().getType().cast<TFHE::GLWECipherTextType>();
 
     rewriter.replaceOpWithNewOp<Concrete::BootstrapLweTensorOp>(
         bsOp, this->getTypeConverter()->convertType(resultType),
-        adaptor.ciphertext(), adaptor.lookup_table(), inputType.getDimension(),
-        adaptor.polySize(), adaptor.level(), adaptor.baseLog(),
-        adaptor.glweDimension(), resultType.getP());
+        adaptor.getCiphertext(), adaptor.getLookupTable(),
+        inputType.getDimension(), adaptor.getPolySize(), adaptor.getLevel(),
+        adaptor.getBaseLog(), adaptor.getGlweDimension(), resultType.getP());
 
     return mlir::success();
   }
@@ -152,11 +151,11 @@ struct KeySwitchGLWEOpPattern
     TFHE::GLWECipherTextType resultType =
         ksOp.getType().cast<TFHE::GLWECipherTextType>();
     TFHE::GLWECipherTextType inputType =
-        ksOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
+        ksOp.getCiphertext().getType().cast<TFHE::GLWECipherTextType>();
 
     rewriter.replaceOpWithNewOp<Concrete::KeySwitchLweTensorOp>(
         ksOp, this->getTypeConverter()->convertType(resultType),
-        adaptor.ciphertext(), adaptor.level(), adaptor.baseLog(),
+        adaptor.getCiphertext(), adaptor.getLevel(), adaptor.getBaseLog(),
         inputType.getDimension(), resultType.getDimension());
 
     return mlir::success();
@@ -174,15 +173,15 @@ struct TracePlaintextOpPattern
   matchAndRewrite(Tracing::TracePlaintextOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto inputWidth =
-        op.plaintext().getType().cast<mlir::IntegerType>().getWidth();
+        op.getPlaintext().getType().cast<mlir::IntegerType>().getWidth();
     if (inputWidth == 64) {
       op->setAttr("input_width", rewriter.getI64IntegerAttr(inputWidth));
       return mlir::success();
     }
     auto extendedInput = rewriter.create<mlir::arith::ExtUIOp>(
-        op.getLoc(), rewriter.getI64Type(), op.plaintext());
+        op.getLoc(), rewriter.getI64Type(), op.getPlaintext());
     auto newOp = rewriter.replaceOpWithNewOp<Tracing::TracePlaintextOp>(
-        op, extendedInput, op.msgAttr(), op.nmsbAttr());
+        op, extendedInput, op.getMsgAttr(), op.getNmsbAttr());
     newOp->setAttr("input_width", rewriter.getI64IntegerAttr(inputWidth));
     return ::mlir::success();
   }
@@ -235,37 +234,36 @@ struct ExtractSliceOpPattern
     if (this->getTypeConverter()->isLegal(extractSliceOp.getType())) {
       return mlir::failure();
     }
-    auto resultTy = extractSliceOp.result().getType();
+    auto resultTy = extractSliceOp.getResult().getType();
     auto newResultTy = this->getTypeConverter()
                            ->convertType(resultTy)
                            .cast<mlir::RankedTensorType>();
 
     // add 0 to the static_offsets
-    mlir::SmallVector<mlir::Attribute> staticOffsets;
-    staticOffsets.append(adaptor.static_offsets().begin(),
-                         adaptor.static_offsets().end());
-    staticOffsets.push_back(rewriter.getI64IntegerAttr(0));
+    mlir::SmallVector<int64_t> staticOffsets;
+    staticOffsets.append(adaptor.getStaticOffsets().begin(),
+                         adaptor.getStaticOffsets().end());
+    staticOffsets.push_back(0);
 
     // add the lweSize to the sizes
-    mlir::SmallVector<mlir::Attribute> staticSizes;
-    staticSizes.append(adaptor.static_sizes().begin(),
-                       adaptor.static_sizes().end());
-    staticSizes.push_back(rewriter.getI64IntegerAttr(
-        newResultTy.getDimSize(newResultTy.getRank() - 1)));
+    mlir::SmallVector<int64_t> staticSizes;
+    staticSizes.append(adaptor.getStaticSizes().begin(),
+                       adaptor.getStaticSizes().end());
+    staticSizes.push_back(newResultTy.getDimSize(newResultTy.getRank() - 1));
 
     // add 1 to the strides
-    mlir::SmallVector<mlir::Attribute> staticStrides;
-    staticStrides.append(adaptor.static_strides().begin(),
-                         adaptor.static_strides().end());
-    staticStrides.push_back(rewriter.getI64IntegerAttr(1));
+    mlir::SmallVector<int64_t> staticStrides;
+    staticStrides.append(adaptor.getStaticStrides().begin(),
+                         adaptor.getStaticStrides().end());
+    staticStrides.push_back(1);
 
     // replace tensor.extract_slice to the new one
     rewriter.replaceOpWithNewOp<mlir::tensor::ExtractSliceOp>(
-        extractSliceOp, newResultTy, adaptor.source(), adaptor.offsets(),
-        adaptor.sizes(), adaptor.strides(),
-        rewriter.getArrayAttr(staticOffsets),
-        rewriter.getArrayAttr(staticSizes),
-        rewriter.getArrayAttr(staticStrides));
+        extractSliceOp, newResultTy, adaptor.getSource(), adaptor.getOffsets(),
+        adaptor.getSizes(), adaptor.getStrides(),
+        rewriter.getDenseI64ArrayAttr(staticOffsets),
+        rewriter.getDenseI64ArrayAttr(staticSizes),
+        rewriter.getDenseI64ArrayAttr(staticStrides));
 
     return ::mlir::success();
   };
@@ -294,31 +292,28 @@ struct ExtractOpPattern
                              ->convertType(extractOp.getType())
                              .cast<mlir::RankedTensorType>();
     auto tensorRank =
-        adaptor.tensor().getType().cast<mlir::RankedTensorType>().getRank();
+        adaptor.getTensor().getType().cast<mlir::RankedTensorType>().getRank();
 
     // [min..., 0] for static_offsets ()
-    mlir::SmallVector<mlir::Attribute> staticOffsets(
-        tensorRank,
-        rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::min()));
-    staticOffsets[staticOffsets.size() - 1] = rewriter.getI64IntegerAttr(0);
+    mlir::SmallVector<int64_t> staticOffsets(
+        tensorRank, std::numeric_limits<int64_t>::min());
+    staticOffsets[staticOffsets.size() - 1] = 0;
 
     // [1..., lweDimension+1] for static_sizes or
     // [1..., nbBlock, lweDimension+1]
-    mlir::SmallVector<mlir::Attribute> staticSizes(
-        tensorRank, rewriter.getI64IntegerAttr(1));
-    staticSizes[staticSizes.size() - 1] = rewriter.getI64IntegerAttr(
-        newResultType.getDimSize(newResultType.getRank() - 1));
+    mlir::SmallVector<int64_t> staticSizes(tensorRank, 1);
+    staticSizes[staticSizes.size() - 1] =
+        newResultType.getDimSize(newResultType.getRank() - 1);
 
     // [1...] for static_strides
-    mlir::SmallVector<mlir::Attribute> staticStrides(
-        tensorRank, rewriter.getI64IntegerAttr(1));
+    mlir::SmallVector<int64_t> staticStrides(tensorRank, 1);
 
     rewriter.replaceOpWithNewOp<mlir::tensor::ExtractSliceOp>(
-        extractOp, newResultType, adaptor.tensor(), adaptor.indices(),
+        extractOp, newResultType, adaptor.getTensor(), adaptor.getIndices(),
         mlir::SmallVector<mlir::Value>{}, mlir::SmallVector<mlir::Value>{},
-        rewriter.getArrayAttr(staticOffsets),
-        rewriter.getArrayAttr(staticSizes),
-        rewriter.getArrayAttr(staticStrides));
+        rewriter.getDenseI64ArrayAttr(staticOffsets),
+        rewriter.getDenseI64ArrayAttr(staticSizes),
+        rewriter.getDenseI64ArrayAttr(staticStrides));
 
     return ::mlir::success();
   };
@@ -344,35 +339,34 @@ struct InsertSliceOpPattern
     }
 
     auto newResultTy = this->getTypeConverter()
-                           ->convertType(insertSliceOp.result().getType())
+                           ->convertType(insertSliceOp.getResult().getType())
                            .cast<mlir::RankedTensorType>();
 
-    // add 0 to static_offsets
-    mlir::SmallVector<mlir::Attribute> staticOffsets;
-    staticOffsets.append(adaptor.static_offsets().begin(),
-                         adaptor.static_offsets().end());
-    staticOffsets.push_back(rewriter.getI64IntegerAttr(0));
+    // add 0 to static offsets
+    mlir::SmallVector<int64_t> staticOffsets;
+    staticOffsets.append(adaptor.getStaticOffsets().begin(),
+                         adaptor.getStaticOffsets().end());
+    staticOffsets.push_back(0);
 
     // add lweDimension+1 to static_sizes
-    mlir::SmallVector<mlir::Attribute> staticSizes;
-    staticSizes.append(adaptor.static_sizes().begin(),
-                       adaptor.static_sizes().end());
-    staticSizes.push_back(rewriter.getI64IntegerAttr(
-        newResultTy.getDimSize(newResultTy.getRank() - 1)));
+    mlir::SmallVector<int64_t> staticSizes;
+    staticSizes.append(adaptor.getStaticSizes().begin(),
+                       adaptor.getStaticSizes().end());
+    staticSizes.push_back(newResultTy.getDimSize(newResultTy.getRank() - 1));
 
     // add 1 to the strides
-    mlir::SmallVector<mlir::Attribute> staticStrides;
-    staticStrides.append(adaptor.static_strides().begin(),
-                         adaptor.static_strides().end());
-    staticStrides.push_back(rewriter.getI64IntegerAttr(1));
+    mlir::SmallVector<int64_t> staticStrides;
+    staticStrides.append(adaptor.getStaticStrides().begin(),
+                         adaptor.getStaticStrides().end());
+    staticStrides.push_back(1);
 
     // replace tensor.insert_slice with the new one
     rewriter.replaceOpWithNewOp<mlir::tensor::InsertSliceOp>(
-        insertSliceOp, newResultTy, adaptor.source(), adaptor.dest(),
-        adaptor.offsets(), adaptor.sizes(), adaptor.strides(),
-        rewriter.getArrayAttr(staticOffsets),
-        rewriter.getArrayAttr(staticSizes),
-        rewriter.getArrayAttr(staticStrides));
+        insertSliceOp, newResultTy, adaptor.getSource(), adaptor.getDest(),
+        adaptor.getOffsets(), adaptor.getSizes(), adaptor.getStrides(),
+        rewriter.getDenseI64ArrayAttr(staticOffsets),
+        rewriter.getDenseI64ArrayAttr(staticSizes),
+        rewriter.getDenseI64ArrayAttr(staticStrides));
 
     return ::mlir::success();
   };
@@ -399,18 +393,18 @@ struct InsertOpPattern
 
     mlir::RankedTensorType newResultTy =
         this->getTypeConverter()
-            ->convertType(insertOp.result().getType())
+            ->convertType(insertOp.getResult().getType())
             .cast<mlir::RankedTensorType>();
 
-    // add zeros to static_offsets
+    // add zeros to static offsets
     mlir::SmallVector<mlir::OpFoldResult> offsets;
-    offsets.append(adaptor.indices().begin(), adaptor.indices().end());
+    offsets.append(adaptor.getIndices().begin(), adaptor.getIndices().end());
     offsets.push_back(rewriter.getIndexAttr(0));
 
     // Inserting a smaller tensor into a (potentially) bigger one. Set
     // dimensions for all leading dimensions of the target tensor not
     // present in the source to 1.
-    mlir::SmallVector<mlir::OpFoldResult> sizes(adaptor.indices().size(),
+    mlir::SmallVector<mlir::OpFoldResult> sizes(adaptor.getIndices().size(),
                                                 rewriter.getI64IntegerAttr(1));
 
     // Add size for the bufferized source element
@@ -423,7 +417,8 @@ struct InsertOpPattern
 
     // replace tensor.insert_slice with the new one
     rewriter.replaceOpWithNewOp<mlir::tensor::InsertSliceOp>(
-        insertOp, adaptor.scalar(), adaptor.dest(), offsets, sizes, strides);
+        insertOp, adaptor.getScalar(), adaptor.getDest(), offsets, sizes,
+        strides);
 
     return ::mlir::success();
   };
@@ -453,7 +448,7 @@ struct FromElementsOpPattern
 
     auto converter = this->getTypeConverter();
 
-    auto resultTy = fromElementsOp.result().getType();
+    auto resultTy = fromElementsOp.getResult().getType();
     if (converter->isLegal(resultTy)) {
       return mlir::failure();
     }
@@ -483,7 +478,7 @@ struct FromElementsOpPattern
     llvm::SmallVector<int64_t> currentOffsets(newRank, 0);
 
     // for each elements insert_slice with right offet
-    for (auto elt : llvm::enumerate(adaptor.elements())) {
+    for (auto elt : llvm::enumerate(adaptor.getElements())) {
       // Just create offsets as attributes
       llvm::SmallVector<mlir::OpFoldResult, 4> offsets;
       offsets.reserve(currentOffsets.size());
@@ -560,7 +555,7 @@ struct TensorShapeOpPattern : public mlir::OpConversionPattern<ShapeOp> {
 
     auto reassocTy =
         ((mlir::Type)this->getTypeConverter()->convertType(
-             (inRank ? shapeOp.src() : shapeOp.result()).getType()))
+             (inRank ? shapeOp.getSrc() : shapeOp.getResult()).getType()))
             .cast<VecTy>();
 
     auto oldReassocs = shapeOp.getReassociationIndices();
@@ -574,7 +569,7 @@ struct TensorShapeOpPattern : public mlir::OpConversionPattern<ShapeOp> {
       newReassocs.push_back(lweAssoc);
     }
 
-    rewriter.replaceOpWithNewOp<ShapeOp>(shapeOp, newResultTy, adaptor.src(),
+    rewriter.replaceOpWithNewOp<ShapeOp>(shapeOp, newResultTy, adaptor.getSrc(),
                                          newReassocs);
 
     return ::mlir::success();
@@ -729,8 +724,9 @@ void TFHEToConcretePass::runOnOperation() {
   target.addLegalOp<mlir::arith::ExtUIOp>();
   target.addDynamicallyLegalOp<Tracing::TracePlaintextOp>(
       [&](Tracing::TracePlaintextOp op) {
-        return (op.plaintext().getType().cast<mlir::IntegerType>().getWidth() ==
-                64);
+        return (
+            op.getPlaintext().getType().cast<mlir::IntegerType>().getWidth() ==
+            64);
       });
 
   // Conversion of RT Dialect Ops

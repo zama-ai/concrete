@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
 #include "mlir/Dialect/Bufferization/Transforms/BufferUtils.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -46,14 +46,14 @@ struct TensorToMemrefOp : public BufferizableOpInterface::ExternalModel<
     return false;
   }
 
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+  AliasingOpResultList getAliasingOpResults(Operation *op, OpOperand &opOperand,
                                             const AnalysisState &state) const {
     return {};
   }
 
   BufferRelation bufferRelation(Operation *op, OpResult opResult,
                                 const AnalysisState &state) const {
-    return BufferRelation::None;
+    return BufferRelation::Unknown;
   }
 
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
@@ -63,7 +63,7 @@ struct TensorToMemrefOp : public BufferizableOpInterface::ExternalModel<
     auto castOp = cast<TensorOp>(op);
 
     auto resTensorType =
-        castOp.result().getType().template cast<mlir::TensorType>();
+        castOp.getResult().getType().template cast<mlir::TensorType>();
 
     auto outMemrefType = MemRefType::get(resTensorType.getShape(),
                                          resTensorType.getElementType());
@@ -81,7 +81,7 @@ struct TensorToMemrefOp : public BufferizableOpInterface::ExternalModel<
         operands.push_back(operand.get());
       } else {
         operands.push_back(
-            bufferization::getBuffer(rewriter, operand.get(), options));
+            *bufferization::getBuffer(rewriter, operand.get(), options));
       }
     }
 

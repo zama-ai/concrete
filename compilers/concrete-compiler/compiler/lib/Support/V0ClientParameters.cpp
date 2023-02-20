@@ -11,6 +11,7 @@
 
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <optional>
 
 #include "concrete/curves.h"
 #include "concretelang/ClientLib/ClientParameters.h"
@@ -51,13 +52,13 @@ gateFromMLIRType(V0FHEContext fheContext, LweSecretKeyID secretKeyID,
     bool sign = type.isSignedInteger();
 
     return CircuitGate{
-        /*.encryption = */ llvm::None,
+        /*.encryption = */ std::nullopt,
         /*.shape = */
         {/*.width = */ width,
          /*.dimensions = */ std::vector<int64_t>(),
          /*.size = */ 0,
          /* .sign */ sign},
-        /*.chunkInfo = */ llvm::None,
+        /*.chunkInfo = */ std::nullopt,
     };
   }
   if (auto lweTy = type.dyn_cast_or_null<
@@ -70,7 +71,7 @@ gateFromMLIRType(V0FHEContext fheContext, LweSecretKeyID secretKeyID,
     size_t width;
     uint64_t size = 0;
     std::vector<int64_t> dims;
-    if (chunkInfo.hasValue()) {
+    if (chunkInfo.has_value()) {
       width = chunkInfo->size;
       assert(lweTy.getWidth() % chunkInfo->width == 0);
       size = lweTy.getWidth() / chunkInfo->width;
@@ -79,7 +80,7 @@ gateFromMLIRType(V0FHEContext fheContext, LweSecretKeyID secretKeyID,
       width = (size_t)lweTy.getWidth();
     }
     return CircuitGate{
-        /* .encryption = */ llvm::Optional<EncryptionGate>({
+        /* .encryption = */ std::optional<EncryptionGate>({
             /* .secretKeyID = */ secretKeyID,
             /* .variance = */ variance,
             /* .encoding = */
@@ -103,7 +104,7 @@ gateFromMLIRType(V0FHEContext fheContext, LweSecretKeyID secretKeyID,
                    mlir::concretelang::FHE::EncryptedBooleanType>()) {
     size_t width = mlir::concretelang::FHE::EncryptedBooleanType::getWidth();
     return CircuitGate{
-        /* .encryption = */ llvm::Optional<EncryptionGate>({
+        /* .encryption = */ std::optional<EncryptionGate>({
             /* .secretKeyID = */ secretKeyID,
             /* .variance = */ variance,
             /* .encoding = */
@@ -120,7 +121,7 @@ gateFromMLIRType(V0FHEContext fheContext, LweSecretKeyID secretKeyID,
             /*.size = */ 0,
             /*.sign = */ false,
         },
-        /*.chunkInfo = */ llvm::None,
+        /*.chunkInfo = */ std::nullopt,
     };
   }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
@@ -189,7 +190,7 @@ createClientParametersForV0(V0FHEContext fheContext,
     bskParam.inputLweDimension = v0Param.nSmall;
     c.bootstrapKeys.push_back(bskParam);
   }
-  if (v0Param.largeInteger.hasValue()) {
+  if (v0Param.largeInteger.has_value()) {
     clientlib::PackingKeyswitchKeyParam param;
     param.inputSecretKeyID = clientlib::BIG_KEY;
     param.outputSecretKeyID = clientlib::BIG_KEY;

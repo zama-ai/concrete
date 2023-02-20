@@ -47,7 +47,7 @@ char stream_emulator_put_uint64[] = "stream_emulator_put_uint64";
 char stream_emulator_get_uint64[] = "stream_emulator_get_uint64";
 
 mlir::Type getDynamicTensor(mlir::OpBuilder &rewriter, size_t rank) {
-  std::vector<int64_t> shape(rank, -1);
+  std::vector<int64_t> shape(rank, mlir::ShapedType::kDynamic);
   return mlir::RankedTensorType::get(shape, rewriter.getI64Type());
 }
 
@@ -166,7 +166,7 @@ struct LowerSDFGMakeProcess
                   ::mlir::PatternRewriter &rewriter) const override {
     const char *funcName;
     mlir::SmallVector<mlir::Value> operands(mpOp->getOperands());
-    switch (mpOp.type()) {
+    switch (mpOp.getType()) {
     case SDFG::ProcessKind::add_eint:
       funcName = stream_emulator_make_memref_add_lwe_ciphertexts_u64_process;
       break;
@@ -249,7 +249,7 @@ struct LowerSDFGMakeStream
     const char *funcName;
 
     stream_type t;
-    switch (msOp.type()) {
+    switch (msOp.getType()) {
     case SDFG::StreamKind::host_to_device:
       t = TS_STREAM_TYPE_X86_TO_TOPO_LSAP;
       break;
@@ -370,7 +370,7 @@ void SDFGToStreamEmulatorPass::runOnOperation() {
                       SDFG::MakeProcess, SDFG::MakeStream, SDFG::Put>();
   // All Concrete ops are legal after the conversion
   target.addLegalDialect<mlir::concretelang::Concrete::ConcreteDialect>();
-  target.addLegalDialect<mlir::arith::ArithmeticDialect>();
+  target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addLegalOp<mlir::func::ReturnOp, mlir::func::FuncOp,
                     mlir::func::CallOp, SDFG::Get, mlir::tensor::CastOp>();
 

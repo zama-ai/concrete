@@ -58,8 +58,8 @@ mlir::LogicalResult _verifyGLWEIntegerOperator(mlir::OpState &op,
 /// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyGLWEIntegerOperator(Operator &op) {
-  auto a = ((mlir::Type)(op.a().getType())).cast<GLWECipherTextType>();
-  auto b = ((mlir::Type)(op.b().getType())).cast<IntegerType>();
+  auto a = ((mlir::Type)(op.getA().getType())).cast<GLWECipherTextType>();
+  auto b = ((mlir::Type)(op.getB().getType())).cast<IntegerType>();
   auto result =
       ((mlir::Type)(op.getResult().getType())).cast<GLWECipherTextType>();
 
@@ -71,8 +71,8 @@ mlir::LogicalResult verifyGLWEIntegerOperator(Operator &op) {
 /// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyIntegerGLWEOperator(Operator &op) {
-  auto a = ((mlir::Type)(op.a().getType())).cast<IntegerType>();
-  auto b = ((mlir::Type)(op.b().getType())).cast<GLWECipherTextType>();
+  auto a = ((mlir::Type)(op.getA().getType())).cast<IntegerType>();
+  auto b = ((mlir::Type)(op.getB().getType())).cast<GLWECipherTextType>();
   auto result =
       ((mlir::Type)(op.getResult().getType())).cast<GLWECipherTextType>();
 
@@ -85,8 +85,8 @@ mlir::LogicalResult verifyIntegerGLWEOperator(Operator &op) {
 /// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
-  auto a = ((mlir::Type)(op.a().getType())).cast<GLWECipherTextType>();
-  auto b = ((mlir::Type)(op.b().getType())).cast<GLWECipherTextType>();
+  auto a = ((mlir::Type)(op.getA().getType())).cast<GLWECipherTextType>();
+  auto b = ((mlir::Type)(op.getB().getType())).cast<GLWECipherTextType>();
   auto result =
       ((mlir::Type)(op.getResult().getType())).cast<GLWECipherTextType>();
 
@@ -114,7 +114,7 @@ mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
 /// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyUnaryGLWEOperator(Operator &op) {
-  auto a = ((mlir::Type)(op.a().getType())).cast<GLWECipherTextType>();
+  auto a = ((mlir::Type)(op.getA().getType())).cast<GLWECipherTextType>();
   auto result =
       ((mlir::Type)(op.getResult().getType())).cast<GLWECipherTextType>();
 

@@ -184,11 +184,11 @@ static inline bool operator==(const ChunkInfo &lhs, const ChunkInfo &rhs) {
 }
 
 struct CircuitGate {
-  llvm::Optional<EncryptionGate> encryption;
+  std::optional<EncryptionGate> encryption;
   CircuitGateShape shape;
-  llvm::Optional<ChunkInfo> chunkInfo;
+  std::optional<ChunkInfo> chunkInfo;
 
-  bool isEncrypted() { return encryption.hasValue(); }
+  bool isEncrypted() { return encryption.has_value(); }
 
   /// byteSize returns the size in bytes for this gate.
   size_t byteSize(std::vector<LweSecretKeyParam> secretKeys) {
@@ -240,7 +240,7 @@ struct ClientParameters {
 
   outcome::checked<LweSecretKeyParam, StringError>
   lweSecretKeyParam(CircuitGate gate) {
-    if (!gate.encryption.hasValue()) {
+    if (!gate.encryption.has_value()) {
       return StringError("gate is not encrypted");
     }
     assert(gate.encryption->secretKeyID < secretKeys.size());
@@ -250,7 +250,7 @@ struct ClientParameters {
 
   /// bufferSize returns the size of the whole buffer of a gate.
   int64_t bufferSize(CircuitGate gate) {
-    if (!gate.encryption.hasValue()) {
+    if (!gate.encryption.has_value()) {
       // Value is not encrypted just returns the tensor size
       return gate.shape.size;
     }
@@ -261,7 +261,7 @@ struct ClientParameters {
 
   /// lweBufferSize returns the size of one ciphertext of a gate.
   int64_t lweBufferSize(CircuitGate gate) {
-    assert(gate.encryption.hasValue());
+    assert(gate.encryption.has_value());
     auto nbBlocks = gate.encryption->encoding.crt.size();
     nbBlocks = nbBlocks == 0 ? 1 : nbBlocks;
 
@@ -273,7 +273,7 @@ struct ClientParameters {
   /// bufferShape returns the shape of the tensor for the given gate. It returns
   /// the shape used at low-level, i.e. contains the dimensions for ciphertexts.
   std::vector<int64_t> bufferShape(CircuitGate gate) {
-    if (!gate.encryption.hasValue()) {
+    if (!gate.encryption.has_value()) {
       // Value is not encrypted just returns the tensor shape
       return gate.shape.dimensions;
     }

@@ -37,9 +37,9 @@ EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
   OUTCOME_TRY(CircuitGate input, keySet.clientParameters().input(currentPos));
   // a chunked input is represented as a tensor in lower levels, and need to to
   // splitted into chunks and encrypted as such
-  if (input.chunkInfo.hasValue()) {
+  if (input.chunkInfo.has_value()) {
     std::vector<uint64_t> chunks =
-        chunkInput(arg, input.shape.size, input.chunkInfo.getPointer()->width);
+        chunkInput(arg, input.shape.size, input.chunkInfo.value().width);
     return this->pushArg(chunks.data(), input.shape.size, keySet);
   }
   // we only increment if we don't forward the call to another pushArg method
@@ -47,7 +47,7 @@ EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
   if (input.shape.size != 0) {
     return StringError("argument #") << pos << " is not a scalar";
   }
-  if (!input.encryption.hasValue()) {
+  if (!input.encryption.has_value()) {
     // clear scalar: just push the argument
     preparedArgs.push_back((void *)arg);
     return outcome::success();

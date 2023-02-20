@@ -113,7 +113,7 @@ struct PublicResult {
     // Chunked integers are represented as tensors at a lower level, so we need
     // to deal with them as tensors, then build the resulting scalar out of the
     // tensor values
-    if (gate.chunkInfo.hasValue()) {
+    if (gate.chunkInfo.has_value()) {
       OUTCOME_TRY(std::vector<uint64_t> decryptedChunks,
                   this->asClearTextVector<uint64_t>(keySet, pos));
       uint64_t decrypted = fromChunks(decryptedChunks, gate.chunkInfo->width);

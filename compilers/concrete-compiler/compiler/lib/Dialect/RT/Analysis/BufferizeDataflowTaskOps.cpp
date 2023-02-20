@@ -22,8 +22,8 @@
 #include <mlir/Dialect/Bufferization/Transforms/Passes.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
+#include <mlir/IR/IRMapping.h>
 #include <mlir/Transforms/RegionUtils.h>
 
 #define GEN_PASS_CLASSES

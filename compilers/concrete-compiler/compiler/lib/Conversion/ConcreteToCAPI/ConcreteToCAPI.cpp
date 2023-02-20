@@ -52,7 +52,7 @@ char memref_trace[] = "memref_trace";
 
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
-  std::vector<int64_t> shape(rank, -1);
+  std::vector<int64_t> shape(rank, mlir::ShapedType::kDynamic);
   mlir::AffineExpr expr = rewriter.getAffineSymbolExpr(0);
   for (size_t i = 0; i < rank; i++) {
     expr = expr +
@@ -263,16 +263,16 @@ void keyswitchAddOperands(KeySwitchOp op,
                           mlir::RewriterBase &rewriter) {
   // level
   operands.push_back(
-      rewriter.create<arith::ConstantOp>(op.getLoc(), op.levelAttr()));
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getLevelAttr()));
   // base_log
   operands.push_back(
-      rewriter.create<arith::ConstantOp>(op.getLoc(), op.baseLogAttr()));
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getBaseLogAttr()));
   // lwe_dim_in
   operands.push_back(
-      rewriter.create<arith::ConstantOp>(op.getLoc(), op.lwe_dim_inAttr()));
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getLweDimInAttr()));
   // lwe_dim_out
   operands.push_back(
-      rewriter.create<arith::ConstantOp>(op.getLoc(), op.lwe_dim_outAttr()));
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getLweDimOutAttr()));
   // context
   operands.push_back(getContextArgument(op));
 }
@@ -283,22 +283,22 @@ void bootstrapAddOperands(BootstrapOp op,
                           mlir::RewriterBase &rewriter) {
   // input_lwe_dim
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.inputLweDimAttr()));
+      op.getLoc(), op.getInputLweDimAttr()));
   // poly_size
-  operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.getPolySizeAttr()));
   // level
   operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.levelAttr()));
+      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.getLevelAttr()));
   // base_log
-  operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.baseLogAttr()));
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.getBaseLogAttr()));
   // glwe_dim
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.glweDimensionAttr()));
+      op.getLoc(), op.getGlweDimensionAttr()));
   // out_precision
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.outPrecisionAttr()));
+      op.getLoc(), op.getOutPrecisionAttr()));
   // context
   operands.push_back(getContextArgument(op));
 }
@@ -307,9 +307,9 @@ void wopPBSAddOperands(Concrete::WopPBSCRTLweBufferOp op,
                        mlir::SmallVector<mlir::Value> &operands,
                        mlir::RewriterBase &rewriter) {
   mlir::Type crtType = mlir::RankedTensorType::get(
-      {(int)op.crtDecompositionAttr().size()}, rewriter.getI64Type());
+      {(int)op.getCrtDecompositionAttr().size()}, rewriter.getI64Type());
   std::vector<int64_t> values;
-  for (auto a : op.crtDecomposition()) {
+  for (auto a : op.getCrtDecomposition()) {
     values.push_back(a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
   }
   auto attr = rewriter.getI64TensorAttr(values);
@@ -319,43 +319,43 @@ void wopPBSAddOperands(Concrete::WopPBSCRTLweBufferOp op,
   assert(!failed(globalMemref));
 
   auto globalRef = rewriter.create<memref::GetGlobalOp>(
-      op.getLoc(), (*globalMemref).type(), (*globalMemref).getName());
+      op.getLoc(), (*globalMemref).getType(), (*globalMemref).getName());
   operands.push_back(getCastedMemRef(rewriter, globalRef));
 
   //   lwe_small_size
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.packingKeySwitchInputLweDimensionAttr()));
+      op.getLoc(), op.getPackingKeySwitchInputLweDimensionAttr()));
   // cbs_level_count
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.circuitBootstrapLevelAttr()));
+      op.getLoc(), op.getCircuitBootstrapLevelAttr()));
   // cbs_base_log
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.circuitBootstrapBaseLogAttr()));
+      op.getLoc(), op.getCircuitBootstrapBaseLogAttr()));
 
   // ksk_level_count
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.keyswitchLevelAttr()));
+      op.getLoc(), op.getKeyswitchLevelAttr()));
   // ksk_base_log
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.keyswitchBaseLogAttr()));
+      op.getLoc(), op.getKeyswitchBaseLogAttr()));
 
   // bsk_level_count
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.bootstrapLevelAttr()));
+      op.getLoc(), op.getBootstrapLevelAttr()));
   // bsk_base_log
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.bootstrapBaseLogAttr()));
+      op.getLoc(), op.getBootstrapBaseLogAttr()));
 
   // fpksk_level_count
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.packingKeySwitchLevelAttr()));
+      op.getLoc(), op.getPackingKeySwitchLevelAttr()));
   // fpksk_base_log
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.packingKeySwitchBaseLogAttr()));
+      op.getLoc(), op.getPackingKeySwitchBaseLogAttr()));
 
   // polynomial_size
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.packingKeySwitchoutputPolynomialSizeAttr()));
+      op.getLoc(), op.getPackingKeySwitchoutputPolynomialSizeAttr()));
 
   // context
   operands.push_back(getContextArgument(op));
@@ -365,10 +365,10 @@ void encodePlaintextWithCrtAddOperands(
     Concrete::EncodePlaintextWithCrtBufferOp op,
     mlir::SmallVector<mlir::Value> &operands, mlir::RewriterBase &rewriter) {
   // mods
-  mlir::Type modsType = mlir::RankedTensorType::get({(int)op.modsAttr().size()},
-                                                    rewriter.getI64Type());
+  mlir::Type modsType = mlir::RankedTensorType::get(
+      {(int)op.getModsAttr().size()}, rewriter.getI64Type());
   std::vector<int64_t> modsValues;
-  for (auto a : op.mods()) {
+  for (auto a : op.getMods()) {
     modsValues.push_back(a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
   }
   auto modsAttr = rewriter.getI64TensorAttr(modsValues);
@@ -378,26 +378,27 @@ void encodePlaintextWithCrtAddOperands(
   rewriter.eraseOp(modsOp);
   assert(!failed(modsGlobalMemref));
   auto modsGlobalRef = rewriter.create<memref::GetGlobalOp>(
-      op.getLoc(), (*modsGlobalMemref).type(), (*modsGlobalMemref).getName());
+      op.getLoc(), (*modsGlobalMemref).getType(),
+      (*modsGlobalMemref).getName());
   operands.push_back(getCastedMemRef(rewriter, modsGlobalRef));
 
   // mods_prod
-  operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.modsProdAttr()));
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.getModsProdAttr()));
 }
 
 void encodeExpandLutForBootstrapAddOperands(
     Concrete::EncodeExpandLutForBootstrapBufferOp op,
     mlir::SmallVector<mlir::Value> &operands, mlir::RewriterBase &rewriter) {
   // poly_size
-  operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.polySizeAttr()));
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.getPolySizeAttr()));
   // output bits
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.outputBitsAttr()));
+      op.getLoc(), op.getOutputBitsAttr()));
   // is_signed
-  operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.isSignedAttr()));
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.getIsSignedAttr()));
 }
 
 void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
@@ -406,9 +407,9 @@ void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
 
   // crt_decomposition
   mlir::Type crtDecompositionType = mlir::RankedTensorType::get(
-      {(int)op.crtDecompositionAttr().size()}, rewriter.getI64Type());
+      {(int)op.getCrtDecompositionAttr().size()}, rewriter.getI64Type());
   std::vector<int64_t> crtDecompositionValues;
-  for (auto a : op.crtDecomposition()) {
+  for (auto a : op.getCrtDecomposition()) {
     crtDecompositionValues.push_back(
         a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
   }
@@ -420,15 +421,15 @@ void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
   rewriter.eraseOp(crtDecompositionOp);
   assert(!failed(crtDecompositionGlobalMemref));
   auto crtDecompositionGlobalRef = rewriter.create<memref::GetGlobalOp>(
-      op.getLoc(), (*crtDecompositionGlobalMemref).type(),
+      op.getLoc(), (*crtDecompositionGlobalMemref).getType(),
       (*crtDecompositionGlobalMemref).getName());
   operands.push_back(getCastedMemRef(rewriter, crtDecompositionGlobalRef));
 
   // crt_bits
   mlir::Type crtBitsType = mlir::RankedTensorType::get(
-      {(int)op.crtBitsAttr().size()}, rewriter.getI64Type());
+      {(int)op.getCrtBitsAttr().size()}, rewriter.getI64Type());
   std::vector<int64_t> crtBitsValues;
-  for (auto a : op.crtBits()) {
+  for (auto a : op.getCrtBits()) {
     crtBitsValues.push_back(
         a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
   }
@@ -439,15 +440,15 @@ void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
   rewriter.eraseOp(crtBitsOp);
   assert(!failed(crtBitsGlobalMemref));
   auto crtBitsGlobalRef = rewriter.create<memref::GetGlobalOp>(
-      op.getLoc(), (*crtBitsGlobalMemref).type(),
+      op.getLoc(), (*crtBitsGlobalMemref).getType(),
       (*crtBitsGlobalMemref).getName());
   operands.push_back(getCastedMemRef(rewriter, crtBitsGlobalRef));
   // modulus_product
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.modulusProductAttr()));
+      op.getLoc(), op.getModulusProductAttr()));
   // is_signed
-  operands.push_back(
-      rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op.isSignedAttr()));
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op.getIsSignedAttr()));
 }
 
 struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
@@ -463,7 +464,7 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
     // Mark ops from the target dialect as legal operations
     target.addLegalDialect<func::FuncDialect>();
     target.addLegalDialect<memref::MemRefDialect>();
-    target.addLegalDialect<arith::ArithmeticDialect>();
+    target.addLegalDialect<arith::ArithDialect>();
     target.addLegalDialect<mlir::LLVM::LLVMDialect>();
 
     // Make sure that no ops from `FHE` remain after the lowering

@@ -52,7 +52,7 @@ struct V0Parameter {
   size_t ksLevel;
   size_t ksLogBase;
 
-  llvm::Optional<LargeIntegerParameter> largeInteger;
+  std::optional<LargeIntegerParameter> largeInteger;
 
   // TODO remove the shift when we have true polynomial size
   size_t getPolynomialSize() { return 1 << logPolynomialSize; }

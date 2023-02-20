@@ -5,7 +5,7 @@
 
 #include <unordered_set>
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/TypeUtilities.h"
@@ -13,6 +13,7 @@
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgTypes.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace mlir {
 namespace OpTrait {
@@ -272,10 +273,10 @@ namespace concretelang {
 namespace FHELinalg {
 
 mlir::LogicalResult ApplyLookupTableEintOp::verify() {
-  auto tTy = this->t().getType().cast<mlir::RankedTensorType>();
+  auto tTy = this->getT().getType().cast<mlir::RankedTensorType>();
   auto tEltTy = tTy.getElementType()
                     .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  auto lutTy = this->lut().getType().cast<mlir::RankedTensorType>();
+  auto lutTy = this->getLut().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = this->getResult().getType().cast<mlir::RankedTensorType>();
 
@@ -297,10 +298,10 @@ mlir::LogicalResult ApplyLookupTableEintOp::verify() {
 }
 
 mlir::LogicalResult ApplyMultiLookupTableEintOp::verify() {
-  auto tTy = this->t().getType().cast<mlir::RankedTensorType>();
+  auto tTy = this->getT().getType().cast<mlir::RankedTensorType>();
   auto tEltTy = tTy.getElementType()
                     .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  auto lutTy = this->luts().getType().cast<mlir::RankedTensorType>();
+  auto lutTy = this->getLuts().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = this->getResult().getType().cast<mlir::RankedTensorType>();
 
@@ -378,9 +379,9 @@ mlir::LogicalResult verifyLutsSize(ApplyMappedLookupTableEintOp &op,
 }
 
 mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
-  auto t = this->t();
-  auto luts = this->luts();
-  auto map = this->map();
+  auto t = this->getT();
+  auto luts = this->getLuts();
+  auto map = this->getMap();
   auto result = this->getResult();
 
   auto t_shape = getTensorType(t).getShape();
@@ -401,16 +402,16 @@ mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
 }
 
 ::mlir::LogicalResult Dot::verify() {
-  if (::mlir::failed(mlir::verifyCompatibleShape(this->lhs().getType(),
-                                                 this->rhs().getType()))) {
+  if (::mlir::failed(mlir::verifyCompatibleShape(this->getLhs().getType(),
+                                                 this->getRhs().getType()))) {
     return this->emitOpError("arguments have incompatible shapes");
   }
-  auto lhsEltType = this->lhs()
+  auto lhsEltType = this->getLhs()
                         .getType()
                         .cast<mlir::TensorType>()
                         .getElementType()
                         .dyn_cast<FHE::FheIntegerInterface>();
-  auto rhsEltType = this->rhs()
+  auto rhsEltType = this->getRhs()
                         .getType()
                         .cast<mlir::TensorType>()
                         .getElementType()
@@ -480,8 +481,8 @@ mlir::LogicalResult SumOp::verify() {
   llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
   int64_t inputDimensions = (int64_t)inputShape.size();
 
-  mlir::ArrayAttr axes = this->axes();
-  bool keepDims = this->keep_dims();
+  mlir::ArrayAttr axes = this->getAxes();
+  bool keepDims = this->getKeepDims();
 
   auto axesToDestroy = std::unordered_set<int64_t>{};
   for (mlir::Attribute axisAttribute : axes) {
@@ -543,8 +544,8 @@ mlir::LogicalResult ConcatOp::verify() {
     return mlir::failure();
   }
 
-  int64_t axis = this->axis();
-  mlir::Value out = this->out();
+  int64_t axis = this->getAxis();
+  mlir::Value out = this->getOut();
 
   auto outVectorType = out.getType().dyn_cast<mlir::TensorType>();
   auto outElementType =
@@ -561,7 +562,7 @@ mlir::LogicalResult ConcatOp::verify() {
   int64_t expectedOutputElementsInAxis = 0;
 
   size_t index = 0;
-  for (mlir::Value in : this->ins()) {
+  for (mlir::Value in : this->getIns()) {
     auto inVectorType = in.getType().dyn_cast<mlir::TensorType>();
     auto inElementType =
         inVectorType.getElementType().dyn_cast<FHE::FheIntegerInterface>();
@@ -626,9 +627,9 @@ mlir::LogicalResult ConcatOp::verify() {
 /// something else
 template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
   auto lhsType =
-      ((mlir::Type)op.lhs().getType()).cast<mlir::RankedTensorType>();
+      ((mlir::Type)op.getLhs().getType()).cast<mlir::RankedTensorType>();
   auto rhsType =
-      ((mlir::Type)op.rhs().getType()).cast<mlir::RankedTensorType>();
+      ((mlir::Type)op.getRhs().getType()).cast<mlir::RankedTensorType>();
 
   llvm::ArrayRef<int64_t> lhsShape = lhsType.getShape();
   llvm::ArrayRef<int64_t> rhsShape = rhsType.getShape();
@@ -786,9 +787,10 @@ mlir::LogicalResult MatMulIntEintOp::verify() {
 mlir::SmallVector<int64_t, 4>
 getPaddingFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
   mlir::SmallVector<int64_t, 4> paddingInts;
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalPadding = convOp.padding();
-  if (optionalPadding.hasValue()) {
-    auto paddingAttr = optionalPadding.getValue();
+  std::optional<mlir::DenseIntElementsAttr> optionalPadding =
+      convOp.getPadding();
+  if (optionalPadding.has_value()) {
+    auto paddingAttr = optionalPadding.value();
     auto paddingAttrShape =
         paddingAttr.getType().cast<RankedTensorType>().getShape();
     assert(paddingAttrShape.size() == 1 && paddingAttrShape[0] == 4 &&
@@ -804,9 +806,10 @@ getPaddingFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
 mlir::SmallVector<int64_t, 2>
 getStridesFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
   mlir::SmallVector<int64_t, 2> stridesInts;
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalStrides = convOp.strides();
-  if (optionalStrides.hasValue()) {
-    auto stridesAttr = optionalStrides.getValue();
+  std::optional<mlir::DenseIntElementsAttr> optionalStrides =
+      convOp.getStrides();
+  if (optionalStrides.has_value()) {
+    auto stridesAttr = optionalStrides.value();
     auto stridesAttrShape =
         stridesAttr.getType().cast<RankedTensorType>().getShape();
     assert(stridesAttrShape.size() == 1 && stridesAttrShape[0] == 2 &&
@@ -822,10 +825,10 @@ getStridesFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
 mlir::SmallVector<int64_t, 2>
 getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
   mlir::SmallVector<int64_t, 2> dilationsInts;
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalDilations =
-      convOp.dilations();
-  if (optionalDilations.hasValue()) {
-    auto dilationsAttr = optionalDilations.getValue();
+  std::optional<mlir::DenseIntElementsAttr> optionalDilations =
+      convOp.getDilations();
+  if (optionalDilations.has_value()) {
+    auto dilationsAttr = optionalDilations.value();
     auto dilationsAttrShape =
         dilationsAttr.getType().cast<RankedTensorType>().getShape();
     assert(dilationsAttrShape.size() == 1 && dilationsAttrShape[0] == 2 &&
@@ -840,18 +843,18 @@ getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
 }
 
 int64_t getGroupFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
-  llvm::Optional<uint64_t> optionalGroup = convOp.group();
-  if (optionalGroup.hasValue())
-    return optionalGroup.getValue();
+  std::optional<uint64_t> optionalGroup = convOp.getGroup();
+  if (optionalGroup.has_value())
+    return optionalGroup.value();
   return 1;
 }
 
 /// Verify the Conv2d shapes, attributes, and expected output dimensions
 mlir::LogicalResult Conv2dOp::verify() {
   auto inputTy =
-      ((mlir::Type)this->input().getType()).cast<mlir::RankedTensorType>();
+      ((mlir::Type)this->getInput().getType()).cast<mlir::RankedTensorType>();
   auto weightTy =
-      ((mlir::Type)this->weight().getType()).cast<mlir::RankedTensorType>();
+      ((mlir::Type)this->getWeight().getType()).cast<mlir::RankedTensorType>();
   auto resultTy =
       ((mlir::Type)this->getResult().getType()).cast<mlir::RankedTensorType>();
   auto inputShape = inputTy.getShape();
@@ -890,9 +893,10 @@ mlir::LogicalResult Conv2dOp::verify() {
 
   // Checking attributes
   mlir::SmallVector<int64_t, 4> paddingInts = getPaddingFromConv2d(*this);
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalPadding = this->padding();
-  if (optionalPadding.hasValue()) {
-    auto paddingAttr = optionalPadding.getValue();
+  std::optional<mlir::DenseIntElementsAttr> optionalPadding =
+      this->getPadding();
+  if (optionalPadding.has_value()) {
+    auto paddingAttr = optionalPadding.value();
     auto paddingAttrShape =
         paddingAttr.getType().cast<RankedTensorType>().getShape();
     if (paddingAttrShape.size() != 1 || paddingAttrShape[0] != 4) {
@@ -918,9 +922,10 @@ mlir::LogicalResult Conv2dOp::verify() {
     }
   }
   mlir::SmallVector<int64_t, 2> stridesInts = getStridesFromConv2d(*this);
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalStrides = this->strides();
-  if (optionalStrides.hasValue()) {
-    auto stridesAttr = optionalStrides.getValue();
+  std::optional<mlir::DenseIntElementsAttr> optionalStrides =
+      this->getStrides();
+  if (optionalStrides.has_value()) {
+    auto stridesAttr = optionalStrides.value();
     auto stridesAttrShape =
         stridesAttr.getType().cast<RankedTensorType>().getShape();
     if (stridesAttrShape.size() != 1 || stridesAttrShape[0] != 2) {
@@ -939,10 +944,10 @@ mlir::LogicalResult Conv2dOp::verify() {
     }
   }
   mlir::SmallVector<int64_t, 2> dilationsInts = getDilationsFromConv2d(*this);
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalDilations =
-      this->dilations();
-  if (optionalDilations.hasValue()) {
-    auto dilationsAttr = optionalDilations.getValue();
+  std::optional<mlir::DenseIntElementsAttr> optionalDilations =
+      this->getDilations();
+  if (optionalDilations.has_value()) {
+    auto dilationsAttr = optionalDilations.value();
     auto dilationsAttrShape =
         dilationsAttr.getType().cast<RankedTensorType>().getShape();
     if (dilationsAttrShape.size() != 1 || dilationsAttrShape[0] != 2) {
@@ -975,7 +980,7 @@ mlir::LogicalResult Conv2dOp::verify() {
           resultH = resultShape[2], resultW = resultShape[3];
 
   // Bias check if specified
-  mlir::Value bias = this->bias();
+  mlir::Value bias = this->getBias();
   if (bias) {
     auto biasTy = ((mlir::Type)bias.getType()).cast<mlir::RankedTensorType>();
     auto biasShape = biasTy.getShape();
@@ -1050,7 +1055,7 @@ mlir::LogicalResult Conv2dOp::verify() {
 
 mlir::LogicalResult Maxpool2dOp::verify() {
   const mlir::RankedTensorType inputTy =
-      this->input().getType().cast<mlir::RankedTensorType>();
+      this->getInput().getType().cast<mlir::RankedTensorType>();
   const mlir::RankedTensorType outputTy =
       this->getResult().getType().cast<mlir::RankedTensorType>();
 
@@ -1085,7 +1090,7 @@ mlir::LogicalResult Maxpool2dOp::verify() {
   const int64_t inputH = inputShape[2];
   const int64_t inputW = inputShape[3];
 
-  const mlir::DenseIntElementsAttr kernelShapeAttr = this->kernel_shape();
+  const mlir::DenseIntElementsAttr kernelShapeAttr = this->getKernelShape();
   const mlir::RankedTensorType kernelShapeAttrTy =
       kernelShapeAttr.getType().cast<mlir::RankedTensorType>();
   const llvm::ArrayRef<int64_t> kernelShapeAttrShape =
@@ -1108,9 +1113,9 @@ mlir::LogicalResult Maxpool2dOp::verify() {
 
   mlir::SmallVector<int64_t, 2> strides;
   const llvm::Optional<mlir::DenseIntElementsAttr> maybeStridesAttr =
-      this->strides();
-  if (maybeStridesAttr.hasValue()) {
-    const mlir::DenseIntElementsAttr stridesAttr = maybeStridesAttr.getValue();
+      this->getStrides();
+  if (maybeStridesAttr.has_value()) {
+    const mlir::DenseIntElementsAttr stridesAttr = maybeStridesAttr.value();
     const mlir::RankedTensorType stridesAttrTy =
         stridesAttr.getType().cast<mlir::RankedTensorType>();
     const llvm::ArrayRef<int64_t> stridesAttrShape = stridesAttrTy.getShape();
@@ -1141,10 +1146,9 @@ mlir::LogicalResult Maxpool2dOp::verify() {
 
   mlir::SmallVector<int64_t, 2> dilations;
   const llvm::Optional<mlir::DenseIntElementsAttr> maybeDilationsAttr =
-      this->dilations();
-  if (maybeDilationsAttr.hasValue()) {
-    const mlir::DenseIntElementsAttr dilationsAttr =
-        maybeDilationsAttr.getValue();
+      this->getDilations();
+  if (maybeDilationsAttr.has_value()) {
+    const mlir::DenseIntElementsAttr dilationsAttr = maybeDilationsAttr.value();
     const mlir::RankedTensorType dilationsAttrTy =
         dilationsAttr.getType().cast<mlir::RankedTensorType>();
     const llvm::ArrayRef<int64_t> dilationsAttrShape =
@@ -1185,7 +1189,7 @@ mlir::LogicalResult Maxpool2dOp::verify() {
       expectedOutputW,
   };
 
-  if (outputShape != llvm::makeArrayRef(expectedOutputShape)) {
+  if (outputShape != llvm::ArrayRef(expectedOutputShape)) {
     this->emitOpError() << "expected output to be of shape "
                         << "(" << expectedOutputShape << ") "
                         << "but it is of shape "
@@ -1203,7 +1207,9 @@ mlir::LogicalResult FromElementOp::verify() {
   auto inType = in.getType();
   auto outType = out.getType().dyn_cast<mlir::TensorType>();
 
-  auto expectedOutType = outType.cloneWith({1}, inType);
+  llvm::SmallVector<int64_t> shape{1};
+  auto expectedOutType = outType.cloneWith(std::optional{shape}, inType);
+
   if (outType != expectedOutType) {
     this->emitOpError() << "has invalid output type (expected "
                         << expectedOutType << ", got " << outType << ")";
@@ -1215,7 +1221,7 @@ mlir::LogicalResult FromElementOp::verify() {
 
 /// Verify the transpose shapes
 mlir::LogicalResult TransposeOp::verify() {
-  mlir::Type tensorTy = ((mlir::Type)this->tensor().getType());
+  mlir::Type tensorTy = ((mlir::Type)this->getTensor().getType());
   if (!tensorTy.isa<RankedTensorType>()) {
     this->emitOpError() << "should have operand as tensor";
     return mlir::failure();
@@ -1243,7 +1249,7 @@ mlir::LogicalResult TransposeOp::verify() {
 
   int64_t inputDimensions = (int64_t)inShape.size();
 
-  mlir::ArrayAttr axes = this->axes();
+  mlir::ArrayAttr axes = this->getAxes();
   if (axes.empty()) {
     for (int64_t i = 0; i < inputDimensions; i++) {
       if (inShape[i] != outShape[inputDimensions - (i + 1)]) {
@@ -1294,7 +1300,7 @@ mlir::LogicalResult TransposeOp::verify() {
 }
 
 mlir::LogicalResult ToSignedOp::verify() {
-  auto inputType = this->input().getType().cast<mlir::ShapedType>();
+  auto inputType = this->getInput().getType().cast<mlir::ShapedType>();
   auto outputType = this->getResult().getType().cast<mlir::ShapedType>();
 
   llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
@@ -1322,7 +1328,7 @@ mlir::LogicalResult ToSignedOp::verify() {
 
 mlir::LogicalResult ToUnsignedOp::verify() {
   mlir::ShapedType inputType =
-      this->input().getType().dyn_cast_or_null<mlir::ShapedType>();
+      this->getInput().getType().dyn_cast_or_null<mlir::ShapedType>();
   mlir::ShapedType outputType =
       this->getResult().getType().dyn_cast_or_null<mlir::ShapedType>();
 

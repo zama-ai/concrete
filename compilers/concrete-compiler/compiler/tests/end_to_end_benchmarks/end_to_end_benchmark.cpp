@@ -37,7 +37,7 @@ static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
   check(clientParameters);
 
   for (auto _ : state) {
-    check(support.keySet(*clientParameters, llvm::None));
+    check(support.keySet(*clientParameters, std::nullopt));
   }
 }
 

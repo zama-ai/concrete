@@ -17,12 +17,12 @@
 template <typename LambdaSupport> class EndToEndTest : public ::testing::Test {
 public:
   explicit EndToEndTest(std::string program, TestDescription desc,
-                        llvm::Optional<TestErrorRate> errorRate,
+                        std::optional<TestErrorRate> errorRate,
                         LambdaSupport support,
                         mlir::concretelang::CompilationOptions options)
       : program(program), desc(desc), errorRate(errorRate), support(support),
         options(options) {
-    if (errorRate.hasValue()) {
+    if (errorRate.has_value()) {
       options.optimizerConfig.global_p_error = errorRate->global_p_error;
       options.optimizerConfig.p_error = errorRate->global_p_error;
     }
@@ -64,7 +64,7 @@ public:
   }
 
   void TestBody() override {
-    if (!errorRate.hasValue()) {
+    if (!errorRate.has_value()) {
       testOnce();
     } else {
       testErrorRate();
@@ -131,7 +131,7 @@ public:
 private:
   std::string program;
   TestDescription desc;
-  llvm::Optional<TestErrorRate> errorRate;
+  std::optional<TestErrorRate> errorRate;
   LambdaSupport support;
   mlir::concretelang::CompilationOptions options;
 
@@ -153,7 +153,7 @@ std::string getTestName(EndToEndDesc desc,
 void registerEndToEnd(std::string suiteName, std::string testName,
                       std::string valueName, std::string libpath,
                       std::string program, TestDescription test,
-                      llvm::Optional<TestErrorRate> errorRate,
+                      std::optional<TestErrorRate> errorRate,
                       mlir::concretelang::CompilationOptions options) {
   // TODO: Get file and line from yaml
   auto file = __FILE__;
@@ -180,11 +180,11 @@ void registerEndToEnd(std::string suiteName, std::string testName,
 void registerEndToEnd(std::string suiteName, std::string libpath,
                       EndToEndDesc desc,
                       mlir::concretelang::CompilationOptions options) {
-  if (desc.v0Constraint.hasValue()) {
+  if (desc.v0Constraint.has_value()) {
     options.v0FHEConstraints = desc.v0Constraint;
   }
   options.optimizerConfig.encoding = desc.encoding;
-  if (desc.p_error.hasValue()) {
+  if (desc.p_error.has_value()) {
     options.optimizerConfig.p_error = *desc.p_error;
     options.optimizerConfig.global_p_error = NAN;
   }
@@ -195,7 +195,7 @@ void registerEndToEnd(std::string suiteName, std::string libpath,
     if (desc.test_error_rates.empty()) {
       registerEndToEnd(suiteName, testName, valueName,
                        libpath.empty() ? libpath : libpath + desc.description,
-                       desc.program, test, llvm::None, options);
+                       desc.program, test, std::nullopt, options);
     } else {
       auto j = 0;
       for (auto rate : desc.test_error_rates) {

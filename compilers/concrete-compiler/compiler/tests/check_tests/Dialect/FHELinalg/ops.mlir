@@ -469,7 +469,7 @@ func.func @conv2d_without_bias(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight
 
 // CHECK-LABEL:  @transpose_eint_2D(%arg0: tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>>
 func.func @transpose_eint_2D(%arg0: tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>> {
-  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) : (tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>>
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = []} : (tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>>
   // CHECK-NEXT:   return %[[v0]] : tensor<10x2x!FHE.eint<6>>
   // CHECK-NEXT: }
   %c = "FHELinalg.transpose"(%arg0) : (tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>>
@@ -478,7 +478,7 @@ func.func @transpose_eint_2D(%arg0: tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!F
 
 // CHECK-LABEL:  @transpose_int_2D(%arg0: tensor<2x10xi6>) -> tensor<10x2xi6>
 func.func @transpose_int_2D(%arg0: tensor<2x10xi6>) -> tensor<10x2xi6> {
-  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) : (tensor<2x10xi6>) -> tensor<10x2xi6>
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = []} : (tensor<2x10xi6>) -> tensor<10x2xi6>
   // CHECK-NEXT:   return %[[v0]] : tensor<10x2xi6>
   // CHECK-NEXT: }
   %c = "FHELinalg.transpose"(%arg0) : (tensor<2x10xi6>) -> tensor<10x2xi6>
@@ -487,7 +487,7 @@ func.func @transpose_int_2D(%arg0: tensor<2x10xi6>) -> tensor<10x2xi6> {
 
 // CHECK-LABEL:  @transpose_eint_3D(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>
 func.func @transpose_eint_3D(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>> {
-  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) {axes = []} : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>
   // CHECK-NEXT:   return %[[v0]] : tensor<5x4x3x!FHE.eint<6>>
   // CHECK-NEXT: }
   %c = "FHELinalg.transpose"(%arg0) : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>

@@ -416,7 +416,7 @@ rust-format:
 
 # libraries we want to have in the installation that aren't already a deps of other targets
 install-deps:
-	cmake --build $(BUILD_DIR) --target MLIRCAPIRegistration
+	cmake --build $(BUILD_DIR) --target MLIRCAPIRegisterEverything
 
 ifeq ($(OS), darwin)
 # rsync should normally come pre-installed on macOS

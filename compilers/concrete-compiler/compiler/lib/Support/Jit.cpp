@@ -25,7 +25,7 @@ namespace concretelang {
 llvm::Expected<std::unique_ptr<JITLambda>>
 JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
                   llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline,
-                  llvm::Optional<std::string> runtimeLibPath) {
+                  std::optional<std::string> runtimeLibPath) {
 
   // Looking for the function
   auto rangeOps = module.getOps<mlir::LLVM::LLVMFuncOp>();
@@ -46,13 +46,13 @@ JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
   // JIT-compiles the module. If runtimeLibPath is specified, it's passed as a
   // shared library to the JIT compiler.
   std::vector<llvm::StringRef> sharedLibPaths;
-  if (runtimeLibPath.hasValue())
-    sharedLibPaths.push_back(runtimeLibPath.getValue());
+  if (runtimeLibPath.has_value())
+    sharedLibPaths.push_back(runtimeLibPath.value());
 
   mlir::ExecutionEngineOptions execOptions;
   execOptions.transformer = optPipeline;
   execOptions.sharedLibPaths = sharedLibPaths;
-  execOptions.jitCodeGenOptLevel = llvm::None;
+  execOptions.jitCodeGenOptLevel = std::nullopt;
   execOptions.llvmModuleBuilder = nullptr;
 
   auto maybeEngine = mlir::ExecutionEngine::create(module, execOptions);

@@ -1,98 +1,97 @@
 // RUN: concretecompiler --optimize-tfhe=false --action=dump-tfhe %s --large-integer-crt-decomposition=2,3,5,7,11 --large-integer-circuit-bootstrap=2,9 --large-integer-packing-keyswitch=694,1024,4,9 --v0-parameter=2,10,693,4,9,7,2 2>&1| FileCheck %s
 
-
-//CHECK-LABEL:  func.func @conv2d(%arg0: tensor<100x3x28x28x5x!TFHE.glwe<{_,_,_}{2}>>, %arg1: tensor<4x3x14x14xi3>, %arg2: tensor<4xi3>) -> tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>> {
-//CHECK-NEXT:    %c4 = arith.constant 4 : index
-//CHECK-NEXT:    %c100 = arith.constant 100 : index
-//CHECK-NEXT:    %c15 = arith.constant 15 : index
-//CHECK-NEXT:    %c0 = arith.constant 0 : index
-//CHECK-NEXT:    %c1 = arith.constant 1 : index
-//CHECK-NEXT:    %c3 = arith.constant 3 : index
-//CHECK-NEXT:    %c14 = arith.constant 14 : index
-//CHECK-NEXT:    %0 = "TFHE.zero_tensor"() : () -> tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:    %1 = scf.for %arg3 = %c0 to %c100 step %c1 iter_args(%arg4 = %0) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:      %3 = scf.for %arg5 = %c0 to %c4 step %c1 iter_args(%arg6 = %arg4) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:        %4 = scf.for %arg7 = %c0 to %c15 step %c1 iter_args(%arg8 = %arg6) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:          %5 = scf.for %arg9 = %c0 to %c15 step %c1 iter_args(%arg10 = %arg8) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:            %6 = tensor.extract %arg2[%arg5] : tensor<4xi3>
-//CHECK-NEXT:            %c0_0 = arith.constant 0 : index
-//CHECK-NEXT:            %7 = tensor.extract_slice %0[%arg3, %arg5, %arg7, %arg9, %c0_0] [1, 1, 1, 1, 5] [1, 1, 1, 1, 1] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>> to tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:            %8 = arith.extsi %6 : i3 to i64
-//CHECK-NEXT:            %9 = "TFHE.encode_plaintext_with_crt"(%8) {mods = [2, 3, 5, 7, 11], modsProd = 2310 : i64} : (i64) -> tensor<5xi64>
-//CHECK-NEXT:            %10 = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:            %c0_1 = arith.constant 0 : index
-//CHECK-NEXT:            %c1_2 = arith.constant 1 : index
-//CHECK-NEXT:            %c5 = arith.constant 5 : index
-//CHECK-NEXT:            %11 = scf.for %arg11 = %c0_1 to %c5 step %c1_2 iter_args(%arg12 = %10) -> (tensor<5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:              %13 = tensor.extract %7[%arg11] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:              %14 = tensor.extract %9[%arg11] : tensor<5xi64>
-//CHECK-NEXT:              %15 = "TFHE.add_glwe_int"(%13, %14) : (!TFHE.glwe<{_,_,_}{2}>, i64) -> !TFHE.glwe<{_,_,_}{2}>
-//CHECK-NEXT:              %16 = tensor.insert %15 into %arg12[%arg11] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:              scf.yield %16 : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK: func.func @conv2d(%[[Varg0:.*]]: tensor<100x3x28x28x5x!TFHE.glwe<{_,_,_}{2}>>, %[[Varg1:.*]]: tensor<4x3x14x14xi3>, %[[Varg2:.*]]: tensor<4xi3>) -> tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>> {
+//CHECK-NEXT:    %[[Vc0:.*]] = arith.constant 0 : index
+//CHECK-NEXT:    %[[Vc100:.*]] = arith.constant 100 : index
+//CHECK-NEXT:    %[[Vc1:.*]] = arith.constant 1 : index
+//CHECK-NEXT:    %[[Vc4:.*]] = arith.constant 4 : index
+//CHECK-NEXT:    %[[Vc15:.*]] = arith.constant 15 : index
+//CHECK-NEXT:    %[[Vc3:.*]] = arith.constant 3 : index
+//CHECK-NEXT:    %[[Vc14:.*]] = arith.constant 14 : index
+//CHECK-NEXT:    %[[V0:.*]] = "TFHE.zero_tensor"() : () -> tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:    %[[V1:.*]] = scf.for %[[Varg3:.*]] = %[[Vc0]] to %[[Vc100]] step %[[Vc1]] iter_args(%[[Varg4:.*]] = %[[V0]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:      %[[V3:.*]] = scf.for %[[Varg5:.*]] = %[[Vc0]] to %[[Vc4]] step %[[Vc1]] iter_args(%[[Varg6:.*]] = %[[Varg4]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:        %[[V4:.*]] = scf.for %[[Varg7:.*]] = %[[Vc0]] to %[[Vc15]] step %[[Vc1]] iter_args(%[[Varg8:.*]] = %[[Varg6]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:          %[[V5:.*]] = scf.for %[[Varg9:.*]] = %[[Vc0]] to %[[Vc15]] step %[[Vc1]] iter_args(%[[Varg10:.*]] = %[[Varg8]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:            %[[Vextracted:.*]] = tensor.extract %[[Varg2]]{{\[}}%[[Varg5]]{{\]}} : tensor<4xi3>
+//CHECK-NEXT:            %[[Vc0_0:.*]] = arith.constant 0 : index
+//CHECK-NEXT:            %[[Vextracted_slice:.*]] = tensor.extract_slice %[[Varg10]]{{\[}}%[[Varg3]], %[[Varg5]], %[[Varg7]], %[[Varg9]], %[[Vc0_0]]{{\] \[1, 1, 1, 1, 5\] \[1, 1, 1, 1, 1\]}} : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>> to tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:            %[[V6:.*]] = arith.extsi %[[Vextracted]] : i3 to i64
+//CHECK-NEXT:            %[[V7:.*]] = "TFHE.encode_plaintext_with_crt"(%[[V6]]) {mods = {{\[2, 3, 5, 7, 11\], modsProd}} = 2310 : i64} : (i64) -> tensor<5xi64>
+//CHECK-NEXT:            %[[V8:.*]] = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:            %[[Vc0_1:.*]] = arith.constant 0 : index
+//CHECK-NEXT:            %[[Vc1_2:.*]] = arith.constant 1 : index
+//CHECK-NEXT:            %[[Vc5:.*]] = arith.constant 5 : index
+//CHECK-NEXT:            %[[V9:.*]] = scf.for %[[Varg11:.*]] = %[[Vc0_1]] to %[[Vc5]] step %[[Vc1_2]] iter_args(%[[Varg12:.*]] = %[[V8]]) -> (tensor<5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:              %[[Vextracted_4:.*]] = tensor.extract %[[Vextracted_slice]]{{\[}}%[[Varg11]]{{\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:              %[[Vextracted_5:.*]] = tensor.extract %[[V7]]{{\[}}%[[Varg11]]{{\]}} : tensor<5xi64>
+//CHECK-NEXT:              %[[V10:.*]] = "TFHE.add_glwe_int"(%[[Vextracted_4]], %[[Vextracted_5]]) : (!TFHE.glwe<{_,_,_}{2}>, i64) -> !TFHE.glwe<{_,_,_}{2}>
+//CHECK-NEXT:              %[[Vinserted:.*]] = tensor.insert %[[V10]] into %[[Varg12]]{{\[}}%[[Varg11]]{{\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:              scf.yield %[[Vinserted]] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:            }
-//CHECK-NEXT:            %c0_3 = arith.constant 0 : index
-//CHECK-NEXT:            %12 = tensor.insert_slice %11 into %arg10[%arg3, %arg5, %arg7, %arg9, %c0_3] [1, 1, 1, 1, 5] [1, 1, 1, 1, 1] : tensor<5x!TFHE.glwe<{_,_,_}{2}>> into tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:            scf.yield %12 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:            %[[Vc0_3:.*]] = arith.constant 0 : index
+//CHECK-NEXT:            %[[Vinserted_slice:.*]] = tensor.insert_slice %[[V9]] into %[[Varg10]]{{\[}}%[[Varg3]], %[[Varg5]], %[[Varg7]], %[[Varg9]], %[[Vc0_3]]{{\] \[1, 1, 1, 1, 5\] \[1, 1, 1, 1, 1\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>> into tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:            scf.yield %[[Vinserted_slice]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:          }
-//CHECK-NEXT:          scf.yield %5 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:          scf.yield %[[V5]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:        }
-//CHECK-NEXT:        scf.yield %4 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:        scf.yield %[[V4]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:      }
-//CHECK-NEXT:      scf.yield %3 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:      scf.yield %[[V3]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:    }
-//CHECK-NEXT:    %2 = scf.for %arg3 = %c0 to %c100 step %c1 iter_args(%arg4 = %1) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:      %3 = scf.for %arg5 = %c0 to %c4 step %c1 iter_args(%arg6 = %arg4) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:        %4 = scf.for %arg7 = %c0 to %c15 step %c1 iter_args(%arg8 = %arg6) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:          %5 = scf.for %arg9 = %c0 to %c15 step %c1 iter_args(%arg10 = %arg8) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:            %6 = scf.for %arg11 = %c0 to %c3 step %c1 iter_args(%arg12 = %arg10) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:              %7 = scf.for %arg13 = %c0 to %c14 step %c1 iter_args(%arg14 = %arg12) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:                %8 = scf.for %arg15 = %c0 to %c14 step %c1 iter_args(%arg16 = %arg14) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:                  %9 = affine.apply #map(%arg7, %arg13)
-//CHECK-NEXT:                  %10 = affine.apply #map(%arg9, %arg15)
-//CHECK-NEXT:                  %c0_0 = arith.constant 0 : index
-//CHECK-NEXT:                  %11 = tensor.extract_slice %arg0[%arg3, %arg11, %9, %10, %c0_0] [1, 1, 1, 1, 5] [1, 1, 1, 1, 1] : tensor<100x3x28x28x5x!TFHE.glwe<{_,_,_}{2}>> to tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                  %12 = tensor.extract %arg1[%arg5, %arg11, %arg13, %arg15] : tensor<4x3x14x14xi3>
-//CHECK-NEXT:                  %c0_1 = arith.constant 0 : index
-//CHECK-NEXT:                  %13 = tensor.extract_slice %1[%arg3, %arg5, %arg7, %arg9, %c0_1] [1, 1, 1, 1, 5] [1, 1, 1, 1, 1] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>> to tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                  %14 = arith.extsi %12 : i3 to i64
-//CHECK-NEXT:                  %15 = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                  %c0_2 = arith.constant 0 : index
-//CHECK-NEXT:                  %c1_3 = arith.constant 1 : index
-//CHECK-NEXT:                  %c5 = arith.constant 5 : index
-//CHECK-NEXT:                  %16 = scf.for %arg17 = %c0_2 to %c5 step %c1_3 iter_args(%arg18 = %15) -> (tensor<5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:                    %20 = tensor.extract %11[%arg17] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                    %21 = "TFHE.mul_glwe_int"(%20, %14) : (!TFHE.glwe<{_,_,_}{2}>, i64) -> !TFHE.glwe<{_,_,_}{2}>
-//CHECK-NEXT:                    %22 = tensor.insert %21 into %arg18[%arg17] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                    scf.yield %22 : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:    %[[V2:.*]] = scf.for %[[Varg3:.*]] = %[[Vc0]] to %[[Vc100]] step %[[Vc1]] iter_args(%[[Varg4:.*]] = %[[V1]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:      %[[V3:.*]] = scf.for %[[Varg5:.*]] = %[[Vc0]] to %[[Vc4]] step %[[Vc1]] iter_args(%[[Varg6:.*]] = %[[Varg4]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:        %[[V4:.*]] = scf.for %[[Varg7:.*]] = %[[Vc0]] to %[[Vc15]] step %[[Vc1]] iter_args(%[[Varg8:.*]] = %[[Varg6]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:          %[[V5:.*]] = scf.for %[[Varg9:.*]] = %[[Vc0]] to %[[Vc15]] step %[[Vc1]] iter_args(%[[Varg10:.*]] = %[[Varg8]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:            %[[V6:.*]] = scf.for %[[Varg11:.*]] = %[[Vc0]] to %[[Vc3]] step %[[Vc1]] iter_args(%[[Varg12:.*]] = %[[Varg10]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:              %[[V7:.*]] = scf.for %[[Varg13:.*]] = %[[Vc0]] to %[[Vc14]] step %[[Vc1]] iter_args(%[[Varg14:.*]] = %[[Varg12]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:                %[[V8:.*]] = scf.for %[[Varg15:.*]] = %[[Vc0]] to %[[Vc14]] step %[[Vc1]] iter_args(%[[Varg16:.*]] = %[[Varg14]]) -> (tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:                  %[[V9:.*]] = affine.apply #map(%[[Varg7]], %[[Varg13]])
+//CHECK-NEXT:                  %[[V10:.*]] = affine.apply #map(%[[Varg9]], %[[Varg15]])
+//CHECK-NEXT:                  %[[Vc0_0:.*]] = arith.constant 0 : index
+//CHECK-NEXT:                  %[[Vextracted_slice:.*]] = tensor.extract_slice %[[Varg0]]{{\[}}%[[Varg3]], %[[Varg11]], %[[V9]], %[[V10]], %[[Vc0_0]]{{\] \[1, 1, 1, 1, 5\] \[1, 1, 1, 1, 1\]}} : tensor<100x3x28x28x5x!TFHE.glwe<{_,_,_}{2}>> to tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                  %[[Vextracted:.*]] = tensor.extract %[[Varg1]]{{\[}}%[[Varg5]], %[[Varg11]], %[[Varg13]], %[[Varg15]]{{\]}} : tensor<4x3x14x14xi3>
+//CHECK-NEXT:                  %[[Vc0_1:.*]] = arith.constant 0 : index
+//CHECK-NEXT:                  %[[Vextracted_slice_2:.*]] = tensor.extract_slice %[[Varg16]]{{\[}}%[[Varg3]], %[[Varg5]], %[[Varg7]], %[[Varg9]], %[[Vc0_1]]{{\] \[1, 1, 1, 1, 5\] \[1, 1, 1, 1, 1\]}} : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>> to tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                  %[[V11:.*]] = arith.extsi %[[Vextracted]] : i3 to i64
+//CHECK-NEXT:                  %[[V12:.*]] = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                  %[[Vc0_3:.*]] = arith.constant 0 : index
+//CHECK-NEXT:                  %[[Vc1_4:.*]] = arith.constant 1 : index
+//CHECK-NEXT:                  %[[Vc5:.*]] = arith.constant 5 : index
+//CHECK-NEXT:                  %[[V13:.*]] = scf.for %[[Varg17:.*]] = %[[Vc0_3]] to %[[Vc5]] step %[[Vc1_4]] iter_args(%[[Varg18:.*]] = %[[V12]]) -> (tensor<5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:                    %[[Vextracted_9:.*]] = tensor.extract %[[Vextracted_slice]]{{\[}}%[[Varg17]]{{\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                    %[[V16:.*]] = "TFHE.mul_glwe_int"(%[[Vextracted_9]], %[[V11]]) : (!TFHE.glwe<{_,_,_}{2}>, i64) -> !TFHE.glwe<{_,_,_}{2}>
+//CHECK-NEXT:                    %[[Vinserted:.*]] = tensor.insert %[[V16]] into %[[Varg18]]{{\[}}%[[Varg17]]{{\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                    scf.yield %[[Vinserted]] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:                  }
-//CHECK-NEXT:                  %17 = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                  %c0_4 = arith.constant 0 : index
-//CHECK-NEXT:                  %c1_5 = arith.constant 1 : index
-//CHECK-NEXT:                  %c5_6 = arith.constant 5 : index
-//CHECK-NEXT:                  %18 = scf.for %arg17 = %c0_4 to %c5_6 step %c1_5 iter_args(%arg18 = %17) -> (tensor<5x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:                    %20 = tensor.extract %13[%arg17] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                    %21 = tensor.extract %16[%arg17] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                    %22 = "TFHE.add_glwe"(%20, %21) : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
-//CHECK-NEXT:                    %23 = tensor.insert %22 into %arg18[%arg17] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                    scf.yield %23 : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                  %[[V14:.*]] = bufferization.alloc_tensor() : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                  %[[Vc0_5:.*]] = arith.constant 0 : index
+//CHECK-NEXT:                  %[[Vc1_6:.*]] = arith.constant 1 : index
+//CHECK-NEXT:                  %[[Vc5_7:.*]] = arith.constant 5 : index
+//CHECK-NEXT:                  %[[V15:.*]] = scf.for %[[Varg17:.*]] = %[[Vc0_5]] to %[[Vc5_7]] step %[[Vc1_6]] iter_args(%[[Varg18:.*]] = %[[V14]]) -> (tensor<5x!TFHE.glwe<{_,_,_}{2}>>) {
+//CHECK-NEXT:                    %[[Vextracted_9:.*]] = tensor.extract %[[Vextracted_slice_2]]{{\[}}%[[Varg17]]{{\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                    %[[Vextracted_10:.*]] = tensor.extract %[[V13]]{{\[}}%[[Varg17]]{{\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                    %[[V16:.*]] = "TFHE.add_glwe"(%[[Vextracted_9]], %[[Vextracted_10]]) : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
+//CHECK-NEXT:                    %[[Vinserted:.*]] = tensor.insert %[[V16]] into %[[Varg18]]{{\[}}%[[Varg17]]{{\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                    scf.yield %[[Vinserted]] : tensor<5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:                  }
-//CHECK-NEXT:                  %c0_7 = arith.constant 0 : index
-//CHECK-NEXT:                  %19 = tensor.insert_slice %18 into %arg16[%arg3, %arg5, %arg7, %arg9, %c0_7] [1, 1, 1, 1, 5] [1, 1, 1, 1, 1] : tensor<5x!TFHE.glwe<{_,_,_}{2}>> into tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:                  scf.yield %19 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                  %[[Vc0_8:.*]] = arith.constant 0 : index
+//CHECK-NEXT:                  %[[Vinserted_slice:.*]] = tensor.insert_slice %[[V15]] into %[[Varg16]]{{\[}}%[[Varg3]], %[[Varg5]], %[[Varg7]], %[[Varg9]], %[[Vc0_8]]{{\] \[1, 1, 1, 1, 5\] \[1, 1, 1, 1, 1\]}} : tensor<5x!TFHE.glwe<{_,_,_}{2}>> into tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                  scf.yield %[[Vinserted_slice]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:                }
-//CHECK-NEXT:                scf.yield %8 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:                scf.yield %[[V8]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:              }
-//CHECK-NEXT:              scf.yield %7 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:              scf.yield %[[V7]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:            }
-//CHECK-NEXT:            scf.yield %6 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:            scf.yield %[[V6]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:          }
-//CHECK-NEXT:          scf.yield %5 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:          scf.yield %[[V5]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:        }
-//CHECK-NEXT:        scf.yield %4 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:        scf.yield %[[V4]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:      }
-//CHECK-NEXT:      scf.yield %3 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:      scf.yield %[[V3]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:    }
-//CHECK-NEXT:    return %2 : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
+//CHECK-NEXT:    return %[[V2]] : tensor<100x4x15x15x5x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:  }
 func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
   %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0, 0, 0, 0]> : tensor<4xi64>}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>

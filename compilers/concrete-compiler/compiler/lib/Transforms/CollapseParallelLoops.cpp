@@ -8,7 +8,7 @@
 #include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
-#include "mlir/IR/BlockAndValueMapping.h"
+#include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/Passes.h"
@@ -79,8 +79,7 @@ struct CollapseParallelLoopsPass
           if (maxPos > start)
             continue;
 
-          auto band =
-              llvm::makeMutableArrayRef(loops.data() + start, end - start);
+          auto band = llvm::MutableArrayRef(loops.data() + start, end - start);
           (void)mlir::coalesceLoops(band);
           break;
         }

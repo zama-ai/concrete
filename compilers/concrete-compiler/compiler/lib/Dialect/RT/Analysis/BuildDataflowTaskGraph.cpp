@@ -16,13 +16,13 @@
 #include <concretelang/Support/Constants.h>
 #include <concretelang/Support/math.h>
 
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/IR/Attributes.h>
-#include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/IRMapping.h>
 #include <mlir/IR/OperationSupport.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Interfaces/ViewLikeInterface.h>
@@ -94,7 +94,7 @@ aggregateBeneficiaryOps(Operation *op, SetVector<Operation *> &beneficiaryOps,
 }
 
 LogicalResult coarsenDFTask(RT::DataflowTaskOp taskOp) {
-  Region &taskOpBody = taskOp.body();
+  Region &taskOpBody = taskOp.getBody();
 
   // Identify uses from values defined outside of the scope.
   SetVector<Value> sinkCandidates;
@@ -111,7 +111,7 @@ LogicalResult coarsenDFTask(RT::DataflowTaskOp taskOp) {
   }
 
   // Insert operations so that the defs get cloned before uses.
-  BlockAndValueMapping map;
+  IRMapping map;
   OpBuilder builder(taskOpBody);
   for (Operation *op : toBeSunk) {
     OpBuilder::InsertionGuard guard(builder);
@@ -156,7 +156,7 @@ struct BuildDataflowTaskGraphPass
 protected:
   void processOperation(mlir::Operation *op) {
     if (isCandidateForTask(op)) {
-      BlockAndValueMapping map;
+      IRMapping map;
       Region &opBody = getOperation().getBody();
       OpBuilder builder(opBody);
 
@@ -166,7 +166,7 @@ protected:
           op->getLoc(), op->getResultTypes(), op->getOperands());
 
       // Add the operation to the task
-      OpBuilder tbbuilder(dftop.body());
+      OpBuilder tbbuilder(dftop.getBody());
       Operation *clonedOp = tbbuilder.clone(*op, map);
 
       // Coarsen granularity by aggregating all dependence related
@@ -180,7 +180,7 @@ protected:
       // Replace the uses of defined values
       for (auto pair : llvm::zip(op->getResults(), clonedOp->getResults()))
         replaceAllUsesInRegionWith(std::get<0>(pair), std::get<1>(pair),
-                                   dftop.body());
+                                   dftop.getBody());
       // Replace uses of the values defined by the task
       for (auto pair : llvm::zip(op->getResults(), dftop->getResults()))
         replaceAllUsesInRegionWith(std::get<0>(pair), std::get<1>(pair),

@@ -62,7 +62,7 @@ public:
       return std::move(err);
     }
 
-    if (!options.clientParametersFuncName.hasValue()) {
+    if (!options.clientParametersFuncName.has_value()) {
       return StreamStringError("Need to have a funcname to compile library");
     }
 

@@ -30,7 +30,7 @@ static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
   assert(clientParameters);
 
   for (auto _ : state) {
-    assert(support.keySet(*clientParameters, llvm::None));
+    assert(support.keySet(*clientParameters, std::nullopt));
   }
 }
 

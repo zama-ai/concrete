@@ -45,13 +45,13 @@ enum Backend {
 
 /// Compilation options allows to configure the compilation pipeline.
 struct CompilationOptions {
-  llvm::Optional<mlir::concretelang::V0FHEConstraint> v0FHEConstraints;
+  std::optional<mlir::concretelang::V0FHEConstraint> v0FHEConstraints;
 
-  llvm::Optional<mlir::concretelang::V0Parameter> v0Parameter;
+  std::optional<mlir::concretelang::V0Parameter> v0Parameter;
 
   /// largeIntegerParameter force the compiler engine to lower FHE.eint using
   /// the large integers strategy with the given parameters.
-  llvm::Optional<mlir::concretelang::LargeIntegerParameter>
+  std::optional<mlir::concretelang::LargeIntegerParameter>
       largeIntegerParameter;
 
   bool verifyDiagnostics;
@@ -65,9 +65,9 @@ struct CompilationOptions {
   bool optimizeTFHE;
   /// use GPU during execution by generating GPU operations if possible
   bool emitGPUOps;
-  llvm::Optional<std::vector<int64_t>> fhelinalgTileSizes;
+  std::optional<std::vector<int64_t>> fhelinalgTileSizes;
 
-  llvm::Optional<std::string> clientParametersFuncName;
+  std::optional<std::string> clientParametersFuncName;
 
   optimizer::Config optimizerConfig;
 
@@ -79,11 +79,11 @@ struct CompilationOptions {
   unsigned int chunkWidth;
 
   CompilationOptions()
-      : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
+      : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchConcreteOps(false),
         emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
         dataflowParallelize(false), optimizeTFHE(true), emitGPUOps(false),
-        clientParametersFuncName(llvm::None),
+        clientParametersFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
         chunkSize(4), chunkWidth(2){};
 
@@ -119,11 +119,11 @@ public:
                           CompilationContext::createShared())
         : compilationContext(compilationContext) {}
 
-    llvm::Optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
-    llvm::Optional<mlir::concretelang::ClientParameters> clientParameters;
-    llvm::Optional<CompilationFeedback> feedback;
+    std::optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
+    std::optional<mlir::concretelang::ClientParameters> clientParameters;
+    std::optional<CompilationFeedback> feedback;
     std::unique_ptr<llvm::Module> llvmModule;
-    llvm::Optional<mlir::concretelang::V0FHEContext> fheContext;
+    std::optional<mlir::concretelang::V0FHEContext> fheContext;
 
   protected:
     std::shared_ptr<CompilationContext> compilationContext;
@@ -176,7 +176,7 @@ public:
     void addExtraObjectFilePath(std::string objectFilePath);
     llvm::Expected<std::string>
     emit(std::string path, std::string dotExt, std::string linker,
-         llvm::Optional<std::vector<std::string>> extraArgs = {});
+         std::optional<std::vector<std::string>> extraArgs = {});
     ~Library();
 
   private:
@@ -242,21 +242,21 @@ public:
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(), compilerOptions(),
         generateClientParameters(
-            compilerOptions.clientParametersFuncName.hasValue()),
+            compilerOptions.clientParametersFuncName.has_value()),
         enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
   llvm::Expected<CompilationResult>
   compile(llvm::StringRef s, Target target,
-          llvm::Optional<std::shared_ptr<Library>> lib = {});
+          std::optional<std::shared_ptr<Library>> lib = {});
 
   llvm::Expected<CompilationResult>
   compile(std::unique_ptr<llvm::MemoryBuffer> buffer, Target target,
-          llvm::Optional<std::shared_ptr<Library>> lib = {});
+          std::optional<std::shared_ptr<Library>> lib = {});
 
   llvm::Expected<CompilationResult>
   compile(llvm::SourceMgr &sm, Target target,
-          llvm::Optional<std::shared_ptr<Library>> lib = {});
+          std::optional<std::shared_ptr<Library>> lib = {});
 
   llvm::Expected<CompilerEngine::Library>
   compile(std::vector<std::string> inputs, std::string outputDirPath,
@@ -276,11 +276,11 @@ public:
 
   void setCompilationOptions(CompilationOptions &options) {
     compilerOptions = options;
-    if (options.v0FHEConstraints.hasValue()) {
+    if (options.v0FHEConstraints.has_value()) {
       setFHEConstraints(*options.v0FHEConstraints);
     }
 
-    if (options.clientParametersFuncName.hasValue()) {
+    if (options.clientParametersFuncName.has_value()) {
       setGenerateClientParameters(true);
     }
   }
@@ -292,8 +292,8 @@ public:
   void setEnablePass(std::function<bool(mlir::Pass *)> enablePass);
 
 protected:
-  llvm::Optional<size_t> overrideMaxEintPrecision;
-  llvm::Optional<size_t> overrideMaxMANP;
+  std::optional<size_t> overrideMaxEintPrecision;
+  std::optional<size_t> overrideMaxMANP;
   CompilationOptions compilerOptions;
   bool generateClientParameters;
   std::function<bool(mlir::Pass *)> enablePass;
@@ -301,7 +301,7 @@ protected:
   std::shared_ptr<CompilationContext> compilationContext;
 
 private:
-  llvm::Expected<llvm::Optional<optimizer::Description>>
+  llvm::Expected<std::optional<optimizer::Description>>
   getConcreteOptimizerDescription(CompilationResult &res);
   llvm::Error determineFHEParameters(CompilationResult &res);
 };

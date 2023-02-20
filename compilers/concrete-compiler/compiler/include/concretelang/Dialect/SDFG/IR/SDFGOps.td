@@ -72,13 +72,13 @@ def SDFG_MakeStream : SDFG_Op<"make_stream"> {
 
     let extraClassDeclaration = [{
       bool createsInputStream() {
-        return type() == StreamKind::host_to_device ||
-          type() == StreamKind::on_device;
+        return getType() == StreamKind::host_to_device ||
+          getType() == StreamKind::on_device;
       }
 
       bool createsOutputStream() {
-        return type() == StreamKind::device_to_host ||
-          type() == StreamKind::on_device;
+        return getType() == StreamKind::device_to_host ||
+          getType() == StreamKind::on_device;
       }
     }];
 }

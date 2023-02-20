@@ -111,7 +111,7 @@ private:
 
   ///////////////////////////////////////////////
   // Convenient positional mapping between positional gate en secret key
-  typedef std::vector<std::pair<CircuitGate, llvm::Optional<LweSecretKey>>>
+  typedef std::vector<std::pair<CircuitGate, std::optional<LweSecretKey>>>
       SecretKeyGateMapping;
   outcome::checked<SecretKeyGateMapping, StringError>
   mapCircuitGateLweSecretKey(std::vector<CircuitGate> gates);

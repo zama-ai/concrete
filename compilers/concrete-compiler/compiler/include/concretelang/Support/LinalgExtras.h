@@ -39,11 +39,11 @@ static SmallVector<Value> makeCanonicalAffineApplies(OpBuilder &b, Location loc,
 }
 
 template <typename LoadOpTy, typename StoreOpTy, typename OpType>
-static std::vector<Value> inlineRegionAndEmitStore(
+static llvm::SmallVector<Value> inlineRegionAndEmitStore(
     OpBuilder &b, Location loc, OpType op, ArrayRef<Value> indexedValues,
     ArrayRef<SmallVector<Value>> indexing, ArrayRef<Value> outputBuffers) {
   auto &block = op->getRegion(0).front();
-  BlockAndValueMapping map;
+  IRMapping map;
   map.map(block.getArguments(), indexedValues);
   for (auto &op : block.without_terminator()) {
     auto *newOp = b.clone(op, map);
@@ -51,7 +51,7 @@ static std::vector<Value> inlineRegionAndEmitStore(
   }
 
   Operation *terminator = block.getTerminator();
-  std::vector<Value> retVals;
+  llvm::SmallVector<Value> retVals;
 
   for (OpOperand &operand : terminator->getOpOperands()) {
     Value toStore = map.lookupOrDefault(operand.get());
@@ -91,40 +91,42 @@ static void replaceIndexOpsByInductionVariables(LinalgOp linalgOp,
     LoopLikeOpInterface loopOp = loopOps.back();
     for (IndexOp indexOp :
          llvm::make_early_inc_range(loopOp.getLoopBody().getOps<IndexOp>()))
-      rewriter.replaceOp(indexOp, allIvs[indexOp.dim()]);
+      rewriter.replaceOp(indexOp, allIvs[indexOp.getDim()]);
   }
 }
 
 template <typename LoadOpTy, typename StoreOpTy>
-static std::vector<Value>
+static llvm::SmallVector<Value>
 emitScalarImplementation(OpBuilder &b, Location loc, ArrayRef<Value> allIvs,
                          LinalgOp linalgOp, ValueRange operandValuesToUse) {
   assert(linalgOp.hasTensorSemantics() &&
          "expected linalg op with buffer semantics");
   SmallVector<Value> indexedValues;
-  indexedValues.reserve(linalgOp.getNumInputsAndOutputs());
+  indexedValues.reserve(linalgOp->getNumOperands());
 
   auto allIvsPlusDims = SmallVector<Value>(allIvs.begin(), allIvs.end());
 
   // TODO: Avoid the loads if the corresponding argument of the
   // region has no uses.
   // 1.a. Emit load from input operand or for scalars access the operand itself.
-  for (OpOperand *inputOperand : linalgOp.getInputOperands()) {
+  for (OpOperand *inputOperand : linalgOp.getDpsInputOperands()) {
+    Value v = operandValuesToUse[inputOperand->getOperandNumber()];
+
     if (linalgOp.isScalar(inputOperand)) {
-      indexedValues.push_back(inputOperand->get());
+      indexedValues.push_back(v);
       continue;
     }
     auto indexing = makeCanonicalAffineApplies(
-        b, loc, linalgOp.getTiedIndexingMap(inputOperand), allIvsPlusDims);
-    indexedValues.push_back(
-        b.create<LoadOpTy>(loc, inputOperand->get(), indexing));
+        b, loc, linalgOp.getMatchingIndexingMap(inputOperand), allIvsPlusDims);
+    indexedValues.push_back(b.create<LoadOpTy>(loc, v, indexing));
   }
   // 1.b. Emit load from output views.
-  for (OpOperand *outputOperand : linalgOp.getOutputOperands()) {
+  for (OpOperand *outputOperand : linalgOp.getDpsInitOperands()) {
+    Value v = operandValuesToUse[outputOperand->getOperandNumber()];
+
     SmallVector<Value> indexing = makeCanonicalAffineApplies(
-        b, loc, linalgOp.getTiedIndexingMap(outputOperand), allIvsPlusDims);
-    indexedValues.push_back(
-        b.create<LoadOpTy>(loc, outputOperand->get(), indexing));
+        b, loc, linalgOp.getMatchingIndexingMap(outputOperand), allIvsPlusDims);
+    indexedValues.push_back(b.create<LoadOpTy>(loc, v, indexing));
   }
 
   // TODO: When a region inliner exists, use it.
@@ -132,10 +134,13 @@ emitScalarImplementation(OpBuilder &b, Location loc, ArrayRef<Value> allIvs,
   // 3. Emit store.
   SmallVector<SmallVector<Value>, 8> indexing;
   SmallVector<Value> outputBuffers;
-  for (OpOperand *outputOperand : linalgOp.getOutputTensorOperands()) {
-    indexing.push_back(makeCanonicalAffineApplies(
-        b, loc, linalgOp.getTiedIndexingMap(outputOperand), allIvsPlusDims));
-    outputBuffers.push_back(operandValuesToUse.back());
+  for (OpOperand *outputOperand : linalgOp.getDpsInitOperands()) {
+    if (outputOperand->get().getType().isa<mlir::TensorType>()) {
+      indexing.push_back(makeCanonicalAffineApplies(
+          b, loc, linalgOp.getMatchingIndexingMap(outputOperand),
+          allIvsPlusDims));
+      outputBuffers.push_back(operandValuesToUse.back());
+    }
   }
   return inlineRegionAndEmitStore<LoadOpTy, StoreOpTy>(
       b, loc, linalgOp, indexedValues, indexing, outputBuffers);
@@ -151,7 +156,7 @@ linalgTensorOpToLoopsImpl(PatternRewriter &rewriter, LinalgOp linalgOp,
          "expected linalg op with value semantics");
 
   auto loopRanges = linalgOp.createLoopRanges(rewriter, linalgOp.getLoc());
-  auto iteratorTypes = llvm::to_vector<4>(linalgOp.iterator_types().getValue());
+  auto iteratorTypes = llvm::to_vector<4>(linalgOp.getIteratorTypesArray());
 
   SmallVector<Value> allIvs;
   GenerateLoopNest<LoopTy>::doit(

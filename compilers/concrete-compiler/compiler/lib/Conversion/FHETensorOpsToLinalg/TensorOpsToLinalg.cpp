@@ -86,7 +86,7 @@ struct DotToLinalgGeneric
 
     // Create `linalg.generic` op
     llvm::SmallVector<mlir::Type, 1> resTypes{zeroTensorOp.getType()};
-    llvm::SmallVector<mlir::Value, 2> ins{dotOp.lhs(), dotOp.rhs()};
+    llvm::SmallVector<mlir::Value, 2> ins{dotOp.getLhs(), dotOp.getRhs()};
     llvm::SmallVector<mlir::Value, 1> outs{zeroTensorOp};
     llvm::SmallVector<mlir::AffineMap, 3> maps{
         mlir::AffineMap::getMultiDimIdentityMap(1, this->getContext()),
@@ -94,7 +94,8 @@ struct DotToLinalgGeneric
         mlir::AffineMap::get(1, 0, {rewriter.getAffineConstantExpr(0)},
                              this->getContext())};
 
-    llvm::SmallVector<llvm::StringRef, 1> itTypes{"reduction"};
+    llvm::SmallVector<mlir::utils::IteratorType, 1> itTypes{
+        mlir::utils::IteratorType::reduction};
     llvm::StringRef doc{""};
     llvm::StringRef call{""};
 
@@ -236,10 +237,10 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
     mlir::RankedTensorType resultTy =
         ((mlir::Type)linalgOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
-    mlir::RankedTensorType lhsTy =
-        ((mlir::Type)linalgOp.lhs().getType()).cast<mlir::RankedTensorType>();
-    mlir::RankedTensorType rhsTy =
-        ((mlir::Type)linalgOp.rhs().getType()).cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType lhsTy = ((mlir::Type)linalgOp.getLhs().getType())
+                                       .cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType rhsTy = ((mlir::Type)linalgOp.getRhs().getType())
+                                       .cast<mlir::RankedTensorType>();
     //  linalg.init_tensor for initial value
     mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
         linalgOp.getLoc(), resultTy, mlir::ValueRange{});
@@ -252,8 +253,8 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
     };
 
     // Create the iterator_types
-    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
-                                                     "parallel");
+    llvm::SmallVector<mlir::utils::IteratorType> iteratorTypes(
+        resultTy.getShape().size(), mlir::utils::IteratorType::parallel);
 
     // Create the body of the `linalg.generic` op
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
@@ -268,7 +269,7 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
 
     // Create the `linalg.generic` op
     llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
-    llvm::SmallVector<mlir::Value, 2> ins{linalgOp.lhs(), linalgOp.rhs()};
+    llvm::SmallVector<mlir::Value, 2> ins{linalgOp.getLhs(), linalgOp.getRhs()};
     llvm::SmallVector<mlir::Value, 1> outs{init};
     llvm::StringRef doc{""};
     llvm::StringRef call{""};
@@ -288,8 +289,9 @@ template <class T> inline mlir::RankedTensorType getRankedTensorType(T v) {
   return ((mlir::Type)v.getType()).cast<mlir::RankedTensorType>();
 }
 
-llvm::SmallVector<llvm::StringRef> parallelIteratorType(int n) {
-  return llvm::SmallVector<llvm::StringRef>(n, "parallel");
+llvm::SmallVector<mlir::utils::IteratorType> parallelIteratorType(int n) {
+  return llvm::SmallVector<mlir::utils::IteratorType>(
+      n, mlir::utils::IteratorType::parallel);
 }
 
 /// This class rewrite pattern transforms any instance of
@@ -347,9 +349,9 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
     using AffineMaps = llvm::SmallVector<mlir::AffineMap>;
     using sliceArg = llvm::SmallVector<mlir::OpFoldResult>;
 
-    auto input = mappedLookup.t();
-    auto luts = mappedLookup.luts();
-    auto map = mappedLookup.map();
+    auto input = mappedLookup.getT();
+    auto luts = mappedLookup.getLuts();
+    auto map = mappedLookup.getMap();
 
     auto loc = mappedLookup.getLoc();
     auto tensorTy = getRankedTensorType(input);
@@ -471,9 +473,10 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
     mlir::RankedTensorType resultTy =
         ((mlir::Type)fheLinalgLutOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
-    mlir::RankedTensorType tensorTy = ((mlir::Type)fheLinalgLutOp.t().getType())
-                                          .cast<mlir::RankedTensorType>();
-    auto luts = fheLinalgLutOp.luts();
+    mlir::RankedTensorType tensorTy =
+        ((mlir::Type)fheLinalgLutOp.getT().getType())
+            .cast<mlir::RankedTensorType>();
+    auto luts = fheLinalgLutOp.getLuts();
     mlir::RankedTensorType lutsTy = getRankedTensorType(luts);
     auto lutElmtTy = lutsTy.getElementType();
     //  linalg.init_tensor for initial value
@@ -549,7 +552,7 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
 
     // Create the `linalg.generic` op
     llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
-    llvm::SmallVector<mlir::Value> ins{fheLinalgLutOp.t()};
+    llvm::SmallVector<mlir::Value> ins{fheLinalgLutOp.getT()};
     llvm::SmallVector<mlir::Value, 1> outs{init};
     llvm::StringRef doc{""};
     llvm::StringRef call{""};
@@ -619,7 +622,7 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
         ((mlir::Type)lutOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
     mlir::RankedTensorType tTy =
-        ((mlir::Type)lutOp.t().getType()).cast<mlir::RankedTensorType>();
+        ((mlir::Type)lutOp.getT().getType()).cast<mlir::RankedTensorType>();
 
     //  linalg.init_tensor for initial value
     mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
@@ -634,8 +637,8 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
     };
 
     // Create the iterator_types
-    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
-                                                     "parallel");
+    llvm::SmallVector<mlir::utils::IteratorType> iteratorTypes(
+        resultTy.getShape().size(), mlir::utils::IteratorType::parallel);
 
     // Create the body of the `linalg.generic` op
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
@@ -644,7 +647,7 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
       mlir::concretelang::FHE::ApplyLookupTableEintOp fheOp =
           nestedBuilder.create<mlir::concretelang::FHE::ApplyLookupTableEintOp>(
               lutOp.getLoc(), resultTy.getElementType(), blockArgs[0],
-              lutOp.lut());
+              lutOp.getLut());
 
       nestedBuilder.create<mlir::linalg::YieldOp>(lutOp.getLoc(),
                                                   fheOp.getResult());
@@ -652,7 +655,7 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
 
     // Create the `linalg.generic` op
     llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
-    llvm::SmallVector<mlir::Value, 1> ins{lutOp.t()};
+    llvm::SmallVector<mlir::Value, 1> ins{lutOp.getT()};
     llvm::SmallVector<mlir::Value, 1> outs{init};
     llvm::StringRef doc{""};
     llvm::StringRef call{""};
@@ -716,8 +719,9 @@ struct FHELinalgNegEintToLinalgGeneric
     mlir::RankedTensorType resultTy =
         ((mlir::Type)negEintOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
-    mlir::RankedTensorType tensorTy = ((mlir::Type)negEintOp.tensor().getType())
-                                          .cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType tensorTy =
+        ((mlir::Type)negEintOp.getTensor().getType())
+            .cast<mlir::RankedTensorType>();
 
     //  linalg.init_tensor for initial value
     mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
@@ -732,8 +736,8 @@ struct FHELinalgNegEintToLinalgGeneric
     };
 
     // Create the iterator_types
-    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
-                                                     "parallel");
+    llvm::SmallVector<mlir::utils::IteratorType> iteratorTypes(
+        resultTy.getShape().size(), mlir::utils::IteratorType::parallel);
 
     // Create the body of the `linalg.generic` op
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
@@ -749,7 +753,7 @@ struct FHELinalgNegEintToLinalgGeneric
 
     // Create the `linalg.generic` op
     llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
-    llvm::SmallVector<mlir::Value, 1> ins{negEintOp.tensor()};
+    llvm::SmallVector<mlir::Value, 1> ins{negEintOp.getTensor()};
     llvm::SmallVector<mlir::Value, 1> outs{init};
     llvm::StringRef doc{""};
     llvm::StringRef call{""};
@@ -821,8 +825,8 @@ struct FHELinalgMatmulToLinalgGeneric
 
     mlir::Location location = matmulOp.getLoc();
 
-    mlir::Value lhs = matmulOp.lhs();
-    mlir::Value rhs = matmulOp.rhs();
+    mlir::Value lhs = matmulOp.getLhs();
+    mlir::Value rhs = matmulOp.getRhs();
     mlir::Value out = matmulOp.getResult();
 
     auto lhsType = ((mlir::Type)lhs.getType()).cast<mlir::RankedTensorType>();
@@ -843,7 +847,7 @@ struct FHELinalgMatmulToLinalgGeneric
     auto ins = llvm::SmallVector<mlir::Value, 2>{lhs, rhs};
     auto outs = llvm::SmallVector<mlir::Value, 1>{zeros};
 
-    auto iteratorTypes = llvm::SmallVector<llvm::StringRef, 3>{};
+    auto iteratorTypes = llvm::SmallVector<mlir::utils::IteratorType, 3>{};
 
     auto lhsAffineExpressions = llvm::SmallVector<mlir::AffineExpr, 2>{};
     auto rhsAffineExpressions = llvm::SmallVector<mlir::AffineExpr, 2>{};
@@ -878,9 +882,9 @@ struct FHELinalgMatmulToLinalgGeneric
       // - Last iterator is for the reduced dimension (N in the examples)
 
       for (int64_t i = 0; i < outDims; i++) {
-        iteratorTypes.push_back(mlir::getParallelIteratorTypeName());
+        iteratorTypes.push_back(mlir::utils::IteratorType::parallel);
       }
-      iteratorTypes.push_back(mlir::getReductionIteratorTypeName());
+      iteratorTypes.push_back(mlir::utils::IteratorType::reduction);
 
       // we need to put appropriate affine dimension expressions
       // that match lhs.shape on iterator types array
@@ -988,9 +992,9 @@ struct FHELinalgMatmulToLinalgGeneric
       int64_t commonDim = rhsDims - 2;
       for (int64_t i = 0; i < rhsDims; i++) {
         if (i == commonDim) {
-          iteratorTypes.push_back(mlir::getReductionIteratorTypeName());
+          iteratorTypes.push_back(mlir::utils::IteratorType::reduction);
         } else {
-          iteratorTypes.push_back(mlir::getParallelIteratorTypeName());
+          iteratorTypes.push_back(mlir::utils::IteratorType::parallel);
         }
       }
 
@@ -1016,9 +1020,9 @@ struct FHELinalgMatmulToLinalgGeneric
       // KxLxMxN @ N -> KxLxM
 
       for (int64_t i = 0; i < lhsDims - 1; i++) {
-        iteratorTypes.push_back(mlir::getParallelIteratorTypeName());
+        iteratorTypes.push_back(mlir::utils::IteratorType::parallel);
       }
-      iteratorTypes.push_back(mlir::getReductionIteratorTypeName());
+      iteratorTypes.push_back(mlir::utils::IteratorType::reduction);
 
       for (int64_t i = 0; i < lhsDims; i++) {
         lhsAffineExpressions.push_back(rewriter.getAffineDimExpr(i));
@@ -1145,7 +1149,7 @@ struct SumToLinalgGeneric
     }
 
     auto axesToDestroy = std::unordered_set<int64_t>{};
-    for (mlir::Attribute axisAttribute : sumOp.axes()) {
+    for (mlir::Attribute axisAttribute : sumOp.getAxes()) {
       int64_t axis = axisAttribute.cast<mlir::IntegerAttr>().getInt();
       axesToDestroy.insert(axis);
     }
@@ -1178,7 +1182,7 @@ struct SumToLinalgGeneric
         bool ithAxisIsDestroyed = axesToDestroy.find(i) != axesToDestroy.end();
         if (!ithAxisIsDestroyed) {
           outputAffineExpressions.push_back(rewriter.getAffineDimExpr(i));
-        } else if (sumOp.keep_dims()) {
+        } else if (sumOp.getKeepDims()) {
           outputAffineExpressions.push_back(rewriter.getAffineConstantExpr(0));
         }
       }
@@ -1191,11 +1195,11 @@ struct SumToLinalgGeneric
 
     auto maps = llvm::SmallVector<mlir::AffineMap, 2>{inputMap, outputMap};
 
-    auto iteratorTypes = llvm::SmallVector<llvm::StringRef, 3>(
-        inputDimensions, mlir::getParallelIteratorTypeName());
+    auto iteratorTypes = llvm::SmallVector<mlir::utils::IteratorType, 3>(
+        inputDimensions, mlir::utils::IteratorType::parallel);
 
     for (int64_t axis : axesToDestroy) {
-      iteratorTypes[axis] = mlir::getReductionIteratorTypeName();
+      iteratorTypes[axis] = mlir::utils::IteratorType::reduction;
     }
 
     auto regionBuilder = [&](mlir::OpBuilder &nestedBuilder,
@@ -1210,11 +1214,10 @@ struct SumToLinalgGeneric
     };
 
     auto resultTypes = llvm::SmallVector<mlir::Type, 1>{accumulatorType};
-    mlir::Value accumulation =
-        rewriter
-            .create<linalg::GenericOp>(location, resultTypes, ins, outs, maps,
-                                       iteratorTypes, regionBuilder)
-            .getResult(0);
+    linalg::GenericOp genericOp = rewriter.create<linalg::GenericOp>(
+        location, resultTypes, ins, outs, maps, iteratorTypes, regionBuilder);
+
+    mlir::Value accumulation = genericOp.getResult(0);
 
     mlir::Value result = accumulation;
     if (!outputIsTensor) {
@@ -1282,7 +1285,7 @@ struct TransposeToLinalgGeneric
 
     std::vector<unsigned int> perms = {};
 
-    mlir::ArrayAttr axes = transposeOp.axes();
+    mlir::ArrayAttr axes = transposeOp.getAxes();
     if (axes.empty()) {
       for (int i = n_dim - 1; i >= 0; i--) {
         perms.push_back(i);
@@ -1386,7 +1389,7 @@ struct ConcatRewritePattern
                   mlir::PatternRewriter &rewriter) const override {
 
     mlir::Location location = op.getLoc();
-    size_t axis = op.axis();
+    size_t axis = op.getAxis();
 
     mlir::Value output = op.getResult();
     auto outputType = output.getType().dyn_cast<mlir::TensorType>();
@@ -1452,9 +1455,11 @@ struct ConcatRewritePattern
       sizes[axis] = axisSize;
 
       // these arrays are copied, so it's fine to modify and use them again
-      mlir::ArrayAttr offsetsAttr = rewriter.getI64ArrayAttr(offsets);
-      mlir::ArrayAttr sizesAttr = rewriter.getI64ArrayAttr(sizes);
-      mlir::ArrayAttr stridesAttr = rewriter.getI64ArrayAttr(strides);
+      mlir::DenseI64ArrayAttr offsetsAttr =
+          rewriter.getDenseI64ArrayAttr(offsets);
+      mlir::DenseI64ArrayAttr sizesAttr = rewriter.getDenseI64ArrayAttr(sizes);
+      mlir::DenseI64ArrayAttr stridesAttr =
+          rewriter.getDenseI64ArrayAttr(strides);
 
       offsets[axis] += axisSize;
 
@@ -1497,9 +1502,10 @@ getPaddedTensor(mlir::Operation *op, mlir::OpBuilder &b, mlir::Value &input,
       getAsOpFoldResult(b, loc, lowPaddingInts);
   mlir::SmallVector<mlir::OpFoldResult> highPaddings =
       getAsOpFoldResult(b, loc, highPaddingInts);
-  mlir::Value paddedInput = mlir::tensor::createPadScalarOp(
-      rankedTensorType, input, pad, /*low=*/lowPaddings, /*high=*/highPaddings,
-      /*packing=*/false, loc, b);
+
+  mlir::Value paddedInput = b.create<mlir::tensor::PadOp>(
+      loc, rankedTensorType, input, lowPaddings, highPaddings, pad);
+
   return paddedInput;
 }
 
@@ -1665,9 +1671,9 @@ struct FHELinalgConv2dToLinalgConv2d
 
     mlir::Location loc = conv2dOp->getLoc();
     mlir::Value input =
-        conv2dOp.input(); /* shape: Batch*Channels*Height*Width */
+        conv2dOp.getInput(); /* shape: Batch*Channels*Height*Width */
     mlir::Value weight =
-        conv2dOp.weight(); /* shape: Filters*Channels*Height*Width */
+        conv2dOp.getWeight(); /* shape: Filters*Channels*Height*Width */
 
     mlir::Type inputElementType =
         input.getType().cast<mlir::RankedTensorType>().getElementType();
@@ -1714,7 +1720,7 @@ struct FHELinalgConv2dToLinalgConv2d
     // Since linalg doesn't support a bias in the conv operation, we initialize
     // the output tensor to the bias values, so that conv results get
     // accumulated to it
-    mlir::Value bias = conv2dOp.bias(); /* optional of shape: Filters */
+    mlir::Value bias = conv2dOp.getBias(); /* optional of shape: Filters */
     mlir::Value biasInitTensor;
     if (!bias) { // no bias was used
       biasInitTensor = initTensor;
@@ -1726,7 +1732,8 @@ struct FHELinalgConv2dToLinalgConv2d
           mlir::AffineMap::get(resultRank, 0, rewriter.getAffineDimExpr(1),
                                rewriter.getContext()),
           rewriter.getMultiDimIdentityMap(resultRank)};
-      mlir::SmallVector<llvm::StringRef> iteratorTypes(resultRank, "parallel");
+      mlir::SmallVector<mlir::utils::IteratorType> iteratorTypes(
+          resultRank, mlir::utils::IteratorType::parallel);
       biasInitTensor =
           rewriter
               .create<mlir::linalg::GenericOp>(
@@ -1817,14 +1824,15 @@ struct FHELinalgMaxpool2dToLinalgMaxpool2d
       output = rewriter.create<FHELinalg::SubEintIntOp>(loc, output, offset);
     }
 
-    const mlir::DenseElementsAttr kernelShapeAttr = maxpool2dOp.kernel_shape();
+    const mlir::DenseElementsAttr kernelShapeAttr =
+        maxpool2dOp.getKernelShape();
     const auto kernelShape =
         llvm::SmallVector<int64_t, 2>(kernelShapeAttr.value_begin<int64_t>(),
                                       kernelShapeAttr.value_end<int64_t>());
 
     const mlir::Value kernel =
         rewriter
-            .create<mlir::linalg::InitTensorOp>(
+            .create<mlir::tensor::EmptyOp>(
                 loc, kernelShape,
                 mlir::IntegerType::get(this->getContext(), 64))
             .getResult();
@@ -1833,12 +1841,12 @@ struct FHELinalgMaxpool2dToLinalgMaxpool2d
         rewriter.getI64VectorAttr({1, 1});
 
     const mlir::DenseIntElementsAttr stridesAttr =
-        maxpool2dOp.dilations().getValueOr(defaultAttr);
+        maxpool2dOp.getDilations().value_or(defaultAttr);
     const mlir::DenseIntElementsAttr dilationsAttr =
-        maxpool2dOp.dilations().getValueOr(defaultAttr);
+        maxpool2dOp.getDilations().value_or(defaultAttr);
 
     rewriter.replaceOpWithNewOp<mlir::linalg::PoolingNchwMaxOp>(
-        maxpool2dOp, outputTy, mlir::ValueRange{maxpool2dOp.input(), kernel},
+        maxpool2dOp, outputTy, mlir::ValueRange{maxpool2dOp.getInput(), kernel},
         output, stridesAttr, dilationsAttr,
         llvm::ArrayRef<mlir::NamedAttribute>({maxOpAttr}));
 
@@ -1892,7 +1900,7 @@ struct FHELinalgToSignedToLinalgGeneric
                   mlir::PatternRewriter &rewriter) const override {
 
     mlir::RankedTensorType inputTy =
-        op.input().getType().cast<mlir::RankedTensorType>();
+        op.getInput().getType().cast<mlir::RankedTensorType>();
     mlir::RankedTensorType resultTy =
         op->getResult(0).getType().cast<mlir::RankedTensorType>();
 
@@ -1906,8 +1914,8 @@ struct FHELinalgToSignedToLinalgGeneric
                                                 this->getContext()),
     };
 
-    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
-                                                     "parallel");
+    llvm::SmallVector<mlir::utils::IteratorType> iteratorTypes(
+        resultTy.getShape().size(), mlir::utils::IteratorType::parallel);
 
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
                            mlir::Location nestedLoc,
@@ -1920,7 +1928,7 @@ struct FHELinalgToSignedToLinalgGeneric
     };
 
     llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
-    llvm::SmallVector<mlir::Value, 1> ins{op.input()};
+    llvm::SmallVector<mlir::Value, 1> ins{op.getInput()};
     llvm::SmallVector<mlir::Value, 1> outs{init};
 
     llvm::StringRef doc{""};
@@ -1981,7 +1989,7 @@ struct FHELinalgToUnsignedToLinalgGeneric
                   mlir::PatternRewriter &rewriter) const override {
 
     mlir::RankedTensorType inputTy =
-        op.input().getType().cast<mlir::RankedTensorType>();
+        op.getInput().getType().cast<mlir::RankedTensorType>();
     mlir::RankedTensorType resultTy =
         op->getResult(0).getType().cast<mlir::RankedTensorType>();
 
@@ -1995,8 +2003,8 @@ struct FHELinalgToUnsignedToLinalgGeneric
                                                 this->getContext()),
     };
 
-    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
-                                                     "parallel");
+    llvm::SmallVector<mlir::utils::IteratorType> iteratorTypes(
+        resultTy.getShape().size(), mlir::utils::IteratorType::parallel);
 
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
                            mlir::Location nestedLoc,
@@ -2009,7 +2017,7 @@ struct FHELinalgToUnsignedToLinalgGeneric
     };
 
     llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
-    llvm::SmallVector<mlir::Value, 1> ins{op.input()};
+    llvm::SmallVector<mlir::Value, 1> ins{op.getInput()};
     llvm::SmallVector<mlir::Value, 1> outs{init};
 
     llvm::StringRef doc{""};
@@ -2040,7 +2048,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   target.addLegalDialect<mlir::memref::MemRefDialect>();
   target.addLegalDialect<mlir::concretelang::FHE::FHEDialect>();
   target.addLegalDialect<mlir::tensor::TensorDialect>();
-  target.addLegalDialect<mlir::arith::ArithmeticDialect>();
+  target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addIllegalOp<mlir::concretelang::FHELinalg::Dot>();
   target.addIllegalDialect<mlir::concretelang::FHELinalg::FHELinalgDialect>();
 

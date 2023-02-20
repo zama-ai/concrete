@@ -5,11 +5,13 @@
 
 #include <iostream>
 #include <mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h>
+#include <mlir/IR/BuiltinTypeInterfaces.h>
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
@@ -21,6 +23,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/MemRef/Transforms/Passes.h"
 #include "mlir/Dialect/OpenMP/OpenMPDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Pass/Pass.h"
@@ -40,7 +43,7 @@ struct MLIRLowerableDialectsToLLVMPass
   void runOnOperation() final;
 
   /// Convert types to the LLVM dialect-compatible type
-  static llvm::Optional<mlir::Type> convertTypes(mlir::Type type);
+  static std::optional<mlir::Type> convertTypes(mlir::Type type);
 };
 } // namespace
 
@@ -73,11 +76,12 @@ struct Memref1DCopyOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::memref::CopyOp copyOp,
                   mlir::PatternRewriter &rewriter) const override {
-    if (copyOp.source().getType().cast<mlir::MemRefType>().getRank() != 1 ||
-        copyOp.source().getType().cast<mlir::MemRefType>().getRank() != 1) {
+    if (copyOp.getSource().getType().cast<mlir::MemRefType>().getRank() != 1 ||
+        copyOp.getSource().getType().cast<mlir::MemRefType>().getRank() != 1) {
       return mlir::failure();
     }
-    auto opType = mlir::MemRefType::get({-1}, rewriter.getI64Type());
+    auto opType = mlir::MemRefType::get({mlir::ShapedType::kDynamic},
+                                        rewriter.getI64Type());
     // Insert forward declaration of the add_lwe_ciphertexts function
     {
       if (insertForwardDeclaration(
@@ -89,9 +93,9 @@ struct Memref1DCopyOpPattern
       }
     }
     auto sourceOp = rewriter.create<mlir::memref::CastOp>(
-        copyOp.getLoc(), opType, copyOp.source());
+        copyOp.getLoc(), opType, copyOp.getSource());
     auto targetOp = rewriter.create<mlir::memref::CastOp>(
-        copyOp.getLoc(), opType, copyOp.target());
+        copyOp.getLoc(), opType, copyOp.getTarget());
     rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         copyOp, "memref_copy_one_rank", mlir::TypeRange{},
         mlir::ValueRange{sourceOp, targetOp});
@@ -119,9 +123,10 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::concretelang::populateRTToLLVMConversionPatterns(typeConverter,
                                                          patterns);
   mlir::populateFuncToLLVMConversionPatterns(typeConverter, patterns);
-  mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
-                                                          patterns);
-  mlir::populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::memref::populateExpandStridedMetadataPatterns(patterns);
+  mlir::populateAffineToStdConversionPatterns(patterns);
+  mlir::populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
   mlir::populateSCFToControlFlowConversionPatterns(patterns);
   mlir::cf::populateControlFlowToLLVMConversionPatterns(typeConverter,
                                                         patterns);
@@ -143,7 +148,7 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   }
 }
 
-llvm::Optional<mlir::Type>
+std::optional<mlir::Type>
 MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
   if (type.isa<mlir::concretelang::Concrete::ContextType>() ||
       type.isa<mlir::concretelang::RT::FutureType>() ||
@@ -161,7 +166,7 @@ MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
     mlir::Type convertedSubtype = typeConverter.convertType(subtype);
     return mlir::LLVM::LLVMPointerType::get(convertedSubtype);
   }
-  return llvm::None;
+  return std::nullopt;
 }
 
 namespace mlir {

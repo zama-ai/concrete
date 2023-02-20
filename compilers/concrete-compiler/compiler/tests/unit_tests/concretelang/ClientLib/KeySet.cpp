@@ -118,8 +118,8 @@ INSTANTIATE_TEST_SUITE_P(
           std::string("lweDimension_") +
           std::to_string(cp.lweSecretKeyParam(input_0).value().dimension) +
           "_precision_" +
-          std::to_string(input_0.encryption.getValue().encoding.precision);
-      auto crt = input_0.encryption.getValue().encoding.crt;
+          std::to_string(input_0.encryption.value().encoding.precision);
+      auto crt = input_0.encryption.value().encoding.crt;
       if (!crt.empty()) {
         paramDescription = paramDescription + "_crt_";
         for (auto b : crt) {

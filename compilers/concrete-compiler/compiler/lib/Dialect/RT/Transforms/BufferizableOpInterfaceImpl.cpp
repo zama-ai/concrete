@@ -36,14 +36,14 @@ struct DerefWorkFunctionArgumentPtrPlaceholderOpBufferizationInterface
     return false;
   }
 
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+  AliasingOpResultList getAliasingOpResults(Operation *op, OpOperand &opOperand,
                                             const AnalysisState &state) const {
     return {};
   }
 
   BufferRelation bufferRelation(Operation *op, OpResult opResult,
                                 const AnalysisState &state) const {
-    return BufferRelation::None;
+    return BufferRelation::Unknown;
   }
 
   LogicalResult bufferize(Operation *bop, RewriterBase &rewriter,
@@ -70,7 +70,7 @@ struct DerefWorkFunctionArgumentPtrPlaceholderOpBufferizationInterface
         if (failed(bufferOrErr))
           return failure();
 
-        Value buffer = bufferOrErr.getValue();
+        Value buffer = bufferOrErr.value();
         newOperands.push_back(buffer);
       } else {
         newOperands.push_back(opOperand.get());
@@ -81,7 +81,7 @@ struct DerefWorkFunctionArgumentPtrPlaceholderOpBufferizationInterface
 
     for (OpResult res : op->getResults()) {
       if (TensorType t = res.getType().dyn_cast<TensorType>()) {
-        BaseMemRefType memrefType = getMemRefType(t, options);
+        BaseMemRefType memrefType = getMemRefType(res, options);
         newResultTypes.push_back(memrefType);
       } else {
         newResultTypes.push_back(res.getType());
@@ -112,14 +112,14 @@ struct MakeReadyFutureOpBufferizationInterface
     return false;
   }
 
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+  AliasingOpResultList getAliasingOpResults(Operation *op, OpOperand &opOperand,
                                             const AnalysisState &state) const {
     return {};
   }
 
   BufferRelation bufferRelation(Operation *op, OpResult opResult,
                                 const AnalysisState &state) const {
-    return BufferRelation::None;
+    return BufferRelation::Unknown;
   }
 
   LogicalResult bufferize(Operation *bop, RewriterBase &rewriter,
@@ -145,7 +145,7 @@ struct MakeReadyFutureOpBufferizationInterface
         if (failed(bufferOrErr))
           return failure();
 
-        Value buffer = bufferOrErr.getValue();
+        Value buffer = bufferOrErr.value();
         newOperands.push_back(buffer);
       } else {
         newOperands.push_back(opOperand.get());
@@ -156,7 +156,7 @@ struct MakeReadyFutureOpBufferizationInterface
 
     for (OpResult res : op->getResults()) {
       if (TensorType t = res.getType().dyn_cast<TensorType>()) {
-        BaseMemRefType memrefType = getMemRefType(t, options);
+        BaseMemRefType memrefType = getMemRefType(res, options);
         newResultTypes.push_back(memrefType);
       } else {
         newResultTypes.push_back(res.getType());
@@ -186,14 +186,14 @@ struct WorkFunctionReturnOpBufferizationInterface
     return false;
   }
 
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+  AliasingOpResultList getAliasingOpResults(Operation *op, OpOperand &opOperand,
                                             const AnalysisState &state) const {
     return {};
   }
 
   BufferRelation bufferRelation(Operation *op, OpResult opResult,
                                 const AnalysisState &state) const {
-    return BufferRelation::None;
+    return BufferRelation::Unknown;
   }
 
   LogicalResult bufferize(Operation *bop, RewriterBase &rewriter,
@@ -219,7 +219,7 @@ struct WorkFunctionReturnOpBufferizationInterface
         if (failed(bufferOrErr))
           return failure();
 
-        Value buffer = bufferOrErr.getValue();
+        Value buffer = bufferOrErr.value();
         newOperands.push_back(buffer);
       } else {
         newOperands.push_back(opOperand.get());
@@ -230,7 +230,7 @@ struct WorkFunctionReturnOpBufferizationInterface
 
     for (OpResult res : op->getResults()) {
       if (TensorType t = res.getType().dyn_cast<TensorType>()) {
-        BaseMemRefType memrefType = getMemRefType(t, options);
+        BaseMemRefType memrefType = getMemRefType(res, options);
         newResultTypes.push_back(memrefType);
       } else {
         newResultTypes.push_back(res.getType());
@@ -260,14 +260,14 @@ struct AwaitFutureOpBufferizationInterface
     return false;
   }
 
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+  AliasingOpResultList getAliasingOpResults(Operation *op, OpOperand &opOperand,
                                             const AnalysisState &state) const {
     return {};
   }
 
   BufferRelation bufferRelation(Operation *op, OpResult opResult,
                                 const AnalysisState &state) const {
-    return BufferRelation::None;
+    return BufferRelation::Unknown;
   }
 
   LogicalResult bufferize(Operation *bop, RewriterBase &rewriter,
@@ -293,7 +293,7 @@ struct AwaitFutureOpBufferizationInterface
         if (failed(bufferOrErr))
           return failure();
 
-        Value buffer = bufferOrErr.getValue();
+        Value buffer = bufferOrErr.value();
         newOperands.push_back(buffer);
       } else {
         newOperands.push_back(opOperand.get());
@@ -304,7 +304,7 @@ struct AwaitFutureOpBufferizationInterface
 
     for (OpResult res : op->getResults()) {
       if (TensorType t = res.getType().dyn_cast<TensorType>()) {
-        BaseMemRefType memrefType = getMemRefType(t, options);
+        BaseMemRefType memrefType = getMemRefType(res, options);
         newResultTypes.push_back(memrefType);
       } else {
         newResultTypes.push_back(res.getType());

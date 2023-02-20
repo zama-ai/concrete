@@ -14,7 +14,7 @@ add_mlir_dialect_library(
   SDFGDialect
   ConcretelangSDFGInterfaces
   ConcretelangConversion
-  MLIRArithmeticDialect
+  MLIRArithDialect
   MLIRBufferizationDialect
   MLIRBufferizationTransforms
   MLIRIR

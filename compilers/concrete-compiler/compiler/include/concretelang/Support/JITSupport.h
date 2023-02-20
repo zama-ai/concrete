@@ -34,7 +34,7 @@ class JITSupport
                            JitCompilationResult> {
 
 public:
-  JITSupport(llvm::Optional<std::string> runtimeLibPath = llvm::None);
+  JITSupport(std::optional<std::string> runtimeLibPath = std::nullopt);
 
   llvm::Expected<std::unique_ptr<JitCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override;
@@ -63,7 +63,7 @@ public:
   }
 
 private:
-  llvm::Optional<std::string> runtimeLibPath;
+  std::optional<std::string> runtimeLibPath;
   llvm::function_ref<llvm::Error(llvm::Module *)> llvmOptPipeline;
 };
 

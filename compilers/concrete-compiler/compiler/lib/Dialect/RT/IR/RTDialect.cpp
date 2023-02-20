@@ -42,7 +42,8 @@ void RTDialect::initialize() {
 ::mlir::Type RTDialect::parseType(::mlir::DialectAsmParser &parser) const {
   mlir::Type type;
   if (parser.parseOptionalKeyword("future").succeeded()) {
-    generatedTypeParser(parser, "future", type);
+    llvm::StringRef mnenomic;
+    generatedTypeParser(parser, &mnenomic, type);
     return type;
   }
   return type;

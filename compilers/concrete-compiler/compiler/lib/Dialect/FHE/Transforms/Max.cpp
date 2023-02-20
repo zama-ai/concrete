@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
@@ -32,8 +32,8 @@ struct MaxEintPattern : public mlir::OpRewritePattern<FHE::MaxEintOp> {
         maxEintOp->getResult(0).getType().cast<FHE::FheIntegerInterface>();
     const int64_t outputBitWidth = outputTy.getWidth();
 
-    mlir::Value x = maxEintOp.x();
-    mlir::Value y = maxEintOp.y();
+    mlir::Value x = maxEintOp.getX();
+    mlir::Value y = maxEintOp.getY();
 
     const auto xTy = x.getType().cast<FHE::FheIntegerInterface>();
     const auto yTy = y.getType().cast<FHE::FheIntegerInterface>();
@@ -70,7 +70,7 @@ struct MaxEintPattern : public mlir::OpRewritePattern<FHE::MaxEintOp> {
             .getResult();
 
     const mlir::Value add =
-        rewriter.create<FHE::AddEintOp>(loc, max, maxEintOp.y()).getResult();
+        rewriter.create<FHE::AddEintOp>(loc, max, maxEintOp.getY()).getResult();
 
     rewriter.replaceOp(maxEintOp, {add});
     return mlir::success();
@@ -85,7 +85,7 @@ struct FHEMaxTransform : public FHEMaxTransformBase<FHEMaxTransform> {
 
 void FHEMaxTransform::runOnOperation() {
   auto target = mlir::ConversionTarget(this->getContext());
-  target.addLegalDialect<arith::ArithmeticDialect>();
+  target.addLegalDialect<arith::ArithDialect>();
   target.addLegalDialect<FHE::FHEDialect>();
   target.addIllegalOp<FHE::MaxEintOp>();
 

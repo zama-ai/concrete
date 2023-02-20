@@ -17,6 +17,7 @@
 #include <mlir/Support/FileUtilities.h>
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Support/ToolUtilities.h>
+#include <optional>
 #include <sstream>
 
 #include "concretelang/ClientLib/KeySet.h"
@@ -384,7 +385,7 @@ cmdlineCompilationOptions() {
     options.v0Parameter = {cmdline::v0Parameter[0], cmdline::v0Parameter[1],
                            cmdline::v0Parameter[2], cmdline::v0Parameter[3],
                            cmdline::v0Parameter[4], cmdline::v0Parameter[5],
-                           cmdline::v0Parameter[6], llvm::None};
+                           cmdline::v0Parameter[6], std::nullopt};
   }
 
   // Setup the large integer options
@@ -477,7 +478,7 @@ mlir::LogicalResult processInputBuffer(
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
 
-  std::string funcName = options.clientParametersFuncName.getValueOr("");
+  std::string funcName = options.clientParametersFuncName.value_or("");
   if (action == Action::JIT_INVOKE) {
     auto lambdaOrErr =
         mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::

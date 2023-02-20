@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
 #include "mlir/Dialect/Bufferization/Transforms/BufferUtils.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -43,7 +43,7 @@ namespace {} // namespace
 namespace {
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
-  std::vector<int64_t> shape(rank, -1);
+  std::vector<int64_t> shape(rank, mlir::ShapedType::kDynamic);
   mlir::AffineExpr expr = rewriter.getAffineSymbolExpr(0);
   for (size_t i = 0; i < rank; i++) {
     expr = expr +
@@ -84,14 +84,14 @@ struct BufferizableWithCallOpInterface
     return false;
   }
 
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+  AliasingOpResultList getAliasingOpResults(Operation *op, OpOperand &opOperand,
                                             const AnalysisState &state) const {
     return {};
   }
 
   BufferRelation bufferRelation(Operation *op, OpResult opResult,
                                 const AnalysisState &state) const {
-    return BufferRelation::None;
+    return BufferRelation::Unknown;
   }
 
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,

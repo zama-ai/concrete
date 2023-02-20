@@ -159,7 +159,7 @@ public:
     // Set sizes
     std::vector<int64_t> sizes = keySet.clientParameters().bufferShape(input);
 
-    if (input.encryption.hasValue()) {
+    if (input.encryption.has_value()) {
       TensorData td(sizes, EncryptedScalarElementType,
                     EncryptedScalarElementWidth);
 

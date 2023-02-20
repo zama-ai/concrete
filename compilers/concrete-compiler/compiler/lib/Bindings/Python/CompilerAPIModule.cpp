@@ -203,10 +203,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "key_set",
           [](clientlib::ClientParameters clientParameters,
              clientlib::KeySetCache *cache) {
-            auto optCache =
-                cache == nullptr
-                    ? llvm::None
-                    : llvm::Optional<clientlib::KeySetCache>(*cache);
+            auto optCache = cache == nullptr
+                                ? std::nullopt
+                                : std::optional<clientlib::KeySetCache>(*cache);
             return key_set(clientParameters, optCache);
           },
           pybind11::arg().none(false), pybind11::arg().none(true))
@@ -241,9 +240,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](mlir::concretelang::ClientParameters &clientParameters) {
              std::vector<bool> result;
              for (auto output : clientParameters.outputs) {
-               if (output.encryption.hasValue()) {
-                 result.push_back(
-                     output.encryption.getValue().encoding.isSigned);
+               if (output.encryption.has_value()) {
+                 result.push_back(output.encryption.value().encoding.isSigned);
                } else {
                  result.push_back(true);
                }

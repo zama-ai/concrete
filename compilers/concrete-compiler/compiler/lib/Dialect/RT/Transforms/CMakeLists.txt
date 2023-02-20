@@ -7,7 +7,7 @@ add_mlir_dialect_library(
   mlir-headers
   LINK_LIBS
   PUBLIC
-  MLIRArithmeticDialect
+  MLIRArithDialect
   MLIRBufferizationDialect
   MLIRBufferizationTransforms
   MLIRIR

@@ -7,7 +7,7 @@
 
 #include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/IR/BlockAndValueMapping.h"
+#include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/Passes.h"
@@ -31,10 +31,11 @@ public:
     if (attr.getValue()) {
       rewriter.replaceOpWithNewOp<mlir::scf::ParallelOp>(
           forOp, mlir::ValueRange{forOp.getLowerBound()},
-          mlir::ValueRange{forOp.getUpperBound()}, forOp.getStep(), llvm::None,
+          mlir::ValueRange{forOp.getUpperBound()}, forOp.getStep(),
+          std::nullopt,
           [&](mlir::OpBuilder &builder, mlir::Location location,
               mlir::ValueRange indVar, mlir::ValueRange iterArgs) {
-            mlir::BlockAndValueMapping map;
+            mlir::IRMapping map;
             map.map(forOp.getInductionVar(), indVar.front());
             for (auto &op : forOp.getRegion().front()) {
               auto newOp = builder.clone(op, map);
@@ -44,10 +45,10 @@ public:
     } else {
       rewriter.replaceOpWithNewOp<mlir::scf::ForOp>(
           forOp, forOp.getLowerBound(), forOp.getUpperBound(), forOp.getStep(),
-          llvm::None,
+          std::nullopt,
           [&](mlir::OpBuilder &builder, mlir::Location location,
               mlir::Value indVar, mlir::ValueRange iterArgs) {
-            mlir::BlockAndValueMapping map;
+            mlir::IRMapping map;
             map.map(forOp.getInductionVar(), indVar);
             for (auto &op : forOp.getRegion().front()) {
               auto newOp = builder.clone(op, map);

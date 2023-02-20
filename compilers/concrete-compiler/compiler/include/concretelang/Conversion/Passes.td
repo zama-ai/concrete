@@ -79,7 +79,7 @@ def SDFGToStreamEmulator : Pass<"sdfg-to-stream-emulator", "mlir::ModuleOp"> {
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
   let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
   let constructor = "mlir::concretelang::createConvertMLIRLowerableDialectsToLLVMPass()";
-  let dependentDialects = ["mlir::func::FuncDialect", "mlir::arith::ArithmeticDialect", "mlir::scf::SCFDialect", "mlir::LLVM::LLVMDialect"];
+  let dependentDialects = ["mlir::func::FuncDialect", "mlir::arith::ArithDialect", "mlir::scf::SCFDialect", "mlir::LLVM::LLVMDialect"];
   let options = [];
 }
 

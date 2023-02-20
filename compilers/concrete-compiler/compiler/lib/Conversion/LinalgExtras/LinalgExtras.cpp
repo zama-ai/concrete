@@ -43,7 +43,7 @@ public:
     if (((mlir::LogicalResult)loops).failed() || loops->size() == 0)
       return mlir::failure();
 
-    rewriter.replaceOp(linalgOp, loops.getValue()[0]->getResult(0));
+    rewriter.replaceOp(linalgOp, loops.value()[0]->getResult(0));
 
     return mlir::success();
   };

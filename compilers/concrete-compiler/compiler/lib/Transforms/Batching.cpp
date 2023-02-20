@@ -4,7 +4,7 @@
 // for license information.
 
 #include <llvm/ADT/STLExtras.h>
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
@@ -206,7 +206,7 @@ struct BoundsAndStep {
 /// Returns the lower bound, upper bound and step of the quasi-affine
 /// expression `expr` on the the induction variable from a for
 /// operation.
-static llvm::Optional<BoundsAndStep>
+static std::optional<BoundsAndStep>
 getBoundsOfQuasiAffineIVExpression(mlir::Value expr, mlir::scf::ForOp forOp) {
   // Base case: expression is the induction variable itself -> return
   // loop bounds
@@ -220,13 +220,13 @@ getBoundsOfQuasiAffineIVExpression(mlir::Value expr, mlir::scf::ForOp forOp) {
     if (llvm::isa<mlir::arith::AddIOp, mlir::arith::SubIOp, mlir::arith::MulIOp,
                   mlir::arith::DivSIOp>(op)) {
 
-      llvm::Optional<BoundsAndStep> lhs =
+      std::optional<BoundsAndStep> lhs =
           getBoundsOfQuasiAffineIVExpression(op->getOperand(0), forOp);
-      llvm::Optional<BoundsAndStep> rhs =
+      std::optional<BoundsAndStep> rhs =
           getBoundsOfQuasiAffineIVExpression(op->getOperand(1), forOp);
 
-      if (!lhs.hasValue() || !rhs.hasValue())
-        return llvm::None;
+      if (!lhs.has_value() || !rhs.has_value())
+        return std::nullopt;
 
       if (llvm::isa<mlir::arith::AddIOp>(op))
         return *lhs + *rhs;
@@ -245,7 +245,7 @@ getBoundsOfQuasiAffineIVExpression(mlir::Value expr, mlir::scf::ForOp forOp) {
         // the divisor, there may be two iterations with the same
         // value. Conservatively bail out.
         if (lhs->step % rhsVal != 0)
-          return llvm::None;
+          return std::nullopt;
 
         return *lhs / rhsVal;
       }
@@ -370,10 +370,10 @@ isQuasiAffineIVExpressionWithConstantStep(mlir::Value expr,
   mlir::scf::ForOp tmpForOp;
 
   if (isQuasiAffineIVExpression(expr, &tmpForOp)) {
-    llvm::Optional<BoundsAndStep> bas =
+    std::optional<BoundsAndStep> bas =
         getBoundsOfQuasiAffineIVExpression(expr, tmpForOp);
 
-    if (bas.hasValue()) {
+    if (bas.has_value()) {
       if (forOp != nullptr)
         *forOp = tmpForOp;
       return true;
@@ -409,10 +409,10 @@ mlir::Value hoistIndexedOp(
 
     if (isAffine && forOp) {
 
-      llvm::Optional<BoundsAndStep> bas =
+      std::optional<BoundsAndStep> bas =
           getBoundsOfQuasiAffineIVExpression(idx, forOp);
 
-      assert(bas.hasValue());
+      assert(bas.has_value());
       assert(bas->step != 0);
 
       offsets.push_back(rewriter.getIndexAttr(bas->lb));
@@ -802,7 +802,7 @@ public:
         return mlir::WalkResult::skip();
 
       if (!llvm::all_of(body, [&](mlir::Operation &op) {
-            return MemoryEffectOpInterface::hasNoEffect(&op);
+            return isMemoryEffectFree(&op);
           })) {
         return mlir::WalkResult::skip();
       }

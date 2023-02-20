@@ -18,7 +18,7 @@ include "concretelang/Dialect/FHE/IR/FHETypes.td"
 class FHE_Op<string mnemonic, list<Trait> traits = []> :
     Op<FHE_Dialect, mnemonic, traits>;
 
-def FHE_ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
+def FHE_ZeroEintOp : FHE_Op<"zero", [Pure]> {
     let summary = "Returns a trivial encrypted integer of 0";
 
     let description = [{
@@ -35,7 +35,7 @@ def FHE_ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
     let results = (outs FHE_AnyEncryptedInteger:$out);
 }
 
-def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [NoSideEffect]> {
+def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure]> {
     let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
 
     let description = [{
@@ -53,7 +53,7 @@ def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [NoSideEffect]> {
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [NoSideEffect]> {
+def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure]> {
     let summary = "Adds an encrypted integer and a clear integer";
 
     let description = [{
@@ -87,7 +87,7 @@ def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [NoSideEffect]> {
     let hasFolder = 1;
 }
 
-def FHE_AddEintOp : FHE_Op<"add_eint", [NoSideEffect]> {
+def FHE_AddEintOp : FHE_Op<"add_eint", [Pure]> {
     let summary = "Adds two encrypted integers";
 
     let description = [{
@@ -120,7 +120,7 @@ def FHE_AddEintOp : FHE_Op<"add_eint", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [NoSideEffect]> {
+def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure]> {
     let summary = "Subtract an encrypted integer from a clear integer";
 
     let description = [{
@@ -153,7 +153,7 @@ def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [NoSideEffect]> {
+def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure]> {
     let summary = "Subtract a clear integer from an encrypted integer";
 
     let description = [{
@@ -187,7 +187,7 @@ def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [NoSideEffect]> {
     let hasFolder = 1;
 }
 
-def FHE_SubEintOp : FHE_Op<"sub_eint", [NoSideEffect]> {
+def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure]> {
     let summary = "Subtract an encrypted integer from an encrypted integer";
 
     let description = [{
@@ -220,7 +220,7 @@ def FHE_SubEintOp : FHE_Op<"sub_eint", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_NegEintOp : FHE_Op<"neg_eint", [NoSideEffect]> {
+def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure]> {
 
     let summary = "Negates an encrypted integer";
 
@@ -251,7 +251,7 @@ def FHE_NegEintOp : FHE_Op<"neg_eint", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [NoSideEffect]> {
+def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure]> {
     let summary = "Multiply an encrypted integer with a clear integer";
 
     let description = [{
@@ -285,7 +285,7 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [NoSideEffect]> {
     let hasFolder = 1;
 }
 
-def FHE_MulEintOp : FHE_Op<"mul_eint", [NoSideEffect]> {
+def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
     let summary = "Multiplies two encrypted integers";
 
     let description = [{
@@ -323,7 +323,7 @@ def FHE_MulEintOp : FHE_Op<"mul_eint", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_MaxEintOp : FHE_Op<"max_eint", [NoSideEffect]> {
+def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure]> {
     let summary = "Get maximum of two encrypted integers.";
 
     let description = [{
@@ -358,7 +358,7 @@ def FHE_MaxEintOp : FHE_Op<"max_eint", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_ToSignedOp : FHE_Op<"to_signed", [NoSideEffect]> {
+def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure]> {
     let summary = "Cast an unsigned integer to a signed one";
 
     let description = [{
@@ -383,7 +383,7 @@ def FHE_ToSignedOp : FHE_Op<"to_signed", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [NoSideEffect]> {
+def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
     let summary = "Cast a signed integer to an unsigned one";
 
     let description = [{
@@ -408,7 +408,7 @@ def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [NoSideEffect]> {
+def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure]> {
 
     let summary = "Applies a clear lookup table to an encrypted integer";
 
@@ -434,7 +434,7 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_RoundEintOp: FHE_Op<"round", [NoSideEffect]> {
+def FHE_RoundEintOp: FHE_Op<"round", [Pure]> {
 
     let summary = "Rounds a ciphertext to a smaller precision.";
 
@@ -465,7 +465,7 @@ def FHE_RoundEintOp: FHE_Op<"round", [NoSideEffect]> {
 
 // FHE Boolean Operations
 
-def FHE_GenGateOp : FHE_Op<"gen_gate", [NoSideEffect]> {
+def FHE_GenGateOp : FHE_Op<"gen_gate", [Pure]> {
 
     let summary = "Applies a truth table based on two boolean inputs";
 
@@ -492,7 +492,7 @@ def FHE_GenGateOp : FHE_Op<"gen_gate", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_MuxOp : FHE_Op<"mux", [NoSideEffect]> {
+def FHE_MuxOp : FHE_Op<"mux", [Pure]> {
 
     let summary = "Multiplexer for two encrypted boolean inputs, based on an encrypted condition";
 
@@ -509,7 +509,7 @@ def FHE_MuxOp : FHE_Op<"mux", [NoSideEffect]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_BoolAndOp : FHE_Op<"and", [NoSideEffect]> {
+def FHE_BoolAndOp : FHE_Op<"and", [Pure]> {
 
     let summary = "Applies an AND gate to two encrypted boolean values";
 
@@ -526,7 +526,7 @@ def FHE_BoolAndOp : FHE_Op<"and", [NoSideEffect]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_BoolOrOp : FHE_Op<"or", [NoSideEffect]> {
+def FHE_BoolOrOp : FHE_Op<"or", [Pure]> {
 
     let summary = "Applies an OR gate to two encrypted boolean values";
 
@@ -543,7 +543,7 @@ def FHE_BoolOrOp : FHE_Op<"or", [NoSideEffect]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_BoolNandOp : FHE_Op<"nand", [NoSideEffect]> {
+def FHE_BoolNandOp : FHE_Op<"nand", [Pure]> {
 
     let summary = "Applies a NAND gate to two encrypted boolean values";
 
@@ -560,7 +560,7 @@ def FHE_BoolNandOp : FHE_Op<"nand", [NoSideEffect]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_BoolXorOp : FHE_Op<"xor", [NoSideEffect]> {
+def FHE_BoolXorOp : FHE_Op<"xor", [Pure]> {
 
     let summary = "Applies a XOR gate to two encrypted boolean values";
 
@@ -577,7 +577,7 @@ def FHE_BoolXorOp : FHE_Op<"xor", [NoSideEffect]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_BoolNotOp : FHE_Op<"not", [NoSideEffect]> {
+def FHE_BoolNotOp : FHE_Op<"not", [Pure]> {
 
     let summary = "Applies a NOT gate to an encrypted boolean value";
 
@@ -594,7 +594,7 @@ def FHE_BoolNotOp : FHE_Op<"not", [NoSideEffect]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_ToBoolOp : FHE_Op<"to_bool", [NoSideEffect]> {
+def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure]> {
     let summary = "Cast an unsigned integer to a boolean";
 
     let description = [{
@@ -620,7 +620,7 @@ def FHE_ToBoolOp : FHE_Op<"to_bool", [NoSideEffect]> {
     let hasVerifier = 1;
 }
 
-def FHE_FromBoolOp : FHE_Op<"from_bool", [NoSideEffect]> {
+def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure]> {
     let summary = "Cast a boolean to an unsigned integer";
 
     let description = [{

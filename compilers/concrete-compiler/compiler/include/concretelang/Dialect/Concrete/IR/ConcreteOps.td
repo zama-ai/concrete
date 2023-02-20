@@ -31,7 +31,7 @@ class Concrete_Op<string mnemonic, list<Trait> traits = []> :
     Op<Concrete_Dialect, mnemonic, traits>;
 
 
-def Concrete_AddLweTensorOp : Concrete_Op<"add_lwe_tensor", [NoSideEffect]> {
+def Concrete_AddLweTensorOp : Concrete_Op<"add_lwe_tensor", [Pure]> {
     let summary = "Returns the sum of 2 lwe ciphertexts";
 
     let arguments = (ins
@@ -51,7 +51,7 @@ def Concrete_AddLweBufferOp : Concrete_Op<"add_lwe_buffer"> {
     );
 }
 
-def Concrete_AddPlaintextLweTensorOp : Concrete_Op<"add_plaintext_lwe_tensor", [NoSideEffect]> {
+def Concrete_AddPlaintextLweTensorOp : Concrete_Op<"add_plaintext_lwe_tensor", [Pure]> {
     let summary = "Returns the sum of a clear integer and an lwe ciphertext";
 
     let arguments = (ins Concrete_LweTensor:$lhs, I64:$rhs);
@@ -68,7 +68,7 @@ def Concrete_AddPlaintextLweBufferOp : Concrete_Op<"add_plaintext_lwe_buffer"> {
     );
 }
 
-def Concrete_MulCleartextLweTensorOp : Concrete_Op<"mul_cleartext_lwe_tensor", [NoSideEffect]> {
+def Concrete_MulCleartextLweTensorOp : Concrete_Op<"mul_cleartext_lwe_tensor", [Pure]> {
     let summary = "Returns the product of a clear integer and a lwe ciphertext";
 
     let arguments = (ins Concrete_LweTensor:$lhs, I64:$rhs);
@@ -85,7 +85,7 @@ def Concrete_MulCleartextLweBufferOp : Concrete_Op<"mul_cleartext_lwe_buffer"> {
     );
 }
 
-def Concrete_NegateLweTensorOp : Concrete_Op<"negate_lwe_tensor", [NoSideEffect]> {
+def Concrete_NegateLweTensorOp : Concrete_Op<"negate_lwe_tensor", [Pure]> {
     let summary = "Negates a lwe ciphertext";
 
     let arguments = (ins Concrete_LweTensor:$ciphertext);
@@ -101,7 +101,7 @@ def Concrete_NegateLweBufferOp : Concrete_Op<"negate_lwe_buffer"> {
     );
 }
 
-def Concrete_EncodeExpandLutForBootstrapTensorOp : Concrete_Op<"encode_expand_lut_for_bootstrap_tensor", [NoSideEffect]> {
+def Concrete_EncodeExpandLutForBootstrapTensorOp : Concrete_Op<"encode_expand_lut_for_bootstrap_tensor", [Pure]> {
     let summary =
     "Encode and expand a lookup table so that it can be used for a bootstrap";
 
@@ -128,7 +128,7 @@ def Concrete_EncodeExpandLutForBootstrapBufferOp : Concrete_Op<"encode_expand_lu
     );
 }
 
-def Concrete_EncodeLutForCrtWopPBSTensorOp : Concrete_Op<"encode_lut_for_crt_woppbs_tensor", [NoSideEffect]> {
+def Concrete_EncodeLutForCrtWopPBSTensorOp : Concrete_Op<"encode_lut_for_crt_woppbs_tensor", [Pure]> {
     let summary =
         "Encode and expand a lookup table so that it can be used for a wop pbs";
 
@@ -157,7 +157,7 @@ def Concrete_EncodeLutForCrtWopPBSBufferOp : Concrete_Op<"encode_lut_for_crt_wop
     );
 }
 
-def Concrete_EncodePlaintextWithCrtTensorOp : Concrete_Op<"encode_plaintext_with_crt_tensor", [NoSideEffect]> {
+def Concrete_EncodePlaintextWithCrtTensorOp : Concrete_Op<"encode_plaintext_with_crt_tensor", [Pure]> {
     let summary =
         "Encodes a plaintext by decomposing it on a crt basis";
 
@@ -182,7 +182,7 @@ def Concrete_EncodePlaintextWithCrtBufferOp : Concrete_Op<"encode_plaintext_with
     );
 }
 
-def Concrete_BootstrapLweTensorOp : Concrete_Op<"bootstrap_lwe_tensor", [NoSideEffect]> {
+def Concrete_BootstrapLweTensorOp : Concrete_Op<"bootstrap_lwe_tensor", [Pure]> {
     let summary = "Bootstraps an LWE ciphertext with a GLWE trivial encryption of the lookup table";
 
     let arguments = (ins
@@ -214,7 +214,7 @@ def Concrete_BootstrapLweTensorOp : Concrete_Op<"bootstrap_lwe_tensor", [NoSideE
 
         return builder.create<BatchedBootstrapLweTensorOp>(
           mlir::TypeRange{resType},
-          mlir::ValueRange{batchedOperands, lookup_table()},
+          mlir::ValueRange{batchedOperands, getLookupTable()},
           getOperation()->getAttrs());
       }
     }];
@@ -236,7 +236,7 @@ def Concrete_BootstrapLweBufferOp : Concrete_Op<"bootstrap_lwe_buffer"> {
     );
 }
 
-def Concrete_BatchedBootstrapLweTensorOp : Concrete_Op<"batched_bootstrap_lwe_tensor", [NoSideEffect]> {
+def Concrete_BatchedBootstrapLweTensorOp : Concrete_Op<"batched_bootstrap_lwe_tensor", [Pure]> {
     let summary = "Batched version of BootstrapLweOp, which performs the same operation on multiple elements";
 
     let arguments = (ins
@@ -268,7 +268,7 @@ def Concrete_BatchedBootstrapLweBufferOp : Concrete_Op<"batched_bootstrap_lwe_bu
     );
 }
 
-def Concrete_KeySwitchLweTensorOp : Concrete_Op<"keyswitch_lwe_tensor", [NoSideEffect]> {
+def Concrete_KeySwitchLweTensorOp : Concrete_Op<"keyswitch_lwe_tensor", [Pure]> {
     let summary = "Keyswitches an LWE ciphertext";
 
     let arguments = (ins
@@ -317,7 +317,7 @@ def Concrete_KeySwitchLweBufferOp : Concrete_Op<"keyswitch_lwe_buffer"> {
     );
 }
 
-def Concrete_BatchedKeySwitchLweTensorOp : Concrete_Op<"batched_keyswitch_lwe_tensor", [NoSideEffect]> {
+def Concrete_BatchedKeySwitchLweTensorOp : Concrete_Op<"batched_keyswitch_lwe_tensor", [Pure]> {
     let summary = "Batched version of KeySwitchLweOp, which performs the same operation on multiple elements";
 
     let arguments = (ins
@@ -344,7 +344,7 @@ def Concrete_BatchedKeySwitchLweBufferOp : Concrete_Op<"batched_keyswitch_lwe_bu
     );
 }
 
-def Concrete_WopPBSCRTLweTensorOp : Concrete_Op<"wop_pbs_crt_lwe_tensor", [NoSideEffect]> {
+def Concrete_WopPBSCRTLweTensorOp : Concrete_Op<"wop_pbs_crt_lwe_tensor", [Pure]> {
     let arguments = (ins
         Concrete_LweCRTTensor:$ciphertext,
         Concrete_CrtLutsTensor:$lookupTable,

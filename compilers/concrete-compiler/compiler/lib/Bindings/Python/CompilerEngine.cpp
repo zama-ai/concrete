@@ -23,8 +23,8 @@
 
 MLIR_CAPI_EXPORTED JITSupport_Py jit_support(std::string runtimeLibPath) {
   auto opt = runtimeLibPath.empty()
-                 ? llvm::None
-                 : llvm::Optional<std::string>(runtimeLibPath);
+                 ? std::nullopt
+                 : std::optional<std::string>(runtimeLibPath);
   return JITSupport_Py{mlir::concretelang::JITSupport(opt)};
 }
 
@@ -139,7 +139,7 @@ library_get_client_parameters_path(LibrarySupport_Py support) {
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
 key_set(concretelang::clientlib::ClientParameters clientParameters,
-        llvm::Optional<concretelang::clientlib::KeySetCache> cache) {
+        std::optional<concretelang::clientlib::KeySetCache> cache) {
   GET_OR_THROW_LLVM_EXPECTED(
       ks, (mlir::concretelang::LambdaSupport<int, int>::keySet(clientParameters,
                                                                cache)));

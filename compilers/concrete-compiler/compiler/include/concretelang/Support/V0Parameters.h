@@ -60,7 +60,7 @@ using DagSolution = concrete_optimizer::dag::DagSolution;
 /* Contains any circuit description usable by the concrete-optimizer */
 struct Description {
   V0FHEConstraint constraint;
-  llvm::Optional<optimizer::Dag> dag;
+  std::optional<optimizer::Dag> dag;
 };
 
 } // namespace optimizer

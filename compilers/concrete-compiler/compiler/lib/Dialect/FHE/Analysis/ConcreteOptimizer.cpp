@@ -6,11 +6,12 @@
 #include <chrono>
 #include <cmath>
 #include <initializer_list>
+#include <optional>
 #include <vector>
 
 #include "boost/outcome.h"
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Pass/PassManager.h"
@@ -65,7 +66,7 @@ struct FunctionToDag {
     mlir::concretelang::log_verbose() << MSG << "\n";                          \
   }
 
-  outcome::checked<llvm::Optional<optimizer::Dag>,
+  outcome::checked<std::optional<optimizer::Dag>,
                    ::concretelang::error::StringError>
   build() {
     auto dag = concrete_optimizer::dag::empty();
@@ -88,7 +89,7 @@ struct FunctionToDag {
       // Dag is empty <=> classical function without encryption
       DEBUG("!!! concrete-optimizer: nothing to do in " << func.getName()
                                                         << "\n");
-      return llvm::None;
+      return std::nullopt;
     };
     DEBUG(std::string(dag->dump()));
     return std::move(dag);
@@ -143,7 +144,7 @@ struct FunctionToDag {
     if (auto dot = asDot(op)) {
       auto weightsOpt = dotWeights(dot);
       if (weightsOpt) {
-        addDot(dag, val, encrypted_inputs, weightsOpt.getValue());
+        addDot(dag, val, encrypted_inputs, weightsOpt.value());
         return;
       }
       // If can't find weights return default leveled op
@@ -231,8 +232,8 @@ struct FunctionToDag {
     mlir::Value result = mulOp.getResult();
     const std::vector<uint64_t> resultShape = getShape(result);
 
-    Operation *xOp = mulOp.a().getDefiningOp();
-    Operation *yOp = mulOp.b().getDefiningOp();
+    Operation *xOp = mulOp.getA().getDefiningOp();
+    Operation *yOp = mulOp.getB().getDefiningOp();
 
     const double fixedCost = NEGLIGIBLE_COMPLEXITY;
     const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
@@ -292,8 +293,8 @@ struct FunctionToDag {
     mlir::Value result = maxOp.getResult();
     const std::vector<uint64_t> resultShape = getShape(result);
 
-    Operation *xOp = maxOp.x().getDefiningOp();
-    Operation *yOp = maxOp.y().getDefiningOp();
+    Operation *xOp = maxOp.getX().getDefiningOp();
+    Operation *yOp = maxOp.getY().getDefiningOp();
 
     const double fixedCost = NEGLIGIBLE_COMPLEXITY;
     const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
@@ -344,12 +345,13 @@ struct FunctionToDag {
     std::vector<uint64_t> fakeShape = resultShape;
 
     uint64_t numberOfComparisons = 1;
-    for (auto dimensionSize : maxpool2dOp.kernel_shape().getValues<int64_t>()) {
+    for (auto dimensionSize :
+         maxpool2dOp.getKernelShape().getValues<int64_t>()) {
       numberOfComparisons *= dimensionSize;
     }
     fakeShape.push_back(numberOfComparisons);
 
-    Operation *inputOp = maxpool2dOp.input().getDefiningOp();
+    Operation *inputOp = maxpool2dOp.getInput().getDefiningOp();
 
     const double fixedCost = NEGLIGIBLE_COMPLEXITY;
     const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
@@ -438,7 +440,7 @@ struct FunctionToDag {
     return value.isa<mlir::BlockArgument>();
   }
 
-  llvm::Optional<std::vector<std::int64_t>>
+  std::optional<std::vector<std::int64_t>>
   resolveConstantVectorWeights(mlir::arith::ConstantOp &cstOp) {
     std::vector<std::int64_t> values;
     mlir::DenseIntElementsAttr denseVals =
@@ -446,14 +448,14 @@ struct FunctionToDag {
 
     for (llvm::APInt val : denseVals.getValues<llvm::APInt>()) {
       if (val.getActiveBits() > 64) {
-        return llvm::None;
+        return std::nullopt;
       }
       values.push_back(val.getSExtValue());
     }
     return values;
   }
 
-  llvm::Optional<std::vector<std::int64_t>>
+  std::optional<std::vector<std::int64_t>>
   resolveConstantWeights(mlir::Value &value) {
     if (auto cstOp = llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
             value.getDefiningOp())) {
@@ -463,18 +465,18 @@ struct FunctionToDag {
         return resolveConstantVectorWeights(cstOp);
       default:
         DEBUG("High-Rank tensor: rely on MANP and levelledOp");
-        return llvm::None;
+        return std::nullopt;
       }
     } else {
       DEBUG("Dynamic Weights: rely on MANP and levelledOp");
-      return llvm::None;
+      return std::nullopt;
     }
   }
 
-  llvm::Optional<std::vector<std::int64_t>>
+  std::optional<std::vector<std::int64_t>>
   dotWeights(mlir::concretelang::FHELinalg::Dot &dot) {
     if (dot.getOperands().size() != 2) {
-      return llvm::None;
+      return std::nullopt;
     }
     auto weights = dot.getOperands()[1];
     return resolveConstantWeights(weights);

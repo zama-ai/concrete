@@ -206,7 +206,7 @@ typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
       return (sign) ? buildScalarLambdaResult<int8_t>(keySet, result)
                     : buildScalarLambdaResult<uint8_t>(keySet, result);
     }
-  } else if (gate.chunkInfo.hasValue()) {
+  } else if (gate.chunkInfo.has_value()) {
     // chunked scalar case
     assert(gate.shape.dimensions.size() == 1);
     width = gate.shape.size * gate.chunkInfo->width;
@@ -392,10 +392,10 @@ public:
   /// Build the client KeySet from the client parameters.
   static llvm::Expected<std::unique_ptr<clientlib::KeySet>>
   keySet(clientlib::ClientParameters clientParameters,
-         llvm::Optional<clientlib::KeySetCache> cache) {
+         std::optional<clientlib::KeySetCache> cache) {
     std::shared_ptr<clientlib::KeySetCache> cachePtr;
-    if (cache.hasValue()) {
-      cachePtr = std::make_shared<clientlib::KeySetCache>(cache.getValue());
+    if (cache.has_value()) {
+      cachePtr = std::make_shared<clientlib::KeySetCache>(cache.value());
     }
     auto keySet =
         clientlib::KeySetCache::generate(cachePtr, clientParameters, 0, 0);
@@ -434,7 +434,7 @@ public:
   static llvm::Expected<ClientServer>
   create(llvm::StringRef program,
          CompilationOptions options = CompilationOptions("main"),
-         llvm::Optional<clientlib::KeySetCache> cache = {},
+         std::optional<clientlib::KeySetCache> cache = {},
          LambdaSupport support = LambdaSupport()) {
     auto compilationResult = support.compile(program, options);
     if (auto err = compilationResult.takeError()) {

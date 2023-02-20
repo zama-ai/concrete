@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
@@ -33,11 +33,11 @@ public:
         rewriter.getContext(), 2);
     auto left = rewriter
                     .create<mlir::concretelang::FHE::FromBoolOp>(
-                        op.getLoc(), eint2, op.left())
+                        op.getLoc(), eint2, op.getLeft())
                     .getResult();
     auto right = rewriter
                      .create<mlir::concretelang::FHE::FromBoolOp>(
-                         op.getLoc(), eint2, op.right())
+                         op.getLoc(), eint2, op.getRight())
                      .getResult();
     auto cst_two =
         rewriter.create<mlir::arith::ConstantIntOp>(op.getLoc(), 2, 3)
@@ -52,7 +52,7 @@ public:
                         .getResult();
     auto lut_result =
         rewriter.create<mlir::concretelang::FHE::ApplyLookupTableEintOp>(
-            op.getLoc(), eint2, newIndex, op.truth_table());
+            op.getLoc(), eint2, newIndex, op.getTruthTable());
     rewriter.replaceOpWithNewOp<mlir::concretelang::FHE::ToBoolOp>(
         op,
         mlir::concretelang::FHE::EncryptedBooleanType::get(
@@ -84,7 +84,7 @@ public:
     auto truth_table =
         rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), truth_table_attr);
     rewriter.replaceOpWithNewOp<mlir::concretelang::FHE::GenGateOp>(
-        op, op.getResult().getType(), op.left(), op.right(), truth_table);
+        op, op.getResult().getType(), op.getLeft(), op.getRight(), truth_table);
     return mlir::success();
   }
 
@@ -119,11 +119,11 @@ public:
     auto c1AndNotCond =
         rewriter
             .create<mlir::concretelang::FHE::GenGateOp>(
-                op.getLoc(), boolType, op.c1(), op.cond(), truth_table)
+                op.getLoc(), boolType, op.getC1(), op.getCond(), truth_table)
             .getResult();
     auto c2AndCond = rewriter
                          .create<mlir::concretelang::FHE::BoolAndOp>(
-                             op.getLoc(), boolType, op.c2(), op.cond())
+                             op.getLoc(), boolType, op.getC2(), op.getCond())
                          .getResult();
 
     auto c1AndNotCondBool = rewriter

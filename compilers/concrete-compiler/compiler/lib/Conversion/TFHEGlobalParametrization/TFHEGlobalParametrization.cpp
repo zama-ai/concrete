@@ -114,15 +114,17 @@ struct KeySwitchGLWEOpPattern
   mlir::LogicalResult
   matchAndRewrite(TFHE::KeySwitchGLWEOp ksOp,
                   mlir::PatternRewriter &rewriter) const override {
-    auto inputTy = ksOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
-    auto newInputTy = converter.convertType(inputTy);
-    auto outputTy = ksOp.result().getType().cast<TFHE::GLWECipherTextType>();
+    auto inputTy =
+        ksOp.getCiphertext().getType().cast<TFHE::GLWECipherTextType>();
+    auto newInputTy = converter.convertType(inputTy)
+                          .cast<mlir::concretelang::TFHE::GLWECipherTextType>();
+    auto outputTy = ksOp.getResult().getType().cast<TFHE::GLWECipherTextType>();
     auto newOutputTy = converter.glweIntraPBSType(outputTy);
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
-        ksOp, newOutputTy, ksOp.ciphertext(), cryptoParameters.ksLevel,
+        ksOp, newOutputTy, ksOp.getCiphertext(), cryptoParameters.ksLevel,
         cryptoParameters.ksLogBase);
     rewriter.startRootUpdate(newOp);
-    newOp.ciphertext().setType(newInputTy);
+    newOp.getCiphertext().setType(newInputTy);
     rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
@@ -145,16 +147,17 @@ struct BootstrapGLWEOpPattern
   mlir::LogicalResult
   matchAndRewrite(TFHE::BootstrapGLWEOp bsOp,
                   mlir::PatternRewriter &rewriter) const override {
-    auto inputTy = bsOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
+    auto inputTy =
+        bsOp.getCiphertext().getType().cast<TFHE::GLWECipherTextType>();
     auto newInputTy = converter.glweIntraPBSType(inputTy);
-    auto outputTy = bsOp.result().getType().cast<TFHE::GLWECipherTextType>();
+    auto outputTy = bsOp.getResult().getType().cast<TFHE::GLWECipherTextType>();
     auto newOutputTy = converter.convertType(outputTy);
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
-        bsOp, newOutputTy, bsOp.ciphertext(), bsOp.lookup_table(),
+        bsOp, newOutputTy, bsOp.getCiphertext(), bsOp.getLookupTable(),
         cryptoParameters.brLevel, cryptoParameters.brLogBase,
         cryptoParameters.getPolynomialSize(), cryptoParameters.glweDimension);
     rewriter.startRootUpdate(newOp);
-    newOp.ciphertext().setType(newInputTy);
+    newOp.getCiphertext().setType(newInputTy);
     rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
@@ -177,8 +180,8 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
   matchAndRewrite(TFHE::WopPBSGLWEOp wopPBSOp,
                   mlir::PatternRewriter &rewriter) const override {
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::WopPBSGLWEOp>(
-        wopPBSOp, converter.convertType(wopPBSOp.result().getType()),
-        wopPBSOp.ciphertexts(), wopPBSOp.lookupTable(),
+        wopPBSOp, converter.convertType(wopPBSOp.getResult().getType()),
+        wopPBSOp.getCiphertexts(), wopPBSOp.getLookupTable(),
         // Bootstrap parameters
         cryptoParameters.brLevel, cryptoParameters.brLogBase,
         // Keyswitch parameters
@@ -198,12 +201,12 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
             cryptoParameters.largeInteger->crtDecomposition));
     rewriter.startRootUpdate(newOp);
     auto ctType =
-        wopPBSOp.ciphertexts().getType().cast<mlir::RankedTensorType>();
+        wopPBSOp.getCiphertexts().getType().cast<mlir::RankedTensorType>();
     auto ciphertextType =
         ctType.getElementType().cast<TFHE::GLWECipherTextType>();
     auto newType = mlir::RankedTensorType::get(
         ctType.getShape(), converter.glweInterPBSType(ciphertextType));
-    newOp.ciphertexts().setType(newType);
+    newOp.getCiphertexts().setType(newType);
     rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
@@ -279,7 +282,8 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
                                          cryptoParameters);
     target.addDynamicallyLegalOp<TFHE::KeySwitchGLWEOp>(
         [&](TFHE::KeySwitchGLWEOp op) {
-          return op.level() != (uint32_t)-1 && op.baseLog() != (uint32_t)-1;
+          return op.getLevel() != (uint32_t)-1 &&
+                 op.getBaseLog() != (uint32_t)-1;
         });
     patterns.add<BootstrapGLWEOpPattern>(&getContext(), converter,
                                          cryptoParameters);

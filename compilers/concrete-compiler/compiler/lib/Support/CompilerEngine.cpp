@@ -5,8 +5,9 @@
 
 #include <fstream>
 #include <iostream>
-#include <mlir/Dialect/Arithmetic/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
+#include <mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/SCF/Transforms/BufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
 #include <stdio.h>
@@ -92,6 +93,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
         registry);
     scf::registerBufferizableOpInterfaceExternalModels(registry);
     tensor::registerBufferizableOpInterfaceExternalModels(registry);
+    linalg::registerBufferizableOpInterfaceExternalModels(registry);
     RT::registerBufferizableOpInterfaceExternalModels(registry);
     this->mlirContext = new mlir::MLIRContext();
     this->mlirContext->appendDialectRegistry(registry);
@@ -136,17 +138,16 @@ void CompilerEngine::setEnablePass(
 }
 
 /// Returns the optimizer::Description
-llvm::Expected<llvm::Optional<optimizer::Description>>
+llvm::Expected<std::optional<optimizer::Description>>
 CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
   mlir::ModuleOp module = res.mlirModuleRef->get();
   // If the values has been overwritten returns
-  if (this->overrideMaxEintPrecision.hasValue() &&
-      this->overrideMaxMANP.hasValue()) {
+  if (this->overrideMaxEintPrecision.has_value() &&
+      this->overrideMaxMANP.has_value()) {
     auto constraint = mlir::concretelang::V0FHEConstraint{
-        this->overrideMaxMANP.getValue(),
-        this->overrideMaxEintPrecision.getValue()};
-    return optimizer::Description{constraint, llvm::None};
+        this->overrideMaxMANP.value(), this->overrideMaxEintPrecision.value()};
+    return optimizer::Description{constraint, std::nullopt};
   }
   auto config = this->compilerOptions.optimizerConfig;
   auto descriptions = mlir::concretelang::pipeline::getFHEContextFromFHE(
@@ -155,10 +156,10 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
     return std::move(err);
   }
   if (descriptions->empty()) { // The pass has not been run
-    return llvm::None;
+    return std::nullopt;
   }
-  if (this->compilerOptions.clientParametersFuncName.hasValue()) {
-    auto name = this->compilerOptions.clientParametersFuncName.getValue();
+  if (this->compilerOptions.clientParametersFuncName.has_value()) {
+    auto name = this->compilerOptions.clientParametersFuncName.value();
     auto description = descriptions->find(name);
     if (description == descriptions->end()) {
       std::string names;
@@ -181,14 +182,14 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
 /// set the fheContext field if the v0Constraint can be computed
 /// set the fheContext field if the v0Constraint can be computed
 llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
-  if (compilerOptions.v0Parameter.hasValue()) {
+  if (compilerOptions.v0Parameter.has_value()) {
     // parameters come from the compiler options
     auto v0Params = compilerOptions.v0Parameter.value();
-    if (compilerOptions.largeIntegerParameter.hasValue()) {
+    if (compilerOptions.largeIntegerParameter.has_value()) {
       v0Params.largeInteger = compilerOptions.largeIntegerParameter;
     }
     V0FHEConstraint constraint;
-    if (compilerOptions.v0FHEConstraints.hasValue()) {
+    if (compilerOptions.v0FHEConstraints.has_value()) {
       constraint = compilerOptions.v0FHEConstraints.value();
     }
     res.fheContext.emplace(
@@ -201,7 +202,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     if (auto err = descr.takeError()) {
       return err;
     }
-    if (!descr.get().hasValue()) {
+    if (!descr.get().has_value()) {
       return llvm::Error::success();
     }
     CompilationFeedback feedback;
@@ -222,7 +223,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   return llvm::Error::success();
 }
 
-using OptionalLib = llvm::Optional<std::shared_ptr<CompilerEngine::Library>>;
+using OptionalLib = std::optional<std::shared_ptr<CompilerEngine::Library>>;
 // Compile the sources managed by the source manager `sm` to the
 // target dialect `target`. If successful, the result can be retrieved
 // using `getModule()` and `getLLVMModule()`, respectively depending
@@ -347,28 +348,28 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Generate client parameters if requested
   if (this->generateClientParameters) {
-    if (!options.clientParametersFuncName.hasValue()) {
+    if (!options.clientParametersFuncName.has_value()) {
       return StreamStringError(
           "Generation of client parameters requested, but no function name "
           "specified");
     }
-    if (!res.fheContext.hasValue()) {
+    if (!res.fheContext.has_value()) {
       return StreamStringError(
           "Cannot generate client parameters, the fhe context is empty for " +
-          options.clientParametersFuncName.getValue());
+          options.clientParametersFuncName.value());
     }
   }
   // Generate client parameters if requested
-  auto funcName = options.clientParametersFuncName.getValueOr("main");
+  auto funcName = options.clientParametersFuncName.value_or("main");
   if (this->generateClientParameters || target == Target::LIBRARY) {
-    if (!res.fheContext.hasValue()) {
+    if (!res.fheContext.has_value()) {
       // Some tests involve call a to non encrypted functions
       ClientParameters emptyParams;
       emptyParams.functionName = funcName;
       res.clientParameters = emptyParams;
     } else {
       llvm::Optional<::concretelang::clientlib::ChunkInfo> chunkInfo =
-          llvm::None;
+          std::nullopt;
       if (options.chunkIntegers) {
         chunkInfo = ::concretelang::clientlib::ChunkInfo{options.chunkSize,
                                                          options.chunkWidth};
@@ -483,7 +484,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       return StreamStringError(
           "Internal Error: Please provide a library parameter");
     }
-    auto objPath = lib.getValue()->addCompilation(res);
+    auto objPath = lib.value()->addCompilation(res);
     if (!objPath) {
       return StreamStringError(llvm::toString(objPath.takeError()));
     }
@@ -764,11 +765,11 @@ CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
   }
 
   addExtraObjectFilePath(objectPath);
-  if (compilation.clientParameters.hasValue()) {
-    clientParametersList.push_back(compilation.clientParameters.getValue());
+  if (compilation.clientParameters.has_value()) {
+    clientParametersList.push_back(compilation.clientParameters.value());
   }
-  if (compilation.feedback.hasValue()) {
-    compilationFeedbackList.push_back(compilation.feedback.getValue());
+  if (compilation.feedback.has_value()) {
+    compilationFeedbackList.push_back(compilation.feedback.value());
   }
   return objectPath;
 }
@@ -791,7 +792,7 @@ std::string ensureLibDotExt(std::string path, std::string dotExt) {
 
 llvm::Expected<std::string> CompilerEngine::Library::emit(
     std::string path, std::string dotExt, std::string linker,
-    llvm::Optional<std::vector<std::string>> extraArgs) {
+    std::optional<std::vector<std::string>> extraArgs) {
   auto pathDotExt = ensureLibDotExt(path, dotExt);
   auto error = mlir::concretelang::emitLibrary(objectsPath, pathDotExt, linker,
                                                extraArgs);

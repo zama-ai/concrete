@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <optional>
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -200,7 +201,7 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
 
   auto sol = (!descr.dag || config.strategy_v0)
                  ? getV0Parameter(descr.constraint, config)
-                 : getV1Parameter(descr.dag.getValue(), config);
+                 : getV1Parameter(descr.dag.value(), config);
 
   auto stop = chrono::high_resolution_clock::now();
   auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
@@ -235,7 +236,7 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
   params.brLogBase = sol.br_decomposition_base_log;
   params.ksLevel = sol.ks_decomposition_level_count;
   params.ksLogBase = sol.ks_decomposition_base_log;
-  params.largeInteger = llvm::None;
+  params.largeInteger = std::nullopt;
 
   if (sol.use_wop_pbs) {
     if (sol.crt_decomposition.empty()) {

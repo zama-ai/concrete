@@ -28,8 +28,16 @@ if(APPLE)
 endif()
 
 target_include_directories(ConcretelangRuntime PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
-target_link_libraries(ConcretelangRuntime PUBLIC concrete_cpu ConcretelangClientLib pthread m dl
-                                                 $<TARGET_OBJECTS:mlir_c_runner_utils>)
+target_link_libraries(
+  ConcretelangRuntime
+  PUBLIC concrete_cpu
+         ConcretelangClientLib
+         pthread
+         m
+         dl
+         $<TARGET_OBJECTS:mlir_c_runner_utils>
+         $<TARGET_OBJECTS:mlir_float16_utils>
+         $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
 
 install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
 install(EXPORT ConcretelangRuntime DESTINATION "./")

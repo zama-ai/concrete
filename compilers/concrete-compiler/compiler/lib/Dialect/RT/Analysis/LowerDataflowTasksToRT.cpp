@@ -21,12 +21,12 @@
 #include <concretelang/Support/math.h>
 
 #include <llvm/IR/Instructions.h>
-#include <mlir/Analysis/DataFlowAnalysis.h>
+#include <mlir/Analysis/DataFlowFramework.h>
 #include <mlir/Conversion/LLVMCommon/ConversionTarget.h>
 #include <mlir/Conversion/LLVMCommon/Pattern.h>
 #include <mlir/Conversion/LLVMCommon/VectorPattern.h>
 #include <mlir/Dialect/Affine/Utils.h>
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Bufferization/Transforms/Passes.h>
 #include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -35,10 +35,10 @@
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/IR/Attributes.h>
-#include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/IRMapping.h>
 #include <mlir/IR/SymbolTable.h>
 #include <mlir/Interfaces/ViewLikeInterface.h>
 #include <mlir/Pass/PassManager.h>
@@ -60,7 +60,7 @@ static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
                                         StringRef workFunctionName) {
   Location loc = DFTOp.getLoc();
   OpBuilder builder(DFTOp.getContext());
-  Region &DFTOpBody = DFTOp.body();
+  Region &DFTOpBody = DFTOp.getBody();
   OpBuilder::InsertionGuard guard(builder);
 
   // Instead of outlining with the same operands/results, we pass all
@@ -82,7 +82,7 @@ static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
   outlinedEntryBlock->addArguments(type.getInputs(), locations);
   outlinedFuncBody.push_back(outlinedEntryBlock);
 
-  BlockAndValueMapping map;
+  IRMapping map;
   int input_offset = DFTOp.getNumResults();
   Block &entryBlock = outlinedFuncBody.front();
   builder.setInsertionPointToStart(&entryBlock);
@@ -241,7 +241,7 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   // unsupported even in the LLVMIR Dialect - this needs to use two
   // placeholders for each output, before and after the
   // CreateAsyncTaskOp.
-  BlockAndValueMapping map;
+  IRMapping map;
   for (auto result : DFTOp.getResults()) {
     Type futType = RT::PointerType::get(RT::FutureType::get(result.getType()));
     auto brpp = builder.create<RT::BuildReturnPtrPlaceholderOp>(DFTOp.getLoc(),

@@ -5,7 +5,6 @@
 
 #include "concretelang/Conversion/Utils/Dialects/SCF.h"
 #include "mlir/Transforms/RegionUtils.h"
-#include <mlir/IR/BlockAndValueMapping.h>
 
 namespace mlir {
 namespace concretelang {

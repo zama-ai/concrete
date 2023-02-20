@@ -21,20 +21,20 @@
 #include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/Compiler.h>
-#include <mlir/Analysis/DataFlowAnalysis.h>
+#include <mlir/Analysis/DataFlowFramework.h>
 #include <mlir/Conversion/LLVMCommon/ConversionTarget.h>
 #include <mlir/Conversion/LLVMCommon/Pattern.h>
 #include <mlir/Conversion/LLVMCommon/VectorPattern.h>
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/Func/Transforms/FuncConversions.h>
 #include <mlir/Dialect/LLVMIR/FunctionCallUtils.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/IR/Attributes.h>
-#include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinAttributes.h>
+#include <mlir/IR/IRMapping.h>
 #include <mlir/IR/SymbolTable.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LLVM.h>
@@ -113,16 +113,18 @@ struct MakeReadyFutureOpInterfaceLowering
     // explicitly space that we can reference as a base for the
     // future.
     auto allocFuncOp = mlir::LLVM::lookupOrCreateMallocFn(
-        mrfOp->getParentOfType<ModuleOp>(), getIndexType());
+        mrfOp->getParentOfType<ModuleOp>(), getIndexType(),
+        getTypeConverter()->useOpaquePointers());
     auto sizeBytes = getSizeInBytes(
         mrfOp.getLoc(), adaptor.getOperands().getTypes().front(), rewriter);
-    auto results = mlir::LLVM::createLLVMCall(
-        rewriter, mrfOp.getLoc(), allocFuncOp, {sizeBytes}, getVoidPtrType());
+
+    auto results =
+        rewriter.create<LLVM::CallOp>(mrfOp.getLoc(), allocFuncOp, sizeBytes);
     Value allocatedPtr = rewriter.create<mlir::LLVM::BitcastOp>(
         mrfOp.getLoc(),
         mlir::LLVM::LLVMPointerType::get(
             adaptor.getOperands().getTypes().front()),
-        results[0]);
+        results.getResult());
     rewriter.create<LLVM::StoreOp>(mrfOp.getLoc(),
                                    adaptor.getOperands().front(), allocatedPtr);
     SmallVector<Value, 4> mrfOperands = {adaptor.getOperands()};
@@ -150,7 +152,7 @@ struct AwaitFutureOpInterfaceLowering
         afOp.getLoc(),
         mlir::LLVM::LLVMPointerType::get(
             (*getTypeConverter()).convertType(afOp.getResult().getType())),
-        afCallOp.getResult(0));
+        afCallOp.getResult());
     rewriter.replaceOpWithNewOp<LLVM::LoadOp>(afOp, futVal);
     return success();
   }

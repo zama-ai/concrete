@@ -7,10 +7,10 @@
 
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
-#include <llvm/Support/Host.h>
 #include <llvm/Support/ToolOutputFile.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
+#include <llvm/TargetParser/Host.h>
 
 #include <mlir/Support/FileUtilities.h>
 
@@ -72,13 +72,13 @@ llvm::Error emitObject(llvm::Module &module, string objectPath) {
 }
 
 string linkerCmd(vector<string> objectsPath, string libraryPath, string linker,
-                 llvm::Optional<vector<string>> extraArgs) {
+                 std::optional<vector<string>> extraArgs) {
   string cmd = linker + libraryPath;
   for (auto objectPath : objectsPath) {
     cmd += " " + objectPath;
   }
-  if (extraArgs.hasValue()) {
-    for (auto extraArg : extraArgs.getValue()) {
+  if (extraArgs.has_value()) {
+    for (auto extraArg : extraArgs.value()) {
       cmd += " " + extraArg;
     }
   }
@@ -116,7 +116,7 @@ llvm::Error callCmd(string cmd) {
 
 llvm::Error emitLibrary(vector<string> objectsPath, string libraryPath,
                         string linker,
-                        llvm::Optional<vector<string>> extraArgs) {
+                        std::optional<vector<string>> extraArgs) {
   auto cmd = linkerCmd(objectsPath, libraryPath, linker, extraArgs);
   return callCmd(cmd);
 }

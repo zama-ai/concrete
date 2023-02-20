@@ -57,7 +57,7 @@ void CompilationFeedback::fillFromClientParameters(
   crtDecompositionsOfOutputs = {};
   for (auto gate : params.outputs) {
     std::vector<int64_t> decomposition;
-    if (gate.encryption.hasValue()) {
+    if (gate.encryption.has_value()) {
       decomposition = gate.encryption->encoding.crt;
     }
     crtDecompositionsOfOutputs.push_back(decomposition);

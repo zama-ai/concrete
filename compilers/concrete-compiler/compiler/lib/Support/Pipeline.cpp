@@ -13,7 +13,7 @@
 #include <mlir/Transforms/Passes.h>
 
 #include <mlir/Dialect/Affine/Passes.h>
-#include <mlir/Dialect/Arithmetic/Transforms/Passes.h>
+#include <mlir/Dialect/Arith/Transforms/Passes.h>
 #include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
 #include <mlir/Dialect/Bufferization/Transforms/Passes.h>
 #include <mlir/Dialect/Linalg/Passes.h>
@@ -81,12 +81,12 @@ addPotentiallyNestedPass(mlir::PassManager &pm, std::unique_ptr<Pass> pass,
   }
 }
 
-llvm::Expected<std::map<std::string, llvm::Optional<optimizer::Description>>>
+llvm::Expected<std::map<std::string, std::optional<optimizer::Description>>>
 getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      optimizer::Config config,
                      std::function<bool(mlir::Pass *)> enablePass) {
-  llvm::Optional<size_t> oMax2norm;
-  llvm::Optional<size_t> oMaxWidth;
+  std::optional<size_t> oMax2norm;
+  std::optional<size_t> oMaxWidth;
   optimizer::FunctionsDag dags;
 
   mlir::PassManager pm(&context);
@@ -99,10 +99,10 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm,
       mlir::concretelang::createMaxMANPPass(
           [&](const uint64_t manp, unsigned width) {
-            if (!oMax2norm.hasValue() || oMax2norm.getValue() < manp)
+            if (!oMax2norm.has_value() || oMax2norm.value() < manp)
               oMax2norm.emplace(manp);
 
-            if (!oMaxWidth.hasValue() || oMaxWidth.getValue() < width)
+            if (!oMaxWidth.has_value() || oMaxWidth.value() < width)
               oMaxWidth.emplace(width);
           }),
       enablePass);
@@ -112,28 +112,28 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
         " required precision",
         llvm::inconvertibleErrorCode());
   }
-  llvm::Optional<mlir::concretelang::V0FHEConstraint> constraint = llvm::None;
+  std::optional<mlir::concretelang::V0FHEConstraint> constraint = std::nullopt;
 
-  if (oMax2norm.hasValue() && oMaxWidth.hasValue()) {
-    constraint = llvm::Optional<mlir::concretelang::V0FHEConstraint>(
-        {/*.norm2 = */ ceilLog2(oMax2norm.getValue()),
-         /*.p = */ oMaxWidth.getValue()});
+  if (oMax2norm.has_value() && oMaxWidth.has_value()) {
+    constraint = std::optional<mlir::concretelang::V0FHEConstraint>(
+        {/*.norm2 = */ ceilLog2(oMax2norm.value()),
+         /*.p = */ oMaxWidth.value()});
   }
   addPotentiallyNestedPass(pm, optimizer::createDagPass(config, dags),
                            enablePass);
   if (pm.run(module.getOperation()).failed()) {
     return StreamStringError() << "Failed to create concrete-optimizer dag\n";
   }
-  std::map<std::string, llvm::Optional<optimizer::Description>> descriptions;
+  std::map<std::string, std::optional<optimizer::Description>> descriptions;
   for (auto &entry_dag : dags) {
     if (!constraint) {
       descriptions.insert(
-          decltype(descriptions)::value_type(entry_dag.first, llvm::None));
+          decltype(descriptions)::value_type(entry_dag.first, std::nullopt));
       continue;
     }
     optimizer::Description description = {*constraint,
                                           std::move(entry_dag.second)};
-    llvm::Optional<optimizer::Description> opt_description{
+    std::optional<optimizer::Description> opt_description{
         std::move(description)};
     descriptions.insert(decltype(descriptions)::value_type(
         entry_dag.first, std::move(opt_description)));
@@ -191,7 +191,7 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    llvm::Optional<V0FHEContext> &fheContext,
+                    std::optional<V0FHEContext> &fheContext,
                     std::function<bool(mlir::Pass *)> enablePass,
                     bool parallelizeLoops, bool batchOperations) {
   mlir::PassManager pm(&context);
@@ -241,11 +241,12 @@ transformFHEBigInt(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-               llvm::Optional<V0FHEContext> &fheContext,
+               std::optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
 
-  if (fheContext.hasValue() && fheContext->parameter.largeInteger.hasValue()) {
+  if (fheContext.has_value() &&
+      fheContext->parameter.largeInteger.has_value()) {
     pipelinePrinting("FHEToTFHECrt", pm, context);
     auto dec =
         fheContext.value().parameter.largeInteger.value().crtDecomposition;
@@ -255,7 +256,7 @@ lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
         mlir::concretelang::createConvertFHEToTFHECrtPass(
             mlir::concretelang::CrtLoweringParameters(mods)),
         enablePass);
-  } else if (fheContext.hasValue()) {
+  } else if (fheContext.has_value()) {
     pipelinePrinting("FHEToTFHEScalar", pm, context);
     size_t polySize = fheContext.value().parameter.getPolynomialSize();
     addPotentiallyNestedPass(
@@ -270,16 +271,16 @@ lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    llvm::Optional<V0FHEContext> &fheContext,
+                    std::optional<V0FHEContext> &fheContext,
                     std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("TFHEToConcrete", pm, context);
 
-  if (fheContext.hasValue()) {
+  if (fheContext.has_value()) {
     addPotentiallyNestedPass(
         pm,
         mlir::concretelang::createConvertTFHEGlobalParametrizationPass(
-            fheContext.getValue()),
+            fheContext.value()),
         enablePass);
   }
 
@@ -345,8 +346,12 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;
   bufferizationOptions.allowReturnAllocs = true;
   bufferizationOptions.printConflicts = true;
-  bufferizationOptions.unknownTypeConversion = mlir::bufferization::
-      OneShotBufferizationOptions::LayoutMapOption::IdentityLayoutMap;
+  bufferizationOptions.unknownTypeConverterFn =
+      [](Value value, Attribute memorySpace,
+         const mlir::bufferization::BufferizationOptions &options) {
+        return mlir::bufferization::getMemRefTypeWithStaticIdentityLayout(
+            value.getType().cast<TensorType>(), memorySpace);
+      };
   bufferizationOptions.bufferizeFunctionBoundaries = true;
   bufferizationOptions.createDeallocs = true;
 
@@ -354,6 +359,12 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       mlir::bufferization::createOneShotBufferizePass(bufferizationOptions);
 
   addPotentiallyNestedPass(pm, std::move(comprBuffPass), enablePass);
+
+  // The bufferization may create `linalg.map` operations; Add another
+  // conversion pass from linalg to loops
+  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
+                           enablePass);
+
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
 

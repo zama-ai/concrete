@@ -115,7 +115,6 @@ add_mlir_python_common_capi_library(
   DECLARED_SOURCES
   # TODO: This can be chopped down significantly for size.
   MLIRPythonSources
-  MLIRPythonExtension.AllPassesRegistration
   ConcretelangBindingsPythonSources
   ConcretelangBindingsPythonExtension)
 
@@ -130,7 +129,6 @@ add_mlir_python_modules(
   "python_packages/concretelang_core/mlir"
   DECLARED_SOURCES
   MLIRPythonSources
-  MLIRPythonExtension.AllPassesRegistration
   # We need the circt extensions co-located with the MLIR extensions. When the namespace is unified, this moves to the
   # below.
   ConcretelangBindingsPythonExtension

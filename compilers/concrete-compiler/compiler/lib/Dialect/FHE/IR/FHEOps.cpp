@@ -61,8 +61,8 @@ bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
 }
 
 mlir::LogicalResult AddEintIntOp::verify() {
-  auto a = this->a().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->b().getType().cast<IntegerType>();
+  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
+  auto b = this->getB().getType().cast<IntegerType>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
@@ -79,8 +79,8 @@ mlir::LogicalResult AddEintIntOp::verify() {
 }
 
 mlir::LogicalResult AddEintOp::verify() {
-  auto a = this->a().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->b().getType().dyn_cast<FheIntegerInterface>();
+  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
+  auto b = this->getB().getType().dyn_cast<FheIntegerInterface>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
@@ -96,8 +96,8 @@ mlir::LogicalResult AddEintOp::verify() {
 }
 
 mlir::LogicalResult SubIntEintOp::verify() {
-  auto a = this->a().getType().cast<IntegerType>();
-  auto b = this->b().getType().dyn_cast<FheIntegerInterface>();
+  auto a = this->getA().getType().cast<IntegerType>();
+  auto b = this->getB().getType().dyn_cast<FheIntegerInterface>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), b,
@@ -114,8 +114,8 @@ mlir::LogicalResult SubIntEintOp::verify() {
 }
 
 mlir::LogicalResult SubEintIntOp::verify() {
-  auto a = this->a().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->b().getType().cast<IntegerType>();
+  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
+  auto b = this->getB().getType().cast<IntegerType>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
@@ -132,8 +132,8 @@ mlir::LogicalResult SubEintIntOp::verify() {
 }
 
 mlir::LogicalResult SubEintOp::verify() {
-  auto a = this->a().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->b().getType().dyn_cast<FheIntegerInterface>();
+  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
+  auto b = this->getB().getType().dyn_cast<FheIntegerInterface>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
@@ -149,7 +149,7 @@ mlir::LogicalResult SubEintOp::verify() {
 }
 
 mlir::LogicalResult NegEintOp::verify() {
-  auto a = this->a().getType().dyn_cast<FheIntegerInterface>();
+  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
                                                        out)) {
@@ -159,8 +159,8 @@ mlir::LogicalResult NegEintOp::verify() {
 }
 
 mlir::LogicalResult MulEintIntOp::verify() {
-  auto a = this->a().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->b().getType().cast<IntegerType>();
+  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
+  auto b = this->getB().getType().cast<IntegerType>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
@@ -177,8 +177,8 @@ mlir::LogicalResult MulEintIntOp::verify() {
 }
 
 mlir::LogicalResult MulEintOp::verify() {
-  auto a = this->a().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->b().getType().dyn_cast<FheIntegerInterface>();
+  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
+  auto b = this->getB().getType().dyn_cast<FheIntegerInterface>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputsConsistency(*this->getOperation(), a, b)) {
@@ -193,8 +193,8 @@ mlir::LogicalResult MulEintOp::verify() {
 }
 
 mlir::LogicalResult MaxEintOp::verify() {
-  auto xTy = this->x().getType().dyn_cast<FheIntegerInterface>();
-  auto yTy = this->y().getType().dyn_cast<FheIntegerInterface>();
+  auto xTy = this->getX().getType().dyn_cast<FheIntegerInterface>();
+  auto yTy = this->getY().getType().dyn_cast<FheIntegerInterface>();
   auto outTy = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(),
@@ -211,7 +211,7 @@ mlir::LogicalResult MaxEintOp::verify() {
 }
 
 mlir::LogicalResult ToSignedOp::verify() {
-  auto input = this->input().getType().cast<EncryptedIntegerType>();
+  auto input = this->getInput().getType().cast<EncryptedIntegerType>();
   auto output = this->getResult().getType().cast<EncryptedSignedIntegerType>();
 
   if (input.getWidth() != output.getWidth()) {
@@ -224,7 +224,7 @@ mlir::LogicalResult ToSignedOp::verify() {
 }
 
 mlir::LogicalResult ToUnsignedOp::verify() {
-  auto input = this->input().getType().cast<EncryptedSignedIntegerType>();
+  auto input = this->getInput().getType().cast<EncryptedSignedIntegerType>();
   auto output = this->getResult().getType().cast<EncryptedIntegerType>();
 
   if (input.getWidth() != output.getWidth()) {
@@ -237,7 +237,7 @@ mlir::LogicalResult ToUnsignedOp::verify() {
 }
 
 mlir::LogicalResult ToBoolOp::verify() {
-  auto input = this->input().getType().cast<EncryptedIntegerType>();
+  auto input = this->getInput().getType().cast<EncryptedIntegerType>();
 
   if (input.getWidth() != 1 && input.getWidth() != 2) {
     this->emitOpError("should have 1 or 2 as the width of encrypted input to "
@@ -249,7 +249,7 @@ mlir::LogicalResult ToBoolOp::verify() {
 }
 
 mlir::LogicalResult GenGateOp::verify() {
-  auto truth_table = this->truth_table().getType().cast<TensorType>();
+  auto truth_table = this->getTruthTable().getType().cast<TensorType>();
 
   mlir::SmallVector<int64_t, 1> expectedShape{4};
   if (!truth_table.hasStaticShape(expectedShape)) {
@@ -261,8 +261,8 @@ mlir::LogicalResult GenGateOp::verify() {
 }
 
 ::mlir::LogicalResult ApplyLookupTableEintOp::verify() {
-  auto ct = this->a().getType().cast<FheIntegerInterface>();
-  auto lut = this->lut().getType().cast<TensorType>();
+  auto ct = this->getA().getType().cast<FheIntegerInterface>();
+  auto lut = this->getLut().getType().cast<TensorType>();
 
   // Check the shape of lut argument
   auto width = ct.getWidth();
@@ -281,7 +281,7 @@ mlir::LogicalResult GenGateOp::verify() {
 }
 
 mlir::LogicalResult RoundEintOp::verify() {
-  auto input = this->input().getType().cast<FheIntegerInterface>();
+  auto input = this->getInput().getType().cast<FheIntegerInterface>();
   auto output = this->getResult().getType().cast<FheIntegerInterface>();
 
   if (input.getWidth() <= output.getWidth()) {

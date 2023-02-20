@@ -7,7 +7,7 @@
 #include <concretelang/Dialect/FHE/IR/FHEOps.h>
 #include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU.h>
 #include <concretelang/Support/Constants.h>
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/IR/PatternMatch.h>
@@ -31,7 +31,7 @@ public:
   matchAndRewrite(FHE::MulEintOp op, FHE::MulEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
-    auto inputType = adaptor.a().getType();
+    auto inputType = adaptor.getA().getType();
     auto bitWidth = inputType.cast<FHE::FheIntegerInterface>().getWidth();
     auto isSigned = inputType.cast<FHE::FheIntegerInterface>().isSigned();
     mlir::Type signedType =
@@ -50,8 +50,8 @@ public:
     // signedness for inputs and outputs.
 
     // s = a + b
-    mlir::Value sum =
-        rewriter.create<FHE::AddEintOp>(op->getLoc(), adaptor.a(), adaptor.b());
+    mlir::Value sum = rewriter.create<FHE::AddEintOp>(
+        op->getLoc(), adaptor.getA(), adaptor.getB());
 
     // se = (s)^2/4
     // Depending on whether a,b,s are signed or not, we need a different lut to
@@ -71,8 +71,8 @@ public:
         op->getLoc(), inputType, sum, sumLut);
 
     // d = a - b
-    mlir::Value diff =
-        rewriter.create<FHE::SubEintOp>(op->getLoc(), adaptor.a(), adaptor.b());
+    mlir::Value diff = rewriter.create<FHE::SubEintOp>(
+        op->getLoc(), adaptor.getA(), adaptor.getB());
 
     // de = (d)^2/4
     // Here, the tlu must be performed with signed encoded lut, to properly
@@ -155,7 +155,7 @@ public:
 
     mlir::ConversionTarget target(getContext());
 
-    target.addLegalDialect<mlir::arith::ArithmeticDialect>();
+    target.addLegalDialect<mlir::arith::ArithDialect>();
     target.addLegalDialect<FHE::FHEDialect>();
     target.addIllegalOp<FHE::MulEintOp>();
 

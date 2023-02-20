@@ -4,7 +4,7 @@
 // for license information.
 
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
-#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/IR/PatternMatch.h>
@@ -93,7 +93,8 @@ public:
   mlir::LogicalResult
   matchAndRewrite(FHE::AddEintOp op, FHE::AddEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
-    auto tensorType = adaptor.a().getType().dyn_cast<mlir::RankedTensorType>();
+    auto tensorType =
+        adaptor.getA().getType().dyn_cast<mlir::RankedTensorType>();
     auto shape = tensorType.getShape();
     assert(shape.size() == 1 &&
            "chunked integer should be converted to flat tensors, but tensor "
@@ -112,7 +113,8 @@ public:
             .getResult();
 
     mlir::Value resultTensor =
-        rewriter.create<FHE::ZeroTensorOp>(op.getLoc(), adaptor.a().getType())
+        rewriter
+            .create<FHE::ZeroTensorOp>(op.getLoc(), adaptor.getA().getType())
             .getResult();
     // used to shift the carry bit to the left
     mlir::Value twoPowerChunkSizeCst =
@@ -127,10 +129,10 @@ public:
         [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::Value iter,
             mlir::ValueRange args) {
           // add inputs with the previous carry (init to 0)
-          mlir::Value leftEint =
-              builder.create<mlir::tensor::ExtractOp>(loc, adaptor.a(), iter);
-          mlir::Value rightEint =
-              builder.create<mlir::tensor::ExtractOp>(loc, adaptor.b(), iter);
+          mlir::Value leftEint = builder.create<mlir::tensor::ExtractOp>(
+              loc, adaptor.getA(), iter);
+          mlir::Value rightEint = builder.create<mlir::tensor::ExtractOp>(
+              loc, adaptor.getB(), iter);
           mlir::Value result =
               builder.create<FHE::AddEintOp>(loc, leftEint, rightEint)
                   .getResult();

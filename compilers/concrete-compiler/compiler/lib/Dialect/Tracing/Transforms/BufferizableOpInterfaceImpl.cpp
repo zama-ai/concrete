@@ -36,14 +36,14 @@ struct TrivialBufferizableInterface
     return false;
   }
 
-  SmallVector<OpResult> getAliasingOpResult(Operation *op, OpOperand &opOperand,
+  AliasingOpResultList getAliasingOpResults(Operation *op, OpOperand &opOperand,
                                             const AnalysisState &state) const {
     return {};
   }
 
   BufferRelation bufferRelation(Operation *op, OpResult opResult,
                                 const AnalysisState &state) const {
-    return BufferRelation::None;
+    return BufferRelation::Unknown;
   }
 
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
@@ -55,7 +55,7 @@ struct TrivialBufferizableInterface
         operands.push_back(operand.get());
       } else {
         operands.push_back(
-            bufferization::getBuffer(rewriter, operand.get(), options));
+            *bufferization::getBuffer(rewriter, operand.get(), options));
       }
     }
 

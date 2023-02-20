@@ -11,7 +11,7 @@
 namespace mlir {
 namespace concretelang {
 
-JITSupport::JITSupport(llvm::Optional<std::string> runtimeLibPath)
+JITSupport::JITSupport(std::optional<std::string> runtimeLibPath)
     : runtimeLibPath(runtimeLibPath) {}
 
 llvm::Expected<std::unique_ptr<JitCompilationResult>>
@@ -29,7 +29,7 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
     return std::move(err);
   }
 
-  if (!options.clientParametersFuncName.hasValue()) {
+  if (!options.clientParametersFuncName.has_value()) {
     return StreamStringError("Need to have a funcname to JIT compile");
   }
   // Compile from LLVM Dialect to JITLambda
@@ -40,7 +40,7 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
   if (auto err = lambda.takeError()) {
     return std::move(err);
   }
-  if (!compilationResult.get().clientParameters.hasValue()) {
+  if (!compilationResult.get().clientParameters.has_value()) {
     // i.e. that should not occurs
     return StreamStringError("No client parameters has been generated");
   }
@@ -52,9 +52,8 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
   if (!mlir::concretelang::dfr::_dfr_is_root_node()) {
     result->clientParameters = clientlib::ClientParameters();
   } else {
-    result->clientParameters =
-        compilationResult.get().clientParameters.getValue();
-    result->feedback = compilationResult.get().feedback.getValue();
+    result->clientParameters = compilationResult.get().clientParameters.value();
+    result->feedback = compilationResult.get().feedback.value();
   }
   return std::move(result);
 }

@@ -2,14 +2,14 @@
 
 // CHECK:      #map = affine_map<(d0, d1, d2) -> (d0, d1, d2)>
 // CHECK-NEXT: module  {
-// CHECK-NEXT:   func.func @main(%arg0: tensor<2x3x4x!FHE.eint<2>>) -> tensor<2x3x4x!FHE.esint<2>> {
-// CHECK-NEXT:     %0 = bufferization.alloc_tensor() : tensor<2x3x4x!FHE.esint<2>>
-// CHECK-NEXT:     %1 = linalg.generic {indexing_maps = [#map, #map], iterator_types = ["parallel", "parallel", "parallel"]} ins(%arg0 : tensor<2x3x4x!FHE.eint<2>>) outs(%0 : tensor<2x3x4x!FHE.esint<2>>) {
-// CHECK-NEXT:     ^bb0(%arg1: !FHE.eint<2>, %arg2: !FHE.esint<2>):
-// CHECK-NEXT:       %2 = "FHE.to_signed"(%arg1) : (!FHE.eint<2>) -> !FHE.esint<2>
-// CHECK-NEXT:       linalg.yield %2 : !FHE.esint<2>
+// CHECK-NEXT:   func.func @main(%[[Varg0:.*]]: tensor<2x3x4x!FHE.eint<2>>) -> tensor<2x3x4x!FHE.esint<2>> {
+// CHECK-NEXT:     %[[V0:.*]] = bufferization.alloc_tensor() : tensor<2x3x4x!FHE.esint<2>>
+// CHECK-NEXT:     %[[V1:.*]] = linalg.generic {indexing_maps = [#map, #map], iterator_types = ["parallel", "parallel", "parallel"]} ins(%[[Varg0]] : tensor<2x3x4x!FHE.eint<2>>) outs(%[[V0]] : tensor<2x3x4x!FHE.esint<2>>) {
+// CHECK-NEXT:     ^bb0(%[[Varg1:.*]]: !FHE.eint<2>, %[[Varg2:.*]]: !FHE.esint<2>):
+// CHECK-NEXT:       %[[V2:.*]] = "FHE.to_signed"(%[[Varg1]]) : (!FHE.eint<2>) -> !FHE.esint<2>
+// CHECK-NEXT:       linalg.yield %[[V2]] : !FHE.esint<2>
 // CHECK-NEXT:     } -> tensor<2x3x4x!FHE.esint<2>>
-// CHECK-NEXT:     return %1 : tensor<2x3x4x!FHE.esint<2>>
+// CHECK-NEXT:     return %[[V1]] : tensor<2x3x4x!FHE.esint<2>>
 // CHECK-NEXT:   }
 // CHECK-NEXT: }
 func.func @main(%arg0: tensor<2x3x4x!FHE.eint<2>>) -> tensor<2x3x4x!FHE.esint<2>> {
