@@ -487,6 +487,30 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUMul(sqNorm, eNorm);
 }
 
+/// Calculates the squared Minimal Arithmetic Noise Padding of
+/// `FHE.mul_eint` operation.
+static llvm::APInt getSqMANP(
+    mlir::concretelang::FHE::MulEintOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+  assert(operandMANPs.size() == 2 &&
+         operandMANPs[0]->getValue().getMANP().hasValue() &&
+         operandMANPs[1]->getValue().getMANP().hasValue() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+
+  // x * y = ((x + y)^2 / 4) - ((x - y)^2 / 4) == tlu(x + y) - tlu(x - y)
+
+  const llvm::APInt x = operandMANPs[0]->getValue().getMANP().getValue();
+  const llvm::APInt y = operandMANPs[1]->getValue().getMANP().getValue();
+
+  const llvm::APInt beforeTLUs = APIntWidthExtendUAdd(x, y);
+  const llvm::APInt tlu = {1, 1, false};
+  const llvm::APInt result = APIntWidthExtendUAdd(tlu, tlu);
+
+  // this is not optimal as it can increase the resulting noise unnecessarily
+  return APIntUMax(beforeTLUs, result);
+}
+
 /// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 /// that is equivalent to an `FHE.round` operation.
 static llvm::APInt getSqMANP(
@@ -510,8 +534,8 @@ static llvm::APInt getSqMANP(
   return eNorm;
 }
 
-/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-/// that is equivalent to an `FHE.max_eint` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of
+/// `FHE.max_eint` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::MaxEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -1245,6 +1269,9 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     } else if (auto mulEintIntOp =
                    llvm::dyn_cast<mlir::concretelang::FHE::MulEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
+    } else if (auto mulEintOp =
+                   llvm::dyn_cast<mlir::concretelang::FHE::MulEintOp>(op)) {
+      norm2SqEquiv = getSqMANP(mulEintOp, operands);
     } else if (auto roundOp =
                    llvm::dyn_cast<mlir::concretelang::FHE::RoundEintOp>(op)) {
       norm2SqEquiv = getSqMANP(roundOp, operands);
