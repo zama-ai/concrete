@@ -420,14 +420,16 @@ __global__ void device_blind_rotation_and_sample_extraction(
     selected_memory = &device_mem[blockIdx.x * device_memory_size_per_sample];
 
   Torus *accumulator_c0 = (Torus *)selected_memory;
-  Torus *accumulator_c1 = (Torus *)accumulator_c0 + 2 * polynomial_size;
+  Torus *accumulator_c1 =
+      (Torus *)accumulator_c0 + (glwe_dim + 1) * polynomial_size;
+  int8_t *cmux_memory =
+      (int8_t *)(accumulator_c1 + (glwe_dim + 1) * polynomial_size);
 
   // Input LUT
   auto mi = &glwe_in[blockIdx.x * (glwe_dim + 1) * polynomial_size];
   int tid = threadIdx.x;
-  for (int i = 0; i < params::opt; i++) {
+  for (int i = 0; i < (glwe_dim + 1) * params::opt; i++) {
     accumulator_c0[tid] = mi[tid];
-    accumulator_c0[tid + params::degree] = mi[tid + params::degree];
     tid += params::degree / params::opt;
   }
 
@@ -436,45 +438,43 @@ __global__ void device_blind_rotation_and_sample_extraction(
     synchronize_threads_in_block();
 
     // Compute x^ai * ACC
-    // Body
+    // Mask and Body
     divide_by_monomial_negacyclic_inplace<Torus, params::opt,
                                           params::degree / params::opt>(
-        accumulator_c1, accumulator_c0, (1 << monomial_degree), false, 1);
-    // Mask
-    divide_by_monomial_negacyclic_inplace<Torus, params::opt,
-                                          params::degree / params::opt>(
-        accumulator_c1 + polynomial_size, accumulator_c0 + polynomial_size,
-        (1 << monomial_degree), false, 1);
+        accumulator_c1, accumulator_c0, (1 << monomial_degree), false,
+        (glwe_dim + 1));
 
     monomial_degree += 1;
 
     // ACC = CMUX ( Ci, x^ai * ACC, ACC )
     synchronize_threads_in_block();
-    cmux<Torus, STorus, params>(
-        accumulator_c0, accumulator_c0, ggsw_in,
-        (int8_t *)(accumulator_c0 + 4 * polynomial_size), 0, 0, 1, glwe_dim,
-        polynomial_size, base_log, level_count, i);
+    cmux<Torus, STorus, params>(accumulator_c0, accumulator_c0, ggsw_in,
+                                cmux_memory, 0, 0, 1, glwe_dim, polynomial_size,
+                                base_log, level_count, i);
   }
   synchronize_threads_in_block();
 
   // Write the output
-  auto block_lwe_out = &lwe_out[blockIdx.x * (polynomial_size + 1)];
+  auto block_lwe_out = &lwe_out[blockIdx.x * (glwe_dim * polynomial_size + 1)];
 
   // The blind rotation for this block is over
   // Now we can perform the sample extraction: for the body it's just
   // the resulting constant coefficient of the accumulator
   // For the mask it's more complicated
-  sample_extract_mask<Torus, params>(block_lwe_out, accumulator_c0, 1);
-  sample_extract_body<Torus, params>(block_lwe_out, accumulator_c0, 1);
+  sample_extract_mask<Torus, params>(block_lwe_out, accumulator_c0, glwe_dim);
+  sample_extract_body<Torus, params>(block_lwe_out, accumulator_c0, glwe_dim);
 }
 
 template <typename Torus>
 __host__ __device__ int
 get_memory_needed_per_block_blind_rotation_sample_extraction(
     uint32_t glwe_dimension, uint32_t polynomial_size) {
-  return sizeof(Torus) * polynomial_size * (glwe_dimension+1) +       // accumulator_c0
-         sizeof(Torus) * polynomial_size * (glwe_dimension+1) +       // accumulator_c1
-         + get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension, polynomial_size);
+  return sizeof(Torus) * polynomial_size *
+             (glwe_dimension + 1) + // accumulator_c0
+         sizeof(Torus) * polynomial_size *
+             (glwe_dimension + 1) + // accumulator_c1
+         +get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
+                                                       polynomial_size);
 }
 
 template <typename Torus>
