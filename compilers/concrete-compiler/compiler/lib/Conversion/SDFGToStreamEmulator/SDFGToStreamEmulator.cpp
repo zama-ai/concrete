@@ -222,10 +222,6 @@ struct LowerSDFGMakeProcess
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(),
           mpOp->getAttrOfType<mlir::IntegerAttr>("glweDimension")));
-      // out_precision
-      operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-          mpOp.getLoc(),
-          mpOp->getAttrOfType<mlir::IntegerAttr>("outPrecision")));
       // output_size
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(),

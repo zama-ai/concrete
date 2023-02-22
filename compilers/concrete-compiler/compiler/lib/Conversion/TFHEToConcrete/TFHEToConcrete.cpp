@@ -128,7 +128,7 @@ struct BootstrapGLWEOpPattern
         bsOp, this->getTypeConverter()->convertType(resultType),
         adaptor.getCiphertext(), adaptor.getLookupTable(),
         inputType.getDimension(), adaptor.getPolySize(), adaptor.getLevel(),
-        adaptor.getBaseLog(), adaptor.getGlweDimension(), resultType.getP());
+        adaptor.getBaseLog(), adaptor.getGlweDimension());
 
     return mlir::success();
   }

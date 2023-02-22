@@ -192,8 +192,7 @@ def Concrete_BootstrapLweTensorOp : Concrete_Op<"bootstrap_lwe_tensor", [Pure]> 
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension,
-        I32Attr:$outPrecision
+        I32Attr:$glweDimension
     );
     let results = (outs Concrete_LweTensor:$result);
 
@@ -231,8 +230,7 @@ def Concrete_BootstrapLweBufferOp : Concrete_Op<"bootstrap_lwe_buffer"> {
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension,
-        I32Attr:$outPrecision
+        I32Attr:$glweDimension
     );
 }
 
@@ -246,8 +244,7 @@ def Concrete_BatchedBootstrapLweTensorOp : Concrete_Op<"batched_bootstrap_lwe_te
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension,
-        I32Attr:$outPrecision
+        I32Attr:$glweDimension
     );
     let results = (outs Concrete_BatchLweTensor:$result);
 }
@@ -263,8 +260,7 @@ def Concrete_BatchedBootstrapLweBufferOp : Concrete_Op<"batched_bootstrap_lwe_bu
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension,
-        I32Attr:$outPrecision
+        I32Attr:$glweDimension
     );
 }
 

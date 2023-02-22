@@ -88,7 +88,7 @@ void memref_bootstrap_lwe_cuda_u64(
     uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
     uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
     uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
-    uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
+    uint32_t base_log, uint32_t glwe_dim,
     mlir::concretelang::RuntimeContext *context) {
   memref_batched_bootstrap_lwe_cuda_u64(
       // Output 1D memref as 2D memref
@@ -98,7 +98,7 @@ void memref_bootstrap_lwe_cuda_u64(
       // Table lookup memref
       tlu_allocated, tlu_aligned, tlu_offset, tlu_size, tlu_stride,
       // Bootstrap additional arguments
-      input_lwe_dim, poly_size, level, base_log, glwe_dim, precision, context);
+      input_lwe_dim, poly_size, level, base_log, glwe_dim, context);
 }
 
 // Batched CUDA function //////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ void memref_batched_bootstrap_lwe_cuda_u64(
     uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *tlu_allocated,
     uint64_t *tlu_aligned, uint64_t tlu_offset, uint64_t tlu_size,
     uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t poly_size,
-    uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
+    uint32_t level, uint32_t base_log, uint32_t glwe_dim,
     mlir::concretelang::RuntimeContext *context) {
   assert(out_size0 == ct0_size0);
   assert(out_size1 == glwe_dim * poly_size + 1);
@@ -537,8 +537,7 @@ void memref_bootstrap_lwe_u64(
     uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
     uint32_t input_lwe_dimension, uint32_t polynomial_size,
     uint32_t decomposition_level_count, uint32_t decomposition_base_log,
-    uint32_t glwe_dimension, uint32_t precision,
-    mlir::concretelang::RuntimeContext *context) {
+    uint32_t glwe_dimension, mlir::concretelang::RuntimeContext *context) {
 
   uint64_t glwe_ct_size = polynomial_size * (glwe_dimension + 1);
   uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
@@ -583,7 +582,7 @@ void memref_batched_bootstrap_lwe_u64(
     uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *tlu_allocated,
     uint64_t *tlu_aligned, uint64_t tlu_offset, uint64_t tlu_size,
     uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t poly_size,
-    uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t precision,
+    uint32_t level, uint32_t base_log, uint32_t glwe_dim,
     mlir::concretelang::RuntimeContext *context) {
 
   for (size_t i = 0; i < out_size0; i++) {
@@ -592,7 +591,7 @@ void memref_batched_bootstrap_lwe_u64(
         out_size1, out_stride1, ct0_allocated, ct0_aligned + i * ct0_size1,
         ct0_offset, ct0_size1, ct0_stride1, tlu_allocated, tlu_aligned,
         tlu_offset, tlu_size, tlu_stride, input_lwe_dim, poly_size, level,
-        base_log, glwe_dim, precision, context);
+        base_log, glwe_dim, context);
   }
 }
 

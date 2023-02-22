@@ -115,7 +115,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
                                         memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i32Type, i32Type, contextType},
+                                        i32Type, i32Type, contextType},
                                        {});
   } else if (funcName == memref_keyswitch_async_lwe_u64) {
     funcType = mlir::FunctionType::get(
@@ -125,7 +125,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
                                         memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i32Type, i32Type, contextType},
+                                        i32Type, i32Type, contextType},
                                        {futureType});
   } else if (funcName == memref_batched_keyswitch_lwe_u64 ||
              funcName == memref_batched_keyswitch_lwe_cuda_u64) {
@@ -138,7 +138,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref2DType, memref2DType,
                                         memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i32Type, i32Type, contextType},
+                                        i32Type, i32Type, contextType},
                                        {});
   } else if (funcName == memref_await_future) {
     funcType = mlir::FunctionType::get(
@@ -296,9 +296,6 @@ void bootstrapAddOperands(BootstrapOp op,
   // glwe_dim
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.getGlweDimensionAttr()));
-  // out_precision
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getOutPrecisionAttr()));
   // context
   operands.push_back(getContextArgument(op));
 }
