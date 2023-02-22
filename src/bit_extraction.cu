@@ -121,14 +121,11 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
                           uint32_t max_shared_memory) {
   assert(("Error (GPU extract bits): base log should be <= 32",
           base_log_bsk <= 32));
-  assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
+  assert(("Error (GPU extract bits): polynomial_size should be one of "
           "256, 512, 1024, 2048, 4096, 8192",
-          lwe_dimension_in == 256 || lwe_dimension_in == 512 ||
-              lwe_dimension_in == 1024 || lwe_dimension_in == 2048 ||
-              lwe_dimension_in == 4096 || lwe_dimension_in == 8192));
-  assert(("Error (GPU extract bits): lwe_dimension_in should be equal to "
-          "polynomial_size",
-          lwe_dimension_in == polynomial_size));
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
   // The number of samples should be lower than four time the number of
   // streaming multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being
   // related to the occupancy of 50%). The only supported value for k is 1, so
@@ -141,7 +138,7 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
           "level_count_bsk",
           number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
 
-  switch (lwe_dimension_in) {
+  switch (polynomial_size) {
   case 256:
     host_extract_bits<uint32_t, Degree<256>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
@@ -258,14 +255,11 @@ void cuda_extract_bits_64(void *v_stream, uint32_t gpu_index,
                           uint32_t max_shared_memory) {
   assert(("Error (GPU extract bits): base log should be <= 64",
           base_log_bsk <= 64));
-  assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
+  assert(("Error (GPU extract bits): polynomial_size should be one of "
           "256, 512, 1024, 2048, 4096, 8192",
-          lwe_dimension_in == 256 || lwe_dimension_in == 512 ||
-              lwe_dimension_in == 1024 || lwe_dimension_in == 2048 ||
-              lwe_dimension_in == 4096 || lwe_dimension_in == 8192));
-  assert(("Error (GPU extract bits): lwe_dimension_in should be equal to "
-          "polynomial_size",
-          lwe_dimension_in == polynomial_size));
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
   // The number of samples should be lower than four time the number of
   // streaming multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being
   // related to the occupancy of 50%). The only supported value for k is 1, so
@@ -278,7 +272,7 @@ void cuda_extract_bits_64(void *v_stream, uint32_t gpu_index,
           "level_count_bsk",
           number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
 
-  switch (lwe_dimension_in) {
+  switch (polynomial_size) {
   case 256:
     host_extract_bits<uint64_t, Degree<256>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
