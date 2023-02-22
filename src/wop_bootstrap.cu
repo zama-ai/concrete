@@ -14,6 +14,12 @@ void scratch_cuda_circuit_bootstrap_vertical_packing_32(
     bool allocate_gpu_memory) {
 
   switch (polynomial_size) {
+  case 256:
+    scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<256>>(
+        v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
+        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
+        max_shared_memory, allocate_gpu_memory);
+    break;
   case 512:
     scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
@@ -63,6 +69,12 @@ void scratch_cuda_circuit_bootstrap_vertical_packing_64(
     bool allocate_gpu_memory) {
 
   switch (polynomial_size) {
+  case 256:
+    scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<256>>(
+        v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
+        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
+        max_shared_memory, allocate_gpu_memory);
+    break;
   case 512:
     scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
@@ -113,6 +125,14 @@ void scratch_cuda_wop_pbs_32(
     uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
     uint32_t max_shared_memory, bool allocate_gpu_memory) {
   switch (polynomial_size) {
+  case 256:
+    scratch_wop_pbs<uint32_t, int32_t, Degree<256>>(
+        v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
+        glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
+    break;
   case 512:
     scratch_wop_pbs<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
@@ -173,6 +193,14 @@ void scratch_cuda_wop_pbs_64(
     uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
     uint32_t max_shared_memory, bool allocate_gpu_memory) {
   switch (polynomial_size) {
+  case 256:
+    scratch_wop_pbs<uint64_t, int64_t, Degree<256>>(
+        v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
+        glwe_dimension, lwe_dimension, polynomial_size, level_count_cbs,
+        level_count_bsk, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
+    break;
   case 512:
     scratch_wop_pbs<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, wop_pbs_buffer, delta_log, cbs_delta_log,
@@ -232,7 +260,7 @@ void scratch_cuda_wop_pbs_64(
  *  - 'lut_vector' list of test vectors
  *  - 'cbs_vp_buffer' a pre-allocated array to store intermediate results
  *  - 'polynomial_size' size of the test polynomial, supported sizes:
- * {512, 1024, 2048, 4096, 8192}
+ * {256, 512, 1024, 2048, 4096, 8192}
  *  - 'glwe_dimension' supported dimensions: {1}
  *  - 'lwe_dimension' dimension of input LWE ciphertexts
  *  - 'level_count_bsk' decomposition level for bootstrapping
@@ -255,10 +283,10 @@ void cuda_circuit_bootstrap_vertical_packing_64(
     uint32_t base_log_cbs, uint32_t number_of_inputs, uint32_t lut_number,
     uint32_t max_shared_memory) {
   assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
-          "512, 1024, 2048, 4096, 8192",
-          polynomial_size == 512 || polynomial_size == 1024 ||
-              polynomial_size == 2048 || polynomial_size == 4096 ||
-              polynomial_size == 8192));
+          "256, 512, 1024, 2048, 4096, 8192",
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
   // The number of inputs should be lower than the number of streaming
   // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
   // to the occupancy of 50%). The only supported value for k is 1, so
@@ -271,6 +299,16 @@ void cuda_circuit_bootstrap_vertical_packing_64(
           "level_count_bsk",
           number_of_inputs <= number_of_sm / 4. / 2. / level_count_bsk));
   switch (polynomial_size) {
+  case 256:
+    host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<256>>(
+        v_stream, gpu_index, (uint64_t *)lwe_array_out,
+        (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
+        (double2 *)fourier_bsk, (uint64_t *)cbs_fpksk, cbs_vp_buffer,
+        cbs_delta_log, glwe_dimension, lwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_pksk, level_count_pksk,
+        base_log_cbs, level_count_cbs, number_of_inputs, lut_number,
+        max_shared_memory);
+    break;
   case 512:
     host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,
@@ -343,7 +381,7 @@ void cuda_circuit_bootstrap_vertical_packing_64(
  *  - 'glwe_dimension' supported dimensions: {1}
  *  - 'lwe_dimension' dimension of input lwe ciphertexts
  *  - 'polynomial_size' size of the test polynomial, supported sizes:
- * {512, 1024, 2048, 4096, 8192}
+ * {256, 512, 1024, 2048, 4096, 8192}
  *  - 'base_log_bsk'  base log parameter for bootstrapping
  *  - 'level_count_bsk' decomposition level for bootstrapping
  *  - 'base_log_ksk' base log parameter for keyswitch
@@ -374,10 +412,10 @@ void cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index, void *lwe_array_out,
                      uint32_t number_of_bits_to_extract, uint32_t delta_log,
                      uint32_t number_of_inputs, uint32_t max_shared_memory) {
   assert(("Error (GPU WOP PBS): polynomial_size should be one of "
-          "512, 1024, 2048, 4096, 8192",
-          polynomial_size == 512 || polynomial_size == 1024 ||
-              polynomial_size == 2048 || polynomial_size == 4096 ||
-              polynomial_size == 8192));
+          "256, 512, 1024, 2048, 4096, 8192",
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
   // The number of inputs should be lower than the number of streaming
   // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
   // to the occupancy of 50%). The only supported value for k is 1, so
@@ -390,6 +428,18 @@ void cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index, void *lwe_array_out,
           "level_count_bsk",
           number_of_inputs <= number_of_sm / 4. / 2. / level_count_bsk));
   switch (polynomial_size) {
+  case 256:
+    host_wop_pbs<uint64_t, int64_t, Degree<256>>(
+        v_stream, gpu_index, (uint64_t *)lwe_array_out,
+        (uint64_t *)lwe_array_in, (uint64_t *)lut_vector,
+        (double2 *)fourier_bsk, (uint64_t *)ksk, (uint64_t *)cbs_fpksk,
+        wop_pbs_buffer, cbs_delta_log, glwe_dimension, lwe_dimension,
+        polynomial_size, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, base_log_pksk, level_count_pksk, base_log_cbs,
+        level_count_cbs, number_of_bits_of_message_including_padding,
+        number_of_bits_to_extract, delta_log, number_of_inputs,
+        max_shared_memory);
+    break;
   case 512:
     host_wop_pbs<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out,

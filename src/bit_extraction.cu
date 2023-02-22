@@ -12,6 +12,12 @@ void scratch_cuda_extract_bits_32(
     bool allocate_gpu_memory) {
 
   switch (polynomial_size) {
+  case 256:
+    scratch_extract_bits<uint32_t, int32_t, Degree<256>>(
+        v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
+        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
+    break;
   case 512:
     scratch_extract_bits<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
@@ -59,6 +65,12 @@ void scratch_cuda_extract_bits_64(
     bool allocate_gpu_memory) {
 
   switch (polynomial_size) {
+  case 256:
+    scratch_extract_bits<uint64_t, int64_t, Degree<256>>(
+        v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
+        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        allocate_gpu_memory);
+    break;
   case 512:
     scratch_extract_bits<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
@@ -110,10 +122,10 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
   assert(("Error (GPU extract bits): base log should be <= 32",
           base_log_bsk <= 32));
   assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
-          "512, 1024, 2048, 4096, 8192",
-          lwe_dimension_in == 512 || lwe_dimension_in == 1024 ||
-              lwe_dimension_in == 2048 || lwe_dimension_in == 4096 ||
-              lwe_dimension_in == 8192));
+          "256, 512, 1024, 2048, 4096, 8192",
+          lwe_dimension_in == 256 || lwe_dimension_in == 512 ||
+              lwe_dimension_in == 1024 || lwe_dimension_in == 2048 ||
+              lwe_dimension_in == 4096 || lwe_dimension_in == 8192));
   assert(("Error (GPU extract bits): lwe_dimension_in should be equal to "
           "polynomial_size",
           lwe_dimension_in == polynomial_size));
@@ -130,6 +142,15 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
           number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
 
   switch (lwe_dimension_in) {
+  case 256:
+    host_extract_bits<uint32_t, Degree<256>>(
+        v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
+        (uint32_t *)lwe_array_in, bit_extract_buffer, (uint32_t *)ksk,
+        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
+        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
+        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
+        max_shared_memory);
+    break;
   case 512:
     host_extract_bits<uint32_t, Degree<512>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
@@ -210,7 +231,7 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
  *  - 'ksk' keyswitch key
  *  - 'fourier_bsk'  complex compressed bsk in fourier domain
  *  - 'lwe_dimension_in' input LWE ciphertext dimension, supported input
- * dimensions are: {512, 1024,2048, 4096, 8192}
+ * dimensions are: {256, 512, 1024,2048, 4096, 8192}
  *  - 'lwe_dimension_out' output LWE ciphertext dimension
  *  - 'glwe_dimension' GLWE dimension,  only glwe_dimension = 1 is supported
  * for now
@@ -238,10 +259,10 @@ void cuda_extract_bits_64(void *v_stream, uint32_t gpu_index,
   assert(("Error (GPU extract bits): base log should be <= 64",
           base_log_bsk <= 64));
   assert(("Error (GPU extract bits): lwe_dimension_in should be one of "
-          "512, 1024, 2048, 4096, 8192",
-          lwe_dimension_in == 512 || lwe_dimension_in == 1024 ||
-              lwe_dimension_in == 2048 || lwe_dimension_in == 4096 ||
-              lwe_dimension_in == 8192));
+          "256, 512, 1024, 2048, 4096, 8192",
+          lwe_dimension_in == 256 || lwe_dimension_in == 512 ||
+              lwe_dimension_in == 1024 || lwe_dimension_in == 2048 ||
+              lwe_dimension_in == 4096 || lwe_dimension_in == 8192));
   assert(("Error (GPU extract bits): lwe_dimension_in should be equal to "
           "polynomial_size",
           lwe_dimension_in == polynomial_size));
@@ -258,6 +279,15 @@ void cuda_extract_bits_64(void *v_stream, uint32_t gpu_index,
           number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
 
   switch (lwe_dimension_in) {
+  case 256:
+    host_extract_bits<uint64_t, Degree<256>>(
+        v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
+        (uint64_t *)lwe_array_in, bit_extract_buffer, (uint64_t *)ksk,
+        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
+        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
+        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
+        max_shared_memory);
+    break;
   case 512:
     host_extract_bits<uint64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
