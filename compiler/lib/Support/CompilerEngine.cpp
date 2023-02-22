@@ -370,7 +370,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       llvm::Optional<::concretelang::clientlib::ChunkInfo> chunkInfo =
           llvm::None;
       if (options.chunkIntegers) {
-        chunkInfo = ::concretelang::clientlib::ChunkInfo{4, 2};
+        chunkInfo = ::concretelang::clientlib::ChunkInfo{options.chunkSize,
+                                                         options.chunkWidth};
       }
       auto clientParametersOrErr =
           mlir::concretelang::createClientParametersForV0(
