@@ -341,7 +341,7 @@ run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
 
 FIXTURE_APPLICATION_DIR=tests/end_to_end_fixture/application/
 
-run-cpu-application-benchmarks:
+run-cpu-benchmarks-application:
 	unzip $(FIXTURE_APPLICATION_DIR)/*.zip -d $(FIXTURE_APPLICATION_DIR)
 	$(BUILD_DIR)/bin/end_to_end_benchmark \
 		--backend=cpu --benchmark_out=benchmarks_results.json --benchmark_out_format=json \
