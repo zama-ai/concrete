@@ -6,3 +6,4 @@ pub(crate) mod partitions;
 pub(crate) mod precision_cut;
 pub(crate) mod symbolic_variance;
 pub(crate) mod union_find;
+pub(crate) mod variance_constraint;
