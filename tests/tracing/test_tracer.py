@@ -45,6 +45,12 @@ from concrete.numpy.values import EncryptedTensor
             "`astype` method must be called with a "
             "numpy type for compilation (e.g., value.astype(np.int64))",
         ),
+        pytest.param(
+            lambda x: x + 1 if x else x + x,
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=())},
+            RuntimeError,
+            "Branching within circuits is not possible",
+        ),
     ],
 )
 def test_tracer_bad_trace(function, parameters, expected_error, expected_message):

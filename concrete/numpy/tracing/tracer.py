@@ -175,6 +175,12 @@ class Tracer:
     def __hash__(self) -> int:
         return id(self)
 
+    def __bool__(self) -> bool:
+        # pylint: disable=invalid-bool-returned
+
+        message = "Branching within circuits is not possible"
+        raise RuntimeError(message)
+
     @staticmethod
     def sanitize(value: Any) -> Any:
         """
