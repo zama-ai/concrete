@@ -112,7 +112,6 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   message(STATUS "ConcreteLang dataflow execution enabled.")
 
   find_package(HPX REQUIRED CONFIG)
-  include_directories(SYSTEM ${HPX_INCLUDE_DIRS})
   list(APPEND CMAKE_MODULE_PATH "${HPX_CMAKE_DIR}")
   add_compile_options(-DCONCRETELANG_DATAFLOW_EXECUTION_ENABLED
                       -DHPX_DEFAULT_CONFIG_FILE="${PROJECT_SOURCE_DIR}/hpx.ini")

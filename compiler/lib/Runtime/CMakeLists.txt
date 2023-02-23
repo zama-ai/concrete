@@ -3,6 +3,7 @@ add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp St
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PRIVATE HPX::hpx HPX::iostreams_component)
   set_source_files_properties(DFRuntime.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
+  target_include_directories(ConcretelangRuntime PUBLIC ${HPX_INCLUDE_DIRS})
 endif()
 
 if(CONCRETELANG_CUDA_SUPPORT)
