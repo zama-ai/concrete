@@ -96,8 +96,8 @@ def test_round_bit_pattern(input_bits, lsbs_to_remove, helpers):
         x_rounded = cnp.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
         return np.abs(50 * np.sin(x_rounded)).astype(np.int64)
 
-    circuit = function.compile([(2**input_bits) - 1], helpers.configuration(), virtual=True)
-    helpers.check_execution(circuit, function, np.random.randint(0, 2**input_bits))
+    circuit = function.compile([(2**input_bits) - 1], helpers.configuration())
+    helpers.check_execution(circuit, function, np.random.randint(0, 2**input_bits), simulate=True)
 
 
 def test_auto_rounding(helpers):
@@ -181,7 +181,6 @@ def test_auto_rounding(helpers):
         inputset3,
         helpers.configuration(),
         auto_adjust_rounders=True,
-        virtual=True,
     )
 
     assert rounder3.lsbs_to_remove == 3

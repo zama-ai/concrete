@@ -85,7 +85,7 @@ class Graph:
                 nodes and their values during computation
         """
 
-        # pylint: disable=no-member,too-many-nested-blocks
+        # pylint: disable=no-member,too-many-nested-blocks,too-many-branches,too-many-statements
 
         if p_error is None:
             p_error = 0.0
@@ -153,19 +153,26 @@ class Graph:
                             error_sign = np.random.rand(*pred_results[index].shape)
                             error_sign = np.where(error_sign < 0.5, 1, -1).astype(np.int64)
 
-                            new_results = pred_results[index] + (error * error_sign)
+                            new_result = pred_results[index] + (error * error_sign)
 
-                            underflow_indices = np.where(new_results < dtype.min())
-                            new_results[underflow_indices] = (
-                                dtype.max() - (dtype.min() - new_results[underflow_indices]) + 1
-                            )
+                            if new_result.shape == ():  # pragma: no cover
+                                if new_result < dtype.min():
+                                    new_result = dtype.max() - (dtype.min() - new_result) + 1
+                                elif new_result > dtype.max():
+                                    new_result = dtype.min() - (new_result - dtype.max()) - 1
 
-                            overflow_indices = np.where(new_results > dtype.max())
-                            new_results[overflow_indices] = (
-                                dtype.min() + (new_results[overflow_indices] - dtype.max()) - 1
-                            )
+                            else:
+                                underflow_indices = np.where(new_result < dtype.min())
+                                new_result[underflow_indices] = (
+                                    dtype.max() - (dtype.min() - new_result[underflow_indices]) + 1
+                                )
 
-                            pred_results[index] = new_results
+                                overflow_indices = np.where(new_result > dtype.max())
+                                new_result[overflow_indices] = (
+                                    dtype.min() + (new_result[overflow_indices] - dtype.max()) - 1
+                                )
+
+                            pred_results[index] = new_result
 
             try:
                 node_results[node] = node(*pred_results)

@@ -23,7 +23,6 @@ class Configuration:
     show_optimizer: Optional[bool]
     dump_artifacts_on_unexpected_failures: bool
     enable_unsafe_features: bool
-    virtual: bool
     use_insecure_key_cache: bool
     loop_parallelize: bool
     dataflow_parallelize: bool
@@ -61,7 +60,6 @@ class Configuration:
         show_optimizer: Optional[bool] = None,
         dump_artifacts_on_unexpected_failures: bool = True,
         enable_unsafe_features: bool = False,
-        virtual: bool = False,
         use_insecure_key_cache: bool = False,
         insecure_key_cache_location: Optional[Union[Path, str]] = None,
         loop_parallelize: bool = True,
@@ -78,7 +76,6 @@ class Configuration:
         self.show_optimizer = show_optimizer
         self.dump_artifacts_on_unexpected_failures = dump_artifacts_on_unexpected_failures
         self.enable_unsafe_features = enable_unsafe_features
-        self.virtual = virtual
         self.use_insecure_key_cache = use_insecure_key_cache
         self.insecure_key_cache_location = (
             str(insecure_key_cache_location) if insecure_key_cache_location is not None else None

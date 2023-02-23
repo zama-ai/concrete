@@ -2,7 +2,6 @@
 Declaration of `Circuit` class.
 """
 
-from copy import deepcopy
 from typing import Any, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -10,7 +9,6 @@ from concrete.compiler import PublicArguments, PublicResult
 
 from ..dtypes import Integer
 from ..internal.utils import assert_that
-from ..mlir import GraphConverter
 from ..representation import Graph
 from .client import Client
 from .configuration import Configuration
@@ -35,9 +33,6 @@ class Circuit:
 
         self.graph = graph
         self.mlir = mlir
-
-        if self.configuration.virtual:
-            return
 
         self._initialize_client_and_server()
 
@@ -82,35 +77,7 @@ class Circuit:
                 result of the simulation
         """
 
-        p_error = self.p_error if not self.configuration.virtual else self.configuration.p_error
-        return self.graph(*args, p_error=p_error)
-
-    def enable_fhe(self):
-        """
-        Enable fully homomorphic encryption features.
-
-        When called on a virtual circuit, it'll enable access to the following methods:
-        - encrypt
-        - run
-        - decrypt
-        - encrypt_run_decrypt
-
-        When called on a normal circuit, it'll do nothing.
-
-        Raises:
-            RuntimeError:
-                if the circuit is not supported in fhe
-        """
-
-        if not self.configuration.virtual:
-            return
-
-        new_configuration = deepcopy(self.configuration)
-        new_configuration.virtual = False
-        self.configuration = new_configuration
-
-        self.mlir = GraphConverter.convert(self.graph)
-        self._initialize_client_and_server()
+        return self.graph(*args, p_error=self.p_error)
 
     def keygen(self, force: bool = False):
         """
@@ -120,10 +87,6 @@ class Circuit:
             force (bool, default = False):
                 whether to generate new keys even if keys are already generated
         """
-
-        if self.configuration.virtual:
-            message = "Virtual circuits cannot use `keygen` method"
-            raise RuntimeError(message)
 
         self.client.keygen(force)
 
@@ -140,10 +103,6 @@ class Circuit:
                 encrypted and plain arguments as well as public keys
         """
 
-        if self.configuration.virtual:
-            message = "Virtual circuits cannot use `encrypt` method"
-            raise RuntimeError(message)
-
         return self.client.encrypt(*args)
 
     def run(self, args: PublicArguments) -> PublicResult:
@@ -158,10 +117,6 @@ class Circuit:
             PublicResult:
                 encrypted result of homomorphic evaluaton
         """
-
-        if self.configuration.virtual:
-            message = "Virtual circuits cannot use `run` method"
-            raise RuntimeError(message)
 
         self.keygen(force=False)
         return self.server.run(args, self.client.evaluation_keys)
@@ -181,10 +136,6 @@ class Circuit:
             Union[int, numpy.ndarray]:
                 clear result of homomorphic evaluaton
         """
-
-        if self.configuration.virtual:
-            message = "Virtual circuits cannot use `decrypt` method"
-            raise RuntimeError(message)
 
         return self.client.decrypt(result)
 

@@ -210,24 +210,6 @@ def test_compiler_bad_compile(helpers):
     )
 
 
-def test_compiler_virtual_compile(helpers):
-    """
-    Test `compile` method of `Compiler` class with virtual=True.
-    """
-
-    configuration = helpers.configuration()
-
-    def f(x, y):
-        return x * y
-
-    compiler = Compiler(f, {"x": "encrypted", "y": "encrypted"})
-
-    inputset = [(100_000, 1_000_000)]
-    circuit = compiler.compile(inputset, configuration=configuration, virtual=True)
-
-    assert circuit.simulate(100_000, 1_000_000) == 100_000_000_000
-
-
 def test_compiler_compile_bad_inputset(helpers):
     """
     Test `compile` method of `Compiler` class with bad inputset.

@@ -92,44 +92,6 @@ Optimizer
     )
 
 
-def test_compiler_verbose_virtual_compile(helpers, capsys):
-    """
-    Test `compile` method of `compiler` decorator with verbose flag.
-    """
-
-    configuration = helpers.configuration()
-    artifacts = cnp.DebugArtifacts()
-
-    @cnp.compiler({"x": "encrypted"})
-    def function(x):
-        return x + 42
-
-    inputset = range(10)
-    function.compile(inputset, configuration, artifacts, verbose=True, virtual=True)
-
-    captured = capsys.readouterr()
-    assert captured.out.strip() == (
-        f"""
-
-Computation Graph
-------------------------------------------------------------------
-{list(artifacts.textual_representations_of_graphs.values())[-1][-1]}
-------------------------------------------------------------------
-
-MLIR
-------------------------------------------------------------------
-Virtual circuits don't have MLIR.
-------------------------------------------------------------------
-
-Optimizer
-------------------------------------------------------------------
-Virtual circuits don't have optimizer output.
-------------------------------------------------------------------
-
-        """.strip()
-    )
-
-
 def test_circuit(helpers):
     """
     Test circuit decorator.

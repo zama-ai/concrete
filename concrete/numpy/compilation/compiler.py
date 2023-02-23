@@ -439,7 +439,7 @@ class Compiler:
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
-            mlir = GraphConverter.convert(self.graph, virtual=self.configuration.virtual)
+            mlir = GraphConverter.convert(self.graph)
             if self.artifacts is not None:
                 self.artifacts.add_mlir_to_compile(mlir)
 
@@ -513,17 +513,12 @@ class Compiler:
                     print("-" * columns)
 
             circuit = Circuit(self.graph, mlir, self.configuration)
-            if not self.configuration.virtual:
-                assert circuit.client.specs.client_parameters is not None
-                if self.artifacts is not None:
-                    self.artifacts.add_client_parameters(
-                        circuit.client.specs.client_parameters.serialize()
-                    )
+
+            client_parameters = circuit.client.specs.client_parameters
+            if self.artifacts is not None:
+                self.artifacts.add_client_parameters(client_parameters.serialize())
 
             if show_optimizer:
-                if self.configuration.virtual:
-                    print("Virtual circuits don't have optimizer output.")
-
                 print("-" * columns)
                 print()
 

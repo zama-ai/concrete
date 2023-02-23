@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from concrete.numpy import Client, ClientSpecs, EvaluationKeys, Server, compiler
+from concrete.numpy import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, compiler
 
 
 def test_circuit_str(helpers):
@@ -127,41 +127,6 @@ def test_circuit_bad_run(helpers):
     assert str(excinfo.value) == (
         "Expected argument 1 to be EncryptedScalar<uint6> but it's EncryptedScalar<uint7>"
     )
-
-
-def test_circuit_virtual_explicit_api(helpers):
-    """
-    Test `keygen`, `encrypt`, `run`, and `decrypt` methods of `Circuit` class with virtual circuit.
-    """
-
-    configuration = helpers.configuration()
-
-    @compiler({"x": "encrypted", "y": "encrypted"})
-    def f(x, y):
-        return x + y
-
-    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
-    circuit = f.compile(inputset, configuration, virtual=True)
-
-    with pytest.raises(RuntimeError) as excinfo:
-        circuit.keygen()
-
-    assert str(excinfo.value) == "Virtual circuits cannot use `keygen` method"
-
-    with pytest.raises(RuntimeError) as excinfo:
-        circuit.encrypt(1, 2)
-
-    assert str(excinfo.value) == "Virtual circuits cannot use `encrypt` method"
-
-    with pytest.raises(RuntimeError) as excinfo:
-        circuit.run(None)
-
-    assert str(excinfo.value) == "Virtual circuits cannot use `run` method"
-
-    with pytest.raises(RuntimeError) as excinfo:
-        circuit.decrypt(None)
-
-    assert str(excinfo.value) == "Virtual circuits cannot use `decrypt` method"
 
 
 def test_client_server_api(helpers):
@@ -303,35 +268,38 @@ def test_bad_server_save(helpers):
 
 
 @pytest.mark.parametrize("p_error", [0.75, 0.5, 0.4, 0.25, 0.2, 0.1, 0.01, 0.001])
-@pytest.mark.parametrize("bit_width", [10])
+@pytest.mark.parametrize("bit_width", [5])
 @pytest.mark.parametrize("sample_size", [1_000_000])
 @pytest.mark.parametrize("tolerance", [0.075])
-def test_virtual_p_error(p_error, bit_width, sample_size, tolerance, helpers):
+def test_p_error_simulation(p_error, bit_width, sample_size, tolerance, helpers):
     """
-    Test virtual circuits with p_error.
+    Test p_error simulation.
     """
 
-    configuration = helpers.configuration()
+    configuration = helpers.configuration().fork(global_p_error=None)
+
+    table = LookupTable([0] + [x - 1 for x in range(1, 2**bit_width)])
 
     @compiler({"x": "encrypted"})
     def function(x):
-        return (-x) ** 2
+        return table[x + 1]
 
-    inputset = [np.random.randint(0, 2**bit_width, size=(sample_size,)) for _ in range(100)]
-    circuit = function.compile(inputset, configuration=configuration, virtual=True, p_error=p_error)
+    inputset = [np.random.randint(0, (2**bit_width) - 1, size=(sample_size,)) for _ in range(100)]
+    circuit = function.compile(inputset, configuration=configuration, p_error=p_error)
 
-    sample = np.random.randint(0, 2**bit_width, size=(sample_size,))
+    assert circuit.p_error < p_error
+
+    sample = np.random.randint(0, (2**bit_width) - 1, size=(sample_size,))
     output = circuit.simulate(sample)
 
-    errors = 0
-    for i in range(sample_size):
-        if output[i] != (-sample[i]) ** 2:
-            errors += 1
+    errors = np.sum(output != sample)
 
-    expected_number_of_errors_on_average = sample_size * p_error
+    expected_number_of_errors_on_average = sample_size * circuit.p_error
+    tolerated_difference = expected_number_of_errors_on_average * tolerance
+
     acceptable_number_of_errors = [
-        expected_number_of_errors_on_average - (expected_number_of_errors_on_average * tolerance),
-        expected_number_of_errors_on_average + (expected_number_of_errors_on_average * tolerance),
+        round(expected_number_of_errors_on_average - tolerated_difference),
+        round(expected_number_of_errors_on_average + tolerated_difference),
     ]
     assert acceptable_number_of_errors[0] <= errors <= acceptable_number_of_errors[1]
 
@@ -358,30 +326,3 @@ def test_circuit_run_with_unused_arg(helpers):
     assert circuit.encrypt_run_decrypt(10, 0) == 20
     assert circuit.encrypt_run_decrypt(10, 10) == 20
     assert circuit.encrypt_run_decrypt(10, 20) == 20
-
-
-def test_circuit_virtual_then_fhe(helpers):
-    """
-    Test compiling to virtual and then fhe.
-    """
-
-    configuration = helpers.configuration()
-
-    @compiler({"x": "encrypted", "y": "encrypted"})
-    def f(x, y):
-        return x + y
-
-    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
-    circuit = f.compile(inputset, configuration, virtual=True)
-
-    assert circuit.simulate(3, 5) == 8
-
-    circuit.enable_fhe()
-
-    assert circuit.simulate(3, 5) == 8
-    assert circuit.encrypt_run_decrypt(3, 5) == 8
-
-    circuit.enable_fhe()
-
-    assert circuit.simulate(3, 5) == 8
-    assert circuit.encrypt_run_decrypt(3, 5) == 8

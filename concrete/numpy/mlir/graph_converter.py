@@ -40,7 +40,7 @@ class GraphConverter:
     """
 
     @staticmethod
-    def _check_node_convertibility(graph: Graph, node: Node, virtual: bool) -> Optional[str]:
+    def _check_node_convertibility(graph: Graph, node: Node) -> Optional[str]:
         """
         Check node convertibility to MLIR.
 
@@ -50,9 +50,6 @@ class GraphConverter:
 
             node (Node):
                 node to be checked
-
-            virtual  (bool):
-                whether the circuit will be virtual
 
         Returns:
             Optional[str]:
@@ -153,7 +150,7 @@ class GraphConverter:
 
             elif name == "multiply":
                 assert_that(len(inputs) == 2)
-                if not virtual and inputs[0].is_encrypted and inputs[1].is_encrypted:
+                if inputs[0].is_encrypted and inputs[1].is_encrypted:
                     return "only multiplication between encrypted and clear is supported"
 
             elif name == "negative":
@@ -205,16 +202,13 @@ class GraphConverter:
         # pylint: enable=too-many-branches,too-many-return-statements,too-many-statements
 
     @staticmethod
-    def _check_graph_convertibility(graph: Graph, virtual: bool):
+    def _check_graph_convertibility(graph: Graph):
         """
         Check graph convertibility to MLIR.
 
         Args:
             graph (Graph):
                 computation graph to be checked
-
-            virtual  (bool):
-                whether the circuit will be virtual
 
         Raises:
             RuntimeError:
@@ -233,7 +227,7 @@ class GraphConverter:
 
         if len(offending_nodes) == 0:
             for node in graph.graph.nodes:
-                reason = GraphConverter._check_node_convertibility(graph, node, virtual)
+                reason = GraphConverter._check_node_convertibility(graph, node)
                 if reason is not None:
                     offending_nodes[node] = [reason, node.location]
 
@@ -665,16 +659,13 @@ class GraphConverter:
         return sanitized_args
 
     @staticmethod
-    def convert(graph: Graph, virtual: bool = False) -> str:
+    def convert(graph: Graph) -> str:
         """
         Convert a computation graph to its corresponding MLIR representation.
 
         Args:
             graph (Graph):
                 computation graph to be converted
-
-            virtual  (bool, default = False):
-                whether the circuit will be virtual
 
         Returns:
             str:
@@ -683,10 +674,7 @@ class GraphConverter:
 
         graph = deepcopy(graph)
 
-        GraphConverter._check_graph_convertibility(graph, virtual)
-        if virtual:
-            return "Virtual circuits don't have MLIR."
-
+        GraphConverter._check_graph_convertibility(graph)
         GraphConverter._update_bit_widths(graph)
         GraphConverter._offset_negative_lookup_table_inputs(graph)
         GraphConverter._broadcast_assignments(graph)

@@ -75,8 +75,8 @@ def test_maxpool(
     def function(x):
         return connx.maxpool(x, **operation)
 
-    circuit = function.compile([sample_input], helpers.configuration(), virtual=True)
-    helpers.check_execution(circuit, function, sample_input)
+    graph = function.trace([sample_input], helpers.configuration())
+    assert np.array_equal(graph(sample_input), expected_output)
 
 
 @pytest.mark.parametrize(
@@ -318,16 +318,16 @@ def test_bad_maxpool_special(helpers):
     Test maxpool with bad parameters for special cases.
     """
 
-    # without virtual
-    # ---------------
+    # compile
+    # -------
 
     @cnp.compiler({"x": "encrypted"})
-    def without_virtual(x):
+    def not_compilable(x):
         return connx.maxpool(x, kernel_shape=(4, 3))
 
     inputset = [np.random.randint(0, 10, size=(1, 1, 10, 10)) for i in range(100)]
     with pytest.raises(NotImplementedError) as excinfo:
-        without_virtual.compile(inputset, helpers.configuration())
+        not_compilable.compile(inputset, helpers.configuration())
 
     helpers.check_str("MaxPool operation cannot be compiled yet", str(excinfo.value))
 

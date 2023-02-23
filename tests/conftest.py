@@ -223,6 +223,7 @@ class Helpers:
         function: Callable,
         sample: Union[Any, List[Any]],
         retries: int = 1,
+        simulate: bool = False,
     ):
         """
         Assert that `circuit` is behaves the same as `function` on `sample`.
@@ -237,8 +238,11 @@ class Helpers:
             sample (List[Any]):
                 inputs
 
-            retries (int):
+            retries (int, default = 1):
                 number of times to retry (for probabilistic execution)
+
+            simulate (bool, default = False):
+                whether to simulate instead of fhe execution
         """
 
         if not isinstance(sample, list):
@@ -262,9 +266,7 @@ class Helpers:
         for i in range(retries):
             expected = sanitize(function(*sample))
             actual = sanitize(
-                circuit.simulate(*sample)
-                if circuit.configuration.virtual
-                else circuit.encrypt_run_decrypt(*sample)
+                circuit.simulate(*sample) if simulate else circuit.encrypt_run_decrypt(*sample)
             )
 
             if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
