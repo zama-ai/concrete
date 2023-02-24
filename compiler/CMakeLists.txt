@@ -12,6 +12,7 @@ add_definitions("-Wno-dollar-in-identifier-extension")
 
 add_definitions("-Wall ")
 add_definitions("-Werror ")
+add_definitions("-Wfatal-errors")
 
 # If we are trying to build the compiler with LLVM/MLIR as libraries
 if(NOT DEFINED LLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR)
