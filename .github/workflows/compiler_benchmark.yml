@@ -121,7 +121,8 @@ jobs:
           --project-version ${COMMIT_HASH} \
           --branch ${{ github.ref_name }} \
           --commit-date ${COMMIT_DATE} \
-          --bench-date "${{ env.BENCH_DATE }}"
+          --bench-date "${{ env.BENCH_DATE }}" \
+          --throughput
 
       - name: Upload parsed results artifact
         uses: actions/upload-artifact@v3
