@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet};
 use {DotKind as DK, VarianceOrigin as VO};
 type Op = unparametrized::UnparameterizedOperator;
 
-fn first<'a, Property>(inputs: &[OperatorIndex], properties: &'a [Property]) -> &'a Property {
+pub fn first<'a, Property>(inputs: &[OperatorIndex], properties: &'a [Property]) -> &'a Property {
     &properties[inputs[0].i]
 }
 
@@ -83,7 +83,7 @@ pub fn has_round(dag: &unparametrized::OperationDag) -> bool {
     false
 }
 
-fn assert_no_round(dag: &unparametrized::OperationDag) {
+pub fn assert_no_round(dag: &unparametrized::OperationDag) {
     assert!(!has_round(dag));
 }
 
@@ -197,7 +197,7 @@ fn out_variances(dag: &unparametrized::OperationDag) -> Vec<SymbolicVariance> {
     out_variances
 }
 
-fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> {
+pub fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> {
     let nb_ops = dag.operators.len();
     let mut extra_values_to_check = vec![true; nb_ops];
     for op in &dag.operators {
@@ -283,7 +283,7 @@ fn op_levelled_complexity(
     }
 }
 
-fn levelled_complexity(dag: &unparametrized::OperationDag) -> LevelledComplexity {
+pub fn levelled_complexity(dag: &unparametrized::OperationDag) -> LevelledComplexity {
     let mut levelled_complexity = LevelledComplexity::ZERO;
     for op in &dag.operators {
         levelled_complexity += op_levelled_complexity(op, &dag.out_shapes);
@@ -301,7 +301,7 @@ pub fn lut_count_from_dag(dag: &unparametrized::OperationDag) -> u64 {
     count
 }
 
-fn safe_noise_bound(precision: Precision, noise_config: &NoiseBoundConfig) -> f64 {
+pub fn safe_noise_bound(precision: Precision, noise_config: &NoiseBoundConfig) -> f64 {
     error::safe_variance_bound_2padbits(
         precision as u64,
         noise_config.ciphertext_modulus_log,
@@ -620,7 +620,7 @@ impl OperationDag {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
 
     use super::*;
     use crate::dag::operator::{FunctionTable, LevelledComplexity, Shape, Weights};
@@ -641,7 +641,7 @@ mod tests {
 
     const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 
-    const CONFIG: NoiseBoundConfig = NoiseBoundConfig {
+    pub const CONFIG: NoiseBoundConfig = NoiseBoundConfig {
         security_level: 128,
         ciphertext_modulus_log: 64,
         maximum_acceptable_error_probability: _4_SIGMA,
