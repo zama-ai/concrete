@@ -143,9 +143,9 @@ jobs:
           echo "CUDACXX=$CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
 
       - name: Setup environment variable for benchmark target
-        if: ${{ inputs.benchmark-name != 'standard' }}
+        if: ${{ env.BENCHMARK_NAME != 'standard' }}
         run: |
-          echo "BENCHMARK_TARGET=${{ env.BENCHMARK_TARGET }}-${{ inputs.benchmark-name }}" >> "${GITHUB_ENV}"
+          echo "BENCHMARK_TARGET=${{ env.BENCHMARK_TARGET }}-${{ env.BENCHMARK_NAME }}" >> "${GITHUB_ENV}"
 
       - name: Install rust
         uses: actions-rs/toolchain@v1
