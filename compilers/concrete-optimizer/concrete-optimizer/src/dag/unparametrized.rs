@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fmt::Write;
 
 use crate::dag::operator::{
@@ -15,6 +16,15 @@ pub struct OperationDag {
     pub(crate) out_shapes: Vec<Shape>,
     // Collect all operators ouput precision
     pub(crate) out_precisions: Vec<Precision>,
+}
+
+impl fmt::Display for OperationDag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (i, op) in self.operators.iter().enumerate() {
+            writeln!(f, "%{i} <- {op}")?;
+        }
+        Ok(())
+    }
 }
 
 impl OperationDag {

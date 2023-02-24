@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::dag::operator::tensor::{ClearTensor, Shape};
 
 pub type Weights = ClearTensor<i64>;
@@ -102,4 +104,61 @@ pub enum Operator {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct OperatorIndex {
     pub i: usize,
+}
+
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "")?;
+        match self {
+            Self::Input {
+                out_precision,
+                out_shape,
+            } => {
+                write!(f, "Input : u{out_precision} x {out_shape:?}")?;
+            }
+            Self::Dot { inputs, weights } => {
+                for (i, (input, weight)) in inputs.iter().zip(weights.values.iter()).enumerate() {
+                    if i > 0 {
+                        write!(f, " + ")?;
+                    }
+                    write!(f, "{weight} x %{}", input.i)?;
+                }
+            }
+            Self::UnsafeCast {
+                input,
+                out_precision,
+            } => {
+                write!(f, "%{} : u{out_precision}", input.i)?;
+            }
+            Self::Lut {
+                input,
+                out_precision,
+                ..
+            } => {
+                write!(f, "LUT[%{}] : u{out_precision}", input.i)?;
+            }
+            Self::LevelledOp {
+                inputs,
+                manp,
+                out_shape,
+                ..
+            } => {
+                write!(f, "LINEAR[")?;
+                for (i, input) in inputs.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "%{}", input.i)?;
+                }
+                write!(f, "] : manp={manp} x {out_shape:?}")?;
+            }
+            Self::Round {
+                input,
+                out_precision,
+            } => {
+                write!(f, "ROUND[%{}] : u{out_precision}", input.i)?;
+            }
+        }
+        Ok(())
+    }
 }
