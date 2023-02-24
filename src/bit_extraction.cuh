@@ -135,15 +135,17 @@ get_buffer_size_extract_bits(uint32_t glwe_dimension, uint32_t lwe_dimension,
                              uint32_t polynomial_size,
                              uint32_t number_of_inputs) {
 
-  return sizeof(Torus) * number_of_inputs // lut_vector_indexes
-         + ((glwe_dimension + 1) * polynomial_size) * sizeof(Torus) // lut_pbs
-         + (glwe_dimension * polynomial_size + 1) *
-               sizeof(Torus) // lwe_array_in_buffer
-         + (glwe_dimension * polynomial_size + 1) *
-               sizeof(Torus)                   // lwe_array_in_shifted_buffer
-         + (lwe_dimension + 1) * sizeof(Torus) // lwe_array_out_ks_buffer
-         + (glwe_dimension * polynomial_size + 1) *
-               sizeof(Torus); // lwe_array_out_pbs_buffer
+  int buffer_size =
+      sizeof(Torus) * number_of_inputs // lut_vector_indexes
+      + ((glwe_dimension + 1) * polynomial_size) * sizeof(Torus) // lut_pbs
+      + (glwe_dimension * polynomial_size + 1) *
+            sizeof(Torus) // lwe_array_in_buffer
+      + (glwe_dimension * polynomial_size + 1) *
+            sizeof(Torus)                   // lwe_array_in_shifted_buffer
+      + (lwe_dimension + 1) * sizeof(Torus) // lwe_array_out_ks_buffer
+      + (glwe_dimension * polynomial_size + 1) *
+            sizeof(Torus); // lwe_array_out_pbs_buffer
+  return buffer_size + buffer_size % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>

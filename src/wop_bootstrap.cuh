@@ -305,9 +305,9 @@ __host__ void host_wop_pbs(
   host_extract_bits<Torus, params>(
       v_stream, gpu_index, (Torus *)lwe_array_out_bit_extract, lwe_array_in,
       bit_extract_buffer, ksk, fourier_bsk, number_of_bits_to_extract,
-      delta_log, polynomial_size, lwe_dimension, glwe_dimension,
-      polynomial_size, base_log_bsk, level_count_bsk, base_log_ksk,
-      level_count_ksk, number_of_inputs, max_shared_memory);
+      delta_log, glwe_dimension * polynomial_size, lwe_dimension,
+      glwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
+      base_log_ksk, level_count_ksk, number_of_inputs, max_shared_memory);
   check_cuda_error(cudaGetLastError());
 
   int8_t *cbs_vp_buffer =

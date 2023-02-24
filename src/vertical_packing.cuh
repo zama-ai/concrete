@@ -84,31 +84,29 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
   synchronize_threads_in_block();
   GadgetMatrix<Torus, params> gadget(base_log, level_count, glwe_sub,
                                      glwe_dim + 1);
+
   // Subtract each glwe operand, decompose the resulting
   // polynomial coefficients to multiply each decomposed level
   // with the corresponding part of the LUT
   for (int level = level_count - 1; level >= 0; level--) {
     // Decomposition
-    gadget.decompose_and_compress_next(glwe_fft);
-    synchronize_threads_in_block();
     for (int i = 0; i < (glwe_dim + 1); i++) {
-      auto glwe_fft_slice = glwe_fft + i * params::degree / 2;
+      gadget.decompose_and_compress_next_polynomial(glwe_fft, i);
 
       // First, perform the polynomial multiplication
-      NSMFFT_direct<HalfDegree<params>>(glwe_fft_slice);
+      NSMFFT_direct<HalfDegree<params>>(glwe_fft);
 
       // External product and accumulate
       // Get the piece necessary for the multiplication
       auto bsk_slice = get_ith_mask_kth_block(
           ggsw_in, ggsw_idx, i, level, polynomial_size, glwe_dim, level_count);
 
-      synchronize_threads_in_block();
       // Perform the coefficient-wise product
       for (int j = 0; j < (glwe_dim + 1); j++) {
         auto bsk_poly = bsk_slice + j * params::degree / 2;
         auto res_fft_poly = res_fft + j * params::degree / 2;
         polynomial_product_accumulate_in_fourier_domain<params, double2>(
-            res_fft_poly, glwe_fft_slice, bsk_poly);
+            res_fft_poly, glwe_fft, bsk_poly);
       }
     }
     synchronize_threads_in_block();
@@ -215,9 +213,8 @@ get_memory_needed_per_block_cmux_tree(uint32_t glwe_dimension,
                                       uint32_t polynomial_size) {
   return sizeof(Torus) * polynomial_size * (glwe_dimension + 1) + // glwe_sub
          sizeof(double2) * polynomial_size / 2 *
-             (glwe_dimension + 1) + // res_fft
-         sizeof(double2) * polynomial_size / 2 *
-             (glwe_dimension + 1); // glwe_fft
+             (glwe_dimension + 1) +             // res_fft
+         sizeof(double2) * polynomial_size / 2; // glwe_fft
 }
 
 template <typename Torus>
@@ -538,8 +535,6 @@ __host__ void host_blind_rotate_and_sample_extraction(
     uint32_t level_count, uint32_t max_shared_memory) {
 
   cudaSetDevice(gpu_index);
-  assert(glwe_dimension ==
-         1); // For larger k we will need to adjust the mask size
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
   int memory_needed_per_block =

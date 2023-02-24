@@ -43,35 +43,45 @@ public:
     synchronize_threads_in_block();
   }
 
+  // Decomposes all polynomials at once
   __device__ void decompose_and_compress_next(double2 *result) {
-    current_level -= 1;
     for (int j = 0; j < num_poly; j++) {
-      int tid = threadIdx.x;
-      auto state_slice = state + j * params::degree;
       auto result_slice = result + j * params::degree / 2;
-      for (int i = 0; i < params::opt / 2; i++) {
-        T res_re = state_slice[tid] & mask_mod_b;
-        T res_im = state_slice[tid + params::degree / 2] & mask_mod_b;
-        state_slice[tid] >>= base_log;
-        state_slice[tid + params::degree / 2] >>= base_log;
-        T carry_re = ((res_re - 1ll) | state_slice[tid]) & res_re;
-        T carry_im =
-            ((res_im - 1ll) | state_slice[tid + params::degree / 2]) & res_im;
-        carry_re >>= (base_log - 1);
-        carry_im >>= (base_log - 1);
-        state_slice[tid] += carry_re;
-        state_slice[tid + params::degree / 2] += carry_im;
-        res_re -= carry_re << base_log;
-        res_im -= carry_im << base_log;
+      decompose_and_compress_next_polynomial(result_slice, j);
+    }
+  }
 
-        result_slice[tid].x = (int32_t)res_re;
-        result_slice[tid].y = (int32_t)res_im;
+  // Decomposes a single polynomial
+  __device__ void decompose_and_compress_next_polynomial(double2 *result,
+                                                         int j) {
+    if (j == 0)
+      current_level -= 1;
 
-        tid += params::degree / params::opt;
-      }
+    int tid = threadIdx.x;
+    auto state_slice = state + j * params::degree;
+    for (int i = 0; i < params::opt / 2; i++) {
+      T res_re = state_slice[tid] & mask_mod_b;
+      T res_im = state_slice[tid + params::degree / 2] & mask_mod_b;
+      state_slice[tid] >>= base_log;
+      state_slice[tid + params::degree / 2] >>= base_log;
+      T carry_re = ((res_re - 1ll) | state_slice[tid]) & res_re;
+      T carry_im =
+          ((res_im - 1ll) | state_slice[tid + params::degree / 2]) & res_im;
+      carry_re >>= (base_log - 1);
+      carry_im >>= (base_log - 1);
+      state_slice[tid] += carry_re;
+      state_slice[tid + params::degree / 2] += carry_im;
+      res_re -= carry_re << base_log;
+      res_im -= carry_im << base_log;
+
+      result[tid].x = (int32_t)res_re;
+      result[tid].y = (int32_t)res_im;
+
+      tid += params::degree / params::opt;
     }
     synchronize_threads_in_block();
   }
+
   __device__ void decompose_and_compress_level(double2 *result, int level) {
     for (int i = 0; i < level_count - level; i++)
       decompose_and_compress_next(result);
