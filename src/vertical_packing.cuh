@@ -75,11 +75,12 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
   // The polynomial multiplications happens at the block level
   // and each thread handles two or more coefficients
   int pos = threadIdx.x;
-  for (int j = 0; j < (glwe_dim + 1) * params::opt / 2; j++) {
-    res_fft[pos].x = 0;
-    res_fft[pos].y = 0;
-    pos += params::degree / params::opt;
-  }
+  for (int i = 0; i < (glwe_dim + 1); i++)
+    for (int j = 0; j < params::opt / 2; j++) {
+      res_fft[pos].x = 0;
+      res_fft[pos].y = 0;
+      pos += params::degree / params::opt;
+    }
 
   synchronize_threads_in_block();
   GadgetMatrix<Torus, params> gadget(base_log, level_count, glwe_sub,
@@ -124,10 +125,11 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
   Torus *mb = &glwe_array_out[output_idx * (glwe_dim + 1) * polynomial_size];
 
   int tid = threadIdx.x;
-  for (int i = 0; i < (glwe_dim + 1) * params::opt; i++) {
-    mb[tid] = m0[tid];
-    tid += params::degree / params::opt;
-  }
+  for (int i = 0; i < (glwe_dim + 1); i++)
+    for (int j = 0; j < params::opt; j++) {
+      mb[tid] = m0[tid];
+      tid += params::degree / params::opt;
+    }
 
   for (int i = 0; i < (glwe_dim + 1); i++) {
     auto res_fft_slice = res_fft + i * params::degree / 2;
@@ -425,10 +427,11 @@ __global__ void device_blind_rotation_and_sample_extraction(
   // Input LUT
   auto mi = &glwe_in[blockIdx.x * (glwe_dim + 1) * polynomial_size];
   int tid = threadIdx.x;
-  for (int i = 0; i < (glwe_dim + 1) * params::opt; i++) {
-    accumulator_c0[tid] = mi[tid];
-    tid += params::degree / params::opt;
-  }
+  for (int i = 0; i < (glwe_dim + 1); i++)
+    for (int j = 0; j < params::opt; j++) {
+      accumulator_c0[tid] = mi[tid];
+      tid += params::degree / params::opt;
+    }
 
   int monomial_degree = 0;
   for (int i = mbr_size - 1; i >= 0; i--) {
