@@ -113,7 +113,6 @@ where
         let content = update(content);
         let len_after = content.len();
         *lock = Arc::new(content);
-        drop(lock);
         if len_before != len_after {
             self.content_changed.store(true, Ordering::Relaxed);
         }
