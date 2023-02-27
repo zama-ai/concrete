@@ -239,9 +239,12 @@ jobs:
           make Python3_EXECUTABLE=$(which python) DATAFLOW_EXECUTION_ENABLED=OFF python-bindings
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
           make python-package
-          echo "::set-output name=ASSET_NAME::$(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl' | rev |cut -d "/" -f 1 |rev )"
+          cp -R build/wheels ${{ github.workspace }}/wheels
+          cd ${{ github.workspace }}/wheels/
+          WHEEL=$(ls *macosx*.whl)
+          echo "::set-output name=ASSET_NAME::$WHEEL"
           # used later for python package test
-          echo "::set-output name=ASSET_NAME_PY$(echo ${{ matrix.python }} |tr -d '.')::$(find ${{ github.workspace }}/wheels/ -name '*macosx*.whl' | rev |cut -d "/" -f 1 |rev )"
+          echo "::set-output name=ASSET_NAME_PY$(echo ${{ matrix.python }} |tr -d '.')::$WHEEL"
 
       - name: Upload Python Package
         uses: actions/upload-release-asset@v1
