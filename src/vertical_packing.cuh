@@ -238,9 +238,10 @@ get_buffer_size_cmux_tree(uint32_t glwe_dimension, uint32_t polynomial_size,
   if (max_shared_memory < polynomial_size * sizeof(double)) {
     device_mem += polynomial_size * sizeof(double);
   }
-  return r * ggsw_size * sizeof(double) +
-         num_lut * tau * glwe_size * sizeof(Torus) +
-         num_lut * tau * glwe_size * sizeof(Torus) + device_mem;
+  int buffer_size = r * ggsw_size * sizeof(double) +
+                    num_lut * tau * glwe_size * sizeof(Torus) +
+                    num_lut * tau * glwe_size * sizeof(Torus) + device_mem;
+  return buffer_size + buffer_size % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>
@@ -315,28 +316,31 @@ host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
   //////////////////////
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
+  int glwe_size = (glwe_dimension + 1) * polynomial_size;
 
+  // Define the buffers
+  // Always define the buffers with strongest memory alignment constraints first
+  // d_buffer1 and d_buffer2 are aligned with Torus, so they're defined last
   double2 *d_ggsw_fft_in = (double2 *)cmux_tree_buffer;
-
-  int8_t *d_mem_fft =
+  int8_t *d_mem =
       (int8_t *)d_ggsw_fft_in + (ptrdiff_t)(r * ggsw_size * sizeof(double));
-  batch_fft_ggsw_vector<Torus, STorus, params>(
-      stream, d_ggsw_fft_in, ggsw_in, d_mem_fft, r, glwe_dimension,
-      polynomial_size, level_count, gpu_index, max_shared_memory);
-
-  //////////////////////
-
-  // Allocate global memory in case parameters are too large
+  int8_t *d_mem_fft = d_mem;
+  if (max_shared_memory < memory_needed_per_block) {
+    d_mem_fft =
+        d_mem + (ptrdiff_t)(memory_needed_per_block * (1 << (r - 1)) * tau);
+  }
   int8_t *d_buffer1 = d_mem_fft;
   if (max_shared_memory < polynomial_size * sizeof(double)) {
     d_buffer1 = d_mem_fft + (ptrdiff_t)(polynomial_size * sizeof(double));
   }
-
-  // Allocate buffers
-  int glwe_size = (glwe_dimension + 1) * polynomial_size;
-
   int8_t *d_buffer2 =
       d_buffer1 + (ptrdiff_t)(num_lut * tau * glwe_size * sizeof(Torus));
+
+  //////////////////////
+
+  batch_fft_ggsw_vector<Torus, STorus, params>(
+      stream, d_ggsw_fft_in, ggsw_in, d_mem_fft, r, glwe_dimension,
+      polynomial_size, level_count, gpu_index, max_shared_memory);
 
   add_padding_to_lut_async<Torus, params>(
       (Torus *)d_buffer1, lut_vector, glwe_dimension, num_lut * tau, stream);
@@ -349,9 +353,6 @@ host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
 
     int num_cmuxes = (1 << (r - 1 - layer_idx));
     dim3 grid(num_cmuxes, tau, 1);
-
-    int8_t *d_mem =
-        d_buffer2 + (ptrdiff_t)(num_lut * tau * glwe_size * sizeof(Torus));
 
     // walks horizontally through the leaves
     if (max_shared_memory < memory_needed_per_block) {
@@ -494,8 +495,9 @@ __host__ __device__ int get_buffer_size_blind_rotation_sample_extraction(
   }
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
-  return mbr_size * ggsw_size * sizeof(double) // d_ggsw_fft_in
-         + device_mem;
+  int buffer_size = mbr_size * ggsw_size * sizeof(double) // d_ggsw_fft_in
+                    + device_mem;
+  return buffer_size + buffer_size % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>
@@ -545,6 +547,7 @@ __host__ void host_blind_rotate_and_sample_extraction(
           glwe_dimension, polynomial_size);
 
   // Prepare the buffers
+  // Here all the buffers have double2 alignment
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
   double2 *d_ggsw_fft_in = (double2 *)br_se_buffer;

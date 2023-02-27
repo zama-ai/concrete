@@ -277,9 +277,10 @@ __host__ __device__ int get_buffer_size_bootstrap_low_latency(
     device_mem = partial_dm * input_lwe_ciphertext_count * level_count *
                  (glwe_dimension + 1);
   }
-  return device_mem + (glwe_dimension + 1) * level_count *
-                          input_lwe_ciphertext_count * polynomial_size / 2 *
-                          sizeof(double2);
+  int buffer_size = device_mem + (glwe_dimension + 1) * level_count *
+                                     input_lwe_ciphertext_count *
+                                     polynomial_size / 2 * sizeof(double2);
+  return buffer_size + buffer_size % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>

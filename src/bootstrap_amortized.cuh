@@ -247,7 +247,7 @@ __host__ __device__ int get_buffer_size_bootstrap_amortized(
   } else if (max_shared_memory < full_sm) {
     device_mem = partial_dm * input_lwe_ciphertext_count;
   }
-  return device_mem;
+  return device_mem + device_mem % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>

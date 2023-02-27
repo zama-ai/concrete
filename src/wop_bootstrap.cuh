@@ -34,11 +34,12 @@ get_buffer_size_cbs_vp(uint32_t glwe_dimension, uint32_t polynomial_size,
 
   int ggsw_size = level_count_cbs * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * polynomial_size;
-  return number_of_inputs * level_count_cbs *
-             sizeof(Torus) +                            // lut_vector_indexes
-         number_of_inputs * ggsw_size * sizeof(Torus) + // ggsw_out_cbs
-         tau * (glwe_dimension + 1) * polynomial_size *
-             sizeof(Torus); // glwe_array_out_cmux_tree
+  int buffer_size =
+      number_of_inputs * level_count_cbs * sizeof(Torus) + // lut_vector_indexes
+      number_of_inputs * ggsw_size * sizeof(Torus) +       // ggsw_out_cbs
+      tau * (glwe_dimension + 1) * polynomial_size *
+          sizeof(Torus); // glwe_array_out_cmux_tree
+  return buffer_size + buffer_size % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>
@@ -57,24 +58,23 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
       (Torus *)malloc(number_of_inputs * level_count_cbs * sizeof(Torus));
   uint32_t r = number_of_inputs - params::log2_degree;
   uint32_t mbr_size = number_of_inputs - r;
-  // allocate and initialize device pointers for circuit bootstrap and vertical
+  int buffer_size =
+      get_buffer_size_cbs_vp<Torus>(glwe_dimension, polynomial_size,
+                                    level_count_cbs, tau, number_of_inputs) +
+      get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension, polynomial_size,
+                                 level_count_cbs, number_of_inputs) +
+      get_buffer_size_bootstrap_amortized<Torus>(
+          glwe_dimension, polynomial_size, number_of_inputs * level_count_cbs,
+          max_shared_memory) +
+      get_buffer_size_cmux_tree<Torus>(glwe_dimension, polynomial_size,
+                                       level_count_cbs, r, tau,
+                                       max_shared_memory) +
+      get_buffer_size_blind_rotation_sample_extraction<Torus>(
+          glwe_dimension, polynomial_size, level_count_cbs, mbr_size, tau,
+          max_shared_memory);
+  // allocate device pointer for circuit bootstrap and vertical
   // packing
   if (allocate_gpu_memory) {
-    int buffer_size =
-        get_buffer_size_cbs_vp<Torus>(glwe_dimension, polynomial_size,
-                                      level_count_cbs, tau, number_of_inputs) +
-        get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
-                                   polynomial_size, level_count_cbs,
-                                   number_of_inputs) +
-        get_buffer_size_bootstrap_amortized<Torus>(
-            glwe_dimension, polynomial_size, number_of_inputs * level_count_cbs,
-            max_shared_memory) +
-        get_buffer_size_cmux_tree<Torus>(glwe_dimension, polynomial_size,
-                                         level_count_cbs, r, tau,
-                                         max_shared_memory) +
-        get_buffer_size_blind_rotation_sample_extraction<Torus>(
-            glwe_dimension, polynomial_size, level_count_cbs, mbr_size, tau,
-            max_shared_memory);
     *cbs_vp_buffer =
         (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
   }
@@ -82,10 +82,14 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
   for (uint index = 0; index < level_count_cbs * number_of_inputs; index++) {
     h_lut_vector_indexes[index] = index % level_count_cbs;
   }
-  // lut_vector_indexes is the first buffer in the cbs_vp_buffer
-  cuda_memcpy_async_to_gpu((Torus *)*cbs_vp_buffer, h_lut_vector_indexes,
-                           number_of_inputs * level_count_cbs * sizeof(Torus),
-                           stream, gpu_index);
+  // lut_vector_indexes is the last buffer in the cbs_vp_buffer
+  int lut_vector_indexes_size =
+      number_of_inputs * level_count_cbs * sizeof(Torus);
+  int8_t *d_lut_vector_indexes =
+      (int8_t *)*cbs_vp_buffer +
+      (ptrdiff_t)(buffer_size - lut_vector_indexes_size);
+  cuda_memcpy_async_to_gpu((Torus *)d_lut_vector_indexes, h_lut_vector_indexes,
+                           lut_vector_indexes_size, stream, gpu_index);
   check_cuda_error(cudaStreamSynchronize(*stream));
   free(h_lut_vector_indexes);
   check_cuda_error(cudaGetLastError());
@@ -117,13 +121,16 @@ __host__ void host_circuit_bootstrap_vertical_packing(
     uint32_t level_count_pksk, uint32_t base_log_cbs, uint32_t level_count_cbs,
     uint32_t number_of_inputs, uint32_t tau, uint32_t max_shared_memory) {
 
+  // Define the buffers
+  // Always define the buffers with strongest memory alignment requirement first
+  // Here the only requirement is that lut_vector_indexes should be defined
+  // last, since all the other buffers are aligned with double2 (all buffers
+  // with a size that's a multiple of polynomial_size * sizeof(Torus) are
+  // aligned with double2)
   int ggsw_size = level_count_cbs * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * polynomial_size;
 
-  Torus *lut_vector_indexes = (Torus *)cbs_vp_buffer;
-  int8_t *cbs_buffer =
-      (int8_t *)lut_vector_indexes +
-      (ptrdiff_t)(number_of_inputs * level_count_cbs * sizeof(Torus));
+  int8_t *cbs_buffer = (int8_t *)cbs_vp_buffer;
   int8_t *ggsw_out_cbs =
       cbs_buffer +
       (ptrdiff_t)(get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
@@ -132,14 +139,6 @@ __host__ void host_circuit_bootstrap_vertical_packing(
                   get_buffer_size_bootstrap_amortized<Torus>(
                       glwe_dimension, polynomial_size,
                       number_of_inputs * level_count_cbs, max_shared_memory));
-  host_circuit_bootstrap<Torus, params>(
-      v_stream, gpu_index, (Torus *)ggsw_out_cbs, lwe_array_in, fourier_bsk,
-      cbs_fpksk, lut_vector_indexes, cbs_buffer, cbs_delta_log, polynomial_size,
-      glwe_dimension, lwe_dimension, level_count_bsk, base_log_bsk,
-      level_count_pksk, base_log_pksk, level_count_cbs, base_log_cbs,
-      number_of_inputs, max_shared_memory);
-  check_cuda_error(cudaGetLastError());
-
   // number_of_inputs = tau * p is the total number of GGSWs
   // split the vec of GGSW in two, the msb GGSW is for the CMux tree and the
   // lsb GGSW is for the last blind rotation.
@@ -150,6 +149,25 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       cmux_tree_buffer + (ptrdiff_t)(get_buffer_size_cmux_tree<Torus>(
                              glwe_dimension, polynomial_size, level_count_cbs,
                              r, tau, max_shared_memory));
+  int8_t *br_se_buffer =
+      glwe_array_out_cmux_tree +
+      (ptrdiff_t)(tau * (glwe_dimension + 1) * polynomial_size * sizeof(Torus));
+  Torus *lut_vector_indexes =
+      (Torus *)br_se_buffer +
+      (ptrdiff_t)(get_buffer_size_blind_rotation_sample_extraction<Torus>(
+                      glwe_dimension, polynomial_size, level_count_cbs,
+                      number_of_inputs - r, tau, max_shared_memory) /
+                  sizeof(Torus));
+
+  // Circuit bootstrap
+  host_circuit_bootstrap<Torus, params>(
+      v_stream, gpu_index, (Torus *)ggsw_out_cbs, lwe_array_in, fourier_bsk,
+      cbs_fpksk, lut_vector_indexes, cbs_buffer, cbs_delta_log, polynomial_size,
+      glwe_dimension, lwe_dimension, level_count_bsk, base_log_bsk,
+      level_count_pksk, base_log_pksk, level_count_cbs, base_log_cbs,
+      number_of_inputs, max_shared_memory);
+  check_cuda_error(cudaGetLastError());
+
   // CMUX Tree
   // r = tau * p - log2(N)
   host_cmux_tree<Torus, STorus, params>(
@@ -161,12 +179,11 @@ __host__ void host_circuit_bootstrap_vertical_packing(
 
   // Blind rotation + sample extraction
   // mbr = tau * p - r = log2(N)
+  // br_ggsw is a pointer to a sub-part of the ggsw_out_cbs buffer, for the
+  // blind rotation
   Torus *br_ggsw = (Torus *)ggsw_out_cbs +
                    (ptrdiff_t)(r * level_count_cbs * (glwe_dimension + 1) *
                                (glwe_dimension + 1) * polynomial_size);
-  int8_t *br_se_buffer =
-      glwe_array_out_cmux_tree +
-      (ptrdiff_t)(tau * (glwe_dimension + 1) * polynomial_size * sizeof(Torus));
   host_blind_rotate_and_sample_extraction<Torus, STorus, params>(
       v_stream, gpu_index, lwe_array_out, br_ggsw,
       (Torus *)glwe_array_out_cmux_tree, br_se_buffer, number_of_inputs - r,
@@ -179,8 +196,10 @@ __host__ __device__ int
 get_buffer_size_wop_pbs(uint32_t lwe_dimension,
                         uint32_t number_of_bits_of_message_including_padding) {
 
-  return (lwe_dimension + 1) * (number_of_bits_of_message_including_padding) *
-         sizeof(Torus); // lwe_array_out_bit_extract
+  int buffer_size = (lwe_dimension + 1) *
+                    (number_of_bits_of_message_including_padding) *
+                    sizeof(Torus); // lwe_array_out_bit_extract
+  return buffer_size + buffer_size % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>
