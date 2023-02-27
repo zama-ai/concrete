@@ -511,7 +511,9 @@ void cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index, void *lwe_array_out,
  */
 void cleanup_cuda_wop_pbs(void *v_stream, uint32_t gpu_index,
                           int8_t **wop_pbs_buffer) {
-  cleanup_wop_pbs(v_stream, gpu_index, wop_pbs_buffer);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  // Free memory
+  cuda_drop_async(*wop_pbs_buffer, stream, gpu_index);
 }
 
 /*
@@ -521,6 +523,7 @@ void cleanup_cuda_wop_pbs(void *v_stream, uint32_t gpu_index,
 void cleanup_cuda_circuit_bootstrap_vertical_packing(void *v_stream,
                                                      uint32_t gpu_index,
                                                      int8_t **cbs_vp_buffer) {
-  cleanup_circuit_bootstrap_vertical_packing(v_stream, gpu_index,
-                                             cbs_vp_buffer);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  // Free memory
+  cuda_drop_async(*cbs_vp_buffer, stream, gpu_index);
 }

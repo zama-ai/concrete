@@ -104,21 +104,6 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
       level_count_cbs, mbr_size, tau, max_shared_memory, false);
 }
 
-/*
- * Cleanup functions free the necessary data on the GPU and on the CPU.
- * Data that lives on the CPU is prefixed with `h_`. This cleanup function thus
- * frees the data for the circuit bootstrap and vertical packing on GPU
- * contained in cbs_vp_buffer
- */
-__host__ void
-cleanup_circuit_bootstrap_vertical_packing(void *v_stream, uint32_t gpu_index,
-                                           int8_t **cbs_vp_buffer) {
-
-  auto stream = static_cast<cudaStream_t *>(v_stream);
-  // Free memory
-  cuda_drop_async(*cbs_vp_buffer, stream, gpu_index);
-}
-
 // number_of_inputs is the total number of LWE ciphertexts passed to CBS + VP,
 // i.e. tau * p where tau is the number of LUTs (the original number of LWEs
 // before bit extraction) and p is the number of extracted bits
@@ -267,17 +252,6 @@ scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
       lwe_dimension, polynomial_size, level_count_cbs,
       number_of_inputs * number_of_bits_to_extract, number_of_inputs,
       max_shared_memory, false);
-}
-
-/*
- * Cleanup functions free the necessary data on the GPU and on the CPU.
- * Data that lives on the CPU is prefixed with `h_`. This cleanup function thus
- * frees the data for the wop PBS on GPU in wop_pbs_buffer
- */
-__host__ void cleanup_wop_pbs(void *v_stream, uint32_t gpu_index,
-                              int8_t **wop_pbs_buffer) {
-  auto stream = static_cast<cudaStream_t *>(v_stream);
-  cuda_drop_async(*wop_pbs_buffer, stream, gpu_index);
 }
 
 template <typename Torus, typename STorus, class params>
