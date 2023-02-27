@@ -377,7 +377,7 @@ struct FunctionToDag {
 
     const double addManp = sqrt(inputSmanp.roundToDouble() + 1);
     const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
-        tluNode, inputs[1]};
+        tluNode, inputs[0]};
 
     index[result] =
         dag->add_levelled_op(slice(addInputs), lweDimCostFactor, fixedCost,
