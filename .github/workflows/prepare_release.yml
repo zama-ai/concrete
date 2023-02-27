@@ -98,7 +98,7 @@ jobs:
             export CONCRETE_COMPILER_Python3_EXECUTABLE=$PYTHON_EXEC
             export CONCRETE_COMPILER_BUILD_DIR=/build
             export CONCRETE_COMPILER_CUDA_SUPPORT=ON
-            export PATH=/opt/python/${{ matrix.python_dir }}/bin:PATH$
+            export PATH=/opt/python/${{ matrix.python_dir }}/bin:$PATH
             make python-package
             cp build/wheels/*manylinux_${{ env.GLIB_VER }}_x86_64.whl /wheels
             echo "Debug: ccache statistics (after the build):"
