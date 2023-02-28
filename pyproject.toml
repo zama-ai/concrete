@@ -92,7 +92,8 @@ filterwarnings = [
     "ignore:Implicitly cleaning up:ResourceWarning",
     "ignore:pandas not found, skipping conversion test.:ImportWarning",
     "ignore:scipy not found, skipping conversion test.:ImportWarning",
-    "ignore:Matplotlib is currently using .*, which is a non-GUI backend, so cannot show the figure\\.:UserWarning"
+    "ignore:Matplotlib is currently using .*, which is a non-GUI backend, so cannot show the figure\\.:UserWarning",
+    "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning"
 ]
 
 [tool.semantic_release]
