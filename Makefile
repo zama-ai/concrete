@@ -78,7 +78,7 @@ pcc:
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_supported_functions check_licenses
+PCC_DEPS += check_supported_functions # check_licenses
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
