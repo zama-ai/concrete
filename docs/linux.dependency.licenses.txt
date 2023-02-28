@@ -7,7 +7,7 @@
  kiwisolver                1.4.4       BSD License
  matplotlib                3.5.3       Python Software Foundation License
  networkx                  2.6.3       BSD License
- numpy                     1.21.6      BSD License
+ numpy                     1.24.2      BSD License
  nvidia-cublas-cu11        11.10.3.66  Other/Proprietary License
  nvidia-cuda-nvrtc-cu11    11.7.99     Other/Proprietary License
  nvidia-cuda-runtime-cu11  11.7.99     Other/Proprietary License
@@ -15,7 +15,7 @@
  packaging                 23.0        Apache Software License; BSD License
  pyparsing                 3.0.9       MIT License
  python-dateutil           2.8.2       Apache Software License; BSD License
- scipy                     1.7.3       BSD License
+ scipy                     1.10.1      BSD License
  six                       1.16.0      MIT License
  torch                     1.13.1      BSD License
  typing-extensions         3.10.0.2    Python Software Foundation License
