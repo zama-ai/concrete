@@ -471,9 +471,14 @@ linux-python-package:
 	# the second run can find the packages via find_namespace_packages
 	$(PIP_WHEEL)
 	$(PIP_WHEEL)
-	export GLIBC_VER=$(shell ldd --version | head -n 1 | grep -o '[^ ]*$$'|head|tr '.' '_')
-	for PLATFORM in manylinux_$(GLIBC_VER)_x86_64 linux_x86_64; do \
-		$(AUDIT_WHEEL_REPAIR) $(BUILD_DIR)/wheels/*.whl --plat $$PLATFORM || echo No repair with $(PLATFORM) ;\
+	GLIBC_VER=$(shell ldd --version | head -n 1 | grep -o '[^ ]*$$'|head|tr '.' '_'); \
+	for PLATFORM in manylinux_$${GLIBC_VER}_x86_64 linux_x86_64; do \
+		if $(AUDIT_WHEEL_REPAIR) $(BUILD_DIR)/wheels/*.whl --plat $$PLATFORM; then \
+			echo Success for $$PLATFORM; \
+			break; \
+		else \
+			echo No repair with $$PLATFORM; \
+		fi \
 	done
 
 darwin-python-package:
