@@ -86,8 +86,8 @@ return %2
 Function you are trying to compile cannot be converted to MLIR
 
 %0 = x              # EncryptedScalar<uint7>          ∈ [0, 99]
-%1 = sin(%0)        # EncryptedScalar<float64>        ∈ [-0.9999902065507035, 0.9999118601072672]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+%1 = sin(%0)        # EncryptedScalar<float64>        ∈ [-0.99999, 0.999912]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
 return %1
 
             """,  # noqa: E501

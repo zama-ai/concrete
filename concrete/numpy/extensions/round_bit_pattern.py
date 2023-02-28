@@ -189,7 +189,7 @@ def round_bit_pattern(
     if isinstance(lsbs_to_remove, AutoRounder):
         if local._is_adjusting:
             if not lsbs_to_remove.is_adjusted:
-                raise Adjusting(lsbs_to_remove, int(np.min(x)), int(np.max(x)))
+                raise Adjusting(lsbs_to_remove, int(np.min(x)), int(np.max(x)))  # type: ignore
 
         elif not lsbs_to_remove.is_adjusted:
             message = (

@@ -282,13 +282,26 @@ class Graph:
             if node.operation == Operation.Generic and "subgraph" in node.properties["kwargs"]:
                 subgraphs[line] = node.properties["kwargs"]["subgraph"]
 
+            # get formatted bounds
+            bounds = ""
+            if node.bounds is not None:
+                bounds += "∈ ["
+
+                lower, upper = node.bounds
+                assert type(lower) == type(upper)  # pylint: disable=unidiomatic-typecheck
+
+                if isinstance(lower, (float, np.float32, np.float64)):
+                    bounds += f"{round(lower, 6)}, {round(upper, 6)}"
+                else:
+                    bounds += f"{int(lower)}, {int(upper)}"
+
+                bounds += "]"
+
             # remember metadata of the node
             line_metadata.append(
                 {
                     "type": f"# {node.output}",
-                    "bounds": (
-                        f"∈ [{node.bounds[0]}, {node.bounds[1]}]" if node.bounds is not None else ""
-                    ),
+                    "bounds": bounds,
                     "tag": (f"@ {node.tag}" if node.tag != "" else ""),
                     "location": node.location,
                 },
