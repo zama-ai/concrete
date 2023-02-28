@@ -36,6 +36,7 @@ jobs:
       needs-38-linux-runner: ${{ steps.set-matrix.outputs.needs-38-linux-runner }}
       needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
       needs-310-linux-runner: ${{ steps.set-matrix.outputs.needs-310-linux-runner }}
+      needs-311-linux-runner: ${{ steps.set-matrix.outputs.needs-311-linux-runner }}
     steps:
       - name: Checkout code
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
@@ -81,6 +82,8 @@ jobs:
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.9")) | length > 0')
           NEEDS_LINUX_310_RUNNER=$(echo "${LINUX_MATRIX}" | \
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.10")) | length > 0')
+          NEEDS_LINUX_311_RUNNER=$(echo "${LINUX_MATRIX}" | \
+            jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.11")) | length > 0')
 
           echo "Needs Linux 3.7 runner:"
           echo "${NEEDS_LINUX_37_RUNNER}"
@@ -94,10 +97,14 @@ jobs:
           echo "Needs Linux 3.10 runner:"
           echo "${NEEDS_LINUX_310_RUNNER}"
 
+          echo "Needs Linux 3.11 runner:"
+          echo "${NEEDS_LINUX_311_RUNNER}"
+
           echo "::set-output name=needs-37-linux-runner::${NEEDS_LINUX_37_RUNNER}"
           echo "::set-output name=needs-38-linux-runner::${NEEDS_LINUX_38_RUNNER}"
           echo "::set-output name=needs-39-linux-runner::${NEEDS_LINUX_39_RUNNER}"
           echo "::set-output name=needs-310-linux-runner::${NEEDS_LINUX_310_RUNNER}"
+          echo "::set-output name=needs-311-linux-runner::${NEEDS_LINUX_311_RUNNER}"
 
   start-runner-linux:
     needs: [matrix-preparation]
@@ -112,6 +119,8 @@ jobs:
       ec2-instance-id-39: ${{ steps.start-ec2-runner-39.outputs.ec2-instance-id || '' }}
       label-310: ${{ steps.start-ec2-runner-310.outputs.label }}
       ec2-instance-id-310: ${{ steps.start-ec2-runner-310.outputs.ec2-instance-id || '' }}
+      label-311: ${{ steps.start-ec2-runner-311.outputs.label }}
+      ec2-instance-id-311: ${{ steps.start-ec2-runner-311.outputs.ec2-instance-id || '' }}
       matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
     steps:
       - name: Checkout Code
@@ -172,6 +181,18 @@ jobs:
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
 
+      - name: Start EC2 runner python 311
+        id: start-ec2-runner-311
+        if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-311-linux-runner) }}
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+
       - name: Update Linux runs_on Matrix
         id: update-linux-matrix
         env:
@@ -185,6 +206,8 @@ jobs:
           '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "${{ steps.start-ec2-runner-39.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
           '(. | map(select(.os_kind=="linux" and .python_version=="3.10") |= . + {"runs_on": "${{ steps.start-ec2-runner-310.outputs.label }}"}) )')
+          MATRIX=$(echo "${MATRIX}" | jq -rc \
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.11") |= . + {"runs_on": "${{ steps.start-ec2-runner-311.outputs.label }}"}) )')
 
           echo "Updated matrix:"
           echo "${MATRIX}"
@@ -432,6 +455,15 @@ jobs:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           label: ${{ needs.start-runner-linux.outputs.label-310 }}
           ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-310 }}
+          mode: stop
+
+      - name: Stop EC2 runner python 311
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-311 }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner-linux.outputs.label-311 }}
+          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-311 }}
           mode: stop
 
   build-macos:
