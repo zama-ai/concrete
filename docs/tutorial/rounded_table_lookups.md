@@ -1,7 +1,7 @@
 # Rounded Table Lookups
 
 {% hint style="warning" %}
-Rounded table lookups are only available in [virtual circuits](./virtual_circuits.md) for the time being.
+Rounded table lookups are not compilable yet. API is stable and will not change so it's documented, but you might not be able to run the code samples in this document.
 {% endhint %}
 
 Table lookups have a strict constraint on number of bits they support. This can be quite limiting, especially if you don't need the exact precision.
@@ -123,10 +123,10 @@ def f(x):
     return cnp.univariate(relu)(x)
 
 inputset = [-100_000, (100_000 - 1)]
-circuit = f.compile(inputset, enable_unsafe_features=True, virtual=True)
+circuit = f.compile(inputset)
 
 xs = range(-100_000, 100_000)
-ys = [circuit.encrypt_run_decrypt(x) for x in xs]
+ys = [circuit.simulate(x) for x in xs]
 
 plt.plot(xs, ys)
 plt.show()
@@ -159,10 +159,10 @@ def f(x):
 
 inputset = [-100_000, (100_000 - 1)]
 cnp.AutoRounder.adjust(f, inputset)  # alternatively, you can use `auto_adjust_rounders=True` below
-circuit = f.compile(inputset, enable_unsafe_features=True, virtual=True)
+circuit = f.compile(inputset)
 
 xs = range(-100_000, 100_000)
-ys = [circuit.encrypt_run_decrypt(x) for x in xs]
+ys = [circuit.simulate(x) for x in xs]
 
 plt.plot(xs, ys)
 plt.show()

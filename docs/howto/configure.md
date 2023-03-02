@@ -94,9 +94,6 @@ Additional kwarg to `compile` function have higher precedence. So if you set an 
 * **enable\_unsafe\_features**: bool = False
   * Whether to enable unsafe features.
 
-* **virtual**: bool = False _(Unsafe)_
-  * Whether to create a virtual circuit.
-
 * **use\_insecure\_key\_cache**: bool = False _(Unsafe)_
   * Whether to use the insecure key cache.
 

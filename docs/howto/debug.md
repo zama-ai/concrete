@@ -96,7 +96,7 @@ This file contains information about the error you received.
 ```
 Traceback (most recent call last):
   File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compilation/compiler.py", line 320, in compile
-    mlir = GraphConverter.convert(self.graph, virtual=self.configuration.virtual)
+    mlir = GraphConverter.convert(self.graph)
   File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/mlir/graph_converter.py", line 298, in convert
     GraphConverter._check_graph_convertibility(graph)
   File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/mlir/graph_converter.py", line 175, in _check_graph_convertibility
