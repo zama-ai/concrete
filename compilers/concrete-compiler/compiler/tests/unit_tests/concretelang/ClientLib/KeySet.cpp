@@ -97,6 +97,9 @@ std::vector<clientlib::ClientParameters> generateAllParameters() {
   for (auto dimension : lweDimensions) {
     for (auto precision : precisions) {
       for (auto crtDecomposition : crtDecompositions) {
+        // Do not use dimension 512 for precision 8
+        if (precision > 7 && dimension < (1 << 10))
+          continue;
         parameters.push_back(generateClientParameterOneScalarOneScalar(
             dimension, precision, crtDecomposition));
       }
