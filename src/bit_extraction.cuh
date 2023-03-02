@@ -224,7 +224,7 @@ __host__ void host_extract_bits(
   // lut_vector_indexes is the last array in the bit_extract buffer
   Torus *lut_vector_indexes =
       (Torus *)lwe_array_out_pbs_buffer +
-      (ptrdiff_t)((glwe_dimension * polynomial_size + 1) * sizeof(Torus));
+      (ptrdiff_t)((glwe_dimension * polynomial_size + 1));
 
   // shift lwe on padding bit and copy in new buffer
   check_cuda_error(
