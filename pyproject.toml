@@ -44,7 +44,7 @@ numpy = [
     {version = "^1.23.5", python = ">=3.8"},
     {version = "1.21.6", python = "<3.8"}
 ]
-concrete-compiler = "^0.23.4"
+concrete-compiler = "0.24.0rc5"
 torch = "^1.13.1"
 scipy = [
     {version = "^1.10.1", python = ">=3.8"},

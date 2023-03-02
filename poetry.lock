@@ -482,19 +482,19 @@ files = [
 
 [[package]]
 name = "concrete-compiler"
-version = "0.23.4"
+version = "0.24.0rc5"
 description = "Concrete Compiler"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "concrete_compiler-0.23.4-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:8705aae91db81b02cfee7a4704180df80ee4cac3c2a738ab97d70d093beaa61c"},
-    {file = "concrete_compiler-0.23.4-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:7499a2969a62ff9b1cb2717a15e5246c2874da832341f02464847ed96546e594"},
-    {file = "concrete_compiler-0.23.4-cp37-cp37m-manylinux_2_28_x86_64.whl", hash = "sha256:d1cd2f2b7653e112d4713a59c7e3be95265dfdc55f7e5201d7fad6b39a8f5727"},
-    {file = "concrete_compiler-0.23.4-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:a0e41646440639d5aade56ef17829381f8d6b6c072c4a824ba5310b129be33c4"},
-    {file = "concrete_compiler-0.23.4-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:57cae640a86a23626e8edfdea80da4621cbe9d5a9419370e1aab56e373d9fb67"},
-    {file = "concrete_compiler-0.23.4-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:61310383bc27de04a852fab44ef1dbd3627839df408e9a6f6b455c4449afaa98"},
-    {file = "concrete_compiler-0.23.4-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:e98da52c78edf553ef27976e8d1f415baad5210e249721225708a711121a298a"},
+    {file = "concrete_compiler-0.24.0rc5-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:c99e79d72f55af33695361bdc366287c725c0c0e9bde148c97e5c63139554870"},
+    {file = "concrete_compiler-0.24.0rc5-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:0cc24dbc02f6b974720dbb31cf9b737866d8a4e425a86d0342e6116b93381665"},
+    {file = "concrete_compiler-0.24.0rc5-cp37-cp37m-manylinux_2_28_x86_64.whl", hash = "sha256:b94f39d114be84ca483bf093304ab60ad73b8d9984a58697fe0f9d6e990c9b96"},
+    {file = "concrete_compiler-0.24.0rc5-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:72ef65c9827e8bcd38fd87a0ac356f89f850d5d9c178fe1224d3a8dcccc181c9"},
+    {file = "concrete_compiler-0.24.0rc5-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:893789cb25227049e8e8c6a9dfb80c2a5132c4beef38105d6d464e10cd0221b3"},
+    {file = "concrete_compiler-0.24.0rc5-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:4e1aef7eae87daffcc500b84fbc36c1c460d5d202cdc31ee753a3eafe4866269"},
+    {file = "concrete_compiler-0.24.0rc5-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:8de4396fbb48c0a20b65e448cf3ee2ef15f801d75bf358c343a5f350f49b5a56"},
 ]
 
 [package.dependencies]
@@ -3962,4 +3962,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<3.12"
-content-hash = "f07f42f82de17b17ad806cb45f8578bf0299562529b2deaca48bd916eda59255"
+content-hash = "c2bcc47c4079fe4f0271e1a45ca7dc9ac8de0a6b629b65070e4ef1ede8b5c43f"

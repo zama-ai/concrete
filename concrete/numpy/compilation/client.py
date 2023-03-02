@@ -198,7 +198,7 @@ class Client:
         """
 
         self.keygen(force=False)
-        outputs = ClientSupport.decrypt_result(self._keyset, result)
+        outputs = ClientSupport.decrypt_result(self.specs.client_parameters, self._keyset, result)
         if not isinstance(outputs, tuple):
             outputs = (outputs,)
 
