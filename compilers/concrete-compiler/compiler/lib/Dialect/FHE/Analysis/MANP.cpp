@@ -687,6 +687,29 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MulEintIntOp op,
   return APIntWidthExtendUMul(sqNorm, eNorm);
 }
 
+/// Calculates the squared Minimal Arithmetic Noise Padding
+/// of `FHE.mul_eint` operation.
+static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MulEintOp op,
+                             llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+  assert(operandMANPs.size() == 2 &&
+         operandMANPs[0]->getValue().getMANP().has_value() &&
+         operandMANPs[1]->getValue().getMANP().has_value() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+
+  // x * y = ((x + y)^2 / 4) - ((x - y)^2 / 4) == tlu(x + y) - tlu(x - y)
+
+  const llvm::APInt x = operandMANPs[0]->getValue().getMANP().value();
+  const llvm::APInt y = operandMANPs[1]->getValue().getMANP().value();
+
+  const llvm::APInt beforeTLUs = APIntWidthExtendUAdd(x, y);
+  const llvm::APInt tlu = {1, 1, false};
+  const llvm::APInt result = APIntWidthExtendUAdd(tlu, tlu);
+
+  // this is not optimal as it can increase the resulting noise unnecessarily
+  return APIntUMax(beforeTLUs, result);
+}
+
 static llvm::APInt computeVectorNorm(
     llvm::ArrayRef<int64_t> shape, int64_t axis,
     mlir::DenseIntElementsAttr denseValues, llvm::APInt encryptedOperandNorm,
@@ -1307,6 +1330,10 @@ public:
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::MulEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
+    } else if (auto mulEintOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::MulEintOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(mulEintOp, operands);
     } else if (auto matmulEintIntOp = llvm::dyn_cast<
                    mlir::concretelang::FHELinalg::MatMulEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(matmulEintIntOp, operands);

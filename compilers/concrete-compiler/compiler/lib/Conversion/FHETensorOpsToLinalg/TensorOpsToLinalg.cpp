@@ -2080,6 +2080,10 @@ void FHETensorOpsToLinalg::runOnOperation() {
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::MulEintIntOp,
                                  mlir::concretelang::FHE::MulEintIntOp>>(
       &getContext());
+  patterns.insert<
+      FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::MulEintOp,
+                                 mlir::concretelang::FHE::MulEintOp>>(
+      &getContext());
   patterns.insert<FHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgNegEintToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgMatmulToLinalgGeneric<

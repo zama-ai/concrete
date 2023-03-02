@@ -367,6 +367,58 @@ def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRul
     let hasFolder = 1;
 }
 
+def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
+    let summary = "Returns a tensor that contains the multiplication of two tensor of encrypted integers.";
+
+    let description = [{
+        Performs an addition following the broadcasting rules between two tensors of encrypted integers.
+        The width of the encrypted integers must be equals.
+
+        Examples:
+        ```mlir
+        // Returns the term to term multiplication of `%a0` with `%a1`
+        "FHELinalg.mul_eint"(%a0, %a1) : (tensor<4x!FHE.eint<8>>, tensor<4x!FHE.eint<8>>) -> tensor<4x!FHE.eint<8>>
+
+        // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        "FHELinalg.mul_eint"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<8>>, tensor<1x4x4x!FHE.eint<8>>) -> tensor<4x4x4x!FHE.eint<8>>
+
+        // Returns the multiplication of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
+        //
+        // [1,2,3]   [1]   [1,2,3]
+        // [4,5,6] * [2] = [8,10,12]
+        // [7,8,9]   [3]   [21,24,27]
+        //
+        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        "FHELinalg.mul_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<8>>, tensor<3x1x!FHE.eint<8>>) -> tensor<3x3x!FHE.eint<8>>
+
+        // Returns the multiplication of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
+        //
+        // [1,2,3]             [1,4,9]
+        // [4,5,6] * [1,2,3] = [4,10,18]
+        // [7,8,9]             [7,16,27]
+        //
+        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        "FHELinalg.mul_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<8>>, tensor<1x3x!FHE.eint<8>>) -> tensor<3x3x!FHE.eint<8>>
+
+        // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
+        "FHELinalg.mul_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<8>>, tensor<3x!FHE.eint<8>>) -> tensor<3x3x!FHE.eint<8>>
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$rhs
+    );
+
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
+
+    let builders = [
+        OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
+         build($_builder, $_state, rhs.getType(), rhs, lhs);
+        }]>
+    ];
+}
+
 def FHELinalg_ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
     let summary = "Returns a tensor that contains the result of the lookup on a table.";
 

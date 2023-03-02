@@ -154,6 +154,10 @@ struct FunctionToDag {
       addMul(dag, mul, encrypted_inputs, precision);
       return;
     }
+    if (auto mul = asMulTensor(op)) {
+      addMulTensor(dag, mul, encrypted_inputs, precision);
+      return;
+    }
     if (auto max = asMax(op)) {
       addMax(dag, max, encrypted_inputs, precision);
       return;
@@ -234,6 +238,70 @@ struct FunctionToDag {
 
     Operation *xOp = mulOp.getA().getDefiningOp();
     Operation *yOp = mulOp.getB().getDefiningOp();
+
+    const double fixedCost = NEGLIGIBLE_COMPLEXITY;
+    const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
+
+    llvm::APInt xSmanp = llvm::APInt{1, 1, false};
+    if (xOp != nullptr) {
+      const auto xSmanpAttr = xOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
+      assert(xSmanpAttr && "Missing SMANP value on a crypto operation");
+      xSmanp = xSmanpAttr.getValue();
+    }
+
+    llvm::APInt ySmanp = llvm::APInt{1, 1, false};
+    if (yOp != nullptr) {
+      const auto ySmanpAttr = yOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
+      assert(ySmanpAttr && "Missing SMANP value on a crypto operation");
+      ySmanp = ySmanpAttr.getValue();
+    }
+
+    auto loc = loc_to_string(mulOp.getLoc());
+    auto comment = std::string(mulOp->getName().getStringRef()) + " " + loc;
+
+    // (x + y) and (x - y)
+    const double addSubManp =
+        sqrt(xSmanp.roundToDouble() + ySmanp.roundToDouble());
+
+    // tlu(v)
+    const double tluManp = 1;
+
+    // tlu(v1) - tlu(v2)
+    const double tluSubManp = sqrt(tluManp + tluManp);
+
+    // for tlus
+    const std::vector<std::uint64_t> unknownFunction;
+
+    // tlu(x + y)
+    auto addNode =
+        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
+                             addSubManp, slice(resultShape), comment);
+    auto lhsTluNode = dag->add_lut(addNode, slice(unknownFunction), precision);
+
+    // tlu(x - y)
+    auto subNode =
+        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
+                             addSubManp, slice(resultShape), comment);
+    auto rhsTluNode = dag->add_lut(subNode, slice(unknownFunction), precision);
+
+    // tlu(x + y) - tlu(x - y)
+    const std::vector<concrete_optimizer::dag::OperatorIndex> subInputs = {
+        lhsTluNode, rhsTluNode};
+    index[result] =
+        dag->add_levelled_op(slice(subInputs), lweDimCostFactor, fixedCost,
+                             tluSubManp, slice(resultShape), comment);
+  }
+
+  void addMulTensor(optimizer::Dag &dag, FHELinalg::MulEintOp &mulOp,
+                    Inputs &inputs, int precision) {
+
+    // x * y = ((x + y)^2 / 4) - ((x - y)^2 / 4) == tlu(x + y) - tlu(x - y)
+
+    mlir::Value result = mulOp.getResult();
+    const std::vector<uint64_t> resultShape = getShape(result);
+
+    Operation *xOp = mulOp.getLhs().getDefiningOp();
+    Operation *yOp = mulOp.getRhs().getDefiningOp();
 
     const double fixedCost = NEGLIGIBLE_COMPLEXITY;
     const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
@@ -418,6 +486,10 @@ struct FunctionToDag {
 
   mlir::concretelang::FHE::MulEintOp asMul(mlir::Operation &op) {
     return llvm::dyn_cast<mlir::concretelang::FHE::MulEintOp>(op);
+  }
+
+  mlir::concretelang::FHELinalg::MulEintOp asMulTensor(mlir::Operation &op) {
+    return llvm::dyn_cast<mlir::concretelang::FHELinalg::MulEintOp>(op);
   }
 
   mlir::concretelang::FHE::MaxEintOp asMax(mlir::Operation &op) {

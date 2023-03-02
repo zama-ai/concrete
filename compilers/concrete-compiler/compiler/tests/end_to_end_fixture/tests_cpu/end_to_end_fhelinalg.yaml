@@ -206,6 +206,38 @@ tests:
     - tensor: [65535, 65535, 23844, 0]
       shape: [4]
 ---
+description: mul_eint_term_to_term_6bits
+program: |
+  func.func @main(%a0: tensor<4x!FHE.eint<7>>, %a1: tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+    %res = "FHELinalg.mul_eint"(%a0, %a1) : (tensor<4x!FHE.eint<7>>, tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
+    return %res : tensor<4x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+      - tensor: [6, 3, 12, 9]
+        shape: [4]
+      - tensor: [10, 20, 2, 3]
+        shape: [4]
+    outputs:
+      - tensor: [60, 60, 24, 27]
+        shape: [4]
+---
+description: mul_eint_term_to_term_15bits
+program: |
+  func.func @main(%a0: tensor<4x!FHE.eint<16>>, %a1: tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>> {
+    %res = "FHELinalg.mul_eint"(%a0, %a1) : (tensor<4x!FHE.eint<16>>, tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>>
+    return %res : tensor<4x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+      - tensor: [300, 5, 30000, 0]
+        shape: [4]
+      - tensor: [100, 1, 1, 0]
+        shape: [4]
+    outputs:
+      - tensor: [30000, 5, 30000, 0]
+        shape: [4]
+---
 description: transpose1d
 program: |
   func.func @main(%input: tensor<3x!FHE.eint<6>>) -> tensor<3x!FHE.eint<6>> {
