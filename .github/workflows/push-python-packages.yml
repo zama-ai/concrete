@@ -25,7 +25,7 @@ jobs:
       - name: Download release assets
         uses: duhow/download-github-release-assets@v1
         with:
-          token: ${{ secrets.GH_TOKEN_RELEASE }}
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
           repository: ${{ github.repository }}
           tag: ${{ github.event.inputs.tag }}
           files: '*'

@@ -56,7 +56,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Set up home
         # "Install rust" step require root user to have a HOME directory which is not set.
@@ -118,7 +118,7 @@ jobs:
         with:
           repository: zama-ai/slab
           path: slab
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Send data to Slab
         shell: bash

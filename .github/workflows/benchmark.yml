@@ -78,8 +78,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Start EC2 runner
         id: start-ec2-runner
@@ -116,7 +116,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Set up home
         # "Install rust" step require root user to have a HOME directory which is not set.
@@ -202,7 +202,7 @@ jobs:
         with:
           repository: zama-ai/slab
           path: slab
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Send data to Slab
         shell: bash
@@ -244,8 +244,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Stop EC2 runner
         uses: machulav/ec2-github-runner@v2

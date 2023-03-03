@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Install rust
         uses: actions-rs/toolchain@v1
