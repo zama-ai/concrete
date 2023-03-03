@@ -41,7 +41,6 @@ public:
 
   void setUseDataflow(bool option) { this->useDataflow = option; }
 
-private:
   /// invokeRaw execute the jit lambda with a list of Argument, the last one is
   /// used to store the result of the computation.
   /// Example:

@@ -11,6 +11,7 @@ add_mlir_library(
   logging.cpp
   Jit.cpp
   LLVMEmitFile.cpp
+  Utils.cpp
   DEPENDS
   mlir-headers
   LINK_LIBS

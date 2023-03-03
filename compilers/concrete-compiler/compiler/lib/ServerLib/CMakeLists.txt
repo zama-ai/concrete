@@ -7,7 +7,6 @@ endif()
 
 add_mlir_library(
   ConcretelangServerLib
-  DynamicRankCall.cpp
   ServerLambda.cpp
   DynamicModule.cpp
   ADDITIONAL_HEADER_DIRS

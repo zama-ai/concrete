@@ -14,10 +14,10 @@
 
 #include "concretelang/Common/BitsSize.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
-#include "concretelang/Runtime/context.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/Jit.h"
 #include "concretelang/Support/logging.h"
+#include <concretelang/Support/Utils.h>
 
 namespace mlir {
 namespace concretelang {
@@ -76,12 +76,6 @@ llvm::Error JITLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
          << pos << " is null or missing";
 }
 
-// memref is a struct which is flattened aligned, allocated pointers, offset,
-// and two array of rank size for sizes and strides.
-uint64_t numArgOfRankedMemrefCallingConvention(uint64_t rank) {
-  return 3 + 2 * rank;
-}
-
 llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
 JITLambda::call(clientlib::PublicArguments &args,
                 clientlib::EvaluationKeys &evaluationKeys) {
@@ -107,85 +101,8 @@ JITLambda::call(clientlib::PublicArguments &args,
   }
 #endif
 
-  // invokeRaw needs to have pointers on arguments and a pointers on the result
-  // as last argument.
-  // Prepare the outputs vector to store the output value of the lambda.
-  auto numOutputs = 0;
-  for (auto &output : args.clientParameters.outputs) {
-    auto shape = args.clientParameters.bufferShape(output);
-    if (shape.size() == 0) {
-      // scalar gate
-      numOutputs += 1;
-    } else {
-      // buffer gate
-      numOutputs += numArgOfRankedMemrefCallingConvention(shape.size());
-    }
-  }
-  std::vector<uint64_t> outputs(numOutputs);
-
-  // Prepare the raw arguments of invokeRaw, i.e. a vector with pointer on
-  // inputs and outputs.
-  std::vector<void *> rawArgs(
-      args.preparedArgs.size() + 1 /*runtime context*/ + 1 /* outputs */
-  );
-  size_t i = 0;
-  // Pointers on inputs
-  for (auto &arg : args.preparedArgs) {
-    rawArgs[i++] = &arg;
-  }
-
-  mlir::concretelang::RuntimeContext runtimeContext(evaluationKeys);
-  // Pointer on runtime context, the rawArgs take pointer on actual value that
-  // is passed to the compiled function.
-  auto rtCtxPtr = &runtimeContext;
-  rawArgs[i++] = &rtCtxPtr;
-
-  // Outputs
-  rawArgs[i++] = reinterpret_cast<void *>(outputs.data());
-
-  // Invoke
-  if (auto err = invokeRaw(rawArgs)) {
-    return std::move(err);
-  }
-
-  // Store the result to the PublicResult
-  std::vector<clientlib::ScalarOrTensorData> buffers;
-  {
-    size_t outputOffset = 0;
-    for (auto &output : args.clientParameters.outputs) {
-      auto shape = args.clientParameters.bufferShape(output);
-      if (shape.size() == 0) {
-        // scalar scalar
-        buffers.push_back(concretelang::clientlib::ScalarOrTensorData(
-            concretelang::clientlib::ScalarData(outputs[outputOffset++],
-                                                output.shape.sign,
-                                                output.shape.width)));
-      } else {
-        // buffer gate
-        auto rank = shape.size();
-        auto allocated = (uint64_t *)outputs[outputOffset++];
-        auto aligned = (uint64_t *)outputs[outputOffset++];
-        auto offset = (size_t)outputs[outputOffset++];
-        size_t *sizes = (size_t *)&outputs[outputOffset];
-        outputOffset += rank;
-        size_t *strides = (size_t *)&outputs[outputOffset];
-        outputOffset += rank;
-
-        size_t elementWidth = (output.isEncrypted())
-                                  ? clientlib::EncryptedScalarElementWidth
-                                  : output.shape.width;
-
-        bool sign = (output.isEncrypted()) ? false : output.shape.sign;
-        concretelang::clientlib::TensorData td =
-            clientlib::tensorDataFromMemRef(rank, elementWidth, sign, allocated,
-                                            aligned, offset, sizes, strides);
-        buffers.push_back(
-            concretelang::clientlib::ScalarOrTensorData(std::move(td)));
-      }
-    }
-  }
-  return clientlib::PublicResult::fromBuffers(args.clientParameters,
-                                              std::move(buffers));
+  return ::concretelang::invokeRawOnLambda(this, args.clientParameters,
+                                           args.preparedArgs, evaluationKeys);
 }
 
 } // namespace concretelang

@@ -6,6 +6,8 @@
 #ifndef CONCRETELANG_SUPPORT_LLVMEMITFILE
 #define CONCRETELANG_SUPPORT_LLVMEMITFILE
 
+#include <llvm/ADT/StringRef.h>
+
 namespace mlir {
 namespace concretelang {
 

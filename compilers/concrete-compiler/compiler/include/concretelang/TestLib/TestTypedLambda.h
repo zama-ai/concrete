@@ -90,9 +90,12 @@ public:
     // server function call
     auto evaluationKeys = keySet->evaluationKeys();
     auto publicResult = serverLambda.call(*publicArgument, evaluationKeys);
+    if (!publicResult) {
+      return StringError("failed calling function");
+    }
 
     // client result decryption
-    return this->decryptResult(*keySet, *publicResult);
+    return this->decryptResult(*keySet, *(publicResult.get()));
   }
 
 private:

@@ -15,6 +15,7 @@
 #include "concretelang/ClientLib/Types.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/ServerLib/DynamicModule.h"
+#include "concretelang/Support/Error.h"
 
 namespace concretelang {
 namespace serverlib {
@@ -36,13 +37,21 @@ public:
   loadFromModule(std::shared_ptr<DynamicModule> module, std::string funcName);
 
   /// Call the ServerLambda with public arguments.
-  std::unique_ptr<clientlib::PublicResult>
+  llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
   call(clientlib::PublicArguments &args,
        clientlib::EvaluationKeys &evaluationKeys);
 
+  /// \brief Call the loaded function using opaque pointers to both inputs and
+  /// outputs.
+  /// \param args Array containing pointers to inputs first, followed by
+  /// pointers to outputs.
+  /// \return Error if failed, success otherwise.
+  llvm::Error invokeRaw(llvm::MutableArrayRef<void *> args);
+
 protected:
   ClientParameters clientParameters;
-  void *(*func)(void *...);
+  /// holds a pointer to the entrypoint of the shared lib which
+  void (*func)(void *...);
   /// Retain module and open shared lib alive
   std::shared_ptr<DynamicModule> module;
 };
