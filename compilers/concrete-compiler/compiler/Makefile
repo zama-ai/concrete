@@ -1,3 +1,5 @@
+LLVM_PROJECT_DIR=../llvm-project
+
 BUILD_TYPE?=Release
 BUILD_DIR?=./build
 Python3_EXECUTABLE?=$(shell which python3)
@@ -109,7 +111,7 @@ $(HPX_LOCAL_DIR): $(HPX_TARBALL)
 
 $(BUILD_DIR)/configured.stamp:
 	mkdir -p $(BUILD_DIR)
-	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
+	cmake -B $(BUILD_DIR) -GNinja $(LLVM_PROJECT_DIR)/llvm \
 	$(CMAKE_CCACHE_OPTIONS) \
 	$(CC_COMPILER_OPTION) \
 	$(CXX_COMPILER_OPTION) \
@@ -483,11 +485,11 @@ install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	    find . | \
 	    grep "^.*\.\(h\|hpp\|td\)$$" | \
         while read filepath; do $(HIERARCHY_PRESERVING_COPY) $$filepath $(INSTALL_PATH)/include; done
-	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/llvm/include && \
+	cd $(MAKEFILE_ROOT_DIR)/$(LLVM_PROJECT_DIR)/llvm/include && \
 	    find . | \
 	    grep "^.*\.\(h\|hpp\|td\)$$" | \
         while read filepath; do $(HIERARCHY_PRESERVING_COPY) $$filepath $(INSTALL_PATH)/include; done
-	cd $(MAKEFILE_ROOT_DIR)/../llvm-project/mlir/include && \
+	cd $(MAKEFILE_ROOT_DIR)/$(LLVM_PROJECT_DIR)/mlir/include && \
 	    find . | \
 	    grep "^.*\.\(h\|hpp\|td\)$$" | \
         while read filepath; do $(HIERARCHY_PRESERVING_COPY) $$filepath $(INSTALL_PATH)/include; done
