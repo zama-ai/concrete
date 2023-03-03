@@ -160,20 +160,36 @@ MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU32(
     std::vector<uint32_t> data, std::vector<int64_t> dimensions);
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU64(
     std::vector<uint64_t> data, std::vector<int64_t> dimensions);
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI8(
+    std::vector<int8_t> data, std::vector<int64_t> dimensions);
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI16(
+    std::vector<int16_t> data, std::vector<int64_t> dimensions);
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI32(
+    std::vector<int32_t> data, std::vector<int64_t> dimensions);
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI64(
+    std::vector<int64_t> data, std::vector<int64_t> dimensions);
 /// Create a lambdaArgument from a scalar
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromScalar(uint64_t scalar);
+MLIR_CAPI_EXPORTED lambdaArgument
+lambdaArgumentFromSignedScalar(int64_t scalar);
 /// Check if a lambdaArgument holds a tensor
 MLIR_CAPI_EXPORTED bool lambdaArgumentIsTensor(lambdaArgument &lambda_arg);
 /// Get tensor data from lambdaArgument
 MLIR_CAPI_EXPORTED std::vector<uint64_t>
 lambdaArgumentGetTensorData(lambdaArgument &lambda_arg);
+MLIR_CAPI_EXPORTED std::vector<int64_t>
+lambdaArgumentGetSignedTensorData(lambdaArgument &lambda_arg);
 /// Get tensor dimensions from lambdaArgument
 MLIR_CAPI_EXPORTED std::vector<int64_t>
 lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg);
 /// Check if a lambdaArgument holds a scalar
 MLIR_CAPI_EXPORTED bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg);
+/// Check if a lambdaArgument holds a signed value
+MLIR_CAPI_EXPORTED bool lambdaArgumentIsSigned(lambdaArgument &lambda_arg);
 /// Get scalar value from lambdaArgument
 MLIR_CAPI_EXPORTED uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg);
+MLIR_CAPI_EXPORTED int64_t
+lambdaArgumentGetSignedScalar(lambdaArgument &lambda_arg);
 
 /// Compile the textual representation of MLIR modules to a library.
 MLIR_CAPI_EXPORTED std::string library(std::string libraryPath,

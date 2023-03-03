@@ -133,6 +133,28 @@ end_to_end_fixture = [
         np.array([63, 15, 14, 12]),
         id="add_eint_int_1D",
     ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
+                %0 = "FHE.neg_eint"(%arg0): (!FHE.esint<7>) -> !FHE.esint<7>
+                return %0: !FHE.esint<7>
+            }
+            """,
+        (5,),
+        -5,
+        id="neg_eint_signed",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: tensor<2x!FHE.esint<7>>) -> tensor<2x!FHE.esint<7>> {
+                %0 = "FHELinalg.neg_eint"(%arg0): (tensor<2x!FHE.esint<7>>) -> tensor<2x!FHE.esint<7>>
+                return %0: tensor<2x!FHE.esint<7>>
+            }
+            """,
+        (np.array([-5, 3]),),
+        np.array([5, -3]),
+        id="neg_eint_signed_2",
+    ),
 ]
 
 end_to_end_parallel_fixture = [

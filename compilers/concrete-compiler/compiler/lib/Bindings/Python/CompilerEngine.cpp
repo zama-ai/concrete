@@ -286,11 +286,19 @@ MLIR_CAPI_EXPORTED bool lambdaArgumentIsTensor(lambdaArgument &lambda_arg) {
          lambda_arg.ptr->isa<mlir::concretelang::TensorLambdaArgument<
              mlir::concretelang::IntLambdaArgument<uint32_t>>>() ||
          lambda_arg.ptr->isa<mlir::concretelang::TensorLambdaArgument<
-             mlir::concretelang::IntLambdaArgument<uint64_t>>>();
+             mlir::concretelang::IntLambdaArgument<uint64_t>>>() ||
+         lambda_arg.ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int8_t>>>() ||
+         lambda_arg.ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int16_t>>>() ||
+         lambda_arg.ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int32_t>>>() ||
+         lambda_arg.ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int64_t>>>();
 }
 
-template <typename T>
-MLIR_CAPI_EXPORTED std::vector<uint64_t> copyTensorLambdaArgumentTo64bitsvector(
+template <typename T, typename R>
+MLIR_CAPI_EXPORTED std::vector<R> copyTensorLambdaArgumentTo64bitsvector(
     mlir::concretelang::TensorLambdaArgument<
         mlir::concretelang::IntLambdaArgument<T>> *tensor) {
   auto numElements = tensor->getNumElements();
@@ -301,7 +309,7 @@ MLIR_CAPI_EXPORTED std::vector<uint64_t> copyTensorLambdaArgumentTo64bitsvector(
        << llvm::toString(std::move(numElements.takeError()));
     throw std::runtime_error(os.str());
   }
-  std::vector<uint64_t> res;
+  std::vector<R> res;
   res.reserve(*numElements);
   T *data = tensor->getValue();
   for (size_t i = 0; i < *numElements; i++) {
@@ -329,17 +337,52 @@ lambdaArgumentGetTensorData(lambdaArgument &lambda_arg) {
   if (auto arg =
           lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
               mlir::concretelang::IntLambdaArgument<uint8_t>>>()) {
-    return copyTensorLambdaArgumentTo64bitsvector(arg);
+    return copyTensorLambdaArgumentTo64bitsvector<uint8_t, uint64_t>(arg);
   }
   if (auto arg =
           lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
               mlir::concretelang::IntLambdaArgument<uint16_t>>>()) {
-    return copyTensorLambdaArgumentTo64bitsvector(arg);
+    return copyTensorLambdaArgumentTo64bitsvector<uint16_t, uint64_t>(arg);
   }
   if (auto arg =
           lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
               mlir::concretelang::IntLambdaArgument<uint32_t>>>()) {
-    return copyTensorLambdaArgumentTo64bitsvector(arg);
+    return copyTensorLambdaArgumentTo64bitsvector<uint32_t, uint64_t>(arg);
+  }
+  throw std::invalid_argument(
+      "LambdaArgument isn't a tensor or has an unsupported bitwidth");
+}
+
+MLIR_CAPI_EXPORTED std::vector<int64_t>
+lambdaArgumentGetSignedTensorData(lambdaArgument &lambda_arg) {
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int64_t>>>()) {
+    llvm::Expected<size_t> sizeOrErr = arg->getNumElements();
+    if (!sizeOrErr) {
+      std::string backingString;
+      llvm::raw_string_ostream os(backingString);
+      os << "Couldn't get size of tensor: "
+         << llvm::toString(sizeOrErr.takeError());
+      throw std::runtime_error(os.str());
+    }
+    std::vector<int64_t> data(arg->getValue(), arg->getValue() + *sizeOrErr);
+    return data;
+  }
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int8_t>>>()) {
+    return copyTensorLambdaArgumentTo64bitsvector<int8_t, int64_t>(arg);
+  }
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int16_t>>>()) {
+    return copyTensorLambdaArgumentTo64bitsvector<int16_t, int64_t>(arg);
+  }
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int32_t>>>()) {
+    return copyTensorLambdaArgumentTo64bitsvector<int32_t, int64_t>(arg);
   }
   throw std::invalid_argument(
       "LambdaArgument isn't a tensor or has an unsupported bitwidth");
@@ -367,13 +410,52 @@ lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg) {
               mlir::concretelang::IntLambdaArgument<uint64_t>>>()) {
     return arg->getDimensions();
   }
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int8_t>>>()) {
+    return arg->getDimensions();
+  }
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int16_t>>>()) {
+    return arg->getDimensions();
+  }
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int32_t>>>()) {
+    return arg->getDimensions();
+  }
+  if (auto arg =
+          lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<int64_t>>>()) {
+    return arg->getDimensions();
+  }
   throw std::invalid_argument(
       "LambdaArgument isn't a tensor, should "
-      "be a TensorLambdaArgument<IntLambdaArgument<uint64_t>>");
+      "be a TensorLambdaArgument<IntLambdaArgument<(u)int{8,16,32,64}_t>>");
 }
 
 MLIR_CAPI_EXPORTED bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg) {
-  return lambda_arg.ptr->isa<mlir::concretelang::IntLambdaArgument<uint64_t>>();
+  auto ptr = lambda_arg.ptr;
+  return ptr->isa<mlir::concretelang::IntLambdaArgument<uint64_t>>() ||
+         ptr->isa<mlir::concretelang::IntLambdaArgument<int64_t>>();
+}
+
+MLIR_CAPI_EXPORTED bool lambdaArgumentIsSigned(lambdaArgument &lambda_arg) {
+  auto ptr = lambda_arg.ptr;
+  return ptr->isa<mlir::concretelang::IntLambdaArgument<int8_t>>() ||
+         ptr->isa<mlir::concretelang::IntLambdaArgument<int16_t>>() ||
+         ptr->isa<mlir::concretelang::IntLambdaArgument<int32_t>>() ||
+         ptr->isa<mlir::concretelang::IntLambdaArgument<int64_t>>() ||
+         ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int8_t>>>() ||
+         ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int16_t>>>() ||
+         ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int32_t>>>() ||
+         ptr->isa<mlir::concretelang::TensorLambdaArgument<
+             mlir::concretelang::IntLambdaArgument<int64_t>>>();
+  ;
 }
 
 MLIR_CAPI_EXPORTED uint64_t
@@ -388,11 +470,31 @@ lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
   return arg->getValue();
 }
 
+MLIR_CAPI_EXPORTED int64_t
+lambdaArgumentGetSignedScalar(lambdaArgument &lambda_arg) {
+  mlir::concretelang::IntLambdaArgument<int64_t> *arg =
+      lambda_arg.ptr
+          ->dyn_cast<mlir::concretelang::IntLambdaArgument<int64_t>>();
+  if (arg == nullptr) {
+    throw std::invalid_argument("LambdaArgument isn't a scalar, should "
+                                "be an IntLambdaArgument<int64_t>");
+  }
+  return arg->getValue();
+}
+
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU8(
     std::vector<uint8_t> data, std::vector<int64_t> dimensions) {
   lambdaArgument tensor_arg{
       std::make_shared<mlir::concretelang::TensorLambdaArgument<
           mlir::concretelang::IntLambdaArgument<uint8_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI8(
+    std::vector<int8_t> data, std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<int8_t>>>(data, dimensions)};
   return tensor_arg;
 }
 
@@ -404,11 +506,27 @@ MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU16(
   return tensor_arg;
 }
 
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI16(
+    std::vector<int16_t> data, std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<int16_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU32(
     std::vector<uint32_t> data, std::vector<int64_t> dimensions) {
   lambdaArgument tensor_arg{
       std::make_shared<mlir::concretelang::TensorLambdaArgument<
           mlir::concretelang::IntLambdaArgument<uint32_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI32(
+    std::vector<int32_t> data, std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<int32_t>>>(data, dimensions)};
   return tensor_arg;
 }
 
@@ -420,9 +538,24 @@ MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU64(
   return tensor_arg;
 }
 
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorI64(
+    std::vector<int64_t> data, std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<int64_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromScalar(uint64_t scalar) {
   lambdaArgument scalar_arg{
       std::make_shared<mlir::concretelang::IntLambdaArgument<uint64_t>>(
           scalar)};
+  return scalar_arg;
+}
+
+MLIR_CAPI_EXPORTED lambdaArgument
+lambdaArgumentFromSignedScalar(int64_t scalar) {
+  lambdaArgument scalar_arg{
+      std::make_shared<mlir::concretelang::IntLambdaArgument<int64_t>>(scalar)};
   return scalar_arg;
 }

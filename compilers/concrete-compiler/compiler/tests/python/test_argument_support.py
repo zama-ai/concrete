@@ -17,7 +17,7 @@ from concrete.compiler import ClientSupport
 )
 def test_invalid_arg_type(garbage):
     with pytest.raises(TypeError):
-        ClientSupport._create_lambda_argument(garbage)
+        ClientSupport._create_lambda_argument(garbage, signed=False)
 
 
 @pytest.mark.parametrize(
@@ -32,7 +32,7 @@ def test_invalid_arg_type(garbage):
 )
 def test_accepted_ints(value):
     try:
-        arg = ClientSupport._create_lambda_argument(value)
+        arg = ClientSupport._create_lambda_argument(value, signed=False)
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
     assert arg.is_scalar(), "should have been a scalar"
@@ -52,7 +52,7 @@ def test_accepted_ints(value):
 def test_accepted_ndarray(dtype, maxvalue):
     value = np.array([0, 1, 2, maxvalue], dtype=dtype)
     try:
-        arg = ClientSupport._create_lambda_argument(value)
+        arg = ClientSupport._create_lambda_argument(value, signed=False)
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
 
@@ -69,7 +69,7 @@ def test_accepted_ndarray(dtype, maxvalue):
 def test_accepted_array_as_scalar():
     value = np.array(7, dtype=np.uint16)
     try:
-        arg = ClientSupport._create_lambda_argument(value)
+        arg = ClientSupport._create_lambda_argument(value, signed=False)
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
     assert arg.is_scalar(), "should have been a scalar"

@@ -37,6 +37,14 @@ class ClientParameters(WrapperCpp):
             )
         super().__init__(client_parameters)
 
+    def input_signs(self) -> List[bool]:
+        """Return the sign information of inputs.
+
+        Returns:
+            List[bool]: list of booleans to indicate whether the inputs are signed or not
+        """
+        return self.cpp().input_signs()
+
     def output_signs(self) -> List[bool]:
         """Return the sign information of outputs.
 

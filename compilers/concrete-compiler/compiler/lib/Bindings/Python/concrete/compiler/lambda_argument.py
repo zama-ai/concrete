@@ -58,25 +58,31 @@ class LambdaArgument(WrapperCpp):
         """
         if not isinstance(scalar, ACCEPTED_INTS):
             raise TypeError(
-                f"scalar must be of type int or numpy.(u)int, not {type(scalar)}"
+                f"scalar must be of type int or numpy.int, not {type(scalar)}"
             )
         return LambdaArgument.wrap(_LambdaArgument.from_scalar(scalar))
 
     @staticmethod
-    def from_tensor_8(data: List[int], shape: List[int]) -> "LambdaArgument":
-        """Build a LambdaArgument containing the given tensor.
+    def from_signed_scalar(scalar: int) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given scalar value.
 
         Args:
-            data (List[int]): flattened tensor data
-            shape (List[int]): shape of original tensor before flattening
+            scalar (int or numpy.int): scalar value to embed in LambdaArgument
+
+        Raises:
+            TypeError: if scalar is not of type int or numpy.uint
 
         Returns:
             LambdaArgument
         """
-        return LambdaArgument.wrap(_LambdaArgument.from_tensor_8(data, shape))
+        if not isinstance(scalar, ACCEPTED_INTS):
+            raise TypeError(
+                f"scalar must be of type int or numpy.uint, not {type(scalar)}"
+            )
+        return LambdaArgument.wrap(_LambdaArgument.from_signed_scalar(scalar))
 
     @staticmethod
-    def from_tensor_16(data: List[int], shape: List[int]) -> "LambdaArgument":
+    def from_tensor_u8(data: List[int], shape: List[int]) -> "LambdaArgument":
         """Build a LambdaArgument containing the given tensor.
 
         Args:
@@ -86,10 +92,10 @@ class LambdaArgument(WrapperCpp):
         Returns:
             LambdaArgument
         """
-        return LambdaArgument.wrap(_LambdaArgument.from_tensor_16(data, shape))
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_u8(data, shape))
 
     @staticmethod
-    def from_tensor_32(data: List[int], shape: List[int]) -> "LambdaArgument":
+    def from_tensor_u16(data: List[int], shape: List[int]) -> "LambdaArgument":
         """Build a LambdaArgument containing the given tensor.
 
         Args:
@@ -99,10 +105,10 @@ class LambdaArgument(WrapperCpp):
         Returns:
             LambdaArgument
         """
-        return LambdaArgument.wrap(_LambdaArgument.from_tensor_32(data, shape))
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_u16(data, shape))
 
     @staticmethod
-    def from_tensor_64(data: List[int], shape: List[int]) -> "LambdaArgument":
+    def from_tensor_u32(data: List[int], shape: List[int]) -> "LambdaArgument":
         """Build a LambdaArgument containing the given tensor.
 
         Args:
@@ -112,7 +118,80 @@ class LambdaArgument(WrapperCpp):
         Returns:
             LambdaArgument
         """
-        return LambdaArgument.wrap(_LambdaArgument.from_tensor_64(data, shape))
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_u32(data, shape))
+
+    @staticmethod
+    def from_tensor_u64(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_u64(data, shape))
+
+    @staticmethod
+    def from_tensor_i8(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_i8(data, shape))
+
+    @staticmethod
+    def from_tensor_i16(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_i16(data, shape))
+
+    @staticmethod
+    def from_tensor_i32(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_i32(data, shape))
+
+    @staticmethod
+    def from_tensor_i64(data: List[int], shape: List[int]) -> "LambdaArgument":
+        """Build a LambdaArgument containing the given tensor.
+
+        Args:
+            data (List[int]): flattened tensor data
+            shape (List[int]): shape of original tensor before flattening
+
+        Returns:
+            LambdaArgument
+        """
+        return LambdaArgument.wrap(_LambdaArgument.from_tensor_i64(data, shape))
+
+    def is_signed(self) -> bool:
+        """Check if the contained argument is signed.
+
+        Returns:
+            bool
+        """
+        return self.cpp().is_signed()
 
     def is_scalar(self) -> bool:
         """Check if the contained argument is a scalar.
@@ -129,6 +208,14 @@ class LambdaArgument(WrapperCpp):
             int
         """
         return self.cpp().get_scalar()
+
+    def get_signed_scalar(self) -> int:
+        """Return the contained scalar value.
+
+        Returns:
+            int
+        """
+        return self.cpp().get_signed_scalar()
 
     def is_tensor(self) -> bool:
         """Check if the contained argument is a tensor.
@@ -153,3 +240,11 @@ class LambdaArgument(WrapperCpp):
             List[int]
         """
         return self.cpp().get_tensor_data()
+
+    def get_signed_tensor_data(self) -> List[int]:
+        """Return the contained flattened tensor data.
+
+        Returns:
+            List[int]
+        """
+        return self.cpp().get_signed_tensor_data()

@@ -247,6 +247,19 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                }
              }
              return result;
+           })
+      .def("input_signs",
+           [](mlir::concretelang::ClientParameters &clientParameters) {
+             std::vector<bool> result;
+             for (auto input : clientParameters.inputs) {
+               if (input.encryption.hasValue()) {
+                 result.push_back(
+                     input.encryption.getValue().encoding.isSigned);
+               } else {
+                 result.push_back(true);
+               }
+             }
+             return result;
            });
 
   pybind11::class_<clientlib::KeySet>(m, "KeySet")
@@ -284,23 +297,40 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
-      .def_static("from_tensor_8",
+      .def_static("from_tensor_u8",
                   [](std::vector<uint8_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU8(tensor, dims);
                   })
-      .def_static("from_tensor_16",
+      .def_static("from_tensor_u16",
                   [](std::vector<uint16_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU16(tensor, dims);
                   })
-      .def_static("from_tensor_32",
+      .def_static("from_tensor_u32",
                   [](std::vector<uint32_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU32(tensor, dims);
                   })
-      .def_static("from_tensor_64",
+      .def_static("from_tensor_u64",
                   [](std::vector<uint64_t> tensor, std::vector<int64_t> dims) {
                     return lambdaArgumentFromTensorU64(tensor, dims);
                   })
+      .def_static("from_tensor_i8",
+                  [](std::vector<int8_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorI8(tensor, dims);
+                  })
+      .def_static("from_tensor_i16",
+                  [](std::vector<int16_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorI16(tensor, dims);
+                  })
+      .def_static("from_tensor_i32",
+                  [](std::vector<int32_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorI32(tensor, dims);
+                  })
+      .def_static("from_tensor_i64",
+                  [](std::vector<int64_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorI64(tensor, dims);
+                  })
       .def_static("from_scalar", lambdaArgumentFromScalar)
+      .def_static("from_signed_scalar", lambdaArgumentFromSignedScalar)
       .def("is_tensor",
            [](lambdaArgument &lambda_arg) {
              return lambdaArgumentIsTensor(lambda_arg);
@@ -308,6 +338,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("get_tensor_data",
            [](lambdaArgument &lambda_arg) {
              return lambdaArgumentGetTensorData(lambda_arg);
+           })
+      .def("get_signed_tensor_data",
+           [](lambdaArgument &lambda_arg) {
+             return lambdaArgumentGetSignedTensorData(lambda_arg);
            })
       .def("get_tensor_shape",
            [](lambdaArgument &lambda_arg) {
@@ -317,7 +351,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](lambdaArgument &lambda_arg) {
              return lambdaArgumentIsScalar(lambda_arg);
            })
-      .def("get_scalar", [](lambdaArgument &lambda_arg) {
-        return lambdaArgumentGetScalar(lambda_arg);
+      .def("is_signed",
+           [](lambdaArgument &lambda_arg) {
+             return lambdaArgumentIsSigned(lambda_arg);
+           })
+      .def("get_scalar",
+           [](lambdaArgument &lambda_arg) {
+             return lambdaArgumentGetScalar(lambda_arg);
+           })
+      .def("get_signed_scalar", [](lambdaArgument &lambda_arg) {
+        return lambdaArgumentGetSignedScalar(lambda_arg);
       });
 }
