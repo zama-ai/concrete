@@ -1,0 +1,164 @@
+const c = @cImport({
+    @cInclude("stdlib.h");
+});
+
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+
+const common = @import("common.zig");
+
+const cpu = @cImport({
+    @cInclude("include/concrete-cpu.h");
+});
+
+fn test3(csprng: *cpu.Csprng) !void {
+    const polynomial_size: usize = 1024;
+    const glwe_dim: usize = 1;
+    const small_dim: usize = 585;
+    const level_bsk: usize = 2;
+    const base_log_bsk: usize = 10;
+    const level_ksk: usize = 7;
+    const base_log_ksk: usize = 4;
+
+    const variance = std.math.pow(f64, 2, -2 * 60);
+
+    const number_of_bits_of_message = 5;
+    var raw_fft = c.aligned_alloc(cpu.CONCRETE_FFT_ALIGN, cpu.CONCRETE_FFT_SIZE);
+    const fft = @ptrCast(*cpu.Fft, raw_fft);
+
+    cpu.concrete_cpu_construct_concrete_fft(fft, polynomial_size);
+
+    const big_dim = glwe_dim * polynomial_size;
+
+    const small_sk = try allocator.alloc(u64, small_dim);
+    cpu.concrete_cpu_init_lwe_secret_key_u64(small_sk.ptr, small_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+
+    const big_sk = try allocator.alloc(u64, big_dim);
+    cpu.concrete_cpu_init_lwe_secret_key_u64(big_sk.ptr, big_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+
+    const bsk_f = try common.new_bsk(
+        csprng,
+        small_dim,
+        glwe_dim,
+        polynomial_size,
+        level_bsk,
+        base_log_bsk,
+        variance,
+        small_sk,
+        big_sk,
+        fft,
+    );
+    defer allocator.free(bsk_f);
+
+    const ksk_size = cpu.concrete_cpu_keyswitch_key_size_u64(level_ksk, base_log_ksk, big_dim, small_dim);
+
+    const ksk = try allocator.alloc(u64, ksk_size);
+    defer allocator.free(ksk);
+
+    cpu.concrete_cpu_init_lwe_keyswitch_key_u64(
+        ksk.ptr,
+        big_sk.ptr,
+        small_sk.ptr,
+        big_dim,
+        small_dim,
+        level_ksk,
+        base_log_ksk,
+        variance,
+        csprng,
+        &cpu.CONCRETE_CSPRNG_VTABLE,
+    );
+
+    const delta_log = 64 - number_of_bits_of_message;
+
+    // 19 in binary is 10011, so has the high bit, low bit set and is not symetrical
+    const val: u64 = 19;
+
+    std.debug.assert(1 << number_of_bits_of_message > val);
+    const message = val << delta_log;
+
+    // We will extract all bits
+    const number_of_bits_to_extract = number_of_bits_of_message;
+
+    const in_ct = try allocator.alloc(u64, big_dim + 1);
+    defer allocator.free(in_ct);
+
+    cpu.concrete_cpu_encrypt_lwe_ciphertext_u64(
+        big_sk.ptr,
+        in_ct.ptr,
+        message,
+        big_dim,
+        variance,
+        csprng,
+        &cpu.CONCRETE_CSPRNG_VTABLE,
+    );
+
+    const out_cts = try allocator.alloc(u64, (small_dim + 1) * number_of_bits_to_extract);
+    defer allocator.free(out_cts);
+
+    var stack_align: usize = 0;
+    var stack_size: usize = 0;
+
+    try std.testing.expect(cpu.concrete_cpu_extract_bit_lwe_ciphertext_u64_scratch(
+        &stack_size,
+        &stack_align,
+        small_dim,
+        big_dim,
+        glwe_dim,
+        polynomial_size,
+        fft,
+    ) == 0);
+
+    const stack = @ptrCast([*]u8, c.aligned_alloc(stack_align, stack_size) orelse unreachable)[0..stack_size];
+    defer c.free(stack.ptr);
+
+    cpu.concrete_cpu_extract_bit_lwe_ciphertext_u64(
+        out_cts.ptr,
+        in_ct.ptr,
+        bsk_f.ptr,
+        ksk.ptr,
+        small_dim,
+        number_of_bits_to_extract,
+        big_dim,
+        number_of_bits_to_extract,
+        delta_log,
+        level_bsk,
+        base_log_bsk,
+        glwe_dim,
+        polynomial_size,
+        small_dim,
+        level_ksk,
+        base_log_ksk,
+        big_dim,
+        small_dim,
+        fft,
+        stack.ptr,
+        stack.len,
+    );
+
+    var i: u64 = 0;
+    while (i < number_of_bits_to_extract) {
+        const expected = (val >> @intCast(u6, number_of_bits_of_message - 1 - i)) & 1;
+        var decrypted: u64 = 0;
+        cpu.concrete_cpu_decrypt_lwe_ciphertext_u64(small_sk.ptr, out_cts[(small_dim + 1) * i ..].ptr, small_dim, &decrypted);
+
+        const rounded = common.closest_representable(decrypted, 1, 1);
+        const decoded = rounded >> 63;
+
+        std.debug.assert(decoded == expected);
+        i += 1;
+    }
+}
+
+test "encryption" {
+    var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
+    defer c.free(raw_csprng);
+    const csprng = @ptrCast(*cpu.Csprng, raw_csprng);
+    cpu.concrete_cpu_construct_concrete_csprng(
+        csprng,
+        cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },
+    );
+    defer cpu.concrete_cpu_destroy_concrete_csprng(csprng);
+
+    try test3(csprng);
+}

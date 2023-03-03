@@ -1,0 +1,57 @@
+[package]
+name = "concrete-cpu"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause-Clear"
+
+[lib]
+name = "concrete_cpu"
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+concrete-csprng = { version = "0.2", optional = true, features = [
+  "generator_soft",
+] }
+libc = { version = "0.2", default-features = false }
+pulp = { version = "0.10", default-features = false }
+dyn-stack = { version = "0.8", default-features = false }
+readonly = "0.2"
+aligned-vec = { version = "0.5", default-features = false }
+concrete-fft = { version = "0.1", default-features = false }
+bytemuck = "1.12"
+num-complex = { version = "0.4", default-features = false, features = [
+  "bytemuck",
+] }
+
+rayon = { version = "1.6", optional = true }
+once_cell = { version = "1.16", optional = true }
+
+[features]
+default = ["parallel", "std", "csprng"]
+std = [
+  "concrete-fft/std",
+  "aligned-vec/std",
+  "dyn-stack/std",
+  "pulp/std",
+  "once_cell",
+]
+csprng = ["concrete-csprng"]
+parallel = ["rayon"]
+nightly = ["pulp/nightly"]
+
+[build-dependencies]
+cbindgen = "0.24"
+
+[dev-dependencies]
+criterion = "0.4"
+
+[[bench]]
+name = "bench"
+harness = false
+
+[profile.test]
+overflow-checks = true
+
+[profile.dev]
+opt-level = 3
+overflow-checks = true
