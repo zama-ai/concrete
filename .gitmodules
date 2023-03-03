@@ -1,20 +1,20 @@
 [submodule "llvm-project"]
-	path = llvm-project
+	path = compilers/concrete-compiler/llvm-project
 	url = git@github.com:zama-ai/concrete-compiler-internal-llvm-project.git
 	shallow = true
 [submodule "compiler/concrete-optimizer"]
-	path = compiler/concrete-optimizer
+	path = compilers/concrete-compiler/compiler/concrete-optimizer
 	url = git@github.com:zama-ai/concrete-optimizer.git
 	shallow = false
 [submodule "compiler/concrete-core"]
-	path = compiler/concrete-core
+	path = compilers/concrete-compiler/compiler/concrete-core
 	url = git@github.com:zama-ai/concrete-core.git
 	shallow = true
 [submodule "compiler/parameter-curves"]
-	path = compiler/parameter-curves
+	path = compilers/concrete-compiler/compiler/parameter-curves
 	url = git@github.com:zama-ai/parameter-curves.git
 	shallow = true
 [submodule "compiler/concrete-cpu"]
-	path = compiler/concrete-cpu
+	path = compilers/concrete-compiler/compiler/concrete-cpu
 	url = git@github.com:zama-ai/concrete-cpu.git
 	shallow = true
