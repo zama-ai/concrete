@@ -1,0 +1,6 @@
+set(LLVM_TARGET_DEFINITIONS Autopar.td)
+mlir_tablegen(Autopar.h.inc -gen-pass-decls -name Analysis)
+mlir_tablegen(Autopar.capi.h.inc -gen-pass-capi-header --prefix Analysis)
+mlir_tablegen(Autopar.capi.cpp.inc -gen-pass-capi-impl --prefix Analysis)
+add_public_tablegen_target(AutoparPassIncGen)
+add_dependencies(mlir-headers AutoparPassIncGen)

@@ -1,0 +1,13 @@
+set(LLVM_TARGET_DEFINITIONS MANP.td)
+mlir_tablegen(MANP.h.inc -gen-pass-decls -name Analysis)
+mlir_tablegen(MANP.capi.h.inc -gen-pass-capi-header --prefix Analysis)
+mlir_tablegen(MANP.capi.cpp.inc -gen-pass-capi-impl --prefix Analysis)
+add_public_tablegen_target(MANPPassIncGen)
+add_dependencies(mlir-headers MANPPassIncGen)
+
+set(LLVM_TARGET_DEFINITIONS ConcreteOptimizer.td)
+mlir_tablegen(ConcreteOptimizer.h.inc -gen-pass-decls -name Analysis)
+mlir_tablegen(ConcreteOptimizer.capi.h.inc -gen-pass-capi-header --prefix Analysis)
+mlir_tablegen(ConcreteOptimizer.capi.cpp.inc -gen-pass-capi-impl --prefix Analysis)
+add_public_tablegen_target(ConcreteOptimizerPassIncGen)
+add_dependencies(mlir-headers ConcreteOptimizerPassIncGen)

@@ -1,0 +1,100 @@
+# Build on an AWS instance (GPU).
+name: AwsEc2BuildGpu
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
+      matrix_item:
+        description: 'Build matrix item'
+        type: string
+
+env:
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  CUDA_PATH: /usr/local/cuda-11.7
+  GCC_VERSION: 11
+
+jobs:
+  BuildAndTest:
+    name: Build and test compiler in EC2 with CUDA support
+    concurrency:
+      group: ${{ github.ref }}_${{ github.event.inputs.instance_image_id }}_${{ github.event.inputs.instance_type }}
+      cancel-in-progress: true
+    runs-on: ${{ github.event.inputs.runner_name }}
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Instance configuration used
+        run: |
+          echo "IDs: ${{ inputs.instance_id }}"
+          echo "AMI: ${{ inputs.instance_image_id }}"
+          echo "Type: ${{ inputs.instance_type }}"
+          echo "Request ID: ${{ inputs.request_id }}"
+          echo "Matrix item: ${{ inputs.matrix_item }}"
+
+      # A SSH private key is required as some dependencies are from private repos
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - name: Set up env
+        # "Install rust" step require root user to have a HOME directory which is not set.
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+
+      - name: Fetch repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Create build dir
+        run: mkdir build
+
+      - name: Build and test compiler
+        uses: addnab/docker-run-action@v3
+        id: build-compiler
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/wheels:/wheels
+            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
+            -e SSH_AUTH_SOCK=/ssh.socket
+            --gpus all
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            rm -rf /build/*
+            mkdir -p /tmp/concrete_compiler/gpu_tests/
+            make BINDINGS_PYTHON_ENABLED=OFF CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s

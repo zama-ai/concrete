@@ -1,0 +1,195 @@
+# Build on an AWS instance (CPU).
+name: AwsEc2BuildCpu
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
+      matrix_item:
+        description: 'Build matrix item'
+        type: string
+
+env:
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  GLIB_VER: 2_28
+
+jobs:
+  BuildAndTest:
+    name: Build and test compiler in EC2
+    concurrency:
+      group: ${{ github.ref }}_${{ github.event.inputs.instance_image_id }}_${{ github.event.inputs.instance_type }}
+      cancel-in-progress: true
+    runs-on: ${{ github.event.inputs.runner_name }}
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Instance configuration used
+        run: |
+          echo "IDs: ${{ inputs.instance_id }}"
+          echo "AMI: ${{ inputs.instance_image_id }}"
+          echo "Type: ${{ inputs.instance_type }}"
+          echo "Request ID: ${{ inputs.request_id }}"
+          echo "Matrix item: ${{ inputs.matrix_item }}"
+
+      # A SSH private key is required as some dependencies are from private repos
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - name: Set up env
+        # "Install rust" step require root user to have a HOME directory which is not set.
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+
+      - name: Fetch repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Create build dir
+        run: mkdir build
+
+      - name: Build compiler
+        uses: addnab/docker-run-action@v3
+        id: build-compiler
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/wheels:/wheels
+            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
+            -e SSH_AUTH_SOCK=/ssh.socket
+            ${{ env.DOCKER_GPU_OPTION }}
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            rm -rf /build/*
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all python-package build-end-to-end-dataflow-tests
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
+      - name: Test compiler
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/build:/build
+            ${{ env.DOCKER_GPU_OPTION }}
+          shell: bash
+          run: |
+            set -e
+            cd /compiler
+            pip install pytest
+            sed "s/pytest/python -m pytest/g" -i Makefile
+            mkdir -p /tmp/concrete_compiler/gpu_tests/
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            chmod -R ugo+rwx /tmp/KeySetCache
+
+      - name: Archive python package
+        uses: actions/upload-artifact@v3
+        with:
+          name: concrete-compiler.whl
+          path: build/wheels/concrete_compiler-*-manylinux_{{ env.GLIB_VER }}_x86_64.whl
+          retention-days: 14
+
+      - name: Build the documentation
+        id: build-doc
+        if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
+            -v ${{ github.workspace }}/docs:/docs
+          shell: bash
+          run: |
+            set -e
+            rm -rf /build
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
+            cd /docs
+            pip install -r requirements.txt
+            pip install -r ../llvm-project/mlir/python/requirements.txt
+            dnf install -y doxygen
+            sed "s/sphinx-apidoc/python -m sphinx.ext.apidoc/g" -i Makefile
+            sed "s/sphinx-build/python -m sphinx.cmd.build/g" -i Makefile
+            make COMPILER_BUILD_DIR=/build/ doc
+
+      - name: Archive docs artifacts
+        if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: html-docs
+          path: docs/_build/html
+
+  PublishDoc:
+    runs-on: ubuntu-20.04
+    needs: BuildAndTest
+    if: ${{ startsWith(github.ref_name, 'v') || github.ref_name == 'main' }}
+    steps:
+      - name: Download Documentation
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          name: html-docs
+
+      - name: Publish Documentation to S3
+        id: publish
+        if: ${{ steps.download.outcome == 'success' && !cancelled() }}
+        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
+        with:
+          args: --acl public-read
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_PREPROD_REPO_DOCUMENTATION_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: '.'
+          DEST_DIR: 'concrete-compiler/${{ github.ref_name }}'
+
+      - name: Invalidate CloudFront Cache
+        if: ${{ steps.publish.outcome == 'success' }}
+        uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
+        env:
+          SOURCE_PATH: '/concrete-compiler/*'
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}

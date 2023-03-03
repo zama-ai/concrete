@@ -1,0 +1,13 @@
+set(LLVM_TARGET_DEFINITIONS ConcreteOps.td)
+mlir_tablegen(ConcreteOps.h.inc -gen-op-decls)
+mlir_tablegen(ConcreteOps.cpp.inc -gen-op-defs)
+mlir_tablegen(ConcreteOpsTypes.h.inc -gen-typedef-decls -typedefs-dialect=Concrete)
+mlir_tablegen(ConcreteOpsTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=Concrete)
+mlir_tablegen(ConcreteOpsDialect.h.inc -gen-dialect-decls -dialect=Concrete)
+mlir_tablegen(ConcreteOpsDialect.cpp.inc -gen-dialect-defs -dialect=Concrete)
+add_public_tablegen_target(MLIRConcreteOpsIncGen)
+add_dependencies(mlir-headers MLIRConcreteOpsIncGen)
+
+add_concretelang_doc(ConcreteOps ConcreteDialect concretelang/ -gen-dialect-doc -dialect=Concrete)
+add_concretelang_doc(ConcreteOps ConcreteOps concretelang/ -gen-op-doc)
+add_concretelang_doc(ConcreteTypes ConcreteTypes concretelang/ -gen-typedef-doc)

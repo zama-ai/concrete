@@ -1,0 +1,4 @@
+Pipeline:
+=========
+
+.. doxygenfile:: Pipeline.h

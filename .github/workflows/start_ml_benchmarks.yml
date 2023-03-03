@@ -1,0 +1,30 @@
+# Start application benchmarks job on Slab CI bot.
+name: Start ML benchmarks
+
+on:
+  workflow_dispatch:
+
+  # Have a weekly benchmark run on main branch to be available on Monday morning (Paris time)
+# TODO: uncomment this section once MLBenchmarks are implemented
+#  schedule:
+#    # * is a special character in YAML so you have to quote this string
+#    # At 1:00 every Thursday
+#    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+#    - cron: '0 1 * * THU'
+
+jobs:
+  start-ml-benchmarks:
+    steps:
+      - name: Start AWS job in Slab
+        shell: bash
+        # TODO: step result must be correlated to HTTP return code.
+        run: |
+          PAYLOAD='{"command": "ml-bench", "git_ref": ${{ github.ref }}, "sha": ${{ github.sha }}}'
+          SIGNATURE="$(slab/scripts/hmac_calculator.sh ${PAYLOAD} '${{ secrets.JOB_SECRET }}')"
+          curl -v -k \
+          -H "Content-Type: application/json" \
+          -H "X-Slab-Repository: ${{ github.repository }}" \
+          -H "X-Slab-Command: start_data" \
+          -H "X-Hub-Signature-256: sha256=${SIGNATURE}" \
+          -d @${{ PAYLOAD }} \
+          ${{ secrets.SLAB_URL }}

@@ -1,0 +1,18 @@
+name: Block PR merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  BlockMerge:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check Commit to Squash
+        run: |
+          set -e
+          git log origin/${{ github.base_ref }}..origin/${{ github.head_ref }} --format=%s | ( ! grep -e "^f [0-9a-f]\+" -q )

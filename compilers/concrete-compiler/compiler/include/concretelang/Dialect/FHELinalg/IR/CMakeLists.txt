@@ -1,0 +1,13 @@
+set(LLVM_TARGET_DEFINITIONS FHELinalgOps.td)
+mlir_tablegen(FHELinalgOps.h.inc -gen-op-decls)
+mlir_tablegen(FHELinalgOps.cpp.inc -gen-op-defs)
+mlir_tablegen(FHELinalgOpsTypes.h.inc -gen-typedef-decls -typedefs-dialect=FHELinalg)
+mlir_tablegen(FHELinalgOpsTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=FHELinalg)
+mlir_tablegen(FHELinalgOpsDialect.h.inc -gen-dialect-decls -dialect=FHELinalg)
+mlir_tablegen(FHELinalgOpsDialect.cpp.inc -gen-dialect-defs -dialect=FHELinalg)
+add_public_tablegen_target(MLIRFHELinalgOpsIncGen)
+add_dependencies(mlir-headers MLIRFHELinalgOpsIncGen)
+
+add_concretelang_doc(FHELinalgOps FHELinalgDialect concretelang/ -gen-dialect-doc -dialect=FHELinalg)
+add_concretelang_doc(FHELinalgOps FHELinalgOps concretelang/ -gen-op-doc)
+add_concretelang_doc(FHELinalgTypes FHELinalgTypes concretelang/ -gen-typedef-doc)

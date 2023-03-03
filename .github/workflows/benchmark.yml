@@ -1,0 +1,256 @@
+# Run benchmarks on an AWS instance and return parsed results to Slab CI bot.
+name: Performance benchmarks
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'test-bench-ci'
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: 'Backend type'
+        required: true
+        default: 'cpu'
+        type: choice
+        options:
+          - cpu
+          - gpu
+      benchmark-name:
+        description: 'Benchmark name'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - standard
+          - application
+      ec2-instance-type:
+        description: 'EC2 instance type'
+        required: true
+        default: 'm6i.metal'
+        type: choice
+        options:
+          - m6i.metal
+          - c6a.metal
+
+env:
+  CARGO_TERM_COLOR: always
+  RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
+  EC2_INSTANCE_TYPE: ${{ inputs.ec2-instance-type || 'm6i.metal' }}
+  CUDA_PATH: /usr/local/cuda-11.3
+  GCC_VERSION: 8
+  BACKEND: ${{ inputs.backend || 'cpu' }}
+  BENCHMARK_NAME: ${{ inputs.benchmark-name || 'standard' }}
+
+jobs:
+  start-runner:
+    name: Start EC2 runner
+    runs-on: ubuntu-20.04
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Sets env vars for m6i.metal
+        if: ${{ env.EC2_INSTANCE_TYPE == 'm6i.metal' }}
+        run: |
+          echo "AWS_REGION=eu-west-3" >> $GITHUB_ENV
+          echo "EC2_IMAGE_ID=ami-0a24aaee029d1295c" >> $GITHUB_ENV
+          echo "SUBNET_ID=subnet-a886b4c1" >> $GITHUB_ENV
+          echo "SECURITY_GROUP_ID=sg-0bf1c1d79c97bc88f" >> $GITHUB_ENV
+
+      - name: Sets env vars for c6a.metal
+        if: ${{ env.EC2_INSTANCE_TYPE == 'c6a.metal' }}
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+          echo "EC2_IMAGE_ID=ami-0afb83d80b3b060d8" >> $GITHUB_ENV
+          echo "SUBNET_ID=subnet-da319dd4" >> $GITHUB_ENV
+          echo "SECURITY_GROUP_ID=sg-0f8b52622a2669491" >> $GITHUB_ENV
+
+      - name: Sets env vars for p3.2xlarge
+        if: ${{ env.BACKEND == 'gpu' }}
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+          echo "EC2_INSTANCE_TYPE=p3.2xlarge" >> $GITHUB_ENV
+          echo "EC2_IMAGE_ID=ami-03deb184ab492226b" >> $GITHUB_ENV
+          echo "SUBNET_ID=subnet-8123c9e7" >> $GITHUB_ENV
+          echo "SECURITY_GROUP_ID=sg-0f8b52622a2669491" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          mode: start
+          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          ec2-image-id: ${{ env.EC2_IMAGE_ID }}
+          ec2-instance-type: ${{ env.EC2_INSTANCE_TYPE }}
+          subnet-id: ${{ env.SUBNET_ID }}
+          security-group-id: ${{ env.SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "compiler-benchmarks-github"}
+            ]
+
+  run-benchmarks:
+    name: Execute end-to-end benchmarks in EC2
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    if: ${{ !cancelled() }}
+    needs: start-runner
+    steps:
+      - name: Get benchmark date
+        run: |
+          echo "BENCH_DATE=$(date --iso-8601=seconds)" >> "${GITHUB_ENV}"
+
+      # SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - name: Fetch submodules
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Set up home
+        # "Install rust" step require root user to have a HOME directory which is not set.
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
+      - name: Export specific variables (CPU)
+        if: ${{ env.BACKEND == 'cpu' }}
+        run: |
+          echo "CUDA_SUPPORT=OFF" >> "${GITHUB_ENV}"
+          echo "BENCHMARK_TARGET=run-cpu-benchmarks" >> "${GITHUB_ENV}"
+
+      - name: Export specific variables (GPU)
+        if: ${{ env.BACKEND == 'gpu' }}
+        run: |
+          echo "CUDA_SUPPORT=ON" >> "${GITHUB_ENV}"
+          echo "BENCHMARK_TARGET=run-gpu-benchmarks" >> "${GITHUB_ENV}"
+          echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
+          echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
+          echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
+          echo "CC=/usr/bin/gcc-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
+          echo "CXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
+          echo "CUDAHOSTCXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
+          echo "CUDACXX=$CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
+
+      - name: Setup environment variable for benchmark target
+        if: ${{ env.BENCHMARK_NAME != 'standard' }}
+        run: |
+          echo "BENCHMARK_TARGET=${{ env.BENCHMARK_TARGET }}-${{ env.BENCHMARK_NAME }}" >> "${GITHUB_ENV}"
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Build compiler benchmarks
+        run: |
+          set -e
+          cd compiler
+          make BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} build-benchmarks
+
+      - name: Download KeySetCache
+        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
+        continue-on-error: true
+        run: |
+          cd compiler
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
+
+      - name: Run end-to-end benchmarks
+        run: |
+          set -e
+          cd compiler
+          make ${{ env.BENCHMARK_TARGET }}
+
+      - name: Upload raw results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.sha }}_raw
+          path: compiler/benchmarks_results.json
+
+      - name: Parse results
+        shell: bash
+        run: |
+          COMMIT_DATE="$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})"
+          COMMIT_HASH="$(git describe --tags --dirty)"
+          python3 ./ci/benchmark_parser.py compiler/benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
+          --database compiler_benchmarks \
+          --hardware ${{ env.EC2_INSTANCE_TYPE }} \
+          --project-version ${COMMIT_HASH} \
+          --branch ${{ github.ref_name }} \
+          --commit-date ${COMMIT_DATE} \
+          --bench-date "${{ env.BENCH_DATE }}"
+
+      - name: Upload parsed results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.sha }}
+          path: ${{ env.RESULTS_FILENAME }}
+
+      - name: Checkout Slab repo
+        uses: actions/checkout@v3
+        with:
+          repository: zama-ai/slab
+          path: slab
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Send data to Slab
+        shell: bash
+        run: |
+          echo "Computing HMac on downloaded artifact"
+          SIGNATURE="$(slab/scripts/hmac_calculator.sh ${{ env.RESULTS_FILENAME }} '${{ secrets.JOB_SECRET }}')"
+          echo "Sending results to Slab..."
+          curl -v -k \
+          -H "Content-Type: application/json" \
+          -H "X-Slab-Repository: ${{ github.repository }}" \
+          -H "X-Slab-Command: store_data" \
+          -H "X-Hub-Signature-256: sha256=${SIGNATURE}" \
+          -d @${{ env.RESULTS_FILENAME }} \
+          ${{ secrets.SLAB_URL }}
+
+  stop-runner:
+    name: Stop EC2 runner
+    needs:
+      - start-runner
+      - run-benchmarks
+    runs-on: ubuntu-20.04
+    if: ${{ always() && (needs.start-runner.result != 'skipped') }}
+    steps:
+      - name: Sets AWS region for m6i.metal
+        if: ${{ env.EC2_INSTANCE_TYPE == 'm6i.metal' }}
+        run: |
+          echo "AWS_REGION=eu-west-3" >> $GITHUB_ENV
+
+      - name: Sets AWS region for c6a.metal
+        if: ${{ env.EC2_INSTANCE_TYPE == 'c6a.metal' }}
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+
+      - name: Sets AWS region for p3.2xlarge
+        if: ${{ env.BACKEND == 'gpu' }}
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
+          mode: stop

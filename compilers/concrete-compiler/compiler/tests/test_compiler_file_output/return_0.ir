@@ -1,0 +1,6 @@
+module {
+  func.func @test_0() -> i8 {
+    %c0_i8 = arith.constant 0 : i8
+    return %c0_i8 : i8
+  }
+}

@@ -1,0 +1,42 @@
+add_mlir_library(
+  ConcretelangSupport
+  Pipeline.cpp
+  Jit.cpp
+  CompilationFeedback.cpp
+  CompilerEngine.cpp
+  JITSupport.cpp
+  LambdaArgument.cpp
+  V0Parameters.cpp
+  V0ClientParameters.cpp
+  logging.cpp
+  Jit.cpp
+  LLVMEmitFile.cpp
+  DEPENDS
+  mlir-headers
+  LINK_LIBS
+  PUBLIC
+  FHELinalgDialect
+  FHELinalgDialectTransforms
+  FHETensorOpsToLinalg
+  FHEDialectTransforms
+  FHEToTFHECrt
+  FHEToTFHEScalar
+  ExtractSDFGOps
+  MLIRLowerableDialectsToLLVM
+  FHEDialectAnalysis
+  FHEDialectTransforms
+  RTDialectAnalysis
+  ConcretelangTransforms
+  ConcretelangConcreteTransforms
+  ConcretelangSDFGTransforms
+  ConcretelangSDFGInterfaces
+  LinalgExtras
+  TFHEDialectTransforms
+  concrete_optimizer
+  MLIRExecutionEngine
+  ${LLVM_PTHREAD_LIB}
+  ConcretelangRuntime
+  ConcretelangClientLib
+  ConcretelangServerLib)
+
+target_include_directories(ConcretelangSupport PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})

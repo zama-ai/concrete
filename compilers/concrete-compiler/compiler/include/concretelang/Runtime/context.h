@@ -1,0 +1,149 @@
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// for license information.
+
+#ifndef CONCRETELANG_RUNTIME_CONTEXT_H
+#define CONCRETELANG_RUNTIME_CONTEXT_H
+
+#include <assert.h>
+#include <map>
+#include <mutex>
+#include <pthread.h>
+
+#include "concretelang/ClientLib/EvaluationKeys.h"
+#include "concretelang/Common/Error.h"
+
+#include "concrete-cpu.h"
+
+#ifdef CONCRETELANG_CUDA_SUPPORT
+#include "bootstrap.h"
+#include "device.h"
+#include "keyswitch.h"
+#endif
+
+namespace mlir {
+namespace concretelang {
+
+typedef struct FFT {
+  FFT() = delete;
+  FFT(size_t polynomial_size);
+  FFT(FFT &other) = delete;
+  FFT(FFT &&other);
+  ~FFT();
+
+  struct Fft *fft;
+  size_t polynomial_size;
+} FFT;
+
+typedef struct RuntimeContext {
+
+  RuntimeContext() = delete;
+
+  RuntimeContext(::concretelang::clientlib::EvaluationKeys evaluationKeys);
+  ~RuntimeContext() {
+#ifdef CONCRETELANG_CUDA_SUPPORT
+    if (bsk_gpu != nullptr) {
+      cuda_drop(bsk_gpu, 0);
+    }
+    if (ksk_gpu != nullptr) {
+      cuda_drop(ksk_gpu, 0);
+    }
+#endif
+  };
+
+  const uint64_t *keyswitch_key_buffer(size_t keyId) {
+    return evaluationKeys.getKeyswitchKey(keyId).buffer();
+  }
+
+  const double *fourier_bootstrap_key_buffer(size_t keyId) {
+    return fourier_bootstrap_keys[keyId]->data();
+  }
+
+  const uint64_t *fp_keyswitch_key_buffer(size_t keyId) {
+    return evaluationKeys.getPackingKeyswitchKey(keyId).buffer();
+  }
+
+  const struct Fft *fft(size_t keyId) { return ffts[keyId].fft; }
+
+  const ::concretelang::clientlib::EvaluationKeys getKeys() const {
+    return evaluationKeys;
+  }
+
+private:
+  ::concretelang::clientlib::EvaluationKeys evaluationKeys;
+  std::vector<std::shared_ptr<std::vector<double>>> fourier_bootstrap_keys;
+  std::vector<FFT> ffts;
+
+#ifdef CONCRETELANG_CUDA_SUPPORT
+public:
+  void *get_bsk_gpu(uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
+                    uint32_t glwe_dim, uint32_t gpu_idx, void *stream) {
+
+    if (bsk_gpu != nullptr) {
+      return bsk_gpu;
+    }
+    const std::lock_guard<std::mutex> guard(bsk_gpu_mutex);
+
+    if (bsk_gpu != nullptr) {
+      return bsk_gpu;
+    }
+
+    auto bsk = evaluationKeys.getBootstrapKey(0);
+
+    size_t bsk_buffer_len = bsk.size();
+    size_t bsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
+
+    void *bsk_gpu_tmp = cuda_malloc(bsk_gpu_buffer_size, gpu_idx);
+    cuda_initialize_twiddles(poly_size, gpu_idx);
+    cuda_convert_lwe_bootstrap_key_64(bsk_gpu_tmp, (void *)bsk.buffer(), stream,
+                                      gpu_idx, input_lwe_dim, glwe_dim, level,
+                                      poly_size);
+    // This is currently not 100% async as
+    // we have to free CPU memory after
+    // conversion
+    cuda_synchronize_device(gpu_idx);
+    bsk_gpu = bsk_gpu_tmp;
+    return bsk_gpu;
+  }
+
+  void *get_ksk_gpu(uint32_t level, uint32_t input_lwe_dim,
+                    uint32_t output_lwe_dim, uint32_t gpu_idx, void *stream) {
+
+    if (ksk_gpu != nullptr) {
+      return ksk_gpu;
+    }
+
+    const std::lock_guard<std::mutex> guard(ksk_gpu_mutex);
+    if (ksk_gpu != nullptr) {
+      return ksk_gpu;
+    }
+    auto ksk = evaluationKeys.getKeyswitchKey(0);
+
+    size_t ksk_buffer_size = sizeof(uint64_t) * ksk.size();
+
+    void *ksk_gpu_tmp = cuda_malloc(ksk_buffer_size, gpu_idx);
+
+    cuda_memcpy_async_to_gpu(ksk_gpu_tmp, (void *)ksk.buffer(), ksk_buffer_size,
+                             stream, gpu_idx);
+    // This is currently not 100% async as
+    // we have to free CPU memory after
+    // conversion
+    cuda_synchronize_device(gpu_idx);
+    ksk_gpu = ksk_gpu_tmp;
+    return ksk_gpu;
+  }
+
+private:
+  std::mutex bsk_gpu_mutex;
+  void *bsk_gpu;
+  std::mutex ksk_gpu_mutex;
+  void *ksk_gpu;
+#endif
+
+} RuntimeContext;
+
+} // namespace concretelang
+} // namespace mlir
+
+#endif

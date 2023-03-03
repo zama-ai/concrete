@@ -1,0 +1,45 @@
+[profile.m6i]
+region = "eu-west-3"
+image_id = "ami-0a24aaee029d1295c" # Based on Ubuntu 22.4
+instance_type = "m6i.metal"
+subnet_id = "subnet-a886b4c1"
+security_group= ["sg-0bf1c1d79c97bc88f", ]
+
+[profile.m6i-old]
+region = "eu-west-3"
+image_id = "ami-05e4c0e628378ad6d" # Based on Ubuntu 20.4
+instance_type = "m6i.metal"
+subnet_id = "subnet-a886b4c1"
+security_group= ["sg-0bf1c1d79c97bc88f", ]
+
+[profile.gpu]
+region = "us-east-1"
+image_id = "ami-0c4773f5626d919b6"
+instance_type = "p3.2xlarge"
+subnet_id = "subnet-8123c9e7"
+security_group= ["sg-0f8b52622a2669491", ]
+
+# Trigger CPU build
+[command.cpu-build]
+workflow = "aws_build_cpu.yml"
+profile = "m6i-old"
+check_run_name = "AWS CPU build (Slab)"
+
+# Trigger GPU build
+[command.gpu-build]
+workflow = "aws_build_gpu.yml"
+profile = "gpu"
+check_run_name = "AWS GPU build (Slab)"
+
+# Trigger Docker images build
+[command.docker-images-build]
+workflow = "publish_docker_images.yml"
+profile = "m6i-old"
+check_run_name = "AWS Docker images build & publish (Slab)"
+
+# Trigger ML benchmarks by running each use cases subset in parallel.
+[command.ml-bench]
+workflow = "ml_benchmark_subset.yml"
+profile = "m6i"
+matrix = [0,1,2,3,4,5,6,7,8,9,10]
+max_parallel_jobs = 2

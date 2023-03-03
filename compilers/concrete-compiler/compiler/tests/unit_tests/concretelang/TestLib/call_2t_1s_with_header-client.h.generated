@@ -1,0 +1,22 @@
+#include "boost/outcome.h"
+#include "concretelang/ClientLib/ClientLambda.h"
+#include "concretelang/ClientLib/KeySetCache.h"
+#include "concretelang/ClientLib/Types.h"
+#include "concretelang/Common/Error.h"
+
+namespace fhecircuit {
+namespace client {
+
+namespace extract {
+  using namespace concretelang::clientlib;
+  using concretelang::error::StringError;
+  using extract_t = TypedClientLambda<scalar_out, tensor1_in, tensor1_in>;
+  static const std::string name = "extract";
+
+  static outcome::checked<extract_t, StringError>
+  load(std::string outputLib)
+  { return extract_t::load(name, outputLib); }
+} // namespace extract
+
+} // namespace client
+} // namespace fhecircuit

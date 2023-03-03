@@ -1,0 +1,46 @@
+name: Push Python Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      internal_pypi:
+        description: 'Whether to push to internal pypi'
+        default: 'false'
+        required: true
+        type: boolean
+      public_pypi:
+        description: 'Whether to push to public pypi'
+        default: 'false'
+        required: true
+        type: boolean
+      tag:
+        description: 'Release tag to push'
+        required: true
+
+jobs:
+  PushPackages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download release assets
+        uses: duhow/download-github-release-assets@v1
+        with:
+          token: ${{ secrets.GH_TOKEN_RELEASE }}
+          repository: ${{ github.repository }}
+          tag: ${{ github.event.inputs.tag }}
+          files: '*'
+          target: ${{ github.workspace }}/release/
+
+      - name: Install dependencies
+        if: ${{ github.event.inputs.internal_pypi || github.event.inputs.public_pypi }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install twine
+
+      - name: Push packages to internal pypi
+        if: ${{ github.event.inputs.internal_pypi }}
+        run: twine upload -u ${{ secrets.INTERNAL_PYPI_USER }} -p "${{ secrets.INTERNAL_PYPI_PASSWORD }}" --repository-url ${{ secrets.INTERNAL_PYPI_URL }} ${{ github.workspace }}/release/*.whl
+
+      - name: Push packages to public pypi
+        if: ${{ github.event.inputs.public_pypi }}
+        run: twine upload -u ${{ secrets.PUBLIC_PYPI_USER }} -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" -r pypi ${{ github.workspace }}/release/*.whl

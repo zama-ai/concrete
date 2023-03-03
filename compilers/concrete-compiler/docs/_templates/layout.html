@@ -1,0 +1,77 @@
+{% extends "!layout.html" %}
+
+{%- block extrahead %}
+    <meta name="author" content="{{ author }}" />
+    <meta name="description" content="{{ description }}" />
+    <meta name="docsearch:language" content="{{ language }}">
+    <!-- theme v1.0.3 -->
+    {%- if theme_google_analytics_id %}
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+    <script>
+        if(Cookies.get("zama-accept-cookies") !== "yes") {
+            window.YETT_BLACKLIST = [
+            /google/,
+            /googletagmanager\.com/,
+            ];
+        }
+        else {
+            window.YETT_BLACKLIST = [];
+        }
+    </script>
+    <script src="https://unpkg.com/yett"></script>
+    {%- endif %}
+
+    {% for favicon in theme_favicons %}
+      {% if favicon.href[:4] == 'http'%}
+      <link rel="{{ favicon.rel }}" sizes="{{ favicon.sizes }}" href="{{ favicon.href }}">
+      {% else %}
+      <link rel="{{ favicon.rel }}" sizes="{{ favicon.sizes }}" href="{{ pathto('_static/' + favicon.href, 1) }}">
+      {% endif %}
+    {% endfor %}
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ theme_google_analytics_id }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', '{{ theme_google_analytics_id }}', {
+          'anonymize_ip': 'true',
+      });
+    </script>
+{%- endblock %}
+
+{%- block footer %}
+    {%- include "footer.html" %}
+    {%- if theme_google_analytics_id %}
+    <div class="gdpr">
+    <div class="zama-container">
+        <div class="padded">
+        <div class="consent">
+            We use analytics cookies to understand how people view and
+            use our documentation.
+        </div>
+        <div class="button button--black button-accept">Accept</div>
+        <div class="button button--black button-decline">Decline</div>
+        <script>
+            $(document).ready(function () {
+            if ((Cookies.get("zama-accept-cookies") === "yes") || Cookies.get("zama-accept-cookies") === "no") {
+                $(".gdpr").hide();
+            }
+            $(".gdpr .button-accept").click(function () {
+                window.yett.unblock();
+                $(".gdpr").hide();
+                Cookies.set("zama-accept-cookies", "yes");
+            });
+            $(".gdpr .button-decline").click(function () {
+                $(".gdpr").hide();
+                Cookies.set("zama-accept-cookies", "no");
+            });
+            });
+        </script>
+        </div>
+    </div>
+    </div>
+    {%- endif %}
+{%- endblock %}

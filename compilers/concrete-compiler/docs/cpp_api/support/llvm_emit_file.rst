@@ -1,0 +1,4 @@
+LLVMEmitFile:
+=============
+
+.. doxygenfile:: LLVMEmitFile.h

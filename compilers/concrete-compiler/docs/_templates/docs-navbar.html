@@ -1,0 +1,41 @@
+<div class="container-xl">
+
+    <div id="navbar-start">
+      {% for navbar_item in theme_navbar_start %}
+      {% include navbar_item %}
+      {% endfor %}
+    </div>
+
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    {% set navbar_class, navbar_align = navbar_align_class() %}
+    <div id="navbar-menu" class="{{ navbar_class }} collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav {{ navbar_align }}">
+        {%- if show_version %}
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {{ release }}
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown" id="version-menu"></div>
+        </li>
+        {% endif %}
+
+        {{ generate_nav_html("navbar", maxdepth=1, collapse=True, includehidden=True, titles_only=True) }}
+        {% for external_link in theme_external_links %}
+        <li class="nav-item">
+            <a class="nav-link nav-external" href="{{ external_link.url }}">{{ external_link.name }}<i class="fas fa-external-link-alt"></i></a>
+        </li>
+        {% endfor %}
+      </ul>
+
+      {% if theme_search_bar_position == 'navbar' %}
+        {%- include "search-field.html" %}
+      {% endif %}
+
+      {%- block icon_links -%}
+      {%- include "icon-links.html" with context -%}
+      {%- endblock %}
+    </div>
+</div>
