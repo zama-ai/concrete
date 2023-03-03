@@ -34,4 +34,17 @@ void mlir::concretelang::python::populateDialectFHESubmodule(
         }
         return cls(typeOrError.type);
       });
+
+  mlir_type_subclass(m, "EncryptedSignedIntegerType",
+                     fheTypeIsAnEncryptedSignedIntegerType)
+      .def_classmethod(
+          "get", [](pybind11::object cls, MlirContext ctx, unsigned width) {
+            MlirTypeOrError typeOrError =
+                fheEncryptedSignedIntegerTypeGetChecked(ctx, width);
+            if (typeOrError.isError) {
+              throw std::invalid_argument(
+                  "can't create esint with the given width");
+            }
+            return cls(typeOrError.type);
+          });
 }
