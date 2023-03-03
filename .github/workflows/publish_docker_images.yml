@@ -42,7 +42,7 @@ jobs:
       # SSH private key is required as some dependencies are from private repos
       - uses: webfactory/ssh-agent@v0.6.0
         with:
-          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
       - uses: actions/checkout@v3
         with:

@@ -48,7 +48,7 @@ jobs:
       - name: Set up SSH agent
         uses: webfactory/ssh-agent@v0.5.2
         with:
-          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
       - name: Set up env
         # "Install rust" step require root user to have a HOME directory which is not set.
