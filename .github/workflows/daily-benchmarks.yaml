@@ -42,7 +42,7 @@ jobs:
         run: timeout 180 bash -c 'until nc -z ${{ steps.amd-public-ip.outputs.value }} 22; do sleep 0.1; done'
 
       - name: Connect To AMD EC2 Instance, Perform Benchmarks, Publish Results
-        uses: appleboy/ssh-action@4a03da89e5c43da56e502053be4bbcb293411883
+        uses: appleboy/ssh-action@b60142998894e495c513803efc6d5d72a72c968a
         with:
           host: ${{ steps.amd-public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
@@ -91,7 +91,7 @@ jobs:
         run: timeout 180 bash -c 'until nc -z ${{ steps.intel-public-ip.outputs.value }} 22; do sleep 0.1; done'
 
       - name: Connect To Intel EC2 Instance, Perform Benchmarks, Publish Results
-        uses: appleboy/ssh-action@4a03da89e5c43da56e502053be4bbcb293411883
+        uses: appleboy/ssh-action@b60142998894e495c513803efc6d5d72a72c968a
         with:
           host: ${{ steps.intel-public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
