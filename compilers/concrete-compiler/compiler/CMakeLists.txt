@@ -61,6 +61,40 @@ set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/parameter-curves/concrete-security-curves-cpp/include)
 
 # -------------------------------------------------------------------------------
+# Concrete Optimizer
+# -------------------------------------------------------------------------------
+
+set(CONCRETE_OPTIMIZER_DIR "${PROJECT_SOURCE_DIR}/../../concrete-optimizer")
+set(CONCRETE_OPTIMIZER_RELEASE_DIR "${CONCRETE_OPTIMIZER_DIR}/target/release")
+set(CONCRETE_OPTIMIZER_INCLUDE_DIR "${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp")
+set(CONCRETE_OPTIMIZER_STATIC_LIB "${CONCRETE_OPTIMIZER_RELEASE_DIR}/libconcrete_optimizer_cpp.a")
+
+ExternalProject_Add(
+  concrete_optimizer_rust
+  DOWNLOAD_COMMAND ""
+  CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_OPTIMIZER_STATIC_LIB}"
+  BUILD_COMMAND cargo build
+  COMMAND cargo build -p concrete-optimizer-cpp --profile release
+  BINARY_DIR "${CONCRETE_OPTIMIZER_DIR}"
+  INSTALL_COMMAND ""
+  LOG_BUILD ON
+  LOG_OUTPUT_ON_FAILURE ON)
+
+add_library(concrete_optimizer STATIC ${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp/concrete-optimizer.cpp)
+
+target_link_libraries(concrete_optimizer PRIVATE
+  pthread m dl
+  "${CONCRETE_OPTIMIZER_DIR}/target/release/libconcrete_optimizer_cpp.a"
+)
+install(TARGETS concrete_optimizer EXPORT concrete_optimizer)
+install(EXPORT concrete_optimizer DESTINATION "./")
+
+add_dependencies(concrete_optimizer concrete_optimizer_rust)
+# TODO - Remove the global include directory
+include_directories(${CONCRETE_OPTIMIZER_INCLUDE_DIR})
+
+
+# -------------------------------------------------------------------------------
 # Concrete Backends
 # -------------------------------------------------------------------------------
 
@@ -163,11 +197,8 @@ option(CONCRETELANG_BENCHMARK "Enables the build of benchmarks" ON)
 # -------------------------------------------------------------------------------
 # Handling sub dirs
 # -------------------------------------------------------------------------------
-include_directories(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp)
 
 add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(tests)
-
-add_subdirectory(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/cmake-utils)
