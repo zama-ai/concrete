@@ -41,7 +41,7 @@ class EvaluationKeys(WrapperCpp):
         return self.cpp().serialize()
 
     @staticmethod
-    def unserialize(serialized_evaluation_keys: bytes) -> "EvaluationKeys":
+    def deserialize(serialized_evaluation_keys: bytes) -> "EvaluationKeys":
         """Unserialize EvaluationKeys from bytes.
 
         Args:
@@ -51,7 +51,7 @@ class EvaluationKeys(WrapperCpp):
             TypeError: if serialized_evaluation_keys is not of type bytes
 
         Returns:
-            EvaluationKeys: unserialized object
+            EvaluationKeys: deserialized object
         """
         if not isinstance(serialized_evaluation_keys, bytes):
             raise TypeError(
@@ -59,5 +59,5 @@ class EvaluationKeys(WrapperCpp):
                 f"not {type(serialized_evaluation_keys)}"
             )
         return EvaluationKeys.wrap(
-            _EvaluationKeys.unserialize(serialized_evaluation_keys)
+            _EvaluationKeys.deserialize(serialized_evaluation_keys)
         )

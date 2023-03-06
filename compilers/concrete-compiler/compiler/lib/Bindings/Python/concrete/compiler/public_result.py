@@ -40,7 +40,7 @@ class PublicResult(WrapperCpp):
         return self.cpp().serialize()
 
     @staticmethod
-    def unserialize(
+    def deserialize(
         client_parameters: ClientParameters, serialized_result: bytes
     ) -> "PublicResult":
         """Unserialize PublicResult from bytes of serialized_result.
@@ -54,7 +54,7 @@ class PublicResult(WrapperCpp):
             TypeError: if serialized_result is not of type bytes
 
         Returns:
-            PublicResult: unserialized object
+            PublicResult: deserialized object
         """
         if not isinstance(client_parameters, ClientParameters):
             raise TypeError(
@@ -65,5 +65,5 @@ class PublicResult(WrapperCpp):
                 f"serialized_result must be of type bytes, not {type(serialized_result)}"
             )
         return PublicResult.wrap(
-            _PublicResult.unserialize(client_parameters.cpp(), serialized_result)
+            _PublicResult.deserialize(client_parameters.cpp(), serialized_result)
         )

@@ -88,27 +88,27 @@ def test_client_server_end_to_end(mlir, args, expected_result, keyset_cache):
 
         evaluation_keys = keyset.get_evaluation_keys()
         evaluation_keys_serialized = evaluation_keys.serialize()
-        evaluation_keys_unserialized = EvaluationKeys.unserialize(
+        evaluation_keys_deserialized = EvaluationKeys.deserialize(
             evaluation_keys_serialized
         )
 
         args = ClientSupport.encrypt_arguments(client_parameters, keyset, args)
         args_serialized = args.serialize()
-        args_unserialized = PublicArguments.unserialize(
+        args_deserialized = PublicArguments.deserialize(
             client_parameters, args_serialized
         )
 
         result = support.server_call(
             server_lambda,
-            args_unserialized,
-            evaluation_keys_unserialized,
+            args_deserialized,
+            evaluation_keys_deserialized,
         )
         result_serialized = result.serialize()
-        result_unserialized = PublicResult.unserialize(
+        result_deserialized = PublicResult.deserialize(
             client_parameters, result_serialized
         )
 
         output = ClientSupport.decrypt_result(
-            client_parameters, keyset, result_unserialized
+            client_parameters, keyset, result_deserialized
         )
         assert np.array_equal(output, expected_result)

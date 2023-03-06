@@ -227,7 +227,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def(pybind11::init<std::string &>());
 
   pybind11::class_<mlir::concretelang::ClientParameters>(m, "ClientParameters")
-      .def_static("unserialize",
+      .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
                     return clientParametersUnserialize(buffer);
                   })
@@ -269,7 +269,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   pybind11::class_<clientlib::PublicArguments,
                    std::unique_ptr<clientlib::PublicArguments>>(
       m, "PublicArguments")
-      .def_static("unserialize",
+      .def_static("deserialize",
                   [](mlir::concretelang::ClientParameters &clientParameters,
                      const pybind11::bytes &buffer) {
                     return publicArgumentsUnserialize(clientParameters, buffer);
@@ -278,7 +278,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
         return pybind11::bytes(publicArgumentsSerialize(publicArgument));
       });
   pybind11::class_<clientlib::PublicResult>(m, "PublicResult")
-      .def_static("unserialize",
+      .def_static("deserialize",
                   [](mlir::concretelang::ClientParameters &clientParameters,
                      const pybind11::bytes &buffer) {
                     return publicResultUnserialize(clientParameters, buffer);
@@ -288,7 +288,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       });
 
   pybind11::class_<clientlib::EvaluationKeys>(m, "EvaluationKeys")
-      .def_static("unserialize",
+      .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
                     return evaluationKeysUnserialize(buffer);
                   })

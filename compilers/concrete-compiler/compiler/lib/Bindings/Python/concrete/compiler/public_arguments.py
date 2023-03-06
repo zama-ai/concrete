@@ -44,7 +44,7 @@ class PublicArguments(WrapperCpp):
         return self.cpp().serialize()
 
     @staticmethod
-    def unserialize(
+    def deserialize(
         client_parameters: ClientParameters, serialized_args: bytes
     ) -> "PublicArguments":
         """Unserialize PublicArguments from bytes of serialized_args.
@@ -58,7 +58,7 @@ class PublicArguments(WrapperCpp):
             TypeError: if serialized_args is not of type bytes
 
         Returns:
-            PublicArguments: unserialized object
+            PublicArguments: deserialized object
         """
         if not isinstance(client_parameters, ClientParameters):
             raise TypeError(
@@ -69,5 +69,5 @@ class PublicArguments(WrapperCpp):
                 f"serialized_args must be of type bytes, not {type(serialized_args)}"
             )
         return PublicArguments.wrap(
-            _PublicArguments.unserialize(client_parameters.cpp(), serialized_args)
+            _PublicArguments.deserialize(client_parameters.cpp(), serialized_args)
         )
