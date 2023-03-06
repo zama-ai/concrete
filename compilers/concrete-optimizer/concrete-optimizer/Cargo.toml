@@ -1,0 +1,26 @@
+[package]
+name = "concrete-optimizer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+concrete-security-curves = { git = "ssh://git@github.com/zama-ai/parameter-curves.git", rev = "05184593ada0eb1116a42a70674e6e3eea5e108e" }
+concrete-cpu-noise-model = { git = "ssh://git@github.com/zama-ai/concrete-cpu.git", rev = "91cff0bf1166d00f17d80b2ff03fcb48d161d43c" }
+file-lock = "2.1.6"
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"
+puruspe = "0.2.0"
+rustc-hash = "1.1"
+rand = "0.8"
+
+[dev-dependencies]
+approx = "0.5"
+once_cell = "1.16.0"
+pretty_assertions = "1.2.1"
+
+[lib]
+crate-type = [
+    "lib", # rust
+]

@@ -1,0 +1,64 @@
+use crate::parameters::{
+    BrDecompositionParameterRanges, GlweParameterRanges, KsDecompositionParameterRanges,
+};
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+struct ParameterCount {
+    pub glwe: usize,
+    pub br_decomposition: usize,
+    pub ks_decomposition: usize,
+}
+
+#[derive(Clone, Copy)]
+pub struct ParameterDomains {
+    // move next comment to pareto ranges definition
+    // TODO: verify if pareto optimal parameters depends on precisions
+    pub glwe_pbs_constrained: GlweParameterRanges,
+    pub free_glwe: GlweParameterRanges,
+    pub br_decomposition: BrDecompositionParameterRanges,
+    pub ks_decomposition: KsDecompositionParameterRanges,
+}
+
+pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
+    glwe_pbs_constrained: GlweParameterRanges {
+        log2_polynomial_size: Range { start: 8, end: 18 },
+        glwe_dimension: Range { start: 1, end: 7 },
+    },
+    free_glwe: GlweParameterRanges {
+        log2_polynomial_size: Range { start: 0, end: 1 },
+        glwe_dimension: Range {
+            start: 512,
+            end: 2048,
+        },
+    },
+    br_decomposition: BrDecompositionParameterRanges {
+        log2_base: Range { start: 1, end: 65 },
+        level: Range { start: 1, end: 65 },
+    },
+    ks_decomposition: KsDecompositionParameterRanges {
+        log2_base: Range { start: 1, end: 65 },
+        level: Range { start: 1, end: 65 },
+    },
+};
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Range {
+    pub start: u64,
+    pub end: u64,
+}
+
+impl IntoIterator for &Range {
+    type Item = u64;
+
+    type IntoIter = std::ops::Range<u64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.start..self.end
+    }
+}
+
+impl Range {
+    pub fn as_vec(self) -> Vec<u64> {
+        self.into_iter().collect()
+    }
+}

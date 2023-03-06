@@ -1,0 +1,109 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: [ main, testci ]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  check-concrete-optimizer:
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-11]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Setup"
+        uses: ./.github/workflows/setup
+        with:
+          ssh_private_key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - name: Formatting
+        run: cargo fmt --check
+
+      - name: Build
+        run: cargo build --release --all-targets
+
+      - name: Lint
+        run: cargo clippy --release --all-targets
+
+      - name: Tests
+        if: matrix.os == 'ubuntu-20.04'
+        run: |
+          cargo test --release --no-fail-fast --all-targets
+          make -C concrete-optimizer-cpp test-ci
+      
+  benchmark-concrete-optimizer:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Setup"
+        uses: ./.github/workflows/setup
+        with:
+          ssh_private_key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
+      - name: Run benchmark
+        run: cargo bench -p v0-parameters -- --output-format bencher | tee bench_result.txt
+
+      - name: Download PR base benchmark data
+        if: ${{ github.event_name == 'pull_request' }}
+        # for artifacts restrictions see https://github.com/actions/download-artifact/issues/3
+        # for cache restrictions see https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache
+        # and  https://github.com/actions/cache/issues/692
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow_conclusion: success
+          commit: ${{ github.event.pull_request.base.sha }}
+          name: ${{ runner.os }}-benchmark
+          if_no_artifact_found: warn
+          path: ./benchmark
+      
+      - name: Save benchmark result to file
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: bench_result.txt
+          external-data-json-path: ./benchmark/benchmark-data.json
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-always: true
+
+      - name: Upload benchmark data
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./benchmark
+          name: ${{ runner.os }}-benchmark
+          
+          
+
+  nightly-check-concrete-optimizer:
+    runs-on: ubuntu-20.04
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v3
+      - name: Rust install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      # A SSH private key is required as some dependencies are from private repos
+      - name: Set ssh keys
+        uses: webfactory/ssh-agent@v0.6.0
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+      - name: Formatting
+        run: cargo fmt --check
+
+      - name: Lint
+        run: cargo clippy --release --all-targets
+

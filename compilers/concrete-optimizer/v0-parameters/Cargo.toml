@@ -1,0 +1,39 @@
+[package]
+name = "v0-parameters"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+expensive_tests = []
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+concrete-optimizer = { path ="../concrete-optimizer" }
+clap = { version = "4.0.17", features = ["derive"] }
+rayon-cond = "0.2" # to avoid rayon code coloring
+# pprof = { version = "0.4", features = ["flamegraph"] }
+rayon = "1.5.1"
+text-diff = "0.4.0"
+chrono = "0.4.19"
+
+[dev-dependencies]
+criterion = "0.4.0"
+
+[lib]
+crate-type= [
+    "lib",       # rust
+]
+bench = false
+
+[[bin]]
+name = "v0-parameters"
+bench = false
+
+[[bin]]
+name = "v0-parameters-by-level"
+bench = false
+
+[[bench]]
+name = "benchmark"
+harness = false

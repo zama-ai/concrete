@@ -1,0 +1,547 @@
+{ /* Security level: 144 */
+{ /* 6.3e-5 errors */
+{ /* precision  1 */
+    /*  0 */ V0Parameter( 2, 10,  587,  1, 22,  4,  2), 		 //  143 mops, 6.2e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  603,  1, 22,  5,  2), 		 //  148 mops, 5.8e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  649,  1, 22,  5,  2), 		 //  227 mops, 6.3e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  610,  2, 15,  5,  2), 		 //  247 mops, 6.0e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 //  352 mops, 6.0e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 //  352 mops, 5.7e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  584,  2, 15,  4,  2), 		 //  353 mops, 5.6e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  587,  2, 15,  5,  2), 		 //  356 mops, 5.4e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  589,  2, 15,  5,  2), 		 //  473 mops, 5.9e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  579,  3, 11,  5,  2), 		 //  497 mops, 5.6e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  595,  3, 11,  5,  2), 		 //  505 mops, 6.2e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  617,  4,  9,  5,  2), 		 //  663 mops, 6.2e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  614,  3, 11,  5,  2), 		 //  849 mops, 6.0e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  608,  5,  8, 10,  1), 		 // 1081 mops, 6.3e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  587,  4,  9,  9,  1), 		 // 1288 mops, 6.0e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  591,  5,  8, 10,  1), 		 // 1585 mops, 5.9e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  627,  6,  7, 11,  1), 		 // 1938 mops, 6.3e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  648,  8,  5, 11,  1), 		 // 2582 mops, 6.3e-5 errors
+    /* 18 */ V0Parameter( 2, 10,  579, 10,  4, 10,  1), 		 // 3497 mops, 6.1e-5 errors
+    /* 19 */ V0Parameter( 2, 10,  602, 10,  4, 10,  1), 		 // 4582 mops, 6.3e-5 errors
+    /* 20 */ V0Parameter( 2, 10,  604, 14,  3, 10,  1), 		 // 7049 mops, 6.3e-5 errors
+    /* 21 */ V0Parameter( 2, 10,  587, 21,  2, 10,  1), 		 // 15456 mops, 5.9e-5 errors
+    /* 22 */ V0Parameter( 3, 10,  616, 22,  2, 10,  1), 		 // 36116 mops, 6.3e-5 errors
+    /* 23 */ V0Parameter( 3, 10,  623, 44,  1, 11,  1), 		 // 153721 mops, 6.3e-5 errors
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  2 */
+    /*  0 */ V0Parameter( 2, 10,  591,  1, 22,  5,  2), 		 //  470 mops, 6.2e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  588,  2, 15,  5,  2), 		 //  551 mops, 5.5e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 //  770 mops, 5.9e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 //  770 mops, 6.3e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  576,  2, 15,  5,  2), 		 //  771 mops, 6.0e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  580,  2, 15,  5,  2), 		 //  775 mops, 6.1e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  607,  2, 15,  5,  2), 		 //  797 mops, 5.8e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  618,  2, 15,  5,  2), 		 // 1044 mops, 6.2e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  583,  3, 11,  5,  2), 		 // 1089 mops, 6.2e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  589,  4,  9,  5,  2), 		 // 1409 mops, 6.1e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  575,  3, 11,  9,  1), 		 // 1743 mops, 6.3e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  586,  4,  9,  9,  1), 		 // 1845 mops, 5.8e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  571,  4,  9,  9,  1), 		 // 2650 mops, 6.2e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  573,  5,  8,  9,  1), 		 // 3249 mops, 5.8e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  579,  6,  7,  9,  1), 		 // 3865 mops, 6.2e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  604,  7,  6, 10,  1), 		 // 4572 mops, 6.1e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  588,  8,  5, 10,  1), 		 // 5914 mops, 6.2e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  636, 10,  4, 11,  1), 		 // 7638 mops, 6.2e-5 errors
+    /* 18 */ V0Parameter( 2, 10,  596, 14,  3, 10,  1), 		 // 12967 mops, 6.2e-5 errors
+    /* 19 */ V0Parameter( 2, 10,  644, 14,  3, 11,  1), 		 // 20797 mops, 6.3e-5 errors
+    /* 20 */ V0Parameter( 3, 10,  614, 22,  2, 10,  1), 		 // 48943 mops, 6.0e-5 errors
+    /* 21 */ V0Parameter( 3, 10,  624, 22,  2, 11,  1), 		 // 150704 mops, 6.2e-5 errors
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  3 */
+    /*  0 */ V0Parameter( 2, 10,  649,  1, 22,  5,  2), 		 // 1005 mops, 6.3e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  610,  2, 15,  5,  2), 		 // 1129 mops, 6.0e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 1541 mops, 6.0e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 1542 mops, 5.7e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  578,  2, 15,  5,  2), 		 // 1546 mops, 5.0e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  587,  2, 15,  5,  2), 		 // 1561 mops, 5.4e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  589,  2, 15,  5,  2), 		 // 2026 mops, 5.9e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  579,  3, 11,  5,  2), 		 // 2169 mops, 5.6e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  595,  3, 11,  5,  2), 		 // 2205 mops, 6.2e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  594,  3, 11,  5,  2), 		 // 2860 mops, 6.0e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  600,  3, 11, 10,  1), 		 // 3585 mops, 6.1e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  608,  5,  8, 10,  1), 		 // 4614 mops, 6.3e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  587,  4,  9,  9,  1), 		 // 5385 mops, 6.0e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  591,  5,  8, 10,  1), 		 // 6622 mops, 5.9e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  627,  6,  7, 11,  1), 		 // 8104 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  648,  8,  5, 11,  1), 		 // 10795 mops, 6.3e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  579, 10,  4, 10,  1), 		 // 14500 mops, 6.1e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  602, 10,  4, 10,  1), 		 // 18861 mops, 6.3e-5 errors
+    /* 18 */ V0Parameter( 2, 10,  604, 14,  3, 10,  1), 		 // 28930 mops, 6.3e-5 errors
+    /* 19 */ V0Parameter( 2, 10,  587, 21,  2, 10,  1), 		 // 62876 mops, 5.9e-5 errors
+    /* 20 */ V0Parameter( 3, 10,  616, 22,  2, 10,  1), 		 // 146107 mops, 6.3e-5 errors
+    /* 21 */ V0Parameter( 3, 10,  623, 44,  1, 11,  1), 		 // 618151 mops, 6.3e-5 errors
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  4 */
+    /*  0 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 2377 mops, 5.9e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 2377 mops, 6.1e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 2380 mops, 6.2e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  579,  2, 15,  5,  2), 		 // 2388 mops, 5.5e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  595,  2, 15,  5,  2), 		 // 2430 mops, 5.8e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  600,  2, 15,  5,  2), 		 // 3143 mops, 5.9e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  581,  3, 11,  5,  2), 		 // 3350 mops, 5.8e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  617,  3, 11,  5,  2), 		 // 3477 mops, 6.1e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  614,  3, 11,  5,  2), 		 // 4471 mops, 5.9e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  578,  4,  9,  9,  1), 		 // 5605 mops, 5.5e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  569,  4,  9,  9,  1), 		 // 8047 mops, 5.3e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  617,  4,  9, 10,  1), 		 // 8449 mops, 6.3e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  574,  6,  7,  9,  1), 		 // 11700 mops, 5.6e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  588,  7,  6,  9,  1), 		 // 13689 mops, 6.3e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  579,  8,  5, 10,  1), 		 // 17805 mops, 6.2e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  594, 10,  4, 10,  1), 		 // 22316 mops, 6.1e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  617, 14,  3, 10,  1), 		 // 31481 mops, 6.3e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  597, 14,  3, 10,  1), 		 // 60248 mops, 5.9e-5 errors
+    /* 18 */ V0Parameter( 2, 10,  624, 21,  2, 11,  1), 		 // 97970 mops, 6.2e-5 errors
+    /* 19 */ V0Parameter( 3, 10,  625, 22,  2, 10,  1), 		 // 235615 mops, 6.3e-5 errors
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  5 */
+    /*  0 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 2377 mops, 5.9e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 2377 mops, 6.1e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 2380 mops, 6.2e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  579,  2, 15,  5,  2), 		 // 2388 mops, 5.5e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  595,  2, 15,  5,  2), 		 // 2430 mops, 5.8e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  600,  2, 15,  5,  2), 		 // 3143 mops, 5.9e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  581,  3, 11,  5,  2), 		 // 3350 mops, 5.8e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  617,  3, 11,  5,  2), 		 // 3477 mops, 6.1e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  614,  3, 11,  5,  2), 		 // 4471 mops, 5.9e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  578,  4,  9,  9,  1), 		 // 5605 mops, 5.5e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  569,  4,  9,  9,  1), 		 // 8047 mops, 5.3e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  617,  4,  9, 10,  1), 		 // 8449 mops, 6.3e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  574,  6,  7,  9,  1), 		 // 11700 mops, 5.6e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  588,  7,  6,  9,  1), 		 // 13689 mops, 6.3e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  579,  8,  5, 10,  1), 		 // 17805 mops, 6.2e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  594, 10,  4, 10,  1), 		 // 22316 mops, 6.1e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  617, 14,  3, 10,  1), 		 // 31481 mops, 6.3e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  597, 14,  3, 10,  1), 		 // 60248 mops, 5.9e-5 errors
+    /* 18 */ V0Parameter( 2, 10,  624, 21,  2, 11,  1), 		 // 97970 mops, 6.2e-5 errors
+    /* 19 */ V0Parameter( 3, 10,  625, 22,  2, 10,  1), 		 // 235615 mops, 6.3e-5 errors
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  6 */
+    /*  0 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 3566 mops, 5.9e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 3566 mops, 6.3e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  576,  2, 15,  5,  2), 		 // 3571 mops, 6.3e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  581,  2, 15,  5,  2), 		 // 3591 mops, 5.7e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  615,  2, 15,  5,  2), 		 // 3725 mops, 6.1e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  636,  2, 15,  5,  2), 		 // 4894 mops, 6.2e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  585,  3, 11,  5,  2), 		 // 5047 mops, 5.4e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  571,  3, 11,  9,  1), 		 // 6500 mops, 5.9e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  578,  3, 11,  9,  1), 		 // 8004 mops, 5.7e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  591,  4,  9,  9,  1), 		 // 8519 mops, 5.9e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  573,  4,  9,  9,  1), 		 // 12120 mops, 5.7e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  575,  5,  8,  9,  1), 		 // 14856 mops, 5.7e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  583,  6,  7,  9,  1), 		 // 17704 mops, 5.7e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  620,  7,  6, 10,  1), 		 // 21178 mops, 6.2e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  594,  8,  5, 10,  1), 		 // 27086 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  629, 11,  4, 11,  1), 		 // 37870 mops, 6.2e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  606, 14,  3, 10,  1), 		 // 59425 mops, 6.0e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  599, 14,  3, 10,  1), 		 // 96829 mops, 6.0e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  626, 22,  2, 11,  1), 		 // 223047 mops, 6.3e-5 errors
+    /* 19 */ V0Parameter( 3, 10,  632, 43,  1, 11,  1), 		 // 689341 mops, 6.2e-5 errors
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  7 */
+    /*  0 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 3566 mops, 5.9e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 3566 mops, 6.3e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  576,  2, 15,  5,  2), 		 // 3571 mops, 6.3e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  581,  2, 15,  5,  2), 		 // 3591 mops, 5.7e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  615,  2, 15,  5,  2), 		 // 3725 mops, 6.1e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  636,  2, 15,  5,  2), 		 // 4894 mops, 6.2e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  585,  3, 11,  5,  2), 		 // 5047 mops, 5.4e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  571,  3, 11,  9,  1), 		 // 6500 mops, 5.9e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  578,  3, 11,  9,  1), 		 // 8004 mops, 5.7e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  591,  4,  9,  9,  1), 		 // 8519 mops, 5.9e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  573,  4,  9,  9,  1), 		 // 12120 mops, 5.7e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  575,  5,  8,  9,  1), 		 // 14856 mops, 5.7e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  583,  6,  7,  9,  1), 		 // 17704 mops, 5.7e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  620,  7,  6, 10,  1), 		 // 21178 mops, 6.2e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  594,  8,  5, 10,  1), 		 // 27086 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  629, 11,  4, 11,  1), 		 // 37870 mops, 6.2e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  606, 14,  3, 10,  1), 		 // 59425 mops, 6.0e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  599, 14,  3, 10,  1), 		 // 96829 mops, 6.0e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  626, 22,  2, 11,  1), 		 // 223047 mops, 6.3e-5 errors
+    /* 19 */ V0Parameter( 3, 10,  632, 43,  1, 11,  1), 		 // 689341 mops, 6.2e-5 errors
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  8 */
+    /*  0 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 3566 mops, 5.9e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  580,  2, 15,  4,  2), 		 // 3566 mops, 6.3e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  576,  2, 15,  5,  2), 		 // 3571 mops, 6.3e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  581,  2, 15,  5,  2), 		 // 3591 mops, 5.7e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  615,  2, 15,  5,  2), 		 // 3725 mops, 6.1e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  636,  2, 15,  5,  2), 		 // 4894 mops, 6.2e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  585,  3, 11,  5,  2), 		 // 5047 mops, 5.4e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  571,  3, 11,  9,  1), 		 // 6500 mops, 5.9e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  578,  3, 11,  9,  1), 		 // 8004 mops, 5.7e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  591,  4,  9,  9,  1), 		 // 8519 mops, 5.9e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  573,  4,  9,  9,  1), 		 // 12120 mops, 5.7e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  575,  5,  8,  9,  1), 		 // 14856 mops, 5.7e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  583,  6,  7,  9,  1), 		 // 17704 mops, 5.7e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  620,  7,  6, 10,  1), 		 // 21178 mops, 6.2e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  594,  8,  5, 10,  1), 		 // 27086 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  629, 11,  4, 11,  1), 		 // 37870 mops, 6.2e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  606, 14,  3, 10,  1), 		 // 59425 mops, 6.0e-5 errors
+    /* 17 */ V0Parameter( 2, 10,  599, 14,  3, 10,  1), 		 // 96829 mops, 6.0e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  626, 22,  2, 11,  1), 		 // 223047 mops, 6.3e-5 errors
+    /* 19 */ V0Parameter( 3, 10,  632, 43,  1, 11,  1), 		 // 689341 mops, 6.2e-5 errors
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision  9 */
+    /*  0 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 4827 mops, 5.4e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  577,  2, 15,  5,  2), 		 // 4833 mops, 5.5e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  583,  2, 15,  5,  2), 		 // 4865 mops, 6.1e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  585,  2, 15,  5,  2), 		 // 6255 mops, 5.6e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  578,  3, 11,  5,  2), 		 // 6770 mops, 5.5e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  589,  3, 11,  5,  2), 		 // 6849 mops, 5.6e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  575,  3, 11,  9,  1), 		 // 8792 mops, 6.1e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  586,  3, 11,  9,  1), 		 // 10851 mops, 6.2e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  609,  4,  9, 10,  1), 		 // 11713 mops, 6.0e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  578,  4,  9,  9,  1), 		 // 16354 mops, 5.9e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  581,  5,  8,  9,  1), 		 // 20062 mops, 6.1e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  593,  6,  7, 10,  1), 		 // 24025 mops, 6.2e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  599,  8,  5, 10,  1), 		 // 31602 mops, 6.1e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  640,  8,  5, 11,  1), 		 // 37922 mops, 6.3e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  586, 10,  4, 10,  1), 		 // 56549 mops, 6.0e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  587, 14,  3, 10,  1), 		 // 86551 mops, 5.7e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  629, 21,  2, 11,  1), 		 // 184547 mops, 6.2e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  635, 21,  2, 11,  1), 		 // 425625 mops, 6.2e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  641, 44,  1, 11,  1), 		 // 946763 mops, 6.3e-5 errors
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision 10 */
+    /*  0 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 4827 mops, 5.4e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  577,  2, 15,  5,  2), 		 // 4833 mops, 5.5e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  583,  2, 15,  5,  2), 		 // 4865 mops, 6.1e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  585,  2, 15,  5,  2), 		 // 6255 mops, 5.6e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  578,  3, 11,  5,  2), 		 // 6770 mops, 5.5e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  589,  3, 11,  5,  2), 		 // 6849 mops, 5.6e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  575,  3, 11,  9,  1), 		 // 8792 mops, 6.1e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  586,  3, 11,  9,  1), 		 // 10851 mops, 6.2e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  609,  4,  9, 10,  1), 		 // 11713 mops, 6.0e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  578,  4,  9,  9,  1), 		 // 16354 mops, 5.9e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  581,  5,  8,  9,  1), 		 // 20062 mops, 6.1e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  593,  6,  7, 10,  1), 		 // 24025 mops, 6.2e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  599,  8,  5, 10,  1), 		 // 31602 mops, 6.1e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  640,  8,  5, 11,  1), 		 // 37922 mops, 6.3e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  586, 10,  4, 10,  1), 		 // 56549 mops, 6.0e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  587, 14,  3, 10,  1), 		 // 86551 mops, 5.7e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  629, 21,  2, 11,  1), 		 // 184547 mops, 6.2e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  635, 21,  2, 11,  1), 		 // 425625 mops, 6.2e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  641, 44,  1, 11,  1), 		 // 946763 mops, 6.3e-5 errors
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision 11 */
+    /*  0 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 4827 mops, 5.4e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  577,  2, 15,  5,  2), 		 // 4833 mops, 5.5e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  583,  2, 15,  5,  2), 		 // 4865 mops, 6.1e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  585,  2, 15,  5,  2), 		 // 6255 mops, 5.6e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  578,  3, 11,  5,  2), 		 // 6770 mops, 5.5e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  589,  3, 11,  5,  2), 		 // 6849 mops, 5.6e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  575,  3, 11,  9,  1), 		 // 8792 mops, 6.1e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  586,  3, 11,  9,  1), 		 // 10851 mops, 6.2e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  609,  4,  9, 10,  1), 		 // 11713 mops, 6.0e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  578,  4,  9,  9,  1), 		 // 16354 mops, 5.9e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  581,  5,  8,  9,  1), 		 // 20062 mops, 6.1e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  593,  6,  7, 10,  1), 		 // 24025 mops, 6.2e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  599,  8,  5, 10,  1), 		 // 31602 mops, 6.1e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  640,  8,  5, 11,  1), 		 // 37922 mops, 6.3e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  586, 10,  4, 10,  1), 		 // 56549 mops, 6.0e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  587, 14,  3, 10,  1), 		 // 86551 mops, 5.7e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  629, 21,  2, 11,  1), 		 // 184547 mops, 6.2e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  635, 21,  2, 11,  1), 		 // 425625 mops, 6.2e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  641, 44,  1, 11,  1), 		 // 946763 mops, 6.3e-5 errors
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision 12 */
+    /*  0 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 6440 mops, 5.7e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  578,  2, 15,  5,  2), 		 // 6455 mops, 5.0e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  587,  2, 15,  5,  2), 		 // 6519 mops, 5.4e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  589,  2, 15,  5,  2), 		 // 8381 mops, 5.9e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  579,  3, 11,  5,  2), 		 // 9040 mops, 5.6e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  595,  3, 11,  5,  2), 		 // 9194 mops, 6.2e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  594,  3, 11,  5,  2), 		 // 11814 mops, 6.0e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  600,  3, 11, 10,  1), 		 // 14720 mops, 6.1e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  608,  5,  8, 10,  1), 		 // 19039 mops, 6.3e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  587,  4,  9,  9,  1), 		 // 22008 mops, 6.0e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  591,  5,  8, 10,  1), 		 // 27056 mops, 5.9e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  627,  6,  7, 11,  1), 		 // 33124 mops, 6.3e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  648,  8,  5, 11,  1), 		 // 44121 mops, 6.3e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  579, 10,  4, 10,  1), 		 // 59036 mops, 6.1e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  602, 10,  4, 10,  1), 		 // 76523 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  604, 14,  3, 10,  1), 		 // 117197 mops, 6.3e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  587, 21,  2, 10,  1), 		 // 253620 mops, 5.9e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  616, 22,  2, 10,  1), 		 // 587734 mops, 6.3e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  623, 44,  1, 11,  1), 		 // 2479187 mops, 6.3e-5 errors
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision 13 */
+    /*  0 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 6440 mops, 5.7e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  578,  2, 15,  5,  2), 		 // 6455 mops, 5.0e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  587,  2, 15,  5,  2), 		 // 6519 mops, 5.4e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  589,  2, 15,  5,  2), 		 // 8381 mops, 5.9e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  579,  3, 11,  5,  2), 		 // 9040 mops, 5.6e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  595,  3, 11,  5,  2), 		 // 9194 mops, 6.2e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  594,  3, 11,  5,  2), 		 // 11814 mops, 6.0e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  600,  3, 11, 10,  1), 		 // 14720 mops, 6.1e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  608,  5,  8, 10,  1), 		 // 19039 mops, 6.3e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  587,  4,  9,  9,  1), 		 // 22008 mops, 6.0e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  591,  5,  8, 10,  1), 		 // 27056 mops, 5.9e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  627,  6,  7, 11,  1), 		 // 33124 mops, 6.3e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  648,  8,  5, 11,  1), 		 // 44121 mops, 6.3e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  579, 10,  4, 10,  1), 		 // 59036 mops, 6.1e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  602, 10,  4, 10,  1), 		 // 76523 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  604, 14,  3, 10,  1), 		 // 117197 mops, 6.3e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  587, 21,  2, 10,  1), 		 // 253620 mops, 5.9e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  616, 22,  2, 10,  1), 		 // 587734 mops, 6.3e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  623, 44,  1, 11,  1), 		 // 2479187 mops, 6.3e-5 errors
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision 14 */
+    /*  0 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 6440 mops, 5.7e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  578,  2, 15,  5,  2), 		 // 6455 mops, 5.0e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  587,  2, 15,  5,  2), 		 // 6519 mops, 5.4e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  589,  2, 15,  5,  2), 		 // 8381 mops, 5.9e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  579,  3, 11,  5,  2), 		 // 9040 mops, 5.6e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  595,  3, 11,  5,  2), 		 // 9194 mops, 6.2e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  594,  3, 11,  5,  2), 		 // 11814 mops, 6.0e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  600,  3, 11, 10,  1), 		 // 14720 mops, 6.1e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  608,  5,  8, 10,  1), 		 // 19039 mops, 6.3e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  587,  4,  9,  9,  1), 		 // 22008 mops, 6.0e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  591,  5,  8, 10,  1), 		 // 27056 mops, 5.9e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  627,  6,  7, 11,  1), 		 // 33124 mops, 6.3e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  648,  8,  5, 11,  1), 		 // 44121 mops, 6.3e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  579, 10,  4, 10,  1), 		 // 59036 mops, 6.1e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  602, 10,  4, 10,  1), 		 // 76523 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  604, 14,  3, 10,  1), 		 // 117197 mops, 6.3e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  587, 21,  2, 10,  1), 		 // 253620 mops, 5.9e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  616, 22,  2, 10,  1), 		 // 587734 mops, 6.3e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  623, 44,  1, 11,  1), 		 // 2479187 mops, 6.3e-5 errors
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision 15 */
+    /*  0 */ V0Parameter( 2, 10,  581,  2, 15,  4,  2), 		 // 6440 mops, 5.7e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  578,  2, 15,  5,  2), 		 // 6455 mops, 5.0e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  587,  2, 15,  5,  2), 		 // 6519 mops, 5.4e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  589,  2, 15,  5,  2), 		 // 8381 mops, 5.9e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  579,  3, 11,  5,  2), 		 // 9040 mops, 5.6e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  595,  3, 11,  5,  2), 		 // 9194 mops, 6.2e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  594,  3, 11,  5,  2), 		 // 11814 mops, 6.0e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  600,  3, 11, 10,  1), 		 // 14720 mops, 6.1e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  608,  5,  8, 10,  1), 		 // 19039 mops, 6.3e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  587,  4,  9,  9,  1), 		 // 22008 mops, 6.0e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  591,  5,  8, 10,  1), 		 // 27056 mops, 5.9e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  627,  6,  7, 11,  1), 		 // 33124 mops, 6.3e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  648,  8,  5, 11,  1), 		 // 44121 mops, 6.3e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  579, 10,  4, 10,  1), 		 // 59036 mops, 6.1e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  602, 10,  4, 10,  1), 		 // 76523 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  604, 14,  3, 10,  1), 		 // 117197 mops, 6.3e-5 errors
+    /* 16 */ V0Parameter( 2, 10,  587, 21,  2, 10,  1), 		 // 253620 mops, 5.9e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  616, 22,  2, 10,  1), 		 // 587734 mops, 6.3e-5 errors
+    /* 18 */ V0Parameter( 3, 10,  623, 44,  1, 11,  1), 		 // 2479187 mops, 6.3e-5 errors
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+{ /* precision 16 */
+    /*  0 */ V0Parameter( 2, 10,  578,  2, 15,  5,  2), 		 // 8208 mops, 5.9e-5 errors
+    /*  1 */ V0Parameter( 2, 10,  590,  2, 15,  5,  2), 		 // 8317 mops, 6.3e-5 errors
+    /*  2 */ V0Parameter( 2, 10,  594,  2, 15,  5,  2), 		 // 10692 mops, 5.8e-5 errors
+    /*  3 */ V0Parameter( 2, 10,  580,  3, 11,  5,  2), 		 // 11475 mops, 5.6e-5 errors
+    /*  4 */ V0Parameter( 2, 10,  604,  3, 11,  5,  2), 		 // 11768 mops, 6.1e-5 errors
+    /*  5 */ V0Parameter( 2, 10,  589,  3, 11, 10,  1), 		 // 15107 mops, 5.9e-5 errors
+    /*  6 */ V0Parameter( 2, 10,  574,  4,  9,  9,  1), 		 // 19008 mops, 6.0e-5 errors
+    /*  7 */ V0Parameter( 2, 10,  671,  5,  8, 11,  1), 		 // 25573 mops, 6.3e-5 errors
+    /*  8 */ V0Parameter( 2, 10,  597,  4,  9, 10,  1), 		 // 28077 mops, 5.9e-5 errors
+    /*  9 */ V0Parameter( 2, 10,  608,  5,  8, 10,  1), 		 // 34653 mops, 6.2e-5 errors
+    /* 10 */ V0Parameter( 2, 10,  582,  7,  6,  9,  1), 		 // 46005 mops, 5.8e-5 errors
+    /* 11 */ V0Parameter( 2, 10,  576,  8,  5,  9,  1), 		 // 59851 mops, 5.6e-5 errors
+    /* 12 */ V0Parameter( 2, 10,  586, 10,  4, 10,  1), 		 // 74690 mops, 5.7e-5 errors
+    /* 13 */ V0Parameter( 2, 10,  597, 14,  3, 10,  1), 		 // 104187 mops, 6.0e-5 errors
+    /* 14 */ V0Parameter( 2, 10,  587, 14,  3, 10,  1), 		 // 200294 mops, 6.2e-5 errors
+    /* 15 */ V0Parameter( 2, 10,  599, 21,  2, 10,  1), 		 // 321251 mops, 6.1e-5 errors
+    /* 16 */ V0Parameter( 3, 10,  674, 22,  2, 12,  1), 		 // 760560 mops, 6.3e-5 errors
+    /* 17 */ V0Parameter( 3, 10,  667, 45,  1, 12,  1), 		 // 3349657 mops, 6.3e-5 errors
+    /* 18 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+  },
+}

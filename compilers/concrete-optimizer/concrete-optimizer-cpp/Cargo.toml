@@ -1,0 +1,17 @@
+[package]
+# see https://doc.rust-lang.org/cargo/reference/manifest.html
+name = "concrete-optimizer-cpp"
+version = "0.1.0"
+authors = [""]
+edition = "2021"
+
+[dependencies]
+cxx = "1.0"
+concrete-optimizer = {path = "../concrete-optimizer" }
+
+[build-dependencies]
+cxx-build = "1.0"
+
+[lib]
+path = "src/concrete-optimizer.rs"
+crate-type = ["staticlib"]

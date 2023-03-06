@@ -1,0 +1,15 @@
+[workspace]
+
+members = [
+    "concrete-optimizer",
+    "v0-parameters",
+    "concrete-optimizer-cpp",
+    "charts",
+]
+
+
+[profile.test]
+overflow-checks = true
+
+[profile.release]
+overflow-checks = true

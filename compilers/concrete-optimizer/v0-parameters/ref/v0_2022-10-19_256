@@ -1,0 +1,30 @@
+security level: 256
+target p_error: 6.3e-5
+per precision and log norm2:
+
+  - 1: # bits
+    # no solution at all
+
+  - 2: # bits
+    # no solution at all
+
+  - 3: # bits
+    # no solution at all
+
+  - 4: # bits
+    # no solution at all
+
+  - 5: # bits
+    # no solution at all
+
+  - 6: # bits
+    # no solution at all
+
+  - 7: # bits
+    # no solution at all
+
+  - 8: # bits
+    # no solution at all
+
+  - 9: # bits
+    # no solution at all
