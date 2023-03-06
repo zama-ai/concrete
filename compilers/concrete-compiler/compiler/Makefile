@@ -14,8 +14,6 @@ INSTALL_PREFIX?=$(abspath $(BUILD_DIR))/install
 INSTALL_PATH=$(abspath $(INSTALL_PREFIX))/concretecompiler/
 MAKEFILE_ROOT_DIR=$(shell pwd)
 
-CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/concrete-optimizer
-
 KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
 KEYSETCACHENAME ?= KeySetCacheV4
@@ -85,13 +83,6 @@ endif
 
 all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc rust-bindings
 
-# concrete-optimizer ######################################
-
-LIB_CONCRETE_OPTIMIZER_CPP = $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer_cpp.a
-
-concrete-optimizer-lib:
-	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $(LIB_CONCRETE_OPTIMIZER_CPP)
-
 # HPX #####################################################
 
 install-hpx-from-source: $(HPX_LOCAL_DIR)
@@ -128,13 +119,12 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_PROJECTS=concretelang \
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
-	-DCONCRETE_OPTIMIZER_DIR=${CONCRETE_OPTIMIZER_DIR} \
 	-DCONCRETE_CORE_PATH=$(CONCRETE_CORE_PATH) \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
 	-DCUDAToolkit_ROOT=$(CUDA_PATH)
 	touch $@
 
-build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
+build-initialized: $(BUILD_DIR)/configured.stamp
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
@@ -469,14 +459,12 @@ darwin-python-package:
 python-package: python-bindings $(OS)-python-package
 	@echo The python package is: $(BUILD_DIR)/wheels/*.whl
 
-install: concretecompiler concrete-optimizer-lib CAPI install-deps
+install: concretecompiler CAPI install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))
 	$(info Installing under $(INSTALL_PATH))
 	mkdir -p $(INSTALL_PATH)/include
 	cp -R $(abspath $(BUILD_DIR))/bin $(INSTALL_PATH)
 	cp -R $(abspath $(BUILD_DIR))/lib $(INSTALL_PATH)
-	cp $(LIB_CONCRETE_OPTIMIZER_CPP)  $(INSTALL_PATH)/lib/
-	cp $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp/src/cpp/concrete-optimizer.hpp $(INSTALL_PATH)/include
 
     # Doing find + grep + while loop is a way to have portable behaviour between macOS and GNU/Linux
     # as with `find . -regex "regex"`, the regex language is not the same / to have the same language, the
@@ -509,7 +497,6 @@ install: concretecompiler concrete-optimizer-lib CAPI install-deps
 	python-lint \
 	python-format \
 	check-python-format \
-	concrete-optimizer-lib \
 	build-tests \
 	run-tests \
 	run-check-tests \
