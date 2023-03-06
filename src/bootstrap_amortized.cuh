@@ -183,7 +183,7 @@ __global__ void device_bootstrap_amortized(
         auto accumulator_slice = accumulator + i * params::degree;
         auto res_fft_slice = res_fft + i * params::degree / 2;
         int tid = threadIdx.x;
-        for (int i = 0; i < params::opt / 2; i++) {
+        for (int j = 0; j < params::opt / 2; j++) {
           accumulator_fft[tid] = res_fft_slice[tid];
           tid = tid + params::degree / params::opt;
         }
@@ -220,14 +220,13 @@ get_buffer_size_full_sm_bootstrap_amortized(uint32_t polynomial_size,
              (glwe_dimension + 1) +              // accumulator rotated
          sizeof(double2) * polynomial_size / 2 + // accumulator fft
          sizeof(double2) * polynomial_size / 2 *
-             (glwe_dimension + 1); // calculate buffer fft
+             (glwe_dimension + 1); // res fft
 }
 
 template <typename Torus>
 __host__ __device__ int
-get_buffer_size_partial_sm_bootstrap_amortized(uint32_t polynomial_size,
-                                               uint32_t glwe_dimension) {
-  return sizeof(double2) * polynomial_size / 2; // calculate buffer fft
+get_buffer_size_partial_sm_bootstrap_amortized(uint32_t polynomial_size) {
+  return sizeof(double2) * polynomial_size / 2; // accumulator fft
 }
 
 template <typename Torus>
@@ -237,8 +236,8 @@ __host__ __device__ int get_buffer_size_bootstrap_amortized(
 
   int full_sm = get_buffer_size_full_sm_bootstrap_amortized<Torus>(
       polynomial_size, glwe_dimension);
-  int partial_sm = get_buffer_size_partial_sm_bootstrap_amortized<Torus>(
-      polynomial_size, glwe_dimension);
+  int partial_sm =
+      get_buffer_size_partial_sm_bootstrap_amortized<Torus>(polynomial_size);
   int partial_dm = full_sm - partial_sm;
   int full_dm = full_sm;
   int device_mem = 0;
@@ -263,8 +262,8 @@ __host__ void scratch_bootstrap_amortized(void *v_stream, uint32_t gpu_index,
 
   int full_sm = get_buffer_size_full_sm_bootstrap_amortized<Torus>(
       polynomial_size, glwe_dimension);
-  int partial_sm = get_buffer_size_partial_sm_bootstrap_amortized<Torus>(
-      polynomial_size, glwe_dimension);
+  int partial_sm =
+      get_buffer_size_partial_sm_bootstrap_amortized<Torus>(polynomial_size);
   if (max_shared_memory >= partial_sm && max_shared_memory < full_sm) {
     cudaFuncSetAttribute(device_bootstrap_amortized<Torus, params, PARTIALSM>,
                          cudaFuncAttributeMaxDynamicSharedMemorySize,
@@ -301,8 +300,8 @@ __host__ void host_bootstrap_amortized(
   int SM_FULL = get_buffer_size_full_sm_bootstrap_amortized<Torus>(
       polynomial_size, glwe_dimension);
 
-  int SM_PART = get_buffer_size_partial_sm_bootstrap_amortized<Torus>(
-      polynomial_size, glwe_dimension);
+  int SM_PART =
+      get_buffer_size_partial_sm_bootstrap_amortized<Torus>(polynomial_size);
 
   int DM_PART = SM_FULL - SM_PART;
 
