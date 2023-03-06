@@ -76,8 +76,19 @@ optimizer::DagSolution getV1ParameterGlobalPError(optimizer::Dag &dag,
     auto surrogate_p_local_success =
         pow(ref_global_p_success, power_global_to_local);
 
-    options.maximum_acceptable_error_probability =
-        1.0 - surrogate_p_local_success;
+    auto surrogate_p_error = 1.0 - surrogate_p_local_success;
+
+    // only valid when p_error is not too small
+    auto valid = 0 < surrogate_p_error && surrogate_p_error < 1.0;
+
+    if (!valid) {
+      // linear approximation, only precise for small p_error
+      auto linear_correction = sol.p_error / sol.global_p_error;
+      surrogate_p_error =
+          options.maximum_acceptable_error_probability * linear_correction;
+    };
+
+    options.maximum_acceptable_error_probability = surrogate_p_error;
 
     sol = dag->optimize(options);
     if (sol.global_p_error <= config.global_p_error) {
