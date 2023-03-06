@@ -39,7 +39,7 @@ public:
       std::vector<PackingKeyswitchKey> packingKeyswitchKeys, CSPRNG &&csprng);
 
   /// Returns the ClientParameters associated with the KeySet.
-  ClientParameters clientParameters() { return _clientParameters; }
+  ClientParameters clientParameters() const { return _clientParameters; }
 
   // isInputEncrypted return true if the input at the given pos is encrypted.
   bool isInputEncrypted(size_t pos);
@@ -70,13 +70,13 @@ public:
   /// keyset. Those evaluations keys can be safely shared publicly
   EvaluationKeys evaluationKeys();
 
-  const std::vector<LweSecretKey> &getSecretKeys();
+  const std::vector<LweSecretKey> &getSecretKeys() const;
 
-  const std::vector<LweBootstrapKey> &getBootstrapKeys();
+  const std::vector<LweBootstrapKey> &getBootstrapKeys() const;
 
-  const std::vector<LweKeyswitchKey> &getKeyswitchKeys();
+  const std::vector<LweKeyswitchKey> &getKeyswitchKeys() const;
 
-  const std::vector<PackingKeyswitchKey> &getPackingKeyswitchKeys();
+  const std::vector<PackingKeyswitchKey> &getPackingKeyswitchKeys() const;
 
 protected:
   outcome::checked<void, StringError>

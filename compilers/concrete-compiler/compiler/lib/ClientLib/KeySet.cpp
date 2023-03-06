@@ -282,17 +282,20 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
   return outcome::success();
 }
 
-const std::vector<LweSecretKey> &KeySet::getSecretKeys() { return secretKeys; }
+const std::vector<LweSecretKey> &KeySet::getSecretKeys() const {
+  return secretKeys;
+}
 
-const std::vector<LweBootstrapKey> &KeySet::getBootstrapKeys() {
+const std::vector<LweBootstrapKey> &KeySet::getBootstrapKeys() const {
   return bootstrapKeys;
 }
 
-const std::vector<LweKeyswitchKey> &KeySet::getKeyswitchKeys() {
+const std::vector<LweKeyswitchKey> &KeySet::getKeyswitchKeys() const {
   return keyswitchKeys;
 }
 
-const std::vector<PackingKeyswitchKey> &KeySet::getPackingKeyswitchKeys() {
+const std::vector<PackingKeyswitchKey> &
+KeySet::getPackingKeyswitchKeys() const {
   return packingKeyswitchKeys;
 }
 

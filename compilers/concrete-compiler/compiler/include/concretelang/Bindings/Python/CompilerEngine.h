@@ -144,6 +144,12 @@ evaluationKeysUnserialize(const std::string &buffer);
 MLIR_CAPI_EXPORTED std::string evaluationKeysSerialize(
     concretelang::clientlib::EvaluationKeys &evaluationKeys);
 
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
+keySetUnserialize(const std::string &buffer);
+
+MLIR_CAPI_EXPORTED std::string
+keySetSerialize(concretelang::clientlib::KeySet &keySet);
+
 /// Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 

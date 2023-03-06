@@ -189,6 +189,87 @@ PackingKeyswitchKey readPackingKeyswitchKey(std::istream &istream) {
   return b;
 }
 
+// KeySet ////////////////////////////////
+
+std::unique_ptr<KeySet> readKeySet(std::istream &istream) {
+  uint64_t nbKey;
+
+  readSize(istream, nbKey);
+  std::vector<LweSecretKey> secretKeys;
+  for (uint64_t i = 0; i < nbKey; i++) {
+    secretKeys.push_back(readLweSecretKey(istream));
+  }
+
+  readSize(istream, nbKey);
+  std::vector<LweBootstrapKey> bootstrapKeys;
+  for (uint64_t i = 0; i < nbKey; i++) {
+    bootstrapKeys.push_back(readLweBootstrapKey(istream));
+  }
+
+  readSize(istream, nbKey);
+  std::vector<LweKeyswitchKey> keyswitchKeys;
+  for (uint64_t i = 0; i < nbKey; i++) {
+    keyswitchKeys.push_back(readLweKeyswitchKey(istream));
+  }
+
+  std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
+  readSize(istream, nbKey);
+  for (uint64_t i = 0; i < nbKey; i++) {
+    packingKeyswitchKeys.push_back(readPackingKeyswitchKey(istream));
+  }
+
+  std::string clientParametersString;
+  istream >> clientParametersString;
+  auto clientParameters =
+      llvm::json::parse<ClientParameters>(clientParametersString);
+
+  if (!clientParameters) {
+    return std::unique_ptr<KeySet>(nullptr);
+  }
+
+  auto csprng = ConcreteCSPRNG(0);
+  auto keySet =
+      KeySet::fromKeys(clientParameters.get(), secretKeys, bootstrapKeys,
+                       keyswitchKeys, packingKeyswitchKeys, std::move(csprng));
+
+  return std::move(keySet.value());
+}
+
+std::ostream &operator<<(std::ostream &ostream, const KeySet &keySet) {
+  auto secretKeys = keySet.getSecretKeys();
+  writeSize(ostream, secretKeys.size());
+  for (auto sk : secretKeys) {
+    ostream << sk;
+  }
+
+  auto bootstrapKeys = keySet.getBootstrapKeys();
+  writeSize(ostream, bootstrapKeys.size());
+  for (auto bsk : bootstrapKeys) {
+    ostream << bsk;
+  }
+
+  auto keyswitchKeys = keySet.getKeyswitchKeys();
+  writeSize(ostream, keyswitchKeys.size());
+  for (auto ksk : keyswitchKeys) {
+    ostream << ksk;
+  }
+
+  auto packingKeyswitchKeys = keySet.getPackingKeyswitchKeys();
+  writeSize(ostream, packingKeyswitchKeys.size());
+  for (auto pksk : packingKeyswitchKeys) {
+    ostream << pksk;
+  }
+
+  auto clientParametersJson = llvm::json::Value(keySet.clientParameters());
+  std::string clientParametersString;
+  llvm::raw_string_ostream clientParametersStringBuffer(clientParametersString);
+  clientParametersStringBuffer << clientParametersJson;
+  ostream << clientParametersString;
+
+  assert(ostream.good());
+  return ostream;
+}
+
 // EvaluationKey ////////////////////////////////
 
 EvaluationKeys readEvaluationKeys(std::istream &istream) {

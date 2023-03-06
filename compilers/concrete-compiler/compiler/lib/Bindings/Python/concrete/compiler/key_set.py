@@ -36,6 +36,33 @@ class KeySet(WrapperCpp):
             raise TypeError(f"keyset must be of type _KeySet, not {type(keyset)}")
         super().__init__(keyset)
 
+    def serialize(self) -> bytes:
+        """Serialize the KeySet.
+
+        Returns:
+            bytes: serialized object
+        """
+        return self.cpp().serialize()
+
+    @staticmethod
+    def deserialize(serialized_key_set: bytes) -> "KeySet":
+        """Deserialize KeySet from bytes.
+
+        Args:
+            serialized_key_set (bytes): previously serialized KeySet
+
+        Raises:
+            TypeError: if serialized_key_set is not of type bytes
+
+        Returns:
+            KeySet: deserialized object
+        """
+        if not isinstance(serialized_key_set, bytes):
+            raise TypeError(
+                f"serialized_key_set must be of type bytes, not {type(serialized_key_set)}"
+            )
+        return KeySet.wrap(_KeySet.deserialize(serialized_key_set))
+
     def get_evaluation_keys(self) -> EvaluationKeys:
         """
         Get evaluation keys for execution.

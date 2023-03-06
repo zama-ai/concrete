@@ -263,6 +263,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            });
 
   pybind11::class_<clientlib::KeySet>(m, "KeySet")
+      .def_static("deserialize",
+                  [](const pybind11::bytes &buffer) {
+                    std::unique_ptr<KeySet> result = keySetUnserialize(buffer);
+                    return result;
+                  })
+      .def("serialize",
+           [](clientlib::KeySet &evaluationKeys) {
+             return pybind11::bytes(keySetSerialize(evaluationKeys));
+           })
       .def("get_evaluation_keys",
            [](clientlib::KeySet &keySet) { return keySet.evaluationKeys(); });
 

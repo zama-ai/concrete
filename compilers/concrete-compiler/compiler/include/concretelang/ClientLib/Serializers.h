@@ -11,6 +11,7 @@
 
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EvaluationKeys.h"
+#include "concretelang/ClientLib/KeySet.h"
 #include "concretelang/ClientLib/Types.h"
 
 namespace concretelang {
@@ -112,6 +113,9 @@ LweBootstrapKey readLweBootstrapKey(std::istream &istream);
 std::ostream &operator<<(std::ostream &ostream,
                          const PackingKeyswitchKey &wrappedKsk);
 PackingKeyswitchKey readPackingKeyswitchKey(std::istream &istream);
+
+std::ostream &operator<<(std::ostream &ostream, const KeySet &keySet);
+std::unique_ptr<KeySet> readKeySet(std::istream &istream);
 
 std::ostream &operator<<(std::ostream &ostream,
                          const EvaluationKeys &evaluationKeys);

@@ -235,6 +235,27 @@ MLIR_CAPI_EXPORTED std::string evaluationKeysSerialize(
   return buffer.str();
 }
 
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
+keySetUnserialize(const std::string &buffer) {
+  std::stringstream istream(buffer);
+
+  std::unique_ptr<concretelang::clientlib::KeySet> keySet =
+      concretelang::clientlib::readKeySet(istream);
+
+  if (istream.fail() || keySet.get() == nullptr) {
+    throw std::runtime_error("Cannot read key set");
+  }
+
+  return keySet;
+}
+
+MLIR_CAPI_EXPORTED std::string
+keySetSerialize(concretelang::clientlib::KeySet &keySet) {
+  std::ostringstream buffer(std::ios::binary);
+  concretelang::clientlib::operator<<(buffer, keySet);
+  return buffer.str();
+}
+
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 clientParametersUnserialize(const std::string &json) {
   GET_OR_THROW_LLVM_EXPECTED(
