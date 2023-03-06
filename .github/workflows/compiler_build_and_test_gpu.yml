@@ -1,5 +1,4 @@
-# Build on an AWS instance (GPU).
-name: AwsEc2BuildGpu
+name: Compiler Build and Test (GPU)
 
 on:
   workflow_dispatch:
@@ -55,7 +54,6 @@ jobs:
         # "Install rust" step require root user to have a HOME directory which is not set.
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
-          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
 
       - name: Fetch repository
@@ -82,8 +80,7 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
-            -v ${{ github.workspace }}/llvm-project:/llvm-project
-            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
             -v ${{ github.workspace }}/wheels:/wheels
             -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
@@ -92,7 +89,7 @@ jobs:
           shell: bash
           run: |
             set -e
-            cd /compiler
+            cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make BINDINGS_PYTHON_ENABLED=OFF CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu

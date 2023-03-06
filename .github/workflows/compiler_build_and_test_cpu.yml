@@ -1,5 +1,4 @@
-# Build on an AWS instance (CPU).
-name: AwsEc2BuildCpu
+name: Compiler Build and Test (CPU)
 
 on:
   workflow_dispatch:
@@ -51,7 +50,6 @@ jobs:
           ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
       - name: Set up env
-        # "Install rust" step require root user to have a HOME directory which is not set.
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
           #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
@@ -62,12 +60,6 @@ jobs:
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
 
       - name: Create build dir
         run: mkdir build

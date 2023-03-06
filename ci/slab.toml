@@ -8,7 +8,7 @@ security_group= ["sg-0bf1c1d79c97bc88f", ]
 [profile.m6i-old]
 region = "eu-west-3"
 image_id = "ami-05e4c0e628378ad6d" # Based on Ubuntu 20.4
-instance_type = "m6i.metal"
+instance_type = "m6i.16xlarge"
 subnet_id = "subnet-a886b4c1"
 security_group= ["sg-0bf1c1d79c97bc88f", ]
 
@@ -19,17 +19,19 @@ instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
 security_group= ["sg-0f8b52622a2669491", ]
 
-# Trigger CPU build
-[command.cpu-build]
-workflow = "aws_build_cpu.yml"
-profile = "m6i-old"
-check_run_name = "AWS CPU build (Slab)"
+#################################################
+# Compiler commands
+#################################################
 
-# Trigger GPU build
-[command.gpu-build]
-workflow = "aws_build_gpu.yml"
+[command.compiler-cpu-build]
+workflow = "compiler_build_and_test_cpu.yml"
+profile = "m6i-old"
+check_run_name = "Compiler Build and Test (CPU)"
+
+[command.compiler-gpu-build]
+workflow = "compiler_build_and_test_gpu.yml"
 profile = "gpu"
-check_run_name = "AWS GPU build (Slab)"
+check_run_name = "Compiler Build and Test (GPU)"
 
 # Trigger Docker images build
 [command.docker-images-build]

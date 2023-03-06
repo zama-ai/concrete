@@ -14,5 +14,5 @@ jobs:
         with:
           allow-repeats: true
           message: |
-            @slab-ci cpu-build
-            @slab-ci gpu-build
+            @slab-ci compiler-cpu-build
+            @slab-ci compiler-gpu-build

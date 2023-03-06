@@ -73,8 +73,7 @@ ExternalProject_Add(
   concrete_optimizer_rust
   DOWNLOAD_COMMAND ""
   CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_OPTIMIZER_STATIC_LIB}"
-  BUILD_COMMAND cargo build
-  COMMAND cargo build -p concrete-optimizer-cpp --profile release
+  BUILD_COMMAND cargo build -p concrete-optimizer-cpp --profile release
   BINARY_DIR "${CONCRETE_OPTIMIZER_DIR}"
   INSTALL_COMMAND ""
   LOG_BUILD ON
