@@ -1,0 +1,60 @@
+# Trigger an AWS build each time commits are pushed to a pull request.
+name: Main
+
+on:
+  pull_request:
+
+jobs:
+  # This jobs outputs for each modules of our mono-repo if it changed,
+  # in order to launch jobs only for the changed modules
+  file-change:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    outputs:
+      compiler: ${{ steps.compiler.outputs.any_changed }}
+      optimizer: ${{ steps.optimizer.outputs.any_changed }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+
+      - name: Get changed files in the concrete-compiler directory
+        id: compiler
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: compilers/concrete-compiler
+
+      - name: Get changed files in the concrete-optimizer directory
+        id: optimizer
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: compilers/concrete-optimizer
+
+#################################################
+# Compiler jobs #################################
+  compiler-compliance:
+    needs: file-change
+    if: needs.file-change.outputs.compiler == 'true'
+    uses: ./.github/workflows/compiler_format_and_linting.yml
+
+  compiler-aws-tests:
+    needs: file-change
+    if: needs.file-change.outputs.compiler == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Launch compiler test on AWS using Slab
+        uses: mshick/add-pr-comment@v2
+        with:
+          allow-repeats: true
+          message: |
+            @slab-ci compiler-cpu-build
+            @slab-ci compiler-gpu-build
+
+  compiler-macos-tests:
+    needs: file-change
+    if: needs.file-change.outputs.compiler == 'true'
+    uses: ./.github/workflows/compiler_macos_build_and_test.yml
+    secrets: inherit

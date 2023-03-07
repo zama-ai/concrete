@@ -1,41 +1,38 @@
-name: Check format and run linters
+name: Compiler - Compliance
 
 on:
-  push:
-    branches: main
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_call:
 
 jobs:
   FormattingAndLinting:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
       - name: Format with clang-format (Cpp)
-        run: sudo apt install moreutils && .github/workflows/scripts/format_cpp.sh
+        run: |
+          sudo apt install moreutils
+          cd compilers/concrete-compiler/compiler
+          ./scripts/format_cpp.sh
       - name: Format with cmake-format (Cmake)
-        run: pip3 install cmakelang && .github/workflows/scripts/format_cmake.sh
+        run: |
+          pip3 install cmakelang
+          cd compilers/concrete-compiler/compiler
+          ./scripts/format_cmake.sh
       - name: Format with black (Python)
         run: |
-          cd compiler
+          cd compilers/concrete-compiler/compiler
           pip install -r lib/Bindings/Python/requirements_dev.txt
           make check-python-format
       - name: Lint with pylint (Python)
         run: |
-          cd compiler
+          cd compilers/concrete-compiler/compiler
           # compiler requirements to lint
           pip install numpy
           make python-lint
       - name: Format with rustfmt (Rust)
         run: |
-          cd compiler
+          cd compilers/concrete-compiler/compiler
           make check-rust-format
-      - name: Linelint
-        uses: fernandrone/linelint@0.0.4
-        id: linelint
 
   CheckLicense:
     runs-on: ubuntu-20.04

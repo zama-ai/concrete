@@ -2,10 +2,12 @@
 name: MacOsBuild
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_call:
+    secrets:
+      CONCRETE_CI_SSH_PRIVATE:
+        required: true
+      CONCRETE_ACTIONS_TOKEN:
+        required: true
 
 jobs:
   BuildAndTestMacOS:
@@ -60,7 +62,7 @@ jobs:
       - name: Build
         run: |
           set -e
-          cd compiler
+          cd compilers/concrete-compiler/compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
           make Python3_EXECUTABLE=$(which python3.10) all run-check-tests python-package
@@ -71,7 +73,7 @@ jobs:
         if: github.event_name == 'push'
         run: |
           set -e
-          cd compiler
+          cd compilers/concrete-compiler/compiler
           echo "Debug: ccache statistics (prior to the tests):"
           ccache -s
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF

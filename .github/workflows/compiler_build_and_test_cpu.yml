@@ -1,4 +1,4 @@
-name: Compiler Build and Test (CPU)
+name: Compiler - Build and Test (CPU)
 
 on:
   workflow_dispatch:

@@ -81,17 +81,14 @@ ExternalProject_Add(
 
 add_library(concrete_optimizer STATIC ${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp/concrete-optimizer.cpp)
 
-target_link_libraries(concrete_optimizer PRIVATE
-  pthread m dl
-  "${CONCRETE_OPTIMIZER_DIR}/target/release/libconcrete_optimizer_cpp.a"
-)
+target_link_libraries(concrete_optimizer PRIVATE pthread m dl
+                                                 "${CONCRETE_OPTIMIZER_DIR}/target/release/libconcrete_optimizer_cpp.a")
 install(TARGETS concrete_optimizer EXPORT concrete_optimizer)
 install(EXPORT concrete_optimizer DESTINATION "./")
 
 add_dependencies(concrete_optimizer concrete_optimizer_rust)
 # TODO - Remove the global include directory
 include_directories(${CONCRETE_OPTIMIZER_INCLUDE_DIR})
-
 
 # -------------------------------------------------------------------------------
 # Concrete Backends

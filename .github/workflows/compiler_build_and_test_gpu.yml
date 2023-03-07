@@ -1,4 +1,4 @@
-name: Compiler Build and Test (GPU)
+name: Compiler - Build and Test (GPU)
 
 on:
   workflow_dispatch:
