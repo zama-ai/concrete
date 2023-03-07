@@ -3,15 +3,12 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
-#include <unordered_set>
-
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Tensor/Utils/Utils.h"
-#include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/OperationSupport.h"
@@ -19,7 +16,6 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/SmallVector.h"
-#include <iostream>
 
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
@@ -27,6 +23,8 @@
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
 #include "concretelang/Support/Constants.h"
+
+#include <unordered_set>
 
 namespace arith = mlir::arith;
 namespace linalg = mlir::linalg;
