@@ -10,7 +10,6 @@ def FHELinalg_Dialect : Dialect {
     A dialect for representation of high level linalg operations on fully homomorphic ciphertexts.
   }];
   let cppNamespace = "::mlir::concretelang::FHELinalg";
-  let useFoldAPI = kEmitRawAttributesFolder;
 }
 
 #endif

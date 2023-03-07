@@ -300,9 +300,8 @@ mlir::LogicalResult RoundEintOp::verify() {
 }
 
 /// Avoid addition with constant 0
-OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
-  assert(operands.size() == 2);
-  auto toAdd = operands[1].dyn_cast_or_null<mlir::IntegerAttr>();
+OpFoldResult AddEintIntOp::fold(FoldAdaptor operands) {
+  auto toAdd = operands.getB().dyn_cast_or_null<mlir::IntegerAttr>();
   if (toAdd != nullptr) {
     auto intToAdd = toAdd.getInt();
     if (intToAdd == 0) {
@@ -313,9 +312,8 @@ OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
 }
 
 /// Avoid subtraction with constant 0
-OpFoldResult SubEintIntOp::fold(ArrayRef<Attribute> operands) {
-  assert(operands.size() == 2);
-  auto toSub = operands[1].dyn_cast_or_null<mlir::IntegerAttr>();
+OpFoldResult SubEintIntOp::fold(FoldAdaptor operands) {
+  auto toSub = operands.getB().dyn_cast_or_null<mlir::IntegerAttr>();
   if (toSub != nullptr) {
     auto intToSub = toSub.getInt();
     if (intToSub == 0) {
@@ -326,9 +324,8 @@ OpFoldResult SubEintIntOp::fold(ArrayRef<Attribute> operands) {
 }
 
 /// Avoid multiplication with constant 1
-OpFoldResult MulEintIntOp::fold(ArrayRef<Attribute> operands) {
-  assert(operands.size() == 2);
-  auto toMul = operands[1].dyn_cast_or_null<mlir::IntegerAttr>();
+OpFoldResult MulEintIntOp::fold(FoldAdaptor operands) {
+  auto toMul = operands.getB().dyn_cast_or_null<mlir::IntegerAttr>();
   if (toMul != nullptr) {
     auto intToMul = toMul.getInt();
     if (intToMul == 1) {
