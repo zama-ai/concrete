@@ -326,3 +326,20 @@ def test_circuit_run_with_unused_arg(helpers):
     assert circuit.encrypt_run_decrypt(10, 0) == 20
     assert circuit.encrypt_run_decrypt(10, 10) == 20
     assert circuit.encrypt_run_decrypt(10, 20) == 20
+
+
+def test_dataflow_circuit(helpers):
+    """
+    Test execution with dataflow_parallelize=True.
+    """
+
+    configuration = helpers.configuration().fork(dataflow_parallelize=True)
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return (x**2) + (y // 2)
+
+    inputset = [(np.random.randint(0, 2**3), np.random.randint(0, 2**3)) for _ in range(100)]
+    circuit = f.compile(inputset, configuration)
+
+    assert circuit.encrypt_run_decrypt(5, 6) == 28

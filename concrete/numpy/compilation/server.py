@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional, Union
 
+import concrete.compiler
 from concrete.compiler import (
     CompilationFeedback,
     CompilationOptions,
@@ -94,6 +95,9 @@ class Server:
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
+
+        if configuration.auto_parallelize or configuration.dataflow_parallelize:
+            concrete.compiler.init_dfr()
 
         global_p_error_is_set = configuration.global_p_error is not None
         p_error_is_set = configuration.p_error is not None
