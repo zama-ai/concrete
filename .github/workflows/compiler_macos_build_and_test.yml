@@ -1,5 +1,5 @@
 # Perform a build on MacOS platform with M1 chip.
-name: MacOsBuild
+name: Compiler - Build and Test (MacOS)
 
 on:
   workflow_call:

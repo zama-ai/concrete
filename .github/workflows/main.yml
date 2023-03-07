@@ -1,4 +1,4 @@
-# Trigger an AWS build each time commits are pushed to a pull request.
+# This job is the main jobs will dispatch build and test for every modules of our mono repo.
 name: Main
 
 on:
@@ -57,4 +57,12 @@ jobs:
     needs: file-change
     if: needs.file-change.outputs.compiler == 'true'
     uses: ./.github/workflows/compiler_macos_build_and_test.yml
+    secrets: inherit
+
+#################################################
+# Optimizer jobs ################################
+  optimizer:
+    needs: file-change
+    if: needs.file-change.outputs.optimizer == 'true'
+    uses: ./.github/workflows/optimizer.yml
     secrets: inherit

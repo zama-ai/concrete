@@ -3,7 +3,7 @@ name: Start all AWS builds
 
 on:
   push:
-    branch:
+    branches:
       - 'main'
   workflow_dispatch:
 
