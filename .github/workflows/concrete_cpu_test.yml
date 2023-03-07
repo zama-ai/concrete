@@ -1,0 +1,44 @@
+name: Concrete CPU - Tests
+
+on:
+  workflow_call:
+
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  tests:
+    runs-on: ubuntu-20.04
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Formatting
+        run: |
+          cd backends/concrete-cpu
+          cargo fmt --check
+
+      - name: Remove header to force regeneration
+        run: |
+          cd backends/concrete-cpu
+          rm include/concrete-cpu.h
+
+      - name: Build
+        run: |
+          cd backends/concrete-cpu
+          cargo build --release --all-targets
+
+      - name: Check regenerated header is unchanged
+        run: |
+          cd backends/concrete-cpu
+          git diff --exit-code
+
+      - name: Lint
+        run: |
+          cd backends/concrete-cpu
+          cargo clippy --release --all-targets
+
+      - name: Tests
+        run: |
+          cd backends/concrete-cpu
+          cargo test --release --no-fail-fast --all-targets

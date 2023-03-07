@@ -14,6 +14,7 @@ jobs:
     outputs:
       compiler: ${{ steps.compiler.outputs.any_changed }}
       optimizer: ${{ steps.optimizer.outputs.any_changed }}
+      concrete-cpu: ${{ steps.concrete-cpu.outputs.any_changed }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
@@ -32,6 +33,12 @@ jobs:
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: compilers/concrete-optimizer
+
+      - name: Get changed files in the concrete-cpu directory
+        id: concrete-cpu
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: backends/concrete-cpu
 
 #################################################
 # Compiler jobs #################################
@@ -65,4 +72,12 @@ jobs:
     needs: file-change
     if: needs.file-change.outputs.optimizer == 'true'
     uses: ./.github/workflows/optimizer.yml
+    secrets: inherit
+
+#################################################
+# ConcreteCPU jobs ##############################
+  concrete-cpu:
+    needs: file-change
+    if: needs.file-change.outputs.concrete-cpu == 'true'
+    uses: ./.github/workflows/concrete_cpu_test.yml
     secrets: inherit

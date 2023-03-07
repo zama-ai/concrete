@@ -8,6 +8,7 @@ license = "BSD-3-Clause-Clear"
 name = "concrete_cpu"
 crate-type = ["lib", "staticlib"]
 
+
 [dependencies]
 concrete-csprng = { version = "0.2", optional = true, features = [
   "generator_soft",
