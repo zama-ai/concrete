@@ -11,7 +11,7 @@ impl KsComplexity {
         params: KeyswitchParameters,
         _ciphertext_modulus_log: u32,
     ) -> Complexity {
-        let _ = self;
+        _ = self;
         // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/keyswitch.py#L91
         let input_lwe_dimension = params.input_lwe_dimension.0 as i64;
         let output_lwe_dimension = params.output_lwe_dimension.0 as i64;

@@ -362,7 +362,7 @@ mod tests {
         let out_precision = 5;
         let rounded_precision = 2;
         let input1 = graph.add_input(out_precision, Shape::number());
-        let _ = graph.add_expanded_rounded_lut(
+        _ = graph.add_expanded_rounded_lut(
             input1,
             FunctionTable::UNKWOWN,
             rounded_precision,

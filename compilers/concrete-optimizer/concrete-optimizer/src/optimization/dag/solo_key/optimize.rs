@@ -444,7 +444,7 @@ mod tests {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let _ = optimize_v0(
+        _ = optimize_v0(
             sum_size,
             precision,
             config,
@@ -757,7 +757,7 @@ mod tests {
         for precision in [4_u8, 8] {
             for weight in [1, 3, 27, 243, 729] {
                 for dim in [1, 2, 16, 32] {
-                    let _ = check_global_p_error_input(dim, weight, precision);
+                    _ = check_global_p_error_input(dim, weight, precision);
                 }
             }
         }

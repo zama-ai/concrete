@@ -103,6 +103,7 @@ where
         self.update_with(|content| ROC::extend(content, new_entries));
     }
 
+    #[allow(clippy::nursery)]
     fn update_with<F>(&self, update: F)
     where
         F: FnOnce(ROC) -> ROC,
