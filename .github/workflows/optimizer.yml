@@ -2,6 +2,7 @@ name: Optimizer - Tests
 
 on:
   workflow_call:
+  workflow_dispatch:
     secrets:
       CONCRETE_CI_SSH_PRIVATE:
         required: true

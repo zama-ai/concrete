@@ -2,6 +2,7 @@ name: Compiler - Compliance
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   FormattingAndLinting:

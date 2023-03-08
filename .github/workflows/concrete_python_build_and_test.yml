@@ -1,6 +1,7 @@
 name: concrete-python
 on:
   workflow_call:
+  workflow_dispatch:
 
 concurrency:
   group: concrete-python-${{ github.ref }}
