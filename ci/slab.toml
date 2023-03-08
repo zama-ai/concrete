@@ -33,6 +33,16 @@ workflow = "compiler_build_and_test_gpu.yml"
 profile = "gpu"
 check_run_name = "Compiler Build and Test (GPU)"
 
+[command.compiler-cpu-benchmark]
+workflow = "compiler_benchmark.yml"
+profile = "m6i-old"
+check_run_name = "Compiler Performances Benchmarks (CPU)"
+
+[command.compiler-gpu-benchmark]
+workflow = "compiler_benchmark.yml"
+profile = "gpu"
+check_run_name = "Compiler Performances Benchmarks (GPU)"
+
 # Trigger Docker images build
 [command.docker-images-build]
 workflow = "publish_docker_images.yml"
