@@ -13,6 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Rust install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Download cargo cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Formatting
         run: |
           cd backends/concrete-cpu
