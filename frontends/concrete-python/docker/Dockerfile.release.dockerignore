@@ -1,0 +1,6 @@
+# Not our sources
+!docker/release_resources/entry_point.sh
+!docker/release_resources/release_requirements.txt
+
+!pkg/
+!pkg/**

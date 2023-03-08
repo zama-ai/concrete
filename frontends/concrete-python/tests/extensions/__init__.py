@@ -1,0 +1,3 @@
+"""
+Tests of extensions.
+"""
