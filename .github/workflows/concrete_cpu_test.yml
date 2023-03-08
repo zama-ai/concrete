@@ -35,7 +35,7 @@ jobs:
       - name: Build
         run: |
           cd backends/concrete-cpu
-          cargo build --release --all-targets
+          cargo build --all-targets
 
       - name: Check regenerated header is unchanged
         run: |
@@ -45,9 +45,18 @@ jobs:
       - name: Lint
         run: |
           cd backends/concrete-cpu
-          cargo clippy --release --all-targets
+          cargo clippy --all-targets
 
       - name: Tests
         run: |
           cd backends/concrete-cpu
-          cargo test --release --no-fail-fast --all-targets
+          cargo test --no-fail-fast --all-targets
+
+      - name: Zig install
+        run: |
+          sudo snap install zig --classic --beta
+
+      - name: Zig test
+        run: |
+          cd backends/concrete-cpu/test
+          make test
