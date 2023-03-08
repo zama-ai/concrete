@@ -7,7 +7,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  tests:
+  tests-linux:
     runs-on: ubuntu-20.04
     env:
       RUSTFLAGS: -D warnings
@@ -55,6 +55,66 @@ jobs:
       - name: Zig install
         run: |
           sudo snap install zig --classic --beta
+
+      - name: Zig test
+        run: |
+          cd backends/concrete-cpu/test
+          make test
+
+  tests-mac_x86:
+    runs-on: macos-11
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Rust install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Download cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Tests
+        run: |
+          cd backends/concrete-cpu
+          cargo test --no-fail-fast --all-targets
+
+      - name: Zig install
+        run: |
+          brew install zig
+
+      - name: Zig test
+        run: |
+          cd backends/concrete-cpu/test
+          make test
+
+
+  tests-mac-m1:
+    runs-on: m1mac
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Rust install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Download cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Tests
+        run: |
+          cd backends/concrete-cpu
+          cargo test --no-fail-fast --all-targets
+
+      - name: Zig install
+        run: |
+          brew install zig
 
       - name: Zig test
         run: |

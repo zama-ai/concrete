@@ -68,6 +68,7 @@ pub unsafe extern "C" fn concrete_cpu_destroy_concrete_csprng(mem: *mut Csprng) 
 // Returns 1 if the random is crypto secure, -1 if it not secure, 0 if fail.
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_crypto_secure_random_128(u128: *mut Uint128) -> c_int {
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     if is_x86_feature_detected!("rdseed") {
         let mut rand: u64 = 0;
         loop {

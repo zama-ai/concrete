@@ -10,6 +10,7 @@ use core::mem::MaybeUninit;
 use dyn_stack::{DynStack, SizeOverflow, StackReq};
 use pulp::{as_arrays, as_arrays_mut};
 
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 pub mod x86;
 
 fn convert_forward_integer_u64_scalar(
