@@ -54,9 +54,9 @@ typedef struct dfr_refcounted_future {
 // await_future), so we only need to track the references in task
 // creation.
 void *_dfr_make_ready_future(void *in, size_t memref_clone_p) {
+  hpx::future<void *> future = hpx::make_ready_future<void *>(in);
   return (void *)new dfr_refcounted_future_t(
-      new hpx::shared_future<void *>(hpx::make_ready_future(in)), 1,
-      memref_clone_p);
+      new hpx::shared_future<void *>(std::move(future)), 1, memref_clone_p);
 }
 
 void *_dfr_await_future(void *in) {
