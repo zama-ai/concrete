@@ -131,6 +131,7 @@ jobs:
             -v ${{ github.workspace }}/docs:/docs
           shell: bash
           run: |
+            cd /concrete/compilers/concrete-compiler/compiler
             set -e
             rm -rf /build
             make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
@@ -146,8 +147,8 @@ jobs:
         if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: html-docs
-          path: docs/_build/html
+          name: compiler-html-docs
+          path: /concrete/compilers/concrete-compiler/compiler/docs/_build/html
 
   PublishDoc:
     runs-on: ubuntu-20.04
@@ -158,7 +159,7 @@ jobs:
         id: download
         uses: actions/download-artifact@v3
         with:
-          name: html-docs
+          name: compiler-html-docs
 
       - name: Publish Documentation to S3
         id: publish
