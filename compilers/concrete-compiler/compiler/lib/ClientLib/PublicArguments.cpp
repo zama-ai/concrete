@@ -43,7 +43,7 @@ PublicArguments::serialize(std::ostream &ostream) {
              << iGate;
     }
 
-    /*auto allocated = */ preparedArgs[iPreparedArgs++];
+    /*auto allocated = */ iPreparedArgs++;
     auto aligned = (encrypted_scalars_t)preparedArgs[iPreparedArgs++];
     assert(aligned != nullptr);
     auto offset = (size_t)preparedArgs[iPreparedArgs++];
