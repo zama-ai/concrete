@@ -152,7 +152,7 @@ fn mm512_cvtpd_epi64(simd: Avx512, x: __m512d) -> __m512i {
     let biased_exp = simd._mm512_and_si512(simd._mm512_srli_epi64::<52>(bits), exp_mask);
 
     // extract the 63rd sign bit
-    let sign_is_negative_mask = simd._mm512_cmpneq_epi64_mask(
+    let sign_is_negative_mask = simd._mm512_cmpeq_epi64_mask(
         simd._mm512_srli_epi64::<63>(bits),
         simd._mm512_set1_epi64(1),
     );
