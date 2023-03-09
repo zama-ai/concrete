@@ -27,7 +27,8 @@ using mlir::concretelang::StreamStringError;
 outcome::checked<ServerLambda, StringError>
 ServerLambda::loadFromModule(std::shared_ptr<DynamicModule> module,
                              std::string funcName) {
-  auto packedFuncName = ::concretelang::makePackedFunctionName(funcName);
+  auto packedFuncName = ::concretelang::makePackedFunctionName(
+      ::concretelang::prefixFuncName(funcName));
   ServerLambda lambda;
   lambda.module =
       module; // prevent module and library handler from being destroyed

@@ -7,6 +7,10 @@
 
 namespace concretelang {
 
+std::string prefixFuncName(llvm::StringRef funcName) {
+  return "concrete_" + funcName.str();
+}
+
 std::string makePackedFunctionName(llvm::StringRef name) {
   return "_mlir_" + name.str();
 }

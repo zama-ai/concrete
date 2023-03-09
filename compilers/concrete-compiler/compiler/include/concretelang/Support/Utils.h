@@ -16,6 +16,9 @@
 
 namespace concretelang {
 
+/// prefix function name with `concrete_` to avoid collision with other function
+std::string prefixFuncName(llvm::StringRef funcName);
+
 // construct the function name of the wrapper function that unify function calls
 // of compiled circuit
 std::string makePackedFunctionName(llvm::StringRef name);

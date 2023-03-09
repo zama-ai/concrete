@@ -74,6 +74,9 @@ static void packFunctionArguments(llvm::Module *module) {
       continue;
     }
 
+    // prefix to avoid colliding with other functions
+    func.setName(::concretelang::prefixFuncName(func.getName()));
+
     // Given a function `foo(<...>)`, define the interface function
     // `mlir_foo(i8**)`.
     auto *newType = llvm::FunctionType::get(
