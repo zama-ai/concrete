@@ -3,6 +3,9 @@ name: Main
 
 on:
   pull_request:
+  push:
+    branches:
+      - 'main'
 
 jobs:
   # This jobs outputs for each modules of our mono-repo if it changed,
@@ -16,6 +19,7 @@ jobs:
       compiler: ${{ steps.compiler.outputs.any_changed }}
       optimizer: ${{ steps.optimizer.outputs.any_changed }}
       concrete-cpu: ${{ steps.concrete-cpu.outputs.any_changed }}
+      test-all: ${{ steps.test-all.outputs.test-all }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
@@ -46,12 +50,17 @@ jobs:
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: backends/concrete-cpu
+      
+      - name: Set the test-all
+        id: test-all
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: echo "test-all=true" >> "$GITHUB_OUTPUT"
 
 #################################################
 # concrete-python jobs ##########################
   concrete-python:
     needs: file-change
-    if: needs.file-change.outputs.concrete-python == 'true'
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.test-all
     uses: ./.github/workflows/concrete_python_build_and_test.yml
     secrets: inherit
 
@@ -64,7 +73,7 @@ jobs:
 
   compiler-aws-tests:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true'
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.test-all
     runs-on: ubuntu-latest
     steps:
       - name: Launch compiler test on AWS using Slab
@@ -85,7 +94,7 @@ jobs:
 # Optimizer jobs ################################
   optimizer:
     needs: file-change
-    if: needs.file-change.outputs.optimizer == 'true'
+    if: needs.file-change.outputs.optimizer == 'true' || needs.file-change.outputs.test-all
     uses: ./.github/workflows/optimizer.yml
     secrets: inherit
 
@@ -93,6 +102,6 @@ jobs:
 # ConcreteCPU jobs ##############################
   concrete-cpu:
     needs: file-change
-    if: needs.file-change.outputs.concrete-cpu == 'true'
+    if: needs.file-change.outputs.concrete-cpu == 'true' || needs.file-change.outputs.test-all
     uses: ./.github/workflows/concrete_cpu_test.yml
     secrets: inherit
