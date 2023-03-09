@@ -39,6 +39,8 @@ std = [
 csprng = ["concrete-csprng"]
 parallel = ["rayon"]
 nightly = ["pulp/nightly"]
+x86_64 = ["concrete-csprng/generator_x86_64_aesni"]
+aarch64 = ["concrete-csprng/generator_aarch64_aes"]
 
 [build-dependencies]
 cbindgen = "0.24"

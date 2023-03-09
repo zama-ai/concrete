@@ -1,11 +1,15 @@
 use std::io::Read;
 
 use super::types::{Csprng, CsprngVtable, Uint128};
-use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+#[cfg(feature = "x86_64")]
+use concrete_csprng::generators::AesniRandomGenerator as Generator;
+#[cfg(feature = "aarch64")]
+use concrete_csprng::generators::NeonAesRandomGenerator as Generator;
+use concrete_csprng::generators::RandomGenerator;
+#[cfg(all(not(feature = "aarch64"), not(feature = "x86_64")))]
+use concrete_csprng::generators::SoftwareRandomGenerator as Generator;
 use concrete_csprng::seeders::Seed;
 use libc::c_int;
-
-type Generator = SoftwareRandomGenerator;
 
 #[no_mangle]
 pub static CONCRETE_CSPRNG_VTABLE: CsprngVtable = CsprngVtable {
