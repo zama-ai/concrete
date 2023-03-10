@@ -252,9 +252,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](mlir::concretelang::ClientParameters &clientParameters) {
              std::vector<bool> result;
              for (auto input : clientParameters.inputs) {
-               if (input.encryption.hasValue()) {
-                 result.push_back(
-                     input.encryption.getValue().encoding.isSigned);
+               if (input.encryption.has_value()) {
+                 result.push_back(input.encryption.value().encoding.isSigned);
                } else {
                  result.push_back(true);
                }
