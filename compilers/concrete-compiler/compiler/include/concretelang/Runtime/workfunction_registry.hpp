@@ -66,6 +66,14 @@ struct WorkFunctionRegistry {
     return ret;
   }
 
+  void clearRegistry() {
+    std::lock_guard<std::mutex> guard(registry_guard);
+
+    ptr_to_name_registry.clear();
+    name_to_ptr_registry.clear();
+    fnid = 0;
+  }
+
 private:
   void registerWorkFunction(const void *fn, std::string name) {
 
@@ -81,7 +89,6 @@ private:
   }
 
   std::string registerAnonymousWorkFunction(const void *fn) {
-    static std::atomic<unsigned int> fnid{0};
     std::string name = "_dfr_jit_wfnname_" + std::to_string(fnid++);
     registerWorkFunction(fn, name);
     return name;
@@ -89,6 +96,7 @@ private:
 
 private:
   std::mutex registry_guard;
+  std::atomic<unsigned int> fnid{0};
   std::map<const void *, std::string> ptr_to_name_registry;
   std::map<std::string, const void *> name_to_ptr_registry;
 };

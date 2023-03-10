@@ -317,6 +317,7 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
   num_nodes = hpx::get_num_localities().get();
 
   new WorkFunctionRegistry();
+  new RuntimeContextManager();
   _dfr_jit_phase_barrier = new hpx::lcos::barrier("phase_barrier", num_nodes,
                                                   hpx::get_locality_id());
   _dfr_startup_barrier = new hpx::lcos::barrier("startup_barrier", num_nodes,
@@ -357,20 +358,21 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
     // cancelled function which registers the work functions.
     if (!_dfr_is_root_node() && !_dfr_is_jit())
       _dfr_stop_impl();
-  }
 
-  // If DFR is used and a runtime context is needed, and execution is
-  // distributed, then broadcast from root to all compute nodes.
-  if (use_dfr_p && (num_nodes > 1) && (ctx || !_dfr_is_root_node())) {
-    BEGIN_TIME(&broadcast_timer);
-    new RuntimeContextManager();
-    _dfr_node_level_runtime_context_manager->setContext(ctx);
-
+    // If DFR is used and a runtime context is needed, and execution is
+    // distributed, then broadcast from root to all compute nodes.
+    if (num_nodes > 1 && (ctx || !_dfr_is_root_node())) {
+      BEGIN_TIME(&broadcast_timer);
+      _dfr_node_level_runtime_context_manager->setContext(ctx);
+    }
     // If this is not JIT, then the remote nodes never reach _dfr_stop,
     // so root should not instantiate this barrier.
     if (_dfr_is_root_node() && _dfr_is_jit())
       _dfr_startup_barrier->wait();
-    END_TIME(&broadcast_timer, "Key broadcasting");
+
+    if (num_nodes > 1 && ctx) {
+      END_TIME(&broadcast_timer, "Key broadcasting");
+    }
   }
   BEGIN_TIME(&compute_timer);
 }
@@ -396,11 +398,11 @@ void _dfr_stop(int64_t use_dfr_p) {
       // gain as the root node would be waiting for the end of computation
       // on all remote nodes before reaching here anyway (dataflow
       // dependences).
-      if (_dfr_is_jit()) {
+      if (_dfr_is_jit())
         _dfr_jit_phase_barrier->wait();
-      }
 
       _dfr_node_level_runtime_context_manager->clearContext();
+      _dfr_node_level_work_function_registry->clearRegistry();
     }
   }
   END_TIME(&compute_timer, "Compute");
