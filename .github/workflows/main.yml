@@ -20,7 +20,7 @@ jobs:
       optimizer: ${{ steps.optimizer.outputs.any_changed }}
       concrete-cpu: ${{ steps.concrete-cpu.outputs.any_changed }}
       concrete-cuda: ${{ steps.concrete-cuda.outputs.any_changed }}
-      test-all: ${{ steps.test-all.outputs.test-all }}
+      push-main: ${{ steps.github.outputs.push-main }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
@@ -58,16 +58,16 @@ jobs:
         with:
           files: backends/concrete-cuda
       
-      - name: Set the test-all
-        id: test-all
+      - name: Set some github event outputs
+        id: github
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: echo "test-all=true" >> "$GITHUB_OUTPUT"
+        run: echo "push-main=true" >> "$GITHUB_OUTPUT"
 
 #################################################
 # concrete-python jobs ##########################
   concrete-python:
     needs: file-change
-    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.test-all
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_python_build_and_test.yml
     secrets: inherit
 
@@ -78,18 +78,21 @@ jobs:
     if: needs.file-change.outputs.compiler == 'true'
     uses: ./.github/workflows/compiler_format_and_linting.yml
 
-  compiler-aws-tests:
+  compiler-cpu-build:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.test-all
-    runs-on: ubuntu-latest
-    steps:
-      - name: Launch compiler test on AWS using Slab
-        uses: mshick/add-pr-comment@v2
-        with:
-          allow-repeats: true
-          message: |
-            @slab-ci compiler-cpu-build
-            @slab-ci compiler-gpu-build
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.push-main == 'true'
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: compiler-cpu-build
+
+  compiler-gpu-build:
+    needs: file-change
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.push-main == 'true'
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: compiler-gpu-build
 
   compiler-macos-tests:
     needs: file-change
@@ -97,11 +100,19 @@ jobs:
     uses: ./.github/workflows/compiler_macos_build_and_test.yml
     secrets: inherit
 
+  compiler-publish-docker-images:
+    needs: file-change
+    if: needs.file-change.outputs.compiler == 'true' && needs.file-change.outputs.push-main == 'true'
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: compiler-publish-docker-images
+
 #################################################
 # Optimizer jobs ################################
   optimizer:
     needs: file-change
-    if: needs.file-change.outputs.optimizer == 'true' || needs.file-change.outputs.test-all
+    if: needs.file-change.outputs.optimizer == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/optimizer.yml
     secrets: inherit
 
@@ -109,7 +120,7 @@ jobs:
 # ConcreteCPU jobs ##############################
   concrete-cpu:
     needs: file-change
-    if: needs.file-change.outputs.concrete-cpu == 'true' || needs.file-change.outputs.test-all
+    if: needs.file-change.outputs.concrete-cpu == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_cpu_test.yml
     secrets: inherit
 
@@ -117,6 +128,6 @@ jobs:
 # Concrete-cuda jobs ############################
   concrete-cuda:
     needs: file-change
-    if: needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.test-all
+    if: needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_cuda_test.yml
     secrets: inherit

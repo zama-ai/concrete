@@ -1,30 +1,8 @@
 # Build and publish Docker images for different applications using AWS EC2.
-name: Publish Docker Images
+name: Compiler - Docker images build & publish
 
 on:
-  workflow_dispatch:
-    inputs:
-      instance_id:
-        description: 'Instance ID'
-        type: string
-      instance_image_id:
-        description: 'Instance AMI ID'
-        type: string
-      instance_type:
-        description: 'Instance product type'
-        type: string
-      runner_name:
-        description: 'Action runner name'
-        type: string
-      request_id:
-        description: 'Slab request ID'
-        type: string
-      matrix_item:
-        description: 'Build matrix item'
-        type: string
-
-env:
-  THIS_FILE: .github/workflows/continuous-integration.yml
+  workflow_call:
 
 jobs:
   BuildAndPushDockerImages:
@@ -94,6 +72,7 @@ jobs:
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
+          cd compilers/concrete-compiler
           docker build -t "${IMAGE}" -f builders/Dockerfile.hpx-env .
           docker push "${IMAGE}:latest"
 
@@ -121,6 +100,7 @@ jobs:
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
+          cd compilers/concrete-compiler
           docker build -t "${IMAGE}" -f builders/Dockerfile.cuda-env .
           docker image tag "${IMAGE}" "${IMAGE}:${TAG}"
           docker push "${IMAGE}:latest"

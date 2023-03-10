@@ -12,6 +12,13 @@ instance_type = "m6i.16xlarge"
 subnet_id = "subnet-a886b4c1"
 security_group= ["sg-0bf1c1d79c97bc88f", ]
 
+[profile.m6i-metal]
+region = "eu-west-3"
+image_id = "ami-0a24aaee029d1295c"
+instance_type = "m6i.metal"
+subnet_id = "subnet-a886b4c1"
+security_group= ["sg-0bf1c1d79c97bc88f", ]
+
 [profile.gpu]
 region = "us-east-1"
 image_id = "ami-0c4773f5626d919b6"
@@ -44,10 +51,10 @@ profile = "gpu"
 check_run_name = "Compiler Performances Benchmarks (GPU)"
 
 # Trigger Docker images build
-[command.docker-images-build]
-workflow = "publish_docker_images.yml"
-profile = "m6i-old"
-check_run_name = "AWS Docker images build & publish (Slab)"
+[command.compiler-publish-docker-images]
+workflow = "compiler_publish_docker_images.yml"
+profile = "m6i-cpu-test"
+check_run_name = "Compiler - Docker images build & publish"
 
 # Trigger ML benchmarks by running each use cases subset in parallel.
 [command.ml-bench]

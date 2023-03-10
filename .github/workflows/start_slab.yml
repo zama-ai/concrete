@@ -1,19 +1,31 @@
-# Start all AWS build jobs on Slab CI bot.
-name: Start all AWS builds
+# Start job on Slab CI bot given by input command.
+name: Start AWS job
 
 on:
-  push:
-    branches:
-      - 'main'
+  workflow_call:
+    inputs:
+      command:
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      command:
+        required: true
+        type: string
+
+env:
+  GIT_REF: ${{ github.head_ref }}
 
 jobs:
-  start-builds:
-    strategy:
-      matrix:
-        command: [cpu-build, gpu-build, docker-images-build]
+  sl:
     runs-on: ubuntu-latest
     steps:
+      - name: Get git ref
+        # github.head_ref is only available from a Pull Request
+        if: env.GIT_REF == ''
+        run: |
+          echo "GIT_REF=${{ github.ref }}" >> $GITHUB_ENV
+
       - name: Checkout Slab repo
         uses: actions/checkout@v3
         with:
@@ -25,9 +37,10 @@ jobs:
         shell: bash
         # TODO: step result must be correlated to HTTP return code.
         run: |
-          echo -n '{"command": "${{ matrix.command }}", "git_ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}' > command.json
+          echo -n '{"command": "${{ inputs.command }}", "git_ref": "${{ env.GIT_REF }}", "sha": "${{ github.sha }}"}' > command.json
           SIGNATURE="$(slab/scripts/hmac_calculator.sh command.json '${{ secrets.JOB_SECRET }}')"
           curl -v -k \
+          --fail-with-body \
           -H "Content-Type: application/json" \
           -H "X-Slab-Repository: ${{ github.repository }}" \
           -H "X-Slab-Command: start_aws" \
