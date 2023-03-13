@@ -45,9 +45,6 @@ class MakeBuild(build_ext):
         cuda_support = os.environ.get("CONCRETE_COMPILER_CUDA_SUPPORT")
         if cuda_support:
             cmd.append(f"CUDA_SUPPORT={cuda_support}")
-        concrete_core_path = os.environ.get("CONCRETE_COMPILER_CONCRETE_CORE_PATH")
-        if concrete_core_path:
-            cmd.append(f"CONCRETE_CORE_PATH={concrete_core_path}")
         cmd.append(f"BUILD_DIR={build_dir()}")
         cmd.append("python-bindings")
         subprocess.check_call(cmd)

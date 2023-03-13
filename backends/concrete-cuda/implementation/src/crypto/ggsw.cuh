@@ -1,5 +1,5 @@
-#ifndef CONCRETE_CORE_GGSW_CUH
-#define CONCRETE_CORE_GGSW_CUH
+#ifndef CNCRT_GGSW_CUH
+#define CNCRT_GGSW_CUH
 
 #include "device.h"
 #include "polynomial/parameters.cuh"
