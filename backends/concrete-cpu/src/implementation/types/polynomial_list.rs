@@ -22,6 +22,10 @@ impl<C: Container> PolynomialList<C> {
     fn container_len(&self) -> usize {
         self.data.len()
     }
+
+    pub fn into_data(self) -> C {
+        self.data
+    }
 }
 
 impl PolynomialList<&[u64]> {
@@ -48,6 +52,13 @@ impl PolynomialList<&[u64]> {
                 count,
             })
     }
+    pub fn as_view(&self) -> PolynomialList<&[u64]> {
+        PolynomialList {
+            data: self.data,
+            count: self.count,
+            polynomial_size: self.polynomial_size,
+        }
+    }
 }
 
 impl PolynomialList<&mut [u64]> {
@@ -57,5 +68,21 @@ impl PolynomialList<&mut [u64]> {
         self.data
             .chunks_exact_mut(self.polynomial_size)
             .map(|a| Polynomial::new(a, self.polynomial_size))
+    }
+
+    pub fn as_mut_view(&mut self) -> PolynomialList<&mut [u64]> {
+        PolynomialList {
+            data: self.data,
+            count: self.count,
+            polynomial_size: self.polynomial_size,
+        }
+    }
+
+    pub fn as_view(&self) -> PolynomialList<&[u64]> {
+        PolynomialList {
+            data: self.data,
+            count: self.count,
+            polynomial_size: self.polynomial_size,
+        }
     }
 }

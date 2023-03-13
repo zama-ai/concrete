@@ -397,6 +397,10 @@ impl<C: Container> GlweCiphertextList<C> {
         }
     }
 
+    pub fn into_data(self) -> C {
+        self.data
+    }
+
     pub fn as_view(&self) -> GlweCiphertextListView<'_, C::Item> {
         GlweCiphertextListView {
             data: self.data.as_ref(),

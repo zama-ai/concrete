@@ -505,9 +505,7 @@ impl GlweSecretKey<&[u64]> {
 
         let mask = mask.as_view();
 
-        for idx in 0..mask.glwe_params.dimension {
-            let poly = mask.get_polynomial(idx);
-            let bin_poly = self.get_polynomial(idx);
+        for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
             let body = body.as_mut_view();
             update_with_wrapping_add_mul(body, poly, bin_poly)
         }
@@ -517,9 +515,7 @@ impl GlweSecretKey<&[u64]> {
 
         let mask = mask.as_view();
         out.copy_from_slice(body.into_data());
-        for idx in 0..mask.glwe_params.dimension {
-            let poly = mask.get_polynomial(idx);
-            let bin_poly = self.get_polynomial(idx);
+        for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
             update_with_wrapping_sub_mul(
                 Polynomial::new(out, encrypted.glwe_params.polynomial_size),
                 poly,
@@ -616,9 +612,7 @@ impl GlweSecretKey<&[u64]> {
         let (mask, mut body) = encrypted.into_mask_and_body();
 
         let mask = mask.as_view();
-        for idx in 0..mask.glwe_params.dimension {
-            let poly = mask.get_polynomial(idx);
-            let bin_poly = self.get_polynomial(idx);
+        for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
             update_with_wrapping_add_mul(body.as_mut_view(), poly, bin_poly)
         }
     }
