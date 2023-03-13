@@ -2,7 +2,7 @@
 name: New Operator
 about: Organise the support of a new operator or notion in the framework.
 labels: feature
-title: Support of **please-fill** in Concrete Numpy
+title: Support of **please-fill** in Concrete
 ---
 
 ## Umbrella

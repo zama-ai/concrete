@@ -368,7 +368,7 @@ def is_single_common_ancestor(
     #   - [...] = Node of which single common ancestor is searched
     #   - {[...]} = Both Candidate Node and Node of which single common ancestor is searched
     #
-    # Consider the folowing graph:
+    # Consider the following graph:
     #
     # (3)       (x)     (2)
     #    \     /   \   /
@@ -393,7 +393,7 @@ def is_single_common_ancestor(
     # which means there is path leading to the addition node and that path doesn't include
     # the multiplication node, so we conclude multiplication node is not a single common ancestor
     #
-    # Now, consider the folowing graph:
+    # Now, consider the following graph:
     #
     # (3)     {x}     (2)
     #    \   /   \   /
@@ -419,7 +419,7 @@ def is_single_common_ancestor(
     # In this subgraph, every node except the candidate node
     # will keep all of their non-constant predecessors,
     # which means all of their non-constant predecessors originated
-    # from the `candidate`, so it's a single common anscestor.
+    # from the `candidate`, so it's a single common ancestor.
     #
     # When you think about it, this implementation makes a lot of sense for our purposes
     # It basically determines if `nodes` "solely" depend on the `candidate`,
@@ -532,7 +532,7 @@ def convert_subgraph_to_subgraph_node(
 
     Args:
         graph (Graph):
-            orginal graph
+            original graph
 
         all_nodes (Dict[Node, None]):
             all nodes in the subgraph
