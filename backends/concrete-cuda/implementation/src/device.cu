@@ -34,6 +34,7 @@ void *cuda_malloc(uint64_t size, uint32_t gpu_index) {
 /// asynchronously.
 void *cuda_malloc_async(uint64_t size, cudaStream_t *stream,
                         uint32_t gpu_index) {
+  cudaSetDevice(gpu_index);
   void *ptr;
 
   int support_async_alloc;
@@ -160,6 +161,7 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
 /// Drop a cuda array. Tries to do it asynchronously
 int cuda_drop_async(void *ptr, cudaStream_t *stream, uint32_t gpu_index) {
 
+  cudaSetDevice(gpu_index);
   int support_async_alloc;
   check_cuda_error(cudaDeviceGetAttribute(
       &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
