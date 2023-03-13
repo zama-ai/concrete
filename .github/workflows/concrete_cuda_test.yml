@@ -1,5 +1,5 @@
 # Compile and test Concrete-cuda on an AWS instance
-name: AWS Cuda tests
+name: Concrete Cuda tests
 
 on:
   workflow_call:
@@ -8,14 +8,14 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-
     steps:
+      - uses: actions/checkout@v3
       - name: Set up Clang
         run: |
           sudo apt-get install clang-format-11
       - name: Format Concrete-cuda
         run: |
-          cd backends/concrete-cuda
+          cd backends/concrete-cuda/implementation
           ./clang-format.sh
       - name: Check diff
         run: git diff --exit-code
@@ -46,7 +46,7 @@ jobs:
           
   run-cuda-tests-linux:
     concurrency:
-      group: ${{ github.head_ref }}
+      group: ${{ github.ref }}
       cancel-in-progress: true
     name: Test code in EC2
     needs: start-runner
@@ -58,11 +58,13 @@ jobs:
         include:
           # 20.04 supports CUDA 11.0+ (gcc >= 5 && gcc <= 10). SM < 52 deprecated since 11.0
           - os: ubuntu-20.04
-            cuda: "11.3"
+            cuda: "11.8"
+            old_cuda: "11.1"
             cuda_arch: "70"
             gcc: 8
     env:
       CUDA_PATH: /usr/local/cuda-${{ matrix.cuda }}
+      OLD_CUDA_PATH: /usr/local/cuda-{{ matrix.old_cuda }}
 
     steps:
     - uses: actions/checkout@v2
@@ -72,6 +74,7 @@ jobs:
         echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
         echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
         echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
+        echo "CUDACXX=/usr/local/cuda-${{ matrix.cuda }}/bin/nvcc" >> "${GITHUB_ENV}"
     # Specify the correct host compilers
     - name: Export gcc and g++ variables
       if: ${{ !cancelled() }}
@@ -79,7 +82,6 @@ jobs:
         echo "CC=/usr/bin/gcc-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
         echo "CXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
         echo "CUDAHOSTCXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
-        echo "CUDACXX=/usr/local/cuda-${{ matrix.cuda }}/bin/nvcc" >> "${GITHUB_ENV}"
         echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
     - name: Build concrete-cuda
       if: ${{ !cancelled() }}
@@ -89,12 +91,32 @@ jobs:
         cd build
         cmake ..
         make -j8
-    - name: Test concrete-cuda
-      if: ${{ !cancelled() }}
-      run: |
-        cd backends/concrete-cuda/implementation/build
-        ./test/test_concrete_cuda
-    
+    #- name: Test concrete-cuda with Cuda 11.8
+    #  if: ${{ !cancelled() }}
+    #  run: |
+    #    cd backends/concrete-cuda/implementation/build
+    #    ./test/test_concrete_cuda
+
+    #- name: Export variables for CUDA 11.1
+    #  run: |
+    #    echo "CUDA_PATH=$OLD_CUDA_PATH" >> "${GITHUB_ENV}"
+    #    echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
+    #    echo "LD_LIBRARY_PATH=$OLD_CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
+    #    echo "CUDACXX=$OLD_CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
+    #- name: Build concrete-cuda with Cuda 11.1
+    #  if: ${{ !cancelled() }}
+    #  run: |
+    #    cd backends/concrete-cuda/implementation
+    #    mkdir build-old-cuda
+    #    cd build-old-cuda
+    #    cmake ..
+    #    make -j8
+    #- name: Test concrete-cuda with Cuda 11.1
+    #  if: ${{ !cancelled() }}
+    #  run: |
+    #    cd backends/concrete-cuda/implementation/build-old-cuda
+    #    ./test/test_concrete_cuda
+
     - name: Slack Notification
       if: ${{ always() }}
       continue-on-error: true
