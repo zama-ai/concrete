@@ -53,7 +53,7 @@ LweSecretKey::LweSecretKey(LweSecretKeyParam &parameters, CSPRNG &csprng)
   _buffer = std::make_shared<std::vector<uint64_t>>();
   _buffer->resize(parameters.dimension);
   // Initialize the lwe secret key buffer
-  concrete_cpu_init_lwe_secret_key_u64(_buffer->data(), parameters.dimension,
+  concrete_cpu_init_secret_key_u64(_buffer->data(), parameters.dimension,
                                        csprng.ptr, csprng.vtable);
 }
 
