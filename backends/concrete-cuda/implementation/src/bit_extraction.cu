@@ -1,6 +1,42 @@
 #include "bit_extraction.cuh"
 
 /*
+ * Runs standard checks to validate the inputs
+ */
+void checks_fast_extract_bits(int nbits, int polynomial_size,
+                              int level_count_bsk, int number_of_samples) {
+
+  assert(("Error (GPU extract bits): polynomial_size should be one of "
+          "256, 512, 1024, 2048, 4096, 8192",
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
+  // The number of samples should be lower than four time the number of
+  // streaming multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being
+  // related to the occupancy of 50%). The only supported value for k is 1, so
+  // k + 1 = 2 for now.
+  int number_of_sm = 0;
+  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+  assert(("Error (GPU extract bits): the number of input LWEs must be lower or "
+          "equal to the "
+          "number of streaming multiprocessors on the device divided by 8 * "
+          "level_count_bsk",
+          number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
+}
+
+/*
+ * Runs standard checks to validate the inputs
+ */
+void checks_extract_bits(int nbits, int polynomial_size, int base_log_bsk,
+                         int level_count_bsk, int number_of_samples) {
+
+  assert(("Error (GPU extract bits): base log should be <= nbits",
+          base_log_bsk <= nbits));
+  checks_fast_extract_bits(nbits, polynomial_size, level_count_bsk,
+                           number_of_samples);
+}
+
+/*
  * This scratch function allocates the necessary amount of data on the GPU for
  * the bit extraction on 32 bits inputs, into `cbs_buffer`. It also
  * configures SM options on the GPU in case FULLSM mode is going to be used.
@@ -10,6 +46,8 @@ void scratch_cuda_extract_bits_32(
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
     uint32_t level_count, uint32_t number_of_inputs, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+
+  checks_fast_extract_bits(32, polynomial_size, level_count, number_of_inputs);
 
   switch (polynomial_size) {
   case 256:
@@ -63,6 +101,7 @@ void scratch_cuda_extract_bits_64(
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
     uint32_t level_count, uint32_t number_of_inputs, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+  checks_fast_extract_bits(64, polynomial_size, level_count, number_of_inputs);
 
   switch (polynomial_size) {
   case 256:
@@ -119,24 +158,8 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
                           uint32_t level_count_bsk, uint32_t base_log_ksk,
                           uint32_t level_count_ksk, uint32_t number_of_samples,
                           uint32_t max_shared_memory) {
-  assert(("Error (GPU extract bits): base log should be <= 32",
-          base_log_bsk <= 32));
-  assert(("Error (GPU extract bits): polynomial_size should be one of "
-          "256, 512, 1024, 2048, 4096, 8192",
-          polynomial_size == 256 || polynomial_size == 512 ||
-              polynomial_size == 1024 || polynomial_size == 2048 ||
-              polynomial_size == 4096 || polynomial_size == 8192));
-  // The number of samples should be lower than four time the number of
-  // streaming multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being
-  // related to the occupancy of 50%). The only supported value for k is 1, so
-  // k + 1 = 2 for now.
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU extract bits): the number of input LWEs must be lower or "
-          "equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count_bsk",
-          number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
+  checks_extract_bits(32, polynomial_size, base_log_bsk, level_count_bsk,
+                      number_of_samples);
 
   switch (polynomial_size) {
   case 256:
@@ -253,24 +276,8 @@ void cuda_extract_bits_64(void *v_stream, uint32_t gpu_index,
                           uint32_t level_count_bsk, uint32_t base_log_ksk,
                           uint32_t level_count_ksk, uint32_t number_of_samples,
                           uint32_t max_shared_memory) {
-  assert(("Error (GPU extract bits): base log should be <= 64",
-          base_log_bsk <= 64));
-  assert(("Error (GPU extract bits): polynomial_size should be one of "
-          "256, 512, 1024, 2048, 4096, 8192",
-          polynomial_size == 256 || polynomial_size == 512 ||
-              polynomial_size == 1024 || polynomial_size == 2048 ||
-              polynomial_size == 4096 || polynomial_size == 8192));
-  // The number of samples should be lower than four time the number of
-  // streaming multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being
-  // related to the occupancy of 50%). The only supported value for k is 1, so
-  // k + 1 = 2 for now.
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU extract bits): the number of input LWEs must be lower or "
-          "equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count_bsk",
-          number_of_samples <= number_of_sm / 4. / 2. / level_count_bsk));
+  checks_extract_bits(64, polynomial_size, base_log_bsk, level_count_bsk,
+                      number_of_samples);
 
   switch (polynomial_size) {
   case 256:

@@ -1,6 +1,54 @@
 #include "wop_bootstrap.cuh"
 
 /*
+ * Runs standard checks to validate the inputs
+ */
+void checks_wop_pbs(int polynomial_size, int level_count_bsk,
+                    int number_of_inputs) {
+  assert(("Error (GPU WOP PBS): polynomial_size should be one of "
+          "256, 512, 1024, 2048, 4096, 8192",
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
+  // The number of inputs should be lower than the number of streaming
+  // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
+  // to the occupancy of 50%). The only supported value for k is 1, so
+  // k + 1 = 2 for now.
+  int number_of_sm = 0;
+  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+  assert(("Error (GPU WOP PBS): the number of input LWEs must be lower or "
+          "equal to the "
+          "number of streaming multiprocessors on the device divided by 8 * "
+          "level_count_bsk",
+          number_of_inputs <= number_of_sm / 4. / 2. / level_count_bsk));
+}
+
+void checks_fast_circuit_bootstrap_vertical_packing(int polynomial_size) {
+  assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
+          "256, 512, 1024, 2048, 4096, 8192",
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
+}
+
+void checks_circuit_bootstrap_vertical_packing(int polynomial_size,
+                                               int number_of_inputs,
+                                               int level_count_bsk) {
+  // The number of inputs should be lower than the number of streaming
+  // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
+  // to the occupancy of 50%). The only supported value for k is 1, so
+  // k + 1 = 2 for now.
+  int number_of_sm = 0;
+  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+  assert(("Error (GPU extract bits): the number of input LWEs must be lower or "
+          "equal to the "
+          "number of streaming multiprocessors on the device divided by 8 * "
+          "level_count_bsk",
+          number_of_inputs <= number_of_sm / 4. / 2. / level_count_bsk));
+  checks_fast_circuit_bootstrap_vertical_packing(polynomial_size);
+}
+
+/*
  * This scratch function allocates the necessary amount of data on the GPU for
  * the circuit bootstrap and vertical packing on 32 bits inputs, into
  * `cbs_vp_buffer`. It also fills the value of delta_log to be used in the
@@ -12,6 +60,8 @@ void scratch_cuda_circuit_bootstrap_vertical_packing_32(
     uint32_t polynomial_size, uint32_t level_count_cbs,
     uint32_t number_of_inputs, uint32_t tau, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+
+  checks_fast_circuit_bootstrap_vertical_packing(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
@@ -67,6 +117,8 @@ void scratch_cuda_circuit_bootstrap_vertical_packing_64(
     uint32_t polynomial_size, uint32_t level_count_cbs,
     uint32_t number_of_inputs, uint32_t tau, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+
+  checks_fast_circuit_bootstrap_vertical_packing(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
@@ -124,6 +176,7 @@ void scratch_cuda_wop_pbs_32(
     uint32_t number_of_bits_of_message_including_padding,
     uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
     uint32_t max_shared_memory, bool allocate_gpu_memory) {
+  checks_wop_pbs(polynomial_size, level_count_bsk, number_of_inputs);
   switch (polynomial_size) {
   case 256:
     scratch_wop_pbs<uint32_t, int32_t, Degree<256>>(
@@ -192,6 +245,7 @@ void scratch_cuda_wop_pbs_64(
     uint32_t number_of_bits_of_message_including_padding,
     uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
     uint32_t max_shared_memory, bool allocate_gpu_memory) {
+  checks_wop_pbs(polynomial_size, level_count_bsk, number_of_inputs);
   switch (polynomial_size) {
   case 256:
     scratch_wop_pbs<uint64_t, int64_t, Degree<256>>(
@@ -282,22 +336,10 @@ void cuda_circuit_bootstrap_vertical_packing_64(
     uint32_t level_count_pksk, uint32_t base_log_pksk, uint32_t level_count_cbs,
     uint32_t base_log_cbs, uint32_t number_of_inputs, uint32_t lut_number,
     uint32_t max_shared_memory) {
-  assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
-          "256, 512, 1024, 2048, 4096, 8192",
-          polynomial_size == 256 || polynomial_size == 512 ||
-              polynomial_size == 1024 || polynomial_size == 2048 ||
-              polynomial_size == 4096 || polynomial_size == 8192));
-  // The number of inputs should be lower than the number of streaming
-  // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
-  // to the occupancy of 50%). The only supported value for k is 1, so
-  // k + 1 = 2 for now.
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU extract bits): the number of input LWEs must be lower or "
-          "equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count_bsk",
-          number_of_inputs <= number_of_sm / 4. / 2. / level_count_bsk));
+
+  checks_circuit_bootstrap_vertical_packing(polynomial_size, number_of_inputs,
+                                            level_count_bsk);
+
   switch (polynomial_size) {
   case 256:
     host_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<256>>(
@@ -411,22 +453,7 @@ void cuda_wop_pbs_64(void *v_stream, uint32_t gpu_index, void *lwe_array_out,
                      uint32_t number_of_bits_of_message_including_padding,
                      uint32_t number_of_bits_to_extract, uint32_t delta_log,
                      uint32_t number_of_inputs, uint32_t max_shared_memory) {
-  assert(("Error (GPU WOP PBS): polynomial_size should be one of "
-          "256, 512, 1024, 2048, 4096, 8192",
-          polynomial_size == 256 || polynomial_size == 512 ||
-              polynomial_size == 1024 || polynomial_size == 2048 ||
-              polynomial_size == 4096 || polynomial_size == 8192));
-  // The number of inputs should be lower than the number of streaming
-  // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
-  // to the occupancy of 50%). The only supported value for k is 1, so
-  // k + 1 = 2 for now.
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU WOP PBS): the number of input LWEs must be lower or "
-          "equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count_bsk",
-          number_of_inputs <= number_of_sm / 4. / 2. / level_count_bsk));
+  checks_wop_pbs(polynomial_size, level_count_bsk, number_of_inputs);
   switch (polynomial_size) {
   case 256:
     host_wop_pbs<uint64_t, int64_t, Degree<256>>(

@@ -3,6 +3,46 @@
 #include <cassert>
 
 /*
+ * Runs standard checks to validate the inputs
+ */
+void checks_fast_cmux_tree(int nbits, int polynomial_size, int r) {
+  assert((
+      "Error (GPU Cmux tree): polynomial size should be one of 256, 512, 1024, "
+      "2048, 4096, 8192",
+      polynomial_size == 256 || polynomial_size == 512 ||
+          polynomial_size == 1024 || polynomial_size == 2048 ||
+          polynomial_size == 4096 || polynomial_size == 8192));
+  // For larger k we will need to adjust the mask size
+  assert(("Error (GPU Cmux tree): r, the number of layers in the tree, should "
+          "be >= 1 ",
+          r >= 1));
+}
+
+/*
+ * Runs standard checks to validate the inputs
+ */
+void checks_cmux_tree(int nbits, int polynomial_size, int base_log, int r) {
+
+  assert(("Error (GPU Cmux tree): base log should be <= nbits",
+          base_log <= nbits));
+  checks_fast_cmux_tree(nbits, polynomial_size, r);
+}
+
+/*
+ * Runs standard checks to validate the inputs
+ */
+void checks_blind_rotation_and_sample_extraction(int polynomial_size) {
+
+  assert(("Error (GPU Blind rotation + sample extraction): polynomial size "
+          "should be one of 256, 512, "
+          "1024, "
+          "2048, 4096, 8192",
+          polynomial_size == 256 || polynomial_size == 512 ||
+              polynomial_size == 1024 || polynomial_size == 2048 ||
+              polynomial_size == 4096 || polynomial_size == 8192));
+}
+
+/*
  * This scratch function allocates the necessary amount of data on the GPU for
  * the Cmux tree on 32 bits inputs, into `cmux_tree_buffer`. It also configures
  * SM options on the GPU in case FULLSM mode is going to be used.
@@ -14,6 +54,7 @@ void scratch_cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index,
                                uint32_t r, uint32_t tau,
                                uint32_t max_shared_memory,
                                bool allocate_gpu_memory) {
+  checks_fast_cmux_tree(32, polynomial_size, r);
 
   switch (polynomial_size) {
   case 256:
@@ -63,6 +104,8 @@ void scratch_cuda_cmux_tree_64(void *v_stream, uint32_t gpu_index,
                                uint32_t r, uint32_t tau,
                                uint32_t max_shared_memory,
                                bool allocate_gpu_memory) {
+  checks_fast_cmux_tree(64, polynomial_size, r);
+
   switch (polynomial_size) {
   case 256:
     scratch_cmux_tree<uint64_t, int64_t, Degree<256>>(
@@ -110,17 +153,7 @@ void cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
                        uint32_t level_count, uint32_t r, uint32_t tau,
                        uint32_t max_shared_memory) {
 
-  assert(("Error (GPU Cmux tree): base log should be <= 32", base_log <= 32));
-  assert((
-      "Error (GPU Cmux tree): polynomial size should be one of 256, 512, 1024, "
-      "2048, 4096, 8192",
-      polynomial_size == 256 || polynomial_size == 512 ||
-          polynomial_size == 1024 || polynomial_size == 2048 ||
-          polynomial_size == 4096 || polynomial_size == 8192));
-  // For larger k we will need to adjust the mask size
-  assert(("Error (GPU Cmux tree): r, the number of layers in the tree, should "
-          "be >= 1 ",
-          r >= 1));
+  checks_cmux_tree(32, polynomial_size, base_log, r);
 
   switch (polynomial_size) {
   case 256:
@@ -197,18 +230,7 @@ void cuda_cmux_tree_64(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
                        uint32_t polynomial_size, uint32_t base_log,
                        uint32_t level_count, uint32_t r, uint32_t tau,
                        uint32_t max_shared_memory) {
-
-  assert(("Error (GPU Cmux tree): base log should be <= 64", base_log <= 64));
-  assert((
-      "Error (GPU Cmux tree): polynomial size should be one of 256, 512, 1024, "
-      "2048, 4096, 8192",
-      polynomial_size == 256 || polynomial_size == 512 ||
-          polynomial_size == 1024 || polynomial_size == 2048 ||
-          polynomial_size == 4096 || polynomial_size == 8192));
-  // For larger k we will need to adjust the mask size
-  assert(("Error (GPU Cmux tree): r, the number of layers in the tree, should "
-          "be >= 1 ",
-          r >= 1));
+  checks_cmux_tree(64, polynomial_size, base_log, r);
 
   switch (polynomial_size) {
   case 256:
@@ -273,6 +295,7 @@ void scratch_cuda_blind_rotation_sample_extraction_32(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t mbr_size, uint32_t tau, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+  checks_blind_rotation_and_sample_extraction(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
@@ -320,6 +343,7 @@ void scratch_cuda_blind_rotation_sample_extraction_64(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t mbr_size, uint32_t tau, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+  checks_blind_rotation_and_sample_extraction(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
@@ -386,6 +410,7 @@ void cuda_blind_rotate_and_sample_extraction_64(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t base_log,
     uint32_t l_gadget, uint32_t max_shared_memory) {
 
+  checks_blind_rotation_and_sample_extraction(polynomial_size);
   switch (polynomial_size) {
   case 256:
     host_blind_rotate_and_sample_extraction<uint64_t, int64_t, Degree<256>>(

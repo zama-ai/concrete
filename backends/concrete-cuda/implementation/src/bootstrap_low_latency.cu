@@ -1,6 +1,42 @@
 #include "bootstrap_low_latency.cuh"
 
 /*
+ * Runs standard checks to validate the inputs
+ */
+void checks_fast_bootstrap_low_latency(int nbits, int level_count,
+                                       int polynomial_size, int num_samples) {
+
+  assert((
+      "Error (GPU low latency PBS): polynomial size should be one of 256, 512, "
+      "1024, 2048, 4096, 8192",
+      polynomial_size == 256 || polynomial_size == 512 ||
+          polynomial_size == 1024 || polynomial_size == 2048 ||
+          polynomial_size == 4096 || polynomial_size == 8192));
+  // The number of samples should be lower than 4 * SM/((k + 1) * l) (the
+  // factor 4 being related to the occupancy of 50%). The only supported
+  // value for k is 1, so k + 1 = 2 for now.
+  int number_of_sm = 0;
+  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+  assert(("Error (GPU low latency PBS): the number of input LWEs must be lower "
+          "or equal to the "
+          "number of streaming multiprocessors on the device divided by 8 * "
+          "level_count",
+          num_samples <= number_of_sm * 4. / 2. / level_count));
+}
+
+/*
+ * Runs standard checks to validate the inputs
+ */
+void checks_bootstrap_low_latency(int nbits, int level_count, int base_log,
+                                  int polynomial_size, int num_samples) {
+
+  assert(("Error (GPU low latency PBS): base log should be <= nbits",
+          base_log <= nbits));
+  checks_fast_bootstrap_low_latency(nbits, level_count, polynomial_size,
+                                    num_samples);
+}
+
+/*
  * This scratch function allocates the necessary amount of data on the GPU for
  * the low latency PBS on 32 bits inputs, into `pbs_buffer`. It also
  * configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to
@@ -11,6 +47,8 @@ void scratch_cuda_bootstrap_low_latency_32(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+  checks_fast_bootstrap_low_latency(32, level_count, polynomial_size,
+                                    input_lwe_ciphertext_count);
 
   switch (polynomial_size) {
   case 256:
@@ -65,6 +103,8 @@ void scratch_cuda_bootstrap_low_latency_64(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+  checks_fast_bootstrap_low_latency(64, level_count, polynomial_size,
+                                    input_lwe_ciphertext_count);
 
   switch (polynomial_size) {
   case 256:
@@ -123,24 +163,8 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
     uint32_t max_shared_memory) {
 
-  assert(("Error (GPU low latency PBS): base log should be <= 32",
-          base_log <= 32));
-  assert((
-      "Error (GPU low latency PBS): polynomial size should be one of 256, 512, "
-      "1024, 2048, 4096, 8192",
-      polynomial_size == 256 || polynomial_size == 512 ||
-          polynomial_size == 1024 || polynomial_size == 2048 ||
-          polynomial_size == 4096 || polynomial_size == 8192));
-  // The number of samples should be lower than 4 * SM/((k + 1) * l) (the
-  // factor 4 being related to the occupancy of 50%). The only supported
-  // value for k is 1, so k + 1 = 2 for now.
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU low latency PBS): the number of input LWEs must be lower "
-          "or equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count",
-          num_samples <= number_of_sm * 4. / 2. / level_count));
+  checks_bootstrap_low_latency(32, level_count, base_log, polynomial_size,
+                               num_samples);
 
   switch (polynomial_size) {
   case 256:
@@ -280,24 +304,8 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
     uint32_t max_shared_memory) {
 
-  assert(("Error (GPU low latency PBS): base log should be <= 64",
-          base_log <= 64));
-  assert((
-      "Error (GPU low latency PBS): polynomial size should be one of 256, 512, "
-      "1024, 2048, 4096, 8192",
-      polynomial_size == 256 || polynomial_size == 512 ||
-          polynomial_size == 1024 || polynomial_size == 2048 ||
-          polynomial_size == 4096 || polynomial_size == 8192));
-  // The number of samples should be lower than 4 * SM/((k + 1) * l) (the
-  // factor 4 being related to the occupancy of 50%). The only supported
-  // value for k is 1, so k + 1 = 2 for now.
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU low latency PBS): the number of input LWEs must be lower "
-          "or equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count",
-          num_samples <= number_of_sm * 4. / 2. / level_count));
+  checks_bootstrap_low_latency(64, level_count, base_log, polynomial_size,
+                               num_samples);
 
   switch (polynomial_size) {
   case 256:
