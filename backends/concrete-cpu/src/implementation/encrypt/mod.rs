@@ -515,16 +515,22 @@ impl GlweSecretKey<&[u64]> {
             update_with_wrapping_add_mul(body, poly, bin_poly)
         }
     }
-    pub fn decrypt_glwe(self, encrypted: GlweCiphertext<&[u64]>) -> Vec<u64> {
+    pub fn decrypt_glwe_inplace(self, encrypted: GlweCiphertext<&[u64]>, out: &mut [u64]) {
         let (mask, body) = encrypted.into_mask_and_body();
 
         let mask = mask.as_view();
-        let mut out = body.into_data().to_owned();
+        out.copy_from_slice(body.into_data());
         for idx in 0..mask.glwe_params.dimension {
             let poly = mask.get_polynomial(idx);
             let bin_poly = self.get_polynomial(idx);
-            update_with_wrapping_sub_mul(&mut out, poly, bin_poly)
+            update_with_wrapping_sub_mul(out, poly, bin_poly)
         }
+    }
+
+    pub fn decrypt_glwe(self, encrypted: GlweCiphertext<&[u64]>) -> Vec<u64> {
+        let mut out = vec![0; encrypted.glwe_params.polynomial_size];
+
+        self.decrypt_glwe_inplace(encrypted, &mut out);
 
         out
     }

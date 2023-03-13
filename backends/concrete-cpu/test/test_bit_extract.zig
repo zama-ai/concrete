@@ -32,10 +32,10 @@ fn test3(csprng: *cpu.Csprng) !void {
     const big_dim = glwe_dim * polynomial_size;
 
     const small_sk = try allocator.alloc(u64, small_dim);
-    cpu.concrete_cpu_init_lwe_secret_key_u64(small_sk.ptr, small_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+    cpu.concrete_cpu_init_secret_key_u64(small_sk.ptr, small_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
 
     const big_sk = try allocator.alloc(u64, big_dim);
-    cpu.concrete_cpu_init_lwe_secret_key_u64(big_sk.ptr, big_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+    cpu.concrete_cpu_init_secret_key_u64(big_sk.ptr, big_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
 
     const bsk_f = try common.new_bsk(
         csprng,

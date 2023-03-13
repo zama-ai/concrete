@@ -160,6 +160,12 @@ void concrete_cpu_construct_concrete_fft(struct Fft *mem, size_t polynomial_size
 
 int concrete_cpu_crypto_secure_random_128(struct Uint128 *u128);
 
+void concrete_cpu_decrypt_glwe_ciphertext_u64(const uint64_t *glwe_sk,
+                                              uint64_t *polynomial_out,
+                                              const uint64_t *glwe_ct_in,
+                                              size_t glwe_dimension,
+                                              size_t polynomial_size);
+
 void concrete_cpu_decrypt_lwe_ciphertext_u64(const uint64_t *lwe_sk,
                                              const uint64_t *lwe_ct_in,
                                              size_t lwe_dimension,
@@ -168,6 +174,17 @@ void concrete_cpu_decrypt_lwe_ciphertext_u64(const uint64_t *lwe_sk,
 void concrete_cpu_destroy_concrete_csprng(struct Csprng *mem);
 
 void concrete_cpu_destroy_concrete_fft(struct Fft *mem);
+
+void concrete_cpu_encrypt_ggsw_ciphertext_u64(const uint64_t *glwe_sk,
+                                              uint64_t *ggsw_out,
+                                              uint64_t input,
+                                              size_t glwe_dimension,
+                                              size_t polynomial_size,
+                                              size_t level,
+                                              size_t base_log,
+                                              double variance,
+                                              struct Csprng *csprng,
+                                              const struct CsprngVtable *csprng_vtable);
 
 void concrete_cpu_encrypt_lwe_ciphertext_u64(const uint64_t *lwe_sk,
                                              uint64_t *lwe_out,
@@ -244,10 +261,10 @@ void concrete_cpu_init_lwe_keyswitch_key_u64(uint64_t *lwe_ksk,
                                              struct Csprng *csprng,
                                              const struct CsprngVtable *csprng_vtable);
 
-void concrete_cpu_init_lwe_secret_key_u64(uint64_t *lwe_sk,
-                                          size_t lwe_dimension,
-                                          struct Csprng *csprng,
-                                          const struct CsprngVtable *csprng_vtable);
+void concrete_cpu_init_secret_key_u64(uint64_t *sk,
+                                      size_t dimension,
+                                      struct Csprng *csprng,
+                                      const struct CsprngVtable *csprng_vtable);
 
 size_t concrete_cpu_keyswitch_key_size_u64(size_t decomposition_level_count,
                                            size_t _decomposition_base_log,

@@ -43,10 +43,10 @@ const KeySet = struct {
         const out_dim = glwe_dim * polynomial_size;
 
         const in_sk = try allocator.alloc(u64, in_dim);
-        cpu.concrete_cpu_init_lwe_secret_key_u64(in_sk.ptr, in_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+        cpu.concrete_cpu_init_secret_key_u64(in_sk.ptr, in_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
 
         const out_sk = try allocator.alloc(u64, out_dim);
-        cpu.concrete_cpu_init_lwe_secret_key_u64(out_sk.ptr, out_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+        cpu.concrete_cpu_init_secret_key_u64(out_sk.ptr, out_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
 
         const bsk_f = try common.new_bsk(
             csprng,

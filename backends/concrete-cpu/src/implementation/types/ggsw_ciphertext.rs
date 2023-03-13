@@ -164,13 +164,12 @@ impl<C: Container> GgswCiphertext<C> {
     pub unsafe fn from_raw_parts(
         data: C::Pointer,
         glwe_params: GlweParams,
-        decomposition_level_count: usize,
         decomp_params: DecompParams,
     ) -> Self
     where
         C: Split,
     {
-        let data = C::from_raw_parts(data, Self::data_len(glwe_params, decomposition_level_count));
+        let data = C::from_raw_parts(data, Self::data_len(glwe_params, decomp_params.level));
         Self {
             data,
             glwe_params,

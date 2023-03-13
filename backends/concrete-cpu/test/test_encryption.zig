@@ -14,7 +14,7 @@ fn test_encrypt_decrypt(csprng: *cpu.Csprng, pt: u64, dim: u64) !u64 {
     const sk = try allocator.alloc(u64, dim);
     defer allocator.free(sk);
 
-    cpu.concrete_cpu_init_lwe_secret_key_u64(sk.ptr, dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+    cpu.concrete_cpu_init_secret_key_u64(sk.ptr, dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
 
     const ct = try allocator.alloc(u64, dim + 1);
     defer allocator.free(ct);
