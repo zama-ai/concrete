@@ -41,7 +41,6 @@ pub enum Parallelism {
     Rayon = 1,
 }
 
-#[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::c_api::csprng::CONCRETE_CSPRNG_VTABLE;

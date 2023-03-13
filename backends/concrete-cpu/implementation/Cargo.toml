@@ -49,7 +49,11 @@ cbindgen = "0.24"
 criterion = "0.4"
 
 [[bench]]
-name = "bench"
+name = "bench_linear"
+harness = false
+
+[[bench]]
+name = "bench_bootstrap"
 harness = false
 
 [profile.test]

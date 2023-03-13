@@ -131,22 +131,17 @@ pub fn pbs_modulus_switch(
     output as usize
 }
 
-#[cfg(test)]
-mod tests {
-    use std::mem::MaybeUninit;
-
-    use crate::c_api::types::tests::to_generic;
+pub mod tests {
     use crate::implementation::fft::{Fft, FftView};
     use crate::implementation::types::*;
-    use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
-    use concrete_csprng::seeders::Seed;
     use dyn_stack::DynStack;
+    use std::mem::MaybeUninit;
 
-    struct KeySet {
+    pub struct KeySet {
         in_dim: usize,
         glwe_params: GlweParams,
         decomp_params: DecompParams,
-        in_sk: LweSecretKey<Vec<u64>>,
+        pub in_sk: LweSecretKey<Vec<u64>>,
         out_sk: LweSecretKey<Vec<u64>>,
         fourier_bsk: BootstrapKey<Vec<f64>>,
         fft: Fft,
@@ -154,7 +149,7 @@ mod tests {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn new_bsk(
+    pub fn new_bsk(
         csprng: CsprngMut,
         in_dim: usize,
         glwe_params: GlweParams,
@@ -188,7 +183,7 @@ mod tests {
     }
 
     impl KeySet {
-        fn new(
+        pub fn new(
             mut csprng: CsprngMut,
             in_dim: usize,
             glwe_params: GlweParams,
@@ -201,7 +196,11 @@ mod tests {
 
             let fft = Fft::new(glwe_params.polynomial_size);
 
-            let mut stack = vec![MaybeUninit::new(0_u8); 100000];
+            let stack_size = BootstrapKey::bootstrap_scratch(glwe_params, fft.as_view())
+                .unwrap()
+                .size_bytes();
+
+            let mut stack = vec![MaybeUninit::new(0_u8); stack_size];
 
             let bsk_f = new_bsk(
                 csprng,
@@ -231,7 +230,7 @@ mod tests {
             }
         }
 
-        fn bootstrap(
+        pub fn encrypt_bootstrap_decrypt(
             &mut self,
             csprng: CsprngMut,
             pt: u64,
@@ -251,20 +250,37 @@ mod tests {
                 (self.glwe_params.dimension + 1) * self.glwe_params.polynomial_size
             );
 
+            self.bootstrap(input.as_view(), output.as_mut_view(), lut);
+
+            self.out_sk.as_view().decrypt_lwe(output.as_view())
+        }
+        pub fn bootstrap(
+            &mut self,
+            input: LweCiphertext<&[u64]>,
+            output: LweCiphertext<&mut [u64]>,
+            lut: GlweCiphertext<&[u64]>,
+        ) {
+            assert_eq!(
+                lut.data.len(),
+                (self.glwe_params.dimension + 1) * self.glwe_params.polynomial_size
+            );
+
             self.fourier_bsk.as_view().bootstrap(
-                output.as_mut_view(),
-                input.as_view(),
+                output,
+                input,
                 lut,
                 self.fft.as_view(),
                 DynStack::new(&mut self.stack),
             );
-
-            self.out_sk.as_view().decrypt_lwe(output.as_view())
         }
     }
 
     #[test]
     fn bootstrap_correctness() {
+        use crate::c_api::types::tests::to_generic;
+        use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+        use concrete_csprng::seeders::Seed;
+
         let mut csprng = SoftwareRandomGenerator::new(Seed(0));
 
         let glwe_dim = 1;
@@ -321,7 +337,7 @@ mod tests {
 
             let pt = (lut_index as f64 + 0.5) / (2. * lut_case_number as f64) * 2.0_f64.powi(64);
 
-            let image = keyset.bootstrap(
+            let image = keyset.encrypt_bootstrap_decrypt(
                 to_generic(&mut csprng),
                 pt as u64,
                 0.0000000001,
