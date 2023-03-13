@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(concrete_cuda LANGUAGES CXX CUDA)
 
-include(CTest)
-
 # See if the minimum CUDA version is available. If not, only enable documentation building.
 set(MINIMUM_SUPPORTED_CUDA_VERSION 10.0)
 include(CheckLanguage)
@@ -69,6 +67,7 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -ccbin ${CMAKE_CXX_COMPILER} -O3 ${CUD
 set(INCLUDE_DIR include)
 
 add_subdirectory(src)
+add_subdirectory(test)
 add_subdirectory(parameters)
 target_include_directories(concrete_cuda PRIVATE ${INCLUDE_DIR})
 
@@ -87,3 +86,6 @@ if (CPPLINT)
     set_target_properties(all_lint PROPERTIES EXCLUDE_FROM_ALL TRUE)
     # set_target_properties(all_lint PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE)
 endif ()
+
+enable_testing()
+

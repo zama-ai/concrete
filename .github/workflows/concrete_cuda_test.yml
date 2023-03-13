@@ -39,7 +39,7 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
-          ec2-image-id: ami-0c4d39cb3dba0fcff
+          ec2-image-id: ami-03f11dc8c6a5f5c0a
           ec2-instance-type: p3.2xlarge
           subnet-id: subnet-8123c9e7
           security-group-id: sg-0466d33ced960ba35
@@ -91,31 +91,31 @@ jobs:
         cd build
         cmake ..
         make -j8
-    #- name: Test concrete-cuda with Cuda 11.8
-    #  if: ${{ !cancelled() }}
-    #  run: |
-    #    cd backends/concrete-cuda/implementation/build
-    #    ./test/test_concrete_cuda
+    - name: Test concrete-cuda with Cuda 11.8
+      if: ${{ !cancelled() }}
+      run: |
+        cd backends/concrete-cuda/implementation/build
+        ./test/test_concrete_cuda
 
-    #- name: Export variables for CUDA 11.1
-    #  run: |
-    #    echo "CUDA_PATH=$OLD_CUDA_PATH" >> "${GITHUB_ENV}"
-    #    echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
-    #    echo "LD_LIBRARY_PATH=$OLD_CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-    #    echo "CUDACXX=$OLD_CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
-    #- name: Build concrete-cuda with Cuda 11.1
-    #  if: ${{ !cancelled() }}
-    #  run: |
-    #    cd backends/concrete-cuda/implementation
-    #    mkdir build-old-cuda
-    #    cd build-old-cuda
-    #    cmake ..
-    #    make -j8
-    #- name: Test concrete-cuda with Cuda 11.1
-    #  if: ${{ !cancelled() }}
-    #  run: |
-    #    cd backends/concrete-cuda/implementation/build-old-cuda
-    #    ./test/test_concrete_cuda
+    - name: Export variables for CUDA 11.1
+      run: |
+        echo "CUDA_PATH=$OLD_CUDA_PATH" >> "${GITHUB_ENV}"
+        echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
+        echo "LD_LIBRARY_PATH=$OLD_CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
+        echo "CUDACXX=$OLD_CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
+    - name: Build concrete-cuda with Cuda 11.1
+      if: ${{ !cancelled() }}
+      run: |
+        cd backends/concrete-cuda/implementation
+        mkdir build-old-cuda
+        cd build-old-cuda
+        cmake ..
+        make -j8
+    - name: Test concrete-cuda with Cuda 11.1
+      if: ${{ !cancelled() }}
+      run: |
+        cd backends/concrete-cuda/implementation/build-old-cuda
+        ./test/test_concrete_cuda
 
     - name: Slack Notification
       if: ${{ always() }}

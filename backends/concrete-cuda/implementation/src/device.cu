@@ -111,6 +111,28 @@ int cuda_synchronize_device(uint32_t gpu_index) {
   return 0;
 }
 
+int cuda_memset_async(void *dest, uint64_t val, uint64_t size,
+                      cudaStream_t *stream, uint32_t gpu_index) {
+  if (size == 0) {
+    // error code: zero copy size
+    return -3;
+  }
+
+  if (gpu_index >= cuda_get_number_of_gpus()) {
+    // error code: invalid gpu_index
+    return -2;
+  }
+  cudaPointerAttributes attr;
+  cudaPointerGetAttributes(&attr, dest);
+  if (attr.device != gpu_index && attr.type != cudaMemoryTypeDevice) {
+    // error code: invalid device pointer
+    return -1;
+  }
+  cudaSetDevice(gpu_index);
+  cudaMemsetAsync(dest, val, size, *stream);
+  return 0;
+}
+
 /// Tries to copy memory to the GPU asynchronously
 /// 0: success
 /// -1: error, invalid device pointer
