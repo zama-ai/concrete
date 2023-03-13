@@ -19,6 +19,7 @@ jobs:
       compiler: ${{ steps.compiler.outputs.any_changed }}
       optimizer: ${{ steps.optimizer.outputs.any_changed }}
       concrete-cpu: ${{ steps.concrete-cpu.outputs.any_changed }}
+      concrete-cuda: ${{ steps.concrete-cuda.outputs.any_changed }}
       test-all: ${{ steps.test-all.outputs.test-all }}
     steps:
       - name: Checkout the repository
@@ -50,6 +51,12 @@ jobs:
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: backends/concrete-cpu
+      
+      - name: Get changed files in the concrete-cuda directory
+        id: concrete-cpu
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: backends/concrete-cuda
       
       - name: Set the test-all
         id: test-all
@@ -104,4 +111,12 @@ jobs:
     needs: file-change
     if: needs.file-change.outputs.concrete-cpu == 'true' || needs.file-change.outputs.test-all
     uses: ./.github/workflows/concrete_cpu_test.yml
+    secrets: inherit
+
+#################################################
+# Concrete-cuda jobs ############################
+  concrete-cuda:
+    needs: file-change
+    if: needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.test-all
+    uses: ./.github/workflows/concrete_cuda_test.yml
     secrets: inherit
