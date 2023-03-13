@@ -394,7 +394,7 @@ unsafe fn update_with_fmadd_scalar(
 #[cfg_attr(__profiling, inline(never))]
 unsafe fn update_with_fmadd(
     output_fft_buffer: &mut [MaybeUninit<f64>],
-    ggsw_row: GgswLevelRow<&[f64]>,
+    ggsw_row: GlweCiphertext<&[f64]>,
     fourier: &[f64],
     is_output_uninit: bool,
     polynomial_size: usize,
