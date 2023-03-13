@@ -1,10 +1,6 @@
-#include "../include/bootstrap.h"
-#include "../include/device.h"
-#include "concrete-cpu.h"
-#include "utils.h"
-#include "gtest/gtest.h"
-#include <cmath>
 #include <cstdint>
+#include <gtest/gtest.h>
+#include <setup_and_teardown.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -47,7 +43,7 @@ protected:
   int tau;
   int p;
   uint64_t delta;
-  uint32_t cbs_delta_log;
+  int cbs_delta_log;
   int delta_log;
   int delta_log_lut;
   Csprng *csprng;
@@ -71,7 +67,6 @@ public:
   // Test arithmetic functions
   void SetUp() {
     stream = cuda_create_stream(0);
-    void *v_stream = (void *)stream;
 
     // TestParams
     lwe_dimension = (int)GetParam().lwe_dimension;
@@ -89,104 +84,30 @@ public:
     cbs_level = (int)GetParam().cbs_level;
     tau = (int)GetParam().tau;
     p = 10 / tau;
-    delta_log = 64 - p;
-    delta_log_lut = delta_log;
-    delta = (uint64_t)(1) << delta_log;
-
-    // Create a Csprng
-    csprng =
-        (Csprng *)aligned_alloc(CONCRETE_CSPRNG_ALIGN, CONCRETE_CSPRNG_SIZE);
-    uint8_t seed[16] = {(uint8_t)0};
-    concrete_cpu_construct_concrete_csprng(
-        csprng, Uint128{.little_endian_bytes = {*seed}});
-
     input_lwe_dimension = glwe_dimension * polynomial_size;
-    // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
-                             REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, lwe_dimension, csprng,
-                             REPETITIONS);
-    generate_lwe_keyswitch_keys(
-        stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
-        input_lwe_dimension, lwe_dimension, ks_level, ks_base_log, csprng,
-        lwe_modular_variance, REPETITIONS);
-    generate_lwe_bootstrap_keys(
-        stream, gpu_index, &d_fourier_bsk_array, lwe_sk_out_array,
-        lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
-        pbs_level, pbs_base_log, csprng, glwe_modular_variance, REPETITIONS);
-    generate_lwe_private_functional_keyswitch_key_lists(
-        stream, gpu_index, &d_pksk_array, lwe_sk_in_array, lwe_sk_in_array,
-        input_lwe_dimension, glwe_dimension, polynomial_size, pksk_level,
-        pksk_base_log, csprng, lwe_modular_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(p, delta, tau, REPETITIONS, SAMPLES);
 
-    // LUT creation
-    int lut_size = polynomial_size;
-    int lut_num = tau << (tau * p - (int)log2(polynomial_size)); // r
-
-    uint64_t *big_lut =
-        (uint64_t *)malloc(lut_num * lut_size * sizeof(uint64_t));
-    for (int t = tau - 1; t >= 0; t--) {
-      uint64_t *small_lut = big_lut + (ptrdiff_t)(t * (1 << (tau * p)));
-      for (uint64_t value = 0; value < (uint64_t)(1 << (tau * p)); value++) {
-        int nbits = t * p;
-        uint64_t x = (value >> nbits) & (uint64_t)((1 << p) - 1);
-        small_lut[value] =
-            ((x % (uint64_t)(1 << (64 - delta_log))) << delta_log_lut);
-      }
-    }
-    d_lut_vector = (uint64_t *)cuda_malloc_async(
-        lut_num * lut_size * sizeof(uint64_t), stream, gpu_index);
-    cuda_memcpy_async_to_gpu(d_lut_vector, big_lut,
-                             lut_num * lut_size * sizeof(uint64_t), stream,
-                             gpu_index);
-    // Execute scratch
-    scratch_cuda_wop_pbs_64(stream, gpu_index, &wop_pbs_buffer,
-                            (uint32_t *)&delta_log, &cbs_delta_log,
-                            glwe_dimension, lwe_dimension, polynomial_size,
-                            cbs_level, pbs_level, p, p, tau,
-                            cuda_get_max_shared_memory(gpu_index), true);
-    // Allocate input
-    d_lwe_ct_in_array = (uint64_t *)cuda_malloc_async(
-        (input_lwe_dimension + 1) * tau * sizeof(uint64_t), stream, gpu_index);
-    // Allocate output
-    d_lwe_ct_out_array = (uint64_t *)cuda_malloc_async(
-        (input_lwe_dimension + 1) * tau * sizeof(uint64_t), stream, gpu_index);
-    lwe_in_ct_array =
-        (uint64_t *)malloc((input_lwe_dimension + 1) * tau * sizeof(uint64_t));
-    lwe_out_ct_array =
-        (uint64_t *)malloc((input_lwe_dimension + 1) * tau * sizeof(uint64_t));
-
-    cuda_synchronize_stream(v_stream);
-    free(big_lut);
+    wop_pbs_setup(
+        stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array, &d_ksk_array,
+        &d_fourier_bsk_array, &d_pksk_array, &plaintexts, &d_lwe_ct_in_array,
+        &d_lwe_ct_out_array, &d_lut_vector, &wop_pbs_buffer, lwe_dimension,
+        glwe_dimension, polynomial_size, lwe_modular_variance,
+        glwe_modular_variance, ks_base_log, ks_level, pksk_base_log, pksk_level,
+        pbs_base_log, pbs_level, cbs_level, p, &delta_log, &cbs_delta_log,
+        &delta_log_lut, &delta, tau, REPETITIONS, SAMPLES, gpu_index);
   }
 
   void TearDown() {
-    void *v_stream = (void *)stream;
-
-    cuda_synchronize_stream(v_stream);
-    concrete_cpu_destroy_concrete_csprng(csprng);
-    free(csprng);
-    free(lwe_sk_in_array);
-    free(lwe_sk_out_array);
-    free(plaintexts);
-    free(lwe_in_ct_array);
-    free(lwe_out_ct_array);
-    cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_index,
-                                                    &wop_pbs_buffer);
-    cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
-    cuda_drop_async(d_ksk_array, stream, gpu_index);
-    cuda_drop_async(d_pksk_array, stream, gpu_index);
-    cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
-    cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
-    cuda_drop_async(d_lut_vector, stream, gpu_index);
-    cuda_destroy_stream(stream, gpu_index);
+    wop_pbs_teardown(stream, csprng, lwe_sk_in_array, lwe_sk_out_array,
+                     d_ksk_array, d_fourier_bsk_array, d_pksk_array, plaintexts,
+                     d_lwe_ct_in_array, d_lut_vector, d_lwe_ct_out_array,
+                     wop_pbs_buffer, gpu_index);
   }
 };
 
 TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
   void *v_stream = (void *)stream;
-  int input_lwe_dimension = glwe_dimension * polynomial_size;
+  uint64_t *lwe_out_ct_array =
+      (uint64_t *)malloc((input_lwe_dimension + 1) * tau * sizeof(uint64_t));
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
                  polynomial_size * (lwe_dimension + 1);
   int ksk_size =
@@ -196,33 +117,23 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
                        (glwe_dimension + 1);
   for (uint r = 0; r < REPETITIONS; r++) {
     double *d_fourier_bsk = d_fourier_bsk_array + (ptrdiff_t)(bsk_size * r);
-    uint64_t *lwe_sk_in =
-        lwe_sk_in_array + (ptrdiff_t)(r * glwe_dimension * polynomial_size);
     uint64_t *d_ksk = d_ksk_array + (ptrdiff_t)(ksk_size * r);
     uint64_t *d_pksk_list = d_pksk_array + (ptrdiff_t)(pksk_list_size * r);
+    uint64_t *lwe_sk_in =
+        lwe_sk_in_array + (ptrdiff_t)(input_lwe_dimension * r);
     for (uint s = 0; s < SAMPLES; s++) {
-      for (int t = 0; t < tau; t++) {
-        uint64_t plaintext = plaintexts[r * SAMPLES * tau + s * tau + t];
-        uint64_t *lwe_in_ct =
-            lwe_in_ct_array + (ptrdiff_t)(t * (input_lwe_dimension + 1));
-        concrete_cpu_encrypt_lwe_ciphertext_u64(
-            lwe_sk_in, lwe_in_ct, plaintext, input_lwe_dimension,
-            lwe_modular_variance, csprng, &CONCRETE_CSPRNG_VTABLE);
-      }
-      cuda_memcpy_async_to_gpu(d_lwe_ct_in_array, lwe_in_ct_array,
-                               (input_lwe_dimension + 1) * tau *
-                                   sizeof(uint64_t),
-                               stream, gpu_index);
+      uint64_t *d_lwe_ct_in =
+          d_lwe_ct_in_array + (ptrdiff_t)((r * SAMPLES * tau + s * tau) *
+                                          (input_lwe_dimension + 1));
 
       // Execute wop pbs
-      cuda_wop_pbs_64(stream, gpu_index, (void *)d_lwe_ct_out_array,
-                      (void *)d_lwe_ct_in_array, (void *)d_lut_vector,
-                      (void *)d_fourier_bsk, (void *)d_ksk, (void *)d_pksk_list,
-                      wop_pbs_buffer, cbs_delta_log, glwe_dimension,
-                      lwe_dimension, polynomial_size, pbs_base_log, pbs_level,
-                      ks_base_log, ks_level, pksk_base_log, pksk_level,
-                      cbs_base_log, cbs_level, p, p, delta_log, tau,
-                      cuda_get_max_shared_memory(gpu_index));
+      cuda_wop_pbs_64(
+          stream, gpu_index, (void *)d_lwe_ct_out_array, (void *)d_lwe_ct_in,
+          (void *)d_lut_vector, (void *)d_fourier_bsk, (void *)d_ksk,
+          (void *)d_pksk_list, wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+          lwe_dimension, polynomial_size, pbs_base_log, pbs_level, ks_base_log,
+          ks_level, pksk_base_log, pksk_level, cbs_base_log, cbs_level, p, p,
+          delta_log, tau, cuda_get_max_shared_memory(gpu_index));
 
       //// Copy result back
       cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_ct_out_array,

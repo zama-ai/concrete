@@ -1,12 +1,12 @@
-#include "utils.h"
-#include "../include/bootstrap.h"
-#include "../include/device.h"
-#include "concrete-cpu.h"
+#include <bootstrap.h>
 #include <cmath>
+#include <concrete-cpu.h>
 #include <cstdint>
 #include <cstdlib>
+#include <device.h>
 #include <functional>
 #include <random>
+#include <utils.h>
 
 // For each sample and repetition, create a plaintext
 // The payload_modulus is the message modulus times the carry modulus

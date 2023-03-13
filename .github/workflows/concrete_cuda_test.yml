@@ -104,7 +104,7 @@ jobs:
       if: ${{ !cancelled() }}
       run: |
         cd backends/concrete-cuda/implementation/build
-        ./test/test_concrete_cuda
+        ./test_and_benchmark/test/test_concrete_cuda
 
     - name: Export variables for CUDA 11.1
       run: |
@@ -124,7 +124,7 @@ jobs:
       if: ${{ !cancelled() }}
       run: |
         cd backends/concrete-cuda/implementation/build-old-cuda
-        ./test/test_concrete_cuda --gtest_filter="Wop*"
+        ./test_and_benchmark/test/test_concrete_cuda --gtest_filter="Wop*"
 
   stop-runner:
     name: Stop EC2 runner

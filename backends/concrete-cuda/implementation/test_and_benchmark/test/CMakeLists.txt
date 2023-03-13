@@ -7,8 +7,9 @@ set(gtest_force_shared_crt
     CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-set(CONCRETE_CPU_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../concrete-cpu/implementation/target/release")
-set(CONCRETE_CPU_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../concrete-cpu/implementation")
+set(CONCRETE_CPU_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../concrete-cpu/implementation/target/release")
+set(CONCRETE_CPU_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../concrete-cpu/implementation")
+set(CONCRETE_CUDA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../")
 
 if(NOT TARGET concrete_cpu)
   # Enable ExternalProject CMake module
@@ -28,7 +29,10 @@ if(NOT TARGET concrete_cpu)
     LOG_BUILD ON)
 endif()
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
 include_directories(${CONCRETE_CPU_SOURCE_DIR}/include)
+include_directories(${CONCRETE_CUDA_SOURCE_DIR}/include)
+
 add_library(concrete_cpu_lib STATIC IMPORTED)
 set_target_properties(concrete_cpu_lib PROPERTIES IMPORTED_LOCATION ${CONCRETE_CPU_BINARY_DIR}/libconcrete_cpu.a)
 
@@ -43,7 +47,7 @@ file(
 
 set(SOURCES ${TEST_SOURCES})
 
-add_executable(${BINARY} ${TEST_SOURCES})
+add_executable(${BINARY} ${TEST_SOURCES} ../utils.cpp ../setup_and_teardown.cpp)
 
 add_test(NAME ${BINARY} COMMAND ${BINARY})
 

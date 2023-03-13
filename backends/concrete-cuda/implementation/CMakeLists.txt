@@ -66,7 +66,7 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -ccbin ${CMAKE_CXX_COMPILER} -O3 ${CUD
 set(INCLUDE_DIR include)
 
 add_subdirectory(src)
-add_subdirectory(test)
+add_subdirectory(test_and_benchmark)
 target_include_directories(concrete_cuda PRIVATE ${INCLUDE_DIR})
 
 # This is required for rust cargo build

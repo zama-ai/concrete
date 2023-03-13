@@ -1,8 +1,8 @@
-#ifndef TEST_UTILS_H
-#define TEST_UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
 
-#include "../include/device.h"
-#include "concrete-cpu.h"
+#include <concrete-cpu.h>
+#include <device.h>
 #include <functional>
 
 uint64_t *generate_plaintexts(uint64_t payload_modulus, uint64_t delta,

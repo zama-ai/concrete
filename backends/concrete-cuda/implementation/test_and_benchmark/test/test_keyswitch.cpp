@@ -1,10 +1,6 @@
-#include "../include/device.h"
-#include "../include/keyswitch.h"
-#include "concrete-cpu.h"
-#include "utils.h"
-#include "gtest/gtest.h"
 #include <cstdint>
-#include <functional>
+#include <gtest/gtest.h>
+#include <setup_and_teardown.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -42,8 +38,8 @@ protected:
   uint64_t *lwe_sk_out_array;
   uint64_t *plaintexts;
   uint64_t *d_ksk_array;
-  uint64_t *d_lwe_out_ct;
-  uint64_t *d_lwe_in_ct;
+  uint64_t *d_lwe_ct_out_array;
+  uint64_t *d_lwe_ct_in_array;
   uint64_t *lwe_in_ct;
   uint64_t *lwe_out_ct;
 
@@ -51,7 +47,6 @@ public:
   // Test arithmetic functions
   void SetUp() {
     stream = cuda_create_stream(0);
-    void *v_stream = (void *)stream;
 
     // TestParams
     input_lwe_dimension = (int)GetParam().input_lwe_dimension;
@@ -63,94 +58,42 @@ public:
     carry_modulus = (int)GetParam().carry_modulus;
     number_of_inputs = (int)GetParam().number_of_inputs;
 
-    payload_modulus = message_modulus * carry_modulus;
-    // Value of the shift we multiply our messages by
-    delta = ((uint64_t)(1) << 63) / (uint64_t)(payload_modulus);
-
-    // Create a Csprng
-    csprng =
-        (Csprng *)aligned_alloc(CONCRETE_CSPRNG_ALIGN, CONCRETE_CSPRNG_SIZE);
-    uint8_t seed[16] = {(uint8_t)0};
-    concrete_cpu_construct_concrete_csprng(
-        csprng, Uint128{.little_endian_bytes = {*seed}});
-
-    // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
-                             REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng,
-                             REPETITIONS);
-    generate_lwe_keyswitch_keys(
-        stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
-        input_lwe_dimension, output_lwe_dimension, ksk_level, ksk_base_log,
-        csprng, noise_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(payload_modulus, delta, number_of_inputs,
-                                     REPETITIONS, SAMPLES);
-
-    d_lwe_out_ct = (uint64_t *)cuda_malloc_async(
-        number_of_inputs * (output_lwe_dimension + 1) * sizeof(uint64_t),
-        stream, gpu_index);
-
-    d_lwe_in_ct = (uint64_t *)cuda_malloc_async(
-        number_of_inputs * (input_lwe_dimension + 1) * sizeof(uint64_t), stream,
-        gpu_index);
-
-    lwe_in_ct = (uint64_t *)malloc(
-        number_of_inputs * (input_lwe_dimension + 1) * sizeof(uint64_t));
-    lwe_out_ct = (uint64_t *)malloc(
-        number_of_inputs * (output_lwe_dimension + 1) * sizeof(uint64_t));
-
-    cuda_synchronize_stream(v_stream);
+    keyswitch_setup(stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array,
+                    &d_ksk_array, &plaintexts, &d_lwe_ct_in_array,
+                    &d_lwe_ct_out_array, input_lwe_dimension,
+                    output_lwe_dimension, noise_variance, ksk_base_log,
+                    ksk_level, message_modulus, carry_modulus, &payload_modulus,
+                    &delta, number_of_inputs, REPETITIONS, SAMPLES, gpu_index);
   }
 
   void TearDown() {
-    void *v_stream = (void *)stream;
-
-    cuda_synchronize_stream(v_stream);
-    concrete_cpu_destroy_concrete_csprng(csprng);
-    free(csprng);
-    cuda_drop_async(d_lwe_in_ct, stream, gpu_index);
-    cuda_drop_async(d_lwe_out_ct, stream, gpu_index);
-    free(lwe_in_ct);
-    free(lwe_out_ct);
-    free(lwe_sk_in_array);
-    free(lwe_sk_out_array);
-    free(plaintexts);
-    cuda_drop_async(d_ksk_array, stream, gpu_index);
-    cuda_destroy_stream(stream, gpu_index);
+    keyswitch_teardown(stream, csprng, lwe_sk_in_array, lwe_sk_out_array,
+                       d_ksk_array, plaintexts, d_lwe_ct_in_array,
+                       d_lwe_ct_out_array, gpu_index);
   }
 };
 
 TEST_P(KeyswitchTestPrimitives_u64, keyswitch) {
-  void *v_stream = (void *)stream;
+  uint64_t *lwe_out_ct = (uint64_t *)malloc(
+      (output_lwe_dimension + 1) * number_of_inputs * sizeof(uint64_t));
   for (uint r = 0; r < REPETITIONS; r++) {
-    uint64_t *lwe_in_sk =
-        lwe_sk_in_array + (ptrdiff_t)(r * input_lwe_dimension);
     uint64_t *lwe_out_sk =
         lwe_sk_out_array + (ptrdiff_t)(r * output_lwe_dimension);
     int ksk_size = ksk_level * (output_lwe_dimension + 1) * input_lwe_dimension;
     uint64_t *d_ksk = d_ksk_array + (ptrdiff_t)(ksk_size * r);
     for (uint s = 0; s < SAMPLES; s++) {
-      for (int i = 0; i < number_of_inputs; i++) {
-        uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
-                                        s * number_of_inputs + i];
-        concrete_cpu_encrypt_lwe_ciphertext_u64(
-            lwe_in_sk, lwe_in_ct + i * (input_lwe_dimension + 1), plaintext,
-            input_lwe_dimension, noise_variance, csprng,
-            &CONCRETE_CSPRNG_VTABLE);
-      }
-      cuda_synchronize_stream(v_stream);
-      cuda_memcpy_async_to_gpu(d_lwe_in_ct, lwe_in_ct,
-                               number_of_inputs * (input_lwe_dimension + 1) *
-                                   sizeof(uint64_t),
-                               stream, gpu_index);
+      uint64_t *d_lwe_ct_in =
+          d_lwe_ct_in_array +
+          (ptrdiff_t)((r * SAMPLES * number_of_inputs + s * number_of_inputs) *
+                      (input_lwe_dimension + 1));
       // Execute keyswitch
       cuda_keyswitch_lwe_ciphertext_vector_64(
-          stream, gpu_index, (void *)d_lwe_out_ct, (void *)d_lwe_in_ct,
+          stream, gpu_index, (void *)d_lwe_ct_out_array, (void *)d_lwe_ct_in,
           (void *)d_ksk, input_lwe_dimension, output_lwe_dimension,
           ksk_base_log, ksk_level, number_of_inputs);
 
       // Copy result back
-      cuda_memcpy_async_to_cpu(lwe_out_ct, d_lwe_out_ct,
+      cuda_memcpy_async_to_cpu(lwe_out_ct, d_lwe_ct_out_array,
                                number_of_inputs * (output_lwe_dimension + 1) *
                                    sizeof(uint64_t),
                                stream, gpu_index);
@@ -162,11 +105,6 @@ TEST_P(KeyswitchTestPrimitives_u64, keyswitch) {
             lwe_out_sk, lwe_out_ct + i * (output_lwe_dimension + 1),
             output_lwe_dimension, &decrypted);
         EXPECT_NE(decrypted, plaintext);
-        // let err = (decrypted >= plaintext) ? decrypted - plaintext :
-        // plaintext
-        // - decrypted;
-        // error_sample_vec.push(err);
-
         // The bit before the message
         uint64_t rounding_bit = delta >> 1;
         // Compute the rounding bit
@@ -176,6 +114,7 @@ TEST_P(KeyswitchTestPrimitives_u64, keyswitch) {
       }
     }
   }
+  free(lwe_out_ct);
 }
 
 // Defines for which parameters set the PBS will be tested.
