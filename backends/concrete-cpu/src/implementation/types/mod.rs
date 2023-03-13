@@ -52,4 +52,5 @@ pub use csprng::*;
 
 pub mod ciphertext_list;
 pub mod glev_ciphertext;
+pub mod polynomial;
 pub mod polynomial_list;

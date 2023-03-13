@@ -1,5 +1,7 @@
 use crate::implementation::Container;
 
+use super::polynomial::Polynomial;
+
 #[derive(Debug, Clone)]
 pub struct PolynomialList<C: Container> {
     pub data: C,
@@ -23,8 +25,10 @@ impl<C: Container> PolynomialList<C> {
 }
 
 impl PolynomialList<&[u64]> {
-    pub fn iter_polynomial(&self) -> impl DoubleEndedIterator<Item = &'_ [u64]> {
-        self.data.chunks_exact(self.polynomial_size)
+    pub fn iter_polynomial(&self) -> impl DoubleEndedIterator<Item = Polynomial<&'_ [u64]>> {
+        self.data
+            .chunks_exact(self.polynomial_size)
+            .map(|a| Polynomial::new(a, self.polynomial_size))
     }
 
     // Creates an iterator over borrowed sub-lists.
@@ -43,5 +47,15 @@ impl PolynomialList<&[u64]> {
                 polynomial_size,
                 count,
             })
+    }
+}
+
+impl PolynomialList<&mut [u64]> {
+    pub fn iter_polynomial(
+        &mut self,
+    ) -> impl DoubleEndedIterator<Item = Polynomial<&'_ mut [u64]>> {
+        self.data
+            .chunks_exact_mut(self.polynomial_size)
+            .map(|a| Polynomial::new(a, self.polynomial_size))
     }
 }

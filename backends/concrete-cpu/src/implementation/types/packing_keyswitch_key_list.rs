@@ -1,4 +1,5 @@
 use super::*;
+use crate::implementation::types::polynomial::Polynomial;
 use crate::implementation::{zip_eq, Container, ContainerMut, Split};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -117,12 +118,13 @@ impl PackingKeyswitchKeyList<&mut [u64]> {
         // the loop avoiding branching
         last_polynomial[0] = u64::MAX;
 
+        let last_polynomial = Polynomial::new(last_polynomial.as_slice(), polynomial_size);
+
         for (mut fpksk, polynomial_to_encrypt) in zip_eq(
             self.as_mut_view().into_ppksk_key(),
             output_glwe_key
-                .data
-                .chunks_exact(polynomial_size)
-                .chain(std::iter::once(last_polynomial.as_slice())),
+                .iter()
+                .chain(std::iter::once(last_polynomial)),
         ) {
             fpksk.fill_with_private_functional_packing_keyswitch_key(
                 input_lwe_key,
@@ -151,12 +153,13 @@ impl PackingKeyswitchKeyList<&mut [u64]> {
         // the loop avoiding branching
         last_polynomial[0] = u64::MAX;
 
+        let last_polynomial = Polynomial::new(last_polynomial.as_slice(), polynomial_size);
+
         for (mut fpksk, polynomial_to_encrypt) in zip_eq(
             self.as_mut_view().into_ppksk_key(),
             output_glwe_key
-                .data
-                .chunks_exact(polynomial_size)
-                .chain(std::iter::once(last_polynomial.as_slice())),
+                .iter()
+                .chain(std::iter::once(last_polynomial)),
         ) {
             fpksk.fill_with_private_functional_packing_keyswitch_key_par(
                 input_lwe_key,

@@ -8,7 +8,7 @@ use super::polynomial::{
     update_with_wrapping_monic_monomial_mul, update_with_wrapping_unit_monomial_div,
 };
 use super::types::*;
-use super::{zip_eq, Split};
+use super::zip_eq;
 
 impl<'a> BootstrapKey<&'a [f64]> {
     pub fn blind_rotate_scratch(
@@ -49,7 +49,7 @@ impl<'a> BootstrapKey<&'a [f64]> {
         let lut_poly_size = lut.glwe_params.polynomial_size;
         let modulus_switched_body = pbs_modulus_switch(*lwe_body, lut_poly_size, 0, 0);
 
-        for polynomial in lut.as_mut_view().into_data().into_chunks(lut_poly_size) {
+        for polynomial in lut.as_mut_view().into_polynomial_list().iter_polynomial() {
             update_with_wrapping_unit_monomial_div(polynomial, modulus_switched_body);
         }
 
@@ -66,10 +66,9 @@ impl<'a> BootstrapKey<&'a [f64]> {
                 let mut ct1 = GlweCiphertext::new(&mut *ct1, ct0.glwe_params);
 
                 // We rotate ct_1 by performing ct_1 <- ct_1 * X^{modulus_switched_mask_element}
-                let polynomial_size = ct1.glwe_params.polynomial_size;
                 let modulus_switched_mask_element =
                     pbs_modulus_switch(*lwe_mask_element, lut_poly_size, 0, 0);
-                for polynomial in ct1.as_mut_view().into_data().into_chunks(polynomial_size) {
+                for polynomial in ct1.as_mut_view().into_polynomial_list().iter_polynomial() {
                     update_with_wrapping_monic_monomial_mul(
                         polynomial,
                         modulus_switched_mask_element,
@@ -237,7 +236,7 @@ mod tests {
             csprng: CsprngMut,
             pt: u64,
             encryption_variance: f64,
-            lut: &[u64],
+            lut: GlweCiphertext<&[u64]>,
         ) -> u64 {
             let mut input = LweCiphertext::zero(self.in_dim);
 
@@ -248,15 +247,14 @@ mod tests {
                 .encrypt_lwe(input.as_mut_view(), pt, encryption_variance, csprng);
 
             assert_eq!(
-                lut.len(),
+                lut.data.len(),
                 (self.glwe_params.dimension + 1) * self.glwe_params.polynomial_size
             );
-            let accumulator = GlweCiphertext::new(lut, self.glwe_params);
 
             self.fourier_bsk.as_view().bootstrap(
                 output.as_mut_view(),
                 input.as_view(),
-                accumulator,
+                lut,
                 self.fft.as_view(),
                 DynStack::new(&mut self.stack),
             );
@@ -274,13 +272,15 @@ mod tests {
         let log2_poly_size = 10;
         let polynomial_size = 1 << log2_poly_size;
 
+        let glwe_params = GlweParams {
+            dimension: glwe_dim,
+            polynomial_size,
+        };
+
         let mut keyset = KeySet::new(
             to_generic(&mut csprng),
             600,
-            GlweParams {
-                dimension: glwe_dim,
-                polynomial_size,
-            },
+            glwe_params,
             DecompParams {
                 level: 3,
                 base_log: 10,
@@ -321,8 +321,12 @@ mod tests {
 
             let pt = (lut_index as f64 + 0.5) / (2. * lut_case_number as f64) * 2.0_f64.powi(64);
 
-            let image =
-                keyset.bootstrap(to_generic(&mut csprng), pt as u64, 0.0000000001, &raw_lut);
+            let image = keyset.bootstrap(
+                to_generic(&mut csprng),
+                pt as u64,
+                0.0000000001,
+                GlweCiphertext::new(&raw_lut, glwe_params),
+            );
 
             let diff = image.wrapping_sub(expected_image) as i64;
 

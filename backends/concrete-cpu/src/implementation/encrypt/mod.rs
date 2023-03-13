@@ -1,6 +1,7 @@
 use super::decomposition::DecompositionTerm;
 use super::fpks::LweKeyBitDecomposition;
 use super::polynomial::{update_with_wrapping_add_mul, update_with_wrapping_sub_mul};
+use super::types::polynomial::Polynomial;
 use super::types::*;
 use super::{from_torus, zip_eq};
 use core::slice;
@@ -256,7 +257,7 @@ impl PackingKeyswitchKey<&mut [u64]> {
         variance: f64,
         mut csprng: CsprngMut,
         f: impl Fn(u64) -> u64,
-        polynomial: &[u64],
+        polynomial: Polynomial<&[u64]>,
     ) {
         // We instantiate a buffer
         let mut messages = vec![0_u64; self.decomp_params.level * self.glwe_params.polynomial_size];
@@ -288,7 +289,7 @@ impl PackingKeyswitchKey<&mut [u64]> {
                     f(1).wrapping_mul(input_key_bit),
                 )
                 .to_recomposition_summand();
-                for (self_i, other_i) in zip_eq(message, polynomial) {
+                for (self_i, other_i) in zip_eq(message, polynomial.as_ref().into_data()) {
                     *self_i = (*self_i).wrapping_add(other_i.wrapping_mul(multiplier));
                 }
             }
@@ -319,7 +320,7 @@ impl<'a> PackingKeyswitchKey<&'a mut [u64]> {
         variance: f64,
         mut csprng: CsprngMut,
         f: impl Sync + Fn(u64) -> u64,
-        polynomial: &[u64],
+        polynomial: Polynomial<&[u64]>,
     ) {
         // We retrieve decomposition arguments
         let decomp_level_count = self.decomp_params.level;
@@ -365,7 +366,7 @@ impl<'a> PackingKeyswitchKey<&'a mut [u64]> {
                         f(1).wrapping_mul(input_key_bit),
                     )
                     .to_recomposition_summand();
-                    for (self_i, other_i) in zip_eq(message, polynomial) {
+                    for (self_i, other_i) in zip_eq(message, polynomial.as_ref().into_data()) {
                         *self_i = (*self_i).wrapping_add(other_i.wrapping_mul(multiplier));
                     }
                 }
@@ -503,10 +504,11 @@ impl GlweSecretKey<&[u64]> {
         fill_with_random_gaussian(body.as_mut_view().into_data(), variance, csprng);
 
         let mask = mask.as_view();
-        let body = body.into_data();
+
         for idx in 0..mask.glwe_params.dimension {
             let poly = mask.get_polynomial(idx);
             let bin_poly = self.get_polynomial(idx);
+            let body = body.as_mut_view();
             update_with_wrapping_add_mul(body, poly, bin_poly)
         }
     }
@@ -518,7 +520,11 @@ impl GlweSecretKey<&[u64]> {
         for idx in 0..mask.glwe_params.dimension {
             let poly = mask.get_polynomial(idx);
             let bin_poly = self.get_polynomial(idx);
-            update_with_wrapping_sub_mul(out, poly, bin_poly)
+            update_with_wrapping_sub_mul(
+                Polynomial::new(out, encrypted.glwe_params.polynomial_size),
+                poly,
+                bin_poly,
+            )
         }
     }
 
@@ -607,14 +613,13 @@ impl GlweSecretKey<&[u64]> {
     }
 
     pub fn encrypt_zero_glwe_noise_full(self, encrypted: GlweCiphertext<&mut [u64]>) {
-        let (mask, body) = encrypted.into_mask_and_body();
+        let (mask, mut body) = encrypted.into_mask_and_body();
 
         let mask = mask.as_view();
-        let body = body.into_data();
         for idx in 0..mask.glwe_params.dimension {
             let poly = mask.get_polynomial(idx);
             let bin_poly = self.get_polynomial(idx);
-            update_with_wrapping_add_mul(body, poly, bin_poly)
+            update_with_wrapping_add_mul(body.as_mut_view(), poly, bin_poly)
         }
     }
 }

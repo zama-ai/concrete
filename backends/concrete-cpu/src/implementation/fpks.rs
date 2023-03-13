@@ -27,15 +27,9 @@ impl PackingKeyswitchKey<&[u64]> {
             // Loop over the number of levels:
             // We compute the multiplication of a ciphertext from the private functional
             // keyswitching key with a piece of the decomposition and subtract it to the buffer
-            for (level_key_cipher, decomposed) in zip_eq(
-                block
-                    .data
-                    .chunks_exact(
-                        (self.glwe_params.dimension + 1) * self.glwe_params.polynomial_size,
-                    )
-                    .rev(),
-                decomp,
-            ) {
+            for (level_key_cipher, decomposed) in
+                zip_eq(block.into_glwe_list().into_glwe_iter().rev(), decomp)
+            {
                 after
                     .as_mut_view()
                     .update_with_wrapping_sub_element_mul(level_key_cipher, decomposed.value());

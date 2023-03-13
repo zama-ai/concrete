@@ -15,6 +15,7 @@ use super::fft::FftView;
 use super::polynomial::update_with_wrapping_unit_monomial_div;
 use super::types::ciphertext_list::LweCiphertextList;
 use super::types::packing_keyswitch_key_list::PackingKeyswitchKeyList;
+use super::types::polynomial::Polynomial;
 use super::types::polynomial_list::PolynomialList;
 use super::types::{
     BootstrapKey, DecompParams, GgswCiphertext, GlweParams, LweCiphertext, LweKeyswitchKey,
@@ -596,12 +597,12 @@ pub fn cmux_tree_memory_optimized(
         t0_j.as_mut_view()
             .into_body()
             .into_data()
-            .copy_from_slice(lut_2i);
+            .copy_from_slice(lut_2i.into_data());
 
         t1_j.as_mut_view()
             .into_body()
             .into_data()
-            .copy_from_slice(lut_2i_plus_1);
+            .copy_from_slice(lut_2i_plus_1.into_data());
 
         t_fill[0] = 2;
 
@@ -840,7 +841,7 @@ fn log2(a: usize) -> usize {
 
 // GGSW ciphertexts are stored from the msb (vec_ggsw[0]) to the lsb (vec_ggsw[last])
 pub fn vertical_packing(
-    lut: &[u64],
+    lut: Polynomial<&[u64]>,
     lwe_out: LweCiphertext<&mut [u64]>,
     ggsw_list: FourierGgswCiphertextListView,
     fft: FftView,
@@ -872,7 +873,7 @@ pub fn vertical_packing(
                 .into_data()
                 .fill_with(|| 0_u64);
             cmux_tree_lut_res.as_mut_view().into_body().into_data()[0..lut.len()]
-                .copy_from_slice(lut);
+                .copy_from_slice(lut.into_data());
             ggsw_list
         }
         Ordering::Equal => {
@@ -884,7 +885,7 @@ pub fn vertical_packing(
                 .as_mut_view()
                 .into_body()
                 .into_data()
-                .copy_from_slice(lut);
+                .copy_from_slice(lut.into_data());
             ggsw_list
         }
         Ordering::Greater => {
@@ -895,8 +896,11 @@ pub fn vertical_packing(
             let (cmux_ggsw, br_ggsw) = ggsw_list.split_at(log_number_of_luts_for_cmux_tree);
             debug_assert_eq!(br_ggsw.count, log_poly_size);
 
-            let small_luts =
-                PolynomialList::new(lut, polynomial_size, 1 << (log_lut_number - log_poly_size));
+            let small_luts = PolynomialList::new(
+                lut.into_data(),
+                polynomial_size,
+                1 << (log_lut_number - log_poly_size),
+            );
 
             cmux_tree_memory_optimized(
                 cmux_tree_lut_res.as_mut_view(),
@@ -951,11 +955,7 @@ pub fn blind_rotate(
             .collect_aligned(CACHELINE_ALIGN, ct_0.as_view().into_data().iter().copied());
         let mut ct_1 = GlweCiphertext::new(&mut *ct1_data, ct_0.glwe_params);
 
-        for a in ct_1
-            .as_mut_view()
-            .into_data()
-            .chunks_exact_mut(ct_0.glwe_params.polynomial_size)
-        {
+        for a in ct_1.as_mut_view().into_polynomial_list().iter_polynomial() {
             update_with_wrapping_unit_monomial_div(a, monomial_degree);
         }
         monomial_degree <<= 1;
