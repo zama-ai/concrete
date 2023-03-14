@@ -9,7 +9,6 @@ include "mlir/Dialect/LLVMIR/LLVMOpBase.td"
 
 include "concretelang/Dialect/Concrete/IR/ConcreteDialect.td"
 include "concretelang/Dialect/Concrete/IR/ConcreteTypes.td"
-include "concretelang/Interfaces/BatchableInterface.td"
 include "concretelang/Dialect/RT/IR/RTDialect.td"
 include "concretelang/Dialect/RT/IR/RTTypes.td"
 
@@ -195,28 +194,6 @@ def Concrete_BootstrapLweTensorOp : Concrete_Op<"bootstrap_lwe_tensor", [Pure]> 
         I32Attr:$glweDimension
     );
     let results = (outs Concrete_LweTensor:$result);
-
-    let extraClassDeclaration = [{
-      ::mlir::OpOperand& getBatchableOperand() {
-        return getOperation()->getOpOperand(0);
-      }
-
-      ::mlir::OperandRange getNonBatchableOperands() {
-        return getOperation()->getOperands().drop_front();
-      }
-
-      ::mlir::Value createBatchedOperation(::mlir::ImplicitLocOpBuilder& builder,
-                                           ::mlir::Value batchedOperands) {
-        ::mlir::RankedTensorType resType = ::mlir::RankedTensorType::get(
-          batchedOperands.getType().cast<::mlir::RankedTensorType>().getShape(),
-          getResult().getType());
-
-        return builder.create<BatchedBootstrapLweTensorOp>(
-          mlir::TypeRange{resType},
-          mlir::ValueRange{batchedOperands, getLookupTable()},
-          getOperation()->getAttrs());
-      }
-    }];
 }
 
 def Concrete_BootstrapLweBufferOp : Concrete_Op<"bootstrap_lwe_buffer"> {
@@ -276,28 +253,6 @@ def Concrete_KeySwitchLweTensorOp : Concrete_Op<"keyswitch_lwe_tensor", [Pure]> 
         I32Attr:$lwe_dim_out
     );
     let results = (outs Concrete_LweTensor:$result);
-
-    let extraClassDeclaration = [{
-      ::mlir::OpOperand& getBatchableOperand() {
-        return getOperation()->getOpOperand(0);
-      }
-
-      ::mlir::OperandRange getNonBatchableOperands() {
-        return getOperation()->getOperands().drop_front();
-      }
-
-      ::mlir::Value createBatchedOperation(::mlir::ImplicitLocOpBuilder& builder,
-                                           ::mlir::Value batchedOperands) {
-        ::mlir::RankedTensorType resType = ::mlir::RankedTensorType::get(
-          batchedOperands.getType().cast<::mlir::RankedTensorType>().getShape(),
-          getResult().getType());
-
-        return builder.create<BatchedKeySwitchLweTensorOp>(
-          mlir::TypeRange{resType},
-          mlir::ValueRange{batchedOperands},
-          getOperation()->getAttrs());
-      }
-    }];
 }
 
 def Concrete_KeySwitchLweBufferOp : Concrete_Op<"keyswitch_lwe_buffer"> {
