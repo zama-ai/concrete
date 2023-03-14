@@ -73,13 +73,16 @@ public:
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng, REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
+                             REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng,
+                             REPETITIONS);
     generate_lwe_keyswitch_keys(
         stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
         input_lwe_dimension, output_lwe_dimension, ksk_level, ksk_base_log,
         csprng, noise_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(payload_modulus, delta, 1, REPETITIONS, SAMPLES);
+    plaintexts =
+        generate_plaintexts(payload_modulus, delta, 1, REPETITIONS, SAMPLES);
 
     d_lwe_out_ct = (uint64_t *)cuda_malloc_async(
         (output_lwe_dimension + 1) * sizeof(uint64_t), stream, gpu_index);

@@ -68,8 +68,8 @@ public:
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
     // Generate the keys
-    generate_glwe_secret_keys(&glwe_sk, glwe_dimension, polynomial_size,
-                              csprng, REPETITIONS);
+    generate_glwe_secret_keys(&glwe_sk, glwe_dimension, polynomial_size, csprng,
+                              REPETITIONS);
     plaintexts = generate_plaintexts(r_lut, 1, 1, REPETITIONS, SAMPLES);
 
     // Create the LUT

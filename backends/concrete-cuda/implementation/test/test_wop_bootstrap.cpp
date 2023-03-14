@@ -70,7 +70,6 @@ public:
   // Test arithmetic functions
   void SetUp() {
     stream = cuda_create_stream(0);
-    void *v_stream = (void *)stream;
 
     // TestParams
     lwe_dimension = (int)GetParam().lwe_dimension;
@@ -101,12 +100,14 @@ public:
 
     int input_lwe_dimension = glwe_dimension * polynomial_size;
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng, REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, lwe_dimension, csprng, REPETITIONS);
-    generate_lwe_keyswitch_keys(stream, gpu_index, &d_ksk_array,
-                                lwe_sk_in_array, lwe_sk_out_array,
-                                input_lwe_dimension, lwe_dimension, ks_level,
-                                ks_base_log, csprng, lwe_modular_variance, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
+                             REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_out_array, lwe_dimension, csprng,
+                             REPETITIONS);
+    generate_lwe_keyswitch_keys(
+        stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
+        input_lwe_dimension, lwe_dimension, ks_level, ks_base_log, csprng,
+        lwe_modular_variance, REPETITIONS);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_out_array,
         lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
@@ -249,8 +250,8 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
         // ks_base_log, ks_level, tau
         (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
-                                                    7.52316384526264e-37, 4,
-                                                    9, 1, 9, 4, 9, 6, 4, 1}//,
+                                 7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
+                                 1} //,
         //(WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
         //                         7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
         //                         2} //,

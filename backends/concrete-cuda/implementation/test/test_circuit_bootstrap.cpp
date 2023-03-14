@@ -89,9 +89,11 @@ public:
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng,
+                             REPETITIONS);
     generate_lwe_secret_keys(&lwe_sk_out_array,
-                             glwe_dimension * polynomial_size, csprng, REPETITIONS);
+                             glwe_dimension * polynomial_size, csprng,
+                             REPETITIONS);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_in_array,
         lwe_sk_out_array, lwe_dimension, glwe_dimension, polynomial_size,
@@ -100,8 +102,9 @@ public:
         stream, gpu_index, &d_pksk_array, lwe_sk_out_array, lwe_sk_out_array,
         glwe_dimension * polynomial_size, glwe_dimension, polynomial_size,
         pksk_level, pksk_base_log, csprng, lwe_modular_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(
-        number_of_bits_of_message_including_padding, delta, 1, REPETITIONS, SAMPLES);
+    plaintexts =
+        generate_plaintexts(number_of_bits_of_message_including_padding, delta,
+                            1, REPETITIONS, SAMPLES);
 
     d_ggsw_out_ct = (uint64_t *)cuda_malloc_async(ggsw_size * sizeof(uint64_t),
                                                   stream, gpu_index);

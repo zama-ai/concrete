@@ -88,8 +88,10 @@ public:
     int input_lwe_dimension = glwe_dimension * polynomial_size;
     int output_lwe_dimension = lwe_dimension;
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng, REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
+                             REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng,
+                             REPETITIONS);
     generate_lwe_keyswitch_keys(
         stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
         input_lwe_dimension, output_lwe_dimension, ks_level, ks_base_log,
@@ -98,8 +100,9 @@ public:
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_out_array,
         lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
         pbs_level, pbs_base_log, csprng, glwe_modular_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(
-        number_of_bits_of_message_including_padding, delta, number_of_inputs, REPETITIONS, SAMPLES);
+    plaintexts =
+        generate_plaintexts(number_of_bits_of_message_including_padding, delta,
+                            number_of_inputs, REPETITIONS, SAMPLES);
 
     d_lwe_out_ct_array = (uint64_t *)cuda_malloc_async(
         (output_lwe_dimension + 1) * number_of_bits_to_extract *
@@ -224,9 +227,11 @@ TEST_P(BitExtractionTestPrimitives_u64, bit_extraction) {
         // ks_base_log, ks_level, number_of_message_bits,
         // number_of_bits_to_extract
         (BitExtractionTestParams){585, 1, 1024, 7.52316384526264e-37,
-                                  7.52316384526264e-37, 10, 2, 4, 7, 5, 5, 1});//,
+                                  7.52316384526264e-37, 10, 2, 4, 7, 5, 5,
+                                  1}); //,
 //        (BitExtractionTestParams){585, 1, 1024, 7.52316384526264e-37,
-//                                  7.52316384526264e-37, 10, 2, 4, 7, 5, 5, 2});
+//                                  7.52316384526264e-37, 10, 2, 4, 7, 5, 5,
+//                                  2});
 
 std::string
 printParamName(::testing::TestParamInfo<BitExtractionTestParams> p) {

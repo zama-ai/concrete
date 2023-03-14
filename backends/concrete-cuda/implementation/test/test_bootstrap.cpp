@@ -81,15 +81,17 @@ public:
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng,
+                             REPETITIONS);
     generate_lwe_secret_keys(&lwe_sk_out_array,
-                             glwe_dimension * polynomial_size, csprng, REPETITIONS);
+                             glwe_dimension * polynomial_size, csprng,
+                             REPETITIONS);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_in_array,
         lwe_sk_out_array, lwe_dimension, glwe_dimension, polynomial_size,
         pbs_level, pbs_base_log, csprng, glwe_modular_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(payload_modulus, delta, number_of_inputs, REPETITIONS,
-                                     SAMPLES);
+    plaintexts = generate_plaintexts(payload_modulus, delta, number_of_inputs,
+                                     REPETITIONS, SAMPLES);
 
     // Create the LUT
     uint64_t *lut_pbs_identity = generate_identity_lut_pbs(
@@ -290,13 +292,56 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
 ::testing::internal::ParamGenerator<BootstrapTestParams> pbs_params_u64 =
     ::testing::Values(
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
-        // message_modulus, carry_modulus
-        (BootstrapTestParams){500, 1, 1024, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 23, 2, 4, 4,
+        // message_modulus, carry_modulus, number_of_inputs
+        // 1 bit message 0 bit carry parameters
+        (BootstrapTestParams){567, 5, 256, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 15, 1, 2, 1,
                               1},
-        (BootstrapTestParams){500, 1, 1024, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 23, 2, 4, 4,
-                              3});
+        (BootstrapTestParams){567, 5, 256, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 15, 1, 2, 1,
+                              10},
+        // 2 bit message 3 bit carry parameters
+        (BootstrapTestParams){623, 6, 256, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 9, 3, 3, 4,
+                              1},
+        (BootstrapTestParams){623, 6, 256, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 9, 3, 3, 4,
+                              10},
+        // 3 bits message 0 bit carry parameters
+        (BootstrapTestParams){694, 3, 512, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 18, 1, 4, 1,
+                              1},
+        (BootstrapTestParams){694, 3, 512, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 18, 1, 4, 1,
+                              10},
+        // 4 bits message 0 bit carry parameters
+        (BootstrapTestParams){769, 2, 1024, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 23, 1, 5, 1,
+                              1},
+        (BootstrapTestParams){769, 2, 1024, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 23, 1, 5, 1,
+                              10},
+        // 5 bits message 0 bit carry parameters
+        (BootstrapTestParams){754, 1, 2048, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 23, 1, 6, 1,
+                              1},
+        (BootstrapTestParams){754, 1, 2048, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 23, 1, 6, 1,
+                              10},
+        // 6 bits message 0 bit carry parameters
+        (BootstrapTestParams){847, 1, 4096, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 1, 22, 7, 1,
+                              1},
+        (BootstrapTestParams){847, 1, 4096, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 1, 22, 7, 1,
+                              10},
+        // 7 bits message 0 bit carry parameters
+        (BootstrapTestParams){881, 1, 8192, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 1, 22, 8, 1,
+                              1},
+        (BootstrapTestParams){881, 1, 8192, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 1, 22, 8, 1,
+                              2});
 
 std::string printParamName(::testing::TestParamInfo<BootstrapTestParams> p) {
   BootstrapTestParams params = p.param;

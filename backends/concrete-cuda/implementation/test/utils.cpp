@@ -12,8 +12,8 @@
 // The payload_modulus is the message modulus times the carry modulus
 // (so the total message modulus)
 uint64_t *generate_plaintexts(uint64_t payload_modulus, uint64_t delta,
-                              int number_of_inputs, const unsigned repetitions, const unsigned
-                              samples) {
+                              int number_of_inputs, const unsigned repetitions,
+                              const unsigned samples) {
   uint64_t *plaintext_array = (uint64_t *)malloc(
       repetitions * samples * number_of_inputs * sizeof(uint64_t));
   std::random_device rd;
@@ -134,7 +134,8 @@ void generate_lwe_secret_keys(uint64_t **lwe_sk_array, int lwe_dimension,
 
 // Generate repetitions GLWE secret keys
 void generate_glwe_secret_keys(uint64_t **glwe_sk_array, int glwe_dimension,
-                               int polynomial_size, Csprng *csprng, const unsigned repetitions) {
+                               int polynomial_size, Csprng *csprng,
+                               const unsigned repetitions) {
   int glwe_sk_array_size = glwe_dimension * polynomial_size * repetitions;
   *glwe_sk_array = (uint64_t *)malloc(glwe_sk_array_size * sizeof(uint64_t));
   int shift = 0;
@@ -148,13 +149,11 @@ void generate_glwe_secret_keys(uint64_t **glwe_sk_array, int glwe_dimension,
 }
 
 // Generate repetitions LWE bootstrap keys
-void generate_lwe_bootstrap_keys(cudaStream_t *stream, int gpu_index,
-                                 double **d_fourier_bsk_array,
-                                 uint64_t *lwe_sk_in_array,
-                                 uint64_t *lwe_sk_out_array, int lwe_dimension,
-                                 int glwe_dimension, int polynomial_size,
-                                 int pbs_level, int pbs_base_log,
-                                 Csprng *csprng, double variance, const unsigned repetitions) {
+void generate_lwe_bootstrap_keys(
+    cudaStream_t *stream, int gpu_index, double **d_fourier_bsk_array,
+    uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array, int lwe_dimension,
+    int glwe_dimension, int polynomial_size, int pbs_level, int pbs_base_log,
+    Csprng *csprng, double variance, const unsigned repetitions) {
   void *v_stream = (void *)stream;
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
                  polynomial_size * (lwe_dimension + 1);
@@ -190,11 +189,14 @@ void generate_lwe_bootstrap_keys(cudaStream_t *stream, int gpu_index,
 }
 
 // Generate repetitions keyswitch keys
-void generate_lwe_keyswitch_keys(
-    cudaStream_t *stream, int gpu_index, uint64_t **d_ksk_array,
-    uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array,
-    int input_lwe_dimension, int output_lwe_dimension, int ksk_level,
-    int ksk_base_log, Csprng *csprng, double variance, const unsigned repetitions) {
+void generate_lwe_keyswitch_keys(cudaStream_t *stream, int gpu_index,
+                                 uint64_t **d_ksk_array,
+                                 uint64_t *lwe_sk_in_array,
+                                 uint64_t *lwe_sk_out_array,
+                                 int input_lwe_dimension,
+                                 int output_lwe_dimension, int ksk_level,
+                                 int ksk_base_log, Csprng *csprng,
+                                 double variance, const unsigned repetitions) {
 
   int ksk_size = ksk_level * (output_lwe_dimension + 1) * input_lwe_dimension;
   int ksk_array_size = ksk_size * repetitions;

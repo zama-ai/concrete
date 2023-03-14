@@ -66,8 +66,10 @@ public:
 
     // Generate the keys
     generate_lwe_secret_keys(&lwe_sk_array, lwe_dimension, csprng, REPETITIONS);
-    plaintexts_1 = generate_plaintexts(payload_modulus, delta, 1, REPETITIONS, SAMPLES);
-    plaintexts_2 = generate_plaintexts(payload_modulus, delta, 1, REPETITIONS, SAMPLES);
+    plaintexts_1 =
+        generate_plaintexts(payload_modulus, delta, 1, REPETITIONS, SAMPLES);
+    plaintexts_2 =
+        generate_plaintexts(payload_modulus, delta, 1, REPETITIONS, SAMPLES);
 
     d_lwe_in_1_ct = (uint64_t *)cuda_malloc_async(
         (lwe_dimension + 1) * sizeof(uint64_t), stream, gpu_index);

@@ -83,6 +83,12 @@ jobs:
         echo "CXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
         echo "CUDAHOSTCXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
         echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
+    - name: Rust install
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
     - name: Build concrete-cuda
       if: ${{ !cancelled() }}
       run: |
