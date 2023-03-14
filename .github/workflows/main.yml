@@ -75,7 +75,7 @@ jobs:
 # Compiler jobs #################################
   compiler-compliance:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true'
+    if: needs.file-change.outputs.compiler == 'true'  || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/compiler_format_and_linting.yml
 
   compiler-cpu-build:
@@ -96,7 +96,7 @@ jobs:
 
   compiler-macos-tests:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true'
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/compiler_macos_build_and_test.yml
     secrets: inherit
 
