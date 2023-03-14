@@ -16,7 +16,13 @@ concurrency:
 
 jobs:
   BuildAndTestMacOS:
-    runs-on: macos-11
+    strategy:
+      # if a failure happens, we want to know if it's specific
+      # to the architecture or the operating system
+      fail-fast: false
+      matrix:
+        runson: ["macos-11", "m1mac"]
+    runs-on: ${{ matrix.runson }}
     steps:
       # A SSH private key is required as some dependencies are from private repos
       - uses: webfactory/ssh-agent@v0.7.0
@@ -45,18 +51,18 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/ccache
-          key: ${{ runner.os }}-compilation-cache-${{ github.sha }}
+          key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-compilation-cache-
+            ${{ runner.os }}-${{ runner.arch }}-compilation-cache-
 
       - name: Cache compilation (pull_request)
         if: github.event_name == 'pull_request'
         uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/ccache
-          key: ${{ runner.os }}-compilation-cache-${{ github.event.pull_request.base.sha }}
+          key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.event.pull_request.base.sha }}
           restore-keys: |
-            ${{ runner.os }}-compilation-cache-
+            ${{ runner.os }}-${{ runner.arch }}-compilation-cache-
 
       - name: Get tmpdir path
         if: github.event_name == 'push'
