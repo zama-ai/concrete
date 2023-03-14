@@ -40,7 +40,8 @@ def BatchableOpInterface : OpInterface<"BatchableOpInterface"> {
       /*retTy=*/"::mlir::Value",
       /*methodName=*/"createBatchedOperation",
       /*args=*/(ins "::mlir::ImplicitLocOpBuilder&":$builder,
-                    "::mlir::Value":$batchedOperands),
+                    "::mlir::Value":$batchedOperands,
+                    "::mlir::ValueRange":$hoistedNonBatchableOperands),
       /*methodBody=*/"",
       /*defaultImplementation=*/[{
         llvm_unreachable("createBatchedOperation not implemented");
