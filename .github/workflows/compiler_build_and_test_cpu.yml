@@ -22,6 +22,10 @@ on:
         description: 'Build matrix item'
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   GLIB_VER: 2_28
@@ -29,9 +33,6 @@ env:
 jobs:
   BuildAndTest:
     name: Build and test compiler in EC2
-    concurrency:
-      group: ${{ github.ref }}_${{ github.event.inputs.instance_image_id }}_${{ github.event.inputs.instance_type }}
-      cancel-in-progress: true
     runs-on: ${{ github.event.inputs.runner_name }}
     if: ${{ !cancelled() }}
     steps:

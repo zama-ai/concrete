@@ -7,6 +7,10 @@ on:
     branches:
       - 'main'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
 jobs:
   # This jobs outputs for each modules of our mono-repo if it changed,
   # in order to launch jobs only for the changed modules
@@ -107,6 +111,22 @@ jobs:
     secrets: inherit
     with:
       command: compiler-publish-docker-images
+
+  compiler-cpu-benchmark:
+    needs: file-change
+    if: needs.file-change.outputs.push-main == 'true'
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: compiler-cpu-benchmark
+
+  compiler-gpu-benchmark:
+    needs: file-change
+    if: needs.file-change.outputs.push-main == 'true'
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: compiler-gpu-benchmark
 
 #################################################
 # Optimizer jobs ################################

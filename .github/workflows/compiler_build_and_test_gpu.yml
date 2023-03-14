@@ -22,6 +22,10 @@ on:
         description: 'Build matrix item'
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   CUDA_PATH: /usr/local/cuda-11.7
@@ -30,9 +34,6 @@ env:
 jobs:
   BuildAndTest:
     name: Build and test compiler in EC2 with CUDA support
-    concurrency:
-      group: ${{ github.ref }}_${{ github.event.inputs.instance_image_id }}_${{ github.event.inputs.instance_type }}
-      cancel-in-progress: true
     runs-on: ${{ github.event.inputs.runner_name }}
     if: ${{ !cancelled() }}
     steps:

@@ -9,6 +9,10 @@ on:
       CONCRETE_ACTIONS_TOKEN:
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
 env:
   CARGO_TERM_COLOR: always
 jobs:

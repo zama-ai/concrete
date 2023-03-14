@@ -23,6 +23,10 @@ on:
         description: 'Build matrix item'
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   BuildAndPushDockerImages:
     needs: [BuildAndPublishHPXDockerImage, BuildAndPublishCUDADockerImage]
