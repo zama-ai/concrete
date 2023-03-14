@@ -18,6 +18,18 @@
 #include <string>
 #include <utime.h>
 
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+inline void getApproval() {
+  std::cerr << "DANGER: You are using an empty unsecure secret keys. Enter "
+               "\"y\" to continue: ";
+  char answer;
+  std::cin >> answer;
+  if (answer != 'y') {
+    std::abort();
+  }
+}
+#endif
+
 namespace concretelang {
 namespace clientlib {
 
@@ -26,6 +38,10 @@ using StringError = concretelang::error::StringError;
 template <class Key>
 outcome::checked<Key, StringError> loadKey(llvm::SmallString<0> &path,
                                            Key(deser)(std::istream &istream)) {
+
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
   std::ifstream in((std::string)path, std::ofstream::binary);
   if (in.fail()) {
     return StringError("Cannot access " + (std::string)path);
@@ -40,6 +56,9 @@ outcome::checked<Key, StringError> loadKey(llvm::SmallString<0> &path,
 template <class Key>
 outcome::checked<void, StringError> saveKey(llvm::SmallString<0> &path,
                                             Key key) {
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
   std::ofstream out((std::string)path, std::ofstream::binary);
   if (out.fail()) {
     return StringError("Cannot access " + (std::string)path);
@@ -55,6 +74,9 @@ outcome::checked<void, StringError> saveKey(llvm::SmallString<0> &path,
 outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
                       uint64_t seed_lsb, std::string folderPath) {
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
 
   // Mark the folder as recently use.
   // e.g. so the CI can do some cleanup of unused keys.
@@ -117,6 +139,10 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
 
 outcome::checked<void, StringError> saveKeys(KeySet &key_set,
                                              llvm::SmallString<0> &folderPath) {
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
+
   llvm::SmallString<0> folderIncompletePath = folderPath;
 
   folderIncompletePath.append(".incomplete");
@@ -167,6 +193,10 @@ outcome::checked<void, StringError> saveKeys(KeySet &key_set,
 outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
                                 uint64_t seed_lsb) {
+
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
 
   llvm::SmallString<0> folderPath =
       llvm::SmallString<0>(this->backingDirectoryPath);
@@ -235,6 +265,10 @@ outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::generate(std::shared_ptr<KeySetCache> cache,
                       ClientParameters &params, uint64_t seed_msb,
                       uint64_t seed_lsb) {
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
+
   __uint128_t seed = seed_msb;
   seed <<= 64;
   seed += seed_lsb;
@@ -247,6 +281,10 @@ KeySetCache::generate(std::shared_ptr<KeySetCache> cache,
 outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::generate(ClientParameters &params, uint64_t seed_msb,
                       uint64_t seed_lsb) {
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
+
   return loadOrGenerateSave(params, seed_msb, seed_lsb);
 }
 

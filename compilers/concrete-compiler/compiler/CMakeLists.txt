@@ -190,6 +190,27 @@ endif()
 # Unit tests
 # -------------------------------------------------------------------------------
 option(CONCRETELANG_UNIT_TESTS "Enables the build of unittests" ON)
+option(
+  CONCRETELANG_UNSECURE_DEBUG
+  "Totally unsecure mode where secret keys are filled with zeros. Useful to reveal the body of the ciphertexts when using tracing during debug."
+  OFF)
+if(CONCRETELANG_UNSECURE_DEBUG)
+  message(
+    WARNING
+      "
+  #############################################################################
+  ##                                                                         ##
+  ##                            !!! WARNING !!!                              ##
+  ##                                                                         ##
+  ##  CONCRETELANG_UNSECURE_DEBUG option activated ! This means that the     ##
+  ##  secret keys generated will provide ZERO security. This should only be  ##
+  ##  used for debugging purpose, and NEVER in a production environment.     ##
+  ##                                                                         ##
+  #############################################################################
+  ")
+  add_compile_definitions(CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS)
+  add_compile_definitions(CONCRETELANG_TEST_KEYCACHE_PATH="UnsecureKeySetCache")
+endif()
 
 # -------------------------------------------------------------------------------
 # Benchmarks

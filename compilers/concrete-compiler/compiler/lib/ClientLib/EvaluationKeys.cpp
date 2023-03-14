@@ -7,6 +7,18 @@
 #include "concrete-cpu.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+inline void getApproval() {
+  std::cerr << "DANGER: You are generating an empty unsecure secret keys. "
+               "Enter \"y\" to continue: ";
+  char answer;
+  std::cin >> answer;
+  if (answer != 'y') {
+    std::abort();
+  }
+}
+#endif
+
 namespace concretelang {
 namespace clientlib {
 
@@ -52,9 +64,17 @@ LweSecretKey::LweSecretKey(LweSecretKeyParam &parameters, CSPRNG &csprng)
   // Allocate the buffer
   _buffer = std::make_shared<std::vector<uint64_t>>();
   _buffer->resize(parameters.dimension);
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  // In insecure debug mode, the secret key is filled with zeros.
+  getApproval();
+  for (uint64_t &val : *_buffer) {
+    val = 0;
+  }
+#else
   // Initialize the lwe secret key buffer
   concrete_cpu_init_secret_key_u64(_buffer->data(), parameters.dimension,
                                    csprng.ptr, csprng.vtable);
+#endif
 }
 
 void LweSecretKey::encrypt(uint64_t *ciphertext, uint64_t plaintext,
