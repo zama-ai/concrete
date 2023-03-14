@@ -21,6 +21,7 @@ ExternalProject_Add(
         CONFIGURE_COMMAND ""
         BUILD_COMMAND cargo build --release COMMAND cargo build --release
         BINARY_DIR ${CONCRETE_CPU_BINARY_DIR}
+        BUILD_ALWAYS true
         INSTALL_COMMAND ""
         LOG_BUILD ON)
 

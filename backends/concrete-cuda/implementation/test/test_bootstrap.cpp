@@ -81,17 +81,15 @@ public:
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng,
-                             REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng, REPETITIONS);
     generate_lwe_secret_keys(&lwe_sk_out_array,
-                             glwe_dimension * polynomial_size, csprng,
-                             REPETITIONS);
+                             glwe_dimension * polynomial_size, csprng, REPETITIONS);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_in_array,
         lwe_sk_out_array, lwe_dimension, glwe_dimension, polynomial_size,
         pbs_level, pbs_base_log, csprng, glwe_modular_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(payload_modulus, delta, number_of_inputs,
-                                     REPETITIONS, SAMPLES);
+    plaintexts = generate_plaintexts(payload_modulus, delta, number_of_inputs, REPETITIONS,
+                                     SAMPLES);
 
     // Create the LUT
     uint64_t *lut_pbs_identity = generate_identity_lut_pbs(
@@ -227,6 +225,10 @@ TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
 }
 
 TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
+  int number_of_sm = 0;
+  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+    if(number_of_inputs > number_of_sm * 4 / (glwe_dimension + 1) / pbs_level)
+        GTEST_SKIP() << "The Low Latency PBS does not support this configuration";
   uint64_t *lwe_ct_out_array =
       (uint64_t *)malloc((glwe_dimension * polynomial_size + 1) *
                          number_of_inputs * sizeof(uint64_t));

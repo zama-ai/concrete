@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 const unsigned REPETITIONS = 5;
-const unsigned SAMPLES = 100;
+const unsigned SAMPLES = 10;
 
 typedef struct {
   int lwe_dimension;
@@ -65,11 +65,13 @@ protected:
   uint64_t *d_lwe_ct_out_array;
   uint64_t *d_lut_vector;
   int8_t *wop_pbs_buffer;
+  int input_lwe_dimension;
 
 public:
   // Test arithmetic functions
   void SetUp() {
     stream = cuda_create_stream(0);
+    void *v_stream = (void *)stream;
 
     // TestParams
     lwe_dimension = (int)GetParam().lwe_dimension;
@@ -98,16 +100,14 @@ public:
     concrete_cpu_construct_concrete_csprng(
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
-    int input_lwe_dimension = glwe_dimension * polynomial_size;
+    input_lwe_dimension = glwe_dimension * polynomial_size;
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
-                             REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, lwe_dimension, csprng,
-                             REPETITIONS);
-    generate_lwe_keyswitch_keys(
-        stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
-        input_lwe_dimension, lwe_dimension, ks_level, ks_base_log, csprng,
-        lwe_modular_variance, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_out_array, lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_keyswitch_keys(stream, gpu_index, &d_ksk_array,
+                                lwe_sk_in_array, lwe_sk_out_array,
+                                input_lwe_dimension, lwe_dimension, ks_level,
+                                ks_base_log, csprng, lwe_modular_variance, REPETITIONS);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_out_array,
         lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
@@ -138,7 +138,6 @@ public:
     cuda_memcpy_async_to_gpu(d_lut_vector, big_lut,
                              lut_num * lut_size * sizeof(uint64_t), stream,
                              gpu_index);
-    free(big_lut);
     // Execute scratch
     scratch_cuda_wop_pbs_64(stream, gpu_index, &wop_pbs_buffer,
                             (uint32_t *)&delta_log, &cbs_delta_log,
@@ -155,6 +154,9 @@ public:
         (uint64_t *)malloc((input_lwe_dimension + 1) * tau * sizeof(uint64_t));
     lwe_out_ct_array =
         (uint64_t *)malloc((input_lwe_dimension + 1) * tau * sizeof(uint64_t));
+
+    cuda_synchronize_stream(v_stream);
+    free(big_lut);
   }
 
   void TearDown() {
@@ -200,13 +202,11 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
       for (int t = 0; t < tau; t++) {
         uint64_t plaintext = plaintexts[r * SAMPLES * tau + s * tau + t];
         uint64_t *lwe_in_ct =
-            lwe_in_ct_array + (ptrdiff_t)((r * SAMPLES * tau + s * tau + t) *
-                                          (input_lwe_dimension + 1));
+            lwe_in_ct_array + (ptrdiff_t)(t * (input_lwe_dimension + 1));
         concrete_cpu_encrypt_lwe_ciphertext_u64(
             lwe_sk_in, lwe_in_ct, plaintext, input_lwe_dimension,
             lwe_modular_variance, csprng, &CONCRETE_CSPRNG_VTABLE);
       }
-      cuda_synchronize_stream(v_stream);
       cuda_memcpy_async_to_gpu(d_lwe_ct_in_array, lwe_in_ct_array,
                                (input_lwe_dimension + 1) * tau *
                                    sizeof(uint64_t),
@@ -223,22 +223,23 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
                       cuda_get_max_shared_memory(gpu_index));
 
       //// Copy result back
-      // cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_ct_out_array,
-      //(input_lwe_dimension + 1) * tau * sizeof(uint64_t), stream, gpu_index);
-      // cuda_synchronize_stream(v_stream);
+       cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_ct_out_array,
+      (input_lwe_dimension + 1) * tau * sizeof(uint64_t), stream, gpu_index);
+       cuda_synchronize_stream(v_stream);
 
-      // for (int i = 0; i < tau; i++) {
-      //  uint64_t *result_ct =
-      //      lwe_out_ct_array + (ptrdiff_t)(i * (input_lwe_dimension + 1));
-      //  uint64_t decrypted_message = 0;
-      //  concrete_cpu_decrypt_lwe_ciphertext_u64(
-      //      lwe_sk_in, result_ct, input_lwe_dimension, &decrypted_message);
-      //  // Round after decryption
-      //  uint64_t decrypted =
-      //      closest_representable(decrypted_message, 1, p) >> delta_log;
-      //  uint64_t expected = plaintext >> delta_log;
-      //  EXPECT_EQ(decrypted, expected);
-      //}
+       for (int i = 0; i < tau; i++) {
+        uint64_t plaintext = plaintexts[r * SAMPLES * tau + s * tau + i];
+        uint64_t *result_ct =
+            lwe_out_ct_array + (ptrdiff_t)(i * (input_lwe_dimension + 1));
+        uint64_t decrypted_message = 0;
+        concrete_cpu_decrypt_lwe_ciphertext_u64(
+            lwe_sk_in, result_ct, input_lwe_dimension, &decrypted_message);
+        // Round after decryption
+        uint64_t decrypted =
+            closest_representable(decrypted_message, 1, p) >> delta_log;
+        uint64_t expected = plaintext >> delta_log;
+        EXPECT_EQ(decrypted, expected);
+      }
     }
   }
 }
@@ -250,17 +251,17 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
         // ks_base_log, ks_level, tau
         (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
-                                 7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
-                                 1} //,
-        //(WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
-        //                         7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
-        //                         2} //,
-        //(WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
-        //                                            7.52316384526264e-37, 4,
-        //                                            9, 1, 9, 4, 9, 6, 4, 1},
-        //(WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
-        //                                            7.52316384526264e-37, 4,
-        //                                            9, 1, 9, 4, 9, 6, 4, 2}
+                                                    7.52316384526264e-37, 4,
+                                                    9, 1, 9, 4, 9, 6, 4, 1}
+//        (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
+//                                 7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
+//                                 2} ,
+//        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
+//                                                    7.52316384526264e-37, 4,
+//                                                    9, 1, 9, 4, 9, 6, 4, 1},
+//        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
+//                                                    7.52316384526264e-37, 4,
+//                                                    9, 1, 9, 4, 9, 6, 4, 2}
     );
 
 std::string printParamName(::testing::TestParamInfo<WopBootstrapTestParams> p) {

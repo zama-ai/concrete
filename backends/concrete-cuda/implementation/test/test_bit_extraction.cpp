@@ -55,6 +55,8 @@ protected:
   uint64_t *d_lwe_in_ct_array;
   uint64_t *d_lwe_out_ct_array;
   int8_t *bit_extract_buffer;
+  int input_lwe_dimension;
+  int output_lwe_dimension;
 
 public:
   // Test arithmetic functions
@@ -85,24 +87,21 @@ public:
     concrete_cpu_construct_concrete_csprng(
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
-    int input_lwe_dimension = glwe_dimension * polynomial_size;
-    int output_lwe_dimension = lwe_dimension;
+    input_lwe_dimension = glwe_dimension * polynomial_size;
+    output_lwe_dimension = lwe_dimension;
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
-                             REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng,
-                             REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng, REPETITIONS);
     generate_lwe_keyswitch_keys(
         stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
         input_lwe_dimension, output_lwe_dimension, ks_level, ks_base_log,
         csprng, lwe_modular_variance, REPETITIONS);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_out_array,
-        lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
+        lwe_sk_in_array, output_lwe_dimension, glwe_dimension, polynomial_size,
         pbs_level, pbs_base_log, csprng, glwe_modular_variance, REPETITIONS);
-    plaintexts =
-        generate_plaintexts(number_of_bits_of_message_including_padding, delta,
-                            number_of_inputs, REPETITIONS, SAMPLES);
+    plaintexts = generate_plaintexts(
+        number_of_bits_of_message_including_padding, delta, number_of_inputs, REPETITIONS, SAMPLES);
 
     d_lwe_out_ct_array = (uint64_t *)cuda_malloc_async(
         (output_lwe_dimension + 1) * number_of_bits_to_extract *
@@ -148,15 +147,15 @@ public:
 TEST_P(BitExtractionTestPrimitives_u64, bit_extraction) {
   void *v_stream = (void *)stream;
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
-                 polynomial_size * (lwe_dimension + 1);
+                 polynomial_size * (output_lwe_dimension + 1);
   int ksk_size =
-      ks_level * (lwe_dimension + 1) * glwe_dimension * polynomial_size;
+      ks_level * input_lwe_dimension * (output_lwe_dimension + 1);
   for (uint r = 0; r < REPETITIONS; r++) {
     double *d_fourier_bsk = d_fourier_bsk_array + (ptrdiff_t)(bsk_size * r);
     uint64_t *d_ksk = d_ksk_array + (ptrdiff_t)(ksk_size * r);
     uint64_t *lwe_in_sk =
-        lwe_sk_in_array + (ptrdiff_t)(glwe_dimension * polynomial_size * r);
-    uint64_t *lwe_sk_out = lwe_sk_out_array + (ptrdiff_t)(r * lwe_dimension);
+        lwe_sk_in_array + (ptrdiff_t)(input_lwe_dimension * r);
+    uint64_t *lwe_sk_out = lwe_sk_out_array + (ptrdiff_t)(r * output_lwe_dimension);
     for (uint s = 0; s < SAMPLES; s++) {
       for (int i = 0; i < number_of_inputs; i++) {
         uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
@@ -164,15 +163,13 @@ TEST_P(BitExtractionTestPrimitives_u64, bit_extraction) {
         uint64_t *lwe_in_ct =
             lwe_in_ct_array +
             (ptrdiff_t)(
-                (r * SAMPLES * number_of_inputs + s * number_of_inputs + i) *
-                (glwe_dimension * polynomial_size + 1));
+                i * (input_lwe_dimension + 1));
         concrete_cpu_encrypt_lwe_ciphertext_u64(
-            lwe_in_sk, lwe_in_ct, plaintext, glwe_dimension * polynomial_size,
+            lwe_in_sk, lwe_in_ct, plaintext, input_lwe_dimension,
             lwe_modular_variance, csprng, &CONCRETE_CSPRNG_VTABLE);
       }
-      cuda_synchronize_stream(v_stream);
       cuda_memcpy_async_to_gpu(d_lwe_in_ct_array, lwe_in_ct_array,
-                               (glwe_dimension * polynomial_size + 1) *
+                               (input_lwe_dimension + 1) *
                                    number_of_inputs * sizeof(uint64_t),
                                stream, gpu_index);
 
@@ -181,31 +178,29 @@ TEST_P(BitExtractionTestPrimitives_u64, bit_extraction) {
           stream, gpu_index, (void *)d_lwe_out_ct_array,
           (void *)d_lwe_in_ct_array, bit_extract_buffer, (void *)d_ksk,
           (void *)d_fourier_bsk, number_of_bits_to_extract, delta_log,
-          glwe_dimension * polynomial_size, lwe_dimension, glwe_dimension,
+          input_lwe_dimension, output_lwe_dimension, glwe_dimension,
           polynomial_size, pbs_base_log, pbs_level, ks_base_log, ks_level,
           number_of_inputs, cuda_get_max_shared_memory(gpu_index));
 
       // Copy result back
-      cuda_synchronize_stream(v_stream);
       cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_out_ct_array,
-                               (lwe_dimension + 1) * number_of_bits_to_extract *
+                               (output_lwe_dimension + 1) * number_of_bits_to_extract *
                                    number_of_inputs * sizeof(uint64_t),
                                stream, gpu_index);
       cuda_synchronize_stream(v_stream);
-
       for (int j = 0; j < number_of_inputs; j++) {
         uint64_t *result_array =
             lwe_out_ct_array +
-            (ptrdiff_t)(j * number_of_bits_to_extract * (lwe_dimension + 1));
+            (ptrdiff_t)(j * number_of_bits_to_extract * (output_lwe_dimension + 1));
         uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
                                         s * number_of_inputs + j];
         for (int i = 0; i < number_of_bits_to_extract; i++) {
           uint64_t *result_ct =
               result_array + (ptrdiff_t)((number_of_bits_to_extract - 1 - i) *
-                                         (lwe_dimension + 1));
+                                         (output_lwe_dimension + 1));
           uint64_t decrypted_message = 0;
           concrete_cpu_decrypt_lwe_ciphertext_u64(
-              lwe_sk_out, result_ct, lwe_dimension, &decrypted_message);
+              lwe_sk_out, result_ct, output_lwe_dimension, &decrypted_message);
           // Round after decryption
           uint64_t decrypted_rounded =
               closest_representable(decrypted_message, 1, 1);
@@ -225,13 +220,11 @@ TEST_P(BitExtractionTestPrimitives_u64, bit_extraction) {
     bit_extract_params_u64 = ::testing::Values(
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
         // ks_base_log, ks_level, number_of_message_bits,
-        // number_of_bits_to_extract
+        // number_of_bits_to_extract, number_of_inputs
         (BitExtractionTestParams){585, 1, 1024, 7.52316384526264e-37,
-                                  7.52316384526264e-37, 10, 2, 4, 7, 5, 5,
-                                  1}); //,
-//        (BitExtractionTestParams){585, 1, 1024, 7.52316384526264e-37,
-//                                  7.52316384526264e-37, 10, 2, 4, 7, 5, 5,
-//                                  2});
+                                  7.52316384526264e-37, 10, 2, 4, 7, 5, 5, 1},
+        (BitExtractionTestParams){481, 1, 1024, 7.52316384526264e-37,
+                                  7.52316384526264e-37, 4, 7, 1, 9, 5, 5, 1});
 
 std::string
 printParamName(::testing::TestParamInfo<BitExtractionTestParams> p) {
