@@ -14,6 +14,7 @@
 
 #include "concretelang/Dialect/TFHE/IR/TFHEAttrs.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
+#include "concretelang/Interfaces/BatchableInterface.h"
 
 #define GET_OP_CLASSES
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h.inc"
