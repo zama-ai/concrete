@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 
 PRECISIONS_TO_BENCH = [1, 2, 5, 8, 9, 12, 16, 24, 32, 40, 48, 56]
@@ -75,4 +76,11 @@ def main():
             print("---")
 
 if __name__ == "__main__":
+    CLI = argparse.ArgumentParser()
+    CLI.add_argument(
+        "--minimal",
+        help="Specify whether to generate minimal tests only",
+        type=bool,
+        default=False,
+    )
     main()

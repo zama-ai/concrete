@@ -73,4 +73,10 @@ if __name__ == "__main__":
         type=int,
         default=list(range(3,9)),
     )
+    CLI.add_argument(
+        "--minimal",
+        help="Specify whether to generate minimal tests only",
+        type=bool,
+        default=False,
+    )
     generate(CLI.parse_args())

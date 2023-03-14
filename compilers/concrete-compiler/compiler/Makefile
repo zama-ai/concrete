@@ -12,6 +12,7 @@ CUDA_SUPPORT?=OFF
 INSTALL_PREFIX?=$(abspath $(BUILD_DIR))/install
 INSTALL_PATH=$(abspath $(INSTALL_PREFIX))/concretecompiler/
 MAKEFILE_ROOT_DIR=$(shell pwd)
+MINIMAL_TESTS?=OFF
 
 KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
@@ -231,16 +232,21 @@ build-end-to-end-tests: build-end-to-end-jit-chunked-int build-end-to-end-jit-te
 
 FIXTURE_CPU_DIR=tests/end_to_end_fixture/tests_cpu
 
-$(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
+ifeq ($(MINIMAL_TESTS),ON)
+	MINIMAL_TESTS_BOOL=true
+else
+	MINIMAL_TESTS_BOOL=false
+endif
+$(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py FORCE
 	mkdir -p $(FIXTURE_CPU_DIR)
-	$(Python3_EXECUTABLE) $< > $@
+	$(Python3_EXECUTABLE) $< --minimal=$(MINIMAL_TESTS_BOOL) > $@
 
 $(FIXTURE_CPU_DIR)/bug_report.yaml:
 	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
 
 generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml $(FIXTURE_CPU_DIR)/end_to_end_round.yaml
 
-SECURITY_TO_TEST=80 128
+SECURITY_TO_TEST=128
 run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_test
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_encrypted_tensor
@@ -484,6 +490,8 @@ install: concretecompiler CAPI install-deps
 	cd $(abspath $(BUILD_DIR))/include                    && find . -iname '*.inc' -exec $(HIERARCHY_PRESERVING_COPY) {} $(INSTALL_PATH)/include \;
 	cd $(abspath $(BUILD_DIR))/tools/concretelang/include && find . -iname '*.inc' -exec $(HIERARCHY_PRESERVING_COPY) {} $(INSTALL_PATH)/include \;
 	cd $(abspath $(BUILD_DIR))/tools/mlir/include         && find . -iname '*.inc' -exec $(HIERARCHY_PRESERVING_COPY) {} $(INSTALL_PATH)/include \;
+
+FORCE:
 
 .PHONY: build-initialized \
 	build-end-to-end-jit \

@@ -44,28 +44,33 @@ def generate(args):
                 print("---")
 
 
-CLI = argparse.ArgumentParser()
-CLI.add_argument(
-    "--bitwidth",
-    help="Specify the list of bitwidth to generate",
-    nargs="+",
-    type=int,
-    default=list(range(1,17)),
-)
-CLI.add_argument(
-    "--n-ct",
-    help="Specify the tensor sizes to generate",
-    nargs="+",
-    type=int,
-    default=[4],
-)
-CLI.add_argument(
-    "--n-lut",
-    help="Specify the number of FHELinalg.apply_lookup_table layers to generate",
-    nargs="+",
-    type=int,
-    default=[1,2],
-)
-
 if __name__ == "__main__":
+    CLI = argparse.ArgumentParser()
+    CLI.add_argument(
+        "--bitwidth",
+        help="Specify the list of bitwidth to generate",
+        nargs="+",
+        type=int,
+        default=list(range(1,17)),
+    )
+    CLI.add_argument(
+        "--n-ct",
+        help="Specify the tensor sizes to generate",
+        nargs="+",
+        type=int,
+        default=[4],
+    )
+    CLI.add_argument(
+        "--n-lut",
+        help="Specify the number of FHELinalg.apply_lookup_table layers to generate",
+        nargs="+",
+        type=int,
+        default=[1,2],
+    )
+    CLI.add_argument(
+        "--minimal",
+        help="Specify whether to generate minimal tests only",
+        type=bool,
+        default=False,
+    )
     generate(CLI.parse_args())
