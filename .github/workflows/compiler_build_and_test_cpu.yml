@@ -98,6 +98,14 @@ jobs:
             export COMPILER_BUILD_DIRECTORY=/build
             make whl
 
+      - name: Enable complete tests on push to main
+        if: github.ref == 'refs/heads/main'
+        run: echo "MINIMAL_TESTS=OFF" >> $GITHUB_ENV
+
+      - name: Enable minimal tests otherwise
+        if: github.ref != 'refs/heads/main'
+        run: echo "MINIMAL_TESTS=ON" >> $GITHUB_ENV
+
       - name: Test compiler
         uses: addnab/docker-run-action@v3
         with:
@@ -123,7 +131,7 @@ jobs:
             cd /concrete/compilers/concrete-compiler/compiler
             sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Archive python package
