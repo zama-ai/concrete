@@ -19,7 +19,7 @@ jobs:
     runs-on: macos-11
     steps:
       # A SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.6.0
+      - uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
