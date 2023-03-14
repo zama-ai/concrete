@@ -1595,7 +1595,7 @@ protected:
           this->signalPassFailure();
           return;
         }
-        this->updateMax(manp.getSExtValue(), eTy.getWidth());
+        this->updateMax(manp.getZExtValue(), eTy.getWidth());
       }
     }
   }
