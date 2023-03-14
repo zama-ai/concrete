@@ -19,7 +19,7 @@ include "concretelang/Dialect/TFHE/IR/TFHEAttrs.td"
 class TFHE_Op<string mnemonic, list<Trait> traits = []>
     : Op<TFHE_Dialect, mnemonic, traits>;
 
-def TFHE_EncodeExpandLutForBootstrapOp : TFHE_Op<"encode_expand_lut_for_bootstrap"> {
+def TFHE_EncodeExpandLutForBootstrapOp : TFHE_Op<"encode_expand_lut_for_bootstrap", [Pure]> {
     let summary =
         "Encode and expand a lookup table so that it can be used for a bootstrap.";
 
@@ -33,7 +33,7 @@ def TFHE_EncodeExpandLutForBootstrapOp : TFHE_Op<"encode_expand_lut_for_bootstra
     let results = (outs 1DTensorOf<[I64]> : $result);
 }
 
-def TFHE_EncodeLutForCrtWopPBSOp : TFHE_Op<"encode_lut_for_crt_woppbs"> {
+def TFHE_EncodeLutForCrtWopPBSOp : TFHE_Op<"encode_lut_for_crt_woppbs", [Pure]> {
     let summary =
         "Encode and expand a lookup table so that it can be used for a wop pbs.";
 
@@ -48,7 +48,7 @@ def TFHE_EncodeLutForCrtWopPBSOp : TFHE_Op<"encode_lut_for_crt_woppbs"> {
     let results = (outs 2DTensorOf<[I64]> : $result);
 }
 
-def TFHE_EncodePlaintextWithCrtOp : TFHE_Op<"encode_plaintext_with_crt"> {
+def TFHE_EncodePlaintextWithCrtOp : TFHE_Op<"encode_plaintext_with_crt", [Pure]> {
     let summary =
         "Encodes a plaintext by decomposing it on a crt basis.";
 
@@ -62,21 +62,21 @@ def TFHE_EncodePlaintextWithCrtOp : TFHE_Op<"encode_plaintext_with_crt"> {
 }
 
 
-def TFHE_ZeroGLWEOp : TFHE_Op<"zero"> {
+def TFHE_ZeroGLWEOp : TFHE_Op<"zero", [Pure]> {
   let summary = "Returns a trivial encyption of 0";
 
   let arguments = (ins);
   let results = (outs TFHE_GLWECipherTextType : $out);
 }
 
-def TFHE_ZeroTensorGLWEOp : TFHE_Op<"zero_tensor"> {
+def TFHE_ZeroTensorGLWEOp : TFHE_Op<"zero_tensor", [Pure]> {
   let summary = "Returns a tensor of trivial encyption of 0";
 
   let arguments = (ins);
   let results = (outs Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def TFHE_AddGLWEIntOp : TFHE_Op<"add_glwe_int"> {
+def TFHE_AddGLWEIntOp : TFHE_Op<"add_glwe_int", [Pure]> {
   let summary = "Returns the sum of a clear integer and a lwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, AnyInteger : $b);
@@ -85,7 +85,7 @@ def TFHE_AddGLWEIntOp : TFHE_Op<"add_glwe_int"> {
   let hasVerifier = 1;
 }
 
-def TFHE_AddGLWEOp : TFHE_Op<"add_glwe"> {
+def TFHE_AddGLWEOp : TFHE_Op<"add_glwe", [Pure]> {
   let summary = "Returns the sum of 2 lwe ciphertexts";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, TFHE_GLWECipherTextType : $b);
@@ -94,7 +94,7 @@ def TFHE_AddGLWEOp : TFHE_Op<"add_glwe"> {
   let hasVerifier = 1;
 }
 
-def TFHE_SubGLWEIntOp : TFHE_Op<"sub_int_glwe"> {
+def TFHE_SubGLWEIntOp : TFHE_Op<"sub_int_glwe", [Pure]> {
   let summary = "Substracts an integer and a GLWE ciphertext";
 
   let arguments = (ins AnyInteger : $a, TFHE_GLWECipherTextType : $b);
@@ -103,7 +103,7 @@ def TFHE_SubGLWEIntOp : TFHE_Op<"sub_int_glwe"> {
   let hasVerifier = 1;
 }
 
-def TFHE_NegGLWEOp : TFHE_Op<"neg_glwe"> {
+def TFHE_NegGLWEOp : TFHE_Op<"neg_glwe", [Pure]> {
   let summary = "Negates a glwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a);
@@ -112,7 +112,7 @@ def TFHE_NegGLWEOp : TFHE_Op<"neg_glwe"> {
   let hasVerifier = 1;
 }
 
-def TFHE_MulGLWEIntOp : TFHE_Op<"mul_glwe_int"> {
+def TFHE_MulGLWEIntOp : TFHE_Op<"mul_glwe_int", [Pure]> {
   let summary = "Returns the product of a clear integer and a lwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, AnyInteger : $b);
@@ -121,7 +121,7 @@ def TFHE_MulGLWEIntOp : TFHE_Op<"mul_glwe_int"> {
   let hasVerifier = 1;
 }
 
-def TFHE_KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe"> {
+def TFHE_KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe", [Pure]> {
   let summary = "Change the encryption parameters of a glwe ciphertext by "
                 "applying a keyswitch";
 
@@ -135,7 +135,7 @@ def TFHE_KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe"> {
 }
 
 
-def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
+def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe", [Pure]> {
   let summary =
       "Programmable bootstraping of a GLWE ciphertext with a lookup table";
 
@@ -148,7 +148,7 @@ def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
   let results = (outs TFHE_GLWECipherTextType : $result);
 }
 
-def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe"> {
+def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe", [Pure]> {
     let summary = "";
 
     let arguments = (ins
