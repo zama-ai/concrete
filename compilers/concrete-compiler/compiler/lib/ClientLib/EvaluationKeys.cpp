@@ -54,7 +54,7 @@ LweSecretKey::LweSecretKey(LweSecretKeyParam &parameters, CSPRNG &csprng)
   _buffer->resize(parameters.dimension);
   // Initialize the lwe secret key buffer
   concrete_cpu_init_secret_key_u64(_buffer->data(), parameters.dimension,
-                                       csprng.ptr, csprng.vtable);
+                                   csprng.ptr, csprng.vtable);
 }
 
 void LweSecretKey::encrypt(uint64_t *ciphertext, uint64_t plaintext,
