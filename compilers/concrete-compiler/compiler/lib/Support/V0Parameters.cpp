@@ -122,7 +122,7 @@ static void display(optimizer::Description &descr,
   auto constraint = descr.constraint;
   auto complexity_label =
       descr.dag ? "for the full circuit" : "for each Pbs call";
-  double mops = int(10 * sol.complexity / (1000 * 1000)) / 10.0;
+  double mops = ceil(sol.complexity / (1000 * 1000));
   auto o = llvm::outs;
   o() << "--- Circuit\n"
       << "  " << constraint.p << " bits integers\n"
