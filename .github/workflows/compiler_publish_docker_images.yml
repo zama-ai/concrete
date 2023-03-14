@@ -27,6 +27,9 @@ concurrency:
   group: compiler_publish_docker_images-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  THIS_FILE: .github/workflows/compiler_publish_docker_images.yml
+
 jobs:
   BuildAndPushDockerImages:
     needs: [BuildAndPublishHPXDockerImage, BuildAndPublishCUDADockerImage]
@@ -37,7 +40,7 @@ jobs:
         include:
           - name: test-env
             image: ghcr.io/zama-ai/concrete-compiler
-            dockerfile: builders/Dockerfile.concrete-compiler-env
+            dockerfile: docker/Dockerfile.concrete-compiler-env
 
     steps:
       - name: Instance configuration used
@@ -80,7 +83,7 @@ jobs:
 
   BuildAndPublishHPXDockerImage:
     name: Build & Publish HPX Docker Image
-    runs-on: ubuntu-20.04
+    runs-on: ${{ github.event.inputs.runner_name }}
     env:
       IMAGE: ghcr.io/zama-ai/hpx
 
@@ -89,25 +92,28 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up env
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v32
 
       - name: Login
         id: login
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
+        if: contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.hpx-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
-          cd compilers/concrete-compiler
-          docker build -t "${IMAGE}" -f builders/Dockerfile.hpx-env .
+          docker build -t "${IMAGE}" -f docker/Dockerfile.hpx-env .
           docker push "${IMAGE}:latest"
 
   BuildAndPublishCUDADockerImage:
     name: Build & Publish CUDA Docker Image
-    runs-on: ubuntu-20.04
+    runs-on: ${{ github.event.inputs.runner_name }}
     env:
       IMAGE: ghcr.io/zama-ai/cuda
       TAG: "11-7"
@@ -117,20 +123,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up env
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v32
 
       - name: Login
         id: login
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.cuda-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
+        if: contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.cuda-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
-          cd compilers/concrete-compiler
-          docker build -t "${IMAGE}" -f builders/Dockerfile.cuda-env .
+          docker build -t "${IMAGE}" -f docker/Dockerfile.cuda-env .
           docker image tag "${IMAGE}" "${IMAGE}:${TAG}"
           docker push "${IMAGE}:latest"
           docker push "${IMAGE}:${TAG}"

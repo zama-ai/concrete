@@ -36,11 +36,9 @@ RUN ln -s /opt/python/${python_tag}/bin/python /bin/python
 ENV PYTHON_EXEC=/opt/python/${python_tag}/bin/python
 # Install python deps
 RUN pip install numpy pybind11==2.8 PyYAML pytest wheel auditwheel
-# Setup LLVM
-COPY /llvm-project /llvm-project
 # Setup and build compiler
-COPY /compiler /compiler
-WORKDIR /compiler
+COPY / /workdir
+WORKDIR /workdir/compilers/concrete-compiler/compiler
 RUN mkdir -p /build
 RUN --mount=type=ssh make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
     Python3_EXECUTABLE=${PYTHON_EXEC} \
