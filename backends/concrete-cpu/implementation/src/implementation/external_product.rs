@@ -20,7 +20,7 @@ impl GgswCiphertext<&mut [f64]> {
         fft: FftView<'_>,
         stack: DynStack<'_>,
     ) {
-        let polynomial_size = standard.glwe_params.polynomial_size;
+        let polynomial_size = standard.in_glwe_params().polynomial_size;
 
         let mut stack = stack;
         for (fourier_polynomial, standard_polynomial) in zip_eq(
@@ -72,15 +72,15 @@ pub fn external_product(
     fft: FftView<'_>,
     stack: DynStack<'_>,
 ) {
-    debug_assert_eq!(ggsw.glwe_params, glwe.glwe_params);
-    debug_assert_eq!(ggsw.glwe_params, out.glwe_params);
+    debug_assert_eq!(ggsw.in_glwe_params(), glwe.glwe_params);
+    debug_assert_eq!(ggsw.out_glwe_params(), out.glwe_params);
     let align = CACHELINE_ALIGN;
-    let polynomial_size = ggsw.glwe_params.polynomial_size;
+    let polynomial_size = ggsw.polynomial_size;
 
     let decomposer = SignedDecomposer::new(ggsw.decomp_params);
 
     let (mut output_fft_buffer, mut substack0) =
-        stack.make_aligned_uninit::<f64>(polynomial_size * (ggsw.glwe_params.dimension + 1), align);
+        stack.make_aligned_uninit::<f64>(polynomial_size * (ggsw.out_glwe_dimension + 1), align);
 
     // output_fft_buffer is initially uninitialized, considered to be implicitly zero, to avoid
     // the cost of filling it up with zeros. `is_output_uninit` is set to `false` once
@@ -106,7 +106,7 @@ pub fn external_product(
             let (glwe_level, glwe_decomposition_term, mut substack2) =
                 collect_next_term(&mut decomposition, &mut substack1, align);
             let glwe_decomposition_term =
-                GlweCiphertext::new(&*glwe_decomposition_term, ggsw.glwe_params);
+                GlweCiphertext::new(&*glwe_decomposition_term, ggsw.in_glwe_params());
             debug_assert_eq!(ggsw_decomposition_matrix.decomposition_level, glwe_level);
 
             // For each level we have to add the result of the vector-matrix product between the
@@ -252,3 +252,6 @@ unsafe fn update_with_fmadd(
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -7,39 +7,88 @@ use super::{DecompParams, GlweParams};
 #[readonly::make]
 pub struct GgswCiphertext<C: Container> {
     pub data: C,
-    pub glwe_params: GlweParams,
+    pub polynomial_size: usize,
+    pub in_glwe_dimension: usize,
+    pub out_glwe_dimension: usize,
     pub decomp_params: DecompParams,
 }
 
 impl<C: Container> GgswCiphertext<C> {
-    pub fn data_len(glwe_params: GlweParams, decomposition_level_count: usize) -> usize {
-        glwe_params.polynomial_size
-            * (glwe_params.dimension + 1)
-            * (glwe_params.dimension + 1)
-            * decomposition_level_count
+    pub fn out_glwe_params(&self) -> GlweParams {
+        GlweParams {
+            dimension: self.out_glwe_dimension,
+            polynomial_size: self.polynomial_size,
+        }
     }
 
-    pub fn new(data: C, glwe_params: GlweParams, decomp_params: DecompParams) -> Self {
-        debug_assert_eq!(data.len(), Self::data_len(glwe_params, decomp_params.level));
+    pub fn in_glwe_params(&self) -> GlweParams {
+        GlweParams {
+            dimension: self.in_glwe_dimension,
+            polynomial_size: self.polynomial_size,
+        }
+    }
+
+    pub fn data_len(
+        polynomial_size: usize,
+        in_glwe_dimension: usize,
+        out_glwe_dimension: usize,
+        decomposition_level_count: usize,
+    ) -> usize {
+        decomposition_level_count
+            * (in_glwe_dimension + 1)
+            * (out_glwe_dimension + 1)
+            * polynomial_size
+    }
+
+    pub fn new(
+        data: C,
+        polynomial_size: usize,
+        in_glwe_dimension: usize,
+        out_glwe_dimension: usize,
+        decomp_params: DecompParams,
+    ) -> Self {
+        debug_assert_eq!(
+            data.len(),
+            Self::data_len(
+                polynomial_size,
+                in_glwe_dimension,
+                out_glwe_dimension,
+                decomp_params.level
+            )
+        );
         Self {
             data,
-            glwe_params,
+            polynomial_size,
+            in_glwe_dimension,
+            out_glwe_dimension,
             decomp_params,
         }
     }
 
     pub unsafe fn from_raw_parts(
         data: C::Pointer,
-        glwe_params: GlweParams,
+        polynomial_size: usize,
+        in_glwe_dimension: usize,
+        out_glwe_dimension: usize,
         decomp_params: DecompParams,
     ) -> Self
     where
         C: Split,
     {
-        let data = C::from_raw_parts(data, Self::data_len(glwe_params, decomp_params.level));
+        let data = C::from_raw_parts(
+            data,
+            Self::data_len(
+                polynomial_size,
+                in_glwe_dimension,
+                out_glwe_dimension,
+                decomp_params.level,
+            ),
+        );
         Self {
             data,
-            glwe_params,
+            polynomial_size,
+            in_glwe_dimension,
+            out_glwe_dimension,
             decomp_params,
         }
     }
@@ -47,7 +96,9 @@ impl<C: Container> GgswCiphertext<C> {
     pub fn as_view(&self) -> GgswCiphertext<&[C::Item]> {
         GgswCiphertext {
             data: self.data.as_ref(),
-            glwe_params: self.glwe_params,
+            polynomial_size: self.polynomial_size,
+            in_glwe_dimension: self.in_glwe_dimension,
+            out_glwe_dimension: self.out_glwe_dimension,
             decomp_params: self.decomp_params,
         }
     }
@@ -58,7 +109,9 @@ impl<C: Container> GgswCiphertext<C> {
     {
         GgswCiphertext {
             data: self.data.as_mut(),
-            glwe_params: self.glwe_params,
+            polynomial_size: self.polynomial_size,
+            in_glwe_dimension: self.in_glwe_dimension,
+            out_glwe_dimension: self.out_glwe_dimension,
             decomp_params: self.decomp_params,
         }
     }
@@ -74,6 +127,14 @@ impl<C: Container> GgswCiphertext<C> {
         self.data
             .split_into(self.decomp_params.level)
             .enumerate()
-            .map(move |(i, slice)| GgswLevelMatrix::new(slice, self.glwe_params, i + 1))
+            .map(move |(i, slice)| {
+                GgswLevelMatrix::new(
+                    slice,
+                    self.polynomial_size,
+                    self.in_glwe_dimension,
+                    self.out_glwe_dimension,
+                    i + 1,
+                )
+            })
     }
 }

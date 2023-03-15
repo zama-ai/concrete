@@ -5,36 +5,74 @@ use crate::implementation::{Container, ContainerMut, Split};
 #[readonly::make]
 pub struct GgswLevelMatrix<C: Container> {
     pub data: C,
-    pub glwe_params: GlweParams,
+    pub polynomial_size: usize,
+    pub in_glwe_dimension: usize,
+    pub out_glwe_dimension: usize,
     pub decomposition_level: usize,
 }
 
 impl<C: Container> GgswLevelMatrix<C> {
-    pub fn data_len(glwe_params: GlweParams) -> usize {
-        glwe_params.polynomial_size * (glwe_params.dimension + 1) * (glwe_params.dimension + 1)
+    pub fn out_glwe_params(&self) -> GlweParams {
+        GlweParams {
+            dimension: self.out_glwe_dimension,
+            polynomial_size: self.polynomial_size,
+        }
     }
 
-    pub fn new(data: C, glwe_params: GlweParams, decomposition_level: usize) -> Self {
-        debug_assert_eq!(data.len(), Self::data_len(glwe_params));
+    pub fn in_glwe_params(&self) -> GlweParams {
+        GlweParams {
+            dimension: self.in_glwe_dimension,
+            polynomial_size: self.polynomial_size,
+        }
+    }
+
+    pub fn data_len(
+        polynomial_size: usize,
+        in_glwe_dimension: usize,
+        out_glwe_dimension: usize,
+    ) -> usize {
+        polynomial_size * (in_glwe_dimension + 1) * (out_glwe_dimension + 1)
+    }
+
+    pub fn new(
+        data: C,
+        polynomial_size: usize,
+        in_glwe_dimension: usize,
+        out_glwe_dimension: usize,
+        decomposition_level: usize,
+    ) -> Self {
+        debug_assert_eq!(
+            data.len(),
+            Self::data_len(polynomial_size, in_glwe_dimension, out_glwe_dimension,)
+        );
         Self {
             data,
-            glwe_params,
+            polynomial_size,
+            in_glwe_dimension,
+            out_glwe_dimension,
             decomposition_level,
         }
     }
 
     pub unsafe fn from_raw_parts(
         data: C::Pointer,
-        glwe_params: GlweParams,
+        polynomial_size: usize,
+        in_glwe_dimension: usize,
+        out_glwe_dimension: usize,
         decomposition_level: usize,
     ) -> Self
     where
         C: Split,
     {
-        let data = C::from_raw_parts(data, Self::data_len(glwe_params));
+        let data = C::from_raw_parts(
+            data,
+            Self::data_len(polynomial_size, in_glwe_dimension, out_glwe_dimension),
+        );
         Self {
             data,
-            glwe_params,
+            polynomial_size,
+            in_glwe_dimension,
+            out_glwe_dimension,
             decomposition_level,
         }
     }
@@ -42,7 +80,9 @@ impl<C: Container> GgswLevelMatrix<C> {
     pub fn as_view(&self) -> GgswLevelMatrix<&[C::Item]> {
         GgswLevelMatrix {
             data: self.data.as_ref(),
-            glwe_params: self.glwe_params,
+            polynomial_size: self.polynomial_size,
+            in_glwe_dimension: self.in_glwe_dimension,
+            out_glwe_dimension: self.out_glwe_dimension,
             decomposition_level: self.decomposition_level,
         }
     }
@@ -53,7 +93,9 @@ impl<C: Container> GgswLevelMatrix<C> {
     {
         GgswLevelMatrix {
             data: self.data.as_mut(),
-            glwe_params: self.glwe_params,
+            polynomial_size: self.polynomial_size,
+            in_glwe_dimension: self.in_glwe_dimension,
+            out_glwe_dimension: self.out_glwe_dimension,
             decomposition_level: self.decomposition_level,
         }
     }
@@ -66,8 +108,10 @@ impl<C: Container> GgswLevelMatrix<C> {
     where
         C: Split,
     {
+        let out_glwe_params = self.out_glwe_params();
+
         self.data
-            .split_into(self.glwe_params.dimension + 1)
-            .map(move |slice| GlweCiphertext::new(slice, self.glwe_params))
+            .split_into(self.in_glwe_dimension + 1)
+            .map(move |slice| GlweCiphertext::new(slice, out_glwe_params))
     }
 }

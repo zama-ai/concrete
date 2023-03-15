@@ -227,7 +227,8 @@ pub fn circuit_bootstrap_boolean(
     let fourier_bsk_output_lwe_dimension = fourier_bsk.output_lwe_dimension();
 
     let glwe_params = fpksk_list.glwe_params;
-    debug_assert_eq!(glwe_params, ggsw_out.glwe_params);
+    debug_assert_eq!(glwe_params, ggsw_out.out_glwe_params());
+    debug_assert_eq!(glwe_params, ggsw_out.in_glwe_params());
 
     debug_assert_eq!(
         fpksk_input_lwe_key_dimension,
@@ -493,10 +494,15 @@ impl<C: Container<Item = f64>> FourierGgswCiphertextList<C> {
     where
         C: Split,
     {
-        self.fourier
-            .data
-            .split_into(self.count)
-            .map(move |slice| GgswCiphertext::new(slice, self.glwe_params, self.decomp_params))
+        self.fourier.data.split_into(self.count).map(move |slice| {
+            GgswCiphertext::new(
+                slice,
+                self.glwe_params.polynomial_size,
+                self.glwe_params.dimension,
+                self.glwe_params.dimension,
+                self.decomp_params,
+            )
+        })
     }
 
     pub fn split_at(self, mid: usize) -> (Self, Self)
@@ -769,7 +775,13 @@ pub fn circuit_bootstrap_boolean_vertical_packing(
         cbs_dp,
     );
 
-    let mut ggsw_res = GgswCiphertext::new(&mut *ggsw_res_data, fpksk_list.glwe_params, cbs_dp);
+    let mut ggsw_res = GgswCiphertext::new(
+        &mut *ggsw_res_data,
+        fpksk_list.glwe_params.polynomial_size,
+        fpksk_list.glwe_params.dimension,
+        fpksk_list.glwe_params.dimension,
+        cbs_dp,
+    );
 
     for (lwe_in, ggsw) in zip_eq(
         lwe_list_in.ciphertext_iter(),

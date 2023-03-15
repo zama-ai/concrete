@@ -161,8 +161,8 @@ impl BootstrapKey<&mut [u64]> {
             zip_eq(self.into_ggsw_iter(), lwe_sk.into_data().iter().copied())
         {
             let encoded = sk_scalar;
-            glwe_sk.gen_noise_ggsw(ggsw.as_mut_view(), variance, csprng.as_mut());
-            glwe_sk.encrypt_constant_ggsw_noise_full(ggsw, encoded);
+            gen_noise_ggsw(glwe_sk, ggsw.as_mut_view(), variance, csprng.as_mut());
+            encrypt_constant_ggsw_noise_full(glwe_sk, glwe_sk, ggsw, encoded);
         }
     }
 }
@@ -177,14 +177,14 @@ impl BootstrapKey<&mut [u64]> {
         mut csprng: CsprngMut<'_, '_>,
     ) {
         for ggsw in self.as_mut_view().into_ggsw_iter() {
-            glwe_sk.gen_noise_ggsw(ggsw, variance, csprng.as_mut());
+            gen_noise_ggsw(glwe_sk, ggsw, variance, csprng.as_mut());
         }
 
         self.into_ggsw_iter_par()
             .zip_eq(lwe_sk.data)
             .for_each(|(ggsw, sk_scalar)| {
                 let encoded = *sk_scalar;
-                glwe_sk.encrypt_constant_ggsw_noise_full(ggsw, encoded);
+                encrypt_constant_ggsw_noise_full(glwe_sk, glwe_sk, ggsw, encoded);
             });
     }
 }
@@ -436,60 +436,148 @@ impl PackingKeyswitchKey<&[u64]> {
     }
 }
 
-impl GlweSecretKey<&[u64]> {
-    pub fn encrypt_constant_ggsw(
-        self,
-        ggsw: GgswCiphertext<&mut [u64]>,
-        encoded: u64,
-        variance: f64,
-        mut csprng: CsprngMut<'_, '_>,
-    ) {
-        let base_log = ggsw.decomp_params.base_log;
+pub fn encrypt_constant_ggsw(
+    in_glwe_sk: GlweSecretKey<&[u64]>,
+    out_glwe_sk: GlweSecretKey<&[u64]>,
+    ggsw: GgswCiphertext<&mut [u64]>,
+    encoded: u64,
+    variance: f64,
+    mut csprng: CsprngMut<'_, '_>,
+) {
+    debug_assert_eq!(in_glwe_sk.glwe_params, ggsw.in_glwe_params());
+    debug_assert_eq!(out_glwe_sk.glwe_params, ggsw.out_glwe_params());
 
-        let glwe_params = ggsw.glwe_params;
+    let base_log = ggsw.decomp_params.base_log;
 
-        for matrix in ggsw.into_level_matrices_iter() {
-            let factor = encoded.wrapping_neg()
-                << (u64::BITS as usize - (base_log * matrix.decomposition_level));
+    let out_glwe_params = ggsw.out_glwe_params();
 
-            let last_row_index = matrix.glwe_params.dimension;
+    for matrix in ggsw.into_level_matrices_iter() {
+        let factor = encoded.wrapping_neg()
+            << (u64::BITS as usize - (base_log * matrix.decomposition_level));
 
-            for (row_index, row) in matrix.into_rows_iter().enumerate() {
-                self.encrypt_constant_ggsw_row(
-                    (row_index, last_row_index),
-                    factor,
-                    GlweCiphertext::new(row.into_data(), glwe_params),
-                    variance,
-                    csprng.as_mut(),
-                );
-            }
+        let last_row_index = matrix.in_glwe_dimension;
+
+        for (row_index, row) in matrix.into_rows_iter().enumerate() {
+            encrypt_constant_ggsw_row(
+                in_glwe_sk,
+                out_glwe_sk,
+                (row_index, last_row_index),
+                factor,
+                GlweCiphertext::new(row.into_data(), out_glwe_params),
+                variance,
+                csprng.as_mut(),
+            );
         }
     }
+}
 
-    pub fn encrypt_constant_ggsw_row(
-        self,
-        (row_index, last_row_index): (usize, usize),
-        factor: u64,
-        mut row: GlweCiphertext<&mut [u64]>,
-        variance: f64,
-        csprng: CsprngMut<'_, '_>,
-    ) {
-        if row_index < last_row_index {
-            // Not the last row
-            let sk_poly = self.get_polynomial(row_index);
-            let encoded = sk_poly.iter().map(|&e| e.wrapping_mul(factor));
+pub fn encrypt_constant_ggsw_row(
+    in_glwe_sk: GlweSecretKey<&[u64]>,
+    out_glwe_sk: GlweSecretKey<&[u64]>,
+    (row_index, last_row_index): (usize, usize),
+    factor: u64,
+    mut row: GlweCiphertext<&mut [u64]>,
+    variance: f64,
+    csprng: CsprngMut<'_, '_>,
+) {
+    if row_index < last_row_index {
+        // Not the last row
+        let sk_poly = in_glwe_sk.get_polynomial(row_index);
+        let encoded = sk_poly.iter().map(|&e| e.wrapping_mul(factor));
 
-            self.encrypt_zero_glwe(row.as_mut_view(), variance, csprng);
-            let (_, body) = row.into_mask_and_body();
-            for (r, e) in zip_eq(body.into_data().iter_mut(), encoded) {
-                *r = r.wrapping_add(e)
-            }
-        } else {
-            // The last row needs a slightly different treatment
-            self.encrypt_zero_glwe(row.as_mut_view(), variance, csprng);
-            let (_, body) = row.into_mask_and_body();
-            let first = body.into_data().first_mut().unwrap();
-            *first = first.wrapping_add(factor.wrapping_neg());
+        out_glwe_sk.encrypt_zero_glwe(row.as_mut_view(), variance, csprng);
+        let (_, body) = row.into_mask_and_body();
+        for (r, e) in zip_eq(body.into_data().iter_mut(), encoded) {
+            *r = r.wrapping_add(e)
+        }
+    } else {
+        // The last row needs a slightly different treatment
+        out_glwe_sk.encrypt_zero_glwe(row.as_mut_view(), variance, csprng);
+        let (_, body) = row.into_mask_and_body();
+        let first = body.into_data().first_mut().unwrap();
+        *first = first.wrapping_add(factor.wrapping_neg());
+    }
+}
+pub fn gen_noise_ggsw(
+    out_glwe_sk: GlweSecretKey<&[u64]>,
+    ggsw: GgswCiphertext<&mut [u64]>,
+    variance: f64,
+    mut csprng: CsprngMut<'_, '_>,
+) {
+    let glwe_params = ggsw.out_glwe_params();
+
+    for matrix in ggsw.into_level_matrices_iter() {
+        for row in matrix.into_rows_iter() {
+            out_glwe_sk.gen_noise_glwe(
+                GlweCiphertext::new(row.into_data(), glwe_params),
+                variance,
+                csprng.as_mut(),
+            );
+        }
+    }
+}
+
+pub fn encrypt_constant_ggsw_row_noise_full(
+    in_glwe_sk: GlweSecretKey<&[u64]>,
+    out_glwe_sk: GlweSecretKey<&[u64]>,
+    (row_index, last_row_index): (usize, usize),
+    factor: u64,
+    mut row: GlweCiphertext<&mut [u64]>,
+) {
+    if row_index < last_row_index {
+        // Not the last row
+        let sk_poly = in_glwe_sk.get_polynomial(row_index);
+        let encoded = sk_poly.iter().map(|&e| e.wrapping_mul(factor));
+
+        out_glwe_sk.encrypt_zero_glwe_noise_full(row.as_mut_view());
+        let (_, body) = row.into_mask_and_body();
+        for (r, e) in zip_eq(body.into_data().iter_mut(), encoded) {
+            *r = r.wrapping_add(e)
+        }
+    } else {
+        // The last row needs a slightly different treatment
+        out_glwe_sk.encrypt_zero_glwe_noise_full(row.as_mut_view());
+        let (_, body) = row.into_mask_and_body();
+        let first = body.into_data().first_mut().unwrap();
+        *first = first.wrapping_add(factor.wrapping_neg());
+    }
+}
+
+pub fn encrypt_constant_ggsw_noise_full(
+    in_glwe_sk: GlweSecretKey<&[u64]>,
+    out_glwe_sk: GlweSecretKey<&[u64]>,
+    ggsw: GgswCiphertext<&mut [u64]>,
+    encoded: u64,
+) {
+    let base_log = ggsw.decomp_params.base_log;
+
+    let out_glwe_params = ggsw.out_glwe_params();
+
+    for matrix in ggsw.into_level_matrices_iter() {
+        let factor = encoded.wrapping_neg()
+            << (u64::BITS as usize - (base_log * matrix.decomposition_level));
+
+        let last_row_index = matrix.out_glwe_dimension;
+
+        for (row_index, row) in matrix.into_rows_iter().enumerate() {
+            encrypt_constant_ggsw_row_noise_full(
+                in_glwe_sk,
+                out_glwe_sk,
+                (row_index, last_row_index),
+                factor,
+                GlweCiphertext::new(row.into_data(), out_glwe_params),
+            );
+        }
+    }
+}
+
+impl GlweSecretKey<&[u64]> {
+    pub fn encrypt_zero_glwe_noise_full(self, encrypted: GlweCiphertext<&mut [u64]>) {
+        let (mask, mut body) = encrypted.into_mask_and_body();
+
+        let mask = mask.as_view();
+        for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
+            update_with_wrapping_add_mul(body.as_mut_view(), poly, bin_poly)
         }
     }
 
@@ -532,25 +620,6 @@ impl GlweSecretKey<&[u64]> {
         out
     }
 
-    pub fn gen_noise_ggsw(
-        self,
-        ggsw: GgswCiphertext<&mut [u64]>,
-        variance: f64,
-        mut csprng: CsprngMut<'_, '_>,
-    ) {
-        let glwe_params = ggsw.glwe_params;
-
-        for matrix in ggsw.into_level_matrices_iter() {
-            for row in matrix.into_rows_iter() {
-                self.gen_noise_glwe(
-                    GlweCiphertext::new(row.into_data(), glwe_params),
-                    variance,
-                    csprng.as_mut(),
-                );
-            }
-        }
-    }
-
     pub fn gen_noise_glwe(
         self,
         encrypted: GlweCiphertext<&mut [u64]>,
@@ -560,61 +629,6 @@ impl GlweSecretKey<&[u64]> {
         let (mut mask, mut body) = encrypted.into_mask_and_body();
         fill_with_random_uniform(mask.as_mut_view().into_data(), csprng.as_mut());
         fill_with_random_gaussian(body.as_mut_view().into_data(), variance, csprng);
-    }
-
-    pub fn encrypt_constant_ggsw_noise_full(self, ggsw: GgswCiphertext<&mut [u64]>, encoded: u64) {
-        let base_log = ggsw.decomp_params.base_log;
-
-        let glwe_params = ggsw.glwe_params;
-
-        for matrix in ggsw.into_level_matrices_iter() {
-            let factor = encoded.wrapping_neg()
-                << (u64::BITS as usize - (base_log * matrix.decomposition_level));
-
-            let last_row_index = matrix.glwe_params.dimension;
-
-            for (row_index, row) in matrix.into_rows_iter().enumerate() {
-                self.encrypt_constant_ggsw_row_noise_full(
-                    (row_index, last_row_index),
-                    factor,
-                    GlweCiphertext::new(row.into_data(), glwe_params),
-                );
-            }
-        }
-    }
-
-    pub fn encrypt_constant_ggsw_row_noise_full(
-        self,
-        (row_index, last_row_index): (usize, usize),
-        factor: u64,
-        mut row: GlweCiphertext<&mut [u64]>,
-    ) {
-        if row_index < last_row_index {
-            // Not the last row
-            let sk_poly = self.get_polynomial(row_index);
-            let encoded = sk_poly.iter().map(|&e| e.wrapping_mul(factor));
-
-            self.encrypt_zero_glwe_noise_full(row.as_mut_view());
-            let (_, body) = row.into_mask_and_body();
-            for (r, e) in zip_eq(body.into_data().iter_mut(), encoded) {
-                *r = r.wrapping_add(e)
-            }
-        } else {
-            // The last row needs a slightly different treatment
-            self.encrypt_zero_glwe_noise_full(row.as_mut_view());
-            let (_, body) = row.into_mask_and_body();
-            let first = body.into_data().first_mut().unwrap();
-            *first = first.wrapping_add(factor.wrapping_neg());
-        }
-    }
-
-    pub fn encrypt_zero_glwe_noise_full(self, encrypted: GlweCiphertext<&mut [u64]>) {
-        let (mask, mut body) = encrypted.into_mask_and_body();
-
-        let mask = mask.as_view();
-        for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
-            update_with_wrapping_add_mul(body.as_mut_view(), poly, bin_poly)
-        }
     }
 }
 
