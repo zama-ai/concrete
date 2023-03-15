@@ -46,8 +46,8 @@ jobs:
           
   run-cuda-tests-linux:
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+      group: concrete_cuda_test-${{ github.ref }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     name: Test code in EC2
     needs: start-runner
     runs-on: ${{ needs.start-runner.outputs.label }}

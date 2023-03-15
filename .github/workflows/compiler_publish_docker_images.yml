@@ -24,7 +24,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: compiler_publish_docker_images-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
