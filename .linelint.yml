@@ -4,11 +4,6 @@ autofix: false
 # list of paths to ignore, uses gitignore syntaxes (executes before any rule)
 ignore:
   - .git/
-  - llvm-project/
-  - compiler/concrete-optimizer
-  - compiler/concrete-core
-  - compiler/parameter-curves
-  - google-benchmark
 
 rules:
   # checks if file ends in a newline character
