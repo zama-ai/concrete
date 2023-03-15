@@ -182,7 +182,7 @@ const MLIR_STATIC_LIBS: [&str; 174] = [
     "MLIRArithToLLVM",
 ];
 
-const LLVM_STATIC_LIBS: [&str; 51] = [
+const LLVM_STATIC_LIBS: [&str; 48] = [
     "LLVMAggressiveInstCombine",
     "LLVMAnalysis",
     "LLVMAsmParser",
@@ -231,12 +231,21 @@ const LLVM_STATIC_LIBS: [&str; 51] = [
     "LLVMTextAPI",
     "LLVMTransformUtils",
     "LLVMVectorize",
-    "LLVMX86CodeGen",
-    "LLVMX86Desc",
-    "LLVMX86Info",
 ];
 
-const CONCRETE_COMPILER_LIBS: [&str; 33] = [
+#[cfg(target_arch = "aarch64")]
+const LLVM_TARGET_SPECIFIC_STATIC_LIBS: [&str; 4] = [
+    "LLVMAArch64Utils",
+    "LLVMAArch64Info",
+    "LLVMAArch64Desc",
+    "LLVMAArch64CodeGen",
+];
+
+#[cfg(target_arch = "x86_64")]
+const LLVM_TARGET_SPECIFIC_STATIC_LIBS: [&str; 3] =
+    ["LLVMX86CodeGen", "LLVMX86Desc", "LLVMX86Info"];
+
+const CONCRETE_COMPILER_STATIC_LIBS: [&str; 33] = [
     "RTDialect",
     "RTDialectTransforms",
     "ConcretelangSupport",
@@ -292,24 +301,22 @@ fn run() -> Result<(), Box<dyn Error>> {
 so your compiler/linker will have to lookup libs and include dirs on their own"
         ),
     }
-    // linking
-    // concrete-compiler libs
-    for concrete_compiler_lib in CONCRETE_COMPILER_LIBS {
-        println!("cargo:rustc-link-lib=static={}", concrete_compiler_lib);
+    // linking to static libs
+    let all_static_libs = CONCRETE_COMPILER_STATIC_LIBS
+        .into_iter()
+        .chain(MLIR_STATIC_LIBS)
+        .chain(LLVM_STATIC_LIBS)
+        .chain(LLVM_TARGET_SPECIFIC_STATIC_LIBS);
+
+    for static_lib_name in all_static_libs {
+        println!("cargo:rustc-link-lib=static={}", static_lib_name);
     }
     // concrete compiler runtime
     println!("cargo:rustc-link-lib=ConcretelangRuntime");
     // concrete optimizer
     // `-bundle` serve to not have multiple definition issues
     println!("cargo:rustc-link-lib=static:-bundle=concrete_optimizer_cpp");
-    // mlir libs
-    for mlir_static_lib in MLIR_STATIC_LIBS {
-        println!("cargo:rustc-link-lib=static={}", mlir_static_lib);
-    }
-    // llvm libs
-    for llvm_static_lib in LLVM_STATIC_LIBS {
-        println!("cargo:rustc-link-lib=static={}", llvm_static_lib);
-    }
+
     // required by llvm
     println!("cargo:rustc-link-lib=ncurses");
     if let Some(name) = get_system_libcpp() {
