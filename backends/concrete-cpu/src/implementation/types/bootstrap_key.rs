@@ -1,5 +1,6 @@
 use super::{DecompParams, GgswCiphertext, GlweParams};
-use crate::implementation::{fft::FftView, zip_eq, Container, ContainerMut, Split};
+use crate::implementation::fft::FftView;
+use crate::implementation::{zip_eq, Container, ContainerMut, Split};
 use dyn_stack::{DynStack, ReborrowMut};
 #[cfg(feature = "parallel")]
 use rayon::{

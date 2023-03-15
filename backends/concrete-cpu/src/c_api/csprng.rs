@@ -1,10 +1,8 @@
 use std::io::Read;
 
 use super::types::{Csprng, CsprngVtable, Uint128};
-use concrete_csprng::{
-    generators::{RandomGenerator, SoftwareRandomGenerator},
-    seeders::Seed,
-};
+use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+use concrete_csprng::seeders::Seed;
 use libc::c_int;
 
 type Generator = SoftwareRandomGenerator;

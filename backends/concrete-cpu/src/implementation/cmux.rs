@@ -1,4 +1,7 @@
-use super::{external_product::external_product, fft::FftView, types::*, zip_eq};
+use super::external_product::external_product;
+use super::fft::FftView;
+use super::types::*;
+use super::zip_eq;
 use crate::implementation::external_product::external_product_scratch;
 use dyn_stack::{DynStack, SizeOverflow, StackReq};
 

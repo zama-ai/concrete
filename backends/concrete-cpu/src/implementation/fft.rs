@@ -82,10 +82,9 @@ mod std_only {
     use concrete_fft::unordered::Method;
     use core::time::Duration;
     use once_cell::sync::OnceCell;
-    use std::{
-        collections::{hash_map::Entry, HashMap},
-        sync::RwLock,
-    };
+    use std::collections::hash_map::Entry;
+    use std::collections::HashMap;
+    use std::sync::RwLock;
 
     type PlanMap = RwLock<HashMap<usize, Arc<OnceCell<Arc<(Twisties<ABox<[f64]>>, Plan)>>>>>;
     static PLANS: OnceCell<PlanMap> = OnceCell::new();
@@ -132,7 +131,8 @@ mod std_only {
 
 #[cfg(not(feature = "std"))]
 mod no_std {
-    use concrete_fft::{ordered::FftAlgo, unordered::Method};
+    use concrete_fft::ordered::FftAlgo;
+    use concrete_fft::unordered::Method;
 
     use super::*;
 

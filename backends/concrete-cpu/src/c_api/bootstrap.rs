@@ -1,14 +1,11 @@
-use crate::{
-    c_api::types::{Parallelism, ScratchStatus},
-    implementation::{fft::Fft, types::*},
-};
+use crate::c_api::types::{Parallelism, ScratchStatus};
+use crate::implementation::fft::Fft;
+use crate::implementation::types::*;
 use core::slice;
 use dyn_stack::DynStack;
 
-use super::{
-    types::{Csprng, CsprngVtable},
-    utils::nounwind,
-};
+use super::types::{Csprng, CsprngVtable};
+use super::utils::nounwind;
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_init_lwe_bootstrap_key_u64(

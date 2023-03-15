@@ -1,4 +1,5 @@
-use super::{decomposition::SignedDecompositionIter, types::DecompParams};
+use super::decomposition::SignedDecompositionIter;
+use super::types::DecompParams;
 
 #[derive(Copy, Clone, Debug)]
 #[readonly::make]

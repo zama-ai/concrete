@@ -2,13 +2,13 @@ use crate::implementation::cmux::cmux_scratch;
 use aligned_vec::CACHELINE_ALIGN;
 use dyn_stack::*;
 
-use super::{
-    cmux::cmux,
-    fft::FftView,
-    polynomial::{update_with_wrapping_monic_monomial_mul, update_with_wrapping_unit_monomial_div},
-    types::*,
-    zip_eq, Split,
+use super::cmux::cmux;
+use super::fft::FftView;
+use super::polynomial::{
+    update_with_wrapping_monic_monomial_mul, update_with_wrapping_unit_monomial_div,
 };
+use super::types::*;
+use super::{zip_eq, Split};
 
 impl<'a> BootstrapKey<&'a [f64]> {
     pub fn blind_rotate_scratch(
@@ -136,17 +136,11 @@ pub fn pbs_modulus_switch(
 mod tests {
     use std::mem::MaybeUninit;
 
-    use crate::{
-        c_api::types::tests::to_generic,
-        implementation::{
-            fft::{Fft, FftView},
-            types::*,
-        },
-    };
-    use concrete_csprng::{
-        generators::{RandomGenerator, SoftwareRandomGenerator},
-        seeders::Seed,
-    };
+    use crate::c_api::types::tests::to_generic;
+    use crate::implementation::fft::{Fft, FftView};
+    use crate::implementation::types::*;
+    use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+    use concrete_csprng::seeders::Seed;
     use dyn_stack::DynStack;
 
     struct KeySet {

@@ -1,7 +1,5 @@
-use super::{
-    types::{Csprng, CsprngVtable},
-    utils::nounwind,
-};
+use super::types::{Csprng, CsprngVtable};
+use super::utils::nounwind;
 use crate::implementation::types::{
     CsprngMut, DecompParams, GgswCiphertext, GlweCiphertext, GlweParams, GlweSecretKey,
     LweCiphertext, LweSecretKey,

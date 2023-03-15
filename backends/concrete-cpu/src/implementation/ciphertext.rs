@@ -1,4 +1,5 @@
-use super::{types::*, Split};
+use super::types::*;
+use super::Split;
 
 impl<'a> GlweCiphertext<&'a [u64]> {
     pub fn fill_lwe_with_sample_extraction(self, lwe: LweCiphertext<&mut [u64]>, n_th: usize) {

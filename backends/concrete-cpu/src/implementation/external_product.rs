@@ -5,12 +5,13 @@ use concrete_fft::c64;
 use dyn_stack::{DynArray, DynStack, ReborrowMut, SizeOverflow, StackReq};
 use pulp::{as_arrays, as_arrays_mut};
 
-use crate::implementation::{
-    assume_init_mut, decomposer::SignedDecomposer,
-    decomposition::TensorSignedDecompositionLendingIter, Split,
-};
+use crate::implementation::decomposer::SignedDecomposer;
+use crate::implementation::decomposition::TensorSignedDecompositionLendingIter;
+use crate::implementation::{assume_init_mut, Split};
 
-use super::{as_mut_uninit, fft::FftView, types::*, zip_eq};
+use super::fft::FftView;
+use super::types::*;
+use super::{as_mut_uninit, zip_eq};
 
 impl GgswCiphertext<&mut [f64]> {
     pub fn fill_with_forward_fourier(

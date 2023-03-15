@@ -1,4 +1,5 @@
-use core::{iter::Map, slice::IterMut};
+use core::iter::Map;
+use core::slice::IterMut;
 use dyn_stack::{DynArray, DynStack};
 
 use super::types::DecompParams;

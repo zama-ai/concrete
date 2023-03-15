@@ -1,16 +1,11 @@
-use super::{
-    decomposition::DecompositionTerm,
-    fpks::LweKeyBitDecomposition,
-    from_torus,
-    polynomial::{update_with_wrapping_add_mul, update_with_wrapping_sub_mul},
-    types::*,
-    zip_eq,
-};
+use super::decomposition::DecompositionTerm;
+use super::fpks::LweKeyBitDecomposition;
+use super::polynomial::{update_with_wrapping_add_mul, update_with_wrapping_sub_mul};
+use super::types::*;
+use super::{from_torus, zip_eq};
 use core::slice;
-use rayon::{
-    prelude::{IndexedParallelIterator, ParallelIterator},
-    slice::ParallelSliceMut,
-};
+use rayon::prelude::{IndexedParallelIterator, ParallelIterator};
+use rayon::slice::ParallelSliceMut;
 use std::cmp::Ordering;
 
 pub fn mask_bytes_per_coef() -> usize {
@@ -655,14 +650,10 @@ impl LweSecretKey<&[u64]> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        c_api::types::tests::to_generic,
-        implementation::types::{CsprngMut, LweCiphertext, LweSecretKey},
-    };
-    use concrete_csprng::{
-        generators::{RandomGenerator, SoftwareRandomGenerator},
-        seeders::Seed,
-    };
+    use crate::c_api::types::tests::to_generic;
+    use crate::implementation::types::{CsprngMut, LweCiphertext, LweSecretKey};
+    use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+    use concrete_csprng::seeders::Seed;
 
     fn encrypt_decrypt(
         mut csprng: CsprngMut,

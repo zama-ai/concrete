@@ -44,7 +44,8 @@ pub enum Parallelism {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{c_api::csprng::CONCRETE_CSPRNG_VTABLE, implementation::types::CsprngMut};
+    use crate::c_api::csprng::CONCRETE_CSPRNG_VTABLE;
+    use crate::implementation::types::CsprngMut;
     use concrete_csprng::generators::SoftwareRandomGenerator;
 
     pub fn to_generic(a: &mut SoftwareRandomGenerator) -> CsprngMut<'_, '_> {

@@ -1,9 +1,7 @@
-use super::{
-    decomposer::SignedDecomposer,
-    types::{GlweCiphertext, GlweParams, LweCiphertext, PackingKeyswitchKey},
-    wop::GlweCiphertextList,
-    zip_eq, Container,
-};
+use super::decomposer::SignedDecomposer;
+use super::types::{GlweCiphertext, GlweParams, LweCiphertext, PackingKeyswitchKey};
+use super::wop::GlweCiphertextList;
+use super::{zip_eq, Container};
 
 impl PackingKeyswitchKey<&[u64]> {
     pub fn private_functional_keyswitch_ciphertext(

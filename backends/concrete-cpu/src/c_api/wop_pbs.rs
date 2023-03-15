@@ -1,17 +1,13 @@
-use crate::{
-    c_api::{types::*, utils::nounwind},
-    implementation::{
-        fft::Fft,
-        types::{
-            ciphertext_list::LweCiphertextList,
-            packing_keyswitch_key_list::PackingKeyswitchKeyList, polynomial_list::PolynomialList,
-            *,
-        },
-        wop::{
-            circuit_bootstrap_boolean_vertical_packing,
-            circuit_bootstrap_boolean_vertical_packing_scratch, extract_bits, extract_bits_scratch,
-        },
-    },
+use crate::c_api::types::*;
+use crate::c_api::utils::nounwind;
+use crate::implementation::fft::Fft;
+use crate::implementation::types::ciphertext_list::LweCiphertextList;
+use crate::implementation::types::packing_keyswitch_key_list::PackingKeyswitchKeyList;
+use crate::implementation::types::polynomial_list::PolynomialList;
+use crate::implementation::types::*;
+use crate::implementation::wop::{
+    circuit_bootstrap_boolean_vertical_packing, circuit_bootstrap_boolean_vertical_packing_scratch,
+    extract_bits, extract_bits_scratch,
 };
 use core::slice;
 use dyn_stack::DynStack;

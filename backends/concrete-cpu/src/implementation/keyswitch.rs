@@ -1,4 +1,6 @@
-use super::{decomposer::SignedDecomposer, types::*, zip_eq};
+use super::decomposer::SignedDecomposer;
+use super::types::*;
+use super::zip_eq;
 
 impl LweKeyswitchKey<&[u64]> {
     pub fn keyswitch_ciphertext(
@@ -40,11 +42,10 @@ impl LweKeyswitchKey<&[u64]> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{c_api::types::tests::to_generic, implementation::types::*};
-    use concrete_csprng::{
-        generators::{RandomGenerator, SoftwareRandomGenerator},
-        seeders::Seed,
-    };
+    use crate::c_api::types::tests::to_generic;
+    use crate::implementation::types::*;
+    use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+    use concrete_csprng::seeders::Seed;
 
     struct KeySet {
         in_dim: usize,

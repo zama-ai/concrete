@@ -5,20 +5,21 @@ use std::cmp::Ordering;
 use aligned_vec::CACHELINE_ALIGN;
 use dyn_stack::{DynStack, ReborrowMut, SizeOverflow, StackReq};
 
-use crate::implementation::{external_product::external_product, types::GlweCiphertext, zip_eq};
+use crate::implementation::external_product::external_product;
+use crate::implementation::types::GlweCiphertext;
+use crate::implementation::zip_eq;
 
-use super::{
-    cmux::{cmux, cmux_scratch},
-    external_product::external_product_scratch,
-    fft::FftView,
-    polynomial::update_with_wrapping_unit_monomial_div,
-    types::{
-        ciphertext_list::LweCiphertextList, packing_keyswitch_key_list::PackingKeyswitchKeyList,
-        polynomial_list::PolynomialList, BootstrapKey, DecompParams, GgswCiphertext, GlweParams,
-        LweCiphertext, LweKeyswitchKey,
-    },
-    Container, Split,
+use super::cmux::{cmux, cmux_scratch};
+use super::external_product::external_product_scratch;
+use super::fft::FftView;
+use super::polynomial::update_with_wrapping_unit_monomial_div;
+use super::types::ciphertext_list::LweCiphertextList;
+use super::types::packing_keyswitch_key_list::PackingKeyswitchKeyList;
+use super::types::polynomial_list::PolynomialList;
+use super::types::{
+    BootstrapKey, DecompParams, GgswCiphertext, GlweParams, LweCiphertext, LweKeyswitchKey,
 };
+use super::{Container, Split};
 
 pub fn extract_bits_scratch(
     lwe_dimension: usize,

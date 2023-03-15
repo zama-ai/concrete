@@ -1,9 +1,7 @@
 use crate::implementation::{assume_init_mut, from_torus};
 
-use super::{
-    as_mut_uninit,
-    fft::{FftView, Twisties},
-};
+use super::as_mut_uninit;
+use super::fft::{FftView, Twisties};
 use bytemuck::cast_slice_mut;
 use concrete_fft::c64;
 use core::mem::MaybeUninit;
