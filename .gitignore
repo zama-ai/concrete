@@ -1,0 +1,7 @@
+## IDE
+
+# VSCODE
+.vscode/
+
+# Jetbrains tools
+.idea/
