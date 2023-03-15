@@ -175,6 +175,41 @@ struct WopPBSGLWEOpPattern
   }
 };
 
+struct BatchedBootstrapGLWEOpPattern
+    : public mlir::OpConversionPattern<TFHE::BatchedBootstrapGLWEOp> {
+
+  BatchedBootstrapGLWEOpPattern(mlir::MLIRContext *context,
+                                mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<TFHE::BatchedBootstrapGLWEOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::BatchedBootstrapGLWEOp bbsOp,
+                  TFHE::BatchedBootstrapGLWEOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    TFHE::GLWECipherTextType inputElementType =
+        bbsOp.getCiphertexts()
+            .getType()
+            .cast<mlir::RankedTensorType>()
+            .getElementType()
+            .cast<TFHE::GLWECipherTextType>();
+
+    auto polySize = adaptor.getKey().getPolySize();
+    auto glweDimension = adaptor.getKey().getGlweDim();
+    auto levels = adaptor.getKey().getLevels();
+    auto baseLog = adaptor.getKey().getBaseLog();
+    auto inputLweDimension = inputElementType.getKey().getDimension().value();
+
+    rewriter.replaceOpWithNewOp<Concrete::BatchedBootstrapLweTensorOp>(
+        bbsOp, this->getTypeConverter()->convertType(bbsOp.getType()),
+        adaptor.getCiphertexts(), adaptor.getLookupTable(), inputLweDimension,
+        polySize, levels, baseLog, glweDimension);
+
+    return mlir::success();
+  }
+};
+
 struct KeySwitchGLWEOpPattern
     : public mlir::OpConversionPattern<TFHE::KeySwitchGLWEOp> {
 
@@ -202,6 +237,45 @@ struct KeySwitchGLWEOpPattern
     rewriter.replaceOpWithNewOp<Concrete::KeySwitchLweTensorOp>(
         ksOp, this->getTypeConverter()->convertType(resultType),
         adaptor.getCiphertext(), levels, baseLog, inputDim, outputDim);
+
+    return mlir::success();
+  }
+};
+
+struct BatchedKeySwitchGLWEOpPattern
+    : public mlir::OpConversionPattern<TFHE::BatchedKeySwitchGLWEOp> {
+
+  BatchedKeySwitchGLWEOpPattern(mlir::MLIRContext *context,
+                                mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<TFHE::BatchedKeySwitchGLWEOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::BatchedKeySwitchGLWEOp bksOp,
+                  TFHE::BatchedKeySwitchGLWEOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    TFHE::GLWECipherTextType resultElementType =
+        bksOp.getType()
+            .cast<mlir::RankedTensorType>()
+            .getElementType()
+            .cast<TFHE::GLWECipherTextType>();
+    TFHE::GLWECipherTextType inputElementType =
+        bksOp.getCiphertexts()
+            .getType()
+            .cast<mlir::RankedTensorType>()
+            .getElementType()
+            .cast<TFHE::GLWECipherTextType>();
+
+    auto levels = adaptor.getKey().getLevels();
+    auto baseLog = adaptor.getKey().getBaseLog();
+    auto inputDim = inputElementType.getKey().getDimension().value();
+    auto outputDim = resultElementType.getKey().getDimension().value();
+
+    rewriter.replaceOpWithNewOp<Concrete::BatchedKeySwitchLweTensorOp>(
+        bksOp, this->getTypeConverter()->convertType(bksOp.getType()),
+        adaptor.getCiphertexts(), levels, baseLog, inputDim, outputDim);
 
     return mlir::success();
   }
@@ -715,8 +789,9 @@ void TFHEToConcretePass::runOnOperation() {
                   ZeroOpPattern<mlir::concretelang::TFHE::ZeroTensorGLWEOp>>(
       &getContext());
   patterns.insert<SubIntGLWEOpPattern, BootstrapGLWEOpPattern,
-                  KeySwitchGLWEOpPattern, WopPBSGLWEOpPattern>(&getContext(),
-                                                               converter);
+                  BatchedBootstrapGLWEOpPattern, KeySwitchGLWEOpPattern,
+                  BatchedKeySwitchGLWEOpPattern, WopPBSGLWEOpPattern>(
+      &getContext(), converter);
 
   // Add patterns to rewrite tensor operators that works on tensors of TFHE GLWE
   // types
