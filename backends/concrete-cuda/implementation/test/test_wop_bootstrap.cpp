@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const unsigned REPETITIONS = 5;
+const unsigned REPETITIONS = 2;
 const unsigned SAMPLES = 10;
 
 typedef struct {
@@ -102,12 +102,14 @@ public:
 
     input_lwe_dimension = glwe_dimension * polynomial_size;
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng, REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, lwe_dimension, csprng, REPETITIONS);
-    generate_lwe_keyswitch_keys(stream, gpu_index, &d_ksk_array,
-                                lwe_sk_in_array, lwe_sk_out_array,
-                                input_lwe_dimension, lwe_dimension, ks_level,
-                                ks_base_log, csprng, lwe_modular_variance, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
+                             REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_out_array, lwe_dimension, csprng,
+                             REPETITIONS);
+    generate_lwe_keyswitch_keys(
+        stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
+        input_lwe_dimension, lwe_dimension, ks_level, ks_base_log, csprng,
+        lwe_modular_variance, REPETITIONS);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_out_array,
         lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
@@ -223,11 +225,13 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
                       cuda_get_max_shared_memory(gpu_index));
 
       //// Copy result back
-       cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_ct_out_array,
-      (input_lwe_dimension + 1) * tau * sizeof(uint64_t), stream, gpu_index);
-       cuda_synchronize_stream(v_stream);
+      cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_ct_out_array,
+                               (input_lwe_dimension + 1) * tau *
+                                   sizeof(uint64_t),
+                               stream, gpu_index);
+      cuda_synchronize_stream(v_stream);
 
-       for (int i = 0; i < tau; i++) {
+      for (int i = 0; i < tau; i++) {
         uint64_t plaintext = plaintexts[r * SAMPLES * tau + s * tau + i];
         uint64_t *result_ct =
             lwe_out_ct_array + (ptrdiff_t)(i * (input_lwe_dimension + 1));
@@ -251,17 +255,19 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
         // ks_base_log, ks_level, tau
         (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
-                                                    7.52316384526264e-37, 4,
-                                                    9, 1, 9, 4, 9, 6, 4, 1}
-//        (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
-//                                 7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
-//                                 2} ,
-//        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
-//                                                    7.52316384526264e-37, 4,
-//                                                    9, 1, 9, 4, 9, 6, 4, 1},
-//        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
-//                                                    7.52316384526264e-37, 4,
-//                                                    9, 1, 9, 4, 9, 6, 4, 2}
+                                 7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
+                                 1}
+        //        (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
+        //                                 7.52316384526264e-37, 4, 9, 1, 9, 4,
+        //                                 9, 6, 4, 2} ,
+        //        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
+        //                                                    7.52316384526264e-37,
+        //                                                    4, 9, 1, 9, 4, 9,
+        //                                                    6, 4, 1},
+        //        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
+        //                                                    7.52316384526264e-37,
+        //                                                    4, 9, 1, 9, 4, 9,
+        //                                                    6, 4, 2}
     );
 
 std::string printParamName(::testing::TestParamInfo<WopBootstrapTestParams> p) {

@@ -1,6 +1,5 @@
 #include "device.h"
 #include <cstdint>
-#include <cstdio>
 #include <cuda_runtime.h>
 
 /// Unsafe function to create a CUDA stream, must check first that GPU exists
@@ -37,6 +36,9 @@ void *cuda_malloc_async(uint64_t size, cudaStream_t *stream,
   cudaSetDevice(gpu_index);
   void *ptr;
 
+#ifndef CUDART_VERSION
+#error CUDART_VERSION Undefined!
+#elif (CUDART_VERSION >= 11020)
   int support_async_alloc;
   check_cuda_error(cudaDeviceGetAttribute(
       &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
@@ -46,6 +48,9 @@ void *cuda_malloc_async(uint64_t size, cudaStream_t *stream,
   } else {
     check_cuda_error(cudaMalloc((void **)&ptr, size));
   }
+#else
+  check_cuda_error(cudaMalloc((void **)&ptr, size));
+#endif
   return ptr;
 }
 
@@ -184,6 +189,9 @@ int cuda_drop(void *ptr, uint32_t gpu_index) {
 int cuda_drop_async(void *ptr, cudaStream_t *stream, uint32_t gpu_index) {
 
   cudaSetDevice(gpu_index);
+#ifndef CUDART_VERSION
+#error CUDART_VERSION Undefined!
+#elif (CUDART_VERSION >= 11020)
   int support_async_alloc;
   check_cuda_error(cudaDeviceGetAttribute(
       &support_async_alloc, cudaDevAttrMemoryPoolsSupported, gpu_index));
@@ -193,6 +201,9 @@ int cuda_drop_async(void *ptr, cudaStream_t *stream, uint32_t gpu_index) {
   } else {
     check_cuda_error(cudaFree(ptr));
   }
+#else
+  check_cuda_error(cudaFree(ptr));
+#endif
   return 0;
 }
 

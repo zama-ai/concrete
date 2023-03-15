@@ -4,10 +4,10 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <cuda_runtime.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 extern "C" {
 cudaStream_t *cuda_create_stream(uint32_t gpu_index);

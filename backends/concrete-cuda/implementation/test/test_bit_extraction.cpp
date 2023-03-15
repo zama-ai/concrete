@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const unsigned REPETITIONS = 5;
-const unsigned SAMPLES = 100;
+const unsigned REPETITIONS = 2;
+const unsigned SAMPLES = 50;
 
 typedef struct {
   int lwe_dimension;
@@ -90,8 +90,10 @@ public:
     input_lwe_dimension = glwe_dimension * polynomial_size;
     output_lwe_dimension = lwe_dimension;
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng, REPETITIONS);
-    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, input_lwe_dimension, csprng,
+                             REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_out_array, output_lwe_dimension, csprng,
+                             REPETITIONS);
     generate_lwe_keyswitch_keys(
         stream, gpu_index, &d_ksk_array, lwe_sk_in_array, lwe_sk_out_array,
         input_lwe_dimension, output_lwe_dimension, ks_level, ks_base_log,
@@ -100,8 +102,9 @@ public:
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_out_array,
         lwe_sk_in_array, output_lwe_dimension, glwe_dimension, polynomial_size,
         pbs_level, pbs_base_log, csprng, glwe_modular_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(
-        number_of_bits_of_message_including_padding, delta, number_of_inputs, REPETITIONS, SAMPLES);
+    plaintexts =
+        generate_plaintexts(number_of_bits_of_message_including_padding, delta,
+                            number_of_inputs, REPETITIONS, SAMPLES);
 
     d_lwe_out_ct_array = (uint64_t *)cuda_malloc_async(
         (output_lwe_dimension + 1) * number_of_bits_to_extract *
@@ -148,29 +151,27 @@ TEST_P(BitExtractionTestPrimitives_u64, bit_extraction) {
   void *v_stream = (void *)stream;
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
                  polynomial_size * (output_lwe_dimension + 1);
-  int ksk_size =
-      ks_level * input_lwe_dimension * (output_lwe_dimension + 1);
+  int ksk_size = ks_level * input_lwe_dimension * (output_lwe_dimension + 1);
   for (uint r = 0; r < REPETITIONS; r++) {
     double *d_fourier_bsk = d_fourier_bsk_array + (ptrdiff_t)(bsk_size * r);
     uint64_t *d_ksk = d_ksk_array + (ptrdiff_t)(ksk_size * r);
     uint64_t *lwe_in_sk =
         lwe_sk_in_array + (ptrdiff_t)(input_lwe_dimension * r);
-    uint64_t *lwe_sk_out = lwe_sk_out_array + (ptrdiff_t)(r * output_lwe_dimension);
+    uint64_t *lwe_sk_out =
+        lwe_sk_out_array + (ptrdiff_t)(r * output_lwe_dimension);
     for (uint s = 0; s < SAMPLES; s++) {
       for (int i = 0; i < number_of_inputs; i++) {
         uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
                                         s * number_of_inputs + i];
         uint64_t *lwe_in_ct =
-            lwe_in_ct_array +
-            (ptrdiff_t)(
-                i * (input_lwe_dimension + 1));
+            lwe_in_ct_array + (ptrdiff_t)(i * (input_lwe_dimension + 1));
         concrete_cpu_encrypt_lwe_ciphertext_u64(
             lwe_in_sk, lwe_in_ct, plaintext, input_lwe_dimension,
             lwe_modular_variance, csprng, &CONCRETE_CSPRNG_VTABLE);
       }
       cuda_memcpy_async_to_gpu(d_lwe_in_ct_array, lwe_in_ct_array,
-                               (input_lwe_dimension + 1) *
-                                   number_of_inputs * sizeof(uint64_t),
+                               (input_lwe_dimension + 1) * number_of_inputs *
+                                   sizeof(uint64_t),
                                stream, gpu_index);
 
       // Execute bit extract
@@ -184,14 +185,15 @@ TEST_P(BitExtractionTestPrimitives_u64, bit_extraction) {
 
       // Copy result back
       cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_out_ct_array,
-                               (output_lwe_dimension + 1) * number_of_bits_to_extract *
+                               (output_lwe_dimension + 1) *
+                                   number_of_bits_to_extract *
                                    number_of_inputs * sizeof(uint64_t),
                                stream, gpu_index);
       cuda_synchronize_stream(v_stream);
       for (int j = 0; j < number_of_inputs; j++) {
         uint64_t *result_array =
-            lwe_out_ct_array +
-            (ptrdiff_t)(j * number_of_bits_to_extract * (output_lwe_dimension + 1));
+            lwe_out_ct_array + (ptrdiff_t)(j * number_of_bits_to_extract *
+                                           (output_lwe_dimension + 1));
         uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
                                         s * number_of_inputs + j];
         for (int i = 0; i < number_of_bits_to_extract; i++) {

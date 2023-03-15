@@ -6,8 +6,8 @@
 #include "keyswitch.h"
 #include "linear_algebra.h"
 
-constexpr int PLAINTEXT_TRUE{1 << (32 - 3)};
-constexpr int PLAINTEXT_FALSE{7 << (32 - 3)};
+constexpr uint32_t PLAINTEXT_TRUE{1 << (32 - 3)};
+constexpr uint32_t PLAINTEXT_FALSE{static_cast<uint32_t>(7 << (32 - 3))};
 
 extern "C" void cuda_boolean_not_32(void *v_stream, uint32_t gpu_index,
                                     void *lwe_array_out, void *lwe_array_in,

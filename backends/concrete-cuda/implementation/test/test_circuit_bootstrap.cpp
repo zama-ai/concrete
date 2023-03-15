@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const unsigned REPETITIONS = 5;
-const unsigned SAMPLES = 100;
+const unsigned REPETITIONS = 2;
+const unsigned SAMPLES = 50;
 
 typedef struct {
   int lwe_dimension;

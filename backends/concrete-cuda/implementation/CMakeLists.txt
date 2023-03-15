@@ -68,14 +68,11 @@ set(INCLUDE_DIR include)
 
 add_subdirectory(src)
 add_subdirectory(test)
-add_subdirectory(parameters)
 target_include_directories(concrete_cuda PRIVATE ${INCLUDE_DIR})
 
 # This is required for rust cargo build
 install(TARGETS concrete_cuda DESTINATION .)
 install(TARGETS concrete_cuda DESTINATION lib)
-install(TARGETS cuda_parameters DESTINATION .)
-install(TARGETS cuda_parameters DESTINATION lib)
 
 # Define a function to add a lint target.
 find_file(CPPLINT NAMES cpplint cpplint.exe)

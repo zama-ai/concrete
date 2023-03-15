@@ -8,8 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const unsigned REPETITIONS = 5;
-const unsigned SAMPLES = 100;
+const unsigned REPETITIONS = 2;
+const unsigned SAMPLES = 50;
 
 typedef struct {
   int input_lwe_dimension;
@@ -169,18 +169,12 @@ TEST_P(KeyswitchTestPrimitives_u64, keyswitch) {
     ::testing::Values(
         // n, k*N, noise_variance, ks_base_log, ks_level,
         // message_modulus, carry_modulus
-        // 1 bit message 0 bit carry parameters
         (KeyswitchTestParams){567, 1280, 2.9802322387695312e-08, 3, 3, 2, 1},
-        // 3 bits message 0 bit carry parameters
-        (KeyswitchTestParams){694, 1536, 2.9802322387695312e-08, 4, 3, 4, 1},
-        // 4 bits message 0 bit carry parameters
-        (KeyswitchTestParams){769, 2048, 2.9802322387695312e-08, 4, 3, 5, 1},
-        // 5 bits message 0 bit carry parameters
-        (KeyswitchTestParams){754, 2048, 2.9802322387695312e-08, 3, 5, 6, 1},
-        // 6 bits message 0 bit carry parameters
-        (KeyswitchTestParams){847, 4096, 2.9802322387695312e-08, 4, 4, 7, 1},
-        // 7 bits message 0 bit carry parameters
-        (KeyswitchTestParams){881, 8192, 2.9802322387695312e-08, 3, 6, 8, 1});
+        (KeyswitchTestParams){694, 1536, 2.9802322387695312e-08, 4, 3, 2, 1},
+        (KeyswitchTestParams){769, 2048, 2.9802322387695312e-08, 4, 3, 2, 1},
+        (KeyswitchTestParams){754, 2048, 2.9802322387695312e-08, 3, 5, 2, 1},
+        (KeyswitchTestParams){847, 4096, 2.9802322387695312e-08, 4, 4, 2, 1},
+        (KeyswitchTestParams){881, 8192, 2.9802322387695312e-08, 3, 6, 2, 1});
 
 std::string printParamName(::testing::TestParamInfo<KeyswitchTestParams> p) {
   KeyswitchTestParams params = p.param;

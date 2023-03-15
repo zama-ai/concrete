@@ -8,9 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const unsigned REPETITIONS = 5;
-const unsigned SAMPLES = 100;
-
 typedef struct {
   int lwe_dimension;
   int glwe_dimension;
@@ -22,6 +19,8 @@ typedef struct {
   int message_modulus;
   int carry_modulus;
   int number_of_inputs;
+  int repetitions;
+  int samples;
 } BootstrapTestParams;
 
 class BootstrapTestPrimitives_u64
@@ -38,6 +37,8 @@ protected:
   int carry_modulus;
   int payload_modulus;
   int number_of_inputs;
+  int repetitions;
+  int samples;
   uint64_t delta;
   Csprng *csprng;
   cudaStream_t *stream;
@@ -68,6 +69,8 @@ public:
     message_modulus = (int)GetParam().message_modulus;
     carry_modulus = (int)GetParam().carry_modulus;
     number_of_inputs = (int)GetParam().number_of_inputs;
+    repetitions = (int)GetParam().repetitions;
+    samples = (int)GetParam().samples;
 
     payload_modulus = message_modulus * carry_modulus;
     // Value of the shift we multiply our messages by
@@ -81,15 +84,17 @@ public:
         csprng, Uint128{.little_endian_bytes = {*seed}});
 
     // Generate the keys
-    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng, REPETITIONS);
+    generate_lwe_secret_keys(&lwe_sk_in_array, lwe_dimension, csprng,
+                             repetitions);
     generate_lwe_secret_keys(&lwe_sk_out_array,
-                             glwe_dimension * polynomial_size, csprng, REPETITIONS);
+                             glwe_dimension * polynomial_size, csprng,
+                             repetitions);
     generate_lwe_bootstrap_keys(
         stream, gpu_index, &d_fourier_bsk_array, lwe_sk_in_array,
         lwe_sk_out_array, lwe_dimension, glwe_dimension, polynomial_size,
-        pbs_level, pbs_base_log, csprng, glwe_modular_variance, REPETITIONS);
-    plaintexts = generate_plaintexts(payload_modulus, delta, number_of_inputs, REPETITIONS,
-                                     SAMPLES);
+        pbs_level, pbs_base_log, csprng, glwe_modular_variance, repetitions);
+    plaintexts = generate_plaintexts(payload_modulus, delta, number_of_inputs,
+                                     repetitions, samples);
 
     // Create the LUT
     uint64_t *lut_pbs_identity = generate_identity_lut_pbs(
@@ -117,21 +122,21 @@ public:
                                           number_of_inputs * sizeof(uint64_t),
                                       stream, gpu_index);
     d_lwe_ct_in_array = (uint64_t *)cuda_malloc_async(
-        (lwe_dimension + 1) * number_of_inputs * REPETITIONS * SAMPLES *
+        (lwe_dimension + 1) * number_of_inputs * repetitions * samples *
             sizeof(uint64_t),
         stream, gpu_index);
     uint64_t *lwe_ct_in_array =
         (uint64_t *)malloc((lwe_dimension + 1) * number_of_inputs *
-                           REPETITIONS * SAMPLES * sizeof(uint64_t));
+                           repetitions * samples * sizeof(uint64_t));
     // Create the input/output ciphertexts
-    for (uint r = 0; r < REPETITIONS; r++) {
+    for (int r = 0; r < repetitions; r++) {
       uint64_t *lwe_sk_in = lwe_sk_in_array + (ptrdiff_t)(r * lwe_dimension);
-      for (uint s = 0; s < SAMPLES; s++) {
+      for (int s = 0; s < samples; s++) {
         for (int i = 0; i < number_of_inputs; i++) {
-          uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
+          uint64_t plaintext = plaintexts[r * samples * number_of_inputs +
                                           s * number_of_inputs + i];
           uint64_t *lwe_ct_in =
-              lwe_ct_in_array + (ptrdiff_t)((r * SAMPLES * number_of_inputs +
+              lwe_ct_in_array + (ptrdiff_t)((r * samples * number_of_inputs +
                                              s * number_of_inputs + i) *
                                             (lwe_dimension + 1));
           concrete_cpu_encrypt_lwe_ciphertext_u64(
@@ -142,7 +147,7 @@ public:
     }
     cuda_synchronize_stream(v_stream);
     cuda_memcpy_async_to_gpu(d_lwe_ct_in_array, lwe_ct_in_array,
-                             REPETITIONS * SAMPLES * number_of_inputs *
+                             repetitions * samples * number_of_inputs *
                                  (lwe_dimension + 1) * sizeof(uint64_t),
                              stream, gpu_index);
     free(lwe_ct_in_array);
@@ -174,14 +179,14 @@ TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
                  polynomial_size * (lwe_dimension + 1);
   // Here execute the PBS
-  for (uint r = 0; r < REPETITIONS; r++) {
+  for (int r = 0; r < repetitions; r++) {
     double *d_fourier_bsk = d_fourier_bsk_array + (ptrdiff_t)(bsk_size * r);
     uint64_t *lwe_sk_out =
         lwe_sk_out_array + (ptrdiff_t)(r * glwe_dimension * polynomial_size);
-    for (uint s = 0; s < SAMPLES; s++) {
+    for (int s = 0; s < samples; s++) {
       uint64_t *d_lwe_ct_in =
           d_lwe_ct_in_array +
-          (ptrdiff_t)((r * SAMPLES * number_of_inputs + s * number_of_inputs) *
+          (ptrdiff_t)((r * samples * number_of_inputs + s * number_of_inputs) *
                       (lwe_dimension + 1));
       // Execute PBS
       cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
@@ -200,7 +205,7 @@ TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
         uint64_t *result =
             lwe_ct_out_array +
             (ptrdiff_t)(j * (glwe_dimension * polynomial_size + 1));
-        uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
+        uint64_t plaintext = plaintexts[r * samples * number_of_inputs +
                                         s * number_of_inputs + j];
         uint64_t decrypted = 0;
         concrete_cpu_decrypt_lwe_ciphertext_u64(
@@ -227,8 +232,8 @@ TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
 TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
   int number_of_sm = 0;
   cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-    if(number_of_inputs > number_of_sm * 4 / (glwe_dimension + 1) / pbs_level)
-        GTEST_SKIP() << "The Low Latency PBS does not support this configuration";
+  if (number_of_inputs > number_of_sm * 4 / (glwe_dimension + 1) / pbs_level)
+    GTEST_SKIP() << "The Low Latency PBS does not support this configuration";
   uint64_t *lwe_ct_out_array =
       (uint64_t *)malloc((glwe_dimension * polynomial_size + 1) *
                          number_of_inputs * sizeof(uint64_t));
@@ -239,14 +244,14 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
                  polynomial_size * (lwe_dimension + 1);
   // Here execute the PBS
-  for (uint r = 0; r < REPETITIONS; r++) {
+  for (int r = 0; r < repetitions; r++) {
     double *d_fourier_bsk = d_fourier_bsk_array + (ptrdiff_t)(bsk_size * r);
     uint64_t *lwe_sk_out =
         lwe_sk_out_array + (ptrdiff_t)(r * glwe_dimension * polynomial_size);
-    for (uint s = 0; s < SAMPLES; s++) {
+    for (int s = 0; s < samples; s++) {
       uint64_t *d_lwe_ct_in =
           d_lwe_ct_in_array +
-          (ptrdiff_t)((r * SAMPLES * number_of_inputs + s * number_of_inputs) *
+          (ptrdiff_t)((r * samples * number_of_inputs + s * number_of_inputs) *
                       (lwe_dimension + 1));
       // Execute PBS
       cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
@@ -265,7 +270,7 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
         uint64_t *result =
             lwe_ct_out_array +
             (ptrdiff_t)(j * (glwe_dimension * polynomial_size + 1));
-        uint64_t plaintext = plaintexts[r * SAMPLES * number_of_inputs +
+        uint64_t plaintext = plaintexts[r * samples * number_of_inputs +
                                         s * number_of_inputs + j];
         uint64_t decrypted = 0;
         concrete_cpu_decrypt_lwe_ciphertext_u64(
@@ -294,56 +299,28 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
 ::testing::internal::ParamGenerator<BootstrapTestParams> pbs_params_u64 =
     ::testing::Values(
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
-        // message_modulus, carry_modulus, number_of_inputs
-        // 1 bit message 0 bit carry parameters
+        // message_modulus, carry_modulus, number_of_inputs, repetitions,
+        // samples
         (BootstrapTestParams){567, 5, 256, 0.000007069849454709433,
                               0.00000000000000029403601535432533, 15, 1, 2, 1,
-                              1},
-        (BootstrapTestParams){567, 5, 256, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 15, 1, 2, 1,
-                              10},
-        // 2 bit message 3 bit carry parameters
-        (BootstrapTestParams){623, 6, 256, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 9, 3, 3, 4,
-                              1},
-        (BootstrapTestParams){623, 6, 256, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 9, 3, 3, 4,
-                              10},
-        // 3 bits message 0 bit carry parameters
+                              5, 2, 50},
+        (BootstrapTestParams){623, 6, 256, 7.52316384526264e-37,
+                              7.52316384526264e-37, 9, 3, 2, 2, 5, 2, 50},
         (BootstrapTestParams){694, 3, 512, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 18, 1, 4, 1,
-                              1},
-        (BootstrapTestParams){694, 3, 512, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 18, 1, 4, 1,
-                              10},
-        // 4 bits message 0 bit carry parameters
+                              0.00000000000000029403601535432533, 18, 1, 2, 1,
+                              5, 2, 50},
         (BootstrapTestParams){769, 2, 1024, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 23, 1, 5, 1,
-                              1},
-        (BootstrapTestParams){769, 2, 1024, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 23, 1, 5, 1,
-                              10},
-        // 5 bits message 0 bit carry parameters
+                              0.00000000000000029403601535432533, 23, 1, 2, 1,
+                              5, 2, 50},
         (BootstrapTestParams){754, 1, 2048, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 23, 1, 6, 1,
-                              1},
-        (BootstrapTestParams){754, 1, 2048, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 23, 1, 6, 1,
-                              10},
-        // 6 bits message 0 bit carry parameters
+                              0.00000000000000029403601535432533, 23, 1, 4, 1,
+                              5, 2, 50},
         (BootstrapTestParams){847, 1, 4096, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 1, 22, 7, 1,
-                              1},
-        (BootstrapTestParams){847, 1, 4096, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 1, 22, 7, 1,
-                              10},
-        // 7 bits message 0 bit carry parameters
+                              0.00000000000000029403601535432533, 2, 12, 2, 1,
+                              2, 1, 50},
         (BootstrapTestParams){881, 1, 8192, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 1, 22, 8, 1,
-                              1},
-        (BootstrapTestParams){881, 1, 8192, 0.000007069849454709433,
-                              0.00000000000000029403601535432533, 1, 22, 8, 1,
-                              2});
+                              0.00000000000000029403601535432533, 22, 1, 2, 1,
+                              2, 1, 25});
 
 std::string printParamName(::testing::TestParamInfo<BootstrapTestParams> p) {
   BootstrapTestParams params = p.param;

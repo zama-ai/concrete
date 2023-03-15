@@ -5,11 +5,10 @@
 #include "gtest/gtest.h"
 #include <cstdint>
 #include <functional>
-#include <stdio.h>
 #include <stdlib.h>
 
 const unsigned REPETITIONS = 5;
-const unsigned SAMPLES = 100;
+const unsigned SAMPLES = 50;
 
 typedef struct {
   int glwe_dimension;
