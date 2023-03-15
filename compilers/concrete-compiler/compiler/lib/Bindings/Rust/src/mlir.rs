@@ -59,7 +59,7 @@ pub fn print_mlir_type_to_string(mlir_type: MlirType) -> String {
 /// use concrete_compiler::mlir::ffi::*;
 /// unsafe{
 ///     let context = mlirContextCreate();
-///     mlirRegisterAllDialects(context);
+///     register_all_dialects(context);
 ///
 ///     // input/output types
 ///     let func_input_types = [
@@ -275,6 +275,13 @@ pub fn create_constant_tensor_op(
     }
 }
 
+pub unsafe fn register_all_dialects(context: MlirContext) {
+    let registry = mlirDialectRegistryCreate();
+    mlirRegisterAllDialects(registry);
+    mlirContextAppendDialectRegistry(context, registry);
+    mlirContextLoadAllAvailableDialects(context);
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -293,7 +300,7 @@ mod test {
     fn test_module_parsing() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             let module_string = "
             module{
                 func.func @test(%arg0: i64, %arg1: i64) -> i64 {
@@ -322,7 +329,7 @@ mod test {
     fn test_module_creation() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
 
             // input/output types
             let func_input_types = [
@@ -378,7 +385,7 @@ module {
     fn test_constant_flat_tensor() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
 
             // create a constant flat tensor
             let contant_flat_tensor_op = create_constant_flat_tensor_op(context, &[0, 1, 2, 3], 64);
@@ -393,7 +400,7 @@ module {
     fn test_constant_tensor() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
 
             // create a constant tensor
             let contant_tensor_op = create_constant_tensor_op(context, &[2, 2], &[0, 1, 2, 3], 64);
@@ -408,7 +415,7 @@ module {
     fn test_constant_tensor_with_signle_elem() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
 
             // create a constant tensor
             let contant_tensor_op = create_constant_tensor_op(context, &[2, 2], &[0], 7);
@@ -423,7 +430,7 @@ module {
     fn test_constant_int() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
 
             // create a constant flat tensor
             let contant_int_op = create_constant_int_op(context, 73, 10);

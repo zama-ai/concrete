@@ -557,7 +557,7 @@ mod test {
     fn test_fhelinalg_func() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
 
             // register the FHELinalg dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
@@ -630,7 +630,7 @@ module {
     fn test_add_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -668,7 +668,7 @@ module {
     fn test_add_eint_int_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -711,7 +711,7 @@ module {
     fn test_sub_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -749,7 +749,7 @@ module {
     fn test_sub_eint_int_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -793,7 +793,7 @@ module {
     fn test_sub_int_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -836,7 +836,7 @@ module {
     fn test_neg_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -870,7 +870,7 @@ module {
     fn test_mul_eint_int_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -914,7 +914,7 @@ module {
     fn test_apply_lut_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -954,7 +954,7 @@ module {
     fn test_apply_multi_lut_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -999,7 +999,7 @@ module {
     fn test_apply_mapped_lut_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1049,7 +1049,7 @@ module {
     fn test_dot_eint_int_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1092,7 +1092,7 @@ module {
     fn test_matmul_eint_int_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1135,7 +1135,7 @@ module {
     fn test_matmul_int_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1178,7 +1178,7 @@ module {
     fn test_sum_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1218,7 +1218,7 @@ module {
     fn test_concat_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1258,7 +1258,7 @@ tensor<6x3x!FHE.eint<4>>";
     fn test_conv2d_eint_int_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1312,7 +1312,7 @@ padding = dense<0> : tensor<4xi64>, strides = dense<1> : tensor<2xi64>} : (tenso
     fn test_transpose_eint_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1351,7 +1351,7 @@ padding = dense<0> : tensor<4xi64>, strides = dense<1> : tensor<2xi64>} : (tenso
     fn test_from_element_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1387,7 +1387,7 @@ padding = dense<0> : tensor<4xi64>, strides = dense<1> : tensor<2xi64>} : (tenso
     fn test_to_signed_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);
@@ -1421,7 +1421,7 @@ padding = dense<0> : tensor<4xi64>, strides = dense<1> : tensor<2xi64>} : (tenso
     fn test_to_unsigned_op() {
         unsafe {
             let context = mlirContextCreate();
-            mlirRegisterAllDialects(context);
+            register_all_dialects(context);
             // register the FHE dialect
             let fhe_handle = mlirGetDialectHandle__fhe__();
             mlirDialectHandleLoadDialect(fhe_handle, context);

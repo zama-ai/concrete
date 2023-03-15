@@ -1156,7 +1156,6 @@ mod test {
                     return %0 : !FHE.eint<5>
                 }";
         let runtime_library_path = runtime_lib_path();
-        let temp_dir = TempDir::new("concrete_compiler_rust_test").unwrap();
         let temp_dir = TempDir::new("concrete_compiler_test").unwrap();
         let support =
             LibrarySupport::new(temp_dir.path().to_str().unwrap(), runtime_library_path).unwrap();
