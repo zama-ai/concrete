@@ -3,7 +3,7 @@ autofix: false
 
 # list of paths to ignore, uses gitignore syntaxes (executes before any rule)
 ignore:
-  - .git/
+  - compilers/concrete-compiler/llvm-project
 
 rules:
   # checks if file ends in a newline character
