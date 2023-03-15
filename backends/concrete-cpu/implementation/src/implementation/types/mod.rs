@@ -51,6 +51,7 @@ mod csprng;
 pub use csprng::*;
 
 pub mod ciphertext_list;
+pub mod ggsw_level_matrix;
 pub mod glev_ciphertext;
 pub mod lev_ciphertext;
 pub mod polynomial;
