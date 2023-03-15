@@ -19,9 +19,17 @@ instance_type = "m6i.metal"
 subnet_id = "subnet-a886b4c1"
 security_group= ["sg-0bf1c1d79c97bc88f", ]
 
-[profile.gpu]
+[profile.gpu-bench]
 region = "us-east-1"
 image_id = "ami-03f11dc8c6a5f5c0a"
+instance_type = "p3.2xlarge"
+subnet_id = "subnet-8123c9e7"
+security_group= ["sg-0f8b52622a2669491", ]
+
+# Docker is well configured for test inside docker in this AMI
+[profile.gpu-test]
+region = "us-east-1"
+image_id = "ami-0c4773f5626d919b6"
 instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
 security_group= ["sg-0f8b52622a2669491", ]
@@ -37,7 +45,7 @@ check_run_name = "Compiler Build and Test (CPU)"
 
 [command.compiler-gpu-build]
 workflow = "compiler_build_and_test_gpu.yml"
-profile = "gpu"
+profile = "gpu-test"
 check_run_name = "Compiler Build and Test (GPU)"
 
 [command.compiler-cpu-benchmark]
@@ -47,7 +55,7 @@ check_run_name = "Compiler Performances Benchmarks (CPU)"
 
 [command.compiler-gpu-benchmark]
 workflow = "compiler_benchmark.yml"
-profile = "gpu"
+profile = "gpu-bench"
 check_run_name = "Compiler Performances Benchmarks (GPU)"
 
 # Trigger Docker images build
