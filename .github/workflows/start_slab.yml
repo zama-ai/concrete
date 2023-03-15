@@ -20,11 +20,16 @@ jobs:
   sl:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout concrete-open-source
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Get git ref
         # github.head_ref is only available from a Pull Request
         if: env.GIT_REF == ''
         run: |
-          echo "GIT_REF=${{ github.ref }}" >> $GITHUB_ENV
+          echo "GIT_REF=${{ github.ref_name }}" >> $GITHUB_ENV
 
       - name: Checkout Slab repo
         uses: actions/checkout@v3
@@ -35,9 +40,10 @@ jobs:
 
       - name: Start AWS job in Slab
         shell: bash
-        # TODO: step result must be correlated to HTTP return code.
         run: |
-          echo -n '{"command": "${{ inputs.command }}", "git_ref": "${{ env.GIT_REF }}", "sha": "${{ github.sha }}"}' > command.json
+          GIT_SHA="$(git --no-pager show -s --format="%H" origin/${{ env.GIT_REF }})"
+          echo -n '{"command": "compiler-cpu-build", "git_ref": "test-with-david", "sha":"'${GIT_SHA}'"}' > command.json
+          cat command.json
           SIGNATURE="$(slab/scripts/hmac_calculator.sh command.json '${{ secrets.JOB_SECRET }}')"
           curl -v -k \
           --fail-with-body \
