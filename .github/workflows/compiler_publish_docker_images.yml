@@ -23,9 +23,9 @@ on:
         description: 'Build matrix item'
         type: string
 
-concurrency:
-  group: compiler_publish_docker_images-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: compiler_publish_docker_images-${{ github.ref }}
+#   cancel-in-progress: true
 
 env:
   THIS_FILE: .github/workflows/compiler_publish_docker_images.yml
