@@ -97,7 +97,15 @@ impl<C: Container> BootstrapKey<C> {
     {
         self.data
             .split_into(self.input_lwe_dimension)
-            .map(move |slice| GgswCiphertext::new(slice, self.glwe_params, self.decomp_params))
+            .map(move |slice| {
+                GgswCiphertext::new(
+                    slice,
+                    self.glwe_params.polynomial_size,
+                    self.glwe_params.dimension,
+                    self.glwe_params.dimension,
+                    self.decomp_params,
+                )
+            })
     }
 
     pub fn output_lwe_dimension(&self) -> usize {
@@ -115,7 +123,15 @@ impl<'a> BootstrapKey<&'a mut [u64]> {
 
         self.data
             .par_chunks_exact_mut(chunk_size)
-            .map(move |slice| GgswCiphertext::new(slice, self.glwe_params, self.decomp_params))
+            .map(move |slice| {
+                GgswCiphertext::new(
+                    slice,
+                    self.glwe_params.polynomial_size,
+                    self.glwe_params.dimension,
+                    self.glwe_params.dimension,
+                    self.decomp_params,
+                )
+            })
     }
 }
 

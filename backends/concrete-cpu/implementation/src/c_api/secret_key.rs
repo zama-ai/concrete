@@ -1,5 +1,6 @@
 use super::types::{Csprng, CsprngVtable};
 use super::utils::nounwind;
+use crate::implementation::encrypt::encrypt_constant_ggsw;
 use crate::implementation::types::{
     CsprngMut, DecompParams, GgswCiphertext, GlweCiphertext, GlweParams, GlweSecretKey,
     LweCiphertext, LweSecretKey,
@@ -84,8 +85,16 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_ggsw_ciphertext_u64(
         };
         let glwe_sk = GlweSecretKey::from_raw_parts(glwe_sk, glwe_params);
         let decomp_params = DecompParams { level, base_log };
-        let ggsw_out = GgswCiphertext::from_raw_parts(ggsw_out, glwe_params, decomp_params);
-        glwe_sk.encrypt_constant_ggsw(
+        let ggsw_out = GgswCiphertext::from_raw_parts(
+            ggsw_out,
+            polynomial_size,
+            glwe_dimension,
+            glwe_dimension,
+            decomp_params,
+        );
+        encrypt_constant_ggsw(
+            glwe_sk,
+            glwe_sk,
             ggsw_out,
             input,
             variance,
