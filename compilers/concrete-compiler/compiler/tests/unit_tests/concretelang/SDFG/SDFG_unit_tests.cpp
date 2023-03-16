@@ -43,7 +43,12 @@ compile(std::string outputLib, std::string source,
       mlir::concretelang::CompilationContext::createShared();
   mlir::concretelang::CompilerEngine ce{ccx};
   mlir::concretelang::CompilationOptions options(funcname);
+  // FIXME(#71)
+#ifdef __APPLE__
+  options.emitSDFGOps = false;
+#else
   options.emitSDFGOps = true;
+#endif
 #ifdef CONCRETELANG_CUDA_SUPPORT
   options.emitGPUOps = true;
 #endif
