@@ -51,11 +51,13 @@ jobs:
         with:
           files: compilers/concrete-compiler
 
-      - name: Get changed files in the concrete-optimizer directory
+      - name: Get changed files for concrete-optimizer
         id: optimizer
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
-          files: compilers/concrete-optimizer
+          files: |
+            compilers/concrete-optimizer
+            .github/workflows/optimizer.yml
 
       - name: Get changed files in the concrete-cpu directory
         id: concrete-cpu
@@ -203,7 +205,11 @@ jobs:
 # Optimizer jobs ################################
   optimizer:
     needs: file-change
-    if: needs.file-change.outputs.optimizer == 'true' || needs.file-change.outputs.concrete-optimizer-workflow == 'true' || needs.file-change.outputs.push-main
+    if: |
+      needs.file-change.outputs.parameters-curves == 'true' ||
+      needs.file-change.outputs.concrete-cpu == 'true' ||
+      needs.file-change.outputs.optimizer == 'true'||
+      needs.file-change.outputs.push-main
     uses: ./.github/workflows/optimizer.yml
     secrets: inherit
 

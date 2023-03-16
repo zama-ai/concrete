@@ -52,7 +52,7 @@ jobs:
           cd compilers/concrete-optimizer
           cargo test --release --no-fail-fast --all-targets
           make -C concrete-optimizer-cpp test-ci
-      
+
   benchmarks:
     runs-on: ubuntu-20.04
     steps:
@@ -76,12 +76,12 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow_conclusion: success
-          commit: ${{ github.event.pull_request.base.sha }}
+          workflow_conclusion: ""
+          search_artifacts: true
           name: ${{ runner.os }}-benchmark
           if_no_artifact_found: warn
           path: ./benchmark
-      
+
       - name: Save benchmark result to file
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -92,11 +92,13 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Enable alert commit comment
           comment-always: true
+          # Enable Job Summary for PRs
+          summary-always: true
 
       - name: Upload benchmark data
         uses: actions/upload-artifact@v3
         with:
-          path: ./compilers/concrete-optimizer/benchmark
+          path: ./benchmark
           name: ${{ runner.os }}-benchmark
 
   nightly-check:
