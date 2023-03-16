@@ -13,10 +13,13 @@ jobs:
       - name: Set up Clang
         run: |
           sudo apt-get install clang-format-11
+      - name: Install cmake-format
+        run: |
+          pip install cmakelang
       - name: Format Concrete-cuda
         run: |
           cd backends/concrete-cuda/implementation
-          ./clang-format.sh
+          ./format_concrete_cuda.sh
       - name: Check diff
         run: git diff --exit-code
 
