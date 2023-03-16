@@ -5,7 +5,7 @@ Tests of execution of matmul operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -125,19 +125,19 @@ def test_matmul(lhs_shape, rhs_shape, bounds, helpers):
     lhs_cst = list(np.random.randint(minimum, maximum, size=lhs_shape))
     rhs_cst = list(np.random.randint(minimum, maximum, size=rhs_shape))
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def lhs_operator(x):
         return x @ rhs_cst
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def rhs_operator(x):
         return lhs_cst @ x
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def lhs_function(x):
         return np.matmul(x, rhs_cst)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def rhs_function(x):
         return np.matmul(lhs_cst, x)
 

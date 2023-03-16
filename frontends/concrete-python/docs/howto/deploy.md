@@ -55,7 +55,7 @@ After getting the serialized `ClientSpecs` from a server, you can create the cli
 
 <!--pytest-codeblocks:skip-->
 ```python
-client_specs = cnp.ClientSpecs.unserialize(serialized_client_specs)
+client_specs = cnp.ClientSpecs.deserialize(serialized_client_specs)
 client = cnp.Client(client_specs)
 ```
 
@@ -96,19 +96,19 @@ The only thing left to do is to send serialized args to the server.
 
 ## Performing computation (on the server)
 
-Upon having the serialized evaluation keys and serialized arguments, you can unserialize them like so:
+Upon having the serialized evaluation keys and serialized arguments, you can deserialize them like so:
 
 <!--pytest-codeblocks:skip-->
 ```python
-unserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluation_keys)
-unserialized_args  = server.client_specs.unserialize_public_args(serialized_args)
+deserialized_evaluation_keys = cnp.EvaluationKeys.deserialize(serialized_evaluation_keys)
+deserialized_args  = server.client_specs.deserialize_public_args(serialized_args)
 ```
 
 And you can perform the computation as well:
 
 <!--pytest-codeblocks:skip-->
 ```python
-public_result = server.run(unserialized_args, unserialized_evaluation_keys)
+public_result = server.run(deserialized_args, deserialized_evaluation_keys)
 serialized_public_result: bytes = public_result.serialize()
 ```
 
@@ -116,17 +116,17 @@ Finally, you can send the serialized public result back to the client, so they c
 
 ## Decrypting the result (on the client)
 
-Once you have received the public result of the computation from the server, you can unserialize it:
+Once you have received the public result of the computation from the server, you can deserialize it:
 
 <!--pytest-codeblocks:skip-->
 ```python
-unserialized_public_result = client.specs.unserialize_public_result(serialized_public_result)
+deserialized_public_result = client.specs.deserialize_public_result(serialized_public_result)
 ```
 
 Finally, you can decrypt the result like so:
 
 <!--pytest-codeblocks:skip-->
 ```python
-result = client.decrypt(unserialized_public_result)
+result = client.decrypt(deserialized_public_result)
 assert result == 49
 ```

@@ -4,7 +4,7 @@ Tests of `Configuration` class.
 
 import pytest
 
-from concrete.numpy.compilation import Configuration
+from concrete.fhe.compilation import Configuration
 
 
 @pytest.mark.parametrize(

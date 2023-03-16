@@ -7,10 +7,10 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from ..numpy.internal.utils import assert_that
-from ..numpy.representation import Node
-from ..numpy.tracing import Tracer
-from ..numpy.values import Value
+from ..fhe.internal.utils import assert_that
+from ..fhe.representation import Node
+from ..fhe.tracing import Tracer
+from ..fhe.values import Value
 
 # pylint: disable=too-many-branches,too-many-statements
 

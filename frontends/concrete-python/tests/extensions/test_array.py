@@ -4,14 +4,14 @@ Tests of 'array' extension.
 
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
     "function,parameters,expected_error",
     [
         pytest.param(
-            lambda x, y: cnp.array([x, y]),
+            lambda x, y: fhe.array([x, y]),
             {
                 "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
                 "y": {"range": [0, 10], "status": "encrypted", "shape": (2, 3)},
@@ -28,7 +28,7 @@ def test_bad_array(function, parameters, expected_error, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, parameter_encryption_statuses)
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     with pytest.raises(ValueError) as excinfo:
         inputset = helpers.generate_inputset(parameters)

@@ -5,7 +5,7 @@ Tests of execution of static assignment operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 def assignment_case_0():
@@ -483,7 +483,7 @@ def test_static_assignment(shape, function, helpers):
     """
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**7, size=shape) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)
@@ -506,7 +506,7 @@ def test_bad_static_assignment(helpers):
         x[1.5] = 0
         return x
 
-    compiler = cnp.Compiler(f, {"x": "encrypted"})
+    compiler = fhe.Compiler(f, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
     with pytest.raises(ValueError) as excinfo:
@@ -521,7 +521,7 @@ def test_bad_static_assignment(helpers):
         x[slice(1.5, 2.5, None)] = 0
         return x
 
-    compiler = cnp.Compiler(g, {"x": "encrypted"})
+    compiler = fhe.Compiler(g, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
     with pytest.raises(ValueError) as excinfo:

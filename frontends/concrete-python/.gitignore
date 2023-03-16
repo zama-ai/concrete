@@ -135,3 +135,9 @@ dmypy.json
 
 # Compilation Artifacts
 .artifacts
+
+# ruff
+.ruff_cache
+
+# fhe keys
+.keys

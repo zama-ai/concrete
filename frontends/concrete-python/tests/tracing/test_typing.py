@@ -4,7 +4,7 @@ Test type annotations.
 
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 def test_bad_tensor():
@@ -17,14 +17,14 @@ def test_bad_tensor():
 
     with pytest.raises(ValueError) as excinfo:
 
-        def case1(x: cnp.tensor[int]):
+        def case1(x: fhe.tensor[int]):
             return x
 
         case1(None)
 
     assert str(excinfo.value) == (
-        "First argument to tensor annotations should be a "
-        "concrete-numpy data type (e.g., cnp.uint4) not int"
+        "First argument to tensor annotations should be "
+        "an fhe data type (e.g., fhe.uint4) not int"
     )
 
     # no shape
@@ -32,13 +32,13 @@ def test_bad_tensor():
 
     with pytest.raises(ValueError) as excinfo:
 
-        def case2(x: cnp.tensor[cnp.uint3]):
+        def case2(x: fhe.tensor[fhe.uint3]):
             return x
 
         case2(None)
 
     assert str(excinfo.value) == (
-        "Tensor annotations should have a shape (e.g., cnp.tensor[cnp.uint4, 3, 2])"
+        "Tensor annotations should have a shape (e.g., fhe.tensor[fhe.uint4, 3, 2])"
     )
 
     # bad shape
@@ -46,7 +46,7 @@ def test_bad_tensor():
 
     with pytest.raises(ValueError) as excinfo:
 
-        def case3(x: cnp.tensor[cnp.uint3, 1.5]):
+        def case3(x: fhe.tensor[fhe.uint3, 1.5]):
             return x
 
         case3(None)

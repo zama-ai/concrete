@@ -1,8 +1,8 @@
 import time
 
-import concrete.numpy as cnp
 import numpy as np
 
+from concrete import fhe
 
 NUMBER_OF_ENTRIES = 5
 CHUNK_SIZE = 4
@@ -23,48 +23,52 @@ KEY = slice(1, 1 + NUMBER_OF_KEY_CHUNKS)
 VALUE = slice(1 + NUMBER_OF_KEY_CHUNKS, None)
 
 
-def encode(number: int, width: int) -> np.array:
+def encode(number: int, width: int) -> np.ndarray:
     binary_repr = np.binary_repr(number, width=width)
-    blocks = [binary_repr[i:i+CHUNK_SIZE] for i in range(0, len(binary_repr), CHUNK_SIZE)]
+    blocks = [binary_repr[i : (i + CHUNK_SIZE)] for i in range(0, len(binary_repr), CHUNK_SIZE)]
     return np.array([int(block, 2) for block in blocks])
 
-def encode_key(number: int) -> np.array:
+
+def encode_key(number: int) -> np.ndarray:
     return encode(number, width=KEY_SIZE)
 
-def encode_value(number: int) -> np.array:
+
+def encode_value(number: int) -> np.ndarray:
     return encode(number, width=VALUE_SIZE)
 
-def decode(encoded_number: np.array) -> int:
+
+def decode(encoded_number: np.ndarray) -> int:
     result = 0
     for i in range(len(encoded_number)):
-        result += 2**(CHUNK_SIZE*i) * encoded_number[(len(encoded_number) - i) - 1]
+        result += 2 ** (CHUNK_SIZE * i) * encoded_number[(len(encoded_number) - i) - 1]
     return result
 
 
-keep_selected_lut = cnp.LookupTable([0 for _ in range(16)] + [i for i in range(16)])
+keep_selected_lut = fhe.LookupTable([0 for _ in range(16)] + [i for i in range(16)])
+
 
 def _insert_impl(state, key, value):
     flags = state[:, FLAG]
 
-    selection = cnp.zeros(NUMBER_OF_ENTRIES)
+    selection = fhe.zeros(NUMBER_OF_ENTRIES)
 
-    found = cnp.zero()
+    found = fhe.zero()
     for i in range(NUMBER_OF_ENTRIES):
         packed_flag_and_already_found = (found * 2) + flags[i]
-        is_selected = (packed_flag_and_already_found == 0)
+        is_selected = packed_flag_and_already_found == 0
 
         selection[i] = is_selected
         found += is_selected
 
-    state_update = cnp.zeros(STATE_SHAPE)
+    state_update = fhe.zeros(STATE_SHAPE)
     state_update[:, FLAG] = selection
 
     selection = selection.reshape((-1, 1))
 
-    packed_selection_and_key = (selection * (2 ** CHUNK_SIZE)) + key
+    packed_selection_and_key = (selection * (2**CHUNK_SIZE)) + key
     key_update = keep_selected_lut[packed_selection_and_key]
 
-    packed_selection_and_value = selection * (2 ** CHUNK_SIZE) + value
+    packed_selection_and_value = selection * (2**CHUNK_SIZE) + value
     value_update = keep_selected_lut[packed_selection_and_value]
 
     state_update[:, KEY] = key_update
@@ -73,25 +77,27 @@ def _insert_impl(state, key, value):
     new_state = state + state_update
     return new_state
 
+
 def _replace_impl(state, key, value):
     flags = state[:, FLAG]
     keys = state[:, KEY]
     values = state[:, VALUE]
 
-    equal_rows = (np.sum((keys - key) == 0, axis=1) == NUMBER_OF_KEY_CHUNKS)
+    equal_rows = np.sum((keys - key) == 0, axis=1) == NUMBER_OF_KEY_CHUNKS
     selection = (flags * 2 + equal_rows == 3).reshape((-1, 1))
 
-    packed_selection_and_value = selection * (2 ** CHUNK_SIZE) + value
+    packed_selection_and_value = selection * (2**CHUNK_SIZE) + value
     set_value = keep_selected_lut[packed_selection_and_value]
 
     inverse_selection = 1 - selection
-    packed_inverse_selection_and_values = inverse_selection * (2 ** CHUNK_SIZE) + values
+    packed_inverse_selection_and_values = inverse_selection * (2**CHUNK_SIZE) + values
     kept_values = keep_selected_lut[packed_inverse_selection_and_values]
 
     new_values = kept_values + set_value
     state[:, VALUE] = new_values
 
     return state
+
 
 def _query_impl(state, key):
     keys = state[:, KEY]
@@ -100,20 +106,19 @@ def _query_impl(state, key):
     selection = (np.sum((keys - key) == 0, axis=1) == NUMBER_OF_KEY_CHUNKS).reshape((-1, 1))
     found = np.sum(selection)
 
-    packed_selection_and_values = selection * (2 ** CHUNK_SIZE) + values
+    packed_selection_and_values = selection * (2**CHUNK_SIZE) + values
     value_selection = keep_selected_lut[packed_selection_and_values]
     value = np.sum(value_selection, axis=0)
 
-    return cnp.array([found, *value])
+    return fhe.array([found, *value])
 
 
 class KeyValueDatabase:
-
     _state: np.ndarray
 
-    _insert_circuit: cnp.Circuit
-    _replace_circuit: cnp.Circuit
-    _query_circuit: cnp.Circuit
+    _insert_circuit: fhe.Circuit
+    _replace_circuit: fhe.Circuit
+    _query_circuit: fhe.Circuit
 
     def __init__(self):
         self._state = np.zeros(STATE_SHAPE, dtype=np.int64)
@@ -137,24 +142,19 @@ class KeyValueDatabase:
             )
         ]
 
-        configuration = cnp.Configuration(
+        configuration = fhe.Configuration(
             enable_unsafe_features=True,
             use_insecure_key_cache=True,
             insecure_key_cache_location=".keys",
         )
 
-        insert_compiler = cnp.Compiler(
-            _insert_impl,
-            {"state": "encrypted", "key": "encrypted", "value": "encrypted"}
+        insert_compiler = fhe.Compiler(
+            _insert_impl, {"state": "encrypted", "key": "encrypted", "value": "encrypted"}
         )
-        replace_compiler = cnp.Compiler(
-            _replace_impl,
-            {"state": "encrypted", "key": "encrypted", "value": "encrypted"}
+        replace_compiler = fhe.Compiler(
+            _replace_impl, {"state": "encrypted", "key": "encrypted", "value": "encrypted"}
         )
-        query_compiler = cnp.Compiler(
-            _query_impl,
-            {"state": "encrypted", "key": "encrypted"}
-        )
+        query_compiler = fhe.Compiler(_query_impl, {"state": "encrypted", "key": "encrypted"})
 
         print()
 
@@ -206,7 +206,7 @@ class KeyValueDatabase:
 
     def insert(self, key, value):
         print()
-        print(f"Inserting...")
+        print("Inserting...")
         start = time.time()
         self._state = self._insert_circuit.encrypt_run_decrypt(
             self._state, encode_key(key), encode_value(value)
@@ -216,7 +216,7 @@ class KeyValueDatabase:
 
     def replace(self, key, value):
         print()
-        print(f"Replacing...")
+        print("Replacing...")
         start = time.time()
         self._state = self._replace_circuit.encrypt_run_decrypt(
             self._state, encode_key(key), encode_value(value)
@@ -226,11 +226,9 @@ class KeyValueDatabase:
 
     def query(self, key):
         print()
-        print(f"Querying...")
+        print("Querying...")
         start = time.time()
-        result = self._query_circuit.encrypt_run_decrypt(
-            self._state, encode_key(key)
-        )
+        result = self._query_circuit.encrypt_run_decrypt(self._state, encode_key(key))
         end = time.time()
         print(f"(took {end - start:.3f} seconds)")
 
@@ -263,10 +261,10 @@ assert db.query(3) == 5
 
 # Define lower/upper bounds for the key
 minimum_key = 1
-maximum_key = 2 ** KEY_SIZE - 1
+maximum_key = 2**KEY_SIZE - 1
 # Define lower/upper bounds for the value
 minimum_value = 1
-maximum_value = 2 ** VALUE_SIZE - 1
+maximum_value = 2**VALUE_SIZE - 1
 
 
 # Test: Insert/Replace/Query Bounds

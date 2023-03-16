@@ -4,7 +4,7 @@ Tests of execution of comparison operations.
 
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -81,7 +81,7 @@ def test_comparison(function, parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, parameter_encryption_statuses)
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
     circuit = compiler.compile(inputset, configuration)
@@ -152,7 +152,7 @@ def test_optimized_comparison(function, parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, parameter_encryption_statuses)
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
     circuit = compiler.compile(inputset, configuration)

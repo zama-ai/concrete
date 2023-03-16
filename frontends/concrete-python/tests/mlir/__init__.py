@@ -1,3 +1,3 @@
 """
-Tests of `concrete.numpy.mlir` namespace.
+Tests of `concrete.fhe.mlir` namespace.
 """

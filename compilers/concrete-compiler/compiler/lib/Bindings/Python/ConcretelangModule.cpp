@@ -10,7 +10,9 @@
 #include "concretelang/Support/Constants.h"
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/IR.h"
+#include "mlir-c/RegisterEverything.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
+#include "mlir/IR/DialectRegistry.h"
 
 #include "llvm-c/ErrorHandling.h"
 #include "llvm/Support/Signals.h"
@@ -28,15 +30,20 @@ PYBIND11_MODULE(_concretelang, m) {
       [](py::object capsule) {
         // Get the MlirContext capsule from PyMlirContext capsule.
         auto wrappedCapsule = capsule.attr(MLIR_PYTHON_CAPI_PTR_ATTR);
-        MlirContext context = mlirPythonCapsuleToContext(wrappedCapsule.ptr());
+        const MlirContext context =
+            mlirPythonCapsuleToContext(wrappedCapsule.ptr());
 
-        // Collect Concretelang dialects to register.
-        MlirDialectHandle fhe = mlirGetDialectHandle__fhe__();
+        const MlirDialectRegistry registry = mlirDialectRegistryCreate();
+        mlirRegisterAllDialects(registry);
+        mlirContextAppendDialectRegistry(context, registry);
+
+        const MlirDialectHandle fhe = mlirGetDialectHandle__fhe__();
         mlirDialectHandleRegisterDialect(fhe, context);
-        mlirDialectHandleLoadDialect(fhe, context);
-        MlirDialectHandle fhelinalg = mlirGetDialectHandle__fhelinalg__();
+
+        const MlirDialectHandle fhelinalg = mlirGetDialectHandle__fhelinalg__();
         mlirDialectHandleRegisterDialect(fhelinalg, context);
-        mlirDialectHandleLoadDialect(fhelinalg, context);
+
+        mlirContextLoadAllAvailableDialects(context);
       },
       "Register Concretelang dialects on a PyMlirContext.");
 

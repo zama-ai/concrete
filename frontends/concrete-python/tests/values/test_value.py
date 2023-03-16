@@ -5,8 +5,8 @@ Tests of `Value` class.
 import numpy as np
 import pytest
 
-from concrete.numpy.dtypes import Float, SignedInteger, UnsignedInteger
-from concrete.numpy.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor, Value
+from concrete.fhe.dtypes import Float, SignedInteger, UnsignedInteger
+from concrete.fhe.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor, Value
 
 
 @pytest.mark.parametrize(

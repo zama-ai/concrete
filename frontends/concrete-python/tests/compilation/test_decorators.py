@@ -5,7 +5,7 @@ Tests of `compiler` and `circuit` decorators.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 def test_compiler_call_and_compile(helpers):
@@ -15,7 +15,7 @@ def test_compiler_call_and_compile(helpers):
 
     configuration = helpers.configuration()
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
@@ -34,9 +34,9 @@ def test_compiler_verbose_trace(helpers, capsys):
     """
 
     configuration = helpers.configuration()
-    artifacts = cnp.DebugArtifacts()
+    artifacts = fhe.DebugArtifacts()
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
@@ -62,9 +62,9 @@ def test_compiler_verbose_compile(helpers, capsys):
     """
 
     configuration = helpers.configuration()
-    artifacts = cnp.DebugArtifacts()
+    artifacts = fhe.DebugArtifacts()
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
@@ -97,8 +97,8 @@ def test_circuit(helpers):
     Test circuit decorator.
     """
 
-    @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-    def circuit1(x: cnp.uint2):
+    @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+    def circuit1(x: fhe.uint2):
         return x + 42
 
     helpers.check_str(
@@ -115,8 +115,8 @@ return %2
 
     # ======================================================================
 
-    @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-    def circuit2(x: cnp.tensor[cnp.uint2, 3, 2]):
+    @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+    def circuit2(x: fhe.tensor[fhe.uint2, 3, 2]):
         return x + 42
 
     helpers.check_str(
@@ -133,12 +133,12 @@ return %2
 
     # ======================================================================
 
-    @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-    def circuit3(x: cnp.uint3):
+    @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+    def circuit3(x: fhe.uint3):
         def square(x):
             return x**2
 
-        return cnp.univariate(square, outputs=cnp.uint7)(x)
+        return fhe.univariate(square, outputs=fhe.uint7)(x)
 
     helpers.check_str(
         """
@@ -153,9 +153,9 @@ return %1
 
     # ======================================================================
 
-    @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-    def circuit4(x: cnp.uint3):
-        return ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(cnp.uint3)
+    @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+    def circuit4(x: fhe.uint3):
+        return ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(fhe.uint3)
 
     helpers.check_str(
         """
@@ -185,8 +185,8 @@ Subgraphs:
 
     # ======================================================================
 
-    @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-    def circuit5(x: cnp.int2):
+    @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+    def circuit5(x: fhe.int2):
         return x + 42
 
     helpers.check_str(
@@ -212,13 +212,13 @@ def test_bad_circuit(helpers):
 
     with pytest.raises(ValueError) as excinfo:
 
-        @cnp.circuit({"x": "encrypted"}, helpers.configuration())
+        @fhe.circuit({"x": "encrypted"}, helpers.configuration())
         def circuit1(x: int):
             return x + 42
 
     assert str(excinfo.value) == (
         f"Annotation {str(int)} for argument 'x' is not valid "
-        f"(please use a cnp type such as `cnp.uint4` or 'cnp.tensor[cnp.uint4, 3, 2]')"
+        f"(please use an fhe type such as `fhe.uint4` or 'fhe.tensor[fhe.uint4, 3, 2]')"
     )
 
     # missing encryption status
@@ -226,8 +226,8 @@ def test_bad_circuit(helpers):
 
     with pytest.raises(ValueError) as excinfo:
 
-        @cnp.circuit({}, helpers.configuration())
-        def circuit2(x: cnp.uint3):
+        @fhe.circuit({}, helpers.configuration())
+        def circuit2(x: fhe.uint3):
             return x + 42
 
     assert str(excinfo.value) == (
@@ -238,21 +238,21 @@ def test_bad_circuit(helpers):
     # ----------
     with pytest.raises(ValueError) as excinfo:
 
-        @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-        def circuit3(x: cnp.uint3):
+        @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+        def circuit3(x: fhe.uint3):
             return x.astype(np.int64)
 
     assert str(excinfo.value) == (
-        "`astype` method must be called with a concrete.numpy type "
-        "for direct circuit definition (e.g., value.astype(cnp.uint4))"
+        "`astype` method must be called with an fhe type "
+        "for direct circuit definition (e.g., value.astype(fhe.uint4))"
     )
 
     # round
     # -----
     with pytest.raises(RuntimeError) as excinfo:
 
-        @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-        def circuit4(x: cnp.uint3):
+        @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+        def circuit4(x: fhe.uint3):
             return round(x)
 
     assert str(excinfo.value) == (

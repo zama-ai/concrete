@@ -4,7 +4,7 @@ Tests of `Float` data type.
 
 import pytest
 
-from concrete.numpy.dtypes import Float
+from concrete.fhe.dtypes import Float
 
 
 @pytest.mark.parametrize(

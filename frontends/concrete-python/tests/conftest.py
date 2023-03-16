@@ -11,8 +11,8 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
 import tests
+from concrete import fhe
 
 tests_directory = os.path.dirname(tests.__file__)
 
@@ -56,7 +56,7 @@ def pytest_sessionstart(session):
         else:
             key_cache_location = Path(key_cache_location).expanduser().resolve()
     else:
-        key_cache_location = Path.home().resolve() / ".cache" / "concrete-numpy" / "pytest"
+        key_cache_location = Path.home().resolve() / ".cache" / "concrete-python" / "pytest"
 
     if key_cache_location:
         key_cache_location.mkdir(parents=True, exist_ok=True)
@@ -98,16 +98,16 @@ class Helpers:
     """
 
     @staticmethod
-    def configuration() -> cnp.Configuration:
+    def configuration() -> fhe.Configuration:
         """
         Get the test configuration to use during testing.
 
         Returns:
-            cnp.Configuration:
+            fhe.Configuration:
                 test configuration
         """
 
-        return cnp.Configuration(
+        return fhe.Configuration(
             dump_artifacts_on_unexpected_failures=False,
             enable_unsafe_features=True,
             use_insecure_key_cache=True,
@@ -219,7 +219,7 @@ class Helpers:
 
     @staticmethod
     def check_execution(
-        circuit: cnp.Circuit,
+        circuit: fhe.Circuit,
         function: Callable,
         sample: Union[Any, List[Any]],
         retries: int = 1,
@@ -229,7 +229,7 @@ class Helpers:
         Assert that `circuit` is behaves the same as `function` on `sample`.
 
         Args:
-            circuit (cnp.Circuit):
+            circuit (fhe.Circuit):
                 compiled circuit
 
             function (Callable):

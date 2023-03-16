@@ -5,10 +5,8 @@ Tests of `GraphConverter` class.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
 import concrete.onnx as connx
-
-# pylint: disable=line-too-long
+from concrete import fhe
 
 
 def assign(x):
@@ -451,7 +449,7 @@ def test_graph_converter_bad_convert(
     """
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, encryption_statuses)
+    compiler = fhe.Compiler(function, encryption_statuses)
 
     with pytest.raises(expected_error) as excinfo:
         compiler.compile(inputset, configuration)
@@ -463,7 +461,7 @@ def test_graph_converter_bad_convert(
     "function,inputset,expected_mlir",
     [
         pytest.param(
-            lambda x: 1 + cnp.LookupTable([4, 1, 2, 3])[x] + cnp.LookupTable([4, 1, 2, 3])[x + 1],
+            lambda x: 1 + fhe.LookupTable([4, 1, 2, 3])[x] + fhe.LookupTable([4, 1, 2, 3])[x + 1],
             range(3),
             """
 
@@ -492,7 +490,7 @@ def test_constant_cache(function, inputset, expected_mlir, helpers):
 
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
     circuit = compiler.compile(inputset, configuration)
 
     helpers.check_str(expected_mlir, circuit.mlir)

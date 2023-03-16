@@ -6,31 +6,31 @@ import random
 
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
     "function",
     [
         pytest.param(
-            lambda x: cnp.one() + x,
-            id="cnp.one() + x",
+            lambda x: fhe.one() + x,
+            id="fhe.one() + x",
         ),
         pytest.param(
-            lambda x: cnp.ones(()) + x,
-            id="cnp.ones(()) + x",
+            lambda x: fhe.ones(()) + x,
+            id="fhe.ones(()) + x",
         ),
         pytest.param(
-            lambda x: cnp.ones(10) + x,
-            id="cnp.ones(10) + x",
+            lambda x: fhe.ones(10) + x,
+            id="fhe.ones(10) + x",
         ),
         pytest.param(
-            lambda x: cnp.ones((10,)) + x,
-            id="cnp.ones((10,)) + x",
+            lambda x: fhe.ones((10,)) + x,
+            id="fhe.ones((10,)) + x",
         ),
         pytest.param(
-            lambda x: cnp.ones((3, 2)) + x,
-            id="cnp.ones((3, 2)) + x",
+            lambda x: fhe.ones((3, 2)) + x,
+            id="fhe.ones((3, 2)) + x",
         ),
     ],
 )
@@ -40,7 +40,7 @@ def test_ones(function, helpers):
     """
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = range(10)
     circuit = compiler.compile(inputset, configuration)

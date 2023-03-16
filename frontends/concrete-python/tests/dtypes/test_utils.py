@@ -4,8 +4,8 @@ Tests of utilities related to data types.
 
 import pytest
 
-from concrete.numpy.dtypes import Float, SignedInteger, UnsignedInteger
-from concrete.numpy.dtypes.utils import combine_dtypes
+from concrete.fhe.dtypes import Float, SignedInteger, UnsignedInteger
+from concrete.fhe.dtypes.utils import combine_dtypes
 
 
 @pytest.mark.parametrize(

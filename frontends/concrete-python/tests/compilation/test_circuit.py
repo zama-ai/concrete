@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from concrete.numpy import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, compiler
+from concrete.fhe import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, compiler
 
 
 def test_circuit_str(helpers):
@@ -160,7 +160,7 @@ def test_client_server_api(helpers):
         server = Server.load(server_path)
 
         serialized_client_specs = server.client_specs.serialize()
-        client_specs = ClientSpecs.unserialize(serialized_client_specs)
+        client_specs = ClientSpecs.deserialize(serialized_client_specs)
 
         clients = [
             Client(client_specs, configuration.insecure_key_cache_location),
@@ -173,14 +173,14 @@ def test_client_server_api(helpers):
             serialized_args = client.specs.serialize_public_args(args)
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            unserialized_args = server.client_specs.unserialize_public_args(serialized_args)
-            unserialized_evaluation_keys = EvaluationKeys.unserialize(serialized_evaluation_keys)
+            deserialized_args = server.client_specs.deserialize_public_args(serialized_args)
+            deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
-            result = server.run(unserialized_args, unserialized_evaluation_keys)
+            result = server.run(deserialized_args, deserialized_evaluation_keys)
             serialized_result = server.client_specs.serialize_public_result(result)
 
-            unserialized_result = client.specs.unserialize_public_result(serialized_result)
-            output = client.decrypt(unserialized_result)
+            deserialized_result = client.specs.deserialize_public_result(serialized_result)
+            output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [45, 50, 43])
 
@@ -220,7 +220,7 @@ def test_client_server_api_via_mlir(helpers):
         server = Server.load(server_path)
 
         serialized_client_specs = server.client_specs.serialize()
-        client_specs = ClientSpecs.unserialize(serialized_client_specs)
+        client_specs = ClientSpecs.deserialize(serialized_client_specs)
 
         clients = [
             Client(client_specs, configuration.insecure_key_cache_location),
@@ -233,14 +233,14 @@ def test_client_server_api_via_mlir(helpers):
             serialized_args = client.specs.serialize_public_args(args)
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            unserialized_args = server.client_specs.unserialize_public_args(serialized_args)
-            unserialized_evaluation_keys = EvaluationKeys.unserialize(serialized_evaluation_keys)
+            deserialized_args = server.client_specs.deserialize_public_args(serialized_args)
+            deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
-            result = server.run(unserialized_args, unserialized_evaluation_keys)
+            result = server.run(deserialized_args, deserialized_evaluation_keys)
             serialized_result = server.client_specs.serialize_public_result(result)
 
-            unserialized_result = client.specs.unserialize_public_result(serialized_result)
-            output = client.decrypt(unserialized_result)
+            deserialized_result = client.specs.deserialize_public_result(serialized_result)
+            output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [45, 50, 43])
 

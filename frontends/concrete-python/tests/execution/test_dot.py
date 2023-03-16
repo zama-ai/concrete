@@ -5,7 +5,7 @@ Tests of execution of dot operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -22,15 +22,15 @@ def test_dot(size, helpers):
     bound = int(np.floor(np.sqrt(127 / size)))
     cst = np.random.randint(0, bound, size=(size,))
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def left_function(x):
         return np.dot(x, cst)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def right_function(x):
         return np.dot(cst, x)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def method(x):
         return x.dot(cst)
 

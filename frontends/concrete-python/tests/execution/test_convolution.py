@@ -5,10 +5,10 @@ Tests of execution of convolution operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
 import concrete.onnx as connx
-from concrete.numpy.representation.node import Node
-from concrete.numpy.tracing.tracer import Tracer
+from concrete import fhe
+from concrete.fhe.representation.node import Node
+from concrete.fhe.tracing.tracer import Tracer
 
 
 @pytest.mark.parametrize(
@@ -58,13 +58,9 @@ def test_conv2d(input_shape, weight_shape, group, strides, dilations, has_bias, 
     configuration = helpers.configuration()
 
     weight = np.random.randint(0, 4, size=weight_shape)
+    bias = np.random.randint(0, 4, size=(weight_shape[0],)) if has_bias else None
 
-    if has_bias:
-        bias = np.random.randint(0, 4, size=(weight_shape[0],))
-    else:
-        bias = None
-
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return connx.conv(x, weight, bias, strides=strides, dilations=dilations, group=group)
 
@@ -131,7 +127,7 @@ def test_conv2d(input_shape, weight_shape, group, strides, dilations, has_bias, 
             1,
             "NOTSET",
             ValueError,
-            "strides should be of form (D_stride,) when performing 1D " "convolution, but it's ()",
+            "strides should be of form (D_stride,) when performing 1D convolution, but it's ()",
         ),
         pytest.param(
             (1, 1, 4),
@@ -388,13 +384,9 @@ def test_bad_conv_compilation(
     configuration = helpers.configuration()
 
     weight = np.random.randint(0, 4, size=weight_shape)
+    bias = np.random.randint(0, 4, size=bias_shape) if bias_shape is not None else None
 
-    if bias_shape is not None:
-        bias = np.random.randint(0, 4, size=bias_shape)
-    else:
-        bias = None
-
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return connx.conv(
             x,

@@ -5,7 +5,7 @@ Tests of execution of transpose operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -69,7 +69,7 @@ def test_transpose(function, parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, parameter_encryption_statuses)
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
     circuit = compiler.compile(inputset, configuration)

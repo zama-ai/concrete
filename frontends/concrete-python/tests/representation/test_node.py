@@ -5,9 +5,9 @@ Tests of `Node` class.
 import numpy as np
 import pytest
 
-from concrete.numpy.dtypes import UnsignedInteger
-from concrete.numpy.representation import Node
-from concrete.numpy.values import ClearScalar, EncryptedScalar, EncryptedTensor, Value
+from concrete.fhe.dtypes import UnsignedInteger
+from concrete.fhe.representation import Node
+from concrete.fhe.values import ClearScalar, EncryptedScalar, EncryptedTensor, Value
 
 
 @pytest.mark.parametrize(

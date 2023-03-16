@@ -4,7 +4,7 @@ Tests of 'LookupTable' extension.
 
 import pytest
 
-from concrete.numpy import LookupTable
+from concrete.fhe import LookupTable
 
 
 @pytest.mark.parametrize(

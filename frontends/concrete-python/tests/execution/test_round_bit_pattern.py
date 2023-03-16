@@ -5,8 +5,8 @@ Tests of execution of round bit pattern operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
-from concrete.numpy.representation.utils import format_constant
+from concrete import fhe
+from concrete.fhe.representation.utils import format_constant
 
 
 @pytest.mark.parametrize(
@@ -36,7 +36,7 @@ def test_plain_round_bit_pattern(sample, lsbs_to_remove, expected_output):
     """
     Test round bit pattern in evaluation context.
     """
-    assert cnp.round_bit_pattern(sample, lsbs_to_remove=lsbs_to_remove) == expected_output
+    assert fhe.round_bit_pattern(sample, lsbs_to_remove=lsbs_to_remove) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -67,7 +67,7 @@ def test_bad_plain_round_bit_pattern(
     """
 
     with pytest.raises(expected_error) as excinfo:
-        cnp.round_bit_pattern(sample, lsbs_to_remove=lsbs_to_remove)
+        fhe.round_bit_pattern(sample, lsbs_to_remove=lsbs_to_remove)
 
     assert str(excinfo.value) == expected_message
 
@@ -91,9 +91,9 @@ def test_round_bit_pattern(input_bits, lsbs_to_remove, helpers):
     Test round bit pattern in evaluation context.
     """
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
-        x_rounded = cnp.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
+        x_rounded = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
         return np.abs(50 * np.sin(x_rounded)).astype(np.int64)
 
     circuit = function.compile([(2**input_bits) - 1], helpers.configuration())
@@ -111,12 +111,12 @@ def test_auto_rounding(helpers):
     # y has the max value of 1999, so it's 11 bits
     # our target msb is 5 bits, which means we need to remove 6 of the least significant bits
 
-    rounder1 = cnp.AutoRounder(target_msbs=5)
+    rounder1 = fhe.AutoRounder(target_msbs=5)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function1(x):
         y = x + 1000
-        z = cnp.round_bit_pattern(y, lsbs_to_remove=rounder1)
+        z = fhe.round_bit_pattern(y, lsbs_to_remove=rounder1)
         return np.sqrt(z).astype(np.int64)
 
     inputset1 = range(1000)
@@ -130,16 +130,16 @@ def test_auto_rounding(helpers):
     # y has the max value of 1999, so it's 11 bits
     # our target msb is 3 bits, which means we need to remove 8 of the least significant bits
 
-    rounder2 = cnp.AutoRounder(target_msbs=3)
+    rounder2 = fhe.AutoRounder(target_msbs=3)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function2(x):
         y = x + 1000
-        z = cnp.round_bit_pattern(y, lsbs_to_remove=rounder2)
+        z = fhe.round_bit_pattern(y, lsbs_to_remove=rounder2)
         return np.sqrt(z).astype(np.int64)
 
     inputset2 = range(1000)
-    cnp.AutoRounder.adjust(function2, inputset2)
+    fhe.AutoRounder.adjust(function2, inputset2)
 
     assert rounder2.lsbs_to_remove == 8
 
@@ -153,9 +153,9 @@ def test_auto_rounding(helpers):
         # so we set every 8th entry to a 4-bit value
         entries3[i] = np.random.randint(0, (2**4) - (2**2))
     # when this tlu is applied to an 8-bit value with 5-bit msb rounding, result will be 4-bits
-    table3 = cnp.LookupTable(entries3)
+    table3 = fhe.LookupTable(entries3)
     # and this is the rounder for table1, which should have lsbs_to_remove of 3
-    rounder3 = cnp.AutoRounder(target_msbs=5)
+    rounder3 = fhe.AutoRounder(target_msbs=5)
 
     # have 2 ** 8 entries during evaluation, it won't matter after compilation
     entries4 = list(range(2**8))
@@ -164,15 +164,15 @@ def test_auto_rounding(helpers):
         # so we set every 4th entry to an 8-bit value
         entries4[i] = np.random.randint(2**7, 2**8)
     # when this tlu is applied to a 4-bit value with 2-bit msb rounding, result will be 8-bits
-    table4 = cnp.LookupTable(entries4)
+    table4 = fhe.LookupTable(entries4)
     # and this is the rounder for table2, which should have lsbs_to_remove of 2
-    rounder4 = cnp.AutoRounder(target_msbs=2)
+    rounder4 = fhe.AutoRounder(target_msbs=2)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function3(x):
-        a = cnp.round_bit_pattern(x, lsbs_to_remove=rounder3)
+        a = fhe.round_bit_pattern(x, lsbs_to_remove=rounder3)
         b = table3[a]
-        c = cnp.round_bit_pattern(b, lsbs_to_remove=rounder4)
+        c = fhe.round_bit_pattern(b, lsbs_to_remove=rounder4)
         d = table4[c]
         return d
 
@@ -209,11 +209,11 @@ def test_auto_rounding_without_adjustment():
     Test round bit pattern with auto rounding but without adjustment.
     """
 
-    rounder = cnp.AutoRounder(target_msbs=5)
+    rounder = fhe.AutoRounder(target_msbs=5)
 
     def function(x):
         y = x + 1000
-        z = cnp.round_bit_pattern(y, lsbs_to_remove=rounder)
+        z = fhe.round_bit_pattern(y, lsbs_to_remove=rounder)
         return np.sqrt(z).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
@@ -231,15 +231,15 @@ def test_auto_rounding_with_empty_inputset():
     Test round bit pattern with auto rounding but with empty inputset.
     """
 
-    rounder = cnp.AutoRounder(target_msbs=5)
+    rounder = fhe.AutoRounder(target_msbs=5)
 
     def function(x):
         y = x + 1000
-        z = cnp.round_bit_pattern(y, lsbs_to_remove=rounder)
+        z = fhe.round_bit_pattern(y, lsbs_to_remove=rounder)
         return np.sqrt(z).astype(np.int64)
 
     with pytest.raises(ValueError) as excinfo:
-        cnp.AutoRounder.adjust(function, [])
+        fhe.AutoRounder.adjust(function, [])
 
     assert str(excinfo.value) == "AutoRounders cannot be adjusted with an empty inputset"
 
@@ -249,16 +249,16 @@ def test_auto_rounding_recursive_adjustment():
     Test round bit pattern with auto rounding but with recursive adjustment.
     """
 
-    rounder = cnp.AutoRounder(target_msbs=5)
+    rounder = fhe.AutoRounder(target_msbs=5)
 
     def function(x):
-        cnp.AutoRounder.adjust(function, range(10))
+        fhe.AutoRounder.adjust(function, range(10))
         y = x + 1000
-        z = cnp.round_bit_pattern(y, lsbs_to_remove=rounder)
+        z = fhe.round_bit_pattern(y, lsbs_to_remove=rounder)
         return np.sqrt(z).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
-        cnp.AutoRounder.adjust(function, range(10))
+        fhe.AutoRounder.adjust(function, range(10))
 
     assert str(excinfo.value) == "AutoRounders cannot be adjusted recursively"
 
@@ -270,11 +270,11 @@ def test_auto_rounding_construct_in_function():
 
     def function(x):
         y = x + 1000
-        z = cnp.round_bit_pattern(y, lsbs_to_remove=cnp.AutoRounder(target_msbs=5))
+        z = fhe.round_bit_pattern(y, lsbs_to_remove=fhe.AutoRounder(target_msbs=5))
         return np.sqrt(z).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
-        cnp.AutoRounder.adjust(function, range(10))
+        fhe.AutoRounder.adjust(function, range(10))
 
     assert str(excinfo.value) == (
         "AutoRounders cannot be constructed during adjustment, "

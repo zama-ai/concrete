@@ -5,10 +5,10 @@ Tests of `Tracer` class.
 import numpy as np
 import pytest
 
-from concrete.numpy.dtypes import UnsignedInteger
-from concrete.numpy.tracing import Tracer
-from concrete.numpy.tracing.typing import uint4
-from concrete.numpy.values import EncryptedTensor
+from concrete.fhe.dtypes import UnsignedInteger
+from concrete.fhe.tracing import Tracer
+from concrete.fhe.tracing.typing import uint4
+from concrete.fhe.values import EncryptedTensor
 
 
 @pytest.mark.parametrize(
@@ -42,8 +42,8 @@ from concrete.numpy.values import EncryptedTensor
             lambda x: x.astype(uint4),
             {"x": EncryptedTensor(UnsignedInteger(7), shape=(4,))},
             ValueError,
-            "`astype` method must be called with a "
-            "numpy type for compilation (e.g., value.astype(np.int64))",
+            "`astype` method must be called with a numpy type "
+            "for compilation (e.g., value.astype(np.int64))",
         ),
         pytest.param(
             lambda x: x + 1 if x else x + x,

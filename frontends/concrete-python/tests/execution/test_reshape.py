@@ -5,7 +5,7 @@ Tests of execution of reshape operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -116,11 +116,11 @@ def test_reshape(shape, newshape, helpers):
 
     configuration = helpers.configuration()
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return np.reshape(x, newshape)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def method(x):
         return x.reshape(newshape)
 
@@ -159,7 +159,7 @@ def test_flatten(shape, helpers):
 
     configuration = helpers.configuration()
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return x.flatten()
 

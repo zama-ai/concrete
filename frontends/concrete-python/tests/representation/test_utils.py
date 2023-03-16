@@ -4,7 +4,7 @@ Tests of utilities related to representation of computation.
 import numpy as np
 import pytest
 
-from concrete.numpy.representation.utils import format_constant
+from concrete.fhe.representation.utils import format_constant
 
 
 @pytest.mark.parametrize(

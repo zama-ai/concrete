@@ -1,3 +1,3 @@
 """
-Tests of `concrete.numpy` namespace.
+Tests of `concrete.fhe` namespace.
 """

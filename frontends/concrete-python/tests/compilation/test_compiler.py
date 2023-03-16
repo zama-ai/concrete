@@ -5,7 +5,7 @@ Tests of `Compiler` class.
 import numpy as np
 import pytest
 
-from concrete.numpy.compilation import Compiler
+from concrete.fhe.compilation import Compiler
 
 
 def test_compiler_bad_init():

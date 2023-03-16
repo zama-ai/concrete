@@ -5,7 +5,7 @@ Tests of execution of operations converted to table lookups.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 def fusable_with_bigger_search(x, y):
@@ -360,7 +360,7 @@ def deterministic_unary_function(x):
             id="x > 50",
         ),
         pytest.param(
-            lambda x: 50 > x,  # pylint: disable=misplaced-comparison-constant
+            lambda x: 50 > x,
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
@@ -374,7 +374,7 @@ def deterministic_unary_function(x):
             id="x < 50",
         ),
         pytest.param(
-            lambda x: 50 < x,  # pylint: disable=misplaced-comparison-constant
+            lambda x: 50 < x,
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
@@ -388,7 +388,7 @@ def deterministic_unary_function(x):
             id="x >= 50",
         ),
         pytest.param(
-            lambda x: 50 >= x,  # pylint: disable=misplaced-comparison-constant
+            lambda x: 50 >= x,
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
@@ -402,7 +402,7 @@ def deterministic_unary_function(x):
             id="x <= 50",
         ),
         pytest.param(
-            lambda x: 50 <= x,  # pylint: disable=misplaced-comparison-constant
+            lambda x: 50 <= x,
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
@@ -416,7 +416,7 @@ def deterministic_unary_function(x):
             id="x == 50",
         ),
         pytest.param(
-            lambda x: 50 == x,  # pylint: disable=misplaced-comparison-constant
+            lambda x: 50 == x,
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
@@ -430,7 +430,7 @@ def deterministic_unary_function(x):
             id="x != 50",
         ),
         pytest.param(
-            lambda x: 50 != x,  # pylint: disable=misplaced-comparison-constant
+            lambda x: 50 != x,
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
@@ -551,11 +551,11 @@ def deterministic_unary_function(x):
             id="x + np.zeros_like(x)",
         ),
         pytest.param(
-            lambda x: cnp.univariate(deterministic_unary_function)(x),
+            lambda x: fhe.univariate(deterministic_unary_function)(x),
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
-            id="cnp.univariate(deterministic_unary_function)(x)",
+            id="fhe.univariate(deterministic_unary_function)(x)",
         ),
         pytest.param(
             lambda x: round(np.sqrt(x)),
@@ -579,12 +579,12 @@ def deterministic_unary_function(x):
             id="(2.5 * round(np.sqrt(x), decimals=4)).astype(np.int64)",
         ),
         pytest.param(
-            lambda x, y: cnp.LookupTable(list(range(32)))[x + y],
+            lambda x, y: fhe.LookupTable(list(range(32)))[x + y],
             {
                 "x": {"status": "encrypted", "range": [-10, 10]},
                 "y": {"status": "encrypted", "range": [-10, 10]},
             },
-            id="cnp.LookupTable(list(range(32)))[x + y]",
+            id="fhe.LookupTable(list(range(32)))[x + y]",
         ),
         pytest.param(
             lambda x: np.expand_dims(x, axis=0),
@@ -691,7 +691,7 @@ def test_others(function, parameters, helpers):
         parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
         configuration = helpers.configuration()
 
-        compiler = cnp.Compiler(function, parameter_encryption_statuses)
+        compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
         inputset = helpers.generate_inputset(parameters)
         circuit = compiler.compile(inputset, configuration)
@@ -711,7 +711,7 @@ def test_others(function, parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, parameter_encryption_statuses)
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
     circuit = compiler.compile(inputset, configuration)
@@ -730,7 +730,7 @@ def test_others_bad_fusing(helpers):
     # two variable inputs
     # -------------------
 
-    @cnp.compiler({"x": "encrypted", "y": "clear"})
+    @fhe.compiler({"x": "encrypted", "y": "clear"})
     def function1(x, y):
         return (10 * (np.sin(x) ** 2) + 10 * (np.cos(y) ** 2)).astype(np.int64)
 
@@ -782,7 +782,7 @@ return %13
     # intermediates with different shape
     # ----------------------------------
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function2(x):
         return np.abs(np.sin(x)).reshape((2, 3)).astype(np.int64)
 
@@ -816,7 +816,7 @@ return %4
     # non-fusable operation
     # ---------------------
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function3(x):
         return np.abs(np.sin(x)).transpose().astype(np.int64)
 
@@ -850,7 +850,7 @@ return %4
     # integer two variable inputs
     # ---------------------------
 
-    @cnp.compiler({"x": "encrypted", "y": "clear"})
+    @fhe.compiler({"x": "encrypted", "y": "clear"})
     def function4(x, y):
         return np.maximum(x, y)
 
@@ -888,15 +888,15 @@ def test_others_bad_univariate(helpers):
     def bad_univariate(x):
         return np.array([x, x, x])
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def f(x):
-        return cnp.univariate(bad_univariate)(x)
+        return fhe.univariate(bad_univariate)(x)
 
     with pytest.raises(ValueError) as excinfo:
         inputset = range(10)
         f.compile(inputset, configuration)
 
     helpers.check_str(
-        "Function bad_univariate cannot be used with cnp.univariate",
+        "Function bad_univariate cannot be used with fhe.univariate",
         str(excinfo.value),
     )

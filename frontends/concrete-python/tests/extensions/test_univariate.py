@@ -4,7 +4,7 @@ Tests of 'univariate' extension.
 
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 def test_bad_univariate(helpers):
@@ -14,11 +14,11 @@ def test_bad_univariate(helpers):
 
     with pytest.raises(ValueError) as excinfo:
 
-        @cnp.circuit({"x": "encrypted"}, helpers.configuration())
-        def function(x: cnp.uint3):
-            return cnp.univariate(lambda x: x**2)(x)
+        @fhe.circuit({"x": "encrypted"}, helpers.configuration())
+        def function(x: fhe.uint3):
+            return fhe.univariate(lambda x: x**2)(x)
 
     assert str(excinfo.value) == (
         "Univariate extension requires `outputs` argument for direct circuit definition "
-        "(e.g., cnp.univariate(function, outputs=cnp.uint4)(x))"
+        "(e.g., fhe.univariate(function, outputs=fhe.uint4)(x))"
     )

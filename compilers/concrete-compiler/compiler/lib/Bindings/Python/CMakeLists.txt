@@ -27,6 +27,7 @@ declare_mlir_python_extension(
   FHEModule.cpp
   CompilerAPIModule.cpp
   EMBED_CAPI_LINK_LIBS
+  MLIRCAPIRegisterEverything
   CONCRETELANGCAPIFHE
   CONCRETELANGCAPIFHELINALG
   CONCRETELANGPySupport)

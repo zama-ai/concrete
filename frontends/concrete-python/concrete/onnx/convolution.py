@@ -8,10 +8,10 @@ from typing import Callable, List, Optional, Tuple, Union, cast
 import numpy as np
 import torch
 
-from ..numpy.internal.utils import assert_that
-from ..numpy.representation import Node
-from ..numpy.tracing import Tracer
-from ..numpy.values import EncryptedTensor
+from ..fhe.internal.utils import assert_that
+from ..fhe.representation import Node
+from ..fhe.tracing import Tracer
+from ..fhe.values import EncryptedTensor
 
 SUPPORTED_AUTO_PAD = {
     "NOTSET",

@@ -4,43 +4,43 @@ Tests of execution of array operation.
 
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
     "function,parameters",
     [
         pytest.param(
-            lambda x: cnp.array([x, x + 1, 1]),
+            lambda x: fhe.array([x, x + 1, 1]),
             {
                 "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
             },
-            id="cnp.array([x, x + 1, 1])",
+            id="fhe.array([x, x + 1, 1])",
         ),
         pytest.param(
-            lambda x, y: cnp.array([x, y]),
-            {
-                "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
-                "y": {"range": [0, 10], "status": "clear", "shape": ()},
-            },
-            id="cnp.array([x, y])",
-        ),
-        pytest.param(
-            lambda x, y: cnp.array([[x, y], [y, x]]),
+            lambda x, y: fhe.array([x, y]),
             {
                 "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
                 "y": {"range": [0, 10], "status": "clear", "shape": ()},
             },
-            id="cnp.array([[x, y], [y, x]])",
+            id="fhe.array([x, y])",
         ),
         pytest.param(
-            lambda x, y, z: cnp.array([[x, 1], [y, 2], [z, 3]]),
+            lambda x, y: fhe.array([[x, y], [y, x]]),
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
+                "y": {"range": [0, 10], "status": "clear", "shape": ()},
+            },
+            id="fhe.array([[x, y], [y, x]])",
+        ),
+        pytest.param(
+            lambda x, y, z: fhe.array([[x, 1], [y, 2], [z, 3]]),
             {
                 "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
                 "y": {"range": [0, 10], "status": "clear", "shape": ()},
                 "z": {"range": [0, 10], "status": "encrypted", "shape": ()},
             },
-            id="cnp.array([[x, 1], [y, 2], [z, 3]])",
+            id="fhe.array([[x, 1], [y, 2], [z, 3]])",
         ),
     ],
 )
@@ -52,7 +52,7 @@ def test_array(function, parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, parameter_encryption_statuses)
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
     circuit = compiler.compile(inputset, configuration)

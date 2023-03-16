@@ -8,8 +8,8 @@ import re
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
 import tests
+from concrete import fhe
 
 tests_directory = os.path.dirname(tests.__file__)
 
@@ -19,7 +19,7 @@ def g(z):
     Example function with a tag.
     """
 
-    with cnp.tag("def"):
+    with fhe.tag("def"):
         a = 120 - z
         b = a // 4
     return b
@@ -30,9 +30,9 @@ def f(x):
     Example function with nested tags.
     """
 
-    with cnp.tag("abc"):
+    with fhe.tag("abc"):
         x = x * 2
-        with cnp.tag("foo"):
+        with fhe.tag("foo"):
             y = x + 42
         z = np.sqrt(y).astype(np.int64)
 
@@ -177,7 +177,7 @@ def test_graph_maximum_integer_bit_width(
 
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
     graph = compiler.trace(inputset, configuration)
 
     assert graph.maximum_integer_bit_width(tag_filter, operation_filter) == expected_result
@@ -307,7 +307,7 @@ def test_graph_integer_range(
 
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
     graph = compiler.trace(inputset, configuration)
 
     assert graph.integer_range(tag_filter, operation_filter) == expected_result
@@ -320,7 +320,7 @@ def test_graph_format_show_lines(helpers):
 
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(f, {"x": "encrypted"})
+    compiler = fhe.Compiler(f, {"x": "encrypted"})
     graph = compiler.trace(range(10), configuration)
 
     # pylint: disable=line-too-long

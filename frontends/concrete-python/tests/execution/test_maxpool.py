@@ -5,8 +5,8 @@ Tests of execution of maxpool operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
 import concrete.onnx as connx
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -71,7 +71,7 @@ def test_maxpool(
 
     assert np.array_equal(connx.maxpool(sample_input, **operation), expected_output)
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return connx.maxpool(x, **operation)
 
@@ -321,7 +321,7 @@ def test_bad_maxpool_special(helpers):
     # compile
     # -------
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def not_compilable(x):
         return connx.maxpool(x, kernel_shape=(4, 3))
 
@@ -334,7 +334,7 @@ def test_bad_maxpool_special(helpers):
     # clear input
     # -----------
 
-    @cnp.compiler({"x": "clear"})
+    @fhe.compiler({"x": "clear"})
     def clear_input(x):
         return connx.maxpool(x, kernel_shape=(4, 3, 2))
 

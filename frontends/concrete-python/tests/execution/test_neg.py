@@ -5,7 +5,7 @@ Tests of execution of neg operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -33,11 +33,11 @@ def test_neg(parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    @cnp.compiler(parameter_encryption_statuses)
+    @fhe.compiler(parameter_encryption_statuses)
     def operator(x):
         return -x
 
-    @cnp.compiler(parameter_encryption_statuses)
+    @fhe.compiler(parameter_encryption_statuses)
     def function(x):
         return np.negative(x)
 

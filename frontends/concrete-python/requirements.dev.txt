@@ -1,0 +1,17 @@
+pybind11>=2.10
+
+pytest-cov>=4.0
+pytest-xdist>=3.2
+pytest>=7.2
+
+black>=23.1
+isort>=5.12
+
+mypy>=1.1
+pydocstyle>=6.3
+pylint>=2.17
+ruff>=0.0
+
+auditwheel>=5.3; sys_platform == 'linux'
+delocate>=0.10; sys_platform == 'darwin'
+wheel>=0.38

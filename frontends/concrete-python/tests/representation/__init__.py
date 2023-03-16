@@ -1,3 +1,3 @@
 """
-Tests of `concrete.numpy.representation` namespace.
+Tests of `concrete.fhe.representation` namespace.
 """

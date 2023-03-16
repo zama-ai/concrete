@@ -5,7 +5,7 @@ Tests of execution of broadcast to operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ def test_broadcast_to(from_shape, to_shape, helpers):
         return np.broadcast_to(x, to_shape)
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**2, size=from_shape) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)

@@ -4,7 +4,7 @@ Tests of 'tag' extension.
 
 import numpy as np
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 def test_tag(helpers):
@@ -13,16 +13,16 @@ def test_tag(helpers):
     """
 
     def g(z):
-        with cnp.tag("def"):
+        with fhe.tag("def"):
             a = 120 - z
             b = a // 4
         return b
 
-    @cnp.compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def f(x):
-        with cnp.tag("abc"):
+        with fhe.tag("abc"):
             x = x * 2
-            with cnp.tag("foo"):
+            with fhe.tag("foo"):
                 y = x + 42
             z = np.sqrt(y).astype(np.int64)
 

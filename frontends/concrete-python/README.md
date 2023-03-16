@@ -20,7 +20,7 @@
   <a href="https://docs.zama.ai/concrete-numpy/developer/contributing">
     <img src="https://img.shields.io/badge/we're%20open%20source-contributing.md-blue?style=flat-square">
   </a>
-<!-- Follow on twitter badge using shields.io -->
+<!-- Twitter badge using shields.io -->
   <a href="https://twitter.com/zama_fhe">
     <img src="https://img.shields.io/badge/follow-zama_fhe-blue?logo=twitter&style=flat-square">
   </a>
@@ -44,12 +44,12 @@ With FHE, you can build services that preserve the privacy of the users. FHE is 
 ## Installation
 
 |               OS / HW                | Available on Docker | Available on PyPI |
-| :----------------------------------: | :-----------------: | :--------------: |
-|                Linux                 |         Yes         |       Yes        |
-|               Windows                |         Yes         |   Coming soon    |
-|     Windows Subsystem for Linux      |         Yes         |       Yes        |
-|            macOS (Intel)             |         Yes         |       Yes        |
-| macOS (Apple Silicon, ie M1, M2 etc) |    Yes (Rosetta)    |   Coming soon    |
+|:------------------------------------:|:-------------------:|:-----------------:|
+|                Linux                 |         Yes         |        Yes        |
+|               Windows                |         Yes         |    Coming soon    |
+|     Windows Subsystem for Linux      |         Yes         |        Yes        |
+|            macOS (Intel)             |         Yes         |        Yes        |
+| macOS (Apple Silicon, ie M1, M2 etc) |    Yes (Rosetta)    |    Coming soon    |
 
 
 The preferred way to install Concrete Numpy is through PyPI:
@@ -132,7 +132,38 @@ Various tutorials are proposed in the documentation to help you start writing ho
 - Partial support of [Floating Points](https://docs.zama.ai/concrete-numpy/tutorials/floating_points)
 - How to perform [Table Lookup](https://docs.zama.ai/concrete-numpy/tutorials/table_lookup)
 
-More generally, if you have built awesome projects using Concrete Numpy, feel free to let us know and we'll link to it!
+More generally, if you have built awesome projects using Concrete Numpy, feel free to let us know, and we'll link to it!
+
+## Setting up for local development
+
+```shell
+# clone the repository
+git clone https://github.com/zama-ai/concrete-open-source.git
+cd concrete-open-source
+
+# create virtual environment
+cd frontends/concrete-python
+make venv
+
+# activate virtual environment
+source .vevn/bin/activate
+
+# build the compiler bindings
+cd ../../compilers/concrete-compiler/compiler
+make python-bindings
+
+# set bindings build directory as an environment variable
+export COMPILER_BUILD_DIRECTORY=$(pwd)/build
+echo "export COMPILER_BUILD_DIRECTORY=$(pwd)/build" >> ~/.bashrc
+
+# run tests
+cd ../../../frontends/concrete-python
+make pytest
+```
+
+Building python bindings requires some python packages to be installed, hence virtual environment is created and activated before building compiler bindings.
+
+Also, you don't have to follow these steps exactly. As long as the compiler is built with CMake in release mode and build directory is exported as the environment variable `COMPILER_BUILD_DIRECTORY`, it'll be okay.
 
 ## Need support?
 

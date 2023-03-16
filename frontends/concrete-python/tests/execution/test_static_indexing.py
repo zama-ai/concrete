@@ -5,7 +5,7 @@ Tests of execution of static indexing operation.
 import numpy as np
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
@@ -159,7 +159,7 @@ def test_static_indexing(shape, function, helpers):
     """
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**5, size=shape) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)
@@ -178,7 +178,7 @@ def test_bad_static_indexing(helpers):
     # with float
     # ----------
 
-    compiler = cnp.Compiler(lambda x: x[1.5], {"x": "encrypted"})
+    compiler = fhe.Compiler(lambda x: x[1.5], {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
     with pytest.raises(ValueError) as excinfo:
@@ -189,7 +189,7 @@ def test_bad_static_indexing(helpers):
     # with bad slice
     # --------------
 
-    compiler = cnp.Compiler(lambda x: x[slice(1.5, 2.5, None)], {"x": "encrypted"})
+    compiler = fhe.Compiler(lambda x: x[slice(1.5, 2.5, None)], {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
     with pytest.raises(ValueError) as excinfo:

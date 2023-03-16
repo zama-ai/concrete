@@ -4,7 +4,7 @@ Tests of utilities related to the entire project.
 
 import pytest
 
-from concrete.numpy.internal.utils import assert_that, unreachable
+from concrete.fhe.internal.utils import assert_that, unreachable
 
 
 def test_assert_that():

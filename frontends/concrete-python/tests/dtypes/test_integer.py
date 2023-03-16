@@ -5,7 +5,7 @@ Tests of `Integer` data type.
 import numpy as np
 import pytest
 
-from concrete.numpy.dtypes import Integer, SignedInteger, UnsignedInteger
+from concrete.fhe.dtypes import Integer, SignedInteger, UnsignedInteger
 
 
 @pytest.mark.parametrize(

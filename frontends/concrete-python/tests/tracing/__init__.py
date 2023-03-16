@@ -1,3 +1,3 @@
 """
-Tests of `concrete.numpy.tracing` namespace.
+Tests of `concrete.fhe.tracing` namespace.
 """

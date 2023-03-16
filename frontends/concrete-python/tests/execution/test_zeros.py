@@ -6,31 +6,31 @@ import random
 
 import pytest
 
-import concrete.numpy as cnp
+from concrete import fhe
 
 
 @pytest.mark.parametrize(
     "function",
     [
         pytest.param(
-            lambda x: cnp.zero() + x,
-            id="cnp.zero() + x",
+            lambda x: fhe.zero() + x,
+            id="fhe.zero() + x",
         ),
         pytest.param(
-            lambda x: cnp.zeros(()) + x,
-            id="cnp.zeros(()) + x",
+            lambda x: fhe.zeros(()) + x,
+            id="fhe.zeros(()) + x",
         ),
         pytest.param(
-            lambda x: cnp.zeros(10) + x,
-            id="cnp.zeros(10) + x",
+            lambda x: fhe.zeros(10) + x,
+            id="fhe.zeros(10) + x",
         ),
         pytest.param(
-            lambda x: cnp.zeros((10,)) + x,
-            id="cnp.zeros((10,)) + x",
+            lambda x: fhe.zeros((10,)) + x,
+            id="fhe.zeros((10,)) + x",
         ),
         pytest.param(
-            lambda x: cnp.zeros((3, 2)) + x,
-            id="cnp.zeros((3, 2)) + x",
+            lambda x: fhe.zeros((3, 2)) + x,
+            id="fhe.zeros((3, 2)) + x",
         ),
     ],
 )
@@ -40,7 +40,7 @@ def test_zeros(function, helpers):
     """
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = range(10)
     circuit = compiler.compile(inputset, configuration)

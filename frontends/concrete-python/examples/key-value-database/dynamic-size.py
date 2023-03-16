@@ -1,8 +1,8 @@
 import time
 
-import concrete.numpy as cnp
 import numpy as np
 
+from concrete import fhe
 
 CHUNK_SIZE = 4
 
@@ -18,74 +18,81 @@ NUMBER_OF_VALUE_CHUNKS = VALUE_SIZE // CHUNK_SIZE
 
 def encode(number, width):
     binary_repr = np.binary_repr(number, width=width)
-    blocks = [binary_repr[i:i+CHUNK_SIZE] for i in range(0, len(binary_repr), CHUNK_SIZE)]
+    blocks = [binary_repr[i : (i + CHUNK_SIZE)] for i in range(0, len(binary_repr), CHUNK_SIZE)]
     return np.array([int(block, 2) for block in blocks])
+
 
 def encode_key(number):
     return encode(number, width=KEY_SIZE)
 
+
 def encode_value(number):
     return encode(number, width=VALUE_SIZE)
+
 
 def decode(encoded_number):
     result = 0
     for i in range(len(encoded_number)):
-        result += 2**(CHUNK_SIZE*i) * encoded_number[(len(encoded_number) - i) - 1]
+        result += 2 ** (CHUNK_SIZE * i) * encoded_number[(len(encoded_number) - i) - 1]
     return result
 
 
-keep_if_match_lut = cnp.LookupTable([0 for _ in range(16)] + [i for i in range(16)])
-keep_if_no_match_lut = cnp.LookupTable([i for i in range(16)] + [0 for _ in range(16)])
+keep_if_match_lut = fhe.LookupTable([0 for _ in range(16)] + [i for i in range(16)])
+keep_if_no_match_lut = fhe.LookupTable([i for i in range(16)] + [0 for _ in range(16)])
+
 
 def _replace_impl(key, value, candidate_key, candidate_value):
     match = np.sum((candidate_key - key) == 0) == NUMBER_OF_KEY_CHUNKS
 
-    packed_match_and_value = (2 ** CHUNK_SIZE) * match + value
+    packed_match_and_value = (2**CHUNK_SIZE) * match + value
     value_if_match_else_zeros = keep_if_match_lut[packed_match_and_value]
 
-    packed_match_and_candidate_value = (2 ** CHUNK_SIZE) * match + candidate_value
+    packed_match_and_candidate_value = (2**CHUNK_SIZE) * match + candidate_value
     zeros_if_match_else_candidate_value = keep_if_no_match_lut[packed_match_and_candidate_value]
 
     return value_if_match_else_zeros + zeros_if_match_else_candidate_value
 
+
 def _query_impl(key, candidate_key, candidate_value):
     match = np.sum((candidate_key - key) == 0) == NUMBER_OF_KEY_CHUNKS
 
-    packed_match_and_candidate_value = (2 ** CHUNK_SIZE) * match + candidate_value
+    packed_match_and_candidate_value = (2**CHUNK_SIZE) * match + candidate_value
     candidate_value_if_match_else_zeros = keep_if_match_lut[packed_match_and_candidate_value]
 
-    return cnp.array([match, *candidate_value_if_match_else_zeros])
+    return fhe.array([match, *candidate_value_if_match_else_zeros])
 
 
 class KeyValueDatabase:
-
     _state: list[np.ndarray]
 
-    _replace_circuit: cnp.Circuit
-    _query_circuit: cnp.Circuit
+    _replace_circuit: fhe.Circuit
+    _query_circuit: fhe.Circuit
 
     def __init__(self):
         self._state = []
 
-        configuration = cnp.Configuration(
+        configuration = fhe.Configuration(
             enable_unsafe_features=True,
             use_insecure_key_cache=True,
             insecure_key_cache_location=".keys",
         )
 
-        replace_compiler = cnp.Compiler(
+        replace_compiler = fhe.Compiler(
             _replace_impl,
             {
-                "key": "encrypted", "value": "encrypted",
-                "candidate_key": "encrypted", "candidate_value": "encrypted",
-            }
+                "key": "encrypted",
+                "value": "encrypted",
+                "candidate_key": "encrypted",
+                "candidate_value": "encrypted",
+            },
         )
-        query_compiler = cnp.Compiler(
+        query_compiler = fhe.Compiler(
             _query_impl,
             {
                 "key": "encrypted",
-                "candidate_key": "encrypted", "candidate_value": "encrypted",
-            }
+                "candidate_key": "encrypted",
+                "candidate_value": "encrypted",
+            },
         )
 
         replace_inputset = [
@@ -110,6 +117,8 @@ class KeyValueDatabase:
                 np.ones(NUMBER_OF_VALUE_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
             )
         ]
+
+        print()
 
         print("Compiling replacement circuit...")
         start = time.time()
@@ -143,7 +152,7 @@ class KeyValueDatabase:
 
     def insert(self, key, value):
         print()
-        print(f"Inserting...")
+        print("Inserting...")
         start = time.time()
 
         self._state.append([encode_key(key), encode_value(value)])
@@ -153,7 +162,7 @@ class KeyValueDatabase:
 
     def replace(self, key, value):
         print()
-        print(f"Replacing...")
+        print("Replacing...")
         start = time.time()
 
         encoded_key = encode_key(key)
@@ -167,7 +176,7 @@ class KeyValueDatabase:
 
     def query(self, key):
         print()
-        print(f"Querying...")
+        print("Querying...")
         start = time.time()
 
         encoded_key = encode_key(key)
@@ -178,7 +187,8 @@ class KeyValueDatabase:
 
         match_count = accumulation[0]
         if match_count > 1:
-            raise RuntimeError("Key inserted multiple times")
+            message = "Key inserted multiple times"
+            raise RuntimeError(message)
 
         result = decode(accumulation[1:]) if match_count == 1 else None
 
@@ -211,10 +221,10 @@ assert db.query(3) == 5
 
 # Define lower/upper bounds for the key
 minimum_key = 0
-maximum_key = 2 ** KEY_SIZE - 1
+maximum_key = 2**KEY_SIZE - 1
 # Define lower/upper bounds for the value
 minimum_value = 0
-maximum_value = 2 ** VALUE_SIZE - 1
+maximum_value = 2**VALUE_SIZE - 1
 
 
 # Test: Insert/Replace/Query Bounds
