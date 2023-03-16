@@ -3,7 +3,7 @@
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_fast_bootstrap_low_latency(int nbits, int level_count,
+void checks_fast_bootstrap_low_latency(int glwe_dimension, int level_count,
                                        int polynomial_size, int num_samples) {
 
   assert((
@@ -17,23 +17,25 @@ void checks_fast_bootstrap_low_latency(int nbits, int level_count,
   // value for k is 1, so k + 1 = 2 for now.
   int number_of_sm = 0;
   cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU low latency PBS): the number of input LWEs must be lower "
-          "or equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count",
-          num_samples <= number_of_sm * 4. / 2. / level_count));
+  assert(
+      ("Error (GPU low latency PBS): the number of input LWEs must be lower "
+       "or equal to the number of streaming multiprocessors on the device "
+       "divided by 4 * "
+       "(k + 1) * level_count",
+       num_samples <= number_of_sm * 4. / (glwe_dimension + 1) / level_count));
 }
 
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_bootstrap_low_latency(int nbits, int level_count, int base_log,
+void checks_bootstrap_low_latency(int nbits, int glwe_dimension,
+                                  int level_count, int base_log,
                                   int polynomial_size, int num_samples) {
 
   assert(("Error (GPU low latency PBS): base log should be <= nbits",
           base_log <= nbits));
-  checks_fast_bootstrap_low_latency(nbits, level_count, polynomial_size,
-                                    num_samples);
+  checks_fast_bootstrap_low_latency(glwe_dimension, level_count,
+                                    polynomial_size, num_samples);
 }
 
 /*
@@ -47,8 +49,8 @@ void scratch_cuda_bootstrap_low_latency_32(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
-  checks_fast_bootstrap_low_latency(32, level_count, polynomial_size,
-                                    input_lwe_ciphertext_count);
+  checks_fast_bootstrap_low_latency(
+      glwe_dimension, level_count, polynomial_size, input_lwe_ciphertext_count);
 
   switch (polynomial_size) {
   case 256:
@@ -103,8 +105,8 @@ void scratch_cuda_bootstrap_low_latency_64(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
-  checks_fast_bootstrap_low_latency(64, level_count, polynomial_size,
-                                    input_lwe_ciphertext_count);
+  checks_fast_bootstrap_low_latency(
+      glwe_dimension, level_count, polynomial_size, input_lwe_ciphertext_count);
 
   switch (polynomial_size) {
   case 256:
@@ -163,8 +165,8 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
     uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
     uint32_t max_shared_memory) {
 
-  checks_bootstrap_low_latency(32, level_count, base_log, polynomial_size,
-                               num_samples);
+  checks_bootstrap_low_latency(32, glwe_dimension, level_count, base_log,
+                               polynomial_size, num_samples);
 
   switch (polynomial_size) {
   case 256:
@@ -304,8 +306,8 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
     uint32_t num_samples, uint32_t num_lut_vectors, uint32_t lwe_idx,
     uint32_t max_shared_memory) {
 
-  checks_bootstrap_low_latency(64, level_count, base_log, polynomial_size,
-                               num_samples);
+  checks_bootstrap_low_latency(64, glwe_dimension, level_count, base_log,
+                               polynomial_size, num_samples);
 
   switch (polynomial_size) {
   case 256:

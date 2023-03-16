@@ -3,7 +3,7 @@
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_fast_bootstrap_amortized(int nbits, int polynomial_size) {
+void checks_fast_bootstrap_amortized(int polynomial_size) {
   assert(
       ("Error (GPU amortized PBS): polynomial size should be one of 256, 512, "
        "1024, 2048, 4096, 8192",
@@ -18,7 +18,7 @@ void checks_fast_bootstrap_amortized(int nbits, int polynomial_size) {
 void checks_bootstrap_amortized(int nbits, int base_log, int polynomial_size) {
   assert(("Error (GPU amortized PBS): base log should be <= nbits",
           base_log <= nbits));
-  checks_fast_bootstrap_amortized(nbits, polynomial_size);
+  checks_fast_bootstrap_amortized(polynomial_size);
 }
 
 /*
@@ -34,7 +34,7 @@ void scratch_cuda_bootstrap_amortized_32(void *v_stream, uint32_t gpu_index,
                                          uint32_t input_lwe_ciphertext_count,
                                          uint32_t max_shared_memory,
                                          bool allocate_gpu_memory) {
-  checks_fast_bootstrap_amortized(32, polynomial_size);
+  checks_fast_bootstrap_amortized(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
@@ -85,7 +85,7 @@ void scratch_cuda_bootstrap_amortized_64(void *v_stream, uint32_t gpu_index,
                                          uint32_t input_lwe_ciphertext_count,
                                          uint32_t max_shared_memory,
                                          bool allocate_gpu_memory) {
-  checks_fast_bootstrap_amortized(64, polynomial_size);
+  checks_fast_bootstrap_amortized(polynomial_size);
 
   switch (polynomial_size) {
   case 256:

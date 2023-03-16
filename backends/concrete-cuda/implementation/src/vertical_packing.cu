@@ -5,7 +5,7 @@
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_fast_cmux_tree(int nbits, int polynomial_size, int r) {
+void checks_fast_cmux_tree(int polynomial_size, int r) {
   assert((
       "Error (GPU Cmux tree): polynomial size should be one of 256, 512, 1024, "
       "2048, 4096, 8192",
@@ -14,7 +14,7 @@ void checks_fast_cmux_tree(int nbits, int polynomial_size, int r) {
           polynomial_size == 4096 || polynomial_size == 8192));
   // For larger k we will need to adjust the mask size
   assert(("Error (GPU Cmux tree): r, the number of layers in the tree, should "
-          "be >= 1 ",
+          "be >= 1",
           r >= 1));
 }
 
@@ -25,7 +25,7 @@ void checks_cmux_tree(int nbits, int polynomial_size, int base_log, int r) {
 
   assert(("Error (GPU Cmux tree): base log should be <= nbits",
           base_log <= nbits));
-  checks_fast_cmux_tree(nbits, polynomial_size, r);
+  checks_fast_cmux_tree(polynomial_size, r);
 }
 
 /*
@@ -34,9 +34,7 @@ void checks_cmux_tree(int nbits, int polynomial_size, int base_log, int r) {
 void checks_blind_rotation_and_sample_extraction(int polynomial_size) {
 
   assert(("Error (GPU Blind rotation + sample extraction): polynomial size "
-          "should be one of 256, 512, "
-          "1024, "
-          "2048, 4096, 8192",
+          "should be one of 256, 512, 1024, 2048, 4096, 8192",
           polynomial_size == 256 || polynomial_size == 512 ||
               polynomial_size == 1024 || polynomial_size == 2048 ||
               polynomial_size == 4096 || polynomial_size == 8192));
@@ -54,7 +52,7 @@ void scratch_cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index,
                                uint32_t r, uint32_t tau,
                                uint32_t max_shared_memory,
                                bool allocate_gpu_memory) {
-  checks_fast_cmux_tree(32, polynomial_size, r);
+  checks_fast_cmux_tree(polynomial_size, r);
 
   switch (polynomial_size) {
   case 256:
@@ -104,7 +102,7 @@ void scratch_cuda_cmux_tree_64(void *v_stream, uint32_t gpu_index,
                                uint32_t r, uint32_t tau,
                                uint32_t max_shared_memory,
                                bool allocate_gpu_memory) {
-  checks_fast_cmux_tree(64, polynomial_size, r);
+  checks_fast_cmux_tree(polynomial_size, r);
 
   switch (polynomial_size) {
   case 256:

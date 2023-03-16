@@ -4,7 +4,7 @@
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_fast_circuit_bootstrap(int polynomial_size, int number_of_inputs) {
+void checks_fast_circuit_bootstrap(int polynomial_size) {
 
   assert(("Error (GPU circuit bootstrap): polynomial_size should be one of "
           "256, 512, 1024, 2048, 4096, 8192",
@@ -16,8 +16,8 @@ void checks_fast_circuit_bootstrap(int polynomial_size, int number_of_inputs) {
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_circuit_bootstrap(int polynomial_size, int level_bsk,
-                              int number_of_inputs) {
+void checks_circuit_bootstrap(int glwe_dimension, int polynomial_size,
+                              int level_bsk, int number_of_inputs) {
   // The number of samples should be lower than the number of streaming
   // multiprocessors divided by (4 * (k + 1) * l) (the factor 4 being related
   // to the occupancy of 50%). The only supported value for k is 1, so
@@ -26,11 +26,12 @@ void checks_circuit_bootstrap(int polynomial_size, int level_bsk,
   cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
   assert(("Error (GPU extract bits): the number of input LWEs must be lower or "
           "equal to the "
-          "number of streaming multiprocessors on the device divided by 8 * "
-          "level_count_bsk",
-          number_of_inputs <= number_of_sm / 4. / 2. / level_bsk));
+          "number of streaming multiprocessors on the device divided by 4 * "
+          "(k + 1) * level_count_bsk",
+          number_of_inputs <=
+              number_of_sm / 4. / (glwe_dimension + 1) / level_bsk));
 
-  checks_fast_circuit_bootstrap(polynomial_size, number_of_inputs);
+  checks_fast_circuit_bootstrap(polynomial_size);
 }
 
 /*
@@ -44,7 +45,7 @@ void scratch_cuda_circuit_bootstrap_32(
     uint32_t level_count_cbs, uint32_t number_of_inputs,
     uint32_t max_shared_memory, bool allocate_gpu_memory) {
 
-  checks_fast_circuit_bootstrap(polynomial_size, number_of_inputs);
+  checks_fast_circuit_bootstrap(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
@@ -99,7 +100,7 @@ void scratch_cuda_circuit_bootstrap_64(
     uint32_t level_count_cbs, uint32_t number_of_inputs,
     uint32_t max_shared_memory, bool allocate_gpu_memory) {
 
-  checks_fast_circuit_bootstrap(polynomial_size, number_of_inputs);
+  checks_fast_circuit_bootstrap(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
@@ -156,7 +157,8 @@ void cuda_circuit_bootstrap_32(
     uint32_t level_cbs, uint32_t base_log_cbs, uint32_t number_of_inputs,
     uint32_t max_shared_memory) {
 
-  checks_circuit_bootstrap(polynomial_size, level_bsk, number_of_inputs);
+  checks_circuit_bootstrap(glwe_dimension, polynomial_size, level_bsk,
+                           number_of_inputs);
 
   switch (polynomial_size) {
   case 256:
@@ -252,7 +254,8 @@ void cuda_circuit_bootstrap_64(
     uint32_t level_cbs, uint32_t base_log_cbs, uint32_t number_of_inputs,
     uint32_t max_shared_memory) {
 
-  checks_circuit_bootstrap(polynomial_size, level_bsk, number_of_inputs);
+  checks_circuit_bootstrap(glwe_dimension, polynomial_size, level_bsk,
+                           number_of_inputs);
 
   switch (polynomial_size) {
   case 256:
