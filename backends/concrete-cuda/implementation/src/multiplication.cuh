@@ -16,8 +16,8 @@ cleartext_multiplication(T *output, T *lwe_input, T *cleartext_input,
                          uint32_t input_lwe_dimension, uint32_t num_entries) {
 
   int tid = threadIdx.x;
-  if (tid < num_entries) {
-    int index = blockIdx.x * blockDim.x + tid;
+  int index = blockIdx.x * blockDim.x + tid;
+  if (index < num_entries) {
     int cleartext_index = index / (input_lwe_dimension + 1);
     // Here we take advantage of the wrapping behaviour of uint
     output[index] = lwe_input[index] * cleartext_input[cleartext_index];

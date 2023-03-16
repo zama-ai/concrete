@@ -158,7 +158,7 @@ TEST_P(KeyswitchTestPrimitives_u64, keyswitch) {
       // Compute the rounding bit
       uint64_t rounding = (decrypted & rounding_bit) << 1;
       uint64_t decoded = (decrypted + rounding) / delta;
-      ASSERT_EQ(decoded, plaintext / delta);
+      EXPECT_EQ(decoded, plaintext / delta);
     }
   }
 }
