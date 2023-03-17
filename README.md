@@ -66,7 +66,7 @@ non-cryptographers.
 The crates within this repository are:
 - [`concrete`](concrete): A high-level library, useful to cryptographers that want to quickly
   implement homomorphic applications, without having to understand the details of the
-  jmplementation.
+  implementation.
 - [`concrete-boolean`](concrete-boolean): A high-level library, implementing homomorphic Boolean gates, making it easy
   to run any kind of circuits over encrypted data.
 - [`concrete-shortint`](concrete-shortint): A high-level library, implementing operations on short integers (about 1 to 4 bits).
