@@ -7,24 +7,26 @@ set(gtest_force_shared_crt
     CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Enable ExternalProject CMake module
-include(ExternalProject)
-
 set(CONCRETE_CPU_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../concrete-cpu/target/release")
 set(CONCRETE_CPU_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../concrete-cpu")
 
-# Add rust_example as a CMake target
-ExternalProject_Add(
-  concrete_cpu
-  SOURCE_DIR ${CONCRETE_CPU_SOURCE_DIR}
-  DOWNLOAD_COMMAND ""
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND cargo build --release
-  COMMAND cargo build --release
-  BINARY_DIR ${CONCRETE_CPU_BINARY_DIR}
-  BUILD_ALWAYS true
-  INSTALL_COMMAND ""
-  LOG_BUILD ON)
+if(NOT TARGET concrete_cpu)
+  # Enable ExternalProject CMake module
+  include(ExternalProject)
+
+  # Add rust_example as a CMake target
+  ExternalProject_Add(
+    concrete_cpu
+    SOURCE_DIR ${CONCRETE_CPU_SOURCE_DIR}
+    DOWNLOAD_COMMAND ""
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND cargo build --release
+    COMMAND cargo build --release
+    BINARY_DIR ${CONCRETE_CPU_BINARY_DIR}
+    BUILD_ALWAYS true
+    INSTALL_COMMAND ""
+    LOG_BUILD ON)
+endif()
 
 include_directories(${CONCRETE_CPU_SOURCE_DIR}/include)
 add_library(concrete_cpu_lib STATIC IMPORTED)
