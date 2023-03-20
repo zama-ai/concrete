@@ -118,46 +118,46 @@ jobs:
             make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
             chmod -R ugo+rwx /tmp/KeySetCache
 
-      - name: Archive python package
-        uses: actions/upload-artifact@v3
-        with:
-          name: concrete-compiler.whl
-          path: build/wheels/concrete_compiler-*-manylinux_{{ env.GLIB_VER }}_x86_64.whl
-          retention-days: 14
+      # - name: Archive python package
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: concrete-compiler.whl
+      #     path: build/wheels/concrete_compiler-*-manylinux_{{ env.GLIB_VER }}_x86_64.whl
+      #     retention-days: 14
 
-      - name: Build the documentation
-        id: build-doc
-        if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
-        uses: addnab/docker-run-action@v3
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ env.LLVM_PROJECT_DIR }}:/llvm-project
-            -v ${{ env.COMPILER_PROJECT_DIR }}:/compiler
-            -v ${{ env.COMPILER_PROJECT_DIR }}/docs:/docs
-          shell: bash
-          run: |
-            cd /concrete/compilers/concrete-compiler/compiler
-            set -e
-            rm -rf /build
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
-            cd /docs
-            pip install -r requirements.txt
-            pip install -r ../llvm-project/mlir/python/requirements.txt
-            dnf install -y doxygen
-            sed "s/sphinx-apidoc/python -m sphinx.ext.apidoc/g" -i Makefile
-            sed "s/sphinx-build/python -m sphinx.cmd.build/g" -i Makefile
-            make COMPILER_BUILD_DIR=/build/ doc
+      # - name: Build the documentation
+      #   id: build-doc
+      #   if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
+      #   uses: addnab/docker-run-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     image: ${{ env.DOCKER_IMAGE_TEST }}
+      #     username: ${{ secrets.GHCR_LOGIN }}
+      #     password: ${{ secrets.GHCR_PASSWORD }}
+      #     options: >-
+      #       -v ${{ env.LLVM_PROJECT_DIR }}:/llvm-project
+      #       -v ${{ env.COMPILER_PROJECT_DIR }}:/compiler
+      #       -v ${{ env.COMPILER_PROJECT_DIR }}/docs:/docs
+      #     shell: bash
+      #     run: |
+      #       cd /concrete/compilers/concrete-compiler/compiler
+      #       set -e
+      #       rm -rf /build
+      #       make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
+      #       cd /docs
+      #       pip install -r requirements.txt
+      #       pip install -r ../llvm-project/mlir/python/requirements.txt
+      #       dnf install -y doxygen
+      #       sed "s/sphinx-apidoc/python -m sphinx.ext.apidoc/g" -i Makefile
+      #       sed "s/sphinx-build/python -m sphinx.cmd.build/g" -i Makefile
+      #       make COMPILER_BUILD_DIR=/build/ doc
 
-      - name: Archive docs artifacts
-        if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: compiler-html-docs
-          path: /concrete/compilers/concrete-compiler/compiler/docs/_build/html
+      # - name: Archive docs artifacts
+      #   if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: compiler-html-docs
+      #     path: /concrete/compilers/concrete-compiler/compiler/docs/_build/html
 
   PublishDoc:
     runs-on: ubuntu-20.04
