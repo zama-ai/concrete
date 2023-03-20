@@ -29,8 +29,7 @@ pytest:
 	pytest tests -svv -n auto \
 		--cov=concrete \
 		--cov-fail-under=100 \
-		--cov-report=term-missing:skip-covered \
-		--key-cache "${CONCRETE_PYTHON_KEY_CACHE_DIRECTORY}"
+		--cov-report=term-missing:skip-covered
 
 # ==========
 # Formatting

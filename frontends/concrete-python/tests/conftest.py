@@ -50,7 +50,7 @@ def pytest_sessionstart(session):
     # pylint: enable=global-statement
 
     key_cache_location = session.config.getoption("--key-cache", default=None)
-    if key_cache_location is not None and key_cache_location != "":
+    if key_cache_location is not None:
         if key_cache_location.lower() == "disable":
             key_cache_location = None
         else:

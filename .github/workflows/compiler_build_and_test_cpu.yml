@@ -83,20 +83,11 @@ jobs:
           shell: bash
           run: |
             set -e
-            
-            cd /concrete/frontends/concrete-python
-            make venv
-            source .venv/bin/activate
-            
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) BUILD_DIR=/build all python-package build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all build-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
-            
-            cd /concrete/frontends/concrete-python
-            export COMPILER_BUILD_DIRECTORY=/build
-            make whl
 
       - name: Enable complete tests on push to main
         if: github.ref == 'refs/heads/main'
@@ -120,18 +111,11 @@ jobs:
           shell: bash
           run: |
             set -e
-            
-            cd /concrete/frontends/concrete-python
-            make venv
-            source .venv/bin/activate
-            export COMPILER_BUILD_DIRECTORY=/build
-            export CONCRETE_PYTHON_KEY_CACHE_DIRECTORY=/tmp/KeySetCache
-            make pytest
-            
             cd /concrete/compilers/concrete-compiler/compiler
+            pip install pytest
             sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Archive python package
@@ -139,13 +123,6 @@ jobs:
         with:
           name: concrete-compiler.whl
           path: build/wheels/concrete_compiler-*-manylinux_{{ env.GLIB_VER }}_x86_64.whl
-          retention-days: 14
-
-      - name: Archive Concrete Python Wheel
-        uses: actions/upload-artifact@v3
-        with:
-          name: concrete-python
-          path: /concrete/frontends/concrete-python/dist/
           retention-days: 14
 
       - name: Build the documentation
