@@ -1,0 +1,16 @@
+name: Concrete Python Checks
+
+on:
+  workflow_call:
+
+jobs:
+  Checks:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Pre-Commit Checks
+        run: |
+          cd frontends/concrete-python
+          make venv
+          source .venv/bin/activate
+          make pcc
