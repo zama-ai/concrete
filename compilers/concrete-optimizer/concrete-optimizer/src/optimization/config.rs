@@ -42,11 +42,10 @@ impl SearchSpace {
     }
 
     pub fn default_gpu_lowlat() -> Self {
-        // https://github.com/zama-ai/concrete-core/blob/6b52182ab44c4b39ddebca1c457e1096fb687801/concrete-cuda/cuda/src/bootstrap_low_latency.cu#L156
-        let glwe_log_polynomial_sizes: Vec<u64> = (9..=11).collect();
+        // See backends/concrete_cuda/implementation/src/bootstrap_low_latency.cu
+        let glwe_log_polynomial_sizes: Vec<u64> = (8..=14).collect();
 
-        // https://github.com/zama-ai/concrete-core/blob/6b52182ab44c4b39ddebca1c457e1096fb687801/concrete-cuda/cuda/src/bootstrap_low_latency.cu#L154
-        let glwe_dimensions: Vec<u64> = vec![1];
+        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
 
         let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
 
@@ -58,11 +57,10 @@ impl SearchSpace {
     }
 
     pub fn default_gpu_amortized() -> Self {
-        // https://github.com/zama-ai/concrete-core/blob/6b52182ab44c4b39ddebca1c457e1096fb687801/concrete-cuda/cuda/src/bootstrap_amortized.cu#L79
-        let glwe_log_polynomial_sizes: Vec<u64> = (9..=13).collect();
+        // See backends/concrete_cuda/implementation/src/bootstrap_amortized.cu
+        let glwe_log_polynomial_sizes: Vec<u64> = (8..=14).collect();
 
-        // https://github.com/zama-ai/concrete-core/blob/6b52182ab44c4b39ddebca1c457e1096fb687801/concrete-cuda/cuda/src/bootstrap_amortized.cu#L78
-        let glwe_dimensions: Vec<u64> = vec![1];
+        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
 
         let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
 
