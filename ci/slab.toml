@@ -70,3 +70,12 @@ workflow = "ml_benchmark_subset.yml"
 profile = "m6i-cpu-bench"
 matrix = [0,1,2,3,4,5,6,7,8,9,10]
 max_parallel_jobs = 2
+
+#################################################
+# Concrete Python Commands
+#################################################
+
+[command.concrete-python-tests]
+workflow = "concrete_python_tests.yml"
+profile = "m6i-cpu-test"
+check_run_name = "Concrete Python Tests"

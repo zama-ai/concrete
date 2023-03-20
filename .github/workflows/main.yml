@@ -147,3 +147,11 @@ jobs:
     if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_python_checks.yml
     secrets: inherit
+
+  concrete-python-tests:
+    needs: file-change
+    if: needs.file-change.outputs.concrete-python == 'true' && needs.file-change.outputs.compiler == 'false' && !needs.file-change.outputs.push-main
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-tests
