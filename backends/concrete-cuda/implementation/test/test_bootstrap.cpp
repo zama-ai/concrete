@@ -320,7 +320,10 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
                               2, 1, 50},
         (BootstrapTestParams){881, 1, 8192, 0.000007069849454709433,
                               0.00000000000000029403601535432533, 22, 1, 2, 1,
-                              2, 1, 25});
+                              2, 1, 25},
+        (BootstrapTestParams){976, 1, 16384, 0.000007069849454709433,
+                              0.00000000000000029403601535432533, 11, 3, 4, 1,
+                              2, 1, 10});
 
 std::string printParamName(::testing::TestParamInfo<BootstrapTestParams> p) {
   BootstrapTestParams params = p.param;

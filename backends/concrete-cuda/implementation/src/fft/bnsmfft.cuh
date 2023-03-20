@@ -295,8 +295,8 @@ template <class params> __device__ void NSMFFT_direct(double2 *A) {
   }
 
   // compressed size = 8192 is actual polynomial size = 16384.
-  // this size is not supported yet by any of the concrete-cuda api.
-  // may be used in the future.
+  // from this size, twiddles can't fit in constant memory,
+  // so from here, butterfly operation access device memory.
   if constexpr (params::degree >= 8192) {
     // level 13
     tid = threadIdx.x;
@@ -306,7 +306,7 @@ template <class params> __device__ void NSMFFT_direct(double2 *A) {
       i1 = 2 * (params::degree / 8192) * twid_id +
            (tid & (params::degree / 8192 - 1));
       i2 = i1 + params::degree / 8192;
-      w = negtwiddles[twid_id + 4096];
+      w = negtwiddles13[twid_id];
       u = A[i1];
       v.x = A[i2].x * w.x - A[i2].y * w.y;
       v.y = A[i2].y * w.x + A[i2].x * w.y;
@@ -353,8 +353,9 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
   // butterfly operation is started from last level
 
   // compressed size = 8192 is actual polynomial size = 16384.
-  // this size is not supported yet by any of the concrete-cuda api.
-  // may be used in the future.
+  // twiddles for this size can't fit in constant memory so
+  // butterfly operation for this level acess device memory to fetch
+  // twiddles
   if constexpr (params::degree >= 8192) {
     // level 13
     tid = threadIdx.x;
@@ -364,7 +365,7 @@ template <class params> __device__ void NSMFFT_inverse(double2 *A) {
       i1 = 2 * (params::degree / 8192) * twid_id +
            (tid & (params::degree / 8192 - 1));
       i2 = i1 + params::degree / 8192;
-      w = negtwiddles[twid_id + 4096];
+      w = negtwiddles13[twid_id];
       u.x = A[i1].x - A[i2].x;
       u.y = A[i1].y - A[i2].y;
       A[i1].x += A[i2].x;

@@ -10,8 +10,10 @@ constexpr int choose_opt(int degree) {
     return 8;
   else if (degree == 4096)
     return 16;
-  else
+  else if (degree == 8192)
     return 32;
+  else
+    return 64;
 }
 template <class params> class HalfDegree {
 public:
