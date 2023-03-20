@@ -129,7 +129,7 @@ jobs:
           options: >-
             -v ${{ env.LLVM_PROJECT_DIR }}:/llvm-project
             -v ${{ env.COMPILER_PROJECT_DIR }}:/compiler
-            -v ${{ github.workspace }}/docs:/docs
+            -v ${{ env.COMPILER_PROJECT_DIR }}/docs:/docs
           shell: bash
           run: |
             cd /concrete/compilers/concrete-compiler/compiler
