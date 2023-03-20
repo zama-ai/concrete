@@ -1,4 +1,5 @@
 import time
+from typing import List
 
 import numpy as np
 
@@ -63,7 +64,7 @@ def _query_impl(key, candidate_key, candidate_value):
 
 
 class KeyValueDatabase:
-    _state: list[np.ndarray]
+    _state: List[np.ndarray]
 
     _replace_circuit: fhe.Circuit
     _query_circuit: fhe.Circuit
