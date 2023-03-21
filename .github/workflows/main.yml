@@ -20,6 +20,15 @@ jobs:
       concrete-cpu: ${{ steps.concrete-cpu.outputs.any_changed }}
       concrete-cuda: ${{ steps.concrete-cuda.outputs.any_changed }}
       concrete-python: ${{ steps.concrete-python.outputs.any_changed }}
+      concrete-compiler-cpu-workflow: ${{ steps.concrete-compiler-cpu-workflow.outputs.any_changed }}
+      concrete-compiler-gpu-workflow: ${{ steps.concrete-compiler-gpu-workflow.outputs.any_changed }}
+      concrete-compiler-format-and-linting-workflow: ${{ steps.concrete-compiler-format-and-linting-workflow.outputs.any_changed }}
+      concrete-compiler-macos-workflow: ${{ steps.concrete-compiler-macos-workflow.outputs.any_changed }}
+      concrete-compiler-docker-images-workflow: ${{ steps.concrete-compiler-docker-images-workflow.outputs.any_changed }}
+      concrete-cpu-workflow: ${{ steps.concrete-cpu-workflow.outputs.any_changed }}
+      concrete-cuda-workflow: ${{ steps.concrete-cuda-workflow.outputs.any_changed }}
+      concrete-python-workflow: ${{ steps.concrete-python-workflow.outputs.any_changed }}
+      concrete-optimizer-workflow: ${{ steps.concrete-optimizer-workflow.outputs.any_changed }}
       push-main: ${{ steps.github.outputs.push-main }}
     steps:
       - name: Checkout the repository
@@ -57,6 +66,60 @@ jobs:
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: frontends/concrete-python
+
+      - name: Check if compiler_build_and_test_cpu workflow has changed
+        id: concrete-compiler-cpu-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/compiler_build_and_test_cpu.yml
+
+      - name: Check if compiler_build_and_test_gpu workflow has changed
+        id: concrete-compiler-gpu-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/compiler_build_and_test_gpu.yml
+
+      - name: Check if compiler_format_and_linting.yml workflow has changed
+        id: concrete-compiler-format-and-linting-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/compiler_format_and_linting.yml
+
+      - name: Check if compiler_macos_build_and_test workflow has changed
+        id: concrete-compiler-macos-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/compiler_macos_build_and_test.yml
+
+      - name: Check if compiler_publish_docker_images workflow has changed
+        id: concrete-compiler-docker-images-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/compiler_publish_docker_images.yml
+
+      - name: Check if concrete_cpu_test workflow has changed
+        id: concrete-cpu-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/concrete_cpu_test.yml
+
+      - name: Check if concrete_cuda_test workflow has changed
+        id: concrete-cuda-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/concrete_cuda_test.yml
+
+      - name: Check if concrete_python_checks workflow has changed
+        id: concrete-python-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/concrete_python_checks.yml
+
+      - name: Check if optimizer workflow has changed
+        id: concrete-optimizer-workflow
+        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
+        with:
+          files: ./.github/workflows/optimizer.yml
       
       - name: Set some github event outputs
         id: github
@@ -67,12 +130,12 @@ jobs:
 # Compiler jobs #################################
   compiler-compliance:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true'  || needs.file-change.outputs.push-main == 'true'
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-format-and-linting-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/compiler_format_and_linting.yml
 
   compiler-cpu-build:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.push-main == 'true'
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-cpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
@@ -80,7 +143,7 @@ jobs:
 
   compiler-gpu-build:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.push-main == 'true'
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-gpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
@@ -88,13 +151,13 @@ jobs:
 
   compiler-macos-tests:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.push-main == 'true'
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-macos-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/compiler_macos_build_and_test.yml
     secrets: inherit
 
   compiler-publish-docker-images:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' && needs.file-change.outputs.push-main == 'true'
+    if: (needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-docker-images-workflow == 'true') && needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
@@ -120,7 +183,7 @@ jobs:
 # Optimizer jobs ################################
   optimizer:
     needs: file-change
-    if: needs.file-change.outputs.optimizer == 'true' || needs.file-change.outputs.push-main
+    if: needs.file-change.outputs.optimizer == 'true' || needs.file-change.outputs.concrete-optimizer-workflow == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/optimizer.yml
     secrets: inherit
 
@@ -128,7 +191,7 @@ jobs:
 # ConcreteCPU jobs ##############################
   concrete-cpu:
     needs: file-change
-    if: needs.file-change.outputs.concrete-cpu == 'true' || needs.file-change.outputs.push-main
+    if: needs.file-change.outputs.concrete-cpu == 'true' || needs.file-change.outputs.concrete-cpu-workflow == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_cpu_test.yml
     secrets: inherit
 
@@ -136,7 +199,7 @@ jobs:
 # Concrete-cuda jobs ############################
   concrete-cuda:
     needs: file-change
-    if: needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.push-main
+    if: needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.concrete-cuda-workflow == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_cuda_test.yml
     secrets: inherit
 
@@ -144,7 +207,7 @@ jobs:
 # Concrete Python jobs ##########################
   concrete-python:
     needs: file-change
-    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.concrete-python-workflow == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_python_checks.yml
     secrets: inherit
 
