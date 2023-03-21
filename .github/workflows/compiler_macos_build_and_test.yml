@@ -81,8 +81,15 @@ jobs:
           echo "Debug: ccache statistics (after the build):"
           ccache -s
 
+      - name: Enable complete tests on push to main
+        if: github.ref == 'refs/heads/main'
+        run: echo "MINIMAL_TESTS=OFF" >> $GITHUB_ENV
+
+      - name: Enable minimal tests otherwise
+        if: github.ref != 'refs/heads/main'
+        run: echo "MINIMAL_TESTS=ON" >> $GITHUB_ENV
+
       - name: Test
-        if: github.event_name == 'push'
         run: |
           set -e
           cd compilers/concrete-compiler/compiler
@@ -90,6 +97,6 @@ jobs:
           ccache -s
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
           pip3.10 install build/wheels/*macosx*.whl
-          make Python3_EXECUTABLE=$(which python3.10) run-tests
+          make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} Python3_EXECUTABLE=$(which python3.10) run-tests
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
