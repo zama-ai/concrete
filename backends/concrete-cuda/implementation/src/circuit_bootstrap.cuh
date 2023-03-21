@@ -101,21 +101,23 @@ __global__ void copy_add_lwe_cbs(Torus *lwe_dst, Torus *lwe_src,
 }
 
 template <typename Torus>
-__host__ __device__ int
-get_buffer_size_cbs(uint32_t glwe_dimension, uint32_t lwe_dimension,
-                    uint32_t polynomial_size, uint32_t level_count_cbs,
-                    uint32_t number_of_inputs) {
+__host__ __device__ uint64_t get_buffer_size_cbs(uint32_t glwe_dimension,
+                                                 uint32_t lwe_dimension,
+                                                 uint32_t polynomial_size,
+                                                 uint32_t level_count_cbs,
+                                                 uint32_t number_of_inputs) {
 
-  int buffer_size = number_of_inputs * level_count_cbs * (glwe_dimension + 1) *
-                        (glwe_dimension * polynomial_size + 1) *
-                        sizeof(Torus) + // lwe_array_in_fp_ks_buffer
-                    number_of_inputs * level_count_cbs *
-                        (glwe_dimension * polynomial_size + 1) *
-                        sizeof(Torus) + // lwe_array_out_pbs_buffer
-                    number_of_inputs * level_count_cbs * (lwe_dimension + 1) *
-                        sizeof(Torus) + // lwe_array_in_shifted_buffer
-                    level_count_cbs * (glwe_dimension + 1) * polynomial_size *
-                        sizeof(Torus); // lut_vector_cbs
+  uint64_t buffer_size =
+      number_of_inputs * level_count_cbs * (glwe_dimension + 1) *
+          (glwe_dimension * polynomial_size + 1) *
+          sizeof(Torus) + // lwe_array_in_fp_ks_buffer
+      number_of_inputs * level_count_cbs *
+          (glwe_dimension * polynomial_size + 1) *
+          sizeof(Torus) + // lwe_array_out_pbs_buffer
+      number_of_inputs * level_count_cbs * (lwe_dimension + 1) *
+          sizeof(Torus) + // lwe_array_in_shifted_buffer
+      level_count_cbs * (glwe_dimension + 1) * polynomial_size *
+          sizeof(Torus); // lut_vector_cbs
   return buffer_size + buffer_size % sizeof(double2);
 }
 
@@ -132,7 +134,7 @@ __host__ void scratch_circuit_bootstrap(
   int pbs_count = number_of_inputs * level_count_cbs;
   // allocate and initialize device pointers for circuit bootstrap
   if (allocate_gpu_memory) {
-    int buffer_size =
+    uint64_t buffer_size =
         get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
                                    polynomial_size, level_count_cbs,
                                    number_of_inputs) +

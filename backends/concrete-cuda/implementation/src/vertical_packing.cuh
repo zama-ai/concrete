@@ -210,9 +210,8 @@ __global__ void device_batch_cmux(Torus *glwe_array_out, Torus *glwe_array_in,
 }
 
 template <typename Torus>
-__host__ __device__ int
-get_memory_needed_per_block_cmux_tree(uint32_t glwe_dimension,
-                                      uint32_t polynomial_size) {
+__host__ __device__ uint64_t get_memory_needed_per_block_cmux_tree(
+    uint32_t glwe_dimension, uint32_t polynomial_size) {
   return sizeof(Torus) * polynomial_size * (glwe_dimension + 1) + // glwe_sub
          sizeof(double2) * polynomial_size / 2 *
              (glwe_dimension + 1) +             // res_fft
@@ -220,27 +219,27 @@ get_memory_needed_per_block_cmux_tree(uint32_t glwe_dimension,
 }
 
 template <typename Torus>
-__host__ __device__ int
-get_buffer_size_cmux_tree(uint32_t glwe_dimension, uint32_t polynomial_size,
-                          uint32_t level_count, uint32_t r, uint32_t tau,
-                          uint32_t max_shared_memory) {
+__host__ __device__ uint64_t get_buffer_size_cmux_tree(
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t r, uint32_t tau, uint32_t max_shared_memory) {
 
-  int memory_needed_per_block = get_memory_needed_per_block_cmux_tree<Torus>(
-      glwe_dimension, polynomial_size);
-  int num_lut = (1 << r);
-  int ggsw_size = polynomial_size * (glwe_dimension + 1) *
-                  (glwe_dimension + 1) * level_count;
-  int glwe_size = (glwe_dimension + 1) * polynomial_size;
-  int device_mem = 0;
+  uint64_t memory_needed_per_block =
+      get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
+                                                   polynomial_size);
+  uint64_t num_lut = (1 << r);
+  uint64_t ggsw_size = polynomial_size * (glwe_dimension + 1) *
+                       (glwe_dimension + 1) * level_count;
+  uint64_t glwe_size = (glwe_dimension + 1) * polynomial_size;
+  uint64_t device_mem = 0;
   if (max_shared_memory < memory_needed_per_block) {
     device_mem = memory_needed_per_block * (1 << (r - 1)) * tau;
   }
   if (max_shared_memory < polynomial_size * sizeof(double)) {
     device_mem += polynomial_size * sizeof(double);
   }
-  int buffer_size = r * ggsw_size * sizeof(double) +
-                    num_lut * tau * glwe_size * sizeof(Torus) +
-                    num_lut * tau * glwe_size * sizeof(Torus) + device_mem;
+  uint64_t buffer_size = r * ggsw_size * sizeof(double) +
+                         num_lut * tau * glwe_size * sizeof(Torus) +
+                         num_lut * tau * glwe_size * sizeof(Torus) + device_mem;
   return buffer_size + buffer_size % sizeof(double2);
 }
 
@@ -253,8 +252,9 @@ scratch_cmux_tree(void *v_stream, uint32_t gpu_index, int8_t **cmux_tree_buffer,
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  int memory_needed_per_block = get_memory_needed_per_block_cmux_tree<Torus>(
-      glwe_dimension, polynomial_size);
+  uint64_t memory_needed_per_block =
+      get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
+                                                   polynomial_size);
   if (max_shared_memory >= memory_needed_per_block) {
     check_cuda_error(cudaFuncSetAttribute(
         device_batch_cmux<Torus, STorus, params, FULLSM>,
@@ -265,7 +265,7 @@ scratch_cmux_tree(void *v_stream, uint32_t gpu_index, int8_t **cmux_tree_buffer,
   }
 
   if (allocate_gpu_memory) {
-    int buffer_size = get_buffer_size_cmux_tree<Torus>(
+    uint64_t buffer_size = get_buffer_size_cmux_tree<Torus>(
         glwe_dimension, polynomial_size, level_count, r, tau,
         max_shared_memory);
     *cmux_tree_buffer =
@@ -308,8 +308,9 @@ host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
     return;
   }
 
-  int memory_needed_per_block = get_memory_needed_per_block_cmux_tree<Torus>(
-      glwe_dimension, polynomial_size);
+  uint64_t memory_needed_per_block =
+      get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
+                                                   polynomial_size);
 
   dim3 thds(polynomial_size / params::opt, 1, 1);
 
@@ -467,7 +468,7 @@ __global__ void device_blind_rotation_and_sample_extraction(
 }
 
 template <typename Torus>
-__host__ __device__ int
+__host__ __device__ uint64_t
 get_memory_needed_per_block_blind_rotation_sample_extraction(
     uint32_t glwe_dimension, uint32_t polynomial_size) {
   return sizeof(Torus) * polynomial_size *
@@ -479,14 +480,14 @@ get_memory_needed_per_block_blind_rotation_sample_extraction(
 }
 
 template <typename Torus>
-__host__ __device__ int get_buffer_size_blind_rotation_sample_extraction(
+__host__ __device__ uint64_t get_buffer_size_blind_rotation_sample_extraction(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t mbr_size, uint32_t tau, uint32_t max_shared_memory) {
 
-  int memory_needed_per_block =
+  uint64_t memory_needed_per_block =
       get_memory_needed_per_block_blind_rotation_sample_extraction<Torus>(
           glwe_dimension, polynomial_size);
-  int device_mem = 0;
+  uint64_t device_mem = 0;
   if (max_shared_memory < memory_needed_per_block) {
     device_mem = memory_needed_per_block * tau;
   }
@@ -495,8 +496,8 @@ __host__ __device__ int get_buffer_size_blind_rotation_sample_extraction(
   }
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
-  int buffer_size = mbr_size * ggsw_size * sizeof(double) // d_ggsw_fft_in
-                    + device_mem;
+  uint64_t buffer_size = mbr_size * ggsw_size * sizeof(double) // d_ggsw_fft_in
+                         + device_mem;
   return buffer_size + buffer_size % sizeof(double2);
 }
 
@@ -509,7 +510,7 @@ __host__ void scratch_blind_rotation_sample_extraction(
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  int memory_needed_per_block =
+  uint64_t memory_needed_per_block =
       get_memory_needed_per_block_blind_rotation_sample_extraction<Torus>(
           glwe_dimension, polynomial_size);
   if (max_shared_memory >= memory_needed_per_block) {
@@ -524,9 +525,10 @@ __host__ void scratch_blind_rotation_sample_extraction(
   }
 
   if (allocate_gpu_memory) {
-    int buffer_size = get_buffer_size_blind_rotation_sample_extraction<Torus>(
-        glwe_dimension, polynomial_size, level_count, mbr_size, tau,
-        max_shared_memory);
+    uint64_t buffer_size =
+        get_buffer_size_blind_rotation_sample_extraction<Torus>(
+            glwe_dimension, polynomial_size, level_count, mbr_size, tau,
+            max_shared_memory);
     *br_se_buffer = (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
     check_cuda_error(cudaGetLastError());
   }
@@ -542,7 +544,7 @@ __host__ void host_blind_rotate_and_sample_extraction(
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  int memory_needed_per_block =
+  uint64_t memory_needed_per_block =
       get_memory_needed_per_block_blind_rotation_sample_extraction<Torus>(
           glwe_dimension, polynomial_size);
 

@@ -130,12 +130,11 @@ __global__ void fill_lut_body_for_current_bit(Torus *lut, Torus value,
 }
 
 template <typename Torus>
-__host__ __device__ int
-get_buffer_size_extract_bits(uint32_t glwe_dimension, uint32_t lwe_dimension,
-                             uint32_t polynomial_size,
-                             uint32_t number_of_inputs) {
+__host__ __device__ uint64_t get_buffer_size_extract_bits(
+    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
+    uint32_t number_of_inputs) {
 
-  int buffer_size =
+  uint64_t buffer_size =
       sizeof(Torus) * number_of_inputs // lut_vector_indexes
       + ((glwe_dimension + 1) * polynomial_size) * sizeof(Torus) // lut_pbs
       + (glwe_dimension * polynomial_size + 1) *
@@ -159,7 +158,7 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  int buffer_size =
+  uint64_t buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
                                           polynomial_size, number_of_inputs) +
       get_buffer_size_bootstrap_low_latency<Torus>(

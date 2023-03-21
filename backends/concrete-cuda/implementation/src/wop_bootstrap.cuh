@@ -27,14 +27,15 @@ __global__ void device_build_lut(Torus *lut_out, Torus *lut_in,
 }
 
 template <typename Torus>
-__host__ __device__ int
-get_buffer_size_cbs_vp(uint32_t glwe_dimension, uint32_t polynomial_size,
-                       uint32_t level_count_cbs, uint32_t tau,
-                       uint32_t number_of_inputs) {
+__host__ __device__ uint64_t get_buffer_size_cbs_vp(uint32_t glwe_dimension,
+                                                    uint32_t polynomial_size,
+                                                    uint32_t level_count_cbs,
+                                                    uint32_t tau,
+                                                    uint32_t number_of_inputs) {
 
   int ggsw_size = level_count_cbs * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * polynomial_size;
-  int buffer_size =
+  uint64_t buffer_size =
       number_of_inputs * level_count_cbs * sizeof(Torus) + // lut_vector_indexes
       number_of_inputs * ggsw_size * sizeof(Torus) +       // ggsw_out_cbs
       tau * (glwe_dimension + 1) * polynomial_size *
@@ -58,7 +59,7 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
       (Torus *)malloc(number_of_inputs * level_count_cbs * sizeof(Torus));
   uint32_t r = number_of_inputs - params::log2_degree;
   uint32_t mbr_size = number_of_inputs - r;
-  int buffer_size =
+  uint64_t buffer_size =
       get_buffer_size_cbs_vp<Torus>(glwe_dimension, polynomial_size,
                                     level_count_cbs, tau, number_of_inputs) +
       get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension, polynomial_size,
@@ -83,7 +84,7 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
     h_lut_vector_indexes[index] = index % level_count_cbs;
   }
   // lut_vector_indexes is the last buffer in the cbs_vp_buffer
-  int lut_vector_indexes_size =
+  uint64_t lut_vector_indexes_size =
       number_of_inputs * level_count_cbs * sizeof(Torus);
   int8_t *d_lut_vector_indexes =
       (int8_t *)*cbs_vp_buffer +
@@ -192,13 +193,13 @@ __host__ void host_circuit_bootstrap_vertical_packing(
 }
 
 template <typename Torus>
-__host__ __device__ int
+__host__ __device__ uint64_t
 get_buffer_size_wop_pbs(uint32_t lwe_dimension,
                         uint32_t number_of_bits_of_message_including_padding) {
 
-  int buffer_size = (lwe_dimension + 1) *
-                    (number_of_bits_of_message_including_padding) *
-                    sizeof(Torus); // lwe_array_out_bit_extract
+  uint64_t buffer_size = (lwe_dimension + 1) *
+                         (number_of_bits_of_message_including_padding) *
+                         sizeof(Torus); // lwe_array_out_bit_extract
   return buffer_size + buffer_size % sizeof(double2);
 }
 
@@ -216,7 +217,7 @@ scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  int bit_extract_buffer_size =
+  uint64_t bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
                                           polynomial_size, number_of_inputs) +
       get_buffer_size_bootstrap_low_latency<Torus>(
@@ -228,7 +229,7 @@ scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
   uint32_t r = cbs_vp_number_of_inputs - params::log2_degree;
   uint32_t mbr_size = cbs_vp_number_of_inputs - r;
   if (allocate_gpu_memory) {
-    int buffer_size =
+    uint64_t buffer_size =
         bit_extract_buffer_size +
         get_buffer_size_wop_pbs<Torus>(
             lwe_dimension, number_of_bits_of_message_including_padding) +
