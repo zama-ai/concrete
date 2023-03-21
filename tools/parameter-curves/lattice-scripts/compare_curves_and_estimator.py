@@ -1,6 +1,5 @@
 import os
 import sys
-sys.path.insert(1, '../lattice-estimator')
 from estimator import LWE, ND, RC
 from sage.all import oo, load, floor, ceil
 from generate_data import estimate, get_security_level

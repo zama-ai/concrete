@@ -3,5 +3,5 @@
 	url = git@github.com:zama-ai/concrete-compiler-internal-llvm-project.git
 	shallow = true
 [submodule "lattice-estimator"]
-	path = tools/parameter-curves/lattice-estimator
+	path = third_party/lattice-estimator
 	url = https://github.com/malb/lattice-estimator

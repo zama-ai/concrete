@@ -5,8 +5,6 @@ import multiprocessing
 import argparse
 import os
 import sys
-sys.path.insert(1, 'lattice-estimator')
-
 
 old_models_sobj = ""
 

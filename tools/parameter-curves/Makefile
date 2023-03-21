@@ -1,3 +1,4 @@
+LATTICE_ESTIMATOR_DIR=$(PWD)/../../third_party/lattice-estimator
 SECURITY_LEVELS=80 112 128 192
 SAGE_OBJECT_DIR=sage-object
 SAGE_SECURITY_CURVES=$(SECURITY_LEVELS:%=$(SAGE_OBJECT_DIR)/%.sobj)
@@ -25,16 +26,16 @@ generate-rust: $(CURVES_RUST_GEN_TXT)
 # Compare curves #######################
 
 $(SAGE_OBJECT_DIR)/outdated_curves.timestamp: ./lattice-scripts/compare_curves_and_estimator.py
-	python3 ./lattice-scripts/compare_curves_and_estimator.py \
+	PYTHONPATH=$(LATTICE_ESTIMATOR_DIR) python3 ./lattice-scripts/compare_curves_and_estimator.py \
 	--curves-dir $(SAGE_OBJECT_DIR) --security-levels $(SECURITY_LEVELS) --log-q 64 \
-	|| touch $(SAGE_OBJECT_DIR)/outdated_curves.timestamp
+	&& touch $(SAGE_OBJECT_DIR)/outdated_curves.timestamp
 
 compare-curves: $(SAGE_OBJECT_DIR)/outdated_curves.timestamp
 
 # Generate curves ######################
 
 $(SAGE_OBJECT_DIR)/%.sobj: $(SAGE_OBJECT_DIR)/outdated_curves.timestamp ./lattice-scripts/generate_data.sh ./lattice-scripts/generate_data.py
-	PYTHONPATH=$(PWD)/lattice-estimator ./lattice-scripts/generate_data.sh \
+	PYTHONPATH=$(LATTICE_ESTIMATOR_DIR) ./lattice-scripts/generate_data.sh \
 	$* --output $(SAGE_OBJECT_DIR) --old-models $(SAGE_VERIFIED_CURVES)
 
 generate-curves: $(SAGE_SECURITY_CURVES)
