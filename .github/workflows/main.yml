@@ -2,6 +2,7 @@
 name: Main
 
 on:
+  merge_group:
   pull_request:
   push:
     branches:
@@ -37,7 +38,7 @@ jobs:
       concrete-cuda-workflow: ${{ steps.concrete-cuda-workflow.outputs.any_changed }}
       concrete-python-workflow: ${{ steps.concrete-python-workflow.outputs.any_changed }}
       concrete-optimizer-workflow: ${{ steps.concrete-optimizer-workflow.outputs.any_changed }}
-      push-main: ${{ steps.github.outputs.push-main }}
+      push-main: ${{ steps.github.outputs.push-main }} || ${{ github.event_name == 'merge_group' }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
