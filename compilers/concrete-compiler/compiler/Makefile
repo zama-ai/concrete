@@ -274,10 +274,10 @@ $(FIXTURE_GPU_DIR):
 	mkdir -p $(FIXTURE_GPU_DIR)
 
 $(FIXTURE_GPU_DIR)/end_to_end_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_apply_lookup_table_gen.py
-	$(Python3_EXECUTABLE) $< --bitwidth 1 2 3 4 5 6 7 > $@
+	$(Python3_EXECUTABLE) $< --bitwidth 1 2 3 4 5 6 7 8 > $@
 
 $(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
-	$(Python3_EXECUTABLE) $< --bitwidth 1 2 3 4 5 6 7 > $@
+	$(Python3_EXECUTABLE) $< --bitwidth 1 2 3 4 5 6 7 8 > $@
 
 
 generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml
