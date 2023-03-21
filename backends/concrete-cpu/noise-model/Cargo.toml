@@ -1,0 +1,11 @@
+[package]
+# see https://doc.rust-lang.org/cargo/reference/manifest.html
+name = "concrete-cpu-noise-model"
+version = "0.1.0"
+authors = [""]
+edition = "2021"
+
+[dependencies]
+
+[dev-dependencies]
+approx = "0.5"
