@@ -58,7 +58,7 @@ set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 # -------------------------------------------------------------------------------
 # Concrete Security curves Configuration
 # -------------------------------------------------------------------------------
-include_directories(${PROJECT_SOURCE_DIR}/parameter-curves/concrete-security-curves-cpp/include)
+include_directories(${PROJECT_SOURCE_DIR}/../../../tools/parameter-curves/concrete-security-curves-cpp/include)
 
 # -------------------------------------------------------------------------------
 # Concrete Optimizer
