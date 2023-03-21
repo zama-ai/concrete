@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 concrete-security-curves = { git = "ssh://git@github.com/zama-ai/parameter-curves.git", rev = "05184593ada0eb1116a42a70674e6e3eea5e108e" }
-concrete-cpu-noise-model = { git = "ssh://git@github.com/zama-ai/concrete-cpu.git", rev = "91cff0bf1166d00f17d80b2ff03fcb48d161d43c" }
+concrete-cpu-noise-model = { path = "../../../backends/concrete-cpu/noise-model/" }
 file-lock = "2.1.6"
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.3"
