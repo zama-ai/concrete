@@ -147,3 +147,17 @@ jobs:
     if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_python_checks.yml
     secrets: inherit
+
+  concrete-python-tests-linux:
+    needs: file-change
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-tests-linux
+
+  concrete-python-tests-macos:
+    needs: file-change
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
+    uses: ./.github/workflows/concrete_python_tests_macos.yml
+    secrets: inherit
