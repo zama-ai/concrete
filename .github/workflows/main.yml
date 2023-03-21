@@ -53,7 +53,7 @@ jobs:
         id: concrete-cpu
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
-          files: backends/concrete-cpu
+          files: backends/concrete-cpu/implementation
       
       - name: Get changed files in the concrete-cuda directory
         id: concrete-cuda

@@ -30,32 +30,32 @@ jobs:
 
       - name: Formatting
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           cargo fmt --check
 
       - name: Remove header to force regeneration
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           rm include/concrete-cpu.h
 
       - name: Build
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           cargo build --all-targets
 
       - name: Check regenerated header is unchanged
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           git diff --exit-code
 
       - name: Lint
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           cargo clippy --all-targets
 
       - name: Tests
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           cargo test --no-fail-fast --all-targets --features=nightly
 
       - name: Zig install
@@ -64,7 +64,7 @@ jobs:
 
       - name: Zig test
         run: |
-          cd backends/concrete-cpu/test
+          cd backends/concrete-cpu/implementation/test
           make test
 
   tests-mac_x86:
@@ -85,7 +85,7 @@ jobs:
 
       - name: Tests
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           cargo test --no-fail-fast --all-targets
 
       - name: Zig install
@@ -94,7 +94,7 @@ jobs:
 
       - name: Zig test
         run: |
-          cd backends/concrete-cpu/test
+          cd backends/concrete-cpu/implementation/test
           make test
 
 
@@ -116,7 +116,7 @@ jobs:
 
       - name: Tests
         run: |
-          cd backends/concrete-cpu
+          cd backends/concrete-cpu/implementation
           cargo test --no-fail-fast --all-targets
 
       - name: Zig install
@@ -125,5 +125,5 @@ jobs:
 
       - name: Zig test
         run: |
-          cd backends/concrete-cpu/test
+          cd backends/concrete-cpu/implementation/test
           make test

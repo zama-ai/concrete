@@ -101,7 +101,7 @@ set(CONCRETE_BACKENDS_DIR "${PROJECT_SOURCE_DIR}/../../../backends")
 # Concrete CPU Configuration
 # -------------------------------------------------------------------------------
 
-set(CONCRETE_CPU_DIR "${CONCRETE_BACKENDS_DIR}/concrete-cpu")
+set(CONCRETE_CPU_DIR "${CONCRETE_BACKENDS_DIR}/concrete-cpu/implementation")
 set(CONCRETE_CPU_RELEASE_DIR "${CONCRETE_CPU_DIR}/target/release")
 set(CONCRETE_CPU_INCLUDE_DIR "${CONCRETE_CPU_DIR}/include")
 set(CONCRETE_CPU_STATIC_LIB "${CONCRETE_CPU_RELEASE_DIR}/libconcrete_cpu.a")
