@@ -1,0 +1,13 @@
+[package]
+name = "brute-force-optimizer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rayon = "1.6"
+concrete-cpu-noise-model = { path = "../../../backends/concrete-cpu/noise-model" }
+concrete-optimizer = { path = "../concrete-optimizer" }
+concrete-security-curves = { git = "ssh://git@github.com/zama-ai/parameter-curves.git", rev = "05184593ada0eb1116a42a70674e6e3eea5e108e" }
+

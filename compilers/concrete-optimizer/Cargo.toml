@@ -5,6 +5,7 @@ members = [
     "v0-parameters",
     "concrete-optimizer-cpp",
     "charts",
+    "brute-force-optimizer",
 ]
 
 
