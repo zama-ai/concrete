@@ -72,6 +72,16 @@ impl ComplexityModel for GpuComplexity {
     ) -> Complexity {
         0.
     }
+
+    fn multi_bit_pbs_complexity(
+        &self,
+        params: PbsParameters,
+        ciphertext_modulus_log: u32,
+        grouping_factor: u32,
+        jit_fft: bool,
+    ) -> Complexity {
+        todo!()
+    }
 }
 
 #[allow(non_snake_case)]

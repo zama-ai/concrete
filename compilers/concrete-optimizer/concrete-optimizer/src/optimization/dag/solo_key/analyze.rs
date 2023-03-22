@@ -104,6 +104,8 @@ pub struct OperationDag {
     // Collect all operators ouput variances
     pub out_variances: Vec<SymbolicVariance>,
     pub nb_luts: u64,
+    // True if all luts have noise with origin VarianceOrigin::Input
+    pub has_only_luts_with_inputs: bool,
     // The full dag levelled complexity
     pub levelled_complexity: LevelledComplexity,
     // Dominating variances and bounds per precision
@@ -411,12 +413,16 @@ pub fn analyze(
         &in_luts_variance,
         noise_config,
     );
+    let has_only_luts_with_inputs = in_luts_variance
+        .iter()
+        .all(|(_, _, sb)| sb.origin() == VarianceOrigin::Input);
     let result = OperationDag {
         operators: dag.operators.clone(),
         out_variances,
         nb_luts,
         levelled_complexity,
         constraints_by_precisions,
+        has_only_luts_with_inputs,
     };
     assert_properties_correctness(&result);
     result
@@ -859,5 +865,25 @@ mod tests {
             assert!(prev_safe_noise_bound < ns.safe_variance_bound);
             prev_safe_noise_bound = ns.safe_variance_bound;
         }
+    }
+
+    #[test]
+    fn test_1_layer_lut() {
+        let mut graph = unparametrized::OperationDag::new();
+        let input1 = graph.add_input(1, Shape::number());
+        let _lut1 = graph.add_lut(input1, FunctionTable::UNKWOWN, 1);
+        let _lut2 = graph.add_lut(input1, FunctionTable::UNKWOWN, 1);
+        let analysis = analyze(&graph);
+        assert!(analysis.has_only_luts_with_inputs);
+    }
+
+    #[test]
+    fn test_2_layer_lut() {
+        let mut graph = unparametrized::OperationDag::new();
+        let input1 = graph.add_input(1, Shape::number());
+        let lut1 = graph.add_lut(input1, FunctionTable::UNKWOWN, 1);
+        let _lut2 = graph.add_lut(lut1, FunctionTable::UNKWOWN, 1);
+        let analysis = analyze(&graph);
+        assert!(!analysis.has_only_luts_with_inputs);
     }
 }

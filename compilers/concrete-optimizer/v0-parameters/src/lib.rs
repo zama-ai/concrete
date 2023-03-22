@@ -50,7 +50,7 @@ pub struct Args {
     #[clap(
         long,
         default_value_t = 128,
-        help = "Supported values: 80, 96, 112, 128, 192"
+        help = "Supported values: 80, 96, 112, 128, 144, 160, 176, 192, 256"
     )]
     pub security_level: u64,
 
