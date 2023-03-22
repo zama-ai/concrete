@@ -13,4 +13,11 @@ pub trait ComplexityModel: Send + Sync {
         lwe_dimension: LweDimension,
         ciphertext_modulus_log: u32,
     ) -> Complexity;
+    fn multi_bit_pbs_complexity(
+        &self,
+        params: PbsParameters,
+        ciphertext_modulus_log: u32,
+        grouping_factor: u32,
+        jit_fft: bool,
+    ) -> Complexity;
 }

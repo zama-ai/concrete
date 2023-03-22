@@ -1,0 +1,13 @@
+[package]
+name = "brute-force-optimizer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rayon = "1.6"
+concrete-cpu-noise-model = { path = "../../../backends/concrete-cpu/noise-model" }
+concrete-optimizer = { path = "../concrete-optimizer" }
+concrete-security-curves = { path = "../../../tools/parameter-curves/concrete-security-curves-rust" }
+
