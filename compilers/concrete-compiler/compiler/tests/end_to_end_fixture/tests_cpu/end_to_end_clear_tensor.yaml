@@ -402,17 +402,17 @@ program: |
   }
 tests:
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7]
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
     - scalar: 0
     outputs:
-    - scalar: 32
+    - scalar: 31
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -422,7 +422,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -432,7 +432,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -442,7 +442,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -452,7 +452,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -462,7 +462,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -472,7 +472,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -482,7 +482,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7] 
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
@@ -492,7 +492,7 @@ tests:
       width: 5
       signed: false
   - inputs:
-    - tensor: [32, 0, 10, 25, 14, 25, 18, 28, 14, 7]
+    - tensor: [31, 0, 10, 25, 14, 25, 18, 28, 14, 7]
       width: 5
       shape: [10]
       signed: false
