@@ -1,3 +1,4 @@
+import platform
 import pytest
 import os.path
 import shutil
@@ -298,6 +299,11 @@ def test_compile_and_run_auto_parallelize(
     )
 
 
+# FIXME #51
+@pytest.mark.xfail(
+    platform.system() == "Darwin",
+    reason="MacOS have issues with translating Cpp exceptions",
+)
 @pytest.mark.parametrize(
     "mlir_input, args, expected_result", end_to_end_parallel_fixture
 )
@@ -352,6 +358,11 @@ def test_compile_and_run_loop_parallelize(
     )
 
 
+# FIXME #51
+@pytest.mark.xfail(
+    platform.system() == "Darwin",
+    reason="MacOS have issues with translating Cpp exceptions",
+)
 @pytest.mark.parametrize(
     "mlir_input, args",
     [
@@ -384,6 +395,11 @@ def test_compile_and_run_invalid_arg_number(
         compile_run_assert(engine, mlir_input, args, None, keyset_cache)
 
 
+# FIXME #51
+@pytest.mark.xfail(
+    platform.system() == "Darwin",
+    reason="MacOS have issues with translating Cpp exceptions",
+)
 @pytest.mark.parametrize(
     "mlir_input",
     [
