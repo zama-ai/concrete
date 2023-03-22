@@ -34,6 +34,17 @@ else ifeq ($(shell uname), Darwin)
 	OS=darwin
 endif
 
+# Set rust flags to activate target cpu features
+ifeq ($(shell uname -m), x86_64)
+ifeq ($(shell uname), Linux)
+export RUSTFLAGS=-Ctarget-feature=+aes,+sse2,+avx,+avx2
+else
+export RUSTFLAGS=-Ctarget-feature=+aes,+sse2,+avx
+endif
+else
+export RUSTFLAGS=-Ctarget-cpu=native
+endif
+
 # Setup find arguments for MacOS
 ifeq ($(OS), darwin)
 FIND_EXECUTABLE_ARG=-perm +111
