@@ -1,18 +1,30 @@
 use super::complexity::Complexity;
 use super::complexity_model::ComplexityModel;
 use super::operators::keyswitch_lwe::KsComplexity;
-use super::operators::{keyswitch_lwe, pbs};
+use super::operators::{keyswitch_lwe, multi_bit_pbs, pbs};
+use crate::computing_cost::operators::multi_bit_pbs::MultiBitPbsComplexity;
 use crate::parameters::{CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters};
 
 #[derive(Clone)]
 pub struct CpuComplexity {
     pub ks_lwe: keyswitch_lwe::KsComplexity,
     pub pbs: pbs::PbsComplexity,
+    pub multi_bit_pbs: MultiBitPbsComplexity,
 }
 
 impl ComplexityModel for CpuComplexity {
     fn pbs_complexity(&self, params: PbsParameters, ciphertext_modulus_log: u32) -> Complexity {
         self.pbs.complexity(params, ciphertext_modulus_log)
+    }
+    fn multi_bit_pbs_complexity(
+        &self,
+        params: PbsParameters,
+        ciphertext_modulus_log: u32,
+        grouping_factor: u32,
+        jit_fft: bool,
+    ) -> Complexity {
+        self.multi_bit_pbs
+            .complexity(params, ciphertext_modulus_log, grouping_factor, jit_fft)
     }
 
     fn cmux_complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u32) -> Complexity {
@@ -48,6 +60,7 @@ impl Default for CpuComplexity {
         Self {
             ks_lwe: KsComplexity,
             pbs: pbs::PbsComplexity::default(),
+            multi_bit_pbs: multi_bit_pbs::MultiBitPbsComplexity::default(),
         }
     }
 }
