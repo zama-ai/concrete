@@ -12,7 +12,7 @@ TEST(Lambda_chunked_int, chunked_int_add_eint) {
     )XXX",
              "main", DEFAULT_useDefaultFHEConstraints,
              DEFAULT_dataflowParallelize, DEFAULT_loopParallelize,
-             DEFAULT_batchConcreteOps, DEFAULT_global_p_error, true, 4, 2);
+             DEFAULT_batchTFHEOps, DEFAULT_global_p_error, true, 4, 2);
   ASSERT_EXPECTED_VALUE(lambda(1_u64, 2_u64), (uint64_t)3);
   ASSERT_EXPECTED_VALUE(lambda(72057594037927936_u64, 10000_u64),
                         (uint64_t)72057594037937936);

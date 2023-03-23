@@ -193,7 +193,7 @@ mlir::LogicalResult
 lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::optional<V0FHEContext> &fheContext,
                     std::function<bool(mlir::Pass *)> enablePass,
-                    bool parallelizeLoops, bool batchOperations) {
+                    bool parallelizeLoops) {
   mlir::PassManager pm(&context);
   pipelinePrinting("FHELinalgToFHE", pm, context);
   addPotentiallyNestedPass(
@@ -206,10 +206,6 @@ lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
           parallelizeLoops),
       enablePass);
 
-  if (batchOperations) {
-    addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
-                             enablePass);
-  }
   return pm.run(module.getOperation());
 }
 
@@ -283,6 +279,18 @@ parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
             fheContext.value()),
         enablePass);
   }
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
+                              mlir::ModuleOp &module,
+                              std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("BatchTFHE", pm, context);
+
+  addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
+                           enablePass);
 
   return pm.run(module.getOperation());
 }

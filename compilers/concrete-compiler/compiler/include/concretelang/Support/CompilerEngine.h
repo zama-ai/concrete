@@ -58,7 +58,7 @@ struct CompilationOptions {
 
   bool autoParallelize;
   bool loopParallelize;
-  bool batchConcreteOps;
+  bool batchTFHEOps;
   bool emitSDFGOps;
   bool unrollLoopsWithSDFGConvertibleOps;
   bool dataflowParallelize;
@@ -80,7 +80,7 @@ struct CompilationOptions {
 
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
-        autoParallelize(false), loopParallelize(false), batchConcreteOps(false),
+        autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
         emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
         dataflowParallelize(false), optimizeTFHE(true), emitGPUOps(false),
         clientParametersFuncName(std::nullopt),
@@ -102,7 +102,7 @@ struct CompilationOptions {
       loopParallelize = true;
       break;
     case Backend::GPU:
-      batchConcreteOps = true;
+      batchTFHEOps = true;
       emitGPUOps = true;
       break;
     }
@@ -211,6 +211,9 @@ public:
     /// Read sources and lower all FHE operations to TFHE
     /// operations, then parametrize the TFHE operations
     PARAMETRIZED_TFHE,
+
+    /// Batch TFHE operations
+    BATCHED_TFHE,
 
     /// Read sources and lower all FHE and TFHE operations to Concrete
     /// operations

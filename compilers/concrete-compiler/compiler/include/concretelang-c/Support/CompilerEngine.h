@@ -135,7 +135,7 @@ typedef enum CompilationTarget CompilationTarget;
 /// ********** CompilationOptions CAPI *****************************************
 
 MLIR_CAPI_EXPORTED CompilationOptions compilationOptionsCreate(
-    MlirStringRef funcName, bool autoParallelize, bool batchConcreteOps,
+    MlirStringRef funcName, bool autoParallelize, bool batchTFHEOps,
     bool dataflowParallelize, bool emitGPUOps, bool loopParallelize,
     bool optimizeTFHE, OptimizerConfig optimizerConfig, bool verifyDiagnostics);
 

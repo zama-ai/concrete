@@ -50,6 +50,7 @@ enum Action {
   DUMP_FHE_NO_LINALG,
   DUMP_TFHE,
   DUMP_PARAMETRIZED_TFHE,
+  DUMP_BATCHED_TFHE,
   DUMP_CONCRETE,
   DUMP_SDFG,
   DUMP_STD,
@@ -128,6 +129,9 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(clEnumValN(
         Action::DUMP_PARAMETRIZED_TFHE, "dump-parametrized-tfhe",
         "Lower to TFHE, parametrize TFHE operations and dump result")),
+    llvm::cl::values(clEnumValN(Action::DUMP_BATCHED_TFHE, "dump-batched-tfhe",
+                                "Lower to TFHE, parametrize and then attempt "
+                                "to batch TFHE operations")),
     llvm::cl::values(clEnumValN(Action::DUMP_CONCRETE, "dump-concrete",
                                 "Lower to Concrete and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_SDFG, "dump-sdfg",
@@ -170,11 +174,10 @@ llvm::cl::opt<bool> loopParallelize(
         "Generate (and execute if JIT) parallel loops from Linalg operations"),
     llvm::cl::init(false));
 
-llvm::cl::opt<bool> batchConcreteOps(
-    "batch-concrete-ops",
-    llvm::cl::desc(
-        "Hoist scalar Concrete operations with corresponding batched "
-        "operations out of loop nests as batched operations"),
+llvm::cl::opt<bool> batchTFHEOps(
+    "batch-tfhe-ops",
+    llvm::cl::desc("Hoist scalar TFHE operations with corresponding batched "
+                   "operations out of loop nests as batched operations"),
     llvm::cl::init(false));
 
 llvm::cl::opt<bool> emitSDFGOps(
@@ -351,7 +354,7 @@ cmdlineCompilationOptions() {
   options.autoParallelize = cmdline::autoParallelize;
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
-  options.batchConcreteOps = cmdline::batchConcreteOps;
+  options.batchTFHEOps = cmdline::batchTFHEOps;
   options.emitSDFGOps = cmdline::emitSDFGOps;
   options.unrollLoopsWithSDFGConvertibleOps =
       cmdline::unrollLoopsWithSDFGConvertibleOps;
@@ -531,6 +534,9 @@ mlir::LogicalResult processInputBuffer(
       break;
     case Action::DUMP_PARAMETRIZED_TFHE:
       target = mlir::concretelang::CompilerEngine::Target::PARAMETRIZED_TFHE;
+      break;
+    case Action::DUMP_BATCHED_TFHE:
+      target = mlir::concretelang::CompilerEngine::Target::BATCHED_TFHE;
       break;
     case Action::DUMP_CONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::CONCRETE;

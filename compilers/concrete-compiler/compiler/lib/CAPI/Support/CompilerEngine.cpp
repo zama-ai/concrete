@@ -63,14 +63,14 @@ template <typename T> BufferRef serialize(T toSerialize) {
 
 CompilationOptions
 compilationOptionsCreate(MlirStringRef funcName, bool autoParallelize,
-                         bool batchConcreteOps, bool dataflowParallelize,
+                         bool batchTFHEOps, bool dataflowParallelize,
                          bool emitGPUOps, bool loopParallelize,
                          bool optimizeTFHE, OptimizerConfig optimizerConfig,
                          bool verifyDiagnostics) {
   std::string funcNameStr(funcName.data, funcName.length);
   auto options = new mlir::concretelang::CompilationOptions(funcNameStr);
   options->autoParallelize = autoParallelize;
-  options->batchConcreteOps = batchConcreteOps;
+  options->batchTFHEOps = batchTFHEOps;
   options->dataflowParallelize = dataflowParallelize;
   options->emitGPUOps = emitGPUOps;
   options->loopParallelize = loopParallelize;

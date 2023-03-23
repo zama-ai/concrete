@@ -331,8 +331,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // FHELinalg -> FHE
   if (mlir::concretelang::pipeline::lowerFHELinalgToFHE(
-          mlirContext, module, res.fheContext, enablePass, loopParallelize,
-          options.batchConcreteOps)
+          mlirContext, module, res.fheContext, enablePass, loopParallelize)
           .failed()) {
     return errorDiag("Lowering from FHELinalg to FHE failed");
   }
@@ -411,6 +410,16 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   if (target == Target::PARAMETRIZED_TFHE)
+    return std::move(res);
+
+  if (options.batchTFHEOps) {
+    if (mlir::concretelang::pipeline::batchTFHE(mlirContext, module, enablePass)
+            .failed()) {
+      return errorDiag("Batching of TFHE operations");
+    }
+  }
+
+  if (target == Target::BATCHED_TFHE)
     return std::move(res);
 
   // TFHE -> Concrete

@@ -42,7 +42,7 @@ mlir::LogicalResult
 lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::optional<V0FHEContext> &fheContext,
                     std::function<bool(mlir::Pass *)> enablePass,
-                    bool parallelize, bool batch);
+                    bool parallelize);
 
 mlir::LogicalResult
 transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,
@@ -63,6 +63,10 @@ parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                 std::optional<V0FHEContext> &fheContext,
                 std::function<bool(mlir::Pass *)> enablePass);
 
+mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
+                              mlir::ModuleOp &module,
+                              std::function<bool(mlir::Pass *)> enablePass);
+
 mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
@@ -70,7 +74,7 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult
 lowerConcreteLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            std::function<bool(mlir::Pass *)> enablePass,
-                           bool parallelizeLoops, bool batchOperations);
+                           bool parallelizeLoops);
 
 mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,

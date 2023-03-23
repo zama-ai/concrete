@@ -57,10 +57,10 @@ parseEndToEndCommandLine(int argc, char **argv) {
       "emit-gpu-ops",
       llvm::cl::desc("Set the emitGPUOps compilation options to run the tests"),
       llvm::cl::init(std::nullopt));
-  llvm::cl::opt<std::optional<bool>> batchConcreteOps(
-      "batch-concrete-ops",
+  llvm::cl::opt<std::optional<bool>> batchTFHEOps(
+      "batch-tfhe-ops",
       llvm::cl::desc(
-          "Set the batchConcreteOps compilation options to run the tests"),
+          "Set the batchTFHEOps compilation options to run the tests"),
       llvm::cl::init(std::nullopt));
 
   // Optimizer options
@@ -98,8 +98,8 @@ parseEndToEndCommandLine(int argc, char **argv) {
         dataflowParallelize.getValue().value();
   if (emitGPUOps.has_value())
     compilationOptions.emitGPUOps = emitGPUOps.getValue().value();
-  if (batchConcreteOps.has_value())
-    compilationOptions.batchConcreteOps = batchConcreteOps.getValue().value();
+  if (batchTFHEOps.has_value())
+    compilationOptions.batchTFHEOps = batchTFHEOps.getValue().value();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
 

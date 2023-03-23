@@ -16,7 +16,7 @@ llvm::StringRef DEFAULT_func = "main";
 bool DEFAULT_useDefaultFHEConstraints = false;
 bool DEFAULT_dataflowParallelize = false;
 bool DEFAULT_loopParallelize = false;
-bool DEFAULT_batchConcreteOps = false;
+bool DEFAULT_batchTFHEOps = false;
 double DEFAULT_global_p_error = TEST_ERROR_RATE;
 bool DEFAULT_chunkedIntegers = false;
 unsigned int DEFAULT_chunkSize = 4;
@@ -32,7 +32,7 @@ internalCheckedJit(
     bool useDefaultFHEConstraints = DEFAULT_useDefaultFHEConstraints,
     bool dataflowParallelize = DEFAULT_dataflowParallelize,
     bool loopParallelize = DEFAULT_loopParallelize,
-    bool batchConcreteOps = DEFAULT_batchConcreteOps,
+    bool batchTFHEOps = DEFAULT_batchTFHEOps,
     double global_p_error = DEFAULT_global_p_error,
     bool chunkedIntegers = DEFAULT_chunkedIntegers,
     unsigned int chunkSize = DEFAULT_chunkSize,
@@ -59,7 +59,7 @@ internalCheckedJit(
   options.dataflowParallelize = dataflowParallelize;
 #endif
 #endif
-  options.batchConcreteOps = batchConcreteOps;
+  options.batchTFHEOps = batchTFHEOps;
 
   auto lambdaOrErr =
       mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::create(
