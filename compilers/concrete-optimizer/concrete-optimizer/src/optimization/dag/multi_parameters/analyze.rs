@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::dag::operator::{
     dot_kind, DotKind, LevelledComplexity, Operator, OperatorIndex, Precision, Shape,
 };
@@ -14,6 +16,8 @@ use crate::optimization::dag::solo_key::analyze::{
     extra_final_values_to_check, first, safe_noise_bound,
 };
 
+use super::complexity::OperationsCount;
+use super::operations_value::OperationsValue;
 use super::variance_constraint::VarianceConstraint;
 
 use crate::utils::square;
@@ -35,31 +39,37 @@ pub struct AnalyzedDag {
     pub variance_constraints: Vec<VarianceConstraint>,
     // Undominated variance constraints
     pub undominated_variance_constraints: Vec<VarianceConstraint>,
+    pub operations_count_per_instrs: Vec<OperationsCount>,
+    pub operations_count: OperationsCount,
+    pub p_cut: PrecisionCut,
 }
 
 pub fn analyze(
     dag: &unparametrized::OperationDag,
     noise_config: &NoiseBoundConfig,
-    p_cut: &PrecisionCut,
+    p_cut: &Option<PrecisionCut>,
     default_partition: PartitionIndex,
 ) -> AnalyzedDag {
-    assert!(
-        p_cut.p_cut.len() <= 1,
-        "Multi-parameter can only be used 0 or 1 precision cut"
-    );
     let dag = expand_round(dag);
     let levelled_complexity = LevelledComplexity::ZERO;
     // The precision cut is chosen to work well with rounded pbs
     // Note: this is temporary
-    let partitions = partitionning_with_preferred(&dag, p_cut, default_partition);
+    #[allow(clippy::option_if_let_else)]
+    let p_cut = match p_cut {
+        Some(p_cut) => p_cut.clone(),
+        None => maximal_p_cut(&dag),
+    };
+    let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition);
     let instrs_partition = partitions.instrs_partition;
     let nb_partitions = partitions.nb_partitions;
     let out_variances = out_variances(&dag, nb_partitions, &instrs_partition);
-
     let variance_constraints =
         collect_all_variance_constraints(&dag, noise_config, &instrs_partition, &out_variances);
     let undominated_variance_constraints =
         VarianceConstraint::remove_dominated(&variance_constraints);
+    let operations_count_per_instrs =
+        collect_operations_count(&dag, nb_partitions, &instrs_partition);
+    let operations_count = sum_operations_count(&operations_count_per_instrs);
     AnalyzedDag {
         operators: dag.operators,
         nb_partitions,
@@ -68,6 +78,9 @@ pub fn analyze(
         levelled_complexity,
         variance_constraints,
         undominated_variance_constraints,
+        operations_count_per_instrs,
+        operations_count,
+        p_cut,
     }
 }
 
@@ -240,8 +253,65 @@ fn collect_all_variance_constraints(
     constraints
 }
 
+#[allow(clippy::match_on_vec_items)]
+fn operations_counts(
+    dag: &unparametrized::OperationDag,
+    op: &unparametrized::UnparameterizedOperator,
+    nb_partitions: usize,
+    instr_partition: &InstructionPartition,
+) -> OperationsCount {
+    let mut counts = OperationsValue::zero(nb_partitions);
+    if let Op::Lut { input, .. } = op {
+        let partition = instr_partition.instruction_partition;
+        let nb_lut = dag.out_shapes[input.i].flat_size() as f64;
+        let src_partition = match instr_partition.inputs_transition[0] {
+            Some(Transition::Internal { src_partition }) => src_partition,
+            Some(Transition::Additional { .. }) | None => partition,
+        };
+        *counts.ks(src_partition, partition) += nb_lut;
+        *counts.pbs(partition) += nb_lut;
+        for &conv_partition in &instr_partition.alternative_output_representation {
+            *counts.fks(partition, conv_partition) += nb_lut;
+        }
+    }
+    OperationsCount { counts }
+}
+
+fn collect_operations_count(
+    dag: &unparametrized::OperationDag,
+    nb_partitions: usize,
+    instrs_partition: &[InstructionPartition],
+) -> Vec<OperationsCount> {
+    dag.operators
+        .iter()
+        .enumerate()
+        .map(|(i, op)| operations_counts(dag, op, nb_partitions, &instrs_partition[i]))
+        .collect()
+}
+
+fn sum_operations_count(all_counts: &[OperationsCount]) -> OperationsCount {
+    let mut sum_counts = OperationsValue::zero(all_counts[0].counts.nb_partitions());
+    for OperationsCount { counts } in all_counts {
+        sum_counts += counts;
+    }
+    OperationsCount { counts: sum_counts }
+}
+
+fn maximal_p_cut(dag: &unparametrized::OperationDag) -> PrecisionCut {
+    let mut lut_in_precisions: HashSet<_> = HashSet::default();
+    for op in &dag.operators {
+        if let Op::Lut { input, .. } = op {
+            _ = lut_in_precisions.insert(dag.out_precisions[input.i]);
+        }
+    }
+    let mut p_cut: Vec<_> = lut_in_precisions.iter().copied().collect();
+    p_cut.sort_unstable();
+    _ = p_cut.pop();
+    PrecisionCut { p_cut }
+}
+
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::dag::operator::{FunctionTable, Shape};
     use crate::dag::unparametrized;
@@ -250,16 +320,16 @@ mod tests {
     };
     use crate::optimization::dag::solo_key::analyze::tests::CONFIG;
 
-    fn analyze(dag: &unparametrized::OperationDag) -> AnalyzedDag {
+    pub fn analyze(dag: &unparametrized::OperationDag) -> AnalyzedDag {
         analyze_with_preferred(dag, LOW_PRECISION_PARTITION)
     }
 
-    fn analyze_with_preferred(
+    pub fn analyze_with_preferred(
         dag: &unparametrized::OperationDag,
         default_partition: PartitionIndex,
     ) -> AnalyzedDag {
         let p_cut = PrecisionCut { p_cut: vec![2] };
-        super::analyze(dag, &CONFIG, &p_cut, default_partition)
+        super::analyze(dag, &CONFIG, &Some(p_cut), default_partition)
     }
 
     #[allow(clippy::float_cmp)]
@@ -657,5 +727,77 @@ mod tests {
                 "\nBad simplified constraint\nActual: {c}\nTruth : {ec} (expected)\n"
             );
         }
+    }
+
+    #[test]
+    fn test_rounded_v3_classic_first_layer_second_layer_complexity() {
+        let acc_precision = 7;
+        let precision = 4;
+        let mut dag = unparametrized::OperationDag::new();
+        let free_input1 = dag.add_input(precision, Shape::number());
+        let input1 = dag.add_lut(free_input1, FunctionTable::UNKWOWN, acc_precision);
+        let rounded1 = dag.add_expanded_round(input1, precision);
+        let _lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, precision);
+        let old_dag = dag;
+        let dag = analyze(&old_dag);
+        // Partition 0
+        let instrs_counts: Vec<_> = dag
+            .operations_count_per_instrs
+            .iter()
+            .map(OperationsCount::to_string)
+            .collect();
+        #[rustfmt::skip] // nighlty and stable are inconsitent here
+        let expected_counts = [
+            "ZERO x ¢",                     // free_input1
+            "1¢K[1] + 1¢Br[1] + 1¢FK[1→0]", // input1
+            "ZERO x ¢",                     // shift
+            "ZERO x ¢",                     // cast
+            "1¢K[0] + 1¢Br[0]",             // extract (lut)
+            "ZERO x ¢",                     // erase (dot)
+            "ZERO x ¢",                     // cast
+            "ZERO x ¢",                     // shift
+            "ZERO x ¢",                     // cast
+            "1¢K[0] + 1¢Br[0]",             // extract (lut)
+            "ZERO x ¢",                     // erase (dot)
+            "ZERO x ¢",                     // cast
+            "ZERO x ¢",                     // shift
+            "ZERO x ¢",                     // cast
+            "1¢K[0] + 1¢Br[0]",             // extract (lut)
+            "ZERO x ¢",                     // erase (dot)
+            "ZERO x ¢",                     // cast
+            "1¢K[0→1] + 1¢Br[1]",           // _lut1
+        ];
+        for ((c, ec), op) in instrs_counts.iter().zip(expected_counts).zip(dag.operators) {
+            assert!(
+                c == ec,
+                "\nBad count on {op}\nActual: {c}\nTruth : {ec} (expected)\n"
+            );
+        }
+        eprintln!("{}", dag.operations_count);
+        assert!(
+            format!("{}", dag.operations_count)
+                == "3¢K[0] + 1¢K[0→1] + 1¢K[1] + 3¢Br[0] + 2¢Br[1] + 1¢FK[1→0]"
+        );
+    }
+
+    #[test]
+    fn test_high_partition_number() {
+        let mut dag = unparametrized::OperationDag::new();
+        let max_precision = 10;
+        let mut lut_input = dag.add_input(max_precision, Shape::number());
+        let mut p_cut = vec![];
+        for out_precision in (1..=max_precision).rev() {
+            lut_input = dag.add_lut(lut_input, FunctionTable::UNKWOWN, out_precision);
+        }
+        _ = dag.add_lut(lut_input, FunctionTable::UNKWOWN, 1);
+        for out_precision in 1..max_precision {
+            p_cut.push(out_precision);
+        }
+        eprintln!("{}", dag.dump());
+        let p_cut = PrecisionCut { p_cut };
+        eprintln!("{p_cut}");
+        let p_cut = Some(p_cut);
+        let dag = super::analyze(&dag, &CONFIG, &p_cut, LOW_PRECISION_PARTITION);
+        assert!(dag.nb_partitions == p_cut.unwrap().p_cut.len() + 1);
     }
 }

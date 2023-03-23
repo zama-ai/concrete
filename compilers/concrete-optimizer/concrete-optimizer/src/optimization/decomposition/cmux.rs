@@ -102,8 +102,12 @@ pub fn pareto_quantities(
     quantities
 }
 
+pub fn lowest_noise(quantities: &[CmuxComplexityNoise]) -> CmuxComplexityNoise {
+    quantities[quantities.len() - 1]
+}
+
 pub fn lowest_noise_br(quantities: &[CmuxComplexityNoise], in_lwe_dim: u64) -> f64 {
-    quantities[quantities.len() - 1].noise_br(in_lwe_dim)
+    lowest_noise(quantities).noise_br(in_lwe_dim)
 }
 
 pub fn lowest_complexity_br(quantities: &[CmuxComplexityNoise], in_lwe_dim: u64) -> f64 {

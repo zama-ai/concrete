@@ -17,7 +17,7 @@ use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::pp_switch::PpSwitchComplexityNoise;
 use crate::optimization::decomposition::PersistDecompCaches;
 use crate::parameters::{BrDecompositionParameters, GlweParameters};
-use crate::utils::max::f64_max;
+use crate::utils::f64::f64_max;
 use crate::utils::square;
 
 pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64) -> f64 {

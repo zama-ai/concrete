@@ -2,6 +2,7 @@ use crate::dag::operator::{Operator, Precision};
 use crate::dag::unparametrized;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 
+#[derive(Clone, Debug)]
 pub struct PrecisionCut {
     // partition0 precision <= p_cut[0] < partition 1 precision <= p_cut[1] ...
     // precision are in the sens of Lut input precision and are sorted
