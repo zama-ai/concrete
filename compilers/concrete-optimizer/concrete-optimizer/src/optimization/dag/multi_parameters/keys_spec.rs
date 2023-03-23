@@ -1,11 +1,13 @@
 use crate::parameters::{BrDecompositionParameters, KsDecompositionParameters};
 
-type Id = u64;
+use crate::optimization::dag::multi_parameters::optimize::MacroParameters;
+
+pub type Id = u64;
 /* An Id is unique per key type. Starting from 0 for the first key ... */
-type SecretLweKeyId = Id;
-type BootstrapKeyId = Id;
-type KeySwitchKeyId = Id;
-type ConversionKeySwitchKeyId = Id;
+pub type SecretLweKeyId = Id;
+pub type BootstrapKeyId = Id;
+pub type KeySwitchKeyId = Id;
+pub type ConversionKeySwitchKeyId = Id;
 
 #[derive(Debug, Clone)]
 pub struct SecretLweKey {
@@ -38,7 +40,7 @@ pub struct KeySwitchKey {
 
 #[derive(Debug, Clone)]
 pub struct ConversionKeySwitchKey {
-    /* Public conversion to make cyphertext with incompatible keys compatible.
+    /* Public conversion to make compatible ciphertext with incompatible keys.
     It's currently only between two big secret keys. */
     pub identifier: ConversionKeySwitchKeyId,
     pub input_key: SecretLweKey,
@@ -48,7 +50,7 @@ pub struct ConversionKeySwitchKey {
     pub description: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct CircuitKeys {
     /* All keys used in a circuit, sorted by Id for each key type */
     pub secret_keys: Vec<SecretLweKey>,
@@ -86,4 +88,129 @@ pub struct CircuitSolution {
     pub p_error: f64,
     /* result error rate, assuming any error will propagate to the result */
     pub global_p_error: f64,
+    pub is_feasible: bool,
+    pub error_msg: String,
+}
+
+pub struct ExpandedCircuitKeys {
+    pub big_secret_keys: Vec<SecretLweKey>,
+    pub small_secret_keys: Vec<SecretLweKey>,
+    pub keyswitch_keys: Vec<Vec<Option<KeySwitchKey>>>,
+    pub bootstrap_keys: Vec<BootstrapKey>,
+    pub conversion_keyswitch_keys: Vec<Vec<Option<ConversionKeySwitchKey>>>,
+}
+
+impl ExpandedCircuitKeys {
+    pub fn of(params: &super::optimize::Parameters) -> Self {
+        let nb_partitions = params.macro_params.len();
+        let big_secret_keys: Vec<_> = params
+            .macro_params
+            .iter()
+            .enumerate()
+            .map(|(i, v): (usize, &Option<MacroParameters>)| {
+                let glwe_params = v.unwrap().glwe_params;
+                SecretLweKey {
+                    identifier: i as Id,
+                    polynomial_size: glwe_params.polynomial_size(),
+                    glwe_dimension: glwe_params.glwe_dimension,
+                    description: format!("big-secret[{i}]"),
+                }
+            })
+            .collect();
+        let small_secret_keys: Vec<_> = params
+            .macro_params
+            .iter()
+            .enumerate()
+            .map(|(i, v): (usize, &Option<MacroParameters>)| {
+                let polynomial_size = v.unwrap().internal_dim;
+                SecretLweKey {
+                    identifier: (nb_partitions + i) as Id,
+                    polynomial_size,
+                    glwe_dimension: 1,
+                    description: format!("small-secret[{i}]"),
+                }
+            })
+            .collect();
+        let bootstrap_keys: Vec<_> = params
+            .micro_params
+            .pbs
+            .iter()
+            .enumerate()
+            .map(|(i, v): (usize, &Option<_>)| {
+                let br_decomposition_parameter = v.unwrap().decomp;
+                BootstrapKey {
+                    identifier: i as Id,
+                    input_key: small_secret_keys[i].clone(),
+                    output_key: big_secret_keys[i].clone(),
+                    br_decomposition_parameter,
+                    description: format!("pbs[{i}]"),
+                }
+            })
+            .collect();
+        let mut keyswitch_keys = vec![vec![None; nb_partitions]; nb_partitions];
+        let mut conversion_keyswitch_keys = vec![vec![None; nb_partitions]; nb_partitions];
+        let mut identifier_ks = 0 as Id;
+        let mut identifier_fks = 0 as Id;
+        #[allow(clippy::needless_range_loop)]
+        for src in 0..nb_partitions {
+            for dst in 0..nb_partitions {
+                let cross_key = |name: &str| {
+                    if src == dst {
+                        format!("{name}[{src}]")
+                    } else {
+                        format!("{name}[{src}->{dst}]")
+                    }
+                };
+                if let Some(ks) = params.micro_params.ks[src][dst] {
+                    let identifier = identifier_ks;
+                    keyswitch_keys[src][dst] = Some(KeySwitchKey {
+                        identifier,
+                        input_key: big_secret_keys[src].clone(),
+                        output_key: small_secret_keys[dst].clone(),
+                        ks_decomposition_parameter: ks.decomp,
+                        description: cross_key("ks"),
+                    });
+                    identifier_ks += 1;
+                }
+                if let Some(fks) = params.micro_params.fks[src][dst] {
+                    let identifier = identifier_fks;
+                    conversion_keyswitch_keys[src][dst] = Some(ConversionKeySwitchKey {
+                        identifier,
+                        input_key: big_secret_keys[src].clone(),
+                        output_key: big_secret_keys[dst].clone(),
+                        ks_decomposition_parameter: fks.decomp,
+                        fast_keyswitch: true,
+                        description: cross_key("fks"),
+                    });
+                    identifier_fks += 1;
+                }
+            }
+        }
+        Self {
+            big_secret_keys,
+            small_secret_keys,
+            keyswitch_keys,
+            bootstrap_keys,
+            conversion_keyswitch_keys,
+        }
+    }
+
+    pub fn compacted(self) -> CircuitKeys {
+        CircuitKeys {
+            secret_keys: [self.big_secret_keys, self.small_secret_keys].concat(),
+            keyswitch_keys: self
+                .keyswitch_keys
+                .into_iter()
+                .flatten()
+                .flatten()
+                .collect(),
+            bootstrap_keys: self.bootstrap_keys,
+            conversion_keyswitch_keys: self
+                .conversion_keyswitch_keys
+                .into_iter()
+                .flatten()
+                .flatten()
+                .collect(),
+        }
+    }
 }

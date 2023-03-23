@@ -1169,6 +1169,8 @@ struct CircuitSolution final {
   double complexity;
   double p_error;
   double global_p_error;
+  bool is_feasible;
+  ::rust::String error_msg;
 
   ::rust::String dump() const noexcept;
   using IsRelocatable = ::std::true_type;
@@ -1182,6 +1184,8 @@ namespace v0 {
 
 namespace utils {
 ::concrete_optimizer::dag::DagSolution convert_to_dag_solution(::concrete_optimizer::v0::Solution const &solution) noexcept;
+
+::concrete_optimizer::dag::CircuitSolution convert_to_circuit_solution(::concrete_optimizer::dag::DagSolution const &solution, ::concrete_optimizer::OperationDag const &dag) noexcept;
 } // namespace utils
 
 namespace dag {
