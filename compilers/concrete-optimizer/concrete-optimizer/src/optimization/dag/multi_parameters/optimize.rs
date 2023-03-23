@@ -17,19 +17,20 @@ use crate::optimization::dag::multi_parameters::complexity::Complexity;
 use crate::optimization::dag::multi_parameters::feasible::Feasible;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::precision_cut::PrecisionCut;
+use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
 
 const DEBUG: bool = false;
 
 #[derive(Debug, Clone)]
 pub struct MicroParameters {
-    pbs: Vec<Option<CmuxComplexityNoise>>,
-    ks: Vec<Vec<Option<KsComplexityNoise>>>,
-    fks: Vec<Vec<Option<FksComplexityNoise>>>,
+    pub pbs: Vec<Option<CmuxComplexityNoise>>,
+    pub ks: Vec<Vec<Option<KsComplexityNoise>>>,
+    pub fks: Vec<Vec<Option<FksComplexityNoise>>>,
 }
 
 // Parameters optimized for 1 partition:
 //  the partition pbs, all used ks for all partitions, a much fks as partition
-pub struct PartialMicroParameters {
+struct PartialMicroParameters {
     pbs: CmuxComplexityNoise,
     ks: Vec<Vec<Option<KsComplexityNoise>>>,
     fks: Vec<Vec<Option<FksComplexityNoise>>>,
@@ -40,19 +41,19 @@ pub struct PartialMicroParameters {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct MacroParameters {
-    glwe_params: GlweParameters,
-    internal_dim: u64,
+    pub glwe_params: GlweParameters,
+    pub internal_dim: u64,
 }
 
 #[derive(Debug, Clone)]
 pub struct Parameters {
-    micro_params: MicroParameters,
-    macro_params: Vec<Option<MacroParameters>>,
+    pub micro_params: MicroParameters,
+    pub macro_params: Vec<Option<MacroParameters>>,
     is_lower_bound: bool,
     is_feasible: bool,
-    p_error: f64,
-    global_p_error: f64,
-    complexity: f64,
+    pub p_error: f64,
+    pub global_p_error: f64,
+    pub complexity: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -792,7 +793,7 @@ pub fn optimize(
     persistent_caches: &PersistDecompCaches,
     p_cut: &Option<PrecisionCut>,
     default_partition: PartitionIndex,
-) -> Option<Parameters> {
+) -> Option<(AnalyzedDag, Parameters)> {
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
     let security_level = config.security_level;
     let noise_config = NoiseBoundConfig {
@@ -904,7 +905,7 @@ pub fn optimize(
         &feasible,
         &complexity,
     );
-    Some(params)
+    Some((dag, params))
 }
 
 fn used_tlu_keyswitch(dag: &AnalyzedDag) -> Vec<Vec<bool>> {
@@ -1000,6 +1001,49 @@ fn sanity_check(
         assert!(params.p_error == feasible.p_error(&operations.variance));
         assert!(params.complexity == complexity.complexity(&operations.cost));
         assert!(params.global_p_error == feasible.global_p_error(&operations.variance));
+    }
+}
+
+pub fn optimize_to_circuit_solution(
+    dag: &unparametrized::OperationDag,
+    config: Config,
+    search_space: &SearchSpace,
+    persistent_caches: &PersistDecompCaches,
+    p_cut: &Option<PrecisionCut>,
+) -> keys_spec::CircuitSolution {
+    let default_partition = 0;
+    let dag_and_params = optimize(
+        dag,
+        config,
+        search_space,
+        persistent_caches,
+        p_cut,
+        default_partition,
+    );
+    #[allow(clippy::option_if_let_else)]
+    if let Some((dag, params)) = dag_and_params {
+        let ext_keys = keys_spec::ExpandedCircuitKeys::of(&params);
+        let instructions_keys = analyze::original_instrs_partition(&dag, &ext_keys);
+        let circuit_keys = ext_keys.compacted();
+        keys_spec::CircuitSolution {
+            circuit_keys,
+            instructions_keys,
+            complexity: params.complexity,
+            p_error: params.p_error,
+            global_p_error: params.global_p_error,
+            is_feasible: true,
+            error_msg: String::default(),
+        }
+    } else {
+        keys_spec::CircuitSolution {
+            circuit_keys: keys_spec::CircuitKeys::default(),
+            instructions_keys: vec![],
+            complexity: f64::INFINITY,
+            p_error: 1.0,
+            global_p_error: 1.0,
+            is_feasible: false,
+            error_msg: "No crypto-parameters for the given constraints".into(),
+        }
     }
 }
 

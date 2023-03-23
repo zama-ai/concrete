@@ -43,7 +43,7 @@ mod tests {
             &SHARED_CACHES,
             p_cut,
             default_partition,
-        )
+        ).map(|v| v.1)
     }
 
     fn optimize_single(dag: &unparametrized::OperationDag) -> Option<Parameters> {

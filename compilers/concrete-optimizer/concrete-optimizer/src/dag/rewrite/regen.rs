@@ -21,7 +21,7 @@ fn reindex_op_inputs(op: &Operator, old_index_to_new: &[usize]) -> Operator {
 pub(crate) fn regen(
     dag: &OperationDag,
     f: &mut dyn FnMut(usize, &Operator, &mut OperationDag) -> Option<OperatorIndex>,
-) -> OperationDag {
+) -> (OperationDag, Vec<Vec<OperatorIndex>>) {
     let mut regen_dag = OperationDag::new();
     let mut old_index_to_new = vec![];
     for (i, op) in dag.operators.iter().enumerate() {
@@ -37,5 +37,25 @@ pub(crate) fn regen(
             regen_dag.out_shapes.push(dag.out_shapes[i].clone());
         }
     }
-    regen_dag
+    (regen_dag, instructions_multi_map(&old_index_to_new))
+}
+
+fn instructions_multi_map(old_index_to_new: &[usize]) -> Vec<Vec<OperatorIndex>> {
+    let mut last_new_instr = None;
+    let mut result = vec![];
+    result.reserve_exact(old_index_to_new.len());
+    for &new_instr in old_index_to_new {
+        let start_from = last_new_instr.map_or(new_instr, |v: usize| v + 1);
+        if start_from <= new_instr {
+            result.push(
+                (start_from..=new_instr)
+                    .map(|i| OperatorIndex { i })
+                    .collect(),
+            );
+        } else {
+            result.push(vec![]);
+        }
+        last_new_instr = Some(new_instr);
+    }
+    result
 }

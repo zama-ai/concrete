@@ -6,7 +6,8 @@ use concrete_optimizer::dag::operator::{
 };
 use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
-use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
+use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::{self, CircuitSolution};
+use concrete_optimizer::optimization::dag::multi_parameters::optimize::optimize_to_circuit_solution;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
@@ -164,60 +165,81 @@ impl From<DagSolution> for ffi::DagSolution {
     }
 }
 
-impl ffi::CircuitSolution {
-    fn of(sol: ffi::DagSolution, dag: &OperationDag) -> Self {
-        let big_key = ffi::SecretLweKey {
-            identifier: 0,
-            polynomial_size: sol.glwe_polynomial_size,
-            glwe_dimension: sol.glwe_dimension,
-            description: "big representation".into(),
-        };
-        let small_key = ffi::SecretLweKey {
-            identifier: 1,
-            polynomial_size: sol.internal_ks_output_lwe_dimension,
-            glwe_dimension: 1,
-            description: "small representation".into(),
-        };
-        let keyswitch_key = ffi::KeySwitchKey {
-            identifier: 0,
-            input_key: big_key.clone(),
-            output_key: small_key.clone(),
-            ks_decomposition_parameter: ffi::KsDecompositionParameters {
-                level: sol.ks_decomposition_level_count,
-                log2_base: sol.ks_decomposition_base_log,
-            },
-            description: "tlu keyswitch".into(),
-        };
-        let bootstrap_key = ffi::BootstrapKey {
-            identifier: 0,
-            input_key: small_key.clone(),
-            output_key: big_key.clone(),
-            br_decomposition_parameter: ffi::BrDecompositionParameters {
-                level: sol.br_decomposition_level_count,
-                log2_base: sol.br_decomposition_base_log,
-            },
-            description: "tlu bootsrap".into(),
-        };
-        let instruction_keys = ffi::InstructionKeys {
-            input_key: big_key.identifier,
-            tlu_keyswitch_key: keyswitch_key.identifier,
-            tlu_bootstrap_key: bootstrap_key.identifier,
-            output_key: big_key.identifier,
-            extra_conversion_keys: vec![],
-        };
-        let instructions_keys = vec![instruction_keys; dag.0.len()];
-        let circuit_keys = ffi::CircuitKeys {
-            secret_keys: [big_key, small_key].into(),
-            keyswitch_keys: [keyswitch_key].into(),
-            bootstrap_keys: [bootstrap_key].into(),
-            conversion_keyswitch_keys: [].into(),
-        };
-        ffi::CircuitSolution {
-            circuit_keys,
-            instructions_keys,
-            complexity: sol.complexity,
-            p_error: sol.p_error,
-            global_p_error: sol.global_p_error,
+fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &OperationDag) -> ffi::CircuitSolution {
+    let big_key = ffi::SecretLweKey {
+        identifier: 0,
+        polynomial_size: sol.glwe_polynomial_size,
+        glwe_dimension: sol.glwe_dimension,
+        description: "big representation".into(),
+    };
+    let small_key = ffi::SecretLweKey {
+        identifier: 1,
+        polynomial_size: sol.internal_ks_output_lwe_dimension,
+        glwe_dimension: 1,
+        description: "small representation".into(),
+    };
+    let keyswitch_key = ffi::KeySwitchKey {
+        identifier: 0,
+        input_key: big_key.clone(),
+        output_key: small_key.clone(),
+        ks_decomposition_parameter: ffi::KsDecompositionParameters {
+            level: sol.ks_decomposition_level_count,
+            log2_base: sol.ks_decomposition_base_log,
+        },
+        description: "tlu keyswitch".into(),
+    };
+    let bootstrap_key = ffi::BootstrapKey {
+        identifier: 0,
+        input_key: small_key.clone(),
+        output_key: big_key.clone(),
+        br_decomposition_parameter: ffi::BrDecompositionParameters {
+            level: sol.br_decomposition_level_count,
+            log2_base: sol.br_decomposition_base_log,
+        },
+        description: "tlu bootstrap".into(),
+    };
+    let instruction_keys = ffi::InstructionKeys {
+        input_key: big_key.identifier,
+        tlu_keyswitch_key: keyswitch_key.identifier,
+        tlu_bootstrap_key: bootstrap_key.identifier,
+        output_key: big_key.identifier,
+        extra_conversion_keys: vec![],
+    };
+    let instructions_keys = vec![instruction_keys; dag.0.len()];
+    let circuit_keys = ffi::CircuitKeys {
+        secret_keys: [big_key, small_key].into(),
+        keyswitch_keys: [keyswitch_key].into(),
+        bootstrap_keys: [bootstrap_key].into(),
+        conversion_keyswitch_keys: [].into(),
+    };
+    let is_feasible = sol.p_error < 1.0;
+    let error_msg = if is_feasible {
+        ""
+    } else {
+        "No crypto-parameters for the given constraints"
+    }
+    .into();
+    ffi::CircuitSolution {
+        circuit_keys,
+        instructions_keys,
+        complexity: sol.complexity,
+        p_error: sol.p_error,
+        global_p_error: sol.global_p_error,
+        is_feasible,
+        error_msg,
+    }
+}
+
+impl From<CircuitSolution> for ffi::CircuitSolution {
+    fn from(v: CircuitSolution) -> Self {
+        Self {
+            circuit_keys: v.circuit_keys.into(),
+            instructions_keys: vec_into(v.instructions_keys),
+            complexity: v.complexity,
+            p_error: v.p_error,
+            global_p_error: v.global_p_error,
+            is_feasible: v.is_feasible,
+            error_msg: v.error_msg,
         }
     }
 }
@@ -230,7 +252,7 @@ impl ffi::CircuitSolution {
 
 impl From<KsDecompositionParameters> for ffi::KsDecompositionParameters {
     fn from(v: KsDecompositionParameters) -> Self {
-        ffi::KsDecompositionParameters {
+        Self {
             level: v.level,
             log2_base: v.log2_base,
         }
@@ -239,7 +261,7 @@ impl From<KsDecompositionParameters> for ffi::KsDecompositionParameters {
 
 impl From<BrDecompositionParameters> for ffi::BrDecompositionParameters {
     fn from(v: BrDecompositionParameters) -> Self {
-        ffi::BrDecompositionParameters {
+        Self {
             level: v.level,
             log2_base: v.log2_base,
         }
@@ -290,6 +312,18 @@ impl From<keys_spec::BootstrapKey> for ffi::BootstrapKey {
             output_key: v.output_key.into(),
             br_decomposition_parameter: v.br_decomposition_parameter.into(),
             description: v.description,
+        }
+    }
+}
+
+impl From<keys_spec::InstructionKeys> for ffi::InstructionKeys {
+    fn from(v: keys_spec::InstructionKeys) -> Self {
+        Self {
+            input_key: v.input_key,
+            tlu_keyswitch_key: v.tlu_keyswitch_key,
+            tlu_bootstrap_key: v.tlu_bootstrap_key,
+            output_key: v.output_key,
+            extra_conversion_keys: v.extra_conversion_keys,
         }
     }
 }
@@ -432,8 +466,22 @@ impl OperationDag {
     }
 
     fn optimize_multi(&self, options: ffi::Options) -> ffi::CircuitSolution {
-        let single_parameter = self.optimize(options);
-        ffi::CircuitSolution::of(single_parameter, self)
+        let processing_unit = processing_unit(options);
+        let config = Config {
+            security_level: options.security_level,
+            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+            ciphertext_modulus_log: 64,
+            complexity_model: &CpuComplexity::default(),
+        };
+        let search_space = SearchSpace::default(processing_unit);
+        let circuit_sol = optimize_to_circuit_solution(
+            &self.0,
+            config,
+            &search_space,
+            &caches_from(options),
+            &None,
+        );
+        circuit_sol.into()
     }
 }
 
@@ -479,6 +527,12 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::utils"]
         fn convert_to_dag_solution(solution: &Solution) -> DagSolution;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn convert_to_circuit_solution(
+            solution: &DagSolution,
+            dag: &OperationDag,
+        ) -> CircuitSolution;
 
         type OperationDag;
 
@@ -685,6 +739,8 @@ mod ffi {
         pub complexity: f64,
         pub p_error: f64,
         pub global_p_error: f64,
+        pub is_feasible: bool,
+        pub error_msg: String,
     }
 }
 

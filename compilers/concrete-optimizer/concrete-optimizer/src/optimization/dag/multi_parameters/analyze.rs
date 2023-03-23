@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::dag::operator::{
     dot_kind, DotKind, LevelledComplexity, Operator, OperatorIndex, Precision, Shape,
 };
-use crate::dag::rewrite::round::expand_round;
+use crate::dag::rewrite::round::expand_round_and_index_map;
 use crate::dag::unparametrized;
 use crate::optimization::config::NoiseBoundConfig;
 use crate::optimization::dag::multi_parameters::partitionning::partitionning_with_preferred;
@@ -17,6 +17,7 @@ use crate::optimization::dag::solo_key::analyze::{
 };
 
 use super::complexity::OperationsCount;
+use super::keys_spec;
 use super::operations_value::OperationsValue;
 use super::variance_constraint::VarianceConstraint;
 
@@ -41,6 +42,7 @@ pub struct AnalyzedDag {
     pub undominated_variance_constraints: Vec<VarianceConstraint>,
     pub operations_count_per_instrs: Vec<OperationsCount>,
     pub operations_count: OperationsCount,
+    pub instruction_rewrite_index: Vec<Vec<OperatorIndex>>,
     pub p_cut: PrecisionCut,
 }
 
@@ -50,7 +52,7 @@ pub fn analyze(
     p_cut: &Option<PrecisionCut>,
     default_partition: PartitionIndex,
 ) -> AnalyzedDag {
-    let dag = expand_round(dag);
+    let (dag, instruction_rewrite_index) = expand_round_and_index_map(dag);
     let levelled_complexity = LevelledComplexity::ZERO;
     // The precision cut is chosen to work well with rounded pbs
     // Note: this is temporary
@@ -72,6 +74,7 @@ pub fn analyze(
     let operations_count = sum_operations_count(&operations_count_per_instrs);
     AnalyzedDag {
         operators: dag.operators,
+        instruction_rewrite_index,
         nb_partitions,
         instrs_partition,
         out_variances,
@@ -82,6 +85,77 @@ pub fn analyze(
         operations_count,
         p_cut,
     }
+}
+
+pub fn original_instrs_partition(
+    dag: &AnalyzedDag,
+    keys: &keys_spec::ExpandedCircuitKeys,
+) -> Vec<keys_spec::InstructionKeys> {
+    let big_keys = &keys.big_secret_keys;
+    let ks_keys = &keys.keyswitch_keys;
+    let pbs_keys = &keys.bootstrap_keys;
+    let fks_keys = &keys.conversion_keyswitch_keys;
+    let mut result = vec![];
+    result.reserve_exact(dag.instruction_rewrite_index.len());
+    let unknown = keys_spec::Id::MAX;
+    for new_instructions in &dag.instruction_rewrite_index {
+        let mut partition = None;
+        let mut input_partition = None;
+        let mut tlu_keyswitch_key = None;
+        let mut tlu_bootstrap_key = None;
+        let mut conversion_key = None;
+        // let mut extra_conversion_keys = None;
+        for (i, new_instruction) in new_instructions.iter().enumerate() {
+            // focus on TLU information
+            let new_instr_part = &dag.instrs_partition[new_instruction.i];
+            if let Op::Lut { .. } = dag.operators[new_instruction.i] {
+                let ks_dst = new_instr_part.instruction_partition;
+                partition = Some(ks_dst);
+                #[allow(clippy::match_on_vec_items)]
+                let ks_src = match new_instr_part.inputs_transition[0] {
+                    Some(Transition::Internal { src_partition }) => src_partition,
+                    None => ks_dst,
+                    _ => unreachable!(),
+                };
+                input_partition = Some(ks_src);
+                let ks_key = ks_keys[ks_src][ks_dst].as_ref().unwrap().identifier;
+                let pbs_key = pbs_keys[ks_dst].identifier;
+                assert!(tlu_keyswitch_key.unwrap_or(ks_key) == ks_key);
+                assert!(tlu_bootstrap_key.unwrap_or(pbs_key) == pbs_key);
+                tlu_keyswitch_key = Some(ks_key);
+                tlu_bootstrap_key = Some(pbs_key);
+            }
+            if !new_instr_part.alternative_output_representation.is_empty() {
+                assert!(new_instr_part.alternative_output_representation.len() == 1);
+                let src = new_instr_part.instruction_partition;
+                let dst = *new_instr_part
+                    .alternative_output_representation
+                    .iter()
+                    .next()
+                    .unwrap();
+                let key = fks_keys[src][dst].as_ref().unwrap().identifier;
+                assert!(conversion_key.unwrap_or(key) == key);
+                conversion_key = Some(key);
+            }
+            // Only last instruction can have alternative conversion
+            assert!(
+                new_instr_part.alternative_output_representation.is_empty()
+                    || i == new_instructions.len() - 1
+            );
+        }
+        let partition =
+            partition.unwrap_or(dag.instrs_partition[new_instructions[0].i].instruction_partition);
+        let input_partition = input_partition.unwrap_or(partition);
+        let merged = keys_spec::InstructionKeys {
+            input_key: big_keys[input_partition].identifier,
+            tlu_keyswitch_key: tlu_keyswitch_key.unwrap_or(unknown),
+            tlu_bootstrap_key: tlu_bootstrap_key.unwrap_or(unknown),
+            output_key: big_keys[partition].identifier,
+            extra_conversion_keys: conversion_key.iter().copied().collect(),
+        };
+        result.push(merged);
+    }
+    result
 }
 
 fn out_variance(
