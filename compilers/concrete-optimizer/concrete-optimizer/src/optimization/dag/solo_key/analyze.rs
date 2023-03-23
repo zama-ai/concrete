@@ -504,7 +504,7 @@ fn peak_relative_variance(
     (max_relative_var, safe_noise)
 }
 
-fn p_error_from_relative_variance(relative_variance: f64, kappa: f64) -> f64 {
+pub fn p_error_from_relative_variance(relative_variance: f64, kappa: f64) -> f64 {
     let sigma_scale = kappa / relative_variance.sqrt();
     error::error_probability_of_sigma_scale(sigma_scale)
 }

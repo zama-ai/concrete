@@ -3,6 +3,7 @@ use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate
 use super::analyze;
 use crate::dag::operator::{LevelledComplexity, Precision};
 use crate::dag::unparametrized;
+use crate::dag::unparametrized::OperationDag;
 use crate::noise_estimator::error;
 use crate::optimization::atomic_pattern::{
     OptimizationDecompositionsConsts, OptimizationState, Solution,
@@ -386,6 +387,27 @@ pub fn optimize(
     state
 }
 
+pub fn add_v0_dag(dag: &mut OperationDag, sum_size: u64, precision: u64, noise_factor: f64) {
+    use crate::dag::operator::{FunctionTable, Shape};
+    let same_scale_manp = 1.0;
+    let manp = noise_factor;
+    let out_shape = &Shape::number();
+    let complexity = LevelledComplexity::ADDITION * sum_size;
+    let comment = "dot";
+    let precision = precision as Precision;
+    let input1 = dag.add_input(precision, out_shape);
+    let dot1 = dag.add_levelled_op([input1], complexity, same_scale_manp, out_shape, comment);
+    let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
+    let dot2 = dag.add_levelled_op([lut1], complexity, manp, out_shape, comment);
+    let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
+}
+
+pub fn v0_dag(sum_size: u64, precision: u64, noise_factor: f64) -> OperationDag {
+    let mut dag = unparametrized::OperationDag::new();
+    add_v0_dag(&mut dag, sum_size, precision, noise_factor);
+    dag
+}
+
 pub fn optimize_v0(
     sum_size: u64,
     precision: u64,
@@ -394,19 +416,7 @@ pub fn optimize_v0(
     search_space: &SearchSpace,
     cache: &PersistDecompCaches,
 ) -> OptimizationState {
-    use crate::dag::operator::{FunctionTable, Shape};
-    let same_scale_manp = 0.0;
-    let manp = noise_factor;
-    let out_shape = &Shape::number();
-    let complexity = LevelledComplexity::ADDITION * sum_size;
-    let comment = "dot";
-    let mut dag = unparametrized::OperationDag::new();
-    let precision = precision as Precision;
-    let input1 = dag.add_input(precision, out_shape);
-    let dot1 = dag.add_levelled_op([input1], complexity, same_scale_manp, out_shape, comment);
-    let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
-    let dot2 = dag.add_levelled_op([lut1], complexity, manp, out_shape, comment);
-    let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
+    let dag = v0_dag(sum_size, precision, noise_factor);
     let mut state = optimize(&dag, config, search_space, cache);
     if let Some(sol) = &mut state.best_solution {
         sol.complexity /= 2.0;
@@ -415,7 +425,7 @@ pub fn optimize_v0(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use std::time::Instant;
 
     use once_cell::sync::Lazy;
@@ -456,7 +466,7 @@ mod tests {
         decomposition::cache(128, processing_unit, None, true)
     });
 
-    fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {
+    pub fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {
         let config = Config {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
