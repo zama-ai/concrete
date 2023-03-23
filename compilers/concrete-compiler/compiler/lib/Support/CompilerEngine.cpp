@@ -404,9 +404,18 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::TFHE)
     return std::move(res);
 
+  if (mlir::concretelang::pipeline::parametrizeTFHE(mlirContext, module,
+                                                    res.fheContext, enablePass)
+          .failed()) {
+    return errorDiag("Parametrization of TFHE operations failed");
+  }
+
+  if (target == Target::PARAMETRIZED_TFHE)
+    return std::move(res);
+
   // TFHE -> Concrete
-  if (mlir::concretelang::pipeline::lowerTFHEToConcrete(
-          mlirContext, module, res.fheContext, this->enablePass)
+  if (mlir::concretelang::pipeline::lowerTFHEToConcrete(mlirContext, module,
+                                                        this->enablePass)
           .failed()) {
     return errorDiag("Lowering from TFHE to Concrete failed");
   }

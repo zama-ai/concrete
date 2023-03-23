@@ -59,8 +59,12 @@ lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                std::optional<V0FHEContext> &fheContext,
+                std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::optional<V0FHEContext> &fheContext,
                     std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult

@@ -49,6 +49,7 @@ enum Action {
   DUMP_FHE,
   DUMP_FHE_NO_LINALG,
   DUMP_TFHE,
+  DUMP_PARAMETRIZED_TFHE,
   DUMP_CONCRETE,
   DUMP_SDFG,
   DUMP_STD,
@@ -124,6 +125,9 @@ static llvm::cl::opt<enum Action> action(
                                 "Lower FHELinalg to FHE and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_TFHE, "dump-tfhe",
                                 "Lower to TFHE and dump result")),
+    llvm::cl::values(clEnumValN(
+        Action::DUMP_PARAMETRIZED_TFHE, "dump-parametrized-tfhe",
+        "Lower to TFHE, parametrize TFHE operations and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_CONCRETE, "dump-concrete",
                                 "Lower to Concrete and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_SDFG, "dump-sdfg",
@@ -524,6 +528,9 @@ mlir::LogicalResult processInputBuffer(
       break;
     case Action::DUMP_TFHE:
       target = mlir::concretelang::CompilerEngine::Target::TFHE;
+      break;
+    case Action::DUMP_PARAMETRIZED_TFHE:
+      target = mlir::concretelang::CompilerEngine::Target::PARAMETRIZED_TFHE;
       break;
     case Action::DUMP_CONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::CONCRETE;

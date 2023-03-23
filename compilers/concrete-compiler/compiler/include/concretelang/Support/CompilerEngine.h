@@ -208,6 +208,10 @@ public:
     /// operations
     TFHE,
 
+    /// Read sources and lower all FHE operations to TFHE
+    /// operations, then parametrize the TFHE operations
+    PARAMETRIZED_TFHE,
+
     /// Read sources and lower all FHE and TFHE operations to Concrete
     /// operations
     CONCRETE,

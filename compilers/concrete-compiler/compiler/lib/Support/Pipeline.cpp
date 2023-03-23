@@ -270,11 +270,11 @@ lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::optional<V0FHEContext> &fheContext,
-                    std::function<bool(mlir::Pass *)> enablePass) {
+parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                std::optional<V0FHEContext> &fheContext,
+                std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("TFHEToConcrete", pm, context);
+  pipelinePrinting("ParametrizeTFHE", pm, context);
 
   if (fheContext.has_value()) {
     addPotentiallyNestedPass(
@@ -283,6 +283,15 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
             fheContext.value()),
         enablePass);
   }
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                    std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("TFHEToConcrete", pm, context);
 
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertTFHEToConcretePass(), enablePass);
