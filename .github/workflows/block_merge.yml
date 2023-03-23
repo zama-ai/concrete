@@ -1,18 +1,21 @@
-name: Block PR merge
-
+# Check commit and PR compliance
+name: Check commit message compliance
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  BlockMerge:
+  check-commit-pr:
+    name: Check commit and PR
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - name: Check first line
+        uses: gsactions/commit-message-checker@v1
         with:
-          fetch-depth: 0
-
-      - name: Check Commit to Squash
-        run: |
-          set -e
-          git log origin/${{ github.base_ref }}..origin/${{ github.head_ref }} --format=%s | ( ! grep -e "^f [0-9a-f]\+" -q )
+          pattern: '^(feat|fix|test|bench|doc|chore|refactor|perf)\((compiler|backend|frontend|optimizer|tools|ci).*\): '
+          flags: 'gs'
+          error: 'Your first line has to contain a commit type and scope like "feat(my_feature): msg".'
+          excludeDescription: 'true' # optional: this excludes the description body of a pull request
+          excludeTitle: 'true' # optional: this excludes the title of a pull request
+          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
