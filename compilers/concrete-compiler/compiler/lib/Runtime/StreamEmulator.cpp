@@ -366,6 +366,24 @@ void stream_emulator_get_memref(void *stream, uint64_t *out_allocated,
   free(mref.allocated);
 }
 
+void *stream_emulator_make_memref_batch_stream(const char *name,
+                                               stream_type stype) {
+  assert(0 && "Batched operations not implemented in the StreamEmulator.");
+}
+void stream_emulator_put_memref_batch(void *stream, uint64_t *allocated,
+                                      uint64_t *aligned, uint64_t offset,
+                                      uint64_t size0, uint64_t size1,
+                                      uint64_t stride0, uint64_t stride1) {
+  assert(0 && "Batched operations not implemented in the StreamEmulator.");
+}
+void stream_emulator_get_memref_batch(void *stream, uint64_t *out_allocated,
+                                      uint64_t *out_aligned,
+                                      uint64_t out_offset, uint64_t out_size0,
+                                      uint64_t out_size1, uint64_t out_stride0,
+                                      uint64_t out_stride1) {
+  assert(0 && "Batched operations not implemented in the StreamEmulator.");
+}
+
 void *stream_emulator_init() {
 #ifdef CORNAMI_AVAILABLE
   // TODO: check/update against new info on Cornami API
