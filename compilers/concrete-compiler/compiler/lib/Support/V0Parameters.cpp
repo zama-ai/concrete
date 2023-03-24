@@ -50,7 +50,7 @@ optimizer::DagSolution getV0Parameter(V0FHEConstraint constraint,
   return concrete_optimizer::utils::convert_to_dag_solution(solution);
 }
 
-const int MAXIMUM_OPTIMIZER_CALL = 5;
+const int MAXIMUM_OPTIMIZER_CALL = 10;
 optimizer::DagSolution getV1ParameterGlobalPError(optimizer::Dag &dag,
                                                   optimizer::Config config) {
   // We find the approximate translation between local and global error with a
@@ -71,20 +71,23 @@ optimizer::DagSolution getV1ParameterGlobalPError(optimizer::Dag &dag,
     auto local_p_success = 1.0 - sol.p_error;
     auto global_p_success = 1.0 - sol.global_p_error;
     auto power_global_to_local = log(local_p_success) / log(global_p_success);
-    if (std::isnan(power_global_to_local)) {
-      break;
-    }
     auto surrogate_p_local_success =
         pow(ref_global_p_success, power_global_to_local);
 
     auto surrogate_p_error = 1.0 - surrogate_p_local_success;
 
-    // only valid when p_error is not too small
+    // only valid when p_error is not too small and global_p_error not too high
     auto valid = 0 < surrogate_p_error && surrogate_p_error < 1.0;
 
     if (!valid) {
       // linear approximation, only precise for small p_error
-      auto linear_correction = sol.p_error / sol.global_p_error;
+      auto linear_correction =
+          sol.p_error < 0.1 ? sol.p_error / sol.global_p_error : 0.1;
+      valid = 0.0 < linear_correction && linear_correction < 1.0;
+      if (!valid) {
+        // global_p_error could be 0
+        linear_correction = 1e-5;
+      }
       surrogate_p_error =
           options.maximum_acceptable_error_probability * linear_correction;
     };
