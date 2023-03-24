@@ -89,10 +89,22 @@ def ProcessKindMulEintInt : I32EnumAttrCase<"mul_eint_int", 2>;
 def ProcessKindNegEint : I32EnumAttrCase<"neg_eint", 3>;
 def ProcessKindKeyswitch : I32EnumAttrCase<"keyswitch", 4>;
 def ProcessKindBootstrap : I32EnumAttrCase<"bootstrap", 5>;
+def ProcessKindBatchAddEint : I32EnumAttrCase<"batched_add_eint", 6>;
+def ProcessKindBatchAddEintInt : I32EnumAttrCase<"batched_add_eint_int", 7>;
+def ProcessKindBatchAddEintIntCst : I32EnumAttrCase<"batched_add_eint_int_cst", 8>;
+def ProcessKindBatchMulEintInt : I32EnumAttrCase<"batched_mul_eint_int", 9>;
+def ProcessKindBatchMulEintIntCst : I32EnumAttrCase<"batched_mul_eint_int_cst", 10>;
+def ProcessKindBatchNegEint : I32EnumAttrCase<"batched_neg_eint", 11>;
+def ProcessKindBatchKeyswitch : I32EnumAttrCase<"batched_keyswitch", 12>;
+def ProcessKindBatchBootstrap : I32EnumAttrCase<"batched_bootstrap", 13>;
 
 def ProcessKind : I32EnumAttr<"ProcessKind", "Process kind",
   [ProcessKindAddEint, ProcessKindAddEintInt, ProcessKindMulEintInt,
-   ProcessKindNegEint, ProcessKindKeyswitch, ProcessKindBootstrap]> {
+   ProcessKindNegEint, ProcessKindKeyswitch, ProcessKindBootstrap,
+   ProcessKindBatchAddEint, ProcessKindBatchAddEintInt,
+   ProcessKindBatchAddEintIntCst, ProcessKindBatchMulEintInt,
+   ProcessKindBatchMulEintIntCst, ProcessKindBatchNegEint,
+   ProcessKindBatchKeyswitch, ProcessKindBatchBootstrap]> {
   let genSpecializedAttr = 0;
   let cppNamespace = "::mlir::concretelang::SDFG";
 }
