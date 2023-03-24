@@ -19,6 +19,10 @@ on:
         description: 'Slab request ID'
         type: string
 
+concurrency:
+  group: concrete_python_tests_linux-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   GLIB_VER: 2_28
