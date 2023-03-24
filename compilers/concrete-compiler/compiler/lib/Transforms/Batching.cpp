@@ -578,7 +578,7 @@ public:
     // Find a batchable op which is embedded into a loop nest
     func.walk([&](BatchableOpInterface scalarOp) {
       // Is producer an extract op?
-      auto extractOp = llvm::dyn_cast<mlir::tensor::ExtractOp>(
+      auto extractOp = llvm::dyn_cast_or_null<mlir::tensor::ExtractOp>(
           scalarOp.getBatchableOperand().get().getDefiningOp());
 
       if (!extractOp)
