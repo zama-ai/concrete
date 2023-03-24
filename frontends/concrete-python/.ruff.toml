@@ -14,4 +14,4 @@ ignore = [
 [per-file-ignores]
 "**/__init__.py" = ["F401"]
 "examples/**" = ["PLR2004"]
-"tests/**" = ["PLR2004", "PLW0603", "SIM300"]
+"tests/**" = ["PLR2004", "PLW0603", "SIM300", "S311"]
