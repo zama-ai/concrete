@@ -27,6 +27,18 @@ char memref_mul_cleartext_lwe_ciphertext_u64[] =
 char memref_negate_lwe_ciphertext_u64[] = "memref_negate_lwe_ciphertext_u64";
 char memref_keyswitch_lwe_u64[] = "memref_keyswitch_lwe_u64";
 char memref_bootstrap_lwe_u64[] = "memref_bootstrap_lwe_u64";
+char memref_batched_add_lwe_ciphertexts_u64[] =
+    "memref_batched_add_lwe_ciphertexts_u64";
+char memref_batched_add_plaintext_lwe_ciphertext_u64[] =
+    "memref_batched_add_plaintext_lwe_ciphertext_u64";
+char memref_batched_add_plaintext_cst_lwe_ciphertext_u64[] =
+    "memref_batched_add_plaintext_cst_lwe_ciphertext_u64";
+char memref_batched_mul_cleartext_lwe_ciphertext_u64[] =
+    "memref_batched_mul_cleartext_lwe_ciphertext_u64";
+char memref_batched_mul_cleartext_cst_lwe_ciphertext_u64[] =
+    "memref_batched_mul_cleartext_cst_lwe_ciphertext_u64";
+char memref_batched_negate_lwe_ciphertext_u64[] =
+    "memref_batched_negate_lwe_ciphertext_u64";
 char memref_batched_keyswitch_lwe_u64[] = "memref_batched_keyswitch_lwe_u64";
 char memref_batched_bootstrap_lwe_u64[] = "memref_batched_bootstrap_lwe_u64";
 
@@ -129,6 +141,26 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                         memref1DType, i32Type, i32Type, i32Type,
                                         i32Type, i32Type, i32Type, contextType},
                                        {futureType});
+  } else if (funcName == memref_batched_add_lwe_ciphertexts_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(), {memref2DType, memref2DType, memref2DType}, {});
+  } else if (funcName == memref_batched_add_plaintext_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(), {memref2DType, memref2DType, memref1DType}, {});
+  } else if (funcName == memref_batched_add_plaintext_cst_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref2DType, memref2DType, rewriter.getI64Type()}, {});
+  } else if (funcName == memref_batched_mul_cleartext_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(), {memref2DType, memref2DType, memref1DType}, {});
+  } else if (funcName == memref_batched_mul_cleartext_cst_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref2DType, memref2DType, rewriter.getI64Type()}, {});
+  } else if (funcName == memref_batched_negate_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref2DType, memref2DType}, {});
   } else if (funcName == memref_batched_keyswitch_lwe_u64 ||
              funcName == memref_batched_keyswitch_lwe_cuda_u64) {
     funcType =
@@ -515,6 +547,26 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
         .add<ConcreteToCAPICallPattern<Concrete::EncodeLutForCrtWopPBSBufferOp,
                                        memref_encode_lut_for_crt_woppbs>>(
             &getContext(), encodeLutForWopPBSAddOperands);
+    patterns
+        .add<ConcreteToCAPICallPattern<Concrete::BatchedAddLweBufferOp,
+                                       memref_batched_add_lwe_ciphertexts_u64>>(
+            &getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedAddPlaintextLweBufferOp,
+        memref_batched_add_plaintext_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedAddPlaintextCstLweBufferOp,
+        memref_batched_add_plaintext_cst_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedMulCleartextLweBufferOp,
+        memref_batched_mul_cleartext_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedMulCleartextCstLweBufferOp,
+        memref_batched_mul_cleartext_cst_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<
+        ConcreteToCAPICallPattern<Concrete::BatchedNegateLweBufferOp,
+                                  memref_batched_negate_lwe_ciphertext_u64>>(
+        &getContext());
     if (gpu) {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_cuda_u64>>(

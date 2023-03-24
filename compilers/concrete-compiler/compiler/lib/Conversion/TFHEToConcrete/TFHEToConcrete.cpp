@@ -784,8 +784,28 @@ void TFHEToConcretePass::runOnOperation() {
           mlir::concretelang::Concrete::EncodeLutForCrtWopPBSTensorOp, true>,
       mlir::concretelang::GenericOneToOneOpConversionPattern<
           mlir::concretelang::TFHE::EncodePlaintextWithCrtOp,
-          mlir::concretelang::Concrete::EncodePlaintextWithCrtTensorOp, true>>(
-      &getContext(), converter);
+          mlir::concretelang::Concrete::EncodePlaintextWithCrtTensorOp, true>,
+
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::ABatchedAddGLWEIntOp,
+          mlir::concretelang::Concrete::BatchedAddPlaintextLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::ABatchedAddGLWEIntCstOp,
+          mlir::concretelang::Concrete::BatchedAddPlaintextCstLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::ABatchedAddGLWEOp,
+          mlir::concretelang::Concrete::BatchedAddLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::BatchedMulGLWEIntOp,
+          mlir::concretelang::Concrete::BatchedMulCleartextLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::BatchedMulGLWEIntCstOp,
+          mlir::concretelang::Concrete::BatchedMulCleartextCstLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::BatchedNegGLWEOp,
+          mlir::concretelang::Concrete::BatchedNegateLweTensorOp>
+
+      >(&getContext(), converter);
   // pattern of remaining TFHE ops
 
   patterns.insert<ZeroOpPattern<mlir::concretelang::TFHE::ZeroGLWEOp>,

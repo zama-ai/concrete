@@ -517,6 +517,102 @@ void memref_keyswitch_lwe_u64(uint64_t *out_allocated, uint64_t *out_aligned,
       output_dimension);
 }
 
+void memref_batched_add_lwe_ciphertexts_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *ct1_allocated,
+    uint64_t *ct1_aligned, uint64_t ct1_offset, uint64_t ct1_size0,
+    uint64_t ct1_size1, uint64_t ct1_stride0, uint64_t ct1_stride1) {
+  for (size_t i = 0; i < ct0_size0; i++) {
+    memref_add_lwe_ciphertexts_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated + i * ct0_size1,
+        ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1,
+        ct1_allocated + i * ct1_size1, ct1_aligned + i * ct1_size1, ct1_offset,
+        ct1_size1, ct1_stride1);
+  }
+}
+
+void memref_batched_add_plaintext_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *ct1_allocated,
+    uint64_t *ct1_aligned, uint64_t ct1_offset, uint64_t ct1_size,
+    uint64_t ct1_stride) {
+  for (size_t i = 0; i < ct0_size0; i++) {
+    memref_add_plaintext_lwe_ciphertext_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated + i * ct0_size1,
+        ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1,
+        *(ct1_aligned + ct1_offset + i * ct1_stride));
+  }
+}
+
+void memref_batched_add_plaintext_cst_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t plaintext) {
+  for (size_t i = 0; i < ct0_size0; i++) {
+    memref_add_plaintext_lwe_ciphertext_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated + i * ct0_size1,
+        ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1,
+        plaintext);
+  }
+}
+
+void memref_batched_mul_cleartext_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *ct1_allocated,
+    uint64_t *ct1_aligned, uint64_t ct1_offset, uint64_t ct1_size,
+    uint64_t ct1_stride) {
+  for (size_t i = 0; i < ct0_size0; i++) {
+    memref_mul_cleartext_lwe_ciphertext_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated + i * ct0_size1,
+        ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1,
+        *(ct1_aligned + ct1_offset + i * ct1_stride));
+  }
+}
+
+void memref_batched_mul_cleartext_cst_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t cleartext) {
+  for (size_t i = 0; i < ct0_size0; i++) {
+    memref_mul_cleartext_lwe_ciphertext_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated + i * ct0_size1,
+        ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1,
+        cleartext);
+  }
+}
+
+void memref_batched_negate_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1) {
+  for (size_t i = 0; i < ct0_size0; i++) {
+    memref_negate_lwe_ciphertext_u64(
+        out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
+        out_size1, out_stride1, ct0_allocated + i * ct0_size1,
+        ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1);
+  }
+}
+
 void memref_batched_keyswitch_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,

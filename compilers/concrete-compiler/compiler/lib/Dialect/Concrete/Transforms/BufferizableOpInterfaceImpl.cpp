@@ -123,6 +123,34 @@ void mlir::concretelang::Concrete::
     // bootstrap_lwe_tensor => bootstrap_lwe_buffer
     Concrete::BootstrapLweTensorOp::attachInterface<TensorToMemrefOp<
         Concrete::BootstrapLweTensorOp, Concrete::BootstrapLweBufferOp>>(*ctx);
+
+    // batched_add_lwe_tensor => batched_add_lwe_buffer
+    Concrete::BatchedAddLweTensorOp::attachInterface<TensorToMemrefOp<
+        Concrete::BatchedAddLweTensorOp, Concrete::BatchedAddLweBufferOp>>(
+        *ctx);
+    // batched_add_plaintext_lwe_tensor => batched_add_plaintext_lwe_buffer
+    Concrete::BatchedAddPlaintextLweTensorOp::attachInterface<
+        TensorToMemrefOp<Concrete::BatchedAddPlaintextLweTensorOp,
+                         Concrete::BatchedAddPlaintextLweBufferOp>>(*ctx);
+    // batched_add_plaintext_cst_lwe_tensor =>
+    // batched_add_plaintext_cst_lwe_buffer
+    Concrete::BatchedAddPlaintextCstLweTensorOp::attachInterface<
+        TensorToMemrefOp<Concrete::BatchedAddPlaintextCstLweTensorOp,
+                         Concrete::BatchedAddPlaintextCstLweBufferOp>>(*ctx);
+    // batched_mul_cleartext_lwe_tensor => batched_mul_cleartext_lwe_buffer
+    Concrete::BatchedMulCleartextLweTensorOp::attachInterface<
+        TensorToMemrefOp<Concrete::BatchedMulCleartextLweTensorOp,
+                         Concrete::BatchedMulCleartextLweBufferOp>>(*ctx);
+    // batched_mul_cleartext_cst_lwe_tensor =>
+    // batched_mul_cleartext_cst_lwe_buffer
+    Concrete::BatchedMulCleartextCstLweTensorOp::attachInterface<
+        TensorToMemrefOp<Concrete::BatchedMulCleartextCstLweTensorOp,
+                         Concrete::BatchedMulCleartextCstLweBufferOp>>(*ctx);
+    // batched_negate_lwe_tensor => batched_negate_lwe_buffer
+    Concrete::BatchedNegateLweTensorOp::attachInterface<
+        TensorToMemrefOp<Concrete::BatchedNegateLweTensorOp,
+                         Concrete::BatchedNegateLweBufferOp>>(*ctx);
+
     // batched_keyswitch_lwe_tensor => batched_keyswitch_lwe_buffer
     Concrete::BatchedKeySwitchLweTensorOp::attachInterface<
         TensorToMemrefOp<Concrete::BatchedKeySwitchLweTensorOp,
