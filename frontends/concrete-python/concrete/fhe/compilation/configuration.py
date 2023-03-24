@@ -58,7 +58,7 @@ class Configuration:
         use_insecure_key_cache: bool = False,
         insecure_key_cache_location: Optional[Union[Path, str]] = None,
         loop_parallelize: bool = True,
-        dataflow_parallelize: bool = True,
+        dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
         jit: bool = False,
         p_error: Optional[float] = None,
