@@ -69,11 +69,12 @@ mlir::Value getCastedMemRef(mlir::RewriterBase &rewriter, mlir::Location loc,
 }
 
 char stream_emulator_get_memref[] = "stream_emulator_get_memref";
+char stream_emulator_get_memref_batch[] = "stream_emulator_get_memref_batch";
 
-template <typename Op, char const *funcName>
+template <typename Op, char const *funcName, char const *funcName_batch>
 struct BufferizableWithCallOpInterface
     : public BufferizableOpInterface::ExternalModel<
-          BufferizableWithCallOpInterface<Op, funcName>, Op> {
+          BufferizableWithCallOpInterface<Op, funcName, funcName_batch>, Op> {
   bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
                               const AnalysisState &state) const {
     return true;
@@ -103,6 +104,13 @@ struct BufferizableWithCallOpInterface
     // able to avoid the copy depending on the stream semantics.
     auto resTensorType =
         op->getResultTypes()[0].template cast<mlir::TensorType>();
+    char const *fname;
+    if (resTensorType.getRank() == 1)
+      fname = funcName;
+    else if (resTensorType.getRank() == 2)
+      fname = funcName_batch;
+    else
+      return mlir::failure();
     auto outMemrefType = MemRefType::get(resTensorType.getShape(),
                                          resTensorType.getElementType());
     auto outMemref = options.createAlloc(rewriter, loc, outMemrefType, {});
@@ -117,9 +125,9 @@ struct BufferizableWithCallOpInterface
     mlir::FunctionType funcType = mlir::FunctionType::get(
         rewriter.getContext(), mlir::ValueRange{operands}.getTypes(),
         mlir::TypeRange());
-    if (insertForwardDeclaration(op, rewriter, funcName, funcType).failed())
+    if (insertForwardDeclaration(op, rewriter, fname, funcType).failed())
       return ::mlir::failure();
-    rewriter.create<mlir::func::CallOp>(loc, funcName, mlir::TypeRange{},
+    rewriter.create<mlir::func::CallOp>(loc, fname, mlir::TypeRange{},
                                         operands);
     replaceOpWithBufferizedValues(rewriter, op, *outMemref);
 
@@ -133,7 +141,8 @@ void mlir::concretelang::SDFG::registerBufferizableOpInterfaceExternalModels(
     DialectRegistry &registry) {
   registry.addExtension(+[](MLIRContext *ctx, SDFG::SDFGDialect *dialect) {
     SDFG::Get::attachInterface<
-        BufferizableWithCallOpInterface<SDFG::Get, stream_emulator_get_memref>>(
+        BufferizableWithCallOpInterface<SDFG::Get, stream_emulator_get_memref,
+                                        stream_emulator_get_memref_batch>>(
         *ctx);
   });
 }

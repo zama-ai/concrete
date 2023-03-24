@@ -82,6 +82,22 @@ mlir::LogicalResult MakeProcess::verify() {
     return checkStreams(1, 1);
   case ProcessKind::bootstrap:
     return checkStreams(2, 1);
+  case ProcessKind::batched_add_eint:
+    return checkStreams(2, 1);
+  case ProcessKind::batched_add_eint_int:
+    return checkStreams(2, 1);
+  case ProcessKind::batched_add_eint_int_cst:
+    return checkStreams(2, 1);
+  case ProcessKind::batched_mul_eint_int:
+    return checkStreams(2, 1);
+  case ProcessKind::batched_mul_eint_int_cst:
+    return checkStreams(2, 1);
+  case ProcessKind::batched_neg_eint:
+    return checkStreams(1, 1);
+  case ProcessKind::batched_keyswitch:
+    return checkStreams(1, 1);
+  case ProcessKind::batched_bootstrap:
+    return checkStreams(2, 1);
   }
 
   return mlir::failure();
