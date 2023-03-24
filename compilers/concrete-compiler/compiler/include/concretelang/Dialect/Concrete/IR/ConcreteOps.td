@@ -26,6 +26,7 @@ def Concrete_CrtLutsTensor : 2DTensorOf<[I64]>;
 def Concrete_CrtPlaintextTensor : 1DTensorOf<[I64]>;
 def Concrete_LweCRTTensor : 2DTensorOf<[I64]>;
 def Concrete_BatchLweTensor : 2DTensorOf<[I64]>;
+def Concrete_BatchPlaintextTensor : 1DTensorOf<[I64]>;
 
 def Concrete_LweBuffer : MemRefRankOf<[I64], [1]>;
 def Concrete_LutBuffer : MemRefRankOf<[I64], [1]>;
@@ -33,6 +34,7 @@ def Concrete_CrtLutsBuffer : MemRefRankOf<[I64], [2]>;
 def Concrete_CrtPlaintextBuffer : MemRefRankOf<[I64], [1]>;
 def Concrete_LweCRTBuffer : MemRefRankOf<[I64], [2]>;
 def Concrete_BatchLweBuffer : MemRefRankOf<[I64], [2]>;
+def Concrete_BatchPlaintextBuffer : MemRefRankOf<[I64], [1]>;
 
 class Concrete_Op<string mnemonic, list<Trait> traits = []> :
     Op<Concrete_Dialect, mnemonic, traits>;
@@ -58,6 +60,26 @@ def Concrete_AddLweBufferOp : Concrete_Op<"add_lwe_buffer"> {
     );
 }
 
+def Concrete_BatchedAddLweTensorOp : Concrete_Op<"batched_add_lwe_tensor", [Pure]> {
+    let summary = "Batched version of AddLweTensorOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins
+        Concrete_BatchLweTensor:$lhs,
+        Concrete_BatchLweTensor:$rhs
+    );
+    let results = (outs Concrete_BatchLweTensor:$result);
+}
+
+def Concrete_BatchedAddLweBufferOp : Concrete_Op<"batched_add_lwe_buffer"> {
+    let summary = "Batched version of AddLweBufferOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins
+        Concrete_BatchLweBuffer:$result,
+        Concrete_BatchLweBuffer:$lhs,
+        Concrete_BatchLweBuffer:$rhs
+    );
+}
+
 def Concrete_AddPlaintextLweTensorOp : Concrete_Op<"add_plaintext_lwe_tensor", [Pure]> {
     let summary = "Returns the sum of a clear integer and an lwe ciphertext";
 
@@ -71,6 +93,40 @@ def Concrete_AddPlaintextLweBufferOp : Concrete_Op<"add_plaintext_lwe_buffer"> {
     let arguments = (ins
         Concrete_LweBuffer:$result,
         Concrete_LweBuffer:$lhs,
+        I64:$rhs
+    );
+}
+
+def Concrete_BatchedAddPlaintextLweTensorOp : Concrete_Op<"batched_add_plaintext_lwe_tensor", [Pure]> {
+    let summary = "Batched version of AddPlaintextLweTensorOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins Concrete_BatchLweTensor:$lhs, Concrete_BatchPlaintextTensor:$rhs);
+    let results = (outs Concrete_BatchLweTensor:$result);
+}
+
+def Concrete_BatchedAddPlaintextLweBufferOp : Concrete_Op<"batched_add_plaintext_lwe_buffer"> {
+    let summary = "Batched version of AddPlaintextLweBufferOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins
+        Concrete_BatchLweBuffer:$result,
+        Concrete_BatchLweBuffer:$lhs,
+        Concrete_BatchPlaintextBuffer:$rhs
+    );
+}
+
+def Concrete_BatchedAddPlaintextCstLweTensorOp : Concrete_Op<"batched_add_plaintext_cst_lwe_tensor", [Pure]> {
+    let summary = "Batched version of AddPlaintextLweTensorOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins Concrete_BatchLweTensor:$lhs, I64:$rhs);
+    let results = (outs Concrete_BatchLweTensor:$result);
+}
+
+def Concrete_BatchedAddPlaintextCstLweBufferOp : Concrete_Op<"batched_add_plaintext_cst_lwe_buffer"> {
+    let summary = "Batched version of AddPlaintextLweBufferOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins
+        Concrete_BatchLweBuffer:$result,
+        Concrete_BatchLweBuffer:$lhs,
         I64:$rhs
     );
 }
@@ -92,6 +148,40 @@ def Concrete_MulCleartextLweBufferOp : Concrete_Op<"mul_cleartext_lwe_buffer"> {
     );
 }
 
+def Concrete_BatchedMulCleartextLweTensorOp : Concrete_Op<"batched_mul_cleartext_lwe_tensor", [Pure]> {
+    let summary = "Batched version of MulCleartextLweTensorOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins Concrete_BatchLweTensor:$lhs, Concrete_BatchPlaintextTensor:$rhs);
+    let results = (outs Concrete_BatchLweTensor:$result);
+}
+
+def Concrete_BatchedMulCleartextLweBufferOp : Concrete_Op<"batched_mul_cleartext_lwe_buffer"> {
+    let summary = "Batched version of MulCleartextLweBufferOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins
+        Concrete_BatchLweBuffer:$result,
+        Concrete_BatchLweBuffer:$lhs,
+        Concrete_BatchPlaintextBuffer:$rhs
+    );
+}
+
+def Concrete_BatchedMulCleartextCstLweTensorOp : Concrete_Op<"batched_mul_cleartext_cst_lwe_tensor", [Pure]> {
+    let summary = "Batched version of MulCleartextLweTensorOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins Concrete_BatchLweTensor:$lhs, I64:$rhs);
+    let results = (outs Concrete_BatchLweTensor:$result);
+}
+
+def Concrete_BatchedMulCleartextCstLweBufferOp : Concrete_Op<"batched_mul_cleartext_cst_lwe_buffer"> {
+    let summary = "Batched version of MulCleartextLweBufferOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins
+        Concrete_BatchLweBuffer:$result,
+        Concrete_BatchLweBuffer:$lhs,
+        I64:$rhs
+    );
+}
+
 def Concrete_NegateLweTensorOp : Concrete_Op<"negate_lwe_tensor", [Pure]> {
     let summary = "Negates a lwe ciphertext";
 
@@ -105,6 +195,22 @@ def Concrete_NegateLweBufferOp : Concrete_Op<"negate_lwe_buffer"> {
     let arguments = (ins
         Concrete_LweBuffer:$result,
         Concrete_LweBuffer:$ciphertext
+    );
+}
+
+def Concrete_BatchedNegateLweTensorOp : Concrete_Op<"batched_negate_lwe_tensor", [Pure]> {
+    let summary = "Batched version of NegateLweTensorOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins Concrete_BatchLweTensor:$ciphertext);
+    let results = (outs Concrete_BatchLweTensor:$result);
+}
+
+def Concrete_BatchedNegateLweBufferOp : Concrete_Op<"batched_negate_lwe_buffer"> {
+    let summary = "Batched version of NegateLweBufferOp, which performs the same operation on multiple elements";
+
+    let arguments = (ins
+        Concrete_BatchLweBuffer:$result,
+        Concrete_BatchLweBuffer:$ciphertext
     );
 }
 

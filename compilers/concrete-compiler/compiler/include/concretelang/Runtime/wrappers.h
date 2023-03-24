@@ -85,6 +85,54 @@ void memref_keyswitch_lwe_u64(uint64_t *out_allocated, uint64_t *out_aligned,
                               uint32_t ksk_index,
                               mlir::concretelang::RuntimeContext *context);
 
+void memref_batched_add_lwe_ciphertexts_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *ct1_allocated,
+    uint64_t *ct1_aligned, uint64_t ct1_offset, uint64_t ct1_size0,
+    uint64_t ct1_size1, uint64_t ct1_stride0, uint64_t ct1_stride1);
+
+void memref_batched_add_plaintext_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *ct1_allocated,
+    uint64_t *ct1_aligned, uint64_t ct1_offset, uint64_t ct1_size,
+    uint64_t ct1_stride);
+
+void memref_batched_add_plaintext_cst_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t plaintext);
+
+void memref_batched_mul_cleartext_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *ct1_allocated,
+    uint64_t *ct1_aligned, uint64_t ct1_offset, uint64_t ct1_size,
+    uint64_t ct1_stride);
+
+void memref_batched_mul_cleartext_cst_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t cleartext);
+
+void memref_batched_negate_lwe_ciphertext_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,
+    uint64_t out_stride1, uint64_t *ct0_allocated, uint64_t *ct0_aligned,
+    uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
+    uint64_t ct0_stride0, uint64_t ct0_stride1);
+
 void memref_batched_keyswitch_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size0, uint64_t out_size1, uint64_t out_stride0,

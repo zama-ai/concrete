@@ -77,22 +77,103 @@ def TFHE_ZeroTensorGLWEOp : TFHE_Op<"zero_tensor", [Pure]> {
   let results = (outs Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def TFHE_AddGLWEIntOp : TFHE_Op<"add_glwe_int", [Pure]> {
+def TFHE_ABatchedAddGLWEIntOp : TFHE_Op<"batched_add_glwe_int", [Pure]> {
+  let summary = "Batched version of AddGLWEIntOp";
+
+  let arguments = (ins
+    1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts,
+    1DTensorOf<[AnyInteger]> : $plaintexts
+  );
+
+  let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+}
+
+def TFHE_ABatchedAddGLWEIntCstOp : TFHE_Op<"batched_add_glwe_int_cst", [Pure]> {
+  let summary = "Batched version of AddGLWEIntOp";
+
+  let arguments = (ins
+    1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts,
+    AnyInteger : $plaintext
+  );
+
+  let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+}
+
+def TFHE_AddGLWEIntOp : TFHE_Op<"add_glwe_int", [Pure, BatchableOpInterface]> {
   let summary = "Returns the sum of a clear integer and a lwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, AnyInteger : $b);
   let results = (outs TFHE_GLWECipherTextType);
 
   let hasVerifier = 1;
+
+  let extraClassDeclaration = [{
+    ::llvm::MutableArrayRef<::mlir::OpOperand> getBatchableOperands() {
+      return getOperation()->getOpOperands().take_front(2);
+    }
+
+    ::mlir::Value createBatchedOperation(::mlir::ImplicitLocOpBuilder& builder,
+                                         ::mlir::ValueRange batchedOperands,
+                                         ::mlir::ValueRange hoistedNonBatchableOperands) {
+      ::mlir::RankedTensorType resType = ::mlir::RankedTensorType::get(
+        batchedOperands[0].getType().cast<::mlir::RankedTensorType>().getShape(),
+        getResult().getType());
+
+      ::llvm::SmallVector<::mlir::Value> operands(batchedOperands);
+      if (hoistedNonBatchableOperands.empty()) {
+        return builder.create<ABatchedAddGLWEIntOp>(
+          mlir::TypeRange{resType},
+          operands,
+          getOperation()->getAttrs());
+      } else {
+        operands.append(hoistedNonBatchableOperands.begin(),
+                        hoistedNonBatchableOperands.end());
+        return builder.create<ABatchedAddGLWEIntCstOp>(
+          mlir::TypeRange{resType},
+          operands,
+          getOperation()->getAttrs());
+      }
+    }
+  }];
 }
 
-def TFHE_AddGLWEOp : TFHE_Op<"add_glwe", [Pure]> {
+def TFHE_ABatchedAddGLWEOp : TFHE_Op<"batched_add_glwe", [Pure]> {
+  let summary = "Batched version of AddGLWEOp";
+
+  let arguments = (ins
+    1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts_a,
+    1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts_b
+  );
+
+  let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+}
+
+def TFHE_AddGLWEOp : TFHE_Op<"add_glwe", [Pure, BatchableOpInterface]> {
   let summary = "Returns the sum of 2 lwe ciphertexts";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, TFHE_GLWECipherTextType : $b);
   let results = (outs TFHE_GLWECipherTextType);
 
   let hasVerifier = 1;
+
+  let extraClassDeclaration = [{
+    ::llvm::MutableArrayRef<::mlir::OpOperand> getBatchableOperands() {
+      return getOperation()->getOpOperands().take_front(2);
+    }
+
+    ::mlir::Value createBatchedOperation(::mlir::ImplicitLocOpBuilder& builder,
+                                         ::mlir::ValueRange batchedOperands,
+                                         ::mlir::ValueRange hoistedNonBatchableOperands) {
+      ::mlir::RankedTensorType resType = ::mlir::RankedTensorType::get(
+        batchedOperands[0].getType().cast<::mlir::RankedTensorType>().getShape(),
+        getResult().getType());
+
+      return builder.create<ABatchedAddGLWEOp>(
+        mlir::TypeRange{resType},
+        mlir::ValueRange{batchedOperands},
+        getOperation()->getAttrs());
+    }
+  }];
 }
 
 def TFHE_SubGLWEIntOp : TFHE_Op<"sub_int_glwe", [Pure]> {
@@ -104,22 +185,102 @@ def TFHE_SubGLWEIntOp : TFHE_Op<"sub_int_glwe", [Pure]> {
   let hasVerifier = 1;
 }
 
-def TFHE_NegGLWEOp : TFHE_Op<"neg_glwe", [Pure]> {
+def TFHE_BatchedNegGLWEOp : TFHE_Op<"batched_neg_glwe", [Pure]> {
+  let summary = "Batched version of NegGLWEOp";
+
+  let arguments = (ins
+    1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts
+  );
+
+  let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+}
+
+def TFHE_NegGLWEOp : TFHE_Op<"neg_glwe", [Pure, BatchableOpInterface]> {
   let summary = "Negates a glwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a);
   let results = (outs TFHE_GLWECipherTextType);
 
   let hasVerifier = 1;
+
+  let extraClassDeclaration = [{
+    ::llvm::MutableArrayRef<::mlir::OpOperand> getBatchableOperands() {
+      return getOperation()->getOpOperands().take_front();
+    }
+
+    ::mlir::Value createBatchedOperation(::mlir::ImplicitLocOpBuilder& builder,
+                                         ::mlir::ValueRange batchedOperands,
+                                         ::mlir::ValueRange hoistedNonBatchableOperands) {
+      ::mlir::RankedTensorType resType = ::mlir::RankedTensorType::get(
+        batchedOperands[0].getType().cast<::mlir::RankedTensorType>().getShape(),
+        getResult().getType());
+
+      return builder.create<BatchedNegGLWEOp>(
+        mlir::TypeRange{resType},
+        mlir::ValueRange{batchedOperands},
+        getOperation()->getAttrs());
+    }
+  }];
 }
 
-def TFHE_MulGLWEIntOp : TFHE_Op<"mul_glwe_int", [Pure]> {
+def TFHE_BatchedMulGLWEIntOp : TFHE_Op<"batched_mul_glwe_int", [Pure]> {
+  let summary = "Batched version of MulGLWEIntOp";
+
+  let arguments = (ins
+    1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts,
+    1DTensorOf<[AnyInteger]> : $cleartexts
+  );
+
+  let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+}
+
+def TFHE_BatchedMulGLWEIntCstOp : TFHE_Op<"batched_mul_glwe_int_cst", [Pure]> {
+  let summary = "Batched version of MulGLWEIntOp";
+
+  let arguments = (ins
+    1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts,
+    AnyInteger: $cleartext
+  );
+
+  let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+}
+
+def TFHE_MulGLWEIntOp : TFHE_Op<"mul_glwe_int", [Pure, BatchableOpInterface]> {
   let summary = "Returns the product of a clear integer and a lwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, AnyInteger : $b);
   let results = (outs TFHE_GLWECipherTextType);
 
   let hasVerifier = 1;
+
+  let extraClassDeclaration = [{
+    ::llvm::MutableArrayRef<::mlir::OpOperand> getBatchableOperands() {
+      return getOperation()->getOpOperands().take_front(2);
+    }
+
+    ::mlir::Value createBatchedOperation(::mlir::ImplicitLocOpBuilder& builder,
+                                         ::mlir::ValueRange batchedOperands,
+                                         ::mlir::ValueRange hoistedNonBatchableOperands) {
+      ::mlir::RankedTensorType resType = ::mlir::RankedTensorType::get(
+        batchedOperands[0].getType().cast<::mlir::RankedTensorType>().getShape(),
+        getResult().getType());
+
+      ::llvm::SmallVector<::mlir::Value> operands(batchedOperands);
+      if (hoistedNonBatchableOperands.empty()) {
+        return builder.create<BatchedMulGLWEIntOp>(
+          mlir::TypeRange{resType},
+          operands,
+          getOperation()->getAttrs());
+      } else {
+        operands.append(hoistedNonBatchableOperands.begin(),
+                        hoistedNonBatchableOperands.end());
+        return builder.create<BatchedMulGLWEIntCstOp>(
+          mlir::TypeRange{resType},
+          operands,
+          getOperation()->getAttrs());
+      }
+    }
+  }];
 }
 
 def TFHE_BatchedKeySwitchGLWEOp : TFHE_Op<"batched_keyswitch_glwe", [Pure]> {
