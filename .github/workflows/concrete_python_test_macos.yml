@@ -1,0 +1,117 @@
+name: Concrete Python Tests (macOS)
+on:
+  workflow_call:
+  workflow_dispatch:
+    secrets:
+      CONCRETE_CI_SSH_PRIVATE:
+        required: true
+      CONCRETE_ACTIONS_TOKEN:
+        required: true
+
+concurrency:
+  group: concrete_python_tests_macos-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  BuildConcreteCompilerAndTestConcretePythonInMacOS:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-11", "m1mac"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+
+      - name: Install OS Dependencies
+        run: |
+          brew install ninja ccache
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Cache Compilation (push)
+        if: github.event_name == 'push'
+        uses: actions/cache@v3
+        with:
+          path: /Users/runner/Library/Caches/ccache
+          key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-compilation-cache-
+
+      - name: Cache Compilation (pull_request)
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@v3
+        with:
+          path: /Users/runner/Library/Caches/ccache
+          key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-compilation-cache-
+
+      - name: Get tmpdir path
+        if: github.event_name == 'push'
+        id: tmpdir-path
+        run: echo "::set-output name=TMPDIR_PATH::$TMPDIR"
+
+      - name: Build
+        run: |
+          set -e
+          
+          cd frontends/concrete-python
+          
+          rm -rf .venv
+          python3.10 -m venv .venv
+          
+          . .venv/bin/activate
+          
+          pip install -r requirements.dev.txt
+          pip install -r requirements.txt
+          
+          cd $GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
+          
+          echo "Debug: ccache statistics (prior to the build):"
+          ccache -s
+          
+          make Python3_EXECUTABLE=$(which python) python-bindings
+          
+          echo "Debug: ccache statistics (after the build):"
+          ccache -s
+          
+          export COMPILER_BUILD_DIRECTORY=$(pwd)/build
+          cd $GITHUB_WORKSPACE/frontends/concrete-python
+          
+          rm -rf dist
+          mkdir -p dist
+          
+          pip wheel -v --no-deps -w dist .
+          delocate-wheel -v dist/*macos*.whl
+          
+          deactivate
+
+      - name: Test
+        run: |
+          set -e
+          cd $(mktemp -d)
+          
+          python3.10 -m venv .testenv
+          . .testenv/bin/activate
+          
+          pip install $GITHUB_WORKSPACE/frontends/concrete-python/dist/*macos*.whl
+          pip install -r $GITHUB_WORKSPACE/frontends/concrete-python/requirements.dev.txt
+          
+          cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
+          pytest tests -svv -n auto --key-cache "/tmp/KeySetCache" -m "not dataflow"
+
+          deactivate
