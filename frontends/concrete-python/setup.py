@@ -2,6 +2,9 @@ import os
 import re
 import setuptools
 
+from setuptools import Extension
+from setuptools.command.build_ext import build_ext
+
 
 def read(file):
     return open(os.path.join(os.path.dirname(__file__), file)).read()
@@ -16,6 +19,16 @@ def bindings_directory():
     if path is None or path == "":
         raise RuntimeError("COMPILER_BUILD_DIRECTORY is not set")
     return os.path.relpath(path) + "/tools/concretelang/python_packages/concretelang_core"
+
+
+class MakeExtension(Extension):
+    def __init__(self, name):
+        Extension.__init__(self, name, sources=[])
+
+
+class MakeBuild(build_ext):
+    def run(self):
+        pass
 
 
 setuptools.setup(
@@ -89,6 +102,8 @@ setuptools.setup(
     include_package_data=True,
     package_data={"": ["*.so", "*.dylib"]},
 
+    ext_modules=[MakeExtension("python-bindings")],
+    cmdclass=dict(build_ext=MakeBuild),
     zip_safe=False,
 
 )
