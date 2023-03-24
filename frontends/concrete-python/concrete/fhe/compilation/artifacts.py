@@ -126,27 +126,33 @@ class DebugArtifacts:
             f.write(f"Python {platform.python_version()}\n")
 
         with open(output_directory.joinpath("requirements.txt"), "w", encoding="utf-8") as f:
-            # example `pip list` output
+            try:
+                # example `pip list` output
 
-            # Package                       Version
-            # ----------------------------- ---------
-            # alabaster                     0.7.12
-            # appdirs                       1.4.4
-            # ...                           ...
-            # ...                           ...
-            # wrapt                         1.12.1
-            # zipp                          3.5.0
+                # Package                       Version
+                # ----------------------------- ---------
+                # alabaster                     0.7.12
+                # appdirs                       1.4.4
+                # ...                           ...
+                # ...                           ...
+                # wrapt                         1.12.1
+                # zipp                          3.5.0
 
-            pip_process = subprocess.run(
-                ["pip", "--disable-pip-version-check", "list"], stdout=subprocess.PIPE, check=True
-            )
-            dependencies = iter(pip_process.stdout.decode("utf-8").split("\n"))
+                pip_process = subprocess.run(
+                    ["pip", "--disable-pip-version-check", "list"],
+                    stdout=subprocess.PIPE,
+                    check=True,
+                )
+                dependencies = iter(pip_process.stdout.decode("utf-8").split("\n"))
 
-            # skip 'Package ... Version' line
-            next(dependencies)
+                # skip 'Package ... Version' line
+                next(dependencies)
 
-            # skip '------- ... -------' line
-            next(dependencies)
+                # skip '------- ... -------' line
+                next(dependencies)
+
+            except Exception:  # pragma: no cover  # pylint: disable=broad-exception-caught
+                dependencies = []  # pragma: no cover
 
             for dependency in dependencies:
                 tokens = [token for token in dependency.split(" ") if token != ""]
