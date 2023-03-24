@@ -35,6 +35,30 @@ namespace {
 static std::atomic<size_t> next_device = {0};
 static size_t num_devices = 0;
 
+static inline size_t memref_get_data_size(MemRef2 &m) {
+  return m.sizes[0] * m.sizes[1] * sizeof(uint64_t);
+}
+
+static inline void memref_copy_contiguous(MemRef2 &out, MemRef2 &in) {
+  assert(in.sizes[0] == out.sizes[0] && in.sizes[1] == out.sizes[1] &&
+         "memref_copy_contiguous sizes differ");
+  assert(in.strides[0] == out.strides[0] && in.strides[1] == out.strides[1] &&
+         "memref_copy_contiguous strides differ");
+  assert(in.strides[0] == in.sizes[1] && in.strides[1] == 1 &&
+         "memref_copy_contiguous strides not compatible with contiguous "
+         "storage.");
+  memcpy(out.aligned + out.offset, in.aligned + in.offset,
+         memref_get_data_size(in));
+}
+
+static inline MemRef2 memref_copy_alloc(MemRef2 &m) {
+  uint64_t *data = (uint64_t *)malloc(memref_get_data_size(m));
+  MemRef2 ret = {
+      data, data, 0, {m.sizes[0], m.sizes[1]}, {m.strides[0], m.strides[1]}};
+  memref_copy_contiguous(ret, m);
+  return ret;
+}
+
 struct Void {};
 union Param {
   Void _;
@@ -58,7 +82,6 @@ struct PBS_buffer {
         max_pbs_buffer_samples, cuda_get_max_shared_memory(gpu_index), true);
   }
   ~PBS_buffer() {
-    assert(pbs_buffer != nullptr);
     cleanup_cuda_bootstrap_amortized(gpu_stream, gpu_index, &pbs_buffer);
   }
   int8_t *get_pbs_buffer(void *stream, uint32_t gpu_idx,
@@ -69,7 +92,6 @@ struct PBS_buffer {
     assert(input_lwe_ciphertext_count <= max_pbs_buffer_samples);
     assert(stream == gpu_stream);
     assert(gpu_idx == gpu_index);
-    assert(pbs_buffer != nullptr);
     return pbs_buffer;
   }
 
@@ -126,21 +148,17 @@ private:
 };
 struct Dependence {
   int32_t location;
-  int32_t rank;
   MemRef2 host_data;
   void *device_data;
   bool onHostReady;
   bool hostAllocated;
   bool used;
-  bool read;
-  Dependence(int32_t l, int32_t r, MemRef2 &hd, void *dd, bool ohr,
-             bool alloc = false)
-      : location(l), rank(r), host_data(hd), device_data(dd), onHostReady(ohr),
-        hostAllocated(alloc), used(false), read(false) {}
-  Dependence(int32_t l, int32_t r, uint64_t val, void *dd, bool ohr,
-             bool alloc = false)
-      : location(l), rank(r), device_data(dd), onHostReady(ohr),
-        hostAllocated(alloc), used(false), read(false) {
+  Dependence(int32_t l, MemRef2 hd, void *dd, bool ohr, bool alloc = false)
+      : location(l), host_data(hd), device_data(dd), onHostReady(ohr),
+        hostAllocated(alloc), used(false) {}
+  Dependence(int32_t l, uint64_t val, void *dd, bool ohr, bool alloc = false)
+      : location(l), device_data(dd), onHostReady(ohr), hostAllocated(alloc),
+        used(false) {
     *host_data.aligned = val;
   }
   inline void free_data(GPU_DFG *dfg) {
@@ -166,7 +184,6 @@ struct Process {
   Param output_lwe_dim;
   Param poly_size;
   Param glwe_dim;
-  Param precision;
   Param output_size;
   Context ctx;
   void (*fun)(Process *);
@@ -174,6 +191,7 @@ struct Process {
 };
 
 static inline void schedule_kernel(Process *p) { p->fun(p); }
+
 struct Stream {
   stream_type type;
   Dependence *dep;
@@ -185,15 +203,14 @@ struct Stream {
   ~Stream() {
     if (dep != nullptr)
       dep->free_data(dfg);
-    delete producer;
+    if (producer != nullptr)
+      delete producer;
   }
   void put(Dependence *d) {
     if (type == TS_STREAM_TYPE_X86_TO_TOPO_LSAP) {
       assert(d->onHostReady &&
              "Host-to-device stream should have data initially on host.");
-      size_t data_size = sizeof(uint64_t);
-      for (int i = 0; i < d->rank; ++i)
-        data_size *= d->host_data.sizes[i];
+      size_t data_size = memref_get_data_size(d->host_data);
       d->device_data = cuda_malloc_async(
           data_size, (cudaStream_t *)dfg->gpu_stream, dfg->gpu_idx);
       cuda_memcpy_async_to_gpu(
@@ -239,21 +256,20 @@ struct Stream {
     dep->used = true;
     // If this was already copied to host, copy out
     if (dep->onHostReady) {
-      memref_copy_one_rank(dep->host_data.allocated, dep->host_data.aligned,
-                           dep->host_data.offset, dep->host_data.sizes[0],
-                           dep->host_data.strides[0], out.allocated,
-                           out.aligned, out.offset, out.sizes[0],
-                           out.strides[0]);
+      memref_copy_contiguous(out, dep->host_data);
     } else {
+      size_t data_size = memref_get_data_size(dep->host_data);
       cuda_memcpy_async_to_cpu(out.aligned + out.offset, dep->device_data,
-                               out.sizes[0] * sizeof(uint64_t),
-                               (cudaStream_t *)dfg->gpu_stream, dep->location);
+                               data_size, (cudaStream_t *)dfg->gpu_stream,
+                               dep->location);
       cudaStreamSynchronize(*(cudaStream_t *)dfg->gpu_stream);
       // After this synchronization point, all of the host-side
       // allocated memory can be freed as we know all asynchronous
       // operations have finished.
       dfg->free_stream_order_dependent_data();
+      dep->host_data = memref_copy_alloc(out);
       dep->onHostReady = true;
+      dep->hostAllocated = true;
     }
     return dep;
   }
@@ -264,9 +280,7 @@ struct Stream {
     if (location == host_location) {
       if (dep->onHostReady)
         return dep;
-      size_t data_size = sizeof(uint64_t);
-      for (int i = 0; i < dep->rank; ++i)
-        data_size *= dep->host_data.sizes[i];
+      size_t data_size = memref_get_data_size(dep->host_data);
       dep->host_data.allocated = dep->host_data.aligned =
           (uint64_t *)malloc(data_size);
       dep->hostAllocated = true;
@@ -332,37 +346,75 @@ make_process_2_1(void *dfg, void *sin1, void *sin2, void *sout,
   return p;
 }
 
+[[maybe_unused]] static MemRef2 sdfg_gpu_debug_dependence(Dependence *d,
+                                                          cudaStream_t *s) {
+  if (d->onHostReady)
+    return d->host_data;
+  size_t data_size = memref_get_data_size(d->host_data);
+  uint64_t *data = (uint64_t *)malloc(data_size);
+  MemRef2 ret = {data,
+                 data,
+                 0,
+                 {d->host_data.sizes[0], d->host_data.sizes[1]},
+                 {d->host_data.strides[0], d->host_data.strides[1]}};
+  cuda_memcpy_async_to_cpu(data, d->device_data, data_size, s, d->location);
+  cudaStreamSynchronize(*s);
+  return ret;
+}
+
+[[maybe_unused]] static bool
+sdfg_gpu_debug_compare_memref(MemRef2 &a, MemRef2 &b, char const *msg) {
+  if (a.sizes[0] != b.sizes[0] || a.sizes[1] != b.sizes[1] ||
+      a.strides[0] != b.strides[0] || a.strides[1] != b.strides[1])
+    return false;
+  size_t data_size = memref_get_data_size(a);
+  for (int i = 0; i < data_size / sizeof(uint64_t); ++i)
+    if ((a.aligned + a.offset)[i] != (b.aligned + b.offset)[i]) {
+      std::cout << msg << " - memrefs differ at position " << i << " "
+                << (a.aligned + a.offset)[i] << " " << (b.aligned + b.offset)[i]
+                << "\n";
+      return false;
+    }
+  return true;
+}
+
 // Stream emulator processes
 void memref_keyswitch_lwe_u64_process(Process *p) {
   Dependence *idep = p->input_streams[0]->get(p->dfg->gpu_idx);
+  uint64_t num_samples = idep->host_data.sizes[0];
+  MemRef2 out = {
+      0, 0, 0, {num_samples, p->output_size.val}, {p->output_size.val, 1}};
   void *ct0_gpu = idep->device_data;
   void *ksk_gpu = p->ctx.val->get_ksk_gpu(
       p->level.val, p->input_lwe_dim.val, p->output_lwe_dim.val,
       p->dfg->gpu_idx, (cudaStream_t *)p->dfg->gpu_stream);
-  MemRef2 out = {0, 0, 0, {p->output_size.val}, {1}};
-  void *out_gpu =
-      cuda_malloc_async(out.sizes[0] * sizeof(uint64_t),
-                        (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
+  size_t data_size = memref_get_data_size(out);
+  void *out_gpu = cuda_malloc_async(
+      data_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
   // Schedule the keyswitch kernel on the GPU
   cuda_keyswitch_lwe_ciphertext_vector_64(
       (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx, out_gpu, ct0_gpu,
       ksk_gpu, p->input_lwe_dim.val, p->output_lwe_dim.val, p->base_log.val,
-      p->level.val, 1 /*batch size*/);
+      p->level.val, num_samples);
   Dependence *dep =
-      new Dependence((int32_t)p->dfg->gpu_idx, 1, out, out_gpu, false);
+      new Dependence((int32_t)p->dfg->gpu_idx, out, out_gpu, false);
   p->output_streams[0]->put(dep);
 }
 
-// Construct the glwe accumulator (on CPU) then put it on a stream as
-// input to the bootstrap
-void memref_bootstrap_glwe_accumulator_process(Process *p) {
+void memref_bootstrap_lwe_u64_process(Process *p) {
+  assert(p->output_size.val == p->glwe_dim.val * p->poly_size.val + 1);
+  void *fbsk_gpu = p->ctx.val->get_bsk_gpu(
+      p->input_lwe_dim.val, p->poly_size.val, p->level.val, p->glwe_dim.val,
+      p->dfg->gpu_idx, (cudaStream_t *)p->dfg->gpu_stream);
+  Dependence *idep0 = p->input_streams[0]->get(p->dfg->gpu_idx);
+  void *ct0_gpu = idep0->device_data;
+
   uint64_t glwe_ct_len = p->poly_size.val * (p->glwe_dim.val + 1);
   uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
   uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size);
-  Dependence *idep = p->input_streams[0]->get(host_location);
-  MemRef2 &mtlu = idep->host_data;
+  Dependence *idep1 = p->input_streams[1]->get(host_location);
+  MemRef2 &mtlu = idep1->host_data;
   auto tlu = mtlu.aligned + mtlu.offset;
-
   // Glwe trivial encryption
   for (size_t i = 0; i < p->poly_size.val * p->glwe_dim.val; i++) {
     glwe_ct[i] = 0;
@@ -370,27 +422,18 @@ void memref_bootstrap_glwe_accumulator_process(Process *p) {
   for (size_t i = 0; i < p->poly_size.val; i++) {
     glwe_ct[p->poly_size.val * p->glwe_dim.val + i] = tlu[i];
   }
-  MemRef2 m = {glwe_ct, glwe_ct, 0, {glwe_ct_len}, {1}};
-  Dependence *dep = new Dependence(host_location, 1, m, nullptr, true, true);
-  p->output_streams[0]->put(dep);
-}
+  void *glwe_ct_gpu = cuda_malloc_async(
+      glwe_ct_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
+  cuda_memcpy_async_to_gpu(glwe_ct_gpu, glwe_ct, glwe_ct_size,
+                           (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
 
-void memref_bootstrap_lwe_u64_process(Process *p) {
-  assert(p->output_size.val == p->glwe_dim.val * p->poly_size.val + 1);
-  uint32_t num_samples = 1; // TODO batching
-  void *fbsk_gpu = p->ctx.val->get_bsk_gpu(
-      p->input_lwe_dim.val, p->poly_size.val, p->level.val, p->glwe_dim.val,
-      p->dfg->gpu_idx, (cudaStream_t *)p->dfg->gpu_stream);
-  Dependence *idep0 = p->input_streams[0]->get(p->dfg->gpu_idx);
-  Dependence *idep1 = p->input_streams[1]->get(p->dfg->gpu_idx);
-  void *ct0_gpu = idep0->device_data;
-  void *glwe_ct_gpu = idep1->device_data;
-
-  MemRef2 out = {0, 0, 0, {p->output_size.val}, {1}};
-  uint64_t out_batch_size = out.sizes[0];
-  void *out_gpu =
-      cuda_malloc_async(out_batch_size * sizeof(uint64_t),
-                        (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
+  uint64_t num_samples = idep0->host_data.sizes[0];
+  MemRef2 out = {
+      0, 0, 0, {num_samples, p->output_size.val}, {p->output_size.val, 1}};
+  size_t data_size = memref_get_data_size(out);
+  void *out_gpu = cuda_malloc_async(
+      data_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
+  cudaMemsetAsync(out_gpu, 0, data_size, *(cudaStream_t *)p->dfg->gpu_stream);
   // Move test vector indexes to the GPU, the test vector indexes is set of 0
   uint32_t num_test_vectors = 1, lwe_idx = 0,
            test_vector_idxes_size = num_samples * sizeof(uint64_t);
@@ -411,11 +454,10 @@ void memref_bootstrap_lwe_u64_process(Process *p) {
       p->input_lwe_dim.val, p->glwe_dim.val, p->poly_size.val, p->base_log.val,
       p->level.val, num_samples, num_test_vectors, lwe_idx,
       cuda_get_max_shared_memory(p->dfg->gpu_idx));
-  p->dfg->drop_pbs_buffer();
   cuda_drop_async(test_vector_idxes_gpu, (cudaStream_t *)p->dfg->gpu_stream,
                   p->dfg->gpu_idx);
   Dependence *dep =
-      new Dependence((int32_t)p->dfg->gpu_idx, 1, out, out_gpu, false);
+      new Dependence((int32_t)p->dfg->gpu_idx, out, out_gpu, false);
   // As streams are not synchronized, we can only free this vector
   // after a later synchronization point where we are guaranteed that
   // this vector is no longer needed.
@@ -427,15 +469,15 @@ void memref_add_lwe_ciphertexts_u64_process(Process *p) {
   Dependence *idep0 = p->input_streams[0]->get(p->dfg->gpu_idx);
   Dependence *idep1 = p->input_streams[1]->get(p->dfg->gpu_idx);
   MemRef2 ct0 = idep0->host_data;
-  void *out_gpu =
-      cuda_malloc_async(ct0.sizes[0] * sizeof(uint64_t),
-                        (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
-  MemRef2 out = {0, 0, 0, {ct0.sizes[0]}, {1}};
+  uint64_t num_samples = ct0.sizes[0];
+  MemRef2 out = {0, 0, 0, {num_samples, ct0.sizes[1]}, {ct0.sizes[1], 1}};
+  size_t data_size = memref_get_data_size(out);
+  void *out_gpu = cuda_malloc_async(
+      data_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
   cuda_add_lwe_ciphertext_vector_64(
       (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx, out_gpu,
-      idep0->device_data, idep1->device_data,
-      /*p->input_lwe_dim.val*/ ct0.sizes[0] - 1, 1 /* num_samples */);
-  Dependence *dep = new Dependence(p->dfg->gpu_idx, 1, out, out_gpu, false);
+      idep0->device_data, idep1->device_data, ct0.sizes[1] - 1, num_samples);
+  Dependence *dep = new Dependence(p->dfg->gpu_idx, out, out_gpu, false);
   p->output_streams[0]->put(dep);
 }
 
@@ -443,16 +485,15 @@ void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p) {
   Dependence *idep0 = p->input_streams[0]->get(p->dfg->gpu_idx);
   Dependence *idep1 = p->input_streams[1]->get(p->dfg->gpu_idx);
   MemRef2 ct0 = idep0->host_data;
-  void *out_gpu =
-      cuda_malloc_async(ct0.sizes[0] * sizeof(uint64_t),
-                        (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
-  MemRef2 out = {0, 0, 0, {ct0.sizes[0]}, {1}};
+  uint64_t num_samples = ct0.sizes[0];
+  MemRef2 out = {0, 0, 0, {num_samples, ct0.sizes[1]}, {ct0.sizes[1], 1}};
+  size_t data_size = memref_get_data_size(out);
+  void *out_gpu = cuda_malloc_async(
+      data_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
   cuda_add_lwe_ciphertext_vector_plaintext_vector_64(
       (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx, out_gpu,
-      idep0->device_data, idep1->device_data,
-      /*p->input_lwe_dim.val*/ ct0.sizes[0] - 1, 1 /* num_samples */);
-
-  Dependence *dep = new Dependence(p->dfg->gpu_idx, 1, out, out_gpu, false);
+      idep0->device_data, idep1->device_data, ct0.sizes[1] - 1, num_samples);
+  Dependence *dep = new Dependence(p->dfg->gpu_idx, out, out_gpu, false);
   p->output_streams[0]->put(dep);
 }
 
@@ -460,31 +501,30 @@ void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p) {
   Dependence *idep0 = p->input_streams[0]->get(p->dfg->gpu_idx);
   Dependence *idep1 = p->input_streams[1]->get(p->dfg->gpu_idx);
   MemRef2 ct0 = idep0->host_data;
-  void *out_gpu =
-      cuda_malloc_async(ct0.sizes[0] * sizeof(uint64_t),
-                        (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
-  MemRef2 out = {0, 0, 0, {ct0.sizes[0]}, {1}};
+  uint64_t num_samples = ct0.sizes[0];
+  MemRef2 out = {0, 0, 0, {num_samples, ct0.sizes[1]}, {ct0.sizes[1], 1}};
+  size_t data_size = memref_get_data_size(out);
+  void *out_gpu = cuda_malloc_async(
+      data_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
   cuda_mult_lwe_ciphertext_vector_cleartext_vector_64(
       (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx, out_gpu,
-      idep0->device_data, idep1->device_data,
-      /*p->input_lwe_dim.val*/ ct0.sizes[0] - 1, 1 /* num_samples */);
-
-  Dependence *dep = new Dependence(p->dfg->gpu_idx, 1, out, out_gpu, false);
+      idep0->device_data, idep1->device_data, ct0.sizes[1] - 1, num_samples);
+  Dependence *dep = new Dependence(p->dfg->gpu_idx, out, out_gpu, false);
   p->output_streams[0]->put(dep);
 }
 
 void memref_negate_lwe_ciphertext_u64_process(Process *p) {
   Dependence *idep = p->input_streams[0]->get(p->dfg->gpu_idx);
   MemRef2 ct0 = idep->host_data;
-  void *out_gpu =
-      cuda_malloc_async(ct0.sizes[0] * sizeof(uint64_t),
-                        (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
-  MemRef2 out = {0, 0, 0, {ct0.sizes[0]}, {1}};
+  uint64_t num_samples = ct0.sizes[0];
+  MemRef2 out = {0, 0, 0, {num_samples, ct0.sizes[1]}, {ct0.sizes[1], 1}};
+  size_t data_size = memref_get_data_size(out);
+  void *out_gpu = cuda_malloc_async(
+      data_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
   cuda_negate_lwe_ciphertext_vector_64(
       (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx, out_gpu,
-      idep->device_data,
-      /*p->input_lwe_dim.val*/ ct0.sizes[0] - 1, 1 /* num_samples */);
-  Dependence *dep = new Dependence(p->dfg->gpu_idx, 1, out, out_gpu, false);
+      idep->device_data, ct0.sizes[1] - 1, num_samples);
+  Dependence *dep = new Dependence(p->dfg->gpu_idx, out, out_gpu, false);
   p->output_streams[0]->put(dep);
 }
 
@@ -550,37 +590,72 @@ void stream_emulator_make_memref_keyswitch_lwe_u64_process(
 void stream_emulator_make_memref_bootstrap_lwe_u64_process(
     void *dfg, void *sin1, void *sin2, void *sout, uint32_t input_lwe_dim,
     uint32_t poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim,
-    uint32_t precision, uint32_t output_size, void *context) {
-
-  // We need to generate two processes: one for building the glwe
-  // accumulator and one for the bootstrap (plus a stream to connect).
-  void *accu_s =
-      stream_emulator_make_memref_stream("", TS_STREAM_TYPE_X86_TO_TOPO_LSAP);
-  Process *accu_p = make_process_1_1(dfg, sin2, accu_s,
-                                     memref_bootstrap_glwe_accumulator_process);
-  accu_p->input_lwe_dim.val = input_lwe_dim;
-  accu_p->poly_size.val = poly_size;
-  accu_p->level.val = level;
-  accu_p->base_log.val = base_log;
-  accu_p->glwe_dim.val = glwe_dim;
-  accu_p->precision.val = precision;
-  accu_p->output_size.val = output_size;
-  accu_p->ctx.val = (RuntimeContext *)context;
-  static int count_ = 0;
-  sprintf(accu_p->name, "glwe_accumulator_%d", count_++);
-
-  Process *p = make_process_2_1(dfg, sin1, accu_s, sout,
-                                memref_bootstrap_lwe_u64_process);
+    uint32_t output_size, void *context) {
+  // The TLU does not need to be sent to GPU
+  ((Stream *)sin2)->type = TS_STREAM_TYPE_X86_TO_X86_LSAP;
+  Process *p =
+      make_process_2_1(dfg, sin1, sin2, sout, memref_bootstrap_lwe_u64_process);
   p->input_lwe_dim.val = input_lwe_dim;
   p->poly_size.val = poly_size;
   p->level.val = level;
   p->base_log.val = base_log;
   p->glwe_dim.val = glwe_dim;
-  p->precision.val = precision;
   p->output_size.val = output_size;
   p->ctx.val = (RuntimeContext *)context;
   static int count = 0;
   sprintf(p->name, "bootstrap_%d", count++);
+}
+
+void stream_emulator_make_memref_batched_add_lwe_ciphertexts_u64_process(
+    void *dfg, void *sin1, void *sin2, void *sout) {
+  stream_emulator_make_memref_add_lwe_ciphertexts_u64_process(dfg, sin1, sin2,
+                                                              sout);
+}
+
+void stream_emulator_make_memref_batched_add_plaintext_lwe_ciphertext_u64_process(
+    void *dfg, void *sin1, void *sin2, void *sout) {
+  stream_emulator_make_memref_add_plaintext_lwe_ciphertext_u64_process(
+      dfg, sin1, sin2, sout);
+}
+void stream_emulator_make_memref_batched_add_plaintext_cst_lwe_ciphertext_u64_process(
+    void *dfg, void *sin1, void *sin2, void *sout) {
+  stream_emulator_make_memref_add_plaintext_lwe_ciphertext_u64_process(
+      dfg, sin1, sin2, sout);
+}
+
+void stream_emulator_make_memref_batched_mul_cleartext_lwe_ciphertext_u64_process(
+    void *dfg, void *sin1, void *sin2, void *sout) {
+  stream_emulator_make_memref_mul_cleartext_lwe_ciphertext_u64_process(
+      dfg, sin1, sin2, sout);
+}
+void stream_emulator_make_memref_batched_mul_cleartext_cst_lwe_ciphertext_u64_process(
+    void *dfg, void *sin1, void *sin2, void *sout) {
+  stream_emulator_make_memref_mul_cleartext_lwe_ciphertext_u64_process(
+      dfg, sin1, sin2, sout);
+}
+
+void stream_emulator_make_memref_batched_negate_lwe_ciphertext_u64_process(
+    void *dfg, void *sin1, void *sout) {
+  stream_emulator_make_memref_negate_lwe_ciphertext_u64_process(dfg, sin1,
+                                                                sout);
+}
+
+void stream_emulator_make_memref_batched_keyswitch_lwe_u64_process(
+    void *dfg, void *sin1, void *sout, uint32_t level, uint32_t base_log,
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t output_size,
+    void *context) {
+  stream_emulator_make_memref_keyswitch_lwe_u64_process(
+      dfg, sin1, sout, level, base_log, input_lwe_dim, output_lwe_dim,
+      output_size, context);
+}
+
+void stream_emulator_make_memref_batched_bootstrap_lwe_u64_process(
+    void *dfg, void *sin1, void *sin2, void *sout, uint32_t input_lwe_dim,
+    uint32_t poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim,
+    uint32_t output_size, void *context) {
+  stream_emulator_make_memref_bootstrap_lwe_u64_process(
+      dfg, sin1, sin2, sout, input_lwe_dim, poly_size, level, base_log,
+      glwe_dim, output_size, context);
 }
 
 void *stream_emulator_make_uint64_stream(const char *name, stream_type stype) {
@@ -590,14 +665,14 @@ void stream_emulator_put_uint64(void *stream, uint64_t e) {
   Stream *s = (Stream *)stream;
   uint64_t *data = (uint64_t *)malloc(sizeof(uint64_t));
   *data = e;
-  MemRef2 m = {data, data, 0, {1}, {1}};
-  Dependence *dep = new Dependence(host_location, 1, m, nullptr, true, true);
+  MemRef2 m = {data, data, 0, {1, 1}, {1, 1}};
+  Dependence *dep = new Dependence(host_location, m, nullptr, true, true);
   s->put(dep);
 }
 uint64_t stream_emulator_get_uint64(void *stream) {
   uint64_t res;
   auto s = (Stream *)stream;
-  MemRef2 m = {&res, &res, 0, {1}, {1}};
+  MemRef2 m = {&res, &res, 0, {1, 1}, {1, 1}};
   s->get_on_host(m);
   return res;
 }
@@ -608,16 +683,52 @@ void *stream_emulator_make_memref_stream(const char *name, stream_type stype) {
 void stream_emulator_put_memref(void *stream, uint64_t *allocated,
                                 uint64_t *aligned, uint64_t offset,
                                 uint64_t size, uint64_t stride) {
+  assert(stride == 1 && "Strided memrefs not supported");
   Stream *s = (Stream *)stream;
-  MemRef2 m = {allocated, aligned, offset, {size}, {stride}};
-  Dependence *dep = new Dependence(host_location, 1, m, nullptr, true);
+  MemRef2 m = {allocated, aligned, offset, {1, size}, {size, stride}};
+  Dependence *dep =
+      new Dependence(host_location, memref_copy_alloc(m), nullptr, true, true);
   s->put(dep);
 }
 void stream_emulator_get_memref(void *stream, uint64_t *out_allocated,
                                 uint64_t *out_aligned, uint64_t out_offset,
                                 uint64_t out_size, uint64_t out_stride) {
-  MemRef2 mref = {
-      out_allocated, out_aligned, out_offset, {out_size}, {out_stride}};
+  assert(out_stride == 1 && "Strided memrefs not supported");
+  MemRef2 mref = {out_allocated,
+                  out_aligned,
+                  out_offset,
+                  {1, out_size},
+                  {out_size, out_stride}};
+  auto s = (Stream *)stream;
+  s->get_on_host(mref);
+}
+
+void *stream_emulator_make_memref_batch_stream(const char *name,
+                                               stream_type stype) {
+  return (void *)new Stream(stype);
+}
+void stream_emulator_put_memref_batch(void *stream, uint64_t *allocated,
+                                      uint64_t *aligned, uint64_t offset,
+                                      uint64_t size0, uint64_t size1,
+                                      uint64_t stride0, uint64_t stride1) {
+  assert(stride1 == 1 && "Strided memrefs not supported");
+  Stream *s = (Stream *)stream;
+  MemRef2 m = {allocated, aligned, offset, {size0, size1}, {stride0, stride1}};
+  Dependence *dep =
+      new Dependence(host_location, memref_copy_alloc(m), nullptr, true, true);
+  s->put(dep);
+}
+void stream_emulator_get_memref_batch(void *stream, uint64_t *out_allocated,
+                                      uint64_t *out_aligned,
+                                      uint64_t out_offset, uint64_t out_size0,
+                                      uint64_t out_size1, uint64_t out_stride0,
+                                      uint64_t out_stride1) {
+  assert(out_stride1 == 1 && "Strided memrefs not supported");
+  MemRef2 mref = {out_allocated,
+                  out_aligned,
+                  out_offset,
+                  {out_size0, out_size1},
+                  {out_stride0, out_stride1}};
   auto s = (Stream *)stream;
   s->get_on_host(mref);
 }
