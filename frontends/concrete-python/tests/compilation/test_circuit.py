@@ -328,6 +328,7 @@ def test_circuit_run_with_unused_arg(helpers):
     assert circuit.encrypt_run_decrypt(10, 20) == 20
 
 
+@pytest.mark.dataflow
 def test_dataflow_circuit(helpers):
     """
     Test execution with dataflow_parallelize=True.
