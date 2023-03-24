@@ -30,7 +30,8 @@ pytest:
 		--cov=concrete \
 		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
-		--key-cache "${KEY_CACHE_DIRECTORY}"
+		--key-cache "${KEY_CACHE_DIRECTORY}" \
+		-m "${PYTEST_MARKERS}"
 
 # ==========
 # Formatting
