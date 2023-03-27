@@ -7,7 +7,8 @@
 #define CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 
 #include <concretelang/Conversion/Utils/GlobalFHEContext.h>
-#include <concretelang/Support/V0ClientParameters.h>
+#include <concretelang/Support/ClientParametersGeneration.h>
+#include <concretelang/Support/Encodings.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/SourceMgr.h>
@@ -78,6 +79,10 @@ struct CompilationOptions {
   unsigned int chunkSize;
   unsigned int chunkWidth;
 
+  /// When compiling from a dialect lower than FHE, one needs to provide
+  /// encodings info manually to allow the client lib to be generated.
+  std::optional<mlir::concretelang::encodings::CircuitEncodings> encodings;
+
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
@@ -85,7 +90,7 @@ struct CompilationOptions {
         dataflowParallelize(false), optimizeTFHE(true), emitGPUOps(false),
         clientParametersFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
-        chunkSize(4), chunkWidth(2){};
+        chunkSize(4), chunkWidth(2), encodings(std::nullopt){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {
     clientParametersFuncName = funcname;
@@ -204,7 +209,7 @@ public:
     /// and scf loops
     FHE_NO_LINALG,
 
-    /// Read sources and lower all FHE operations to TFHE
+    /// Read sources and lower all FHE operations to unparameterized TFHE
     /// operations
     TFHE,
 
@@ -214,6 +219,10 @@ public:
 
     /// Batch TFHE operations
     BATCHED_TFHE,
+
+    /// Read sources and lower all FHE operations to normalized TFHE
+    /// operations
+    NORMALIZED_TFHE,
 
     /// Read sources and lower all FHE and TFHE operations to Concrete
     /// operations

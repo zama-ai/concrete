@@ -200,6 +200,9 @@ struct LowerSDFGMakeProcess
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(),
           mpOp->getAttrOfType<mlir::IntegerAttr>("output_size")));
+      // ksk_index
+      operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+          mpOp.getLoc(), mpOp->getAttrOfType<mlir::IntegerAttr>("kskIndex")));
       // context
       operands.push_back(getContextArgument(mpOp));
       break;
@@ -226,6 +229,9 @@ struct LowerSDFGMakeProcess
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(),
           mpOp->getAttrOfType<mlir::IntegerAttr>("output_size")));
+      // bsk_index
+      operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+          mpOp.getLoc(), mpOp->getAttrOfType<mlir::IntegerAttr>("bskIndex")));
       // context
       operands.push_back(getContextArgument(mpOp));
       break;

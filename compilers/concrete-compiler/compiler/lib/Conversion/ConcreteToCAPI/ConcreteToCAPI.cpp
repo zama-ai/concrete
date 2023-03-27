@@ -106,18 +106,20 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                        {memref1DType, memref1DType}, {});
   } else if (funcName == memref_keyswitch_lwe_u64 ||
              funcName == memref_keyswitch_lwe_cuda_u64) {
-    funcType = mlir::FunctionType::get(rewriter.getContext(),
-                                       {memref1DType, memref1DType, i32Type,
-                                        i32Type, i32Type, i32Type, contextType},
-                                       {});
+    funcType =
+        mlir::FunctionType::get(rewriter.getContext(),
+                                {memref1DType, memref1DType, i32Type, i32Type,
+                                 i32Type, i32Type, i32Type, contextType},
+                                {});
   } else if (funcName == memref_bootstrap_lwe_u64 ||
              funcName == memref_bootstrap_lwe_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
                                         memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i32Type, contextType},
+                                        i32Type, i32Type, i32Type, contextType},
                                        {});
   } else if (funcName == memref_keyswitch_async_lwe_u64) {
+    // Todo Answer this question: Isn't it dead ?
     funcType = mlir::FunctionType::get(
         rewriter.getContext(), {memref1DType, memref1DType, contextType},
         {futureType});
@@ -125,20 +127,21 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, memref1DType,
                                         memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i32Type, contextType},
+                                        i32Type, i32Type, i32Type, contextType},
                                        {futureType});
   } else if (funcName == memref_batched_keyswitch_lwe_u64 ||
              funcName == memref_batched_keyswitch_lwe_cuda_u64) {
-    funcType = mlir::FunctionType::get(rewriter.getContext(),
-                                       {memref2DType, memref2DType, i32Type,
-                                        i32Type, i32Type, i32Type, contextType},
-                                       {});
+    funcType =
+        mlir::FunctionType::get(rewriter.getContext(),
+                                {memref2DType, memref2DType, i32Type, i32Type,
+                                 i32Type, i32Type, i32Type, contextType},
+                                {});
   } else if (funcName == memref_batched_bootstrap_lwe_u64 ||
              funcName == memref_batched_bootstrap_lwe_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref2DType, memref2DType,
                                         memref1DType, i32Type, i32Type, i32Type,
-                                        i32Type, i32Type, contextType},
+                                        i32Type, i32Type, i32Type, contextType},
                                        {});
   } else if (funcName == memref_await_future) {
     funcType = mlir::FunctionType::get(
@@ -161,6 +164,9 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                            memref2DType,
                                            memref2DType,
                                            memref1DType,
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
                                            rewriter.getI32Type(),
                                            rewriter.getI32Type(),
                                            rewriter.getI32Type(),
@@ -273,6 +279,9 @@ void keyswitchAddOperands(KeySwitchOp op,
   // lwe_dim_out
   operands.push_back(
       rewriter.create<arith::ConstantOp>(op.getLoc(), op.getLweDimOutAttr()));
+  // ksk_index
+  operands.push_back(
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getKskIndexAttr()));
   // context
   operands.push_back(getContextArgument(op));
 }
@@ -296,6 +305,9 @@ void bootstrapAddOperands(BootstrapOp op,
   // glwe_dim
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.getGlweDimensionAttr()));
+  // bsk_index
+  operands.push_back(
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getBskIndexAttr()));
   // context
   operands.push_back(getContextArgument(op));
 }
@@ -354,6 +366,15 @@ void wopPBSAddOperands(Concrete::WopPBSCRTLweBufferOp op,
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.getPackingKeySwitchoutputPolynomialSizeAttr()));
 
+  // ksk_index
+  operands.push_back(
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getKskIndexAttr()));
+  // bsk_index
+  operands.push_back(
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getBskIndexAttr()));
+  // pksk_index
+  operands.push_back(
+      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getPkskIndexAttr()));
   // context
   operands.push_back(getContextArgument(op));
 }

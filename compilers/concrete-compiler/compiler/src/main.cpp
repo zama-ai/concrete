@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/JSON.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/ToolOutputFile.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
@@ -34,6 +35,7 @@
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/Encodings.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/LLVMEmitFile.h"
@@ -43,12 +45,14 @@
 #include "mlir/IR/BuiltinOps.h"
 
 namespace clientlib = concretelang::clientlib;
+namespace encodings = mlir::concretelang::encodings;
 
 enum Action {
   ROUND_TRIP,
   DUMP_FHE,
   DUMP_FHE_NO_LINALG,
   DUMP_TFHE,
+  DUMP_NORMALIZED_TFHE,
   DUMP_PARAMETRIZED_TFHE,
   DUMP_BATCHED_TFHE,
   DUMP_CONCRETE,
@@ -124,8 +128,12 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(clEnumValN(Action::DUMP_FHE_NO_LINALG,
                                 "dump-fhe-no-linalg",
                                 "Lower FHELinalg to FHE and dump result")),
-    llvm::cl::values(clEnumValN(Action::DUMP_TFHE, "dump-tfhe",
-                                "Lower to TFHE and dump result")),
+    llvm::cl::values(
+        clEnumValN(Action::DUMP_TFHE, "dump-tfhe",
+                   "Lower to unparameterized TFHE and dump result")),
+    llvm::cl::values(clEnumValN(Action::DUMP_NORMALIZED_TFHE,
+                                "dump-normalized-tfhe",
+                                "Lower to normalized TFHE and dump result")),
     llvm::cl::values(clEnumValN(
         Action::DUMP_PARAMETRIZED_TFHE, "dump-parametrized-tfhe",
         "Lower to TFHE, parametrize TFHE operations and dump result")),
@@ -327,6 +335,12 @@ llvm::cl::list<int64_t> largeIntegerCircuitBootstrap(
         "(experimental) [level, baseLog]"),
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 
+llvm::cl::opt<std::string> circuitEncodings(
+    "circuit-encodings",
+    llvm::cl::desc("Specify the input and output encodings of the circuit, "
+                   "using the JSON representation."),
+    llvm::cl::init(std::string{}));
+
 } // namespace cmdline
 
 namespace llvm {
@@ -447,6 +461,20 @@ cmdlineCompilationOptions() {
         llvm::inconvertibleErrorCode());
   }
 
+  if (!cmdline::circuitEncodings.empty()) {
+    auto jsonString = cmdline::circuitEncodings.getValue();
+    auto maybeEncodings =
+        llvm::json::parse<encodings::CircuitEncodings>(jsonString);
+    if (auto err = maybeEncodings.takeError()) {
+      return llvm::make_error<llvm::StringError>(
+          "Failed to parse the --circuit-encodings option.",
+          llvm::inconvertibleErrorCode());
+    }
+    options.encodings = maybeEncodings.get();
+  } else {
+    options.encodings = std::nullopt;
+  }
+
   return options;
 }
 
@@ -531,6 +559,9 @@ mlir::LogicalResult processInputBuffer(
       break;
     case Action::DUMP_TFHE:
       target = mlir::concretelang::CompilerEngine::Target::TFHE;
+      break;
+    case Action::DUMP_NORMALIZED_TFHE:
+      target = mlir::concretelang::CompilerEngine::Target::NORMALIZED_TFHE;
       break;
     case Action::DUMP_PARAMETRIZED_TFHE:
       target = mlir::concretelang::CompilerEngine::Target::PARAMETRIZED_TFHE;

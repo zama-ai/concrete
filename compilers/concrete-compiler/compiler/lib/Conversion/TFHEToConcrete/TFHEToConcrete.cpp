@@ -46,11 +46,11 @@ public:
   TFHEToConcreteTypeConverter() {
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](GLWECipherTextType type) {
-      assert(!type.getKey().isNotParameterized());
-      assert(type.getKey().getPolySize().value() == 1 &&
+      assert(type.getKey().isNormalized() && "keys should be normalized");
+      assert(type.getKey().getNormalized().value().polySize == 1 &&
              "converter doesn't support polynomialSize > 1");
       llvm::SmallVector<int64_t, 2> shape;
-      shape.push_back(type.getKey().getDimension().value() + 1);
+      shape.push_back(type.getKey().getNormalized().value().dimension + 1);
       return mlir::RankedTensorType::get(
           shape, mlir::IntegerType::get(type.getContext(), 64));
     });
@@ -62,8 +62,8 @@ public:
       mlir::SmallVector<int64_t> newShape;
       newShape.reserve(type.getShape().size() + 1);
       newShape.append(type.getShape().begin(), type.getShape().end());
-      assert(!glwe.getKey().isNotParameterized());
-      newShape.push_back(glwe.getKey().getDimension().value() + 1);
+      assert(glwe.getKey().isNormalized());
+      newShape.push_back(glwe.getKey().getNormalized().value().dimension + 1);
       mlir::Type r = mlir::RankedTensorType::get(
           newShape, mlir::IntegerType::get(type.getContext(), 64));
       return r;
@@ -128,12 +128,14 @@ struct BootstrapGLWEOpPattern
     auto glweDimension = adaptor.getKey().getGlweDim();
     auto levels = adaptor.getKey().getLevels();
     auto baseLog = adaptor.getKey().getBaseLog();
-    auto inputLweDimension = inputType.getKey().getDimension().value();
+    auto inputLweDimension =
+        inputType.getKey().getNormalized().value().dimension;
+    auto bskIndex = bsOp.getKeyAttr().getIndex();
 
     rewriter.replaceOpWithNewOp<Concrete::BootstrapLweTensorOp>(
         bsOp, this->getTypeConverter()->convertType(resultType),
         adaptor.getCiphertext(), adaptor.getLookupTable(), inputLweDimension,
-        polySize, levels, baseLog, glweDimension);
+        polySize, levels, baseLog, glweDimension, bskIndex);
 
     return mlir::success();
   }
@@ -164,12 +166,16 @@ struct WopPBSGLWEOpPattern
     auto pksOutputPolySize = adaptor.getPksk().getOutputPolySize();
     auto crtDecomposition = adaptor.getCrtDecompositionAttr();
     auto resultType = op.getType();
+    auto kskIndex = op.getKskAttr().getIndex();
+    auto bskIndex = op.getBskAttr().getIndex();
+    auto pkskIndex = op.getPkskAttr().getIndex();
 
     rewriter.replaceOpWithNewOp<Concrete::WopPBSCRTLweTensorOp>(
         op, this->getTypeConverter()->convertType(resultType),
         adaptor.getCiphertexts(), adaptor.getLookupTable(), bsLevels, bsBaseLog,
         ksLevels, ksBaseLog, pksInputLweDim, pksOutputPolySize, pksLevels,
-        pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition);
+        pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition, kskIndex, bskIndex,
+        pkskIndex);
 
     return mlir::success();
   }
@@ -199,12 +205,14 @@ struct BatchedBootstrapGLWEOpPattern
     auto glweDimension = adaptor.getKey().getGlweDim();
     auto levels = adaptor.getKey().getLevels();
     auto baseLog = adaptor.getKey().getBaseLog();
-    auto inputLweDimension = inputElementType.getKey().getDimension().value();
+    auto inputLweDimension =
+        inputElementType.getKey().getNormalized().value().dimension;
+    auto bskIndex = adaptor.getKey().getIndex();
 
     rewriter.replaceOpWithNewOp<Concrete::BatchedBootstrapLweTensorOp>(
         bbsOp, this->getTypeConverter()->convertType(bbsOp.getType()),
         adaptor.getCiphertexts(), adaptor.getLookupTable(), inputLweDimension,
-        polySize, levels, baseLog, glweDimension);
+        polySize, levels, baseLog, glweDimension, bskIndex);
 
     return mlir::success();
   }
@@ -231,12 +239,14 @@ struct KeySwitchGLWEOpPattern
 
     auto levels = adaptor.getKey().getLevels();
     auto baseLog = adaptor.getKey().getBaseLog();
-    auto inputDim = inputType.getKey().getDimension().value();
-    auto outputDim = resultType.getKey().getDimension().value();
+    auto inputDim = inputType.getKey().getNormalized().value().dimension;
+    auto outputDim = resultType.getKey().getNormalized().value().dimension;
+    auto kskIndex = ksOp.getKeyAttr().getIndex();
 
     rewriter.replaceOpWithNewOp<Concrete::KeySwitchLweTensorOp>(
         ksOp, this->getTypeConverter()->convertType(resultType),
-        adaptor.getCiphertext(), levels, baseLog, inputDim, outputDim);
+        adaptor.getCiphertext(), levels, baseLog, inputDim, outputDim,
+        kskIndex);
 
     return mlir::success();
   }
@@ -270,12 +280,15 @@ struct BatchedKeySwitchGLWEOpPattern
 
     auto levels = adaptor.getKey().getLevels();
     auto baseLog = adaptor.getKey().getBaseLog();
-    auto inputDim = inputElementType.getKey().getDimension().value();
-    auto outputDim = resultElementType.getKey().getDimension().value();
+    auto inputDim = inputElementType.getKey().getNormalized().value().dimension;
+    auto outputDim =
+        resultElementType.getKey().getNormalized().value().dimension;
+    auto kskIndex = adaptor.getKey().getIndex();
 
     rewriter.replaceOpWithNewOp<Concrete::BatchedKeySwitchLweTensorOp>(
         bksOp, this->getTypeConverter()->convertType(bksOp.getType()),
-        adaptor.getCiphertexts(), levels, baseLog, inputDim, outputDim);
+        adaptor.getCiphertexts(), levels, baseLog, inputDim, outputDim,
+        kskIndex);
 
     return mlir::success();
   }

@@ -5,6 +5,7 @@
 
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
+#include "concretelang/Dialect/TFHE/IR/TFHEParameters.h"
 
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/TFHE/IR/TFHEAttrs.cpp.inc"
@@ -15,6 +16,7 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEOpsDialect.cpp.inc"
 
 #include "concretelang/Support/Constants.h"
+#include "concretelang/Support/Variants.h"
 
 using namespace mlir::concretelang::TFHE;
 
@@ -36,17 +38,32 @@ void TFHEDialect::initialize() {
 }
 
 /// Verify that GLWE parameter are consistant
-/// - The bits parameter is 64 (we support only this for v0)
 ::mlir::LogicalResult GLWECipherTextType::verify(
     ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
     GLWESecretKey key) {
-  if (!key.isNotParameterized() && key.getPolySize().value() == 0) {
-    emitError() << "GLWE key has zero poly size.";
-    return ::mlir::failure();
-  }
-  if (!key.isNotParameterized() && key.getDimension().value() == 0) {
-    emitError() << "GLWE key has zero dimension.";
-    return ::mlir::failure();
-  }
-  return ::mlir::success();
+  return std::visit(
+      overloaded{[](GLWESecretKeyNone sk) { return mlir::success(); },
+                 [&](GLWESecretKeyParameterized sk) {
+                   if (sk.dimension == 0) {
+                     emitError() << "GLWE key has zero dimension.";
+                     return ::mlir::failure();
+                   }
+                   if (sk.polySize == 0) {
+                     emitError() << "GLWE key has zero poly size.";
+                     return ::mlir::failure();
+                   }
+                   return mlir::success();
+                 },
+                 [&](GLWESecretKeyNormalized sk) {
+                   if (sk.dimension == 0) {
+                     emitError() << "GLWE key has zero dimension.";
+                     return ::mlir::failure();
+                   }
+                   if (sk.polySize == 0) {
+                     emitError() << "GLWE key has zero poly size.";
+                     return ::mlir::failure();
+                   }
+                   return mlir::success();
+                 }},
+      key.inner);
 }

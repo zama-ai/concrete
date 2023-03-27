@@ -4,10 +4,12 @@ add_mlir_library(
   Jit.cpp
   CompilationFeedback.cpp
   CompilerEngine.cpp
+  TFHECircuitKeys.cpp
+  Encodings.cpp
   JITSupport.cpp
   LambdaArgument.cpp
   V0Parameters.cpp
-  V0ClientParameters.cpp
+  ClientParametersGeneration.cpp
   logging.cpp
   Jit.cpp
   LLVMEmitFile.cpp

@@ -28,6 +28,7 @@
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
 
+#include "concretelang/Conversion/TFHEKeyNormalization/Pass.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include <concretelang/Conversion/Passes.h>
@@ -291,6 +292,18 @@ mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
 
   addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
                            enablePass);
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                  std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("TFHEKeyNormalization", pm, context);
+
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createTFHEKeyNormalizationPass(), enablePass);
 
   return pm.run(module.getOperation());
 }

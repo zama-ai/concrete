@@ -131,6 +131,12 @@ llvm::Expected<mlir::concretelang::CompilerEngine::
     return mlir::concretelang::CompilerEngine::Target::FHE;
   case TFHE:
     return mlir::concretelang::CompilerEngine::Target::TFHE;
+  case PARAMETRIZED_TFHE:
+    return mlir::concretelang::CompilerEngine::Target::PARAMETRIZED_TFHE;
+  case NORMALIZED_TFHE:
+    return mlir::concretelang::CompilerEngine::Target::NORMALIZED_TFHE;
+  case BATCHED_TFHE:
+    return mlir::concretelang::CompilerEngine::Target::BATCHED_TFHE;
   case CONCRETE:
     return mlir::concretelang::CompilerEngine::Target::CONCRETE;
   case STD:

@@ -580,12 +580,13 @@ struct ApplyLookupTableEintOpPattern
         op.getLoc(), converter->convertType(op.getType()), adaptor.getA(),
         newLut,
         TFHE::GLWEKeyswitchKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
-                                        TFHE::GLWESecretKey(), -1, -1),
+                                        TFHE::GLWESecretKey(), -1, -1, -1),
         TFHE::GLWEBootstrapKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
-                                        TFHE::GLWESecretKey(), -1, -1, -1, -1),
+                                        TFHE::GLWESecretKey(), -1, -1, -1, -1,
+                                        -1),
         TFHE::GLWEPackingKeyswitchKeyAttr::get(
             op.getContext(), TFHE::GLWESecretKey(), TFHE::GLWESecretKey(), -1,
-            -1, -1, -1),
+            -1, -1, -1, -1, -1),
         rewriter.getI64ArrayAttr({}), rewriter.getI32IntegerAttr(-1),
         rewriter.getI32IntegerAttr(-1));
 
