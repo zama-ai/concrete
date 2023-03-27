@@ -74,9 +74,11 @@ RuntimeContext::RuntimeContext(clientlib::EvaluationKeys evaluationKeys)
     assert(cudaGetDeviceCount(&num_devices) == cudaSuccess);
     bsk_gpu.resize(num_devices, nullptr);
     ksk_gpu.resize(num_devices, nullptr);
+    pksk_gpu.resize(num_devices, nullptr);
     for (int i = 0; i < num_devices; ++i) {
       bsk_gpu_mutex.push_back(std::make_unique<std::mutex>());
       ksk_gpu_mutex.push_back(std::make_unique<std::mutex>());
+      pksk_gpu_mutex.push_back(std::make_unique<std::mutex>());
     }
 #endif
   }

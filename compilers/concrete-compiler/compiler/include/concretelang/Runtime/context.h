@@ -18,6 +18,7 @@
 #include "concrete-cpu.h"
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
+#include "bit_extraction.h"
 #include "bootstrap.h"
 #include "device.h"
 #include "keyswitch.h"
@@ -48,6 +49,8 @@ typedef struct RuntimeContext {
         cuda_drop(bsk_gpu[i], i);
       if (ksk_gpu[i] != nullptr)
         cuda_drop(ksk_gpu[i], i);
+      if (pksk_gpu[i] != nullptr)
+        cuda_drop(pksk_gpu[i], i);
     }
 #endif
   };
@@ -134,11 +137,40 @@ public:
     return ksk_gpu[gpu_idx];
   }
 
+  void *get_pksk_gpu(uint32_t gpu_idx, void *stream) {
+
+    if (pksk_gpu[gpu_idx] != nullptr) {
+      return pksk_gpu[gpu_idx];
+    }
+
+    const std::lock_guard<std::mutex> guard(*pksk_gpu_mutex[gpu_idx]);
+    if (pksk_gpu[gpu_idx] != nullptr) {
+      return pksk_gpu[gpu_idx];
+    }
+    auto pksk = evaluationKeys.getPackingKeyswitchKey(0);
+
+    size_t pksk_buffer_size = sizeof(uint64_t) * pksk.size();
+
+    void *pksk_gpu_tmp =
+        cuda_malloc_async(pksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
+
+    cuda_memcpy_async_to_gpu(pksk_gpu_tmp,
+                             const_cast<uint64_t *>(pksk.buffer()),
+                             pksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
+    // Synchronization here is not optional as it works with mutex to
+    // prevent other GPU streams from reading partially copied keys.
+    cudaStreamSynchronize(*(cudaStream_t *)stream);
+    pksk_gpu[gpu_idx] = pksk_gpu_tmp;
+    return pksk_gpu[gpu_idx];
+  }
+
 private:
   std::vector<std::unique_ptr<std::mutex>> bsk_gpu_mutex;
   std::vector<void *> bsk_gpu;
   std::vector<std::unique_ptr<std::mutex>> ksk_gpu_mutex;
   std::vector<void *> ksk_gpu;
+  std::vector<std::unique_ptr<std::mutex>> pksk_gpu_mutex;
+  std::vector<void *> pksk_gpu;
   int num_devices;
 #endif
 } RuntimeContext;

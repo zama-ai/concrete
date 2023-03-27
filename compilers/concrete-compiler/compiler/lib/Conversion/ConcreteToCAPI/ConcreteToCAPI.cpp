@@ -43,6 +43,8 @@ char memref_expand_lut_in_trivial_glwe_ct_u64[] =
     "memref_expand_lut_in_trivial_glwe_ct_u64";
 
 char memref_wop_pbs_crt_buffer[] = "memref_wop_pbs_crt_buffer";
+char memref_wop_pbs_crt_buffer_cuda_u64[] =
+    "memref_wop_pbs_crt_buffer_cuda_u64";
 
 char memref_encode_plaintext_with_crt[] = "memref_encode_plaintext_with_crt";
 char memref_encode_expand_lut_for_bootstrap[] =
@@ -157,7 +159,8 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                            memref1DType,
                                        },
                                        {});
-  } else if (funcName == memref_wop_pbs_crt_buffer) {
+  } else if (funcName == memref_wop_pbs_crt_buffer ||
+             funcName == memref_wop_pbs_crt_buffer_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {
                                            memref2DType,
@@ -532,6 +535,9 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
                                     memref_batched_bootstrap_lwe_cuda_u64>>(
           &getContext(),
           bootstrapAddOperands<Concrete::BatchedBootstrapLweBufferOp>);
+      patterns.add<ConcreteToCAPICallPattern<
+          Concrete::WopPBSCRTLweBufferOp, memref_wop_pbs_crt_buffer_cuda_u64>>(
+          &getContext(), wopPBSAddOperands);
     } else {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_u64>>(
@@ -549,11 +555,10 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
                                          memref_batched_bootstrap_lwe_u64>>(
               &getContext(),
               bootstrapAddOperands<Concrete::BatchedBootstrapLweBufferOp>);
+      patterns.add<ConcreteToCAPICallPattern<Concrete::WopPBSCRTLweBufferOp,
+                                             memref_wop_pbs_crt_buffer>>(
+          &getContext(), wopPBSAddOperands);
     }
-
-    patterns.add<ConcreteToCAPICallPattern<Concrete::WopPBSCRTLweBufferOp,
-                                           memref_wop_pbs_crt_buffer>>(
-        &getContext(), wopPBSAddOperands);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))
