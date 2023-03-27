@@ -152,7 +152,7 @@ impl From<DagSolution> for ffi::DagSolution {
                 complexity: sol.complexity,
                 noise_max: sol.noise_max,
                 p_error: sol.p_error,
-                global_p_error: f64::NAN,
+                global_p_error: sol.global_p_error,
                 use_wop_pbs: true,
                 cb_decomposition_level_count: sol.cb_decomposition_level_count,
                 cb_decomposition_base_log: sol.cb_decomposition_base_log,
