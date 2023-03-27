@@ -6,11 +6,14 @@ on:
   push:
     branches:
       - 'main'
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   # This jobs outputs for each modules of our mono-repo if it changed,
   # in order to launch jobs only for the changed modules
   file-change:
+    if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -232,3 +235,12 @@ jobs:
     secrets: inherit
     with:
       command: concrete-python-tests-linux
+
+  #################################################
+  # Release jobs #################################
+  nightly-release:
+    if: ${{ github.event_name == 'schedule' }}
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-release-nightly
