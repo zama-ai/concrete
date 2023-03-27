@@ -152,6 +152,8 @@ pub fn original_instrs_partition(
             tlu_bootstrap_key: tlu_bootstrap_key.unwrap_or(unknown),
             output_key: big_keys[partition].identifier,
             extra_conversion_keys: conversion_key.iter().copied().collect(),
+            tlu_circuit_bootstrap_key: keys_spec::NO_KEY_ID,
+            tlu_private_functional_packing_key: keys_spec::NO_KEY_ID,
         };
         result.push(merged);
     }

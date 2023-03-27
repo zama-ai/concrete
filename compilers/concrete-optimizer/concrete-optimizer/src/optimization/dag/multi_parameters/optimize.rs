@@ -1028,6 +1028,7 @@ pub fn optimize_to_circuit_solution(
         keys_spec::CircuitSolution {
             circuit_keys,
             instructions_keys,
+            crt_decomposition: vec![],
             complexity: params.complexity,
             p_error: params.p_error,
             global_p_error: params.global_p_error,
@@ -1038,6 +1039,7 @@ pub fn optimize_to_circuit_solution(
         keys_spec::CircuitSolution {
             circuit_keys: keys_spec::CircuitKeys::default(),
             instructions_keys: vec![],
+            crt_decomposition: vec![],
             complexity: f64::INFINITY,
             p_error: 1.0,
             global_p_error: 1.0,

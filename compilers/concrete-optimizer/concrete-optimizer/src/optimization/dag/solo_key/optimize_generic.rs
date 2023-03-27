@@ -31,11 +31,11 @@ pub enum Encoding {
     Crt,
 }
 
-fn max_precision(dag: &OperationDag) -> Precision {
+pub fn max_precision(dag: &OperationDag) -> Precision {
     dag.out_precisions.iter().copied().max().unwrap_or(0)
 }
 
-fn updated_global_p_error_and_comlexity(nb_luts: u64, sol: WopSolution) -> WopSolution {
+fn updated_global_p_error_and_complexity(nb_luts: u64, sol: WopSolution) -> WopSolution {
     let global_p_error = repeat_p_error(sol.p_error, nb_luts);
     let complexity = nb_luts as f64 * sol.complexity;
     WopSolution {
@@ -78,7 +78,7 @@ fn optimize_with_wop_pbs(
     let log_norm = default_log_norm2_woppbs.min(worst_log_norm);
     wop_optimize(max_precision as u64, config, log_norm, search_space, caches)
         .best_solution
-        .map(|sol| updated_global_p_error_and_comlexity(nb_luts, sol))
+        .map(|sol| updated_global_p_error_and_complexity(nb_luts, sol))
 }
 
 pub fn optimize(

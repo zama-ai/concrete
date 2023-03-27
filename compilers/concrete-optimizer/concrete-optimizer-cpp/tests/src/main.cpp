@@ -171,6 +171,42 @@ void test_multi_parameters_2_precision() {
   assert(actual == expected);
 }
 
+void test_multi_parameters_2_precision_crt() {
+  auto dag = concrete_optimizer::dag::empty();
+
+  std::vector<uint64_t> shape = {3};
+
+  concrete_optimizer::dag::OperatorIndex input1 =
+      dag->add_input(PRECISION_8B, slice(shape));
+
+  concrete_optimizer::dag::OperatorIndex input2 =
+      dag->add_input(PRECISION_1B, slice(shape));
+
+
+  std::vector<u_int64_t> table = {};
+  auto lut1 = dag->add_lut(input1, slice(table), PRECISION_8B);
+  auto lut2 = dag->add_lut(input2, slice(table), PRECISION_8B);
+
+  std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {lut1, lut2};
+
+  std::vector<int64_t> weight_vec = {1, 1};
+
+  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
+      concrete_optimizer::weights::vector(slice(weight_vec));
+
+  dag->add_dot(slice(inputs), std::move(weights));
+
+  auto options = default_options();
+  options.encoding = concrete_optimizer::Encoding::Crt;
+  auto circuit_solution = dag->optimize_multi(options);
+  assert(circuit_solution.is_feasible);
+  auto secret_keys = circuit_solution.circuit_keys.secret_keys;
+  assert(circuit_solution.circuit_keys.secret_keys.size() == 2);
+  assert(circuit_solution.circuit_keys.bootstrap_keys.size() == 1);
+  assert(circuit_solution.circuit_keys.keyswitch_keys.size() == 1);
+  assert(circuit_solution.circuit_keys.conversion_keyswitch_keys.size() == 0);
+}
+
 int main() {
   test_v0();
   test_dag_no_lut();
@@ -179,6 +215,7 @@ int main() {
   test_dag_lut_force_wop();
   test_multi_parameters_1_precision();
   test_multi_parameters_2_precision();
+  test_multi_parameters_2_precision_crt();
 
   return 0;
 }
