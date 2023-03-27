@@ -7,10 +7,12 @@ use crate::noise_estimator::error::{
     error_probability_of_sigma_scale, safe_variance_bound_product_1padbit,
     sigma_scale_of_error_probability,
 };
+use crate::noise_estimator::p_error::repeat_p_error;
 use crate::optimization::atomic_pattern;
 use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
 
 use crate::optimization::config::{Config, SearchSpace};
+use crate::optimization::dag::multi_parameters::keys_spec;
 use crate::optimization::decomposition::circuit_bootstrap::{CbComplexityNoise, CbPareto};
 use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
 use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
@@ -531,5 +533,41 @@ pub fn optimize_one_compat(
     let result = optimize_one(precision, config, log_norm, search_space, cache);
     atomic_pattern::OptimizationState {
         best_solution: result.best_solution.map(Solution::into),
+    }
+}
+
+pub fn optimize_to_circuit_solution(
+    precision: u64,
+    nb_instr: usize,
+    nb_luts: u64,
+    config: Config,
+    log_norm: f64,
+    search_space: &SearchSpace,
+    caches: &PersistDecompCaches,
+) -> keys_spec::CircuitSolution {
+    let Ok(coprimes) = crt_decomposition::default_coprimes(precision as Precision) else {
+        return keys_spec::CircuitSolution::no_solution("Crt decomposition is not unknown for {precision}:bits")
+    };
+    let n_functions = 1;
+    let state = optimize_raw(
+        log_norm,
+        config,
+        search_space,
+        n_functions,
+        &coprimes,
+        caches,
+    );
+    if let Some(sol) = state.best_solution {
+        keys_spec::CircuitSolution {
+            crt_decomposition: coprimes,
+            global_p_error: repeat_p_error(sol.p_error, nb_luts),
+            complexity: nb_luts as f64 * sol.complexity,
+            ..keys_spec::CircuitSolution::from_wop_solution(sol, nb_instr)
+        }
+    } else {
+        keys_spec::CircuitSolution {
+            crt_decomposition: coprimes,
+            ..keys_spec::CircuitSolution::no_solution("No crypto parameters")
+        }
     }
 }

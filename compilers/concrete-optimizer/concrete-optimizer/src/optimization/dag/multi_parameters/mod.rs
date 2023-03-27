@@ -5,6 +5,7 @@ mod feasible;
 pub mod keys_spec;
 mod operations_value;
 pub mod optimize;
+pub mod optimize_generic;
 mod partitionning;
 mod partitions;
 mod precision_cut;

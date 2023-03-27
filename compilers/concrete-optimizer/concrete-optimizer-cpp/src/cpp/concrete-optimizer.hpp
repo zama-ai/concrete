@@ -919,6 +919,8 @@ std::size_t align_of() {
 } // namespace cxxbridge1
 } // namespace rust
 
+struct PrivateFunctionalPackingBoostrapKey;
+struct CircuitKeys;
 namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
@@ -933,7 +935,7 @@ namespace concrete_optimizer {
     struct BootstrapKey;
     struct KeySwitchKey;
     struct ConversionKeySwitchKey;
-    struct CircuitKeys;
+    struct CircuitBoostrapKey;
     struct InstructionKeys;
     struct CircuitSolution;
   }
@@ -1136,24 +1138,56 @@ struct ConversionKeySwitchKey final {
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$ConversionKeySwitchKey
 
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitKeys
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitKeys
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitBoostrapKey
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitBoostrapKey
+struct CircuitBoostrapKey final {
+  ::std::uint64_t identifier;
+  ::concrete_optimizer::dag::SecretLweKey representation_key;
+  ::concrete_optimizer::dag::BrDecompositionParameters br_decomposition_parameter;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitBoostrapKey
+} // namespace dag
+} // namespace concrete_optimizer
+
+#ifndef CXXBRIDGE1_STRUCT_PrivateFunctionalPackingBoostrapKey
+#define CXXBRIDGE1_STRUCT_PrivateFunctionalPackingBoostrapKey
+struct PrivateFunctionalPackingBoostrapKey final {
+  ::std::uint64_t identifier;
+  ::concrete_optimizer::dag::SecretLweKey representation_key;
+  ::concrete_optimizer::dag::BrDecompositionParameters br_decomposition_parameter;
+  ::rust::String description;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_PrivateFunctionalPackingBoostrapKey
+
+#ifndef CXXBRIDGE1_STRUCT_CircuitKeys
+#define CXXBRIDGE1_STRUCT_CircuitKeys
 struct CircuitKeys final {
   ::rust::Vec<::concrete_optimizer::dag::SecretLweKey> secret_keys;
   ::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> keyswitch_keys;
   ::rust::Vec<::concrete_optimizer::dag::BootstrapKey> bootstrap_keys;
   ::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> conversion_keyswitch_keys;
+  ::rust::Vec<::concrete_optimizer::dag::CircuitBoostrapKey> circuit_bootstrap_keys;
+  ::rust::Vec<::PrivateFunctionalPackingBoostrapKey> private_functional_packing_keys;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitKeys
+#endif // CXXBRIDGE1_STRUCT_CircuitKeys
 
+namespace concrete_optimizer {
+namespace dag {
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$InstructionKeys
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$InstructionKeys
 struct InstructionKeys final {
   ::std::uint64_t input_key;
   ::std::uint64_t tlu_keyswitch_key;
   ::std::uint64_t tlu_bootstrap_key;
+  ::std::uint64_t tlu_circuit_bootstrap_key;
+  ::std::uint64_t tlu_private_functional_packing_key;
   ::std::uint64_t output_key;
   ::rust::Vec<::std::uint64_t> extra_conversion_keys;
 
@@ -1164,8 +1198,9 @@ struct InstructionKeys final {
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
 struct CircuitSolution final {
-  ::concrete_optimizer::dag::CircuitKeys circuit_keys;
+  ::CircuitKeys circuit_keys;
   ::rust::Vec<::concrete_optimizer::dag::InstructionKeys> instructions_keys;
+  ::rust::Vec<::std::uint64_t> crt_decomposition;
   double complexity;
   double p_error;
   double global_p_error;
@@ -1195,4 +1230,6 @@ namespace dag {
 namespace weights {
 ::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<::std::int64_t const> weights) noexcept;
 } // namespace weights
+
+::std::uint64_t NO_KEY_ID() noexcept;
 } // namespace concrete_optimizer

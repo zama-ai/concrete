@@ -7,7 +7,6 @@ use concrete_optimizer::dag::operator::{
 use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::{self, CircuitSolution};
-use concrete_optimizer::optimization::dag::multi_parameters::optimize::optimize_to_circuit_solution;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
@@ -198,10 +197,42 @@ fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &OperationDag) -> ff
         },
         description: "tlu bootstrap".into(),
     };
+    let circuit_bootstrap_keys = if sol.use_wop_pbs {
+        vec![ffi::CircuitBoostrapKey {
+            identifier: 0,
+            representation_key: big_key.clone(),
+            br_decomposition_parameter: ffi::BrDecompositionParameters {
+                level: sol.cb_decomposition_level_count,
+                log2_base: sol.cb_decomposition_base_log,
+            },
+            description: "circuit bootstrap for woppbs".into(),
+        }]
+    } else {
+        vec![]
+    };
+    let private_functional_packing_keys = if sol.use_wop_pbs {
+        vec![ffi::PrivateFunctionalPackingBoostrapKey {
+            identifier: 0,
+            representation_key: big_key.clone(),
+            br_decomposition_parameter: ffi::BrDecompositionParameters {
+                level: sol.pp_decomposition_level_count,
+                log2_base: sol.pp_decomposition_base_log,
+            },
+            description: "private functional packing for woppbs".into(),
+        }]
+    } else {
+        vec![]
+    };
     let instruction_keys = ffi::InstructionKeys {
         input_key: big_key.identifier,
         tlu_keyswitch_key: keyswitch_key.identifier,
         tlu_bootstrap_key: bootstrap_key.identifier,
+        tlu_circuit_bootstrap_key: circuit_bootstrap_keys
+            .last()
+            .map_or(keys_spec::NO_KEY_ID, |v| v.identifier),
+        tlu_private_functional_packing_key: private_functional_packing_keys
+            .last()
+            .map_or(keys_spec::NO_KEY_ID, |v| v.identifier),
         output_key: big_key.identifier,
         extra_conversion_keys: vec![],
     };
@@ -211,6 +242,8 @@ fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &OperationDag) -> ff
         keyswitch_keys: [keyswitch_key].into(),
         bootstrap_keys: [bootstrap_key].into(),
         conversion_keyswitch_keys: [].into(),
+        circuit_bootstrap_keys,
+        private_functional_packing_keys,
     };
     let is_feasible = sol.p_error < 1.0;
     let error_msg = if is_feasible {
@@ -222,6 +255,7 @@ fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &OperationDag) -> ff
     ffi::CircuitSolution {
         circuit_keys,
         instructions_keys,
+        crt_decomposition: sol.crt_decomposition.clone(),
         complexity: sol.complexity,
         p_error: sol.p_error,
         global_p_error: sol.global_p_error,
@@ -235,6 +269,7 @@ impl From<CircuitSolution> for ffi::CircuitSolution {
         Self {
             circuit_keys: v.circuit_keys.into(),
             instructions_keys: vec_into(v.instructions_keys),
+            crt_decomposition: v.crt_decomposition,
             complexity: v.complexity,
             p_error: v.p_error,
             global_p_error: v.global_p_error,
@@ -316,12 +351,38 @@ impl From<keys_spec::BootstrapKey> for ffi::BootstrapKey {
     }
 }
 
+impl From<keys_spec::CircuitBoostrapKey> for ffi::CircuitBoostrapKey {
+    fn from(v: keys_spec::CircuitBoostrapKey) -> Self {
+        Self {
+            identifier: v.identifier,
+            representation_key: v.representation_key.into(),
+            br_decomposition_parameter: v.br_decomposition_parameter.into(),
+            description: v.description,
+        }
+    }
+}
+
+impl From<keys_spec::PrivateFunctionalPackingBoostrapKey>
+    for ffi::PrivateFunctionalPackingBoostrapKey
+{
+    fn from(v: keys_spec::PrivateFunctionalPackingBoostrapKey) -> Self {
+        Self {
+            identifier: v.identifier,
+            representation_key: v.representation_key.into(),
+            br_decomposition_parameter: v.br_decomposition_parameter.into(),
+            description: v.description,
+        }
+    }
+}
+
 impl From<keys_spec::InstructionKeys> for ffi::InstructionKeys {
     fn from(v: keys_spec::InstructionKeys) -> Self {
         Self {
             input_key: v.input_key,
             tlu_keyswitch_key: v.tlu_keyswitch_key,
             tlu_bootstrap_key: v.tlu_bootstrap_key,
+            tlu_circuit_bootstrap_key: v.tlu_circuit_bootstrap_key,
+            tlu_private_functional_packing_key: v.tlu_private_functional_packing_key,
             output_key: v.output_key,
             extra_conversion_keys: v.extra_conversion_keys,
         }
@@ -338,9 +399,16 @@ impl From<keys_spec::CircuitKeys> for ffi::CircuitKeys {
             secret_keys: vec_into(v.secret_keys),
             keyswitch_keys: vec_into(v.keyswitch_keys),
             bootstrap_keys: vec_into(v.bootstrap_keys),
+            circuit_bootstrap_keys: vec_into(v.circuit_bootstrap_keys),
+            private_functional_packing_keys: vec_into(v.private_functional_packing_keys),
             conversion_keyswitch_keys: vec_into(v.conversion_keyswitch_keys),
         }
     }
+}
+
+#[allow(non_snake_case)]
+fn NO_KEY_ID() -> u64 {
+    keys_spec::NO_KEY_ID
 }
 
 pub struct OperationDag(unparametrized::OperationDag);
@@ -474,13 +542,18 @@ impl OperationDag {
             complexity_model: &CpuComplexity::default(),
         };
         let search_space = SearchSpace::default(processing_unit);
-        let circuit_sol = optimize_to_circuit_solution(
-            &self.0,
-            config,
-            &search_space,
-            &caches_from(options),
-            &None,
-        );
+
+        let encoding = options.encoding.into();
+        let circuit_sol =
+            concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                &self.0,
+                config,
+                &search_space,
+                encoding,
+                options.default_log_norm2_woppbs,
+                &caches_from(options),
+                &None,
+            );
         circuit_sol.into()
     }
 }
@@ -590,6 +663,7 @@ mod ffi {
 
         fn optimize_multi(self: &OperationDag, _options: Options) -> CircuitSolution;
 
+        fn NO_KEY_ID() -> u64;
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -713,12 +787,30 @@ mod ffi {
 
     #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
+    pub struct CircuitBoostrapKey {
+        pub identifier: u64,
+        pub representation_key: SecretLweKey,
+        pub br_decomposition_parameter: BrDecompositionParameters,
+        pub description: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct PrivateFunctionalPackingBoostrapKey {
+        pub identifier: u64,
+        pub representation_key: SecretLweKey,
+        pub br_decomposition_parameter: BrDecompositionParameters,
+        pub description: String,
+    }
+
+    #[derive(Debug, Clone)]
     pub struct CircuitKeys {
         /* All keys used in a circuit */
         pub secret_keys: Vec<SecretLweKey>,
         pub keyswitch_keys: Vec<KeySwitchKey>,
         pub bootstrap_keys: Vec<BootstrapKey>,
         pub conversion_keyswitch_keys: Vec<ConversionKeySwitchKey>,
+        pub circuit_bootstrap_keys: Vec<CircuitBoostrapKey>,
+        pub private_functional_packing_keys: Vec<PrivateFunctionalPackingBoostrapKey>,
     }
 
     #[namespace = "concrete_optimizer::dag"]
@@ -727,6 +819,8 @@ mod ffi {
         pub input_key: u64,
         pub tlu_keyswitch_key: u64,
         pub tlu_bootstrap_key: u64,
+        pub tlu_circuit_bootstrap_key: u64,
+        pub tlu_private_functional_packing_key: u64,
         pub output_key: u64,
         pub extra_conversion_keys: Vec<u64>,
     }
@@ -736,6 +830,7 @@ mod ffi {
     pub struct CircuitSolution {
         pub circuit_keys: CircuitKeys,
         pub instructions_keys: Vec<InstructionKeys>,
+        pub crt_decomposition: Vec<u64>,
         pub complexity: f64,
         pub p_error: f64,
         pub global_p_error: f64,
