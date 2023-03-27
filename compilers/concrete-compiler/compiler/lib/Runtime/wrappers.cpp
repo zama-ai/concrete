@@ -68,7 +68,7 @@ void memref_keyswitch_lwe_cuda_u64(
     uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
     uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
     uint64_t ct0_stride, uint32_t level, uint32_t base_log,
-    uint32_t input_lwe_dim, uint32_t output_lwe_dim,
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t ksk_index,
     mlir::concretelang::RuntimeContext *context) {
   assert(out_stride == 1);
   assert(ct0_stride == 1);
@@ -78,7 +78,7 @@ void memref_keyswitch_lwe_cuda_u64(
       // Output 1D memref as 2D memref
       ct0_allocated, ct0_aligned, ct0_offset, 1, ct0_size, ct0_size, ct0_stride,
       // Keyswitch additional arguments
-      level, base_log, input_lwe_dim, output_lwe_dim, context);
+      level, base_log, input_lwe_dim, output_lwe_dim, ksk_index, context);
 }
 
 void memref_bootstrap_lwe_cuda_u64(
@@ -88,7 +88,7 @@ void memref_bootstrap_lwe_cuda_u64(
     uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
     uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
     uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
-    uint32_t base_log, uint32_t glwe_dim,
+    uint32_t base_log, uint32_t glwe_dim, uint32_t bsk_index,
     mlir::concretelang::RuntimeContext *context) {
   memref_batched_bootstrap_lwe_cuda_u64(
       // Output 1D memref as 2D memref
@@ -98,7 +98,7 @@ void memref_bootstrap_lwe_cuda_u64(
       // Table lookup memref
       tlu_allocated, tlu_aligned, tlu_offset, tlu_size, tlu_stride,
       // Bootstrap additional arguments
-      input_lwe_dim, poly_size, level, base_log, glwe_dim, context);
+      input_lwe_dim, poly_size, level, base_log, glwe_dim, bsk_index, context);
 }
 
 // Batched CUDA function //////////////////////////////////////////////////////
@@ -110,7 +110,8 @@ void memref_batched_keyswitch_lwe_cuda_u64(
     uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
     uint64_t ct0_stride0, uint64_t ct0_stride1, uint32_t level,
     uint32_t base_log, uint32_t input_lwe_dim, uint32_t output_lwe_dim,
-    mlir::concretelang::RuntimeContext *context) {
+    uint32_t ksk_index, mlir::concretelang::RuntimeContext *context) {
+  assert(ksk_index == 0 && "multiple ksk is not yet implemented on GPU");
   assert(out_size0 == ct0_size0);
   assert(out_size1 == output_lwe_dim + 1);
   assert(ct0_size1 == input_lwe_dim + 1);
@@ -154,8 +155,9 @@ void memref_batched_bootstrap_lwe_cuda_u64(
     uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *tlu_allocated,
     uint64_t *tlu_aligned, uint64_t tlu_offset, uint64_t tlu_size,
     uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t poly_size,
-    uint32_t level, uint32_t base_log, uint32_t glwe_dim,
+    uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t bsk_index,
     mlir::concretelang::RuntimeContext *context) {
+  assert(bsk_index == 0 && "multiple bsk is not yet implemented on GPU");
   assert(out_size0 == ct0_size0);
   assert(out_size1 == glwe_dim * poly_size + 1);
   // TODO: Multi GPU
@@ -495,16 +497,19 @@ void memref_negate_lwe_ciphertext_u64(
       out_aligned + out_offset, ct0_aligned + ct0_offset, lwe_dimension);
 }
 
-void memref_keyswitch_lwe_u64(
-    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
-    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
-    uint64_t ct0_stride, uint32_t decomposition_level_count,
-    uint32_t decomposition_base_log, uint32_t input_dimension,
-    uint32_t output_dimension, mlir::concretelang::RuntimeContext *context) {
+void memref_keyswitch_lwe_u64(uint64_t *out_allocated, uint64_t *out_aligned,
+                              uint64_t out_offset, uint64_t out_size,
+                              uint64_t out_stride, uint64_t *ct0_allocated,
+                              uint64_t *ct0_aligned, uint64_t ct0_offset,
+                              uint64_t ct0_size, uint64_t ct0_stride,
+                              uint32_t decomposition_level_count,
+                              uint32_t decomposition_base_log,
+                              uint32_t input_dimension,
+                              uint32_t output_dimension, uint32_t ksk_index,
+                              mlir::concretelang::RuntimeContext *context) {
   assert(out_stride == 1 && ct0_stride == 1);
-  // Get keyswitch key - TODO Give a non hardcoded keyID
-  const uint64_t *keyswitch_key = context->keyswitch_key_buffer(0);
+  // Get keyswitch key
+  const uint64_t *keyswitch_key = context->keyswitch_key_buffer(ksk_index);
   // Get stack parameter
   concrete_cpu_keyswitch_lwe_ciphertext_u64(
       out_aligned + out_offset, ct0_aligned + ct0_offset, keyswitch_key,
@@ -519,13 +524,13 @@ void memref_batched_keyswitch_lwe_u64(
     uint64_t ct0_offset, uint64_t ct0_size0, uint64_t ct0_size1,
     uint64_t ct0_stride0, uint64_t ct0_stride1, uint32_t level,
     uint32_t base_log, uint32_t input_lwe_dim, uint32_t output_lwe_dim,
-    mlir::concretelang::RuntimeContext *context) {
+    uint32_t ksk_index, mlir::concretelang::RuntimeContext *context) {
   for (size_t i = 0; i < ct0_size0; i++) {
     memref_keyswitch_lwe_u64(
         out_allocated + i * out_size1, out_aligned + i * out_size1, out_offset,
         out_size1, out_stride1, ct0_allocated + i * ct0_size1,
         ct0_aligned + i * ct0_size1, ct0_offset, ct0_size1, ct0_stride1, level,
-        base_log, input_lwe_dim, output_lwe_dim, context);
+        base_log, input_lwe_dim, output_lwe_dim, ksk_index, context);
   }
 }
 
@@ -537,7 +542,8 @@ void memref_bootstrap_lwe_u64(
     uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
     uint32_t input_lwe_dimension, uint32_t polynomial_size,
     uint32_t decomposition_level_count, uint32_t decomposition_base_log,
-    uint32_t glwe_dimension, mlir::concretelang::RuntimeContext *context) {
+    uint32_t glwe_dimension, uint32_t bsk_index,
+    mlir::concretelang::RuntimeContext *context) {
 
   uint64_t glwe_ct_size = polynomial_size * (glwe_dimension + 1);
   uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
@@ -551,10 +557,9 @@ void memref_bootstrap_lwe_u64(
     glwe_ct[polynomial_size * glwe_dimension + i] = tlu[i];
   }
 
-  // Get fourrier bootstrap key - TODO Give a non hardcoded keyID
-  size_t keyId = 0;
-  const auto &fft = context->fft(keyId);
-  auto bootstrap_key = context->fourier_bootstrap_key_buffer(keyId);
+  // Get fourrier bootstrap key
+  const auto &fft = context->fft(bsk_index);
+  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bsk_index);
   // Get stack parameter
   size_t scratch_size;
   size_t scratch_align;
@@ -582,7 +587,7 @@ void memref_batched_bootstrap_lwe_u64(
     uint64_t ct0_stride0, uint64_t ct0_stride1, uint64_t *tlu_allocated,
     uint64_t *tlu_aligned, uint64_t tlu_offset, uint64_t tlu_size,
     uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t poly_size,
-    uint32_t level, uint32_t base_log, uint32_t glwe_dim,
+    uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t bsk_index,
     mlir::concretelang::RuntimeContext *context) {
 
   for (size_t i = 0; i < out_size0; i++) {
@@ -591,7 +596,7 @@ void memref_batched_bootstrap_lwe_u64(
         out_size1, out_stride1, ct0_allocated, ct0_aligned + i * ct0_size1,
         ct0_offset, ct0_size1, ct0_stride1, tlu_allocated, tlu_aligned,
         tlu_offset, tlu_size, tlu_stride, input_lwe_dim, poly_size, level,
-        base_log, glwe_dim, context);
+        base_log, glwe_dim, bsk_index, context);
   }
 }
 
@@ -617,10 +622,12 @@ void memref_wop_pbs_crt_buffer(
     uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
     uint64_t crt_decomp_stride,
     // Additional crypto parameters
-    uint32_t lwe_small_size, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t lwe_small_dim, uint32_t cbs_level_count, uint32_t cbs_base_log,
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
     uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
     uint32_t polynomial_size,
+    // Key Indices,
+    uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context) {
 
@@ -635,7 +642,7 @@ void memref_wop_pbs_crt_buffer(
   // Check for the size S
   assert(out_size_1 == in_size_1);
 
-  uint64_t lwe_small_dim = lwe_small_size - 1;
+  uint64_t lwe_small_size = lwe_small_dim + 1;
 
   assert(out_size_1 == in_size_1);
   uint64_t lwe_big_size = in_size_1;
@@ -672,13 +679,9 @@ void memref_wop_pbs_crt_buffer(
   std::vector<uint64_t> in_copy(first_ciphertext, first_ciphertext + copy_size);
   // Extraction of each bit for each block
 
-  size_t fftKeyId = 0;
-  const auto &fft = context->fft(fftKeyId);
-  size_t bskKeyId = 0;
-  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bskKeyId);
-
-  size_t kskKeyId = 0;
-  auto keyswicth_key = context->keyswitch_key_buffer(kskKeyId);
+  const auto &fft = context->fft(bsk_index);
+  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bsk_index);
+  auto keyswicth_key = context->keyswitch_key_buffer(ksk_index);
 
   for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0; i >= 0;
        extract_bits_output_offset += number_of_bits_per_block[i--]) {
@@ -731,8 +734,7 @@ void memref_wop_pbs_crt_buffer(
 
   auto *scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
 
-  size_t fpkskKeyId = 0;
-  auto fp_keyswicth_key = context->fp_keyswitch_key_buffer(fpkskKeyId);
+  auto fp_keyswicth_key = context->fp_keyswitch_key_buffer(pksk_index);
 
   concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
       out_aligned + out_offset, extract_bits_output_buffer,

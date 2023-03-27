@@ -369,13 +369,14 @@ struct ApplyLookupTableEintOpPattern
         op.getLoc(), getTypeConverter()->convertType(adaptor.getA().getType()),
         input,
         TFHE::GLWEKeyswitchKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
-                                        TFHE::GLWESecretKey(), -1, -1));
+                                        TFHE::GLWESecretKey(), -1, -1, -1));
 
     // Insert bootstrap
     rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         op, getTypeConverter()->convertType(op.getType()), ksOp, newLut,
         TFHE::GLWEBootstrapKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
-                                        TFHE::GLWESecretKey(), -1, -1, -1, -1));
+                                        TFHE::GLWESecretKey(), -1, -1, -1, -1,
+                                        -1));
 
     return mlir::success();
   };
@@ -557,12 +558,12 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
           op.getLoc(), truncationInputTy, shiftedRotatedInput,
           TFHE::GLWEKeyswitchKeyAttr::get(op->getContext(),
                                           TFHE::GLWESecretKey(),
-                                          TFHE::GLWESecretKey(), -1, -1));
+                                          TFHE::GLWESecretKey(), -1, -1, -1));
       mlir::Value bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
           op.getLoc(), truncationInputTy, keyswitched, lut,
           TFHE::GLWEBootstrapKeyAttr::get(
               op->getContext(), TFHE::GLWESecretKey(), TFHE::GLWESecretKey(),
-              -1, -1, -1, -1));
+              -1, -1, -1, -1, -1));
 
       //------------------------------------------------------------- CORRECTION
       // The correction is performed to achieve our right shift semantic.

@@ -418,9 +418,7 @@ def test_compile_and_run_invalid_arg_number(
 )
 def test_compile_invalid(mlir_input):
     engine = JITSupport.new()
-    with pytest.raises(
-        RuntimeError, match=r"Could not find existing crypto parameters for"
-    ):
+    with pytest.raises(RuntimeError, match=r"Function not found, name='main'"):
         engine.compile(mlir_input)
 
 

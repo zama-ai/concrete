@@ -191,7 +191,8 @@ def Concrete_BootstrapLweTensorOp : Concrete_Op<"bootstrap_lwe_tensor", [Pure]> 
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension
+        I32Attr:$glweDimension,
+        I32Attr:$bskIndex
     );
     let results = (outs Concrete_LweTensor:$result);
 }
@@ -207,7 +208,8 @@ def Concrete_BootstrapLweBufferOp : Concrete_Op<"bootstrap_lwe_buffer"> {
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension
+        I32Attr:$glweDimension,
+        I32Attr:$bskIndex
     );
 }
 
@@ -221,7 +223,8 @@ def Concrete_BatchedBootstrapLweTensorOp : Concrete_Op<"batched_bootstrap_lwe_te
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension
+        I32Attr:$glweDimension,
+        I32Attr:$bskIndex
     );
     let results = (outs Concrete_BatchLweTensor:$result);
 }
@@ -237,7 +240,8 @@ def Concrete_BatchedBootstrapLweBufferOp : Concrete_Op<"batched_bootstrap_lwe_bu
         I32Attr:$polySize,
         I32Attr:$level,
         I32Attr:$baseLog,
-        I32Attr:$glweDimension
+        I32Attr:$glweDimension,
+        I32Attr:$bskIndex
     );
 }
 
@@ -250,7 +254,8 @@ def Concrete_KeySwitchLweTensorOp : Concrete_Op<"keyswitch_lwe_tensor", [Pure]> 
         I32Attr:$level,
         I32Attr:$baseLog,
         I32Attr:$lwe_dim_in,
-        I32Attr:$lwe_dim_out
+        I32Attr:$lwe_dim_out,
+        I32Attr:$kskIndex
     );
     let results = (outs Concrete_LweTensor:$result);
 }
@@ -264,7 +269,8 @@ def Concrete_KeySwitchLweBufferOp : Concrete_Op<"keyswitch_lwe_buffer"> {
         I32Attr:$level,
         I32Attr:$baseLog,
         I32Attr:$lwe_dim_in,
-        I32Attr:$lwe_dim_out
+        I32Attr:$lwe_dim_out,
+        I32Attr:$kskIndex
     );
 }
 
@@ -277,7 +283,8 @@ def Concrete_BatchedKeySwitchLweTensorOp : Concrete_Op<"batched_keyswitch_lwe_te
         I32Attr:$level,
         I32Attr:$baseLog,
         I32Attr:$lwe_dim_in,
-        I32Attr:$lwe_dim_out
+        I32Attr:$lwe_dim_out,
+        I32Attr:$kskIndex
     );
     let results = (outs Concrete_BatchLweTensor:$result);
 }
@@ -291,7 +298,8 @@ def Concrete_BatchedKeySwitchLweBufferOp : Concrete_Op<"batched_keyswitch_lwe_bu
         I32Attr:$level,
         I32Attr:$baseLog,
         I32Attr:$lwe_dim_in,
-        I32Attr:$lwe_dim_out
+        I32Attr:$lwe_dim_out,
+        I32Attr:$kskIndex
     );
 }
 
@@ -313,7 +321,11 @@ def Concrete_WopPBSCRTLweTensorOp : Concrete_Op<"wop_pbs_crt_lwe_tensor", [Pure]
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
         I32Attr : $circuitBootstrapBaseLog,
-        I64ArrayAttr:$crtDecomposition
+        I64ArrayAttr:$crtDecomposition,
+        // Key indices
+        I32Attr:$kskIndex,
+        I32Attr:$bskIndex,
+        I32Attr:$pkskIndex
     );
     let results = (outs Concrete_LweCRTTensor:$result);
 }
@@ -337,7 +349,11 @@ def Concrete_WopPBSCRTLweBufferOp : Concrete_Op<"wop_pbs_crt_lwe_buffer"> {
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
         I32Attr : $circuitBootstrapBaseLog,
-        I64ArrayAttr:$crtDecomposition
+        I64ArrayAttr:$crtDecomposition,
+        // Key indices
+        I32Attr:$kskIndex,
+        I32Attr:$bskIndex,
+        I32Attr:$pkskIndex
     );
 }
 

@@ -68,6 +68,10 @@ mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
                               std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                  std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 

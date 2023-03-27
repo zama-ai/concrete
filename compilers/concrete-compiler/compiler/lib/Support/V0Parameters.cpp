@@ -254,7 +254,7 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
     lParams.wopPBS.circuitBootstrap.baseLog = sol.cb_decomposition_base_log;
     lParams.wopPBS.circuitBootstrap.level = sol.cb_decomposition_level_count;
     lParams.wopPBS.packingKeySwitch.inputLweDimension =
-        sol.internal_ks_output_lwe_dimension + 1;
+        sol.internal_ks_output_lwe_dimension;
     lParams.wopPBS.packingKeySwitch.outputPolynomialSize =
         sol.glwe_polynomial_size;
     lParams.wopPBS.packingKeySwitch.level = sol.pp_decomposition_level_count;

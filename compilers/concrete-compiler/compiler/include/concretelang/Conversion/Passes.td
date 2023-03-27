@@ -32,6 +32,13 @@ def TFHEGlobalParametrization : Pass<"tfhe-global-parametrization", "mlir::Modul
   let dependentDialects = ["mlir::concretelang::TFHE::TFHEDialect"];
 }
 
+def TFHEKeyNormalization : Pass<"tfhe-key-normalization", "mlir::ModuleOp"> {
+  let summary = "Ensures the key ids form proper ranges of indices";
+  let constructor = "mlir::concretelang::createTFHEKeyNormalizationPass()";
+  let options = [];
+  let dependentDialects = ["mlir::concretelang::TFHE::TFHEDialect"];
+}
+
 def TFHEToConcrete : Pass<"tfhe-to-concrete", "mlir::ModuleOp"> {
   let summary = "Lowers operations from the TFHE dialect to Concrete";
   let description = [{ Lowers operations from the TFHE dialect to Concrete }];

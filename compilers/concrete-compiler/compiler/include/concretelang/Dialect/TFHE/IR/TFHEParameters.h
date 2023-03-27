@@ -11,48 +11,63 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/DialectImplementation.h>
+#include <variant>
 
 namespace mlir {
 namespace concretelang {
 namespace TFHE {
 
-/// A type parameter representing GLWE secret key.
-///
-/// A glwe secret key is basically a glwe dimension, a polynomial size, and an
-/// id that makes it possible to disambiguate potential keys with with same
-/// parameters.
-///
-/// Note that a key can be instantiated to a `none` key, to serve as a
-/// placeholder in the IR. In this case, none of its data are actually usable
-/// for lowering to the `Concrete` dialect. Once the
-/// `TFHEGlobalParameterization` was performed, there should remain no such
-/// `none` keys in the IR.
-class GLWESecretKey {
-public:
-  /// Creates a new none key.
-  GLWESecretKey();
-  /// Create a new key from parameters.
-  GLWESecretKey(int64_t dimension, int64_t polySize, int64_t id);
-  bool operator==(GLWESecretKey other);
-  bool operator==(const GLWESecretKey other) const;
-  bool operator!=(GLWESecretKey other);
-  /// Returns the dimension associated with this key, if the key is not none.
-  mlir::Optional<int64_t> getDimension() const;
-  /// Returns the polynomial size associated with this key, if the key is not
-  /// none.
-  mlir::Optional<int64_t> getPolySize() const;
-  /// Returns the id associated with this key, if the key is not none.
-  mlir::Optional<int64_t> getId() const;
-  /// Returns true if the key was not filled with valid parameters.
-  bool isNotParameterized() const;
+/// A placeholder.
+struct GLWESecretKeyNone {};
+llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
+                              const GLWESecretKeyNone sk);
 
-private:
-  int64_t dimension;
-  int64_t polySize;
-  int64_t id;
+// The key was parameterized.
+struct GLWESecretKeyParameterized {
+  uint64_t dimension;
+  uint64_t polySize;
+  uint64_t identifier;
+  bool operator==(const GLWESecretKeyParameterized other) const;
+};
+llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
+                              const GLWESecretKeyParameterized sk);
+
+// The key was normalized
+struct GLWESecretKeyNormalized {
+  uint64_t dimension;
+  uint64_t polySize;
+  uint64_t index;
+  bool operator==(const GLWESecretKeyNormalized other) const;
+};
+llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
+                              const GLWESecretKeyNormalized sk);
+
+/// A sum type parameter representing GLWE secret keys in different states.
+struct GLWESecretKey {
+  std::variant<GLWESecretKeyNone, GLWESecretKeyParameterized,
+               GLWESecretKeyNormalized>
+      inner;
+
+  static GLWESecretKey newNone();
+  static GLWESecretKey newParameterized(uint64_t dimension, uint64_t polySize,
+                                        uint64_t identifier);
+  static GLWESecretKey newNormalized(uint64_t dimension, uint64_t polySize,
+                                     uint64_t index);
+  bool operator==(const GLWESecretKey other) const;
+  bool operator!=(const GLWESecretKey other) const;
+  template <typename V> bool is();
+  bool isNone();
+  bool isParameterized();
+  bool isNormalized();
+  template <typename V> std::optional<V> get();
+  std::optional<GLWESecretKeyNone> getNone();
+  std::optional<GLWESecretKeyParameterized> getParameterized();
+  std::optional<GLWESecretKeyNormalized> getNormalized();
 };
 
 llvm::hash_code hash_value(const GLWESecretKey &key);
+llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const GLWESecretKey sk);
+
 } // namespace TFHE
 } // namespace concretelang
 } // namespace mlir

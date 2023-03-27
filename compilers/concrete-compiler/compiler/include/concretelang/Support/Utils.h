@@ -13,6 +13,7 @@
 #include <concretelang/Runtime/context.h>
 #include <concretelang/ServerLib/ServerLambda.h>
 #include <concretelang/Support/Error.h>
+#include <llvm/ADT/SmallVector.h>
 
 namespace concretelang {
 
@@ -111,6 +112,17 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
   }
   return clientlib::PublicResult::fromBuffers(clientParameters,
                                               std::move(buffers));
+}
+
+template <typename V, unsigned int N>
+llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
+                              const llvm::SmallVector<V, N> vect) {
+  OS << "[";
+  for (auto v : vect) {
+    OS << v << ",";
+  }
+  OS << "]";
+  return OS;
 }
 } // namespace concretelang
 

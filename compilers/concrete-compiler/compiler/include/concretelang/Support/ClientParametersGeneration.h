@@ -10,6 +10,7 @@
 #include <mlir/IR/BuiltinOps.h>
 
 #include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/Support/Encodings.h"
 #include "concretelang/Support/V0Parameters.h"
 
 namespace mlir {
@@ -19,9 +20,10 @@ using ::concretelang::clientlib::ChunkInfo;
 using ::concretelang::clientlib::ClientParameters;
 
 llvm::Expected<ClientParameters>
-createClientParametersForV0(V0FHEContext context, llvm::StringRef functionName,
-                            mlir::ModuleOp module, int bitsOfSecurity,
-                            llvm::Optional<ChunkInfo> chunkInfo = std::nullopt);
+createClientParametersFromTFHE(mlir::ModuleOp module,
+                               llvm::StringRef functionName, int bitsOfSecurity,
+                               encodings::CircuitEncodings encodings,
+                               std::optional<CRTDecomposition> maybeCrt);
 
 } // namespace concretelang
 } // namespace mlir

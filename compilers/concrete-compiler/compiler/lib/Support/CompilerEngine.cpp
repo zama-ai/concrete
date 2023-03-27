@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <llvm/Support/Debug.h>
 #include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h>
@@ -42,6 +43,7 @@
 #include <concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/CompilerEngine.h>
+#include <concretelang/Support/Encodings.h>
 #include <concretelang/Support/Error.h>
 #include <concretelang/Support/Jit.h>
 #include <concretelang/Support/LLVMEmitFile.h>
@@ -163,12 +165,8 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
     auto description = descriptions->find(name);
     if (description == descriptions->end()) {
       std::string names;
-      for (auto &entry : *descriptions) {
-        names += "'" + entry.first + "' ";
-      }
-      return StreamStringError()
-             << "Could not find existing crypto parameters for function '"
-             << name << "' (known functions: " << names << ")";
+      return StreamStringError("Function not found, name='")
+             << name << "', cannot get optimizer description";
     }
     return std::move(description->second);
   }
@@ -194,6 +192,10 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     }
     res.fheContext.emplace(
         mlir::concretelang::V0FHEContext{constraint, v0Params});
+
+    CompilationFeedback feedback;
+    res.feedback.emplace(feedback);
+
     return llvm::Error::success();
   }
   // compute parameters
@@ -286,6 +288,25 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::ROUND_TRIP)
     return std::move(res);
 
+  // Retrieves the encoding informations before any transformation is performed
+  // on the `FHE` dialect.
+  if ((this->generateClientParameters || target == Target::LIBRARY) &&
+      !options.encodings.has_value()) {
+    auto funcName = options.clientParametersFuncName.value_or("main");
+    auto maybeChunkInfo =
+        options.chunkIntegers
+            ? std::optional(concretelang::clientlib::ChunkInfo{
+                  options.chunkSize, options.chunkWidth})
+            : std::nullopt;
+    auto encodingInfosOrErr =
+        mlir::concretelang::encodings::getCircuitEncodings(funcName, module,
+                                                           maybeChunkInfo);
+    if (!encodingInfosOrErr) {
+      return encodingInfosOrErr.takeError();
+    }
+    options.encodings = encodingInfosOrErr.get();
+  }
+
   if (mlir::concretelang::pipeline::transformFHEBoolean(mlirContext, module,
                                                         enablePass)
           .failed()) {
@@ -345,46 +366,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::FHE_NO_LINALG)
     return std::move(res);
 
-  // Generate client parameters if requested
-  if (this->generateClientParameters) {
-    if (!options.clientParametersFuncName.has_value()) {
-      return StreamStringError(
-          "Generation of client parameters requested, but no function name "
-          "specified");
-    }
-    if (!res.fheContext.has_value()) {
-      return StreamStringError(
-          "Cannot generate client parameters, the fhe context is empty for " +
-          options.clientParametersFuncName.value());
-    }
-  }
-  // Generate client parameters if requested
-  auto funcName = options.clientParametersFuncName.value_or("main");
-  if (this->generateClientParameters || target == Target::LIBRARY) {
-    if (!res.fheContext.has_value()) {
-      // Some tests involve call a to non encrypted functions
-      ClientParameters emptyParams;
-      emptyParams.functionName = funcName;
-      res.clientParameters = emptyParams;
-    } else {
-      llvm::Optional<::concretelang::clientlib::ChunkInfo> chunkInfo =
-          std::nullopt;
-      if (options.chunkIntegers) {
-        chunkInfo = ::concretelang::clientlib::ChunkInfo{options.chunkSize,
-                                                         options.chunkWidth};
-      }
-      auto clientParametersOrErr =
-          mlir::concretelang::createClientParametersForV0(
-              *res.fheContext, funcName, module,
-              options.optimizerConfig.security, chunkInfo);
-      if (!clientParametersOrErr)
-        return clientParametersOrErr.takeError();
-
-      res.clientParameters = clientParametersOrErr.get();
-      res.feedback->fillFromClientParameters(*res.clientParameters);
-    }
-  }
-
   // FHE -> TFHE
   if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,
                                                    res.fheContext, enablePass)
@@ -410,6 +391,57 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   if (target == Target::PARAMETRIZED_TFHE)
+    return std::move(res);
+
+  // Normalize TFHE keys
+  if (mlir::concretelang::pipeline::normalizeTFHEKeys(mlirContext, module,
+                                                      this->enablePass)
+          .failed()) {
+    return errorDiag("Normalizing TFHE keys failed");
+  }
+
+  // Generate client parameters if requested
+  if (this->generateClientParameters) {
+    if (!options.clientParametersFuncName.has_value()) {
+      return StreamStringError(
+          "Generation of client parameters requested, but no function name "
+          "specified");
+    }
+    if (!res.fheContext.has_value()) {
+      return StreamStringError(
+          "Cannot generate client parameters, the fhe context is empty for " +
+          options.clientParametersFuncName.value());
+    }
+  }
+  // Generate client parameters if requested
+  if (this->generateClientParameters || target == Target::LIBRARY) {
+    auto funcName = options.clientParametersFuncName.value_or("main");
+    if (!res.fheContext.has_value()) {
+      // Some tests involve call a to non encrypted functions
+      ClientParameters emptyParams;
+      emptyParams.functionName = funcName;
+      res.clientParameters = emptyParams;
+    } else {
+      std::optional<CRTDecomposition> maybeCrt = std::nullopt;
+      if (res.fheContext.value().parameter.largeInteger.has_value()) {
+        maybeCrt = res.fheContext.value()
+                       .parameter.largeInteger.value()
+                       .crtDecomposition;
+      }
+      auto clientParametersOrErr =
+          mlir::concretelang::createClientParametersFromTFHE(
+              module, funcName, options.optimizerConfig.security,
+              options.encodings.value(), maybeCrt);
+
+      if (!clientParametersOrErr)
+        return clientParametersOrErr.takeError();
+
+      res.clientParameters = clientParametersOrErr.get();
+      res.feedback->fillFromClientParameters(*res.clientParameters);
+    }
+  }
+
+  if (target == Target::NORMALIZED_TFHE)
     return std::move(res);
 
   if (options.batchTFHEOps) {

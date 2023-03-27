@@ -25,13 +25,6 @@ def TFHE_GLWECipherTextType
   let hasCustomAssemblyFormat = 1;
 
   let genVerifyDecl = true;
-
-  let extraClassDeclaration = [{
-    // Returns true if has an unparametrized parameters
-    bool hasUnparametrizedParameters() {
-      return getKey().isNotParameterized();
-    };
-  }];
 }
 
 #endif
