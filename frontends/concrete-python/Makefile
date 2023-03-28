@@ -1,3 +1,6 @@
+PYTHON=python
+PIP=$(PYTHON) -m pip
+
 BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
 RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 
@@ -10,11 +13,11 @@ RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 # =====
 
 venv:
-	python -m venv .venv
+	$(PYTHON) -m venv .venv
 	source .venv/bin/activate
 
-	pip install -r requirements.dev.txt
-	pip install -r requirements.txt
+	$(PIP) install -r requirements.dev.txt
+	$(PIP) install -r requirements.txt
 
 licenses:
 	bash scripts/versioning/summary.sh
@@ -45,7 +48,7 @@ format:
 		--dir tests
 
 sanitize-notebooks:
-	python scripts/notebook/sanitizer.py docs
+	$(PYTHON) scripts/notebook/sanitizer.py docs
 
 conformance: format sanitize-notebooks
 
@@ -61,7 +64,7 @@ check-format:
 		--dir tests
 
 check-sanitize-notebooks:
-	python scripts/notebook/sanitizer.py docs --check
+	$(PYTHON) scripts/notebook/sanitizer.py docs --check
 
 mypy:
 	mypy concrete examples scripts tests --ignore-missing-imports
@@ -96,12 +99,12 @@ clear-whls:
 
 build-whl:
 	mkdir -p dist
-	pip wheel --no-deps -w dist .
+	$(PIP) wheel --no-deps -w dist .
 
 patch-whl-linux:
 	GLIBC_VER=$(shell ldd --version | head -n 1 | grep -o '[^ ]*$$'|head|tr '.' '_'); \
 	for PLATFORM in manylinux_$${GLIBC_VER}_x86_64 linux_x86_64; do \
-		if python -m auditwheel repair -w dist --plat $$PLATFORM dist/*.whl; then \
+		if $(PYTHON) -m auditwheel repair -w dist --plat $$PLATFORM dist/*.whl; then \
 			echo Success for $$PLATFORM; \
 			break; \
 		else \
