@@ -1,4 +1,4 @@
-set(LLVM_TARGET_DEFINITIONS Optimization.td)
-mlir_tablegen(Optimization.h.inc -gen-pass-decls -name Transforms)
-add_public_tablegen_target(ConcretelangTFHEOptimizationPassIncGen)
-add_dependencies(mlir-headers ConcretelangTFHEOptimizationPassIncGen)
+set(LLVM_TARGET_DEFINITIONS Transforms.td)
+mlir_tablegen(Transforms.h.inc -gen-pass-decls -name Transforms)
+add_public_tablegen_target(ConcretelangTFHETransformsPassIncGen)
+add_dependencies(mlir-headers ConcretelangTFHETransformsPassIncGen)

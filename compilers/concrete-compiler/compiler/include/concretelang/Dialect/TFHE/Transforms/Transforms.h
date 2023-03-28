@@ -6,15 +6,19 @@
 #ifndef CONCRETELANG_TFHE_OPTIMIZATION_PASS_H
 #define CONCRETELANG_TFHE_OPTIMIZATION_PASS_H
 
-#include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
-#include <mlir/Pass/Pass.h>
+#include "concrete-optimizer.hpp"
+#include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
+#include "mlir/Pass/Pass.h"
 
 #define GEN_PASS_CLASSES
-#include <concretelang/Dialect/TFHE/Transforms/Optimization.h.inc>
+#include "concretelang/Dialect/TFHE/Transforms/Transforms.h.inc"
 
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<mlir::OperationPass<>> createTFHEOptimizationPass();
+std::unique_ptr<mlir::OperationPass<>>
+    createTFHECircuitSolutionParametrizationPass(
+        concrete_optimizer::dag::CircuitSolution);
 } // namespace concretelang
 } // namespace mlir
 
