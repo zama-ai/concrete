@@ -7,7 +7,8 @@ on:
     branches:
       - 'main'
   schedule:
-    - cron: "0 0 * * *"
+    # Nightly Release @ 3AM after each work day
+    - cron: "0 3 * * 2-6"
 
 jobs:
   # This jobs outputs for each modules of our mono-repo if it changed,

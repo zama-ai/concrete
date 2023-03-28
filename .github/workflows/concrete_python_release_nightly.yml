@@ -22,14 +22,12 @@ env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   GLIB_VER: 2_28
 
-
-strategy:
-  matrix:
-    python-version: ["3.8", "3.9", "3.10"]
-
 jobs:
-  release:
-    if: ${{ !cancelled() }}
+  linux-x86:
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
       - name: Log instance configuration
@@ -39,10 +37,124 @@ jobs:
           echo "Type: ${{ inputs.instance_type }}"
           echo "Request ID: ${{ inputs.request_id }}"
 
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
+
+      - name: Set up GitHub environment
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+
+      - name: Set release version
+        run: echo "__version__ = \"$(date +"%Y.%m.%d")\"" >| frontends/concrete-python/version.txt
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Build wheel
+        uses: addnab/docker-run-action@v3
+        id: build-compiler-bindings
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
+            -e SSH_AUTH_SOCK=/ssh.socket
+            ${{ env.DOCKER_GPU_OPTION }}
+          shell: bash
+          run: |
+            set -e
+            rm -rf /build/*
+            
+            export PYTHON=${{ format('python{0}', matrix.python-version) }}
+            echo "Using $PYTHON"
+
+            cd /concrete/frontends/concrete-python
+            make PYTHON=$PYTHON venv
+            source .venv/bin/activate
+            
+            cd /concrete/compilers/concrete-compiler/compiler
+            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$(which python) python-bindings
+            
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
+            cd /concrete/frontends/concrete-python
+
+            export COMPILER_BUILD_DIRECTORY="/build"
+            make whl
+            
+            deactivate
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          path: frontends/concrete-python/dist/*manylinux*.whl
+          retention-days: 3
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Print Python version
-        run: python --version
+      - name: Test wheel
+        run: |
+          set -e
+          
+          export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
+
+          cd $(mktemp -d)
+          
+          python -m venv .testenv
+          source .testenv/bin/activate
+          
+          pip install $CONCRETE_PYTHON/dist/*manylinux*.whl
+          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
+          
+          cp -R $CONCRETE_PYTHON/tests .
+          cp -R $CONCRETE_PYTHON/pytest.ini .
+          
+          pytest -svv -n auto tests
+          
+          deactivate
+
+  push:
+    needs: linux-x86
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheel-3.8-linux-x86
+          path: wheels
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheel-3.9-linux-x86
+          path: wheels
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheel-3.10-linux-x86
+          path: wheels
+
+      - name: Push wheels to internal PyPI
+        run: |
+          pip install twine==4.0.2
+          twine upload wheels/*.whl \
+            -u "${{ secrets.INTERNAL_PYPI_USERNAME }}" \
+            -p "${{ secrets.INTERNAL_PYPI_PASSWORD }}" \
+            --repository-url "${{ secrets.INTERNAL_PYPI_URL }}"
