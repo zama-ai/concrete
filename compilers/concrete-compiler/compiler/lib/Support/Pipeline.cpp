@@ -41,7 +41,7 @@
 #include <concretelang/Dialect/FHE/Transforms/Max/Max.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
-#include <concretelang/Dialect/TFHE/Transforms/Optimization.h>
+#include <concretelang/Dialect/TFHE/Transforms/Transforms.h>
 #include <concretelang/Support/Pipeline.h>
 #include <concretelang/Support/logging.h>
 #include <concretelang/Support/math.h>

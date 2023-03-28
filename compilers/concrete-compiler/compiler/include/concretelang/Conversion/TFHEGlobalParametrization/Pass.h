@@ -14,8 +14,7 @@ namespace mlir {
 namespace concretelang {
 /// Create a pass to inject fhe parameters to the TFHE types and operators.
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertTFHEGlobalParametrizationPass(
-    mlir::concretelang::V0FHEContext &fheContext);
+createConvertTFHEGlobalParametrizationPass(const V0Parameter parameter);
 } // namespace concretelang
 } // namespace mlir
 

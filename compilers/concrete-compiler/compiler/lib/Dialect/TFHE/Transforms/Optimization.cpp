@@ -8,7 +8,7 @@
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
 #include <concretelang/Dialect/TFHE/IR/TFHEOps.h>
-#include <concretelang/Dialect/TFHE/Transforms/Optimization.h>
+#include <concretelang/Dialect/TFHE/Transforms/Transforms.h>
 #include <concretelang/Support/Constants.h>
 
 namespace mlir {
