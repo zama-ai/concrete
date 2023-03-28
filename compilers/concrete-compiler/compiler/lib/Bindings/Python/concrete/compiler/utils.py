@@ -52,8 +52,14 @@ def _lookup_runtime_lib_dir_linux() -> str:
     cwd = os.path.abspath(os.path.join(cwd, os.pardir))
     # to site-packages
     cwd = os.path.abspath(os.path.join(cwd, os.pardir))
-    package_name = "concrete_compiler"
-    return os.path.join(cwd, f"{package_name}.libs")
+
+    possible_package_names = ["concrete_python", "concrete_compiler"]
+    for name in possible_package_names:
+        candidate = os.path.join(cwd, f"{name}.libs")
+        if os.path.exists(candidate):
+            return candidate
+
+    return ""
 
 
 def _lookup_runtime_lib_dir_macos() -> str:
