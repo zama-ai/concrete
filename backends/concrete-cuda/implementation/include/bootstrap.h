@@ -147,6 +147,14 @@ void cleanup_cuda_wop_pbs(void *v_stream, uint32_t gpu_index,
 void cleanup_cuda_circuit_bootstrap_vertical_packing(void *v_stream,
                                                      uint32_t gpu_index,
                                                      int8_t **cbs_vp_buffer);
+
+uint64_t get_buffer_size_bootstrap_amortized_64(
+    uint32_t glwe_dimension, uint32_t polynomial_size,
+    uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory);
+
+uint64_t get_buffer_size_bootstrap_low_latency_64(
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory);
 }
 
 #ifdef __CUDACC__

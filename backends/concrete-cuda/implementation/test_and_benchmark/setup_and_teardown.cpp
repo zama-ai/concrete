@@ -7,9 +7,8 @@ void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
                      double **d_fourier_bsk_array, uint64_t **plaintexts,
                      uint64_t **d_lut_pbs_identity,
                      uint64_t **d_lut_pbs_indexes, uint64_t **d_lwe_ct_in_array,
-                     uint64_t **d_lwe_ct_out_array,
-                     int8_t **amortized_pbs_buffer, int8_t **lowlat_pbs_buffer,
-                     int lwe_dimension, int glwe_dimension, int polynomial_size,
+                     uint64_t **d_lwe_ct_out_array, int lwe_dimension,
+                     int glwe_dimension, int polynomial_size,
                      double lwe_modular_variance, double glwe_modular_variance,
                      int pbs_base_log, int pbs_level, int message_modulus,
                      int carry_modulus, int *payload_modulus, uint64_t *delta,
@@ -93,13 +92,6 @@ void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
                                (lwe_dimension + 1) * sizeof(uint64_t),
                            stream, gpu_index);
 
-  scratch_cuda_bootstrap_amortized_64(
-      stream, gpu_index, amortized_pbs_buffer, glwe_dimension, polynomial_size,
-      number_of_inputs, cuda_get_max_shared_memory(gpu_index), true);
-  scratch_cuda_bootstrap_low_latency_64(
-      stream, gpu_index, lowlat_pbs_buffer, glwe_dimension, polynomial_size,
-      pbs_level, number_of_inputs, cuda_get_max_shared_memory(gpu_index), true);
-
   cuda_synchronize_stream(v_stream);
 
   free(lwe_ct_in_array);
@@ -112,9 +104,7 @@ void bootstrap_teardown(cudaStream_t *stream, Csprng *csprng,
                         uint64_t *d_lut_pbs_identity,
                         uint64_t *d_lut_pbs_indexes,
                         uint64_t *d_lwe_ct_in_array,
-                        uint64_t *d_lwe_ct_out_array,
-                        int8_t *amortized_pbs_buffer, int8_t *lowlat_pbs_buffer,
-                        int gpu_index) {
+                        uint64_t *d_lwe_ct_out_array, int gpu_index) {
   void *v_stream = (void *)stream;
   cuda_synchronize_stream(v_stream);
 
@@ -128,8 +118,6 @@ void bootstrap_teardown(cudaStream_t *stream, Csprng *csprng,
   cuda_drop_async(d_lut_pbs_indexes, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
-  cleanup_cuda_bootstrap_amortized(stream, gpu_index, &amortized_pbs_buffer);
-  cleanup_cuda_bootstrap_low_latency(stream, gpu_index, &lowlat_pbs_buffer);
   cuda_destroy_stream(stream, gpu_index);
 }
 

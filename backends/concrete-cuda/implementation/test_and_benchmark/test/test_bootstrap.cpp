@@ -50,8 +50,6 @@ protected:
   uint64_t *d_lwe_ct_in_array;
   uint64_t *d_lwe_ct_out_array;
   uint64_t *lwe_ct_out_array;
-  int8_t *amortized_pbs_buffer;
-  int8_t *lowlat_pbs_buffer;
 
 public:
   // Test arithmetic functions
@@ -75,11 +73,10 @@ public:
     bootstrap_setup(stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array,
                     &d_fourier_bsk_array, &plaintexts, &d_lut_pbs_identity,
                     &d_lut_pbs_indexes, &d_lwe_ct_in_array, &d_lwe_ct_out_array,
-                    &amortized_pbs_buffer, &lowlat_pbs_buffer, lwe_dimension,
-                    glwe_dimension, polynomial_size, lwe_modular_variance,
-                    glwe_modular_variance, pbs_base_log, pbs_level,
-                    message_modulus, carry_modulus, &payload_modulus, &delta,
-                    number_of_inputs, repetitions, samples, gpu_index);
+                    lwe_dimension, glwe_dimension, polynomial_size,
+                    lwe_modular_variance, glwe_modular_variance, pbs_base_log,
+                    pbs_level, message_modulus, carry_modulus, &payload_modulus,
+                    &delta, number_of_inputs, repetitions, samples, gpu_index);
 
     lwe_ct_out_array =
         (uint64_t *)malloc((glwe_dimension * polynomial_size + 1) *
@@ -91,11 +88,16 @@ public:
     bootstrap_teardown(stream, csprng, lwe_sk_in_array, lwe_sk_out_array,
                        d_fourier_bsk_array, plaintexts, d_lut_pbs_identity,
                        d_lut_pbs_indexes, d_lwe_ct_in_array, d_lwe_ct_out_array,
-                       amortized_pbs_buffer, lowlat_pbs_buffer, gpu_index);
+                       gpu_index);
   }
 };
 
 TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
+  int8_t *pbs_buffer;
+  scratch_cuda_bootstrap_amortized_64(
+      stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      number_of_inputs, cuda_get_max_shared_memory(gpu_index), true);
+
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
                  polynomial_size * (lwe_dimension + 1);
   // Here execute the PBS
@@ -112,10 +114,9 @@ TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
       cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
           stream, gpu_index, (void *)d_lwe_ct_out_array,
           (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
-          (void *)d_lwe_ct_in, (void *)d_fourier_bsk, amortized_pbs_buffer,
-          lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log,
-          pbs_level, number_of_inputs, 1, 0,
-          cuda_get_max_shared_memory(gpu_index));
+          (void *)d_lwe_ct_in, (void *)d_fourier_bsk, pbs_buffer, lwe_dimension,
+          glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+          number_of_inputs, 1, 0, cuda_get_max_shared_memory(gpu_index));
       // Copy result back
       cuda_memcpy_async_to_cpu(lwe_ct_out_array, d_lwe_ct_out_array,
                                (glwe_dimension * polynomial_size + 1) *
@@ -147,9 +148,15 @@ TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
       }
     }
   }
+  cleanup_cuda_bootstrap_amortized(stream, gpu_index, &pbs_buffer);
 }
 
 TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
+  int8_t *pbs_buffer;
+  scratch_cuda_bootstrap_low_latency_64(
+      stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level, number_of_inputs, cuda_get_max_shared_memory(gpu_index), true);
+
   int number_of_sm = 0;
   cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
   if (number_of_inputs > number_of_sm * 4 / (glwe_dimension + 1) / pbs_level)
@@ -170,10 +177,9 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
       cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
           stream, gpu_index, (void *)d_lwe_ct_out_array,
           (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
-          (void *)d_lwe_ct_in, (void *)d_fourier_bsk, lowlat_pbs_buffer,
-          lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log,
-          pbs_level, number_of_inputs, 1, 0,
-          cuda_get_max_shared_memory(gpu_index));
+          (void *)d_lwe_ct_in, (void *)d_fourier_bsk, pbs_buffer, lwe_dimension,
+          glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+          number_of_inputs, 1, 0, cuda_get_max_shared_memory(gpu_index));
       // Copy result back
       cuda_memcpy_async_to_cpu(lwe_ct_out_array, d_lwe_ct_out_array,
                                (glwe_dimension * polynomial_size + 1) *
@@ -204,6 +210,7 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
       }
     }
   }
+  cleanup_cuda_bootstrap_low_latency(stream, gpu_index, &pbs_buffer);
 }
 
 // Defines for which parameters set the PBS will be tested.

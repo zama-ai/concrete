@@ -39,8 +39,6 @@ protected:
   Csprng *csprng;
   cudaStream_t *stream;
   int gpu_index = 0;
-  int8_t *amortized_pbs_buffer;
-  int8_t *lowlat_pbs_buffer;
 
 public:
   void SetUp(const ::benchmark::State &state) {
@@ -56,11 +54,10 @@ public:
     bootstrap_setup(stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array,
                     &d_fourier_bsk_array, &plaintexts, &d_lut_pbs_identity,
                     &d_lut_pbs_indexes, &d_lwe_ct_in_array, &d_lwe_ct_out_array,
-                    &amortized_pbs_buffer, &lowlat_pbs_buffer, lwe_dimension,
-                    glwe_dimension, polynomial_size, lwe_modular_variance,
-                    glwe_modular_variance, pbs_base_log, pbs_level,
-                    message_modulus, carry_modulus, &payload_modulus, &delta,
-                    input_lwe_ciphertext_count, 1, 1, gpu_index);
+                    lwe_dimension, glwe_dimension, polynomial_size,
+                    lwe_modular_variance, glwe_modular_variance, pbs_base_log,
+                    pbs_level, message_modulus, carry_modulus, &payload_modulus,
+                    &delta, input_lwe_ciphertext_count, 1, 1, gpu_index);
 
     // We keep the following for the benchmarks with copies
     lwe_ct_array = (uint64_t *)malloc(
@@ -71,31 +68,56 @@ public:
     bootstrap_teardown(stream, csprng, lwe_sk_in_array, lwe_sk_out_array,
                        d_fourier_bsk_array, plaintexts, d_lut_pbs_identity,
                        d_lut_pbs_indexes, d_lwe_ct_in_array, d_lwe_ct_out_array,
-                       amortized_pbs_buffer, lowlat_pbs_buffer, gpu_index);
+                       gpu_index);
     free(lwe_ct_array);
+    cudaDeviceReset();
   }
 };
 
 BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_AmortizedPBS)
 (benchmark::State &st) {
-  void *v_stream = (void *)stream;
+  size_t free, total;
+  cudaMemGetInfo(&free, &total);
+  uint64_t buffer_size = get_buffer_size_bootstrap_amortized_64(
+      glwe_dimension, polynomial_size, input_lwe_ciphertext_count,
+      cuda_get_max_shared_memory(gpu_index));
+  if (buffer_size > free)
+    st.SkipWithError("Not enough free memory in the device. Skipping...");
+
+  int8_t *pbs_buffer;
+  scratch_cuda_bootstrap_amortized_64(
+      stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      input_lwe_ciphertext_count, cuda_get_max_shared_memory(gpu_index), true);
 
   for (auto _ : st) {
     // Execute PBS
     cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         stream, gpu_index, (void *)d_lwe_ct_out_array,
         (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
-        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array,
-        amortized_pbs_buffer, lwe_dimension, glwe_dimension, polynomial_size,
-        pbs_base_log, pbs_level, input_lwe_ciphertext_count,
-        input_lwe_ciphertext_count, 0, cuda_get_max_shared_memory(gpu_index));
-    cuda_synchronize_stream(v_stream);
+        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array, pbs_buffer,
+        lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+        input_lwe_ciphertext_count, input_lwe_ciphertext_count, 0,
+        cuda_get_max_shared_memory(gpu_index));
+    cuda_synchronize_stream(stream);
   }
+  cleanup_cuda_bootstrap_amortized(stream, gpu_index, &pbs_buffer);
+  cuda_synchronize_stream(stream);
 }
 
 BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusAmortizedPBS)
 (benchmark::State &st) {
-  void *v_stream = (void *)stream;
+  size_t free, total;
+  cudaMemGetInfo(&free, &total);
+  uint64_t buffer_size = get_buffer_size_bootstrap_amortized_64(
+      glwe_dimension, polynomial_size, input_lwe_ciphertext_count,
+      cuda_get_max_shared_memory(gpu_index));
+  if (buffer_size > free)
+    st.SkipWithError("Not enough free memory in the device. Skipping...");
+
+  int8_t *pbs_buffer;
+  scratch_cuda_bootstrap_amortized_64(
+      stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      input_lwe_ciphertext_count, cuda_get_max_shared_memory(gpu_index), true);
 
   for (auto _ : st) {
     cuda_memcpy_async_to_gpu(d_lwe_ct_in_array, lwe_ct_array,
@@ -107,37 +129,66 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusAmortizedPBS)
     cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         stream, gpu_index, (void *)d_lwe_ct_out_array,
         (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
-        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array,
-        amortized_pbs_buffer, lwe_dimension, glwe_dimension, polynomial_size,
-        pbs_base_log, pbs_level, input_lwe_ciphertext_count,
-        input_lwe_ciphertext_count, 0, cuda_get_max_shared_memory(gpu_index));
+        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array, pbs_buffer,
+        lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+        input_lwe_ciphertext_count, input_lwe_ciphertext_count, 0,
+        cuda_get_max_shared_memory(gpu_index));
 
     cuda_memcpy_async_to_cpu(lwe_ct_array, d_lwe_ct_out_array,
                              (lwe_dimension + 1) * input_lwe_ciphertext_count *
                                  sizeof(uint64_t),
                              stream, gpu_index);
-    cuda_synchronize_stream(v_stream);
+    cuda_synchronize_stream(stream);
   }
+  cleanup_cuda_bootstrap_amortized(stream, gpu_index, &pbs_buffer);
+  cuda_synchronize_stream(stream);
 }
 
 BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
 (benchmark::State &st) {
+  size_t free, total;
+  cudaMemGetInfo(&free, &total);
+  uint64_t buffer_size = get_buffer_size_bootstrap_low_latency_64(
+      glwe_dimension, polynomial_size, pbs_level, input_lwe_ciphertext_count,
+      cuda_get_max_shared_memory(gpu_index));
+  if (buffer_size > free)
+    st.SkipWithError("Not enough free memory in the device. Skipping...");
+
+  int8_t *pbs_buffer;
+  scratch_cuda_bootstrap_low_latency_64(
+      stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level, input_lwe_ciphertext_count,
+      cuda_get_max_shared_memory(gpu_index), true);
+
   for (auto _ : st) {
     // Execute PBS
     cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
         stream, gpu_index, (void *)d_lwe_ct_out_array,
         (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
-        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array,
-        lowlat_pbs_buffer, lwe_dimension, glwe_dimension, polynomial_size,
-        pbs_base_log, pbs_level, 1, 1, 0,
-        cuda_get_max_shared_memory(gpu_index));
+        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array, pbs_buffer,
+        lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+        1, 1, 0, cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
+  cleanup_cuda_bootstrap_low_latency(stream, gpu_index, &pbs_buffer);
+  cuda_synchronize_stream(stream);
 }
 
 BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusLowLatencyPBS)
 (benchmark::State &st) {
-  void *v_stream = (void *)stream;
+  size_t free, total;
+  cudaMemGetInfo(&free, &total);
+  uint64_t buffer_size = get_buffer_size_bootstrap_low_latency_64(
+      glwe_dimension, polynomial_size, pbs_level, input_lwe_ciphertext_count,
+      cuda_get_max_shared_memory(gpu_index));
+  if (buffer_size > free)
+    st.SkipWithError("Not enough free memory in the device. Skipping...");
+
+  int8_t *pbs_buffer;
+  scratch_cuda_bootstrap_low_latency_64(
+      stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level, input_lwe_ciphertext_count,
+      cuda_get_max_shared_memory(gpu_index), true);
 
   for (auto _ : st) {
     cuda_memcpy_async_to_gpu(d_lwe_ct_in_array, lwe_ct_array,
@@ -148,17 +199,18 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusLowLatencyPBS)
     cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
         stream, gpu_index, (void *)d_lwe_ct_out_array,
         (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
-        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array,
-        lowlat_pbs_buffer, lwe_dimension, glwe_dimension, polynomial_size,
-        pbs_base_log, pbs_level, 1, 1, 0,
-        cuda_get_max_shared_memory(gpu_index));
+        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array, pbs_buffer,
+        lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+        1, 1, 0, cuda_get_max_shared_memory(gpu_index));
 
     cuda_memcpy_async_to_cpu(lwe_ct_array, d_lwe_ct_out_array,
                              (lwe_dimension + 1) * input_lwe_ciphertext_count *
                                  sizeof(uint64_t),
                              stream, gpu_index);
-    cuda_synchronize_stream(v_stream);
+    cuda_synchronize_stream(stream);
   }
+  cleanup_cuda_bootstrap_low_latency(stream, gpu_index, &pbs_buffer);
+  cuda_synchronize_stream(stream);
 }
 
 static void

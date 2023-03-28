@@ -1,6 +1,17 @@
 #include "bootstrap_low_latency.cuh"
 
 /*
+ * Returns the buffer size for 64 bits executions
+ */
+uint64_t get_buffer_size_bootstrap_low_latency_64(
+    uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
+    uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory) {
+  return get_buffer_size_bootstrap_low_latency<uint64_t>(
+      glwe_dimension, polynomial_size, level_count, input_lwe_ciphertext_count,
+      max_shared_memory);
+}
+
+/*
  * Runs standard checks to validate the inputs
  */
 void checks_fast_bootstrap_low_latency(int glwe_dimension, int level_count,
