@@ -225,29 +225,39 @@ mod tests {
                 let sol_1 = sol_1.unwrap();
                 let sol_2 = sol_2.unwrap();
                 assert!(sol_1.complexity < sol_multi.complexity);
-                assert!(sol_multi.complexity < sol_2.complexity);
+                if REAL_FAST_KS {
+                    assert!(sol_multi.complexity < sol_2.complexity);
+                }
                 eprintln!("{:?}", sol_multi.micro_params.fks);
                 let fks_complexity = sol_multi.micro_params.fks[(default_partition + 1) % 2][default_partition].unwrap().complexity;
                 let sol_multi_without_fks = sol_multi.complexity - fks_complexity;
                 let perfect_complexity = (sol_1.complexity + sol_2.complexity) / 2.0;
-                assert!(sol_multi.macro_params[1] == sol_2.macro_params[0]);
-                // The smallest the precision the more fks noise break partition independence
-                if precision1 < 4 {
-                    assert!(
-                        sol_multi_without_fks / perfect_complexity < 1.1,
-                        "{precision1} {precision2}"
-                    );
-                } else if precision1 <= 7 {
-                    assert!(
-                        sol_multi_without_fks / perfect_complexity < 1.03,
-                        "{precision1} {precision2} {}", sol_multi_without_fks / perfect_complexity
-                    );
-                } else {
-                    assert!(
-                        sol_multi_without_fks / perfect_complexity < 1.001,
-                        "{precision1} {precision2} {}", sol_multi_without_fks / perfect_complexity
-                    );
+                if REAL_FAST_KS {
+                    assert!(sol_multi.macro_params[1] == sol_2.macro_params[0]);
                 }
+                // The smallest the precision the more fks noise break partition independence
+                #[allow(clippy::collapsible_else_if)]
+                let maximal_relative_degratdation = if REAL_FAST_KS {
+                    if precision1 < 4 {
+                        1.1
+                    } else if precision1 <= 7 {
+                        1.03
+                    } else {
+                        1.001
+                    }
+                } else {
+                    if precision1 < 4 {
+                        1.5
+                    } else if precision1 <= 7 {
+                        1.8
+                    } else {
+                        1.6
+                    }
+                };
+                assert!(
+                    sol_multi_without_fks / perfect_complexity < maximal_relative_degratdation,
+                    "{precision1} {precision2} {} < {maximal_relative_degratdation}", sol_multi_without_fks / perfect_complexity
+                );
             }
         }
     }
@@ -284,22 +294,28 @@ mod tests {
                 let sol_multi_without_fks = sol_multi.complexity - fks_complexity;
                 let perfect_complexity = (sol_1.complexity + sol_2.complexity) / 2.0;
                 let relative_degradation = sol_multi_without_fks / perfect_complexity;
-                if precision1 < 4 {
-                    assert!(
-                        relative_degradation < 1.2,
-                        "{precision1} {precision2} {}", sol_multi_without_fks / perfect_complexity
-                    );
-                } else if precision1 <= 7 {
-                    assert!(
-                        relative_degradation < 1.19,
-                        "{precision1} {precision2} {}", sol_multi_without_fks / perfect_complexity
-                    );
+                #[allow(clippy::collapsible_else_if)]
+                let maxim_relative_degradation = if REAL_FAST_KS {
+                    if precision1 < 4 {
+                        1.2
+                    } else if precision1 <= 7 {
+                        1.19
+                    } else {
+                        1.15
+                    }
                 } else {
-                    assert!(
-                        relative_degradation < 1.15,
-                        "{precision1} {precision2} {}", sol_multi_without_fks / perfect_complexity
-                    );
-                }
+                    if precision1 < 4 {
+                        1.45
+                    } else if precision1 <= 7 {
+                        1.8
+                    } else {
+                        1.6
+                    }
+                };
+                assert!(
+                    relative_degradation < maxim_relative_degradation,
+                    "{precision1} {precision2} {}", sol_multi_without_fks / perfect_complexity
+                );
             }
         }
     }
@@ -359,12 +375,21 @@ mod tests {
 
     #[test]
     fn test_optimize_v3_expanded_round_16_8() {
-        test_optimize_v3_expanded_round(16, 8, 5.5);
+        if REAL_FAST_KS {
+            test_optimize_v3_expanded_round(16, 8, 5.5);
+        } else {
+            test_optimize_v3_expanded_round(16, 8, 3.9);
+
+        }
     }
 
     #[test]
     fn test_optimize_v3_expanded_round_16_6() {
-        test_optimize_v3_expanded_round(16, 6, 3.3);
+        if REAL_FAST_KS {
+            test_optimize_v3_expanded_round(16, 6, 3.3);
+        } else {
+            test_optimize_v3_expanded_round(16, 6, 2.6);
+        }
     }
 
     #[test]

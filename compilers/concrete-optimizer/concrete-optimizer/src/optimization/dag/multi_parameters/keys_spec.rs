@@ -1,7 +1,7 @@
 use crate::optimization::wop_atomic_pattern;
 use crate::parameters::{BrDecompositionParameters, KsDecompositionParameters};
 
-use crate::optimization::dag::multi_parameters::optimize::MacroParameters;
+use crate::optimization::dag::multi_parameters::optimize::{MacroParameters, REAL_FAST_KS};
 
 pub type Id = u64;
 /* An Id is unique per key type. Starting from 0 for the first key ... */
@@ -307,7 +307,7 @@ impl ExpandedCircuitKeys {
                         input_key: big_secret_keys[src].clone(),
                         output_key: big_secret_keys[dst].clone(),
                         ks_decomposition_parameter: fks.decomp,
-                        fast_keyswitch: true,
+                        fast_keyswitch: REAL_FAST_KS,
                         description: cross_key("fks"),
                     });
                     identifier_fks += 1;

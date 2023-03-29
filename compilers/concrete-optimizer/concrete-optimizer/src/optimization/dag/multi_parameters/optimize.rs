@@ -543,7 +543,7 @@ fn fks_to_optimize(
 }
 
 // In case fast ks are not used
-const REAL_FAST_KS: bool = true;
+pub const REAL_FAST_KS: bool = false;
 
 #[allow(clippy::too_many_lines)]
 fn optimize_macro(
