@@ -9,10 +9,13 @@ pub enum DotKind {
     // inputs = [[x], [y], [z]], weights = [[a],[b],[c]], = same
     CompatibleTensor,
     // inputs = [[x, y, z], [x, y, z]], weights = [[a,b,c]], = [same, same]
+    // inputs = [[x, y, z], [u, v, w]], weights = [a, b], [x*a + u*b, y*a + v*b, z*c + w*c]
+    // inputs = [[x, y, z]], weights = [a], [x*a, y*a, z*a]
     Broadcast,
     Unsupported,
 }
 
+#[allow(clippy::if_same_then_else)]
 pub fn dot_kind<W>(nb_inputs: u64, input_shape: &Shape, weights: &ClearTensor<W>) -> DotKind {
     let inputs_shape = Shape::duplicated(nb_inputs, input_shape);
     if input_shape.is_number() && inputs_shape == weights.shape {
@@ -22,6 +25,12 @@ pub fn dot_kind<W>(nb_inputs: u64, input_shape: &Shape, weights: &ClearTensor<W>
     } else if inputs_shape == weights.shape {
         DotKind::CompatibleTensor
     } else if nb_inputs == 1 && input_shape.erase_first_dim() == weights.shape {
+        DotKind::Broadcast
+    } else if weights.shape.is_vector() && weights.shape.flat_size() == nb_inputs {
+        // Same as simple but with tensor inputs
+        DotKind::Broadcast
+    } else if weights.shape.is_number() && nb_inputs == 1 {
+        // Any input multiply by one number
         DotKind::Broadcast
     } else {
         DotKind::Unsupported

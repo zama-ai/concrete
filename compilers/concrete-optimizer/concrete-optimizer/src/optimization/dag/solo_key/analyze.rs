@@ -153,7 +153,7 @@ fn out_variance(
                     let first_input = inputs[0];
                     let mut out_variance = SymbolicVariance::ZERO;
                     for (j, &weight) in weights.values.iter().enumerate() {
-                        let k = if kind == DK::Simple {
+                        let k = if inputs.len() > 1 {
                             inputs[j].i
                         } else {
                             first_input.i
@@ -859,5 +859,36 @@ mod tests {
             assert!(prev_safe_noise_bound < ns.safe_variance_bound);
             prev_safe_noise_bound = ns.safe_variance_bound;
         }
+    }
+
+    #[test]
+    fn test_broadcast_dot_multiply_by_number() {
+        let mut graph = unparametrized::OperationDag::new();
+        let shape = Shape {
+            dimensions_size: vec![2, 2],
+        };
+        let input1 = graph.add_input(1, shape);
+        let weights = &Weights::number(2);
+        _ = graph.add_dot([input1], weights);
+        assert!(*graph.out_shapes.last().unwrap() == Shape::vector(2));
+        let analysis = analyze(&graph);
+        assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
+    }
+
+    #[test]
+    fn test_broadcast_dot_add_tensor() {
+        let mut graph = unparametrized::OperationDag::new();
+        let shape = Shape {
+            dimensions_size: vec![2, 2],
+        };
+        let input1 = graph.add_input(1, &shape);
+        let input2 = graph.add_input(1, &shape);
+        let lut2 = graph.add_lut(input2, FunctionTable::UNKWOWN, 1);
+        let weights = &Weights::vector([2, 3]);
+        let _ = graph.add_dot([input1, lut2], weights);
+        assert!(*graph.out_shapes.last().unwrap() == Shape::vector(2));
+        let analysis = analyze(&graph);
+        assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
+        assert_f64_eq(analysis.out_variances.last().unwrap().lut_coeff, 9.0);
     }
 }
