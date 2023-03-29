@@ -217,7 +217,7 @@ int cuda_get_max_shared_memory(uint32_t gpu_index) {
   cudaDeviceProp prop;
   cudaGetDeviceProperties(&prop, gpu_index);
   int max_shared_memory = 0;
-  if (prop.major > 7) {
+  if (prop.major >= 6) {
     max_shared_memory = prop.sharedMemPerMultiprocessor;
   } else {
     max_shared_memory = prop.sharedMemPerBlock;

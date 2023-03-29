@@ -1,4 +1,5 @@
 #include <cmath>
+#include <random>
 #include <setup_and_teardown.h>
 
 void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
@@ -804,5 +805,75 @@ void wop_pbs_teardown(cudaStream_t *stream, Csprng *csprng,
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
   cuda_drop_async(d_lut_vector, stream, gpu_index);
+  cuda_destroy_stream(stream, gpu_index);
+}
+
+void fft_setup(cudaStream_t *stream, double **_poly1, double **_poly2,
+               double2 **_h_cpoly1, double2 **_h_cpoly2, double2 **_d_cpoly1,
+               double2 **_d_cpoly2, size_t polynomial_size, int samples,
+               int gpu_index) {
+
+  auto &poly1 = *_poly1;
+  auto &poly2 = *_poly2;
+  auto &h_cpoly1 = *_h_cpoly1;
+  auto &h_cpoly2 = *_h_cpoly2;
+  auto &d_cpoly1 = *_d_cpoly1;
+  auto &d_cpoly2 = *_d_cpoly2;
+
+  void *v_stream = (void *)stream;
+  poly1 = (double *)malloc(polynomial_size * samples * sizeof(double));
+  poly2 = (double *)malloc(polynomial_size * samples * sizeof(double));
+  h_cpoly1 = (double2 *)malloc(polynomial_size / 2 * samples * sizeof(double2));
+  h_cpoly2 = (double2 *)malloc(polynomial_size / 2 * samples * sizeof(double2));
+  d_cpoly1 = (double2 *)cuda_malloc_async(
+      polynomial_size / 2 * samples * sizeof(double2), stream, gpu_index);
+  d_cpoly2 = (double2 *)cuda_malloc_async(
+      polynomial_size / 2 * samples * sizeof(double2), stream, gpu_index);
+
+  double lower_bound = -1;
+  double upper_bound = 1;
+  std::uniform_real_distribution<double> unif(lower_bound, upper_bound);
+  std::default_random_engine re;
+  // Fill test data with random values
+  for (size_t i = 0; i < polynomial_size * samples; i++) {
+    poly1[i] = unif(re);
+    poly2[i] = unif(re);
+  }
+
+  // prepare data for device
+  // compress
+  for (size_t p = 0; p < (size_t)samples; p++) {
+    auto left_cpoly = &h_cpoly1[p * polynomial_size / 2];
+    auto right_cpoly = &h_cpoly2[p * polynomial_size / 2];
+    auto left = &poly1[p * polynomial_size];
+    auto right = &poly2[p * polynomial_size];
+    for (std::size_t i = 0; i < polynomial_size / 2; ++i) {
+      left_cpoly[i].x = left[i];
+      left_cpoly[i].y = left[i + polynomial_size / 2];
+
+      right_cpoly[i].x = right[i];
+      right_cpoly[i].y = right[i + polynomial_size / 2];
+    }
+  }
+
+  // copy memory cpu->gpu
+  cuda_memcpy_async_to_gpu(d_cpoly1, h_cpoly1,
+                           polynomial_size / 2 * samples * sizeof(double2),
+                           stream, gpu_index);
+  cuda_memcpy_async_to_gpu(d_cpoly2, h_cpoly2,
+                           polynomial_size / 2 * samples * sizeof(double2),
+                           stream, gpu_index);
+  cuda_synchronize_stream(v_stream);
+}
+
+void fft_teardown(cudaStream_t *stream, double *poly1, double *poly2,
+                  double2 *h_cpoly1, double2 *h_cpoly2, double2 *d_cpoly1,
+                  double2 *d_cpoly2, int gpu_index) {
+  free(poly1);
+  free(poly2);
+  free(h_cpoly1);
+  free(h_cpoly2);
+  cuda_drop_async(d_cpoly1, stream, gpu_index);
+  cuda_drop_async(d_cpoly2, stream, gpu_index);
   cuda_destroy_stream(stream, gpu_index);
 }

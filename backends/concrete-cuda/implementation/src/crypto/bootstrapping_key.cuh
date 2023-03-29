@@ -246,6 +246,162 @@ void cuda_convert_lwe_bootstrap_key_64(void *dest, void *src, void *v_stream,
       glwe_dim, level_count, polynomial_size);
 }
 
+void cuda_fourier_polynomial_mul(void *_input1, void *_input2, void *_output,
+                                 void *v_stream, uint32_t gpu_index,
+                                 uint32_t polynomial_size,
+                                 uint32_t total_polynomials) {
+
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+  auto input1 = (double2 *)_input1;
+  auto input2 = (double2 *)_input2;
+  auto output = (double2 *)_output;
+
+  size_t shared_memory_size = sizeof(double2) * polynomial_size / 2;
+
+  int gridSize = total_polynomials;
+  int blockSize = polynomial_size / choose_opt(polynomial_size);
+
+  double2 *buffer;
+  switch (polynomial_size) {
+  case 256:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_polynomial_mul<FFTDegree<Degree<256>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_polynomial_mul<FFTDegree<Degree<256>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_polynomial_mul<FFTDegree<Degree<256>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(
+              input1, input2, output, buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_polynomial_mul<FFTDegree<Degree<256>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(input1, input2, output, buffer);
+    }
+    break;
+  case 512:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_polynomial_mul<FFTDegree<Degree<521>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_polynomial_mul<FFTDegree<Degree<512>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_polynomial_mul<FFTDegree<Degree<512>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(
+              input1, input2, output, buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_polynomial_mul<FFTDegree<Degree<512>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(input1, input2, output, buffer);
+    }
+    break;
+  case 1024:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_polynomial_mul<FFTDegree<Degree<1024>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_polynomial_mul<FFTDegree<Degree<1024>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_polynomial_mul<FFTDegree<Degree<1024>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(
+              input1, input2, output, buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_polynomial_mul<FFTDegree<Degree<1024>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(input1, input2, output, buffer);
+    }
+    break;
+  case 2048:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_polynomial_mul<FFTDegree<Degree<2048>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_polynomial_mul<FFTDegree<Degree<2048>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_polynomial_mul<FFTDegree<Degree<2048>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(
+              input1, input2, output, buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_polynomial_mul<FFTDegree<Degree<2048>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(input1, input2, output, buffer);
+    }
+    break;
+  case 4096:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_polynomial_mul<FFTDegree<Degree<4096>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_polynomial_mul<FFTDegree<Degree<4096>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_polynomial_mul<FFTDegree<Degree<4096>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(
+              input1, input2, output, buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_polynomial_mul<FFTDegree<Degree<4096>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(input1, input2, output, buffer);
+    }
+    break;
+  case 8192:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_polynomial_mul<FFTDegree<Degree<8192>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_polynomial_mul<FFTDegree<Degree<8192>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_polynomial_mul<FFTDegree<Degree<8192>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(
+              input1, input2, output, buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_polynomial_mul<FFTDegree<Degree<8192>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(input1, input2, output, buffer);
+    }
+    break;
+  case 16384:
+    if (shared_memory_size <= cuda_get_max_shared_memory(gpu_index)) {
+      buffer = (double2 *)cuda_malloc_async(0, stream, gpu_index);
+      check_cuda_error(cudaFuncSetAttribute(
+          batch_polynomial_mul<FFTDegree<Degree<16384>, ForwardFFT>, FULLSM>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize, shared_memory_size));
+      check_cuda_error(cudaFuncSetCacheConfig(
+          batch_polynomial_mul<FFTDegree<Degree<16384>, ForwardFFT>, FULLSM>,
+          cudaFuncCachePreferShared));
+      batch_polynomial_mul<FFTDegree<Degree<16384>, ForwardFFT>, FULLSM>
+          <<<gridSize, blockSize, shared_memory_size, *stream>>>(
+              input1, input2, output, buffer);
+    } else {
+      buffer = (double2 *)cuda_malloc_async(
+          shared_memory_size * total_polynomials, stream, gpu_index);
+      batch_polynomial_mul<FFTDegree<Degree<16384>, ForwardFFT>, NOSM>
+          <<<gridSize, blockSize, 0, *stream>>>(input1, input2, output, buffer);
+    }
+    break;
+  default:
+    break;
+  }
+  cuda_drop_async(buffer, stream, gpu_index);
+}
+
 // We need these lines so the compiler knows how to specialize these functions
 template __device__ uint64_t *get_ith_mask_kth_block(uint64_t *ptr, int i,
                                                      int k, int level,

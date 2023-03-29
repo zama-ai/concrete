@@ -143,4 +143,13 @@ void linear_algebra_teardown(cudaStream_t *stream, Csprng **csprng,
                              uint64_t **lwe_out_ct, uint64_t **plaintexts_1,
                              uint64_t **plaintexts_2, uint64_t **d_plaintext_2,
                              uint64_t **d_plaintexts_2_mul, int gpu_index);
+void fft_setup(cudaStream_t *stream, double **poly1, double **poly2,
+               double2 **h_cpoly1, double2 **h_cpoly2, double2 **d_cpoly1,
+               double2 **d_cpoly2, size_t polynomial_size, int samples,
+               int gpu_index);
+
+void fft_teardown(cudaStream_t *stream, double *poly1, double *poly2,
+                  double2 *h_cpoly1, double2 *h_cpoly2, double2 *d_cpoly1,
+                  double2 *d_cpoly2, int gpu_index);
+
 #endif // SETUP_AND_TEARDOWN_H

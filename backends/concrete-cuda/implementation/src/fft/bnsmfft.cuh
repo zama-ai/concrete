@@ -664,4 +664,76 @@ __global__ void batch_NSMFFT(double2 *d_input, double2 *d_output,
   }
 }
 
+/*
+ * global batch polynomial multiplication
+ * only used for fft tests
+ * d_input1 and d_output must not have the same pointer
+ * d_input1 can be modified inside the function
+ */
+template <class params, sharedMemDegree SMD>
+__global__ void batch_polynomial_mul(double2 *d_input1, double2 *d_input2,
+                                     double2 *d_output, double2 *buffer) {
+  extern __shared__ double2 sharedMemoryFFT[];
+  double2 *fft = (SMD == NOSM) ? &buffer[blockIdx.x * params::degree / 2]
+                               : sharedMemoryFFT;
+
+  // Move first polynomial into shared memory(if possible otherwise it will
+  // be moved in device buffer)
+  int tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    fft[tid] = d_input1[blockIdx.x * (params::degree / 2) + tid];
+    tid = tid + params::degree / params::opt;
+  }
+
+  // Perform direct negacyclic fourier transform
+  __syncthreads();
+  NSMFFT_direct<HalfDegree<params>>(fft);
+  __syncthreads();
+
+  // Put the result of direct fft inside input1
+  tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    d_input1[blockIdx.x * (params::degree / 2) + tid] = fft[tid];
+    tid = tid + params::degree / params::opt;
+  }
+  __syncthreads();
+
+  // Move first polynomial into shared memory(if possible otherwise it will
+  // be moved in device buffer)
+  tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    fft[tid] = d_input2[blockIdx.x * (params::degree / 2) + tid];
+    tid = tid + params::degree / params::opt;
+  }
+
+  // Perform direct negacyclic fourier transform on the second polynomial
+  __syncthreads();
+  NSMFFT_direct<HalfDegree<params>>(fft);
+  __syncthreads();
+
+  // calculate pointwise multiplication inside fft buffer
+  tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    fft[tid] *= d_input1[blockIdx.x * (params::degree / 2) + tid];
+    tid = tid + params::degree / params::opt;
+  }
+
+  // Perform backward negacyclic fourier transform
+  __syncthreads();
+  NSMFFT_inverse<HalfDegree<params>>(fft);
+  __syncthreads();
+
+  // copy results in output buffer
+  tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    d_output[blockIdx.x * (params::degree / 2) + tid] = fft[tid];
+    tid = tid + params::degree / params::opt;
+  }
+}
+
 #endif // GPU_BOOTSTRAP_FFT_CUH

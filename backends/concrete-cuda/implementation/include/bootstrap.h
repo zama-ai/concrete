@@ -4,6 +4,10 @@
 #include <cstdint>
 
 extern "C" {
+void cuda_fourier_polynomial_mul(void *input1, void *input2, void *output,
+                                 void *v_stream, uint32_t gpu_index,
+                                 uint32_t polynomial_size,
+                                 uint32_t total_polynomials);
 
 void cuda_convert_lwe_bootstrap_key_32(void *dest, void *src, void *v_stream,
                                        uint32_t gpu_index,
