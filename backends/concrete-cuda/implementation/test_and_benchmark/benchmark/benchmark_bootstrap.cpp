@@ -13,7 +13,7 @@ typedef struct {
   int input_lwe_ciphertext_count;
 } BootstrapBenchmarkParams;
 
-class BootstrapBenchmark_u64 : public benchmark::Fixture {
+class Bootstrap_u64 : public benchmark::Fixture {
 protected:
   int lwe_dimension;
   int glwe_dimension;
@@ -76,7 +76,8 @@ public:
   }
 };
 
-BENCHMARK_DEFINE_F(BootstrapBenchmark_u64, AmortizedPBS)(benchmark::State &st) {
+BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_AmortizedPBS)
+(benchmark::State &st) {
   void *v_stream = (void *)stream;
 
   for (auto _ : st) {
@@ -92,7 +93,7 @@ BENCHMARK_DEFINE_F(BootstrapBenchmark_u64, AmortizedPBS)(benchmark::State &st) {
   }
 }
 
-BENCHMARK_DEFINE_F(BootstrapBenchmark_u64, CopiesPlusAmortizedPBS)
+BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusAmortizedPBS)
 (benchmark::State &st) {
   void *v_stream = (void *)stream;
 
@@ -119,7 +120,7 @@ BENCHMARK_DEFINE_F(BootstrapBenchmark_u64, CopiesPlusAmortizedPBS)
   }
 }
 
-BENCHMARK_DEFINE_F(BootstrapBenchmark_u64, LowLatencyPBS)
+BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
 (benchmark::State &st) {
   for (auto _ : st) {
     // Execute PBS
@@ -134,7 +135,7 @@ BENCHMARK_DEFINE_F(BootstrapBenchmark_u64, LowLatencyPBS)
   }
 }
 
-BENCHMARK_DEFINE_F(BootstrapBenchmark_u64, CopiesPlusLowLatencyPBS)
+BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusLowLatencyPBS)
 (benchmark::State &st) {
   void *v_stream = (void *)stream;
 
@@ -184,12 +185,12 @@ BootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
     }
 }
 
-BENCHMARK_REGISTER_F(BootstrapBenchmark_u64, AmortizedPBS)
+BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_AmortizedPBS)
     ->Apply(BootstrapBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(BootstrapBenchmark_u64, LowLatencyPBS)
+BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
     ->Apply(BootstrapBenchmarkGenerateParams);
 
-BENCHMARK_REGISTER_F(BootstrapBenchmark_u64, CopiesPlusAmortizedPBS)
+BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_CopiesPlusAmortizedPBS)
     ->Apply(BootstrapBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(BootstrapBenchmark_u64, CopiesPlusLowLatencyPBS)
+BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_CopiesPlusLowLatencyPBS)
     ->Apply(BootstrapBenchmarkGenerateParams);

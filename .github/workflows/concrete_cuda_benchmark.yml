@@ -44,21 +44,23 @@ jobs:
         run: |
           echo "BENCH_DATE=$(date --iso-8601=seconds)" >> "${GITHUB_ENV}"
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Export CUDA variables
         if: ${{ !cancelled() }}
         run: |
           echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
           echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
           echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-          echo "CUDACXX=/usr/local/cuda-${{ matrix.cuda }}/bin/nvcc" >> "${GITHUB_ENV}"
+          echo "CUDACXX=/usr/local/cuda-11.8/bin/nvcc" >> "${GITHUB_ENV}"
       # Specify the correct host compilers
       - name: Export gcc and g++ variables
         if: ${{ !cancelled() }}
         run: |
-          echo "CC=/usr/bin/gcc-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
-          echo "CXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
-          echo "CUDAHOSTCXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
+          echo "CC=/usr/bin/gcc-8" >> "${GITHUB_ENV}"
+          echo "CXX=/usr/bin/g++-8" >> "${GITHUB_ENV}"
+          echo "CUDAHOSTCXX=/usr/bin/g++-8" >> "${GITHUB_ENV}"
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Rust install
@@ -78,20 +80,21 @@ jobs:
       - name: Benchmark concrete-cuda
         if: ${{ !cancelled() }}
         run: |
-          ${{ BENCHMARK_DIR }}/benchmark_concrete_cuda --benchmark_out=benchmarks_results.json --benchmark_out_format=json
+          ${{ env.BENCHMARK_DIR }}/benchmark_concrete_cuda --benchmark_out=benchmarks_results.json 
+          --benchmark_out_format=json
 
       - name: Upload raw results artifact
         uses: actions/upload-artifact@v3
         with:
           name: concrete_cuda_${{ github.sha }}_raw
-          path: ${{ BENCHMARK_DIR }}/benchmarks_results.json
+          path: benchmarks_results.json
 
       - name: Parse results
         shell: bash
         run: |
           COMMIT_DATE="$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})"
           COMMIT_HASH="$(git describe --tags --dirty)"
-          python3 ./ci/benchmark_parser.py ${{ BENCHMARK_DIR }}/benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
+          python3 ./ci/benchmark_parser.py benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
           --database compiler_benchmarks \
           --hardware ${{ inputs.instance_type }} \
           --project-version ${COMMIT_HASH} \

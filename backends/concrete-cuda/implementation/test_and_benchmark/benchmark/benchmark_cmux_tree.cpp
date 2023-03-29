@@ -14,7 +14,7 @@ typedef struct {
   int level_count;
 } CMUXTreeBenchmarkParams;
 
-class CMUXTreeBenchmark_u64 : public benchmark::Fixture {
+class CMUXTree_u64 : public benchmark::Fixture {
 protected:
   int glwe_dimension;
   int polynomial_size;
@@ -65,7 +65,7 @@ public:
   }
 };
 
-BENCHMARK_DEFINE_F(CMUXTreeBenchmark_u64, CMUXTree)(benchmark::State &st) {
+BENCHMARK_DEFINE_F(CMUXTree_u64, ConcreteCuda_CMUXTree)(benchmark::State &st) {
   for (auto _ : st) {
     // Execute scratch/CMUX tree/cleanup
     cuda_cmux_tree_64(stream, gpu_index, (void *)d_glwe_out,
@@ -90,5 +90,5 @@ static void CMUXTreeBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
              x.level_count});
 }
 
-BENCHMARK_REGISTER_F(CMUXTreeBenchmark_u64, CMUXTree)
+BENCHMARK_REGISTER_F(CMUXTree_u64, ConcreteCuda_CMUXTree)
     ->Apply(CMUXTreeBenchmarkGenerateParams);

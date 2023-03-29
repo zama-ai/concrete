@@ -17,7 +17,7 @@ typedef struct {
   int number_of_inputs;
 } BitExtractionBenchmarkParams;
 
-class BitExtractionBenchmark_u64 : public benchmark::Fixture {
+class BitExtraction_u64 : public benchmark::Fixture {
 protected:
   int lwe_dimension;
   int glwe_dimension;
@@ -79,7 +79,7 @@ public:
   }
 };
 
-BENCHMARK_DEFINE_F(BitExtractionBenchmark_u64, BitExtraction)
+BENCHMARK_DEFINE_F(BitExtraction_u64, ConcreteCuda_BitExtraction)
 (benchmark::State &st) {
   for (auto _ : st) {
     // Execute bit extract
@@ -109,5 +109,5 @@ BitExtractionBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
              x.number_of_bits_to_extract, x.number_of_inputs});
 }
 
-BENCHMARK_REGISTER_F(BitExtractionBenchmark_u64, BitExtraction)
+BENCHMARK_REGISTER_F(BitExtraction_u64, ConcreteCuda_BitExtraction)
     ->Apply(BitExtractionBenchmarkGenerateParams);

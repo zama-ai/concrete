@@ -9,7 +9,7 @@ typedef struct {
   int input_lwe_ciphertext_count;
 } LinearAlgebraBenchmarkParams;
 
-class LinearAlgebraBenchmark_u64 : public benchmark::Fixture {
+class LinearAlgebra_u64 : public benchmark::Fixture {
 protected:
   int lwe_dimension;
   double noise_variance = 2.9802322387695312e-08;
@@ -62,7 +62,8 @@ public:
   }
 };
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, Addition)(benchmark::State &st) {
+BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_Addition)
+(benchmark::State &st) {
   // Execute addition
   for (auto _ : st) {
     cuda_add_lwe_ciphertext_vector_64(
@@ -72,7 +73,7 @@ BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, Addition)(benchmark::State &st) {
   }
 }
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, CopiesPlusAddition)
+BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusAddition)
 (benchmark::State &st) {
   // Execute addition
   for (auto _ : st) {
@@ -97,7 +98,7 @@ BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, CopiesPlusAddition)
   }
 }
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, PlaintextAddition)
+BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_PlaintextAddition)
 (benchmark::State &st) {
   for (auto _ : st) {
     // Execute addition
@@ -108,7 +109,7 @@ BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, PlaintextAddition)
   }
 }
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, CopiesPlusPlaintextAddition)
+BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusPlaintextAddition)
 (benchmark::State &st) {
   for (auto _ : st) {
 
@@ -131,7 +132,7 @@ BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, CopiesPlusPlaintextAddition)
   }
 }
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, PlaintextMultiplication)
+BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CleartextMultiplication)
 (benchmark::State &st) {
   for (auto _ : st) {
     // Execute addition
@@ -142,8 +143,8 @@ BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, PlaintextMultiplication)
   }
 }
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64,
-                   CopiesPlusPlaintextMultiplication)
+BENCHMARK_DEFINE_F(LinearAlgebra_u64,
+                   ConcreteCuda_CopiesPlusCleartextMultiplication)
 (benchmark::State &st) {
   for (auto _ : st) {
     cuda_memcpy_async_to_gpu(d_lwe_in_1_ct, lwe_in_1_ct,
@@ -165,7 +166,8 @@ BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64,
   }
 }
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, Negate)(benchmark::State &st) {
+BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_Negation)
+(benchmark::State &st) {
   for (auto _ : st) {
     // Execute addition
     cuda_negate_lwe_ciphertext_vector_64(
@@ -175,7 +177,7 @@ BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, Negate)(benchmark::State &st) {
   }
 }
 
-BENCHMARK_DEFINE_F(LinearAlgebraBenchmark_u64, CopiesPlusNegate)
+BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusNegation)
 (benchmark::State &st) {
   for (auto _ : st) {
     cuda_memcpy_async_to_gpu(d_lwe_in_1_ct, lwe_in_1_ct,
@@ -208,20 +210,21 @@ LinearAlgebraBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
     b->Args({x.lwe_dimension, x.input_lwe_ciphertext_count});
 }
 
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64, Addition)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64, ConcreteCuda_Addition)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64, CopiesPlusAddition)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusAddition)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64, PlaintextAddition)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64, ConcreteCuda_PlaintextAddition)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64, CopiesPlusPlaintextAddition)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64,
+                     ConcreteCuda_CopiesPlusPlaintextAddition)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64, PlaintextMultiplication)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64, ConcreteCuda_CleartextMultiplication)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64,
-                     CopiesPlusPlaintextMultiplication)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64,
+                     ConcreteCuda_CopiesPlusCleartextMultiplication)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64, Negate)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64, ConcreteCuda_Negation)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(LinearAlgebraBenchmark_u64, CopiesPlusNegate)
+BENCHMARK_REGISTER_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusNegation)
     ->Apply(LinearAlgebraBenchmarkGenerateParams);

@@ -19,7 +19,7 @@ typedef struct {
   int tau;
 } WopPBSBenchmarkParams;
 
-class WopPBSBenchmark_u64 : public benchmark::Fixture {
+class WopPBS_u64 : public benchmark::Fixture {
 protected:
   int lwe_dimension;
   int glwe_dimension;
@@ -111,7 +111,7 @@ public:
   }
 };
 
-BENCHMARK_DEFINE_F(WopPBSBenchmark_u64, WopPBS)(benchmark::State &st) {
+BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_WopPBS)(benchmark::State &st) {
   for (auto _ : st) {
     // Execute wop pbs
     cuda_wop_pbs_64(
@@ -125,7 +125,7 @@ BENCHMARK_DEFINE_F(WopPBSBenchmark_u64, WopPBS)(benchmark::State &st) {
   }
 }
 
-BENCHMARK_DEFINE_F(WopPBSBenchmark_u64, CopiesPlusWopPBS)
+BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_CopiesPlusWopPBS)
 (benchmark::State &st) {
   for (auto _ : st) {
     cuda_memcpy_async_to_gpu(d_lwe_ct_in_array, lwe_ct_in_array,
@@ -163,7 +163,7 @@ static void WopPBSBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
              x.tau});
 }
 
-BENCHMARK_REGISTER_F(WopPBSBenchmark_u64, WopPBS)
+BENCHMARK_REGISTER_F(WopPBS_u64, ConcreteCuda_WopPBS)
     ->Apply(WopPBSBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(WopPBSBenchmark_u64, CopiesPlusWopPBS)
+BENCHMARK_REGISTER_F(WopPBS_u64, ConcreteCuda_CopiesPlusWopPBS)
     ->Apply(WopPBSBenchmarkGenerateParams);

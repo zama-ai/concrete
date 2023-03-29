@@ -12,7 +12,7 @@ typedef struct {
   int number_of_inputs;
 } KeyswitchBenchmarkParams;
 
-class KeyswitchBenchmark_u64 : public benchmark::Fixture {
+class Keyswitch_u64 : public benchmark::Fixture {
 protected:
   int input_lwe_dimension;
   int output_lwe_dimension;
@@ -61,7 +61,8 @@ public:
   }
 };
 
-BENCHMARK_DEFINE_F(KeyswitchBenchmark_u64, Keyswitch)(benchmark::State &st) {
+BENCHMARK_DEFINE_F(Keyswitch_u64, ConcreteCuda_Keyswitch)
+(benchmark::State &st) {
   for (auto _ : st) {
     // Execute keyswitch
     cuda_keyswitch_lwe_ciphertext_vector_64(
@@ -72,7 +73,7 @@ BENCHMARK_DEFINE_F(KeyswitchBenchmark_u64, Keyswitch)(benchmark::State &st) {
   }
 }
 
-BENCHMARK_DEFINE_F(KeyswitchBenchmark_u64, CopiesPlusKeyswitch)
+BENCHMARK_DEFINE_F(Keyswitch_u64, ConcreteCuda_CopiesPlusKeyswitch)
 (benchmark::State &st) {
   uint64_t *lwe_in_ct = (uint64_t *)malloc(
       number_of_inputs * (input_lwe_dimension + 1) * sizeof(uint64_t));
@@ -110,8 +111,8 @@ KeyswitchBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
              x.ksk_level, x.number_of_inputs});
 }
 
-BENCHMARK_REGISTER_F(KeyswitchBenchmark_u64, Keyswitch)
+BENCHMARK_REGISTER_F(Keyswitch_u64, ConcreteCuda_Keyswitch)
     ->Apply(KeyswitchBenchmarkGenerateParams);
 
-BENCHMARK_REGISTER_F(KeyswitchBenchmark_u64, CopiesPlusKeyswitch)
+BENCHMARK_REGISTER_F(Keyswitch_u64, ConcreteCuda_CopiesPlusKeyswitch)
     ->Apply(KeyswitchBenchmarkGenerateParams);

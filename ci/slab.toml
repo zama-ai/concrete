@@ -21,7 +21,7 @@ security_group= ["sg-0bf1c1d79c97bc88f", ]
 
 [profile.gpu-bench]
 region = "us-east-1"
-image_id = "ami-03f11dc8c6a5f5c0a"
+image_id = "ami-08e27480d79e82238"
 instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
 security_group= ["sg-0f8b52622a2669491", ]
@@ -77,7 +77,7 @@ max_parallel_jobs = 2
 
 [command.concrete-cuda-benchmark]
 workflow = "concrete_cuda_benchmark.yml"
-profile = "gpu-test"
+profile = "gpu-bench"
 check_run_name = "Concrete Cuda Performances Benchmarks"
 
 #################################################

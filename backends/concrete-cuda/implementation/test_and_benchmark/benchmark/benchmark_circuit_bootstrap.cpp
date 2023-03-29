@@ -17,7 +17,7 @@ typedef struct {
   int number_of_inputs;
 } CircuitBootstrapBenchmarkParams;
 
-class CircuitBootstrapBenchmark_u64 : public benchmark::Fixture {
+class CircuitBootstrap_u64 : public benchmark::Fixture {
 protected:
   int lwe_dimension;
   int glwe_dimension;
@@ -87,7 +87,7 @@ public:
   }
 };
 
-BENCHMARK_DEFINE_F(CircuitBootstrapBenchmark_u64, CircuitBootstrap)
+BENCHMARK_DEFINE_F(CircuitBootstrap_u64, ConcreteCuda_CircuitBootstrap)
 (benchmark::State &st) {
   for (auto _ : st) {
     // Execute circuit bootstrap
@@ -116,5 +116,5 @@ CircuitBootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
              x.cbs_base_log, x.cbs_level, x.number_of_inputs});
 }
 
-BENCHMARK_REGISTER_F(CircuitBootstrapBenchmark_u64, CircuitBootstrap)
+BENCHMARK_REGISTER_F(CircuitBootstrap_u64, ConcreteCuda_CircuitBootstrap)
     ->Apply(CircuitBootstrapBenchmarkGenerateParams);
