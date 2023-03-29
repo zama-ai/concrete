@@ -17,9 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-11", "m1mac"]
+        machine: ["aws-mac1-metal", "m1mac"]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.machine }}
     steps:
       - name: Set up SSH agent
         uses: webfactory/ssh-agent@v0.7.0
