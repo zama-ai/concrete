@@ -221,6 +221,14 @@ jobs:
     uses: ./.github/workflows/concrete_cuda_test.yml
     secrets: inherit
 
+  concrete-cuda-benchmark:
+    needs: file-change
+    if:  needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.concrete-cuda-workflow == 'true' || needs.file-change.outputs.push-main
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-cuda-benchmark
+
 #################################################
 # Concrete Python jobs ##########################
   concrete-python:

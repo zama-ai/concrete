@@ -1,0 +1,128 @@
+# Run benchmarks on an AWS instance for concrete-cuda and return parsed results to Slab CI bot.
+name: Concrete-cuda - Performance benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  BENCHMARK_DIR: backends/concrete-cuda/implementation/build/test_and_benchmark/benchmark
+  RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
+  CUDA_PATH: /usr/local/cuda-11.8
+  GCC_VERSION: 8
+
+jobs:
+  run-benchmarks:
+    name: Execute concrete-cuda benchmarks in EC2
+    runs-on: ${{ github.event.inputs.runner_name }}
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Instance configuration used
+        run: |
+          echo "IDs: ${{ inputs.instance_id }}"
+          echo "AMI: ${{ inputs.instance_image_id }}"
+          echo "Type: ${{ inputs.instance_type }}"
+          echo "Request ID: ${{ inputs.request_id }}"
+
+      - name: Get benchmark date
+        run: |
+          echo "BENCH_DATE=$(date --iso-8601=seconds)" >> "${GITHUB_ENV}"
+
+      - uses: actions/checkout@v2
+      - name: Export CUDA variables
+        if: ${{ !cancelled() }}
+        run: |
+          echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
+          echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
+          echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
+          echo "CUDACXX=/usr/local/cuda-${{ matrix.cuda }}/bin/nvcc" >> "${GITHUB_ENV}"
+      # Specify the correct host compilers
+      - name: Export gcc and g++ variables
+        if: ${{ !cancelled() }}
+        run: |
+          echo "CC=/usr/bin/gcc-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
+          echo "CXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
+          echo "CUDAHOSTCXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
+      - name: Rust install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build concrete-cuda
+        if: ${{ !cancelled() }}
+        run: |
+          cd backends/concrete-cuda/implementation
+          mkdir build
+          cd build
+          cmake ..
+          make -j8
+
+      - name: Benchmark concrete-cuda
+        if: ${{ !cancelled() }}
+        run: |
+          ${{ BENCHMARK_DIR }}/benchmark_concrete_cuda --benchmark_out=benchmarks_results.json --benchmark_out_format=json
+
+      - name: Upload raw results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: concrete_cuda_${{ github.sha }}_raw
+          path: ${{ BENCHMARK_DIR }}/benchmarks_results.json
+
+      - name: Parse results
+        shell: bash
+        run: |
+          COMMIT_DATE="$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})"
+          COMMIT_HASH="$(git describe --tags --dirty)"
+          python3 ./ci/benchmark_parser.py ${{ BENCHMARK_DIR }}/benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
+          --database compiler_benchmarks \
+          --hardware ${{ inputs.instance_type }} \
+          --project-version ${COMMIT_HASH} \
+          --branch ${{ github.ref_name }} \
+          --commit-date ${COMMIT_DATE} \
+          --bench-date "${{ env.BENCH_DATE }}" \
+          --throughput
+
+      - name: Upload parsed results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: concrete_cuda_${{ github.sha }}
+          path: ${{ env.RESULTS_FILENAME }}
+
+      - name: Checkout Slab repo
+        uses: actions/checkout@v3
+        with:
+          repository: zama-ai/slab
+          path: slab
+          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+
+      - name: Send data to Slab
+        shell: bash
+        run: |
+          echo "Computing HMac on downloaded artifact"
+          SIGNATURE="$(slab/scripts/hmac_calculator.sh ${{ env.RESULTS_FILENAME }} '${{ secrets.JOB_SECRET }}')"
+          echo "Sending results to Slab..."
+          curl -v -k \
+          -H "Content-Type: application/json" \
+          -H "X-Slab-Repository: ${{ github.repository }}" \
+          -H "X-Slab-Command: store_data" \
+          -H "X-Hub-Signature-256: sha256=${SIGNATURE}" \
+          -d @${{ env.RESULTS_FILENAME }} \
+          ${{ secrets.SLAB_URL }}
