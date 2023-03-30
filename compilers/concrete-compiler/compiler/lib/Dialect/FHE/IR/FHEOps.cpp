@@ -177,8 +177,8 @@ mlir::LogicalResult MulEintIntOp::verify() {
 }
 
 mlir::LogicalResult MulEintOp::verify() {
-  auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->getB().getType().dyn_cast<FheIntegerInterface>();
+  auto a = this->getRhs().getType().dyn_cast<FheIntegerInterface>();
+  auto b = this->getLhs().getType().dyn_cast<FheIntegerInterface>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputsConsistency(*this->getOperation(), a, b)) {

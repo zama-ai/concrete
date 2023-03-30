@@ -5,7 +5,7 @@
 // CHECK:      func.func @main(%[[a0:.*]]: tensor<1x1x8x10x!FHE.eint<5>>) -> tensor<1x1x6x9x!FHE.eint<5>> {
 // CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x1x6x9x!FHE.eint<5>>
 // CHECK-NEXT:   %[[v1:.*]] = tensor.empty() : tensor<3x2xi64>
-// CHECK-NEXT:   %[[v2:.*]] = linalg.pooling_nchw_max {dilations = dense<1> : vector<2xi64>, max_signed = "FHE.max_eint", strides = dense<1> : vector<2xi64>} ins(%arg0, %1 : tensor<1x1x8x10x!FHE.eint<5>>, tensor<3x2xi64>) outs(%0 : tensor<1x1x6x9x!FHE.eint<5>>) -> tensor<1x1x6x9x!FHE.eint<5>>
+// CHECK-NEXT:   %[[v2:.*]] = linalg.pooling_nchw_max {dilations = dense<1> : vector<2xi64>, max_signed = {op = "FHE.max_eint", op_attrs = {}}, strides = dense<1> : vector<2xi64>} ins(%arg0, %1 : tensor<1x1x8x10x!FHE.eint<5>>, tensor<3x2xi64>) outs(%0 : tensor<1x1x6x9x!FHE.eint<5>>) -> tensor<1x1x6x9x!FHE.eint<5>>
 // CHECK-NEXT:   return %[[v2]] : tensor<1x1x6x9x!FHE.eint<5>>
 // CHECK-NEXT: }
 func.func @main(%arg0: tensor<1x1x8x10x!FHE.eint<5>>) -> tensor<1x1x6x9x!FHE.eint<5>> {
@@ -29,7 +29,7 @@ func.func @main(%arg0: tensor<1x1x8x10x!FHE.eint<5>>) -> tensor<1x1x6x9x!FHE.ein
 // CHECK-NEXT:     linalg.yield %[[vv0]] : !FHE.esint<6>
 // CHECK-NEXT:   } -> tensor<1x1x5x3x!FHE.esint<6>>
 // CHECK-NEXT:   %[[v4:.*]] = tensor.empty() : tensor<2x3xi64>
-// CHECK-NEXT:   %[[v5:.*]] = linalg.pooling_nchw_max {dilations = dense<1> : vector<2xi64>, max_signed = "FHE.max_eint", strides = dense<1> : vector<2xi64>} ins(%arg0, %[[v4]] : tensor<1x1x6x5x!FHE.esint<6>>, tensor<2x3xi64>) outs(%[[v3]] : tensor<1x1x5x3x!FHE.esint<6>>) -> tensor<1x1x5x3x!FHE.esint<6>>
+// CHECK-NEXT:   %[[v5:.*]] = linalg.pooling_nchw_max {dilations = dense<1> : vector<2xi64>, max_signed = {op = "FHE.max_eint", op_attrs = {}}, strides = dense<1> : vector<2xi64>} ins(%arg0, %[[v4]] : tensor<1x1x6x5x!FHE.esint<6>>, tensor<2x3xi64>) outs(%[[v3]] : tensor<1x1x5x3x!FHE.esint<6>>) -> tensor<1x1x5x3x!FHE.esint<6>>
 // CHECK-NEXT:   return %[[v5]] : tensor<1x1x5x3x!FHE.esint<6>>
 // CHECK-NEXT: }
 func.func @main(%arg0: tensor<1x1x6x5x!FHE.esint<6>>) -> tensor<1x1x5x3x!FHE.esint<6>> {
