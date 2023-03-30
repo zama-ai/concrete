@@ -1355,6 +1355,41 @@ mlir::LogicalResult ToUnsignedOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult RoundOp::verify() {
+  auto inputType =
+      this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+  auto inputShape = inputType.getShape();
+  auto outputShape = outputType.getShape();
+
+  if (inputShape != outputShape) {
+    this->emitOpError()
+        << "input and output tensors should have the same shape";
+    return mlir::failure();
+  }
+
+  auto inputElementType =
+      inputType.getElementType().cast<FHE::FheIntegerInterface>();
+  auto outputElementType =
+      outputType.getElementType().cast<FHE::FheIntegerInterface>();
+
+  if (inputElementType.getWidth() <= outputElementType.getWidth()) {
+    this->emitOpError()
+        << "input tensor should have bigger bit width than output tensor";
+    return mlir::failure();
+  }
+
+  if (inputElementType.isSigned() != outputElementType.isSigned()) {
+    this->emitOpError()
+        << "input and output tensors should have the same signedness";
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 /// Avoid addition with constant tensor of 0s
 OpFoldResult AddEintIntOp::fold(FoldAdaptor operands) {
   auto toAdd = operands.getRhs().dyn_cast_or_null<mlir::DenseIntElementsAttr>();

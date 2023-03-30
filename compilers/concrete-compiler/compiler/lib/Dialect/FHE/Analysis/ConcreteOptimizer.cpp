@@ -477,7 +477,8 @@ struct FunctionToDag {
   }
 
   bool isRound(mlir::Operation &op) {
-    return llvm::isa<mlir::concretelang::FHE::RoundEintOp>(op);
+    return llvm::isa<mlir::concretelang::FHE::RoundEintOp>(op) ||
+           llvm::isa<mlir::concretelang::FHELinalg::RoundOp>(op);
   }
 
   mlir::concretelang::FHELinalg::Dot asDot(mlir::Operation &op) {

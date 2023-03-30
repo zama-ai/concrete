@@ -26,6 +26,8 @@ def generate(args):
     for from_p in args.bitwidth:
         for to_p in range(2, from_p):
             max_value = (2 ** from_p) - 1
+
+            # scalar
             print(f"description: unsigned_round_{from_p}to{to_p}bits")
             print("program: |")
             print(f"  func.func @main(%arg0: !FHE.eint<{from_p}>) -> !FHE.eint<{to_p}> {{")
@@ -41,11 +43,33 @@ def generate(args):
                 print("    outputs:")
                 print(f"    - scalar: {round(val, from_p, to_p)}")
             print("---")
+
+            # tensor
+            print(f"description: unsigned_round_2x2_{from_p}to{to_p}bits")
+            print("program: |")
+            print(f"  func.func @main(%arg0: tensor<2x2x!FHE.eint<{from_p}>>) -> tensor<2x2x!FHE.eint<{to_p}>> {{")
+            print(f"    %1 = \"FHELinalg.round\"(%arg0) : (tensor<2x2x!FHE.eint<{from_p}>>) -> tensor<2x2x!FHE.eint<{to_p}>>")
+            print(f"    return %1: tensor<2x2x!FHE.eint<{to_p}>>")
+            print("  }")
+            print(f"p-error: {P_ERROR}")
+            print("tests:")
+            for i in range(8):
+                sample = [np.random.randint(max_value) for _ in range(2 * 2)]
+                print("  - inputs:")
+                print(f"    - tensor: {sample}")
+                print(f"      shape: [2, 2]")
+                print("    outputs:")
+                print(f"    - tensor: {[round(value, from_p, to_p) for value in sample]}")
+                print(f"      shape: [2, 2]")
+            print("---")
+
     # signed_signed
     for from_p in args.bitwidth:
         for to_p in range(2, from_p):
             min_value = -(2 ** (from_p - 1))
             max_value = abs(min_value) - 1
+
+            # scalar
             print(f"description: signed_round_from_{from_p}to{to_p}bits")
             print("program: |")
             print(f"  func.func @main(%arg0: !FHE.esint<{from_p}>) -> !FHE.esint<{to_p}> {{")
@@ -61,6 +85,27 @@ def generate(args):
                 print(f"      signed: true")
                 print("    outputs:")
                 print(f"    - scalar: {round(val, from_p, to_p, True)}")
+                print(f"      signed: true")
+            print("---")
+
+            # tensor
+            print(f"description: signed_round_2x2_{from_p}to{to_p}bits")
+            print("program: |")
+            print(f"  func.func @main(%arg0: tensor<2x2x!FHE.esint<{from_p}>>) -> tensor<2x2x!FHE.esint<{to_p}>> {{")
+            print(f"    %1 = \"FHELinalg.round\"(%arg0) : (tensor<2x2x!FHE.esint<{from_p}>>) -> tensor<2x2x!FHE.esint<{to_p}>>")
+            print(f"    return %1: tensor<2x2x!FHE.esint<{to_p}>>")
+            print("  }")
+            print(f"p-error: {P_ERROR}")
+            print("tests:")
+            for i in range(8):
+                sample = [np.random.randint(min_value, max_value) for _ in range(2 * 2)]
+                print("  - inputs:")
+                print(f"    - tensor: {sample}")
+                print(f"      shape: [2, 2]")
+                print(f"      signed: true")
+                print("    outputs:")
+                print(f"    - tensor: {[round(value, from_p, to_p, True) for value in sample]}")
+                print(f"      shape: [2, 2]")
                 print(f"      signed: true")
             print("---")
 

@@ -1226,6 +1226,36 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::Maxpool2dOp op,
   return APIntUMax(forIntermediate, forResult);
 }
 
+static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::RoundOp op,
+                             llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() == 1 &&
+      operandMANPs[0]->getValue().getMANP().has_value() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  const uint64_t inputWidth = op.getOperand()
+                                  .getType()
+                                  .cast<mlir::RankedTensorType>()
+                                  .getElementType()
+                                  .cast<FHE::FheIntegerInterface>()
+                                  .getWidth();
+
+  const uint64_t outputWidth = op.getResult()
+                                   .getType()
+                                   .cast<mlir::RankedTensorType>()
+                                   .getElementType()
+                                   .cast<FHE::FheIntegerInterface>()
+                                   .getWidth();
+
+  const uint64_t clearedBits = inputWidth - outputWidth;
+
+  llvm::APInt result = operandMANPs[0]->getValue().getMANP().value();
+  result += clearedBits;
+
+  return result;
+}
+
 class MANPAnalysis
     : public mlir::dataflow::SparseDataFlowAnalysis<MANPLattice> {
 public:
@@ -1377,6 +1407,9 @@ public:
       } else {
         isDummy = true;
       }
+    } else if (auto roundOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::RoundOp>(op)) {
+      norm2SqEquiv = getSqMANP(roundOp, operands);
     }
 
     // Tensor Operators

@@ -1124,4 +1124,37 @@ def FHELinalg_ToUnsignedOp : FHELinalg_Op<"to_unsigned", []> {
     let hasVerifier = 1;
 }
 
+def FHELinalg_RoundOp : FHELinalg_Op<"round", [TensorUnaryEint]> {
+    let summary = "Rounds a tensor of ciphertexts into a smaller precision.";
+
+    let description = [{
+        Assuming a ciphertext whose message is implemented over `p` bits, this
+        operation rounds it to fit to `q` bits where `p>q`.
+
+        Example:
+        ```mlir
+        // ok
+        "FHELinalg.round"(%a): (tensor<3x!FHE.eint<6>>) -> (tensor<3x!FHE.eint<5>>)
+        "FHELinalg.round"(%a): (tensor<3x!FHE.eint<5>>) -> (tensor<3x!FHE.eint<3>>)
+        "FHELinalg.round"(%a): (tensor<3x!FHE.eint<3>>) -> (tensor<3x!FHE.eint<2>>)
+        "FHELinalg.round"(%a): (tensor<3x!FHE.esint<3>>) -> (tensor<3x!FHE.esint<2>>)
+
+        // error
+        "FHELinalg.round"(%a): (tensor<3x!FHE.eint<6>>) -> (tensor<3x!FHE.eint<6>>)
+        "FHELinalg.round"(%a): (tensor<3x!FHE.eint<4>>) -> (tensor<3x!FHE.eint<5>>)
+        "FHELinalg.round"(%a): (tensor<3x!FHE.eint<4>>) -> (tensor<3x!FHE.esint<2>>)
+		```
+    }];
+
+    let arguments = (ins
+    	Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input
+    );
+
+    let results = (outs
+    	Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$output
+    );
+
+    let hasVerifier = 1;
+}
+
 #endif

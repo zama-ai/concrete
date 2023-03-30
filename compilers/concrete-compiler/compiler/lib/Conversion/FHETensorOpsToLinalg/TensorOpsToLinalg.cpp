@@ -2030,6 +2030,95 @@ struct FHELinalgToUnsignedToLinalgGeneric
   };
 };
 
+/// This template rewrite pattern transforms any instance of
+/// operators `FHELinalg.round` to an instance of `linalg.generic` with an
+/// appropriate region using `FHE.round` operation, an appropriate
+/// specification for the iteration dimensions and appropriate operations
+/// managing the accumulator of `linalg.generic`.
+///
+/// Example:
+///
+/// FHELinalg.round(%tensor):
+///  tensor<DNx...xD1x!FHE.eint<p>> -> tensor<DNx...xD1x!FHE.eint<q>>
+///
+/// becomes:
+///
+/// #maps = [
+///    affine_map<(aN, ..., a1) -> (aN, ..., a1)>,
+///    affine_map<(aN, ..., a1) -> (aN, ..., a1)>
+/// ]
+/// #attributes {
+///     indexing_maps = #maps,
+///     iterator_types = ["parallel", ..., "parallel"],
+/// }
+///
+/// %output = linalg.init_tensor [DN,...,D1] : tensor<DNx...xD1x!FHE.eint<q>>
+/// %result = linalg.generic {
+///     ins(%input: tensor<DNx...xD1x!FHE.eint<p>>)
+///     outs(%output: tensor<DNx...xD1x!FHE.eint<q>>)
+///     {
+///         ^bb0(%arg0: !FHE.eint<p>):
+///             %0 = FHE.round(%arg0): !FHE.eint<p> -> !FHE.eint<q>
+///             linalg.yield %0 : !FHE.eint<q>
+///     }
+/// }
+///
+struct FHELinalgRoundToLinalgGeneric
+    : public mlir::OpRewritePattern<FHELinalg::RoundOp> {
+  FHELinalgRoundToLinalgGeneric(mlir::MLIRContext *context,
+                                mlir::PatternBenefit benefit =
+                                    mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<FHELinalg::RoundOp>(context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHELinalg::RoundOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+
+    auto loc = op.getLoc();
+
+    auto inputTy = op.getInput().getType().cast<mlir::RankedTensorType>();
+    auto outputTy = op.getOutput().getType().cast<mlir::RankedTensorType>();
+
+    auto buffer = rewriter.create<bufferization::AllocTensorOp>(
+        loc, outputTy, mlir::ValueRange{});
+
+    auto maps = llvm::SmallVector<mlir::AffineMap, 2>{
+        mlir::AffineMap::getMultiDimIdentityMap(inputTy.getShape().size(),
+                                                this->getContext()),
+        mlir::AffineMap::getMultiDimIdentityMap(outputTy.getShape().size(),
+                                                this->getContext()),
+    };
+
+    auto iteratorTypes = llvm::SmallVector<mlir::utils::IteratorType>(
+        outputTy.getShape().size(), mlir::utils::IteratorType::parallel);
+
+    auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                           mlir::Location nestedLoc,
+                           mlir::ValueRange blockArgs) {
+      auto round = nestedBuilder.create<FHE::RoundEintOp>(
+          op.getLoc(), outputTy.getElementType(), blockArgs[0]);
+
+      nestedBuilder.create<mlir::linalg::YieldOp>(op.getLoc(),
+                                                  round.getResult());
+    };
+
+    auto resTypes = llvm::SmallVector<mlir::Type, 1>{buffer.getType()};
+
+    auto ins = llvm::SmallVector<mlir::Value, 1>{op.getInput()};
+    auto outs = llvm::SmallVector<mlir::Value, 1>{buffer};
+
+    auto doc = llvm::StringRef{""};
+    auto call = llvm::StringRef{""};
+
+    auto output = rewriter.create<mlir::linalg::GenericOp>(
+        loc, resTypes, ins, outs, maps, iteratorTypes, doc, call, bodyBuilder);
+
+    rewriter.replaceOp(op, {output.getResult(0)});
+
+    return mlir::success();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -2109,6 +2198,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<FromElementToTensorFromElements>(&getContext());
   patterns.insert<FHELinalgToSignedToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgToUnsignedToLinalgGeneric>(&getContext());
+  patterns.insert<FHELinalgRoundToLinalgGeneric>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())
