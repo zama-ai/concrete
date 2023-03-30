@@ -25,10 +25,10 @@ namespace {
 struct TFHEGlobalParametrizationPass
     : public TFHEGlobalParametrizationBase<TFHEGlobalParametrizationPass> {
   TFHEGlobalParametrizationPass(
-      mlir::concretelang::V0Parameter &cryptoParameters)
+      const mlir::concretelang::V0Parameter cryptoParameters)
       : cryptoParameters(cryptoParameters){};
   void runOnOperation() final;
-  mlir::concretelang::V0Parameter &cryptoParameters;
+  const mlir::concretelang::V0Parameter cryptoParameters;
 };
 } // namespace
 
@@ -41,7 +41,7 @@ class TFHEGlobalParametrizationTypeConverter : public mlir::TypeConverter {
 
 public:
   TFHEGlobalParametrizationTypeConverter(
-      mlir::concretelang::V0Parameter &cryptoParameters)
+      const mlir::concretelang::V0Parameter cryptoParameters)
       : cryptoParameters(cryptoParameters) {
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](GLWECipherTextType type) {
@@ -96,14 +96,14 @@ public:
     return TFHE::GLWECipherTextType::get(type.getContext(), getIntraPBSKey());
   }
 
-  mlir::concretelang::V0Parameter cryptoParameters;
+  const mlir::concretelang::V0Parameter cryptoParameters;
 };
 
 struct KeySwitchGLWEOpPattern
     : public mlir::OpRewritePattern<TFHE::KeySwitchGLWEOp> {
   KeySwitchGLWEOpPattern(mlir::MLIRContext *context,
                          TFHEGlobalParametrizationTypeConverter &converter,
-                         mlir::concretelang::V0Parameter &cryptoParameters,
+                         const mlir::concretelang::V0Parameter cryptoParameters,
                          mlir::PatternBenefit benefit =
                              mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<TFHE::KeySwitchGLWEOp>(context, benefit),
@@ -133,14 +133,14 @@ struct KeySwitchGLWEOpPattern
 
 private:
   TFHEGlobalParametrizationTypeConverter &converter;
-  mlir::concretelang::V0Parameter &cryptoParameters;
+  const mlir::concretelang::V0Parameter cryptoParameters;
 };
 
 struct BootstrapGLWEOpPattern
     : public mlir::OpRewritePattern<TFHE::BootstrapGLWEOp> {
   BootstrapGLWEOpPattern(mlir::MLIRContext *context,
                          TFHEGlobalParametrizationTypeConverter &converter,
-                         mlir::concretelang::V0Parameter &cryptoParameters,
+                         const mlir::concretelang::V0Parameter cryptoParameters,
                          mlir::PatternBenefit benefit =
                              mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<TFHE::BootstrapGLWEOp>(context, benefit),
@@ -172,13 +172,13 @@ struct BootstrapGLWEOpPattern
 
 private:
   TFHEGlobalParametrizationTypeConverter &converter;
-  mlir::concretelang::V0Parameter &cryptoParameters;
+  const mlir::concretelang::V0Parameter cryptoParameters;
 };
 
 struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
   WopPBSGLWEOpPattern(mlir::MLIRContext *context,
                       TFHEGlobalParametrizationTypeConverter &converter,
-                      mlir::concretelang::V0Parameter &cryptoParameters,
+                      const mlir::concretelang::V0Parameter cryptoParameters,
                       mlir::PatternBenefit benefit =
                           mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<TFHE::WopPBSGLWEOp>(context, benefit),
@@ -229,7 +229,7 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
 
 private:
   TFHEGlobalParametrizationTypeConverter &converter;
-  mlir::concretelang::V0Parameter &cryptoParameters;
+  const mlir::concretelang::V0Parameter cryptoParameters;
 };
 
 template <typename Op>
@@ -423,9 +423,8 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertTFHEGlobalParametrizationPass(
-    mlir::concretelang::V0FHEContext &fheContext) {
-  return std::make_unique<TFHEGlobalParametrizationPass>(fheContext.parameter);
+createConvertTFHEGlobalParametrizationPass(const V0Parameter parameter) {
+  return std::make_unique<TFHEGlobalParametrizationPass>(parameter);
 }
 } // namespace concretelang
 } // namespace mlir

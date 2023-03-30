@@ -11,7 +11,6 @@
 
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
-#include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "llvm/Support/Error.h"
 
 namespace mlir {

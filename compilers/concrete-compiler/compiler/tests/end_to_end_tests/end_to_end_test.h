@@ -24,7 +24,7 @@ const double TEST_ERROR_RATE = 1.0 - 0.999936657516;
 std::tuple<mlir::concretelang::CompilationOptions, std::string,
            std::vector<EndToEndDescFile>>
 parseEndToEndCommandLine(int argc, char **argv) {
-
+  namespace optimizer = mlir::concretelang::optimizer;
   // TODO - Well reset other llvm command line options registered but assert on
   // --help
   // llvm::cl::ResetCommandLineParser();
@@ -67,12 +67,30 @@ parseEndToEndCommandLine(int argc, char **argv) {
   llvm::cl::opt<int> securityLevel(
       "security-level",
       llvm::cl::desc("Set the number of bit of security to target"),
-      llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.security));
+      llvm::cl::init(optimizer::DEFAULT_CONFIG.security));
   llvm::cl::opt<bool> optimizerDisplay(
       "optimizer-display",
       llvm::cl::desc("Set the optimizerConfig.display compilation options to "
                      "run the tests"),
       llvm::cl::init(false));
+  llvm::cl::opt<optimizer::Strategy> optimizerStrategy(
+      "optimizer-strategy",
+      llvm::cl::desc("Select the concrete optimizer strategy"),
+      llvm::cl::init(optimizer::DEFAULT_STRATEGY),
+      llvm::cl::values(clEnumValN(optimizer::Strategy::V0, "V0",
+                                  "Use the V0 optimizer strategy that use the "
+                                  "worst case atomic pattern")),
+      llvm::cl::values(clEnumValN(
+          optimizer::Strategy::DAG_MONO, "dag-mono",
+          "Use the dag-mono optimizer strategy that solve the optimization "
+          "problem using the fhe computation dag with ONE set of evaluation "
+          "keys")),
+      llvm::cl::values(clEnumValN(
+          optimizer::Strategy::DAG_MULTI, "dag-multi",
+          "Use the dag-multi optimizer strategy that solve the optimization "
+          "problem using the fhe computation dag with SEVERAL set of "
+          "evaluation "
+          "keys")));
 
   // JIT or Library support
   llvm::cl::opt<bool> jit(
@@ -102,6 +120,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
     compilationOptions.batchTFHEOps = batchTFHEOps.getValue().value();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
+  compilationOptions.optimizerConfig.strategy = optimizerStrategy.getValue();
 
   std::vector<EndToEndDescFile> parsedDescriptionFiles;
   for (auto descFile : descriptionFiles) {

@@ -6,14 +6,65 @@
 #ifndef CONCRETELANG_SUPPORT_V0Parameter_H_
 #define CONCRETELANG_SUPPORT_V0Parameter_H_
 
+#include <variant>
+
 #include "llvm/ADT/Optional.h"
 
 #include "concrete-optimizer.hpp"
-#include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Support/CompilationFeedback.h"
 
 namespace mlir {
 namespace concretelang {
+
+/// FHE constraint to solve using the V0 crypto optimization
+/// strategy.
+struct V0FHEConstraint {
+  size_t norm2;
+  size_t p;
+};
+
+typedef std::vector<int64_t> CRTDecomposition;
+
+struct PackingKeySwitchParameter {
+  size_t inputLweDimension;
+  size_t outputPolynomialSize;
+  size_t level;
+  size_t baseLog;
+};
+
+struct CitcuitBoostrapParameter {
+  size_t level;
+  size_t baseLog;
+};
+
+struct WopPBSParameter {
+  PackingKeySwitchParameter packingKeySwitch;
+  CitcuitBoostrapParameter circuitBootstrap;
+};
+
+struct LargeIntegerParameter {
+  CRTDecomposition crtDecomposition;
+  WopPBSParameter wopPBS;
+};
+
+struct V0Parameter {
+  size_t glweDimension;
+  size_t logPolynomialSize;
+  size_t nSmall;
+  size_t brLevel;
+  size_t brLogBase;
+  size_t ksLevel;
+  size_t ksLogBase;
+
+  std::optional<LargeIntegerParameter> largeInteger;
+
+  // TODO remove the shift when we have true polynomial size
+  size_t getPolynomialSize() const { return 1 << logPolynomialSize; }
+
+  size_t getNBigLweDimension() const {
+    return glweDimension * getPolynomialSize();
+  }
+};
 
 namespace optimizer {
 constexpr double DEFAULT_GLOBAL_P_ERROR = 1.0 / 100000.0;
@@ -23,17 +74,30 @@ constexpr double UNSPECIFIED_GLOBAL_P_ERROR =
 constexpr uint DEFAULT_SECURITY = 128;
 constexpr uint DEFAULT_FALLBACK_LOG_NORM_WOPPBS = 8;
 constexpr bool DEFAULT_DISPLAY = false;
-constexpr bool DEFAULT_STRATEGY_V0 = false;
 constexpr bool DEFAULT_USE_GPU_CONSTRAINTS = false;
 constexpr concrete_optimizer::Encoding DEFAULT_ENCODING =
     concrete_optimizer::Encoding::Auto;
 constexpr bool DEFAULT_CACHE_ON_DISK = true;
 
+/// The strategy of the crypto optimization
+enum Strategy {
+  /// V0 is a strategy based on the worst case atomic pattern
+  V0,
+  /// DAG_MONO is a strategy that used the optimizer dag but resolve with a
+  /// unique set of keyswitch and boostrap key
+  DAG_MONO,
+  /// DAG_MULTI is a strategy that used the optimizer dag but resolve with a
+  /// multiple set of keyswitch and boostrap key
+  DAG_MULTI
+};
+
+constexpr Strategy DEFAULT_STRATEGY = Strategy::DAG_MONO;
+
 struct Config {
   double p_error;
   double global_p_error;
   bool display;
-  bool strategy_v0;
+  Strategy strategy;
   std::uint64_t security;
   double fallback_log_norm_woppbs;
   bool use_gpu_constraints;
@@ -45,7 +109,7 @@ constexpr Config DEFAULT_CONFIG = {
     UNSPECIFIED_P_ERROR,
     UNSPECIFIED_GLOBAL_P_ERROR,
     DEFAULT_DISPLAY,
-    DEFAULT_STRATEGY_V0,
+    DEFAULT_STRATEGY,
     DEFAULT_SECURITY,
     DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
     DEFAULT_USE_GPU_CONSTRAINTS,
@@ -54,8 +118,8 @@ constexpr Config DEFAULT_CONFIG = {
 };
 
 using Dag = rust::Box<concrete_optimizer::OperationDag>;
-using Solution = concrete_optimizer::v0::Solution;
 using DagSolution = concrete_optimizer::dag::DagSolution;
+using CircuitSolution = concrete_optimizer::dag::CircuitSolution;
 
 /* Contains any circuit description usable by the concrete-optimizer */
 struct Description {
@@ -63,11 +127,41 @@ struct Description {
   std::optional<optimizer::Dag> dag;
 };
 
+/// The Solution is a variant of a V0Parameter or a CircuitSolution depending of
+/// optimizer config.
+typedef std::variant<V0Parameter, CircuitSolution> Solution;
+
 } // namespace optimizer
 
-llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
-                                         CompilationFeedback &feedback,
-                                         optimizer::Config optimizerConfig);
+struct CompilationFeedback;
+
+llvm::Expected<optimizer::Solution>
+getSolution(optimizer::Description &descr, CompilationFeedback &feedback,
+            optimizer::Config optimizerConfig);
+
+// As for now the solution which contains a crt encoding is mono parameter only
+// we have some parts of the pipeline that rely on that.
+// TODO: Remove this function
+inline std::optional<CRTDecomposition>
+getCrtDecompositionFromSolution(optimizer::Solution solution) {
+  if (auto mono = std::get_if<V0Parameter>(&solution); mono != nullptr) {
+    if (mono->largeInteger.has_value()) {
+      return mono->largeInteger->crtDecomposition;
+    }
+  }
+  // TODO: Integrate the CircuitSolution with crt
+  return std::nullopt;
+}
+
+// Temporary function for hack FHEToScalar
+// TODO: Remove this function
+inline size_t getPolynomialSizeFromSolution(optimizer::Solution solution) {
+  if (auto mono = std::get_if<V0Parameter>(&solution); mono != nullptr) {
+    return mono->getPolynomialSize();
+  }
+  return 42;
+}
+
 } // namespace concretelang
 } // namespace mlir
 #endif

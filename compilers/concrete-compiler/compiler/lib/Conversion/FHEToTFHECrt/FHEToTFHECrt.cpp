@@ -34,7 +34,6 @@
 namespace FHE = mlir::concretelang::FHE;
 namespace TFHE = mlir::concretelang::TFHE;
 namespace Tracing = mlir::concretelang::Tracing;
-namespace concretelang = mlir::concretelang;
 
 namespace fhe_to_tfhe_crt_conversion {
 
@@ -83,7 +82,7 @@ mlir::Type maybeConvertEncrypted(mlir::MLIRContext *context, mlir::Type t,
 class TypeConverter : public mlir::TypeConverter {
 
 public:
-  TypeConverter(concretelang::CrtLoweringParameters loweringParameters) {
+  TypeConverter(mlir::concretelang::CrtLoweringParameters loweringParameters) {
     size_t nMods = loweringParameters.nMods;
     addConversion([](mlir::Type type) { return type; });
     addConversion([=](FHE::FheIntegerInterface type) {
@@ -92,13 +91,15 @@ public:
     addConversion([=](mlir::RankedTensorType type) {
       return maybeConvertEncryptedTensor(type.getContext(), type, nMods);
     });
-    addConversion([&](concretelang::RT::FutureType type) {
-      return concretelang::RT::FutureType::get(this->convertType(
-          type.dyn_cast<concretelang::RT::FutureType>().getElementType()));
+    addConversion([&](mlir::concretelang::RT::FutureType type) {
+      return mlir::concretelang::RT::FutureType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::FutureType>()
+                                .getElementType()));
     });
-    addConversion([&](concretelang::RT::PointerType type) {
-      return concretelang::RT::PointerType::get(this->convertType(
-          type.dyn_cast<concretelang::RT::PointerType>().getElementType()));
+    addConversion([&](mlir::concretelang::RT::PointerType type) {
+      return mlir::concretelang::RT::PointerType::get(
+          this->convertType(type.dyn_cast<mlir::concretelang::RT::PointerType>()
+                                .getElementType()));
     });
   }
 
@@ -119,10 +120,10 @@ template <typename T>
 struct CrtOpPattern : public mlir::OpConversionPattern<T> {
 
   /// The lowering parameters are bound to the op rewriter.
-  concretelang::CrtLoweringParameters loweringParameters;
+  mlir::concretelang::CrtLoweringParameters loweringParameters;
 
   CrtOpPattern(mlir::MLIRContext *context,
-               concretelang::CrtLoweringParameters params,
+               mlir::concretelang::CrtLoweringParameters params,
                mlir::PatternBenefit benefit = 1)
       : mlir::OpConversionPattern<T>(typeConverter, context, benefit),
         loweringParameters(params), typeConverter(params) {}
@@ -184,7 +185,7 @@ protected:
 struct AddEintIntOpPattern : public CrtOpPattern<FHE::AddEintIntOp> {
 
   AddEintIntOpPattern(mlir::MLIRContext *context,
-                      concretelang::CrtLoweringParameters params,
+                      mlir::concretelang::CrtLoweringParameters params,
                       mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::AddEintIntOp>(context, params, benefit) {}
 
@@ -231,7 +232,7 @@ struct AddEintIntOpPattern : public CrtOpPattern<FHE::AddEintIntOp> {
 struct SubIntEintOpPattern : public CrtOpPattern<FHE::SubIntEintOp> {
 
   SubIntEintOpPattern(mlir::MLIRContext *context,
-                      concretelang::CrtLoweringParameters params,
+                      mlir::concretelang::CrtLoweringParameters params,
                       mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::SubIntEintOp>(context, params, benefit) {}
 
@@ -278,7 +279,7 @@ struct SubIntEintOpPattern : public CrtOpPattern<FHE::SubIntEintOp> {
 struct SubEintIntOpPattern : public CrtOpPattern<FHE::SubEintIntOp> {
 
   SubEintIntOpPattern(mlir::MLIRContext *context,
-                      concretelang::CrtLoweringParameters params,
+                      mlir::concretelang::CrtLoweringParameters params,
                       mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::SubEintIntOp>(context, params, benefit) {}
 
@@ -335,7 +336,7 @@ struct SubEintIntOpPattern : public CrtOpPattern<FHE::SubEintIntOp> {
 struct AddEintOpPattern : CrtOpPattern<FHE::AddEintOp> {
 
   AddEintOpPattern(mlir::MLIRContext *context,
-                   concretelang::CrtLoweringParameters params,
+                   mlir::concretelang::CrtLoweringParameters params,
                    mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::AddEintOp>(context, params, benefit) {}
 
@@ -378,7 +379,7 @@ struct AddEintOpPattern : CrtOpPattern<FHE::AddEintOp> {
 struct SubEintOpPattern : CrtOpPattern<FHE::SubEintOp> {
 
   SubEintOpPattern(mlir::MLIRContext *context,
-                   concretelang::CrtLoweringParameters params,
+                   mlir::concretelang::CrtLoweringParameters params,
                    mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::SubEintOp>(context, params, benefit) {}
 
@@ -423,7 +424,7 @@ struct SubEintOpPattern : CrtOpPattern<FHE::SubEintOp> {
 struct NegEintOpPattern : CrtOpPattern<FHE::NegEintOp> {
 
   NegEintOpPattern(mlir::MLIRContext *context,
-                   concretelang::CrtLoweringParameters params,
+                   mlir::concretelang::CrtLoweringParameters params,
                    mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::NegEintOp>(context, params, benefit) {}
 
@@ -461,7 +462,7 @@ struct NegEintOpPattern : CrtOpPattern<FHE::NegEintOp> {
 /// Rewriter for the `FHE::to_signed` operation.
 struct ToSignedOpPattern : public CrtOpPattern<FHE::ToSignedOp> {
   ToSignedOpPattern(mlir::MLIRContext *context,
-                    concretelang::CrtLoweringParameters params,
+                    mlir::concretelang::CrtLoweringParameters params,
                     mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::ToSignedOp>(context, params, benefit) {}
 
@@ -479,7 +480,7 @@ struct ToSignedOpPattern : public CrtOpPattern<FHE::ToSignedOp> {
 /// Rewriter for the `FHE::to_unsigned` operation.
 struct ToUnsignedOpPattern : public CrtOpPattern<FHE::ToUnsignedOp> {
   ToUnsignedOpPattern(mlir::MLIRContext *context,
-                      concretelang::CrtLoweringParameters params,
+                      mlir::concretelang::CrtLoweringParameters params,
                       mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::ToUnsignedOp>(context, params, benefit) {}
 
@@ -498,7 +499,7 @@ struct ToUnsignedOpPattern : public CrtOpPattern<FHE::ToUnsignedOp> {
 struct MulEintIntOpPattern : CrtOpPattern<FHE::MulEintIntOp> {
 
   MulEintIntOpPattern(mlir::MLIRContext *context,
-                      concretelang::CrtLoweringParameters params,
+                      mlir::concretelang::CrtLoweringParameters params,
                       mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::MulEintIntOp>(context, params, benefit) {}
 
@@ -543,9 +544,10 @@ struct MulEintIntOpPattern : CrtOpPattern<FHE::MulEintIntOp> {
 struct ApplyLookupTableEintOpPattern
     : public CrtOpPattern<FHE::ApplyLookupTableEintOp> {
 
-  ApplyLookupTableEintOpPattern(mlir::MLIRContext *context,
-                                concretelang::CrtLoweringParameters params,
-                                mlir::PatternBenefit benefit = 1)
+  ApplyLookupTableEintOpPattern(
+      mlir::MLIRContext *context,
+      mlir::concretelang::CrtLoweringParameters params,
+      mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<FHE::ApplyLookupTableEintOp>(context, params, benefit) {}
 
   ::mlir::LogicalResult
@@ -599,7 +601,7 @@ struct ApplyLookupTableEintOpPattern
 struct TraceCiphertextOpPattern : CrtOpPattern<Tracing::TraceCiphertextOp> {
 
   TraceCiphertextOpPattern(mlir::MLIRContext *context,
-                           concretelang::CrtLoweringParameters params,
+                           mlir::concretelang::CrtLoweringParameters params,
                            mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<Tracing::TraceCiphertextOp>(context, params, benefit) {}
 
@@ -638,7 +640,7 @@ struct TraceCiphertextOpPattern : CrtOpPattern<Tracing::TraceCiphertextOp> {
 struct TensorExtractOpPattern : public CrtOpPattern<mlir::tensor::ExtractOp> {
 
   TensorExtractOpPattern(mlir::MLIRContext *context,
-                         concretelang::CrtLoweringParameters params,
+                         mlir::concretelang::CrtLoweringParameters params,
                          mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<mlir::tensor::ExtractOp>(context, params, benefit) {}
 
@@ -689,7 +691,7 @@ struct TensorExtractOpPattern : public CrtOpPattern<mlir::tensor::ExtractOp> {
 struct TensorInsertOpPattern : public CrtOpPattern<mlir::tensor::InsertOp> {
 
   TensorInsertOpPattern(mlir::MLIRContext *context,
-                        concretelang::CrtLoweringParameters params,
+                        mlir::concretelang::CrtLoweringParameters params,
                         mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<mlir::tensor::InsertOp>(context, params, benefit) {}
 
@@ -738,7 +740,7 @@ struct TensorFromElementsOpPattern
     : public CrtOpPattern<mlir::tensor::FromElementsOp> {
 
   TensorFromElementsOpPattern(mlir::MLIRContext *context,
-                              concretelang::CrtLoweringParameters params,
+                              mlir::concretelang::CrtLoweringParameters params,
                               mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<mlir::tensor::FromElementsOp>(context, params, benefit) {}
 
@@ -812,7 +814,7 @@ struct TensorFromElementsOpPattern
 template <typename Op, bool inRank>
 struct TensorReassociationOpPattern : public CrtOpPattern<Op> {
   TensorReassociationOpPattern(mlir::MLIRContext *context,
-                               concretelang::CrtLoweringParameters params,
+                               mlir::concretelang::CrtLoweringParameters params,
                                mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<Op>(context, params, benefit) {}
 
@@ -846,7 +848,7 @@ struct TensorReassociationOpPattern : public CrtOpPattern<Op> {
 struct ExtractSliceOpPattern
     : public CrtOpPattern<mlir::tensor::ExtractSliceOp> {
   ExtractSliceOpPattern(mlir::MLIRContext *context,
-                        concretelang::CrtLoweringParameters params,
+                        mlir::concretelang::CrtLoweringParameters params,
                         mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<mlir::tensor::ExtractSliceOp>(context, params, benefit) {}
 
@@ -880,7 +882,7 @@ struct ExtractSliceOpPattern
 
 struct InsertSliceOpPattern : public CrtOpPattern<mlir::tensor::InsertSliceOp> {
   InsertSliceOpPattern(mlir::MLIRContext *context,
-                       concretelang::CrtLoweringParameters params,
+                       mlir::concretelang::CrtLoweringParameters params,
                        mlir::PatternBenefit benefit = 1)
       : CrtOpPattern<mlir::tensor::InsertSliceOp>(context, params, benefit) {}
 
@@ -916,7 +918,7 @@ struct InsertSliceOpPattern : public CrtOpPattern<mlir::tensor::InsertSliceOp> {
 
 struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
 
-  FHEToTFHECrtPass(concretelang::CrtLoweringParameters params)
+  FHEToTFHECrtPass(mlir::concretelang::CrtLoweringParameters params)
       : loweringParameters(params) {}
 
   void runOnOperation() override {
@@ -954,55 +956,55 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
         });
     target.addLegalOp<mlir::func::CallOp>();
 
-    concretelang::addDynamicallyLegalTypeOp<mlir::bufferization::AllocTensorOp>(
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::bufferization::AllocTensorOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::func::ReturnOp>(
         target, converter);
-    concretelang::addDynamicallyLegalTypeOp<mlir::func::ReturnOp>(target,
-                                                                  converter);
-    concretelang::addDynamicallyLegalTypeOp<mlir::tensor::ExtractSliceOp>(
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::ExtractSliceOp>(
         target, converter);
-    concretelang::addDynamicallyLegalTypeOp<mlir::tensor::InsertSliceOp>(
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::InsertSliceOp>(
         target, converter);
-    concretelang::addDynamicallyLegalTypeOp<mlir::tensor::FromElementsOp>(
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::FromElementsOp>(
         target, converter);
-    concretelang::addDynamicallyLegalTypeOp<mlir::tensor::ExpandShapeOp>(
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::ExpandShapeOp>(
         target, converter);
-    concretelang::addDynamicallyLegalTypeOp<mlir::tensor::CollapseShapeOp>(
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::tensor::CollapseShapeOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
         target, converter);
-    concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::AwaitFutureOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
         target, converter);
-    concretelang::addDynamicallyLegalTypeOp<
-        concretelang::RT::MakeReadyFutureOp>(target, converter);
-    concretelang::addDynamicallyLegalTypeOp<concretelang::RT::AwaitFutureOp>(
-        target, converter);
-    concretelang::addDynamicallyLegalTypeOp<
-        concretelang::RT::CreateAsyncTaskOp>(target, converter);
-    concretelang::addDynamicallyLegalTypeOp<
-        concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
-    concretelang::addDynamicallyLegalTypeOp<
-        concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(target,
-                                                                     converter);
-    concretelang::addDynamicallyLegalTypeOp<
-        concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
-    concretelang::addDynamicallyLegalTypeOp<
-        concretelang::RT::WorkFunctionReturnOp>(target, converter);
-    concretelang::addDynamicallyLegalTypeOp<
-        concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
 
     //---------------------------------------------------------- Adding patterns
     mlir::RewritePatternSet patterns(&getContext());
 
     // Patterns for `bufferization` dialect operations.
-    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::bufferization::AllocTensorOp, true>>(patterns.getContext(),
                                                    converter);
 
     // Patterns for the `FHE` dialect operations
     patterns.add<
         //    |_ `FHE::zero_eint`
-        concretelang::GenericOneToOneOpConversionPattern<FHE::ZeroEintOp,
-                                                         TFHE::ZeroGLWEOp>,
+        mlir::concretelang::GenericOneToOneOpConversionPattern<
+            FHE::ZeroEintOp, TFHE::ZeroGLWEOp>,
         //    |_ `FHE::zero_tensor`
-        concretelang::GenericOneToOneOpConversionPattern<
+        mlir::concretelang::GenericOneToOneOpConversionPattern<
             FHE::ZeroTensorOp, TFHE::ZeroTensorGLWEOp>>(&getContext(),
                                                         converter);
     //    |_ `FHE::add_eint_int`
@@ -1029,15 +1031,12 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
 
     // Patterns for the relics of the `FHELinalg` dialect operations.
     //    |_ `linalg::generic` turned to nested `scf::for`
-    patterns.add<
-        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::ForOp>>(
-        patterns.getContext(), converter);
-    patterns.add<
-        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::YieldOp>>(
-        patterns.getContext(), converter);
-    patterns.add<
-        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::ForOp>>(
-        &getContext(), converter);
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::scf::ForOp>>(patterns.getContext(), converter);
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::scf::YieldOp>>(patterns.getContext(), converter);
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::scf::ForOp>>(&getContext(), converter);
     patterns.add<lowering::TensorExtractOpPattern>(&getContext(),
                                                    loweringParameters);
     patterns.add<lowering::TensorInsertOpPattern>(&getContext(),
@@ -1054,13 +1053,13 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
                                                  loweringParameters);
     patterns.add<lowering::TraceCiphertextOpPattern>(patterns.getContext(),
                                                      loweringParameters);
-    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::GenerateOp, true>>(&getContext(), converter);
 
     // Patterns for `func` dialect operations.
     mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
         patterns, converter);
-    patterns.add<concretelang::TypeConvertingReinstantiationPattern<
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::func::ReturnOp>>(patterns.getContext(), converter);
     patterns.add<FunctionConstantOpConversion<typing::TypeConverter>>(
         &getContext(), converter);
@@ -1071,26 +1070,27 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
 
     // Patterns for the `RT` dialect operations.
     patterns.add<
-        // concretelang::TypeConvertingReinstantiationPattern<
+        // mlir::concretelang::TypeConvertingReinstantiationPattern<
         //     mlir::func::ReturnOp>,
-        concretelang::TypeConvertingReinstantiationPattern<mlir::scf::YieldOp>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::MakeReadyFutureOp>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::AwaitFutureOp>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::CreateAsyncTaskOp, true>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::BuildReturnPtrPlaceholderOp>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::DerefReturnPtrPlaceholderOp>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::WorkFunctionReturnOp>,
-        concretelang::TypeConvertingReinstantiationPattern<
-            concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                           converter);
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::scf::YieldOp>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::MakeReadyFutureOp>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::AwaitFutureOp>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::CreateAsyncTaskOp, true>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::WorkFunctionReturnOp>,
+        mlir::concretelang::TypeConvertingReinstantiationPattern<
+            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
+                                                                 converter);
 
     //--------------------------------------------------------- Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))
@@ -1100,7 +1100,7 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
   }
 
 private:
-  concretelang::CrtLoweringParameters loweringParameters;
+  mlir::concretelang::CrtLoweringParameters loweringParameters;
 };
 } // namespace fhe_to_tfhe_crt_conversion
 

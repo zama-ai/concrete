@@ -34,6 +34,12 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   m.def("init_df_parallelization", &initDataflowParallelization);
 
+  pybind11::enum_<optimizer::Strategy>(m, "OptimizerStrategy")
+      .value("V0", optimizer::Strategy::V0)
+      .value("DAG_MONO", optimizer::Strategy::DAG_MONO)
+      .value("DAG_MULTI", optimizer::Strategy::DAG_MULTI)
+      .export_values();
+
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
       .def(pybind11::init(
           [](std::string funcname) { return CompilationOptions(funcname); }))
@@ -63,9 +69,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, bool display) {
              options.optimizerConfig.display = display;
            })
-      .def("set_strategy_v0",
-           [](CompilationOptions &options, bool strategy_v0) {
-             options.optimizerConfig.strategy_v0 = strategy_v0;
+      .def("set_optimizer_strategy",
+           [](CompilationOptions &options, optimizer::Strategy strategy) {
+             options.optimizerConfig.strategy = strategy;
            })
       .def("set_global_p_error",
            [](CompilationOptions &options, double global_p_error) {

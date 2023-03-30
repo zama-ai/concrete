@@ -240,22 +240,23 @@ mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                std::optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass) {
-  mlir::PassManager pm(&context);
+  if (!fheContext)
+    return mlir::success();
 
-  if (fheContext.has_value() &&
-      fheContext->parameter.largeInteger.has_value()) {
+  mlir::PassManager pm(&context);
+  auto solution = fheContext.value().solution;
+  auto optCrt = getCrtDecompositionFromSolution(solution);
+  if (optCrt) {
     pipelinePrinting("FHEToTFHECrt", pm, context);
-    auto dec =
-        fheContext.value().parameter.largeInteger.value().crtDecomposition;
-    auto mods = mlir::SmallVector<int64_t>(dec.begin(), dec.end());
+    auto mods = mlir::SmallVector<int64_t>(optCrt->begin(), optCrt->end());
     addPotentiallyNestedPass(
         pm,
         mlir::concretelang::createConvertFHEToTFHECrtPass(
             mlir::concretelang::CrtLoweringParameters(mods)),
         enablePass);
-  } else if (fheContext.has_value()) {
+  } else {
     pipelinePrinting("FHEToTFHEScalar", pm, context);
-    size_t polySize = fheContext.value().parameter.getPolynomialSize();
+    size_t polySize = getPolynomialSizeFromSolution(solution);
     addPotentiallyNestedPass(
         pm,
         mlir::concretelang::createConvertFHEToTFHEScalarPass(
@@ -270,17 +271,29 @@ mlir::LogicalResult
 parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                 std::optional<V0FHEContext> &fheContext,
                 std::function<bool(mlir::Pass *)> enablePass) {
+  if (!fheContext)
+    return mlir::success();
+
   mlir::PassManager pm(&context);
   pipelinePrinting("ParametrizeTFHE", pm, context);
 
-  if (fheContext.has_value()) {
+  if (auto monoSolution = std::get_if<V0Parameter>(&fheContext->solution);
+      monoSolution != nullptr) {
     addPotentiallyNestedPass(
         pm,
         mlir::concretelang::createConvertTFHEGlobalParametrizationPass(
-            fheContext.value()),
+            *monoSolution),
         enablePass);
   }
-
+  if (auto circuitSolution =
+          std::get_if<optimizer::CircuitSolution>(&fheContext->solution);
+      circuitSolution != nullptr) {
+    addPotentiallyNestedPass(
+        pm,
+        mlir::concretelang::createTFHECircuitSolutionParametrizationPass(
+            *circuitSolution),
+        enablePass);
+  }
   return pm.run(module.getOperation());
 }
 
