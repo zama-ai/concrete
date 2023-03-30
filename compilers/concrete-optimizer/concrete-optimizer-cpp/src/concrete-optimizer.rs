@@ -174,7 +174,7 @@ impl ffi::CircuitSolution {
         };
         let small_key = ffi::SecretLweKey {
             identifier: 1,
-            polynomial_size: sol.glwe_polynomial_size,
+            polynomial_size: sol.internal_ks_output_lwe_dimension,
             glwe_dimension: 1,
             description: "small representation".into(),
         };
