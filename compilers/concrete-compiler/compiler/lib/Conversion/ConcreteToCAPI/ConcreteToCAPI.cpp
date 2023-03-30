@@ -545,7 +545,7 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
           &getContext(), wopPBSAddOperands);
       patterns.add<ConcreteToCAPICallPattern<
           Concrete::WopPBSCRTLweBufferOp,
-          memref_bacthed_wop_pbs_crt_buffer_cuda_u64>>(&getContext(),
+          memref_batched_wop_pbs_crt_buffer_cuda_u64>>(&getContext(),
                                                        wopPBSAddOperands);
     } else {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,

@@ -181,6 +181,42 @@ struct WopPBSGLWEOpPattern
   }
 };
 
+struct BatchedWopPBSGLWEOpPattern
+    : public mlir::OpConversionPattern<TFHE::BatchedWopPBSGLWEOp> {
+
+  BatchedWopPBSGLWEOpPattern(mlir::MLIRContext *context,
+                             mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<TFHE::BatchedWopPBSGLWEOp>(
+      typeConverter, context,
+      mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::BatchedWopPBSGLWEOp op, TFHE::BatchedWopPBSGLWEOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    auto bsBaseLog = adaptor.getBsk().getBaseLog();
+    auto bsLevels = adaptor.getBsk().getLevels();
+    auto cbsBaseLog = adaptor.getCbsBaseLog();
+    auto cbsLevels = adaptor.getCbsLevels();
+    auto ksBaseLog = adaptor.getKsk().getBaseLog();
+    auto ksLevels = adaptor.getKsk().getLevels();
+    auto pksBaseLog = adaptor.getPksk().getBaseLog();
+    auto pksLevels = adaptor.getPksk().getLevels();
+    auto pksInputLweDim = adaptor.getPksk().getInputLweDim();
+    auto pksOutputPolySize = adaptor.getPksk().getOutputPolySize();
+    auto crtDecomposition = adaptor.getCrtDecompositionAttr();
+    auto resultType = op.getType();
+
+    rewriter.replaceOpWithNewOp<Concrete::BatchedWopPBSCRTLweTensorOp>(
+        op, this->getTypeConverter()->convertType(resultType),
+        adaptor.getCiphertexts(), adaptor.getLookupTable(), bsLevels, bsBaseLog,
+        ksLevels, ksBaseLog, pksInputLweDim, pksOutputPolySize, pksLevels,
+        pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition);
+
+    return mlir::success();
+  }
+};
+
 struct BatchedBootstrapGLWEOpPattern
     : public mlir::OpConversionPattern<TFHE::BatchedBootstrapGLWEOp> {
 
