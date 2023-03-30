@@ -58,7 +58,7 @@ public:
                     gpu_index);
   }
 
-  void TearDown() {
+  void TearDown(const ::benchmark::State &state) {
     cmux_tree_teardown(stream, &csprng, &glwe_sk, &d_lut_identity, &plaintexts,
                        &d_ggsw_bit_array, &cmux_tree_buffer, &d_glwe_out,
                        gpu_index);

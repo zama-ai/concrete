@@ -80,8 +80,7 @@ jobs:
       - name: Benchmark concrete-cuda
         if: ${{ !cancelled() }}
         run: |
-          ${{ env.BENCHMARK_DIR }}/benchmark_concrete_cuda --benchmark_out=benchmarks_results.json 
-          --benchmark_out_format=json
+          ${{ env.BENCHMARK_DIR }}/benchmark_concrete_cuda --benchmark_out=benchmarks_results.json --benchmark_out_format=json
 
       - name: Upload raw results artifact
         uses: actions/upload-artifact@v3

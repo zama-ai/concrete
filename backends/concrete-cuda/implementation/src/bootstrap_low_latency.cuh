@@ -398,4 +398,44 @@ __host__ void host_bootstrap_low_latency(
   check_cuda_error(cudaGetLastError());
 }
 
+// Verify if the grid size for the low latency kernel satisfies the cooperative
+// group constraints
+template <typename Torus, class params>
+__host__ bool verify_cuda_bootstrap_low_latency_grid_size(
+    int glwe_dimension, int polynomial_size, int level_count, int num_samples,
+    uint32_t max_shared_memory) {
+  // Calculate the dimension of the kernel
+  uint64_t full_sm =
+      get_buffer_size_full_sm_bootstrap_low_latency<Torus>(polynomial_size);
+
+  uint64_t partial_sm =
+      get_buffer_size_partial_sm_bootstrap_low_latency<Torus>(polynomial_size);
+
+  int thds = polynomial_size / params::opt;
+
+  // Get the maximum number of active blocks per streaming multiprocessors
+  int number_of_blocks = level_count * (glwe_dimension + 1) * num_samples;
+  int max_active_blocks_per_sm;
+
+  if (max_shared_memory < partial_sm) {
+    cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+        &max_active_blocks_per_sm,
+        (void *)device_bootstrap_low_latency<Torus, params, NOSM>, thds, 0);
+  } else if (max_shared_memory < full_sm) {
+    cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+        &max_active_blocks_per_sm,
+        (void *)device_bootstrap_low_latency<Torus, params, PARTIALSM>, thds,
+        0);
+  } else {
+    cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+        &max_active_blocks_per_sm,
+        (void *)device_bootstrap_low_latency<Torus, params, FULLSM>, thds, 0);
+  }
+
+  // Get the number of streaming multiprocessors
+  int number_of_sm = 0;
+  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+  return number_of_blocks <= max_active_blocks_per_sm * number_of_sm;
+}
+
 #endif // LOWLAT_PBS_H

@@ -42,6 +42,7 @@ protected:
 
 public:
   void SetUp(const ::benchmark::State &state) {
+    cudaDeviceSynchronize();
     stream = cuda_create_stream(0);
 
     lwe_dimension = state.range(0);
@@ -64,12 +65,13 @@ public:
         (lwe_dimension + 1) * input_lwe_ciphertext_count * sizeof(uint64_t));
   }
 
-  void TearDown() {
+  void TearDown(const ::benchmark::State &state) {
     bootstrap_teardown(stream, csprng, lwe_sk_in_array, lwe_sk_out_array,
                        d_fourier_bsk_array, plaintexts, d_lut_pbs_identity,
                        d_lut_pbs_indexes, d_lwe_ct_in_array, d_lwe_ct_out_array,
                        gpu_index);
     free(lwe_ct_array);
+    cudaDeviceSynchronize();
     cudaDeviceReset();
   }
 };
@@ -151,12 +153,12 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
   uint64_t buffer_size = get_buffer_size_bootstrap_low_latency_64(
       glwe_dimension, polynomial_size, pbs_level, input_lwe_ciphertext_count,
       cuda_get_max_shared_memory(gpu_index));
+
   if (buffer_size > free)
     st.SkipWithError("Not enough free memory in the device. Skipping...");
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  if (input_lwe_ciphertext_count >
-      number_of_sm * 4 / (glwe_dimension + 1) / pbs_level)
+  if (!verify_cuda_bootstrap_low_latency_grid_size_64(
+          glwe_dimension, polynomial_size, pbs_level,
+          input_lwe_ciphertext_count, cuda_get_max_shared_memory(gpu_index)))
     st.SkipWithError(
         "Not enough SM on device to run this configuration. Skipping...");
 

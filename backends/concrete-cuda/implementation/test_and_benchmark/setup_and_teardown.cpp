@@ -15,7 +15,6 @@ void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
                      int number_of_inputs, int repetitions, int samples,
                      int gpu_index) {
 
-  void *v_stream = (void *)stream;
   *payload_modulus = message_modulus * carry_modulus;
   // Value of the shift we multiply our messages by
   *delta = ((uint64_t)(1) << 63) / (uint64_t)(*payload_modulus);
@@ -92,7 +91,7 @@ void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
                                (lwe_dimension + 1) * sizeof(uint64_t),
                            stream, gpu_index);
 
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
 
   free(lwe_ct_in_array);
   free(lut_pbs_identity);
@@ -105,21 +104,21 @@ void bootstrap_teardown(cudaStream_t *stream, Csprng *csprng,
                         uint64_t *d_lut_pbs_indexes,
                         uint64_t *d_lwe_ct_in_array,
                         uint64_t *d_lwe_ct_out_array, int gpu_index) {
-  void *v_stream = (void *)stream;
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
 
   concrete_cpu_destroy_concrete_csprng(csprng);
   free(csprng);
   free(lwe_sk_in_array);
   free(lwe_sk_out_array);
   free(plaintexts);
+
   cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
   cuda_drop_async(d_lut_pbs_identity, stream, gpu_index);
   cuda_drop_async(d_lut_pbs_indexes, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }
 
 void keyswitch_setup(cudaStream_t *stream, Csprng **csprng,
@@ -137,7 +136,6 @@ void keyswitch_setup(cudaStream_t *stream, Csprng **csprng,
   // Value of the shift we multiply our messages by
   *delta = ((uint64_t)(1) << 63) / (uint64_t)(*payload_modulus);
 
-  void *v_stream = (void *)stream;
   // Create a Csprng
   *csprng =
       (Csprng *)aligned_alloc(CONCRETE_CSPRNG_ALIGN, CONCRETE_CSPRNG_SIZE);
@@ -189,7 +187,7 @@ void keyswitch_setup(cudaStream_t *stream, Csprng **csprng,
                            repetitions * samples * number_of_inputs *
                                (input_lwe_dimension + 1) * sizeof(uint64_t),
                            stream, gpu_index);
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
   free(lwe_ct_in_array);
 }
 
@@ -198,18 +196,19 @@ void keyswitch_teardown(cudaStream_t *stream, Csprng *csprng,
                         uint64_t *d_ksk_array, uint64_t *plaintexts,
                         uint64_t *d_lwe_ct_in_array,
                         uint64_t *d_lwe_ct_out_array, int gpu_index) {
-  void *v_stream = (void *)stream;
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
+
   concrete_cpu_destroy_concrete_csprng(csprng);
   free(csprng);
   free(lwe_sk_in_array);
   free(lwe_sk_out_array);
   free(plaintexts);
+
   cuda_drop_async(d_ksk_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }
 
 void linear_algebra_setup(cudaStream_t *stream, Csprng **csprng,
@@ -312,8 +311,7 @@ void linear_algebra_setup(cudaStream_t *stream, Csprng **csprng,
                                sizeof(uint64_t),
                            stream, gpu_index);
 
-  void *v_stream = (void *)stream;
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
   free(cleartext_2);
 }
 
@@ -324,24 +322,25 @@ void linear_algebra_teardown(cudaStream_t *stream, Csprng **csprng,
                              uint64_t **lwe_out_ct, uint64_t **plaintexts_1,
                              uint64_t **plaintexts_2, uint64_t **d_plaintexts_2,
                              uint64_t **d_cleartext_2, int gpu_index) {
-  void *v_stream = (void *)stream;
 
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
+
   concrete_cpu_destroy_concrete_csprng(*csprng);
   free(*csprng);
-  cuda_drop_async(*d_lwe_in_1_ct, stream, gpu_index);
-  cuda_drop_async(*d_lwe_in_2_ct, stream, gpu_index);
-  cuda_drop_async(*d_plaintexts_2, stream, gpu_index);
-  cuda_drop_async(*d_cleartext_2, stream, gpu_index);
-  cuda_drop_async(*d_lwe_out_ct, stream, gpu_index);
   free(*lwe_out_ct);
   free(*lwe_sk_array);
   free(*plaintexts_1);
   free(*plaintexts_2);
   free(*lwe_in_1_ct);
   free(*lwe_in_2_ct);
+
+  cuda_drop_async(*d_lwe_in_1_ct, stream, gpu_index);
+  cuda_drop_async(*d_lwe_in_2_ct, stream, gpu_index);
+  cuda_drop_async(*d_plaintexts_2, stream, gpu_index);
+  cuda_drop_async(*d_cleartext_2, stream, gpu_index);
+  cuda_drop_async(*d_lwe_out_ct, stream, gpu_index);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }
 
 void bit_extraction_setup(
@@ -355,7 +354,6 @@ void bit_extraction_setup(
     int number_of_bits_of_message_including_padding,
     int number_of_bits_to_extract, int *delta_log, uint64_t *delta,
     int number_of_inputs, int repetitions, int samples, int gpu_index) {
-  void *v_stream = (void *)stream;
   *delta_log = 64 - number_of_bits_of_message_including_padding;
   *delta = (uint64_t)(1) << *delta_log;
 
@@ -428,7 +426,7 @@ void bit_extraction_setup(
                                pbs_level, number_of_inputs,
                                cuda_get_max_shared_memory(gpu_index), true);
 
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
   free(lwe_ct_in_array);
 }
 
@@ -439,20 +437,21 @@ void bit_extraction_teardown(cudaStream_t *stream, Csprng *csprng,
                              uint64_t *plaintexts, uint64_t *d_lwe_ct_in_array,
                              uint64_t *d_lwe_ct_out_array,
                              int8_t *bit_extract_buffer, int gpu_index) {
-  void *v_stream = (void *)stream;
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
+
   concrete_cpu_destroy_concrete_csprng(csprng);
   free(csprng);
   free(lwe_sk_in_array);
   free(lwe_sk_out_array);
   free(plaintexts);
+
   cleanup_cuda_extract_bits(stream, gpu_index, &bit_extract_buffer);
   cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
   cuda_drop_async(d_ksk_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }
 
 void circuit_bootstrap_setup(
@@ -468,7 +467,6 @@ void circuit_bootstrap_setup(
     int *delta_log, uint64_t *delta, int number_of_inputs, int repetitions,
     int samples, int gpu_index) {
 
-  void *v_stream = (void *)stream;
   *delta_log = 60;
 
   *delta = (uint64_t)(1) << *delta_log;
@@ -547,7 +545,7 @@ void circuit_bootstrap_setup(
   cuda_memcpy_async_to_gpu(*d_lut_vector_indexes, h_lut_vector_indexes,
                            number_of_inputs * cbs_level * sizeof(uint64_t),
                            stream, gpu_index);
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
   free(h_lut_vector_indexes);
   free(lwe_ct_in_array);
 }
@@ -558,21 +556,23 @@ void circuit_bootstrap_teardown(
     uint64_t *d_pksk_array, uint64_t *plaintexts, uint64_t *d_lwe_ct_in_array,
     uint64_t *d_lut_vector_indexes, uint64_t *d_ggsw_ct_out_array,
     int8_t *cbs_buffer, int gpu_index) {
-  void *v_stream = (void *)stream;
-  cuda_synchronize_stream(v_stream);
+
+  cuda_synchronize_stream(stream);
+
   concrete_cpu_destroy_concrete_csprng(csprng);
   free(csprng);
   free(lwe_sk_in_array);
   free(lwe_sk_out_array);
   free(plaintexts);
+
   cleanup_cuda_circuit_bootstrap(stream, gpu_index, &cbs_buffer);
   cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
   cuda_drop_async(d_pksk_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
   cuda_drop_async(d_ggsw_ct_out_array, stream, gpu_index);
   cuda_drop_async(d_lut_vector_indexes, stream, gpu_index);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }
 
 void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
@@ -583,7 +583,6 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
                      double glwe_modular_variance, int r_lut, int tau,
                      uint64_t delta_log, int repetitions, int samples,
                      int gpu_index) {
-  void *v_stream = (void *)stream;
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
   int glwe_size = (glwe_dimension + 1) * polynomial_size;
@@ -647,7 +646,7 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
   scratch_cuda_cmux_tree_64(stream, gpu_index, cmux_tree_buffer, glwe_dimension,
                             polynomial_size, level_count, r_lut, tau,
                             cuda_get_max_shared_memory(gpu_index), true);
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
   free(lut_cmux_tree_identity);
   free(ggsw_bit_array);
 }
@@ -657,16 +656,18 @@ void cmux_tree_teardown(cudaStream_t *stream, Csprng **csprng,
                         int8_t **cmux_tree_buffer, uint64_t **d_glwe_out,
                         int gpu_index) {
   cuda_synchronize_stream(stream);
+
   concrete_cpu_destroy_concrete_csprng(*csprng);
   free(*plaintexts);
   free(*csprng);
   free(*glwe_sk);
+
+  cleanup_cuda_cmux_tree(stream, gpu_index, cmux_tree_buffer);
   cuda_drop_async(*d_lut_identity, stream, gpu_index);
   cuda_drop_async(*d_ggsw_bit_array, stream, gpu_index);
   cuda_drop_async(*d_glwe_out, stream, gpu_index);
-  cleanup_cuda_cmux_tree(stream, gpu_index, cmux_tree_buffer);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }
 
 void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
@@ -683,7 +684,6 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
                    int *delta_log_lut, uint64_t *delta, int tau,
                    int repetitions, int samples, int gpu_index) {
 
-  void *v_stream = (void *)stream;
   int input_lwe_dimension = glwe_dimension * polynomial_size;
   *delta_log = 64 - p;
   *delta_log_lut = *delta_log;
@@ -773,7 +773,7 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
                           cbs_level, pbs_level, p, p, tau,
                           cuda_get_max_shared_memory(gpu_index), true);
 
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
   free(lwe_ct_in_array);
   free(big_lut);
 }
@@ -785,23 +785,23 @@ void wop_pbs_teardown(cudaStream_t *stream, Csprng *csprng,
                       uint64_t *d_lwe_ct_in_array, uint64_t *d_lut_vector,
                       uint64_t *d_lwe_ct_out_array, int8_t *wop_pbs_buffer,
                       int gpu_index) {
-  void *v_stream = (void *)stream;
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
+
   concrete_cpu_destroy_concrete_csprng(csprng);
   free(csprng);
   free(lwe_sk_in_array);
   free(lwe_sk_out_array);
   free(plaintexts);
-  cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_index,
-                                                  &wop_pbs_buffer);
+
+  cleanup_cuda_wop_pbs(stream, gpu_index, &wop_pbs_buffer);
   cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
   cuda_drop_async(d_ksk_array, stream, gpu_index);
   cuda_drop_async(d_pksk_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
   cuda_drop_async(d_lut_vector, stream, gpu_index);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }
 
 void fft_setup(cudaStream_t *stream, double **_poly1, double **_poly2,
@@ -816,7 +816,6 @@ void fft_setup(cudaStream_t *stream, double **_poly1, double **_poly2,
   auto &d_cpoly1 = *_d_cpoly1;
   auto &d_cpoly2 = *_d_cpoly2;
 
-  void *v_stream = (void *)stream;
   poly1 = (double *)malloc(polynomial_size * samples * sizeof(double));
   poly2 = (double *)malloc(polynomial_size * samples * sizeof(double));
   h_cpoly1 = (double2 *)malloc(polynomial_size / 2 * samples * sizeof(double2));
@@ -859,18 +858,21 @@ void fft_setup(cudaStream_t *stream, double **_poly1, double **_poly2,
   cuda_memcpy_async_to_gpu(d_cpoly2, h_cpoly2,
                            polynomial_size / 2 * samples * sizeof(double2),
                            stream, gpu_index);
-  cuda_synchronize_stream(v_stream);
+  cuda_synchronize_stream(stream);
 }
 
 void fft_teardown(cudaStream_t *stream, double *poly1, double *poly2,
                   double2 *h_cpoly1, double2 *h_cpoly2, double2 *d_cpoly1,
                   double2 *d_cpoly2, int gpu_index) {
+  cuda_synchronize_stream(stream);
+
   free(poly1);
   free(poly2);
   free(h_cpoly1);
   free(h_cpoly2);
+
   cuda_drop_async(d_cpoly1, stream, gpu_index);
   cuda_drop_async(d_cpoly2, stream, gpu_index);
+  cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
-  cudaDeviceSynchronize();
 }

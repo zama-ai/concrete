@@ -88,6 +88,8 @@ public:
     // We keep the following for the benchmarks with copies
     lwe_ct_in_array = (uint64_t *)malloc(
         (glwe_dimension * polynomial_size + 1) * tau * sizeof(uint64_t));
+    lwe_ct_out_array = (uint64_t *)malloc(
+        (glwe_dimension * polynomial_size + 1) * tau * sizeof(uint64_t));
     for (int i = 0; i < tau; i++) {
       uint64_t plaintext = plaintexts[i];
       uint64_t *lwe_ct_in =
@@ -97,11 +99,9 @@ public:
           lwe_sk_in, lwe_ct_in, plaintext, glwe_dimension * polynomial_size,
           lwe_modular_variance, csprng, &CONCRETE_CSPRNG_VTABLE);
     }
-    lwe_ct_out_array = (uint64_t *)malloc(
-        (glwe_dimension * polynomial_size + 1) * tau * sizeof(uint64_t));
   }
 
-  void TearDown() {
+  void TearDown(const ::benchmark::State &state) {
     wop_pbs_teardown(stream, csprng, lwe_sk_in, lwe_sk_out, d_ksk,
                      d_fourier_bsk, d_pksk, plaintexts, d_lwe_ct_in_array,
                      d_lut_vector, d_lwe_ct_out_array, wop_pbs_buffer,

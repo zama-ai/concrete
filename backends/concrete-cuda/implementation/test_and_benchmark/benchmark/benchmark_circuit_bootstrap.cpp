@@ -79,7 +79,7 @@ public:
         &delta, number_of_inputs, 1, 1, gpu_index);
   }
 
-  void TearDown() {
+  void TearDown(const ::benchmark::State &state) {
     circuit_bootstrap_teardown(stream, csprng, lwe_sk_in, lwe_sk_out,
                                d_fourier_bsk, d_pksk, plaintexts,
                                d_lwe_ct_in_array, d_lut_vector_indexes,

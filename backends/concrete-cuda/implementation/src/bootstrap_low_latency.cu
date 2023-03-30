@@ -11,6 +11,55 @@ uint64_t get_buffer_size_bootstrap_low_latency_64(
       max_shared_memory);
 }
 
+// The number of samples should be lower than 4 * SM/((k + 1) * l) (the
+// factor 4 being related to the occupancy of 50%).
+bool verify_cuda_bootstrap_low_latency_grid_size_64(
+    int glwe_dimension, int polynomial_size, int level_count, int num_samples,
+    uint32_t max_shared_memory) {
+
+  int ret;
+  switch (polynomial_size) {
+  case 256:
+    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<256>>(
+        glwe_dimension, polynomial_size, level_count, num_samples,
+        max_shared_memory);
+    break;
+  case 512:
+    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<512>>(
+        glwe_dimension, polynomial_size, level_count, num_samples,
+        max_shared_memory);
+    break;
+  case 1024:
+    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<1024>>(
+        glwe_dimension, polynomial_size, level_count, num_samples,
+        max_shared_memory);
+    break;
+  case 2048:
+    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<2048>>(
+        glwe_dimension, polynomial_size, level_count, num_samples,
+        max_shared_memory);
+    break;
+  case 4096:
+    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<4096>>(
+        glwe_dimension, polynomial_size, level_count, num_samples,
+        max_shared_memory);
+    break;
+  case 8192:
+    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<8192>>(
+        glwe_dimension, polynomial_size, level_count, num_samples,
+        max_shared_memory);
+    break;
+  case 16384:
+    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<16384>>(
+        glwe_dimension, polynomial_size, level_count, num_samples,
+        max_shared_memory);
+    break;
+  default:
+    break;
+  }
+
+  return ret;
+}
 /*
  * Runs standard checks to validate the inputs
  */
@@ -25,16 +74,14 @@ void checks_fast_bootstrap_low_latency(int glwe_dimension, int level_count,
           polynomial_size == 4096 || polynomial_size == 8192 ||
           polynomial_size == 16384));
   // The number of samples should be lower than 4 * SM/((k + 1) * l) (the
-  // factor 4 being related to the occupancy of 50%). The only supported
-  // value for k is 1, so k + 1 = 2 for now.
+  // factor 4 being related to the occupancy of 50%).
   int number_of_sm = 0;
   cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(
-      ("Error (GPU low latency PBS): the number of input LWEs must be lower "
-       "or equal to the number of streaming multiprocessors on the device "
-       "divided by 4 * "
-       "(k + 1) * level_count",
-       num_samples <= number_of_sm * 4. / (glwe_dimension + 1) / level_count));
+  assert(("Error (GPU low latency PBS): the number of input LWEs must be lower "
+          "or equal to the number of streaming multiprocessors on the device "
+          "divided by 4 * (k + 1) * level_count",
+          verify_cuda_bootstrap_low_latency_grid_size(
+              glwe_dimension, level_count, num_samples)));
 }
 
 /*
@@ -43,7 +90,6 @@ void checks_fast_bootstrap_low_latency(int glwe_dimension, int level_count,
 void checks_bootstrap_low_latency(int nbits, int glwe_dimension,
                                   int level_count, int base_log,
                                   int polynomial_size, int num_samples) {
-
   assert(("Error (GPU low latency PBS): base log should be <= nbits",
           base_log <= nbits));
   checks_fast_bootstrap_low_latency(glwe_dimension, level_count,

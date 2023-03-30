@@ -56,6 +56,12 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
 void cleanup_cuda_bootstrap_amortized(void *v_stream, uint32_t gpu_index,
                                       int8_t **pbs_buffer);
 
+bool verify_cuda_bootstrap_low_latency_grid_size_64(int glwe_dimension,
+                                                    int polynomial_size,
+                                                    int level_count,
+                                                    int num_samples,
+                                                    uint32_t max_shared_memory);
+
 void scratch_cuda_bootstrap_low_latency_32(
     void *v_stream, uint32_t gpu_index, int8_t **pbs_buffer,
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,

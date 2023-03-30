@@ -72,7 +72,7 @@ public:
         gpu_index);
   }
 
-  void TearDown() {
+  void TearDown(const ::benchmark::State &state) {
     bit_extraction_teardown(stream, csprng, lwe_sk_in, lwe_sk_out,
                             d_fourier_bsk, d_ksk, plaintexts, d_lwe_ct_in_array,
                             d_lwe_ct_out_array, bit_extract_buffer, gpu_index);

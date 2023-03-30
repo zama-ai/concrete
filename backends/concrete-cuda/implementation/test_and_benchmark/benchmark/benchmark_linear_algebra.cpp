@@ -54,7 +54,7 @@ public:
         noise_variance, payload_modulus, delta, num_samples, 1, 1, gpu_index);
   }
 
-  void TearDown() {
+  void TearDown(const ::benchmark::State &state) {
     linear_algebra_teardown(
         stream, &csprng, &lwe_sk_array, &d_lwe_in_1_ct, &d_lwe_in_2_ct,
         &d_lwe_out_ct, &lwe_in_1_ct, &lwe_in_2_ct, &lwe_out_ct, &plaintexts_1,

@@ -54,7 +54,7 @@ public:
                     &delta, number_of_inputs, 1, 1, gpu_index);
   }
 
-  void TearDown() {
+  void TearDown(const ::benchmark::State &state) {
     keyswitch_teardown(stream, csprng, lwe_sk_in_array, lwe_sk_out_array,
                        d_ksk_array, plaintexts, d_lwe_in_ct_array,
                        d_lwe_out_ct_array, gpu_index);
@@ -77,6 +77,8 @@ BENCHMARK_DEFINE_F(Keyswitch_u64, ConcreteCuda_CopiesPlusKeyswitch)
 (benchmark::State &st) {
   uint64_t *lwe_in_ct = (uint64_t *)malloc(
       number_of_inputs * (input_lwe_dimension + 1) * sizeof(uint64_t));
+  uint64_t *lwe_out_ct = (uint64_t *)malloc(
+      number_of_inputs * (output_lwe_dimension + 1) * sizeof(uint64_t));
   void *v_stream = (void *)stream;
   for (auto _ : st) {
     cuda_memcpy_async_to_gpu(d_lwe_in_ct_array, lwe_in_ct,
@@ -88,13 +90,14 @@ BENCHMARK_DEFINE_F(Keyswitch_u64, ConcreteCuda_CopiesPlusKeyswitch)
         stream, gpu_index, (void *)d_lwe_out_ct_array,
         (void *)d_lwe_in_ct_array, (void *)d_ksk_array, input_lwe_dimension,
         output_lwe_dimension, ksk_base_log, ksk_level, number_of_inputs);
-    cuda_memcpy_async_to_cpu(lwe_in_ct, d_lwe_out_ct_array,
+    cuda_memcpy_async_to_cpu(lwe_out_ct, d_lwe_out_ct_array,
                              number_of_inputs * (output_lwe_dimension + 1) *
                                  sizeof(uint64_t),
                              stream, gpu_index);
     cuda_synchronize_stream(v_stream);
   }
   free(lwe_in_ct);
+  free(lwe_out_ct);
 }
 
 static void
