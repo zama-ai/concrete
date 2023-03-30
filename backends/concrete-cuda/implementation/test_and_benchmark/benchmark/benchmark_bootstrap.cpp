@@ -153,6 +153,12 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
       cuda_get_max_shared_memory(gpu_index));
   if (buffer_size > free)
     st.SkipWithError("Not enough free memory in the device. Skipping...");
+  int number_of_sm = 0;
+  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
+  if (input_lwe_ciphertext_count >
+      number_of_sm * 4 / (glwe_dimension + 1) / pbs_level)
+    st.SkipWithError(
+        "Not enough SM on device to run this configuration. Skipping...");
 
   int8_t *pbs_buffer;
   scratch_cuda_bootstrap_low_latency_64(
@@ -167,46 +173,8 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
         (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
         (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array, pbs_buffer,
         lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
-        1, 1, 0, cuda_get_max_shared_memory(gpu_index));
-    cuda_synchronize_stream(stream);
-  }
-  cleanup_cuda_bootstrap_low_latency(stream, gpu_index, &pbs_buffer);
-  cuda_synchronize_stream(stream);
-}
-
-BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusLowLatencyPBS)
-(benchmark::State &st) {
-  size_t free, total;
-  cudaMemGetInfo(&free, &total);
-  uint64_t buffer_size = get_buffer_size_bootstrap_low_latency_64(
-      glwe_dimension, polynomial_size, pbs_level, input_lwe_ciphertext_count,
-      cuda_get_max_shared_memory(gpu_index));
-  if (buffer_size > free)
-    st.SkipWithError("Not enough free memory in the device. Skipping...");
-
-  int8_t *pbs_buffer;
-  scratch_cuda_bootstrap_low_latency_64(
-      stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
-      pbs_level, input_lwe_ciphertext_count,
-      cuda_get_max_shared_memory(gpu_index), true);
-
-  for (auto _ : st) {
-    cuda_memcpy_async_to_gpu(d_lwe_ct_in_array, lwe_ct_array,
-                             (lwe_dimension + 1) * input_lwe_ciphertext_count *
-                                 sizeof(uint64_t),
-                             stream, gpu_index);
-    // Execute PBS
-    cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
-        stream, gpu_index, (void *)d_lwe_ct_out_array,
-        (void *)d_lut_pbs_identity, (void *)d_lut_pbs_indexes,
-        (void *)d_lwe_ct_in_array, (void *)d_fourier_bsk_array, pbs_buffer,
-        lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
-        1, 1, 0, cuda_get_max_shared_memory(gpu_index));
-
-    cuda_memcpy_async_to_cpu(lwe_ct_array, d_lwe_ct_out_array,
-                             (lwe_dimension + 1) * input_lwe_ciphertext_count *
-                                 sizeof(uint64_t),
-                             stream, gpu_index);
+        input_lwe_ciphertext_count, 1, 0,
+        cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
   cleanup_cuda_bootstrap_low_latency(stream, gpu_index, &pbs_buffer);
@@ -249,6 +217,4 @@ BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
     ->Apply(BootstrapBenchmarkGenerateParams);
 
 BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_CopiesPlusAmortizedPBS)
-    ->Apply(BootstrapBenchmarkGenerateParams);
-BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_CopiesPlusLowLatencyPBS)
     ->Apply(BootstrapBenchmarkGenerateParams);
