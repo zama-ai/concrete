@@ -6,8 +6,10 @@
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
     CompilationOptions as _CompilationOptions,
+    OptimizerStrategy as _OptimizerStrategy,
 )
 from .wrapper import WrapperCpp
+
 
 # pylint: enable=no-name-in-module,import-error
 
@@ -165,18 +167,18 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("display should be a bool")
         self.cpp().set_display_optimizer_choice(display)
 
-    def set_strategy_v0(self, enable: bool):
-        """Set the strategy of the optimizer to the v0 one.
+    def set_strategy(self, strategy: _OptimizerStrategy):
+        """Set the strategy of the optimizer.
 
         Args:
-            enable (bool): if true the compiler use the V0 optimizer strategy.
+            strategy (OptimizerStrategy): Use the specified optmizer strategy.
 
         Raises:
             TypeError: if the value is not a bool
         """
-        if not isinstance(enable, bool):
+        if not isinstance(strategy, _OptimizerStrategy):
             raise TypeError("enable should be a bool")
-        self.cpp().set_strategy_v0(enable)
+        self.cpp().set_strategy(strategy)
 
     def set_global_p_error(self, global_p_error: float):
         """Set global error probability for the full circuit.

@@ -92,7 +92,8 @@ void compilationOptionsDestroy(CompilationOptions options){
 OptimizerConfig
     optimizerConfigCreate(bool display, double fallback_log_norm_woppbs,
                           double global_p_error, double p_error,
-                          uint64_t security, bool strategy_v0,
+                          uint64_t security,
+                          mlir::concretelang::optimizer::Strategy strategy,
                           bool use_gpu_constraints) {
   auto config = new mlir::concretelang::optimizer::Config();
   config->display = display;
@@ -100,7 +101,7 @@ OptimizerConfig
   config->global_p_error = global_p_error;
   config->p_error = p_error;
   config->security = security;
-  config->strategy_v0 = strategy_v0;
+  config->strategy = strategy;
   config->use_gpu_constraints = use_gpu_constraints;
   return wrap(config);
 }

@@ -212,13 +212,13 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     // backend.
     compilerOptions.optimizerConfig.use_gpu_constraints =
         compilerOptions.emitGPUOps;
-    auto v0Params = getParameter(descr.get().value(), feedback,
-                                 compilerOptions.optimizerConfig);
-    if (auto err = v0Params.takeError()) {
+    auto expectedSolution = getSolution(descr.get().value(), feedback,
+                                        compilerOptions.optimizerConfig);
+    if (auto err = expectedSolution.takeError()) {
       return err;
     }
     res.fheContext.emplace(mlir::concretelang::V0FHEContext{
-        descr.get().value().constraint, v0Params.get()});
+        descr.get().value().constraint, *expectedSolution});
     res.feedback.emplace(feedback);
   }
 
@@ -422,12 +422,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       emptyParams.functionName = funcName;
       res.clientParameters = emptyParams;
     } else {
-      std::optional<CRTDecomposition> maybeCrt = std::nullopt;
-      if (res.fheContext.value().parameter.largeInteger.has_value()) {
-        maybeCrt = res.fheContext.value()
-                       .parameter.largeInteger.value()
-                       .crtDecomposition;
-      }
+      auto maybeCrt = getCrtDecompositionFromSolution(res.fheContext->solution);
       auto clientParametersOrErr =
           mlir::concretelang::createClientParametersFromTFHE(
               module, funcName, options.optimizerConfig.security,

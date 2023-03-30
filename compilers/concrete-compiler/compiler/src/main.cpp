@@ -46,6 +46,7 @@
 
 namespace clientlib = concretelang::clientlib;
 namespace encodings = mlir::concretelang::encodings;
+namespace optimizer = mlir::concretelang::optimizer;
 
 enum Action {
   ROUND_TRIP,
@@ -243,41 +244,52 @@ llvm::cl::opt<std::string> jitKeySetCachePath(
 llvm::cl::opt<double> pbsErrorProbability(
     "pbs-error-probability",
     llvm::cl::desc("Change the default probability of error for all pbs"),
-    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.p_error));
+    llvm::cl::init(optimizer::DEFAULT_CONFIG.p_error));
 
 llvm::cl::opt<double> globalErrorProbability(
     "global-error-probability",
     llvm::cl::desc(
         "Use global error probability (override pbs error probability)"),
-    llvm::cl::init(
-        mlir::concretelang::optimizer::DEFAULT_CONFIG.global_p_error));
+    llvm::cl::init(optimizer::DEFAULT_CONFIG.global_p_error));
 
 llvm::cl::opt<double> securityLevel(
     "security-level",
     llvm::cl::desc(
         "Specify the security level to target for compiling the program"),
-    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.security));
+    llvm::cl::init(optimizer::DEFAULT_CONFIG.security));
 
 llvm::cl::opt<bool> displayOptimizerChoice(
     "display-optimizer-choice",
     llvm::cl::desc("Display the information returned by the optimizer"),
     llvm::cl::init(false));
 
-llvm::cl::opt<bool>
-    optimizerV0("optimizer-v0",
-                llvm::cl::desc("Select the v0 parameters strategy"),
-                llvm::cl::init(false));
+llvm::cl::opt<optimizer::Strategy> optimizerStrategy(
+    "optimizer-strategy",
+    llvm::cl::desc("Select the concrete optimizer strategy"),
+    llvm::cl::init(optimizer::DEFAULT_STRATEGY),
+    llvm::cl::values(clEnumValN(optimizer::Strategy::V0, "V0",
+                                "Use the V0 optimizer strategy that use the "
+                                "worst case atomic pattern")),
+    llvm::cl::values(clEnumValN(
+        optimizer::Strategy::DAG_MONO, "dag-mono",
+        "Use the dag-mono optimizer strategy that solve the optimization "
+        "problem using the fhe computation dag with ONE set of evaluation "
+        "keys")),
+    llvm::cl::values(clEnumValN(
+        optimizer::Strategy::DAG_MULTI, "dag-multi",
+        "Use the dag-multi optimizer strategy that solve the optimization "
+        "problem using the fhe computation dag with SEVERAL set of evaluation "
+        "keys")));
 
 llvm::cl::opt<double> fallbackLogNormWoppbs(
     "optimizer-fallback-log-norm-woppbs",
     llvm::cl::desc("Select a fallback value for multisum log norm in woppbs "
                    "when the precise value can't be computed."),
-    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG
-                       .fallback_log_norm_woppbs));
+    llvm::cl::init(optimizer::DEFAULT_CONFIG.fallback_log_norm_woppbs));
 
 llvm::cl::opt<concrete_optimizer::Encoding> optimizerEncoding(
     "force-encoding", llvm::cl::desc("Choose cyphertext encoding."),
-    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.encoding),
+    llvm::cl::init(optimizer::DEFAULT_CONFIG.encoding),
     llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Auto, "auto",
                                 "Pick the best [default]")),
     llvm::cl::values(clEnumValN(concrete_optimizer::Encoding::Native, "native",
@@ -450,12 +462,12 @@ cmdlineCompilationOptions() {
   options.optimizerConfig.global_p_error = cmdline::globalErrorProbability;
   options.optimizerConfig.p_error = cmdline::pbsErrorProbability;
   options.optimizerConfig.display = cmdline::displayOptimizerChoice;
-  options.optimizerConfig.strategy_v0 = cmdline::optimizerV0;
+  options.optimizerConfig.strategy = cmdline::optimizerStrategy;
   options.optimizerConfig.encoding = cmdline::optimizerEncoding;
   options.optimizerConfig.cache_on_disk = !cmdline::optimizerNoCacheOnDisk;
 
   if (!std::isnan(options.optimizerConfig.global_p_error) &&
-      options.optimizerConfig.strategy_v0) {
+      options.optimizerConfig.strategy) {
     return llvm::make_error<llvm::StringError>(
         "--global-error-probability is not compatible with --optimizer-v0",
         llvm::inconvertibleErrorCode());

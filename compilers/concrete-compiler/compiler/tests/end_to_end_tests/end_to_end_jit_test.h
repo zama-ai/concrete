@@ -46,7 +46,8 @@ internalCheckedJit(
   options.chunkWidth = chunkWidth;
   if (useDefaultFHEConstraints) {
     options.v0FHEConstraints = defaultV0Constraints;
-    options.optimizerConfig.strategy_v0 = true;
+    options.optimizerConfig.strategy =
+        mlir::concretelang::optimizer::Strategy::V0;
   }
 
   // Allow loop parallelism in all cases
