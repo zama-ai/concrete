@@ -222,8 +222,8 @@ scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
   uint64_t bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
                                           polynomial_size, number_of_inputs) +
-      get_buffer_size_bootstrap_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count_bsk, number_of_inputs,
+      get_buffer_size_bootstrap_amortized<Torus>(
+          glwe_dimension, polynomial_size, number_of_inputs,
           max_shared_memory);
   uint32_t cbs_vp_number_of_inputs =
       number_of_inputs * number_of_bits_to_extract;
@@ -295,8 +295,8 @@ __host__ void host_wop_pbs(
       (ptrdiff_t)(get_buffer_size_extract_bits<Torus>(
                       glwe_dimension, lwe_dimension, polynomial_size,
                       number_of_inputs) +
-                  get_buffer_size_bootstrap_low_latency<Torus>(
-                      glwe_dimension, polynomial_size, level_count_bsk,
+                  get_buffer_size_bootstrap_amortized<Torus>(
+                      glwe_dimension, polynomial_size,
                       number_of_inputs, max_shared_memory));
   host_extract_bits<Torus, params>(
       v_stream, gpu_index, (Torus *)lwe_array_out_bit_extract, lwe_array_in,

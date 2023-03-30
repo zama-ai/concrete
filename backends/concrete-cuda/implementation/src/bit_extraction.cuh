@@ -4,7 +4,7 @@
 #include "cooperative_groups.h"
 
 #include "bit_extraction.h"
-#include "bootstrap_low_latency.cuh"
+#include "bootstrap_amortized.cuh"
 #include "device.h"
 #include "keyswitch.cuh"
 #include "polynomial/parameters.cuh"
@@ -161,8 +161,8 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
   uint64_t buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
                                           polynomial_size, number_of_inputs) +
-      get_buffer_size_bootstrap_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count, number_of_inputs,
+      get_buffer_size_bootstrap_amortized<Torus>(
+          glwe_dimension, polynomial_size, number_of_inputs,
           max_shared_memory);
   // allocate and initialize device pointers for bit extraction
   if (allocate_gpu_memory) {
@@ -175,9 +175,9 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
   check_cuda_error(
       cudaMemsetAsync(*bit_extract_buffer, 0, buffer_size, *stream));
 
-  scratch_bootstrap_low_latency<Torus, STorus, params>(
+  scratch_bootstrap_amortized<Torus, STorus, params>(
       v_stream, gpu_index, bit_extract_buffer, glwe_dimension, polynomial_size,
-      level_count, number_of_inputs, max_shared_memory, false);
+      number_of_inputs, max_shared_memory, false);
 }
 
 /*
@@ -206,8 +206,8 @@ __host__ void host_extract_bits(
   int8_t *pbs_buffer = (int8_t *)bit_extract_buffer;
   Torus *lut_pbs =
       (Torus *)pbs_buffer +
-      (ptrdiff_t)(get_buffer_size_bootstrap_low_latency<Torus>(
-                      glwe_dimension, polynomial_size, level_count_bsk,
+      (ptrdiff_t)(get_buffer_size_bootstrap_amortized<Torus>(
+                      glwe_dimension, polynomial_size,
                       number_of_samples, max_shared_memory) /
                   sizeof(Torus));
   Torus *lwe_array_in_buffer =
@@ -262,11 +262,11 @@ __host__ void host_extract_bits(
         lut_pbs, (Torus)(0ll - 1ll << (delta_log - 1 + bit_idx)),
         glwe_dimension);
     check_cuda_error(cudaGetLastError());
-    host_bootstrap_low_latency<Torus, params>(
+    host_bootstrap_amortized<Torus, params>(
         v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_pbs,
         lut_vector_indexes, lwe_array_out_ks_buffer, fourier_bsk, pbs_buffer,
         glwe_dimension, lwe_dimension_out, polynomial_size, base_log_bsk,
-        level_count_bsk, number_of_samples, 1, max_shared_memory);
+        level_count_bsk, number_of_samples, 1, 0, max_shared_memory);
 
     // Add alpha where alpha = delta*2^{bit_idx-1} to end up with an encryption
     // of 0 if the extracted bit was 0 and 1 in the other case
