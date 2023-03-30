@@ -31,12 +31,19 @@ public:
   matchAndRewrite(FHE::MulEintOp op, FHE::MulEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
-    auto inputType = adaptor.getA().getType();
+    // Note: To understand the operator indexes propagation take a look at the
+    // addMul function on ConcreteOptimizer.cpp
+
+    auto inputType = adaptor.getRhs().getType();
     auto bitWidth = inputType.cast<FHE::FheIntegerInterface>().getWidth();
     auto isSigned = inputType.cast<FHE::FheIntegerInterface>().isSigned();
     mlir::Type signedType =
         FHE::EncryptedSignedIntegerType::get(op->getContext(), bitWidth);
 
+    // Get the operator indexes stored in FHE.mul operator to annotated FHE
+    // nodes
+    auto operatorIndexes =
+        op->getAttrOfType<mlir::DenseI32ArrayAttr>("TFHE.OId");
     // Note:
     // -----
     //
@@ -50,9 +57,10 @@ public:
     // signedness for inputs and outputs.
 
     // s = a + b
-    mlir::Value sum = rewriter.create<FHE::AddEintOp>(
-        op->getLoc(), adaptor.getA(), adaptor.getB());
-
+    auto sum = rewriter.create<FHE::AddEintOp>(op->getLoc(), adaptor.getRhs(),
+                                               adaptor.getLhs());
+    if (operatorIndexes != nullptr)
+      sum->setAttr("TFHE.OId", rewriter.getI32IntegerAttr(operatorIndexes[0]));
     // se = (s)^2/4
     // Depending on whether a,b,s are signed or not, we need a different lut to
     // compute (.)^2/4.
@@ -67,12 +75,24 @@ public:
                           mlir::RankedTensorType::get(
                               rawSumLut.size(), rewriter.getIntegerType(64)),
                           rawSumLut));
-    mlir::Value sumTluOutput = rewriter.create<FHE::ApplyLookupTableEintOp>(
+    auto sumTluOutput = rewriter.create<FHE::ApplyLookupTableEintOp>(
         op->getLoc(), inputType, sum, sumLut);
+    if (operatorIndexes != nullptr) {
+      std::vector<int32_t> sumTluIndexes{operatorIndexes[1]};
+      if (isSigned) {
+        sumTluIndexes = {operatorIndexes[6], operatorIndexes[1]};
+      }
+      sumTluOutput->setAttr("TFHE.OId",
+                            rewriter.getDenseI32ArrayAttr(sumTluIndexes));
+    }
 
     // d = a - b
-    mlir::Value diff = rewriter.create<FHE::SubEintOp>(
-        op->getLoc(), adaptor.getA(), adaptor.getB());
+    auto diffOp = rewriter.create<FHE::SubEintOp>(
+        op->getLoc(), adaptor.getRhs(), adaptor.getLhs());
+    if (operatorIndexes != nullptr)
+      diffOp->setAttr("TFHE.OId",
+                      rewriter.getI32IntegerAttr(operatorIndexes[2]));
+    mlir::Value diff = diffOp;
 
     // de = (d)^2/4
     // Here, the tlu must be performed with signed encoded lut, to properly
@@ -90,12 +110,21 @@ public:
                           mlir::RankedTensorType::get(
                               rawDiffLut.size(), rewriter.getIntegerType(64)),
                           rawDiffLut));
-    mlir::Value diffTluOutput = rewriter.create<FHE::ApplyLookupTableEintOp>(
+    auto diffTluOutput = rewriter.create<FHE::ApplyLookupTableEintOp>(
         op->getLoc(), inputType, diff, diffLut);
+    if (operatorIndexes != nullptr) {
+      std::vector<int32_t> diffTluIndexes{operatorIndexes[3],
+                                          operatorIndexes[4]};
+      diffTluOutput->setAttr("TFHE.OId",
+                             rewriter.getDenseI32ArrayAttr(diffTluIndexes));
+    }
 
     // o = se - de
-    mlir::Value output = rewriter.create<FHE::SubEintOp>(
-        op->getLoc(), inputType, sumTluOutput, diffTluOutput);
+    auto output = rewriter.create<FHE::SubEintOp>(op->getLoc(), inputType,
+                                                  sumTluOutput, diffTluOutput);
+    if (operatorIndexes != nullptr)
+      output->setAttr("TFHE.OId",
+                      rewriter.getI32IntegerAttr(operatorIndexes[5]));
 
     rewriter.replaceOp(op, {output});
 

@@ -23,6 +23,7 @@
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
 #include "concretelang/Support/Constants.h"
+#include "concretelang/Support/logging.h"
 
 #include <unordered_set>
 
@@ -33,6 +34,16 @@ namespace bufferization = mlir::bufferization;
 
 namespace FHE = mlir::concretelang::FHE;
 namespace FHELinalg = mlir::concretelang::FHELinalg;
+
+inline void forwardOptimizerID(mlir::Operation *source,
+                               mlir::Operation *destination) {
+  auto optimizerIdAttr = source->getAttr("TFHE.OId");
+  if (optimizerIdAttr == nullptr) {
+    mlir::concretelang::log_verbose() << "No TFHE.OId\n";
+    return;
+  }
+  destination->setAttr("TFHE.OId", optimizerIdAttr);
+}
 
 struct DotToLinalgGeneric
     : public ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::Dot> {
@@ -103,10 +114,11 @@ struct DotToLinalgGeneric
       mlir::concretelang::FHE::MulEintIntOp mul =
           nestedBuilder.create<mlir::concretelang::FHE::MulEintIntOp>(
               dotOp.getLoc(), blockArgs[0], blockArgs[1]);
+      forwardOptimizerID(dotOp, mul);
       mlir::concretelang::FHE::AddEintOp add =
           nestedBuilder.create<mlir::concretelang::FHE::AddEintOp>(
               dotOp.getLoc(), mul, blockArgs[2]);
-
+      forwardOptimizerID(dotOp, add);
       nestedBuilder.create<mlir::linalg::YieldOp>(dotOp.getLoc(),
                                                   add.getResult());
     };
@@ -121,7 +133,7 @@ struct DotToLinalgGeneric
     mlir::Value idx0 =
         rewriter.create<mlir::arith::ConstantIndexOp>(dotOp.getLoc(), 0);
     llvm::SmallVector<mlir::Value, 1> indexes{idx0};
-    mlir::Value res = rewriter.create<mlir::tensor::ExtractOp>(
+    auto res = rewriter.create<mlir::tensor::ExtractOp>(
         dotOp.getLoc(), gop.getResult(0), indexes);
 
     rewriter.replaceOp(dotOp, {res});
@@ -232,6 +244,7 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
   ::mlir::LogicalResult
   matchAndRewrite(FHELinalgOp linalgOp,
                   ::mlir::PatternRewriter &rewriter) const override {
+
     mlir::RankedTensorType resultTy =
         ((mlir::Type)linalgOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
@@ -260,6 +273,7 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
                            mlir::ValueRange blockArgs) {
       FHEOp fheOp = nestedBuilder.create<FHEOp>(linalgOp.getLoc(), blockArgs[0],
                                                 blockArgs[1]);
+      forwardOptimizerID(linalgOp, fheOp);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(linalgOp.getLoc(),
                                                   fheOp.getResult());
@@ -338,6 +352,7 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
   ::mlir::LogicalResult
   matchAndRewrite(FHELinalg::ApplyMappedLookupTableEintOp mappedLookup,
                   ::mlir::PatternRewriter &rewriter) const override {
+
     namespace arith = mlir::arith;
     namespace linalg = mlir::linalg;
     namespace tensor = mlir::tensor;
@@ -391,6 +406,7 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
       // %res1 = apply_lookup_table %arg0 %lut
       auto lookup = nestedBuilder.create<FHE::ApplyLookupTableEintOp>(
           loc, elementTy, tElmt, lut);
+      forwardOptimizerID(mappedLookup, lookup);
       // linalg.yield %res1 : !FHE.eint<2>
       nestedBuilder.create<linalg::YieldOp>(loc, lookup.getResult());
     };
@@ -468,6 +484,7 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
   ::mlir::LogicalResult matchAndRewrite(
       mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp fheLinalgLutOp,
       ::mlir::PatternRewriter &rewriter) const override {
+
     mlir::RankedTensorType resultTy =
         ((mlir::Type)fheLinalgLutOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
@@ -544,6 +561,7 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
           loc, lutTy, luts, offsets, sizes, strides);
       auto lutOp = nestedBuilder.create<FHE::ApplyLookupTableEintOp>(
           loc, resultTy.getElementType(), tElmt, lut);
+      forwardOptimizerID(fheLinalgLutOp, lutOp);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(loc, lutOp.getResult());
     };
@@ -616,6 +634,7 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
   ::mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHELinalg::ApplyLookupTableEintOp lutOp,
                   ::mlir::PatternRewriter &rewriter) const override {
+
     mlir::RankedTensorType resultTy =
         ((mlir::Type)lutOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
@@ -646,6 +665,7 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
           nestedBuilder.create<mlir::concretelang::FHE::ApplyLookupTableEintOp>(
               lutOp.getLoc(), resultTy.getElementType(), blockArgs[0],
               lutOp.getLut());
+      forwardOptimizerID(lutOp, fheOp);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(lutOp.getLoc(),
                                                   fheOp.getResult());
@@ -714,6 +734,7 @@ struct FHELinalgNegEintToLinalgGeneric
   ::mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHELinalg::NegEintOp negEintOp,
                   ::mlir::PatternRewriter &rewriter) const override {
+
     mlir::RankedTensorType resultTy =
         ((mlir::Type)negEintOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
@@ -744,6 +765,7 @@ struct FHELinalgNegEintToLinalgGeneric
       mlir::concretelang::FHE::NegEintOp fheOp =
           nestedBuilder.create<mlir::concretelang::FHE::NegEintOp>(
               negEintOp.getLoc(), resultTy.getElementType(), blockArgs[0]);
+      forwardOptimizerID(negEintOp, fheOp);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(negEintOp.getLoc(),
                                                   fheOp.getResult());
@@ -1046,18 +1068,15 @@ struct FHELinalgMatmulToLinalgGeneric
     auto regionBuilder = [&](mlir::OpBuilder &nestedBuilder,
                              mlir::Location nestedLoc,
                              mlir::ValueRange blockArgs) {
-      mlir::Value multiplication =
-          createMulOp(nestedBuilder, location, outElementType, blockArgs[0],
-                      blockArgs[1])
-              .getResult();
+      auto multiplication = createMulOp(nestedBuilder, location, outElementType,
+                                        blockArgs[0], blockArgs[1]);
+      forwardOptimizerID(matmulOp, multiplication);
 
-      mlir::Value addition =
-          nestedBuilder
-              .create<FHE::AddEintOp>(location, outElementType, blockArgs[2],
-                                      multiplication)
-              .getResult();
+      auto addition = nestedBuilder.create<FHE::AddEintOp>(
+          location, outElementType, blockArgs[2], multiplication);
+      forwardOptimizerID(matmulOp, addition);
 
-      nestedBuilder.create<linalg::YieldOp>(location, addition);
+      nestedBuilder.create<linalg::YieldOp>(location, addition.getResult());
     };
 
     auto resultTypes = llvm::SmallVector<mlir::Type, 1>{outType};
@@ -1205,10 +1224,10 @@ struct SumToLinalgGeneric
                              mlir::ValueRange blockArgs) {
       mlir::Value lhs = blockArgs[0];
       mlir::Value rhs = blockArgs[1];
-      mlir::Value addition =
-          nestedBuilder.create<FHE::AddEintOp>(location, lhs, rhs).getResult();
+      auto addition = nestedBuilder.create<FHE::AddEintOp>(location, lhs, rhs);
+      forwardOptimizerID(sumOp, addition);
 
-      nestedBuilder.create<linalg::YieldOp>(location, addition);
+      nestedBuilder.create<linalg::YieldOp>(location, addition.getResult());
     };
 
     auto resultTypes = llvm::SmallVector<mlir::Type, 1>{accumulatorType};
@@ -1541,13 +1560,13 @@ mlir::Value extractContiguous4DSlice(mlir::PatternRewriter &rewriter,
 
 /// Create operations for grouped convolution. This will slice the input,
 /// weight, and output tensors to apply separate conv2d operations.
-mlir::LogicalResult
-createGroupedConv2D(mlir::PatternRewriter &rewriter,
-                    mlir::concretelang::FHELinalg::Conv2dOp &conv2dOp,
-                    mlir::Value paddedInput, mlir::Value weight,
-                    mlir::Value outputTensor,
-                    mlir::DenseIntElementsAttr stridesAttr,
-                    mlir::DenseIntElementsAttr dilationsAttr, int64_t group) {
+mlir::LogicalResult createGroupedConv2D(
+    mlir::PatternRewriter &rewriter,
+    mlir::concretelang::FHELinalg::Conv2dOp &conv2dOp, mlir::Value paddedInput,
+    mlir::Value weight, mlir::Value outputTensor,
+    mlir::DenseIntElementsAttr stridesAttr,
+    mlir::DenseIntElementsAttr dilationsAttr,
+    llvm::ArrayRef<mlir::NamedAttribute> namedAttr, int64_t group) {
 
   mlir::RankedTensorType inputTy =
       paddedInput.getType().cast<mlir::RankedTensorType>();
@@ -1589,37 +1608,30 @@ createGroupedConv2D(mlir::PatternRewriter &rewriter,
     mlir::Value biasSlice = extractContiguous4DSlice(
         rewriter, conv2dOp.getLoc(), outputTensor, sliceResultType,
         sliceResultSizes, {0, g * sliceResultSizes[1], 0, 0});
-    // attributes for custom linalg named op
-    auto addOpAttr = rewriter.getNamedAttr(
-        "add", rewriter.getStringAttr(
-                   mlir::concretelang::FHE::AddEintOp::getOperationName()));
-    auto mulOpAttr = rewriter.getNamedAttr(
-        "mul", rewriter.getStringAttr(
-                   mlir::concretelang::FHE::MulEintIntOp::getOperationName()));
     // slices are currently causing issues during scf bufferization, so we are
     // trying to avoid slices here by creating a new tensor and adding the bias
     // to it
     mlir::RankedTensorType biasSliceType =
         biasSlice.getType().cast<mlir::RankedTensorType>();
-    mlir::Value biasUnsliced =
+    auto biasUnslicedInit =
         rewriter
             .create<mlir::concretelang::FHE::ZeroTensorOp>(
                 conv2dOp.getLoc(),
                 mlir::RankedTensorType::get(biasSliceType.getShape(),
                                             biasSliceType.getElementType()))
             .getResult();
-    biasUnsliced = rewriter
-                       .create<mlir::concretelang::FHELinalg::AddEintOp>(
-                           conv2dOp.getLoc(), biasUnsliced, biasSlice)
-                       .getResult();
+    auto biasUnsliced =
+        rewriter.create<mlir::concretelang::FHELinalg::AddEintOp>(
+            conv2dOp.getLoc(), biasUnslicedInit, biasSlice);
+    forwardOptimizerID(conv2dOp, biasUnsliced);
+
     // apply conv
     mlir::Value convResult =
         rewriter
             .create<mlir::linalg::Conv2DNchwFchwOp>(
                 conv2dOp.getLoc(), sliceResultType,
-                mlir::ValueRange{inputSlice, weightSlice}, biasUnsliced,
-                stridesAttr, dilationsAttr,
-                llvm::ArrayRef<mlir::NamedAttribute>({addOpAttr, mulOpAttr}))
+                mlir::ValueRange{inputSlice, weightSlice},
+                biasUnsliced.getResult(), stridesAttr, dilationsAttr, namedAttr)
             .getResult(0);
     // insert result of a single conv in the final result
     finalResult =
@@ -1666,6 +1678,31 @@ struct FHELinalgConv2dToLinalgConv2d
   ::mlir::LogicalResult
   matchAndRewrite(::mlir::concretelang::FHELinalg::Conv2dOp conv2dOp,
                   ::mlir::PatternRewriter &rewriter) const override {
+    auto optimizerIdAttr =
+        conv2dOp->getAttrOfType<mlir::IntegerAttr>("TFHE.OId");
+
+    // Create named attr for custom linalg op
+    std::vector<mlir::NamedAttribute> addOpDict = {rewriter.getNamedAttr(
+        "op", rewriter.getStringAttr(
+                  mlir::concretelang::FHE::AddEintOp::getOperationName()))};
+    std::vector<mlir::NamedAttribute> mulOpDict = {rewriter.getNamedAttr(
+        "op", rewriter.getStringAttr(
+                  mlir::concretelang::FHE::MulEintIntOp::getOperationName()))};
+    std::vector<mlir::NamedAttribute> opAttrs;
+    if (optimizerIdAttr != nullptr) {
+      opAttrs.push_back(rewriter.getNamedAttr("TFHE.OId", optimizerIdAttr));
+    }
+    auto opNamedAttrs =
+        rewriter.getNamedAttr("op_attrs", rewriter.getDictionaryAttr(opAttrs));
+
+    addOpDict.push_back(opNamedAttrs);
+    mulOpDict.push_back(opNamedAttrs);
+
+    auto addOpAttr =
+        rewriter.getNamedAttr("add", rewriter.getDictionaryAttr(addOpDict));
+    auto mulOpAttr =
+        rewriter.getNamedAttr("mul", rewriter.getDictionaryAttr(mulOpDict));
+    std::vector<mlir::NamedAttribute> namedAttr({addOpAttr, mulOpAttr});
 
     mlir::Location loc = conv2dOp->getLoc();
     mlir::Value input =
@@ -1715,9 +1752,9 @@ struct FHELinalgConv2dToLinalgConv2d
                                                  .cast<mlir::RankedTensorType>()
                                                  .getShape(),
                                              inputElementType));
-    // Since linalg doesn't support a bias in the conv operation, we initialize
-    // the output tensor to the bias values, so that conv results get
-    // accumulated to it
+    // Since linalg doesn't support a bias in the conv operation, we
+    // initialize the output tensor to the bias values, so that conv results
+    // get accumulated to it
     mlir::Value bias = conv2dOp.getBias(); /* optional of shape: Filters */
     mlir::Value biasInitTensor;
     if (!bias) { // no bias was used
@@ -1737,13 +1774,14 @@ struct FHELinalgConv2dToLinalgConv2d
               .create<mlir::linalg::GenericOp>(
                   loc, initTensor.getType(), bias, initTensor, indexingMaps,
                   iteratorTypes,
-                  [](mlir::OpBuilder &b, mlir::Location loc,
-                     mlir::ValueRange args) {
-                    mlir::Value encryptedBias =
+                  [&](mlir::OpBuilder &b, mlir::Location loc,
+                      mlir::ValueRange args) {
+                    auto encryptedBias =
                         b.create<mlir::concretelang::FHE::AddEintIntOp>(
-                             loc, args[1], args[0])
-                            .getResult();
-                    b.create<mlir::linalg::YieldOp>(loc, encryptedBias);
+                            loc, args[1], args[0]);
+                    forwardOptimizerID(conv2dOp, encryptedBias);
+                    b.create<mlir::linalg::YieldOp>(loc,
+                                                    encryptedBias.getResult());
                   })
               .getResult(0);
     }
@@ -1751,28 +1789,20 @@ struct FHELinalgConv2dToLinalgConv2d
     auto stridesAttr = rewriter.getI64VectorAttr(stridesInts);
     auto dilationsAttr = rewriter.getI64VectorAttr(dilationsInts);
 
-    // we can directly use linalg::Conv2DNchwFchwOp if group is equal to 1, but
-    // since there is no support for groups in linalg conv operations, we need
-    // to slice the different tensors and apply multiple convolution in case
-    // group is greater than 1
+    // we can directly use linalg::Conv2DNchwFchwOp if group is equal to 1,
+    // but since there is no support for groups in linalg conv operations, we
+    // need to slice the different tensors and apply multiple convolution in
+    // case group is greater than 1
     if (group == 1) {
-      auto addOpAttr = rewriter.getNamedAttr(
-          "add", rewriter.getStringAttr(
-                     mlir::concretelang::FHE::AddEintOp::getOperationName()));
-      auto mulOpAttr = rewriter.getNamedAttr(
-          "mul",
-          rewriter.getStringAttr(
-              mlir::concretelang::FHE::MulEintIntOp::getOperationName()));
       rewriter.replaceOpWithNewOp<mlir::linalg::Conv2DNchwFchwOp>(
           conv2dOp, biasInitTensor.getType(),
           mlir::ValueRange{paddedInput, weight}, biasInitTensor, stridesAttr,
-          dilationsAttr,
-          llvm::ArrayRef<mlir::NamedAttribute>({addOpAttr, mulOpAttr}));
+          dilationsAttr, namedAttr);
       return mlir::success();
     }
     return createGroupedConv2D(rewriter, conv2dOp, paddedInput, weight,
                                biasInitTensor, stridesAttr, dilationsAttr,
-                               group);
+                               namedAttr, group);
   };
 };
 
@@ -1787,20 +1817,30 @@ struct FHELinalgMaxpool2dToLinalgMaxpool2d
   mlir::LogicalResult
   matchAndRewrite(FHELinalg::Maxpool2dOp maxpool2dOp,
                   mlir::PatternRewriter &rewriter) const override {
+    auto optimizerIdAttr =
+        maxpool2dOp->getAttrOfType<mlir::DenseI32ArrayAttr>("TFHE.OId");
 
     const mlir::Location loc = maxpool2dOp->getLoc();
 
+    std::vector<mlir::NamedAttribute> maxOpDict = {rewriter.getNamedAttr(
+        "op", rewriter.getStringAttr(
+                  mlir::concretelang::FHE::MaxEintOp::getOperationName()))};
+    std::vector<mlir::NamedAttribute> opAttrs;
+    if (optimizerIdAttr != nullptr) {
+      opAttrs.push_back(rewriter.getNamedAttr("TFHE.OId", optimizerIdAttr));
+    }
+    auto opNamedAttrs =
+        rewriter.getNamedAttr("op_attrs", rewriter.getDictionaryAttr(opAttrs));
+    maxOpDict.push_back(opNamedAttrs);
     const mlir::NamedAttribute maxOpAttr = rewriter.getNamedAttr(
-        "max_signed",
-        rewriter.getStringAttr(FHE::MaxEintOp::getOperationName()));
+        "max_signed", rewriter.getDictionaryAttr(maxOpDict));
 
     const auto outputTy =
         maxpool2dOp->getResult(0).getType().cast<mlir::RankedTensorType>();
     const auto outputElementTy =
         outputTy.getElementType().cast<FHE::FheIntegerInterface>();
 
-    mlir::Value output =
-        rewriter.create<FHE::ZeroTensorOp>(loc, outputTy).getResult();
+    auto output = rewriter.create<FHE::ZeroTensorOp>(loc, outputTy).getResult();
 
     if (outputElementTy.isSigned()) {
       const int64_t outputBitWidth = outputElementTy.getWidth();
@@ -1819,7 +1859,21 @@ struct FHELinalgMaxpool2dToLinalgMaxpool2d
       const mlir::Value offset =
           rewriter.create<mlir::arith::ConstantOp>(loc, offsetAttr);
 
-      output = rewriter.create<FHELinalg::SubEintIntOp>(loc, output, offset);
+      auto subOp =
+          rewriter.create<FHELinalg::SubEintIntOp>(loc, output, offset);
+      if (optimizerIdAttr != nullptr) {
+        assert(optimizerIdAttr.size() == 3);
+        output.getDefiningOp()->setAttr(
+            "TFHE.OId", rewriter.getI32IntegerAttr(optimizerIdAttr[2]));
+        subOp->setAttr("TFHE.OId",
+                       rewriter.getI32IntegerAttr(optimizerIdAttr[2]));
+      }
+      output = subOp.getResult();
+    } else {
+      if (optimizerIdAttr != nullptr) {
+        output.getDefiningOp()->setAttr(
+            "TFHE.OId", rewriter.getI32IntegerAttr(optimizerIdAttr[0]));
+      }
     }
 
     const mlir::DenseElementsAttr kernelShapeAttr =
@@ -1942,8 +1996,8 @@ struct FHELinalgToSignedToLinalgGeneric
 };
 
 /// This template rewrite pattern transforms any instance of
-/// operators `FHELinalg.to_unsigned` to an instance of `linalg.generic` with an
-/// appropriate region using `FHE.to_unsigned` operation, an appropriate
+/// operators `FHELinalg.to_unsigned` to an instance of `linalg.generic` with
+/// an appropriate region using `FHE.to_unsigned` operation, an appropriate
 /// specification for the iteration dimensions and appropriate operations
 /// managing the accumulator of `linalg.generic`.
 ///
@@ -2073,7 +2127,6 @@ struct FHELinalgRoundToLinalgGeneric
   mlir::LogicalResult
   matchAndRewrite(FHELinalg::RoundOp op,
                   mlir::PatternRewriter &rewriter) const override {
-
     auto loc = op.getLoc();
 
     auto inputTy = op.getInput().getType().cast<mlir::RankedTensorType>();
@@ -2097,6 +2150,7 @@ struct FHELinalgRoundToLinalgGeneric
                            mlir::ValueRange blockArgs) {
       auto round = nestedBuilder.create<FHE::RoundEintOp>(
           op.getLoc(), outputTy.getElementType(), blockArgs[0]);
+      forwardOptimizerID(op, round);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(op.getLoc(),
                                                   round.getResult());

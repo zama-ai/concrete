@@ -30,6 +30,7 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEParameters.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 #include "concretelang/Dialect/Tracing/IR/TracingOps.h"
+#include "concretelang/Support/logging.h"
 
 namespace FHE = mlir::concretelang::FHE;
 namespace TFHE = mlir::concretelang::TFHE;
@@ -37,6 +38,16 @@ namespace Tracing = mlir::concretelang::Tracing;
 namespace concretelang = mlir::concretelang;
 
 namespace fhe_to_tfhe_scalar_conversion {
+
+inline void forwardOptimizerID(mlir::Operation *source,
+                               mlir::Operation *destination) {
+  auto optimizerIdAttr = source->getAttr("TFHE.OId");
+  if (optimizerIdAttr == nullptr) {
+    mlir::concretelang::log_verbose() << "No TFHE.OId\n";
+    return;
+  }
+  destination->setAttr("TFHE.OId", optimizerIdAttr);
+}
 
 namespace typing {
 
@@ -148,9 +159,10 @@ struct AddEintIntOpPattern : public ScalarOpPattern<FHE::AddEintIntOp> {
         op.getType().cast<FHE::FheIntegerInterface>().getWidth(), rewriter);
 
     // Write the new op
-    rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
         op, getTypeConverter()->convertType(op.getType()), adaptor.getA(),
         encodedInt);
+    forwardOptimizerID(op, newOp);
 
     return mlir::success();
   }
@@ -166,6 +178,7 @@ struct SubEintIntOpPattern : public ScalarOpPattern<FHE::SubEintIntOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::SubEintIntOp op, FHE::SubEintIntOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
+
     mlir::Location location = op.getLoc();
     mlir::Value eintOperand = op.getA();
     mlir::Value intOperand = op.getB();
@@ -176,9 +189,8 @@ struct SubEintIntOpPattern : public ScalarOpPattern<FHE::SubEintIntOp> {
     mlir::Value minusOne =
         rewriter.create<mlir::arith::ConstantOp>(location, minusOneAttr)
             .getResult();
-    mlir::Value negative =
-        rewriter.create<mlir::arith::MulIOp>(location, intOperand, minusOne)
-            .getResult();
+    auto negative =
+        rewriter.create<mlir::arith::MulIOp>(location, intOperand, minusOne);
 
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
@@ -187,9 +199,10 @@ struct SubEintIntOpPattern : public ScalarOpPattern<FHE::SubEintIntOp> {
         rewriter);
 
     // Write the new op
-    rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
         op, getTypeConverter()->convertType(op.getType()), adaptor.getA(),
         encodedInt);
+    forwardOptimizerID(op, newOp);
 
     return mlir::success();
   };
@@ -205,6 +218,7 @@ struct SubIntEintOpPattern : public ScalarOpPattern<FHE::SubIntEintOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::SubIntEintOp op, FHE::SubIntEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
+
     // Write the plaintext encoding
     mlir::Value encodedInt = writePlaintextShiftEncoding(
         op.getLoc(), adaptor.getA(),
@@ -212,9 +226,10 @@ struct SubIntEintOpPattern : public ScalarOpPattern<FHE::SubIntEintOp> {
         rewriter);
 
     // Write the new op
-    rewriter.replaceOpWithNewOp<TFHE::SubGLWEIntOp>(
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::SubGLWEIntOp>(
         op, getTypeConverter()->convertType(op.getType()), encodedInt,
         adaptor.getB());
+    forwardOptimizerID(op, newOp);
 
     return mlir::success();
   };
@@ -229,6 +244,7 @@ struct SubEintOpPattern : public ScalarOpPattern<FHE::SubEintOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::SubEintOp op, FHE::SubEintOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
+
     mlir::Location location = op.getLoc();
     mlir::Value lhsOperand = adaptor.getA();
     mlir::Value rhsOperand = adaptor.getB();
@@ -236,11 +252,13 @@ struct SubEintOpPattern : public ScalarOpPattern<FHE::SubEintOp> {
     // Write rhs negation
     auto negative = rewriter.create<TFHE::NegGLWEOp>(
         location, rhsOperand.getType(), rhsOperand);
+    forwardOptimizerID(op, negative);
 
     // Write new op.
-    rewriter.replaceOpWithNewOp<TFHE::AddGLWEOp>(
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::AddGLWEOp>(
         op, getTypeConverter()->convertType(op.getType()), lhsOperand,
         negative.getResult());
+    forwardOptimizerID(op, newOp);
 
     return mlir::success();
   };
@@ -266,9 +284,10 @@ struct MulEintIntOpPattern : public ScalarOpPattern<FHE::MulEintIntOp> {
         location, rewriter.getIntegerType(64), intOperand);
 
     // Write the new op.
-    rewriter.replaceOpWithNewOp<TFHE::MulGLWEIntOp>(
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::MulGLWEIntOp>(
         op, getTypeConverter()->convertType(op.getType()), eintOperand,
         castedCleartext);
+    forwardOptimizerID(op, newOp);
 
     return mlir::success();
   }
@@ -344,6 +363,12 @@ struct ApplyLookupTableEintOpPattern
     typing::TypeConverter converter;
     mlir::Value input = adaptor.getA();
 
+    auto operatorIndexes =
+        op->getAttrOfType<mlir::DenseI32ArrayAttr>("TFHE.OId");
+    if (operatorIndexes != nullptr) {
+      assert(operatorIndexes != nullptr && operatorIndexes.size() > 0);
+    }
+
     if (inputType.isSigned()) {
       // If the input is a signed integer, it comes to the bootstrap with a
       // signed-leveled encoding (compatible with 2s complement semantics).
@@ -361,6 +386,11 @@ struct ApplyLookupTableEintOpPattern
       auto inputOp = rewriter.create<TFHE::AddGLWEIntOp>(
           op.getLoc(), converter.convertType(input.getType()), input,
           encodedConstant);
+      if (operatorIndexes != nullptr) {
+        assert(operatorIndexes.size() == 2);
+        auto addIndex = operatorIndexes[0];
+        inputOp->setAttr("TFHE.OId", rewriter.getI32IntegerAttr(addIndex));
+      }
       input = inputOp;
     }
 
@@ -370,14 +400,23 @@ struct ApplyLookupTableEintOpPattern
         input,
         TFHE::GLWEKeyswitchKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
                                         TFHE::GLWESecretKey(), -1, -1, -1));
+    if (operatorIndexes != nullptr) {
+      ksOp->setAttr("TFHE.OId",
+                    rewriter.getI32IntegerAttr(
+                        operatorIndexes[operatorIndexes.size() - 1]));
+    }
 
     // Insert bootstrap
-    rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
+    auto bsOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         op, getTypeConverter()->convertType(op.getType()), ksOp, newLut,
         TFHE::GLWEBootstrapKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
                                         TFHE::GLWESecretKey(), -1, -1, -1, -1,
                                         -1));
-
+    if (operatorIndexes != nullptr) {
+      bsOp->setAttr("TFHE.OId",
+                    rewriter.getI32IntegerAttr(
+                        operatorIndexes[operatorIndexes.size() - 1]));
+    }
     return mlir::success();
   };
 
@@ -411,7 +450,6 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
     //                performing a left shift and a pbs.
     //             -> Subtract this one from the input by performing a
     //                homomorphic subtraction.
-
     mlir::Value input = adaptor.getInput();
     auto inputType = op.getInput().getType().cast<FHE::FheIntegerInterface>();
     mlir::Value output = op.getResult();
@@ -441,8 +479,9 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
                                 rawCarryCst));
     mlir::Value encodedCarryCst = writePlaintextShiftEncoding(
         op.getLoc(), carryCst, inputBitwidth, rewriter);
-    mlir::Value carryPropagatedVal = rewriter.create<TFHE::AddGLWEIntOp>(
+    auto carryPropagatedVal = rewriter.create<TFHE::AddGLWEIntOp>(
         op.getLoc(), inputTy, input, encodedCarryCst);
+    forwardOptimizerID(op, carryPropagatedVal);
 
     //--------------------------------------------------------------- TRUNCATION
     // The second step is to truncate every lsbs to be removed, from the least
@@ -479,8 +518,9 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
       uint64_t rawShiftCst = ((uint64_t)1) << (inputBitwidth - i);
       mlir::Value shiftCst = rewriter.create<mlir::arith::ConstantOp>(
           op->getLoc(), rewriter.getI64IntegerAttr(rawShiftCst));
-      mlir::Value shiftedInput = rewriter.create<TFHE::MulGLWEIntOp>(
+      auto shiftedInput = rewriter.create<TFHE::MulGLWEIntOp>(
           op.getLoc(), truncationInputTy, previousOutput, shiftCst);
+      forwardOptimizerID(op, shiftedInput);
 
       //-------------------------------------------------------- LUT PREPARATION
       // To perform the right shift (kind of), we use a PBS that acts on the
@@ -548,22 +588,25 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
       uint64_t rawRotationCst = (((uint64_t)1) << 62);
       mlir::Value rotationCst = rewriter.create<mlir::arith::ConstantOp>(
           op->getLoc(), rewriter.getI64IntegerAttr(rawRotationCst));
-      mlir::Value shiftedRotatedInput = rewriter.create<TFHE::AddGLWEIntOp>(
+      auto shiftedRotatedInput = rewriter.create<TFHE::AddGLWEIntOp>(
           op.getLoc(), truncationInputTy, shiftedInput, rotationCst);
+      forwardOptimizerID(op, shiftedRotatedInput);
 
       //-------------------------------------------------------------------- PBS
       // The lookup is performed ...
 
-      mlir::Value keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
+      auto keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
           op.getLoc(), truncationInputTy, shiftedRotatedInput,
           TFHE::GLWEKeyswitchKeyAttr::get(op->getContext(),
                                           TFHE::GLWESecretKey(),
                                           TFHE::GLWESecretKey(), -1, -1, -1));
-      mlir::Value bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
+      forwardOptimizerID(op, keyswitched);
+      auto bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
           op.getLoc(), truncationInputTy, keyswitched, lut,
           TFHE::GLWEBootstrapKeyAttr::get(
               op->getContext(), TFHE::GLWESecretKey(), TFHE::GLWESecretKey(),
               -1, -1, -1, -1, -1));
+      forwardOptimizerID(op, bootstrapped);
 
       //------------------------------------------------------------- CORRECTION
       // The correction is performed to achieve our right shift semantic.
@@ -571,18 +614,21 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
       uint64_t rawCorrCst = ((uint64_t)1) << (64 - (inputBitwidth + 2 - i));
       mlir::Value corrCst = rewriter.create<mlir::arith::ConstantOp>(
           op.getLoc(), rewriter.getI64IntegerAttr(rawCorrCst));
-      mlir::Value extractedBit = rewriter.create<TFHE::AddGLWEIntOp>(
+      auto extractedBit = rewriter.create<TFHE::AddGLWEIntOp>(
           op.getLoc(), truncationInputTy, bootstrapped, corrCst);
+      forwardOptimizerID(op, extractedBit);
 
       //------------------------------------------------------------- TRUNCATION
       // Finally, the extracted bit is subtracted from the input.
 
-      mlir::Value minusIsolatedBit = rewriter.create<TFHE::NegGLWEOp>(
+      auto minusIsolatedBit = rewriter.create<TFHE::NegGLWEOp>(
           op.getLoc(), truncationInputTy, extractedBit);
+      forwardOptimizerID(op, minusIsolatedBit);
       truncationInputTy = TFHE::GLWECipherTextType::get(rewriter.getContext(),
                                                         TFHE::GLWESecretKey());
-      mlir::Value truncationOutput = rewriter.create<TFHE::AddGLWEOp>(
+      auto truncationOutput = rewriter.create<TFHE::AddGLWEOp>(
           op.getLoc(), truncationInputTy, previousOutput, minusIsolatedBit);
+      forwardOptimizerID(op, truncationOutput);
       previousOutput = truncationOutput;
     }
 
@@ -700,21 +746,20 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     // Patterns for the `FHE` dialect operations
     patterns.add<
         //    |_ `FHE::zero_eint`
-        concretelang::GenericOneToOneOpConversionPattern<FHE::ZeroEintOp,
-                                                         TFHE::ZeroGLWEOp>,
+        concretelang::GenericOneToOneOpConversionPattern<
+            FHE::ZeroEintOp, TFHE::ZeroGLWEOp, true>,
         //    |_ `FHE::zero_tensor`
         concretelang::GenericOneToOneOpConversionPattern<
-            FHE::ZeroTensorOp, TFHE::ZeroTensorGLWEOp>,
+            FHE::ZeroTensorOp, TFHE::ZeroTensorGLWEOp, true>,
         //    |_ `FHE::neg_eint`
         concretelang::GenericOneToOneOpConversionPattern<FHE::NegEintOp,
-                                                         TFHE::NegGLWEOp>,
+                                                         TFHE::NegGLWEOp, true>,
         //    |_ `FHE::not`
         concretelang::GenericOneToOneOpConversionPattern<FHE::BoolNotOp,
-                                                         TFHE::NegGLWEOp>,
+                                                         TFHE::NegGLWEOp, true>,
         //    |_ `FHE::add_eint`
-        concretelang::GenericOneToOneOpConversionPattern<FHE::AddEintOp,
-                                                         TFHE::AddGLWEOp>>(
-        &getContext(), converter);
+        concretelang::GenericOneToOneOpConversionPattern<
+            FHE::AddEintOp, TFHE::AddGLWEOp, true>>(&getContext(), converter);
     //    |_ `FHE::add_eint_int`
     patterns.add<lowering::AddEintIntOpPattern,
                  //    |_ `FHE::sub_int_eint`
@@ -805,6 +850,8 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
             .failed()) {
       this->signalPassFailure();
     }
+    // TODO: Dirty fix to make check test happy
+    op->walk([](mlir::Operation *op) { op->removeAttr("MANP"); });
   }
 
 private:

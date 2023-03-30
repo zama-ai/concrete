@@ -57,9 +57,12 @@ struct FunctionToDag {
   mlir::func::FuncOp func;
   optimizer::Config config;
   llvm::DenseMap<mlir::Value, concrete_optimizer::dag::OperatorIndex> index;
+  bool setOptimizerID;
 
   FunctionToDag(mlir::func::FuncOp func, optimizer::Config config)
-      : func(func), config(config) {}
+      : func(func), config(config) {
+    setOptimizerID = config.strategy == optimizer::Strategy::DAG_MULTI;
+  }
 
 #define DEBUG(MSG)                                                             \
   if (mlir::concretelang::isVerbose()) {                                       \
@@ -71,8 +74,14 @@ struct FunctionToDag {
   build() {
     auto dag = concrete_optimizer::dag::empty();
     // Converting arguments as Input
-    for (auto &arg : func.getArguments()) {
-      addArg(dag, arg);
+    mlir::Builder builder(func.getContext());
+    for (size_t i = 0; i < func.getNumArguments(); i++) {
+      auto arg = func.getArgument(i);
+      auto optimizerIdx = addArg(dag, arg);
+      if (optimizerIdx.has_value() && setOptimizerID) {
+        func.setArgAttr(i, "TFHE.OId",
+                        builder.getI32IntegerAttr(optimizerIdx->index));
+      }
     }
     // Converting ops
     for (auto &bb : func.getBody().getBlocks()) {
@@ -95,15 +104,17 @@ struct FunctionToDag {
     return std::move(dag);
   }
 
-  void addArg(optimizer::Dag &dag, mlir::Value &arg) {
+  std::optional<concrete_optimizer::dag::OperatorIndex>
+  addArg(optimizer::Dag &dag, mlir::Value &arg) {
     DEBUG("Arg " << arg << " " << arg.getType());
     if (!fhe::utils::isEncryptedValue(arg)) {
-      return;
+      return std::nullopt;
     }
     auto precision = fhe::utils::getEintPrecision(arg);
     auto shape = getShape(arg);
     auto opI = dag->add_input(precision, slice(shape));
     index[arg] = opI;
+    return opI;
   }
 
   bool hasEncryptedResult(mlir::Operation &op) {
@@ -133,68 +144,91 @@ struct FunctionToDag {
     assert(op.getNumResults() == 1);
     auto val = op.getResult(0);
     auto precision = fhe::utils::getEintPrecision(val);
-    if (isLut(op)) {
-      addLut(dag, val, encrypted_inputs, precision);
+    concrete_optimizer::dag::OperatorIndex index;
+    if (auto inputType = isLut(op); inputType != nullptr) {
+      addLut(dag, op, inputType, encrypted_inputs, precision);
       return;
-    }
-    if (isRound(op)) {
-      addRound(dag, val, encrypted_inputs, precision);
-      return;
-    }
-    if (auto dot = asDot(op)) {
+    } else if (isRound(op)) {
+      index = addRound(dag, val, encrypted_inputs, precision);
+    } else if (auto dot = asDot(op)) {
       auto weightsOpt = dotWeights(dot);
       if (weightsOpt) {
-        addDot(dag, val, encrypted_inputs, weightsOpt.value());
-        return;
+        index = addDot(dag, val, encrypted_inputs, weightsOpt.value());
+      } else {
+        // If can't find weights return default leveled op
+        DEBUG("Replace Dot by LevelledOp on " << op);
+        index = addLevelledOp(dag, op, encrypted_inputs);
       }
-      // If can't find weights return default leveled op
-      DEBUG("Replace Dot by LevelledOp on " << op);
-    }
-    if (auto mul = asMul(op)) {
+    } else if (auto mul = asMul(op)) {
+      // special case as mul are rewritten in several optimizer nodes
       addMul(dag, mul, encrypted_inputs, precision);
       return;
-    }
-    if (auto mul = asMulTensor(op)) {
-      addMulTensor(dag, mul, encrypted_inputs, precision);
+    } else if (auto mul = asMulTensor(op)) {
+      // special case as mul are rewritten in several optimizer nodes
+      addMul(dag, mul, encrypted_inputs, precision);
       return;
-    }
-    if (auto max = asMax(op)) {
+    } else if (auto max = asMax(op)) {
+      // special case as max are rewritten in several optimizer nodes
       addMax(dag, max, encrypted_inputs, precision);
       return;
-    }
-    if (auto maxpool2d = asMaxpool2d(op)) {
+    } else if (auto maxpool2d = asMaxpool2d(op)) {
+      // special case as max are rewritten in several optimizer nodes
       addMaxpool2d(dag, maxpool2d, encrypted_inputs, precision);
       return;
+    } else {
+      index = addLevelledOp(dag, op, encrypted_inputs);
     }
-    // default
-    addLevelledOp(dag, op, encrypted_inputs);
+    mlir::Builder builder(op.getContext());
+    if (setOptimizerID)
+      op.setAttr("TFHE.OId", builder.getI32IntegerAttr(index.index));
   }
 
-  void addLut(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
+  void addLut(optimizer::Dag &dag, mlir::Operation &op,
+              FHE::FheIntegerInterface inputType, Inputs &encrypted_inputs,
               int precision) {
+    auto val = op.getResult(0);
     assert(encrypted_inputs.size() == 1);
     // No need to distinguish different lut kind until we do approximate
     // paradigm on outputs
     auto encrypted_input = encrypted_inputs[0];
     std::vector<std::uint64_t> unknowFunction;
-    index[val] =
+    std::vector<int32_t> operatorIndexes;
+    if (inputType.isSigned()) {
+      // std::vector<std::int64_t> weights_vector{1};
+      auto addIndex = dag->add_dot(slice(encrypted_inputs),
+                                   concrete_optimizer::weights::vector(
+                                       slice(std::vector<std::int64_t>{1})));
+      encrypted_inputs[0] = addIndex;
+      operatorIndexes.push_back(addIndex.index);
+    }
+    auto lutIndex =
         dag->add_lut(encrypted_input, slice(unknowFunction), precision);
+    operatorIndexes.push_back(lutIndex.index);
+    mlir::Builder builder(op.getContext());
+    if (setOptimizerID)
+      op.setAttr("TFHE.OId", builder.getDenseI32ArrayAttr(operatorIndexes));
+    index[val] = lutIndex;
   }
 
-  void addRound(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
-                int rounded_precision) {
+  concrete_optimizer::dag::OperatorIndex addRound(optimizer::Dag &dag,
+                                                  mlir::Value &val,
+                                                  Inputs &encrypted_inputs,
+                                                  int rounded_precision) {
     assert(encrypted_inputs.size() == 1);
     // No need to distinguish different lut kind until we do approximate
     // paradigm on outputs
     auto encrypted_input = encrypted_inputs[0];
     index[val] = dag->add_round_op(encrypted_input, rounded_precision);
+    return index[val];
   }
 
-  void addDot(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
-              std::vector<std::int64_t> &weights_vector) {
+  concrete_optimizer::dag::OperatorIndex
+  addDot(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
+         std::vector<std::int64_t> &weights_vector) {
     assert(encrypted_inputs.size() == 1);
     auto weights = concrete_optimizer::weights::vector(slice(weights_vector));
     index[val] = dag->add_dot(slice(encrypted_inputs), std::move(weights));
+    return index[val];
   }
 
   std::string loc_to_string(mlir::Location location) {
@@ -204,7 +238,8 @@ struct FunctionToDag {
     return loc;
   }
 
-  void addLevelledOp(optimizer::Dag &dag, mlir::Operation &op, Inputs &inputs) {
+  concrete_optimizer::dag::OperatorIndex
+  addLevelledOp(optimizer::Dag &dag, mlir::Operation &op, Inputs &inputs) {
     auto val = op.getResult(0);
     auto out_shape = getShape(val);
     if (inputs.empty()) {
@@ -226,74 +261,19 @@ struct FunctionToDag {
     index[val] =
         dag->add_levelled_op(slice(inputs), lwe_dim_cost_factor, fixed_cost,
                              manp, slice(out_shape), comment);
+    return index[val];
   }
 
-  void addMul(optimizer::Dag &dag, FHE::MulEintOp &mulOp, Inputs &inputs,
+  bool isSignedEint(mlir::Type type) {
+    if (auto tensor = type.dyn_cast<RankedTensorType>(); tensor != nullptr) {
+      type = tensor.getElementType();
+    }
+    return type.cast<FHE::FheIntegerInterface>().isSigned();
+  }
+
+  template <typename MulOp>
+  void addMul(optimizer::Dag &dag, MulOp &mulOp, Inputs &inputs,
               int precision) {
-
-    // x * y = ((x + y)^2 / 4) - ((x - y)^2 / 4) == tlu(x + y) - tlu(x - y)
-
-    mlir::Value result = mulOp.getResult();
-    const std::vector<uint64_t> resultShape = getShape(result);
-
-    Operation *xOp = mulOp.getA().getDefiningOp();
-    Operation *yOp = mulOp.getB().getDefiningOp();
-
-    const double fixedCost = NEGLIGIBLE_COMPLEXITY;
-    const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
-
-    llvm::APInt xSmanp = llvm::APInt{1, 1, false};
-    if (xOp != nullptr) {
-      const auto xSmanpAttr = xOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
-      assert(xSmanpAttr && "Missing SMANP value on a crypto operation");
-      xSmanp = xSmanpAttr.getValue();
-    }
-
-    llvm::APInt ySmanp = llvm::APInt{1, 1, false};
-    if (yOp != nullptr) {
-      const auto ySmanpAttr = yOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
-      assert(ySmanpAttr && "Missing SMANP value on a crypto operation");
-      ySmanp = ySmanpAttr.getValue();
-    }
-
-    auto loc = loc_to_string(mulOp.getLoc());
-    auto comment = std::string(mulOp->getName().getStringRef()) + " " + loc;
-
-    // (x + y) and (x - y)
-    const double addSubManp =
-        sqrt(xSmanp.roundToDouble() + ySmanp.roundToDouble());
-
-    // tlu(v)
-    const double tluManp = 1;
-
-    // tlu(v1) - tlu(v2)
-    const double tluSubManp = sqrt(tluManp + tluManp);
-
-    // for tlus
-    const std::vector<std::uint64_t> unknownFunction;
-
-    // tlu(x + y)
-    auto addNode =
-        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
-                             addSubManp, slice(resultShape), comment);
-    auto lhsTluNode = dag->add_lut(addNode, slice(unknownFunction), precision);
-
-    // tlu(x - y)
-    auto subNode =
-        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
-                             addSubManp, slice(resultShape), comment);
-    auto rhsTluNode = dag->add_lut(subNode, slice(unknownFunction), precision);
-
-    // tlu(x + y) - tlu(x - y)
-    const std::vector<concrete_optimizer::dag::OperatorIndex> subInputs = {
-        lhsTluNode, rhsTluNode};
-    index[result] =
-        dag->add_levelled_op(slice(subInputs), lweDimCostFactor, fixedCost,
-                             tluSubManp, slice(resultShape), comment);
-  }
-
-  void addMulTensor(optimizer::Dag &dag, FHELinalg::MulEintOp &mulOp,
-                    Inputs &inputs, int precision) {
 
     // x * y = ((x + y)^2 / 4) - ((x - y)^2 / 4) == tlu(x + y) - tlu(x - y)
 
@@ -340,20 +320,50 @@ struct FunctionToDag {
     auto addNode =
         dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
                              addSubManp, slice(resultShape), comment);
+    std::optional<concrete_optimizer::dag::OperatorIndex> lhsCorrectionNode;
+    if (isSignedEint(mulOp.getType())) {
+      // If signed mul we need to add the addition node for correction of the
+      // signed tlu
+      addNode = dag->add_dot(
+          slice(std::vector<concrete_optimizer::dag::OperatorIndex>{addNode}),
+          concrete_optimizer::weights::vector(
+              slice(std::vector<std::int64_t>{1})));
+      lhsCorrectionNode = addNode;
+    }
     auto lhsTluNode = dag->add_lut(addNode, slice(unknownFunction), precision);
 
     // tlu(x - y)
     auto subNode =
         dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
                              addSubManp, slice(resultShape), comment);
-    auto rhsTluNode = dag->add_lut(subNode, slice(unknownFunction), precision);
+    // This is a signed tlu so we need to also add the addition for correction
+    // signed tlu
+    auto rhsCorrectionNode = dag->add_dot(
+        slice(std::vector<concrete_optimizer::dag::OperatorIndex>{subNode}),
+        concrete_optimizer::weights::vector(
+            slice(std::vector<std::int64_t>{1})));
+    auto rhsTluNode =
+        dag->add_lut(rhsCorrectionNode, slice(unknownFunction), precision);
 
     // tlu(x + y) - tlu(x - y)
     const std::vector<concrete_optimizer::dag::OperatorIndex> subInputs = {
         lhsTluNode, rhsTluNode};
-    index[result] =
+    auto resultNode =
         dag->add_levelled_op(slice(subInputs), lweDimCostFactor, fixedCost,
                              tluSubManp, slice(resultShape), comment);
+    index[result] = resultNode;
+    // Set attribute on the MLIR node
+    mlir::Builder builder(mulOp.getContext());
+    mlir::SmallVector<int32_t, 5> operatorIndexes = {
+        (int32_t)addNode.index,    (int32_t)lhsTluNode.index,
+        (int32_t)subNode.index,    (int32_t)rhsCorrectionNode.index,
+        (int32_t)rhsTluNode.index, (int32_t)resultNode.index};
+    if (lhsCorrectionNode.has_value()) {
+      // We push that at the end by convention
+      operatorIndexes.push_back(lhsCorrectionNode.value().index);
+    }
+    if (setOptimizerID)
+      mulOp->setAttr("TFHE.OId", builder.getDenseI32ArrayAttr(operatorIndexes));
   }
 
   void addMax(optimizer::Dag &dag, FHE::MaxEintOp &maxOp, Inputs &inputs,
@@ -398,9 +408,18 @@ struct FunctionToDag {
     const double addManp = sqrt(tluNodeManp + ySmanp.roundToDouble());
     const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
         tluNode, inputs[1]};
-    index[result] =
+    auto resultNode =
         dag->add_levelled_op(slice(addInputs), lweDimCostFactor, fixedCost,
                              addManp, slice(resultShape), comment);
+    index[result] = resultNode;
+
+    // Set attribute on the MLIR node
+    mlir::Builder builder(maxOp.getContext());
+    mlir::SmallVector<int32_t, 3> operatorIndexes = {(int32_t)subNode.index,
+                                                     (int32_t)tluNode.index,
+                                                     (int32_t)resultNode.index};
+    if (setOptimizerID)
+      maxOp->setAttr("TFHE.OId", builder.getDenseI32ArrayAttr(operatorIndexes));
   }
 
   void addMaxpool2d(optimizer::Dag &dag, FHELinalg::Maxpool2dOp &maxpool2dOp,
@@ -449,9 +468,23 @@ struct FunctionToDag {
     const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
         tluNode, inputs[0]};
 
-    index[result] =
+    auto resultNode =
         dag->add_levelled_op(slice(addInputs), lweDimCostFactor, fixedCost,
                              addManp, slice(resultShape), comment);
+    index[result] = resultNode;
+    // Set attribute on the MLIR node
+    mlir::Builder builder(maxpool2dOp.getContext());
+    mlir::SmallVector<int32_t, 3> operatorIndexes = {(int32_t)subNode.index,
+                                                     (int32_t)tluNode.index,
+                                                     (int32_t)resultNode.index};
+    // TODO : The substraction of the signed case is not given to the optimizer
+    // which could lead to some issue with the dag partitioning of the
+    // optimizer.
+    // Note: Should not be an issue while the partition are computed
+    // on the precision.
+    if (setOptimizerID)
+      maxpool2dOp->setAttr("TFHE.OId",
+                           builder.getDenseI32ArrayAttr(operatorIndexes));
   }
 
   Inputs encryptedInputs(mlir::Operation &op) {
@@ -468,12 +501,41 @@ struct FunctionToDag {
     return inputs;
   }
 
-  bool isLut(mlir::Operation &op) {
-    return llvm::isa<
-        mlir::concretelang::FHE::ApplyLookupTableEintOp,
-        mlir::concretelang::FHELinalg::ApplyLookupTableEintOp,
-        mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp,
-        mlir::concretelang::FHELinalg::ApplyMappedLookupTableEintOp>(op);
+  template <typename LinalgApplyLookupTable>
+  FHE::FheIntegerInterface getEintTypeOfLut(LinalgApplyLookupTable op) {
+    auto tensorType = op.getT().getType().template dyn_cast<mlir::TensorType>();
+    auto eint = tensorType.getElementType()
+                    .template dyn_cast<FHE::FheIntegerInterface>();
+    assert(eint != nullptr);
+    return eint;
+  }
+
+  // Returns the FHE integer type on which the lut is performed else return a
+  // nullptr
+  FHE::FheIntegerInterface isLut(mlir::Operation &op) {
+    if (auto lut =
+            llvm::dyn_cast<mlir::concretelang::FHE::ApplyLookupTableEintOp>(op);
+        lut != nullptr) {
+      auto eint = lut.getA().getType().dyn_cast<FHE::FheIntegerInterface>();
+      assert(eint != nullptr);
+      return eint;
+    }
+    if (auto lut = llvm::dyn_cast<
+            mlir::concretelang::FHELinalg::ApplyLookupTableEintOp>(op);
+        lut != nullptr) {
+      return getEintTypeOfLut(lut);
+    }
+    if (auto lut = llvm::dyn_cast<
+            mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp>(op);
+        lut != nullptr) {
+      return getEintTypeOfLut(lut);
+    }
+    if (auto lut = llvm::dyn_cast<
+            mlir::concretelang::FHELinalg::ApplyMappedLookupTableEintOp>(op);
+        lut != nullptr) {
+      return getEintTypeOfLut(lut);
+    }
+    return nullptr;
   }
 
   bool isRound(mlir::Operation &op) {

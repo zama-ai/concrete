@@ -25,6 +25,10 @@ struct MaxEintPattern : public mlir::OpRewritePattern<FHE::MaxEintOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::MaxEintOp maxEintOp,
                   mlir::PatternRewriter &rewriter) const override {
+    // Get the operator indexes stored in FHE.mul operator to annotated FHE
+    // nodes
+    auto operatorIndexes =
+        maxEintOp->getAttrOfType<mlir::DenseI32ArrayAttr>("TFHE.OId");
 
     const mlir::Location loc = maxEintOp->getLoc();
 
@@ -48,8 +52,9 @@ struct MaxEintPattern : public mlir::OpRewritePattern<FHE::MaxEintOp> {
       y = rewriter.create<FHE::ToSignedOp>(loc, signedTy, y).getResult();
     }
 
-    const mlir::Value sub =
-        rewriter.create<FHE::SubEintOp>(loc, x, y).getResult();
+    auto sub = rewriter.create<FHE::SubEintOp>(loc, x, y);
+    if (operatorIndexes != nullptr)
+      sub->setAttr("TFHE.OId", rewriter.getI32IntegerAttr(operatorIndexes[0]));
 
     const int64_t lutSize = 1 << outputBitWidth;
 
@@ -65,12 +70,19 @@ struct MaxEintPattern : public mlir::OpRewritePattern<FHE::MaxEintOp> {
     const mlir::Value lut =
         rewriter.create<arith::ConstantOp>(loc, lutAttr).getResult();
 
-    const mlir::Value max =
-        rewriter.create<FHE::ApplyLookupTableEintOp>(loc, outputTy, sub, lut)
-            .getResult();
+    auto max =
+        rewriter.create<FHE::ApplyLookupTableEintOp>(loc, outputTy, sub, lut);
+    if (operatorIndexes != nullptr) {
+      // It's a signed lut and the signed correction can be saw as the same
+      // optimizer node than the max sub
+      max->setAttr("TFHE.OId",
+                   rewriter.getDenseI32ArrayAttr(std::vector<int32_t>{
+                       operatorIndexes[0], operatorIndexes[1]}));
+    }
 
-    const mlir::Value add =
-        rewriter.create<FHE::AddEintOp>(loc, max, maxEintOp.getY()).getResult();
+    auto add = rewriter.create<FHE::AddEintOp>(loc, max, maxEintOp.getY());
+    if (operatorIndexes != nullptr)
+      add->setAttr("TFHE.OId", rewriter.getI32IntegerAttr(operatorIndexes[2]));
 
     rewriter.replaceOp(maxEintOp, {add});
     return mlir::success();

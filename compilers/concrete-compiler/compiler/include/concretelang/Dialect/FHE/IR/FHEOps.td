@@ -311,12 +311,12 @@ def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
         ```
     }];
 
-    let arguments = (ins FHE_AnyEncryptedInteger:$a, FHE_AnyEncryptedInteger:$b);
+    let arguments = (ins FHE_AnyEncryptedInteger:$rhs, FHE_AnyEncryptedInteger:$lhs);
     let results = (outs FHE_AnyEncryptedInteger);
 
     let builders = [
-        OpBuilder<(ins "Value":$a, "Value":$b), [{
-          build($_builder, $_state, a.getType(), a, b);
+        OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
+          build($_builder, $_state, rhs.getType(), rhs, lhs);
         }]>
     ];
 
