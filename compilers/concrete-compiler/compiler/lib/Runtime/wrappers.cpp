@@ -106,6 +106,46 @@ void memref_bootstrap_lwe_cuda_u64(
       input_lwe_dim, poly_size, level, base_log, glwe_dim, bsk_index, context);
 }
 
+void memref_wop_pbs_crt_buffer_cuda_u64(
+    // Output 2D memref
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
+    // Input 2D memref
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
+    // clear text lut 1D memref
+    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
+    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
+    // CRT decomposition 1D memref
+    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
+    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
+    uint64_t crt_decomp_stride,
+    // Additional crypto parameters
+    uint32_t lwe_small_size, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
+    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
+    uint32_t polynomial_size,
+    // runtime context that hold evluation keys
+    mlir::concretelang::RuntimeContext *context) {
+  // The compiler should only generates 2D memref<BxS>, where B is the number of
+  // ciphertext block and S the lweSize.
+  // Check for the size B
+  assert(out_size_0 == in_size_0 && out_size_0 == crt_decomp_size);
+  memref_batched_wop_pbs_crt_buffer_cuda_u64(
+      out_allocated, out_aligned, out_offset, out_size_0, out_size_1,
+      out_stride_0, out_stride_1, in_allocated, in_aligned, in_offset,
+      in_size_0, in_size_1, in_stride_0, in_stride_1, lut_ct_allocated,
+      lut_ct_aligned, lut_ct_offset, lut_ct_size0, lut_ct_size1, lut_ct_stride0,
+      lut_ct_stride1, crt_decomp_allocated, crt_decomp_aligned,
+      crt_decomp_offset, crt_decomp_size, crt_decomp_stride, lwe_small_size,
+      cbs_level_count, cbs_base_log, ksk_level_count, ksk_base_log,
+      bsk_level_count, bsk_base_log, fpksk_level_count, fpksk_base_log,
+      polynomial_size, context);
+}
+
 // Batched CUDA function //////////////////////////////////////////////////////
 
 void memref_batched_keyswitch_lwe_cuda_u64(
@@ -239,7 +279,7 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
 
-void memref_wop_pbs_crt_buffer_cuda_u64(
+void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     // Output 2D memref
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
@@ -264,23 +304,20 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context) {
   // The compiler should only generates 2D memref<BxS>, where B is the number of
-  // ciphertext block and S the lweSize.
+  // ciphertext block times the number of inputs and S the lweSize.
   // Check for the strides
-
   assert(out_stride_1 == 1);
   assert(in_stride_0 == in_size_1 && in_stride_0 == in_size_1);
   // Check for the size B
-  assert(out_size_0 == in_size_0 && out_size_0 == crt_decomp_size);
+  assert(out_size_0 == in_size_0);
   // Check for the size S
   assert(out_size_1 == in_size_1);
 
+  assert(out_size_0 % crt_decomp_size == 0);
+  uint64_t number_of_input_lwe = out_size_0 / crt_decomp_size;
   uint64_t lwe_small_dim = lwe_small_size - 1;
-
-  assert(out_size_1 == in_size_1);
   uint64_t lwe_big_size = in_size_1;
   uint64_t lwe_big_dim = lwe_big_size - 1;
-  assert(lwe_big_dim % polynomial_size == 0);
-
   assert(lwe_big_dim % polynomial_size == 0);
   uint64_t glwe_dim = lwe_big_dim / polynomial_size;
 
@@ -326,51 +363,58 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   // [msb(m%crt[n-1])..lsb(m%crt[n-1])...msb(m%crt[0])..lsb(m%crt[0])] where n
   // is the size of the crt decomposition
   uint64_t *bit_extract_out_gpu = (uint64_t *)cuda_malloc_async(
-      lwe_small_size * total_number_of_bits_per_block * sizeof(uint64_t),
+      number_of_input_lwe * lwe_small_size * total_number_of_bits_per_block *
+          sizeof(uint64_t),
       (cudaStream_t *)stream, gpu_idx);
 
-  // We make a private copy to apply a subtraction on the body
-  auto first_ciphertext = in_aligned + in_offset;
-  auto copy_size = crt_decomp_size * lwe_big_size;
-  std::vector<uint64_t> in_copy(first_ciphertext, first_ciphertext + copy_size);
-  // Extraction of each bit for each block
-  for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0; i >= 0;
-       extract_bits_output_offset += number_of_bits_per_block[i--]) {
-    auto nb_bits_to_extract = number_of_bits_per_block[i];
+  for (int64_t c = 0; c < number_of_input_lwe; c++) {
+    int64_t ciphertext_offset = c * lwe_small_size * crt_decomp_size;
+    // We make a private copy to apply a subtraction on the body
+    auto first_ciphertext = in_aligned + in_offset + ciphertext_offset;
+    auto copy_size = crt_decomp_size * lwe_big_size;
+    std::vector<uint64_t> in_copy(first_ciphertext,
+                                  first_ciphertext + copy_size);
+    // Extraction of each bit for each block
+    for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0;
+         i >= 0; extract_bits_output_offset += number_of_bits_per_block[i--]) {
+      auto nb_bits_to_extract = number_of_bits_per_block[i];
 
-    size_t delta_log = 64 - nb_bits_to_extract;
+      size_t delta_log = 64 - nb_bits_to_extract;
 
-    auto in_block = &in_copy[lwe_big_size * i];
+      auto in_block = &in_copy[lwe_big_size * i];
 
-    // trick ( ct - delta/2 + delta/2^4  )
-    uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -
-                   (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 5));
-    in_block[lwe_big_size - 1] -= sub;
-    cudaStreamSynchronize(*(cudaStream_t *)stream);
-    void *in_gpu = alloc_and_memcpy_async_to_gpu(
-        in_block, 0, lwe_big_size, gpu_idx, (cudaStream_t *)stream);
+      // trick ( ct - delta/2 + delta/2^4  )
+      uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -
+                     (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 5));
+      in_block[lwe_big_size - 1] -= sub;
+      cudaStreamSynchronize(*(cudaStream_t *)stream);
+      void *in_gpu = alloc_and_memcpy_async_to_gpu(
+          in_block, 0, lwe_big_size, gpu_idx, (cudaStream_t *)stream);
 
-    // call bit extract scratch
-    scratch_cuda_extract_bits_64(stream, gpu_idx, &bit_extract_buffer, glwe_dim,
-                                 lwe_small_dim, polynomial_size,
-                                 bsk_level_count, 1,
-                                 cuda_get_max_shared_memory(gpu_idx), true);
-    // Execute bit extract
-    cuda_extract_bits_64(
-        stream, gpu_idx,
-        (void *)(bit_extract_out_gpu +
-                 (ptrdiff_t)(lwe_small_size * extract_bits_output_offset)),
-        in_gpu, bit_extract_buffer, ksk_gpu, fbsk_gpu, nb_bits_to_extract,
-        delta_log, lwe_big_dim, lwe_small_dim, glwe_dim, polynomial_size,
-        bsk_base_log, bsk_level_count, ksk_base_log, ksk_level_count, 1,
-        cuda_get_max_shared_memory(gpu_idx));
-    cleanup_cuda_extract_bits(stream, gpu_idx, &bit_extract_buffer);
-    cuda_drop_async(in_gpu, (cudaStream_t *)stream, gpu_idx);
-    cudaStreamSynchronize(*(cudaStream_t *)stream);
+      // call bit extract scratch
+      scratch_cuda_extract_bits_64(stream, gpu_idx, &bit_extract_buffer,
+                                   glwe_dim, lwe_small_dim, polynomial_size,
+                                   bsk_level_count, 1,
+                                   cuda_get_max_shared_memory(gpu_idx), true);
+      // Execute bit extract
+      cuda_extract_bits_64(
+          stream, gpu_idx,
+          (void *)(bit_extract_out_gpu +
+                   (ptrdiff_t)(c * lwe_small_size *
+                                   total_number_of_bits_per_block +
+                               lwe_small_size * extract_bits_output_offset)),
+          in_gpu, bit_extract_buffer, ksk_gpu, fbsk_gpu, nb_bits_to_extract,
+          delta_log, lwe_big_dim, lwe_small_dim, glwe_dim, polynomial_size,
+          bsk_base_log, bsk_level_count, ksk_base_log, ksk_level_count, 1,
+          cuda_get_max_shared_memory(gpu_idx));
+      cleanup_cuda_extract_bits(stream, gpu_idx, &bit_extract_buffer);
+      cuda_drop_async(in_gpu, (cudaStream_t *)stream, gpu_idx);
+      cudaStreamSynchronize(*(cudaStream_t *)stream);
+    }
   }
 
-  size_t ct_in_count = total_number_of_bits_per_block;
-  size_t lut_size = 1 << ct_in_count;
+  size_t ct_in_count = total_number_of_bits_per_block * number_of_input_lwe;
+  size_t lut_size = 1 << total_number_of_bits_per_block;
   size_t ct_out_count = out_size_0;
   size_t lut_count = ct_out_count;
 
@@ -385,14 +429,15 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   // CBS + vertical packing
   scratch_cuda_circuit_bootstrap_vertical_packing_64(
       stream, gpu_idx, &cbs_vp_buffer, &cbs_delta_log, glwe_dim, lwe_small_dim,
-      polynomial_size, cbs_level_count, total_number_of_bits_per_block,
-      crt_decomp_size, cuda_get_max_shared_memory(gpu_idx), true);
+      polynomial_size, cbs_level_count, ct_in_count,
+      crt_decomp_size * number_of_input_lwe,
+      cuda_get_max_shared_memory(gpu_idx), true);
   cuda_circuit_bootstrap_vertical_packing_64(
       stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
       lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
       lwe_small_dim, bsk_level_count, bsk_base_log, fpksk_level_count,
-      fpksk_base_log, cbs_level_count, cbs_base_log,
-      total_number_of_bits_per_block, crt_decomp_size,
+      fpksk_base_log, cbs_level_count, cbs_base_log, ct_in_count,
+      crt_decomp_size * number_of_input_lwe,
       cuda_get_max_shared_memory(gpu_idx));
   cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_idx,
                                                   &cbs_vp_buffer);
@@ -788,7 +833,7 @@ void memref_wop_pbs_crt_buffer(
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
     uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
     uint64_t in_stride_1,
-    // clear text lut 1D memref
+    // clear text lut 2D memref
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
     uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
     uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
@@ -921,6 +966,48 @@ void memref_wop_pbs_crt_buffer(
       scratch, scratch_size);
 
   free(scratch);
+}
+
+void memref_batched_wop_pbs_crt_buffer(
+    // Output 2D memref
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
+    // Input 2D memref
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
+    // clear text lut 1D memref
+    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
+    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
+    // CRT decomposition 1D memref
+    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
+    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
+    uint64_t crt_decomp_stride,
+    // Additional crypto parameters
+    uint32_t lwe_small_size, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
+    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
+    uint32_t polynomial_size,
+    // runtime context that hold evluation keys
+    mlir::concretelang::RuntimeContext *context) {
+
+  assert(out_size_0 % crt_decomp_size == 0);
+  uint64_t number_of_input_lwe = out_size_0 / crt_decomp_size;
+  for (size_t i = 0; i < number_of_input_lwe; i++) {
+    memref_wop_pbs_crt_buffer(
+        out_allocated, out_aligned + i * crt_decomp_size * out_size_1,
+        out_offset, out_size_0, out_size_1, out_stride_0, out_stride_1,
+        in_allocated, in_aligned + i * crt_decomp_size * in_size_1, in_offset,
+        in_size_0, in_size_1, in_stride_0, in_stride_1, lut_ct_allocated,
+        lut_ct_aligned, lut_ct_offset, lut_ct_size0, lut_ct_size1,
+        lut_ct_stride0, lut_ct_stride1, crt_decomp_allocated,
+        crt_decomp_aligned, crt_decomp_offset, crt_decomp_size,
+        crt_decomp_stride, lwe_small_size, cbs_level_count, cbs_base_log,
+        ksk_level_count, ksk_base_log, bsk_level_count, bsk_base_log,
+        fpksk_level_count, fpksk_base_log, polynomial_size, context);
+  }
 }
 
 void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,

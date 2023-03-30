@@ -45,6 +45,9 @@ char memref_expand_lut_in_trivial_glwe_ct_u64[] =
 char memref_wop_pbs_crt_buffer[] = "memref_wop_pbs_crt_buffer";
 char memref_wop_pbs_crt_buffer_cuda_u64[] =
     "memref_wop_pbs_crt_buffer_cuda_u64";
+char memref_batched_wop_pbs_crt_buffer[] = "memref_batched_wop_pbs_crt_buffer";
+char memref_batched_wop_pbs_crt_buffer_cuda_u64[] =
+    "memref_batched_wop_pbs_crt_buffer_cuda_u64";
 
 char memref_encode_plaintext_with_crt[] = "memref_encode_plaintext_with_crt";
 char memref_encode_expand_lut_for_bootstrap[] =
@@ -160,7 +163,9 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                        },
                                        {});
   } else if (funcName == memref_wop_pbs_crt_buffer ||
-             funcName == memref_wop_pbs_crt_buffer_cuda_u64) {
+             funcName == memref_wop_pbs_crt_buffer_cuda_u64 ||
+             funcName == memref_batched_wop_pbs_crt_buffer ||
+             funcName == memref_batched_wop_pbs_crt_buffer_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {
                                            memref2DType,
@@ -538,6 +543,10 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
       patterns.add<ConcreteToCAPICallPattern<
           Concrete::WopPBSCRTLweBufferOp, memref_wop_pbs_crt_buffer_cuda_u64>>(
           &getContext(), wopPBSAddOperands);
+      patterns.add<ConcreteToCAPICallPattern<
+          Concrete::WopPBSCRTLweBufferOp,
+          memref_bacthed_wop_pbs_crt_buffer_cuda_u64>>(&getContext(),
+                                                       wopPBSAddOperands);
     } else {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_u64>>(
@@ -557,6 +566,9 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
               bootstrapAddOperands<Concrete::BatchedBootstrapLweBufferOp>);
       patterns.add<ConcreteToCAPICallPattern<Concrete::WopPBSCRTLweBufferOp,
                                              memref_wop_pbs_crt_buffer>>(
+          &getContext(), wopPBSAddOperands);
+      patterns.add<ConcreteToCAPICallPattern<
+          Concrete::WopPBSCRTLweBufferOp, memref_batched_wop_pbs_crt_buffer>>(
           &getContext(), wopPBSAddOperands);
     }
 
