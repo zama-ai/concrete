@@ -84,6 +84,9 @@ setuptools.setup(
     },
     packages=setuptools.find_namespace_packages(
         where=".",
+        include=["concrete", "concrete.*"]
+    ) + setuptools.find_namespace_packages(
+        where=".",
         include=["concrete.fhe", "concrete.fhe.*"],
     ) + setuptools.find_namespace_packages(
         where=".",
