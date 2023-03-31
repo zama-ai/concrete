@@ -109,6 +109,7 @@ struct CompilationOptions {
     case Backend::GPU:
       batchTFHEOps = true;
       emitGPUOps = true;
+      emitSDFGOps = true;
       break;
     }
   }

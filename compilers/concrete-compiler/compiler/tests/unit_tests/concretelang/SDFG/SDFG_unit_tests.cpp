@@ -52,9 +52,7 @@ compile(std::string outputLib, std::string source,
   options.emitSDFGOps = true;
 #endif
 #endif
-#ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
-  options.dataflowParallelize = true;
-#endif
+  options.batchTFHEOps = true;
   ce.setCompilationOptions(options);
   auto result = ce.compile(sources, outputLib);
   if (!result) {
@@ -218,4 +216,49 @@ func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
     auto res = lambda.call(a);
     ASSERT_EQ_OUTCOME(res, (scalar_out)((a * 2) % 16));
   }
+}
+
+TEST(SDFG_unit_tests, tlu_batched) {
+  std::string source = R"(
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
+      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
+      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!FHE.eint<3>>
+      return %res : tensor<3x3x!FHE.eint<3>>
+    }
+)";
+  using tensor2_in = std::array<std::array<uint8_t, 3>, 3>;
+  std::string outputLib = outputLibFromThis(this->test_info_);
+  auto compiled = compile(outputLib, source);
+  auto lambda = load<TestTypedLambda<tensor2_out, tensor2_in>>(outputLib);
+  tensor2_in t = {{{0, 1, 2}, {3, 0, 1}, {2, 3, 0}}};
+  tensor2_out expected = {{{1, 3, 5}, {7, 1, 3}, {5, 7, 1}}};
+  auto res = lambda.call(t);
+  ASSERT_TRUE(res);
+  ASSERT_EQ_OUTCOME(res, expected);
+}
+
+TEST(SDFG_unit_tests, batched_tree) {
+  std::string source = R"(
+    func.func @main(%t: tensor<3x3x!FHE.eint<3>>, %a1: tensor<3x3xi4>, %a2: tensor<3x3xi4>) -> tensor<3x3x!FHE.eint<4>> {
+      %lut = arith.constant dense<[1,3,5,7,9,11,13,15]> : tensor<8xi64>
+      %b1 = "FHELinalg.add_eint_int"(%t, %a1) : (tensor<3x3x!FHE.eint<3>>, tensor<3x3xi4>) -> tensor<3x3x!FHE.eint<3>>
+      %b2 = "FHELinalg.add_eint_int"(%t, %a2) : (tensor<3x3x!FHE.eint<3>>, tensor<3x3xi4>) -> tensor<3x3x!FHE.eint<3>>
+      %c = "FHELinalg.add_eint"(%b1, %b2) : (tensor<3x3x!FHE.eint<3>>, tensor<3x3x!FHE.eint<3>>) -> tensor<3x3x!FHE.eint<3>>
+      %res = "FHELinalg.apply_lookup_table"(%c, %lut) : (tensor<3x3x!FHE.eint<3>>, tensor<8xi64>) -> tensor<3x3x!FHE.eint<4>>
+      return %res : tensor<3x3x!FHE.eint<4>>
+    }
+)";
+  using tensor2_in = std::array<std::array<uint8_t, 3>, 3>;
+  std::string outputLib = outputLibFromThis(this->test_info_);
+  auto compiled = compile(outputLib, source);
+  auto lambda =
+      load<TestTypedLambda<tensor2_out, tensor2_in, tensor2_in, tensor2_in>>(
+          outputLib);
+  tensor2_in t = {{{0, 1, 2}, {3, 0, 1}, {2, 3, 0}}};
+  tensor2_in a1 = {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}};
+  tensor2_in a2 = {{{1, 0, 1}, {1, 0, 1}, {1, 0, 1}}};
+  tensor2_out expected = {{{3, 7, 11}, {15, 3, 7}, {11, 15, 3}}};
+  auto res = lambda.call(t, a1, a2);
+  ASSERT_TRUE(res);
+  ASSERT_EQ_OUTCOME(res, expected);
 }
