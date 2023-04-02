@@ -274,8 +274,8 @@ namespace FHELinalg {
 
 mlir::LogicalResult ApplyLookupTableEintOp::verify() {
   auto tTy = this->getT().getType().cast<mlir::RankedTensorType>();
-  auto tEltTy = tTy.getElementType()
-                    .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
+  auto tEltTy =
+      tTy.getElementType().cast<mlir::concretelang::FHE::FheIntegerInterface>();
   auto lutTy = this->getLut().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = this->getResult().getType().cast<mlir::RankedTensorType>();
@@ -299,8 +299,8 @@ mlir::LogicalResult ApplyLookupTableEintOp::verify() {
 
 mlir::LogicalResult ApplyMultiLookupTableEintOp::verify() {
   auto tTy = this->getT().getType().cast<mlir::RankedTensorType>();
-  auto tEltTy = tTy.getElementType()
-                    .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
+  auto tEltTy =
+      tTy.getElementType().cast<mlir::concretelang::FHE::FheIntegerInterface>();
   auto lutTy = this->getLuts().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = this->getResult().getType().cast<mlir::RankedTensorType>();
@@ -336,9 +336,9 @@ mlir::IntegerType getClearElmentType(::mlir::Value value) {
   return getElmentType<mlir::IntegerType>(value);
 }
 
-FHE::EncryptedIntegerType getEncryptedElmentType(::mlir::Value value) {
+FHE::FheIntegerInterface getEncryptedElmentType(::mlir::Value value) {
   using namespace mlir::concretelang::FHE;
-  return getElmentType<FHE::EncryptedIntegerType>(value);
+  return getElmentType<FHE::FheIntegerInterface>(value);
 }
 
 mlir::LogicalResult verifyMapHasRightShape(ApplyMappedLookupTableEintOp &op,
@@ -862,9 +862,7 @@ mlir::LogicalResult Conv2dOp::verify() {
   auto resultShape = resultTy.getShape();
 
   Type inputElTy = inputTy.getElementType();
-  auto p = inputElTy.isa<FHE::EncryptedIntegerType>()
-               ? inputElTy.cast<FHE::EncryptedIntegerType>().getWidth()
-               : inputElTy.cast<FHE::EncryptedSignedIntegerType>().getWidth();
+  auto p = inputElTy.cast<FHE::FheIntegerInterface>().getWidth();
 
   auto weightElementTyWidth =
       weightTy.getElementType().cast<mlir::IntegerType>().getWidth();
