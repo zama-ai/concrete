@@ -427,7 +427,11 @@ mod tests {
         let sol = optimize_rounded(&dag).unwrap();
         let sol_mono = solo_key::optimize::tests::optimize(&dag).best_solution.unwrap();
         let speedup = sol_mono.complexity / sol.complexity;
-        let minimal_speedup = 80.0;
+        let minimal_speedup = if REAL_FAST_KS {
+            80.0
+        } else {
+            30.0
+        };
         assert!(speedup >= minimal_speedup,
             "Speedup {speedup} smaller than {minimal_speedup}"
         );
