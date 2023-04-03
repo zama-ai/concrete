@@ -368,7 +368,7 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
       (cudaStream_t *)stream, gpu_idx);
 
   for (int64_t c = 0; c < number_of_input_lwe; c++) {
-    int64_t ciphertext_offset = c * lwe_small_size * crt_decomp_size;
+    int64_t ciphertext_offset = c * lwe_big_size * crt_decomp_size;
     // We make a private copy to apply a subtraction on the body
     auto first_ciphertext = in_aligned + in_offset + ciphertext_offset;
     auto copy_size = crt_decomp_size * lwe_big_size;
