@@ -18,8 +18,8 @@ def Concrete_CrtLutsTensor : 2DTensorOf<[I64]>;
 def Concrete_CrtPlaintextTensor : 1DTensorOf<[I64]>;
 def Concrete_LweCRTTensor : 2DTensorOf<[I64]>;
 def Concrete_BatchLweTensor : 2DTensorOf<[I64]>;
-def Concrete_BatchLweCRTTensor : 3DTensorOf<[I64]>;
-def Concrete_BatchCrtLutsTensor : 3DTensorOf<[I64]>;
+def Concrete_BatchLweCRTTensor : 2DTensorOf<[I64]>;
+def Concrete_BatchCrtLutsTensor : 2DTensorOf<[I64]>;
 
 def Concrete_LweBuffer : MemRefRankOf<[I64], [1]>;
 def Concrete_LutBuffer : MemRefRankOf<[I64], [1]>;
@@ -27,8 +27,8 @@ def Concrete_CrtLutsBuffer : MemRefRankOf<[I64], [2]>;
 def Concrete_CrtPlaintextBuffer : MemRefRankOf<[I64], [1]>;
 def Concrete_LweCRTBuffer : MemRefRankOf<[I64], [2]>;
 def Concrete_BatchLweBuffer : MemRefRankOf<[I64], [2]>;
-def Concrete_BatchLweCRTBuffer : MemRefRankOf<[I64], [3]>;
-def Concrete_BatchCrtLutsBuffer : MemRefRankOf<[I64], [3]>;
+def Concrete_BatchLweCRTBuffer : MemRefRankOf<[I64], [2]>;
+def Concrete_BatchCrtLutsBuffer : MemRefRankOf<[I64], [2]>;
 
 class Concrete_Op<string mnemonic, list<Trait> traits = []> :
     Op<Concrete_Dialect, mnemonic, traits>;

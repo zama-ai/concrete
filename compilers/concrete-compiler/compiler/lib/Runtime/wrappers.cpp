@@ -436,8 +436,7 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
       stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
       lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
       lwe_small_dim, bsk_level_count, bsk_base_log, fpksk_level_count,
-      fpksk_base_log, cbs_level_count, cbs_base_log, ct_in_count,
-      crt_decomp_size * number_of_input_lwe,
+      fpksk_base_log, cbs_level_count, cbs_base_log, ct_in_count, lut_count,
       cuda_get_max_shared_memory(gpu_idx));
   cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_idx,
                                                   &cbs_vp_buffer);
