@@ -255,7 +255,7 @@ $(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py FORCE
 $(FIXTURE_CPU_DIR)/bug_report.yaml:
 	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
 
-generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml $(FIXTURE_CPU_DIR)/end_to_end_round.yaml
+generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml $(FIXTURE_CPU_DIR)/end_to_end_round.yaml $(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml
 
 SECURITY_TO_TEST=128
 run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
@@ -265,6 +265,10 @@ run-end-to-end-tests: build-end-to-end-tests generate-cpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_lambda
 	$(foreach security,$(SECURITY_TO_TEST),$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	--backend=cpu --security-level=$(security) --jit $(FIXTURE_CPU_DIR)/*.yaml;)
+
+run-multi-precision-tests: build-end-to-end-tests generate-cpu-tests
+	$(foreach security,$(SECURITY_TO_TEST),$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	--backend=cpu --security-level=$(security) --optimizer-strategy=dag-multi --jit $(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml;)
 
 ### end-to-end-tests GPU
 
