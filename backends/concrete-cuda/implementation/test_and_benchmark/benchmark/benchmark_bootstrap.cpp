@@ -201,12 +201,12 @@ BootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
 
   // Add to the list of parameters to benchmark
   for (auto x : params) {
-    int max_num_samples = 10000;
+    int max_num_samples = 1000;
     if (x.polynomial_size >= 8192) {
       max_num_samples = 100;
     }
     for (int num_samples = 1; num_samples <= max_num_samples;
-         num_samples *= 10) {
+         num_samples *= 1000) {
       b->Args({x.lwe_dimension, x.glwe_dimension, x.polynomial_size,
                x.pbs_base_log, x.pbs_level, num_samples});
     }
