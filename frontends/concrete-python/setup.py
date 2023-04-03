@@ -54,7 +54,6 @@ setuptools.setup(
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
-        "License :: Free for non-commercial use",
         "Topic :: Security :: Cryptography",
         "Topic :: Software Development :: Compilers",
     ],
