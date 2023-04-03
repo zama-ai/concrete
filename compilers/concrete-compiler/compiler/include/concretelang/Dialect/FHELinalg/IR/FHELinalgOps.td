@@ -493,11 +493,11 @@ def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_tab
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$t,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$luts
     );
 
-    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
 }
@@ -546,12 +546,12 @@ def FHELinalg_ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_t
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$t,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$luts,
         Type<And<[TensorOf<[Index]>.predicate, HasStaticShapePred]>>:$map
     );
 
-    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
 }

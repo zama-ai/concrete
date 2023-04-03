@@ -651,7 +651,7 @@ struct TensorExtractOpPattern : public CrtOpPattern<mlir::tensor::ExtractOp> {
              .getType()
              .cast<mlir::TensorType>()
              .getElementType()
-             .isa<FHE::EncryptedIntegerType>() &&
+             .isa<FHE::FheIntegerInterface>() &&
         !op.getTensor()
              .getType()
              .cast<mlir::TensorType>()
@@ -700,7 +700,7 @@ struct TensorInsertOpPattern : public CrtOpPattern<mlir::tensor::InsertOp> {
              .getType()
              .cast<mlir::TensorType>()
              .getElementType()
-             .isa<FHE::EncryptedIntegerType>() &&
+             .isa<FHE::FheIntegerInterface>() &&
         !op.getDest()
              .getType()
              .cast<mlir::TensorType>()
@@ -751,7 +751,7 @@ struct TensorFromElementsOpPattern
              .getType()
              .cast<mlir::RankedTensorType>()
              .getElementType()
-             .isa<FHE::EncryptedIntegerType>() &&
+             .isa<FHE::FheIntegerInterface>() &&
         !op.getResult()
              .getType()
              .cast<mlir::RankedTensorType>()
