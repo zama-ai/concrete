@@ -331,10 +331,13 @@ $(BENCHMARK_CPU_DIR):
 $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
 	$(Python3_EXECUTABLE) $< --n-ct 64 128 1024 > $@
 
+$(BENCHMARK_CPU_DIR)/end_to_end_round.yaml: tests/end_to_end_fixture/end_to_end_round_gen.py
+	$(Python3_EXECUTABLE) $< --shapes 64 128 1024 > $@
+
 $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 	$(Python3_EXECUTABLE) $< > $@
 
-generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml
+generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_round.yaml
 
 SECURITY_TO_BENCH=128
 run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks

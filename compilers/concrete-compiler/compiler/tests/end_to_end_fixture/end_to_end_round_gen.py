@@ -117,13 +117,14 @@ def generate(args):
     print("# /!\ THIS FILE HAS BEEN GENERATED")
     np.random.seed(0)
     # unsigned_unsigned
+    shapes = ([shape] for shape in args.shapes) if args.shapes else (None, [3], [2, 3] , [1, 2, 3])
     domain = [
         (from_p, to_p, signed, with_tlu, with_shape)
         for from_p in args.acc_bitwidth
         for to_p in args.bitwidth
         for signed in (False, True)
         for with_tlu in (False, True)
-        for with_shape in (None, [3], [2, 3] , [1, 2, 3])
+        for with_shape in shapes
         if to_p < from_p
     ]
     for (from_p, to_p, signed, with_tlu, with_shape) in domain:
@@ -154,6 +155,13 @@ if __name__ == "__main__":
         nargs="+",
         type=int,
         default=[8, 13, 16],
+    )
+    CLI.add_argument(
+         "--shapes",
+         help="Specify the shapes to test",
+         nargs='*',
+         type=int,
+         default=[],
     )
     CLI.add_argument(
          "--minimal",
