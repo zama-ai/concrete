@@ -6,6 +6,8 @@ on:
   push:
     branches:
       - 'main'
+    tags:
+      - 'v[0-9]+.*'
   schedule:
     # Nightly Release @ 3AM after each work day
     - cron: "0 3 * * 2-6"
@@ -251,11 +253,20 @@ jobs:
     uses: ./.github/workflows/concrete_python_test_macos.yml
     secrets: inherit
 
-  #################################################
-  # Release jobs #################################
-  nightly-release:
+#################################################
+# Release jobs #################################
+  concrete-python-nightly-release:
     if: ${{ github.event_name == 'schedule' }}
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
-      command: concrete-python-release-nightly
+      command: concrete-python-release
+      user_inputs: '{"release_type": "nightly"}'
+
+  concrete-python-public-release:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-release
+      user_inputs: '{"release_type": "public"}'
