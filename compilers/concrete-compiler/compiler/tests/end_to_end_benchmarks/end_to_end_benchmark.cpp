@@ -73,7 +73,6 @@ template <typename LambdaSupport>
 static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
                         LambdaSupport support,
                         mlir::concretelang::CompilationOptions options) {
-  options.optimizerConfig.display = true;
   auto compilationResult = support.compile(description.program, options);
   check(compilationResult);
   auto clientParameters = support.loadClientParameters(**compilationResult);
