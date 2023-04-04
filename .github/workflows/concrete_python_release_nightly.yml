@@ -218,7 +218,8 @@ jobs:
 
           export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
 
-          cd $(mktemp -d)
+          export TEST_TMP_DIR=$(mktemp -d)
+          cd $TEST_TMP_DIR
 
           export PYTHON_VERSION=${{ format('python{0}', matrix.python-version) }}
 
@@ -247,7 +248,7 @@ jobs:
 
           pytest tests -svv -n auto -m "not dataflow"
 
-          deactivate
+          rm -rf $TEST_TMP_DIR
 
   push:
     needs: [linux-x86, macos]

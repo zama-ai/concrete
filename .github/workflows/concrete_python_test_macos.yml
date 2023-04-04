@@ -103,7 +103,8 @@ jobs:
       - name: Test
         run: |
           set -e
-          cd $(mktemp -d)
+          export TEST_TMP_DIR=$(mktemp -d)
+          cd $TEST_TMP_DIR
           
           python3.10 -m venv .testenv
           . .testenv/bin/activate
@@ -121,4 +122,4 @@ jobs:
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
           pytest tests -svv -n auto --key-cache "/tmp/KeySetCache" -m "not dataflow"
 
-          deactivate
+          rm -rf $TEST_TMP_DIR
