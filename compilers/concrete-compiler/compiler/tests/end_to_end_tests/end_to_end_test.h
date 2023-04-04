@@ -2,6 +2,7 @@
 #define END_TO_END_TEST_H
 
 #include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/logging.h"
 #include "llvm/Support/CommandLine.h"
 
 #include "end_to_end_fixture/EndToEndFixture.h"
@@ -104,6 +105,11 @@ parseEndToEndCommandLine(int argc, char **argv) {
                      "prefix for compilation artifacts"),
       llvm::cl::init<std::string>(""));
 
+  // Verbose compiler
+  llvm::cl::opt<bool> verbose("verbose",
+                              llvm::cl::desc("Set the compiler verbosity"),
+                              llvm::cl::init(false));
+
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
   // Build compilation options
@@ -121,6 +127,8 @@ parseEndToEndCommandLine(int argc, char **argv) {
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
   compilationOptions.optimizerConfig.strategy = optimizerStrategy.getValue();
+
+  mlir::concretelang::setupLogging(verbose.getValue());
 
   std::vector<EndToEndDescFile> parsedDescriptionFiles;
   for (auto descFile : descriptionFiles) {
