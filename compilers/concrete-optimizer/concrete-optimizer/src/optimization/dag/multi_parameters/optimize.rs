@@ -175,6 +175,8 @@ fn optimize_1_fks_and_all_compatible_ks(
                 decomp: ks_quantity.decomp,
                 noise: 0.0,
                 complexity: 0.0,
+                src_glwe_param: input_glwe,
+                dst_glwe_param: output_glwe,
             }
         } else if use_fast_ks {
             let noise = fast_keyswitch::noise(&ks_quantity, &input_glwe, &output_glwe);
@@ -184,6 +186,8 @@ fn optimize_1_fks_and_all_compatible_ks(
                 decomp: ks_quantity.decomp,
                 noise,
                 complexity,
+                src_glwe_param: input_glwe,
+                dst_glwe_param: output_glwe,
             }
         } else {
             let noise = ks_quantity.noise(input_glwe.sample_extract_lwe_dimension());
@@ -192,6 +196,8 @@ fn optimize_1_fks_and_all_compatible_ks(
                 decomp: ks_quantity.decomp,
                 noise,
                 complexity,
+                src_glwe_param: input_glwe,
+                dst_glwe_param: output_glwe,
             }
         };
         *operations.cost.fks(fks_src, fks_dst) = fks_quantity.complexity;
@@ -397,10 +403,12 @@ fn apply_all_ks_lower_bound(
     }
 }
 
-fn apply_all_fks_lower_bound(
+fn apply_fks_variance_and_cost_or_lower_bound(
     caches: &mut keyswitch::Cache,
     nb_partitions: usize,
     macro_parameters: &[MacroParameters],
+    initial_fks: &[Vec<Option<FksComplexityNoise>>],
+    fks_to_optimize: &[Option<FksSrc>],
     used_conversion_keyswitch: &[Vec<bool>],
     operations: &mut OperationsCV,
 ) {
@@ -414,6 +422,18 @@ fn apply_all_fks_lower_bound(
             *operations.variance.fks(src, dst) = 0.0;
             *operations.cost.fks(src, dst) = 0.0;
             continue;
+        }
+        // if an optimized fks is applicable and is not to be optimized
+        // we use the already optimized fks instead of a lower bound
+        if let Some(fks) = initial_fks[src][dst] {
+            let to_be_optimized = fks_to_optimize[src].map_or(false, |fdst| dst == fdst);
+            if !to_be_optimized {
+                if input_glwe == &fks.src_glwe_param && output_glwe == &fks.dst_glwe_param {
+                    *operations.variance.fks(src, dst) = fks.noise;
+                    *operations.cost.fks(src, dst) = fks.complexity;
+                }
+                continue;
+            }
         }
         let ks_pareto = caches.pareto_quantities(output_glwe.sample_extract_lwe_dimension());
         let use_fast_ks = REAL_FAST_KS
@@ -665,10 +685,12 @@ fn optimize_macro(
                 &mut operations,
             );
             // OPT: could be done once and than partially updated
-            apply_all_fks_lower_bound(
+            apply_fks_variance_and_cost_or_lower_bound(
                 &mut caches.keyswitch,
                 nb_partitions,
                 &macros,
+                &init_parameters.micro_params.fks,
+                &fks_to_optimize,
                 used_conversion_keyswitch,
                 &mut operations,
             );
@@ -764,11 +786,6 @@ fn optimize_macro(
                     ks: some_micro_params.ks,
                     fks: all_fks,
                 };
-                // for (i, pbs) in init_parameters.micro_params.pbs.iter().enumerate() {
-                //     if i != partition {
-                //         micro_params.pbs[i] = *pbs;
-                //     }
-                // }
                 best_complexity = some_micro_params.complexity;
                 best_p_error = some_micro_params.p_error;
                 best_parameters = Parameters {
