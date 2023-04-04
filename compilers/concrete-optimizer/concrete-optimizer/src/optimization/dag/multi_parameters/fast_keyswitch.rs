@@ -16,6 +16,8 @@ pub struct FksComplexityNoise {
     pub decomp: KsDecompositionParameters,
     pub noise: f64,
     pub complexity: f64,
+    pub src_glwe_param: GlweParameters,
+    pub dst_glwe_param: GlweParameters,
 }
 
 // Copy & paste from concrete-cpu
