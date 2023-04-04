@@ -7,10 +7,16 @@ on:
       command:
         required: true
         type: string
+      user_inputs:
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       command:
         required: true
+        type: string
+      user_inputs:
+        required: false
         type: string
 
 env:
@@ -42,7 +48,7 @@ jobs:
         shell: bash
         run: |
           GIT_SHA="$(git --no-pager show -s --format="%H" origin/${{ env.GIT_REF }})"
-          echo -n '{"command": "${{ inputs.command }}", "git_ref": "${{ env.GIT_REF }}", "sha":"'${GIT_SHA}'"}' > command.json
+          echo -n '{"command": "${{ inputs.command }}", "git_ref": "${{ env.GIT_REF }}", "sha":"'${GIT_SHA}'", "user_inputs": "${inputs.user_inputs}"}' > command.json
           cat command.json
           SIGNATURE="$(slab/scripts/hmac_calculator.sh command.json '${{ secrets.JOB_SECRET }}')"
           curl -v -k \
