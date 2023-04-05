@@ -116,6 +116,7 @@ pub fn zip_eq<T, U>(
 
 impl<A: IntoIterator> ZipEq for A {}
 
+#[allow(clippy::len_without_is_empty)]
 pub trait Container: Sized + AsRef<[Self::Item]> {
     type Item;
 

@@ -6,6 +6,7 @@ pub struct Polynomial<C: Container> {
     pub polynomial_size: usize,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl<C: Container> Polynomial<C> {
     pub fn new(data: C, polynomial_size: usize) -> Self {
         debug_assert_eq!(data.len(), polynomial_size);
