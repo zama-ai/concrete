@@ -16,6 +16,7 @@ on:
         required: true
         type: string
       user_inputs:
+        description: 'user inputs to be forwarded to the called workflow'
         required: false
         type: string
 

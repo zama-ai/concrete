@@ -18,6 +18,7 @@ on:
         description: 'Slab request ID'
         type: string
       user_inputs:
+        description: 'either "nightly" or "public" to specify the release type'
         required: true
         type: string
 
@@ -50,7 +51,7 @@ jobs:
 
       - name: Set up GitHub environment
         run: |
-          echo "RELEASE_TYPE=${{ fromJSON(inputs.user_inputs).release_type }}" >> "${GITHUB_ENV}"
+          echo "RELEASE_TYPE=${{ inputs.user_inputs }}" >> "${GITHUB_ENV}"
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
           #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
@@ -175,8 +176,17 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Set release version
+      - name: Set up GitHub environment
+        run: |
+          echo "RELEASE_TYPE=${{ inputs.user_inputs }}" >> "${GITHUB_ENV}"
+
+      - name: Set release version (nightly)
+        if: ${{ env.RELEASE_TYPE == "nightly" }}
         run: echo "__version__ = \"$(date +"%Y.%m.%d")\"" >| frontends/concrete-python/version.txt
+
+      - name: Set release version (public)
+        if: ${{ env.RELEASE_TYPE == "public" }}
+        run: echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" >| frontends/concrete-python/version.txt
 
       - name: Create build directory
         run: mkdir build
