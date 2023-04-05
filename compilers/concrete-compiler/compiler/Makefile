@@ -271,6 +271,7 @@ $(FIXTURE_CPU_DIR)/bug_report.yaml:
 generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml $(FIXTURE_CPU_DIR)/end_to_end_round.yaml $(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml
 
 SECURITY_TO_TEST=128
+OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
 PARALLEL_END_2_END_TESTS= end_to_end_jit_test \
 	end_to_end_jit_encrypted_tensor \
 	end_to_end_jit_fhelinalg \
@@ -279,13 +280,9 @@ PARALLEL_END_2_END_TESTS= end_to_end_jit_test \
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
 	$(foreach TEST,$(PARALLEL_END_2_END_TESTS), \
 	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST);)
-	$(foreach security,$(SECURITY_TO_TEST), \
-	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	        $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) --jit $(FIXTURE_CPU_DIR)/*.yaml;)
-
-run-multi-precision-tests: build-end-to-end-tests generate-cpu-tests
-	$(foreach security,$(SECURITY_TO_TEST),$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	--backend=cpu --security-level=$(security) --optimizer-strategy=dag-multi --jit $(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml;)
+	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
+	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml;))
 
 ### end-to-end-tests GPU
 
