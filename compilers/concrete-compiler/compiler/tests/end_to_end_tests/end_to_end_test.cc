@@ -147,7 +147,7 @@ std::string getTestName(EndToEndDesc desc,
                         int testNum) {
   std::ostringstream os;
   os << getOptionsName(options) << "." << desc.description << "." << testNum;
-  return os.str().substr(1);
+  return os.str();
 }
 
 void registerEndToEnd(std::string suiteName, std::string testName,
