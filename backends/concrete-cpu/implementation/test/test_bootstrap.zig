@@ -11,7 +11,7 @@ const random = std.rand.Random;
 const common = @import("common.zig");
 
 const cpu = @cImport({
-    @cInclude("include/concrete-cpu.h");
+    @cInclude("concrete-cpu.h");
 });
 
 const KeySet = struct {
