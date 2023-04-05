@@ -27,4 +27,11 @@ def Batching : Pass<"concrete", "mlir::ModuleOp"> {
   let constructor = "mlir::concretelang::createBatchingPass()";
 }
 
+def SCFForallToSCFFor : Pass<"scf-forall-to-scf-for", "mlir::ModuleOp"> {
+  let summary = "Replaces all occurrences of scf.forall with equivalent loop nests of scf.for";
+  let description = [{ Replaces all occurrences of scf.forall with equivalent loop nests of scf.for }];
+  let constructor = "mlir::concretelang::createSCFForallToSCFForPass()";
+  let dependentDialects = ["mlir::scf::SCFDialect"];
+}
+
 #endif
