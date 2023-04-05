@@ -63,11 +63,11 @@ jobs:
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Set release version (nightly)
-        if: ${{ env.RELEASE_TYPE == "nightly" }}
+        if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: echo "__version__ = \"$(date +"%Y.%m.%d")\"" >| frontends/concrete-python/version.txt
 
       - name: Set release version (public)
-        if: ${{ env.RELEASE_TYPE == "public" }}
+        if: ${{ env.RELEASE_TYPE == 'public' }}
         run: echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" >| frontends/concrete-python/version.txt
 
       - name: Create build directory
@@ -181,11 +181,11 @@ jobs:
           echo "RELEASE_TYPE=${{ inputs.user_inputs }}" >> "${GITHUB_ENV}"
 
       - name: Set release version (nightly)
-        if: ${{ env.RELEASE_TYPE == "nightly" }}
+        if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: echo "__version__ = \"$(date +"%Y.%m.%d")\"" >| frontends/concrete-python/version.txt
 
       - name: Set release version (public)
-        if: ${{ env.RELEASE_TYPE == "public" }}
+        if: ${{ env.RELEASE_TYPE == 'public' }}
         run: echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" >| frontends/concrete-python/version.txt
 
       - name: Create build directory
@@ -276,61 +276,61 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.8-linux-x86
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.9-linux-x86
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.10-linux-x86
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.8-aws-mac1-metal
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.9-aws-mac1-metal
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.10-aws-mac1-metal
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.8-m1mac
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.9-m1mac
           path: wheels
 
       - uses: actions/download-artifact@v3
-        continue-on-error: ${{ env.RELEASE_TYPE == "nightly" }}
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.10-m1mac
           path: wheels
 
       - name: Push wheels to internal PyPI (nightly)
-        if: ${{ env.RELEASE_TYPE == "nightly" }}
+        if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: |
           pip install twine==4.0.2
           twine upload wheels/*.whl \
@@ -339,7 +339,7 @@ jobs:
             --repository-url "${{ secrets.INTERNAL_PYPI_URL }}"
 
       - name: Push wheels to public PyPI (public)
-        if: ${{ env.RELEASE_TYPE == "public" }}
+        if: ${{ env.RELEASE_TYPE == 'public' }}
         run: |
           pip install twine==4.0.2
           twine upload wheels/*.whl \
