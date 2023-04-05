@@ -444,6 +444,9 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
   mlir::PassManager pm(&context);
   pipelinePrinting("Lowering to Std", pm, context);
 
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createSCFForallToSCFForPass(), enablePass);
+
   // Bufferize
   mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;
   bufferizationOptions.allowReturnAllocs = true;
