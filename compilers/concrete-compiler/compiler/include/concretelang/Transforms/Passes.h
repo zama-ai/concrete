@@ -22,6 +22,7 @@ createCollapseParallelLoops();
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>> createForLoopToParallel();
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
 createBatchingPass(int64_t maxBatchSize = std::numeric_limits<int64_t>::max());
+std::unique_ptr<OperationPass<ModuleOp>> createSCFForallToSCFForPass();
 } // namespace concretelang
 } // namespace mlir
 
