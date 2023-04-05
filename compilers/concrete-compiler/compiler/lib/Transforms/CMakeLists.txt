@@ -3,6 +3,7 @@ add_mlir_library(
   Batching.cpp
   CollapseParallelLoops.cpp
   ForLoopToParallel.cpp
+  SCFForallToSCFFor.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Transforms
   DEPENDS
