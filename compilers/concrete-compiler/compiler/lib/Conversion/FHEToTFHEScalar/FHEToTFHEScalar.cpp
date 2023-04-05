@@ -792,6 +792,7 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
               op, converter);
         });
     target.addLegalOp<mlir::func::CallOp>();
+    target.addLegalOp<mlir::scf::InParallelOp>();
 
     //---------------------------------------------------------- Adding patterns
     mlir::RewritePatternSet patterns(&getContext());
@@ -853,7 +854,14 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
                      mlir::tensor::GenerateOp, true>,
                  mlir::concretelang::TypeConvertingReinstantiationPattern<
-                     mlir::scf::ForOp>>(&getContext(), converter);
+                     mlir::scf::ForOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::scf::ForallOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::tensor::EmptyOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::tensor::ParallelInsertSliceOp, true>>(&getContext(),
+                                                                 converter);
     mlir::concretelang::populateWithTensorTypeConverterPatterns(
         patterns, target, converter);
 
@@ -869,6 +877,13 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
         target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::scf::ForOp>(target,
                                                                     converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::scf::ForallOp>(
+        target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
+        target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::tensor::ParallelInsertSliceOp>(target, converter);
+
     patterns.add<FunctionConstantOpConversion<typing::TypeConverter>>(
         &getContext(), converter);
 
