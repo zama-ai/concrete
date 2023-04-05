@@ -202,7 +202,7 @@ LinearAlgebraBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
   // Define the parameters to benchmark
   // n, input_lwe_ciphertext_count
   std::vector<LinearAlgebraBenchmarkParams> params = {
-      (LinearAlgebraBenchmarkParams){600, 10},
+      (LinearAlgebraBenchmarkParams){600, 100},
   };
 
   // Add to the list of parameters to benchmark

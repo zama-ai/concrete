@@ -220,23 +220,46 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
         // message_modulus, carry_modulus, number_of_inputs, repetitions,
         // samples
-        (BootstrapTestParams){567, 5, 256, 7.52316384526264e-25,
-                              7.52316384526264e-25, 15, 1, 2, 1, 5, 2, 5},
-        (BootstrapTestParams){623, 6, 256, 7.52316384526264e-25,
-                              7.52316384526264e-25, 9, 3, 2, 2, 5, 2, 50},
-        (BootstrapTestParams){694, 3, 512, 7.52316384526264e-25,
-                              7.52316384526264e-25, 18, 1, 2, 1, 5, 2, 50},
-        (BootstrapTestParams){769, 2, 1024, 7.52316384526264e-25,
-                              7.52316384526264e-25, 23, 1, 2, 1, 5, 2, 50},
-        (BootstrapTestParams){754, 1, 2048, 7.52316384526264e-25,
-                              7.52316384526264e-25, 23, 1, 4, 1, 5, 2, 50},
-        (BootstrapTestParams){847, 1, 4096, 7.52316384526264e-25,
-                              7.52316384526264e-25, 2, 12, 2, 1, 2, 1, 50},
-        (BootstrapTestParams){881, 1, 8192, 7.52316384526264e-25,
-                              7.52316384526264e-25, 22, 1, 2, 1, 2, 1, 25},
-        (BootstrapTestParams){976, 1, 16384, 7.52316384526264e-25,
-                              7.52316384526264e-25, 11, 3, 4, 1, 2, 1, 10});
-
+        // BOOLEAN_DEFAULT_PARAMETERS
+        (BootstrapTestParams){777, 3, 512, 1.3880686109937e-11,
+                              1.1919984450689246e-23, 18, 1, 2, 2, 2, 2, 40},
+        // BOOLEAN_TFHE_LIB_PARAMETERS
+        (BootstrapTestParams){830, 2, 1024, 1.994564705573226e-12,
+                              8.645717832544903e-32, 23, 1, 2, 2, 2, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_0
+        (BootstrapTestParams){678, 5, 256, 5.203010004723453e-10,
+                              1.3996292326131784e-19, 15, 1, 2, 1, 2, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_1
+        (BootstrapTestParams){684, 3, 512, 4.177054989616946e-10,
+                              1.1919984450689246e-23, 18, 1, 2, 2, 2, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_2_CARRY_0
+        (BootstrapTestParams){656, 2, 512, 1.1641198952558192e-09,
+                              1.6434266310406663e-15, 8, 2, 4, 1, 2, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_2
+        // SHORTINT_PARAM_MESSAGE_2_CARRY_1
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_0
+        (BootstrapTestParams){742, 2, 1024, 4.998277131225527e-11,
+                              8.645717832544903e-32, 23, 1, 2, 4, 2, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_3
+        // SHORTINT_PARAM_MESSAGE_2_CARRY_2
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_1
+        // SHORTINT_PARAM_MESSAGE_4_CARRY_0
+        (BootstrapTestParams){745, 1, 2048, 4.478453795193731e-11,
+                              8.645717832544903e-32, 23, 1, 2, 8, 2, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_5_CARRY_0
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_2
+        (BootstrapTestParams){807, 1, 4096, 4.629015039118823e-12,
+                              4.70197740328915e-38, 22, 1, 32, 1, 2, 1, 40},
+        // SHORTINT_PARAM_MESSAGE_6_CARRY_0
+        (BootstrapTestParams){915, 1, 8192, 8.883173851180252e-14,
+                              4.70197740328915e-38, 22, 1, 64, 1, 2, 1, 5},
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_3
+        (BootstrapTestParams){864, 1, 8192, 1.5843564961097632e-15,
+                              4.70197740328915e-38, 15, 2, 8, 8, 2, 1, 5},
+        // SHORTINT_PARAM_MESSAGE_4_CARRY_3
+        // SHORTINT_PARAM_MESSAGE_7_CARRY_0
+        (BootstrapTestParams){930, 1, 16384, 5.129877458078009e-14,
+                              4.70197740328915e-38, 15, 2, 128, 1, 2, 1, 5});
 std::string printParamName(::testing::TestParamInfo<BootstrapTestParams> p) {
   BootstrapTestParams params = p.param;
 

@@ -105,7 +105,7 @@ KeyswitchBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
   // Define the parameters to benchmark
   // na, nb, base_log, level, number_of_inputs
   std::vector<KeyswitchBenchmarkParams> params = {
-      (KeyswitchBenchmarkParams){600, 1024, 3, 8, 10},
+      (KeyswitchBenchmarkParams){600, 1024, 3, 8, 1000},
   };
 
   // Add to the list of parameters to benchmark

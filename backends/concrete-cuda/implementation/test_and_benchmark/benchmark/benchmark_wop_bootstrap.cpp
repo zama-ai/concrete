@@ -17,6 +17,7 @@ typedef struct {
   int cbs_base_log;
   int cbs_level;
   int tau;
+  int p;
 } WopPBSBenchmarkParams;
 
 class WopPBS_u64 : public benchmark::Fixture {
@@ -75,7 +76,7 @@ public:
     cbs_base_log = state.range(9);
     cbs_level = state.range(10);
     tau = state.range(11);
-    p = 10 / tau;
+    p = state.range(12);
     wop_pbs_setup(stream, &csprng, &lwe_sk_in, &lwe_sk_out, &d_ksk,
                   &d_fourier_bsk, &d_pksk, &plaintexts, &d_lwe_ct_in_array,
                   &d_lwe_ct_out_array, &d_lut_vector, &wop_pbs_buffer,
@@ -150,17 +151,21 @@ BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_CopiesPlusWopPBS)
 static void WopPBSBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
   // Define the parameters to benchmark
   // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
-  // ks_base_log, ks_level, tau
+  // ks_base_log, ks_level, tau, p
   std::vector<WopPBSBenchmarkParams> params = {
-      (WopPBSBenchmarkParams){481, 2, 512, 4, 9, 1, 9, 4, 9, 6, 4, 1} //,
+      (WopPBSBenchmarkParams){481, 2, 512, 4, 9, 1, 9, 4, 9, 6, 4, 1, 10},
+      //// INTEGER_PARAM_MESSAGE_4_CARRY_4_16_BITS
+      //(WopPBSBenchmarkParams){481, 1, 2048, 9, 4, 1, 9, 9, 4, 6, 4, 1, 8},
+      //// INTEGER_PARAM_MESSAGE_2_CARRY_2_16_BITS
+      //(WopPBSBenchmarkParams){493, 1, 2048, 16, 2, 2, 5, 16, 2, 6, 4, 1, 4},
   };
 
   // Add to the list of parameters to benchmark
   for (auto x : params)
     b->Args({x.lwe_dimension, x.glwe_dimension, x.polynomial_size,
              x.pbs_base_log, x.pbs_level, x.ks_base_log, x.ks_level,
-             x.pksk_base_log, x.pksk_level, x.cbs_base_log, x.cbs_level,
-             x.tau});
+             x.pksk_base_log, x.pksk_level, x.cbs_base_log, x.cbs_level, x.tau,
+             x.p});
 }
 
 BENCHMARK_REGISTER_F(WopPBS_u64, ConcreteCuda_WopPBS)

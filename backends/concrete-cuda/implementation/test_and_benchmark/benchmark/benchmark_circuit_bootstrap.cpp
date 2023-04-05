@@ -106,8 +106,7 @@ static void
 CircuitBootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
   // Define the parameters to benchmark
   std::vector<CircuitBootstrapBenchmarkParams> params = {
-      (CircuitBootstrapBenchmarkParams){10, 2, 512, 11, 2, 15, 2, 10, 1, 10} //,
-  };
+      (CircuitBootstrapBenchmarkParams){10, 2, 512, 11, 2, 15, 2, 10, 1, 100}};
 
   // Add to the list of parameters to benchmark
   for (auto x : params)
