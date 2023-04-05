@@ -7,7 +7,7 @@ const std = @import("std");
 const allocator = std.heap.page_allocator;
 
 const cpu = @cImport({
-    @cInclude("include/concrete-cpu.h");
+    @cInclude("concrete-cpu.h");
 });
 
 pub fn new_bsk(

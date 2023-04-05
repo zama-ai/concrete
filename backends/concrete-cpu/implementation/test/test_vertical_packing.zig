@@ -9,7 +9,7 @@ const allocator = std.heap.page_allocator;
 const common = @import("common.zig");
 
 const cpu = @cImport({
-    @cInclude("include/concrete-cpu.h");
+    @cInclude("concrete-cpu.h");
 });
 
 fn test3(csprng: *cpu.Csprng, polynomial_size: usize) !void {
@@ -179,7 +179,7 @@ fn test3(csprng: *cpu.Csprng, polynomial_size: usize) !void {
     std.debug.assert(decoded == expected);
 }
 
-test "encryption" {
+test "vertical_packing" {
     var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
     defer c.free(raw_csprng);
     const csprng = @ptrCast(*cpu.Csprng, raw_csprng);

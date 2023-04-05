@@ -5,7 +5,7 @@ const c = @cImport({
 const std = @import("std");
 
 const cpu = @cImport({
-    @cInclude("include/concrete-cpu.h");
+    @cInclude("concrete-cpu.h");
 });
 
 const allocator = std.heap.page_allocator;
