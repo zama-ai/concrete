@@ -22,7 +22,7 @@ pub fn int_log2(a: usize) -> usize {
 }
 
 mod ciphertext;
-pub use ciphertext::*;
+pub use ciphertext::LweCiphertext;
 
 mod glwe_ciphertext;
 pub use glwe_ciphertext::*;
