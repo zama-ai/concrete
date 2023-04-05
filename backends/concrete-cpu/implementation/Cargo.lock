@@ -167,12 +167,13 @@ dependencies = [
  "cbindgen",
  "concrete-csprng",
  "concrete-fft",
+ "concrete-ntt",
  "criterion",
  "dyn-stack",
  "libc",
  "num-complex",
  "once_cell",
- "pulp",
+ "pulp 0.10.4",
  "rayon",
  "readonly",
 ]
@@ -196,6 +197,15 @@ dependencies = [
  "aligned-vec",
  "dyn-stack",
  "num-complex",
+]
+
+[[package]]
+name = "concrete-ntt"
+version = "0.1.0"
+source = "git+https://github.com/zama-ai/concrete-ntt.git#39e02f94df2cb342dcb6e6b2806eff26ef727947"
+dependencies = [
+ "aligned-vec",
+ "pulp 0.11.11",
 ]
 
 [[package]]
@@ -574,6 +584,15 @@ name = "pulp"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "284c392c810680912400c6f70879a8cde404344db6b68ff52cc3990c020324d1"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
+name = "pulp"
+version = "0.11.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "866e8018d6397b0717100dd4a7948fc8cbc8c4b8ce3e39e98a0e1e878d3ba925"
 dependencies = [
  "bytemuck",
 ]

@@ -1,6 +1,6 @@
 use crate::implementation::Container;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Polynomial<C: Container> {
     data: C,
     pub polynomial_size: usize,

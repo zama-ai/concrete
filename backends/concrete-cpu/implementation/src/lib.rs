@@ -5,4 +5,4 @@
 extern crate alloc;
 
 pub mod c_api;
-mod implementation;
+pub mod implementation;

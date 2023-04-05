@@ -46,7 +46,7 @@ mod decomposer;
 mod decomposition;
 pub mod fft;
 pub mod fpks;
-mod polynomial;
+pub mod polynomial;
 
 pub mod types;
 

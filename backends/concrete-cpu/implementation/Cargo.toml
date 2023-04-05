@@ -27,6 +27,10 @@ num-complex = { version = "0.4", default-features = false, features = [
 rayon = { version = "1.6", optional = true }
 once_cell = { version = "1.16", optional = true }
 
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+concrete-ntt = { git = "https://github.com/zama-ai/concrete-ntt.git" }
+
+
 [features]
 default = ["parallel", "std", "csprng"]
 std = [
