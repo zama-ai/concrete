@@ -93,7 +93,7 @@ check_run_name = "Concrete Python Tests (Linux)"
 # Release Commands
 #################################################
 
-[command.concrete-python-release-nightly]
-workflow = "concrete_python_release_nightly.yml"
+[command.concrete-python-release]
+workflow = "concrete_python_release.yml"
 profile = "m6i-cpu-test"
-check_run_name = "Concrete Python Release (Nightly)"
+check_run_name = "Concrete Python Release"
