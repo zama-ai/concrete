@@ -26,6 +26,7 @@ on:
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   GLIB_VER: 2_28
+  RELEASE_TYPE: ${{ inputs.user_inputs }}
 
 jobs:
   linux-x86:
@@ -51,7 +52,6 @@ jobs:
 
       - name: Set up GitHub environment
         run: |
-          echo "RELEASE_TYPE=${{ inputs.user_inputs }}" >> "${GITHUB_ENV}"
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
           #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
@@ -175,10 +175,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-
-      - name: Set up GitHub environment
-        run: |
-          echo "RELEASE_TYPE=${{ inputs.user_inputs }}" >> "${GITHUB_ENV}"
 
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
