@@ -425,9 +425,9 @@ impl OperationDag {
         self.0.dump()
     }
 
-    fn optimize_multi(&self, options: ffi::Options) -> Box<ffi::CircuitSolution> {
+    fn optimize_multi(&self, options: ffi::Options) -> ffi::CircuitSolution {
         let single_parameter = self.optimize(options);
-        Box::new(ffi::CircuitSolution::of(single_parameter, self))
+        ffi::CircuitSolution::of(single_parameter, self)
     }
 }
 
@@ -525,7 +525,7 @@ mod ffi {
         #[namespace = "concrete_optimizer::weights"]
         fn vector(weights: &[i64]) -> Box<Weights>;
 
-        fn optimize_multi(self: &OperationDag, _options: Options) -> Box<CircuitSolution>;
+        fn optimize_multi(self: &OperationDag, _options: Options) -> CircuitSolution;
 
     }
 
@@ -593,18 +593,21 @@ mod ffi {
         pub cache_on_disk: bool,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Clone, Debug)]
     pub struct BrDecompositionParameters {
         pub level: u64,
         pub log2_base: u64,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Clone, Debug)]
     pub struct KsDecompositionParameters {
         pub level: u64,
         pub log2_base: u64,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
     pub struct SecretLweKey {
         /* Big and small secret keys */
@@ -614,6 +617,7 @@ mod ffi {
         pub description: String,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
     pub struct BootstrapKey {
         pub identifier: u64,
@@ -623,6 +627,7 @@ mod ffi {
         pub description: String,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
     pub struct KeySwitchKey {
         pub identifier: u64,
@@ -632,6 +637,7 @@ mod ffi {
         pub description: String,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
     pub struct ConversionKeySwitchKey {
         pub identifier: u64,
@@ -642,6 +648,7 @@ mod ffi {
         pub description: String,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
     pub struct CircuitKeys {
         /* All keys used in a circuit */
@@ -651,6 +658,7 @@ mod ffi {
         pub conversion_keyswitch_keys: Vec<ConversionKeySwitchKey>,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
     pub struct InstructionKeys {
         pub input_key: u64,
@@ -660,6 +668,7 @@ mod ffi {
         pub extra_conversion_keys: Vec<u64>,
     }
 
+    #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone)]
     pub struct CircuitSolution {
         pub circuit_keys: CircuitKeys,

@@ -122,7 +122,7 @@ void test_multi_parameters() {
 
   auto options = default_options();
   auto circuit_solution = dag->optimize_multi(options);
-  auto secret_keys = circuit_solution->circuit_keys.keyswitch_keys;
+  auto secret_keys = circuit_solution.circuit_keys.keyswitch_keys;
   assert(!secret_keys.empty());
 }
 
