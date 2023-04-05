@@ -479,6 +479,9 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
       pm, mlir::bufferization::createEmptyTensorToAllocTensorPass(),
       enablePass);
 
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createSCFForallToSCFForPass(), enablePass);
+
   // Bufferize
   mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;
   bufferizationOptions.allowReturnAllocs = true;
