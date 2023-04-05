@@ -938,15 +938,6 @@ union MaybeUninit {
 } // namespace cxxbridge1
 } // namespace rust
 
-struct BrDecompositionParameters;
-struct KsDecompositionParameters;
-struct SecretLweKey;
-struct BootstrapKey;
-struct KeySwitchKey;
-struct ConversionKeySwitchKey;
-struct CircuitKeys;
-struct InstructionKeys;
-struct CircuitSolution;
 namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
@@ -955,6 +946,15 @@ namespace concrete_optimizer {
   namespace dag {
     struct OperatorIndex;
     struct DagSolution;
+    struct BrDecompositionParameters;
+    struct KsDecompositionParameters;
+    struct SecretLweKey;
+    struct BootstrapKey;
+    struct KeySwitchKey;
+    struct ConversionKeySwitchKey;
+    struct CircuitKeys;
+    struct InstructionKeys;
+    struct CircuitSolution;
   }
   namespace v0 {
     struct Solution;
@@ -973,7 +973,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
-  ::rust::Box<::CircuitSolution> optimize_multi(::concrete_optimizer::Options _options) const noexcept;
+  ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options _options) const noexcept;
   ~OperationDag() = delete;
 
 private:
@@ -1081,30 +1081,30 @@ struct Options final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Options
-} // namespace concrete_optimizer
 
-#ifndef CXXBRIDGE1_STRUCT_BrDecompositionParameters
-#define CXXBRIDGE1_STRUCT_BrDecompositionParameters
+namespace dag {
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$BrDecompositionParameters
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$BrDecompositionParameters
 struct BrDecompositionParameters final {
   ::std::uint64_t level;
   ::std::uint64_t log2_base;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_BrDecompositionParameters
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$BrDecompositionParameters
 
-#ifndef CXXBRIDGE1_STRUCT_KsDecompositionParameters
-#define CXXBRIDGE1_STRUCT_KsDecompositionParameters
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$KsDecompositionParameters
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$KsDecompositionParameters
 struct KsDecompositionParameters final {
   ::std::uint64_t level;
   ::std::uint64_t log2_base;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_KsDecompositionParameters
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$KsDecompositionParameters
 
-#ifndef CXXBRIDGE1_STRUCT_SecretLweKey
-#define CXXBRIDGE1_STRUCT_SecretLweKey
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$SecretLweKey
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$SecretLweKey
 struct SecretLweKey final {
   ::std::uint64_t identifier;
   ::std::uint64_t polynomial_size;
@@ -1113,62 +1113,62 @@ struct SecretLweKey final {
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_SecretLweKey
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$SecretLweKey
 
-#ifndef CXXBRIDGE1_STRUCT_BootstrapKey
-#define CXXBRIDGE1_STRUCT_BootstrapKey
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$BootstrapKey
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$BootstrapKey
 struct BootstrapKey final {
   ::std::uint64_t identifier;
-  ::SecretLweKey input_key;
-  ::SecretLweKey output_key;
-  ::BrDecompositionParameters br_decomposition_parameter;
+  ::concrete_optimizer::dag::SecretLweKey input_key;
+  ::concrete_optimizer::dag::SecretLweKey output_key;
+  ::concrete_optimizer::dag::BrDecompositionParameters br_decomposition_parameter;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_BootstrapKey
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$BootstrapKey
 
-#ifndef CXXBRIDGE1_STRUCT_KeySwitchKey
-#define CXXBRIDGE1_STRUCT_KeySwitchKey
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$KeySwitchKey
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$KeySwitchKey
 struct KeySwitchKey final {
   ::std::uint64_t identifier;
-  ::SecretLweKey input_key;
-  ::SecretLweKey output_key;
-  ::KsDecompositionParameters ks_decomposition_parameter;
+  ::concrete_optimizer::dag::SecretLweKey input_key;
+  ::concrete_optimizer::dag::SecretLweKey output_key;
+  ::concrete_optimizer::dag::KsDecompositionParameters ks_decomposition_parameter;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_KeySwitchKey
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$KeySwitchKey
 
-#ifndef CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
-#define CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$ConversionKeySwitchKey
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$ConversionKeySwitchKey
 struct ConversionKeySwitchKey final {
   ::std::uint64_t identifier;
-  ::SecretLweKey input_key;
-  ::SecretLweKey output_key;
-  ::KsDecompositionParameters ks_decomposition_parameter;
+  ::concrete_optimizer::dag::SecretLweKey input_key;
+  ::concrete_optimizer::dag::SecretLweKey output_key;
+  ::concrete_optimizer::dag::KsDecompositionParameters ks_decomposition_parameter;
   bool fast_keyswitch;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_ConversionKeySwitchKey
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$ConversionKeySwitchKey
 
-#ifndef CXXBRIDGE1_STRUCT_CircuitKeys
-#define CXXBRIDGE1_STRUCT_CircuitKeys
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitKeys
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitKeys
 struct CircuitKeys final {
-  ::rust::Vec<::SecretLweKey> secret_keys;
-  ::rust::Vec<::KeySwitchKey> keyswitch_keys;
-  ::rust::Vec<::BootstrapKey> bootstrap_keys;
-  ::rust::Vec<::ConversionKeySwitchKey> conversion_keyswitch_keys;
+  ::rust::Vec<::concrete_optimizer::dag::SecretLweKey> secret_keys;
+  ::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> keyswitch_keys;
+  ::rust::Vec<::concrete_optimizer::dag::BootstrapKey> bootstrap_keys;
+  ::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> conversion_keyswitch_keys;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_CircuitKeys
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitKeys
 
-#ifndef CXXBRIDGE1_STRUCT_InstructionKeys
-#define CXXBRIDGE1_STRUCT_InstructionKeys
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$InstructionKeys
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$InstructionKeys
 struct InstructionKeys final {
   ::std::uint64_t input_key;
   ::std::uint64_t tlu_keyswitch_key;
@@ -1178,22 +1178,22 @@ struct InstructionKeys final {
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_InstructionKeys
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$InstructionKeys
 
-#ifndef CXXBRIDGE1_STRUCT_CircuitSolution
-#define CXXBRIDGE1_STRUCT_CircuitSolution
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
 struct CircuitSolution final {
-  ::CircuitKeys circuit_keys;
-  ::rust::Vec<::InstructionKeys> instructions_keys;
+  ::concrete_optimizer::dag::CircuitKeys circuit_keys;
+  ::rust::Vec<::concrete_optimizer::dag::InstructionKeys> instructions_keys;
   double complexity;
   double p_error;
   double global_p_error;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_CircuitSolution
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
+} // namespace dag
 
-namespace concrete_optimizer {
 namespace v0 {
 extern "C" {
 ::concrete_optimizer::v0::Solution concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;
@@ -1244,7 +1244,7 @@ extern "C" {
 } // namespace weights
 
 extern "C" {
-::CircuitSolution *concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options _options) noexcept;
+void concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options _options, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
 } // extern "C"
 
 namespace v0 {
@@ -1325,8 +1325,10 @@ namespace weights {
 }
 } // namespace weights
 
-::rust::Box<::CircuitSolution> OperationDag::optimize_multi(::concrete_optimizer::Options _options) const noexcept {
-  return ::rust::Box<::CircuitSolution>::from_raw(concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(*this, _options));
+::concrete_optimizer::dag::CircuitSolution OperationDag::optimize_multi(::concrete_optimizer::Options _options) const noexcept {
+  ::rust::MaybeUninit<::concrete_optimizer::dag::CircuitSolution> return$;
+  concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(*this, _options, &return$.value);
+  return ::std::move(return$.value);
 }
 } // namespace concrete_optimizer
 
@@ -1339,54 +1341,50 @@ void cxxbridge1$box$concrete_optimizer$OperationDag$drop(::rust::Box<::concrete_
 void cxxbridge1$box$concrete_optimizer$Weights$dealloc(::concrete_optimizer::Weights *) noexcept;
 void cxxbridge1$box$concrete_optimizer$Weights$drop(::rust::Box<::concrete_optimizer::Weights> *ptr) noexcept;
 
-::CircuitSolution *cxxbridge1$box$CircuitSolution$alloc() noexcept;
-void cxxbridge1$box$CircuitSolution$dealloc(::CircuitSolution *) noexcept;
-void cxxbridge1$box$CircuitSolution$drop(::rust::Box<::CircuitSolution> *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$new(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$drop(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$len(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$capacity(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> const *ptr) noexcept;
+::concrete_optimizer::dag::SecretLweKey const *cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$data(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$reserve_total(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$set_len(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$truncate(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> *ptr, ::std::size_t len) noexcept;
 
-void cxxbridge1$rust_vec$SecretLweKey$new(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$SecretLweKey$drop(::rust::Vec<::SecretLweKey> *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$SecretLweKey$len(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$SecretLweKey$capacity(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
-::SecretLweKey const *cxxbridge1$rust_vec$SecretLweKey$data(::rust::Vec<::SecretLweKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$SecretLweKey$reserve_total(::rust::Vec<::SecretLweKey> *ptr, ::std::size_t new_cap) noexcept;
-void cxxbridge1$rust_vec$SecretLweKey$set_len(::rust::Vec<::SecretLweKey> *ptr, ::std::size_t len) noexcept;
-void cxxbridge1$rust_vec$SecretLweKey$truncate(::rust::Vec<::SecretLweKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$new(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$drop(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$len(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$capacity(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> const *ptr) noexcept;
+::concrete_optimizer::dag::KeySwitchKey const *cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$data(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$reserve_total(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$set_len(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$truncate(::rust::Vec<::concrete_optimizer::dag::KeySwitchKey> *ptr, ::std::size_t len) noexcept;
 
-void cxxbridge1$rust_vec$KeySwitchKey$new(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$KeySwitchKey$drop(::rust::Vec<::KeySwitchKey> *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$KeySwitchKey$len(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$KeySwitchKey$capacity(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
-::KeySwitchKey const *cxxbridge1$rust_vec$KeySwitchKey$data(::rust::Vec<::KeySwitchKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$KeySwitchKey$reserve_total(::rust::Vec<::KeySwitchKey> *ptr, ::std::size_t new_cap) noexcept;
-void cxxbridge1$rust_vec$KeySwitchKey$set_len(::rust::Vec<::KeySwitchKey> *ptr, ::std::size_t len) noexcept;
-void cxxbridge1$rust_vec$KeySwitchKey$truncate(::rust::Vec<::KeySwitchKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$new(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$drop(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$len(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$capacity(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> const *ptr) noexcept;
+::concrete_optimizer::dag::BootstrapKey const *cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$data(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$reserve_total(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$set_len(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$truncate(::rust::Vec<::concrete_optimizer::dag::BootstrapKey> *ptr, ::std::size_t len) noexcept;
 
-void cxxbridge1$rust_vec$BootstrapKey$new(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$BootstrapKey$drop(::rust::Vec<::BootstrapKey> *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$BootstrapKey$len(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$BootstrapKey$capacity(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
-::BootstrapKey const *cxxbridge1$rust_vec$BootstrapKey$data(::rust::Vec<::BootstrapKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$BootstrapKey$reserve_total(::rust::Vec<::BootstrapKey> *ptr, ::std::size_t new_cap) noexcept;
-void cxxbridge1$rust_vec$BootstrapKey$set_len(::rust::Vec<::BootstrapKey> *ptr, ::std::size_t len) noexcept;
-void cxxbridge1$rust_vec$BootstrapKey$truncate(::rust::Vec<::BootstrapKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$new(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$drop(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$len(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$capacity(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> const *ptr) noexcept;
+::concrete_optimizer::dag::ConversionKeySwitchKey const *cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$data(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$reserve_total(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$set_len(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$truncate(::rust::Vec<::concrete_optimizer::dag::ConversionKeySwitchKey> *ptr, ::std::size_t len) noexcept;
 
-void cxxbridge1$rust_vec$ConversionKeySwitchKey$new(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$ConversionKeySwitchKey$drop(::rust::Vec<::ConversionKeySwitchKey> *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$ConversionKeySwitchKey$len(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$ConversionKeySwitchKey$capacity(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
-::ConversionKeySwitchKey const *cxxbridge1$rust_vec$ConversionKeySwitchKey$data(::rust::Vec<::ConversionKeySwitchKey> const *ptr) noexcept;
-void cxxbridge1$rust_vec$ConversionKeySwitchKey$reserve_total(::rust::Vec<::ConversionKeySwitchKey> *ptr, ::std::size_t new_cap) noexcept;
-void cxxbridge1$rust_vec$ConversionKeySwitchKey$set_len(::rust::Vec<::ConversionKeySwitchKey> *ptr, ::std::size_t len) noexcept;
-void cxxbridge1$rust_vec$ConversionKeySwitchKey$truncate(::rust::Vec<::ConversionKeySwitchKey> *ptr, ::std::size_t len) noexcept;
-
-void cxxbridge1$rust_vec$InstructionKeys$new(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
-void cxxbridge1$rust_vec$InstructionKeys$drop(::rust::Vec<::InstructionKeys> *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$InstructionKeys$len(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$InstructionKeys$capacity(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
-::InstructionKeys const *cxxbridge1$rust_vec$InstructionKeys$data(::rust::Vec<::InstructionKeys> const *ptr) noexcept;
-void cxxbridge1$rust_vec$InstructionKeys$reserve_total(::rust::Vec<::InstructionKeys> *ptr, ::std::size_t new_cap) noexcept;
-void cxxbridge1$rust_vec$InstructionKeys$set_len(::rust::Vec<::InstructionKeys> *ptr, ::std::size_t len) noexcept;
-void cxxbridge1$rust_vec$InstructionKeys$truncate(::rust::Vec<::InstructionKeys> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$new(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$drop(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$len(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$capacity(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> const *ptr) noexcept;
+::concrete_optimizer::dag::InstructionKeys const *cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$data(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$reserve_total(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$set_len(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$truncate(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> *ptr, ::std::size_t len) noexcept;
 } // extern "C"
 
 namespace rust {
@@ -1416,176 +1414,164 @@ void Box<::concrete_optimizer::Weights>::drop() noexcept {
   cxxbridge1$box$concrete_optimizer$Weights$drop(this);
 }
 template <>
-::CircuitSolution *Box<::CircuitSolution>::allocation::alloc() noexcept {
-  return cxxbridge1$box$CircuitSolution$alloc();
+Vec<::concrete_optimizer::dag::SecretLweKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$new(this);
 }
 template <>
-void Box<::CircuitSolution>::allocation::dealloc(::CircuitSolution *ptr) noexcept {
-  cxxbridge1$box$CircuitSolution$dealloc(ptr);
+void Vec<::concrete_optimizer::dag::SecretLweKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$drop(this);
 }
 template <>
-void Box<::CircuitSolution>::drop() noexcept {
-  cxxbridge1$box$CircuitSolution$drop(this);
+::std::size_t Vec<::concrete_optimizer::dag::SecretLweKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$len(this);
 }
 template <>
-Vec<::SecretLweKey>::Vec() noexcept {
-  cxxbridge1$rust_vec$SecretLweKey$new(this);
+::std::size_t Vec<::concrete_optimizer::dag::SecretLweKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$capacity(this);
 }
 template <>
-void Vec<::SecretLweKey>::drop() noexcept {
-  return cxxbridge1$rust_vec$SecretLweKey$drop(this);
+::concrete_optimizer::dag::SecretLweKey const *Vec<::concrete_optimizer::dag::SecretLweKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$data(this);
 }
 template <>
-::std::size_t Vec<::SecretLweKey>::size() const noexcept {
-  return cxxbridge1$rust_vec$SecretLweKey$len(this);
+void Vec<::concrete_optimizer::dag::SecretLweKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$reserve_total(this, new_cap);
 }
 template <>
-::std::size_t Vec<::SecretLweKey>::capacity() const noexcept {
-  return cxxbridge1$rust_vec$SecretLweKey$capacity(this);
+void Vec<::concrete_optimizer::dag::SecretLweKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$set_len(this, len);
 }
 template <>
-::SecretLweKey const *Vec<::SecretLweKey>::data() const noexcept {
-  return cxxbridge1$rust_vec$SecretLweKey$data(this);
+void Vec<::concrete_optimizer::dag::SecretLweKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$truncate(this, len);
 }
 template <>
-void Vec<::SecretLweKey>::reserve_total(::std::size_t new_cap) noexcept {
-  return cxxbridge1$rust_vec$SecretLweKey$reserve_total(this, new_cap);
+Vec<::concrete_optimizer::dag::KeySwitchKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$new(this);
 }
 template <>
-void Vec<::SecretLweKey>::set_len(::std::size_t len) noexcept {
-  return cxxbridge1$rust_vec$SecretLweKey$set_len(this, len);
+void Vec<::concrete_optimizer::dag::KeySwitchKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$drop(this);
 }
 template <>
-void Vec<::SecretLweKey>::truncate(::std::size_t len) {
-  return cxxbridge1$rust_vec$SecretLweKey$truncate(this, len);
+::std::size_t Vec<::concrete_optimizer::dag::KeySwitchKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$len(this);
 }
 template <>
-Vec<::KeySwitchKey>::Vec() noexcept {
-  cxxbridge1$rust_vec$KeySwitchKey$new(this);
+::std::size_t Vec<::concrete_optimizer::dag::KeySwitchKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$capacity(this);
 }
 template <>
-void Vec<::KeySwitchKey>::drop() noexcept {
-  return cxxbridge1$rust_vec$KeySwitchKey$drop(this);
+::concrete_optimizer::dag::KeySwitchKey const *Vec<::concrete_optimizer::dag::KeySwitchKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$data(this);
 }
 template <>
-::std::size_t Vec<::KeySwitchKey>::size() const noexcept {
-  return cxxbridge1$rust_vec$KeySwitchKey$len(this);
+void Vec<::concrete_optimizer::dag::KeySwitchKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$reserve_total(this, new_cap);
 }
 template <>
-::std::size_t Vec<::KeySwitchKey>::capacity() const noexcept {
-  return cxxbridge1$rust_vec$KeySwitchKey$capacity(this);
+void Vec<::concrete_optimizer::dag::KeySwitchKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$set_len(this, len);
 }
 template <>
-::KeySwitchKey const *Vec<::KeySwitchKey>::data() const noexcept {
-  return cxxbridge1$rust_vec$KeySwitchKey$data(this);
+void Vec<::concrete_optimizer::dag::KeySwitchKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$KeySwitchKey$truncate(this, len);
 }
 template <>
-void Vec<::KeySwitchKey>::reserve_total(::std::size_t new_cap) noexcept {
-  return cxxbridge1$rust_vec$KeySwitchKey$reserve_total(this, new_cap);
+Vec<::concrete_optimizer::dag::BootstrapKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$new(this);
 }
 template <>
-void Vec<::KeySwitchKey>::set_len(::std::size_t len) noexcept {
-  return cxxbridge1$rust_vec$KeySwitchKey$set_len(this, len);
+void Vec<::concrete_optimizer::dag::BootstrapKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$drop(this);
 }
 template <>
-void Vec<::KeySwitchKey>::truncate(::std::size_t len) {
-  return cxxbridge1$rust_vec$KeySwitchKey$truncate(this, len);
+::std::size_t Vec<::concrete_optimizer::dag::BootstrapKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$len(this);
 }
 template <>
-Vec<::BootstrapKey>::Vec() noexcept {
-  cxxbridge1$rust_vec$BootstrapKey$new(this);
+::std::size_t Vec<::concrete_optimizer::dag::BootstrapKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$capacity(this);
 }
 template <>
-void Vec<::BootstrapKey>::drop() noexcept {
-  return cxxbridge1$rust_vec$BootstrapKey$drop(this);
+::concrete_optimizer::dag::BootstrapKey const *Vec<::concrete_optimizer::dag::BootstrapKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$data(this);
 }
 template <>
-::std::size_t Vec<::BootstrapKey>::size() const noexcept {
-  return cxxbridge1$rust_vec$BootstrapKey$len(this);
+void Vec<::concrete_optimizer::dag::BootstrapKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$reserve_total(this, new_cap);
 }
 template <>
-::std::size_t Vec<::BootstrapKey>::capacity() const noexcept {
-  return cxxbridge1$rust_vec$BootstrapKey$capacity(this);
+void Vec<::concrete_optimizer::dag::BootstrapKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$set_len(this, len);
 }
 template <>
-::BootstrapKey const *Vec<::BootstrapKey>::data() const noexcept {
-  return cxxbridge1$rust_vec$BootstrapKey$data(this);
+void Vec<::concrete_optimizer::dag::BootstrapKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$BootstrapKey$truncate(this, len);
 }
 template <>
-void Vec<::BootstrapKey>::reserve_total(::std::size_t new_cap) noexcept {
-  return cxxbridge1$rust_vec$BootstrapKey$reserve_total(this, new_cap);
+Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$new(this);
 }
 template <>
-void Vec<::BootstrapKey>::set_len(::std::size_t len) noexcept {
-  return cxxbridge1$rust_vec$BootstrapKey$set_len(this, len);
+void Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$drop(this);
 }
 template <>
-void Vec<::BootstrapKey>::truncate(::std::size_t len) {
-  return cxxbridge1$rust_vec$BootstrapKey$truncate(this, len);
+::std::size_t Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$len(this);
 }
 template <>
-Vec<::ConversionKeySwitchKey>::Vec() noexcept {
-  cxxbridge1$rust_vec$ConversionKeySwitchKey$new(this);
+::std::size_t Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$capacity(this);
 }
 template <>
-void Vec<::ConversionKeySwitchKey>::drop() noexcept {
-  return cxxbridge1$rust_vec$ConversionKeySwitchKey$drop(this);
+::concrete_optimizer::dag::ConversionKeySwitchKey const *Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$data(this);
 }
 template <>
-::std::size_t Vec<::ConversionKeySwitchKey>::size() const noexcept {
-  return cxxbridge1$rust_vec$ConversionKeySwitchKey$len(this);
+void Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$reserve_total(this, new_cap);
 }
 template <>
-::std::size_t Vec<::ConversionKeySwitchKey>::capacity() const noexcept {
-  return cxxbridge1$rust_vec$ConversionKeySwitchKey$capacity(this);
+void Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$set_len(this, len);
 }
 template <>
-::ConversionKeySwitchKey const *Vec<::ConversionKeySwitchKey>::data() const noexcept {
-  return cxxbridge1$rust_vec$ConversionKeySwitchKey$data(this);
+void Vec<::concrete_optimizer::dag::ConversionKeySwitchKey>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$ConversionKeySwitchKey$truncate(this, len);
 }
 template <>
-void Vec<::ConversionKeySwitchKey>::reserve_total(::std::size_t new_cap) noexcept {
-  return cxxbridge1$rust_vec$ConversionKeySwitchKey$reserve_total(this, new_cap);
+Vec<::concrete_optimizer::dag::InstructionKeys>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$new(this);
 }
 template <>
-void Vec<::ConversionKeySwitchKey>::set_len(::std::size_t len) noexcept {
-  return cxxbridge1$rust_vec$ConversionKeySwitchKey$set_len(this, len);
+void Vec<::concrete_optimizer::dag::InstructionKeys>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$drop(this);
 }
 template <>
-void Vec<::ConversionKeySwitchKey>::truncate(::std::size_t len) {
-  return cxxbridge1$rust_vec$ConversionKeySwitchKey$truncate(this, len);
+::std::size_t Vec<::concrete_optimizer::dag::InstructionKeys>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$len(this);
 }
 template <>
-Vec<::InstructionKeys>::Vec() noexcept {
-  cxxbridge1$rust_vec$InstructionKeys$new(this);
+::std::size_t Vec<::concrete_optimizer::dag::InstructionKeys>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$capacity(this);
 }
 template <>
-void Vec<::InstructionKeys>::drop() noexcept {
-  return cxxbridge1$rust_vec$InstructionKeys$drop(this);
+::concrete_optimizer::dag::InstructionKeys const *Vec<::concrete_optimizer::dag::InstructionKeys>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$data(this);
 }
 template <>
-::std::size_t Vec<::InstructionKeys>::size() const noexcept {
-  return cxxbridge1$rust_vec$InstructionKeys$len(this);
+void Vec<::concrete_optimizer::dag::InstructionKeys>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$reserve_total(this, new_cap);
 }
 template <>
-::std::size_t Vec<::InstructionKeys>::capacity() const noexcept {
-  return cxxbridge1$rust_vec$InstructionKeys$capacity(this);
+void Vec<::concrete_optimizer::dag::InstructionKeys>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$set_len(this, len);
 }
 template <>
-::InstructionKeys const *Vec<::InstructionKeys>::data() const noexcept {
-  return cxxbridge1$rust_vec$InstructionKeys$data(this);
-}
-template <>
-void Vec<::InstructionKeys>::reserve_total(::std::size_t new_cap) noexcept {
-  return cxxbridge1$rust_vec$InstructionKeys$reserve_total(this, new_cap);
-}
-template <>
-void Vec<::InstructionKeys>::set_len(::std::size_t len) noexcept {
-  return cxxbridge1$rust_vec$InstructionKeys$set_len(this, len);
-}
-template <>
-void Vec<::InstructionKeys>::truncate(::std::size_t len) {
-  return cxxbridge1$rust_vec$InstructionKeys$truncate(this, len);
+void Vec<::concrete_optimizer::dag::InstructionKeys>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$truncate(this, len);
 }
 } // namespace cxxbridge1
 } // namespace rust
