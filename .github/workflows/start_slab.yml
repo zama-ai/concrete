@@ -48,7 +48,7 @@ jobs:
       - name: Start AWS job in Slab
         shell: bash
         run: |
-          GIT_SHA="$(git --no-pager show -s --format="%H" origin/${{ env.GIT_REF }})"
+          GIT_SHA="$(git --no-pager show -s --format="%H" origin/${{ env.GIT_REF }})" || GIT_SHA=${{ github.sha }}
           echo -n '{"command": "${{ inputs.command }}", "git_ref": "${{ env.GIT_REF }}", "sha":"'${GIT_SHA}'", "user_inputs": "${{ inputs.user_inputs }}"}' > command.json
           cat command.json
           SIGNATURE="$(slab/scripts/hmac_calculator.sh command.json '${{ secrets.JOB_SECRET }}')"
