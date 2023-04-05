@@ -88,11 +88,16 @@ static mlir::OpFoldResult getValueAsOpFoldResult(mlir::Value v) {
   return v;
 }
 
+// Checks whether `v` is a constant value of type index
+static bool isConstantIndexValue(mlir::Value v) {
+  return v.getDefiningOp() &&
+         llvm::isa<mlir::arith::ConstantIndexOp>(*v.getDefiningOp());
+}
+
 /// Assumes that `v` is a constant index operation and returns the
 /// constant value as an `int64_t`.
 static int64_t getConstantIndexValue(mlir::Value v) {
-  assert(v.getDefiningOp() &&
-         llvm::isa<mlir::arith::ConstantIndexOp>(*v.getDefiningOp()));
+  assert(isConstantIndexValue(v));
 
   return llvm::dyn_cast<mlir::arith::ConstantIndexOp>(*v.getDefiningOp())
       .value();
@@ -223,9 +228,12 @@ struct BoundsAndStep {
 /// operation.
 static std::optional<BoundsAndStep>
 getBoundsOfQuasiAffineIVExpression(mlir::Value expr, mlir::scf::ForOp forOp) {
-  // Base case: expression is the induction variable itself -> return
-  // loop bounds
-  if (expr == forOp.getInductionVar()) {
+  // Base case: expression is the induction variable itself -> check
+  // if the bounds are static and return them
+  if (expr == forOp.getInductionVar() &&
+      isConstantIndexValue(forOp.getLowerBound()) &&
+      isConstantIndexValue(forOp.getUpperBound()) &&
+      isConstantIndexValue(forOp.getStep())) {
     return BoundsAndStep{getConstantIndexValue(forOp.getLowerBound()),
                          getConstantIndexValue(forOp.getUpperBound()),
                          getConstantIndexValue(forOp.getStep())};
@@ -273,7 +281,7 @@ getBoundsOfQuasiAffineIVExpression(mlir::Value expr, mlir::scf::ForOp forOp) {
     }
   }
 
-  llvm_unreachable("Expression could not be evaluated statically");
+  return std::nullopt;
 }
 
 /// Checks whether the expression `expr` is a quasi-affine expression
