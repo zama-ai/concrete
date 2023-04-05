@@ -222,6 +222,12 @@ impl ffi::CircuitSolution {
     }
 }
 
+impl ffi::CircuitSolution {
+    fn dump(&self) -> String {
+        format!("{self:#?}")
+    }
+}
+
 impl From<KsDecompositionParameters> for ffi::KsDecompositionParameters {
     fn from(v: KsDecompositionParameters) -> Self {
         ffi::KsDecompositionParameters {
@@ -519,6 +525,9 @@ mod ffi {
         fn optimize(self: &OperationDag, options: Options) -> DagSolution;
 
         fn dump(self: &OperationDag) -> String;
+
+        #[namespace = "concrete_optimizer::dag"]
+        fn dump(self: &CircuitSolution) -> String;
 
         type Weights;
 

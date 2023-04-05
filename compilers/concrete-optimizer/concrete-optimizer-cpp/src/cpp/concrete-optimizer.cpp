@@ -1189,6 +1189,7 @@ struct CircuitSolution final {
   double p_error;
   double global_p_error;
 
+  ::rust::String dump() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
@@ -1233,6 +1234,15 @@ extern "C" {
 void concrete_optimizer$cxxbridge1$OperationDag$optimize(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
 
 void concrete_optimizer$cxxbridge1$OperationDag$dump(::concrete_optimizer::OperationDag const &self, ::rust::String *return$) noexcept;
+} // extern "C"
+
+namespace dag {
+extern "C" {
+void concrete_optimizer$dag$cxxbridge1$CircuitSolution$dump(::concrete_optimizer::dag::CircuitSolution const &self, ::rust::String *return$) noexcept;
+} // extern "C"
+} // namespace dag
+
+extern "C" {
 ::std::size_t concrete_optimizer$cxxbridge1$Weights$operator$sizeof() noexcept;
 ::std::size_t concrete_optimizer$cxxbridge1$Weights$operator$alignof() noexcept;
 } // extern "C"
@@ -1310,6 +1320,14 @@ namespace dag {
   concrete_optimizer$cxxbridge1$OperationDag$dump(*this, &return$.value);
   return ::std::move(return$.value);
 }
+
+namespace dag {
+::rust::String CircuitSolution::dump() const noexcept {
+  ::rust::MaybeUninit<::rust::String> return$;
+  concrete_optimizer$dag$cxxbridge1$CircuitSolution$dump(*this, &return$.value);
+  return ::std::move(return$.value);
+}
+} // namespace dag
 
 ::std::size_t Weights::layout::size() noexcept {
   return concrete_optimizer$cxxbridge1$Weights$operator$sizeof();
