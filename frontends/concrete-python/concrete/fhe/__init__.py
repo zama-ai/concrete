@@ -1,10 +1,9 @@
 """
-Export everything that users might need.
+Concrete.
 """
 
 # pylint: disable=import-error,no-name-in-module
 
-# mypy: disable-error-code=attr-defined
 from concrete.compiler import EvaluationKeys, PublicArguments, PublicResult
 
 from .compilation import (
@@ -24,6 +23,8 @@ from .extensions import (
     AutoRounder,
     LookupTable,
     array,
+    conv,
+    maxpool,
     one,
     ones,
     round_bit_pattern,

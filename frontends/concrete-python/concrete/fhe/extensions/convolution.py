@@ -1,17 +1,18 @@
 """
-Convolution operations' tracing and evaluation.
+Tracing and evaluation of convolution.
 """
 
 import math
+from copy import deepcopy
 from typing import Callable, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import torch
 
-from ..fhe.internal.utils import assert_that
-from ..fhe.representation import Node
-from ..fhe.tracing import Tracer
-from ..fhe.values import EncryptedTensor
+from ..internal.utils import assert_that
+from ..representation import Node
+from ..tracing import Tracer
+from ..values import EncryptedTensor
 
 SUPPORTED_AUTO_PAD = {
     "NOTSET",
@@ -23,8 +24,8 @@ SUPPORTED_AUTO_PAD = {
 
 def conv(
     x: Union[np.ndarray, Tracer],
-    weight: Union[np.ndarray, Tracer],
-    bias: Optional[Union[np.ndarray, Tracer]] = None,
+    weight: Union[np.ndarray, List, Tracer],
+    bias: Optional[Union[np.ndarray, List, Tracer]] = None,
     pads: Optional[Union[Tuple[int, ...], List[int]]] = None,
     strides: Optional[Union[Tuple[int, ...], List[int]]] = None,
     dilations: Optional[Union[Tuple[int, ...], List[int]]] = None,
@@ -63,11 +64,18 @@ def conv(
     Returns:
         Union[np.ndarray, Tracer]: evaluation result or traced computation
     """
-    if kernel_shape is not None and (
-        (weight.ndim - 2) != len(kernel_shape) or not np.all(weight.shape[2:] == kernel_shape)
-    ):
-        message = f"expected kernel_shape to be {weight.shape[2:]}, but got {kernel_shape}"
-        raise ValueError(message)
+
+    if isinstance(weight, list):  # pragma: no cover
+        try:
+            weight = np.array(weight)
+        except Exception:  # pylint: disable=broad-except
+            pass
+
+    if bias is not None and isinstance(bias, list):  # pragma: no cover
+        try:
+            bias = np.array(bias)
+        except Exception:  # pylint: disable=broad-except
+            pass
 
     if isinstance(x, np.ndarray):
         if not isinstance(weight, np.ndarray):
@@ -83,6 +91,12 @@ def conv(
         if bias is not None and not isinstance(bias, (Tracer, np.ndarray)):
             message = "expected bias to be of type Tracer or ndarray"
             raise TypeError(message)
+
+    if kernel_shape is not None and (
+        (weight.ndim - 2) != len(kernel_shape) or not np.all(weight.shape[2:] == kernel_shape)
+    ):
+        message = f"expected kernel_shape to be {weight.shape[2:]}, but got {kernel_shape}"
+        raise ValueError(message)
 
     if x.ndim <= 2:
         message = (
@@ -511,7 +525,7 @@ def _trace_conv(
 
     computation = Node.generic(
         conv_func,  # "conv1d" or "conv2d" or "conv3d"
-        input_values,
+        deepcopy(input_values),
         output_value,
         eval_func,
         args=() if bias is not None else (np.zeros(n_filters, dtype=np.int64),),

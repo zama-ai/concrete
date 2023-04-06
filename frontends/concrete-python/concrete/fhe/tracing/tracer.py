@@ -426,7 +426,7 @@ class Tracer:
 
         computation = Node.generic(
             operation.__name__,
-            [tracer.output for tracer in tracers],
+            [deepcopy(tracer.output) for tracer in tracers],
             output_value,
             operation,
             kwargs=kwargs,
@@ -618,7 +618,7 @@ class Tracer:
 
             computation = Node.generic(
                 "astype",
-                [self.output],
+                [deepcopy(self.output)],
                 output_value,
                 lambda x: x,  # unused for direct definition
             )
@@ -662,7 +662,7 @@ class Tracer:
 
         computation = Node.generic(
             "astype",
-            [self.output],
+            [deepcopy(self.output)],
             output_value,
             evaluator,
             kwargs={"dtype": dtype},
@@ -753,8 +753,8 @@ class Tracer:
         output_value.shape = np.zeros(output_value.shape)[index].shape
 
         computation = Node.generic(
-            "index.static",
-            [self.output],
+            "index_static",
+            [deepcopy(self.output)],
             output_value,
             lambda x, index: x[index],
             kwargs={"index": index},
@@ -803,8 +803,8 @@ class Tracer:
 
         sanitized_value = self.sanitize(value)
         computation = Node.generic(
-            "assign.static",
-            [self.output, sanitized_value.output],
+            "assign_static",
+            [deepcopy(self.output), deepcopy(sanitized_value.output)],
             self.output,
             assign,
             kwargs={"index": index},

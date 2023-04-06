@@ -21,6 +21,22 @@ from concrete import fhe
             lambda x, y: fhe.array([x, y]),
             {
                 "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
+                "y": {"range": [0, 10], "status": "encrypted", "shape": ()},
+            },
+            id="fhe.array([x, y])",
+        ),
+        pytest.param(
+            lambda x, y: fhe.array([x, y]),
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
+                "y": {"range": [0, 10], "status": "clear", "shape": ()},
+            },
+            id="fhe.array([x, y])",
+        ),
+        pytest.param(
+            lambda x, y: fhe.array([x, y]),
+            {
+                "x": {"range": [0, 10], "status": "clear", "shape": ()},
                 "y": {"range": [0, 10], "status": "clear", "shape": ()},
             },
             id="fhe.array([x, y])",
@@ -41,6 +57,14 @@ from concrete import fhe
                 "z": {"range": [0, 10], "status": "encrypted", "shape": ()},
             },
             id="fhe.array([[x, 1], [y, 2], [z, 3]])",
+        ),
+        pytest.param(
+            lambda x, y: fhe.array([x, y]) + fhe.array([x, y]),
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": ()},
+                "y": {"range": [0, 10], "status": "clear", "shape": ()},
+            },
+            id="fhe.array([x, y]) + fhe.array([x, y])",
         ),
     ],
 )

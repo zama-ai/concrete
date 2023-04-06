@@ -29,7 +29,15 @@ licenses:
 pytest:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
 	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+
+	# test single precision
 	pytest tests -svv -n auto \
+		--key-cache "${KEY_CACHE_DIRECTORY}" \
+		-m "${PYTEST_MARKERS}"
+
+	# test multi precision
+	pytest tests -svv -n auto \
+		--precision=multi \
 		--cov=concrete \
 		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \

@@ -608,7 +608,7 @@ def convert_subgraph_to_subgraph_node(
     subgraph = Graph(nx_subgraph, {0: subgraph_variable_input_node}, {0: terminal_node})
     subgraph_node = Node.generic(
         "subgraph",
-        subgraph_variable_input_node.inputs,
+        deepcopy(subgraph_variable_input_node.inputs),
         terminal_node.output,
         lambda x, subgraph, terminal_node: subgraph.evaluate(x)[terminal_node],
         kwargs={

@@ -1,16 +1,17 @@
 """
-Tracing and evaluation of maxpool function.
+Tracing and evaluation of maxpool.
 """
 
+from copy import deepcopy
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 
-from ..fhe.internal.utils import assert_that
-from ..fhe.representation import Node
-from ..fhe.tracing import Tracer
-from ..fhe.values import Value
+from ..internal.utils import assert_that
+from ..representation import Node
+from ..tracing import Tracer
+from ..values import Value
 
 # pylint: disable=too-many-branches,too-many-statements
 
@@ -288,9 +289,12 @@ def _trace_or_evaluate(
     resulting_value.is_encrypted = x.output.is_encrypted
     resulting_value.dtype = x.output.dtype
 
+    dims = x.ndim - 2
+    assert_that(dims in {1, 2, 3})
+
     computation = Node.generic(
-        "maxpool",
-        [x.output],
+        f"maxpool{dims}d",
+        [deepcopy(x.output)],
         resulting_value,
         _evaluate,
         kwargs={

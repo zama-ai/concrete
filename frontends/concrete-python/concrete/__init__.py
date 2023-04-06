@@ -1,5 +1,5 @@
 """
-Setup concrete module to be enlarged with numpy module.
+Setup concrete namespace.
 """
 
 # Do not modify, this is to have a compatible namespace package

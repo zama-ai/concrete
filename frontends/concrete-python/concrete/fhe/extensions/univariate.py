@@ -2,6 +2,7 @@
 Declaration of `univariate` function.
 """
 
+from copy import deepcopy
 from typing import Any, Callable, Optional, Type, Union
 
 import numpy as np
@@ -75,7 +76,7 @@ def univariate(
 
             computation = Node.generic(
                 function.__name__,
-                [x.output],
+                [deepcopy(x.output)],
                 output_value,
                 lambda x: function(x),  # pylint: disable=unnecessary-lambda
             )

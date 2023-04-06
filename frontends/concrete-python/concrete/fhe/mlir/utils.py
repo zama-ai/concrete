@@ -4,7 +4,7 @@ Declaration of various functions and constants related to MLIR conversion.
 
 from collections import defaultdict, deque
 from copy import deepcopy
-from itertools import product
+from itertools import chain, product
 from typing import Any, DefaultDict, List, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -53,11 +53,11 @@ def flood_replace_none_values(table: list):
         previous_idx = current_idx - 1
         next_idx = current_idx + 1
 
-        if previous_idx >= 0 and table[previous_idx] is None:
+        if previous_idx >= 0 and table[previous_idx] is None:  # pragma: no cover
             table[previous_idx] = deepcopy(current_value)
             not_none_values_idx.append(previous_idx)
 
-        if next_idx < len(table) and table[next_idx] is None:
+        if next_idx < len(table) and table[next_idx] is None:  # pragma: no cover
             table[next_idx] = deepcopy(current_value)
             not_none_values_idx.append(next_idx)
 
@@ -93,12 +93,13 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
     assert_that(isinstance(variable_input_dtype, Integer))
     variable_input_dtype = cast(Integer, variable_input_dtype)
 
-    inputs: List[Any] = [pred() if pred.operation == Operation.Constant else None for pred in preds]
+    values = chain(range(0, variable_input_dtype.max() + 1), range(variable_input_dtype.min(), 0))
 
     np.seterr(divide="ignore")
 
+    inputs: List[Any] = [pred() if pred.operation == Operation.Constant else None for pred in preds]
     table: List[Optional[Union[np.bool_, np.integer, np.floating, np.ndarray]]] = []
-    for value in range(variable_input_dtype.min(), variable_input_dtype.max() + 1):
+    for value in values:
         try:
             inputs[variable_input_index] = np.ones(variable_input_shape, dtype=np.int64) * value
             table.append(node(*inputs))

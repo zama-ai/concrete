@@ -5,7 +5,6 @@ Tests of execution of convolution operation.
 import numpy as np
 import pytest
 
-import concrete.onnx as connx
 from concrete import fhe
 from concrete.fhe.representation.node import Node
 from concrete.fhe.tracing.tracer import Tracer
@@ -62,7 +61,7 @@ def test_conv2d(input_shape, weight_shape, group, strides, dilations, has_bias, 
 
     @fhe.compiler({"x": "encrypted"})
     def function(x):
-        return connx.conv(x, weight, bias, strides=strides, dilations=dilations, group=group)
+        return fhe.conv(x, weight, bias, strides=strides, dilations=dilations, group=group)
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     circuit = function.compile(inputset, configuration)
@@ -308,32 +307,6 @@ def test_conv2d(input_shape, weight_shape, group, strides, dilations, has_bias, 
             "expected number of channel in weight to be 1.0 (C / group), but got 2",
         ),
         pytest.param(
-            (1, 1, 4),
-            (1, 1, 2),
-            (1,),
-            (0, 0),
-            (1,),
-            (1,),
-            None,
-            1,
-            "NOTSET",
-            NotImplementedError,
-            "conv1d conversion to MLIR is not yet implemented",
-        ),
-        pytest.param(
-            (1, 1, 4, 4, 4),
-            (1, 1, 2, 2, 2),
-            (1,),
-            (0, 0, 0, 0, 0, 0),
-            (1, 1, 1),
-            (1, 1, 1),
-            None,
-            1,
-            "NOTSET",
-            NotImplementedError,
-            "conv3d conversion to MLIR is not yet implemented",
-        ),
-        pytest.param(
             (1, 1, 4, 4, 4, 4),
             (1, 1, 2, 2, 2, 2),
             (1,),
@@ -388,7 +361,7 @@ def test_bad_conv_compilation(
 
     @fhe.compiler({"x": "encrypted"})
     def function(x):
-        return connx.conv(
+        return fhe.conv(
             x,
             weight,
             bias=bias,
@@ -426,8 +399,8 @@ def test_bad_conv_compilation(
     "func",
     [
         # pylint: disable=protected-access
-        connx.convolution._evaluate_conv,
-        connx.convolution._trace_conv,
+        fhe.extensions.convolution._evaluate_conv,
+        fhe.extensions.convolution._trace_conv,
         # pylint: enable=protected-access
     ],
 )
@@ -487,7 +460,7 @@ def test_inconsistent_input_types(
     Test conv with inconsistent input types.
     """
     with pytest.raises(expected_error) as excinfo:
-        connx.conv(
+        fhe.conv(
             x,
             weight,
             bias=bias,

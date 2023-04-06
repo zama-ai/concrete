@@ -78,7 +78,6 @@ setuptools.setup(
 
     package_dir={
         "concrete.fhe": "./concrete/fhe",
-        "concrete.onnx": "./concrete/onnx",
         "": bindings_directory(),
     },
     packages=setuptools.find_namespace_packages(
@@ -87,9 +86,6 @@ setuptools.setup(
     ) + setuptools.find_namespace_packages(
         where=".",
         include=["concrete.fhe", "concrete.fhe.*"],
-    ) + setuptools.find_namespace_packages(
-        where=".",
-        include=["concrete.onnx", "concrete.onnx.*"],
     ) + setuptools.find_namespace_packages(
         where=bindings_directory(),
         include=["concrete.compiler", "concrete.compiler.*"],

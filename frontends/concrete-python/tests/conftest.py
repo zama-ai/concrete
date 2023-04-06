@@ -18,6 +18,7 @@ tests_directory = os.path.dirname(tests.__file__)
 
 
 INSECURE_KEY_CACHE_LOCATION = None
+USE_MULTI_PRECISION = False
 
 
 def pytest_addoption(parser):
@@ -39,6 +40,13 @@ def pytest_addoption(parser):
         action="store",
         help="Specify the location of the key cache",
     )
+    parser.addoption(
+        "--precision",
+        type=str,
+        default=None,
+        action="store",
+        help="Which precision strategy to use in execution tests (single or multi)",
+    )
 
 
 def pytest_sessionstart(session):
@@ -47,6 +55,7 @@ def pytest_sessionstart(session):
     """
     # pylint: disable=global-statement
     global INSECURE_KEY_CACHE_LOCATION
+    global USE_MULTI_PRECISION
     # pylint: enable=global-statement
 
     key_cache_location = session.config.getoption("--key-cache", default=None)
@@ -63,6 +72,9 @@ def pytest_sessionstart(session):
         print(f"INSECURE_KEY_CACHE_LOCATION={str(key_cache_location)}")
 
         INSECURE_KEY_CACHE_LOCATION = str(key_cache_location)
+
+    precision = session.config.getoption("--precision", default="single")
+    USE_MULTI_PRECISION = precision == "multi"
 
 
 def pytest_sessionfinish(session, exitstatus):  # pylint: disable=unused-argument
@@ -117,6 +129,7 @@ class Helpers:
             jit=True,
             insecure_key_cache_location=INSECURE_KEY_CACHE_LOCATION,
             global_p_error=(1 / 10_000),
+            single_precision=(not USE_MULTI_PRECISION),
         )
 
     @staticmethod

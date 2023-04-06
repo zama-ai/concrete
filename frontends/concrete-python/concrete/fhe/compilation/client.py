@@ -8,7 +8,7 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -165,13 +165,7 @@ class Client:
                 )
 
                 if is_valid:
-                    is_signed = self.specs.input_signs[index]
-                    sanitizer = 0 if not is_signed else 2 ** (width - 1)
-
-                    if isinstance(arg, int):
-                        sanitized_args[index] = arg + sanitizer
-                    else:
-                        sanitized_args[index] = (arg + sanitizer).astype(np.uint64)
+                    sanitized_args[index] = arg
 
             if not is_valid:
                 actual_value = Value.of(arg, is_encrypted=is_encrypted)
@@ -205,61 +199,7 @@ class Client:
 
         self.keygen(force=False)
         outputs = ClientSupport.decrypt_result(self.specs.client_parameters, self._keyset, result)
-        if not isinstance(outputs, tuple):
-            outputs = (outputs,)
-
-        sanitized_outputs: List[Union[int, np.ndarray]] = []
-
-        client_parameters_json = json.loads(self.specs.client_parameters.serialize())
-        assert_that("outputs" in client_parameters_json)
-        output_specs = client_parameters_json["outputs"]
-
-        for index, output in enumerate(outputs):
-            is_signed = self.specs.output_signs[index]
-            crt_decomposition = (
-                output_specs[index].get("encryption", {}).get("encoding", {}).get("crt", [])
-            )
-
-            if is_signed:
-                if crt_decomposition:
-                    if isinstance(output, int):
-                        sanititzed_output = (
-                            output
-                            if output < (int(np.prod(crt_decomposition)) // 2)
-                            else -int(np.prod(crt_decomposition)) + output
-                        )
-                    else:
-                        output = output.astype(np.longlong)  # to prevent overflows in numpy
-                        sanititzed_output = np.where(
-                            output < (np.prod(crt_decomposition) // 2),
-                            output,
-                            -np.prod(crt_decomposition) + output,
-                        ).astype(
-                            np.int64
-                        )  # type: ignore
-
-                    sanitized_outputs.append(sanititzed_output)
-
-                else:
-                    n = output_specs[index]["shape"]["width"]
-                    output %= 2**n
-                    if isinstance(output, int):
-                        sanititzed_output = output if output < (2 ** (n - 1)) else output - (2**n)
-                        sanitized_outputs.append(sanititzed_output)
-                    else:
-                        output = output.astype(np.longlong)  # to prevent overflows in numpy
-                        sanititzed_output = np.where(
-                            output < (2 ** (n - 1)), output, output - (2**n)
-                        ).astype(
-                            np.int64
-                        )  # type: ignore
-                        sanitized_outputs.append(sanititzed_output)
-            else:
-                sanitized_outputs.append(
-                    output if isinstance(output, int) else output.astype(np.uint64)
-                )
-
-        return sanitized_outputs[0] if len(sanitized_outputs) == 1 else tuple(sanitized_outputs)
+        return outputs
 
     @property
     def evaluation_keys(self) -> EvaluationKeys:

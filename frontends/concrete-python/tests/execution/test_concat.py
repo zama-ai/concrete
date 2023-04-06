@@ -19,6 +19,20 @@ from concrete import fhe
             },
         ),
         pytest.param(
+            lambda x, y: np.concatenate((x, y)),
+            {
+                "x": {"shape": (4, 2), "status": "clear"},
+                "y": {"shape": (3, 2)},
+            },
+        ),
+        pytest.param(
+            lambda x, y: np.concatenate((x, y)),
+            {
+                "x": {"shape": (4, 2)},
+                "y": {"shape": (3, 2), "status": "clear"},
+            },
+        ),
+        pytest.param(
             lambda x, y: np.concatenate((x, y), axis=0),
             {
                 "x": {"shape": (4, 2)},

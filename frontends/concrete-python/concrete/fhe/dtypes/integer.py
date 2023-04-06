@@ -45,7 +45,7 @@ class Integer(BaseDataType):
 
         if isinstance(value, list):
             try:
-                value = np.array(value)
+                value = np.array(value, dtype=np.int64)
             except Exception:  # pylint: disable=broad-except
                 # here we try our best to convert the list to np.ndarray
                 # if it fails we raise the exception at the else branch below

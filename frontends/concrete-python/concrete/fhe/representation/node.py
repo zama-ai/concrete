@@ -163,10 +163,6 @@ class Node:
 
         fhe_directory = os.path.dirname(fhe.__file__)
 
-        import concrete.onnx as coonx
-
-        coonx_directory = os.path.dirname(coonx.__file__)
-
         # pylint: enable=cyclic-import,import-outside-toplevel
 
         for frame in reversed(traceback.extract_stack()):
@@ -174,9 +170,6 @@ class Node:
                 continue
 
             if frame.filename.startswith(fhe_directory):
-                continue
-
-            if frame.filename.startswith(coonx_directory):
                 continue
 
             self.location = f"{frame.filename}:{frame.lineno}"
@@ -294,12 +287,12 @@ class Node:
 
         name = self.properties["name"]
 
-        if name == "index.static":
+        if name == "index_static":
             index = self.properties["kwargs"]["index"]
             elements = [format_indexing_element(element) for element in index]
             return f"{predecessors[0]}[{', '.join(elements)}]"
 
-        if name == "assign.static":
+        if name == "assign_static":
             index = self.properties["kwargs"]["index"]
             elements = [format_indexing_element(element) for element in index]
             return f"({predecessors[0]}[{', '.join(elements)}] = {predecessors[1]})"
@@ -345,10 +338,10 @@ class Node:
 
         name = self.properties["name"]
 
-        if name == "index.static":
+        if name == "index_static":
             name = self.format(["□"])
 
-        if name == "assign.static":
+        if name == "assign_static":
             name = self.format(["□", "□"])[1:-1]
 
         return name
@@ -386,7 +379,7 @@ class Node:
         return self.operation == Operation.Generic and self.properties["name"] not in [
             "add",
             "array",
-            "assign.static",
+            "assign_static",
             "broadcast_to",
             "concatenate",
             "conv1d",
@@ -394,7 +387,7 @@ class Node:
             "conv3d",
             "dot",
             "expand_dims",
-            "index.static",
+            "index_static",
             "matmul",
             "maxpool",
             "multiply",

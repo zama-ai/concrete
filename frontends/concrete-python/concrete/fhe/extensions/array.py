@@ -2,6 +2,7 @@
 Declaration of `array` function, to simplify creation of encrypted arrays.
 """
 
+from copy import deepcopy
 from typing import Any, Union
 
 import numpy as np
@@ -52,7 +53,7 @@ def array(values: Any) -> Union[np.ndarray, Tracer]:
 
     computation = Node.generic(
         "array",
-        [value.output for value in values],
+        [deepcopy(value.output) for value in values],
         Value(dtype, shape, is_encrypted),
         lambda *args: np.array(args).reshape(shape),
     )

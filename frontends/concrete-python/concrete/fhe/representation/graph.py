@@ -5,7 +5,7 @@ Declaration of `Graph` class.
 import math
 import re
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -296,10 +296,15 @@ class Graph:
 
                 bounds += "]"
 
+            output_value = node.output
+            if isinstance(output_value.dtype, Integer) and "original_bit_width" in node.properties:
+                output_value = deepcopy(output_value)
+                output_value.dtype.bit_width = node.properties["original_bit_width"]
+
             # remember metadata of the node
             line_metadata.append(
                 {
-                    "type": f"# {node.output}",
+                    "type": f"# {output_value}",
                     "bounds": bounds,
                     "tag": (f"@ {node.tag}" if node.tag != "" else ""),
                     "location": node.location,
@@ -559,6 +564,9 @@ class Graph:
         self,
         tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
         operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        is_encrypted_filter: Optional[bool] = None,
+        custom_filter: Optional[Callable[[Node], bool]] = None,
+        ordered: bool = False,
     ) -> List[Node]:
         """
         Query nodes within the graph.
@@ -574,6 +582,15 @@ class Graph:
 
             operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
                 filter for operations
+
+            is_encrypted_filter (Optional[bool], default = None)
+                filter for encryption status
+
+            custom_filter (Optional[Callable[[Node], bool]], default = None):
+                flexible filter
+
+            ordered (bool)
+                whether to apply topological sorting before filtering nodes
 
         Returns:
             List[Node]:
@@ -592,6 +609,12 @@ class Graph:
 
             return any(text == alternative for alternative in text_filter)
 
+        def match_boolean_filter(boolean_filter, boolean):
+            if boolean_filter is None:
+                return True
+
+            return boolean == boolean_filter
+
         def get_operation_name(node):
             result: str
 
@@ -604,12 +627,15 @@ class Graph:
 
             return result
 
+        nodes = nx.lexicographical_topological_sort(self.graph) if ordered else self.graph.nodes()
         return [
             node
-            for node in self.graph.nodes()
+            for node in nodes
             if (
                 match_text_filter(tag_filter, node.tag)
                 and match_text_filter(operation_filter, get_operation_name(node))
+                and match_boolean_filter(is_encrypted_filter, node.output.is_encrypted)
+                and (custom_filter is None or custom_filter(node))
             )
         ]
 
@@ -617,6 +643,8 @@ class Graph:
         self,
         tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
         operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        is_encrypted_filter: Optional[bool] = None,
+        custom_filter: Optional[Callable[[Node], bool]] = None,
     ) -> int:
         """
         Get maximum integer bit-width within the graph.
@@ -630,16 +658,21 @@ class Graph:
             operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
                 filter for operations
 
+            is_encrypted_filter (Optional[bool], default = None)
+                filter for encryption status
+
+            custom_filter (Optional[Callable[[Node], bool]], default = None):
+                flexible filter
+
         Returns:
             int:
                 maximum integer bit-width within the graph
                 if there are no integer nodes matching the query, result is -1
         """
 
+        query = self.query_nodes(tag_filter, operation_filter, is_encrypted_filter, custom_filter)
         filtered_bit_widths = (
-            node.output.dtype.bit_width
-            for node in self.query_nodes(tag_filter, operation_filter)
-            if isinstance(node.output.dtype, Integer)
+            node.output.dtype.bit_width for node in query if isinstance(node.output.dtype, Integer)
         )
         return max(filtered_bit_widths, default=-1)
 
@@ -647,6 +680,8 @@ class Graph:
         self,
         tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
         operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        is_encrypted_filter: Optional[bool] = None,
+        custom_filter: Optional[Callable[[Node], bool]] = None,
     ) -> Optional[Tuple[int, int]]:
         """
         Get integer range of the graph.
@@ -660,30 +695,39 @@ class Graph:
             operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
                 filter for operations
 
+            is_encrypted_filter (Optional[bool], default = None)
+                filter for encryption status
+
+            custom_filter (Optional[Callable[[Node], bool]], default = None):
+                flexible filter
+
         Returns:
             Optional[Tuple[int, int]]:
                 minimum and maximum integer value observed during inputset evaluation
                 if there are no integer nodes matching the query, result is None
         """
 
+        if self.is_direct:
+            return None
+
         result: Optional[Tuple[int, int]] = None
 
-        if not self.is_direct:
-            filtered_bounds = (
-                node.bounds
-                for node in self.query_nodes(tag_filter, operation_filter)
-                if isinstance(node.output.dtype, Integer) and node.bounds is not None
-            )
-            for min_bound, max_bound in filtered_bounds:
-                assert isinstance(min_bound, np.integer) and isinstance(max_bound, np.integer)
+        query = self.query_nodes(tag_filter, operation_filter, is_encrypted_filter, custom_filter)
+        filtered_bounds = (
+            node.bounds
+            for node in query
+            if isinstance(node.output.dtype, Integer) and node.bounds is not None
+        )
+        for min_bound, max_bound in filtered_bounds:
+            assert isinstance(min_bound, np.integer) and isinstance(max_bound, np.integer)
 
-                if result is None:
-                    result = (int(min_bound), int(max_bound))
-                else:
-                    old_min_bound, old_max_bound = result  # pylint: disable=unpacking-non-sequence
-                    result = (
-                        min(old_min_bound, int(min_bound)),
-                        max(old_max_bound, int(max_bound)),
-                    )
+            if result is None:
+                result = (int(min_bound), int(max_bound))
+            else:
+                old_min_bound, old_max_bound = result
+                result = (
+                    min(old_min_bound, int(min_bound)),
+                    max(old_max_bound, int(max_bound)),
+                )
 
         return result

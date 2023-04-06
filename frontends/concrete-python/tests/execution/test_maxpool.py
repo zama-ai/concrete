@@ -5,7 +5,6 @@ Tests of execution of maxpool operation.
 import numpy as np
 import pytest
 
-import concrete.onnx as connx
 from concrete import fhe
 
 
@@ -69,14 +68,59 @@ def test_maxpool(
     sample_input = np.expand_dims(np.array(sample_input), axis=(0, 1))
     expected_output = np.expand_dims(np.array(expected_output), axis=(0, 1))
 
-    assert np.array_equal(connx.maxpool(sample_input, **operation), expected_output)
+    assert np.array_equal(fhe.maxpool(sample_input, **operation), expected_output)
 
     @fhe.compiler({"x": "encrypted"})
     def function(x):
-        return connx.maxpool(x, **operation)
+        return fhe.maxpool(x, **operation)
 
     graph = function.trace([sample_input], helpers.configuration())
     assert np.array_equal(graph(sample_input), expected_output)
+
+
+@pytest.mark.parametrize(
+    "operation,parameters",
+    [
+        pytest.param(
+            {
+                "kernel_shape": (3, 2),
+            },
+            {
+                "x": {"status": "encrypted", "range": [0, 20], "shape": (1, 1, 6, 7)},
+            },
+        ),
+        pytest.param(
+            {
+                "kernel_shape": (3, 2),
+            },
+            {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 1, 6, 7)},
+            },
+        ),
+    ],
+)
+def test_maxpool2d(
+    operation,
+    parameters,
+    helpers,
+):
+    """
+    Test maxpool2d.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+    configuration = helpers.configuration()
+
+    def function(x):
+        return fhe.maxpool(x, **operation)
+
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
+
+    inputset = helpers.generate_inputset(parameters)
+    circuit = compiler.compile(inputset, configuration)
+
+    sample = helpers.generate_sample(parameters)
+    helpers.check_execution(circuit, function, sample)
 
 
 @pytest.mark.parametrize(
@@ -308,7 +352,7 @@ def test_bad_maxpool(
     """
 
     with pytest.raises(expected_error) as excinfo:
-        connx.maxpool(np.random.randint(0, 10, size=input_shape), **operation)
+        fhe.maxpool(np.random.randint(0, 10, size=input_shape), **operation)
 
     helpers.check_str(expected_message, str(excinfo.value))
 
@@ -318,51 +362,11 @@ def test_bad_maxpool_special(helpers):
     Test maxpool with bad parameters for special cases.
     """
 
-    # compile
-    # -------
-
-    @fhe.compiler({"x": "encrypted"})
-    def not_compilable(x):
-        return connx.maxpool(x, kernel_shape=(4, 3))
-
-    inputset = [np.random.randint(0, 10, size=(1, 1, 10, 10)) for i in range(100)]
-    with pytest.raises(NotImplementedError) as excinfo:
-        not_compilable.compile(inputset, helpers.configuration())
-
-    helpers.check_str("MaxPool operation cannot be compiled yet", str(excinfo.value))
-
-    # clear input
-    # -----------
-
-    @fhe.compiler({"x": "clear"})
-    def clear_input(x):
-        return connx.maxpool(x, kernel_shape=(4, 3, 2))
-
-    inputset = [np.zeros((1, 1, 10, 10, 10), dtype=np.int64)]
-    with pytest.raises(RuntimeError) as excinfo:
-        clear_input.compile(inputset, helpers.configuration())
-
-    helpers.check_str(
-        # pylint: disable=line-too-long
-        """
-
-Function you are trying to compile cannot be converted to MLIR
-
-%0 = x                                                                                                                            # ClearTensor<uint1, shape=(1, 1, 10, 10, 10)>        ∈ [0, 0]
-%1 = maxpool(%0, kernel_shape=(4, 3, 2), strides=(1, 1, 1), pads=(0, 0, 0, 0, 0, 0), dilations=(1, 1, 1), ceil_mode=False)        # ClearTensor<uint1, shape=(1, 1, 7, 8, 9)>           ∈ [0, 0]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted maxpool is supported
-return %1
-
-        """.strip(),  # noqa: E501
-        # pylint: enable=line-too-long
-        str(excinfo.value),
-    )
-
     # badly typed ndarray input
     # -------------------------
 
     with pytest.raises(TypeError) as excinfo:
-        connx.maxpool(np.array([{}, None]), ())
+        fhe.maxpool(np.array([{}, None]), ())
 
     helpers.check_str(
         # pylint: disable=line-too-long
@@ -379,7 +383,7 @@ Expected input elements to be of type np.integer, np.floating, or np.bool_ but i
     # -----------------
 
     with pytest.raises(TypeError) as excinfo:
-        connx.maxpool("", ())
+        fhe.maxpool("", ())
 
     helpers.check_str(
         # pylint: disable=line-too-long

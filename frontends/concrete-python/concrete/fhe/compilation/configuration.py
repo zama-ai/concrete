@@ -30,6 +30,7 @@ class Configuration:
     global_p_error: Optional[float]
     insecure_key_cache_location: Optional[str]
     auto_adjust_rounders: bool
+    single_precision: bool
 
     def _validate(self):
         """
@@ -64,6 +65,7 @@ class Configuration:
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
+        single_precision: bool = True,
     ):
         self.verbose = verbose
         self.show_graph = show_graph
@@ -82,6 +84,7 @@ class Configuration:
         self.p_error = p_error
         self.global_p_error = global_p_error
         self.auto_adjust_rounders = auto_adjust_rounders
+        self.single_precision = single_precision
 
         self._validate()
 

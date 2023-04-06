@@ -218,7 +218,7 @@ def round_bit_pattern(
     if isinstance(x, Tracer):
         computation = Node.generic(
             "round_bit_pattern",
-            [x.output],
+            [deepcopy(x.output)],
             deepcopy(x.output),
             evaluator,
             kwargs={"lsbs_to_remove": lsbs_to_remove},

@@ -167,7 +167,7 @@ def test_node_bad_call(node, args, expected_error, expected_message):
         ),
         pytest.param(
             Node.generic(
-                name="index.static",
+                name="index_static",
                 inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3,))],
                 output=EncryptedTensor(UnsignedInteger(3), shape=(3,)),
                 operation=lambda x: x[slice(None, None, -1)],
@@ -208,7 +208,7 @@ def test_node_bad_call(node, args, expected_error, expected_message):
         ),
         pytest.param(
             Node.generic(
-                name="assign.static",
+                name="assign_static",
                 inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3, 4))],
                 output=EncryptedTensor(UnsignedInteger(3), shape=(3, 4)),
                 operation=lambda *args: args,
@@ -266,7 +266,7 @@ def test_node_format(node, predecessors, expected_result):
         ),
         pytest.param(
             Node.generic(
-                name="index.static",
+                name="index_static",
                 inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3, 4))],
                 output=EncryptedTensor(UnsignedInteger(3), shape=()),
                 operation=lambda *args: args,
@@ -276,7 +276,7 @@ def test_node_format(node, predecessors, expected_result):
         ),
         pytest.param(
             Node.generic(
-                name="assign.static",
+                name="assign_static",
                 inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3, 4))],
                 output=EncryptedTensor(UnsignedInteger(3), shape=(3, 4)),
                 operation=lambda *args: args,

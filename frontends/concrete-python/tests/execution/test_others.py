@@ -273,7 +273,7 @@ def deterministic_unary_function(x):
             {
                 "x": {"status": "encrypted", "range": [0, 84]},
             },
-            id="abs(64 - x)",
+            id="abs(42 - x)",
         ),
         pytest.param(
             lambda x: ~x,

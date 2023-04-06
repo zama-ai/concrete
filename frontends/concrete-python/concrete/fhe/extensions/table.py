@@ -83,7 +83,7 @@ class LookupTable:
 
         computation = Node.generic(
             "tlu",
-            [key.output],
+            [deepcopy(key.output)],
             output,
             LookupTable.apply,
             kwargs={"table": table},
