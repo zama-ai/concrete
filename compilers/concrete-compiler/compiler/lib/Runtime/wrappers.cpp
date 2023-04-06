@@ -422,6 +422,10 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
       cuda_drop_async(in_gpu, (cudaStream_t *)stream, gpu_idx);
     }
 
+  printf("CBS-VP params: N: %u, glwe_dim: %lu, lwe_dim: %lu, pbs_level: %u, pbs_b: %u, "
+         "fpksk_l: %u, fpksk_b: %u, cbs_l: %u, cbs_b: %u, inputs: %lu, luts: %lu\n",
+        polynomial_size, glwe_dim, lwe_small_dim, bsk_level_count, bsk_base_log, fpksk_level_count,
+        fpksk_base_log, cbs_level_count, cbs_base_log, cbs_vp_in_count, lut_count);
     // CBS + vertical packing
     cuda_circuit_bootstrap_vertical_packing_64(
         stream, gpu_idx, out_gpu, bit_extract_out_gpu, 
