@@ -647,6 +647,32 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::NegEintOp op,
   return eNorm;
 }
 
+static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::ToSignedOp op,
+                             llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() == 1 &&
+      operandMANPs[0]->getValue().getMANP().has_value() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().value();
+
+  return eNorm;
+}
+
+static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::ToUnsignedOp op,
+                             llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() == 1 &&
+      operandMANPs[0]->getValue().getMANP().has_value() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().value();
+
+  return eNorm;
+}
+
 /// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 /// that is equivalent to an `FHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MulEintIntOp op,
@@ -1356,6 +1382,14 @@ public:
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::NegEintOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(negEintOp, operands);
+    } else if (auto toSignedOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::ToSignedOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(toSignedOp, operands);
+    } else if (auto toUnsignedOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::ToUnsignedOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(toUnsignedOp, operands);
     } else if (auto mulEintIntOp =
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::MulEintIntOp>(
                        op)) {
