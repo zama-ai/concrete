@@ -1,0 +1,5 @@
+FROM python:3.10-slim
+
+ARG version
+
+RUN pip install concrete-python==${version}
