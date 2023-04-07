@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        machine: ["aws-mac1-metal", "m1mac"]
+        machine: ["aws-mac1-metal", "aws-mac2-metal"]
 
     runs-on: ${{ matrix.machine }}
     steps:

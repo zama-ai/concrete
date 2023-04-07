@@ -150,7 +150,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
-        runs-on: ["aws-mac1-metal", "m1mac"]
+        runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
 
     runs-on: ${{ matrix.runs-on }}
     steps:
@@ -310,19 +310,19 @@ jobs:
       - uses: actions/download-artifact@v3
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
-          name: wheel-3.8-m1mac
+          name: wheel-3.8-aws-mac2-metal
           path: wheels
 
       - uses: actions/download-artifact@v3
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
-          name: wheel-3.9-m1mac
+          name: wheel-3.9-aws-mac2-metal
           path: wheels
 
       - uses: actions/download-artifact@v3
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
-          name: wheel-3.10-m1mac
+          name: wheel-3.10-aws-mac2-metal
           path: wheels
 
       - name: Push wheels to internal PyPI (nightly)

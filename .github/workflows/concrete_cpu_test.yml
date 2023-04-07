@@ -99,7 +99,7 @@ jobs:
 
 
   tests-mac-m1:
-    runs-on: m1mac
+    runs-on: "aws-mac2-metal"
     env:
       RUSTFLAGS: -D warnings
     steps:
