@@ -294,6 +294,20 @@ static llvm::APInt conservativeIntNorm2Sq(mlir::Type t) {
   return APIntWidthExtendUnsignedSq(maxVal);
 }
 
+static llvm::APInt
+getNoOpSqMANP(llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+  // Come from block arg as example
+  if (operandMANPs.size() == 0) {
+    return llvm::APInt{1, 1, false};
+  }
+  assert(operandMANPs[0]->getValue().getMANP().has_value() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().value();
+  return eNorm;
+}
+
 /// Calculates the squared Minimal Arithmetic Noise Padding of an
 /// `FHELinalg.dot_eint_int` operation.
 static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::Dot op,
@@ -1348,11 +1362,12 @@ public:
                    llvm::dyn_cast<mlir::concretelang::FHE::MaxEintOp>(op)) {
       norm2SqEquiv = getSqMANP(maxEintOp, operands);
     } else if (llvm::isa<mlir::concretelang::FHE::ZeroEintOp>(op) ||
-               llvm::isa<mlir::concretelang::FHE::ToBoolOp>(op) ||
-               llvm::isa<mlir::concretelang::FHE::FromBoolOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::ZeroTensorOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::ApplyLookupTableEintOp>(op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
+    } else if (llvm::isa<mlir::concretelang::FHE::ToBoolOp>(op) ||
+               llvm::isa<mlir::concretelang::FHE::FromBoolOp>(op)) {
+      norm2SqEquiv = getNoOpSqMANP(operands);
     }
     // FHELinalg Operators
     else if (auto dotOp =
