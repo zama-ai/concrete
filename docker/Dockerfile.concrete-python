@@ -2,4 +2,4 @@ FROM python:3.10-slim
 
 ARG version
 
-RUN pip install concrete-python==${version}
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu concrete-python==${version}
