@@ -128,7 +128,7 @@ class Helpers:
             auto_parallelize=False,
             jit=True,
             insecure_key_cache_location=INSECURE_KEY_CACHE_LOCATION,
-            global_p_error=(1 / 10_000),
+            global_p_error=(1 / 100_000),
             single_precision=(not USE_MULTI_PRECISION),
         )
 
