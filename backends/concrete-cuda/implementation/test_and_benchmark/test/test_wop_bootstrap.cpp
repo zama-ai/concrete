@@ -168,7 +168,6 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
 // It executes each test for all pairs on phis X qs (Cartesian product)
 ::testing::internal::ParamGenerator<WopBootstrapTestParams> wop_pbs_params_u64 =
     ::testing::Values(
-
         // lwe_dimension, glwe_dimension, polynomial_size, lwe_modular_variance,
         // glwe_modular_variance, pbs_base_log, pbs_level, ks_base_log,
         // ks_level, pksk_base_log, pksk_level, cbs_base_log, cbs_level, tau, p
@@ -180,7 +179,31 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
                                  1, 9}, // No CMUX tree
         (WopBootstrapTestParams){481, 1, 1024, 7.52316384526264e-37,
                                  7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
-                                 1, 9} // Expanded LUT
+                                 1, 9}, // Expanded LUT
+        // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
+        // ks_base_log, ks_level, pksk_base_log, pksk_level, cbs_base_log, cbs_level, tau, p
+        (WopBootstrapTestParams){691, 2, 1024, 7.52316384526264e-37,
+                                 7.52316384526264e-37, 12, 3, 2, 2, 17, 7, 8, 2,
+                                 5, 3}
+
+//        (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
+//                                 7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
+//                                 1, 10}
+                                 
+// CBS-VP params: N: 1024, glwe_dim: 2, lwe_dim: 691, pbs_level: 3, pbs_b: 12, ks_l: 2, ks_b: 2, 
+//fpksk_l: 7, fpksk_b: 17, cbs_l: 2, cbs_b: 8, inputs: 15, luts: 5
+
+//        (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
+        //                                 7.52316384526264e-37, 4, 9, 1, 9, 4,
+        //                                 9, 6, 4, 2} ,
+        //        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
+        //                                                    7.52316384526264e-37,
+        //                                                    4, 9, 1, 9, 4, 9,
+        //                                                    6, 4, 1},
+        //        (WopBootstrapTestParams){481, 2, 1024, 7.52316384526264e-37,
+        //                                                    7.52316384526264e-37,
+        //                                                    4, 9, 1, 9, 4, 9,
+        //                                                    6, 4, 2}
     );
 
 std::string printParamName(::testing::TestParamInfo<WopBootstrapTestParams> p) {
