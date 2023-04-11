@@ -31,7 +31,7 @@ jobs:
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
           aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
@@ -135,7 +135,7 @@ jobs:
     if: ${{ always() && (needs.start-runner.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
           aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
