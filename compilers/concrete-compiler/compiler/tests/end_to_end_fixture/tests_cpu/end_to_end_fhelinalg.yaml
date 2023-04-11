@@ -473,3 +473,2044 @@ tests:
         ]
         shape: [1, 1, 5, 3]
         signed: true
+---
+description: extract_slice_zero_offset_regression
+program: |
+  func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>) -> tensor<3x!FHE.eint<4>> {
+    %0 = tensor.extract_slice %arg0[0, 0] [3, 1] [1, 1] : tensor<3x2x!FHE.eint<4>> to tensor<3x1x!FHE.eint<4>>
+    %1 = tensor.collapse_shape %0 [[0, 1]] : tensor<3x1x!FHE.eint<4>> into tensor<3x!FHE.eint<4>>
+    return %1 : tensor<3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1, 2, 3, 4, 5, 6]
+      shape: [3,2]
+    outputs:
+    - tensor: [1,3,5]
+      shape: [3]
+  
+---
+description: extract_slice_nonzero_offset_regression
+program: |
+  func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>) -> tensor<3x!FHE.eint<4>> {
+    %0 = tensor.extract_slice %arg0[0, 1] [3, 1] [1, 1] : tensor<3x2x!FHE.eint<4>> to tensor<3x1x!FHE.eint<4>>
+    %1 = tensor.collapse_shape %0 [[0, 1]] : tensor<3x1x!FHE.eint<4>> into tensor<3x!FHE.eint<4>>
+    return %1 : tensor<3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1, 2, 3, 4, 5, 6,]
+      shape: [3,2]
+    outputs:
+    - tensor: [2,4,6]
+      shape: [3]
+   
+---
+description: add_eint_int_term_to_term_ret_lambda_argument
+program: |
+  // Returns the term to term addition of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31, 6, 12, 9]
+      shape: [4]
+    - tensor: [32, 9, 2, 3]
+      shape: [4]
+    outputs:
+    - tensor: [63, 15, 14, 12]
+      shape: [4]
+---
+description: add_eint_int_term_to_term_ret_lambda_argument_multi_dim
+program: |
+  // Returns the term to term addition of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x2x3x!FHE.eint<6>>, %a1: tensor<4x2x3xi7>) -> tensor<4x2x3x!FHE.eint<6>> {
+    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x2x3x!FHE.eint<6>>, tensor<4x2x3xi7>) -> tensor<4x2x3x!FHE.eint<6>>
+    return %res : tensor<4x2x3x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31, 6, 12, 9, 1, 2, 3, 4, 9, 0, 3, 2,
+               2,  1, 0,  6, 3, 6, 2, 8, 0, 0, 4, 3]
+      shape: [4,2,3]
+    - tensor: [32, 9, 2, 3, 6, 6, 2, 1, 1, 6, 9, 7,
+               3,  5, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      shape: [4,2,3]
+    outputs:
+    - tensor: [63, 15, 14, 12,  7,  8,  5,  5, 10,  6, 12,  9,  5,  6,  0,  7,  4,
+               7,  3,  9,  1,  1,  5,  4]
+      shape: [4,2,3]
+   
+---
+description: add_eint_int_term_to_term_broadcast
+program: |
+  // Returns the term to term addition of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4xi6>) -> tensor<4x4x4x!FHE.eint<5>> {
+    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4xi6>) -> tensor<4x4x4x!FHE.eint<5>>
+    return %res : tensor<4x4x4x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [4,1,4]
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [1,4,4]
+    outputs:
+    - tensor: [ 2,  4,  6,  8,  6,  8, 10, 12, 10, 12, 14, 16, 14, 16, 18, 20,  6,
+        8, 10, 12, 10, 12, 14, 16, 14, 16, 18, 20, 18, 20, 22, 24, 10, 12,
+       14, 16, 14, 16, 18, 20, 18, 20, 22, 24, 22, 24, 26, 28, 14, 16, 18,
+       20, 18, 20, 22, 24, 22, 24, 26, 28, 26, 28, 30, 32]
+      shape: [4, 4, 4]
+   
+---
+description: add_eint_int_matrix_column
+program: |
+  // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
+  //
+  // [1,2,3]   [1]   [2,3,4]
+  // [4,5,6] + [2] = [6,7,8]
+  // [7,8,9]   [3]   [10,11,12]
+  //
+  // The dimension #1 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [3,1]
+    outputs:
+    - tensor: [ 2,  3,  4,  6,  7,  8, 10, 11, 12]
+      shape: [3,3]
+   
+---
+description: add_eint_int_matrix_line
+program: |
+  // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
+  //
+  // [1,2,3]             [2,4,6]
+  // [4,5,6] + [1,2,3] = [5,7,9]
+  // [7,8,9]             [8,10,12]
+  //
+  // The dimension #2 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [1,3]
+    outputs:
+    - tensor: [ 2,  4,  6,  5,  7,  9,  8, 10, 12]
+      shape: [3,3]
+
+---
+description: add_eint_term_to_term_broadcast
+program: |
+  // Returns the term to term addition of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1:
+  tensor<1x4x4x!FHE.eint<5>>) -> tensor<4x4x4x!FHE.eint<5>> {
+    %res = "FHELinalg.add_eint"(%a0, %a1) :
+    (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4x!FHE.eint<5>>) ->
+    tensor<4x4x4x!FHE.eint<5>> return %res : tensor<4x4x4x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [4,1,4]
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [1,4,4]
+    outputs:
+    - tensor: [ 2,  4,  6,  8,  6,  8, 10, 12, 10, 12, 14, 16, 14, 16, 18, 20,  6,
+        8, 10, 12, 10, 12, 14, 16, 14, 16, 18, 20, 18, 20, 22, 24, 10, 12,
+       14, 16, 14, 16, 18, 20, 18, 20, 22, 24, 22, 24, 26, 28, 14, 16, 18,
+       20, 18, 20, 22, 24, 22, 24, 26, 28, 26, 28, 30, 32]
+      shape: [4,4,4]
+   
+---
+description: add_eint_matrix_column
+program: |
+  // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
+  //
+  // [1,2,3]   [1]   [2,3,4]
+  // [4,5,6] + [2] = [6,7,8]
+  // [7,8,9]   [3]   [10,11,12]
+  //
+  // The dimension #1 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1:
+  tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [3,1]
+    outputs:
+    - tensor: [ 2, 3, 4, 6, 7, 8,10,11,12]
+      shape: [3,3]
+
+---
+description: add_eint_matrix_line
+program: |
+  // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
+  //
+  // [1,2,3]             [2,4,6]
+  // [4,5,6] + [1,2,3] = [5,7,9]
+  // [7,8,9]             [8,10,12]
+  //
+  // The dimension #2 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1:
+  tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>,
+    tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> return %res :
+    tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [1,3]
+    outputs:
+    - tensor: [ 2, 4, 6, 5, 7, 9, 8,10,12]
+      shape: [3,3]
+      
+---
+description: add_eint_tensor_dim_equals_1
+program: |
+  // Broadcasting shouldn't happen when some dimensions are equals to 1
+  func.func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
+    %1 = "FHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x1x2x!FHE.eint<5>>, tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>>
+    return %1 : tensor<3x1x2x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,4,5,7,8]
+      shape: [3,1,2]
+    - tensor: [8,10,12,14,16,18]
+      shape: [3,1,2]
+    outputs:
+    - tensor: [ 9,12,16,19,23,26]
+      shape: [3,1,2]
+   
+---
+description: sub_int_eint_term_to_term
+program: |
+  // Returns the term to term substraction of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi5>, tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>>
+    return %res : tensor<4x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [32, 9, 12, 9]
+      shape: [4]
+    - tensor: [31, 6, 2, 3]
+      shape: [4]
+    outputs:
+    - tensor: [ 1, 3, 10, 6]
+      shape: [4]
+         
+---
+description: sub_int_eint_term_to_term_broadcast
+program: |
+  // Returns the term to term substraction of `%a0` with `%a1`, where dimensions equals to one are stretched.
+  func.func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
+    %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi8>, tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>>
+    return %res : tensor<4x4x4x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [4,1,4]
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [1,4,4]
+    outputs:
+    - tensor: [  0,  0,  0,  0,252,252,252,252,248,248,248,248,244,244,244,244,  4,  4,
+   4,  4,  0,  0,  0,  0,252,252,252,252,248,248,248,248,  8,  8,  8,  8,
+   4,  4,  4,  4,  0,  0,  0,  0,252,252,252,252, 12, 12, 12, 12,  8,  8,
+   8,  8,  4,  4,  4,  4,  0,  0,  0,  0]
+      shape: [4,4,4]
+   
+---
+description: sub_int_eint_matrix_column
+program: |
+  // Returns the substraction of a 3x3 matrix of integers and a 3x1 matrix (a column) of encrypted integers.
+  //
+  // [1,2,3]   [1]   [0,2,3]
+  // [4,5,6] - [2] = [2,3,4]
+  // [7,8,9]   [3]   [4,5,6]
+  //
+  // The dimension #1 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3xi5>, %a1: tensor<3x1x!FHE.eint<4>>) ->
+  tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>,
+    tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> return %res :
+    tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [3,1]
+    outputs:
+    - tensor: [0,1,2,2,3,4,4,5,6]
+      shape: [3,3]
+   
+---
+description: sub_int_eint_matrix_line
+program: |
+  // Returns the substraction of a 3x3 matrix of integers and a 1x3 matrix (a line) of encrypted integers.
+  //
+  // [1,2,3]             [0,0,0]
+  // [4,5,6] + [1,2,3] = [3,3,3]
+  // [7,8,9]             [6,6,6]
+  //
+  // The dimension #2 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3xi5>, %a1: tensor<1x3x!FHE.eint<4>>) ->
+  tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>,
+    tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> return %res :
+    tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [1,3]
+    outputs:
+    - tensor: [0,0,0,3,3,3,6,6,6]
+      shape: [3,3]
+         
+---
+description: sub_eint_int_term_to_term_broadcast
+program: |
+  func.func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
+    %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<1x4x4x!FHE.eint<7>>, tensor<4x1x4xi8>) -> tensor<4x4x4x!FHE.eint<7>>
+    return %res : tensor<4x4x4x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [4,1,4]
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [1,4,4]
+    outputs:
+    - tensor: [  0,  0,  0,  0,  4,  4,  4,  4,  8,  8,  8,  8, 12, 12, 12, 12,252,252,
+ 252,252,  0,  0,  0,  0,  4,  4,  4,  4,  8,  8,  8,  8,248,248,248,248,
+ 252,252,252,252,  0,  0,  0,  0,  4,  4,  4,  4,244,244,244,244,248,248,
+ 248,248,252,252,252,252,  0,  0,  0,  0]
+      shape: [4,4,4]
+   
+---
+description: sub_eint_int_matrix_column
+program: |
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) ->
+  tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [3,1]
+    outputs:
+    - tensor: [0,1,2,2,3,4,4,5,6]
+      shape: [3, 3]
+   
+---
+description: sub_eint_int_matrix_line
+program: |
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) ->
+  tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [1,3]
+    outputs:
+    - tensor: [0,0,0,3,3,3,6,6,6]
+      shape: [3,3]
+
+---
+description: sub_eint_term_to_term
+program: |
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31, 6, 12, 9]
+      shape: [4]
+    - tensor: [4, 2, 9, 3]
+      shape: [4]
+    outputs:
+    - tensor: [27, 4, 3, 6]
+      shape: [4]
+         
+---
+description: sub_eint_term_to_term_broadcast
+program: |
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4x!FHE.eint<5>>) -> tensor<4x4x4x!FHE.eint<5>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4x!FHE.eint<5>>) ->
+    tensor<4x4x4x!FHE.eint<5>> return %res : tensor<4x4x4x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+    - tensor: [10,20,30,40,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [4,1,4]
+    - tensor: [1,2,3,4,4,3,2,1,3,1,4,2,2,4,1,3]
+      shape: [1,4,4]
+    outputs:
+    - tensor: [ 9,18,27,36, 6,17,28,39, 7,19,26,38, 8,16,29,37, 4, 4, 4, 4, 1, 3, 5, 7,
+  2, 5, 3, 6, 3, 2, 6, 5, 8, 8, 8, 8, 5, 7, 9,11, 6, 9, 7,10, 7, 6,10, 9,
+ 12,12,12,12, 9,11,13,15,10,13,11,14,11,10,14,13]
+      shape: [4,4,4]
+   
+---
+description: sub_eint_matrix_column
+program: |
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [3,1]
+    outputs:
+    - tensor: [0,1,2,2,3,4,4,5,6]
+      shape: [3,3]
+    
+---
+description: sub_eint_matrix_line
+program: |
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [1,3]
+    outputs:
+    - tensor: [0,0,0,3,3,3,6,6,6]
+      shape: [3,3]
+     
+---
+description: sub_eint_tensor_dim_equals_1
+program: |
+  func.func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
+    %1 = "FHELinalg.sub_eint"(%arg0, %arg1) : (tensor<3x1x2x!FHE.eint<5>>, tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>>
+    return %1 : tensor<3x1x2x!FHE.eint<5>>
+  }
+tests:
+  - inputs:
+    - tensor: [8,10,12,14,16,18]
+      shape: [3,1,2]
+    - tensor: [1,2,4,5,7,8]
+      shape: [3,1,2]
+    outputs:
+    - tensor: [ 7, 8, 8, 9, 9,10]
+      shape: [3,1,2]
+      
+---
+description: mul_eint_int_term_to_term
+program: |
+  // Returns the term to term multiplication of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31,6,12,9]
+      shape: [4]
+    - tensor: [2,3,2,3]
+      shape: [4]
+    outputs:
+    - tensor: [62,18,24,27]
+      shape: [4]
+         
+---
+description: mul_eint_int_term_to_term_broadcast
+program: |
+  // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equals to one are stretched.
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<6>>, %a1: tensor<1x4x4xi7>) -> tensor<4x4x4x!FHE.eint<6>> {
+    %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<6>>, tensor<1x4x4xi7>) -> tensor<4x4x4x!FHE.eint<6>>
+    return %res : tensor<4x4x4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+      shape: [4,1,4]
+    - tensor: [1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1]
+      shape: [1,4,4]
+    outputs:
+    - tensor: [ 1, 4, 0, 4, 2, 0, 3, 8, 0, 2, 6, 0, 1, 4, 0, 4, 5,12, 0, 8,10, 0, 7,16,
+  0, 6,14, 0, 5,12, 0, 8, 9,20, 0,12,18, 0,11,24, 0,10,22, 0, 9,20, 0,12,
+ 13,28, 0,16,26, 0,15,32, 0,14,30, 0,13,28, 0,16]
+      shape: [4,4,4]
+   
+---
+description: mul_eint_int_matrix_column
+program: |
+  // Returns the multiplication of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of integers.
+  //
+  // [1,2,3]   [1]   [1,2,3]
+  // [4,5,6] * [2] = [8,10,18]
+  // [7,8,9]   [3]   [21,24,27]
+  //
+  // The dimension #1 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [3,1]
+    outputs:
+    - tensor: [ 1, 2, 3, 8,10,12,21,24,27]
+      shape: [3,3]
+ 
+---
+description: mul_eint_int_matrix_line
+program: |
+  // Returns the multiplication of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of integers.
+  //
+  // [1,2,3]             [2,4,6]
+  // [4,5,6] * [1,2,3] = [5,7,9]
+  // [7,8,9]             [8,10,12]
+  //
+  // The dimension #2 of operand #2 is stretched as it is equals to 1.
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9]
+      shape: [3,3]
+    - tensor: [1,2,3]
+      shape: [1,3]
+    outputs:
+    - tensor: [ 1, 4, 9, 4,10,18, 7,16,27]
+      shape: [3,3]
+         
+         
+---
+description: apply_lookup_table
+program: |
+    // Returns the lookup of 3x3 matrix of encrypted indices of with 2 on a table of size 4=2² of clear integers.
+    //
+    // [0,1,2]                 [1,3,5]
+    // [3,0,1] lut [1,3,5,7] = [7,1,3]
+    // [2,3,0]                 [5,7,1]
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
+      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
+      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!FHE.eint<3>>
+      return %res : tensor<3x3x!FHE.eint<3>>
+    }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,0,1,2,3,0]
+      shape: [3,3]
+    outputs:
+    - tensor: [1,3,5,7,1,3,5,7,1]
+      shape: [3,3]
+
+---
+description: apply_lookup_table_batched
+program: |
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
+      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
+      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!FHE.eint<3>>
+      return %res : tensor<3x3x!FHE.eint<3>>
+    }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,0,1,2,3,0]
+      shape: [3,3]
+    outputs:
+    - tensor: [1,3,5,7,1,3,5,7,1]
+      shape: [3,3]
+
+---
+description: apply_multi_lookup_table
+program: |
+    // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a 3x3 matrix of tables of size 4=2² of clear integers.
+    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
+      %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
+      return %1: tensor<3x3x!FHE.eint<2>>
+    }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,0,1,2,3,0]
+      shape: [3,3]
+    - tensor: [1,3,5,7,0,4,1,3,3,2,5,0,0,2,1,2,7,1,0,2,0,1,2,3,2,1,0,3,0,1,2,3,6,5,4,3]
+      shape: [3,3,4]
+    outputs:
+    - tensor: [1,4,5,2,7,1,0,3,6]
+      shape: [3,3]
+   
+---
+description: apply_multi_lookup_table_with_boradcast
+program: |
+    // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a vector of 3 tables of size 4=2² of clear integers.
+    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
+      %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
+      return %1: tensor<3x3x!FHE.eint<2>>
+    }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,0,1,2,3,0]
+      shape: [3,3]
+    - tensor: [1,3,5,7,0,2,1,3,2,1,0,6]
+      shape: [3,4]
+    outputs:
+    - tensor: [1,2,0,7,0,1,5,3,2]
+      shape: [3,3]
+    
+   
+---
+description: apply_mapped_lookup_table_sequential
+program: |
+    // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
+      %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
+        (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
+      return %1: tensor<3x3x!FHE.eint<2>>
+    }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,0,1,2,3,0]
+      shape: [3,3]
+    - tensor: [3,0,0,0,0,3,0,0,0,0,3,0,0,0,0,3,3,0,0,0,0,3,0,0,0,0,3,0,0,0,0,3,3,0,0,0]
+      shape: [9,4]
+    - tensor: [0,1,2,3,4,5,6,7,8]
+      shape: [3,3]
+    outputs:
+    - tensor: [3,3,3,3,3,3,3,3,3]
+      shape: [3,3]
+   
+---
+description: apply_mapped_lookup_table_same_lut
+program: |
+    // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
+      %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
+        (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
+      return %1: tensor<3x3x!FHE.eint<2>>
+    }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,0,1,2,3,0]
+      shape: [3,3]
+    - tensor: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      shape: [9,4]
+    - tensor: [4,4,4,4,4,4,4,4,4]
+      shape: [3,3]
+    outputs:
+    - tensor: [1,2,3,1,1,2,3,1,1]
+      shape: [3,3]
+
+---
+description: dot_eint_int_7
+program: |
+  func.func @main(%arg0: tensor<4x!FHE.eint<7>>,
+                     %arg1: tensor<4xi8>) -> !FHE.eint<7>
+  {
+    %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+      (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>
+    return %ret : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3]
+      shape: [4]
+    - tensor: [0,1,2,3]
+      shape: [4]
+    outputs:
+    - scalar: 14
+    
+---
+description: neg_eint
+program: |
+    // Returns the negation of a 3x3 matrix of encrypted integers of width 2.
+    //
+    //        ([0,1,2])   [0,7,6]
+    // negate ([3,4,5]) = [5,4,3]
+    //        ([6,7,0])   [2,1,0]
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<2>> {
+      %res = "FHELinalg.neg_eint"(%t) : (tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<2>>
+      return %res : tensor<3x3x!FHE.eint<2>>
+    }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,0]
+      shape: [3,3]
+    outputs:
+    - tensor: [0,7,6,5,4,3,2,1,0]
+      shape: [3,3]
+      
+---
+description: matmul_eint_int_2d_2d
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+    %y = arith.constant dense<
+
+    [
+      [1, 2],
+      [3, 4],
+      [5, 0],
+      [1, 2]
+    ]
+
+    > : tensor<4x2xi8>
+    %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
+    return %0 : tensor<3x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,0,1,2,3,4,5,0]
+      shape: [3,4]
+    outputs:
+    - tensor: [26,18,12,14,40,22]
+      shape: [3,2]
+  
+---
+description: matmul_eint_int_1d_2d
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
+    %y = arith.constant dense<
+
+    [
+      [1, 2],
+      [3, 4],
+      [5, 0]
+    ]
+
+    > : tensor<3x2xi8>
+    %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<3x!FHE.eint<7>>, tensor<3x2xi8>) -> tensor<2x!FHE.eint<7>>
+    return %0 : tensor<2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3]
+      shape: [3]
+    outputs:
+    - tensor: [22,10]
+      shape: [2]
+   
+---
+description: matmul_eint_int_1d_3d
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
+    %y = arith.constant dense<
+
+    [
+      [
+        [1, 2],
+        [3, 4],
+        [5, 0]
+      ],
+      [
+        [5, 4],
+        [3, 2],
+        [1, 0]
+      ],
+      [
+        [1, 4],
+        [2, 5],
+        [3, 0]
+      ],
+      [
+        [5, 2],
+        [4, 1],
+        [3, 0]
+      ]
+    ]
+
+    > : tensor<4x3x2xi8>
+    %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<3x!FHE.eint<7>>, tensor<4x3x2xi8>) -> tensor<4x2x!FHE.eint<7>>
+    return %0 : tensor<4x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3]
+      shape: [3]
+    outputs:
+    - tensor: [22,10,14,8,14,14,22,4]
+      shape: [4,2]
+   
+---
+description: matmul_eint_int_2d_1d
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+    %y = arith.constant dense<
+
+    [1, 2, 3, 4]
+
+    > : tensor<4xi8>
+    %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<3x4x!FHE.eint<7>>, tensor<4xi8>) -> tensor<3x!FHE.eint<7>>
+    return %0 : tensor<3x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,0,1,2,3,4,5,0]
+      shape: [3,4]
+    outputs:
+    - tensor: [30,16,26]
+      shape: [3]
+   
+---
+description: matmul_eint_int_3d_1d
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
+    %y = arith.constant dense<
+
+    [1, 2, 3, 4]
+
+    > : tensor<4xi8>
+    %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<2x3x4x!FHE.eint<7>>, tensor<4xi8>) -> tensor<2x3x!FHE.eint<7>>
+    return %0 : tensor<2x3x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,0,1,2,3,4,5,0,1,4,5,2,2,5,4,1,3,0,3,0]
+      shape: [2,3,4]
+    outputs:
+    - tensor: [30,16,26,32,28,12]
+      shape: [2,3]
+         
+---
+description: matmul_eint_int_3d_3d
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x2x!FHE.eint<7>> {
+    %y = arith.constant dense<
+  
+    [
+      [
+        [1, 2],
+        [3, 4],
+        [5, 0],
+        [1, 2]
+      ],
+      [
+        [1, 5],
+        [2, 0],
+        [3, 1],
+        [4, 2]
+      ]
+    ]
+  
+    > : tensor<2x4x2xi8>
+    %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<2x3x4x!FHE.eint<7>>, tensor<2x4x2xi8>) -> tensor<2x3x2x!FHE.eint<7>>
+    return %0 : tensor<2x3x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,0,1,2,3,4,5,0,1,4,5,2,2,5,4,1,3,0,3,0]
+      shape: [2,3,4]
+    outputs:
+    - tensor: [26,18,12,14,40,22,32,14,28,16,12,18]
+      shape: [2,3,2]
+   
+---
+description: matmul_eint_int_4d_3d
+program: |
+  func.func @main(%x: tensor<2x1x3x4x!FHE.eint<7>>) -> tensor<2x5x3x2x!FHE.eint<7>> {
+    %y = arith.constant dense<
+    [
+      [
+        [1, 2],
+        [3, 4],
+        [5, 0],
+        [1, 2]
+      ],
+      [
+        [1, 5],
+        [2, 0],
+        [3, 1],
+        [4, 2]
+      ],
+      [
+        [2, 1],
+        [4, 3],
+        [0, 5],
+        [2, 1]
+      ],
+      [
+        [5, 1],
+        [0, 2],
+        [1, 3],
+        [2, 4]
+      ],
+      [
+        [1, 3],
+        [5, 1],
+        [2, 0],
+        [4, 2]
+      ]
+    ]
+
+    > : tensor<5x4x2xi8>
+    %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<2x1x3x4x!FHE.eint<7>>, tensor<5x4x2xi8>) -> tensor<2x5x3x2x!FHE.eint<7>>
+    return %0 : tensor<2x5x3x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,0,1,2,3,4,5,0,1,4,5,2,2,5,4,1,3,0,3,0]
+      shape: [2,1,3,4]
+    outputs:
+    - tensor: [26,18,12,14,40,22,30,16,16,30,26,20,18,26,14,12,22,40,16,30,30,16,20,26,33,13,15,19,33,13,40,22,38,26,18,6,32,14,28,16,12,18,22,40,26,38,6,18,14,32,16,28,18,12,39,11,39,13,9,9]
+      shape: [2,5,3,2]
+
+---
+description: matmul_int_eint
+program: |
+  // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
+  //         [ 1, 2, 3]
+  //         [ 2, 3, 4]
+  //       *
+  // [1,2]   [ 5, 8,11]
+  // [3,4] = [11,18,25]
+  // [5,6]   [17,28,39]
+  func.func @main(%a: tensor<3x2xi7>, %b: tensor<2x3x!FHE.eint<6>>) -> tensor<3x3x!FHE.eint<6>> {
+    %0 = "FHELinalg.matmul_int_eint"(%a, %b) : (tensor<3x2xi7>, tensor<2x3x!FHE.eint<6>>) -> tensor<3x3x!FHE.eint<6>>
+    return %0 : tensor<3x3x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6]
+      shape: [3,2]
+    - tensor: [1,2,3,2,3,4]
+      shape: [2,3]
+    outputs:
+    - tensor: [5,8,11,11,18,25,17,28,39]
+      shape: [3,3]
+      
+---
+description: conv2d_simple_input44_kernel22
+program: |
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.conv2d"(%input, %weight){
+      strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
+    } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
+    return %0 : tensor<1x1x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+      shape: [1,1,4,4]
+    - tensor: [1,2,2,1]
+      shape: [1,1,2,2]
+    outputs:
+    - tensor: [9,21,9,21]
+      shape: [1,1,2,2]
+   
+---
+description: conv2d_simple_input44_const_kernel22
+program: |
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+    %weight = arith.constant dense<[[[[1, 2], [2, 1]]]]> : tensor<1x1x2x2xi7>
+    %0 = "FHELinalg.conv2d"(%input, %weight){
+      strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
+    } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
+    return %0 : tensor<1x1x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+      shape: [1,1,4,4]
+    outputs:
+    - tensor: [9,21,9,21]
+      shape: [1,1,2,2]
+   
+---
+description: conv2d_simple_input44_kernel22_const_bias
+program: |
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+    %bias = arith.constant dense<[1]> : tensor<1xi7>
+    %0 = "FHELinalg.conv2d"(%input, %weight, %bias){
+      strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
+    } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>, tensor<1xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
+    return %0 : tensor<1x1x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+      shape: [1,1,4,4]
+    - tensor: [1,2,2,1]
+      shape: [1,1,2,2]
+    outputs:
+    - tensor: [10,22,10,22]
+      shape: [1,1,2,2]
+    
+---
+description: conv2d_batched_input44_kernel22
+program: |
+  func.func @main(%input: tensor<3x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<3x1x2x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.conv2d"(%input, %weight){
+      strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
+    } : (tensor<3x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>) -> tensor<3x1x2x2x!FHE.eint<6>>
+    return %0 : tensor<3x1x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,3,2,3,4,2,3,3,4,3,2,3,4,2,3,3,4,1,2,3,4,1,2,4,2,1,2,3,4,1,2,4,2]
+      shape: [3,1,4,4]
+    - tensor: [1,2,2,1]
+      shape: [1,1,2,2]
+    outputs:
+    - tensor: [9,21,9,21,14,21,14,21,9,21,9,21]
+      shape: [3,1,2,2]
+   
+---
+description: conv2d_simple_input44_kernel2122
+program: |
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<2x1x2x2xi7>) -> tensor<1x2x2x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.conv2d"(%input, %weight){
+      strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
+    } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<2x1x2x2xi7>) -> tensor<1x2x2x2x!FHE.eint<6>>
+    return %0 : tensor<1x2x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+      shape: [1,1,4,4]
+    - tensor: [1,2,2,1,2,2,2,2]
+      shape: [2,1,2,2]
+    outputs:
+    - tensor: [9,21,9,21,12,28,12,28]
+      shape: [1,2,2,2]
+   
+---
+description: conv2d_simple_input1244_kernel1222
+program: |
+  func.func @main(%input: tensor<1x2x4x4x!FHE.eint<6>>, %weight: tensor<1x2x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.conv2d"(%input, %weight){
+      strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
+    } : (tensor<1x2x4x4x!FHE.eint<6>>, tensor<1x2x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
+    return %0 : tensor<1x1x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+      shape: [1,2,4,4]
+    - tensor: [1,2,2,1,1,2,2,1]
+      shape: [1,2,2,2]
+    outputs:
+    - tensor: [18,42,18,42]
+      shape: [1,1,2,2]
+
+   
+---
+description: conv2d_simple_input44_kernel22_dilation2
+program: |
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.conv2d"(%input, %weight){
+      strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[2,2]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
+    } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
+    return %0 : tensor<1x1x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+      shape: [1,1,4,4]
+    - tensor: [1,2,2,1]
+      shape: [1,1,2,2]
+    outputs:
+    - tensor: [12,18,12,18]
+      shape: [1,1,2,2]
+   
+---
+description: tensor_collapse_shape
+program: |
+  func.func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
+    %0 = tensor.collapse_shape %a [[0],[1,2]] : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
+    return %0 : tensor<2x8x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17]
+      shape: [2,2,4]
+    outputs:
+    - tensor: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17]
+      shape: [2,8]
+
+---
+description: tensor_expand_shape
+program: |
+  func.func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
+    %0 = tensor.expand_shape %a [[0],[1,2]] : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
+    return %0 : tensor<2x2x4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17]
+      shape: [2,8]
+    outputs:
+    - tensor: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17]
+      shape: [2,2,4]
+      
+---
+description: sum_empty
+program: |
+  func.func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.sum"(%x) : (tensor<0x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: []
+      shape: [0]
+    outputs:
+    - scalar: 0
+   
+---
+description: sum_1D_no_axes
+program: |
+  func.func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.sum"(%x) : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3]
+      shape: [4]
+    outputs:
+    - scalar: 6
+    
+---
+description: sum_1D_axes_0
+program: |
+  func.func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3]
+      shape: [4]
+    outputs:
+    - scalar: 6
+       
+---
+description: sum_2D_no_axes
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.sum"(%x) : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - scalar: 46
+    
+---
+description: sum_2D_axes_0
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
+    return %0 : tensor<4x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - tensor: [12,15,8,11]
+      shape: [4]
+   
+---
+description: sum_2D_axes_1
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
+    return %0 : tensor<3x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - tensor: [6,22,18]
+      shape: [3]
+   
+---
+description: sum_2D_axes_0_1
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - scalar: 46
+       
+---
+description: sum_3D_no_axes
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.sum"(%x) : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - scalar: 96
+    
+---
+description: sum_3D_axes_0
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>>
+    return %0 : tensor<4x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [14,17,10,13,6,9,12,15]
+      shape: [4,2]
+         
+---
+description: sum_3D_axes_1
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>>
+    return %0 : tensor<3x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [12,16,14,18,16,20]
+      shape: [3,2]
+   
+---
+description: sum_3D_axes_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>>
+    return %0 : tensor<3x4x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [1,5,9,13,17,1,5,9,13,17,1,5]
+      shape: [3,4]
+   
+---
+description: sum_3D_axes_0_1
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>>
+    return %0 : tensor<2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [42,54]
+      shape: [2]
+      
+---
+description: sum_3D_axes_1_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
+    return %0 : tensor<3x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [28,32,36]
+      shape: [3]
+   
+---
+description: sum_3D_axes_0_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
+    return %0 : tensor<4x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [31,23,15,27]
+      shape: [4]
+
+---
+description: sum_3D_axes_0_1_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - scalar: 96
+   
+---
+description: sum_keep_dims_empty
+program: |
+  func.func @main(%x: tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+    return %0 : tensor<1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: []
+      shape: [0]
+    outputs:
+    - tensor: [0]
+      shape: [1]
+   
+---
+description: sum_1D_keep_dims_no_axes
+program: |
+  func.func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+    return %0 : tensor<1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3]
+      shape: [4]
+    outputs:
+    - tensor: [6]
+      shape: [1]
+   
+---
+description: sum_1D_keep_dims_axes_0
+program: |
+  func.func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+    return %0 : tensor<1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3]
+      shape: [4]
+    outputs:
+    - tensor: [6]
+      shape: [1]
+         
+---
+description: sum_2D_keep_dims_no_axes
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
+    return %0 : tensor<1x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - tensor: [46]
+      shape: [1,1]
+      
+---
+description: sum_2D_keep_dims_axes_0
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>>
+    return %0 : tensor<1x4x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - tensor: [12,15,8,11]
+      shape: [1,4]
+   
+---
+description: sum_2D_keep_dims_axes_1
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>>
+    return %0 : tensor<3x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - tensor: [6,22,18]
+      shape: [3,1]
+   
+---
+description: sum_2D_keep_dims_axes_0_1
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
+    return %0 : tensor<1x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1]
+      shape: [3,4]
+    outputs:
+    - tensor: [46]
+      shape: [1,1]
+   
+---
+description: sum_3D_keep_dims_no_axes
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
+    return %0 : tensor<1x1x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [96]
+      shape: [1,1,1]
+   
+---
+description: sum_3D_keep_dims_axes_0
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>>
+    return %0 : tensor<1x4x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [14,17,10,13,6,9,12,15]
+      shape: [1,4,2]
+   
+---
+description: sum_3D_keep_dims_axes_1
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>>
+    return %0 : tensor<3x1x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [12,16,14,18,16,20]
+      shape: [3,1,2]
+   
+---
+description: sum_3D_keep_dims_axes_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>>
+    return %0 : tensor<3x4x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [1,5,9,13,17,1,5,9,13,17,1,5]
+      shape: [3,4,1]
+      
+---
+description: sum_3D_keep_dims_axes_0_1
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>>
+    return %0 : tensor<1x1x2x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [42,54]
+      shape: [1,1,2]
+   
+---
+description: sum_3D_keep_dims_axes_1_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>>
+    return %0 : tensor<3x1x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [28,32,36]
+      shape: [3,1,1]
+      
+---
+description: sum_3D_keep_dims_axes_0_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>>
+    return %0 : tensor<1x4x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [31,23,15,27]
+      shape: [1,4,1]
+      
+---
+description: sum_3D_keep_dims_axes_0_1_2
+program: |
+  func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
+    %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
+    return %0 : tensor<1x1x1x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [3,4,2]
+    outputs:
+    - tensor: [96]
+      shape: [1,1,1]
+      
+---
+description: concat_1D_axis_0
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<7>>, %y: tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>> {
+    %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<3x!FHE.eint<7>>, tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>>
+    return %0 : tensor<7x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2]
+      shape: [3]
+    - tensor: [3,4,5,6]
+      shape: [4]
+    outputs:
+    - tensor: [0,1,2,3,4,5,6]
+      shape: [7]
+   
+---
+description: concat_2D_axis_0
+program: |
+  func.func @main(%x: tensor<2x3x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>> {
+    %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x3x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>>
+    return %0 : tensor<5x3x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5]
+      shape: [2,3]
+    - tensor: [6,7,8,9,0,1,2,3,4]
+      shape: [3,3]
+    outputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4]
+      shape: [5,3]
+         
+---
+description: concat_2D_axis_1
+program: |
+  func.func @main(%x: tensor<3x2x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>> {
+    %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<3x2x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>>
+    return %0 : tensor<3x5x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5]
+      shape: [3,2]
+    - tensor: [6,7,8,9,0,1,2,3,4]
+      shape: [3,3]
+    outputs:
+    - tensor: [0,1,6,7,8,2,3,9,0,1,4,5,2,3,4]
+      shape: [3,5]
+
+---
+description: concat_3D_axis_0
+program: |
+  func.func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>> {
+    %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>>
+    return %0 : tensor<4x4x3x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [2,4,3]
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [2,4,3]
+    outputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [4,4,3]
+      
+---
+description: concat_3D_axis_1
+program: |
+  func.func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>> {
+    %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>>
+    return %0 : tensor<2x8x3x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [2,4,3]
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [2,4,3]
+    outputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [2,8,3]
+   
+---
+description: concat_3D_axis_2
+program: |
+  func.func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>> {
+    %0 = "FHELinalg.concat"(%x, %y) { axis = 2 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>>
+    return %0 : tensor<2x4x6x!FHE.eint<7>>
+  }
+tests:
+  - inputs:
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [2,4,3]
+    - tensor: [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3]
+      shape: [2,4,3]
+    outputs:
+    - tensor: [0,1,2,0,1,2,3,4,5,3,4,5,6,7,8,6,7,8,9,0,1,9,0,1,2,3,4,2,3,4,5,6,7,5,6,7,8,9,0,8,9,0,1,2,3,1,2,3]
+      shape: [2,4,6]
+
+---
+description: tiled_matmul_eint_int_1_1_1
+program: |
+  func.func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [1,1,1] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
+    return %0 : tensor<8x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - tensor: [1,2,3,4,3,1,0,2]
+      shape: [4,2]
+    outputs:
+    - tensor: [16,21,44,57,12,23,30,39,58,55,16,21,44,57,12,23]
+      shape: [8,2]
+
+---
+description: tiled_matmul_eint_int_2_2_2
+program: |
+  func.func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [2,2,2] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
+    return %0 : tensor<8x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - tensor: [1,2,3,4,3,1,0,2]
+      shape: [4,2]
+    outputs:
+    - tensor: [16,21,44,57,12,23,30,39,58,55,16,21,44,57,12,23]
+      shape: [8,2]
+
+---
+description: tiled_matmul_eint_int_4_4_2
+program: |
+  func.func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [4,4,2] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
+    return %0 : tensor<8x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - tensor: [1,2,3,4,3,1,0,2]
+      shape: [4,2]
+    outputs:
+    - tensor: [16,21,44,57,12,23,30,39,58,55,16,21,44,57,12,23]
+      shape: [8,2]
+
+---
+description: tiled_matmul_eint_int_2_4_2
+program: |
+  func.func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [2,4,2] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
+    return %0 : tensor<8x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - tensor: [1,2,3,4,3,1,0,2]
+      shape: [4,2]
+    outputs:
+    - tensor: [16,21,44,57,12,23,30,39,58,55,16,21,44,57,12,23]
+      shape: [8,2]
+      
+---
+description: tiled_matmul_eint_int_8_4_2
+program: |
+  func.func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [8,4,2] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
+    return %0 : tensor<8x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - tensor: [1,2,3,4,3,1,0,2]
+      shape: [4,2]
+    outputs:
+    - tensor: [16,21,44,57,12,23,30,39,58,55,16,21,44,57,12,23]
+      shape: [8,2]
+
+---
+description: extract_slice_parametric_2x2
+program: |
+  func.func @main(%t: tensor<8x4x!FHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!FHE.eint<6>> {
+    %r = tensor.extract_slice %t[%y, %x][2, 2][1, 1] : tensor<8x4x!FHE.eint<6>> to tensor<2x2x!FHE.eint<6>>
+    return %r : tensor<2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - tensor: [1,2,5,6]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - tensor: [2,3,6,7]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - tensor: [5,6,9,0]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - tensor: [6,7,0,1]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 2
+    - scalar: 0
+    outputs:
+    - tensor: [9,0,3,4]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 2
+    - scalar: 1
+    outputs:
+    - tensor: [0,1,4,5]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 3
+    - scalar: 0
+    outputs:
+    - tensor: [3,4,7,8]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 3
+    - scalar: 1
+    outputs:
+    - tensor: [4,5,8,9]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 4
+    - scalar: 0
+    outputs:
+    - tensor: [7,8,1,2]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 4
+    - scalar: 1
+    outputs:
+    - tensor: [8,9,2,3]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 5
+    - scalar: 0
+    outputs:
+    - tensor: [1,2,5,6]
+      shape: [2,2]
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - scalar: 5
+    - scalar: 1
+    outputs:
+    - tensor: [2,3,6,7]
+      shape: [2,2]
+
+---
+description: extract_slice_parametric_2x2x2x2
+program: |
+  func.func @main(%t: tensor<8x4x5x3x!FHE.eint<6>>, %d0: index, %d1: index, %d2: index, %d3: index) -> tensor<2x2x2x2x!FHE.eint<6>> {
+    %r = tensor.extract_slice %t[%d0, %d1, %d2, %d3][2, 2, 2, 2][1, 1, 1, 1] : tensor<8x4x5x3x!FHE.eint<6>> to tensor<2x2x2x2x!FHE.eint<6>>
+    return %r : tensor<2x2x2x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [ 0,  1,  2,  1,  2,  3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  1,  2,
+                3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  1,  2,  3,  2,  3,  4,  3,  4,
+                5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11,
+               12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11,
+               10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14, 15,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14, 13, 14, 15, 10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14,
+               15, 14, 15, 16]
+      shape: [8,4,5,3]
+    - scalar: 0
+    - scalar: 0
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - tensor: [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4]
+      shape: [2,2,2,2]
+  - inputs:
+    - tensor: [ 0,  1,  2,  1,  2,  3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  1,  2,
+                3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  1,  2,  3,  2,  3,  4,  3,  4,
+                5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11,
+               12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11,
+               10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14, 15,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14, 13, 14, 15, 10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14,
+               15, 14, 15, 16]
+      shape: [8,4,5,3]
+    - scalar: 1
+    - scalar: 1
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - tensor: [4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8]
+      shape: [2,2,2,2]
+  - inputs:
+    - tensor: [ 0,  1,  2,  1,  2,  3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  1,  2,
+                3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  1,  2,  3,  2,  3,  4,  3,  4,
+                5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11,
+               12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11,
+               10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14, 15,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14, 13, 14, 15, 10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14,
+               15, 14, 15, 16]
+      shape: [8,4,5,3]
+    - scalar: 6
+    - scalar: 2
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - tensor: [ 9, 10, 10, 11, 10, 11, 11, 12, 10, 11, 11, 12, 11, 12, 12, 13]
+      shape: [2,2,2,2]
+  - inputs:
+    - tensor: [ 0,  1,  2,  1,  2,  3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  1,  2,
+                3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  1,  2,  3,  2,  3,  4,  3,  4,
+                5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11,
+               12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11,
+               10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14, 15,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14, 13, 14, 15, 10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14,
+               15, 14, 15, 16]
+      shape: [8,4,5,3]
+    - scalar: 3
+    - scalar: 1
+    - scalar: 2
+    - scalar: 0
+    outputs:
+    - tensor: [ 6,  7,  7,  8,  7,  8,  8,  9,  7,  8,  8,  9,  8,  9,  9, 10]
+      shape: [2,2,2,2]
+  - inputs:
+    - tensor: [ 0,  1,  2,  1,  2,  3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  1,  2,
+                3,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  1,  2,  3,  2,  3,  4,  3,  4,
+                5,  4,  5,  6,  5,  6,  7,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  2,  3,  4,  3,  4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  3,
+                4,  5,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  3,  4,  5,  4,  5,  6,  5,
+                6,  7,  6,  7,  8,  7,  8,  9,  4,  5,  6,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12,  4,  5,  6,  5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,
+                5,  6,  7,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,
+                8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  5,  6,  7,  6,  7,  8,
+                7,  8,  9,  8,  9, 10,  9, 10, 11,  6,  7,  8,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14,  6,  7,  8,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11,
+               12,  7,  8,  9,  8,  9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,
+                9, 10,  9, 10, 11, 10, 11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11,
+               10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14, 15,  7,  8,  9,  8,  9,
+               10,  9, 10, 11, 10, 11, 12, 11, 12, 13,  8,  9, 10,  9, 10, 11, 10,
+               11, 12, 11, 12, 13, 12, 13, 14,  9, 10, 11, 10, 11, 12, 11, 12, 13,
+               12, 13, 14, 13, 14, 15, 10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14,
+               15, 14, 15, 16]
+      shape: [8,4,5,3]
+    - scalar: 3
+    - scalar: 1
+    - scalar: 2
+    - scalar: 1
+    outputs:
+    - tensor: [ 7,  8,  8,  9,  8,  9,  9, 10,  8,  9,  9, 10,  9, 10, 10, 11]
+      shape: [2,2,2,2]

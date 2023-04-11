@@ -250,7 +250,7 @@ build-end-to-end-jit-fhelinalg: build-initialized
 build-end-to-end-jit-lambda: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_lambda
 
-build-end-to-end-tests: build-end-to-end-jit-chunked-int build-end-to-end-jit-test build-end-to-end-test build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+build-end-to-end-tests: build-end-to-end-jit-chunked-int build-end-to-end-jit-test build-end-to-end-test build-end-to-end-jit-lambda
 
 ### end-to-end-tests CPU
 
@@ -273,8 +273,6 @@ generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR
 SECURITY_TO_TEST=128
 OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
 PARALLEL_END_2_END_TESTS= end_to_end_jit_test \
-	end_to_end_jit_encrypted_tensor \
-	end_to_end_jit_fhelinalg \
 	end_to_end_jit_lambda \
 	end_to_end_jit_lambda
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
