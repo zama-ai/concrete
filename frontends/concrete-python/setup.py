@@ -42,7 +42,7 @@ setuptools.setup(
     author="Zama",
     author_email="hello@zama.ai",
 
-    url="https://github.com/zama-ai/concrete-open-source/tree/main/frontends/concrete-python",
+    url="https://github.com/zama-ai/concrete/tree/main/frontends/concrete-python",
     keywords=[
         "fhe",
         "homomorphic",

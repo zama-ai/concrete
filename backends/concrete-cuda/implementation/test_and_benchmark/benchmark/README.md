@@ -12,7 +12,7 @@ We recommend creating this directory outside of the source directory, but inside
 implementation folder,  to keep the source directory clean.
 
 ```bash
-$ cd concrete-open-source/backends/concrete-cuda/implementation
+$ cd concrete/backends/concrete-cuda/implementation
 $ mkdir build
 $ cd build
 ```

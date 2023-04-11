@@ -27,7 +27,7 @@ jobs:
   sl:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout concrete-open-source
+      - name: Checkout concrete
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
