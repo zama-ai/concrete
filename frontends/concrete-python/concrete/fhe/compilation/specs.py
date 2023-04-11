@@ -4,8 +4,7 @@ Declaration of `ClientSpecs` class.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
-import json
-from typing import List
+from typing import Any
 
 # mypy: disable-error-code=attr-defined
 from concrete.compiler import ClientParameters, PublicArguments, PublicResult
@@ -18,45 +17,35 @@ class ClientSpecs:
     ClientSpecs class, to create Client objects.
     """
 
-    input_signs: List[bool]
     client_parameters: ClientParameters
-    output_signs: List[bool]
 
-    def __init__(
-        self,
-        input_signs: List[bool],
-        client_parameters: ClientParameters,
-        output_signs: List[bool],
-    ):
-        self.input_signs = input_signs
+    def __init__(self, client_parameters: ClientParameters):
         self.client_parameters = client_parameters
-        self.output_signs = output_signs
 
-    def serialize(self) -> str:
+    def __eq__(self, other: Any):
+        if self.client_parameters.serialize() != other.client_parameters.serialize():
+            return False
+
+        return True
+
+    def serialize(self) -> bytes:
         """
         Serialize client specs into a string representation.
 
         Returns:
-            str:
-                string representation of the client specs
+            bytes:
+                serialized client specs
         """
 
-        client_parameters_json = json.loads(self.client_parameters.serialize())
-        return json.dumps(
-            {
-                "input_signs": self.input_signs,
-                "client_parameters": client_parameters_json,
-                "output_signs": self.output_signs,
-            }
-        )
+        return self.client_parameters.serialize()
 
     @staticmethod
-    def deserialize(serialized_client_specs: str) -> "ClientSpecs":
+    def deserialize(serialized_client_specs: bytes) -> "ClientSpecs":
         """
         Create client specs from its string representation.
 
         Args:
-            serialized_client_specs (str):
+            serialized_client_specs (bytes):
                 client specs to deserialize
 
         Returns:
@@ -64,12 +53,8 @@ class ClientSpecs:
                 deserialized client specs
         """
 
-        raw_specs = json.loads(serialized_client_specs)
-
-        client_parameters_bytes = json.dumps(raw_specs["client_parameters"]).encode("utf-8")
-        client_parameters = ClientParameters.deserialize(client_parameters_bytes)
-
-        return ClientSpecs(raw_specs["input_signs"], client_parameters, raw_specs["output_signs"])
+        client_parameters = ClientParameters.deserialize(serialized_client_specs)
+        return ClientSpecs(client_parameters)
 
     def serialize_public_args(self, args: PublicArguments) -> bytes:
         """
@@ -88,7 +73,7 @@ class ClientSpecs:
 
     def deserialize_public_args(self, serialized_args: bytes) -> PublicArguments:
         """
-        Unserialize public arguments from bytes.
+        Deserialize public arguments from bytes.
 
         Args:
             serialized_args (bytes):
@@ -118,7 +103,7 @@ class ClientSpecs:
 
     def deserialize_public_result(self, serialized_result: bytes) -> PublicResult:
         """
-        Unserialize public result from bytes.
+        Deserialize public result from bytes.
 
         Args:
             serialized_result (bytes):

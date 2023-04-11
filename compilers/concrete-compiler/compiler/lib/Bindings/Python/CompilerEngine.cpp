@@ -139,10 +139,11 @@ library_get_client_parameters_path(LibrarySupport_Py support) {
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
 key_set(concretelang::clientlib::ClientParameters clientParameters,
-        std::optional<concretelang::clientlib::KeySetCache> cache) {
+        std::optional<concretelang::clientlib::KeySetCache> cache,
+        uint64_t seedMsb, uint64_t seedLsb) {
   GET_OR_THROW_LLVM_EXPECTED(
-      ks, (mlir::concretelang::LambdaSupport<int, int>::keySet(clientParameters,
-                                                               cache)));
+      ks, (mlir::concretelang::LambdaSupport<int, int>::keySet(
+              clientParameters, cache, seedMsb, seedLsb)));
   return std::move(*ks);
 }
 

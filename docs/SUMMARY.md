@@ -26,8 +26,9 @@
 ## How To
 
 * [Configure](howto/configure.md)
-* [Debug](howto/debug.md)
+* [Manage Keys](howto/manage\_keys.md)
 * [Deploy](howto/deploy.md)
+* [Debug](howto/debug.md)
 
 ## Developer
 

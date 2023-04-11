@@ -11,20 +11,12 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-
-# mypy: disable-error-code=attr-defined
-from concrete.compiler import (
-    ClientSupport,
-    EvaluationKeys,
-    KeySet,
-    KeySetCache,
-    PublicArguments,
-    PublicResult,
-)
+from concrete.compiler import ClientSupport, EvaluationKeys, PublicArguments, PublicResult
 
 from ..dtypes.integer import SignedInteger, UnsignedInteger
 from ..internal.utils import assert_that
 from ..values.value import Value
+from .keys import Keys
 from .specs import ClientSpecs
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -36,9 +28,7 @@ class Client:
     """
 
     specs: ClientSpecs
-
-    _keyset: Optional[KeySet]
-    _keyset_cache: Optional[KeySetCache]
+    _keys: Keys
 
     def __init__(
         self,
@@ -46,12 +36,7 @@ class Client:
         keyset_cache_directory: Optional[Union[str, Path]] = None,
     ):
         self.specs = client_specs
-
-        self._keyset = None
-        self._keyset_cache = None
-
-        if keyset_cache_directory is not None:
-            self._keyset_cache = KeySetCache.new(str(keyset_cache_directory))
+        self._keys = Keys(client_specs, keyset_cache_directory)
 
     def save(self, path: Union[str, Path]):
         """
@@ -63,7 +48,7 @@ class Client:
         """
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            with open(Path(tmp_dir) / "client.specs.json", "w", encoding="utf-8") as f:
+            with open(Path(tmp_dir) / "client.specs.json", "wb") as f:
                 f.write(self.specs.serialize())
 
             path = str(path)
@@ -94,22 +79,42 @@ class Client:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             shutil.unpack_archive(path, tmp_dir, "zip")
-            with open(Path(tmp_dir) / "client.specs.json", "r", encoding="utf-8") as f:
+            with open(Path(tmp_dir) / "client.specs.json", "rb") as f:
                 client_specs = ClientSpecs.deserialize(f.read())
 
         return Client(client_specs, keyset_cache_directory)
 
-    def keygen(self, force: bool = False):
+    @property
+    def keys(self) -> Keys:
+        """
+        Get the keys for the client.
+        """
+        return self._keys
+
+    @keys.setter
+    def keys(self, new_keys: Keys):
+        """
+        Set the keys for the client.
+        """
+        if new_keys.client_specs != self.specs:
+            message = "Unable to set keys as they are generated for a different circuit"
+            raise ValueError(message)
+
+        self._keys = new_keys
+
+    def keygen(self, force: bool = False, seed: Optional[int] = None):
         """
         Generate keys required for homomorphic evaluation.
 
         Args:
             force (bool, default = False):
                 whether to generate new keys even if keys are already generated
+
+            seed (Optional[int], default = None):
+                seed for randomness
         """
 
-        if self._keyset is None or force:
-            self._keyset = ClientSupport.key_set(self.specs.client_parameters, self._keyset_cache)
+        self.keys.generate(force=force, seed=seed)
 
     def encrypt(self, *args: Union[int, np.ndarray]) -> PublicArguments:
         """
@@ -143,12 +148,11 @@ class Client:
             )
 
             width = spec["shape"]["width"]
+            is_signed = spec["shape"]["sign"]
             shape = tuple(spec["shape"]["dimensions"])
             is_encrypted = spec["encryption"] is not None
 
-            expected_dtype = (
-                SignedInteger(width) if self.specs.input_signs[index] else UnsignedInteger(width)
-            )
+            expected_dtype = SignedInteger(width) if is_signed else UnsignedInteger(width)
             expected_value = Value(expected_dtype, shape, is_encrypted)
             if is_valid:
                 expected_min = expected_dtype.min()
@@ -175,9 +179,11 @@ class Client:
                 raise ValueError(message)
 
         self.keygen(force=False)
+        keyset = self.keys._keyset  # pylint: disable=protected-access
+
         return ClientSupport.encrypt_arguments(
             self.specs.client_parameters,
-            self._keyset,
+            keyset,
             [sanitized_args[i] for i in range(len(sanitized_args))],
         )
 
@@ -186,19 +192,20 @@ class Client:
         result: PublicResult,
     ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
         """
-        Decrypt result of homomorphic evaluaton.
+        Decrypt result of homomorphic evaluation.
 
         Args:
             result (PublicResult):
-                encrypted result of homomorphic evaluaton
+                encrypted result of homomorphic evaluation
 
         Returns:
             Union[int, numpy.ndarray]:
-                clear result of homomorphic evaluaton
+                clear result of homomorphic evaluation
         """
 
         self.keygen(force=False)
-        outputs = ClientSupport.decrypt_result(self.specs.client_parameters, self._keyset, result)
+        keyset = self.keys._keyset  # pylint: disable=protected-access
+        outputs = ClientSupport.decrypt_result(self.specs.client_parameters, keyset, result)
         return outputs
 
     @property
@@ -212,6 +219,4 @@ class Client:
         """
 
         self.keygen(force=False)
-
-        assert self._keyset is not None
-        return self._keyset.get_evaluation_keys()
+        return self.keys.evaluation

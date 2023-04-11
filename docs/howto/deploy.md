@@ -65,7 +65,7 @@ Once you have the `Client` object, you can perform key generation:
 
 <!--pytest-codeblocks:skip-->
 ```python
-client.keygen()
+client.keys.generate()
 ```
 
 This method generates encryption/decryption keys and evaluation keys.

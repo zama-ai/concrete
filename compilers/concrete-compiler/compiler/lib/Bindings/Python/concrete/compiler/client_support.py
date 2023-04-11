@@ -58,30 +58,47 @@ class ClientSupport(WrapperCpp):
 
     @staticmethod
     def key_set(
-        client_parameters: ClientParameters, keyset_cache: Optional[KeySetCache] = None
+        client_parameters: ClientParameters,
+        keyset_cache: Optional[KeySetCache] = None,
+        seed_msb: int = 0,
+        seed_lsb: int = 0,
     ) -> KeySet:
         """Generate a key set according to the client parameters.
 
-        If the cache is set, and include equivalent keys as specified by the client parameters, the keyset
-        is loaded, otherwise, a new keyset is generated and saved in the cache.
+        If the cache is set, and include equivalent keys as specified by the client parameters,
+        the keyset is loaded, otherwise, a new keyset is generated and saved in the cache.
 
         Args:
             client_parameters (ClientParameters): client parameters specification
             keyset_cache (Optional[KeySetCache], optional): keyset cache. Defaults to None.
+            seed_msb (int): msb of seed
+            seed_lsb (int): lsb of seed
 
         Raises:
             TypeError: if client_parameters is not of type ClientParameters
             TypeError: if keyset_cache is not of type KeySetCache
+            AssertionError: if seed components is not uint64
 
         Returns:
             KeySet: generated or loaded keyset
         """
+        assert 0 <= seed_msb < 2**64
+        assert 0 <= seed_lsb < 2**64
+
         if keyset_cache is not None and not isinstance(keyset_cache, KeySetCache):
             raise TypeError(
                 f"keyset_cache must be None or of type KeySetCache, not {type(keyset_cache)}"
             )
+
         cpp_cache = None if keyset_cache is None else keyset_cache.cpp()
-        return KeySet.wrap(_ClientSupport.key_set(client_parameters.cpp(), cpp_cache))
+        return KeySet.wrap(
+            _ClientSupport.key_set(
+                client_parameters.cpp(),
+                cpp_cache,
+                seed_msb,
+                seed_lsb,
+            ),
+        )
 
     @staticmethod
     def encrypt_arguments(

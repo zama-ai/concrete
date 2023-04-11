@@ -202,13 +202,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_static(
           "key_set",
           [](clientlib::ClientParameters clientParameters,
-             clientlib::KeySetCache *cache) {
+             clientlib::KeySetCache *cache, uint64_t seedMsb,
+             uint64_t seedLsb) {
             auto optCache = cache == nullptr
                                 ? std::nullopt
                                 : std::optional<clientlib::KeySetCache>(*cache);
-            return key_set(clientParameters, optCache);
+            return key_set(clientParameters, optCache, seedMsb, seedLsb);
           },
-          pybind11::arg().none(false), pybind11::arg().none(true))
+          pybind11::arg().none(false), pybind11::arg().none(true),
+          pybind11::arg("seedMsb") = 0, pybind11::arg("seedLsb") = 0)
       .def_static("encrypt_arguments",
                   [](clientlib::ClientParameters clientParameters,
                      clientlib::KeySet &keySet,
@@ -268,9 +270,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                     return result;
                   })
       .def("serialize",
-           [](clientlib::KeySet &evaluationKeys) {
-             return pybind11::bytes(keySetSerialize(evaluationKeys));
+           [](clientlib::KeySet &keySet) {
+             return pybind11::bytes(keySetSerialize(keySet));
            })
+      .def("client_parameters",
+           [](clientlib::KeySet &keySet) { return keySet.clientParameters(); })
       .def("get_evaluation_keys",
            [](clientlib::KeySet &keySet) { return keySet.evaluationKeys(); });
 

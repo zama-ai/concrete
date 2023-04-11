@@ -4,18 +4,18 @@ Declaration of `Circuit` class.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
-from typing import Any, Optional, Tuple, Union, cast
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 
 # mypy: disable-error-code=attr-defined
 from concrete.compiler import PublicArguments, PublicResult
 
-from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Graph
 from .client import Client
 from .configuration import Configuration
+from .keys import Keys
 from .server import Server
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -43,21 +43,7 @@ class Circuit:
         self._initialize_client_and_server()
 
     def _initialize_client_and_server(self):
-        input_signs = []
-        for i in range(len(self.graph.input_nodes)):  # pylint: disable=consider-using-enumerate
-            input_value = self.graph.input_nodes[i].output
-            assert_that(isinstance(input_value.dtype, Integer))
-            input_dtype = cast(Integer, input_value.dtype)
-            input_signs.append(input_dtype.is_signed)
-
-        output_signs = []
-        for i in range(len(self.graph.output_nodes)):  # pylint: disable=consider-using-enumerate
-            output_value = self.graph.output_nodes[i].output
-            assert_that(isinstance(output_value.dtype, Integer))
-            output_dtype = cast(Integer, output_value.dtype)
-            output_signs.append(output_dtype.is_signed)
-
-        self.server = Server.create(self.mlir, input_signs, output_signs, self.configuration)
+        self.server = Server.create(self.mlir, self.configuration)
 
         keyset_cache_directory = None
         if self.configuration.use_insecure_key_cache:
@@ -85,16 +71,33 @@ class Circuit:
 
         return self.graph(*args, p_error=self.p_error)
 
-    def keygen(self, force: bool = False):
+    @property
+    def keys(self) -> Keys:
+        """
+        Get the keys of the circuit.
+        """
+        return self.client.keys
+
+    @keys.setter
+    def keys(self, new_keys: Keys):
+        """
+        Set the keys of the circuit.
+        """
+        self.client.keys = new_keys
+
+    def keygen(self, force: bool = False, seed: Optional[int] = None):
         """
         Generate keys required for homomorphic evaluation.
 
         Args:
             force (bool, default = False):
                 whether to generate new keys even if keys are already generated
+
+            seed (Optional[int], default = None):
+                seed for randomness
         """
 
-        self.client.keygen(force)
+        self.client.keygen(force, seed)
 
     def encrypt(self, *args: Union[int, np.ndarray]) -> PublicArguments:
         """

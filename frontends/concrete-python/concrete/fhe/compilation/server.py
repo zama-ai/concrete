@@ -8,7 +8,7 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 # mypy: disable-error-code=attr-defined
 import concrete.compiler
@@ -72,24 +72,13 @@ class Server:
         )
 
     @staticmethod
-    def create(
-        mlir: str,
-        input_signs: List[bool],
-        output_signs: List[bool],
-        configuration: Configuration,
-    ) -> "Server":
+    def create(mlir: str, configuration: Configuration) -> "Server":
         """
         Create a server using MLIR and output sign information.
 
         Args:
             mlir (str):
                 mlir to compile
-
-            input_signs (List[bool]):
-                sign status of the inputs
-
-            output_signs (List[bool]):
-                sign status of the outputs
 
             configuration (Optional[Configuration], default = None):
                 configuration to use
@@ -159,7 +148,7 @@ class Server:
             server_lambda = support.load_server_lambda(compilation_result)
 
         client_parameters = support.load_client_parameters(compilation_result)
-        client_specs = ClientSpecs(input_signs, client_parameters, output_signs)
+        client_specs = ClientSpecs(client_parameters)
 
         result = Server(client_specs, output_dir, support, compilation_result, server_lambda)
 
@@ -196,12 +185,6 @@ class Server:
                 with open(Path(tmp) / "circuit.mlir", "w", encoding="utf-8") as f:
                     f.write(self._mlir)
 
-                with open(Path(tmp) / "input_signs.json", "w", encoding="utf-8") as f:
-                    f.write(json.dumps(self.client_specs.input_signs))
-
-                with open(Path(tmp) / "output_signs.json", "w", encoding="utf-8") as f:
-                    f.write(json.dumps(self.client_specs.output_signs))
-
                 with open(Path(tmp) / "configuration.json", "w", encoding="utf-8") as f:
                     f.write(json.dumps(self._configuration.__dict__))
 
@@ -213,7 +196,7 @@ class Server:
             message = "Just-in-Time compilation cannot be saved"
             raise RuntimeError(message)
 
-        with open(Path(self._output_dir.name) / "client.specs.json", "w", encoding="utf-8") as f:
+        with open(Path(self._output_dir.name) / "client.specs.json", "wb") as f:
             f.write(self.client_specs.serialize())
 
         shutil.make_archive(path, "zip", self._output_dir.name)
@@ -243,22 +226,12 @@ class Server:
             with open(output_dir_path / "circuit.mlir", "r", encoding="utf-8") as f:
                 mlir = f.read()
 
-            with open(output_dir_path / "input_signs.json", "r", encoding="utf-8") as f:
-                input_signs = json.load(f)
-                assert_that(isinstance(input_signs, list))
-                assert_that(all(isinstance(sign, bool) for sign in input_signs))
-
-            with open(output_dir_path / "output_signs.json", "r", encoding="utf-8") as f:
-                output_signs = json.load(f)
-                assert_that(isinstance(output_signs, list))
-                assert_that(all(isinstance(sign, bool) for sign in output_signs))
-
             with open(output_dir_path / "configuration.json", "r", encoding="utf-8") as f:
                 configuration = Configuration().fork(**json.load(f))
 
-            return Server.create(mlir, input_signs, output_signs, configuration)
+            return Server.create(mlir, configuration)
 
-        with open(output_dir_path / "client.specs.json", "r", encoding="utf-8") as f:
+        with open(output_dir_path / "client.specs.json", "rb") as f:
             client_specs = ClientSpecs.deserialize(f.read())
 
         support = LibrarySupport.new(
