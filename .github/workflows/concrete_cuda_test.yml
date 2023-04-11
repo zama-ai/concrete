@@ -1,10 +1,24 @@
 # Compile and test Concrete-cuda on an AWS instance
-name: Concrete Cuda tests
+name: Concrete Cuda - Tests
 
 on:
-  workflow_call:
   workflow_dispatch:
-
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -22,52 +36,24 @@ jobs:
           ./format_concrete_cuda.sh
       - name: Check diff
         run: git diff --exit-code
-
-  start-runner:
-    name: Start EC2 runner
-    runs-on: ubuntu-20.04
-    outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
-          aws-region: us-east-1
-      - name: Start EC2 runner
-        id: start-ec2-runner
-        uses: machulav/ec2-github-runner@v2.2.0
-        with:
-          mode: start
-          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
-          ec2-image-id: ami-08e27480d79e82238
-          ec2-instance-type: p3.2xlarge
-          subnet-id: subnet-8123c9e7
-          security-group-id: sg-0466d33ced960ba35
           
   run-cuda-tests-linux:
     concurrency:
       group: concrete_cuda_test-${{ github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     name: Test code in EC2
-    needs: start-runner
-    runs-on: ${{ needs.start-runner.outputs.label }}
+    runs-on: ${{ github.event.inputs.runner_name }}
     strategy:
       fail-fast: false
       # explicit include-based build matrix, of known valid options
       matrix:
         include:
-          # 20.04 supports CUDA 11.0+ (gcc >= 5 && gcc <= 10). SM < 52 deprecated since 11.0
           - os: ubuntu-20.04
             cuda: "11.8"
-            old_cuda: "11.1"
             cuda_arch: "70"
             gcc: 8
     env:
       CUDA_PATH: /usr/local/cuda-${{ matrix.cuda }}
-      OLD_CUDA_PATH: /usr/local/cuda-{{ matrix.old_cuda }}
 
     steps:
     - uses: actions/checkout@v2
@@ -105,45 +91,3 @@ jobs:
       run: |
         cd backends/concrete-cuda/implementation/build
         ./test_and_benchmark/test/test_concrete_cuda
-
-    - name: Export variables for CUDA 11.1
-      run: |
-        echo "CUDA_PATH=$OLD_CUDA_PATH" >> "${GITHUB_ENV}"
-        echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
-        echo "LD_LIBRARY_PATH=$OLD_CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-        echo "CUDACXX=/usr/local/cuda-${{ matrix.old_cuda }}/bin/nvcc" >> "${GITHUB_ENV}"
-    - name: Build concrete-cuda with Cuda 11.1
-      if: ${{ !cancelled() }}
-      run: |
-        cd backends/concrete-cuda/implementation
-        mkdir build-old-cuda
-        cd build-old-cuda
-        cmake ..
-        make -j8
-    - name: Test concrete-cuda with Cuda 11.1
-      if: ${{ !cancelled() }}
-      run: |
-        cd backends/concrete-cuda/implementation/build-old-cuda
-        ./test_and_benchmark/test/test_concrete_cuda --gtest_filter="Wop*"
-
-  stop-runner:
-    name: Stop EC2 runner
-    needs:
-      - start-runner
-      - run-cuda-tests-linux
-    runs-on: ubuntu-20.04
-    if: ${{ always() && (needs.start-runner.result != 'skipped') }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
-          aws-region: us-east-1
-      - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@v2.2.0
-        with:
-          mode: stop
-          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
-          label: ${{ needs.start-runner.outputs.label }}
-          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}

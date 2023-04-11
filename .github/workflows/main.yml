@@ -217,11 +217,13 @@ jobs:
 
 #################################################
 # Concrete-cuda jobs ############################
-  concrete-cuda:
+  concrete-cuda-tests:
     needs: file-change
-    if: needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.concrete-cuda-workflow == 'true' || needs.file-change.outputs.push-main
-    uses: ./.github/workflows/concrete_cuda_test.yml
+    if:  needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.concrete-cuda-workflow == 'true' || needs.file-change.outputs.push-main
+    uses: ./.github/workflows/start_slab.yml
     secrets: inherit
+    with:
+      command: concrete-cuda-tests
 
   concrete-cuda-benchmark:
     needs: file-change
