@@ -48,7 +48,7 @@ PublicArguments::serialize(std::ostream &ostream) {
     assert(aligned != nullptr);
     auto offset = (size_t)preparedArgs[iPreparedArgs++];
     std::vector<size_t> sizes; // includes lweSize as last dim
-    sizes.resize(rank + 1);
+    sizes.resize(rank + (gate.encryption->encoding.crt.empty() ? 1 : 2));
     for (auto dim = 0u; dim < sizes.size(); dim++) {
       // sizes are part of the client parameters signature
       // it's static now but some day it could be dynamic so we serialize
@@ -81,9 +81,14 @@ PublicArguments::unserializeArgs(std::istream &istream) {
     if (!gate.encryption.has_value()) {
       return StringError("Clear values are not handled");
     }
-    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
+
     std::vector<int64_t> sizes = gate.shape.dimensions;
+    if (gate.encryption.has_value() && !gate.encryption->encoding.crt.empty()) {
+      sizes.push_back(gate.encryption->encoding.crt.size());
+    }
+    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
     sizes.push_back(lweSize);
+
     auto sotdOrErr = unserializeScalarOrTensorData(sizes, istream);
 
     if (sotdOrErr.has_error())
@@ -138,9 +143,14 @@ PublicResult::unserialize(std::istream &istream) {
     if (!gate.encryption.has_value()) {
       return StringError("Clear values are not handled");
     }
-    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
+
     std::vector<int64_t> sizes = gate.shape.dimensions;
+    if (gate.encryption.has_value() && !gate.encryption->encoding.crt.empty()) {
+      sizes.push_back(gate.encryption->encoding.crt.size());
+    }
+    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
     sizes.push_back(lweSize);
+
     auto sotd = unserializeScalarOrTensorData(sizes, istream);
 
     if (sotd.has_error())
