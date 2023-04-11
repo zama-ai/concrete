@@ -113,7 +113,7 @@ jobs:
           components: rustfmt, clippy
       # A SSH private key is required as some dependencies are from private repos
       - name: Set ssh keys
-        uses: webfactory/ssh-agent@v0.7.0
+        uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
       - name: Formatting
