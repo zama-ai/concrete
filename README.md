@@ -1,37 +1,29 @@
 <p align="center">
 <!-- product name logo -->
-  <img width=600 src="https://user-images.githubusercontent.com/5758427/177340641-f152edb7-1957-49a3-86ab-246774701aab.png">
+  <img width=1200 src="https://user-images.githubusercontent.com/5758427/231143787-28176cba-c6a6-4070-8808-e724ce75923f.png">
 </p>
-
+<hr/>
+<p align="center">
+  <a href="https://docs.zama.ai/concrete"> 📒 Read documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a>
+</p>
 <p align="center">
 <!-- Version badge using shields.io -->
   <a href="https://github.com/zama-ai/concrete/releases">
     <img src="https://img.shields.io/github/v/release/zama-ai/concrete?style=flat-square">
   </a>
-<!-- Link to docs badge using shields.io -->
-  <a href="https://docs.zama.ai/concrete/">
-    <img src="https://img.shields.io/badge/read-documentation-yellow?style=flat-square">
-  </a>
-<!-- Community forum badge using shields.io -->
-  <a href="https://community.zama.ai/c/concrete">
-    <img src="https://img.shields.io/badge/community%20forum-online-brightgreen?style=flat-square">
-  </a>
-<!-- Open source badge using shields.io -->
-  <a href="https://docs.zama.ai/concrete/developer/contributing">
-    <img src="https://img.shields.io/badge/we're%20open%20source-contributing.md-blue?style=flat-square">
-  </a>
-<!-- Follow on twitter badge using shields.io -->
-  <a href="https://twitter.com/zama_fhe">
-    <img src="https://img.shields.io/badge/follow-zama_fhe-blue?logo=twitter&style=flat-square">
+<!-- Zama Bounty Program -->
+  <a href="https://github.com/zama-ai/bounty-program">
+    <img src="https://img.shields.io/badge/Contribute-Zama%20Bounty%20Program-yellow?style=flat-square">
   </a>
 </p>
+<hr/>
 
 
-**Concrete** is an open-source framework which simplifies the use of fully homomorphic encryption (FHE).
+**Concrete** is an open-source FHE Compiler which simplifies the use of fully homomorphic encryption (FHE).
 
 FHE is a powerful cryptographic tool, which allows computation to be performed directly on encrypted data without needing to decrypt it first. With FHE, you can build services that preserve privacy for all users. FHE is also great against data breaches as everything is done on encrypted data. Even if the server is compromised, in the end no sensitive data is leaked.
 
-Since writing FHE program is hard, concrete framework contains a TFHE Compiler based on LLVM to make this process easier for developers.
+Since writing FHE program is hard, Concrete, based on LLVM, make this process easier for developers.
 
 ## Main features
 
@@ -150,7 +142,7 @@ More generally, if you have built awesome projects using Concrete, feel free to 
 ## Need support?
 
 <a target="_blank" href="https://community.zama.ai">
-  <img src="https://user-images.githubusercontent.com/5758427/191792238-b132e413-05f9-4fee-bee3-1371f3d81c28.png">
+  <img src="https://user-images.githubusercontent.com/5758427/231145251-9cb3f03f-3e0e-4750-afb8-2e6cf391fa43.png">
 </a>
 
 ## License
