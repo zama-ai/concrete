@@ -192,6 +192,57 @@ def test_client_server_api(helpers):
         server.cleanup()
 
 
+def test_client_server_api_crt(helpers):
+    """
+    Test client/server API on a CRT circuit.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted"})
+    def function(x):
+        return x**2
+
+    inputset = [np.random.randint(0, 200, size=(3,)) for _ in range(10)]
+    circuit = function.compile(inputset, configuration.fork(jit=False))
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_dir_path = Path(tmp_dir)
+
+        server_path = tmp_dir_path / "server.zip"
+        circuit.server.save(server_path)
+
+        client_path = tmp_dir_path / "client.zip"
+        circuit.client.save(client_path)
+
+        server = Server.load(server_path)
+
+        serialized_client_specs = server.client_specs.serialize()
+        client_specs = ClientSpecs.deserialize(serialized_client_specs)
+
+        clients = [
+            Client(client_specs, configuration.insecure_key_cache_location),
+            Client.load(client_path, configuration.insecure_key_cache_location),
+        ]
+
+        for client in clients:
+            args = client.encrypt([100, 150, 10])
+
+            serialized_args = client.specs.serialize_public_args(args)
+            serialized_evaluation_keys = client.evaluation_keys.serialize()
+
+            deserialized_args = server.client_specs.deserialize_public_args(serialized_args)
+            deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
+
+            result = server.run(deserialized_args, deserialized_evaluation_keys)
+            serialized_result = server.client_specs.serialize_public_result(result)
+
+            deserialized_result = client.specs.deserialize_public_result(serialized_result)
+            output = client.decrypt(deserialized_result)
+
+            assert np.array_equal(output, [100**2, 150**2, 10**2])
+
+
 def test_client_server_api_via_mlir(helpers):
     """
     Test client/server API.
