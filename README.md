@@ -1,6 +1,6 @@
 <p align="center">
 <!-- product name logo -->
-  <img width=1200 src="https://user-images.githubusercontent.com/5758427/231143787-28176cba-c6a6-4070-8808-e724ce75923f.png">
+  <img width=600 src="https://user-images.githubusercontent.com/5758427/231207493-62676aea-4cb9-4bb4-92b0-20309c8a933a.png">
 </p>
 <hr/>
 <p align="center">

@@ -1,6 +1,6 @@
 # What is Concrete?
 
-[<mark style="background-color:yellow;">⭐️ Star the repo on Github</mark>](https://github.com/zama-ai/concrete) <mark style="background-color:yellow;">| 🗣</mark> [<mark style="background-color:yellow;">Community support forum</mark>](https://community.zama.ai/c/concrete) <mark style="background-color:yellow;">| 📁</mark> [<mark style="background-color:yellow;">Contribute to the project</mark>](dev/contributing.md)
+📁 [Github](https://github.com/zama-ai/concrete) | 💛 [Community support](https://zama.ai/community) | 🟨 [Zama Bounty Program](https://github.com/zama-ai/bounty-program)
 
 <figure><img src="_static/zama_home_docs.png" alt=""><figcaption></figcaption></figure>
 
