@@ -38,7 +38,7 @@ jobs:
           aws-region: us-east-1
       - name: Start EC2 runner
         id: start-ec2-runner
-        uses: machulav/ec2-github-runner@v2.2.0
+        uses: machulav/ec2-github-runner@v2.3.3
         with:
           mode: start
           github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
@@ -141,7 +141,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
           aws-region: us-east-1
       - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@v2.2.0
+        uses: machulav/ec2-github-runner@v2.3.3
         with:
           mode: stop
           github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
