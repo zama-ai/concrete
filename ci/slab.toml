@@ -75,6 +75,11 @@ max_parallel_jobs = 2
 # Concrete CUDA commands
 #################################################
 
+[command.concrete-cuda-tests]
+workflow = "concrete_cuda_test.yml"
+profile = "gpu-bench"
+check_run_name = "Concrete Cuda Tests"
+
 [command.concrete-cuda-benchmark]
 workflow = "concrete_cuda_benchmark.yml"
 profile = "gpu-bench"
