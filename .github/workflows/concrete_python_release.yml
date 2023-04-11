@@ -330,7 +330,7 @@ jobs:
         run: |
           pip install twine==4.0.2
           twine upload wheels/*.whl \
-            -u "${{ secrets.INTERNAL_PYPI_USERNAME }}" \
+            -u "${{ secrets.INTERNAL_PYPI_USER }}" \
             -p "${{ secrets.INTERNAL_PYPI_PASSWORD }}" \
             --repository-url "${{ secrets.INTERNAL_PYPI_URL }}"
 
