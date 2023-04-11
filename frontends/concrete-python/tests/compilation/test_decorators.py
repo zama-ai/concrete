@@ -155,7 +155,7 @@ return %1
 
     @fhe.circuit({"x": "encrypted"}, helpers.configuration())
     def circuit4(x: fhe.uint3):
-        return ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(fhe.uint3)
+        return ((np.sin(x) ** 2) + (np.cos(x) ** 2)).round().astype(fhe.uint3)
 
     helpers.check_str(
         """
@@ -168,16 +168,17 @@ Subgraphs:
 
     %1 = subgraph(%0):
 
-        %0 = input                # EncryptedScalar<uint3>
-        %1 = sin(%0)              # EncryptedScalar<float64>
-        %2 = 2                    # ClearScalar<uint2>
-        %3 = power(%1, %2)        # EncryptedScalar<float64>
-        %4 = cos(%0)              # EncryptedScalar<float64>
-        %5 = 2                    # ClearScalar<uint2>
-        %6 = power(%4, %5)        # EncryptedScalar<float64>
-        %7 = add(%3, %6)          # EncryptedScalar<float64>
-        %8 = astype(%7)           # EncryptedScalar<uint3>
-        return %8
+        %0 = input                         # EncryptedScalar<uint3>
+        %1 = sin(%0)                       # EncryptedScalar<float64>
+        %2 = 2                             # ClearScalar<uint2>
+        %3 = power(%1, %2)                 # EncryptedScalar<float64>
+        %4 = cos(%0)                       # EncryptedScalar<float64>
+        %5 = 2                             # ClearScalar<uint2>
+        %6 = power(%4, %5)                 # EncryptedScalar<float64>
+        %7 = add(%3, %6)                   # EncryptedScalar<float64>
+        %8 = around(%7, decimals=0)        # EncryptedScalar<float64>
+        %9 = astype(%8)                    # EncryptedScalar<uint3>
+        return %9
 
         """.strip(),
         str(circuit4),

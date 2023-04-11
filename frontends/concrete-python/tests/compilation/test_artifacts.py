@@ -23,7 +23,7 @@ def test_artifacts_export(helpers):
 
         @compiler({"x": "encrypted"})
         def f(x):
-            a = ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.int64)
+            a = ((np.sin(x) ** 2) + (np.cos(x) ** 2)).round().astype(np.int64)
             b = np.where(x < 5, x * 10, x + 10)
             return a + b
 

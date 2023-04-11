@@ -451,11 +451,11 @@ def deterministic_unary_function(x):
             id="(60 * np.sin(x)).astype(np.int64) + 60",
         ),
         pytest.param(
-            lambda x: ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.int64),
+            lambda x: ((np.sin(x) ** 2) + (np.cos(x) ** 2)).round().astype(np.int64),
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
-            id="((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.int64)",
+            id="((np.sin(x) ** 2) + (np.cos(x) ** 2)).round().astype(np.int64)",
         ),
         pytest.param(
             lambda x: np.maximum(x, [[10, 20], [30, 40], [50, 60]]),
