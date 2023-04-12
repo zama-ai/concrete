@@ -78,7 +78,7 @@ private:
   std::vector<std::shared_ptr<std::vector<double>>> fourier_bootstrap_keys;
   std::vector<FFT> ffts;
 
-#ifdef CONCRETELANG_CUDA_SUPPORT
+//#ifdef CONCRETELANG_CUDA_SUPPORT
 public:
   void *get_bsk_gpu(uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
                     uint32_t glwe_dim, uint32_t gpu_idx, void *stream) {
@@ -173,7 +173,7 @@ private:
   std::vector<std::unique_ptr<std::mutex>> pksk_gpu_mutex;
   std::vector<void *> pksk_gpu;
   int num_devices;
-#endif
+//#endif
 } RuntimeContext;
 
 } // namespace concretelang
