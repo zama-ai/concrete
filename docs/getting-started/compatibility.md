@@ -2,7 +2,7 @@
 
 ## Supported operations
 
-Here are the operations you can use inside the function you are compiling.
+Here are the operations you can use inside the function you are compiling:
 
 {% hint style="info" %}
 Some of these operations are not supported between two encrypted values. A detailed error will be raised if you try to do something that is not supported.
@@ -166,11 +166,11 @@ Some of these operations are not supported between two encrypted values. A detai
 
 ### Control flow constraints.
 
-Some Python control flow statements are not supported. For example, you cannot have an `if` statement or a `while` statement for which the condition depends on an encrypted value. However, such statements are supported with constant values (e.g., `for i in range(SOME_CONSTANT)`, `if os.environ.get("SOME_FEATURE") == "ON":`).
+Some Python control flow statements are not supported. You cannot have an `if` statement or a `while` statement for which the condition depends on an encrypted value. However, such statements are supported with constant values (e.g., `for i in range(SOME_CONSTANT)`, `if os.environ.get("SOME_FEATURE") == "ON":`).
 
 ### Type constraints.
 
-Another constraint is that you cannot have floating-point inputs or floating-point outputs. You can have floating-point intermediate values as long as they can be converted to an integer Table Lookup (e.g., `(60 * np.sin(x)).astype(np.int64)`).
+You cannot have floating-point inputs or floating-point outputs. You can have floating-point intermediate values as long as they can be converted to an integer Table Lookup (e.g., `(60 * np.sin(x)).astype(np.int64)`).
 
 ### Bit width constraints.
 

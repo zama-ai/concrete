@@ -4,10 +4,10 @@ In this tutorial, we will review the ways to perform direct table lookups in **C
 
 ## Direct table lookup
 
-**Concrete** provides a `LookupTable` class for you to create your own tables and apply them in your circuits.
+**Concrete** provides a `LookupTable` class to create your own tables and apply them in your circuits.
 
 {% hint style="info" %}
-`LookupTable`s can have any number of elements. Let's call them **N**. As long as the lookup variable is in range \[-**N**, **N**), table lookup is valid.
+`LookupTable`s can have any number of elements. Let's call them **N**. As long as the lookup variable is in range \[-**N**, **N**), Table Lookup is valid.
 
 If you go out of bounds of this range, you will get the following error:
 
@@ -92,7 +92,7 @@ assert circuit.encrypt_run_decrypt(3) == table[-3] == -1
 assert circuit.encrypt_run_decrypt(4) == table[-4] == 2
 ```
 
-## Direct multi table lookup
+## Direct multi-table lookup
 
 In case you want to apply a different lookup table to each element of a tensor, you can have a `LookupTable` of `LookupTable`s:
 
@@ -165,7 +165,7 @@ The function is first traced into:
 
 ![](../\_static/tutorials/table-lookup/1.initial.graph.png)
 
-Then, **Concrete** fuses appropriate nodes:
+**Concrete** then fuses appropriate nodes:
 
 ![](../\_static/tutorials/table-lookup/3.final.graph.png)
 

@@ -15,5 +15,5 @@ print(circuit)
 ```
 
 {% hint style="warning" %}
-Formatting is just for debugging. It's not possible to create the circuit back from its textual representation. See [How to Deploy](../howto/deploy.md) if that's your goal.
+Formatting is just for debugging purposes. It's not possible to create the circuit back from its textual representation. See [How to Deploy](../howto/deploy.md) if that's your goal.
 {% endhint %}

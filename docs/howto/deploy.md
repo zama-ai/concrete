@@ -1,6 +1,6 @@
 # Deploy
 
-After developing your circuit, you may want to deploy it. However, sharing the details of your circuit with every client might not be desirable. Further, you might want to perform the computation in dedicated servers. In this case, you can use the `Client` and `Server` features of **Concrete**.
+After developing your circuit, you may want to deploy it. However, sharing the details of your circuit with every client might not be desirable. You might want to perform the computation in dedicated servers, as well. In this case, you can use the `Client` and `Server` features of **Concrete**.
 
 ## Development of the circuit
 
@@ -18,18 +18,18 @@ inputset = range(10)
 circuit = function.compile(inputset)
 ```
 
-Once you have your circuit, you can save everything the server needs like so:
+Once you have your circuit, you can save everything the server needs:
 
 <!--pytest-codeblocks:skip-->
 ```python
 circuit.server.save("server.zip")
 ```
 
-All you need to do now is to send `server.zip` to your computation server.
+Then, send `server.zip` to your computation server.
 
 ## Setting up a server
 
-You can load the `server.zip` you get from the development machine as follows:
+You can load the `server.zip` you get from the development machine:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -38,9 +38,9 @@ from concrete import fhe
 server = fhe.Server.load("server.zip")
 ```
 
-At this point, you will need to wait for requests from clients. The first likely request is for `ClientSpecs`.
+You will need to wait for requests from clients. The first likely request is for `ClientSpecs`.
 
-Clients need `ClientSpecs` to generate keys and request computation. You can serialize `ClientSpecs` like so:
+Clients need `ClientSpecs` to generate keys and request computation. You can serialize `ClientSpecs`:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -51,7 +51,7 @@ Then, you can send it to the clients requesting it.
 
 ## Setting up clients
 
-After getting the serialized `ClientSpecs` from a server, you can create the client object like this:
+After getting the serialized `ClientSpecs` from a server, you can create the client object:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -70,14 +70,14 @@ client.keys.generate()
 
 This method generates encryption/decryption keys and evaluation keys.
 
-The server requires evaluation keys linked to the encryption keys that you just generated. You can serialize your evaluation keys as shown below:
+The server requires evaluation keys linked to the encryption keys that you just generated. You can serialize your evaluation keys as shown:
 
 <!--pytest-codeblocks:skip-->
 ```python
 serialized_evaluation_keys: bytes = client.evaluation_keys.serialize()
 ```
 
-After serialization, you can send the evaluation keys to the server.
+After serialization, send the evaluation keys to the server.
 
 {% hint style="info" %}
 Serialized evaluation keys are very big in size, so you may want to cache them on the server instead of sending them with each request.
@@ -85,18 +85,18 @@ Serialized evaluation keys are very big in size, so you may want to cache them o
 
 ## Encrypting inputs (on the client)
 
-You are now ready to encrypt your inputs and request the server to perform the computation. You can do it like so:
+Now encrypt your inputs and request the server to perform the computation. You can do it like so:
 
 <!--pytest-codeblocks:skip-->
 ```python
 serialized_args: bytes = client.encrypt(7).serialize()
 ```
 
-The only thing left to do is to send serialized args to the server.
+Then, send serialized args to the server.
 
 ## Performing computation (on the server)
 
-Upon having the serialized evaluation keys and serialized arguments, you can deserialize them like so:
+Once you have serialized evaluation keys and serialized arguments, you can deserialize them:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -104,7 +104,7 @@ deserialized_evaluation_keys = fhe.EvaluationKeys.deserialize(serialized_evaluat
 deserialized_args  = server.client_specs.deserialize_public_args(serialized_args)
 ```
 
-And you can perform the computation as well:
+You can perform the computation, as well:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -112,7 +112,7 @@ public_result = server.run(deserialized_args, deserialized_evaluation_keys)
 serialized_public_result: bytes = public_result.serialize()
 ```
 
-Finally, you can send the serialized public result back to the client, so they can decrypt it and get the result of the computation.
+Then, send the serialized public result back to the client, so they can decrypt it and get the result of the computation.
 
 ## Decrypting the result (on the client)
 
@@ -123,7 +123,7 @@ Once you have received the public result of the computation from the server, you
 deserialized_public_result = client.specs.deserialize_public_result(serialized_public_result)
 ```
 
-Finally, you can decrypt the result like so:
+Then, decrypt the result:
 
 <!--pytest-codeblocks:skip-->
 ```python

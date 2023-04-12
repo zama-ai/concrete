@@ -1,10 +1,10 @@
 # Direct Circuits
 
 {% hint style="warning" %}
-Direct circuits are still experimental, and it's very easy to shoot yourself in the foot (e.g., no overflow checks, no type coercion) while using them so utilize them with care.
+Direct circuits are still experimental. It is very easy to shoot yourself in the foot (e.g., no overflow checks, no type coercion) while using direct circuits, so utilize them with care.
 {% endhint %}
 
-For some applications, data types of inputs, intermediate values and outputs are known (e.g., for manipulating bytes, you would want to use uint8). For such cases, using inputsets to determine bounds are not necessary, or even error-prone. Therefore, another interface for defining such circuits, is introduced:
+For some applications, data types of inputs, intermediate values, and outputs are known (e.g., for manipulating bytes, you would want to use uint8). Using inputsets to determine bounds in these cases are not necessary, or even error-prone. Therefore, another interface for defining such circuits is introduced:
 
 ```python
 from concrete import fhe
@@ -16,14 +16,14 @@ def circuit(x: fhe.uint8):
 assert circuit.encrypt_run_decrypt(10) == 52
 ```
 
-There are a few differences between direct circuits and traditional circuits though:
+There are a few differences between direct circuits and traditional circuits:
 
-- You need to remember that resulting dtype for each operation will be determined by its inputs. This can lead to some unexpected results if you're not careful (e.g., if you do `-x` where `x: fhe.uint8`, you'll not get the negative value as the result will be `fhe.uint8` as well)
-- You need to use fhe types in `.astype(...)` calls (e.g., `np.sqrt(x).astype(fhe.uint4)`). This is because there are no inputset evaluation, so cannot determine the bit-width of the output.
-- You need to specify the resulting data type in [univariate](./extensions.md#fheunivariatefunction) extension (e.g., `fhe.univariate(function, outputs=fhe.uint4)(x)`), because of the same reason as above.
-- You need to be careful with overflows. With inputset evaluation, you'll get bigger bit-widths but no overflows, with direct definition, you're responsible to ensure there aren't any overflows!
+* Remember that the resulting dtype for each operation will be determined by its inputs. This can lead to some unexpected results if you're not careful (e.g., if you do `-x` where `x: fhe.uint8`, you'll fail to get the negative value as the result will be `fhe.uint8` as well)
+* Use fhe types in `.astype(...)` calls (e.g., `np.sqrt(x).astype(fhe.uint4)`). There is no inputset evaluation, so the bit width of the output cannot be determined.
+* Specify the resulting data type in [univariate](extensions.md#fheunivariatefunction) extension (e.g., `fhe.univariate(function, outputs=fhe.uint4)(x)`), for the same reason as above.
+* Be careful with overflows. With inputset evaluation, you'll get bigger bit widths but no overflows. With direct definition, you must ensure there aren't any overflows!
 
-Let's go over a more complicated example to see how direct circuits behave:
+Let's review a more complicated example to see how direct circuits behave:
 
 ```python
 from concrete import fhe
@@ -44,7 +44,9 @@ def circuit(x: fhe.uint8, y: fhe.int2):
 
 print(circuit)
 ```
-prints
+
+This prints:
+
 ```
 %0 = x                       # EncryptedScalar<uint8>
 %1 = y                       # EncryptedScalar<int2>
@@ -67,7 +69,9 @@ Subgraphs:
         %3 = astype(%2)                    # EncryptedScalar<uint4>
         return %3
 ```
-And here is the breakdown of assigned data types:
+
+Here is the breakdown of assigned data types:
+
 ```
 %0 is uint8 because it's specified in the definition
 %1 is  int2 because it's specified in the definition
@@ -80,4 +84,4 @@ And here is the breakdown of assigned data types:
 %8 is uint8 because it's subtraction between uint8 and uint4
 ```
 
-As you can see, `%8` is subtraction of two unsigned values, and it's unsigned as well. In an overflow condition where `c > d`, it'll result in undefined behavior.
+As you can see, `%8` is subtraction of two unsigned values, and it's unsigned as well. In an overflow condition where `c > d`, it results in undefined behavior.

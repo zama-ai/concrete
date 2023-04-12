@@ -122,7 +122,7 @@ Various tutorials are proposed in the documentation to help you start writing ho
 
 - How to use Concrete with [Decorators](https://docs.zama.ai/concrete/tutorials/decorator)
 - Partial support of [Floating Points](https://docs.zama.ai/concrete/tutorials/floating_points)
-- How to perform [Table Lookup](https://docs.zama.ai/concrete/tutorials/table_lookup)
+- How to perform [Table Lookup](https://docs.zama.ai/concrete/tutorials/table_lookups)
 
 More generally, if you have built awesome projects using Concrete, feel free to let us know and we'll link to it!
 

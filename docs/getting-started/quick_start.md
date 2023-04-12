@@ -1,6 +1,6 @@
 # Quick Start
 
-To compute on encrypted data, you first need to define the function that you want to compute, then compile it into a Concrete `Circuit`, which you can use to perform homomorphic evaluation.
+To compute on encrypted data, you first need to define the function you want to compute, then compile it into a Concrete `Circuit`, which you can use to perform homomorphic evaluation.
 
 Here is the full example that we will walk through:
 
@@ -35,7 +35,7 @@ from concrete import fhe
 
 ## Defining the function to compile
 
-In this example, we will compile a simple addition function:
+In this example, we compile a simple addition function:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -45,7 +45,7 @@ def add(x, y):
 
 ## Creating a compiler
 
-To compile the function, you need to create a `Compiler` by specifying the function to compile and encryption status of its inputs:
+To compile the function, you need to create a `Compiler` by specifying the function to compile and the encryption status of its inputs:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -56,7 +56,7 @@ compiler = fhe.Compiler(add, {"x": "encrypted", "y": "clear"})
 
 An inputset is a collection representing the typical inputs to the function. It is used to determine the bit widths and shapes of the variables within the function.
 
-It should be an iterable, yielding tuples of the same length as the number of arguments of the function being compiled:
+It should be in iterable, yielding tuples, of the same length as the number of arguments of the function being compiled:
 
 <!--pytest-codeblocks:skip-->
 ```python

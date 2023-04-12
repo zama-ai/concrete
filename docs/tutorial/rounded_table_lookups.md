@@ -1,16 +1,17 @@
 # Rounded Table Lookups
 
 {% hint style="warning" %}
-Rounded table lookups are not compilable yet. API is stable and will not change, so it's documented, but you might not be able to run the code samples in this document.
+Rounded table lookups are not yet compilable. API is stable and will not change, so it's documented, but you might not be able to run the code samples provided in this document.
 {% endhint %}
 
-Table lookups have a strict constraint on number of bits they support. This can be quite limiting, especially if you don't need the exact precision.
+Table lookups have a strict constraint on the number of bits they support. This can limiting, especially if you don't need exact precision.
 
-To overcome such shortcomings, rounded table lookup operation is introduced. It's a way to extract most significant bits of a large integer and then applying the table lookup to those bits.
+To overcome this, a rounded table lookup operation is introduced. It's a way to extract the most significant bits of a large integer and then apply the table lookup to those bits.
 
-Imagine you have an 8-bit value, but you want to have a 5-bit table lookup, you can call `fhe.round_bit_pattern(input, lsbs_to_remove=3)` and use the value you get in the table lookup.
+Imagine you have an 8-bit value, but you want to have a 5-bit table lookup. You can call `fhe.round_bit_pattern(input, lsbs_to_remove=3)` and use the value you get in the table lookup.
 
-In Python, evaluation will work like the following:
+In Python, evaluation will work like this:
+
 ```
 0b_0000_0000 => 0b_0000_0000
 0b_0000_0001 => 0b_0000_0000
@@ -49,7 +50,8 @@ In Python, evaluation will work like the following:
 0b_1011_1111 => 0b_1100_0000
 ```
 
-and during homomorphic execution, it'll be converted like this:
+During homomorphic execution, it'll be converted like this:
+
 ```
 0b_0000_0000 => 0b_00000
 0b_0000_0001 => 0b_00000
@@ -88,9 +90,9 @@ and during homomorphic execution, it'll be converted like this:
 0b_1011_1111 => 0b_11000
 ```
 
-and then a modified table lookup would be applied to the resulting 5-bits.
+A modified table lookup would be applied to the resulting 5 bits.
 
-Here is a concrete example, let's say you want to apply ReLU to an 18-bit value. Let's see what the original ReLU looks like first:
+If you want to apply ReLU to an 18-bit value., first look at the original ReLU:
 
 ```python
 import matplotlib.pyplot as plt
@@ -105,9 +107,9 @@ plt.plot(xs, ys)
 plt.show()
 ```
 
-![](../_static/rounded-tlu/relu.png)
+![](../\_static/rounded-tlu/relu.png)
 
-Input range is [-100_000, 100_000), which means 18-bit table lookups are required, but they are not supported yet, you can apply rounding operation to the input before passing it to `ReLU` function:
+The input range is \[-100\_000, 100\_000), which means 18-bit table lookups are required, but they are not yet supported. You can apply a rounding operation to the input before passing it to the `ReLU` function:
 
 ```python
 from concrete import fhe
@@ -132,15 +134,15 @@ plt.plot(xs, ys)
 plt.show()
 ```
 
-in this case we've removed 10 least significant bits of the input and then applied ReLU function to this value to get:
+We've removed the 10 least significant bits of the input and then applied the ReLU function to this value to get:
 
-![](../_static/rounded-tlu/10-bits-removed.png)
+![](../\_static/rounded-tlu/10-bits-removed.png)
 
-which is close enough to original ReLU for some cases. If your application is more flexible, you could remove more bits, let's say 12 to get:
+This is close enough to original ReLU for some cases. If your application is more flexible, you could remove more bits, let's say 12, to get:
 
-![](../_static/rounded-tlu/12-bits-removed.png)
+![](../\_static/rounded-tlu/12-bits-removed.png)
 
-This is very useful, but in some cases, you don't know how many bits your input have, so it's not reliable to specify `lsbs_to_remove` manually. For this reason, `AutoRounder` class is introduced.
+This is very useful but, in some cases, you don't know how many bits your input contains, so it's not reliable to specify `lsbs_to_remove` manually. For this reason, `AutoRounder` class is introduced.
 
 ```python
 from concrete import fhe
@@ -170,14 +172,14 @@ plt.show()
 
 `AutoRounder`s allow you to set how many of the most significant bits to keep, but they need to be adjusted using an inputset to determine how many of the least significant bits to remove. This can be done manually using `fhe.AutoRounder.adjust(function, inputset)`, or by setting `auto_adjust_rounders` to `True` during compilation.
 
-In the example above, `6` of the most significant bits are kept to get:
+In this case, `6` of the most significant bits are kept to get:
 
-![](../_static/rounded-tlu/6-bits-kept.png)
+![](../\_static/rounded-tlu/6-bits-kept.png)
 
-You can adjust `target_msbs` depending on your requirements. If you set it to `4` for example, you'd get:
+You can adjust `target_msbs` depending on your requirements. If you set it to `4`, you get:
 
-![](../_static/rounded-tlu/4-bits-kept.png)
+![](../\_static/rounded-tlu/4-bits-kept.png)
 
 {% hint style="warning" %}
-`AutoRounder`s should be defined outside the function being compiled. They are used to store the result of adjustment process, so they shouldn't be created each time the function is called.
+`AutoRounder`s should be defined outside the function being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called.
 {% endhint %}
