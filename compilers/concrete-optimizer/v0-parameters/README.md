@@ -3,6 +3,10 @@
 The `v0-parameters` tool provides crypto-parameters that guarantee security, correctness and fast
 computation without prior knowledge of the crypto-parameter optimization.
 
+For a given (`precision`, `log2(norm2)`), these parameters can be used in a TFHE integer circuit where the maximal integer precision is `precision` and the maximal norm2 between table lookups is `2^log2(norm2)`.
+The norm2 is the sum of the square of weights in multisum between table lookups or graph inputs (weights on the same input must first be combined as a single weight).
+The probablity of error is the maximal acceptable probability of error of each table lookup.
+
 It can also be used to explore the crypto-parameter space w.r.t. the 2-norm of the dot product, the
 precision or even the failure probability.
 
@@ -59,9 +63,6 @@ precision and for every 2-norm. If not specified, the correctness of the computa
 up to a failure probability of 2^-13.9. This can be changed using the `--p-error`
 optional argument.
 
-Try running `cargo run --release`, you will get the V0 Parameters Table that was previously used
-in `concrete-compiler`.
-
 ## Advanced Usage
 
 ### Playing with search spaces
@@ -70,7 +71,7 @@ It is possible to choose the search space for each cryptographic parameters. For
 constrain the glwe dimension to be equal to 1:
 
 ```bash
-cargo run --release -- --max-glwe-dim 1
+./optimizer --max-glwe-dim 1
 ```
 
 ### Generating reference files
