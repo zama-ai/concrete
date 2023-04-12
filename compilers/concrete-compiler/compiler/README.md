@@ -70,6 +70,12 @@ Run the compiler
 ./build-Release/bin/concretecompiler
 ```
 
+#### Debug build and custom linker
+
+To build a debug version of the project, you can set `BUILD_TYPE=Debug` in the `Makefile`. In `Debug` 
+the build system will detect if the `lld` linker is installed on the system and use it. `lld` is much faster
+than the default `ld` linker. Release builds with `lld` can also be enabled by modifying the `Makefile`. 
+
 ### Installation from source
 
 You can install libs, bins, and include files into a specific directory by running:

@@ -360,30 +360,6 @@ return %3
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x, y: np.dot(x, y),
-            {"x": "encrypted", "y": "encrypted"},
-            [
-                (
-                    np.ones(shape=(3,), dtype=np.int64),
-                    np.ones(shape=(3,), dtype=np.int64),
-                )
-            ],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be compiled
-
-%0 = x                  # EncryptedTensor<uint1, shape=(3,)>        ∈ [1, 1]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ lhs is encrypted
-%1 = y                  # EncryptedTensor<uint1, shape=(3,)>        ∈ [1, 1]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rhs is encrypted
-%2 = dot(%0, %1)        # EncryptedScalar<uint2>                    ∈ [3, 3]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but encrypted-encrypted dot products are not supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
             lambda x, y: x @ y,
             {"x": "clear", "y": "clear"},
             [([[1, 2], [3, 4]], [[4, 3], [2, 1]])],
@@ -398,25 +374,6 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rhs is clear
 %2 = matmul(%0, %1)        # ClearTensor<uint5, shape=(2, 2)>        ∈ [5, 20]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear-clear matrix multiplications are not supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
-            lambda x, y: x @ y,
-            {"x": "encrypted", "y": "encrypted"},
-            [([[1, 2], [3, 4]], [[4, 3], [2, 1]])],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be compiled
-
-%0 = x                     # EncryptedTensor<uint3, shape=(2, 2)>        ∈ [1, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ lhs is encrypted
-%1 = y                     # EncryptedTensor<uint3, shape=(2, 2)>        ∈ [1, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rhs is encrypted
-%2 = matmul(%0, %1)        # EncryptedTensor<uint5, shape=(2, 2)>        ∈ [5, 20]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but encrypted-encrypted matrix multiplications are not supported
 return %2
 
             """,  # noqa: E501

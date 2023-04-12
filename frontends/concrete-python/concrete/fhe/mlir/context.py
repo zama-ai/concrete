@@ -764,28 +764,40 @@ class Context:
             }
             self.error(highlights)
 
-        if x.is_encrypted and y.is_encrypted:
-            highlights = {
-                x.origin: "lhs is encrypted",
-                y.origin: (
-                    "rhs is encrypted" if x.origin is not y.origin else "operand is encrypted"
-                ),
-                self.converting: "but encrypted-encrypted dot products are not supported",
-            }
-            self.error(highlights)
-
         assert self.is_bit_width_compatible(resulting_type, x, y)
 
         if x.is_scalar or y.is_scalar:
             return self.mul(resulting_type, x, y)
 
-        x = self.to_signedness(x, of=resulting_type)
-        y = self.to_signedness(y, of=resulting_type)
+        operation = fhelinalg.DotEint if x.is_encrypted and y.is_encrypted else fhelinalg.Dot
 
         if x.is_clear:
             x, y = y, x
 
-        return self.operation(fhelinalg.Dot, resulting_type, x.result, y.result)
+        if (x.is_signed or y.is_signed) and resulting_type.is_unsigned:
+            x = self.to_signed(x)
+            y = self.to_signed(y)
+
+            signed_resulting_type = self.typeof(
+                Value(
+                    dtype=Integer(is_signed=True, bit_width=resulting_type.bit_width),
+                    shape=resulting_type.shape,
+                    is_encrypted=resulting_type.is_encrypted,
+                )
+            )
+            intermediate_result = self.operation(
+                operation,
+                signed_resulting_type,
+                x.result,
+                y.result,
+            )
+
+            return self.to_unsigned(intermediate_result)
+
+        x = self.to_signedness(x, of=resulting_type)
+        y = self.to_signedness(y, of=resulting_type)
+
+        return self.operation(operation, resulting_type, x.result, y.result)
 
     def encrypt(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
         assert self.is_bit_width_compatible(resulting_type, x)
@@ -1293,28 +1305,40 @@ class Context:
             }
             self.error(highlights)
 
-        if x.is_encrypted and y.is_encrypted:
-            highlights = {
-                x.origin: "lhs is encrypted",
-                y.origin: (
-                    "rhs is encrypted" if x.origin is not y.origin else "operand is encrypted"
-                ),
-                self.converting: "but encrypted-encrypted matrix multiplications are not supported",
-            }
-            self.error(highlights)
-
         assert self.is_bit_width_compatible(resulting_type, x, y)
-
-        x = self.to_signedness(x, of=resulting_type)
-        y = self.to_signedness(y, of=resulting_type)
 
         if resulting_type.shape == ():
             if x.is_clear:
                 x, y = y, x
 
-            operation = fhelinalg.Dot
+            operation = fhelinalg.DotEint if x.is_encrypted and y.is_encrypted else fhelinalg.Dot
+        elif x.is_encrypted and y.is_encrypted:
+            operation = fhelinalg.MatMulEintEintOp
         else:
             operation = fhelinalg.MatMulEintIntOp if x.is_encrypted else fhelinalg.MatMulIntEintOp
+
+        if (x.is_signed or y.is_signed) and resulting_type.is_unsigned:
+            x = self.to_signed(x)
+            y = self.to_signed(y)
+
+            signed_resulting_type = self.typeof(
+                Value(
+                    dtype=Integer(is_signed=True, bit_width=resulting_type.bit_width),
+                    shape=resulting_type.shape,
+                    is_encrypted=resulting_type.is_encrypted,
+                )
+            )
+            intermediate_result = self.operation(
+                operation,
+                signed_resulting_type,
+                x.result,
+                y.result,
+            )
+
+            return self.to_unsigned(intermediate_result)
+
+        x = self.to_signedness(x, of=resulting_type)
+        y = self.to_signedness(y, of=resulting_type)
 
         return self.operation(operation, resulting_type, x.result, y.result)
 

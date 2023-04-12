@@ -45,11 +45,16 @@ inline void forwardOptimizerID(mlir::Operation *source,
   destination->setAttr("TFHE.OId", optimizerIdAttr);
 }
 
-struct DotToLinalgGeneric
-    : public ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::Dot> {
-  DotToLinalgGeneric(::mlir::MLIRContext *context)
-      : ::mlir::OpRewritePattern<::mlir::concretelang::FHELinalg::Dot>(
-            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+template <typename DotOp, typename FHEMulOp>
+struct DotToLinalgGeneric : public ::mlir::OpRewritePattern<DotOp> {
+  DotToLinalgGeneric(
+      ::mlir::MLIRContext *context,
+      std::function<FHEMulOp(mlir::OpBuilder &, mlir::Location, mlir::Type,
+                             mlir::Value, mlir::Value)>
+          createMulOp)
+      : ::mlir::OpRewritePattern<DotOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT),
+        createMulOp(createMulOp) {}
 
   /// This rewrite pattern transforms any instance of
   /// `FHELinalg.dot_eint_int` to an instance of `linalg.generic` with an
@@ -87,7 +92,7 @@ struct DotToLinalgGeneric
   ///   %o = tensor.extract %1[%c0] : tensor<1x!FHE.eint<0>>
   ///
   ::mlir::LogicalResult
-  matchAndRewrite(::mlir::concretelang::FHELinalg::Dot dotOp,
+  matchAndRewrite(DotOp dotOp,
                   ::mlir::PatternRewriter &rewriter) const override {
 
     auto zeroTensorOp = rewriter.create<mlir::concretelang::FHE::ZeroTensorOp>(
@@ -111,9 +116,9 @@ struct DotToLinalgGeneric
     auto regBuilder = [&](mlir::OpBuilder &nestedBuilder,
                           mlir::Location nestedLoc,
                           mlir::ValueRange blockArgs) {
-      mlir::concretelang::FHE::MulEintIntOp mul =
-          nestedBuilder.create<mlir::concretelang::FHE::MulEintIntOp>(
-              dotOp.getLoc(), blockArgs[0], blockArgs[1]);
+      auto mul = this->createMulOp(nestedBuilder, dotOp.getLoc(),
+                                   dotOp.getResult().getType(), blockArgs[0],
+                                   blockArgs[1]);
       forwardOptimizerID(dotOp, mul);
       mlir::concretelang::FHE::AddEintOp add =
           nestedBuilder.create<mlir::concretelang::FHE::AddEintOp>(
@@ -140,6 +145,11 @@ struct DotToLinalgGeneric
 
     return ::mlir::success();
   };
+
+private:
+  std::function<FHEMulOp(mlir::OpBuilder &, mlir::Location, mlir::Type,
+                         mlir::Value, mlir::Value)>
+      createMulOp;
 };
 
 mlir::AffineMap
@@ -826,13 +836,13 @@ struct FHELinalgNegEintToLinalgGeneric
 ///        linalg.yield %e : !FHE.eint<p>
 ///   }
 ///
-template <typename FHELinalgMatmulOp>
+template <typename FHELinalgMatmulOp, typename FHEMulOp>
 struct FHELinalgMatmulToLinalgGeneric
     : public mlir::OpRewritePattern<FHELinalgMatmulOp> {
   FHELinalgMatmulToLinalgGeneric(
       mlir::MLIRContext *context,
-      std::function<FHE::MulEintIntOp(mlir::OpBuilder &, mlir::Location,
-                                      mlir::Type, mlir::Value, mlir::Value)>
+      std::function<FHEMulOp(mlir::OpBuilder &, mlir::Location, mlir::Type,
+                             mlir::Value, mlir::Value)>
           createMulOp,
       mlir::PatternBenefit benefit =
           mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
@@ -1091,8 +1101,8 @@ struct FHELinalgMatmulToLinalgGeneric
   };
 
 private:
-  std::function<FHE::MulEintIntOp(mlir::OpBuilder &, mlir::Location, mlir::Type,
-                                  mlir::Value, mlir::Value)>
+  std::function<FHEMulOp(mlir::OpBuilder &, mlir::Location, mlir::Type,
+                         mlir::Value, mlir::Value)>
       createMulOp;
 };
 
@@ -2195,7 +2205,21 @@ void FHETensorOpsToLinalg::runOnOperation() {
   target.addLegalOp<bufferization::AllocTensorOp>();
 
   mlir::RewritePatternSet patterns(&getContext());
-  patterns.insert<DotToLinalgGeneric>(&getContext());
+
+  patterns.insert<DotToLinalgGeneric<mlir::concretelang::FHELinalg::Dot,
+                                     mlir::concretelang::FHE::MulEintIntOp>>(
+      &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
+                        mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
+        return builder.create<mlir::concretelang::FHE::MulEintIntOp>(
+            loc, type, arg0, arg1);
+      });
+  patterns.insert<DotToLinalgGeneric<mlir::concretelang::FHELinalg::DotEint,
+                                     mlir::concretelang::FHE::MulEintOp>>(
+      &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
+                        mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
+        return builder.create<mlir::concretelang::FHE::MulEintOp>(loc, type,
+                                                                  arg0, arg1);
+      });
   patterns.insert<
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::AddEintOp,
                                  mlir::concretelang::FHE::AddEintOp>>(
@@ -2227,18 +2251,28 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<FHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgNegEintToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgMatmulToLinalgGeneric<
-      mlir::concretelang::FHELinalg::MatMulEintIntOp>>(
+      mlir::concretelang::FHELinalg::MatMulEintIntOp,
+      mlir::concretelang::FHE::MulEintIntOp>>(
       &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
                         mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
         return builder.create<mlir::concretelang::FHE::MulEintIntOp>(
             loc, type, arg0, arg1);
       });
   patterns.insert<FHELinalgMatmulToLinalgGeneric<
-      mlir::concretelang::FHELinalg::MatMulIntEintOp>>(
+      mlir::concretelang::FHELinalg::MatMulIntEintOp,
+      mlir::concretelang::FHE::MulEintIntOp>>(
       &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
                         mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
         return builder.create<mlir::concretelang::FHE::MulEintIntOp>(
             loc, type, arg1, arg0);
+      });
+  patterns.insert<FHELinalgMatmulToLinalgGeneric<
+      mlir::concretelang::FHELinalg::MatMulEintEintOp,
+      mlir::concretelang::FHE::MulEintOp>>(
+      &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
+                        mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
+        return builder.create<mlir::concretelang::FHE::MulEintOp>(loc, type,
+                                                                  arg1, arg0);
       });
   patterns.insert<FHELinalgApplyMultiLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgApplyMappedLookupTableToLinalgGeneric>(

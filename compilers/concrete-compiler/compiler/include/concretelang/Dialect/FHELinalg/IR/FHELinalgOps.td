@@ -587,12 +587,37 @@ def FHELinalg_Dot : FHELinalg_Op<"dot_eint_int"> {
     let hasVerifier = 1;
 }
 
+
+def FHELinalg_DotEint : FHELinalg_Op<"dot_eint_eint"> {
+    let summary = "Returns the encrypted dot product between two vectors of encrypted integers.";
+
+    let description = [{
+        Performs a dot product between two vectors of encrypted integers.
+
+        Examples:
+        ```mlir
+        // Returns the dot product of `%a0` with `%a1`
+        "FHELinalg.dot_eint_eint"(%a0, %a1) : (tensor<4x!FHE.eint<4>>, tensor<4x!FHE.eint<4>>) -> !FHE.eint<4>
+
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$lhs,
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$rhs);
+
+    let results = (outs FHE_AnyEncryptedInteger:$out);
+
+    let hasVerifier = 1;
+}
+
+
 def FHELinalg_MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.";
 
     let description = [{
         Performs a matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.
-        The width of the clear integers must be less than or equals to the witdh of encrypted integers.
+        The width of the clear integers must be less than or equals to the width of encrypted integers.
 
         The behavior depends on the arguments in the following way:
 
@@ -730,7 +755,7 @@ def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryInt
 
     let description = [{
         Performs a matrix multiplication of a matrix of clear integers and a matrix of encrypted integers.
-        The width of the clear integers must be less than or equals to the witdh of encrypted integers.
+        The width of the clear integers must be less than or equals to the width of encrypted integers.
 
         The behavior depends on the arguments in the following way:
 
@@ -855,6 +880,144 @@ def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryInt
 
     let arguments = (ins
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$rhs
+    );
+
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
+
+    let hasVerifier = 1;
+}
+
+
+def FHELinalg_MatMulEintEintOp : FHELinalg_Op<"matmul_eint_eint", [TensorBinaryEint]> {
+    let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of encrypted integers and a second matrix of encrypted integers.";
+
+    let description = [{
+        Performs a matrix multiplication of a matrix of encrypted integers and a second matrix of encrypted integers.
+
+        The behavior depends on the arguments in the following way:
+
+            - If both arguments are 2-D,
+              they are multiplied like conventional matrices.
+
+              e.g.,
+
+              arg0: tensor<MxN> = [...]
+              arg1: tensor<NxP> = [...]
+
+              result: tensor<MxP> = [...]
+
+            - If the first argument is a vector (1-D),
+              it is treated as a matrix with a single row and standard matrix multiplication is performed.
+
+              After standard matrix multiplication,
+              the first dimension is removed from the result.
+
+              e.g.,
+
+              arg0: tensor<3> = [x, y, z]
+              arg1: tensor<3xM> = [
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+              ]
+
+              is treated as
+
+              arg0: tensor<1x3> = [
+                  [x, y, z]
+              ]
+              arg1: tensor<3xM> = [
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+              ]
+
+              and matrix multiplication is performed with the following form (1x3 @ 3xM -> 1xM)
+
+              result: tensor<1xM> = [[_, _, ..., _, _]]
+
+              finally, the first dimension is removed by definition so the result has the following form
+
+              result: tensor<M>  = [_, _, ..., _, _]
+
+            - If the second argument is 1-D,
+              it is treated as a matrix with a single column and standard matrix multiplication is performed.
+
+              After standard matrix multiplication,
+              the last dimension is removed from the result.
+
+              e.g.,
+
+              arg0: tensor<Mx3> = [
+                  [_, _, _],
+                  [_, _, _],
+                  ...,
+                  [_, _, _],
+                  [_, _, _],
+              ]
+              arg1: tensor<3> = [x, y, z]
+
+              is treated as
+
+              arg0: tensor<Mx3> = [
+                  [_, _, _],
+                  [_, _, _],
+                  ...,
+                  [_, _, _],
+                  [_, _, _],
+              ]
+              arg1: tensor<3x1> = [
+                [x],
+                [y],
+                [z],
+              ]
+
+              and matrix multiplication is performed with the following form (Mx3 @ 3x1 -> Mx1)
+
+              result: tensor<Mx1> = [
+                [_],
+                [_],
+                  ...,
+                [_],
+                [_],
+              ]
+
+              finally, the last dimension is removed by definition so the result has the following form
+
+              result: tensor<M> = [_, _, _]
+
+            - If either argument is N-D where N > 2,
+              the operation is treated as a collection of matrices residing in the last two indices and broadcasted accordingly.
+
+              arg0: tensor<Kx1MxN> = [...]
+              arg1: tensor<LxNxP> = [...]
+
+              result: tensor<KxLxMxP> = [...]
+
+        ```mlir
+        "FHELinalg.matmul_eint_eint(%a, %b) : (tensor<MxNx!FHE.eint<p>>, tensor<NxPx!FHE.eint<p>'>) -> tensor<MxPx!FHE.eint<p>>"
+        "FHELinalg.matmul_eint_eint(%a, %b) : (tensor<KxLxMxNx!FHE.eint<p>>, tensor<KxLxNxPx!FHE.eint<p>'>) -> tensor<KxLxMxPx!FHE.eint<p>>"
+        "FHELinalg.matmul_eint_eint(%a, %b) : (tensor<MxNx!FHE.eint<p>>, tensor<Nx!FHE.eint<p>'>) -> tensor<Mx!FHE.eint<p>>"
+        "FHELinalg.matmul_eint_eint(%a, %b) : (tensor<Nx!FHE.eint<p>>, tensor<NxPx!FHE.eint<p>'>) -> tensor<Px!FHE.eint<p>>"
+        ```
+
+        Examples:
+        ```mlir
+        // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
+        //         [ 1, 2, 3]
+        //         [ 2, 3, 4]
+        //       *
+        // [1,2]   [ 5, 8,11]
+        // [3,4] = [11,18,25]
+        // [5,6]   [17,28,39]
+        //
+        "FHELinalg.matmul_eint_eint"(%a, %b) : (tensor<3x2x!FHE.eint<6>>, tensor<2x3x!FHE.eint<6>>) -> tensor<3x3x!FHE.eint<12>>
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$lhs,
         Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$rhs
     );
 

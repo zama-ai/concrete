@@ -335,3 +335,24 @@ func.func @main(%x: tensor<3x4xi6>, %y: tensor<4x2x!FHE.eint<5>>) -> tensor<3x2x
   %0 = "FHELinalg.matmul_int_eint"(%x, %y): (tensor<3x4xi6>, tensor<4x2x!FHE.eint<5>>) -> tensor<3x2x!FHE.eint<5>>
   return %0 : tensor<3x2x!FHE.eint<5>>
 }
+
+// -----
+
+// CHECK:      #map = affine_map<(d0, d1, d2) -> (d0, d2)>
+// CHECK-NEXT: #map1 = affine_map<(d0, d1, d2) -> (d2, d1)>
+// CHECK-NEXT: #map2 = affine_map<(d0, d1, d2) -> (d0, d1)>
+
+// CHECK:      func.func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<5>>, %[[a1:.*]]: tensor<4x2x!FHE.eint<5>>) -> tensor<3x2x!FHE.eint<5>> {
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x2x!FHE.eint<5>>
+// CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[m0]], #[[m1]], #[[m2]]], iterator_types = ["parallel", "parallel", "reduction"]} ins(%[[a0]], %[[a1]] : tensor<3x4x!FHE.eint<5>>, tensor<4x2x!FHE.eint<5>>) outs(%[[v0]] : tensor<3x2x!FHE.eint<5>>) {
+// CHECK-NEXT:   ^bb0(%[[aa0:.*]]: !FHE.eint<5>, %[[aa1:.*]]: !FHE.eint<5>, %[[aa2:.*]]: !FHE.eint<5>):
+// CHECK-NEXT:     %[[vv0:.*]] = "FHE.mul_eint"(%[[aa1]], %[[aa0]]) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
+// CHECK-NEXT:     %[[vv1:.*]] = "FHE.add_eint"(%[[aa2]], %[[vv0]]) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
+// CHECK-NEXT:     linalg.yield %[[vv1]] : !FHE.eint<5>
+// CHECK-NEXT:   } -> tensor<3x2x!FHE.eint<5>>
+// CHECK-NEXT:   return %[[v1]] : tensor<3x2x!FHE.eint<5>>
+// CHECK-NEXT: }
+func.func @main(%x: tensor<3x4x!FHE.eint<5>>, %y: tensor<4x2x!FHE.eint<5>>) -> tensor<3x2x!FHE.eint<5>> {
+  %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x4x!FHE.eint<5>>, tensor<4x2x!FHE.eint<5>>) -> tensor<3x2x!FHE.eint<5>>
+  return %0 : tensor<3x2x!FHE.eint<5>>
+}

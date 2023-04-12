@@ -25,6 +25,11 @@ bool verifyEncryptedIntegerAndIntegerInputsConsistency(Operation &op,
                                                        FheIntegerInterface &a,
                                                        IntegerType &b);
 
+// Checks the consistency between two integer inputs of an operation
+bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
+                                             FheIntegerInterface &a,
+                                             FheIntegerInterface &b);
+
 /// Shared error message for all ApplyLookupTable variant Op (several Dialect)
 /// E.g. FHE.apply_lookup_table(input, lut)
 /// Message when the lut tensor has an invalid size,

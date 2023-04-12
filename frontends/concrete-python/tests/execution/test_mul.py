@@ -152,6 +152,26 @@ def test_constant_mul(function, parameters, helpers):
             "x": {"range": [-10, 10], "status": "encrypted", "shape": (3, 2)},
             "y": {"range": [-10, 10], "status": "encrypted", "shape": (3, 2)},
         },
+        {
+            "x": {"range": [-10, 10], "status": "encrypted", "shape": (3, 1)},
+            "y": {"range": [0, 0], "status": "encrypted", "shape": (3, 1)},
+        },
+        {
+            "x": {"range": [10, 20], "status": "encrypted", "shape": (3, 1)},
+            "y": {"range": [0, 0], "status": "encrypted", "shape": (1, 3)},
+        },
+        {
+            "x": {"range": [2**12, 2**13 - 1], "status": "encrypted", "shape": (3, 1)},
+            "y": {"range": [0, 0], "status": "encrypted", "shape": (1, 3)},
+        },
+        {
+            "x": {"range": [2**12, 2**13 - 1], "status": "encrypted", "shape": (3, 1)},
+            "y": {"range": [0, 2 * 3 - 1], "status": "encrypted", "shape": (1, 3)},
+        },
+        {
+            "x": {"range": [-(2**7), 2**7 - 1], "status": "encrypted", "shape": (3, 1)},
+            "y": {"range": [-(2**7), 2**7 - 1], "status": "encrypted", "shape": (1, 3)},
+        },
     ],
 )
 def test_mul(function, parameters, helpers):

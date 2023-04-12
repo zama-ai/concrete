@@ -65,8 +65,8 @@ def assign_precisions_1_node(node: Node, output_p: int, inputs_p: int):
 CHUNKED_COMPARISON = {"greater", "greater_equal", "less", "less_equal"}
 CHUNKED_COMPARISON_MIN_BITWIDTH = 4
 MAX_POOLS = {"maxpool1d", "maxpool2d", "maxpool3d"}
-MULTIPLY = {"multiply"}
 ROUNDING = {"round_bit_pattern"}
+MULTIPLY = {"multiply", "matmul"}
 
 
 def max_encrypted_bitwidth_node(node: Node):
@@ -88,13 +88,38 @@ def max_encrypted_bitwidth_node(node: Node):
         return normal_p + 1
 
     if name in MULTIPLY and all(value.is_encrypted for value in node.inputs):
-        return normal_p + 1
+        # For operations that use multiply, an additional bit
+        # needs to be added to the bitwidths of the inputs.
+        # For single precision circuits the max of the input / output
+        # precisions will be taken in required_encrypted_bitwidth. For
+        # multi-precision, the circuit partitions will handle the
+        # input and output precisions separately.
+        all_inp_bitwidths = []
+        # Need a loop here to allow typechecking and make mypy happy
+        for inp in node.inputs:
+            dtype_inp = inp.dtype
+            assert isinstance(dtype_inp, Integer)
+            all_inp_bitwidths.append(dtype_inp.bit_width)
+
+        normal_p = max(all_inp_bitwidths)
+
+        # FIXME: This probably does not work well with multi-precision!
+        return max(normal_p + 1, node.output.dtype.bit_width)
 
     return normal_p
 
 
 def required_encrypted_bitwidth(nodes: Iterable[Node]) -> int:
-    """Give the minimal precision to implement all the nodes."""
+    """Give the minimal precision to implement all the nodes.
+
+    This function is called for both single-precision (for the whole circuit)
+    and for multi-precision circuits (for circuit partitions).
+
+    Ops for which the compiler introduces TLUs need to be handled explicitly
+    in `max_encrypted_bitwidth_node`. The maximum
+    of all precisions of the various operations is returned.
+    """
+
     bitwidths = map(max_encrypted_bitwidth_node, nodes)
     return max(bitwidths, default=-1)
 
