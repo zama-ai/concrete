@@ -193,6 +193,9 @@ jobs:
 
           cd frontends/concrete-python
 
+          # Setup pkg-config to find OpenBLAS (scipy need it)
+          export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
+
           rm -rf .venv
           ${{ format('python{0}', matrix.python-version) }} -m venv .venv
 
