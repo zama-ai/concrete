@@ -484,6 +484,23 @@ func.func @dot_eint_int(%arg0: tensor<2x!FHE.eint<2>>,
   return %ret : !FHE.eint<2>
 }
 
+
+/////////////////////////////////////////////////
+// FHELinalg.dot_eint_eint
+/////////////////////////////////////////////////
+
+// CHECK-LABEL: func.func @dot_eint_eint(%arg0: tensor<2x!FHE.eint<2>>, %arg1: tensor<2x!FHE.eint<2>>) -> !FHE.eint<2>
+func.func @dot_eint_eint(%arg0: tensor<2x!FHE.eint<2>>,
+                   %arg1: tensor<2x!FHE.eint<2>>) -> !FHE.eint<2>
+{
+  // CHECK-NEXT: %[[RET:.*]] = "FHELinalg.dot_eint_eint"(%arg0, %arg1) : (tensor<2x!FHE.eint<2>>, tensor<2x!FHE.eint<2>>) -> !FHE.eint<2>
+  %ret = "FHELinalg.dot_eint_eint"(%arg0, %arg1) :
+    (tensor<2x!FHE.eint<2>>, tensor<2x!FHE.eint<2>>) -> !FHE.eint<2>
+
+  //CHECK-NEXT: return %[[RET]] : !FHE.eint<2>
+  return %ret : !FHE.eint<2>
+}
+
 /////////////////////////////////////////////////
 // FHELinalg.conv2d
 /////////////////////////////////////////////////

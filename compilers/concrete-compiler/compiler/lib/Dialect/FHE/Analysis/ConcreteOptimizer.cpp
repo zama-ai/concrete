@@ -159,6 +159,10 @@ struct FunctionToDag {
         DEBUG("Replace Dot by LevelledOp on " << op);
         index = addLevelledOp(dag, op, encrypted_inputs);
       }
+    } else if (auto dot = asDotEint(op)) {
+      index = addDotEint(dag, dot, encrypted_inputs, precision);
+      // The above function call sets the OIds, can return right away
+      return;
     } else if (auto mul = asMul(op)) {
       // special case as mul are rewritten in several optimizer nodes
       addMul(dag, mul, encrypted_inputs, precision);
@@ -174,6 +178,10 @@ struct FunctionToDag {
     } else if (auto maxpool2d = asMaxpool2d(op)) {
       // special case as max are rewritten in several optimizer nodes
       addMaxpool2d(dag, maxpool2d, encrypted_inputs, precision);
+      return;
+    } else if (auto matmulEintEint = asMatmulEintEint(op)) {
+      index =
+          addEncMatMulTensor(dag, matmulEintEint, encrypted_inputs, precision);
       return;
     } else {
       index = addLevelledOp(dag, op, encrypted_inputs);
@@ -352,7 +360,7 @@ struct FunctionToDag {
         dag->add_levelled_op(slice(subInputs), lweDimCostFactor, fixedCost,
                              tluSubManp, slice(resultShape), comment);
     index[result] = resultNode;
-    // Set attribute on the MLIR node
+
     mlir::Builder builder(mulOp.getContext());
     mlir::SmallVector<int32_t, 5> operatorIndexes = {
         (int32_t)addNode.index,    (int32_t)lhsTluNode.index,
@@ -362,8 +370,191 @@ struct FunctionToDag {
       // We push that at the end by convention
       operatorIndexes.push_back(lhsCorrectionNode.value().index);
     }
+
     if (setOptimizerID)
       mulOp->setAttr("TFHE.OId", builder.getDenseI32ArrayAttr(operatorIndexes));
+  }
+
+  template <typename InnerProductOp>
+  concrete_optimizer::dag::OperatorIndex
+  addTensorInnerProductEncEnc(optimizer::Dag &dag,
+                              InnerProductOp &innerProductOp, Inputs &inputs,
+                              int precision) {
+    mlir::Value result = innerProductOp.getResult();
+    const std::vector<uint64_t> resultShape = getShape(result);
+
+    // We assume a first tensorized matmul step
+    // is the construction of matrices of:
+    //   - sums of all pairs
+    //   - differences of all pairs
+    // where pairs are pairs of values that are to be multiplied together
+
+    // Compute the number of elements in each of the
+    // matrices of pairs
+
+    auto lhsType = ((mlir::Type)innerProductOp.getLhs().getType())
+                       .cast<mlir::RankedTensorType>();
+
+    auto rhsType = ((mlir::Type)innerProductOp.getRhs().getType())
+                       .cast<mlir::RankedTensorType>();
+
+    std::vector<int64_t> lhsShape = lhsType.getShape();
+    std::vector<int64_t> rhsShape = rhsType.getShape();
+
+    if (rhsShape.size() == 1)
+      rhsShape.push_back(1);
+
+    if (lhsShape.size() == 1)
+      lhsShape.emplace(lhsShape.begin(), 1);
+
+    int64_t rhsDims = (int64_t)rhsShape.size();
+    int64_t lhsDims = (int64_t)lhsShape.size();
+
+    // Suppose lhsDims is (5, 3, 2) -> 5 matrices of size 3x2 (2 is the
+    // reduction dimension) and     rhsDims is (3, 5, 2, 3) -> 3x 5 matrices of
+    // size 2x3 the pair matrix would have size (3, 5, 3, 3, 2) this is the
+    // shape of the matrix onto which we apply the TLUs that compute the
+    // multiplication of all pairs of values
+
+    // The RHS can be a (N,) matrix, the outer dimension is supposed to be 1
+    int64_t rhsOuterDim = rhsShape[rhsDims - 1];
+    int64_t lhsOuterDim = lhsShape[lhsDims - 2];
+
+    std::vector<uint64_t> pairMatrixShape;
+
+    // Compute the output matrix dimension
+    // Corresponding dimensions that are considered "compatible" are "N, 1", "1,
+    // N", "N, N"
+    int64_t rhsDimIter = rhsDims - 3, lhsDimIter = lhsDims - 3;
+    if (rhsDimIter >= 0 && lhsDimIter >= 0) {
+      while (rhsDimIter >= 0 && lhsDimIter >= 0 &&
+             (lhsShape[lhsDimIter] == rhsShape[rhsDimIter] ||
+              lhsShape[lhsDimIter] == 1 || rhsShape[rhsDimIter] == 1)) {
+        pairMatrixShape.push_back(
+            std::max(rhsShape[rhsDimIter], lhsShape[lhsDimIter]));
+        --lhsDimIter;
+        --rhsDimIter;
+      }
+    }
+    assert((lhsDimIter < 0 || rhsDimIter < 0) &&
+           "Bad dimensions given to matmul or dot");
+    while (lhsDimIter >= 0) {
+      pairMatrixShape.push_back(lhsShape[lhsDimIter]);
+      --lhsDimIter;
+    }
+    while (rhsDimIter >= 0) {
+      pairMatrixShape.push_back(rhsShape[rhsDimIter]);
+      --rhsDimIter;
+    }
+    // Add the outer dimensions of the individual matrices
+    pairMatrixShape.push_back(lhsOuterDim);
+    pairMatrixShape.push_back(rhsOuterDim);
+
+    // Add the reduction dimension
+    // The number of elements in the dot product
+    // is the number of cells on the reduction axis (aka "destroyed dimension")
+    int64_t reductionDimSize = rhsShape[rhsDims - 2];
+    assert(lhsShape[lhsDims - 1] == reductionDimSize);
+
+    pairMatrixShape.push_back(reductionDimSize);
+
+    // Compute the manp of the various steps
+    // in the matmul of enc x enc:
+
+    // 1. (x + y) and (x - y) -> supposing broadcasting is used
+    // to tensorize this operation
+
+    Operation *xOp = innerProductOp.getLhs().getDefiningOp();
+    Operation *yOp = innerProductOp.getRhs().getDefiningOp();
+
+    const double fixedCost = NEGLIGIBLE_COMPLEXITY;
+    const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
+
+    llvm::APInt xSmanp = llvm::APInt{1, 1, false};
+    if (xOp != nullptr) {
+      const auto xSmanpAttr = xOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
+      assert(xSmanpAttr && "Missing SMANP value on a crypto operation");
+      xSmanp = xSmanpAttr.getValue();
+    }
+
+    llvm::APInt ySmanp = llvm::APInt{1, 1, false};
+    if (yOp != nullptr) {
+      const auto ySmanpAttr = yOp->getAttrOfType<mlir::IntegerAttr>("SMANP");
+      assert(ySmanpAttr && "Missing SMANP value on a crypto operation");
+      ySmanp = ySmanpAttr.getValue();
+    }
+
+    auto loc = loc_to_string(innerProductOp.getLoc());
+    auto comment =
+        std::string(innerProductOp->getName().getStringRef()) + " " + loc;
+
+    // (x + y) and (x - y)
+    const double addSubManp =
+        sqrt(xSmanp.roundToDouble() + ySmanp.roundToDouble());
+
+    auto addNode =
+        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
+                             addSubManp, slice(pairMatrixShape), comment);
+
+    auto subNode =
+        dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
+                             addSubManp, slice(pairMatrixShape), comment);
+
+    // tlu(x - y), tlu(x + y)
+    const std::vector<std::uint64_t> unknownFunction;
+
+    auto lhsTluNode = dag->add_lut(addNode, slice(unknownFunction), precision);
+
+    auto rhsTluNode = dag->add_lut(subNode, slice(unknownFunction), precision);
+
+    // 3. Sum(tlu(x + y) - tlu(x - y))
+    // Create a leveled op that simulates concatenation. It takes
+    // as inputs all the intermediary dot product results and produces
+    // the output tensor
+
+    // Default complexity is negligible
+    double fixed_cost = NEGLIGIBLE_COMPLEXITY;
+    double lwe_dim_cost_factor = NEGLIGIBLE_COMPLEXITY;
+
+    // For the output of the operation, take the MANP from the MANP pass
+    mlir::Operation *op = innerProductOp.getOperation();
+    mlir::IntegerAttr smanp_int = op->getAttrOfType<mlir::IntegerAttr>("SMANP");
+    assert(smanp_int && "Missing manp value on a crypto operation");
+
+    Inputs tluOpIndices{lhsTluNode, rhsTluNode};
+
+    // TODO: use APIFloat.sqrt when it's available
+    double manp = sqrt(smanp_int.getValue().roundToDouble());
+    index[result] =
+        dag->add_levelled_op(slice(tluOpIndices), lwe_dim_cost_factor,
+                             fixed_cost, manp, slice(resultShape), comment);
+
+    mlir::Builder builder(innerProductOp.getContext());
+    mlir::SmallVector<int32_t, 5> operatorIndexes = {
+        (int32_t)addNode.index, (int32_t)lhsTluNode.index,
+        (int32_t)subNode.index, (int32_t)rhsTluNode.index,
+        (int32_t)index[result].index};
+
+    if (setOptimizerID)
+      innerProductOp->setAttr("TFHE.OId",
+                              builder.getDenseI32ArrayAttr(operatorIndexes));
+
+    return index[result];
+  }
+
+  concrete_optimizer::dag::OperatorIndex
+  addEncMatMulTensor(optimizer::Dag &dag, FHELinalg::MatMulEintEintOp &matmulOp,
+                     Inputs &inputs, int precision) {
+    return addTensorInnerProductEncEnc<FHELinalg::MatMulEintEintOp>(
+        dag, matmulOp, inputs, precision);
+  }
+
+  concrete_optimizer::dag::OperatorIndex addDotEint(optimizer::Dag &dag,
+                                                    FHELinalg::DotEint &dotOp,
+                                                    Inputs &inputs,
+                                                    int precision) {
+    return addTensorInnerProductEncEnc<FHELinalg::DotEint>(dag, dotOp, inputs,
+                                                           precision);
   }
 
   void addMax(optimizer::Dag &dag, FHE::MaxEintOp &maxOp, Inputs &inputs,
@@ -547,6 +738,10 @@ struct FunctionToDag {
     return llvm::dyn_cast<mlir::concretelang::FHELinalg::Dot>(op);
   }
 
+  mlir::concretelang::FHELinalg::DotEint asDotEint(mlir::Operation &op) {
+    return llvm::dyn_cast<mlir::concretelang::FHELinalg::DotEint>(op);
+  }
+
   mlir::concretelang::FHE::MulEintOp asMul(mlir::Operation &op) {
     return llvm::dyn_cast<mlir::concretelang::FHE::MulEintOp>(op);
   }
@@ -561,6 +756,11 @@ struct FunctionToDag {
 
   mlir::concretelang::FHELinalg::Maxpool2dOp asMaxpool2d(mlir::Operation &op) {
     return llvm::dyn_cast<mlir::concretelang::FHELinalg::Maxpool2dOp>(op);
+  }
+
+  mlir::concretelang::FHELinalg::MatMulEintEintOp
+  asMatmulEintEint(mlir::Operation &op) {
+    return llvm::dyn_cast<mlir::concretelang::FHELinalg::MatMulEintEintOp>(op);
   }
 
   bool isReturn(mlir::Operation &op) {

@@ -1,7 +1,9 @@
 LLVM_PROJECT_DIR=../llvm-project
 
 BUILD_TYPE?=Release
-BUILD_DIR?=./build
+# Build dir is `build` for Release builds and `build_BUILD_TYPE` for 
+# other build types (e.g. Debug, ReleaseWithDebugInfo, etc.)
+BUILD_DIR?=./$(shell ./get_build_dir.sh "$(BUILD_TYPE)")
 Python3_EXECUTABLE?=$(shell which python3)
 BINDINGS_PYTHON_ENABLED=ON
 DATAFLOW_EXECUTION_ENABLED=OFF
@@ -86,6 +88,15 @@ else
 		CXX_COMPILER_OPTION=
 endif
 
+# If the build type is Debug, and the lld linked is installed
+# then use it
+CUSTOM_LINKER_OPTS=
+ifneq ($(shell which lld),)
+ifeq ($(BUILD_TYPE),Debug)
+	CUSTOM_LINKER_OPTS=-DLLVM_USE_LINKER=lld
+endif
+endif
+
 # don't run parallel python tests if compiler doesn't support it
 ifeq ($(DATAFLOW_EXECUTION_ENABLED),ON)
 		PYTHON_TESTS_MARKER=""
@@ -119,6 +130,7 @@ $(BUILD_DIR)/configured.stamp:
 	$(CMAKE_CCACHE_OPTIONS) \
 	$(CC_COMPILER_OPTION) \
 	$(CXX_COMPILER_OPTION) \
+	$(CUSTOM_LINKER_OPTS) \
 	-DLLVM_ENABLE_PROJECTS="mlir;clang;openmp" \
 	-DLLVM_BUILD_EXAMPLES=OFF \
 	-DLLVM_TARGETS_TO_BUILD="host" \
@@ -137,6 +149,10 @@ $(BUILD_DIR)/configured.stamp:
 	touch $@
 
 build-initialized: $(BUILD_DIR)/configured.stamp
+
+reconfigure:
+	rm $(BUILD_DIR)/configured.stamp
+	rm $(BUILD_DIR)/CMakeCache.txt
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
@@ -263,7 +279,14 @@ $(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py FORCE
 $(FIXTURE_CPU_DIR)/bug_report.yaml:
 	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
 
-generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml $(FIXTURE_CPU_DIR)/end_to_end_round.yaml $(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml
+generate-cpu-tests: \
+	$(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml \
+	$(FIXTURE_CPU_DIR)/bug_report.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_round.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_linalg_enc_enc_matmul_dot.yaml
 
 SECURITY_TO_TEST=128
 OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
@@ -275,7 +298,8 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST);)
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml;))
+	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
+	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml;))
 
 ### end-to-end-tests GPU
 
@@ -542,4 +566,5 @@ FORCE:
 	opt \
 	mlir-opt \
 	mlir-cpu-runner \
-	mlir-translate
+	mlir-translate \
+	reconfigure

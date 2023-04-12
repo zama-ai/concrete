@@ -5,3 +5,6 @@
 
 # Jetbrains tools
 .idea/
+
+# HPX library
+compilers/concrete-compiler/compiler/hpx*

@@ -342,6 +342,48 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::Dot op,
 }
 
 /// Calculates the squared Minimal Arithmetic Noise Padding of an
+/// `FHELinalg.dot_eint_eint` operation.
+static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::DotEint op,
+                             llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+  assert(operandMANPs.size() == 2 &&
+         operandMANPs[0]->getValue().getMANP().has_value() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+
+  llvm::APInt lhsNorm = operandMANPs[0]->getValue().getMANP().value();
+  llvm::APInt rhsNorm = operandMANPs[1]->getValue().getMANP().value();
+
+  auto rhsType =
+      ((mlir::Type)op.getRhs().getType()).cast<mlir::RankedTensorType>();
+
+  llvm::ArrayRef<int64_t> rhsShape = rhsType.getShape();
+
+  int64_t rhsDims = (int64_t)rhsShape.size();
+
+  assert(rhsDims == 1 && "In MANP computation dot product RHS expected to have "
+                         "a single dimension");
+
+  int64_t N = rhsShape[0];
+
+  // Compute output MANP:
+  // Tlu output MANP is 1
+  llvm::APInt tlu = {1, 1, false};
+  // The element-wise multiplication is given by the
+  // subtraction of two TLU outputs. The MANP of the multiplication is thus
+  // the sum of the TLU MANPs
+  llvm::APInt elemMulNorm = APIntWidthExtendUAdd(tlu, tlu);
+
+  llvm::APInt accNorm = llvm::APInt{1, 0, false};
+
+  // For the total Dot product MANP, take the manp of the sum of products
+  for (int64_t i = 0; i < N; i++) {
+    accNorm = APIntWidthExtendUAdd(elemMulNorm, accNorm);
+  }
+
+  return accNorm;
+}
+
+/// Calculates the squared Minimal Arithmetic Noise Padding of an
 /// `FHE.add_eint_int` operation.
 static llvm::APInt getSqMANP(mlir::concretelang::FHE::AddEintIntOp op,
                              llvm::ArrayRef<const MANPLattice *> operandMANPs) {
@@ -522,12 +564,12 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHE::MulEintOp op,
   const llvm::APInt x = operandMANPs[0]->getValue().getMANP().value();
   const llvm::APInt y = operandMANPs[1]->getValue().getMANP().value();
 
-  const llvm::APInt beforeTLUs = APIntWidthExtendUAdd(x, y);
+  // The MANP of this operation is simply the MANP after the TLUs
+  // which is equal to the sum of outputs of 2 TLUs
   const llvm::APInt tlu = {1, 1, false};
   const llvm::APInt result = APIntWidthExtendUAdd(tlu, tlu);
 
-  // this is not optimal as it can increase the resulting noise unnecessarily
-  return APIntUMax(beforeTLUs, result);
+  return result;
 }
 
 /// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
@@ -742,12 +784,12 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MulEintOp op,
   const llvm::APInt x = operandMANPs[0]->getValue().getMANP().value();
   const llvm::APInt y = operandMANPs[1]->getValue().getMANP().value();
 
-  const llvm::APInt beforeTLUs = APIntWidthExtendUAdd(x, y);
+  // The MANP of this operation is simply the MANP after the TLUs
+  // which is equal to the sum of outputs of 2 TLUs
   const llvm::APInt tlu = {1, 1, false};
   const llvm::APInt result = APIntWidthExtendUAdd(tlu, tlu);
 
-  // this is not optimal as it can increase the resulting noise unnecessarily
-  return APIntUMax(beforeTLUs, result);
+  return result;
 }
 
 static llvm::APInt computeVectorNorm(
@@ -755,7 +797,10 @@ static llvm::APInt computeVectorNorm(
     mlir::DenseIntElementsAttr denseValues, llvm::APInt encryptedOperandNorm,
     llvm::SmallVector<uint64_t, /*size-hint=*/4> &elementSelector) {
 
-  llvm::APInt accumulationNorm = llvm::APInt{1, 1, false};
+  // The accumulator is initialized with 0s in all bits (not the encrypted 0)
+  // the there is no initial noise in the accumulator, so its
+  // MANP is initialized to 0
+  llvm::APInt accumulationNorm = llvm::APInt{1, 0, false};
   for (int64_t i = 0; i < shape[axis]; i++) {
     elementSelector[axis] = i;
 
@@ -845,7 +890,7 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MatMulEintIntOp op,
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt lhsNorm = operandMANPs[0]->getValue().getMANP().value();
-  llvm::APInt accNorm = llvm::APInt{1, 1, false};
+  llvm::APInt accNorm = llvm::APInt{1, 0, false};
 
   mlir::arith::ConstantOp cstOp =
       llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
@@ -866,7 +911,10 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MatMulEintIntOp op,
       int64_t P = rhsShape[1];
       for (int64_t m = 0; m < M; m++) {
         for (int64_t p = 0; p < P; p++) {
-          llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
+          // The accumulator is initialized with 0s in all bits (not the
+          // encrypted 0) the there is no initial noise in the accumulator, so
+          // its MANP is initialized to 0
+          llvm::APInt tmpNorm = llvm::APInt{1, 0, false};
           for (int64_t n = 0; n < N; n++) {
             llvm::APInt cst = denseValsAP[{(uint64_t)n, (uint64_t)p}];
             llvm::APInt rhsNorm = APIntWidthExtendSqForConstant(cst);
@@ -943,7 +991,7 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MatMulIntEintOp op,
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt rhsNorm = operandMANPs[1]->getValue().getMANP().value();
-  llvm::APInt accNorm = llvm::APInt{1, 1, false};
+  llvm::APInt accNorm = llvm::APInt{1, 0, false};
 
   mlir::arith::ConstantOp cstOp =
       llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
@@ -1013,6 +1061,46 @@ static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MatMulIntEintOp op,
       llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
       accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
     }
+  }
+
+  return accNorm;
+}
+
+/// Calculates the squared Minimal Arithmetic Noise Padding of a matmul
+/// operation
+static llvm::APInt getSqMANP(mlir::concretelang::FHELinalg::MatMulEintEintOp op,
+                             llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+
+  auto rhsType =
+      ((mlir::Type)op.getRhs().getType()).cast<mlir::RankedTensorType>();
+
+  llvm::ArrayRef<int64_t> rhsShape = rhsType.getShape();
+
+  int64_t rhsDims = (int64_t)rhsShape.size();
+
+  assert(
+      operandMANPs.size() == 2 &&
+      operandMANPs[0]->getValue().getMANP().has_value() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt lhsNorm = operandMANPs[0]->getValue().getMANP().value();
+  llvm::APInt rhsNorm = operandMANPs[1]->getValue().getMANP().value();
+
+  int64_t N = rhsDims <= 2 ? rhsShape[0] : rhsShape[rhsDims - 2];
+
+  // Compute MANP of a single matrix cell x matrix cell multiplication
+  // This is used later to compute the MANP of an entire dot product
+
+  llvm::APInt tlu = {1, 1, false};
+  llvm::APInt elemMulNorm = APIntWidthExtendUAdd(tlu, tlu);
+  llvm::APInt accNorm = llvm::APInt{1, 0, false};
+
+  // For the total MatMul MANP, take the MANP of a single
+  // column-row dot-product
+  // All such dot-products produce the same MANP, there
+  // is no need to take the maximum over the dot-products
+  for (int64_t i = 0; i < N; i++) {
+    accNorm = APIntWidthExtendUAdd(elemMulNorm, accNorm);
   }
 
   return accNorm;
@@ -1373,6 +1461,9 @@ public:
     else if (auto dotOp =
                  llvm::dyn_cast<mlir::concretelang::FHELinalg::Dot>(op)) {
       norm2SqEquiv = getSqMANP(dotOp, operands);
+    } else if (auto dotEintOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::DotEint>(op)) {
+      norm2SqEquiv = getSqMANP(dotEintOp, operands);
     } else if (auto addEintIntOp =
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::AddEintIntOp>(
                        op)) {
@@ -1419,6 +1510,9 @@ public:
     } else if (auto matmulIntEintOp = llvm::dyn_cast<
                    mlir::concretelang::FHELinalg::MatMulIntEintOp>(op)) {
       norm2SqEquiv = getSqMANP(matmulIntEintOp, operands);
+    } else if (auto matmulEintEintOp = llvm::dyn_cast<
+                   mlir::concretelang::FHELinalg::MatMulEintEintOp>(op)) {
+      norm2SqEquiv = getSqMANP(matmulEintEintOp, operands);
     } else if (llvm::isa<
                    mlir::concretelang::FHELinalg::ApplyLookupTableEintOp,
                    mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp,

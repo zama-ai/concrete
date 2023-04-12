@@ -50,6 +50,12 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+if(DEFINED LLVM_USE_LINKER AND (NOT ${LLVM_USE_LINKER} STREQUAL ""))
+  message(INFO " Using custom Linker: ${CMAKE_LINKER}")
+else()
+  message(INFO " Using standard linker")
+endif()
+
 # Custom doc generation function
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(AddConcretelangDoc)

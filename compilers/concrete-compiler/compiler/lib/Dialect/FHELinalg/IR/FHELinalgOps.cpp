@@ -401,33 +401,71 @@ mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
                        verifyLutsSize(*this, t, luts).succeeded());
 }
 
-::mlir::LogicalResult Dot::verify() {
-  if (::mlir::failed(mlir::verifyCompatibleShape(this->getLhs().getType(),
-                                                 this->getRhs().getType()))) {
-    return this->emitOpError("arguments have incompatible shapes");
-  }
-  auto lhsEltType = this->getLhs()
-                        .getType()
-                        .cast<mlir::TensorType>()
-                        .getElementType()
-                        .dyn_cast<FHE::FheIntegerInterface>();
-  auto rhsEltType = this->getRhs()
-                        .getType()
-                        .cast<mlir::TensorType>()
-                        .getElementType()
-                        .cast<mlir::IntegerType>();
-  auto resultType =
-      this->getResult().getType().dyn_cast<FHE::FheIntegerInterface>();
-  if (!mlir::concretelang::FHE::
-          verifyEncryptedIntegerAndIntegerInputsConsistency(
-              *this->getOperation(), lhsEltType, rhsEltType)) {
+mlir::LogicalResult
+verifyDotInputsOutputsConsistency(mlir::concretelang::FHELinalg::DotEint &op,
+                                  FHE::FheIntegerInterface &lhsEltType,
+                                  FHE::FheIntegerInterface &rhsEltType,
+                                  FHE::FheIntegerInterface &resultType) {
+  if (!mlir::concretelang::FHE::verifyEncryptedIntegerInputsConsistency(
+          *op.getOperation(), lhsEltType, rhsEltType)) {
     return ::mlir::failure();
   }
   if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
-          *this->getOperation(), lhsEltType, resultType)) {
+          *op.getOperation(), lhsEltType, resultType)) {
     return ::mlir::failure();
   }
   return ::mlir::success();
+}
+
+mlir::LogicalResult
+verifyDotInputsOutputsConsistency(mlir::concretelang::FHELinalg::Dot &op,
+                                  FHE::FheIntegerInterface &lhsEltType,
+                                  mlir::IntegerType &rhsEltType,
+                                  FHE::FheIntegerInterface &resultType) {
+  if (!mlir::concretelang::FHE::
+          verifyEncryptedIntegerAndIntegerInputsConsistency(
+              *op.getOperation(), lhsEltType, rhsEltType)) {
+    return ::mlir::failure();
+  }
+  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
+          *op.getOperation(), lhsEltType, resultType)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+// Verify a dot product operation:
+// - check that the shapes are compatible
+// - check that the widths of the inputs and result is the same
+template <typename DotOp, typename RHSElementType>
+mlir::LogicalResult verifyDot(DotOp &op) {
+  if (::mlir::failed(mlir::verifyCompatibleShape(op.getLhs().getType(),
+                                                 op.getRhs().getType()))) {
+    return op.emitOpError("arguments have incompatible shapes");
+  }
+  auto lhsEltType = ((mlir::Type)op.getLhs().getType())
+                        .cast<mlir::TensorType>()
+                        .getElementType()
+                        .dyn_cast<FHE::FheIntegerInterface>();
+  auto rhsEltType = ((mlir::Type)op.getRhs().getType())
+                        .cast<mlir::TensorType>()
+                        .getElementType()
+                        .cast<RHSElementType>();
+  auto resultType = ((mlir::Type)op.getResult().getType())
+                        .dyn_cast<FHE::FheIntegerInterface>();
+
+  return verifyDotInputsOutputsConsistency(op, lhsEltType, rhsEltType,
+                                           resultType);
+}
+
+::mlir::LogicalResult Dot::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyDot<
+      mlir::concretelang::FHELinalg::Dot, mlir::IntegerType>(*this);
+}
+
+::mlir::LogicalResult DotEint::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyDot<
+      mlir::concretelang::FHELinalg::DotEint, FHE::FheIntegerInterface>(*this);
 }
 
 llvm::SmallVector<int64_t, 3>
@@ -782,6 +820,11 @@ mlir::LogicalResult MatMulEintIntOp::verify() {
 mlir::LogicalResult MatMulIntEintOp::verify() {
   return ::mlir::concretelang::FHELinalg::verifyMatmul<
       mlir::concretelang::FHELinalg::MatMulIntEintOp>(*this);
+}
+
+mlir::LogicalResult MatMulEintEintOp::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyMatmul<
+      mlir::concretelang::FHELinalg::MatMulEintEintOp>(*this);
 }
 
 mlir::SmallVector<int64_t, 4>
