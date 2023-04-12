@@ -22,36 +22,46 @@ pub fn int_log2(a: usize) -> usize {
 }
 
 mod ciphertext;
-pub use ciphertext::*;
+pub use ciphertext::LweCiphertext;
 
 mod glwe_ciphertext;
-pub use glwe_ciphertext::*;
+pub use glwe_ciphertext::GlweCiphertext;
 
 mod lwe_secret_key;
-pub use lwe_secret_key::*;
+pub use lwe_secret_key::LweSecretKey;
 
 mod glwe_secret_key;
-pub use glwe_secret_key::*;
+pub use glwe_secret_key::GlweSecretKey;
 
 mod ggsw_ciphertext;
-pub use ggsw_ciphertext::*;
+pub use ggsw_ciphertext::GgswCiphertext;
 
 mod bootstrap_key;
-pub use bootstrap_key::*;
+pub use bootstrap_key::BootstrapKey;
 
 mod keyswitch_key;
-pub use keyswitch_key::*;
+pub use keyswitch_key::LweKeyswitchKey;
 
 mod packing_keyswitch_key;
-pub use packing_keyswitch_key::*;
+pub use packing_keyswitch_key::PackingKeyswitchKey;
 
-pub mod packing_keyswitch_key_list;
+mod packing_keyswitch_key_list;
+pub use packing_keyswitch_key_list::PackingKeyswitchKeyList;
 
 mod csprng;
 pub use csprng::*;
 
-pub mod ciphertext_list;
-pub mod glev_ciphertext;
-pub mod lev_ciphertext;
-pub mod polynomial;
-pub mod polynomial_list;
+mod ciphertext_list;
+pub use ciphertext_list::LweCiphertextList;
+
+mod glev_ciphertext;
+pub use glev_ciphertext::GlevCiphertext;
+
+mod lev_ciphertext;
+pub use lev_ciphertext::LevCiphertext;
+
+mod polynomial;
+pub use polynomial::Polynomial;
+
+mod polynomial_list;
+pub use polynomial_list::PolynomialList;

@@ -1,4 +1,4 @@
-use super::types::polynomial::Polynomial;
+use super::types::Polynomial;
 
 pub fn update_with_wrapping_unit_monomial_div(
     mut polynomial: Polynomial<&mut [u64]>,

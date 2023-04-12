@@ -1,7 +1,6 @@
 use super::decomposition::DecompositionTerm;
 use super::fpks::LweKeyBitDecomposition;
 use super::polynomial::{update_with_wrapping_add_mul, update_with_wrapping_sub_mul};
-use super::types::polynomial::Polynomial;
 use super::types::*;
 use super::{from_torus, zip_eq};
 use core::slice;

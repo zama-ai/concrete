@@ -13,12 +13,9 @@ use super::cmux::{cmux, cmux_scratch};
 use super::external_product::external_product_scratch;
 use super::fft::FftView;
 use super::polynomial::update_with_wrapping_unit_monomial_div;
-use super::types::ciphertext_list::LweCiphertextList;
-use super::types::packing_keyswitch_key_list::PackingKeyswitchKeyList;
-use super::types::polynomial::Polynomial;
-use super::types::polynomial_list::PolynomialList;
 use super::types::{
-    BootstrapKey, DecompParams, GgswCiphertext, GlweParams, LweCiphertext, LweKeyswitchKey,
+    BootstrapKey, DecompParams, GgswCiphertext, GlweParams, LweCiphertext, LweCiphertextList,
+    LweKeyswitchKey, PackingKeyswitchKeyList, Polynomial, PolynomialList,
 };
 use super::{Container, Split};
 
