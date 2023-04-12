@@ -1,6 +1,6 @@
 # Extensions
 
-**Concrete** tries to support native Python and NumPy operations as much as possible, but not everything is available in Python or NumPy. So, we provide some extensions ourselves to improve your experience.
+**Concrete** supports native Python and NumPy operations as much as possible, but not everything is available in Python or NumPy. So, we provide some extensions ourselves to improve your experience.
 
 ## fhe.univariate(function)
 
@@ -41,7 +41,7 @@ The wrapped function shouldn't have any side effects, and it should be determini
 
 ## fhe.conv(...)
 
-Allows you to perform convolution operation, with the same semantic of [onnx.Conv](https://github.com/onnx/onnx/blob/main/docs/Operators.md#conv):
+Allows you to perform a convolution operation, with the same semantic of [onnx.Conv](https://github.com/onnx/onnx/blob/main/docs/Operators.md#conv):
 
 ```python
 import numpy as np
@@ -73,7 +73,7 @@ Only 2D convolutions without padding and with one groups are supported for the t
 
 ## fhe.maxpool(...)
 
-Allows you to perform maxpool operation, with the same semantic of [onnx.MaxPool](https://github.com/onnx/onnx/blob/main/docs/Operators.md#maxpool):
+Allows you to perform a maxpool operation, with the same semantic of [onnx.MaxPool](https://github.com/onnx/onnx/blob/main/docs/Operators.md#maxpool):
 
 ```python
 import numpy as np

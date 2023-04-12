@@ -1,21 +1,21 @@
 # Debug
 
-In this section, you will learn how to debug the compilation process easily as well as how to get help in case you cannot resolve your issue.
+In this section, you will learn how to debug the compilation process easily and get help in case you cannot resolve your issue.
 
-## Debug Artifacts
+## Debug artifacts
 
 **Concrete** has an artifact system to simplify the process of debugging issues.
 
 ### Automatic export.
 
-In case of compilation failures, artifacts are exported automatically to the `.artifacts` directory under the working directory. Let's intentionally create a compilation failure to show what kinds of things are exported.
+In case of compilation failures, artifacts are exported automatically to the `.artifacts` directory under the working directory. Let's intentionally create a compilation failure to show what is exported.
 
 ```python
 def f(x):
     return np.sin(x)
 ```
 
-This function fails to compile because **Concrete** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. If you go the `.artifacts` directory under the working directory, you'll see the following files:
+This function fails to compile because **Concrete** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. If you go to the `.artifacts` directory under the working directory, you'll see the following files:
 
 #### environment.txt
 
@@ -28,7 +28,7 @@ Python 3.8.10
 
 #### requirements.txt
 
-This file contains information about python packages and their versions installed on your system.
+This file contains information about Python packages and their versions installed on your system.
 
 ```
 astroid==2.15.0
@@ -102,9 +102,9 @@ RuntimeError: Function you are trying to compile cannot be converted to MLIR
 return %1
 ```
 
-### Manual export.
+### Manual exports.
 
-Manual exports are mostly used for visualization. Nonetheless, they can be very useful for demonstrations. Here is how to perform one:
+Manual exports are mostly used for visualization. They can be very useful for demonstrations. Here is how to perform one:
 
 ```python
 from concrete import fhe
@@ -207,7 +207,7 @@ module {
 }
 ```
 
-#### client_parameters.json
+#### client\_parameters.json
 
 This file contains information about the client parameters chosen by **Concrete**.
 
@@ -291,15 +291,15 @@ You can seek help with your issue by asking a question directly in the [communit
 
 If you cannot find a solution in the community forum, or you found a bug in the library, you could create an issue in our GitHub repository.
 
-In case of a bug:
+In case of a bug, try to:
 
-* try to minimize randomness
-* try to minimize your function as much as possible while keeping the bug - this will help to fix the bug faster
-* try to include your inputset in the issue
-* try to include reproduction steps in the issue
-* try to include debug artifacts in the issue
+* minimize randomness;
+* minimize your function as much as possible while keeping the bug - this will help to fix the bug faster;
+* include your inputset in the issue;
+* include reproduction steps in the issue;
+* include debug artifacts in the issue.
 
-In case of a feature request:
+In case of a feature request, try to:
 
-* try to give a minimal example of the desired behavior
-* try to explain your use case
+* give a minimal example of the desired behavior;
+* explain your use case.

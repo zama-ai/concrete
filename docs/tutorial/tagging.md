@@ -1,6 +1,6 @@
 # Tagging
 
-When you have big circuits, keeping track of which node corresponds to which part of your code becomes very hard. Tagging system could simplify such situations:
+When you have big circuits, keeping track of which node corresponds to which part of your code becomes difficult. A tagging system can simplify such situations:
 
 ```python
 def g(z):
@@ -20,7 +20,7 @@ def f(x):
     return g(z + 3) * 2
 ```
 
-when you compile `f` with inputset of `range(10)`, you get the following graph:
+When you compile `f` with inputset of `range(10)`, you get the following graph:
 
 ```
  %0 = x                            # EncryptedScalar<uint4>        ∈ [0, 9]
@@ -49,8 +49,8 @@ Subgraphs:
         return %2
 ```
 
-and if you get an error, you'll precisely see where the error occurred (e.g., which layer of the neural network, if you tag layers).
+If you get an error, you'll see exactly where the error occurred (e.g., which layer of the neural network, if you tag layers).
 
 {% hint style="info" %}
-In the future, we're planning to use tags for other features as well (e.g., to measure performance of tagged regions), so it's a good idea to start utilizing them for big circuits.
+In the future, we plan to use tags for additional features (e.g., to measure performance of tagged regions), so it's a good idea to start utilizing them for big circuits.
 {% endhint %}

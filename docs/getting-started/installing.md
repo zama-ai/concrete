@@ -1,6 +1,6 @@
 # Installation
 
-**Concrete** is natively supported on Linux and macOS from Python 3.8 to 3.10 inclusive, but if you have Docker in your platform, you can use the docker image to use **Concrete**.
+**Concrete** is natively supported on Linux and macOS from Python 3.8 to 3.10 inclusive. If you have Docker in your platform, you can use the docker image to use **Concrete**.
 
 ## Using PyPI
 
