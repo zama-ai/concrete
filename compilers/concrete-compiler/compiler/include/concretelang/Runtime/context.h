@@ -137,7 +137,9 @@ public:
     return ksk_gpu[gpu_idx];
   }
 
-  void *get_pksk_gpu(uint32_t gpu_idx, void *stream) {
+  void *get_pksk_gpu(uint32_t level, uint32_t input_lwe_dim,
+                    uint32_t output_glwe_dim, uint32_t output_poly_size, uint32_t gpu_idx, void 
+                    *stream) {
 
     if (pksk_gpu[gpu_idx] != nullptr) {
       return pksk_gpu[gpu_idx];
@@ -154,8 +156,7 @@ public:
     void *pksk_gpu_tmp =
         cuda_malloc_async(pksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
 
-    cuda_memcpy_async_to_gpu(pksk_gpu_tmp,
-                             const_cast<uint64_t *>(pksk.buffer()),
+    cuda_memcpy_async_to_gpu(pksk_gpu_tmp, const_cast<uint64_t *>(pksk.buffer()),
                              pksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
     // Synchronization here is not optional as it works with mutex to
     // prevent other GPU streams from reading partially copied keys.

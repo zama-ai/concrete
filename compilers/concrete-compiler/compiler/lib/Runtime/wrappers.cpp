@@ -40,8 +40,11 @@ void *memcpy_async_ksk_to_gpu(mlir::concretelang::RuntimeContext *context,
 }
 
 void *memcpy_async_pksk_to_gpu(mlir::concretelang::RuntimeContext *context,
+                              uint32_t input_lwe_dim, uint32_t output_poly_size,
+                              uint32_t level, uint32_t output_glwe_dim,
                                uint32_t gpu_idx, void *stream) {
-  return context->get_pksk_gpu(gpu_idx, stream);
+  return context->get_pksk_gpu(level, input_lwe_dim, output_glwe_dim, output_poly_size, gpu_idx, 
+                               stream);
 }
 
 void *alloc_and_memcpy_async_to_gpu(uint64_t *buf_ptr, uint64_t buf_offset,
@@ -331,6 +334,11 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
   assert(lwe_big_dim % polynomial_size == 0);
   uint64_t glwe_dim = lwe_big_dim / polynomial_size;
 
+  size_t fftKeyId = 0;
+  const auto &fft = context->fft(fftKeyId);
+  size_t bskKeyId = 0;
+  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bskKeyId);
+  
   // Compute the numbers of bits to extract for each block and the total one.
   uint64_t total_number_of_bits_per_block = 0;
   auto number_of_bits_per_block = new uint64_t[crt_decomp_size]();
@@ -360,7 +368,8 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
       memcpy_async_bsk_to_gpu(context, lwe_small_dim, polynomial_size,
                               bsk_level_count, glwe_dim, gpu_idx, stream);
   // Get the pointer on the private keyswitching keys for CBS on the GPU
-  void *pksk_gpu = memcpy_async_pksk_to_gpu(context, gpu_idx, stream);
+  void *pksk_gpu = memcpy_async_pksk_to_gpu(context, lwe_small_dim, polynomial_size, 
+                                            fpksk_level_count, glwe_dim, gpu_idx, stream);
   // TODO: The allocation should be done by the compiler codegen
 
   // Copy lut vector to GPU (corresponds to 1 input)
@@ -447,6 +456,7 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
         fpksk_base_log, cbs_level_count, cbs_base_log, cbs_vp_in_count,
         lut_count, cuda_get_max_shared_memory(gpu_idx));
 
+    auto *cbs_vp_output_buffer = (uint64_t *)malloc(copy_size * sizeof(uint64_t));
     // Copy the output batch of ciphertext back to CPU
     memcpy_async_to_cpu(out_aligned, out_offset + ciphertext_offset, copy_size,
                         out_gpu, gpu_idx, stream);
