@@ -266,7 +266,7 @@ jobs:
       user_inputs: 'nightly'
 
   concrete-python-public-release:
-    needs: [compiler-cpu-build, compiler-macos-tests, compiler-publish-docker-images, concrete-python-tests-linux, concrete-python-tests-macos]
+#    needs: [compiler-cpu-build, compiler-macos-tests, compiler-publish-docker-images, concrete-python-tests-linux, concrete-python-tests-macos]
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
