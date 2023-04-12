@@ -21,7 +21,7 @@ jobs:
       # to the architecture or the operating system
       fail-fast: false
       matrix:
-        runson: ["macos-11", "aws-mac2-metal"]
+        runson: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.runson }}
     steps:
       # A SSH private key is required as some dependencies are from private repos
