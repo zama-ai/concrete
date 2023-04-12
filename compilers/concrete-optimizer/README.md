@@ -30,7 +30,7 @@ cargo test --release
 
 Running `./optimizer` prints a [table of cryptographic parameters](./v0-parameters/README.md#v0-parameters) for different precisions and `log2(norm2)`.
 
-The tools accepts different [options](/v0-parameters/README.md#usage) that can be recalled by:
+The tools accepts different [options](./v0-parameters/README.md#usage) that can be recalled by:
 ```
 ./optimizer --help
 ```
