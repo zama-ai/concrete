@@ -58,7 +58,7 @@ setuptools.setup(
         "Topic :: Software Development :: Compilers",
     ],
 
-    long_description=read("README.md"),
+    long_description=read("../../README.md"),
     long_description_content_type="text/markdown",
 
     python_requires=">=3.8",
