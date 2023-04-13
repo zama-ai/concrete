@@ -9,7 +9,8 @@ expensive_tests = []
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-concrete-optimizer = { path ="../concrete-optimizer" }
+concrete-optimizer = { path = "../concrete-optimizer" }
+concrete-security-curves = { path = "../../../tools/parameter-curves/concrete-security-curves-rust" }
 clap = { version = "4.0.17", features = ["derive"] }
 rayon-cond = "0.2" # to avoid rayon code coloring
 # pprof = { version = "0.4", features = ["flamegraph"] }

@@ -4,8 +4,8 @@ use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate
 use super::crt_decomposition;
 use crate::dag::operator::Precision;
 use crate::noise_estimator::error::{
-    error_probability_of_sigma_scale, safe_variance_bound_product_1padbit,
-    sigma_scale_of_error_probability,
+    error_probability_of_sigma_scale, safe_variance_bound_2padbits,
+    safe_variance_bound_product_1padbit, sigma_scale_of_error_probability,
 };
 use crate::optimization::atomic_pattern;
 use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
@@ -24,6 +24,11 @@ pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64)
     let sigma = variance_to_std_dev(variance_bound) * kappa;
     let sigma_scale = sigma / variance_to_std_dev(current_maximum_noise);
     error_probability_of_sigma_scale(sigma_scale)
+}
+
+pub enum WopEncoding {
+    CRT,
+    RADIX,
 }
 
 #[derive(Clone, Debug)]
@@ -113,14 +118,15 @@ fn estimate_variance(
     norm: f64,
     precisions_sum: u64,
     max_precision: u64,
+    n_inputs: u64,
 ) -> f64 {
     assert!(max_precision <= precisions_sum);
     let variance_ggsw = pp_variance + br_variance / 2.;
     let variance_coeff_1_cmux_tree =
         square(norm)            // variance_coeff for the multisum
-        * (precisions_sum                    // for hybrid packing
-        << (2 * (max_precision - 1))) as f64 // for left shift
-    ;
+            * (precisions_sum * n_inputs                   // for hybrid packing
+            << (2 * (max_precision - 1))) as f64 // for left shift
+        ;
     let variance_one_external_product_for_cmux_tree = cb_decomp.variance_from_ggsw(variance_ggsw);
     variance_modulus_switching
         + variance_coeff_1_cmux_tree * variance_one_external_product_for_cmux_tree
@@ -136,6 +142,7 @@ fn estimate_complexity(
     precisions_sum: u64,
     nb_blocks: u64,
     n_functions: u64,
+    n_inputs: u64,
 ) -> f64 {
     // Pbs dans BitExtract et Circuit BS et FP-KS (partagés)
     // Hybrid packing
@@ -145,41 +152,42 @@ fn estimate_complexity(
     // BitExtract use br
     let complexity_bit_extract_1_pbs = br_cost;
     let complexity_bit_extract_wo_ks =
-        (precisions_sum - nb_blocks) as f64 * complexity_bit_extract_1_pbs;
+        ((precisions_sum - nb_blocks) * n_inputs) as f64 * complexity_bit_extract_1_pbs;
 
     // Hybrid packing
     // Circuit bs: fp-ks
     let complexity_ppks = pp_cost;
     let complexity_all_ppks =
-        ((glwe_params.glwe_dimension + 1) * cb_level * precisions_sum) as f64 * complexity_ppks;
+        ((glwe_params.glwe_dimension + 1) * cb_level * precisions_sum * n_inputs) as f64
+            * complexity_ppks;
 
     // Circuit bs: pbs
-    let complexity_all_pbs = (precisions_sum * cb_level) as f64 * br_cost;
+    let complexity_all_pbs = (precisions_sum * cb_level * n_inputs) as f64 * br_cost;
 
     let complexity_circuit_bs = complexity_all_pbs + complexity_all_ppks;
 
     // Hybrid packing (Do we have 1 or 2 groups)
     let log2_polynomial_size = glwe_params.log2_polynomial_size;
     // Size of cmux_group, can be zero
-    let cmux_group_count = if precisions_sum > log2_polynomial_size {
-        2f64.powi((precisions_sum - log2_polynomial_size - 1) as i32)
+    let cmux_group_count = if precisions_sum * n_inputs > log2_polynomial_size {
+        2f64.powi((precisions_sum * n_inputs - log2_polynomial_size - 1) as i32)
     } else {
         0.0
     };
     let complexity_cmux_tree = cmux_group_count * complexity_1_cmux_hp;
 
-    let complexity_all_ggsw_to_fft = precisions_sum as f64 * complexity_1_ggsw_to_fft;
+    let complexity_all_ggsw_to_fft = (precisions_sum * n_inputs) as f64 * complexity_1_ggsw_to_fft;
 
     // Hybrid packing blind rotate
-    let complexity_g_br =
-        complexity_1_cmux_hp * u64::min(glwe_params.log2_polynomial_size, precisions_sum) as f64;
+    let complexity_g_br = complexity_1_cmux_hp
+        * u64::min(glwe_params.log2_polynomial_size, precisions_sum * n_inputs) as f64;
 
     let complexity_hybrid_packing = complexity_cmux_tree + complexity_g_br;
 
     let complexity_multi_hybrid_packing =
         n_functions as f64 * complexity_hybrid_packing + complexity_all_ggsw_to_fft;
 
-    let complexity_all_ks = precisions_sum as f64 * ks_cost;
+    let complexity_all_ks = (precisions_sum * n_inputs) as f64 * ks_cost;
 
     complexity_bit_extract_wo_ks
         + complexity_circuit_bs
@@ -199,6 +207,7 @@ fn update_state_with_best_decompositions(
     pareto_keyswitch: &[KsComplexityNoise],
     pp_switch: &[PpSwitchComplexityNoise],
     pareto_cb: &CbPareto,
+    n_inputs: u64,
 ) {
     let ciphertext_modulus_log = consts.config.ciphertext_modulus_log;
     let precisions_sum = precisions.iter().sum();
@@ -268,6 +277,7 @@ fn update_state_with_best_decompositions(
             norm,
             precisions_sum,
             max_precision,
+            n_inputs,
         )
     };
 
@@ -299,6 +309,7 @@ fn update_state_with_best_decompositions(
             precisions_sum,
             nb_blocks,
             n_functions,
+            n_inputs,
         )
     };
 
@@ -408,13 +419,15 @@ fn update_state_with_best_decompositions(
     }
 }
 
-fn optimize_raw(
+pub fn optimize_raw(
     log_norm: f64, // ?? norm2 of noise multisum, complexity of multisum is neglected
     config: Config,
     search_space: &SearchSpace,
     n_functions: u64, // Many functions at the same time, stay at 1 for start
     coprimes: &[u64],
     persistent_caches: &PersistDecompCaches,
+    encoding: &WopEncoding,
+    n_inputs: u64,
 ) -> OptimizationState {
     let fractionnal_precisions = crt_decomposition::fractional_precisions_from_coprimes(coprimes);
     let precisions = crt_decomposition::precisions_from_coprimes(coprimes);
@@ -428,11 +441,18 @@ fn optimize_raw(
     // 1 bit of message only here =)
     // Bound for first bit extract in BitExtract (dominate others)
     let max_block_fractional_precision = f64_max(&fractionnal_precisions, 0.0);
-    let safe_variance_bound = safe_variance_bound_product_1padbit(
-        max_block_fractional_precision,
-        ciphertext_modulus_log,
-        config.maximum_acceptable_error_probability,
-    );
+    let safe_variance_bound = match encoding {
+        WopEncoding::CRT => safe_variance_bound_product_1padbit(
+            max_block_fractional_precision,
+            ciphertext_modulus_log,
+            config.maximum_acceptable_error_probability,
+        ),
+        WopEncoding::RADIX => safe_variance_bound_2padbits(
+            0,
+            ciphertext_modulus_log,
+            config.maximum_acceptable_error_probability,
+        ),
+    };
     let kappa: f64 = sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
     let mut state = OptimizationState {
@@ -482,6 +502,7 @@ fn optimize_raw(
                     pareto_keyswitch,
                     pareto_pp_switch,
                     pareto_cb,
+                    n_inputs,
                 );
             }
         }
@@ -504,6 +525,7 @@ pub fn optimize_one(
         }
     };
     let n_functions = 1;
+    let n_inputs = 1;
     let mut state = optimize_raw(
         log_norm,
         config,
@@ -511,6 +533,8 @@ pub fn optimize_one(
         n_functions,
         &coprimes,
         caches,
+        &WopEncoding::CRT,
+        n_inputs,
     );
     state.best_solution = state.best_solution.map(|mut sol| -> Solution {
         sol.crt_decomposition = coprimes;
