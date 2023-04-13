@@ -1,10 +1,11 @@
-from estimator import RC, LWE, ND
 from sage.all import oo, save, load
 from math import log2
 import multiprocessing
 import argparse
 import os
 import sys
+from estimator import RC, LWE, ND
+
 
 old_models_sobj = ""
 
@@ -149,7 +150,7 @@ def generate_parameter_matrix(
     for lam in target_security_levels:
         for sd in range(sd_min, sd_max + 1):
             print(f"run for {lam} {sd}")
-            Xe_new = ND.NoiseDistribution.DiscreteGaussian(2 ** sd)
+            Xe_new = ND.DiscreteGaussian(2 ** sd)
             (params_out, sec) = automated_param_select_n(
                 params_in.updated(Xe=Xe_new), target_security=lam
             )

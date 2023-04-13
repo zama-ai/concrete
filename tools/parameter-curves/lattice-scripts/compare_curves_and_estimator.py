@@ -81,7 +81,6 @@ def compare_curve_and_estimator(security_level, log_q, curves_dir):
     :return: If one of (lwe dim, std dev) is estimated to be less secure than our target `security_level`
      this function return False, else return True
     """
-    assert log_q == 64
     print(f"Security Target: {security_level} bits")
 
     # step 0. loading the right curve

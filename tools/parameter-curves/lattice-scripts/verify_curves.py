@@ -4,7 +4,6 @@ import json
 import os
 import argparse
 
-
 def sort_data(security_level, curves_dir):
     from operator import itemgetter
 
@@ -63,8 +62,6 @@ def verify_curve(security_level, a, b, curves_dir):
 
     # step 3. for each n, check whether we satisfy the table
     n_min = max(2 * security_level, 450, X["{}".format(security_level)][-1][0])
-    #print(n_min)
-    #print(n_max)
 
     for n in range(n_max, n_min, -1):
         model_sd = f_model(a, b, n)
@@ -85,7 +82,6 @@ def generate_and_verify(security_levels, log_q, curves_dir, verified_curves_path
     fail = []
 
     for sec in security_levels:
-        #print("WE GO FOR {}".format(sec))
         # generate the model for security level sec
         (a_sec, b_sec) = generate_curve(sec, curves_dir)
         # verify the model for security level sec

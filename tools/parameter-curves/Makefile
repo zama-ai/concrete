@@ -32,6 +32,18 @@ $(SAGE_OBJECT_DIR)/outdated_curves.timestamp: ./lattice-scripts/compare_curves_a
 
 compare-curves: $(SAGE_OBJECT_DIR)/outdated_curves.timestamp
 
+# Compare curves custom q #######################
+# run via e.g:
+# logq=128 make compare-curves-custom-q
+# for q = 2**(128)
+
+$(SAGE_OBJECT_DIR)/outdated_curves.timestamp: ./lattice-scripts/compare_curves_and_estimator.py
+	PYTHONPATH=$(LATTICE_ESTIMATOR_DIR) python3 ./lattice-scripts/compare_curves_and_estimator.py \
+	--curves-dir $(SAGE_OBJECT_DIR) --security-levels $(SECURITY_LEVELS) --log-q $(logq) \
+	&& touch $(SAGE_OBJECT_DIR)/outdated_curves.timestamp
+
+compare-curves-custom-q: $(SAGE_OBJECT_DIR)/outdated_curves.timestamp
+
 # Generate curves ######################
 
 $(SAGE_OBJECT_DIR)/%.sobj: $(SAGE_OBJECT_DIR)/outdated_curves.timestamp ./lattice-scripts/generate_data.sh ./lattice-scripts/generate_data.py
