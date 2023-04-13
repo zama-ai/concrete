@@ -112,7 +112,7 @@ class Graph:
                     if pred_node.operation != Operation.Input:
                         dtype = node.inputs[index].dtype
                         if isinstance(dtype, Integer):
-                            # see https://github.com/zama-ai/concrete-numpy/blob/main/docs/_static/p_error_simulation.pdf  # noqa: E501  # pylint: disable=line-too-long
+                            # see https://github.com/zama-ai/concrete/blob/main/docs/_static/p_error_simulation.pdf  # noqa: E501  # pylint: disable=line-too-long
                             # to learn more about the distribution of error
 
                             if p_error not in P_ERROR_PER_ERROR_SIZE_CACHE:
