@@ -28,7 +28,7 @@ Since writing FHE program is hard, Concrete, based on LLVM, make this process ea
 ## Main features
 
 - Ability to compile Python functions (that may use NumPy within) to their FHE equivalents, to operate on encrypted data
-- Support for [large collection of operators](https://docs.zama.ai/concrete-numpy/getting-started/compatibility)
+- Support for [large collection of operators](https://docs.zama.ai/concrete/getting-started/compatibility)
 - Partial support for floating points
 - Support for table lookups on integers
 - Support for integration with Client / Server architectures
