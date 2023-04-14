@@ -96,9 +96,10 @@ uint64_t *generate_identity_lut_pbs(int polynomial_size, int glwe_dimension,
   return lut_pbs;
 }
 
-uint64_t *generate_identity_lut_cmux_tree(int polynomial_size, int num_lut,
+uint64_t *generate_identity_lut_cmux_tree(int polynomial_size, int lut_size,
                                           int tau, int delta_log) {
-
+  int r = log2(lut_size) - log2(polynomial_size);
+  uint64_t num_lut = (1 << r);
   // Create the plaintext lut_pbs
   uint64_t *plaintext_lut_cmux_tree =
       (uint64_t *)malloc(num_lut * tau * polynomial_size * sizeof(uint64_t));

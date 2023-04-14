@@ -262,7 +262,6 @@ __host__ void host_extract_bits(
         lut_pbs, (Torus)(0ll - 1ll << (delta_log - 1 + bit_idx)),
         glwe_dimension);
     check_cuda_error(cudaGetLastError());
-
     host_bootstrap_low_latency<Torus, params>(
         v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_pbs,
         lut_vector_indexes, lwe_array_out_ks_buffer, fourier_bsk, pbs_buffer,
