@@ -56,6 +56,10 @@ harness = false
 name = "bench_bootstrap"
 harness = false
 
+[[bench]]
+name = "bench_keyswitch"
+harness = false
+
 [profile.test]
 overflow-checks = true
 

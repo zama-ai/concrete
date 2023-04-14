@@ -40,23 +40,19 @@ impl LweKeyswitchKey<&[u64]> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::c_api::types::tests::to_generic;
+pub mod tests {
     use crate::implementation::types::*;
-    use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
-    use concrete_csprng::seeders::Seed;
 
-    struct KeySet {
-        in_dim: usize,
-        out_dim: usize,
-        in_sk: LweSecretKey<Vec<u64>>,
-        out_sk: LweSecretKey<Vec<u64>>,
-        ksk: LweKeyswitchKey<Vec<u64>>,
+    pub struct KeySet {
+        pub in_dim: usize,
+        pub out_dim: usize,
+        pub in_sk: LweSecretKey<Vec<u64>>,
+        pub out_sk: LweSecretKey<Vec<u64>>,
+        pub ksk: LweKeyswitchKey<Vec<u64>>,
     }
 
     impl KeySet {
-        fn new(
+        pub fn new(
             mut csprng: CsprngMut,
             in_dim: usize,
             out_dim: usize,
@@ -88,7 +84,7 @@ mod tests {
             }
         }
 
-        fn keyswitch(&self, csprng: CsprngMut, pt: u64, encryption_variance: f64) -> u64 {
+        pub fn keyswitch(&self, csprng: CsprngMut, pt: u64, encryption_variance: f64) -> u64 {
             let mut input = LweCiphertext::zero(self.in_dim);
 
             let mut output = LweCiphertext::zero(self.out_dim);
@@ -107,6 +103,9 @@ mod tests {
 
     #[test]
     fn keyswitch_correctness() {
+        use crate::c_api::types::tests::to_generic;
+        use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+        use concrete_csprng::seeders::Seed;
         let mut csprng = SoftwareRandomGenerator::new(Seed(0));
 
         let keyset = KeySet::new(
