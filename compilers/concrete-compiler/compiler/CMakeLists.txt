@@ -106,18 +106,12 @@ set(CONCRETE_CPU_RELEASE_DIR "${CONCRETE_CPU_DIR}/target/release")
 set(CONCRETE_CPU_INCLUDE_DIR "${CONCRETE_CPU_DIR}/include")
 set(CONCRETE_CPU_STATIC_LIB "${CONCRETE_CPU_RELEASE_DIR}/libconcrete_cpu.a")
 
-if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  set(CONCRETE_CPU_FEATURES "--features=x86_64")
-elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64")
-  set(CONCRETE_CPU_FEATURES "--features=aarch64")
-endif()
-
 ExternalProject_Add(
   concrete_cpu_rust
   DOWNLOAD_COMMAND ""
   CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_CPU_STATIC_LIB}"
   BUILD_ALWAYS true
-  BUILD_COMMAND cargo +nightly build --release ${CONCRETE_CPU_FEATURES} --features=nightly
+  BUILD_COMMAND cargo +nightly build --release --features=nightly
   BINARY_DIR "${CONCRETE_CPU_DIR}"
   INSTALL_COMMAND ""
   LOG_BUILD ON
