@@ -90,7 +90,7 @@ or if you have a simple function that you can decorate, and you don't care about
 ```python
 from concrete import fhe
 
-@fhe.circuit({"x": "encrypted", "y": "encrypted"})
+@fhe.compiler({"x": "encrypted", "y": "encrypted"})
 def add(x, y):
     return x + y
 
