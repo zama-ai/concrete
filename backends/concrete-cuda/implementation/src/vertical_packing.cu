@@ -5,27 +5,23 @@
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_fast_cmux_tree(int polynomial_size, int r) {
+void checks_fast_cmux_tree(int polynomial_size) {
   assert((
       "Error (GPU Cmux tree): polynomial size should be one of 256, 512, 1024, "
       "2048, 4096, 8192",
       polynomial_size == 256 || polynomial_size == 512 ||
           polynomial_size == 1024 || polynomial_size == 2048 ||
           polynomial_size == 4096 || polynomial_size == 8192));
-  // For larger k we will need to adjust the mask size
-  assert(("Error (GPU Cmux tree): r, the number of layers in the tree, should "
-          "be >= 1",
-          r >= 1));
 }
 
 /*
  * Runs standard checks to validate the inputs
  */
-void checks_cmux_tree(int nbits, int polynomial_size, int base_log, int r) {
+void checks_cmux_tree(int nbits, int polynomial_size, int base_log) {
 
   assert(("Error (GPU Cmux tree): base log should be <= nbits",
           base_log <= nbits));
-  checks_fast_cmux_tree(polynomial_size, r);
+  checks_fast_cmux_tree(polynomial_size);
 }
 
 /*
@@ -49,41 +45,47 @@ void scratch_cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index,
                                int8_t **cmux_tree_buffer,
                                uint32_t glwe_dimension,
                                uint32_t polynomial_size, uint32_t level_count,
-                               uint32_t r, uint32_t tau,
+                               uint32_t lut_vector_size, uint32_t tau,
                                uint32_t max_shared_memory,
                                bool allocate_gpu_memory) {
-  checks_fast_cmux_tree(polynomial_size, r);
+  checks_fast_cmux_tree(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
     scratch_cmux_tree<uint32_t, int32_t, Degree<256>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 512:
     scratch_cmux_tree<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 1024:
     scratch_cmux_tree<uint32_t, int32_t, Degree<1024>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 2048:
     scratch_cmux_tree<uint32_t, int32_t, Degree<2048>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 4096:
     scratch_cmux_tree<uint32_t, int32_t, Degree<4096>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 8192:
     scratch_cmux_tree<uint32_t, int32_t, Degree<8192>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   default:
     break;
@@ -99,41 +101,47 @@ void scratch_cuda_cmux_tree_64(void *v_stream, uint32_t gpu_index,
                                int8_t **cmux_tree_buffer,
                                uint32_t glwe_dimension,
                                uint32_t polynomial_size, uint32_t level_count,
-                               uint32_t r, uint32_t tau,
+                               uint32_t lut_vector_size, uint32_t tau,
                                uint32_t max_shared_memory,
                                bool allocate_gpu_memory) {
-  checks_fast_cmux_tree(polynomial_size, r);
+  checks_fast_cmux_tree(polynomial_size);
 
   switch (polynomial_size) {
   case 256:
     scratch_cmux_tree<uint64_t, int64_t, Degree<256>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 512:
     scratch_cmux_tree<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 1024:
     scratch_cmux_tree<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 2048:
     scratch_cmux_tree<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 4096:
     scratch_cmux_tree<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   case 8192:
     scratch_cmux_tree<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, cmux_tree_buffer, glwe_dimension, polynomial_size,
-        level_count, r, tau, max_shared_memory, allocate_gpu_memory);
+        level_count, lut_vector_size, tau, max_shared_memory,
+        allocate_gpu_memory);
     break;
   default:
     break;
@@ -148,47 +156,53 @@ void cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
                        void *ggsw_in, void *lut_vector,
                        int8_t *cmux_tree_buffer, uint32_t glwe_dimension,
                        uint32_t polynomial_size, uint32_t base_log,
-                       uint32_t level_count, uint32_t r, uint32_t tau,
-                       uint32_t max_shared_memory) {
+                       uint32_t level_count, uint32_t lut_vector_size,
+                       uint32_t tau, uint32_t max_shared_memory) {
 
-  checks_cmux_tree(32, polynomial_size, base_log, r);
+  checks_cmux_tree(32, polynomial_size, base_log);
 
   switch (polynomial_size) {
   case 256:
     host_cmux_tree<uint32_t, int32_t, Degree<256>>(
         v_stream, gpu_index, (uint32_t *)glwe_array_out, (uint32_t *)ggsw_in,
         (uint32_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 512:
     host_cmux_tree<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, (uint32_t *)glwe_array_out, (uint32_t *)ggsw_in,
         (uint32_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 1024:
     host_cmux_tree<uint32_t, int32_t, Degree<1024>>(
         v_stream, gpu_index, (uint32_t *)glwe_array_out, (uint32_t *)ggsw_in,
         (uint32_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 2048:
     host_cmux_tree<uint32_t, int32_t, Degree<2048>>(
         v_stream, gpu_index, (uint32_t *)glwe_array_out, (uint32_t *)ggsw_in,
         (uint32_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 4096:
     host_cmux_tree<uint32_t, int32_t, Degree<4096>>(
         v_stream, gpu_index, (uint32_t *)glwe_array_out, (uint32_t *)ggsw_in,
         (uint32_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 8192:
     host_cmux_tree<uint32_t, int32_t, Degree<8192>>(
         v_stream, gpu_index, (uint32_t *)glwe_array_out, (uint32_t *)ggsw_in,
         (uint32_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   default:
     break;
@@ -211,7 +225,7 @@ void cuda_cmux_tree_32(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
  * 1024, 2048, 4096, 8192}
  *  - 'base_log' base log parameter for cmux block
  *  - 'level_count' decomposition level for cmux block
- *  - 'r' number of input GGSW ciphertexts
+ *  - 'lut_vector_size' number of elements in lut_vector
  *  - 'tau' number of input LWE ciphertext which were used to generate GGSW
  * ciphertexts stored in 'ggsw_in', it is also an amount of output GLWE
  * ciphertexts
@@ -226,46 +240,52 @@ void cuda_cmux_tree_64(void *v_stream, uint32_t gpu_index, void *glwe_array_out,
                        void *ggsw_in, void *lut_vector,
                        int8_t *cmux_tree_buffer, uint32_t glwe_dimension,
                        uint32_t polynomial_size, uint32_t base_log,
-                       uint32_t level_count, uint32_t r, uint32_t tau,
-                       uint32_t max_shared_memory) {
-  checks_cmux_tree(64, polynomial_size, base_log, r);
+                       uint32_t level_count, uint32_t lut_vector_size,
+                       uint32_t tau, uint32_t max_shared_memory) {
+  checks_cmux_tree(64, polynomial_size, base_log);
 
   switch (polynomial_size) {
   case 256:
     host_cmux_tree<uint64_t, int64_t, Degree<256>>(
         v_stream, gpu_index, (uint64_t *)glwe_array_out, (uint64_t *)ggsw_in,
         (uint64_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 512:
     host_cmux_tree<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)glwe_array_out, (uint64_t *)ggsw_in,
         (uint64_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 1024:
     host_cmux_tree<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)glwe_array_out, (uint64_t *)ggsw_in,
         (uint64_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 2048:
     host_cmux_tree<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)glwe_array_out, (uint64_t *)ggsw_in,
         (uint64_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 4096:
     host_cmux_tree<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, (uint64_t *)glwe_array_out, (uint64_t *)ggsw_in,
         (uint64_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   case 8192:
     host_cmux_tree<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, (uint64_t *)glwe_array_out, (uint64_t *)ggsw_in,
         (uint64_t *)lut_vector, cmux_tree_buffer, glwe_dimension,
-        polynomial_size, base_log, level_count, r, tau, max_shared_memory);
+        polynomial_size, base_log, level_count, lut_vector_size, tau,
+        max_shared_memory);
     break;
   default:
     break;

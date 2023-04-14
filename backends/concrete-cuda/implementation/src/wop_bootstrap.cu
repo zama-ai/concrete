@@ -338,6 +338,7 @@ void scratch_cuda_wop_pbs_64(
  *  - 'level_count_cbs' level of circuit bootstrap
  *  - 'base_log_cbs' base log parameter for circuit bootstrap
  *  - 'number_of_inputs' number of input LWE ciphertexts
+ *  - 'lut_number' number of LUTs given as input
  *  - 'max_shared_memory' maximum shared memory amount to be used in
  *  bootstrapping kernel
  *

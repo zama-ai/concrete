@@ -93,7 +93,7 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
                      uint64_t **d_glwe_out, int glwe_dimension,
                      int polynomial_size, int base_log, int level_count,
                      double glwe_modular_variance, int r_lut, int tau,
-                     uint64_t delta_log, int repetitions, int samples,
+                     uint32_t *delta_log, int repetitions, int samples,
                      int gpu_index);
 void cmux_tree_teardown(cudaStream_t *stream, Csprng **csprng,
                         uint64_t **glwe_sk, uint64_t **d_lut_identity,

@@ -138,19 +138,39 @@ cmux(Torus *glwe_array_out, Torus *glwe_array_in, double2 *ggsw_in,
   }
 }
 
-// Appends zeroed paddings between each LUT
+// Converts an array of plaintexts to trivially encrypted GLWEs.
 template <typename Torus, class params>
-__host__ void add_padding_to_lut_async(Torus *lut_out, Torus *lut_in,
-                                       uint32_t glwe_dimension,
-                                       uint32_t num_lut, cudaStream_t *stream) {
+__host__ void
+plaintext_to_glwe_array(Torus *lut_out, Torus *lut_in, uint32_t glwe_dimension,
+                        uint32_t lut_vector_size, uint32_t number_of_trees,
+                        cudaStream_t *stream) {
+
+  int r = log2(lut_vector_size) - params::log2_degree;
+  /*
+   * r < 0: No CMUX tree is needed, but the LUT is not big enough (i.e. has less
+   * than N elements).
+   *
+   * r == 0: No CMUX tree is needed and the LUT has exactly N
+   * elements.
+   *
+   * r > 0: CMUX tree is needed, so LUT is split in smaller LUTs of
+   * size lut_vector_size / num_lut.
+   *
+   * if r <= 0 we simply copy the LUT to lut_out, adding zeroes to the highest
+   * positions if needed.
+   */
+  int num_lut = std::max(1, r);
   check_cuda_error(cudaMemsetAsync(lut_out, 0,
-                                   num_lut * (glwe_dimension + 1) *
-                                       params::degree * sizeof(Torus),
+                                   num_lut * number_of_trees *
+                                       (glwe_dimension + 1) * params::degree *
+                                       sizeof(Torus),
                                    *stream));
-  for (int i = 0; i < num_lut; i++)
+
+  uint32_t small_lut_size = lut_vector_size / (1 << num_lut);
+  for (int i = 0; i < number_of_trees * num_lut; i++)
     check_cuda_error(cudaMemcpyAsync(
         lut_out + ((glwe_dimension + 1) * i + glwe_dimension) * params::degree,
-        lut_in + i * params::degree, params::degree * sizeof(Torus),
+        lut_in + i * small_lut_size, small_lut_size * sizeof(Torus),
         cudaMemcpyDeviceToDevice, *stream));
 }
 
@@ -218,11 +238,15 @@ __host__ __device__ uint64_t get_memory_needed_per_block_cmux_tree(
          sizeof(double2) * polynomial_size / 2; // glwe_fft
 }
 
-template <typename Torus>
+template <typename Torus, typename params>
 __host__ __device__ uint64_t get_buffer_size_cmux_tree(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
-    uint32_t r, uint32_t tau, uint32_t max_shared_memory) {
+    uint32_t lut_vector_size, uint32_t tau, uint32_t max_shared_memory) {
 
+  int r = log2(lut_vector_size) - params::log2_degree;
+  if (r <= 0)
+    // A cmux tree is not needed
+    return 0;
   uint64_t memory_needed_per_block =
       get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
                                                    polynomial_size);
@@ -237,9 +261,11 @@ __host__ __device__ uint64_t get_buffer_size_cmux_tree(
   if (max_shared_memory < polynomial_size * sizeof(double)) {
     device_mem += polynomial_size * sizeof(double);
   }
-  uint64_t buffer_size = r * ggsw_size * sizeof(double) +
-                         num_lut * tau * glwe_size * sizeof(Torus) +
-                         num_lut * tau * glwe_size * sizeof(Torus) + device_mem;
+  uint64_t buffer_size =
+      r * ggsw_size * sizeof(double) +            // d_ggsw_fft_in
+      num_lut * tau * glwe_size * sizeof(Torus) + // d_buffer1
+      num_lut * tau * glwe_size * sizeof(Torus) + // d_buffer2
+      device_mem;                                 // d_mem
   return buffer_size + buffer_size % sizeof(double2);
 }
 
@@ -247,7 +273,7 @@ template <typename Torus, typename STorus, typename params>
 __host__ void
 scratch_cmux_tree(void *v_stream, uint32_t gpu_index, int8_t **cmux_tree_buffer,
                   uint32_t glwe_dimension, uint32_t polynomial_size,
-                  uint32_t level_count, uint32_t r, uint32_t tau,
+                  uint32_t level_count, uint32_t lut_vector_size, uint32_t tau,
                   uint32_t max_shared_memory, bool allocate_gpu_memory) {
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
@@ -265,8 +291,8 @@ scratch_cmux_tree(void *v_stream, uint32_t gpu_index, int8_t **cmux_tree_buffer,
   }
 
   if (allocate_gpu_memory) {
-    uint64_t buffer_size = get_buffer_size_cmux_tree<Torus>(
-        glwe_dimension, polynomial_size, level_count, r, tau,
+    uint64_t buffer_size = get_buffer_size_cmux_tree<Torus, params>(
+        glwe_dimension, polynomial_size, level_count, lut_vector_size, tau,
         max_shared_memory);
     *cmux_tree_buffer =
         (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
@@ -282,31 +308,33 @@ scratch_cmux_tree(void *v_stream, uint32_t gpu_index, int8_t **cmux_tree_buffer,
  *  - v_stream: The CUDA stream that should be used.
  *  - glwe_array_out: A device array for the output GLWE ciphertext.
  *  - ggsw_in: A device array for the GGSW ciphertexts used in each layer.
- *  - lut_vector: A device array for the GLWE ciphertexts used in the first
- * layer.
+ *  - lut_vector: A device array of cleartexts.
  * -  polynomial_size: size of the polynomials. This is N.
  *  - base_log: log base used for the gadget matrix - B = 2^base_log (~8)
  *  - level_count: number of decomposition levels in the gadget matrix (~4)
- *  - r: Number of layers in the tree.
+ *  - lut_vector_size: Number of elements in lut_vector
  *  - tau: The quantity of CMUX trees that should be executed
  */
 template <typename Torus, typename STorus, class params>
-__host__ void
-host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
-               Torus *ggsw_in, Torus *lut_vector, int8_t *cmux_tree_buffer,
-               uint32_t glwe_dimension, uint32_t polynomial_size,
-               uint32_t base_log, uint32_t level_count, uint32_t r,
-               uint32_t tau, uint32_t max_shared_memory) {
+__host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
+                             Torus *glwe_array_out, Torus *ggsw_in,
+                             Torus *lut_vector, int8_t *cmux_tree_buffer,
+                             uint32_t glwe_dimension, uint32_t polynomial_size,
+                             uint32_t base_log, uint32_t level_count,
+                             uint32_t lut_vector_size, uint32_t tau,
+                             uint32_t max_shared_memory) {
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
-
-  int num_lut = (1 << r);
-  if (r == 0) {
-    // Simply copy the LUTs
-    add_padding_to_lut_async<Torus, params>(glwe_array_out, lut_vector,
-                                            glwe_dimension, tau, stream);
+  if (lut_vector_size <= params::degree) {
+    // The LUT itself is the result
+    plaintext_to_glwe_array<Torus, params>(glwe_array_out, lut_vector,
+                                           glwe_dimension, lut_vector_size, tau,
+                                           stream);
     return;
   }
+  // r = tau * p - log2(N)
+  uint32_t r = log2(lut_vector_size) - params::log2_degree;
+  uint32_t num_lut = (1 << r);
 
   uint64_t memory_needed_per_block =
       get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
@@ -338,13 +366,13 @@ host_cmux_tree(void *v_stream, uint32_t gpu_index, Torus *glwe_array_out,
       d_buffer1 + (ptrdiff_t)(num_lut * tau * glwe_size * sizeof(Torus));
 
   //////////////////////
-
   batch_fft_ggsw_vector<Torus, STorus, params>(
       stream, d_ggsw_fft_in, ggsw_in, d_mem_fft, r, glwe_dimension,
       polynomial_size, level_count, gpu_index, max_shared_memory);
 
-  add_padding_to_lut_async<Torus, params>(
-      (Torus *)d_buffer1, lut_vector, glwe_dimension, num_lut * tau, stream);
+  plaintext_to_glwe_array<Torus, params>((Torus *)d_buffer1, lut_vector,
+                                         glwe_dimension, lut_vector_size, tau,
+                                         stream);
 
   Torus *output;
   // Run the cmux tree

@@ -580,12 +580,13 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
                      uint64_t **d_ggsw_bit_array, int8_t **cmux_tree_buffer,
                      uint64_t **d_glwe_out, int glwe_dimension,
                      int polynomial_size, int base_log, int level_count,
-                     double glwe_modular_variance, int r_lut, int tau,
-                     uint64_t delta_log, int repetitions, int samples,
+                     double glwe_modular_variance, int p, int tau,
+                     uint32_t *delta_log, int repetitions, int samples,
                      int gpu_index) {
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
   int glwe_size = (glwe_dimension + 1) * polynomial_size;
+  *delta_log = 64 - p;
 
   // Create a Csprng
   *csprng =
@@ -595,24 +596,23 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
       *csprng, Uint128{.little_endian_bytes = {*seed}});
 
   // Generate the keys
+  uint32_t r_lut = tau * p - log2(polynomial_size);
   generate_glwe_secret_keys(glwe_sk, glwe_dimension, polynomial_size, *csprng,
                             repetitions);
   *plaintexts = generate_plaintexts(r_lut, 1, 1, repetitions, samples);
 
   // Create the LUT
-  int num_lut = (1 << r_lut);
-  *d_lut_identity = (uint64_t *)cuda_malloc_async(
-      polynomial_size * num_lut * tau * sizeof(uint64_t), stream, gpu_index);
-  uint64_t *lut_cmux_tree_identity =
-      generate_identity_lut_cmux_tree(polynomial_size, num_lut, tau, delta_log);
+  int lut_size = 1 << (tau * p);
+  uint64_t *big_lut = generate_identity_lut_cmux_tree(polynomial_size, lut_size,
+                                                      tau, *delta_log);
 
   // Encrypt one bit per GGSW
   uint64_t *ggsw_bit_array = (uint64_t *)malloc(repetitions * samples * r_lut *
                                                 ggsw_size * sizeof(uint64_t));
+
   for (int r = 0; r < repetitions; r++) {
     for (int s = 0; s < samples; s++) {
       uint64_t witness = (*plaintexts)[r * samples + s];
-
       // Instantiate the GGSW m^tree ciphertexts
       // We need r GGSW ciphertexts
       // Bit decomposition of the value from MSB to LSB
@@ -629,27 +629,33 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
       free(bit_array);
     }
   }
+
   // Allocate and copy things to the device
   *d_glwe_out = (uint64_t *)cuda_malloc_async(
       tau * glwe_size * sizeof(uint64_t), stream, gpu_index);
   *d_ggsw_bit_array = (uint64_t *)cuda_malloc_async(
       repetitions * samples * r_lut * ggsw_size * sizeof(uint64_t), stream,
       gpu_index);
-  cuda_memcpy_async_to_gpu(*d_lut_identity, lut_cmux_tree_identity,
-                           polynomial_size * num_lut * tau * sizeof(uint64_t),
-                           stream, gpu_index);
+  *d_lut_identity = (uint64_t *)cuda_malloc_async(
+      (1 << r_lut) * tau * polynomial_size * sizeof(uint64_t), stream,
+      gpu_index);
+  cuda_memcpy_async_to_gpu(*d_lut_identity, big_lut,
+                           lut_size * tau * sizeof(uint64_t), stream,
+                           gpu_index);
   cuda_memcpy_async_to_gpu(*d_ggsw_bit_array, ggsw_bit_array,
                            repetitions * samples * r_lut * ggsw_size *
                                sizeof(uint64_t),
                            stream, gpu_index);
 
+  uint32_t N = log2(polynomial_size);
   scratch_cuda_cmux_tree_64(stream, gpu_index, cmux_tree_buffer, glwe_dimension,
-                            polynomial_size, level_count, r_lut, tau,
+                            polynomial_size, level_count, lut_size, tau,
                             cuda_get_max_shared_memory(gpu_index), true);
   cuda_synchronize_stream(stream);
-  free(lut_cmux_tree_identity);
+  free(big_lut);
   free(ggsw_bit_array);
 }
+
 void cmux_tree_teardown(cudaStream_t *stream, Csprng **csprng,
                         uint64_t **glwe_sk, uint64_t **d_lut_identity,
                         uint64_t **plaintexts, uint64_t **d_ggsw_bit_array,
@@ -688,6 +694,7 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
   *delta_log = 64 - p;
   *delta_log_lut = *delta_log;
   *delta = (uint64_t)(1) << *delta_log;
+
   // Create a Csprng
   *csprng =
       (Csprng *)aligned_alloc(CONCRETE_CSPRNG_ALIGN, CONCRETE_CSPRNG_SIZE);
@@ -715,23 +722,15 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
   *plaintexts = generate_plaintexts(p, *delta, tau, repetitions, samples);
 
   // LUT creation
-  int lut_size = polynomial_size;
-  int lut_num = tau << (tau * p - (int)log2(polynomial_size)); // r
+  int lut_size = 1 << (tau * p);
+  uint64_t *big_lut = (uint64_t *)malloc(tau * lut_size * sizeof(uint64_t));
+  for (int i = 0; i < tau * lut_size; i++)
+    big_lut[i] = ((uint64_t)(i % (1 << p))) << *delta_log_lut;
 
-  uint64_t *big_lut = (uint64_t *)malloc(lut_num * lut_size * sizeof(uint64_t));
-  for (int t = tau - 1; t >= 0; t--) {
-    uint64_t *small_lut = big_lut + (ptrdiff_t)(t * (1 << (tau * p)));
-    for (uint64_t value = 0; value < (uint64_t)(1 << (tau * p)); value++) {
-      int nbits = t * p;
-      uint64_t x = (value >> nbits) & (uint64_t)((1 << p) - 1);
-      small_lut[value] =
-          ((x % (uint64_t)(1 << (64 - *delta_log))) << *delta_log_lut);
-    }
-  }
   *d_lut_vector = (uint64_t *)cuda_malloc_async(
-      lut_num * lut_size * sizeof(uint64_t), stream, gpu_index);
+      tau * lut_size * sizeof(uint64_t), stream, gpu_index);
   cuda_memcpy_async_to_gpu(*d_lut_vector, big_lut,
-                           lut_num * lut_size * sizeof(uint64_t), stream,
+                           tau * lut_size * sizeof(uint64_t), stream,
                            gpu_index);
   // Allocate input
   *d_lwe_ct_in_array = (uint64_t *)cuda_malloc_async(
