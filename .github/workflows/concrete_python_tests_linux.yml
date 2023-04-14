@@ -25,6 +25,8 @@ on:
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  CUDA_PATH: /usr/local/cuda-11.7
+  GCC_VERSION: 11
   GLIB_VER: 2_28
 
 jobs:
@@ -50,7 +52,7 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
           #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-
+          
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -62,6 +64,7 @@ jobs:
 
       - name: Build bindings
         uses: addnab/docker-run-action@v3
+        if: ${{ !contains(inputs.instance_type, 'p3') }}
         id: build-compiler-bindings
         with:
           registry: ghcr.io
@@ -73,7 +76,6 @@ jobs:
             -v ${{ github.workspace }}/build:/build
             -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
             -e SSH_AUTH_SOCK=/ssh.socket
-            ${{ env.DOCKER_GPU_OPTION }}
           shell: bash
           run: |
             set -e
@@ -84,13 +86,14 @@ jobs:
             source .venv/bin/activate
             
             cd /concrete/compilers/concrete-compiler/compiler
-            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$(which python3) python-bindings
+            make BUILD_DIR=/build DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) python-bindings
             
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
       - name: Test
         uses: addnab/docker-run-action@v3
+        if: ${{ !contains(inputs.instance_type, 'p3') }}
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -99,7 +102,6 @@ jobs:
           options: >-
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
-            ${{ env.DOCKER_GPU_OPTION }}
           shell: bash
           run: |
             set -e
@@ -111,5 +113,63 @@ jobs:
             export COMPILER_BUILD_DIRECTORY=/build
             export KEY_CACHE_DIRECTORY=/tmp/KeySetCache
             make pytest
+            
+            chmod -R ugo+rwx /tmp/KeySetCache
+
+      - name: Build bindings gpu
+        uses: addnab/docker-run-action@v3
+        if: ${{ contains(inputs.instance_type, 'p3') }}
+        id: build-compiler-bindings-gpu
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/wheels:/wheels
+            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
+            -e SSH_AUTH_SOCK=/ssh.socket
+            --gpus all
+          shell: bash
+          run: |
+            set -e
+            rm -rf /build/*
+
+            cd /concrete/frontends/concrete-python
+            make venv
+            source .venv/bin/activate
+            
+            cd /concrete/compilers/concrete-compiler/compiler
+            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$(which python3) CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} python-bindings
+            
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
+      - name: Test gpu
+        uses: addnab/docker-run-action@v3
+        if: ${{ contains(inputs.instance_type, 'p3') }}
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/wheels:/wheels
+            --gpus all
+          shell: bash
+          run: |
+            set -e
+            
+            cd /concrete/frontends/concrete-python
+            make venv
+            source .venv/bin/activate
+
+            export COMPILER_BUILD_DIRECTORY=/build
+            export KEY_CACHE_DIRECTORY=/tmp/KeySetCache
+            make pytest-gpu
             
             chmod -R ugo+rwx /tmp/KeySetCache

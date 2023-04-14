@@ -96,9 +96,16 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, int security_level) {
              options.optimizerConfig.security = security_level;
            })
-      .def("simulation", [](CompilationOptions &options, bool simulate) {
-        options.simulate = simulate;
-      });
+      .def("simulation", [](CompilationOptions &options,
+                            bool simulate) { options.simulate = simulate; })
+      .def("set_emit_gpu_ops",
+           [](CompilationOptions &options, bool emit_gpu_ops) {
+             options.emitGPUOps = emit_gpu_ops;
+           })
+      .def("set_batch_tfhe_ops",
+           [](CompilationOptions &options, bool batch_tfhe_ops) {
+             options.batchTFHEOps = batch_tfhe_ops;
+           });
 
   pybind11::class_<mlir::concretelang::CompilationFeedback>(
       m, "CompilationFeedback")

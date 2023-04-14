@@ -102,6 +102,8 @@ class Server:
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
+        options.set_emit_gpu_ops(configuration.use_gpu)
+        options.set_batch_tfhe_ops(False)
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member

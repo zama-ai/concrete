@@ -20,6 +20,7 @@ tests_directory = os.path.dirname(tests.__file__)
 INSECURE_KEY_CACHE_LOCATION = None
 USE_MULTI_PRECISION = False
 OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MONO
+USE_GPU = False
 
 
 def pytest_addoption(parser):
@@ -55,6 +56,7 @@ def pytest_addoption(parser):
         action="store",
         help="Which optimization strategy to use in execution tests (v0, mono or multi)",
     )
+    parser.addoption("--use_gpu", action="store_true")
 
 
 def pytest_sessionstart(session):
@@ -65,6 +67,7 @@ def pytest_sessionstart(session):
     global INSECURE_KEY_CACHE_LOCATION
     global USE_MULTI_PRECISION
     global OPTIMIZATION_STRATEGY
+    global USE_GPU
     # pylint: enable=global-statement
 
     key_cache_location = session.config.getoption("--key-cache", default=None)
@@ -92,6 +95,8 @@ def pytest_sessionstart(session):
         OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MULTI
     else:
         OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MONO
+
+    USE_GPU = session.config.getoption("--use_gpu", default=False)
 
 
 def pytest_sessionfinish(session, exitstatus):  # pylint: disable=unused-argument
@@ -148,6 +153,7 @@ class Helpers:
             global_p_error=(1 / 100_000),
             single_precision=(not USE_MULTI_PRECISION),
             parameter_selection_strategy=OPTIMIZATION_STRATEGY,
+            use_gpu=USE_GPU,
         )
 
     @staticmethod

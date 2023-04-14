@@ -224,3 +224,29 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(simulate, bool):
             raise TypeError("need to pass a boolean value")
         self.cpp().simulation(simulate)
+
+    def set_emit_gpu_ops(self, emit_gpu_ops: bool):
+        """Set flag that allows gpu ops to be emitted.
+
+        Args:
+            emit_gpu_ops (bool): whether to emit gpu ops.
+
+        Raises:
+            TypeError: if the value to set is not bool
+        """
+        if not isinstance(emit_gpu_ops, bool):
+            raise TypeError("emit_gpu_ops must be boolean")
+        self.cpp().set_emit_gpu_ops(emit_gpu_ops)
+
+    def set_batch_tfhe_ops(self, batch_tfhe_ops: bool):
+        """Set flag that triggers the batching of scalar TFHE operations.
+
+        Args:
+            batch_tfhe_ops (bool): whether to batch tfhe ops.
+
+        Raises:
+            TypeError: if the value to set is not bool
+        """
+        if not isinstance(batch_tfhe_ops, bool):
+            raise TypeError("batch_tfhe_ops must be boolean")
+        self.cpp().set_batch_tfhe_ops(batch_tfhe_ops)
