@@ -62,6 +62,7 @@ def assign_precisions_1_node(node: Node, output_p: int, inputs_p: int):
             value.dtype.bit_width = inputs_p + 1
 
 
+BITWISES = {"bitwise_and", "bitwise_or", "bitwise_xor"}
 CHUNKED_COMPARISON = {"greater", "greater_equal", "less", "less_equal"}
 CHUNKED_COMPARISON_MIN_BITWIDTH = 4
 MAX_POOLS = {"maxpool1d", "maxpool2d", "maxpool3d"}
@@ -124,15 +125,13 @@ def assign_multi_precision(graph, nodes):
     clear_nodes_id(nodes)
 
 
-TLU_WITHOUT_PRECISION_CHANGE = CHUNKED_COMPARISON | MAX_POOLS | MULTIPLY
+CAN_CHANGE_PRECISION = BITWISES
 
 
 def can_change_precision(node):
     """Detect if a node completely ties inputs/output precisions together."""
-    return (
-        node.converted_to_table_lookup
-        and node.properties.get("name") not in TLU_WITHOUT_PRECISION_CHANGE
-    )
+    name = node.properties.get("name")
+    return node.converted_to_table_lookup or name in CAN_CHANGE_PRECISION
 
 
 def convert_union_to_blocks(node_union: UnionFind) -> Iterable[list[int]]:

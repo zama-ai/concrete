@@ -520,10 +520,12 @@ class Context:
                 )
             self.error(highlights)
 
-        assert self.is_bit_width_compatible(resulting_type, x, y)
+        assert self.is_bit_width_compatible(x, y)
         assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
 
-        if x.original_bit_width + y.original_bit_width <= resulting_type.bit_width:
+        internal_result_type = max(x.type, y.type, key=lambda t: len(t.shape))
+
+        if x.original_bit_width + y.original_bit_width <= internal_result_type.bit_width:
             shifter_type = self.typeof(
                 Value(
                     dtype=Integer(is_signed=False, bit_width=(x.bit_width + 1)),
@@ -534,7 +536,7 @@ class Context:
             shifter = self.constant(shifter_type, 2**x.original_bit_width)
 
             shifted_x = self.mul(x.type, x, shifter)
-            packed_x_and_y = self.add(resulting_type, shifted_x, y)
+            packed_x_and_y = self.add(internal_result_type, shifted_x, y)
 
             return self.tlu(
                 resulting_type,
@@ -546,7 +548,7 @@ class Context:
                 ],
             )
 
-        bit_width = resulting_type.bit_width
+        bit_width = internal_result_type.bit_width
         original_bit_width = max(x.original_bit_width, y.original_bit_width)
 
         chunk_size = max(int(np.floor(bit_width / 2)), 1)
@@ -560,7 +562,7 @@ class Context:
             x_chunk = self.tlu(x.type, x, x_lut)
             y_chunk = self.tlu(y.type, y, y_lut)
 
-            packed_x_and_y_chunks = self.add(resulting_type, x_chunk, y_chunk)
+            packed_x_and_y_chunks = self.add(internal_result_type, x_chunk, y_chunk)
             result_chunk = self.tlu(
                 resulting_type,
                 packed_x_and_y_chunks,
