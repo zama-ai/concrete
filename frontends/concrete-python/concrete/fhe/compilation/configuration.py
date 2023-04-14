@@ -900,6 +900,7 @@ class Configuration:
     multivariate_strategy_preference: List[MultivariateStrategy]
     min_max_strategy_preference: List[MinMaxStrategy]
     composable: bool
+    use_gpu: bool
 
     def __init__(
         self,
@@ -949,6 +950,7 @@ class Configuration:
             Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]
         ] = None,
         composable: bool = False,
+        use_gpu: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1026,6 +1028,7 @@ class Configuration:
             )
         )
         self.composable = composable
+        self.use_gpu = use_gpu
 
         self._validate()
 
@@ -1081,6 +1084,7 @@ class Configuration:
             Keep, Optional[Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]]
         ] = KEEP,
         composable: Union[Keep, bool] = KEEP,
+        use_gpu: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
