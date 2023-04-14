@@ -42,7 +42,8 @@ else
 export RUSTFLAGS=-Ctarget-feature=+aes,+sse2,+avx
 endif
 else
-export RUSTFLAGS=-Ctarget-cpu=native
+# https://docs.rs/aes/0.8.2/aes/#configuration-flags
+export RUSTFLAGS=-Ctarget-cpu=native --cfg aes_armv8
 endif
 
 # Setup find arguments for MacOS

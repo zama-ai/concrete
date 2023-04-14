@@ -10,8 +10,8 @@ crate-type = ["lib", "staticlib"]
 
 
 [dependencies]
-concrete-csprng = { version = "0.2", optional = true, features = [
-  "generator_soft",
+concrete-csprng = { version = "0.3", optional = true, features = [
+  "generator_fallback",
 ] }
 libc = { version = "0.2", default-features = false }
 pulp = { version = "0.10", default-features = false }
@@ -39,8 +39,6 @@ std = [
 csprng = ["concrete-csprng"]
 parallel = ["rayon"]
 nightly = ["pulp/nightly", "concrete-fft/nightly"]
-x86_64 = ["concrete-csprng/generator_x86_64_aesni"]
-aarch64 = ["concrete-csprng/generator_aarch64_aes"]
 
 [build-dependencies]
 cbindgen = "0.24"
