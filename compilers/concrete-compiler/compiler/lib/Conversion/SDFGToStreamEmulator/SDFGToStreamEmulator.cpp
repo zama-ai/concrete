@@ -62,6 +62,8 @@ char stream_emulator_make_memref_batched_keyswitch_lwe_u64_process[] =
     "stream_emulator_make_memref_batched_keyswitch_lwe_u64_process";
 char stream_emulator_make_memref_batched_bootstrap_lwe_u64_process[] =
     "stream_emulator_make_memref_batched_bootstrap_lwe_u64_process";
+char stream_emulator_make_memref_batched_mapped_bootstrap_lwe_u64_process[] =
+    "stream_emulator_make_memref_batched_mapped_bootstrap_lwe_u64_process";
 
 char stream_emulator_make_memref_stream[] =
     "stream_emulator_make_memref_stream";
@@ -241,6 +243,11 @@ struct LowerSDFGMakeProcess
       break;
     case SDFG::ProcessKind::batched_bootstrap:
       funcName = stream_emulator_make_memref_batched_bootstrap_lwe_u64_process;
+      [[fallthrough]];
+    case SDFG::ProcessKind::batched_mapped_bootstrap:
+      if (funcName == nullptr)
+        funcName =
+            stream_emulator_make_memref_batched_mapped_bootstrap_lwe_u64_process;
       [[fallthrough]];
     case SDFG::ProcessKind::bootstrap:
       if (funcName == nullptr)

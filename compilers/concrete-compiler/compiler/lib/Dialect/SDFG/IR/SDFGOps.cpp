@@ -98,6 +98,8 @@ mlir::LogicalResult MakeProcess::verify() {
     return checkStreams(1, 1);
   case ProcessKind::batched_bootstrap:
     return checkStreams(2, 1);
+  case ProcessKind::batched_mapped_bootstrap:
+    return checkStreams(2, 1);
   }
 
   return mlir::failure();

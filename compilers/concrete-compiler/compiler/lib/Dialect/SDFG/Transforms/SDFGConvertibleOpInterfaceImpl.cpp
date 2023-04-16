@@ -29,6 +29,7 @@ char batched_mul_eint_int_cst[] = "batched_mul_eint_int_cst";
 char batched_neg_eint[] = "batched_neg_eint";
 char batched_keyswitch[] = "batched_keyswitch";
 char batched_bootstrap[] = "batched_bootstrap";
+char batched_mapped_bootstrap[] = "batched_mapped_bootstrap";
 } // namespace
 
 template <typename Op, char const *processName, bool copyAttributes = false>
@@ -129,6 +130,10 @@ void registerSDFGConvertibleOpInterfaceExternalModels(
         ReplaceWithProcessSDFGConversionInterface<
             mlir::concretelang::Concrete::BatchedBootstrapLweTensorOp,
             batched_bootstrap, true>>(*ctx);
+    mlir::concretelang::Concrete::BatchedMappedBootstrapLweTensorOp::
+        attachInterface<ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedMappedBootstrapLweTensorOp,
+            batched_mapped_bootstrap, true>>(*ctx);
   });
 }
 } // namespace SDFG
