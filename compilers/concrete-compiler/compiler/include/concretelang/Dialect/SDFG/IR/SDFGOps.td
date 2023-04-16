@@ -97,6 +97,7 @@ def ProcessKindBatchMulEintIntCst : I32EnumAttrCase<"batched_mul_eint_int_cst", 
 def ProcessKindBatchNegEint : I32EnumAttrCase<"batched_neg_eint", 11>;
 def ProcessKindBatchKeyswitch : I32EnumAttrCase<"batched_keyswitch", 12>;
 def ProcessKindBatchBootstrap : I32EnumAttrCase<"batched_bootstrap", 13>;
+def ProcessKindBatchMapBootstrap : I32EnumAttrCase<"batched_mapped_bootstrap", 14>;
 
 def ProcessKind : I32EnumAttr<"ProcessKind", "Process kind",
   [ProcessKindAddEint, ProcessKindAddEintInt, ProcessKindMulEintInt,
@@ -104,7 +105,8 @@ def ProcessKind : I32EnumAttr<"ProcessKind", "Process kind",
    ProcessKindBatchAddEint, ProcessKindBatchAddEintInt,
    ProcessKindBatchAddEintIntCst, ProcessKindBatchMulEintInt,
    ProcessKindBatchMulEintIntCst, ProcessKindBatchNegEint,
-   ProcessKindBatchKeyswitch, ProcessKindBatchBootstrap]> {
+   ProcessKindBatchKeyswitch, ProcessKindBatchBootstrap,
+   ProcessKindBatchMapBootstrap]> {
   let genSpecializedAttr = 0;
   let cppNamespace = "::mlir::concretelang::SDFG";
 }

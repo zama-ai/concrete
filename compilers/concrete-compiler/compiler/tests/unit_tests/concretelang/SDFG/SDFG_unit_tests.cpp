@@ -262,3 +262,33 @@ TEST(SDFG_unit_tests, batched_tree) {
   ASSERT_TRUE(res);
   ASSERT_EQ_OUTCOME(res, expected);
 }
+
+TEST(SDFG_unit_tests, batched_tree_mapped_tlu) {
+  std::string source = R"(
+    func.func @main(%t: tensor<3x3x!FHE.eint<3>>, %a1: tensor<3x3xi4>, %a2: tensor<3x3xi4>) -> tensor<3x3x!FHE.eint<4>> {
+      %lut_vec = arith.constant dense<[[1,3,5,7,9,11,13,15],
+                                       [2,4,6,8,10,12,14,0],
+                                       [3,6,9,12,15,2,5,8],
+                                       [4,8,12,0,4,8,12,0]]> : tensor<4x8xi64>
+      %map = arith.constant dense<[[0, 1, 2], [3, 2, 1], [1, 2, 3]]> : tensor<3x3xindex>
+      %b1 = "FHELinalg.add_eint_int"(%t, %a1) : (tensor<3x3x!FHE.eint<3>>, tensor<3x3xi4>) -> tensor<3x3x!FHE.eint<3>>
+      %b2 = "FHELinalg.add_eint_int"(%t, %a2) : (tensor<3x3x!FHE.eint<3>>, tensor<3x3xi4>) -> tensor<3x3x!FHE.eint<3>>
+      %c = "FHELinalg.add_eint"(%b1, %b2) : (tensor<3x3x!FHE.eint<3>>, tensor<3x3x!FHE.eint<3>>) -> tensor<3x3x!FHE.eint<3>>
+      %res = "FHELinalg.apply_mapped_lookup_table"(%c, %lut_vec, %map) : (tensor<3x3x!FHE.eint<3>>, tensor<4x8xi64>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<4>>
+      return %res : tensor<3x3x!FHE.eint<4>>
+    }
+)";
+  using tensor2_in = std::array<std::array<uint8_t, 3>, 3>;
+  std::string outputLib = outputLibFromThis(this->test_info_);
+  auto compiled = compile(outputLib, source);
+  auto lambda =
+      load<TestTypedLambda<tensor2_out, tensor2_in, tensor2_in, tensor2_in>>(
+          outputLib);
+  tensor2_in t = {{{0, 1, 2}, {3, 0, 1}, {2, 3, 0}}};
+  tensor2_in a1 = {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}};
+  tensor2_in a2 = {{{1, 0, 1}, {1, 0, 1}, {1, 0, 1}}};
+  tensor2_out expected = {{{3, 8, 2}, {0, 6, 8}, {12, 8, 8}}};
+  auto res = lambda.call(t, a1, a2);
+  ASSERT_TRUE(res);
+  ASSERT_EQ_OUTCOME(res, expected);
+}

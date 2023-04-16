@@ -41,6 +41,8 @@ char memref_batched_negate_lwe_ciphertext_u64[] =
     "memref_batched_negate_lwe_ciphertext_u64";
 char memref_batched_keyswitch_lwe_u64[] = "memref_batched_keyswitch_lwe_u64";
 char memref_batched_bootstrap_lwe_u64[] = "memref_batched_bootstrap_lwe_u64";
+char memref_batched_mapped_bootstrap_lwe_u64[] =
+    "memref_batched_mapped_bootstrap_lwe_u64";
 
 char memref_keyswitch_async_lwe_u64[] = "memref_keyswitch_async_lwe_u64";
 char memref_bootstrap_async_lwe_u64[] = "memref_bootstrap_async_lwe_u64";
@@ -51,6 +53,8 @@ char memref_batched_keyswitch_lwe_cuda_u64[] =
     "memref_batched_keyswitch_lwe_cuda_u64";
 char memref_batched_bootstrap_lwe_cuda_u64[] =
     "memref_batched_bootstrap_lwe_cuda_u64";
+char memref_batched_mapped_bootstrap_lwe_cuda_u64[] =
+    "memref_batched_mapped_bootstrap_lwe_cuda_u64";
 char memref_expand_lut_in_trivial_glwe_ct_u64[] =
     "memref_expand_lut_in_trivial_glwe_ct_u64";
 
@@ -173,6 +177,13 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref2DType, memref2DType,
                                         memref1DType, i32Type, i32Type, i32Type,
+                                        i32Type, i32Type, i32Type, contextType},
+                                       {});
+  } else if (funcName == memref_batched_mapped_bootstrap_lwe_u64 ||
+             funcName == memref_batched_mapped_bootstrap_lwe_cuda_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref2DType, memref2DType,
+                                        memref2DType, i32Type, i32Type, i32Type,
                                         i32Type, i32Type, i32Type, contextType},
                                        {});
   } else if (funcName == memref_await_future) {
@@ -584,6 +595,11 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
                                     memref_batched_bootstrap_lwe_cuda_u64>>(
           &getContext(),
           bootstrapAddOperands<Concrete::BatchedBootstrapLweBufferOp>);
+      patterns.add<ConcreteToCAPICallPattern<
+          Concrete::BatchedMappedBootstrapLweBufferOp,
+          memref_batched_mapped_bootstrap_lwe_cuda_u64>>(
+          &getContext(),
+          bootstrapAddOperands<Concrete::BatchedMappedBootstrapLweBufferOp>);
     } else {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_u64>>(
@@ -601,6 +617,11 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
                                          memref_batched_bootstrap_lwe_u64>>(
               &getContext(),
               bootstrapAddOperands<Concrete::BatchedBootstrapLweBufferOp>);
+      patterns.add<
+          ConcreteToCAPICallPattern<Concrete::BatchedMappedBootstrapLweBufferOp,
+                                    memref_batched_mapped_bootstrap_lwe_u64>>(
+          &getContext(),
+          bootstrapAddOperands<Concrete::BatchedMappedBootstrapLweBufferOp>);
     }
 
     patterns.add<ConcreteToCAPICallPattern<Concrete::WopPBSCRTLweBufferOp,

@@ -184,13 +184,18 @@ struct Process {
   Param output_lwe_dim;
   Param poly_size;
   Param glwe_dim;
+  Param sk_index;
   Param output_size;
   Context ctx;
   void (*fun)(Process *);
   char name[80];
 };
 
-static inline void schedule_kernel(Process *p) { p->fun(p); }
+static inline void schedule_kernel(Process *p) {
+  std::cout << " Scheduling a " << p->name << " on GPU " << p->dfg->gpu_idx
+            << "\n";
+  p->fun(p);
+}
 
 struct Stream {
   stream_type type;
@@ -368,7 +373,7 @@ sdfg_gpu_debug_compare_memref(MemRef2 &a, MemRef2 &b, char const *msg) {
       a.strides[0] != b.strides[0] || a.strides[1] != b.strides[1])
     return false;
   size_t data_size = memref_get_data_size(a);
-  for (int i = 0; i < data_size / sizeof(uint64_t); ++i)
+  for (size_t i = 0; i < data_size / sizeof(uint64_t); ++i)
     if ((a.aligned + a.offset)[i] != (b.aligned + b.offset)[i]) {
       std::cout << msg << " - memrefs differ at position " << i << " "
                 << (a.aligned + a.offset)[i] << " " << (b.aligned + b.offset)[i]
@@ -380,6 +385,7 @@ sdfg_gpu_debug_compare_memref(MemRef2 &a, MemRef2 &b, char const *msg) {
 
 // Stream emulator processes
 void memref_keyswitch_lwe_u64_process(Process *p) {
+  assert(p->sk_index.val == 0 && "multiple ksk is not yet implemented on GPU");
   Dependence *idep = p->input_streams[0]->get(p->dfg->gpu_idx);
   uint64_t num_samples = idep->host_data.sizes[0];
   MemRef2 out = {
@@ -402,6 +408,7 @@ void memref_keyswitch_lwe_u64_process(Process *p) {
 }
 
 void memref_bootstrap_lwe_u64_process(Process *p) {
+  assert(p->sk_index.val == 0 && "multiple bsk is not yet implemented on GPU");
   assert(p->output_size.val == p->glwe_dim.val * p->poly_size.val + 1);
   void *fbsk_gpu = p->ctx.val->get_bsk_gpu(
       p->input_lwe_dim.val, p->poly_size.val, p->level.val, p->glwe_dim.val,
@@ -409,18 +416,23 @@ void memref_bootstrap_lwe_u64_process(Process *p) {
   Dependence *idep0 = p->input_streams[0]->get(p->dfg->gpu_idx);
   void *ct0_gpu = idep0->device_data;
 
-  uint64_t glwe_ct_len = p->poly_size.val * (p->glwe_dim.val + 1);
-  uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
-  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size);
   Dependence *idep1 = p->input_streams[1]->get(host_location);
   MemRef2 &mtlu = idep1->host_data;
+  uint32_t num_lut_vectors = mtlu.sizes[0];
+  uint64_t glwe_ct_len =
+      p->poly_size.val * (p->glwe_dim.val + 1) * num_lut_vectors;
+  uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
+  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size);
   auto tlu = mtlu.aligned + mtlu.offset;
   // Glwe trivial encryption
-  for (size_t i = 0; i < p->poly_size.val * p->glwe_dim.val; i++) {
-    glwe_ct[i] = 0;
-  }
-  for (size_t i = 0; i < p->poly_size.val; i++) {
-    glwe_ct[p->poly_size.val * p->glwe_dim.val + i] = tlu[i];
+  size_t pos = 0, postlu = 0;
+  for (size_t l = 0; l < num_lut_vectors; ++l) {
+    for (size_t i = 0; i < p->poly_size.val * p->glwe_dim.val; i++) {
+      glwe_ct[pos++] = 0;
+    }
+    for (size_t i = 0; i < p->poly_size.val; i++) {
+      glwe_ct[pos++] = tlu[postlu++];
+    }
   }
   void *glwe_ct_gpu = cuda_malloc_async(
       glwe_ct_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
@@ -434,15 +446,21 @@ void memref_bootstrap_lwe_u64_process(Process *p) {
   void *out_gpu = cuda_malloc_async(
       data_size, (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
   cudaMemsetAsync(out_gpu, 0, data_size, *(cudaStream_t *)p->dfg->gpu_stream);
+
   // Move test vector indexes to the GPU, the test vector indexes is set of 0
-  uint32_t num_test_vectors = 1, lwe_idx = 0,
-           test_vector_idxes_size = num_samples * sizeof(uint64_t);
-  void *test_vector_idxes = malloc(test_vector_idxes_size);
-  memset(test_vector_idxes, 0, test_vector_idxes_size);
+  uint32_t lwe_idx = 0, test_vector_idxes_size = num_samples * sizeof(uint64_t);
+  uint64_t *test_vector_idxes = (uint64_t *)malloc(test_vector_idxes_size);
+  if (num_lut_vectors == 1) {
+    memset((void *)test_vector_idxes, 0, test_vector_idxes_size);
+  } else {
+    assert(num_lut_vectors == num_samples);
+    for (size_t i = 0; i < num_lut_vectors; ++i)
+      test_vector_idxes[i] = i;
+  }
   void *test_vector_idxes_gpu =
       cuda_malloc_async(test_vector_idxes_size,
                         (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
-  cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, test_vector_idxes,
+  cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, (void *)test_vector_idxes,
                            test_vector_idxes_size,
                            (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx);
   // Schedule the bootstrap kernel on the GPU
@@ -452,7 +470,7 @@ void memref_bootstrap_lwe_u64_process(Process *p) {
       (cudaStream_t *)p->dfg->gpu_stream, p->dfg->gpu_idx, out_gpu, glwe_ct_gpu,
       test_vector_idxes_gpu, ct0_gpu, fbsk_gpu, (int8_t *)pbs_buffer,
       p->input_lwe_dim.val, p->glwe_dim.val, p->poly_size.val, p->base_log.val,
-      p->level.val, num_samples, num_test_vectors, lwe_idx,
+      p->level.val, num_samples, num_lut_vectors, lwe_idx,
       cuda_get_max_shared_memory(p->dfg->gpu_idx));
   cuda_drop_async(test_vector_idxes_gpu, (cudaStream_t *)p->dfg->gpu_stream,
                   p->dfg->gpu_idx);
@@ -573,14 +591,15 @@ void stream_emulator_make_memref_negate_lwe_ciphertext_u64_process(void *dfg,
 
 void stream_emulator_make_memref_keyswitch_lwe_u64_process(
     void *dfg, void *sin1, void *sout, uint32_t level, uint32_t base_log,
-    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t output_size,
-    void *context) {
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t ksk_index,
+    uint32_t output_size, void *context) {
   Process *p =
       make_process_1_1(dfg, sin1, sout, memref_keyswitch_lwe_u64_process);
   p->level.val = level;
   p->base_log.val = base_log;
   p->input_lwe_dim.val = input_lwe_dim;
   p->output_lwe_dim.val = output_lwe_dim;
+  p->sk_index.val = ksk_index;
   p->output_size.val = output_size;
   p->ctx.val = (RuntimeContext *)context;
   static int count = 0;
@@ -590,7 +609,7 @@ void stream_emulator_make_memref_keyswitch_lwe_u64_process(
 void stream_emulator_make_memref_bootstrap_lwe_u64_process(
     void *dfg, void *sin1, void *sin2, void *sout, uint32_t input_lwe_dim,
     uint32_t poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim,
-    uint32_t output_size, void *context) {
+    uint32_t bsk_index, uint32_t output_size, void *context) {
   // The TLU does not need to be sent to GPU
   ((Stream *)sin2)->type = TS_STREAM_TYPE_X86_TO_X86_LSAP;
   Process *p =
@@ -600,6 +619,7 @@ void stream_emulator_make_memref_bootstrap_lwe_u64_process(
   p->level.val = level;
   p->base_log.val = base_log;
   p->glwe_dim.val = glwe_dim;
+  p->sk_index.val = bsk_index;
   p->output_size.val = output_size;
   p->ctx.val = (RuntimeContext *)context;
   static int count = 0;
@@ -642,20 +662,29 @@ void stream_emulator_make_memref_batched_negate_lwe_ciphertext_u64_process(
 
 void stream_emulator_make_memref_batched_keyswitch_lwe_u64_process(
     void *dfg, void *sin1, void *sout, uint32_t level, uint32_t base_log,
-    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t output_size,
-    void *context) {
+    uint32_t input_lwe_dim, uint32_t output_lwe_dim, uint32_t ksk_index,
+    uint32_t output_size, void *context) {
   stream_emulator_make_memref_keyswitch_lwe_u64_process(
       dfg, sin1, sout, level, base_log, input_lwe_dim, output_lwe_dim,
-      output_size, context);
+      ksk_index, output_size, context);
 }
 
 void stream_emulator_make_memref_batched_bootstrap_lwe_u64_process(
     void *dfg, void *sin1, void *sin2, void *sout, uint32_t input_lwe_dim,
     uint32_t poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim,
-    uint32_t output_size, void *context) {
+    uint32_t bsk_index, uint32_t output_size, void *context) {
   stream_emulator_make_memref_bootstrap_lwe_u64_process(
       dfg, sin1, sin2, sout, input_lwe_dim, poly_size, level, base_log,
-      glwe_dim, output_size, context);
+      glwe_dim, bsk_index, output_size, context);
+}
+
+void stream_emulator_make_memref_batched_mapped_bootstrap_lwe_u64_process(
+    void *dfg, void *sin1, void *sin2, void *sout, uint32_t input_lwe_dim,
+    uint32_t poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim,
+    uint32_t bsk_index, uint32_t output_size, void *context) {
+  stream_emulator_make_memref_bootstrap_lwe_u64_process(
+      dfg, sin1, sin2, sout, input_lwe_dim, poly_size, level, base_log,
+      glwe_dim, bsk_index, output_size, context);
 }
 
 void *stream_emulator_make_uint64_stream(const char *name, stream_type stype) {

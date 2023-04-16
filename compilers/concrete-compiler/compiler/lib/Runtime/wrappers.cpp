@@ -247,7 +247,8 @@ void memref_batched_mapped_bootstrap_lwe_cuda_u64(
   assert(bsk_index == 0 && "multiple bsk is not yet implemented on GPU");
   assert(out_size0 == ct0_size0);
   assert(out_size1 == glwe_dim * poly_size + 1);
-  assert((out_size0 == tlu_size0 || tlu_size0 == 1) && "Number of LUTs does not match batch size");
+  assert((out_size0 == tlu_size0 || tlu_size0 == 1) &&
+         "Number of LUTs does not match batch size");
   // TODO: Multi GPU
   uint32_t gpu_idx = 0;
   uint32_t num_samples = out_size0;
@@ -291,8 +292,7 @@ void memref_batched_mapped_bootstrap_lwe_cuda_u64(
       glwe_ct, 0, glwe_ct_size, gpu_idx, (cudaStream_t *)stream);
 
   // Move test vector indexes to the GPU, the test vector indexes is set of 0
-  uint32_t lwe_idx = 0,
-           test_vector_idxes_size = num_samples * sizeof(uint64_t);
+  uint32_t lwe_idx = 0, test_vector_idxes_size = num_samples * sizeof(uint64_t);
   uint64_t *test_vector_idxes = (uint64_t *)malloc(test_vector_idxes_size);
   if (num_lut_vectors == 1) {
     memset((void *)test_vector_idxes, 0, test_vector_idxes_size);

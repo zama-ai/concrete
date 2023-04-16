@@ -159,6 +159,11 @@ void mlir::concretelang::Concrete::
     Concrete::BatchedBootstrapLweTensorOp::attachInterface<
         TensorToMemrefOp<Concrete::BatchedBootstrapLweTensorOp,
                          Concrete::BatchedBootstrapLweBufferOp>>(*ctx);
+    // batched_mapped_bootstrap_lwe_tensor =>
+    // batched_mapped_bootstrap_lwe_buffer
+    Concrete::BatchedMappedBootstrapLweTensorOp::attachInterface<
+        TensorToMemrefOp<Concrete::BatchedMappedBootstrapLweTensorOp,
+                         Concrete::BatchedMappedBootstrapLweBufferOp>>(*ctx);
     // wop_pbs_crt_lwe_tensor => wop_pbs_crt_lwe_buffer
     Concrete::WopPBSCRTLweTensorOp::attachInterface<TensorToMemrefOp<
         Concrete::WopPBSCRTLweTensorOp, Concrete::WopPBSCRTLweBufferOp>>(*ctx);

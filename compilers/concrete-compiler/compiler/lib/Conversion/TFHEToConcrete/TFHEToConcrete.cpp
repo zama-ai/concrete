@@ -219,6 +219,43 @@ struct BatchedBootstrapGLWEOpPattern
   }
 };
 
+struct BatchedMappedBootstrapGLWEOpPattern
+    : public mlir::OpConversionPattern<TFHE::BatchedMappedBootstrapGLWEOp> {
+
+  BatchedMappedBootstrapGLWEOpPattern(mlir::MLIRContext *context,
+                                      mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<TFHE::BatchedMappedBootstrapGLWEOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::BatchedMappedBootstrapGLWEOp bmbsOp,
+                  TFHE::BatchedMappedBootstrapGLWEOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    TFHE::GLWECipherTextType inputElementType =
+        bmbsOp.getCiphertexts()
+            .getType()
+            .cast<mlir::RankedTensorType>()
+            .getElementType()
+            .cast<TFHE::GLWECipherTextType>();
+
+    auto polySize = adaptor.getKey().getPolySize();
+    auto glweDimension = adaptor.getKey().getGlweDim();
+    auto levels = adaptor.getKey().getLevels();
+    auto baseLog = adaptor.getKey().getBaseLog();
+    auto inputLweDimension =
+        inputElementType.getKey().getNormalized().value().dimension;
+    auto bskIndex = bmbsOp.getKeyAttr().getIndex();
+
+    rewriter.replaceOpWithNewOp<Concrete::BatchedMappedBootstrapLweTensorOp>(
+        bmbsOp, this->getTypeConverter()->convertType(bmbsOp.getType()),
+        adaptor.getCiphertexts(), adaptor.getLookupTable(), inputLweDimension,
+        polySize, levels, baseLog, glweDimension, bskIndex);
+
+    return mlir::success();
+  }
+};
+
 struct KeySwitchGLWEOpPattern
     : public mlir::OpConversionPattern<TFHE::KeySwitchGLWEOp> {
 
@@ -811,7 +848,8 @@ void TFHEToConcretePass::runOnOperation() {
   patterns.insert<ZeroOpPattern<mlir::concretelang::TFHE::ZeroGLWEOp>,
                   ZeroOpPattern<mlir::concretelang::TFHE::ZeroTensorGLWEOp>,
                   SubIntGLWEOpPattern, BootstrapGLWEOpPattern,
-                  BatchedBootstrapGLWEOpPattern, KeySwitchGLWEOpPattern,
+                  BatchedBootstrapGLWEOpPattern,
+                  BatchedMappedBootstrapGLWEOpPattern, KeySwitchGLWEOpPattern,
                   BatchedKeySwitchGLWEOpPattern, WopPBSGLWEOpPattern>(
       &getContext(), converter);
 
