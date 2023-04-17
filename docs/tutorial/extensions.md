@@ -41,6 +41,7 @@ The wrapped function:
 - should be deterministic (e.g., no random numbers)
 - should have the same output shape as its input (i.e., `output.shape` should be the same with `input.shape`)
 - each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]`)
+
 If any of these constraints are violated, the outcome is undefined.
 {% endhint %}
 
