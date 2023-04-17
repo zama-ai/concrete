@@ -94,7 +94,8 @@ OptimizerConfig
                           double global_p_error, double p_error,
                           uint64_t security,
                           mlir::concretelang::optimizer::Strategy strategy,
-                          bool use_gpu_constraints) {
+                          bool use_gpu_constraints,
+                          uint32_t ciphertext_modulus_log) {
   auto config = new mlir::concretelang::optimizer::Config();
   config->display = display;
   config->fallback_log_norm_woppbs = fallback_log_norm_woppbs;
@@ -103,6 +104,7 @@ OptimizerConfig
   config->security = security;
   config->strategy = strategy;
   config->use_gpu_constraints = use_gpu_constraints;
+  config->ciphertext_modulus_log = ciphertext_modulus_log;
   return wrap(config);
 }
 

@@ -78,6 +78,7 @@ constexpr bool DEFAULT_USE_GPU_CONSTRAINTS = false;
 constexpr concrete_optimizer::Encoding DEFAULT_ENCODING =
     concrete_optimizer::Encoding::Auto;
 constexpr bool DEFAULT_CACHE_ON_DISK = true;
+constexpr uint32_t DEFAULT_CIPHERTEXT_MODULUS_LOG = 64;
 
 /// The strategy of the crypto optimization
 enum Strategy {
@@ -105,6 +106,7 @@ struct Config {
   bool use_gpu_constraints;
   concrete_optimizer::Encoding encoding;
   bool cache_on_disk;
+  uint32_t ciphertext_modulus_log;
 };
 
 constexpr Config DEFAULT_CONFIG = {
@@ -117,6 +119,7 @@ constexpr Config DEFAULT_CONFIG = {
     DEFAULT_USE_GPU_CONSTRAINTS,
     DEFAULT_ENCODING,
     DEFAULT_CACHE_ON_DISK,
+    DEFAULT_CIPHERTEXT_MODULUS_LOG,
 };
 
 using Dag = rust::Box<concrete_optimizer::OperationDag>;

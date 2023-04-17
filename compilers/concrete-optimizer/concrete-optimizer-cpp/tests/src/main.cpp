@@ -16,15 +16,17 @@ const double PRECISION_8B = 8;
 const double PRECISION_16B = 16;
 const double WOP_FALLBACK_LOG_NORM = 8;
 const double NOISE_DEVIATION_COEFF = 1.0;
+const uint32_t CIPHERTEXT_MODULUS_LOG = 64;
 
 concrete_optimizer::Options default_options() {
-  return concrete_optimizer::Options {
-    .security_level = SECURITY_128B,
-    .maximum_acceptable_error_probability = P_ERROR,
-    .default_log_norm2_woppbs = WOP_FALLBACK_LOG_NORM,
-    .use_gpu_constraints = false,
-    .encoding = concrete_optimizer::Encoding::Auto,
-    .cache_on_disk = true,
+  return concrete_optimizer::Options{
+      .security_level = SECURITY_128B,
+      .maximum_acceptable_error_probability = P_ERROR,
+      .default_log_norm2_woppbs = WOP_FALLBACK_LOG_NORM,
+      .use_gpu_constraints = false,
+      .encoding = concrete_optimizer::Encoding::Auto,
+      .cache_on_disk = true,
+      .ciphertext_modulus_log = CIPHERTEXT_MODULUS_LOG,
   };
 }
 
@@ -145,7 +147,6 @@ void test_multi_parameters_2_precision() {
   concrete_optimizer::dag::OperatorIndex input2 =
       dag->add_input(PRECISION_1B, slice(shape));
 
-
   std::vector<u_int64_t> table = {};
   auto lut1 = dag->add_lut(input1, slice(table), PRECISION_8B);
   auto lut2 = dag->add_lut(input2, slice(table), PRECISION_8B);
@@ -165,8 +166,11 @@ void test_multi_parameters_2_precision() {
   auto secret_keys = circuit_solution.circuit_keys.secret_keys;
   assert(circuit_solution.circuit_keys.secret_keys.size() == 4);
   assert(circuit_solution.circuit_keys.bootstrap_keys.size() == 2);
-  assert(circuit_solution.circuit_keys.keyswitch_keys.size() == 2); // 1 layer so less ks
-  std::string actual = circuit_solution.circuit_keys.conversion_keyswitch_keys[0].description.c_str();
+  assert(circuit_solution.circuit_keys.keyswitch_keys.size() ==
+         2); // 1 layer so less ks
+  std::string actual =
+      circuit_solution.circuit_keys.conversion_keyswitch_keys[0]
+          .description.c_str();
   std::string expected = "fks[1->0]";
   assert(actual == expected);
 }
@@ -181,7 +185,6 @@ void test_multi_parameters_2_precision_crt() {
 
   concrete_optimizer::dag::OperatorIndex input2 =
       dag->add_input(PRECISION_1B, slice(shape));
-
 
   std::vector<u_int64_t> table = {};
   auto lut1 = dag->add_lut(input1, slice(table), PRECISION_8B);

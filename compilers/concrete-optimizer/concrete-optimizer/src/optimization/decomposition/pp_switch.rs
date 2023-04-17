@@ -35,7 +35,7 @@ pub fn pareto_quantities(
     glwe_params: GlweParameters,
 ) -> Vec<PpSwitchComplexityNoise> {
     let variance_bsk = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
-    let mut quantities = Vec::with_capacity(64);
+    let mut quantities = Vec::with_capacity(ciphertext_modulus_log as usize);
     let mut increasing_complexity = 0.0;
     let mut decreasing_variance = f64::INFINITY;
     let mut counting_no_progress = 0;
@@ -110,11 +110,12 @@ pub fn cache(
     security_level: u64,
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
+    ciphertext_modulus_log: u32,
 ) -> PersistDecompCache {
     let cache_dir: String = default_cache_dir();
-    let ciphertext_modulus_log = 64;
     let hardware = processing_unit.br_to_string();
-    let path = format!("{cache_dir}/pp-decomp-{hardware}-64-{security_level}");
+    let path =
+        format!("{cache_dir}/pp-decomp-{hardware}-{ciphertext_modulus_log}-{security_level}");
 
     let function = move |glwe_params: GlweParameters| {
         pareto_quantities(

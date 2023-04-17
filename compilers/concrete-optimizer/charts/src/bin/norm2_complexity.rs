@@ -36,14 +36,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let precision = 8;
     let log_norm2s = 1_u64..=31;
 
+    let ciphertext_modulus_log = 64;
+
     let config = Config {
         security_level,
         maximum_acceptable_error_probability: p_error,
-        ciphertext_modulus_log: 64,
+        ciphertext_modulus_log,
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(security_level, processing_unit, None, true);
+    let cache = decomposition::cache(
+        security_level,
+        processing_unit,
+        None,
+        true,
+        ciphertext_modulus_log,
+    );
 
     let solutions: Vec<_> = log_norm2s
         .clone()
