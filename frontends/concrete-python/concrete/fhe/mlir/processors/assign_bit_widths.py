@@ -8,6 +8,7 @@ from collections.abc import Iterable
 
 from ...dtypes import Integer
 from ...representation import Graph, Node, Operation
+from ...representation.node import BITWISE_OPS, COMPARISON_OPS
 from . import GraphProcessor
 
 
@@ -62,8 +63,7 @@ def assign_precisions_1_node(node: Node, output_p: int, inputs_p: int):
             value.dtype.bit_width = inputs_p + 1
 
 
-BITWISES = {"bitwise_and", "bitwise_or", "bitwise_xor"}
-CHUNKED_COMPARISON = {"greater", "greater_equal", "less", "less_equal"}
+CHUNKED_COMPARISON = {}
 CHUNKED_COMPARISON_MIN_BITWIDTH = 4
 MAX_POOLS = {"maxpool1d", "maxpool2d", "maxpool3d"}
 MULTIPLY = {"multiply"}
@@ -98,11 +98,10 @@ def required_encrypted_bitwidth(nodes: Iterable[Node]) -> int:
     bitwidths = map(max_encrypted_bitwidth_node, nodes)
     return max(bitwidths, default=-1)
 
-
-def required_inputs_encrypted_bitwidth(graph, node, nodes_output_p: list[tuple[Node, int]]) -> int:
+def required_inputs_encrypted_bitwidth(graph, node, nodes_output_p: list[int]) -> int:
     """Give the minimal precision to supports the inputs."""
     preds = graph.ordered_preds_of(node)
-    get_prec = lambda node: nodes_output_p[node.properties[NODE_ID]][1]
+    get_prec = lambda node: nodes_output_p[node.properties[NODE_ID]]
     # by definition all inputs have the same block precision
     # see uniform_precision_per_blocks
     return get_prec(node) if len(preds) == 0 else get_prec(preds[0])
@@ -112,26 +111,25 @@ def assign_multi_precision(graph, nodes):
     """Assign a specific encryption precision to each nodes."""
     add_nodes_id(nodes)
     nodes_output_p = uniform_precision_per_blocks(graph, nodes)
-    for node, _ in nodes_output_p:
+    for node in nodes:
         node.properties["original_bit_width"] = node.output.dtype.bit_width
     nodes_inputs_p = [
-        required_inputs_encrypted_bitwidth(graph, node, nodes_output_p)
+        required_inputs_encrypted_bitwidth(graph, nodes[node_id], nodes_output_p)
         if can_change_precision(node)
         else output_p
-        for node, output_p in nodes_output_p
+        for node_id, output_p in enumerate(nodes_output_p)
     ]
-    for (node, output_p), inputs_p in zip(nodes_output_p, nodes_inputs_p):
-        assign_precisions_1_node(node, output_p, inputs_p)
+    for node_id, (output_p, inputs_p) in enumerate(zip(nodes_output_p, nodes_inputs_p)):
+        assign_precisions_1_node(nodes[node_id], output_p, inputs_p)
     clear_nodes_id(nodes)
 
-
-CAN_CHANGE_PRECISION = BITWISES
+CAN_CHANGE_PRECISION = BITWISE_OPS #| COMPARISON_OPS
 
 
 def can_change_precision(node):
     """Detect if a node completely ties inputs/output precisions together."""
     name = node.properties.get("name")
-    return node.converted_to_table_lookup or name in CAN_CHANGE_PRECISION
+    return node.converted_to_direct_table_lookup or name in CAN_CHANGE_PRECISION
 
 
 def convert_union_to_blocks(node_union: UnionFind) -> Iterable[list[int]]:
@@ -166,7 +164,7 @@ def clear_nodes_id(nodes):
         del node.properties[NODE_ID]
 
 
-def uniform_precision_per_blocks(graph: Graph, nodes: list[Node]) -> list[tuple[Node, int]]:
+def uniform_precision_per_blocks(graph: Graph, nodes: list[Node]) -> list[int]:
     """Find the required precision of blocks and associate it corresponding nodes."""
     size = len(nodes)
     node_union = UnionFind(size)
@@ -184,14 +182,53 @@ def uniform_precision_per_blocks(graph: Graph, nodes: list[Node]) -> list[tuple[
             node_union.union(first_input_id, node_id)
 
     blocks = convert_union_to_blocks(node_union)
-    result: list[None | tuple[Node, int]]
-    result = [None] * len(nodes)
-    for nodes_id in blocks:
+    node_precision: list[None | int]
+    node_precision = [None] * len(nodes)
+    block_precision = [None] * len(blocks)
+    for block_i, nodes_id in enumerate(blocks):
         output_p = required_encrypted_bitwidth(nodes[node_id] for node_id in nodes_id)
+        block_precision[block_i] = output_p
         for node_id in nodes_id:
-            result[node_id] = (nodes[node_id], output_p)
-    assert None not in result
-    return typing.cast("list[tuple[Node, int]]", result)
+            print("NODE", nodes[node_id].label(), output_p)
+            node_precision[node_id] = output_p
+
+    assert None not in node_precision
+    node_precision = typing.cast("list[int]", node_precision)
+    max_tlu_input_bit_width = max(
+        required_inputs_encrypted_bitwidth(graph, node, node_precision)
+        for node in nodes
+        if node.converted_to_at_least_one_table_lookup_at_some_point
+    )
+
+    # operators specific decision after worst bitwidth are known
+    changed = False
+    for nodes_id in blocks:
+        for node_id in nodes_id:
+            node = nodes[node_id]
+            name = node.properties.get("name")
+            can_pack_inputs = (
+                all(node.is_encrypted for node in node.inputs)
+                and name in BITWISE_OPS
+            )
+            if not can_pack_inputs:
+                continue
+            input_nodes = graph.ordered_preds_of(node)
+            packed_bit_width = sum(node.properties["original_bit_width"] for node in input_nodes)
+            if packed_bit_width <= max_tlu_input_bit_width:
+                changed = True
+                for node in input_nodes:
+                    node_id = node.properties[NODE_ID]
+                    node_precision[node_id] = packed_bit_width
+
+    if changed:
+        # uniformize again
+        for block_i, nodes_id in enumerate(blocks):
+            block_p = max(node_precision[node_id] for node_id in nodes_id)
+            for node_id in nodes_id:
+                node_precision[node_id] = block_p
+
+    assert None not in node_precision
+    return node_precision
 
 
 class UnionFind:

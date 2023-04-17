@@ -100,7 +100,7 @@ class Graph:
 
             pred_results = [node_results[pred] for pred in self.ordered_preds_of(node)]
 
-            if p_error > 0.0 and node.converted_to_table_lookup:
+            if p_error > 0.0 and node.converted_to_direct_table_lookup:
                 variable_input_indices = [
                     idx
                     for idx, pred in enumerate(self.ordered_preds_of(node))
@@ -180,7 +180,7 @@ class Graph:
                 raise RuntimeError(
                     "Evaluation of the graph failed\n\n"
                     + self.format(
-                        highlighted_nodes={node: ["evaluation of this node failed"]},
+                        highlighted_nodes={node: [f"evaluation of this node failed ({error})"]},
                         show_bounds=False,
                     )
                 ) from error

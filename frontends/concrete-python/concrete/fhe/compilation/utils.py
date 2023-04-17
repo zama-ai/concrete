@@ -194,7 +194,7 @@ def find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_anc
         for node in nx_graph.nodes()
         if (
             node not in processed_terminal_nodes
-            and node.converted_to_table_lookup
+            and node.converted_to_direct_table_lookup
             and all(isinstance(input.dtype, Integer) for input in node.inputs)
             and isinstance(node.output.dtype, Integer)
             and len(

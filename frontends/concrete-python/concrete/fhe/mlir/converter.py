@@ -408,7 +408,7 @@ class Converter:
         return ctx.reshape(preds[0], shape=node.output.shape)
 
     def tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
-        assert node.converted_to_table_lookup
+        assert node.converted_to_direct_table_lookup
 
         variable_input_index = -1
 

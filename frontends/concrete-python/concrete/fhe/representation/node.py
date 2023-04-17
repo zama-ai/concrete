@@ -2,6 +2,7 @@
 Declaration of `Node` class.
 """
 
+from enum import Enum, auto
 import os
 import time
 import traceback
@@ -15,6 +16,51 @@ from ..values import Value
 from .evaluator import ConstantEvaluator, GenericEvaluator, GenericTupleEvaluator, InputEvaluator
 from .operation import Operation
 from .utils import KWARGS_IGNORED_IN_FORMATTING, format_constant, format_indexing_element
+
+
+class Name:
+    # this is non extensive list
+    add = "add"
+    array =  "array"
+    assign_static = "assign_static"
+    bitwise_and = "bitwise_and"
+    bitwise_or = "bitwise_or"
+    bitwise_xor = "bitwise_xor"
+    broadcast_to = "broadcast_to"
+    constant = "constant"
+    concatenate = "concatenate"
+    conv1d = "conv1d"
+    conv2d = "conv2d"
+    conv3d = "conv3d"
+    dot = "dot"
+    equal = "equal"
+    expand_dims = "expand_dims"
+    greater = "greater"
+    greater_equal = "greater_equal"
+    index_static = "index_static"
+    left_shift = "left_shift"
+    less = "less"
+    less_equal = "less_equal"
+    matmul = "matmul"
+    maxpool1d = "maxpool1d"
+    maxpool2d = "maxpool2d"
+    maxpool3d = "maxpool3d"
+    multiply = "multiply"
+    not_equal = "not_equal"
+    negative = "negative"
+    ones = "ones"
+    reshape = "reshape"
+    right_shift = "right_shift"
+    squeeze = "squeeze"
+    subtract = "subtract"
+    sum = "sum"
+    transpose = "transpose"
+    zeros =  "zeros "
+
+
+BITWISE_OPS = {Name.bitwise_and, Name.bitwise_or, Name.bitwise_xor}
+COMPARISON_OPS = {Name.greater, Name.greater_equal, Name.less, Name.less_equal}
+MAX_POOLS_OPS = {Name.maxpool1d, Name.maxpool2d, Name.maxpool3d}
 
 
 class Node:
@@ -59,7 +105,7 @@ class Node:
             message = f"Constant {repr(constant)} is not supported"
             raise ValueError(message) from error
 
-        properties = {"constant": np.array(constant)}
+        properties = {Name.constant: np.array(constant)}
         return Node([], value, Operation.Constant, ConstantEvaluator(properties), properties)
 
     @staticmethod
@@ -101,7 +147,6 @@ class Node:
             Node:
                 node representing operation
         """
-
         properties = {
             "name": name,
             "args": args if args is not None else (),
@@ -115,7 +160,7 @@ class Node:
             Operation.Generic,
             (
                 GenericTupleEvaluator(operation, properties)  # type: ignore
-                if name in ["concatenate"]
+                if name in [Name.concatenate]
                 else GenericEvaluator(operation, properties)  # type: ignore
             ),
             properties,
@@ -287,26 +332,26 @@ class Node:
 
         name = self.properties["name"]
 
-        if name == "index_static":
+        if name == Name.index_static:
             index = self.properties["kwargs"]["index"]
             elements = [format_indexing_element(element) for element in index]
             return f"{predecessors[0]}[{', '.join(elements)}]"
 
-        if name == "assign_static":
+        if name == Name.assign_static:
             index = self.properties["kwargs"]["index"]
             elements = [format_indexing_element(element) for element in index]
             return f"({predecessors[0]}[{', '.join(elements)}] = {predecessors[1]})"
 
-        if name == "concatenate":  # noqa: SIM108
+        if name == Name.concatenate:  # noqa: SIM108
             args = [f"({', '.join(predecessors)})"]
         else:
             args = deepcopy(predecessors)
 
-        if name == "array":
+        if name == Name.array:
             values = str(np.array(predecessors).reshape(self.output.shape).tolist()).replace(
                 "'", ""
             )
-            return f"array({format_constant(values, maximum_constant_length)})"
+            return f"{name}({format_constant(values, maximum_constant_length)})"
 
         args.extend(
             format_constant(value, maximum_constant_length) for value in self.properties["args"]
@@ -338,16 +383,16 @@ class Node:
 
         name = self.properties["name"]
 
-        if name == "index_static":
+        if name == Name.index_static:
             name = self.format(["□"])
 
-        if name == "assign_static":
+        if name == Name.assign_static:
             name = self.format(["□", "□"])[1:-1]
 
         return name
 
     @property
-    def converted_to_table_lookup(self) -> bool:
+    def converted_to_direct_table_lookup(self) -> bool:
         """
         Get whether the node is converted to a table lookup during MLIR conversion.
 
@@ -361,47 +406,80 @@ class Node:
             and self.operation == Operation.Generic
             and self.properties["name"]
             in [
-                "bitwise_and",
-                "bitwise_or",
-                "bitwise_xor",
-                "equal",
-                "greater",
-                "greater_equal",
-                "left_shift",
-                "less",
-                "less_equal",
-                "not_equal",
-                "right_shift",
+                Name.bitwise_and,
+                Name.bitwise_or,
+                Name.bitwise_xor,
+                Name.equal,
+                Name.greater,
+                Name.greater_equal,
+                Name.left_shift,
+                Name.less,
+                Name.less_equal,
+                Name.not_equal,
+                Name.right_shift,
             ]
         ):
             return False
 
         return self.operation == Operation.Generic and self.properties["name"] not in [
-            "add",
-            "array",
-            "assign_static",
-            "broadcast_to",
-            "concatenate",
-            "conv1d",
-            "conv2d",
-            "conv3d",
-            "dot",
-            "expand_dims",
-            "index_static",
-            "matmul",
-            "maxpool1d",
-            "maxpool2d",
-            "maxpool3d",
-            "multiply",
-            "negative",
-            "ones",
-            "reshape",
-            "squeeze",
-            "subtract",
-            "sum",
-            "transpose",
-            "zeros",
+            Name.add,
+            Name.array,
+            Name.assign_static,
+            Name.broadcast_to,
+            Name.concatenate,
+            Name.conv1d,
+            Name.conv2d,
+            Name.conv3d,
+            Name.dot,
+            Name.expand_dims,
+            Name.index_static,
+            Name.matmul,
+            Name.maxpool1d,
+            Name.maxpool2d,
+            Name.maxpool3d,
+            Name.multiply,
+            Name.negative,
+            Name.ones,
+            Name.reshape,
+            Name.squeeze,
+            Name.subtract,
+            Name.sum,
+            Name.transpose,
+            Name.zeros,
         ]
+
+    @property
+    def converted_to_at_least_one_table_lookup_at_some_point(self):
+        """
+        Get whether the node is converted to at least table lookup.
+
+        Returns:
+            bool:
+                True if the node is converted to a table lookup, False otherwise
+        """
+        return self.operation == Operation.Generic and self.properties["name"] not in {
+            Name.add,
+            Name.array,
+            Name.assign_static,
+            Name.broadcast_to,
+            Name.concatenate,
+            Name.conv1d,
+            Name.conv2d,
+            Name.conv3d,
+            Name.dot,
+            Name.expand_dims,
+            Name.index_static,
+            Name.matmul,
+            Name.negative,
+            Name.ones,
+            Name.reshape,
+            Name.squeeze,
+            Name.subtract,
+            Name.sum,
+            Name.transpose,
+            Name.zeros,
+        }
+
 
     @property
     def is_fusable(self) -> bool:
@@ -413,17 +491,24 @@ class Node:
                 True if the node can be fused into a table lookup, False otherwise
         """
 
-        if self.converted_to_table_lookup:
+        if self.converted_to_direct_table_lookup:
             return True
 
         return self.operation != Operation.Generic or self.properties["name"] in [
-            "add",
-            "multiply",
-            "negative",
-            "ones",
-            "subtract",
-            "zeros",
+            Name.add,
+            Name.multiply,
+            Name.negative,
+            Name.ones,
+            Name.subtract,
+            Name.zeros,
         ]
 
     def __lt__(self, other) -> bool:
         return self.created_at < other.created_at
+
+    @property
+    def maximum_tlu_input_bit_width(self):
+        if self.converted_to_at_least_one_table_lookup_at_some_point and len(self.inputs):
+            return max(input.dtype.bit_width for input in self.inputs)
+        else:
+            return 0

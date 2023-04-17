@@ -68,6 +68,13 @@ class Context:
 
         self.from_elements_operations = {}
 
+        self.maximum_encrypted_bit_width = max(
+            node.maximum_tlu_input_bit_width
+            for node in self.graph.query_nodes()
+        )
+        for node in self.graph.query_nodes():
+            print(node.label(), node.maximum_tlu_input_bit_width)
+
     # types
 
     def i(self, width: int) -> ConversionType:
@@ -523,9 +530,16 @@ class Context:
         assert self.is_bit_width_compatible(x, y)
         assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
 
-        internal_result_type = max(x.type, y.type, key=lambda t: len(t.shape))
+        internal_result_type = self.typeof(
+            Value(
+                dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
+                shape=resulting_type.shape,
+                is_encrypted=x.is_encrypted,
+            )
+        )
+        bit_width = internal_result_type.bit_width
 
-        if x.original_bit_width + y.original_bit_width <= internal_result_type.bit_width:
+        if x.original_bit_width + y.original_bit_width <= x.bit_width:
             shifter_type = self.typeof(
                 Value(
                     dtype=Integer(is_signed=False, bit_width=(x.bit_width + 1)),
@@ -551,16 +565,28 @@ class Context:
         bit_width = internal_result_type.bit_width
         original_bit_width = max(x.original_bit_width, y.original_bit_width)
 
-        chunk_size = max(int(np.floor(bit_width / 2)), 1)
+        chunk_size = max(int(np.floor(x.bit_width / 2)), 1)
         mask = (2**chunk_size) - 1
 
         chunks = []
+        x_chunk_type = self.typeof(Value(
+            dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
+            shape=x.shape,
+            is_encrypted=x.is_encrypted,
+        ))
+        y_chunk_type = self.typeof(Value(
+            dtype=Integer(is_signed=y.is_signed, bit_width=x.bit_width),
+            shape=y.shape,
+            is_encrypted=y.is_encrypted,
+        ))
+
         for offset in range(0, original_bit_width, chunk_size):
             x_lut = [((x >> offset) & mask) << chunk_size for x in range(2**bit_width)]
             y_lut = [(y >> offset) & mask for y in range(2**bit_width)]
 
-            x_chunk = self.tlu(x.type, x, x_lut)
-            y_chunk = self.tlu(y.type, y, y_lut)
+
+            x_chunk = self.tlu(x_chunk_type, x, x_lut)
+            y_chunk = self.tlu(y_chunk_type, y, y_lut)
 
             packed_x_and_y_chunks = self.add(internal_result_type, x_chunk, y_chunk)
             result_chunk = self.tlu(
@@ -1053,7 +1079,7 @@ class Context:
         y: Conversion,
         equal: bool = False,
     ) -> Conversion:
-        assert self.is_bit_width_compatible(resulting_type, x, y)
+        assert self.is_bit_width_compatible(x, y)
         assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
 
         x_dtype = Integer(is_signed=x.is_signed, bit_width=x.original_bit_width)
