@@ -15,5 +15,7 @@ pub fn build(b: *std.build.Builder) void {
 
     test_.addIncludePath("../include");
 
+    test_.linkFramework("Security");
+
     test_step.dependOn(&test_.step);
 }
