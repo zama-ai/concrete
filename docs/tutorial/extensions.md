@@ -36,7 +36,12 @@ assert np.array_equal(circuit.encrypt_run_decrypt(sample), complex_univariate_fu
 ```
 
 {% hint style="danger" %}
-The wrapped function shouldn't have any side effects, and it should be deterministic. Otherwise, the outcome is undefined.
+The wrapped function:
+- shouldn't have any side effects (e.g., no modification of global state)
+- should be deterministic (e.g., no random numbers)
+- should have the same output shape as its input (i.e., `output.shape` should be the same with `input.shape`)
+- each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]`)
+If any of these constraints are violated, the outcome is undefined.
 {% endhint %}
 
 ## fhe.conv(...)
