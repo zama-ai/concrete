@@ -128,6 +128,8 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
     uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
     uint32_t polynomial_size,
+    // Key Indices
+    uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context) {
   // The compiler should only generates 2D memref<BxS>, where B is the number of
@@ -143,7 +145,7 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
       crt_decomp_offset, crt_decomp_size, crt_decomp_stride, lwe_small_size,
       cbs_level_count, cbs_base_log, ksk_level_count, ksk_base_log,
       bsk_level_count, bsk_base_log, fpksk_level_count, fpksk_base_log,
-      polynomial_size, context);
+      polynomial_size, ksk_index, bsk_index, pksk_index, context);
 }
 
 // Batched CUDA function //////////////////////////////////////////////////////
@@ -301,8 +303,13 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
     uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
     uint32_t polynomial_size,
+    // Key Indices
+    uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context) {
+  assert(ksk_index == 0 && "multiple ksk is not yet implemented on GPU");
+  assert(bsk_index == 0 && "multiple bsk is not yet implemented on GPU");
+  assert(pksk_index == 0 && "multiple pksk is not yet implemented on GPU");
   // The compiler should only generates 2D memref<BxS>, where B is the number of
   // ciphertext block times the number of inputs and S the lweSize.
   // Check for the strides
@@ -355,7 +362,7 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
 
   // Copy lut vector to GPU (corresponds to 1 input)
   uint64_t lut_ct_size = lut_ct_size0 * lut_ct_size1;
-  auto lut_vector_gpu = alloc_and_memcpy_async_to_gpu(
+  void *lut_vector_gpu = alloc_and_memcpy_async_to_gpu(
       lut_ct_aligned, lut_ct_offset, lut_ct_size, gpu_idx, stream);
   // Allocate data on the GPU
   void *out_gpu = cuda_malloc_async(lwe_big_size * crt_decomp_size * sizeof(uint64_t),
@@ -428,25 +435,22 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
         fpksk_base_log, cbs_level_count, cbs_base_log, cbs_vp_in_count, lut_count);
     // CBS + vertical packing
     cuda_circuit_bootstrap_vertical_packing_64(
-        stream, gpu_idx, out_gpu, bit_extract_out_gpu, 
-        fbsk_gpu, pksk_gpu,
-        lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
+        stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu, lut_vector_gpu, 
+        cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
         lwe_small_dim, bsk_level_count, bsk_base_log, fpksk_level_count,
         fpksk_base_log, cbs_level_count, cbs_base_log, cbs_vp_in_count, lut_count,
         cuda_get_max_shared_memory(gpu_idx));
 
     // Copy the output batch of ciphertext back to CPU
-    memcpy_async_to_cpu(out_aligned + ciphertext_offset, out_offset, 
-                        copy_size, out_gpu, gpu_idx,
-                        stream);
+    memcpy_async_to_cpu(out_aligned, out_offset + ciphertext_offset, 
+                        copy_size, out_gpu, gpu_idx, stream);
   }
   // free memory that we allocated on gpu
   cuda_drop_async(out_gpu, (cudaStream_t *)stream, gpu_idx);
   cuda_drop_async(bit_extract_out_gpu, (cudaStream_t *)stream, gpu_idx);
   cuda_drop_async(lut_vector_gpu, (cudaStream_t *)stream, gpu_idx);
   cleanup_cuda_extract_bits(stream, gpu_idx, &bit_extract_buffer);
-  cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_idx,
-                                                  &cbs_vp_buffer);
+  cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_idx, &cbs_vp_buffer);
   cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
   
 }
@@ -466,7 +470,7 @@ void memref_encode_plaintext_with_crt(
   assert(mods_stride == 1 && "Runtime: stride not equal to 1, check "
                              "memref_encode_plaintext_with_crt");
 
-  for (size_t i = 0; i < (size_t)mods_size; ++i) {
+  for (size_t i = 0; i < (size_t) mods_size; ++i) {
     output_aligned[output_offset + i] =
         encode_crt(input, mods_aligned[mods_offset + i], mods_product);
   }
@@ -495,7 +499,7 @@ void memref_encode_expand_lut_for_bootstrap(
   // When the bootstrap is executed on encrypted signed integers, the lut must
   // be half-rotated. This map takes care about properly indexing into the input
   // lut depending on what bootstrap gets executed.
-  std::function<size_t(size_t)> indexMap;
+  std::function < size_t(size_t) > indexMap;
   if (is_signed) {
     size_t halfInputSize = input_lut_size / 2;
     indexMap = [=](size_t idx) {
@@ -515,19 +519,19 @@ void memref_encode_expand_lut_for_bootstrap(
   for (size_t idx = 0; idx < mega_case_size / 2; ++idx) {
     output_lut_aligned[output_lut_offset + idx] =
         input_lut_aligned[input_lut_offset + indexMap(0)]
-        << (64 - out_MESSAGE_BITS - 1);
+            << (64 - out_MESSAGE_BITS - 1);
   }
   for (size_t idx = (input_lut_size - 1) * mega_case_size + mega_case_size / 2;
        idx < output_lut_size; ++idx) {
     output_lut_aligned[output_lut_offset + idx] =
         -(input_lut_aligned[input_lut_offset + indexMap(0)]
-          << (64 - out_MESSAGE_BITS - 1));
+            << (64 - out_MESSAGE_BITS - 1));
   }
 
   // Treats the other ut values.
   for (size_t lut_idx = 1; lut_idx < input_lut_size; ++lut_idx) {
     uint64_t lut_value = input_lut_aligned[input_lut_offset + indexMap(lut_idx)]
-                         << (64 - out_MESSAGE_BITS - 1);
+        << (64 - out_MESSAGE_BITS - 1);
     size_t start = mega_case_size * (lut_idx - 1) + mega_case_size / 2;
     for (size_t output_idx = start; output_idx < start + mega_case_size;
          ++output_idx) {
@@ -578,7 +582,7 @@ void memref_encode_lut_for_crt_woppbs(
   // (to ensure the lookup falls into the proper case).
   // This map takes care about properly indexing into the output lut depending
   // on what bootstrap gets executed.
-  std::function<uint64_t(uint64_t)> indexMap;
+  std::function < uint64_t(uint64_t) > indexMap;
   if (!is_signed) {
     // When not signed, the integer values are encoded in increasing order. That
     // is (example of 9 bits values, using crt decomposition [5,7,16]):
@@ -649,7 +653,7 @@ void memref_encode_lut_for_crt_woppbs(
             crt_decomposition_aligned[crt_decomposition_offset + in_block];
         auto bits_count = crt_bits_aligned[crt_bits_offset + in_block];
         out_index += (((indexMap(in_index) % in_base) << bits_count) / in_base)
-                     << total_bit_count;
+            << total_bit_count;
         total_bit_count += bits_count;
       }
     }
@@ -764,7 +768,7 @@ void memref_bootstrap_lwe_u64(
     mlir::concretelang::RuntimeContext *context) {
 
   uint64_t glwe_ct_size = polynomial_size * (glwe_dimension + 1);
-  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
+  uint64_t *glwe_ct = (uint64_t *) malloc(glwe_ct_size * sizeof(uint64_t));
   auto tlu = tlu_aligned + tlu_offset;
 
   // Glwe trivial encryption
@@ -784,7 +788,7 @@ void memref_bootstrap_lwe_u64(
   concrete_cpu_bootstrap_lwe_ciphertext_u64_scratch(
       &scratch_size, &scratch_align, glwe_dimension, polynomial_size, fft);
   // Allocate scratch
-  auto scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
+  auto scratch = (uint8_t *) aligned_alloc(scratch_align, scratch_size);
 
   // Bootstrap
   concrete_cpu_bootstrap_lwe_ciphertext_u64(
@@ -894,7 +898,7 @@ void memref_wop_pbs_crt_buffer(
   // We make a private copy to apply a subtraction on the body
   auto first_ciphertext = in_aligned + in_offset;
   auto copy_size = crt_decomp_size * lwe_big_size;
-  std::vector<uint64_t> in_copy(first_ciphertext, first_ciphertext + copy_size);
+  std::vector <uint64_t> in_copy(first_ciphertext, first_ciphertext + copy_size);
   // Extraction of each bit for each block
 
   const auto &fft = context->fft(bsk_index);
@@ -920,7 +924,7 @@ void memref_wop_pbs_crt_buffer(
         &scratch_size, &scratch_align, lwe_small_dim, lwe_big_dim, glwe_dim,
         polynomial_size, fft);
     // Allocate scratch
-    auto *scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
+    auto *scratch = (uint8_t *) aligned_alloc(scratch_align, scratch_size);
 
     concrete_cpu_extract_bit_lwe_ciphertext_u64(
         &extract_bits_output_buffer[lwe_small_size *
@@ -950,7 +954,7 @@ void memref_wop_pbs_crt_buffer(
       lut_size, lut_count, glwe_dim, polynomial_size, polynomial_size,
       cbs_level_count, fft);
 
-  auto *scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
+  auto *scratch = (uint8_t *) aligned_alloc(scratch_align, scratch_size);
 
   auto fp_keyswicth_key = context->fp_keyswitch_key_buffer(pksk_index);
 
@@ -988,6 +992,8 @@ void memref_batched_wop_pbs_crt_buffer(
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
     uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
     uint32_t polynomial_size,
+    // Key Indices
+    uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context) {
 
@@ -1004,7 +1010,8 @@ void memref_batched_wop_pbs_crt_buffer(
         crt_decomp_aligned, crt_decomp_offset, crt_decomp_size,
         crt_decomp_stride, lwe_small_size, cbs_level_count, cbs_base_log,
         ksk_level_count, ksk_base_log, bsk_level_count, bsk_base_log,
-        fpksk_level_count, fpksk_base_log, polynomial_size, context);
+        fpksk_level_count, fpksk_base_log, polynomial_size, ksk_index, bsk_index, pksk_index,
+        context);
   }
 }
 
@@ -1029,7 +1036,7 @@ void memref_trace_ciphertext(uint64_t *ct0_allocated, uint64_t *ct0_aligned,
                              uint64_t ct0_offset, uint64_t ct0_size,
                              uint64_t ct0_stride, char *message_ptr,
                              uint32_t message_len, uint32_t msb) {
-  std::string message{message_ptr, (size_t)message_len};
+  std::string message{message_ptr, (size_t) message_len};
   std::cout << message << " : ";
   std::bitset<64> bits{ct0_aligned[ct0_offset + ct0_size - 1]};
   std::string bitstring = bits.to_string();
@@ -1040,7 +1047,7 @@ void memref_trace_ciphertext(uint64_t *ct0_allocated, uint64_t *ct0_aligned,
 void memref_trace_plaintext(uint64_t input, uint64_t input_width,
                             char *message_ptr, uint32_t message_len,
                             uint32_t msb) {
-  std::string message{message_ptr, (size_t)message_len};
+  std::string message{message_ptr, (size_t) message_len};
   std::cout << message << " : ";
   std::bitset<64> bits{input};
   std::string bitstring = bits.to_string();
@@ -1050,6 +1057,6 @@ void memref_trace_plaintext(uint64_t input, uint64_t input_width,
 }
 
 void memref_trace_message(char *message_ptr, uint32_t message_len) {
-  std::string message{message_ptr, (size_t)message_len};
+  std::string message{message_ptr, (size_t) message_len};
   std::cout << message << std::endl;
 }

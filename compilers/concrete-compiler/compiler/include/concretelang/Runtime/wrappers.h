@@ -240,7 +240,8 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
     uint32_t cbs_level_count, uint32_t cbs_base_log, uint32_t ksk_level_count,
     uint32_t ksk_base_log, uint32_t bsk_level_count, uint32_t bsk_base_log,
     uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size, mlir::concretelang::RuntimeContext *context);
+    uint32_t polynomial_size, uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
+    mlir::concretelang::RuntimeContext *context);
 
 // Batched CUDA function //////////////////////////////////////////////////////
 
@@ -278,7 +279,8 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     uint32_t cbs_level_count, uint32_t cbs_base_log, uint32_t ksk_level_count,
     uint32_t ksk_base_log, uint32_t bsk_level_count, uint32_t bsk_base_log,
     uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size, mlir::concretelang::RuntimeContext *context);
+    uint32_t polynomial_size, uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
+    mlir::concretelang::RuntimeContext *context);
 
 // Tracing ////////////////////////////////////////////////////////////////////
 void memref_trace_ciphertext(uint64_t *ct0_allocated, uint64_t *ct0_aligned,
