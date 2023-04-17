@@ -66,3 +66,6 @@ overflow-checks = true
 [profile.dev]
 opt-level = 3
 overflow-checks = true
+
+[profile.release]
+lto = "fat"
