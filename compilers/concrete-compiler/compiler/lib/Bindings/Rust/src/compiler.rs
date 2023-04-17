@@ -369,6 +369,7 @@ impl OptimizerConfig {
                 security,
                 strategy_v0,
                 use_gpu_constraints,
+                64,
             ));
             if config.is_null() {
                 return Err(CompilerError(config.error_msg()));

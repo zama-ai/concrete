@@ -14,9 +14,11 @@ mod tests {
     use crate::optimization::dag::solo_key::optimize::{add_v0_dag, v0_dag};
     use crate::optimization::decomposition;
 
+    const CIPHERTEXT_MODULUS_LOG: u32 = 64;
+
     static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
         let processing_unit = config::ProcessingUnit::Cpu;
-        decomposition::cache(128, processing_unit, None, true)
+        decomposition::cache(128, processing_unit, None, true, CIPHERTEXT_MODULUS_LOG)
     });
 
     const _4_SIGMA: f64 = 0.000_063_342_483_999_973;

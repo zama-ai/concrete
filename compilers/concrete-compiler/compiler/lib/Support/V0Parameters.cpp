@@ -32,6 +32,7 @@ concrete_optimizer::Options options_from_config(optimizer::Config config) {
       /* .use_gpu_constraints = */ config.use_gpu_constraints,
       /* .encoding = */ config.encoding,
       /* .cache_on_disk = */ config.cache_on_disk,
+      /* .ciphertext_modulus_log = */ config.ciphertext_modulus_log,
   };
   return options;
 }

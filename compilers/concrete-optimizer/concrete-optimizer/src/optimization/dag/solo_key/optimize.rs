@@ -461,9 +461,11 @@ pub(crate) mod tests {
 
     const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 
+    const CIPHERTEXT_MODULUS_LOG: u32 = 64;
+
     static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
         let processing_unit = config::ProcessingUnit::Cpu;
-        decomposition::cache(128, processing_unit, None, true)
+        decomposition::cache(128, processing_unit, None, true, CIPHERTEXT_MODULUS_LOG)
     });
 
     pub fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {

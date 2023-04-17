@@ -33,10 +33,9 @@ pub fn pareto_quantities(
     security_level: u64,
     internal_dim: u64,
 ) -> Vec<KsComplexityNoise> {
-    assert!(ciphertext_modulus_log == 64);
     let variance_ksk = minimal_variance_lwe(internal_dim, ciphertext_modulus_log, security_level);
 
-    let mut quantities = Vec::with_capacity(64);
+    let mut quantities = Vec::with_capacity(ciphertext_modulus_log as usize);
     let mut increasing_complexity_slope = 0.0;
     let mut decreasing_variance = f64::INFINITY;
     let mut counting_no_progress = 0;
@@ -131,11 +130,12 @@ pub fn cache(
     security_level: u64,
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
+    ciphertext_modulus_log: u32,
 ) -> PersistDecompCache {
     let cache_dir: String = default_cache_dir();
-    let ciphertext_modulus_log = 64;
     let hardware = processing_unit.ks_to_string();
-    let path = format!("{cache_dir}/ks-decomp-{hardware}-64-{security_level}");
+    let path =
+        format!("{cache_dir}/ks-decomp-{hardware}-{ciphertext_modulus_log}-{security_level}");
 
     let function = move |internal_dim: u64| {
         pareto_quantities(

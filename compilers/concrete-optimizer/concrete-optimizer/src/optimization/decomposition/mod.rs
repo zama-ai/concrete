@@ -31,12 +31,14 @@ pub fn cache(
     processing_unit: config::ProcessingUnit,
     complexity_model: Option<Arc<dyn ComplexityModel>>,
     cache_on_disk: bool,
+    ciphertext_modulus_log: u32,
 ) -> PersistDecompCaches {
     PersistDecompCaches::new(
         security_level,
         processing_unit,
         complexity_model,
         cache_on_disk,
+        ciphertext_modulus_log,
     )
 }
 
@@ -46,14 +48,35 @@ impl PersistDecompCaches {
         processing_unit: config::ProcessingUnit,
         complexity_model: Option<Arc<dyn ComplexityModel>>,
         cache_on_disk: bool,
+        ciphertext_modulus_log: u32,
     ) -> Self {
         let complexity_model =
             complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
         let res = Self {
-            ks: keyswitch::cache(security_level, processing_unit, complexity_model.clone()),
-            cmux: cmux::cache(security_level, processing_unit, complexity_model.clone()),
-            pp: pp_switch::cache(security_level, processing_unit, complexity_model.clone()),
-            cb: circuit_bootstrap::cache(security_level, processing_unit, complexity_model),
+            ks: keyswitch::cache(
+                security_level,
+                processing_unit,
+                complexity_model.clone(),
+                ciphertext_modulus_log,
+            ),
+            cmux: cmux::cache(
+                security_level,
+                processing_unit,
+                complexity_model.clone(),
+                ciphertext_modulus_log,
+            ),
+            pp: pp_switch::cache(
+                security_level,
+                processing_unit,
+                complexity_model.clone(),
+                ciphertext_modulus_log,
+            ),
+            cb: circuit_bootstrap::cache(
+                security_level,
+                processing_unit,
+                complexity_model,
+                ciphertext_modulus_log,
+            ),
             cache_on_disk,
         };
         if cache_on_disk {

@@ -151,6 +151,7 @@ fn optimize_1_fks_and_all_compatible_ks(
     complexity: &Complexity,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
+    ciphertext_modulus_log: u32,
 ) -> Option<(Best1FksAndManyKs, OperationsCV)> {
     // At this point every thing else is known apart fks and ks
     let input_glwe = macro_parameters[fks_src].glwe_params;
@@ -179,7 +180,12 @@ fn optimize_1_fks_and_all_compatible_ks(
                 dst_glwe_param: output_glwe,
             }
         } else if use_fast_ks {
-            let noise = fast_keyswitch::noise(&ks_quantity, &input_glwe, &output_glwe);
+            let noise = fast_keyswitch::noise(
+                &ks_quantity,
+                &input_glwe,
+                &output_glwe,
+                ciphertext_modulus_log,
+            );
             let complexity =
                 fast_keyswitch::complexity(&input_glwe, &output_glwe, ks_quantity.decomp.level);
             FksComplexityNoise {
@@ -252,6 +258,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
     complexity: &Complexity,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
+    ciphertext_modulus_log: u32,
 ) -> Option<(Vec<Best1FksAndManyKs>, OperationsCV)> {
     // All fks subgroup can be optimized independently
     let mut acc_operations = operations.clone();
@@ -273,6 +280,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
                 complexity,
                 caches,
                 cut_complexity,
+                ciphertext_modulus_log,
             )?;
             result.push(bests);
             _ = std::mem::replace(&mut acc_operations, operations);
@@ -309,6 +317,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     best_p_error: f64,
+    ciphertext_modulus_log: u32,
 ) -> Option<PartialMicroParameters> {
     let mut operations = operations.clone();
     let mut best_sol = None;
@@ -338,6 +347,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
             complexity,
             caches,
             best_sol_complexity,
+            ciphertext_modulus_log,
         );
         if sol.is_none() {
             continue;
@@ -411,6 +421,7 @@ fn apply_fks_variance_and_cost_or_lower_bound(
     fks_to_optimize: &[Option<FksSrc>],
     used_conversion_keyswitch: &[Vec<bool>],
     operations: &mut OperationsCV,
+    ciphertext_modulus_log: u32,
 ) {
     for (src, dst) in cross_partition(nb_partitions) {
         if !used_conversion_keyswitch[src][dst] {
@@ -449,7 +460,8 @@ fn apply_fks_variance_and_cost_or_lower_bound(
         // TODO: use a pareto front to avoid that loop
         if use_fast_ks {
             for ks_q in ks_pareto {
-                let variance = fast_keyswitch::noise(ks_q, input_glwe, output_glwe);
+                let variance =
+                    fast_keyswitch::noise(ks_q, input_glwe, output_glwe, ciphertext_modulus_log);
                 variance_min = variance_min.min(variance);
             }
         } else {
@@ -693,6 +705,7 @@ fn optimize_macro(
                 &fks_to_optimize,
                 used_conversion_keyswitch,
                 &mut operations,
+                ciphertext_modulus_log,
             );
 
             let non_feasible = !feasible.feasible(&operations.variance);
@@ -761,6 +774,7 @@ fn optimize_macro(
                 &mut caches.keyswitch,
                 best_complexity,
                 best_p_error,
+                ciphertext_modulus_log,
             );
             if let Some(some_micro_params) = micro_opt {
                 // erase macros and all fks and ks that can't be real

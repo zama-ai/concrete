@@ -1060,6 +1060,7 @@ struct Options final {
   bool use_gpu_constraints;
   ::concrete_optimizer::Encoding encoding;
   bool cache_on_disk;
+  ::std::uint32_t ciphertext_modulus_log;
 
   using IsRelocatable = ::std::true_type;
 };
