@@ -59,7 +59,7 @@ class LookupTable:
     def __repr__(self):
         return str(list(self.table))
 
-    def __getitem__(self, key: Union[int, np.integer, np.ndarray, Tracer]):
+    def __getitem__(self, key: Union[int, np.integer, np.bool_, np.ndarray, Tracer]):
         if not isinstance(key, Tracer):
             return LookupTable.apply(key, self.table)
 
@@ -92,14 +92,14 @@ class LookupTable:
 
     @staticmethod
     def apply(
-        key: Union[int, np.integer, np.ndarray],
+        key: Union[int, np.integer, np.bool_, np.ndarray],
         table: np.ndarray,
     ) -> Union[int, np.integer, np.ndarray]:
         """
         Apply lookup table.
 
         Args:
-            key (Union[int, np.integer, np.ndarray]):
+            key (Union[int, np.integer, np.bool_, np.ndarray]):
                 lookup key
 
             table (np.ndarray):
@@ -113,6 +113,9 @@ class LookupTable:
             ValueError:
                 if `table` cannot be looked up with `key`
         """
+
+        if isinstance(key, (np.bool_, np.ndarray)) and np.issubdtype(key.dtype, np.bool_):
+            key = key.astype(np.int64)
 
         if not isinstance(key, (int, np.integer, np.ndarray)) or (
             isinstance(key, np.ndarray) and not np.issubdtype(key.dtype, np.integer)

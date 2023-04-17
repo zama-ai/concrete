@@ -677,6 +677,13 @@ def deterministic_unary_function(x):
             },
             id="np.squeeze(x, axis=1) where x.shape == (1, 1, 1)",
         ),
+        pytest.param(
+            lambda x: fhe.LookupTable([10, 5])[x > 5],
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="fhe.LookupTable([10, 5])[x > 5]",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):
