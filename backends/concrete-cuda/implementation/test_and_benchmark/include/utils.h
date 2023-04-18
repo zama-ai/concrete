@@ -5,6 +5,11 @@
 #include <device.h>
 #include <functional>
 
+// This is the price per hour of a p3.2xlarge instance on Amazon AWS
+#define AWS_VM_COST_PER_HOUR (double)3.06
+
+double get_aws_cost_per_second();
+
 uint64_t *generate_plaintexts(uint64_t payload_modulus, uint64_t delta,
                               int number_of_inputs, const unsigned repetitions,
                               const unsigned samples);

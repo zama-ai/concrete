@@ -71,6 +71,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_Addition)
         (void *)d_lwe_in_2_ct, lwe_dimension, num_samples);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusAddition)
@@ -96,6 +98,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusAddition)
                              stream, gpu_index);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_PlaintextAddition)
@@ -107,6 +111,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_PlaintextAddition)
         (void *)d_plaintext_2, lwe_dimension, num_samples);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusPlaintextAddition)
@@ -130,6 +136,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusPlaintextAddition)
                              stream, gpu_index);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CleartextMultiplication)
@@ -141,6 +149,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CleartextMultiplication)
         (void *)d_cleartext, lwe_dimension, num_samples);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(LinearAlgebra_u64,
@@ -164,6 +174,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64,
                              stream, gpu_index);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_Negation)
@@ -175,6 +187,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_Negation)
         lwe_dimension, num_samples);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusNegation)
@@ -195,6 +209,8 @@ BENCHMARK_DEFINE_F(LinearAlgebra_u64, ConcreteCuda_CopiesPlusNegation)
                              stream, gpu_index);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(num_samples / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 static void

@@ -102,6 +102,8 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_AmortizedPBS)
         cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(input_lwe_ciphertext_count / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
   cleanup_cuda_bootstrap_amortized(stream, gpu_index, &pbs_buffer);
   cuda_synchronize_stream(stream);
 }
@@ -142,6 +144,8 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_CopiesPlusAmortizedPBS)
                              stream, gpu_index);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(input_lwe_ciphertext_count / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
   cleanup_cuda_bootstrap_amortized(stream, gpu_index, &pbs_buffer);
   cuda_synchronize_stream(stream);
 }
@@ -181,6 +185,8 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
         cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(input_lwe_ciphertext_count / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
   cleanup_cuda_bootstrap_low_latency(stream, gpu_index, &pbs_buffer);
   cuda_synchronize_stream(stream);
 }

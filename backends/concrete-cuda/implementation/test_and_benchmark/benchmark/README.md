@@ -96,6 +96,10 @@ Doing this, for each run the execution time will be reported. If you prefer, you
 `--benchmark_display_aggregates_only=true` that will display in the standard output only the 
 statistical data but report everything in the output file. 
 
+## Known issues
+
+When displayed in the standard output, on a terminal, the unit presented for the throughput is given in "number of operations per second". This is a bug on the way data is presented by Google Benchmark. The correct unit is "operations per dollar".
+
 ## Conclusion
 
 With these options, you can easily run benchmarks, filter benchmarks, set the time unit, and the number of iterations of benchmark_concrete_cuda. If you have any questions or issues, please feel free to contact us.

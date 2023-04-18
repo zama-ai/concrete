@@ -8,6 +8,10 @@
 #include <random>
 #include <utils.h>
 
+double get_aws_cost_per_second(){
+    return AWS_VM_COST_PER_HOUR / 3600;
+}
+
 // For each sample and repetition, create a plaintext
 // The payload_modulus is the message modulus times the carry modulus
 // (so the total message modulus)
@@ -106,7 +110,7 @@ uint64_t *generate_identity_lut_cmux_tree(int polynomial_size, int lut_size,
 
   // This plaintext_lut_cmux_tree extracts the carry bits
   for (int tree = 0; tree < tau; tree++)
-    for (int i = 0; i < num_lut; i++) {
+    for (uint64_t i = 0; i < num_lut; i++) {
       uint64_t *plaintext_lut_slice = plaintext_lut_cmux_tree +
                                       i * polynomial_size +
                                       tree * num_lut * polynomial_size;

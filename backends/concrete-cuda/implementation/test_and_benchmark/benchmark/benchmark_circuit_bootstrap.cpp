@@ -100,6 +100,8 @@ BENCHMARK_DEFINE_F(CircuitBootstrap_u64, ConcreteCuda_CircuitBootstrap)
         cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(number_of_inputs / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 static void
