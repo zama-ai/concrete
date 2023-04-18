@@ -4,7 +4,7 @@
  * Runs standard checks to validate the inputs
  */
 void checks_fast_extract_bits(int glwe_dimension, int polynomial_size,
-                              int level_count_bsk, int number_of_samples) {
+                              int level_count_bsk, int crt_decomposition_size) {
 
   assert(("Error (GPU extract bits): polynomial_size should be one of "
           "256, 512, 1024, 2048, 4096, 8192",
@@ -20,7 +20,7 @@ void checks_fast_extract_bits(int glwe_dimension, int polynomial_size,
           "equal to the number of streaming multiprocessors on the device "
           "divided by 4 * (k + 1) "
           "level_count_bsk",
-          number_of_samples <=
+          crt_decomposition_size <=
               number_of_sm / 4. / (glwe_dimension + 1) / level_count_bsk));
 }
 
@@ -29,12 +29,12 @@ void checks_fast_extract_bits(int glwe_dimension, int polynomial_size,
  */
 void checks_extract_bits(int nbits, int glwe_dimension, int polynomial_size,
                          int base_log_bsk, int level_count_bsk,
-                         int number_of_samples) {
+                         int crt_decomposition_size) {
 
   assert(("Error (GPU extract bits): base log should be <= nbits",
           base_log_bsk <= nbits));
   checks_fast_extract_bits(glwe_dimension, polynomial_size, level_count_bsk,
-                           number_of_samples);
+                           crt_decomposition_size);
 }
 
 /*
@@ -45,47 +45,47 @@ void checks_extract_bits(int nbits, int glwe_dimension, int polynomial_size,
 void scratch_cuda_extract_bits_32(
     void *v_stream, uint32_t gpu_index, int8_t **bit_extract_buffer,
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t level_count, uint32_t number_of_inputs, uint32_t max_shared_memory,
-    bool allocate_gpu_memory) {
+    uint32_t level_count, uint32_t crt_decomposition_size,
+    uint32_t max_shared_memory, bool allocate_gpu_memory) {
 
   checks_fast_extract_bits(glwe_dimension, polynomial_size, level_count,
-                           number_of_inputs);
+                           crt_decomposition_size);
 
   switch (polynomial_size) {
   case 256:
     scratch_extract_bits<uint32_t, int32_t, Degree<256>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 512:
     scratch_extract_bits<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 1024:
     scratch_extract_bits<uint32_t, int32_t, Degree<1024>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 2048:
     scratch_extract_bits<uint32_t, int32_t, Degree<2048>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 4096:
     scratch_extract_bits<uint32_t, int32_t, Degree<4096>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 8192:
     scratch_extract_bits<uint32_t, int32_t, Degree<8192>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   default:
@@ -101,46 +101,46 @@ void scratch_cuda_extract_bits_32(
 void scratch_cuda_extract_bits_64(
     void *v_stream, uint32_t gpu_index, int8_t **bit_extract_buffer,
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t level_count, uint32_t number_of_inputs, uint32_t max_shared_memory,
-    bool allocate_gpu_memory) {
+    uint32_t level_count, uint32_t crt_decomposition_size,
+    uint32_t max_shared_memory, bool allocate_gpu_memory) {
   checks_fast_extract_bits(glwe_dimension, polynomial_size, level_count,
-                           number_of_inputs);
+                           crt_decomposition_size);
 
   switch (polynomial_size) {
   case 256:
     scratch_extract_bits<uint64_t, int64_t, Degree<256>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 512:
     scratch_extract_bits<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 1024:
     scratch_extract_bits<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 2048:
     scratch_extract_bits<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 4096:
     scratch_extract_bits<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   case 8192:
     scratch_extract_bits<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, bit_extract_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, level_count, number_of_inputs, max_shared_memory,
+        polynomial_size, level_count, crt_decomposition_size, max_shared_memory,
         allocate_gpu_memory);
     break;
   default:
@@ -154,70 +154,71 @@ void scratch_cuda_extract_bits_64(
 void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
                           void *list_lwe_array_out, void *lwe_array_in,
                           int8_t *bit_extract_buffer, void *ksk,
-                          void *fourier_bsk, uint32_t number_of_bits,
-                          uint32_t delta_log, uint32_t lwe_dimension_in,
+                          void *fourier_bsk, uint32_t *number_of_bits_array,
+                          uint32_t *delta_log_array, uint32_t lwe_dimension_in,
                           uint32_t lwe_dimension_out, uint32_t glwe_dimension,
                           uint32_t polynomial_size, uint32_t base_log_bsk,
                           uint32_t level_count_bsk, uint32_t base_log_ksk,
-                          uint32_t level_count_ksk, uint32_t number_of_samples,
+                          uint32_t level_count_ksk,
+                          uint32_t crt_decomposition_size,
                           uint32_t max_shared_memory) {
   checks_extract_bits(32, glwe_dimension, polynomial_size, base_log_bsk,
-                      level_count_bsk, number_of_samples);
+                      level_count_bsk, crt_decomposition_size);
 
   switch (polynomial_size) {
   case 256:
     host_extract_bits<uint32_t, Degree<256>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
         (uint32_t *)lwe_array_in, bit_extract_buffer, (uint32_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 512:
     host_extract_bits<uint32_t, Degree<512>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
         (uint32_t *)lwe_array_in, bit_extract_buffer, (uint32_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 1024:
     host_extract_bits<uint32_t, Degree<1024>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
         (uint32_t *)lwe_array_in, bit_extract_buffer, (uint32_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 2048:
     host_extract_bits<uint32_t, Degree<2048>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
         (uint32_t *)lwe_array_in, bit_extract_buffer, (uint32_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 4096:
     host_extract_bits<uint32_t, Degree<4096>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
         (uint32_t *)lwe_array_in, bit_extract_buffer, (uint32_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 8192:
     host_extract_bits<uint32_t, Degree<8192>>(
         v_stream, gpu_index, (uint32_t *)list_lwe_array_out,
         (uint32_t *)lwe_array_in, bit_extract_buffer, (uint32_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   default:
     break;
@@ -236,7 +237,7 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
  *  - 'list_lwe_array_out' output batch LWE ciphertexts for each bit of every
  * input ciphertext
  *  - 'lwe_array_in' batch of input LWE ciphertexts, with size -
- * ('lwe_dimension_in' + 1) * number_of_samples * sizeof(u64)
+ * ('lwe_dimension_in' + 1) * crt_decomposition_size * sizeof(u64)
  * The following 5 parameters are used during calculations, they are not actual
  * inputs of the function they are just allocated memory for calculation
  * process, like this, memory can be allocated once and can be used as much
@@ -244,7 +245,7 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
  *  - 'lwe_array_in_buffer' same size as 'lwe_array_in'
  *  - 'lwe_array_in_shifted_buffer' same size as 'lwe_array_in'
  *  - 'lwe_array_out_ks_buffer'  with size:
- * ('lwe_dimension_out' + 1) * number_of_samples * sizeof(u64)
+ * ('lwe_dimension_out' + 1) * crt_decomposition_size * sizeof(u64)
  *  - 'lwe_array_out_pbs_buffer' same size as 'lwe_array_in'
  *  - 'lut_pbs' with size:
  * (glwe_dimension + 1) * (lwe_dimension_in + 1) * sizeof(u64)
@@ -262,7 +263,7 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
  *  - 'level_count_bsk' decomposition level count for bootstrapping
  *  - 'base_log_ksk' base_log for keyswitch
  *  - 'level_count_ksk' decomposition level for keyswitch
- *  - 'number_of_samples' number of input LWE ciphertexts
+ *  - 'crt_decomposition_size' number of input LWE ciphertexts
  *  - 'max_shared_memory' maximum amount of shared memory to be used inside
  * device functions
  *
@@ -272,70 +273,71 @@ void cuda_extract_bits_32(void *v_stream, uint32_t gpu_index,
 void cuda_extract_bits_64(void *v_stream, uint32_t gpu_index,
                           void *list_lwe_array_out, void *lwe_array_in,
                           int8_t *bit_extract_buffer, void *ksk,
-                          void *fourier_bsk, uint32_t number_of_bits,
-                          uint32_t delta_log, uint32_t lwe_dimension_in,
+                          void *fourier_bsk, uint32_t *number_of_bits_array,
+                          uint32_t *delta_log_array, uint32_t lwe_dimension_in,
                           uint32_t lwe_dimension_out, uint32_t glwe_dimension,
                           uint32_t polynomial_size, uint32_t base_log_bsk,
                           uint32_t level_count_bsk, uint32_t base_log_ksk,
-                          uint32_t level_count_ksk, uint32_t number_of_samples,
+                          uint32_t level_count_ksk,
+                          uint32_t crt_decomposition_size,
                           uint32_t max_shared_memory) {
   checks_extract_bits(64, glwe_dimension, polynomial_size, base_log_bsk,
-                      level_count_bsk, number_of_samples);
+                      level_count_bsk, crt_decomposition_size);
 
   switch (polynomial_size) {
   case 256:
     host_extract_bits<uint64_t, Degree<256>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
         (uint64_t *)lwe_array_in, bit_extract_buffer, (uint64_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 512:
     host_extract_bits<uint64_t, Degree<512>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
         (uint64_t *)lwe_array_in, bit_extract_buffer, (uint64_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 1024:
     host_extract_bits<uint64_t, Degree<1024>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
         (uint64_t *)lwe_array_in, bit_extract_buffer, (uint64_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 2048:
     host_extract_bits<uint64_t, Degree<2048>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
         (uint64_t *)lwe_array_in, bit_extract_buffer, (uint64_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 4096:
     host_extract_bits<uint64_t, Degree<4096>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
         (uint64_t *)lwe_array_in, bit_extract_buffer, (uint64_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   case 8192:
     host_extract_bits<uint64_t, Degree<8192>>(
         v_stream, gpu_index, (uint64_t *)list_lwe_array_out,
         (uint64_t *)lwe_array_in, bit_extract_buffer, (uint64_t *)ksk,
-        (double2 *)fourier_bsk, number_of_bits, delta_log, lwe_dimension_in,
-        lwe_dimension_out, glwe_dimension, polynomial_size, base_log_bsk,
-        level_count_bsk, base_log_ksk, level_count_ksk, number_of_samples,
-        max_shared_memory);
+        (double2 *)fourier_bsk, number_of_bits_array, delta_log_array,
+        lwe_dimension_in, lwe_dimension_out, glwe_dimension, polynomial_size,
+        base_log_bsk, level_count_bsk, base_log_ksk, level_count_ksk,
+        crt_decomposition_size, max_shared_memory);
     break;
   default:
     break;

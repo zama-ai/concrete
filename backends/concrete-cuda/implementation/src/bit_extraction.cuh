@@ -132,10 +132,10 @@ __global__ void fill_lut_body_for_current_bit(Torus *lut, Torus value,
 template <typename Torus>
 __host__ __device__ uint64_t get_buffer_size_extract_bits(
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t number_of_inputs) {
+    uint32_t crt_decomposition_size) {
 
   uint64_t buffer_size =
-      sizeof(Torus) * number_of_inputs // lut_vector_indexes
+      sizeof(Torus) // lut_vector_indexes
       + ((glwe_dimension + 1) * polynomial_size) * sizeof(Torus) // lut_pbs
       + (glwe_dimension * polynomial_size + 1) *
             sizeof(Torus) // lwe_array_in_buffer
@@ -144,7 +144,9 @@ __host__ __device__ uint64_t get_buffer_size_extract_bits(
       + (lwe_dimension + 1) * sizeof(Torus) // lwe_array_out_ks_buffer
       + (glwe_dimension * polynomial_size + 1) *
             sizeof(Torus); // lwe_array_out_pbs_buffer
-  return buffer_size + buffer_size % sizeof(double2);
+  buffer_size =
+      (buffer_size + buffer_size % sizeof(double2)) * crt_decomposition_size;
+  return buffer_size;
 }
 
 template <typename Torus, typename STorus, typename params>
@@ -152,23 +154,24 @@ __host__ void
 scratch_extract_bits(void *v_stream, uint32_t gpu_index,
                      int8_t **bit_extract_buffer, uint32_t glwe_dimension,
                      uint32_t lwe_dimension, uint32_t polynomial_size,
-                     uint32_t level_count, uint32_t number_of_inputs,
+                     uint32_t level_count, uint32_t crt_decomposition_size,
                      uint32_t max_shared_memory, bool allocate_gpu_memory) {
 
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  uint64_t buffer_size =
-      get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
-                                          polynomial_size, number_of_inputs) +
-      get_buffer_size_bootstrap_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count, number_of_inputs,
-          max_shared_memory);
+  uint64_t buffer_size = get_buffer_size_extract_bits<Torus>(
+                             glwe_dimension, lwe_dimension, polynomial_size,
+                             crt_decomposition_size) +
+                         get_buffer_size_bootstrap_low_latency<Torus>(
+                             glwe_dimension, polynomial_size, level_count,
+                             crt_decomposition_size, max_shared_memory);
   // allocate and initialize device pointers for bit extraction
   if (allocate_gpu_memory) {
     *bit_extract_buffer =
         (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
   }
+
   // lut_vector_indexes is the last buffer in the bit_extract_buffer
   // it's hard set to 0: only one LUT is given as input, it's the same for all
   // LWE inputs For simplicity we initialize the whole buffer to 0
@@ -177,23 +180,23 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
 
   scratch_bootstrap_low_latency<Torus, STorus, params>(
       v_stream, gpu_index, bit_extract_buffer, glwe_dimension, polynomial_size,
-      level_count, number_of_inputs, max_shared_memory, false);
+      level_count, crt_decomposition_size, max_shared_memory, false);
 }
 
 /*
- * Host function for cuda extract bits.
+ * Host function for cuda single ciphertext extract bits.
  * it executes device functions in specific order and manages
  * parallelism
  */
 template <typename Torus, class params>
-__host__ void host_extract_bits(
+__host__ void host_single_ciphertext_extract_bits(
     void *v_stream, uint32_t gpu_index, Torus *list_lwe_array_out,
     Torus *lwe_array_in, int8_t *bit_extract_buffer, Torus *ksk,
     double2 *fourier_bsk, uint32_t number_of_bits, uint32_t delta_log,
     uint32_t lwe_dimension_in, uint32_t lwe_dimension_out,
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t base_log_bsk,
     uint32_t level_count_bsk, uint32_t base_log_ksk, uint32_t level_count_ksk,
-    uint32_t number_of_samples, uint32_t max_shared_memory) {
+    uint32_t max_shared_memory) {
 
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
@@ -204,12 +207,11 @@ __host__ void host_extract_bits(
   // Always define the PBS buffer first, because it has the strongest memory
   // alignment requirement (16 bytes for double2)
   int8_t *pbs_buffer = (int8_t *)bit_extract_buffer;
-  Torus *lut_pbs =
-      (Torus *)pbs_buffer +
-      (ptrdiff_t)(get_buffer_size_bootstrap_low_latency<Torus>(
-                      glwe_dimension, polynomial_size, level_count_bsk,
-                      number_of_samples, max_shared_memory) /
-                  sizeof(Torus));
+  Torus *lut_pbs = (Torus *)pbs_buffer +
+                   (ptrdiff_t)(get_buffer_size_bootstrap_low_latency<Torus>(
+                                   glwe_dimension, polynomial_size,
+                                   level_count_bsk, 1, max_shared_memory) /
+                               sizeof(Torus));
   Torus *lwe_array_in_buffer =
       (Torus *)lut_pbs + (ptrdiff_t)((glwe_dimension + 1) * polynomial_size);
   Torus *lwe_array_in_shifted_buffer =
@@ -266,7 +268,7 @@ __host__ void host_extract_bits(
         v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_pbs,
         lut_vector_indexes, lwe_array_out_ks_buffer, fourier_bsk, pbs_buffer,
         glwe_dimension, lwe_dimension_out, polynomial_size, base_log_bsk,
-        level_count_bsk, number_of_samples, 1, max_shared_memory);
+        level_count_bsk, 1, 1, max_shared_memory);
 
     // Add alpha where alpha = delta*2^{bit_idx-1} to end up with an encryption
     // of 0 if the extracted bit was 0 and 1 in the other case
@@ -277,6 +279,70 @@ __host__ void host_extract_bits(
         glwe_dimension);
     check_cuda_error(cudaGetLastError());
   }
+}
+
+/*
+ * Host function for cuda extract bits.
+ * it executes device functions in specific order and manages
+ * parallelism
+ */
+template <typename Torus, class params>
+__host__ void
+host_extract_bits(void *v_stream, uint32_t gpu_index, Torus *list_lwe_array_out,
+                  Torus *lwe_array_in, int8_t *bit_extract_buffer, Torus *ksk,
+                  double2 *fourier_bsk, uint32_t *number_of_bits_array,
+                  uint32_t *delta_log_array, uint32_t lwe_dimension_in,
+                  uint32_t lwe_dimension_out, uint32_t glwe_dimension,
+                  uint32_t polynomial_size, uint32_t base_log_bsk,
+                  uint32_t level_count_bsk, uint32_t base_log_ksk,
+                  uint32_t level_count_ksk, uint32_t crt_decomposition_size,
+                  uint32_t max_shared_memory) {
+
+  cudaSetDevice(gpu_index);
+  auto stream = static_cast<cudaStream_t *>(v_stream);
+
+  cudaStream_t *sub_streams[crt_decomposition_size];
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    sub_streams[i] = cuda_create_stream(gpu_index);
+  }
+
+  int bit_extract_buffer_size =
+      get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension_out,
+                                          polynomial_size, 1) +
+      get_buffer_size_bootstrap_low_latency<Torus>(
+          glwe_dimension, polynomial_size, level_count_bsk, 1,
+          max_shared_memory);
+
+  int cur_total_lwe = 0;
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    uint32_t number_of_bits = number_of_bits_array[i];
+    auto cur_input_lwe = &lwe_array_in[i * (lwe_dimension_in + 1)];
+    auto cur_output_lwe_array =
+        &list_lwe_array_out[cur_total_lwe * (lwe_dimension_out + 1)];
+    auto cur_bit_extract_buffer =
+        &bit_extract_buffer[i * bit_extract_buffer_size];
+    host_single_ciphertext_extract_bits<Torus, params>(
+        (void *)sub_streams[i], gpu_index, cur_output_lwe_array, cur_input_lwe,
+        cur_bit_extract_buffer, ksk, fourier_bsk, number_of_bits,
+        delta_log_array[i], lwe_dimension_in, lwe_dimension_out, glwe_dimension,
+        polynomial_size, base_log_bsk, level_count_bsk, base_log_ksk,
+        level_count_ksk, max_shared_memory);
+    cur_total_lwe += number_of_bits_array[i];
+  }
+
+  cudaEvent_t event;
+  cudaEventCreate(&event);
+
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    cudaEventRecord(event, *(sub_streams[i]));
+    cudaStreamWaitEvent(*stream, event, 0);
+  }
+
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    cuda_destroy_stream((sub_streams[i]), gpu_index);
+  }
+
+  cudaEventDestroy(event);
 }
 
 #endif // BIT_EXTRACT_CUH

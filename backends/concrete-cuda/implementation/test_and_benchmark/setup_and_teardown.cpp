@@ -344,18 +344,25 @@ void linear_algebra_teardown(cudaStream_t *stream, Csprng **csprng,
 }
 
 void bit_extraction_setup(
-    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    cudaStream_t **stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
     uint64_t **lwe_sk_out_array, double **d_fourier_bsk_array,
     uint64_t **d_ksk_array, uint64_t **plaintexts, uint64_t **d_lwe_ct_in_array,
-    uint64_t **d_lwe_ct_out_array, int8_t **bit_extract_buffer,
+    uint64_t **d_lwe_ct_out_array, int8_t **bit_extract_buffer_array,
     int lwe_dimension, int glwe_dimension, int polynomial_size,
     double lwe_modular_variance, double glwe_modular_variance, int ks_base_log,
     int ks_level, int pbs_base_log, int pbs_level,
-    int number_of_bits_of_message_including_padding,
-    int number_of_bits_to_extract, int *delta_log, uint64_t *delta,
-    int number_of_inputs, int repetitions, int samples, int gpu_index) {
-  *delta_log = 64 - number_of_bits_of_message_including_padding;
-  *delta = (uint64_t)(1) << *delta_log;
+    uint32_t *number_of_bits_of_message_including_padding_array,
+    uint32_t *number_of_bits_to_extract_array, uint32_t *delta_log_array,
+    uint64_t *delta_array, int crt_decomposition_size, int repetitions,
+    int samples, int gpu_index) {
+
+  uint32_t total_bits_to_extract = 0;
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    total_bits_to_extract += number_of_bits_to_extract_array[i];
+    delta_log_array[i] =
+        64 - number_of_bits_of_message_including_padding_array[i];
+    delta_array[i] = (uint64_t)(1) << delta_log_array[i];
+  }
 
   // Create a Csprng
   *csprng =
@@ -366,92 +373,113 @@ void bit_extraction_setup(
 
   int input_lwe_dimension = glwe_dimension * polynomial_size;
   int output_lwe_dimension = lwe_dimension;
+
   // Generate the keys
   generate_lwe_secret_keys(lwe_sk_in_array, input_lwe_dimension, *csprng,
                            repetitions);
   generate_lwe_secret_keys(lwe_sk_out_array, output_lwe_dimension, *csprng,
                            repetitions);
-  generate_lwe_keyswitch_keys(stream, gpu_index, d_ksk_array, *lwe_sk_in_array,
-                              *lwe_sk_out_array, input_lwe_dimension,
-                              output_lwe_dimension, ks_level, ks_base_log,
-                              *csprng, lwe_modular_variance, repetitions);
+  generate_lwe_keyswitch_keys(
+      stream[0], gpu_index, d_ksk_array, *lwe_sk_in_array, *lwe_sk_out_array,
+      input_lwe_dimension, output_lwe_dimension, ks_level, ks_base_log, *csprng,
+      lwe_modular_variance, repetitions);
 
   generate_lwe_bootstrap_keys(
-      stream, gpu_index, d_fourier_bsk_array, *lwe_sk_out_array,
+      stream[0], gpu_index, d_fourier_bsk_array, *lwe_sk_out_array,
       *lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
       pbs_level, pbs_base_log, *csprng, glwe_modular_variance, repetitions);
-  *plaintexts =
-      generate_plaintexts(number_of_bits_of_message_including_padding, *delta,
-                          number_of_inputs, repetitions, samples);
+
+  uint64_t payload_modulus_array[crt_decomposition_size];
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    payload_modulus_array[i] =
+        (1 << number_of_bits_of_message_including_padding_array[i]);
+  }
+
+  *plaintexts = generate_plaintexts_bit_extract(
+      payload_modulus_array, delta_array, crt_decomposition_size, repetitions,
+      samples);
 
   *d_lwe_ct_out_array = (uint64_t *)cuda_malloc_async(
-      (output_lwe_dimension + 1) * number_of_bits_to_extract *
-          number_of_inputs * sizeof(uint64_t),
-      stream, gpu_index);
+      (output_lwe_dimension + 1) * total_bits_to_extract * samples *
+          sizeof(uint64_t),
+      stream[0], gpu_index);
 
   *d_lwe_ct_in_array = (uint64_t *)cuda_malloc_async(
-      (input_lwe_dimension + 1) * number_of_inputs * repetitions * samples *
-          sizeof(uint64_t),
-      stream, gpu_index);
+      (input_lwe_dimension + 1) * crt_decomposition_size * repetitions *
+          samples * sizeof(uint64_t),
+      stream[0], gpu_index);
 
   uint64_t *lwe_ct_in_array =
       (uint64_t *)malloc(repetitions * samples * (input_lwe_dimension + 1) *
-                         number_of_inputs * sizeof(uint64_t));
+                         crt_decomposition_size * sizeof(uint64_t));
 
   // Create the input ciphertexts
   for (int r = 0; r < repetitions; r++) {
     uint64_t *lwe_sk_in =
         *lwe_sk_in_array + (ptrdiff_t)(r * input_lwe_dimension);
     for (int s = 0; s < samples; s++) {
-      for (int i = 0; i < number_of_inputs; i++) {
-        uint64_t plaintext = (*plaintexts)[r * samples * number_of_inputs +
-                                           s * number_of_inputs + i];
+      for (int i = 0; i < crt_decomposition_size; i++) {
+        uint64_t plaintext =
+            (*plaintexts)[r * samples * crt_decomposition_size +
+                          s * crt_decomposition_size + i];
         uint64_t *lwe_ct_in =
-            lwe_ct_in_array + (ptrdiff_t)((r * samples * number_of_inputs +
-                                           s * number_of_inputs + i) *
-                                          (input_lwe_dimension + 1));
+            lwe_ct_in_array +
+            (ptrdiff_t)((r * samples * crt_decomposition_size +
+                         s * crt_decomposition_size + i) *
+                        (input_lwe_dimension + 1));
         concrete_cpu_encrypt_lwe_ciphertext_u64(
             lwe_sk_in, lwe_ct_in, plaintext, input_lwe_dimension,
             lwe_modular_variance, *csprng, &CONCRETE_CSPRNG_VTABLE);
       }
     }
   }
-  cuda_memcpy_async_to_gpu(*d_lwe_ct_in_array, lwe_ct_in_array,
-                           repetitions * samples * number_of_inputs *
-                               (input_lwe_dimension + 1) * sizeof(uint64_t),
-                           stream, gpu_index);
-  // Execute scratch
-  scratch_cuda_extract_bits_64(stream, gpu_index, bit_extract_buffer,
-                               glwe_dimension, lwe_dimension, polynomial_size,
-                               pbs_level, number_of_inputs,
-                               cuda_get_max_shared_memory(gpu_index), true);
 
-  cuda_synchronize_stream(stream);
+  cuda_memcpy_async_to_gpu(*d_lwe_ct_in_array, lwe_ct_in_array,
+                           repetitions * samples * (input_lwe_dimension + 1) *
+                               crt_decomposition_size * sizeof(uint64_t),
+                           stream[0], gpu_index);
+  // Execute scratch
+  for (int s = 0; s < samples; s++) {
+    scratch_cuda_extract_bits_64(
+        stream[s], gpu_index, &bit_extract_buffer_array[s], glwe_dimension,
+        lwe_dimension, polynomial_size, pbs_level, crt_decomposition_size,
+        cuda_get_max_shared_memory(gpu_index), true);
+  }
+
+  for (int i = 0; i < samples; i++) {
+    cuda_synchronize_stream(stream[i]);
+  }
   free(lwe_ct_in_array);
 }
 
-void bit_extraction_teardown(cudaStream_t *stream, Csprng *csprng,
+void bit_extraction_teardown(cudaStream_t **stream, Csprng *csprng,
                              uint64_t *lwe_sk_in_array,
                              uint64_t *lwe_sk_out_array,
                              double *d_fourier_bsk_array, uint64_t *d_ksk_array,
                              uint64_t *plaintexts, uint64_t *d_lwe_ct_in_array,
                              uint64_t *d_lwe_ct_out_array,
-                             int8_t *bit_extract_buffer, int gpu_index) {
-  cuda_synchronize_stream(stream);
-
+                             int8_t **bit_extract_buffer_array, int samples,
+                             int gpu_index) {
+  for (int i = 0; i < samples; i++) {
+    cuda_synchronize_stream(stream[i]);
+  }
   concrete_cpu_destroy_concrete_csprng(csprng);
   free(csprng);
   free(lwe_sk_in_array);
   free(lwe_sk_out_array);
   free(plaintexts);
+  for (int i = 0; i < samples; i++) {
+    cleanup_cuda_extract_bits(stream[i], gpu_index,
+                              &bit_extract_buffer_array[i]);
+  }
+  cuda_drop_async(d_fourier_bsk_array, stream[0], gpu_index);
+  cuda_drop_async(d_ksk_array, stream[0], gpu_index);
+  cuda_drop_async(d_lwe_ct_in_array, stream[0], gpu_index);
+  cuda_drop_async(d_lwe_ct_out_array, stream[0], gpu_index);
 
-  cleanup_cuda_extract_bits(stream, gpu_index, &bit_extract_buffer);
-  cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
-  cuda_drop_async(d_ksk_array, stream, gpu_index);
-  cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
-  cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
-  cuda_synchronize_stream(stream);
-  cuda_destroy_stream(stream, gpu_index);
+  for (int i = 0; i < samples; i++) {
+    cuda_destroy_stream(stream[i], gpu_index);
+  }
 }
 
 void circuit_bootstrap_setup(
@@ -617,7 +645,7 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
       // We need r GGSW ciphertexts
       // Bit decomposition of the value from MSB to LSB
       uint64_t *bit_array = bit_decompose_value(witness, r_lut);
-      for (int i = 0; i < r_lut; i++) {
+      for (size_t i = 0; i < r_lut; i++) {
         uint64_t *ggsw_slice =
             ggsw_bit_array +
             (ptrdiff_t)((r * samples * r_lut + s * r_lut + i) * ggsw_size);
@@ -647,7 +675,6 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
                                sizeof(uint64_t),
                            stream, gpu_index);
 
-  uint32_t N = log2(polynomial_size);
   scratch_cuda_cmux_tree_64(stream, gpu_index, cmux_tree_buffer, glwe_dimension,
                             polynomial_size, level_count, lut_size, tau,
                             cuda_get_max_shared_memory(gpu_index), true);
@@ -686,14 +713,19 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
                    double lwe_modular_variance, double glwe_modular_variance,
                    int ks_base_log, int ks_level, int pksk_base_log,
                    int pksk_level, int pbs_base_log, int pbs_level,
-                   int cbs_level, int p, int *delta_log, int *cbs_delta_log,
-                   int *delta_log_lut, uint64_t *delta, int tau,
-                   int repetitions, int samples, int gpu_index) {
+                   int cbs_level, uint32_t *p_array, uint32_t *delta_log_array,
+                   int *cbs_delta_log, uint64_t *delta_array,
+                   int crt_decomposition_size, int repetitions, int samples,
+                   int gpu_index) {
 
   int input_lwe_dimension = glwe_dimension * polynomial_size;
-  *delta_log = 64 - p;
-  *delta_log_lut = *delta_log;
-  *delta = (uint64_t)(1) << *delta_log;
+  int total_bits_to_extract = 0;
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    total_bits_to_extract += p_array[i];
+    delta_log_array[i] = 64 - p_array[i];
+    delta_array[i] = 1ULL << delta_log_array[i];
+    printf("delta: %d %lu\n", delta_log_array[i], delta_array[i]);
+  }
 
   // Create a Csprng
   *csprng =
@@ -719,42 +751,60 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
       stream, gpu_index, d_pksk_array, *lwe_sk_in_array, *lwe_sk_in_array,
       input_lwe_dimension, glwe_dimension, polynomial_size, pksk_level,
       pksk_base_log, *csprng, lwe_modular_variance, repetitions);
-  *plaintexts = generate_plaintexts(p, *delta, tau, repetitions, samples);
+
+  uint64_t payload_modulus_array[crt_decomposition_size];
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    payload_modulus_array[i] = p_array[i];
+  }
+
+  *plaintexts = generate_plaintexts_bit_extract(
+      payload_modulus_array, delta_array, crt_decomposition_size, repetitions,
+      samples);
+
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    printf("plaintext: %lu\n", plaintexts[i]);
+  }
 
   // LUT creation
-  int lut_size = 1 << (tau * p);
-  uint64_t *big_lut = (uint64_t *)malloc(tau * lut_size * sizeof(uint64_t));
-  for (int i = 0; i < tau * lut_size; i++)
-    big_lut[i] = ((uint64_t)(i % (1 << p))) << *delta_log_lut;
+  int lut_size = 1 << (total_bits_to_extract);
+  uint64_t *big_lut =
+      (uint64_t *)malloc(crt_decomposition_size * lut_size * sizeof(uint64_t));
+  for (int i = 0; i < crt_decomposition_size * lut_size; i++)
+    big_lut[i] = ((uint64_t)(i % (1 << p_array[i / lut_size])))
+                 << delta_log_array[i / lut_size];
 
   *d_lut_vector = (uint64_t *)cuda_malloc_async(
-      tau * lut_size * sizeof(uint64_t), stream, gpu_index);
+      crt_decomposition_size * lut_size * sizeof(uint64_t), stream, gpu_index);
   cuda_memcpy_async_to_gpu(*d_lut_vector, big_lut,
-                           tau * lut_size * sizeof(uint64_t), stream,
-                           gpu_index);
+                           crt_decomposition_size * lut_size * sizeof(uint64_t),
+                           stream, gpu_index);
   // Allocate input
   *d_lwe_ct_in_array = (uint64_t *)cuda_malloc_async(
-      repetitions * samples * (input_lwe_dimension + 1) * tau *
-          sizeof(uint64_t),
+      repetitions * samples * (input_lwe_dimension + 1) *
+          crt_decomposition_size * sizeof(uint64_t),
       stream, gpu_index);
   // Allocate output
   *d_lwe_ct_out_array = (uint64_t *)cuda_malloc_async(
-      repetitions * samples * (input_lwe_dimension + 1) * tau *
-          sizeof(uint64_t),
+      repetitions * samples * (input_lwe_dimension + 1) *
+          crt_decomposition_size * sizeof(uint64_t),
       stream, gpu_index);
   uint64_t *lwe_ct_in_array =
       (uint64_t *)malloc(repetitions * samples * (input_lwe_dimension + 1) *
-                         tau * sizeof(uint64_t));
+                         crt_decomposition_size * sizeof(uint64_t));
   // Create the input ciphertexts
   for (int r = 0; r < repetitions; r++) {
     uint64_t *lwe_sk_in =
         *lwe_sk_in_array + (ptrdiff_t)(r * input_lwe_dimension);
     for (int s = 0; s < samples; s++) {
-      for (int i = 0; i < tau; i++) {
-        uint64_t plaintext = (*plaintexts)[r * samples * tau + s * tau + i];
+      for (int i = 0; i < crt_decomposition_size; i++) {
+        uint64_t plaintext =
+            (*plaintexts)[r * samples * crt_decomposition_size +
+                          s * crt_decomposition_size + i];
         uint64_t *lwe_ct_in =
-            lwe_ct_in_array + (ptrdiff_t)((r * samples * tau + s * tau + i) *
-                                          (input_lwe_dimension + 1));
+            lwe_ct_in_array +
+            (ptrdiff_t)((r * samples * crt_decomposition_size +
+                         s * crt_decomposition_size + i) *
+                        (input_lwe_dimension + 1));
         concrete_cpu_encrypt_lwe_ciphertext_u64(
             lwe_sk_in, lwe_ct_in, plaintext, input_lwe_dimension,
             lwe_modular_variance, *csprng, &CONCRETE_CSPRNG_VTABLE);
@@ -762,14 +812,14 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
     }
   }
   cuda_memcpy_async_to_gpu(*d_lwe_ct_in_array, lwe_ct_in_array,
-                           repetitions * samples * tau *
+                           repetitions * samples * crt_decomposition_size *
                                (input_lwe_dimension + 1) * sizeof(uint64_t),
                            stream, gpu_index);
   // Execute scratch
-  scratch_cuda_wop_pbs_64(stream, gpu_index, wop_pbs_buffer,
-                          (uint32_t *)delta_log, (uint32_t *)cbs_delta_log,
-                          glwe_dimension, lwe_dimension, polynomial_size,
-                          cbs_level, pbs_level, p, p, tau,
+  scratch_cuda_wop_pbs_64(stream, gpu_index, wop_pbs_buffer, delta_log_array,
+                          (uint32_t *)cbs_delta_log, glwe_dimension,
+                          lwe_dimension, polynomial_size, cbs_level, pbs_level,
+                          p_array, crt_decomposition_size,
                           cuda_get_max_shared_memory(gpu_index), true);
 
   cuda_synchronize_stream(stream);
@@ -802,7 +852,6 @@ void wop_pbs_teardown(cudaStream_t *stream, Csprng *csprng,
   cuda_synchronize_stream(stream);
   cuda_destroy_stream(stream, gpu_index);
 }
-
 void fft_setup(cudaStream_t *stream, double **_poly1, double **_poly2,
                double2 **_h_cpoly1, double2 **_h_cpoly2, double2 **_d_cpoly1,
                double2 **_d_cpoly2, size_t polynomial_size, int samples,
