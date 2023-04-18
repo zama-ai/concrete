@@ -1152,15 +1152,14 @@ struct SumToLinalgGeneric
 
     for (int64_t size : inputShape) {
       if (size == 0) {
-        mlir::Value result;
+        mlir::Operation *newOp;
         if (outputIsTensor) {
-          result = rewriter.create<FHE::ZeroTensorOp>(location, outputType)
-                       .getResult();
+          newOp = rewriter.create<FHE::ZeroTensorOp>(location, outputType);
         } else {
-          result = rewriter.create<FHE::ZeroEintOp>(location, outputType)
-                       .getResult();
+          newOp = rewriter.create<FHE::ZeroEintOp>(location, outputType);
         }
-        rewriter.replaceOp(sumOp, {result});
+        forwardOptimizerID(sumOp, newOp);
+        rewriter.replaceOp(sumOp, newOp->getResults());
         return mlir::success();
       }
     }
