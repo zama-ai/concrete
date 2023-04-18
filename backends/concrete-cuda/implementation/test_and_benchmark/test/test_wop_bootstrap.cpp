@@ -6,6 +6,7 @@
 
 const unsigned REPETITIONS = 2;
 const unsigned SAMPLES = 10;
+const unsigned MAX_TAU = 4;
 
 typedef struct {
   int lwe_dimension;
@@ -42,10 +43,10 @@ protected:
   int cbs_base_log;
   int cbs_level;
   int tau;
-  int p;
-  uint64_t delta;
+  uint32_t p[MAX_TAU];
+  uint64_t delta_array[MAX_TAU];
   int cbs_delta_log;
-  int delta_log;
+  uint32_t delta_log_array[MAX_TAU];
   int delta_log_lut;
   Csprng *csprng;
   cudaStream_t *stream;
@@ -84,7 +85,7 @@ public:
     cbs_base_log = (int)GetParam().cbs_base_log;
     cbs_level = (int)GetParam().cbs_level;
     tau = (int)GetParam().tau;
-    p = (int)GetParam().p;
+    p[0] = (int)GetParam().p;
     input_lwe_dimension = glwe_dimension * polynomial_size;
 
     wop_pbs_setup(
@@ -93,8 +94,8 @@ public:
         &d_lwe_ct_out_array, &d_lut_vector, &wop_pbs_buffer, lwe_dimension,
         glwe_dimension, polynomial_size, lwe_modular_variance,
         glwe_modular_variance, ks_base_log, ks_level, pksk_base_log, pksk_level,
-        pbs_base_log, pbs_level, cbs_level, p, &delta_log, &cbs_delta_log,
-        &delta_log_lut, &delta, tau, REPETITIONS, SAMPLES, gpu_index);
+        pbs_base_log, pbs_level, cbs_level, p, delta_log_array, &cbs_delta_log,
+        delta_array, tau, REPETITIONS, SAMPLES, gpu_index);
   }
 
   void TearDown() {
@@ -134,7 +135,7 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
           (void *)d_pksk_list, wop_pbs_buffer, cbs_delta_log, glwe_dimension,
           lwe_dimension, polynomial_size, pbs_base_log, pbs_level, ks_base_log,
           ks_level, pksk_base_log, pksk_level, cbs_base_log, cbs_level, p, p,
-          delta_log, tau, cuda_get_max_shared_memory(gpu_index));
+          delta_log_array, tau, cuda_get_max_shared_memory(gpu_index));
 
       //// Copy result back
       cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_ct_out_array,
@@ -152,8 +153,9 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
             lwe_sk_in, result_ct, input_lwe_dimension, &decrypted_message);
         // Round after decryption
         uint64_t decrypted =
-            closest_representable(decrypted_message, 1, p) >> delta_log_lut;
-        uint64_t expected = plaintext >> delta_log;
+            closest_representable(decrypted_message, 1, p[i]) >>
+            delta_log_array[i];
+        uint64_t expected = plaintext >> delta_log_array[i];
         EXPECT_EQ(decrypted, expected)
             << " failed at tau " << i << ", repetition " << r
             << ","

@@ -48,24 +48,26 @@ void keyswitch_teardown(cudaStream_t *stream, Csprng *csprng,
                         uint64_t *d_lwe_ct_out_array, int gpu_index);
 
 void bit_extraction_setup(
-    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    cudaStream_t *stream[], Csprng **csprng, uint64_t **lwe_sk_in_array,
     uint64_t **lwe_sk_out_array, double **d_fourier_bsk_array,
     uint64_t **d_ksk_array, uint64_t **plaintexts, uint64_t **d_lwe_ct_in_array,
-    uint64_t **d_lwe_ct_out_array, int8_t **bit_extract_buffer,
+    uint64_t **d_lwe_ct_out_array, int8_t *bit_extract_buffer_array[],
     int lwe_dimension, int glwe_dimension, int polynomial_size,
     double lwe_modular_variance, double glwe_modular_variance, int ks_base_log,
     int ks_level, int pbs_base_log, int pbs_level,
-    int number_of_bits_of_message_including_padding,
-    int number_of_bits_to_extract, int *delta_log, uint64_t *delta,
-    int number_of_inputs, int repetitions, int samples, int gpu_index);
+    uint32_t number_of_bits_of_message_including_padding_array[],
+    uint32_t number_of_bits_to_extract_array[], uint32_t delta_log_array[],
+    uint64_t delta_array[], int number_of_inputs, int repetitions, int samples,
+    int gpu_index);
 
-void bit_extraction_teardown(cudaStream_t *stream, Csprng *csprng,
+void bit_extraction_teardown(cudaStream_t *stream[], Csprng *csprng,
                              uint64_t *lwe_sk_in_array,
                              uint64_t *lwe_sk_out_array,
                              double *d_fourier_bsk_array, uint64_t *d_ksk_array,
                              uint64_t *plaintexts, uint64_t *d_lwe_ct_in_array,
                              uint64_t *d_lwe_ct_out_array,
-                             int8_t *bit_extract_buffer, int gpu_index);
+                             int8_t *bit_extract_buffer_array[], int samples,
+                             int gpu_index);
 
 void circuit_bootstrap_setup(
     cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
@@ -110,8 +112,8 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
                    double lwe_modular_variance, double glwe_modular_variance,
                    int ks_base_log, int ks_level, int pksk_base_log,
                    int pksk_level, int pbs_base_log, int pbs_level,
-                   int cbs_level, int p, int *delta_log, int *cbs_delta_log,
-                   int *delta_log_lut, uint64_t *delta, int tau,
+                   int cbs_level, uint32_t p[], uint32_t delta_log_array[],
+                   int *cbs_delta_log, uint64_t delta_array[], int tau,
                    int repetitions, int samples, int gpu_index);
 
 void wop_pbs_teardown(cudaStream_t *stream, Csprng *csprng,

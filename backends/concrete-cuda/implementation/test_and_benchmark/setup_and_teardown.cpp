@@ -344,18 +344,25 @@ void linear_algebra_teardown(cudaStream_t *stream, Csprng **csprng,
 }
 
 void bit_extraction_setup(
-    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    cudaStream_t *stream[], Csprng **csprng, uint64_t **lwe_sk_in_array,
     uint64_t **lwe_sk_out_array, double **d_fourier_bsk_array,
     uint64_t **d_ksk_array, uint64_t **plaintexts, uint64_t **d_lwe_ct_in_array,
-    uint64_t **d_lwe_ct_out_array, int8_t **bit_extract_buffer,
+    uint64_t **d_lwe_ct_out_array, int8_t *bit_extract_buffer_array[],
     int lwe_dimension, int glwe_dimension, int polynomial_size,
     double lwe_modular_variance, double glwe_modular_variance, int ks_base_log,
     int ks_level, int pbs_base_log, int pbs_level,
-    int number_of_bits_of_message_including_padding,
-    int number_of_bits_to_extract, int *delta_log, uint64_t *delta,
-    int number_of_inputs, int repetitions, int samples, int gpu_index) {
-  *delta_log = 64 - number_of_bits_of_message_including_padding;
-  *delta = (uint64_t)(1) << *delta_log;
+    uint32_t number_of_bits_of_message_including_padding_array[],
+    uint32_t number_of_bits_to_extract_array[], uint32_t delta_log_array[],
+    uint64_t delta_array[], int number_of_inputs, int repetitions, int samples,
+    int gpu_index) {
+
+  uint32_t total_bits_to_extract = 0;
+  for (int i = 0; i < number_of_inputs; i++) {
+    total_bits_to_extract += number_of_bits_to_extract_array[i];
+    delta_log_array[i] =
+        64 - number_of_bits_of_message_including_padding_array[i];
+    delta_array[i] = (uint64_t)(1) << delta_log_array[i];
+  }
 
   // Create a Csprng
   *csprng =
@@ -366,33 +373,41 @@ void bit_extraction_setup(
 
   int input_lwe_dimension = glwe_dimension * polynomial_size;
   int output_lwe_dimension = lwe_dimension;
+
   // Generate the keys
   generate_lwe_secret_keys(lwe_sk_in_array, input_lwe_dimension, *csprng,
                            repetitions);
   generate_lwe_secret_keys(lwe_sk_out_array, output_lwe_dimension, *csprng,
                            repetitions);
-  generate_lwe_keyswitch_keys(stream, gpu_index, d_ksk_array, *lwe_sk_in_array,
-                              *lwe_sk_out_array, input_lwe_dimension,
-                              output_lwe_dimension, ks_level, ks_base_log,
-                              *csprng, lwe_modular_variance, repetitions);
+  generate_lwe_keyswitch_keys(
+      stream[0], gpu_index, d_ksk_array, *lwe_sk_in_array, *lwe_sk_out_array,
+      input_lwe_dimension, output_lwe_dimension, ks_level, ks_base_log, *csprng,
+      lwe_modular_variance, repetitions);
 
   generate_lwe_bootstrap_keys(
-      stream, gpu_index, d_fourier_bsk_array, *lwe_sk_out_array,
+      stream[0], gpu_index, d_fourier_bsk_array, *lwe_sk_out_array,
       *lwe_sk_in_array, lwe_dimension, glwe_dimension, polynomial_size,
       pbs_level, pbs_base_log, *csprng, glwe_modular_variance, repetitions);
+
+  uint64_t payload_modulus_array[number_of_inputs];
+  for (int i = 0; i < number_of_inputs; i++) {
+    payload_modulus_array[i] =
+        (1 << number_of_bits_of_message_including_padding_array[i]);
+  }
+
   *plaintexts =
-      generate_plaintexts(number_of_bits_of_message_including_padding, *delta,
-                          number_of_inputs, repetitions, samples);
+      generate_plaintexts_bit_extract(payload_modulus_array, delta_array,
+                                      number_of_inputs, repetitions, samples);
 
   *d_lwe_ct_out_array = (uint64_t *)cuda_malloc_async(
-      (output_lwe_dimension + 1) * number_of_bits_to_extract *
-          number_of_inputs * sizeof(uint64_t),
-      stream, gpu_index);
+      (output_lwe_dimension + 1) * total_bits_to_extract * samples *
+          sizeof(uint64_t),
+      stream[0], gpu_index);
 
   *d_lwe_ct_in_array = (uint64_t *)cuda_malloc_async(
       (input_lwe_dimension + 1) * number_of_inputs * repetitions * samples *
           sizeof(uint64_t),
-      stream, gpu_index);
+      stream[0], gpu_index);
 
   uint64_t *lwe_ct_in_array =
       (uint64_t *)malloc(repetitions * samples * (input_lwe_dimension + 1) *
@@ -416,42 +431,53 @@ void bit_extraction_setup(
       }
     }
   }
-  cuda_memcpy_async_to_gpu(*d_lwe_ct_in_array, lwe_ct_in_array,
-                           repetitions * samples * number_of_inputs *
-                               (input_lwe_dimension + 1) * sizeof(uint64_t),
-                           stream, gpu_index);
-  // Execute scratch
-  scratch_cuda_extract_bits_64(stream, gpu_index, bit_extract_buffer,
-                               glwe_dimension, lwe_dimension, polynomial_size,
-                               pbs_level, number_of_inputs,
-                               cuda_get_max_shared_memory(gpu_index), true);
 
-  cuda_synchronize_stream(stream);
+  cuda_memcpy_async_to_gpu(*d_lwe_ct_in_array, lwe_ct_in_array,
+                           repetitions * samples * (input_lwe_dimension + 1) *
+                               number_of_inputs * sizeof(uint64_t),
+                           stream[0], gpu_index);
+  // Execute scratch
+  for (int s = 0; s < samples; s++) {
+    scratch_cuda_extract_bits_64(
+        stream[s], gpu_index, &bit_extract_buffer_array[s], glwe_dimension,
+        lwe_dimension, polynomial_size, pbs_level, number_of_inputs,
+        cuda_get_max_shared_memory(gpu_index), true);
+  }
+
+  for (int i = 0; i < samples; i++) {
+    cuda_synchronize_stream(stream[i]);
+  }
   free(lwe_ct_in_array);
 }
 
-void bit_extraction_teardown(cudaStream_t *stream, Csprng *csprng,
+void bit_extraction_teardown(cudaStream_t *stream[], Csprng *csprng,
                              uint64_t *lwe_sk_in_array,
                              uint64_t *lwe_sk_out_array,
                              double *d_fourier_bsk_array, uint64_t *d_ksk_array,
                              uint64_t *plaintexts, uint64_t *d_lwe_ct_in_array,
                              uint64_t *d_lwe_ct_out_array,
-                             int8_t *bit_extract_buffer, int gpu_index) {
-  cuda_synchronize_stream(stream);
-
+                             int8_t *bit_extract_buffer_array[], int samples,
+                             int gpu_index) {
+  for (int i = 0; i < samples; i++) {
+    cuda_synchronize_stream(stream[i]);
+  }
   concrete_cpu_destroy_concrete_csprng(csprng);
   free(csprng);
   free(lwe_sk_in_array);
   free(lwe_sk_out_array);
   free(plaintexts);
+  for (int i = 0; i < samples; i++) {
+    cleanup_cuda_extract_bits(stream[i], gpu_index,
+                              &bit_extract_buffer_array[i]);
+  }
+  cuda_drop_async(d_fourier_bsk_array, stream[0], gpu_index);
+  cuda_drop_async(d_ksk_array, stream[0], gpu_index);
+  cuda_drop_async(d_lwe_ct_in_array, stream[0], gpu_index);
+  cuda_drop_async(d_lwe_ct_out_array, stream[0], gpu_index);
 
-  cleanup_cuda_extract_bits(stream, gpu_index, &bit_extract_buffer);
-  cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
-  cuda_drop_async(d_ksk_array, stream, gpu_index);
-  cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
-  cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
-  cuda_synchronize_stream(stream);
-  cuda_destroy_stream(stream, gpu_index);
+  for (int i = 0; i < samples; i++) {
+    cuda_destroy_stream(stream[i], gpu_index);
+  }
 }
 
 void circuit_bootstrap_setup(
@@ -689,15 +715,17 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
                    double lwe_modular_variance, double glwe_modular_variance,
                    int ks_base_log, int ks_level, int pksk_base_log,
                    int pksk_level, int pbs_base_log, int pbs_level,
-                   int cbs_level, int p, int *delta_log, int *cbs_delta_log,
-                   int *delta_log_lut, uint64_t *delta, int tau,
+                   int cbs_level, uint32_t p[], uint32_t delta_log_array[],
+                   int *cbs_delta_log, uint64_t delta_array[], int tau,
                    int repetitions, int samples, int gpu_index) {
 
   int input_lwe_dimension = glwe_dimension * polynomial_size;
-  *delta_log = 64 - p;
-  *delta_log_lut = *delta_log;
-  *delta = (uint64_t)(1) << *delta_log;
-
+  int total_bits_to_extract = 0;
+  for (int i = 0; i < tau; i++) {
+    delta_log_array[i] = 64 - p[i];
+    delta_array[i] = (uint64_t)(1) << delta_log_array[i];
+    total_bits_to_extract += p[i];
+  }
   // Create a Csprng
   *csprng =
       (Csprng *)aligned_alloc(CONCRETE_CSPRNG_ALIGN, CONCRETE_CSPRNG_SIZE);
@@ -722,8 +750,30 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
       stream, gpu_index, d_pksk_array, *lwe_sk_in_array, *lwe_sk_in_array,
       input_lwe_dimension, glwe_dimension, polynomial_size, pksk_level,
       pksk_base_log, *csprng, lwe_modular_variance, repetitions);
-  *plaintexts = generate_plaintexts(p, *delta, tau, repetitions, samples);
 
+  uint64_t payload_modulus_array[tau];
+  for (int i = 0; i < tau; i++) {
+    payload_modulus_array[i] = (1 << p[i]);
+  }
+  *plaintexts = generate_plaintexts_bit_extract(
+      payload_modulus_array, delta_array, tau, repetitions, samples);
+
+
+  int lut_size = 1 << (tau * p);
+  int lut_num =
+      tau << (total_bits_to_extract - (int)log2(polynomial_size)); // r
+  uint64_t *big_lut = (uint64_t *)malloc(lut_num * lut_size * sizeof(uint64_t));
+
+  // LUT creation
+  for (int t = tau - 1; t >= 0; t--) {
+    uint64_t *small_lut = big_lut + (ptrdiff_t)(t * (1 << (tau * p[t])));
+    for (uint64_t value = 0; value < (uint64_t)(1 << (tau * p[t])); value++) {
+      int nbits = t * p[t];
+      uint64_t x = (value >> nbits) & (uint64_t)((1 << p[t]) - 1);
+      small_lut[value] = ((x % (uint64_t)(1 << (64 - delta_log_array[t])))
+                          << delta_log_array[t]);
+    }
+  }
   // LUT creation
   int lut_size = 1 << (tau * p);
   uint64_t *big_lut = (uint64_t *)malloc(tau * lut_size * sizeof(uint64_t));
@@ -769,11 +819,11 @@ void wop_pbs_setup(cudaStream_t *stream, Csprng **csprng,
                                (input_lwe_dimension + 1) * sizeof(uint64_t),
                            stream, gpu_index);
   // Execute scratch
-  scratch_cuda_wop_pbs_64(stream, gpu_index, wop_pbs_buffer,
-                          (uint32_t *)delta_log, (uint32_t *)cbs_delta_log,
-                          glwe_dimension, lwe_dimension, polynomial_size,
-                          cbs_level, pbs_level, p, p, tau,
-                          cuda_get_max_shared_memory(gpu_index), true);
+  scratch_cuda_wop_pbs_64(stream, gpu_index, wop_pbs_buffer, delta_log_array,
+                          (uint32_t *)cbs_delta_log, glwe_dimension,
+                          lwe_dimension, polynomial_size, cbs_level, pbs_level,
+                          p, p, tau, cuda_get_max_shared_memory(gpu_index),
+                          true);
 
   cuda_synchronize_stream(stream);
   free(lwe_ct_in_array);

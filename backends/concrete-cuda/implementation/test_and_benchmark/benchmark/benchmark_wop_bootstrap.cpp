@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+const unsigned MAX_TAU = 4;
+
 typedef struct {
   int lwe_dimension;
   int glwe_dimension;
@@ -36,11 +38,11 @@ protected:
   int cbs_base_log;
   int cbs_level;
   int tau;
-  int p;
+  uint32_t p_array[MAX_TAU];
   int input_lwe_dimension;
-  uint64_t delta;
+  uint64_t delta_array[MAX_TAU];
   int cbs_delta_log;
-  int delta_log;
+  uint32_t delta_log_array[MAX_TAU];
   int delta_log_lut;
   Csprng *csprng;
   cudaStream_t *stream;
@@ -76,15 +78,15 @@ public:
     cbs_base_log = state.range(9);
     cbs_level = state.range(10);
     tau = state.range(11);
-    p = state.range(12);
+    p_array[0] = state.range(12);
     wop_pbs_setup(stream, &csprng, &lwe_sk_in, &lwe_sk_out, &d_ksk,
                   &d_fourier_bsk, &d_pksk, &plaintexts, &d_lwe_ct_in_array,
                   &d_lwe_ct_out_array, &d_lut_vector, &wop_pbs_buffer,
                   lwe_dimension, glwe_dimension, polynomial_size,
                   lwe_modular_variance, glwe_modular_variance, ks_base_log,
                   ks_level, pksk_base_log, pksk_level, pbs_base_log, pbs_level,
-                  cbs_level, p, &delta_log, &cbs_delta_log, &delta_log_lut,
-                  &delta, tau, 1, 1, gpu_index);
+                  cbs_level, p_array, delta_log_array, &cbs_delta_log,
+                  delta_array, tau, 1, 1, gpu_index);
 
     // We keep the following for the benchmarks with copies
     lwe_ct_in_array = (uint64_t *)malloc(
@@ -115,13 +117,14 @@ public:
 BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_WopPBS)(benchmark::State &st) {
   for (auto _ : st) {
     // Execute wop pbs
-    cuda_wop_pbs_64(
-        stream, gpu_index, (void *)d_lwe_ct_out_array,
-        (void *)d_lwe_ct_in_array, (void *)d_lut_vector, (void *)d_fourier_bsk,
-        (void *)d_ksk, (void *)d_pksk, wop_pbs_buffer, cbs_delta_log,
-        glwe_dimension, lwe_dimension, polynomial_size, pbs_base_log, pbs_level,
-        ks_base_log, ks_level, pksk_base_log, pksk_level, cbs_base_log,
-        cbs_level, p, p, delta_log, tau, cuda_get_max_shared_memory(gpu_index));
+    cuda_wop_pbs_64(stream, gpu_index, (void *)d_lwe_ct_out_array,
+                    (void *)d_lwe_ct_in_array, (void *)d_lut_vector,
+                    (void *)d_fourier_bsk, (void *)d_ksk, (void *)d_pksk,
+                    wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+                    lwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+                    ks_base_log, ks_level, pksk_base_log, pksk_level,
+                    cbs_base_log, cbs_level, p_array, p_array, delta_log_array,
+                    tau, cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
 }
@@ -133,13 +136,14 @@ BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_CopiesPlusWopPBS)
                              (input_lwe_dimension + 1) * tau * sizeof(uint64_t),
                              stream, gpu_index);
     // Execute wop pbs
-    cuda_wop_pbs_64(
-        stream, gpu_index, (void *)d_lwe_ct_out_array,
-        (void *)d_lwe_ct_in_array, (void *)d_lut_vector, (void *)d_fourier_bsk,
-        (void *)d_ksk, (void *)d_pksk, wop_pbs_buffer, cbs_delta_log,
-        glwe_dimension, lwe_dimension, polynomial_size, pbs_base_log, pbs_level,
-        ks_base_log, ks_level, pksk_base_log, pksk_level, cbs_base_log,
-        cbs_level, p, p, delta_log, tau, cuda_get_max_shared_memory(gpu_index));
+    cuda_wop_pbs_64(stream, gpu_index, (void *)d_lwe_ct_out_array,
+                    (void *)d_lwe_ct_in_array, (void *)d_lut_vector,
+                    (void *)d_fourier_bsk, (void *)d_ksk, (void *)d_pksk,
+                    wop_pbs_buffer, cbs_delta_log, glwe_dimension,
+                    lwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+                    ks_base_log, ks_level, pksk_base_log, pksk_level,
+                    cbs_base_log, cbs_level, p_array, p_array, delta_log_array,
+                    tau, cuda_get_max_shared_memory(gpu_index));
 
     cuda_memcpy_async_to_cpu(lwe_ct_out_array, d_lwe_ct_out_array,
                              (input_lwe_dimension + 1) * tau * sizeof(uint64_t),

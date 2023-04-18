@@ -33,6 +33,29 @@ uint64_t *generate_plaintexts(uint64_t payload_modulus, uint64_t delta,
   return plaintext_array;
 }
 
+// For each sample and repetition, create a plaintext for bit extract,
+// The payload_modulus is the message modulus times the carry modulus
+// (so the total message modulus)
+uint64_t *generate_plaintexts_bit_extract(uint64_t payload_modulus[],
+                                          uint64_t delta[],
+                                          int number_of_inputs,
+                                          const unsigned repetitions,
+                                          const unsigned samples) {
+
+  uint64_t *plaintext_array = (uint64_t *)malloc(
+      repetitions * samples * number_of_inputs * sizeof(uint64_t));
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<unsigned long long> dis(
+      std::numeric_limits<std::uint64_t>::min(),
+      std::numeric_limits<std::uint64_t>::max());
+  for (size_t i = 0; i < number_of_inputs * repetitions * samples; i++) {
+    plaintext_array[i] = (dis(gen) % payload_modulus[i % number_of_inputs]) *
+                         delta[i % number_of_inputs];
+  }
+  return plaintext_array;
+}
+
 // Decompose value in r bits
 // Bit decomposition of the value from MSB to LSB
 uint64_t *bit_decompose_value(uint64_t value, int r) {
