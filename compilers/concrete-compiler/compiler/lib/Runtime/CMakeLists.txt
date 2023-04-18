@@ -1,5 +1,6 @@
 if(CONCRETELANG_CUDA_SUPPORT)
   add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp GPUDFG.cpp)
+  target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 else()
   add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp)
 endif()
