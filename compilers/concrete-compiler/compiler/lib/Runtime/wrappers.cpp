@@ -109,12 +109,12 @@ void memref_bootstrap_lwe_cuda_u64(
 void memref_wop_pbs_crt_buffer_cuda_u64(
     // Output 2D memref
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
     // Input 2D memref
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
     // clear text lut 1D memref
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
     uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
@@ -135,18 +135,18 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   // The compiler should only generates 2D memref<BxS>, where B is the number of
   // ciphertext block and S the lweSize.
   // Check for the size B
-  assert(out_size_0 == in_size_0 && out_size_0 == crt_decomp_size);
+  assert(out_size_0 == in_size_0 && out_size_1 == in_size_1);
+  assert(out_size_0 == crt_decomp_size);
   memref_batched_wop_pbs_crt_buffer_cuda_u64(
-      out_allocated, out_aligned, out_offset, out_size_0, out_size_1, 1,
-      out_stride_0, out_stride_1, out_stride_2, in_allocated, in_aligned,
-      in_offset, in_size_0, in_size_1, 1, in_stride_0, in_stride_1, in_stride_2,
-      lut_ct_allocated, lut_ct_aligned, lut_ct_offset, lut_ct_size0,
-      lut_ct_size1, lut_ct_stride0, lut_ct_stride1, crt_decomp_allocated,
-      crt_decomp_aligned, crt_decomp_offset, crt_decomp_size, crt_decomp_stride,
-      lwe_small_size, cbs_level_count, cbs_base_log, ksk_level_count,
-      ksk_base_log, bsk_level_count, bsk_base_log, fpksk_level_count,
-      fpksk_base_log, polynomial_size, ksk_index, bsk_index, pksk_index,
-      context);
+      out_allocated, out_aligned, out_offset, out_size_0, out_size_1,
+      out_stride_0, out_stride_1, in_allocated, in_aligned, in_offset,
+      in_size_0, in_size_1, in_stride_0, in_stride_1, lut_ct_allocated,
+      lut_ct_aligned, lut_ct_offset, lut_ct_size0, lut_ct_size1, lut_ct_stride0,
+      lut_ct_stride1, crt_decomp_allocated, crt_decomp_aligned,
+      crt_decomp_offset, crt_decomp_size, crt_decomp_stride, lwe_small_size,
+      cbs_level_count, cbs_base_log, ksk_level_count, ksk_base_log,
+      bsk_level_count, bsk_base_log, fpksk_level_count, fpksk_base_log,
+      polynomial_size, ksk_index, bsk_index, pksk_index, context);
 }
 
 // Batched CUDA function //////////////////////////////////////////////////////
@@ -285,12 +285,12 @@ void memref_batched_bootstrap_lwe_cuda_u64(
 void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     // Output 3D memref
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
     // Input 3D memref
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
     // clear text lut 1D memref
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
     uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
@@ -976,12 +976,12 @@ void memref_wop_pbs_crt_buffer(
 void memref_batched_wop_pbs_crt_buffer(
     // Output 3D memref
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
     // Input 3D memref
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
     // clear text lut 1D memref
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
     uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
@@ -1000,9 +1000,8 @@ void memref_batched_wop_pbs_crt_buffer(
     // runtime context that hold evaluation keys
     mlir::concretelang::RuntimeContext *context) {
 
-  assert(out_size_0 == crt_decomp_size);
-  assert(in_size_2 == out_size_2);
-  uint64_t number_of_input_lwe = out_size_2;
+  assert(out_size_0 % crt_decomp_size == 0);
+  uint64_t number_of_input_lwe = out_size_0 / crt_decomp_size;
   for (size_t i = 0; i < number_of_input_lwe; i++) {
     memref_wop_pbs_crt_buffer(
         out_allocated, out_aligned + i * crt_decomp_size * out_size_1,

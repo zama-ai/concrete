@@ -170,12 +170,12 @@ void memref_wop_pbs_crt_buffer(
 void memref_batched_wop_pbs_crt_buffer(
     // Output memref 2D memref
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1,
     // Input memref
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
+    uint64_t in_stride_1,
     // clear text lut (only 1 is given, for all inputs)
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
     uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
@@ -230,14 +230,12 @@ void memref_bootstrap_lwe_cuda_u64(
 
 void memref_wop_pbs_crt_buffer_cuda_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
-    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
-    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
-    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
-    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1, uint64_t *in_allocated, uint64_t *in_aligned,
+    uint64_t in_offset, uint64_t in_size_0, uint64_t in_size_1,
+    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t *lut_ct_allocated,
+    uint64_t *lut_ct_aligned, uint64_t lut_ct_offset, uint64_t lut_ct_size0,
+    uint64_t lut_ct_size1, uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
     uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
     uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
     uint64_t crt_decomp_stride, uint32_t lwe_small_size,
@@ -271,14 +269,12 @@ void memref_batched_bootstrap_lwe_cuda_u64(
 
 void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
-    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
-    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
-    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
-    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
+    uint64_t out_stride_1, uint64_t *in_allocated, uint64_t *in_aligned,
+    uint64_t in_offset, uint64_t in_size_0, uint64_t in_size_1,
+    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t *lut_ct_allocated,
+    uint64_t *lut_ct_aligned, uint64_t lut_ct_offset, uint64_t lut_ct_size0,
+    uint64_t lut_ct_size1, uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
     uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
     uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
     uint64_t crt_decomp_stride, uint32_t lwe_small_size,
