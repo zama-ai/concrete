@@ -1,0 +1,44 @@
+use super::super::complexity::Complexity;
+use super::cmux;
+use crate::parameters::PbsParameters;
+use crate::utils::square;
+
+#[derive(Default, Clone)]
+pub struct MultiBitPbsComplexity {
+    pub cmux: cmux::SimpleWithFactors,
+}
+
+impl MultiBitPbsComplexity {
+    pub fn complexity(
+        &self,
+        params: PbsParameters,
+        ciphertext_modulus_log: u32,
+        grouping_factor: u32,
+        jit_fft: bool,
+    ) -> Complexity {
+        // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L163
+        // grouping_factor: nb of sk bit bundled together
+        let square_glwe_size = square(params.output_glwe_params.glwe_dimension as f64 + 1.);
+        let cmux_cost = self
+            .cmux
+            .complexity(params.cmux_parameters(), ciphertext_modulus_log);
+        if jit_fft {
+            // JIT fourier transform for the GGSW
+            (params.internal_lwe_dimension.0 as f64) / (grouping_factor as f64) * cmux_cost
+                + 2. * (f64::exp2(grouping_factor as f64) - 1.)
+                    * params.br_decomposition_parameter.level as f64
+                    * square_glwe_size
+                    * params.output_glwe_params.polynomial_size() as f64
+                + params.br_decomposition_parameter.level as f64
+                    * square_glwe_size
+                    * params.output_glwe_params.polynomial_size() as f64
+                    * params.output_glwe_params.log2_polynomial_size as f64
+        } else {
+            (params.internal_lwe_dimension.0 as f64) / (grouping_factor as f64) * cmux_cost
+                + 2. * (f64::exp2(grouping_factor as f64) - 1.)
+                    * params.br_decomposition_parameter.level as f64
+                    * square_glwe_size
+                    * params.output_glwe_params.polynomial_size() as f64
+        }
+    }
+}
