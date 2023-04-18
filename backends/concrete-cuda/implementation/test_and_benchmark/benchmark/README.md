@@ -1,8 +1,9 @@
 # benchmark_concrete_cuda
 
-This benchmark tool is written over Google Benchmark library. It measures the performance of the 
-CUDA-accelerated functions of the concrete-framework and helps to identify potential 
-bottlenecks.
+This benchmark tool is written over Google Benchmark library. It measures the performance of the concrete framework's CUDA-accelerated functions and helps identify potential bottlenecks. 
+The output format can be adjusted according to the user's interest. 
+
+Each benchmark is executed once and targets a single function. Internally, for each benchmark, the tool will repeat each targetted function as many times as it needs to report an execution time with sufficient reliability. At this point, the variation we've observed in the benchmarked functions is relatively small, and thus we chose not to repeat benchmarks by default. However, this can also be tuned by the user if needed.
 
 ## How to Compile
 
@@ -24,15 +25,22 @@ $ cmake ..
 $ make
 ```
 
+The binary will be found in `concrete/backends/concrete-cuda/implementation/build/test_and_benchmark
+/benchmark`.
+
 ## How to Run Benchmarks
 
 To run benchmarks, you can simply execute the `benchmark_concrete_cuda` executable with no arguments:
 
 ```bash
-$ benchmark/benchmark_concrete_cuda
+$ test_and_benchmark/benchmark/benchmark_concrete_cuda
 ```
 
-This will run all the benchmarks in the code.
+This will run all the available benchmarks.
+
+## Output format
+
+The reports will be printed to the standard output if you don't pass any arguments. However, Google Benchmarks has extended documentation on how to print it to files with different formats, e.g., `--benchmark_format=json` will print everything to a JSON file.
 
 ## How to Filter Benchmarks
 
@@ -41,8 +49,10 @@ You can filter benchmarks by specifying a regular expression as an argument. Onl
 For example, to run only benchmarks whose name contains the word "Bootstrap", you can execute:
 
 ```bash
-$ benchmark/benchmark_concrete_cuda --benchmark_filter=Bootstrap
+$ test_and_benchmark/benchmark/benchmark_concrete_cuda --benchmark_filter=Bootstrap
 ```
+
+The parameter `--benchmark_list_tests` can be used to list all the available benchmarks. 
 
 ## How to Set the Time Unit
 
@@ -56,21 +66,35 @@ By default, benchmarks are reported in seconds. However, you can change the time
 To set the time unit, use the --benchmark_time_unit option followed by the desired time unit:
 
 ```bash
-$ benchmark/benchmark_concrete_cuda --benchmark_time_unit=us
+$ test_and_benchmark/benchmark/benchmark_concrete_cuda --benchmark_time_unit=us
 ```
 
 ## How to Set the Number of Iterations
 
 By default, each benchmark is executed for a number of iterations that is automatically determined by the Google Benchmark library. 
 However, you can increase the minimum time used for each measurement to increase the number of 
-iterations by using --benchmark_min_time. For instance:
+iterations by using `--benchmark_min_time`. For instance:
 
 ```bash
-$ benchmark/benchmark_concrete_cuda --benchmark_min_time=10
+$ test_and_benchmark/benchmark/benchmark_concrete_cuda --benchmark_min_time=10
 ```
 
  will force the tool to run at least 10s of iterations.
 
+## Statistics about the benchmarks
+
+By default each benchmark will be executed only once. However, if you use 
+`--benchmark_repetitions` you can increase that and compute the mean, median, and standard 
+deviation of the benchmarks. 
+
+```bash
+$ test_and_benchmark/benchmark/benchmark_concrete_cuda --benchmark_repetitions=10
+```
+
+Doing this, for each run the execution time will be reported. If you prefer, you can use 
+`--benchmark_report_aggregates_only=true` to report only the statistical data, or 
+`--benchmark_display_aggregates_only=true` that will display in the standard output only the 
+statistical data but report everything in the output file. 
 
 ## Conclusion
 
