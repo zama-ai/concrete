@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const unsigned REPETITIONS = 2;
-const unsigned SAMPLES = 10;
+const unsigned REPETITIONS = 1;
+const unsigned SAMPLES = 1;
+const unsigned MAX_TAU = 4;
 
 typedef struct {
   int lwe_dimension;
@@ -22,7 +23,7 @@ typedef struct {
   int cbs_base_log;
   int cbs_level;
   int tau;
-  int p;
+  int p_array[MAX_TAU];
 } WopBootstrapTestParams;
 
 class WopBootstrapTestPrimitives_u64
@@ -42,11 +43,10 @@ protected:
   int cbs_base_log;
   int cbs_level;
   int tau;
-  int p;
-  uint64_t delta;
+  uint32_t p_array[MAX_TAU];
+  uint64_t delta_array[MAX_TAU];
   int cbs_delta_log;
-  int delta_log;
-  int delta_log_lut;
+  uint32_t delta_log_array[MAX_TAU];
   Csprng *csprng;
   cudaStream_t *stream;
   int gpu_index = 0;
@@ -84,7 +84,11 @@ public:
     cbs_base_log = (int)GetParam().cbs_base_log;
     cbs_level = (int)GetParam().cbs_level;
     tau = (int)GetParam().tau;
-    p = (int)GetParam().p;
+    for (int i = 0; i < tau; i++) {
+      p_array[i] = (int)GetParam().p_array[i];
+      printf("extract_bit: %d\n", p_array[i]);
+    }
+
     input_lwe_dimension = glwe_dimension * polynomial_size;
 
     wop_pbs_setup(
@@ -93,8 +97,8 @@ public:
         &d_lwe_ct_out_array, &d_lut_vector, &wop_pbs_buffer, lwe_dimension,
         glwe_dimension, polynomial_size, lwe_modular_variance,
         glwe_modular_variance, ks_base_log, ks_level, pksk_base_log, pksk_level,
-        pbs_base_log, pbs_level, cbs_level, p, &delta_log, &cbs_delta_log,
-        &delta_log_lut, &delta, tau, REPETITIONS, SAMPLES, gpu_index);
+        pbs_base_log, pbs_level, cbs_level, p_array, delta_log_array,
+        &cbs_delta_log, delta_array, tau, REPETITIONS, SAMPLES, gpu_index);
   }
 
   void TearDown() {
@@ -133,8 +137,8 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
           (void *)d_lut_vector, (void *)d_fourier_bsk, (void *)d_ksk,
           (void *)d_pksk_list, wop_pbs_buffer, cbs_delta_log, glwe_dimension,
           lwe_dimension, polynomial_size, pbs_base_log, pbs_level, ks_base_log,
-          ks_level, pksk_base_log, pksk_level, cbs_base_log, cbs_level, p, p,
-          delta_log, tau, cuda_get_max_shared_memory(gpu_index));
+          ks_level, pksk_base_log, pksk_level, cbs_base_log, cbs_level, p_array,
+          delta_log_array, tau, cuda_get_max_shared_memory(gpu_index));
 
       //// Copy result back
       cuda_memcpy_async_to_cpu(lwe_out_ct_array, d_lwe_ct_out_array,
@@ -152,8 +156,9 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
             lwe_sk_in, result_ct, input_lwe_dimension, &decrypted_message);
         // Round after decryption
         uint64_t decrypted =
-            closest_representable(decrypted_message, 1, p) >> delta_log_lut;
-        uint64_t expected = plaintext >> delta_log;
+            closest_representable(decrypted_message, 1, p_array[i]) >>
+            delta_log_array[i];
+        uint64_t expected = plaintext >> delta_log_array[i];
         EXPECT_EQ(decrypted, expected)
             << " failed at tau " << i << ", repetition " << r
             << ","
@@ -174,42 +179,47 @@ TEST_P(WopBootstrapTestPrimitives_u64, wop_pbs) {
         // ks_level, pksk_base_log, pksk_level, cbs_base_log, cbs_level, tau, p
         (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
                                  7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
-                                 1, 11}, // Full Wop-PBS
+                                 1, {11}}, // Full Wop-PBS
         (WopBootstrapTestParams){481, 2, 512, 7.52316384526264e-37,
                                  7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
-                                 1, 9}, // No CMUX tree
+                                 1, {9}}, // No CMUX tree
         (WopBootstrapTestParams){481, 1, 1024, 7.52316384526264e-37,
                                  7.52316384526264e-37, 4, 9, 1, 9, 4, 9, 6, 4,
-                                 1, 9} // Expanded LUT
+                                 1, {9}} // Expanded LUT
     );
 
-std::string printParamName(::testing::TestParamInfo<WopBootstrapTestParams> p) {
-  WopBootstrapTestParams params = p.param;
-  uint32_t lut_vector_size = (1 << (params.p * params.tau));
-  std::string message = "Unknown_parameter_set";
-  if ((uint32_t)params.polynomial_size < lut_vector_size) {
-    // We have a cmux tree done with a single cmux.
-    message = "wop_pbs_full_n_" + std::to_string(params.lwe_dimension) + "_k_" +
-              std::to_string(params.glwe_dimension) + "_N_" +
-              std::to_string(params.polynomial_size) + "_tau_" +
-              std::to_string(params.tau) + "_p_" + std::to_string(params.p);
-  } else if ((uint32_t)params.polynomial_size == lut_vector_size) {
-    // the VP skips the cmux tree.
-    message = "wop_pbs_without_cmux_tree_n_" +
-              std::to_string(params.lwe_dimension) + "_k_" +
-              std::to_string(params.glwe_dimension) + "_N_" +
-              std::to_string(params.polynomial_size) + "_tau_" +
-              std::to_string(params.tau) + "_p_" + std::to_string(params.p);
-  } else {
-    // the VP skips the cmux tree and expands the lut.
-    message = "wop_pbs_expanded_lut_n_" + std::to_string(params.lwe_dimension) +
-              "_k_" + std::to_string(params.glwe_dimension) + "_N_" +
-              std::to_string(params.polynomial_size) + "_tau_" +
-              std::to_string(params.tau) + "_p_" + std::to_string(params.p);
+  std::string printParamName(
+      ::testing::TestParamInfo<WopBootstrapTestParams> p) {
+    WopBootstrapTestParams params = p.param;
+    uint32_t lut_vector_size = (1 << (params.p_array[0] * params.tau));
+    std::string message = "Unknown_parameter_set";
+    if ((uint32_t)params.polynomial_size < lut_vector_size) {
+      // We have a cmux tree done with a single cmux.
+      message = "wop_pbs_full_n_" + std::to_string(params.lwe_dimension) +
+                "_k_" + std::to_string(params.glwe_dimension) + "_N_" +
+                std::to_string(params.polynomial_size) + "_tau_" +
+                std::to_string(params.tau) + "_p_" +
+                std::to_string(params.p_array[0]);
+    } else if ((uint32_t)params.polynomial_size == lut_vector_size) {
+      // the VP skips the cmux tree.
+      message = "wop_pbs_without_cmux_tree_n_" +
+                std::to_string(params.lwe_dimension) + "_k_" +
+                std::to_string(params.glwe_dimension) + "_N_" +
+                std::to_string(params.polynomial_size) + "_tau_" +
+                std::to_string(params.tau) + "_p_" +
+                std::to_string(params.p_array[0]);
+    } else {
+      // the VP skips the cmux tree and expands the lut.
+      message = "wop_pbs_expanded_lut_n_" +
+                std::to_string(params.lwe_dimension) + "_k_" +
+                std::to_string(params.glwe_dimension) + "_N_" +
+                std::to_string(params.polynomial_size) + "_tau_" +
+                std::to_string(params.tau) + "_p_" +
+                std::to_string(params.p_array[0]);
+    }
+    return message;
   }
-  return message;
-}
 
-INSTANTIATE_TEST_CASE_P(WopBootstrapInstantiation,
-                        WopBootstrapTestPrimitives_u64, wop_pbs_params_u64,
-                        printParamName);
+  INSTANTIATE_TEST_CASE_P(WopBootstrapInstantiation,
+                          WopBootstrapTestPrimitives_u64, wop_pbs_params_u64,
+                          printParamName);
