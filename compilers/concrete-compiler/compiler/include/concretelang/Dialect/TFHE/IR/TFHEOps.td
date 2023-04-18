@@ -227,7 +227,7 @@ def TFHE_BatchedWopPBSGLWEOp : TFHE_Op<"batched_wop_pbs_glwe", [Pure]> {
 
     let arguments = (ins
         Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>: $ciphertexts,
-        3DTensorOf<[I64]> : $lookupTable,
+        2DTensorOf<[I64]> : $lookupTable,
         TFHE_KeyswitchKeyAttr: $ksk,
         TFHE_BootstrapKeyAttr: $bsk,
         TFHE_PackingKeyswitchKeyAttr: $pksk,

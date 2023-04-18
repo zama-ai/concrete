@@ -187,11 +187,12 @@ struct BatchedWopPBSGLWEOpPattern
   BatchedWopPBSGLWEOpPattern(mlir::MLIRContext *context,
                              mlir::TypeConverter &typeConverter)
       : mlir::OpConversionPattern<TFHE::BatchedWopPBSGLWEOp>(
-      typeConverter, context,
-      mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(TFHE::BatchedWopPBSGLWEOp op, TFHE::BatchedWopPBSGLWEOp::Adaptor adaptor,
+  matchAndRewrite(TFHE::BatchedWopPBSGLWEOp op,
+                  TFHE::BatchedWopPBSGLWEOp::Adaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
 
     auto bsBaseLog = adaptor.getBsk().getBaseLog();
@@ -206,12 +207,16 @@ struct BatchedWopPBSGLWEOpPattern
     auto pksOutputPolySize = adaptor.getPksk().getOutputPolySize();
     auto crtDecomposition = adaptor.getCrtDecompositionAttr();
     auto resultType = op.getType();
+    auto kskIndex = op.getKskAttr().getIndex();
+    auto bskIndex = op.getBskAttr().getIndex();
+    auto pkskIndex = op.getPkskAttr().getIndex();
 
     rewriter.replaceOpWithNewOp<Concrete::BatchedWopPBSCRTLweTensorOp>(
         op, this->getTypeConverter()->convertType(resultType),
         adaptor.getCiphertexts(), adaptor.getLookupTable(), bsLevels, bsBaseLog,
         ksLevels, ksBaseLog, pksInputLweDim, pksOutputPolySize, pksLevels,
-        pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition);
+        pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition, kskIndex, bskIndex,
+        pkskIndex);
 
     return mlir::success();
   }

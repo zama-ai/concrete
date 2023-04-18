@@ -170,13 +170,13 @@ void memref_wop_pbs_crt_buffer(
 void memref_batched_wop_pbs_crt_buffer(
     // Output memref 2D memref
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
-    uint64_t out_stride_1,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
+    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
     // Input memref
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_stride_0,
-    uint64_t in_stride_1,
-    // clear text lut
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
+    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
+    // clear text lut (only 1 is given, for all inputs)
     uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
     uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
     uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
@@ -189,7 +189,9 @@ void memref_batched_wop_pbs_crt_buffer(
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
     uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
     uint32_t polynomial_size,
-    // runtime context that hold evluation keys
+    // Key Indices
+    uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
+    // runtime context that hold evaluation keys
     mlir::concretelang::RuntimeContext *context);
 
 void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
@@ -240,8 +242,8 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
     uint32_t cbs_level_count, uint32_t cbs_base_log, uint32_t ksk_level_count,
     uint32_t ksk_base_log, uint32_t bsk_level_count, uint32_t bsk_base_log,
     uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size, uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
-    mlir::concretelang::RuntimeContext *context);
+    uint32_t polynomial_size, uint32_t ksk_index, uint32_t bsk_index,
+    uint32_t pksk_index, mlir::concretelang::RuntimeContext *context);
 
 // Batched CUDA function //////////////////////////////////////////////////////
 
@@ -267,20 +269,22 @@ void memref_batched_bootstrap_lwe_cuda_u64(
 
 void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_stride_0,
-    uint64_t out_stride_1, uint64_t *in_allocated, uint64_t *in_aligned,
-    uint64_t in_offset, uint64_t in_size_0, uint64_t in_size_1,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t *lut_ct_allocated,
-    uint64_t *lut_ct_aligned, uint64_t lut_ct_offset, uint64_t lut_ct_size0,
-    uint64_t lut_ct_size1, uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
+    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
+    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
+    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
+    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
+    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
+    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
     uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
     uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
     uint64_t crt_decomp_stride, uint32_t lwe_small_size,
     uint32_t cbs_level_count, uint32_t cbs_base_log, uint32_t ksk_level_count,
     uint32_t ksk_base_log, uint32_t bsk_level_count, uint32_t bsk_base_log,
     uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size, uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
-    mlir::concretelang::RuntimeContext *context);
+    uint32_t polynomial_size, uint32_t ksk_index, uint32_t bsk_index,
+    uint32_t pksk_index, mlir::concretelang::RuntimeContext *context);
 
 // Tracing ////////////////////////////////////////////////////////////////////
 void memref_trace_ciphertext(uint64_t *ct0_allocated, uint64_t *ct0_aligned,

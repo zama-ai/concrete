@@ -379,7 +379,11 @@ def Concrete_BatchedWopPBSCRTLweTensorOp : Concrete_Op<"batched_wop_pbs_crt_lwe_
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
         I32Attr : $circuitBootstrapBaseLog,
-        I64ArrayAttr:$crtDecomposition
+        I64ArrayAttr:$crtDecomposition,
+        // Key indices
+        I32Attr:$kskIndex,
+        I32Attr:$bskIndex,
+        I32Attr:$pkskIndex
     );
     let results = (outs Concrete_BatchLweCRTTensor:$result);
 }
@@ -402,7 +406,11 @@ def Concrete_BatchedWopPBSCRTLweBufferOp : Concrete_Op<"batched_wop_pbs_crt_lwe_
         // Circuit bootstrap parameters
         I32Attr : $circuitBootstrapLevel,
         I32Attr : $circuitBootstrapBaseLog,
-        I64ArrayAttr:$crtDecomposition
+        I64ArrayAttr:$crtDecomposition,
+        // Key indices
+        I32Attr:$kskIndex,
+        I32Attr:$bskIndex,
+        I32Attr:$pkskIndex
     );
     let results = (outs Concrete_BatchLweCRTBuffer:$result);
 }
