@@ -124,6 +124,8 @@ BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_WopPBS)(benchmark::State &st) {
         cbs_level, p, p, delta_log, tau, cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(tau * p / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_CopiesPlusWopPBS)
@@ -146,6 +148,8 @@ BENCHMARK_DEFINE_F(WopPBS_u64, ConcreteCuda_CopiesPlusWopPBS)
                              stream, gpu_index);
     cuda_synchronize_stream(stream);
   }
+  st.counters["Throughput"] = benchmark::Counter(tau * p / get_aws_cost_per_second(),
+                                                 benchmark::Counter::kIsIterationInvariantRate);
 }
 
 static void WopPBSBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {

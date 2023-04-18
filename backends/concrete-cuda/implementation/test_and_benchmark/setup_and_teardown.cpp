@@ -617,7 +617,7 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
       // We need r GGSW ciphertexts
       // Bit decomposition of the value from MSB to LSB
       uint64_t *bit_array = bit_decompose_value(witness, r_lut);
-      for (int i = 0; i < r_lut; i++) {
+      for (uint32_t i = 0; i < r_lut; i++) {
         uint64_t *ggsw_slice =
             ggsw_bit_array +
             (ptrdiff_t)((r * samples * r_lut + s * r_lut + i) * ggsw_size);
@@ -647,7 +647,6 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
                                sizeof(uint64_t),
                            stream, gpu_index);
 
-  uint32_t N = log2(polynomial_size);
   scratch_cuda_cmux_tree_64(stream, gpu_index, cmux_tree_buffer, glwe_dimension,
                             polynomial_size, level_count, lut_size, tau,
                             cuda_get_max_shared_memory(gpu_index), true);
