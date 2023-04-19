@@ -54,7 +54,7 @@ void batch_fft_ggsw_vector(cudaStream_t *stream, double2 *dest, T *src,
                            uint32_t polynomial_size, uint32_t level_count,
                            uint32_t gpu_index, uint32_t max_shared_memory) {
 
-  int shared_memory_size = sizeof(double) * polynomial_size;
+  uint32_t shared_memory_size = sizeof(double) * polynomial_size;
 
   int gridSize = r * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
   int blockSize = polynomial_size / params::opt;

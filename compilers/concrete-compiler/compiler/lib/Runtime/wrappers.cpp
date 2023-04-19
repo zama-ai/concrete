@@ -322,6 +322,9 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
   assert(out_size_1 == in_size_1);
 
   assert(out_size_0 % crt_decomp_size == 0);
+  printf("out size 0: %lu, 1: %lu\n", out_size_0, out_size_1);
+  printf("in size 0: %lu, 1: %lu\n", in_size_0, in_size_1);
+  printf("lut_ct size 0: %lu, 1: %lu\n", lut_ct_size0, lut_ct_size1);
   uint64_t number_of_input_lwe = out_size_0 / crt_decomp_size;
   uint64_t lwe_small_dim = lwe_small_size - 1;
   uint64_t lwe_big_size = in_size_1;
@@ -437,6 +440,7 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
            bsk_base_log, fpksk_level_count, fpksk_base_log, cbs_level_count,
            cbs_base_log, cbs_vp_in_count, lut_count);
     // CBS + vertical packing
+    printf("cbs vp in count: %lu\n", cbs_vp_in_count);
     cuda_circuit_bootstrap_vertical_packing_64(
         stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
         lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,

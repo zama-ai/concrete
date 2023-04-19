@@ -167,7 +167,7 @@ plaintext_to_glwe_array(Torus *lut_out, Torus *lut_in, uint32_t glwe_dimension,
                                    *stream));
 
   uint32_t small_lut_size = lut_vector_size / (1 << num_lut);
-  for (int i = 0; i < number_of_trees * num_lut; i++)
+  for (uint32_t i = 0; i < number_of_trees * num_lut; i++)
     check_cuda_error(cudaMemcpyAsync(
         lut_out + ((glwe_dimension + 1) * i + glwe_dimension) * params::degree,
         lut_in + i * small_lut_size, small_lut_size * sizeof(Torus),
@@ -325,6 +325,8 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
                              uint32_t max_shared_memory) {
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
+  printf("lut vector size: %u, N: %u, tau: %u\n\n", lut_vector_size,
+         params::degree, tau);
   if (lut_vector_size <= params::degree) {
     // The LUT itself is the result
     plaintext_to_glwe_array<Torus, params>(glwe_array_out, lut_vector,
@@ -335,6 +337,7 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
   // r = tau * p - log2(N)
   uint32_t r = log2(lut_vector_size) - params::log2_degree;
   uint32_t num_lut = (1 << r);
+  printf("r: %u, num_lut: %u\n", r, num_lut);
 
   uint64_t memory_needed_per_block =
       get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
@@ -374,9 +377,9 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
                                          glwe_dimension, lut_vector_size, tau,
                                          stream);
 
-  Torus *output;
+  Torus *output = nullptr;
   // Run the cmux tree
-  for (int layer_idx = 0; layer_idx < r; layer_idx++) {
+  for (uint32_t layer_idx = 0; layer_idx < r; layer_idx++) {
     output = (layer_idx % 2 ? (Torus *)d_buffer1 : (Torus *)d_buffer2);
     Torus *input = (layer_idx % 2 ? (Torus *)d_buffer2 : (Torus *)d_buffer1);
 
@@ -404,7 +407,7 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
     check_cuda_error(cudaGetLastError());
   }
 
-  for (int i = 0; i < tau; i++) {
+  for (uint64_t i = 0; i < tau; i++) {
     check_cuda_error(cudaMemcpyAsync(
         glwe_array_out + i * glwe_size, output + i * num_lut * glwe_size,
         glwe_size * sizeof(Torus), cudaMemcpyDeviceToDevice, *stream));
