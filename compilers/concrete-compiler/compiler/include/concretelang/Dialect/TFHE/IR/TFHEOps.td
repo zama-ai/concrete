@@ -1,4 +1,4 @@
-//===- TFHEOps.td - High level FHE dialect ops ----------------*- tablegen
+//===- TFHEOps.td - TFHE dialect ops ----------------*- tablegen
 //-*-===//
 //
 // This file is licensed under the Apache License v2.0 with LLVM Exceptions.
