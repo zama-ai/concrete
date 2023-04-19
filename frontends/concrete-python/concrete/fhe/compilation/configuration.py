@@ -3,11 +3,22 @@ Declaration of `Configuration` class.
 """
 
 from copy import deepcopy
+from enum import Enum
 from pathlib import Path
 from typing import Optional, Union, get_type_hints
 
 DEFAULT_P_ERROR = None
 DEFAULT_GLOBAL_P_ERROR = 1 / 100_000
+
+
+class ParameterSelectionStrategy(str, Enum):
+    """
+    ParameterSelectionStrategy, to set optimization strategy.
+    """
+
+    V0 = "v0"
+    MONO = "mono"
+    MULTI = "multi"
 
 
 class Configuration:
@@ -31,6 +42,7 @@ class Configuration:
     insecure_key_cache_location: Optional[str]
     auto_adjust_rounders: bool
     single_precision: bool
+    parameter_selection_strategy: ParameterSelectionStrategy
 
     def _validate(self):
         """
@@ -66,6 +78,7 @@ class Configuration:
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
         single_precision: bool = True,
+        parameter_selection_strategy: ParameterSelectionStrategy = ParameterSelectionStrategy.MONO,
     ):
         self.verbose = verbose
         self.show_graph = show_graph
@@ -85,6 +98,7 @@ class Configuration:
         self.global_p_error = global_p_error
         self.auto_adjust_rounders = auto_adjust_rounders
         self.single_precision = single_precision
+        self.parameter_selection_strategy = parameter_selection_strategy
 
         self._validate()
 
@@ -131,6 +145,13 @@ class Configuration:
                 if not (value is None or isinstance(value, bool)):
                     is_correctly_typed = False
                     expected = "Optional[bool]"
+
+            elif name == "parameter_selection_strategy":
+                if not isinstance(value, (ParameterSelectionStrategy, str)):
+                    is_correctly_typed = False
+                    expected = "Union[ParameterSelectionStrategy, str]"
+                else:
+                    value = ParameterSelectionStrategy(value)
 
             elif not isinstance(value, hint):  # type: ignore
                 is_correctly_typed = False
