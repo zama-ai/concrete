@@ -117,7 +117,7 @@ def generate(args):
     print("# /!\ THIS FILE HAS BEEN GENERATED")
     np.random.seed(0)
     # unsigned_unsigned
-    shapes = ([shape] for shape in args.shapes) if args.shapes else (None, [3], [2, 3] , [1, 2, 3])
+    shapes = tuple([shape] for shape in args.shapes) if args.shapes else (None, [3], [2, 3] , [1, 2, 3])
     domain = [
         (from_p, to_p, signed, with_tlu, with_shape)
         for from_p in args.acc_bitwidth
