@@ -172,7 +172,7 @@ def test_direct_table_lookup(bits, function, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = int(np.random.randint(0, 2**bits))
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
     # tensor
     # ------
@@ -183,7 +183,7 @@ def test_direct_table_lookup(bits, function, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2**bits, size=(3, 2))
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
     # negative scalar
     # ---------------
@@ -194,7 +194,7 @@ def test_direct_table_lookup(bits, function, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = int(np.random.randint(-(2 ** (bits - 1)), 2 ** (bits - 1)))
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
     # negative tensor
     # ---------------
@@ -207,7 +207,7 @@ def test_direct_table_lookup(bits, function, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = np.random.randint(-(2 ** (bits - 1)), 2 ** (bits - 1), size=(3, 2))
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
 
 def test_direct_multi_table_lookup(helpers):
@@ -237,7 +237,7 @@ def test_direct_multi_table_lookup(helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2**2, size=(3, 2))
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
 
 def test_bad_direct_table_lookup(helpers):

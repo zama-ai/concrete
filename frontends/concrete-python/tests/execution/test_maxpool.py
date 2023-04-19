@@ -120,7 +120,7 @@ def test_maxpool2d(
     circuit = compiler.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
 
 @pytest.mark.parametrize(

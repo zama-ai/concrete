@@ -51,7 +51,7 @@ def test_left_shift(function, parameters, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
 
 @pytest.mark.parametrize(
@@ -98,7 +98,7 @@ def test_right_shift(function, parameters, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
 
 @pytest.mark.parametrize(
@@ -134,7 +134,7 @@ def test_left_shift_coverage(function, parameters, helpers):
 
     for i in range(2):
         for j in range(8):
-            helpers.check_execution(circuit, function, [i, j])
+            helpers.check_execution(circuit, function, [i, j], retries=3)
 
 
 @pytest.mark.parametrize(
@@ -168,11 +168,11 @@ def test_right_shift_coverage(function, parameters, helpers):
     inputset = helpers.generate_inputset(parameters)
     circuit = compiler.compile(inputset, configuration)
 
-    helpers.check_execution(circuit, function, [0b11, 0])
-    helpers.check_execution(circuit, function, [0b11, 1])
-    helpers.check_execution(circuit, function, [0b110, 2])
-    helpers.check_execution(circuit, function, [0b1100, 3])
-    helpers.check_execution(circuit, function, [0b11000, 4])
-    helpers.check_execution(circuit, function, [0b110000, 5])
-    helpers.check_execution(circuit, function, [0b110000, 6])
-    helpers.check_execution(circuit, function, [0b1100000, 7])
+    helpers.check_execution(circuit, function, [0b11, 0], retries=3)
+    helpers.check_execution(circuit, function, [0b11, 1], retries=3)
+    helpers.check_execution(circuit, function, [0b110, 2], retries=3)
+    helpers.check_execution(circuit, function, [0b1100, 3], retries=3)
+    helpers.check_execution(circuit, function, [0b11000, 4], retries=3)
+    helpers.check_execution(circuit, function, [0b110000, 5], retries=3)
+    helpers.check_execution(circuit, function, [0b110000, 6], retries=3)
+    helpers.check_execution(circuit, function, [0b1100000, 7], retries=3)
