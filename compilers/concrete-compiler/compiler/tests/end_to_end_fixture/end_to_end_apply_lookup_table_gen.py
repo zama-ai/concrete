@@ -11,174 +11,80 @@ def generate(args):
     print("# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
     print("# /!\ THIS FILE HAS BEEN GENERATED")
     np.random.seed(0)
-    # unsigned_unsigned
-    for p in args.bitwidth:
-        max_value = (2 ** p) - 1
-        random_lut = np.random.randint(max_value+1, size=2**p)
-        print(f"description: apply_lookup_table_{p}bits")
-        print("program: |")
-        print(
-            f"  func.func @main(%arg0: !FHE.eint<{p}>) -> !FHE.eint<{p}> {{")
-        print(f"    %tlu = arith.constant dense<[{','.join(map(str, random_lut))}]> : tensor<{2**p}xi64>")
-        print(
-            f"    %1 = \"FHE.apply_lookup_table\"(%arg0, %tlu): (!FHE.eint<{p}>, tensor<{2**p}xi64>) -> (!FHE.eint<{p}>)")
-        print(f"    return %1: !FHE.eint<{p}>")
-        print("  }")
-        if p >= PRECISION_FORCE_CRT:
-            print("encoding: crt")
-        print(f"p-error: {P_ERROR}")
-        print("tests:")
-        print("  - inputs:")
-        random_i = np.random.randint(max_value)
-        print(f"    - scalar: {random_i}")
-        print("    outputs:")
-        print(f"    - scalar: {random_lut[random_i]}")
-        if not args.minimal:
-            print("  - inputs:")
-            print("    - scalar: 0")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[0]}")
-            print("  - inputs:")
-            print(f"    - scalar: {max_value}")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[max_value]}")
-        print("---")
-    # unsigned_signed
-    for p in args.bitwidth:
-        lower_bound = -(2 ** (p-1))
-        upper_bound = (2 ** (p-1)) - 1
-        max_value = (2 ** p) - 1
-        random_lut = np.random.randint(lower_bound, upper_bound, size=2**p)
-        print(f"description: unsigned_signed_apply_lookup_table_{p}bits")
-        print("program: |")
-        print(
-            f"  func.func @main(%arg0: !FHE.eint<{p}>) -> !FHE.esint<{p}> {{")
-        print(f"    %tlu = arith.constant dense<[{','.join(map(str, random_lut))}]> : tensor<{2**p}xi64>")
-        print(
-            f"    %1 = \"FHE.apply_lookup_table\"(%arg0, %tlu): (!FHE.eint<{p}>, tensor<{2**p}xi64>) -> (!FHE.esint<{p}>)")
-        print(f"    return %1: !FHE.esint<{p}>")
-        print("  }")
-        if p >= PRECISION_FORCE_CRT:
-            print("encoding: crt")
-        print(f"p-error: {P_ERROR}")
-        print("tests:")
-        print("  - inputs:")
-        random_i = np.random.randint(max_value)
-        print(f"    - scalar: {random_i}")
-        print("    outputs:")
-        print(f"    - scalar: {random_lut[random_i]}")
-        print(f"      signed: true")
-        if not args.minimal:
-            print("  - inputs:")
-            print("    - scalar: 0")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[0]}")
-            print(f"      signed: true")
-            print("  - inputs:")
-            print(f"    - scalar: {max_value}")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[max_value]}")
-            print(f"      signed: true")
-        print("---")
-    # signed_signed
-    for p in args.bitwidth:
-        lower_bound = -(2 ** (p-1))
-        upper_bound = (2 ** (p-1)) - 1
-        random_lut = np.random.randint(lower_bound, upper_bound, size=2**p)
-        print(f"description: signed_apply_lookup_table_{p}bits")
-        print("program: |")
-        print(
-            f"  func.func @main(%arg0: !FHE.esint<{p}>) -> !FHE.esint<{p}> {{")
-        print(f"    %tlu = arith.constant dense<[{','.join(map(str, random_lut))}]> : tensor<{2**p}xi64>")
-        print(
-            f"    %1 = \"FHE.apply_lookup_table\"(%arg0, %tlu): (!FHE.esint<{p}>, tensor<{2**p}xi64>) -> (!FHE.esint<{p}>)")
-        print(f"    return %1: !FHE.esint<{p}>")
-        print("  }")
-        if p >= PRECISION_FORCE_CRT:
-            print("encoding: crt")
-        print(f"p-error: {P_ERROR}")
-        print("tests:")
-        print("  - inputs:")
-        random_i = np.random.randint(lower_bound, upper_bound)
-        print(f"    - scalar: {random_i}")
-        print(f"      signed: true")
-        print("    outputs:")
-        print(f"    - scalar: {random_lut[random_i]}")
-        print(f"      signed: true")
-        if not args.minimal:
-            print("  - inputs:")
-            print(f"    - scalar: 0")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[0]}")
-            print(f"      signed: true")
-            print("  - inputs:")
-            print(f"    - scalar: {upper_bound}")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[upper_bound]}")
-            print(f"      signed: true")
-            print("  - inputs:")
-            print(f"    - scalar: {lower_bound}")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[lower_bound]}")
-            print(f"      signed: true")
-            print("  - inputs:")
-            print(f"    - scalar: -1")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[-1]}")
-            print(f"      signed: true")
-        print("---")
 
-    # signed_unsigned
-    for p in args.bitwidth:
-        lower_bound = -(2 ** (p-1))
-        upper_bound = (2 ** (p-1)) - 1
-        max_value = (2 ** p) - 1
-        random_lut = np.random.randint(max_value+1, size=2**p)
-        print(f"description: signed_unsigned_apply_lookup_table_{p}bits")
-        print("program: |")
-        print(
-            f"  func.func @main(%arg0: !FHE.esint<{p}>) -> !FHE.eint<{p}> {{")
-        print(f"    %tlu = arith.constant dense<[{','.join(map(str, random_lut))}]> : tensor<{2**p}xi64>")
-        print(
-            f"    %1 = \"FHE.apply_lookup_table\"(%arg0, %tlu): (!FHE.esint<{p}>, tensor<{2**p}xi64>) -> (!FHE.eint<{p}>)")
-        print(f"    return %1: !FHE.eint<{p}>")
-        print("  }")
-        if p >= PRECISION_FORCE_CRT:
-            print("encoding: crt")
-        print(f"p-error: {P_ERROR}")
-        print("tests:")
-        print("  - inputs:")
-        random_i = np.random.randint(lower_bound, upper_bound)
-        print(f"    - scalar: {random_i}")
-        print(f"      signed: true")
-        print("    outputs:")
-        print(f"    - scalar: {random_lut[random_i]}")
-        if not args.minimal:
-            print("  - inputs:")
-            print(f"    - scalar: 0")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[0]}")
-            print("  - inputs:")
-            print(f"    - scalar: {upper_bound}")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[upper_bound]}")
-            print("  - inputs:")
-            print(f"    - scalar: {lower_bound}")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[lower_bound]}")
-            print("  - inputs:")
-            print(f"    - scalar: -1")
-            print(f"      signed: true")
-            print("    outputs:")
-            print(f"    - scalar: {random_lut[-1]}")
-        print("---")
+    for in_signed in [False, True]:
+        for out_signed in [False, True]:
+            for p in args.bitwidth:
+                if in_signed:
+                    in_lower_bound = -(2 ** (p-1))
+                    in_upper_bound = (2 ** (p-1)) - 1
+                else:
+                    in_lower_bound = 0
+                    in_upper_bound = (2 ** p) - 1
+
+                if out_signed:
+                    out_lower_bound = -(2 ** (p-1))
+                    out_upper_bound = (2 ** (p-1)) - 1
+                else:
+                    out_lower_bound = 0
+                    out_upper_bound = (2 ** p) - 1
+                
+                random_lut = np.random.randint(out_lower_bound, out_upper_bound, size=2**p)
+                
+                if in_signed:
+                    in_type = f"!FHE.esint<{p}>"
+                else:
+                    in_type = f"!FHE.eint<{p}>"
+
+                if out_signed:
+                    out_type = f"!FHE.esint<{p}>"
+                else:
+                    out_type = f"!FHE.eint<{p}>"
+
+                print(f"description: { 'signed' if in_signed else 'unsigned' }_{ 'signed' if out_signed else 'unsigned' }_apply_lookup_table_{p}bits")
+                print("program: |")
+                print(
+                    f"  func.func @main(%arg0: {in_type}) -> {out_type} {{")
+                print(f"    %tlu = arith.constant dense<[{','.join(map(str, random_lut))}]> : tensor<{2**p}xi64>")
+                print(
+                    f"    %1 = \"FHE.apply_lookup_table\"(%arg0, %tlu): ({in_type}, tensor<{2**p}xi64>) -> ({out_type})")
+                print(f"    return %1: {out_type}")
+                print("  }")
+                if p >= PRECISION_FORCE_CRT:
+                    print("encoding: crt")
+                print(f"p-error: {P_ERROR}")
+
+                def print_in(value):
+                    print("  - inputs:")
+                    print(f"    - scalar: {value}")
+                    if in_signed:
+                        print(f"      signed: true")
+
+                def print_out(value):
+                    print("    outputs:")
+                    print(f"    - scalar: {value}")
+                    if out_signed:
+                        print(f"      signed: true")
+                
+                print("tests:")
+                random_i = np.random.randint(in_lower_bound, in_upper_bound)
+                print_in(random_i)
+                print_out(random_lut[random_i])
+                if not args.minimal:
+                    print_in(0)
+                    print_out(random_lut[0])
+                    
+                    print_in(in_upper_bound)
+                    print_out(random_lut[in_upper_bound])
+                    
+                    if in_signed:
+                        #if in_signed, lower_bound==0, already exists
+                        print_in(in_lower_bound)
+                        print_out(random_lut[in_lower_bound])
+                        
+                        print_in(-1)
+                        print_out(random_lut[-1])
+                print("---")
 
 if __name__ == "__main__":
     CLI = argparse.ArgumentParser()
