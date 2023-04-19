@@ -338,11 +338,12 @@ $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_round.yaml
 
 SECURITY_TO_BENCH=128
+OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
 run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
-	$(foreach security,$(SECURITY_TO_BENCH),$(BUILD_DIR)/bin/end_to_end_benchmark \
-		--backend=cpu --security-level=$(security)\
+	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST),$(foreach security,$(SECURITY_TO_BENCH),$(BUILD_DIR)/bin/end_to_end_benchmark \
+		--backend=cpu --security-level=$(security) --optimizer-strategy=$(optimizer_strategy)\
 		--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
-		$(BENCHMARK_CPU_DIR)/*.yaml;)
+		$(BENCHMARK_CPU_DIR)/*.yaml;))
 
 FIXTURE_APPLICATION_DIR=tests/end_to_end_fixture/application/
 
