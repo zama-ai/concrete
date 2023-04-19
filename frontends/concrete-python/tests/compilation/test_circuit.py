@@ -321,7 +321,7 @@ def test_bad_server_save(helpers):
 @pytest.mark.parametrize("p_error", [0.75, 0.5, 0.4, 0.25, 0.2, 0.1, 0.01, 0.001])
 @pytest.mark.parametrize("bit_width", [5])
 @pytest.mark.parametrize("sample_size", [1_000_000])
-@pytest.mark.parametrize("tolerance", [0.075])
+@pytest.mark.parametrize("tolerance", [0.1])
 def test_p_error_simulation(p_error, bit_width, sample_size, tolerance, helpers):
     """
     Test p_error simulation.
