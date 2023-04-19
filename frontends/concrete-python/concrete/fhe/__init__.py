@@ -17,6 +17,7 @@ from .compilation import (
     DebugArtifacts,
     EncryptionStatus,
     Keys,
+    ParameterSelectionStrategy,
     Server,
 )
 from .compilation.decorators import circuit, compiler

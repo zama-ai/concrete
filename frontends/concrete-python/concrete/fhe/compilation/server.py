@@ -25,9 +25,15 @@ from concrete.compiler import (
     PublicArguments,
     PublicResult,
 )
+from mlir._mlir_libs._concretelang._compiler import OptimizerStrategy
 
 from ..internal.utils import assert_that
-from .configuration import DEFAULT_GLOBAL_P_ERROR, DEFAULT_P_ERROR, Configuration
+from .configuration import (
+    DEFAULT_GLOBAL_P_ERROR,
+    DEFAULT_P_ERROR,
+    Configuration,
+    ParameterSelectionStrategy,
+)
 from .specs import ClientSpecs
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -127,6 +133,14 @@ class Server:
             else configuration.verbose
         )
         options.set_display_optimizer_choice(show_optimizer)
+
+        parameter_selection_strategy = configuration.parameter_selection_strategy
+        if parameter_selection_strategy == ParameterSelectionStrategy.V0:  # pragma: no cover
+            options.set_optimizer_strategy(OptimizerStrategy.V0)
+        elif parameter_selection_strategy == ParameterSelectionStrategy.MONO:  # pragma: no cover
+            options.set_optimizer_strategy(OptimizerStrategy.DAG_MONO)
+        elif parameter_selection_strategy == ParameterSelectionStrategy.MULTI:  # pragma: no cover
+            options.set_optimizer_strategy(OptimizerStrategy.DAG_MULTI)
 
         if configuration.jit:
             output_dir = None

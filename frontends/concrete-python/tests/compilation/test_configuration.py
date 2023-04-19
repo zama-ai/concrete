@@ -92,6 +92,12 @@ def test_configuration_fork():
             "Unexpected type for keyword argument 'show_optimizer' "
             "(expected 'Optional[bool]', got 'str')",
         ),
+        pytest.param(
+            {"parameter_selection_strategy": 42},
+            TypeError,
+            "Unexpected type for keyword argument 'parameter_selection_strategy' "
+            "(expected 'Union[ParameterSelectionStrategy, str]', got 'int')",
+        ),
     ],
 )
 def test_configuration_bad_fork(kwargs, expected_error, expected_message):

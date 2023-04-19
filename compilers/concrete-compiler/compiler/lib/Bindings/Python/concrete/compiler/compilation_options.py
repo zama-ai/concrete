@@ -167,7 +167,7 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("display should be a bool")
         self.cpp().set_display_optimizer_choice(display)
 
-    def set_strategy(self, strategy: _OptimizerStrategy):
+    def set_optimizer_strategy(self, strategy: _OptimizerStrategy):
         """Set the strategy of the optimizer.
 
         Args:
@@ -178,7 +178,7 @@ class CompilationOptions(WrapperCpp):
         """
         if not isinstance(strategy, _OptimizerStrategy):
             raise TypeError("enable should be a bool")
-        self.cpp().set_strategy(strategy)
+        self.cpp().set_optimizer_strategy(strategy)
 
     def set_global_p_error(self, global_p_error: float):
         """Set global error probability for the full circuit.

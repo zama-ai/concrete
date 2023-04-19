@@ -19,6 +19,7 @@ tests_directory = os.path.dirname(tests.__file__)
 
 INSECURE_KEY_CACHE_LOCATION = None
 USE_MULTI_PRECISION = False
+OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MONO
 
 
 def pytest_addoption(parser):
@@ -47,6 +48,13 @@ def pytest_addoption(parser):
         action="store",
         help="Which precision strategy to use in execution tests (single or multi)",
     )
+    parser.addoption(
+        "--strategy",
+        type=str,
+        default=None,
+        action="store",
+        help="Which optimization strategy to use in execution tests (v0, mono or multi)",
+    )
 
 
 def pytest_sessionstart(session):
@@ -56,6 +64,7 @@ def pytest_sessionstart(session):
     # pylint: disable=global-statement
     global INSECURE_KEY_CACHE_LOCATION
     global USE_MULTI_PRECISION
+    global OPTIMIZATION_STRATEGY
     # pylint: enable=global-statement
 
     key_cache_location = session.config.getoption("--key-cache", default=None)
@@ -75,6 +84,14 @@ def pytest_sessionstart(session):
 
     precision = session.config.getoption("--precision", default="single")
     USE_MULTI_PRECISION = precision == "multi"
+
+    strategy = session.config.getoption("--strategy", default="mono")
+    if strategy == "v0":
+        OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.V0
+    elif strategy == "multi":
+        OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MULTI
+    else:
+        OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MONO
 
 
 def pytest_sessionfinish(session, exitstatus):  # pylint: disable=unused-argument
@@ -130,6 +147,7 @@ class Helpers:
             insecure_key_cache_location=INSECURE_KEY_CACHE_LOCATION,
             global_p_error=(1 / 100_000),
             single_precision=(not USE_MULTI_PRECISION),
+            parameter_selection_strategy=OPTIMIZATION_STRATEGY,
         )
 
     @staticmethod
