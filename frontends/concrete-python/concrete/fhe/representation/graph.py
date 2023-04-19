@@ -195,6 +195,7 @@ class Graph:
         show_bounds: bool = True,
         show_tags: bool = True,
         show_locations: bool = False,
+        show_assigned_bit_widths: bool = False,
     ) -> str:
         """
         Get the textual representation of the `Graph`.
@@ -217,6 +218,9 @@ class Graph:
 
             show_locations (bool, default = False):
                 whether to show line information of nodes
+
+            show_assigned_bit_widths (bool, default = False)
+                whether to show assigned bit width of nodes instead of their original bit width
 
         Returns:
             str:
@@ -297,7 +301,11 @@ class Graph:
                 bounds += "]"
 
             output_value = node.output
-            if isinstance(output_value.dtype, Integer) and "original_bit_width" in node.properties:
+            if (
+                not show_assigned_bit_widths
+                and isinstance(output_value.dtype, Integer)
+                and "original_bit_width" in node.properties
+            ):
                 output_value = deepcopy(output_value)
                 output_value.dtype.bit_width = node.properties["original_bit_width"]
 
