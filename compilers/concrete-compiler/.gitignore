@@ -49,13 +49,5 @@ _build/
 # macOS
 .DS_Store
 
-
-compiler/tests/TestLib/out/
 compiler/lib/Bindings/Rust/target/
 compiler/lib/Bindings/Rust/Cargo.lock
-compiler/tests/end_to_end_fixture/tests_cpu/bug_report.yaml
-compiler/tests/end_to_end_fixture/tests_cpu/end_to_end_round.yaml
-compiler/tests/end_to_end_fixture/tests_cpu/end_to_end_apply_lookup_table.yaml
-compiler/tests/end_to_end_fixture/tests_cpu/end_to_end_leveled.yaml
-compiler/tests/end_to_end_fixture/tests_cpu/end_to_end_linalg_apply_lookup_table.yaml
-
