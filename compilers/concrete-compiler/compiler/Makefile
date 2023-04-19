@@ -241,12 +241,6 @@ build-end-to-end-jit-test: build-initialized
 build-end-to-end-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_test
 
-build-end-to-end-jit-encrypted-tensor: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_encrypted_tensor
-
-build-end-to-end-jit-fhelinalg: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_fhelinalg
-
 build-end-to-end-jit-lambda: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_lambda
 
