@@ -87,6 +87,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
 
   auto memref1DType = getDynamicMemrefWithUnknownOffset(rewriter, 1);
   auto memref2DType = getDynamicMemrefWithUnknownOffset(rewriter, 2);
+  auto memref3DType = getDynamicMemrefWithUnknownOffset(rewriter, 3);
   auto futureType =
       mlir::concretelang::RT::FutureType::get(rewriter.getIndexType());
   auto contextType =
@@ -163,9 +164,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                        },
                                        {});
   } else if (funcName == memref_wop_pbs_crt_buffer ||
-             funcName == memref_wop_pbs_crt_buffer_cuda_u64 ||
-             funcName == memref_batched_wop_pbs_crt_buffer ||
-             funcName == memref_batched_wop_pbs_crt_buffer_cuda_u64) {
+             funcName == memref_wop_pbs_crt_buffer_cuda_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {
                                            memref2DType,
@@ -188,7 +187,30 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                            contextType,
                                        },
                                        {});
-
+  } else if (funcName == memref_batched_wop_pbs_crt_buffer ||
+             funcName == memref_batched_wop_pbs_crt_buffer_cuda_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {
+                                           memref3DType,
+                                           memref3DType,
+                                           memref2DType,
+                                           memref1DType,
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           rewriter.getI32Type(),
+                                           contextType,
+                                       },
+                                       {});
   } else if (funcName == memref_encode_plaintext_with_crt) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref1DType, rewriter.getI64Type(),
