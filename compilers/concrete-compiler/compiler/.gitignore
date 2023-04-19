@@ -7,7 +7,11 @@ build*/
 # Test-generated artifacts
 concrete-compiler_compilation_artifacts/
 py_test_lib_compile_and_run_custom_perror/
-tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table.yaml
-tests/end_to_end_fixture/end_to_end_linalg_leveled.yaml
-tests/end_to_end_fixture/end_to_end_linalg_2_apply_lookup_table.yaml
-tests/end_to_end_fixture/bug_report.yaml
+tests/TestLib/out/
+tests/end_to_end_fixture/tests_cpu/bug_report.yaml
+tests/end_to_end_fixture/tests_cpu/end_to_end_round.yaml
+tests/end_to_end_fixture/tests_cpu/end_to_end_apply_lookup_table.yaml
+tests/end_to_end_fixture/tests_cpu/end_to_end_leveled.yaml
+tests/end_to_end_fixture/tests_cpu/end_to_end_linalg_apply_lookup_table.yaml
+tests/end_to_end_fixture/tests_cpu/end_to_end_multi_precision.yaml
+
