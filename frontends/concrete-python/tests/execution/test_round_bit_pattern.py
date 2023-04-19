@@ -86,18 +86,258 @@ def test_bad_plain_round_bit_pattern(
         (5, 4),
     ],
 )
-def test_round_bit_pattern(input_bits, lsbs_to_remove, helpers):
+@pytest.mark.parametrize(
+    "mapper",
+    [
+        pytest.param(
+            lambda x: x,
+            id="x",
+        ),
+        pytest.param(
+            lambda x: x + 10,
+            id="x + 10",
+        ),
+        pytest.param(
+            lambda x: x**2,
+            id="x ** 2",
+        ),
+        pytest.param(
+            lambda x: fhe.univariate(lambda x: x if x >= 0 else 0)(x),
+            id="relu",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "overflow",
+    [
+        True,
+        False,
+    ],
+)
+def test_round_bit_pattern(input_bits, lsbs_to_remove, mapper, overflow, helpers):
     """
-    Test round bit pattern in evaluation context.
+    Test round bit pattern.
     """
 
     @fhe.compiler({"x": "encrypted"})
     def function(x):
         x_rounded = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
-        return np.abs(50 * np.sin(x_rounded)).astype(np.int64)
+        return mapper(x_rounded)
 
-    circuit = function.compile([(2**input_bits) - 1], helpers.configuration())
-    helpers.check_execution(circuit, function, np.random.randint(0, 2**input_bits), simulate=True)
+    upper_bound = (2**input_bits) - (2 ** (lsbs_to_remove - 1))
+    inputset = [0, upper_bound - 1]
+
+    if overflow:
+        upper_bound = 2**input_bits
+        inputset.append(upper_bound - 1)
+
+    circuit = function.compile(inputset, helpers.configuration())
+    helpers.check_execution(circuit, function, np.random.randint(0, upper_bound))
+
+    for value in inputset:
+        helpers.check_execution(circuit, function, value)
+
+
+@pytest.mark.parametrize(
+    "input_bits,lsbs_to_remove",
+    [
+        (3, 1),
+        (3, 2),
+        (4, 1),
+        (4, 2),
+        (4, 3),
+    ],
+)
+def test_round_bit_pattern_unsigned_range(input_bits, lsbs_to_remove, helpers):
+    """
+    Test round bit pattern in unsigned range.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        return fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
+
+    inputset = range(0, 2**input_bits)
+    circuit = function.compile(inputset, helpers.configuration())
+
+    for value in inputset:
+        helpers.check_execution(circuit, function, value)
+
+
+@pytest.mark.parametrize(
+    "input_bits,lsbs_to_remove",
+    [
+        (3, 1),
+        (3, 2),
+        (4, 1),
+        (4, 2),
+        (4, 3),
+    ],
+)
+def test_round_bit_pattern_signed_range(input_bits, lsbs_to_remove, helpers):
+    """
+    Test round bit pattern in signed range.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        return fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
+
+    inputset = range(-(2 ** (input_bits - 1)), 2 ** (input_bits - 1))
+    circuit = function.compile(inputset, helpers.configuration())
+
+    for value in inputset:
+        helpers.check_execution(circuit, function, value)
+
+
+@pytest.mark.parametrize(
+    "input_bits,lsbs_to_remove",
+    [
+        (3, 1),
+        (3, 2),
+        (4, 1),
+        (4, 2),
+        (4, 3),
+    ],
+)
+def test_round_bit_pattern_unsigned_range_assigned(input_bits, lsbs_to_remove, helpers):
+    """
+    Test round bit pattern in unsigned range with a big bit-width assigned.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        rounded = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
+        return (rounded**2) + (50_000 - x)
+
+    inputset = range(0, 2**input_bits)
+    circuit = function.compile(inputset, helpers.configuration())
+
+    for value in inputset:
+        helpers.check_execution(circuit, function, value)
+
+
+@pytest.mark.parametrize(
+    "input_bits,lsbs_to_remove",
+    [
+        (3, 1),
+        (3, 2),
+        (4, 1),
+        (4, 2),
+        (4, 3),
+    ],
+)
+def test_round_bit_pattern_signed_range_assigned(input_bits, lsbs_to_remove, helpers):
+    """
+    Test round bit pattern in signed range with a big bit-width assigned.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        rounded = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
+        return (rounded**2) + (50_000 - x)
+
+    inputset = range(-(2 ** (input_bits - 1)), 2 ** (input_bits - 1))
+    circuit = function.compile(inputset, helpers.configuration())
+
+    for value in inputset:
+        helpers.check_execution(circuit, function, value)
+
+
+def test_round_bit_pattern_no_overflow_protection(helpers, pytestconfig):
+    """
+    Test round bit pattern without overflow protection.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        rounded = fhe.round_bit_pattern(x, lsbs_to_remove=2)
+        return rounded**2
+
+    inputset = range(-32, 32)
+    circuit = function.compile(inputset, helpers.configuration())
+
+    expected_mlir = (
+        """
+
+module {
+  func.func @main(%arg0: !FHE.esint<7>) -> !FHE.eint<11> {
+    %0 = "FHE.round"(%arg0) : (!FHE.esint<7>) -> !FHE.esint<5>
+    %c2_i8 = arith.constant 2 : i8
+    %cst = arith.constant dense<[0, 16, 64, 144, 256, 400, 576, 784, 1024, 1296, 1600, 1936, 2304, 2704, 3136, 3600, 4096, 3600, 3136, 2704, 2304, 1936, 1600, 1296, 1024, 784, 576, 400, 256, 144, 64, 16]> : tensor<32xi64>
+    %1 = "FHE.apply_lookup_table"(%0, %cst) : (!FHE.esint<5>, tensor<32xi64>) -> !FHE.eint<11>
+    return %1 : !FHE.eint<11>
+  }
+}
+
+        """  # noqa: E501
+        if pytestconfig.getoption("precision") == "multi"
+        else """
+
+module {
+  func.func @main(%arg0: !FHE.esint<11>) -> !FHE.eint<11> {
+    %c16_i12 = arith.constant 16 : i12
+    %0 = "FHE.mul_eint_int"(%arg0, %c16_i12) : (!FHE.esint<11>, i12) -> !FHE.esint<11>
+    %1 = "FHE.round"(%0) : (!FHE.esint<11>) -> !FHE.esint<5>
+    %c2_i12 = arith.constant 2 : i12
+    %cst = arith.constant dense<[0, 16, 64, 144, 256, 400, 576, 784, 1024, 1296, 1600, 1936, 2304, 2704, 3136, 3600, 4096, 3600, 3136, 2704, 2304, 1936, 1600, 1296, 1024, 784, 576, 400, 256, 144, 64, 16]> : tensor<32xi64>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.esint<5>, tensor<32xi64>) -> !FHE.eint<11>
+    return %2 : !FHE.eint<11>
+  }
+}
+
+        """  # noqa: E501
+    )
+
+    helpers.check_str(expected_mlir, circuit.mlir)
+
+
+def test_round_bit_pattern_identity(helpers, pytestconfig):
+    """
+    Test round bit pattern used multiple times outside TLUs.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        rounded = fhe.round_bit_pattern(x, lsbs_to_remove=2, overflow_protection=False)
+        return rounded + rounded
+
+    inputset = range(-20, 20)
+    circuit = function.compile(inputset, helpers.configuration())
+
+    expected_mlir = (
+        """
+
+module {
+  func.func @main(%arg0: !FHE.esint<6>) -> !FHE.esint<7> {
+    %0 = "FHE.round"(%arg0) : (!FHE.esint<6>) -> !FHE.esint<4>
+    %cst = arith.constant dense<[0, 4, 8, 12, 16, 20, 24, 28, -32, -28, -24, -20, -16, -12, -8, -4]> : tensor<16xi64>
+    %1 = "FHE.apply_lookup_table"(%0, %cst) : (!FHE.esint<4>, tensor<16xi64>) -> !FHE.esint<7>
+    %2 = "FHE.add_eint"(%1, %1) : (!FHE.esint<7>, !FHE.esint<7>) -> !FHE.esint<7>
+    return %2 : !FHE.esint<7>
+  }
+}
+
+        """  # noqa: E501
+        if pytestconfig.getoption("precision") == "multi"
+        else """
+
+module {
+  func.func @main(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
+    %c2_i8 = arith.constant 2 : i8
+    %0 = "FHE.mul_eint_int"(%arg0, %c2_i8) : (!FHE.esint<7>, i8) -> !FHE.esint<7>
+    %1 = "FHE.round"(%0) : (!FHE.esint<7>) -> !FHE.esint<4>
+    %cst = arith.constant dense<[0, 4, 8, 12, 16, 20, 24, 28, -32, -28, -24, -20, -16, -12, -8, -4]> : tensor<16xi64>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.esint<4>, tensor<16xi64>) -> !FHE.esint<7>
+    %3 = "FHE.add_eint"(%2, %2) : (!FHE.esint<7>, !FHE.esint<7>) -> !FHE.esint<7>
+    return %3 : !FHE.esint<7>
+  }
+}
+
+        """  # noqa: E501
+    )
+
+    helpers.check_str(expected_mlir, circuit.mlir)
 
 
 def test_auto_rounding(helpers):

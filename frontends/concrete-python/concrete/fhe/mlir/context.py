@@ -1560,6 +1560,30 @@ class Context:
             ),
         )
 
+    def round_bit_pattern(self, x: Conversion, lsbs_to_remove: int) -> Conversion:
+        if x.is_clear:
+            highlights = {
+                x.origin: "operand is clear",
+                self.converting: "but clear round bit pattern is not supported",
+            }
+            self.error(highlights)
+
+        assert x.bit_width > lsbs_to_remove
+
+        resulting_type = self.typeof(
+            Value(
+                dtype=Integer(is_signed=x.is_signed, bit_width=(x.bit_width - lsbs_to_remove)),
+                shape=x.shape,
+                is_encrypted=x.is_encrypted,
+            )
+        )
+
+        return self.operation(
+            fhe.RoundEintOp if x.is_scalar else fhelinalg.RoundOp,
+            resulting_type,
+            x.result,
+        )
+
     def shift(
         self,
         resulting_type: ConversionType,

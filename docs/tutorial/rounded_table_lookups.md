@@ -1,12 +1,8 @@
 # Rounded Table Lookups
 
-{% hint style="warning" %}
-Rounded table lookups are not yet compilable. API is stable and will not change, so it's documented, but you might not be able to run the code samples provided in this document.
-{% endhint %}
-
 Table lookups have a strict constraint on the number of bits they support. This can limiting, especially if you don't need exact precision.
 
-To overcome this, a rounded table lookup operation is introduced. It's a way to extract the most significant bits of a large integer and then apply the table lookup to those bits.
+To overcome this, rounded table lookups are introduced. They provide a way to round the least significant bits of a large integer and then apply the table lookup on the resulting value.
 
 Imagine you have an 8-bit value, but you want to have a 5-bit table lookup. You can call `fhe.round_bit_pattern(input, lsbs_to_remove=3)` and use the value you get in the table lookup.
 
@@ -90,9 +86,13 @@ During homomorphic execution, it'll be converted like this:
 0b_1011_1111 => 0b_11000
 ```
 
-A modified table lookup would be applied to the resulting 5 bits.
+{% hint style="info" %}
+If kept bits are all zero and removed bits are closer to their biggest possible value than 0, overflows could happen (e.g., `0b_1111_1110` -> `0b_1_0000_0000`. By default, this behavior is detected and prevented by increasing the bit width of the input. However, this introduces some performance overheads.
 
-If you want to apply ReLU to an 18-bit value., first look at the original ReLU:
+You can turn this overflow protection off using `fhe.round_bit_pattern(..., overflow_protection=False)`, but beware, you might get unexpected behavior at runtime!
+{% endhint %}
+
+Let's say you want to apply ReLU to an 18-bit value. First look at the original ReLU:
 
 ```python
 import matplotlib.pyplot as plt
@@ -181,5 +181,5 @@ You can adjust `target_msbs` depending on your requirements. If you set it to `4
 ![](../\_static/rounded-tlu/4-bits-kept.png)
 
 {% hint style="warning" %}
-`AutoRounder`s should be defined outside the function being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called.
+`AutoRounder`s should be defined outside the function being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called. Furthermore, each `AutoRounder` should be used with exactly one `round_bit_pattern` call!
 {% endhint %}
