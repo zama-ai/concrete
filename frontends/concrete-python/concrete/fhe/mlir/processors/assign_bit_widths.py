@@ -66,6 +66,7 @@ CHUNKED_COMPARISON = {"greater", "greater_equal", "less", "less_equal"}
 CHUNKED_COMPARISON_MIN_BITWIDTH = 4
 MAX_POOLS = {"maxpool1d", "maxpool2d", "maxpool3d"}
 MULTIPLY = {"multiply"}
+ROUNDING = {"round_bit_pattern"}
 
 
 def max_encrypted_bitwidth_node(node: Node):
@@ -129,6 +130,12 @@ TLU_WITHOUT_PRECISION_CHANGE = CHUNKED_COMPARISON | MAX_POOLS | MULTIPLY
 
 def can_change_precision(node):
     """Detect if a node completely ties inputs/output precisions together."""
+    if (
+        node.properties.get("name") in ROUNDING
+        and node.properties["attributes"]["overflow_protection"]
+    ):
+        return False  # protection can change precision
+
     return (
         node.converted_to_table_lookup
         and node.properties.get("name") not in TLU_WITHOUT_PRECISION_CHANGE

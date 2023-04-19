@@ -129,6 +129,7 @@ class Converter:
         pipeline = [
             CheckIntegerOnly(),
             AssignBitWidths(single_precision=configuration.single_precision),
+            ProcessRounding(),
         ]
 
         graph = deepcopy(graph)
@@ -380,6 +381,23 @@ class Converter:
             )
 
         return self.tlu(ctx, node, preds)
+
+    def round_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        pred = preds[0]
+
+        if pred.is_encrypted and pred.bit_width != pred.original_bit_width:
+            overflow_protection = node.properties["overflow_protection"]
+            overflow_detected = node.properties["overflow_detected"]
+
+            shifter = 2 ** (pred.bit_width - pred.original_bit_width)
+            if overflow_protection and overflow_detected:
+                shifter //= 2
+
+            if shifter != 1:
+                pred = ctx.mul(pred.type, pred, ctx.constant(ctx.i(pred.bit_width + 1), shifter))
+
+        return ctx.round_bit_pattern(pred, node.properties["final_lsbs_to_remove"])
 
     def subtract(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2

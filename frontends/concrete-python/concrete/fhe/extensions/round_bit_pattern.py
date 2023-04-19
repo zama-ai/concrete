@@ -127,6 +127,7 @@ class AutoRounder:
 def round_bit_pattern(
     x: Union[int, np.integer, List, np.ndarray, Tracer],
     lsbs_to_remove: Union[int, AutoRounder],
+    overflow_protection: bool = True,
 ) -> Union[int, np.integer, List, np.ndarray, Tracer]:
     """
     Round the bit pattern of an integer.
@@ -178,6 +179,9 @@ def round_bit_pattern(
             number of the least significant bits to remove
             or an auto rounder object which will be used to determine the integer value
 
+        overflow_protection (bool, default = True)
+            whether to adjust bit widths and lsbs to remove to avoid overflows
+
     Returns:
         Union[int, np.integer, np.ndarray, Tracer]:
             Tracer that respresents the operation during tracing
@@ -222,6 +226,7 @@ def round_bit_pattern(
             deepcopy(x.output),
             evaluator,
             kwargs={"lsbs_to_remove": lsbs_to_remove},
+            attributes={"overflow_protection": overflow_protection},
         )
         return Tracer(computation, [x])
 

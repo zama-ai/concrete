@@ -91,9 +91,31 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
     variable_input_shape = node.inputs[variable_input_index].shape
 
     assert_that(isinstance(variable_input_dtype, Integer))
-    variable_input_dtype = cast(Integer, variable_input_dtype)
+    variable_input_dtype = deepcopy(cast(Integer, variable_input_dtype))
 
-    values = chain(range(0, variable_input_dtype.max() + 1), range(variable_input_dtype.min(), 0))
+    variable_input = preds[variable_input_index]
+    if (
+        variable_input.operation == Operation.Generic
+        and variable_input.properties["name"] == "round_bit_pattern"
+    ):
+        resulting_bit_width = variable_input.properties["resulting_bit_width"]
+        expected_number_of_elements = 2**resulting_bit_width
+
+        overflow_protection = variable_input.properties["overflow_protection"]
+        overflow_detected = variable_input.properties["overflow_detected"]
+
+        variable_input_dtype.bit_width = variable_input.properties["original_input_bit_width"]
+        if overflow_protection and overflow_detected:
+            variable_input_dtype.bit_width += 1
+
+        step = (2**variable_input_dtype.bit_width) // expected_number_of_elements
+    else:
+        step = 1
+
+    values = chain(
+        range(0, variable_input_dtype.max() + 1, step),
+        range(variable_input_dtype.min(), 0, step),
+    )
 
     np.seterr(divide="ignore")
 
