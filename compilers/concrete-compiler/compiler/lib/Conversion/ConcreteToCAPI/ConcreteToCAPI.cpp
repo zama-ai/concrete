@@ -45,9 +45,6 @@ char memref_expand_lut_in_trivial_glwe_ct_u64[] =
 char memref_wop_pbs_crt_buffer[] = "memref_wop_pbs_crt_buffer";
 char memref_wop_pbs_crt_buffer_cuda_u64[] =
     "memref_wop_pbs_crt_buffer_cuda_u64";
-char memref_batched_wop_pbs_crt_buffer[] = "memref_batched_wop_pbs_crt_buffer";
-char memref_batched_wop_pbs_crt_buffer_cuda_u64[] =
-    "memref_batched_wop_pbs_crt_buffer_cuda_u64";
 
 char memref_encode_plaintext_with_crt[] = "memref_encode_plaintext_with_crt";
 char memref_encode_expand_lut_for_bootstrap[] =
@@ -87,7 +84,6 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
 
   auto memref1DType = getDynamicMemrefWithUnknownOffset(rewriter, 1);
   auto memref2DType = getDynamicMemrefWithUnknownOffset(rewriter, 2);
-  auto memref3DType = getDynamicMemrefWithUnknownOffset(rewriter, 3);
   auto futureType =
       mlir::concretelang::RT::FutureType::get(rewriter.getIndexType());
   auto contextType =
@@ -169,30 +165,6 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                        {
                                            memref2DType,
                                            memref2DType,
-                                           memref2DType,
-                                           memref1DType,
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           rewriter.getI32Type(),
-                                           contextType,
-                                       },
-                                       {});
-  } else if (funcName == memref_batched_wop_pbs_crt_buffer ||
-             funcName == memref_batched_wop_pbs_crt_buffer_cuda_u64) {
-    funcType = mlir::FunctionType::get(rewriter.getContext(),
-                                       {
-                                           memref3DType,
-                                           memref3DType,
                                            memref2DType,
                                            memref1DType,
                                            rewriter.getI32Type(),
@@ -345,73 +317,6 @@ void bootstrapAddOperands(BootstrapOp op,
 void wopPBSAddOperands(Concrete::WopPBSCRTLweBufferOp op,
                        mlir::SmallVector<mlir::Value> &operands,
                        mlir::RewriterBase &rewriter) {
-  mlir::Type crtType = mlir::RankedTensorType::get(
-      {(int)op.getCrtDecompositionAttr().size()}, rewriter.getI64Type());
-  std::vector<int64_t> values;
-  for (auto a : op.getCrtDecomposition()) {
-    values.push_back(a.cast<mlir::IntegerAttr>().getValue().getZExtValue());
-  }
-  auto attr = rewriter.getI64TensorAttr(values);
-  auto x = rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), attr, crtType);
-  auto globalMemref = mlir::bufferization::getGlobalFor(x, 0);
-  rewriter.eraseOp(x);
-  assert(!failed(globalMemref));
-
-  auto globalRef = rewriter.create<memref::GetGlobalOp>(
-      op.getLoc(), (*globalMemref).getType(), (*globalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, globalRef));
-
-  //   lwe_small_size
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getPackingKeySwitchInputLweDimensionAttr()));
-  // cbs_level_count
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getCircuitBootstrapLevelAttr()));
-  // cbs_base_log
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getCircuitBootstrapBaseLogAttr()));
-
-  // ksk_level_count
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getKeyswitchLevelAttr()));
-  // ksk_base_log
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getKeyswitchBaseLogAttr()));
-
-  // bsk_level_count
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getBootstrapLevelAttr()));
-  // bsk_base_log
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getBootstrapBaseLogAttr()));
-
-  // fpksk_level_count
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getPackingKeySwitchLevelAttr()));
-  // fpksk_base_log
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getPackingKeySwitchBaseLogAttr()));
-
-  // polynomial_size
-  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
-      op.getLoc(), op.getPackingKeySwitchoutputPolynomialSizeAttr()));
-
-  // ksk_index
-  operands.push_back(
-      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getKskIndexAttr()));
-  // bsk_index
-  operands.push_back(
-      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getBskIndexAttr()));
-  // pksk_index
-  operands.push_back(
-      rewriter.create<arith::ConstantOp>(op.getLoc(), op.getPkskIndexAttr()));
-  // context
-  operands.push_back(getContextArgument(op));
-}
-
-void batchedWopPBSAddOperands(Concrete::BatchedWopPBSCRTLweBufferOp op,
-                              mlir::SmallVector<mlir::Value> &operands,
-                              mlir::RewriterBase &rewriter) {
   mlir::Type crtType = mlir::RankedTensorType::get(
       {(int)op.getCrtDecompositionAttr().size()}, rewriter.getI64Type());
   std::vector<int64_t> values;
@@ -632,10 +537,6 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
       patterns.add<ConcreteToCAPICallPattern<
           Concrete::WopPBSCRTLweBufferOp, memref_wop_pbs_crt_buffer_cuda_u64>>(
           &getContext(), wopPBSAddOperands);
-      patterns.add<ConcreteToCAPICallPattern<
-          Concrete::BatchedWopPBSCRTLweBufferOp,
-          memref_batched_wop_pbs_crt_buffer_cuda_u64>>(
-          &getContext(), batchedWopPBSAddOperands);
     } else {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_u64>>(
@@ -656,10 +557,6 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
       patterns.add<ConcreteToCAPICallPattern<Concrete::WopPBSCRTLweBufferOp,
                                              memref_wop_pbs_crt_buffer>>(
           &getContext(), wopPBSAddOperands);
-      patterns
-          .add<ConcreteToCAPICallPattern<Concrete::BatchedWopPBSCRTLweBufferOp,
-                                         memref_batched_wop_pbs_crt_buffer>>(
-              &getContext(), batchedWopPBSAddOperands);
     }
 
     // Apply conversion

@@ -222,8 +222,8 @@ def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe", [Pure, BatchableOpInterface
   }];
 }
 
-def TFHE_BatchedWopPBSGLWEOp : TFHE_Op<"batched_wop_pbs_glwe", [Pure]> {
-    let summary = "Batched version of WopPBSGLWEOp";
+def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe", [Pure]> {
+    let summary = "";
 
     let arguments = (ins
         Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>: $ciphertexts,
@@ -237,53 +237,6 @@ def TFHE_BatchedWopPBSGLWEOp : TFHE_Op<"batched_wop_pbs_glwe", [Pure]> {
     );
 
     let results = (outs Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>:$result);
-}
-
-def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe", [Pure, BatchableOpInterface]> {
-    let summary =
-        "WOP Programmable bootstrapping of a GLWE ciphertext with a lookup table";
-    
-    let arguments = (ins
-        Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>: $ciphertexts,
-        2DTensorOf<[I64]> : $lookupTable,
-        TFHE_KeyswitchKeyAttr: $ksk,
-        TFHE_BootstrapKeyAttr: $bsk,
-        TFHE_PackingKeyswitchKeyAttr: $pksk,
-        I64ArrayAttr: $crtDecomposition,
-        I32Attr: $cbsLevels,
-        I32Attr: $cbsBaseLog
-    );
-
-    let results = (outs Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, 
-                               HasStaticShapePred]>>:$result);
-
-    let extraClassDeclaration = [{
-        ::mlir::OpOperand& getBatchableOperand() {
-          return getOperation()->getOpOperand(0);
-        }
-    
-        ::mlir::OperandRange getNonBatchableOperands() {
-          return getOperation()->getOperands().drop_front();
-        }
-
-        ::mlir::Value createBatchedOperation(::mlir::ImplicitLocOpBuilder& builder,
-                                         ::mlir::Value batchedOperands,
-                                         ::mlir::ValueRange hoistedNonBatchableOperands) {
-            ::mlir::RankedTensorType resType = ::mlir::RankedTensorType::get(
-                batchedOperands.getType().cast<::mlir::RankedTensorType>().getShape(),
-                getResult().getType());
-
-            ::llvm::SmallVector<::mlir::Value> operands;
-            operands.push_back(batchedOperands);
-            operands.append(hoistedNonBatchableOperands.begin(),
-                      hoistedNonBatchableOperands.end());
-
-            return builder.create<BatchedWopPBSGLWEOp>(
-                mlir::TypeRange{resType},
-                operands,
-                getOperation()->getAttrs());
-        }
-    }];
 }
 
 

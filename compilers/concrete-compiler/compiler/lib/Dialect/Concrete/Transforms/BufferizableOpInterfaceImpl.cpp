@@ -134,10 +134,6 @@ void mlir::concretelang::Concrete::
     // wop_pbs_crt_lwe_tensor => wop_pbs_crt_lwe_buffer
     Concrete::WopPBSCRTLweTensorOp::attachInterface<TensorToMemrefOp<
         Concrete::WopPBSCRTLweTensorOp, Concrete::WopPBSCRTLweBufferOp>>(*ctx);
-    // batched_wop_pbs_crt_lwe_tensor => batched_wop_pbs_crt_lwe_buffer
-    Concrete::BatchedWopPBSCRTLweTensorOp::attachInterface<
-        TensorToMemrefOp<Concrete::BatchedWopPBSCRTLweTensorOp,
-                         Concrete::BatchedWopPBSCRTLweBufferOp>>(*ctx);
     // encode_plaintext_with_crt_tensor => encode_plaintext_with_crt_buffer
     Concrete::EncodePlaintextWithCrtTensorOp::attachInterface<
         TensorToMemrefOp<Concrete::EncodePlaintextWithCrtTensorOp,

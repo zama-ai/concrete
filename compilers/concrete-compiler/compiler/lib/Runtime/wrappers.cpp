@@ -136,20 +136,145 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
     uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context) {
-  // The compiler should only generates 2D memref<BxS>, where B is the number of
-  // ciphertext block and S the lweSize.
+  assert(ksk_index == 0 && "multiple ksk is not yet implemented on GPU");
+  assert(bsk_index == 0 && "multiple bsk is not yet implemented on GPU");
+  assert(pksk_index == 0 && "multiple pksk is not yet implemented on GPU");
+  // The compiler should only generates 2D memref<BxS>, where B is the
+  // number of ciphertext blocks, S the lweSize.
+  // Check for the strides
+  assert(out_stride_1 == 1);
+  assert(in_stride_0 == in_size_1);
   // Check for the size B
-  assert(out_size_0 == in_size_0 && out_size_0 == crt_decomp_size);
-  memref_batched_wop_pbs_crt_buffer_cuda_u64(
-      out_allocated, out_aligned, out_offset, out_size_0, out_size_1, 1,
-      out_stride_0, out_stride_1, 0, in_allocated, in_aligned, in_offset,
-      in_size_0, in_size_1, 1, in_stride_0, in_stride_1, 0, lut_ct_allocated,
-      lut_ct_aligned, lut_ct_offset, lut_ct_size0, lut_ct_size1, lut_ct_stride0,
-      lut_ct_stride1, crt_decomp_allocated, crt_decomp_aligned,
-      crt_decomp_offset, crt_decomp_size, crt_decomp_stride, lwe_small_dim,
-      cbs_level_count, cbs_base_log, ksk_level_count, ksk_base_log,
-      bsk_level_count, bsk_base_log, fpksk_level_count, fpksk_base_log,
-      polynomial_size, ksk_index, bsk_index, pksk_index, context);
+  assert(out_size_0 == in_size_0);
+  assert(out_size_0 == crt_decomp_size);
+  // Check for the size S
+  assert(out_size_1 == in_size_1);
+
+  assert(out_size_0 == crt_decomp_size);
+  uint64_t lwe_small_size = lwe_small_dim + 1;
+  uint64_t lwe_big_size = in_size_1;
+  uint64_t lwe_big_dim = lwe_big_size - 1;
+  assert(lwe_big_dim % polynomial_size == 0);
+  uint64_t glwe_dim = lwe_big_dim / polynomial_size;
+
+  // Compute the numbers of bits to extract for each block and the total one.
+  uint64_t total_number_of_bits_per_block = 0;
+  auto number_of_bits_per_block = new uint64_t[crt_decomp_size]();
+  for (uint64_t i = 0; i < crt_decomp_size; i++) {
+    uint64_t modulus = crt_decomp_aligned[i + crt_decomp_offset];
+    uint64_t nb_bit_to_extract =
+        static_cast<uint64_t>(ceil(log2(static_cast<double>(modulus))));
+    number_of_bits_per_block[i] = nb_bit_to_extract;
+
+    total_number_of_bits_per_block += nb_bit_to_extract;
+  }
+
+  // TODO: Multi GPU
+  uint32_t gpu_idx = 0;
+  int8_t *bit_extract_buffer = nullptr;
+  int8_t *cbs_vp_buffer = nullptr;
+  uint32_t cbs_delta_log;
+
+  // Create the cuda stream
+  // TODO: Should be created by the compiler codegen
+  void *stream = cuda_create_stream(gpu_idx);
+  // Get the pointer on the keyswitching key on the GPU
+  void *ksk_gpu = memcpy_async_ksk_to_gpu(
+      context, ksk_level_count, lwe_small_dim, lwe_big_dim, gpu_idx, stream);
+  // Get the pointer on the bootstraping key on the GPU
+  void *fbsk_gpu =
+      memcpy_async_bsk_to_gpu(context, lwe_small_dim, polynomial_size,
+                              bsk_level_count, glwe_dim, gpu_idx, stream);
+  // Get the pointer on the private keyswitching keys for CBS on the GPU
+  void *pksk_gpu =
+      memcpy_async_pksk_to_gpu(context, lwe_big_dim, polynomial_size,
+                               fpksk_level_count, glwe_dim, gpu_idx, stream);
+  // TODO: The allocation should be done by the compiler codegen
+
+  // Copy lut vector to GPU (corresponds to 1 input)
+  uint64_t lut_ct_size = lut_ct_size0 * lut_ct_size1;
+  void *lut_vector_gpu = alloc_and_memcpy_async_to_gpu(
+      lut_ct_aligned, lut_ct_offset, lut_ct_size, gpu_idx, stream);
+  // Allocate data on the GPU
+  void *out_gpu =
+      cuda_malloc_async(lwe_big_size * crt_decomp_size * sizeof(uint64_t),
+                        (cudaStream_t *)stream, gpu_idx);
+  // Create the buffer of ciphertexts for storing the total number of bits to
+  // extract. The extracted bit should be in the following order:
+  // [msb(m%crt[n-1])..lsb(m%crt[n-1])...msb(m%crt[0])..lsb(m%crt[0])] where n
+  // is the size of the crt decomposition
+  // call bit extract scratch
+  uint64_t *bit_extract_out_gpu = (uint64_t *)cuda_malloc_async(
+      lwe_small_size * total_number_of_bits_per_block * sizeof(uint64_t),
+      (cudaStream_t *)stream, gpu_idx);
+  scratch_cuda_extract_bits_64(stream, gpu_idx, &bit_extract_buffer, glwe_dim,
+                               lwe_small_dim, polynomial_size, bsk_level_count,
+                               1, cuda_get_max_shared_memory(gpu_idx), true);
+  size_t cbs_vp_in_count = total_number_of_bits_per_block;
+  size_t lut_size = 1 << cbs_vp_in_count;
+  size_t ct_out_count = crt_decomp_size;
+  size_t lut_count = ct_out_count;
+
+  assert(lut_ct_size0 == lut_count);
+  assert(lut_ct_size1 == lut_size);
+
+  scratch_cuda_circuit_bootstrap_vertical_packing_64(
+      stream, gpu_idx, &cbs_vp_buffer, &cbs_delta_log, glwe_dim, lwe_small_dim,
+      polynomial_size, cbs_level_count, cbs_vp_in_count, lut_count,
+      cuda_get_max_shared_memory(gpu_idx), true);
+
+  // We make a private copy to apply a subtraction on the body
+  auto first_ciphertext = in_aligned + in_offset;
+  auto copy_size = crt_decomp_size * lwe_big_size;
+  std::vector<uint64_t> in_copy(first_ciphertext, first_ciphertext + copy_size);
+  // Extraction of each bit for each block
+  for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0; i >= 0;
+       extract_bits_output_offset += number_of_bits_per_block[i--]) {
+    auto nb_bits_to_extract = number_of_bits_per_block[i];
+
+    size_t delta_log = 64 - nb_bits_to_extract;
+
+    auto in_block = &in_copy[lwe_big_size * i];
+
+    // trick ( ct - delta/2 + delta/2^4  )
+    uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -
+                   (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 5));
+    in_block[lwe_big_size - 1] -= sub;
+    cudaStreamSynchronize(*(cudaStream_t *)stream);
+    void *in_gpu = alloc_and_memcpy_async_to_gpu(
+        in_block, 0, lwe_big_size, gpu_idx, (cudaStream_t *)stream);
+
+    // Execute bit extract
+    cuda_extract_bits_64(
+        stream, gpu_idx,
+        (void *)(bit_extract_out_gpu +
+                 (ptrdiff_t)(lwe_small_size * extract_bits_output_offset)),
+        in_gpu, bit_extract_buffer, ksk_gpu, fbsk_gpu, nb_bits_to_extract,
+        delta_log, lwe_big_dim, lwe_small_dim, glwe_dim, polynomial_size,
+        bsk_base_log, bsk_level_count, ksk_base_log, ksk_level_count, 1,
+        cuda_get_max_shared_memory(gpu_idx));
+    cuda_drop_async(in_gpu, (cudaStream_t *)stream, gpu_idx);
+  }
+
+  // CBS + vertical packing
+  cuda_circuit_bootstrap_vertical_packing_64(
+      stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
+      lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
+      lwe_small_dim, bsk_level_count, bsk_base_log, fpksk_level_count,
+      fpksk_base_log, cbs_level_count, cbs_base_log, cbs_vp_in_count, lut_count,
+      cuda_get_max_shared_memory(gpu_idx));
+
+  // Copy the output batch of ciphertext back to CPU
+  memcpy_async_to_cpu(out_aligned, out_offset, copy_size, out_gpu, gpu_idx,
+                      stream);
+  // free memory that we allocated on gpu
+  cuda_drop_async(out_gpu, (cudaStream_t *)stream, gpu_idx);
+  cuda_drop_async(bit_extract_out_gpu, (cudaStream_t *)stream, gpu_idx);
+  cuda_drop_async(lut_vector_gpu, (cudaStream_t *)stream, gpu_idx);
+  cleanup_cuda_extract_bits(stream, gpu_idx, &bit_extract_buffer);
+  cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_idx,
+                                                  &cbs_vp_buffer);
+  cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
 
 // Batched CUDA function //////////////////////////////////////////////////////
@@ -282,238 +407,6 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   // Free the glwe accumulator (on CPU)
   free(glwe_ct);
   free(test_vector_idxes);
-  cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
-}
-
-void memref_batched_wop_pbs_crt_buffer_cuda_u64(
-    // Output 3D memref
-    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
-    // Input 3D memref
-    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
-    // clear text lut 1D memref
-    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
-    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
-    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
-    // CRT decomposition 1D memref
-    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
-    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
-    uint64_t crt_decomp_stride,
-    // Additional crypto parameters
-    uint32_t lwe_small_dim, uint32_t cbs_level_count, uint32_t cbs_base_log,
-    uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
-    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size,
-    // Key Indices
-    uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
-    // runtime context that hold evaluation keys
-    mlir::concretelang::RuntimeContext *context) {
-  assert(ksk_index == 0 && "multiple ksk is not yet implemented on GPU");
-  assert(bsk_index == 0 && "multiple bsk is not yet implemented on GPU");
-  assert(pksk_index == 0 && "multiple pksk is not yet implemented on GPU");
-  // The compiler should only generates 3D memref<BxSxC>, where B is the
-  // number of ciphertext blocks, S the lweSize and C the number of inputs.
-  // Check for the strides
-  assert(out_stride_1 == 1);
-  assert(in_stride_0 == in_size_1);
-  // Check for the size B
-  assert(out_size_0 == in_size_0);
-  // Check for the size S
-  assert(out_size_1 == in_size_1);
-
-  assert(out_size_0 == crt_decomp_size);
-  printf("out size 0: %lu, 1: %lu, 2: %lu\n", out_size_0, out_size_1,
-         out_size_2);
-  printf("in size 0: %lu, 1: %lu, 2: %lu\n", in_size_0, in_size_1, in_size_2);
-  printf("lut_ct size 0: %lu, 1: %lu\n", lut_ct_size0, lut_ct_size1);
-  uint64_t number_of_input_lwe = in_size_2;
-  uint64_t lwe_small_size = lwe_small_dim + 1;
-  uint64_t lwe_big_size = in_size_1;
-  uint64_t lwe_big_dim = lwe_big_size - 1;
-  assert(lwe_big_dim % polynomial_size == 0);
-  uint64_t glwe_dim = lwe_big_dim / polynomial_size;
-
-  size_t fftKeyId = 0;
-  const auto &fft = context->fft(fftKeyId);
-  size_t bskKeyId = 0;
-  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bskKeyId);
-
-  // Compute the numbers of bits to extract for each block and the total one.
-  uint64_t total_number_of_bits_per_block = 0;
-  auto number_of_bits_per_block = new uint64_t[crt_decomp_size]();
-  for (uint64_t i = 0; i < crt_decomp_size; i++) {
-    uint64_t modulus = crt_decomp_aligned[i + crt_decomp_offset];
-    uint64_t nb_bit_to_extract =
-        static_cast<uint64_t>(ceil(log2(static_cast<double>(modulus))));
-    number_of_bits_per_block[i] = nb_bit_to_extract;
-
-    total_number_of_bits_per_block += nb_bit_to_extract;
-  }
-
-  // TODO: Multi GPU
-  uint32_t gpu_idx = 0;
-  int8_t *bit_extract_buffer = nullptr;
-  int8_t *cbs_vp_buffer = nullptr;
-  uint32_t cbs_delta_log;
-
-  // Create the cuda stream
-  // TODO: Should be created by the compiler codegen
-  void *stream = cuda_create_stream(gpu_idx);
-  // Get the pointer on the keyswitching key on the GPU
-  void *ksk_gpu = memcpy_async_ksk_to_gpu(
-      context, ksk_level_count, lwe_small_dim, lwe_big_dim, gpu_idx, stream);
-  // Get the pointer on the bootstraping key on the GPU
-  void *fbsk_gpu =
-      memcpy_async_bsk_to_gpu(context, lwe_small_dim, polynomial_size,
-                              bsk_level_count, glwe_dim, gpu_idx, stream);
-  // Get the pointer on the private keyswitching keys for CBS on the GPU
-  void *pksk_gpu =
-      memcpy_async_pksk_to_gpu(context, lwe_big_dim, polynomial_size,
-                               fpksk_level_count, glwe_dim, gpu_idx, stream);
-  // TODO: The allocation should be done by the compiler codegen
-
-  // Copy lut vector to GPU
-  uint64_t lut_ct_size = lut_ct_size0 * lut_ct_size1;
-  void *lut_vector_gpu = alloc_and_memcpy_async_to_gpu(
-      lut_ct_aligned, lut_ct_offset, lut_ct_size, gpu_idx, stream);
-  // Allocate data on the GPU
-  void *out_gpu =
-      cuda_malloc_async(lwe_big_size * crt_decomp_size * sizeof(uint64_t),
-                        (cudaStream_t *)stream, gpu_idx);
-  // Create the buffer of ciphertexts for storing the total number of bits to
-  // extract. The extracted bit should be in the following order:
-  // [msb(m%crt[n-1])..lsb(m%crt[n-1])...msb(m%crt[0])..lsb(m%crt[0])] where n
-  // is the size of the crt decomposition
-  // call bit extract scratch
-  uint64_t *bit_extract_out_gpu = (uint64_t *)cuda_malloc_async(
-      lwe_small_size * total_number_of_bits_per_block * sizeof(uint64_t),
-      (cudaStream_t *)stream, gpu_idx);
-  scratch_cuda_extract_bits_64(stream, gpu_idx, &bit_extract_buffer, glwe_dim,
-                               lwe_small_dim, polynomial_size, bsk_level_count,
-                               1, cuda_get_max_shared_memory(gpu_idx), true);
-  size_t lut_size = 1 << total_number_of_bits_per_block;
-  size_t ct_out_count = crt_decomp_size;
-  size_t lut_count = ct_out_count;
-
-  assert(lut_ct_size0 == lut_count);
-  assert(lut_ct_size1 == lut_size);
-
-  scratch_cuda_circuit_bootstrap_vertical_packing_64(
-      stream, gpu_idx, &cbs_vp_buffer, &cbs_delta_log, glwe_dim, lwe_small_dim,
-      polynomial_size, cbs_level_count, total_number_of_bits_per_block,
-      lut_count, cuda_get_max_shared_memory(gpu_idx), true);
-
-  for (uint64_t c = 0; c < number_of_input_lwe; c++) {
-    uint64_t ciphertext_offset = c * lwe_big_size * crt_decomp_size;
-    // We make a private copy to apply a subtraction on the body
-    auto first_ciphertext = in_aligned + in_offset + ciphertext_offset;
-    auto copy_size = crt_decomp_size * lwe_big_size;
-    printf("copy size: %lu, crt: %lu, lwe_big: %lu\n",
-           crt_decomp_size * lwe_big_size, crt_decomp_size, lwe_big_size);
-    std::vector<uint64_t> in_copy(first_ciphertext,
-                                  first_ciphertext + copy_size);
-    // Extraction of each bit for each block
-    for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0;
-         i >= 0; extract_bits_output_offset += number_of_bits_per_block[i--]) {
-      auto nb_bits_to_extract = number_of_bits_per_block[i];
-
-      size_t delta_log = 64 - nb_bits_to_extract;
-
-      auto in_block = &in_copy[lwe_big_size * i];
-
-      // trick ( ct - delta/2 + delta/2^4  )
-      uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -
-                     (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 5));
-      in_block[lwe_big_size - 1] -= sub;
-      cudaStreamSynchronize(*(cudaStream_t *)stream);
-      void *in_gpu = alloc_and_memcpy_async_to_gpu(
-          in_block, 0, lwe_big_size, gpu_idx, (cudaStream_t *)stream);
-
-      // Execute bit extract
-      cuda_extract_bits_64(
-          stream, gpu_idx,
-          (void *)(bit_extract_out_gpu +
-                   (ptrdiff_t)(lwe_small_size * extract_bits_output_offset)),
-          in_gpu, bit_extract_buffer, ksk_gpu, fbsk_gpu, nb_bits_to_extract,
-          delta_log, lwe_big_dim, lwe_small_dim, glwe_dim, polynomial_size,
-          bsk_base_log, bsk_level_count, ksk_base_log, ksk_level_count, 1,
-          cuda_get_max_shared_memory(gpu_idx));
-      cuda_drop_async(in_gpu, (cudaStream_t *)stream, gpu_idx);
-    }
-
-    printf("CBS-VP params: N: %u, glwe_dim: %lu, lwe_dim: %u, pbs_level: %u, "
-           "pbs_b: %u, "
-           "ks_l: %u, ks_b: %u, fpksk_l: %u, fpksk_b: %u, cbs_l: %u, cbs_b: "
-           "%u, inputs: %lu, "
-           "luts: %lu\n",
-           polynomial_size, glwe_dim, lwe_small_dim, bsk_level_count,
-           bsk_base_log, ksk_level_count, ksk_base_log, fpksk_level_count,
-           fpksk_base_log, cbs_level_count, cbs_base_log,
-           total_number_of_bits_per_block, lut_count);
-    // CBS + vertical packing
-    cuda_circuit_bootstrap_vertical_packing_64(
-        stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
-        lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
-        lwe_small_dim, bsk_level_count, bsk_base_log, fpksk_level_count,
-        fpksk_base_log, cbs_level_count, cbs_base_log,
-        total_number_of_bits_per_block, lut_count,
-        cuda_get_max_shared_memory(gpu_idx));
-
-    auto *cbs_vp_output_buffer =
-        (uint64_t *)malloc(copy_size * sizeof(uint64_t));
-    // Copy the output batch of ciphertext back to CPU
-    memcpy_async_to_cpu(out_aligned, out_offset + ciphertext_offset, copy_size,
-                        out_gpu, gpu_idx, stream);
-
-    // Execute the cbs_vp on CPU to compare
-    auto *extract_bits_output_buffer = (uint64_t *)malloc(
-        lwe_small_size * total_number_of_bits_per_block * sizeof(uint64_t));
-    memcpy_async_to_cpu(extract_bits_output_buffer, 0,
-                        lwe_small_size * total_number_of_bits_per_block,
-                        bit_extract_out_gpu, gpu_idx, stream);
-    size_t scratch_size;
-    size_t scratch_align;
-    concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64_scratch(
-        &scratch_size, &scratch_align, lut_count, lwe_small_dim,
-        total_number_of_bits_per_block, lut_size, lut_count, glwe_dim,
-        polynomial_size, polynomial_size, cbs_level_count, fft);
-
-    auto *scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
-
-    size_t fpkskKeyId = 0;
-    auto fp_keyswicth_key = context->fp_keyswitch_key_buffer(fpkskKeyId);
-
-    concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
-        cbs_vp_output_buffer, extract_bits_output_buffer,
-        lut_ct_aligned + lut_ct_offset, bootstrap_key, fp_keyswicth_key,
-        lwe_big_dim, ct_out_count, lwe_small_dim,
-        total_number_of_bits_per_block, lut_size, lut_count, bsk_level_count,
-        bsk_base_log, glwe_dim, polynomial_size, lwe_small_dim,
-        fpksk_level_count, fpksk_base_log, lwe_big_dim, glwe_dim,
-        polynomial_size, glwe_dim + 1, cbs_level_count, cbs_base_log, fft,
-        scratch, scratch_size);
-
-    auto out_gpu_copied = out_aligned + out_offset + ciphertext_offset;
-    for (int k = 0; k < crt_decomp_size; k++) {
-      printf("crt decomp: %d | CPU output body: %lu, GPU output body: %lu\n", k,
-             cbs_vp_output_buffer[k * lwe_big_size + lwe_big_dim],
-             out_gpu_copied[k * lwe_big_size + lwe_big_dim]);
-    }
-
-    free(scratch);
-    free(cbs_vp_output_buffer);
-    free(extract_bits_output_buffer);
-  }
-  // free memory that we allocated on gpu
-  cuda_drop_async(out_gpu, (cudaStream_t *)stream, gpu_idx);
-  cuda_drop_async(bit_extract_out_gpu, (cudaStream_t *)stream, gpu_idx);
-  cuda_drop_async(lut_vector_gpu, (cudaStream_t *)stream, gpu_idx);
-  cleanup_cuda_extract_bits(stream, gpu_idx, &bit_extract_buffer);
-  cleanup_cuda_circuit_bootstrap_vertical_packing(stream, gpu_idx,
-                                                  &cbs_vp_buffer);
   cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
 
@@ -1030,52 +923,6 @@ void memref_wop_pbs_crt_buffer(
       scratch, scratch_size);
 
   free(scratch);
-}
-
-void memref_batched_wop_pbs_crt_buffer(
-    // Output 3D memref
-    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size_0, uint64_t out_size_1, uint64_t out_size_2,
-    uint64_t out_stride_0, uint64_t out_stride_1, uint64_t out_stride_2,
-    // Input 3D memref
-    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
-    uint64_t in_size_0, uint64_t in_size_1, uint64_t in_size_2,
-    uint64_t in_stride_0, uint64_t in_stride_1, uint64_t in_stride_2,
-    // clear text lut 1D memref
-    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
-    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
-    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
-    // CRT decomposition 1D memref
-    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
-    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
-    uint64_t crt_decomp_stride,
-    // Additional crypto parameters
-    uint32_t lwe_small_size, uint32_t cbs_level_count, uint32_t cbs_base_log,
-    uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
-    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size,
-    // Key Indices
-    uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
-    // runtime context that hold evaluation keys
-    mlir::concretelang::RuntimeContext *context) {
-
-  assert(out_size_0 == crt_decomp_size);
-  assert(in_size_2 == out_size_2);
-  uint64_t number_of_input_lwe = out_size_2;
-  for (size_t i = 0; i < number_of_input_lwe; i++) {
-    memref_wop_pbs_crt_buffer(
-        out_allocated, out_aligned + i * crt_decomp_size * out_size_1,
-        out_offset, crt_decomp_size, out_size_1, out_stride_0, out_stride_1,
-        in_allocated, in_aligned + i * crt_decomp_size * in_size_1, in_offset,
-        crt_decomp_size, in_size_1, in_stride_0, in_stride_1, lut_ct_allocated,
-        lut_ct_aligned, lut_ct_offset, lut_ct_size0, lut_ct_size1,
-        lut_ct_stride0, lut_ct_stride1, crt_decomp_allocated,
-        crt_decomp_aligned, crt_decomp_offset, crt_decomp_size,
-        crt_decomp_stride, lwe_small_size, cbs_level_count, cbs_base_log,
-        ksk_level_count, ksk_base_log, bsk_level_count, bsk_base_log,
-        fpksk_level_count, fpksk_base_log, polynomial_size, ksk_index,
-        bsk_index, pksk_index, context);
-  }
 }
 
 void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
