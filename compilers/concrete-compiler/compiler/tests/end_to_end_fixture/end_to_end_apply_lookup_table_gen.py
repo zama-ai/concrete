@@ -6,6 +6,7 @@ import numpy as np
 from end_to_end_linalg_leveled_gen import P_ERROR
 
 PRECISION_FORCE_CRT = 9
+P_ERROR_CRT = 1e-9
 
 def generate(args):
     print("# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
@@ -52,7 +53,9 @@ def generate(args):
                 print("  }")
                 if p >= PRECISION_FORCE_CRT:
                     print("encoding: crt")
-                print(f"p-error: {P_ERROR}")
+                    print(f"p-error: {P_ERROR_CRT}")
+                else:
+                    print(f"p-error: {P_ERROR}")
 
                 def print_in(value):
                     print("  - inputs:")
