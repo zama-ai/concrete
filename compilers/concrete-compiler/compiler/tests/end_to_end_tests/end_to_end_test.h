@@ -78,16 +78,19 @@ parseEndToEndCommandLine(int argc, char **argv) {
       "optimizer-strategy",
       llvm::cl::desc("Select the concrete optimizer strategy"),
       llvm::cl::init(optimizer::DEFAULT_STRATEGY),
-      llvm::cl::values(clEnumValN(optimizer::Strategy::V0, "V0",
+      llvm::cl::values(clEnumValN(optimizer::Strategy::V0,
+                                  toString(optimizer::Strategy::V0),
                                   "Use the V0 optimizer strategy that use the "
                                   "worst case atomic pattern")),
       llvm::cl::values(clEnumValN(
-          optimizer::Strategy::DAG_MONO, "dag-mono",
+          optimizer::Strategy::DAG_MONO,
+          toString(optimizer::Strategy::DAG_MONO),
           "Use the dag-mono optimizer strategy that solve the optimization "
           "problem using the fhe computation dag with ONE set of evaluation "
           "keys")),
       llvm::cl::values(clEnumValN(
-          optimizer::Strategy::DAG_MULTI, "dag-multi",
+          optimizer::Strategy::DAG_MULTI,
+          toString(optimizer::Strategy::DAG_MULTI),
           "Use the dag-multi optimizer strategy that solve the optimization "
           "problem using the fhe computation dag with SEVERAL set of "
           "evaluation "
@@ -147,6 +150,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
 }
 
 std::string getOptionsName(mlir::concretelang::CompilationOptions options) {
+  namespace optimizer = mlir::concretelang::optimizer;
   std::ostringstream os;
   if (options.loopParallelize)
     os << "_loop";
@@ -158,8 +162,11 @@ std::string getOptionsName(mlir::concretelang::CompilationOptions options) {
   if (ostr.size() == 0) {
     os << "_default";
   }
-  if (options.optimizerConfig.security != 128) {
+  if (options.optimizerConfig.security != optimizer::DEFAULT_CONFIG.security) {
     os << "_security" << options.optimizerConfig.security;
+  }
+  if (options.optimizerConfig.strategy != optimizer::DEFAULT_CONFIG.strategy) {
+    os << "_" << options.optimizerConfig.strategy;
   }
   return os.str().substr(1);
 }

@@ -82,7 +82,7 @@ constexpr bool DEFAULT_CACHE_ON_DISK = true;
 /// The strategy of the crypto optimization
 enum Strategy {
   /// V0 is a strategy based on the worst case atomic pattern
-  V0,
+  V0 = 0,
   /// DAG_MONO is a strategy that used the optimizer dag but resolve with a
   /// unique set of keyswitch and boostrap key
   DAG_MONO,
@@ -90,6 +90,8 @@ enum Strategy {
   /// multiple set of keyswitch and boostrap key
   DAG_MULTI
 };
+
+std::string const StrategyLabel[] = {"V0", "dag-mono", "dag-multi"};
 
 constexpr Strategy DEFAULT_STRATEGY = Strategy::DAG_MONO;
 
@@ -164,4 +166,17 @@ inline size_t getPolynomialSizeFromSolution(optimizer::Solution solution) {
 
 } // namespace concretelang
 } // namespace mlir
+
+static inline std::string toString(mlir::concretelang::optimizer::Strategy s) {
+  if (s <= mlir::concretelang::optimizer::DAG_MULTI)
+    return mlir::concretelang::optimizer::StrategyLabel[s];
+  else
+    return "unknown";
+}
+
+static inline std::ostream &
+operator<<(std::ostream &OS, mlir::concretelang::optimizer::Strategy s) {
+  return OS << toString(s);
+}
+
 #endif
