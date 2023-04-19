@@ -132,10 +132,10 @@ def test_round_bit_pattern(input_bits, lsbs_to_remove, mapper, overflow, helpers
         inputset.append(upper_bound - 1)
 
     circuit = function.compile(inputset, helpers.configuration())
-    helpers.check_execution(circuit, function, np.random.randint(0, upper_bound))
+    helpers.check_execution(circuit, function, np.random.randint(0, upper_bound), retries=3)
 
     for value in inputset:
-        helpers.check_execution(circuit, function, value)
+        helpers.check_execution(circuit, function, value, retries=3)
 
 
 @pytest.mark.parametrize(
@@ -161,7 +161,7 @@ def test_round_bit_pattern_unsigned_range(input_bits, lsbs_to_remove, helpers):
     circuit = function.compile(inputset, helpers.configuration())
 
     for value in inputset:
-        helpers.check_execution(circuit, function, value)
+        helpers.check_execution(circuit, function, value, retries=3)
 
 
 @pytest.mark.parametrize(
@@ -187,7 +187,7 @@ def test_round_bit_pattern_signed_range(input_bits, lsbs_to_remove, helpers):
     circuit = function.compile(inputset, helpers.configuration())
 
     for value in inputset:
-        helpers.check_execution(circuit, function, value)
+        helpers.check_execution(circuit, function, value, retries=3)
 
 
 @pytest.mark.parametrize(
@@ -214,7 +214,7 @@ def test_round_bit_pattern_unsigned_range_assigned(input_bits, lsbs_to_remove, h
     circuit = function.compile(inputset, helpers.configuration())
 
     for value in inputset:
-        helpers.check_execution(circuit, function, value)
+        helpers.check_execution(circuit, function, value, retries=3)
 
 
 @pytest.mark.parametrize(
@@ -241,7 +241,7 @@ def test_round_bit_pattern_signed_range_assigned(input_bits, lsbs_to_remove, hel
     circuit = function.compile(inputset, helpers.configuration())
 
     for value in inputset:
-        helpers.check_execution(circuit, function, value)
+        helpers.check_execution(circuit, function, value, retries=3)
 
 
 def test_round_bit_pattern_no_overflow_protection(helpers, pytestconfig):

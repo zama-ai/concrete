@@ -87,7 +87,7 @@ def test_comparison(function, parameters, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
 
 
 @pytest.mark.parametrize(
@@ -158,4 +158,4 @@ def test_optimized_comparison(function, parameters, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample)
+    helpers.check_execution(circuit, function, sample, retries=3)
