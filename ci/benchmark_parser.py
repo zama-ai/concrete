@@ -51,7 +51,14 @@ def parse_results(raw_results, compute_throughput=False, hardware_hourly_cost=No
     for res in raw_results["benchmarks"]:
         test_name = res["name"]
         value = res["cpu_time"]
-        parsed_results.append({"value": value, "test": test_name})
+        parsed_results.append({"value": value, "test": test_name})        
+                                   
+        try:        
+            value = res["Throughput"]
+            parsed_results.append({"value": value, "test": "_".join([test_name, "throughput"])})
+        except KeyError:
+            pass
+
         if test_name.endswith("_mean") and compute_throughput:
             parsed_results.append({
                 "value": compute_ops_per_millisecond(value),
