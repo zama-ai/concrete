@@ -166,6 +166,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       level_count_pksk, base_log_pksk, level_count_cbs, base_log_cbs,
       number_of_inputs, max_shared_memory);
   check_cuda_error(cudaGetLastError());
+  printf("Hello after cbs\n");
 
   // CMUX Tree
   uint64_t lut_vector_size = (1 << number_of_inputs);
@@ -176,6 +177,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       max_shared_memory);
   check_cuda_error(cudaGetLastError());
 
+  printf("Hello after cmux tree\n");
   // Blind rotation + sample extraction
   // mbr = tau * p - r = log2(N)
   // br_ggsw is a pointer to a sub-part of the ggsw_out_cbs buffer, for the
@@ -192,6 +194,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       (Torus *)glwe_array_out_cmux_tree, br_se_buffer, mbr_size, tau,
       glwe_dimension, polynomial_size, base_log_cbs, level_count_cbs,
       max_shared_memory);
+  printf("Hello after br\n");
 }
 
 template <typename Torus>
@@ -223,8 +226,7 @@ scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
                                           polynomial_size, number_of_inputs) +
       get_buffer_size_bootstrap_amortized<Torus>(
-          glwe_dimension, polynomial_size, number_of_inputs,
-          max_shared_memory);
+          glwe_dimension, polynomial_size, number_of_inputs, max_shared_memory);
   uint32_t cbs_vp_number_of_inputs =
       number_of_inputs * number_of_bits_to_extract;
   uint32_t mbr_size = std::min(
@@ -296,8 +298,8 @@ __host__ void host_wop_pbs(
                       glwe_dimension, lwe_dimension, polynomial_size,
                       number_of_inputs) +
                   get_buffer_size_bootstrap_amortized<Torus>(
-                      glwe_dimension, polynomial_size,
-                      number_of_inputs, max_shared_memory));
+                      glwe_dimension, polynomial_size, number_of_inputs,
+                      max_shared_memory));
   host_extract_bits<Torus, params>(
       v_stream, gpu_index, (Torus *)lwe_array_out_bit_extract, lwe_array_in,
       bit_extract_buffer, ksk, fourier_bsk, number_of_bits_to_extract,
