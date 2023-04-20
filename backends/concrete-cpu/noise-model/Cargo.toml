@@ -6,6 +6,8 @@ authors = [""]
 edition = "2021"
 
 [dependencies]
+concrete-security-curves = { path = "../../../tools/parameter-curves/concrete-security-curves-rust" }
+
 
 [dev-dependencies]
 approx = "0.5"
