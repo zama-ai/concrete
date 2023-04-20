@@ -375,7 +375,7 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
                                fpksk_level_count, glwe_dim, gpu_idx, stream);
   // TODO: The allocation should be done by the compiler codegen
 
-  // Copy lut vector to GPU (corresponds to 1 input)
+  // Copy lut vector to GPU
   uint64_t lut_ct_size = lut_ct_size0 * lut_ct_size1;
   void *lut_vector_gpu = alloc_and_memcpy_async_to_gpu(
       lut_ct_aligned, lut_ct_offset, lut_ct_size, gpu_idx, stream);
@@ -454,7 +454,6 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
            fpksk_base_log, cbs_level_count, cbs_base_log,
            total_number_of_bits_per_block, lut_count);
     // CBS + vertical packing
-    printf("cbs vp in count: %lu\n", total_number_of_bits_per_block);
     cuda_circuit_bootstrap_vertical_packing_64(
         stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
         lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
