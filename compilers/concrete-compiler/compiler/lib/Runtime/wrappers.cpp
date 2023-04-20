@@ -254,8 +254,8 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
         stream, gpu_idx,
         (void *)(bit_extract_out_gpu +
                  (ptrdiff_t)(lwe_small_size * extract_bits_output_offset)),
-        in_gpu, bit_extract_buffer, ksk_gpu, fbsk_gpu, nb_bits_to_extract,
-        delta_log, lwe_big_dim, lwe_small_dim, glwe_dim, polynomial_size,
+        in_gpu, bit_extract_buffer, ksk_gpu, fbsk_gpu, &nb_bits_to_extract,
+        &delta_log, lwe_big_dim, lwe_small_dim, glwe_dim, polynomial_size,
         bsk_base_log, bsk_level_count, ksk_base_log, ksk_level_count, 1,
         cuda_get_max_shared_memory(gpu_idx));
     cuda_drop_async(in_gpu, (cudaStream_t *)stream, gpu_idx);
@@ -281,8 +281,7 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   // Copy the output batch of ciphertext back to CPU
   memcpy_async_to_cpu(out_aligned, out_offset, copy_size, out_gpu, gpu_idx,
                       stream);
-  auto *cbs_vp_output_buffer =
-      (uint64_t *)malloc(copy_size * sizeof(uint64_t));
+  auto *cbs_vp_output_buffer = (uint64_t *)malloc(copy_size * sizeof(uint64_t));
   // Execute the cbs_vp on CPU to compare
   auto *extract_bits_output_buffer = (uint64_t *)malloc(
       lwe_small_size * total_number_of_bits_per_block * sizeof(uint64_t));
@@ -304,12 +303,11 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
       cbs_vp_output_buffer, extract_bits_output_buffer,
       lut_ct_aligned + lut_ct_offset, bootstrap_key, fp_keyswicth_key,
-      lwe_big_dim, ct_out_count, lwe_small_dim,
-      total_number_of_bits_per_block, lut_size, lut_count, bsk_level_count,
-      bsk_base_log, glwe_dim, polynomial_size, lwe_small_dim,
-      fpksk_level_count, fpksk_base_log, lwe_big_dim, glwe_dim,
-      polynomial_size, glwe_dim + 1, cbs_level_count, cbs_base_log, fft,
-      scratch, scratch_size);
+      lwe_big_dim, ct_out_count, lwe_small_dim, total_number_of_bits_per_block,
+      lut_size, lut_count, bsk_level_count, bsk_base_log, glwe_dim,
+      polynomial_size, lwe_small_dim, fpksk_level_count, fpksk_base_log,
+      lwe_big_dim, glwe_dim, polynomial_size, glwe_dim + 1, cbs_level_count,
+      cbs_base_log, fft, scratch, scratch_size);
 
   auto out_gpu_copied = out_aligned + out_offset;
   for (int k = 0; k < crt_decomp_size; k++) {
@@ -331,7 +329,8 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
 
-// Batched CUDA function //////////////////////////////////////////////////////
+// Batched CUDA function
+// //////////////////////////////////////////////////////
 
 void memref_batched_keyswitch_lwe_cuda_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
@@ -464,7 +463,6 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
 
-
 #endif
 
 void memref_encode_plaintext_with_crt(
@@ -507,8 +505,8 @@ void memref_encode_expand_lut_for_bootstrap(
   assert((mega_case_size % 2) == 0);
 
   // When the bootstrap is executed on encrypted signed integers, the lut must
-  // be half-rotated. This map takes care about properly indexing into the input
-  // lut depending on what bootstrap gets executed.
+  // be half-rotated. This map takes care about properly indexing into the
+  // input lut depending on what bootstrap gets executed.
   std::function<size_t(size_t)> indexMap;
   if (is_signed) {
     size_t halfInputSize = input_lut_size / 2;
@@ -524,8 +522,8 @@ void memref_encode_expand_lut_for_bootstrap(
   }
 
   // The first lut value should be centered over zero. This means that half of
-  // it should appear at the beginning of the output lut, and half of it at the
-  // end (but negated).
+  // it should appear at the beginning of the output lut, and half of it at
+  // the end (but negated).
   for (size_t idx = 0; idx < mega_case_size / 2; ++idx) {
     output_lut_aligned[output_lut_offset + idx] =
         input_lut_aligned[input_lut_offset + indexMap(0)]
@@ -587,15 +585,15 @@ void memref_encode_lut_for_crt_woppbs(
     output_lut_aligned[output_lut_offset + i] = 0;
   }
 
-  // When the woppbs is executed on encrypted signed integers, the index of the
-  // lut elements must be adapted to fit the way signed are encrypted in CRT
-  // (to ensure the lookup falls into the proper case).
-  // This map takes care about properly indexing into the output lut depending
-  // on what bootstrap gets executed.
+  // When the woppbs is executed on encrypted signed integers, the index of
+  // the lut elements must be adapted to fit the way signed are encrypted in
+  // CRT (to ensure the lookup falls into the proper case). This map takes
+  // care about properly indexing into the output lut depending on what
+  // bootstrap gets executed.
   std::function<uint64_t(uint64_t)> indexMap;
   if (!is_signed) {
-    // When not signed, the integer values are encoded in increasing order. That
-    // is (example of 9 bits values, using crt decomposition [5,7,16]):
+    // When not signed, the integer values are encoded in increasing order.
+    // That is (example of 9 bits values, using crt decomposition [5,7,16]):
     //
     // |0     511|
     // |---------|
@@ -863,9 +861,8 @@ void memref_wop_pbs_crt_buffer(
     // runtime context that hold evluation keys
     mlir::concretelang::RuntimeContext *context) {
 
-  // The compiler should only generates 2D memref<BxS>, where B is the number of
-  // ciphertext block and S the lweSize.
-  // Check for the strides
+  // The compiler should only generates 2D memref<BxS>, where B is the number
+  // of ciphertext block and S the lweSize. Check for the strides
 
   assert(out_stride_1 == 1);
   assert(in_stride_0 == in_size_1 && in_stride_0 == in_size_1);
