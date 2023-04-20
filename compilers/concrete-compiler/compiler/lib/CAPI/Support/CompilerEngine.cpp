@@ -95,7 +95,8 @@ OptimizerConfig
                           uint64_t security,
                           mlir::concretelang::optimizer::Strategy strategy,
                           bool use_gpu_constraints,
-                          uint32_t ciphertext_modulus_log) {
+                          uint32_t ciphertext_modulus_log,
+                          uint32_t fft_precision) {
   auto config = new mlir::concretelang::optimizer::Config();
   config->display = display;
   config->fallback_log_norm_woppbs = fallback_log_norm_woppbs;
@@ -105,6 +106,7 @@ OptimizerConfig
   config->strategy = strategy;
   config->use_gpu_constraints = use_gpu_constraints;
   config->ciphertext_modulus_log = ciphertext_modulus_log;
+  config->fft_precision = fft_precision;
   return wrap(config);
 }
 

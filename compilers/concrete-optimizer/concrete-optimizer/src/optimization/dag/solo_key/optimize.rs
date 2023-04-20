@@ -462,10 +462,18 @@ pub(crate) mod tests {
     const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 
     const CIPHERTEXT_MODULUS_LOG: u32 = 64;
+    const FFT_PRECISION: u32 = 53;
 
     static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
         let processing_unit = config::ProcessingUnit::Cpu;
-        decomposition::cache(128, processing_unit, None, true, CIPHERTEXT_MODULUS_LOG)
+        decomposition::cache(
+            128,
+            processing_unit,
+            None,
+            true,
+            CIPHERTEXT_MODULUS_LOG,
+            FFT_PRECISION,
+        )
     });
 
     pub fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {
@@ -473,6 +481,7 @@ pub(crate) mod tests {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
             ciphertext_modulus_log: 64,
+            fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
         };
 
@@ -516,6 +525,7 @@ pub(crate) mod tests {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
             ciphertext_modulus_log: 64,
+            fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
         };
 
@@ -612,6 +622,7 @@ pub(crate) mod tests {
             security_level,
             maximum_acceptable_error_probability: _4_SIGMA,
             ciphertext_modulus_log: 64,
+            fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
         };
 

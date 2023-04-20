@@ -152,6 +152,7 @@ fn optimize_1_fks_and_all_compatible_ks(
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> Option<(Best1FksAndManyKs, OperationsCV)> {
     // At this point every thing else is known apart fks and ks
     let input_glwe = macro_parameters[fks_src].glwe_params;
@@ -185,6 +186,7 @@ fn optimize_1_fks_and_all_compatible_ks(
                 &input_glwe,
                 &output_glwe,
                 ciphertext_modulus_log,
+                fft_precision,
             );
             let complexity =
                 fast_keyswitch::complexity(&input_glwe, &output_glwe, ks_quantity.decomp.level);
@@ -259,6 +261,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> Option<(Vec<Best1FksAndManyKs>, OperationsCV)> {
     // All fks subgroup can be optimized independently
     let mut acc_operations = operations.clone();
@@ -281,6 +284,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
                 caches,
                 cut_complexity,
                 ciphertext_modulus_log,
+                fft_precision,
             )?;
             result.push(bests);
             _ = std::mem::replace(&mut acc_operations, operations);
@@ -318,6 +322,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     cut_complexity: f64,
     best_p_error: f64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> Option<PartialMicroParameters> {
     let mut operations = operations.clone();
     let mut best_sol = None;
@@ -348,6 +353,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
             caches,
             best_sol_complexity,
             ciphertext_modulus_log,
+            fft_precision,
         );
         if sol.is_none() {
             continue;
@@ -422,6 +428,7 @@ fn apply_fks_variance_and_cost_or_lower_bound(
     used_conversion_keyswitch: &[Vec<bool>],
     operations: &mut OperationsCV,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) {
     for (src, dst) in cross_partition(nb_partitions) {
         if !used_conversion_keyswitch[src][dst] {
@@ -460,8 +467,13 @@ fn apply_fks_variance_and_cost_or_lower_bound(
         // TODO: use a pareto front to avoid that loop
         if use_fast_ks {
             for ks_q in ks_pareto {
-                let variance =
-                    fast_keyswitch::noise(ks_q, input_glwe, output_glwe, ciphertext_modulus_log);
+                let variance = fast_keyswitch::noise(
+                    ks_q,
+                    input_glwe,
+                    output_glwe,
+                    ciphertext_modulus_log,
+                    fft_precision,
+                );
                 variance_min = variance_min.min(variance);
             }
         } else {
@@ -581,6 +593,7 @@ pub const REAL_FAST_KS: bool = false;
 fn optimize_macro(
     security_level: u64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
     search_space: &SearchSpace,
     partition: PartitionIndex,
     used_tlu_keyswitch: &[Vec<bool>],
@@ -706,6 +719,7 @@ fn optimize_macro(
                 used_conversion_keyswitch,
                 &mut operations,
                 ciphertext_modulus_log,
+                fft_precision,
             );
 
             let non_feasible = !feasible.feasible(&operations.variance);
@@ -775,6 +789,7 @@ fn optimize_macro(
                 best_complexity,
                 best_p_error,
                 ciphertext_modulus_log,
+                fft_precision,
             );
             if let Some(some_micro_params) = micro_opt {
                 // erase macros and all fks and ks that can't be real
@@ -835,6 +850,7 @@ pub fn optimize(
     default_partition: PartitionIndex,
 ) -> Option<(AnalyzedDag, Parameters)> {
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
+    let fft_precision = config.fft_precision;
     let security_level = config.security_level;
     let noise_config = NoiseBoundConfig {
         security_level,
@@ -879,6 +895,7 @@ pub fn optimize(
             let new_params = optimize_macro(
                 security_level,
                 ciphertext_modulus_log,
+                fft_precision,
                 search_space,
                 partition,
                 &used_tlu_keyswitch,

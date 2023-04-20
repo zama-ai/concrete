@@ -41,6 +41,7 @@ fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
         Some(ProcessingUnit::Cpu.complexity_model()),
         options.cache_on_disk,
         options.ciphertext_modulus_log,
+        options.fft_precision,
     )
 }
 
@@ -51,6 +52,7 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
         security_level: options.security_level,
         maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
         ciphertext_modulus_log: options.ciphertext_modulus_log,
+        fft_precision: options.fft_precision,
         complexity_model: &CpuComplexity::default(),
     };
 
@@ -491,6 +493,7 @@ impl OperationDag {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
             ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
 
@@ -513,6 +516,7 @@ impl OperationDag {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
             ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
 
@@ -540,6 +544,7 @@ impl OperationDag {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
             ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
         let search_space = SearchSpace::default(processing_unit);
@@ -730,6 +735,7 @@ mod ffi {
         pub encoding: Encoding,
         pub cache_on_disk: bool,
         pub ciphertext_modulus_log: u32,
+        pub fft_precision: u32,
     }
 
     #[namespace = "concrete_optimizer::dag"]

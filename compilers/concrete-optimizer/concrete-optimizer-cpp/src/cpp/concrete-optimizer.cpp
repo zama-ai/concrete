@@ -1080,6 +1080,7 @@ struct Options final {
   ::concrete_optimizer::Encoding encoding;
   bool cache_on_disk;
   ::std::uint32_t ciphertext_modulus_log;
+  ::std::uint32_t fft_precision;
 
   using IsRelocatable = ::std::true_type;
 };

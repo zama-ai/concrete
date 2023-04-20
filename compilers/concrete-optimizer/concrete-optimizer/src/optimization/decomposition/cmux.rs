@@ -29,6 +29,7 @@ impl CmuxComplexityNoise {
 pub fn pareto_quantities(
     complexity_model: &dyn ComplexityModel,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
     security_level: u64,
     glwe_params: GlweParameters,
 ) -> Vec<CmuxComplexityNoise> {
@@ -57,6 +58,7 @@ pub fn pareto_quantities(
                 log2_base,
                 level,
                 ciphertext_modulus_log,
+                fft_precision,
                 variance_bsk,
             );
             if base_noise > level_decreasing_base_noise {
@@ -127,16 +129,18 @@ pub fn cache(
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> PersistDecompCache {
     let cache_dir: String = default_cache_dir();
     let hardware = processing_unit.br_to_string();
     let path =
-        format!("{cache_dir}/cmux-decomp-{hardware}-{ciphertext_modulus_log}-{security_level}");
+        format!("{cache_dir}/cmux-decomp-{hardware}-{ciphertext_modulus_log}-{fft_precision}-{security_level}");
 
     let function = move |glwe_params: GlweParameters| {
         pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
+            fft_precision,
             security_level,
             glwe_params,
         )

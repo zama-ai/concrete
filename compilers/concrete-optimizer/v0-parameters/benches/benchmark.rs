@@ -19,6 +19,7 @@ fn v0_pbs_optimization(c: &mut Criterion) {
         simulate_dag: false,
         cache_on_disk: true,
         ciphertext_modulus_log: 64,
+        fft_precision: 53,
     };
 
     c.bench_function("v0 PBS table generation", |b| {
@@ -44,6 +45,7 @@ fn v0_pbs_optimization_simulate_graph(c: &mut Criterion) {
         simulate_dag: true,
         cache_on_disk: true,
         ciphertext_modulus_log: 64,
+        fft_precision: 53,
     };
 
     c.bench_function("v0 PBS simulate dag table generation", |b| {
@@ -69,6 +71,7 @@ fn v0_wop_pbs_optimization(c: &mut Criterion) {
         simulate_dag: false,
         cache_on_disk: true,
         ciphertext_modulus_log: 64,
+        fft_precision: 53,
     };
 
     c.bench_function("v0 WoP-PBS table generation", |b| {

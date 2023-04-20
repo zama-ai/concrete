@@ -89,6 +89,9 @@ pub struct Args {
 
     #[clap(long, default_value_t = 64)]
     pub ciphertext_modulus_log: u32,
+
+    #[clap(long, default_value_t = 53)]
+    pub fft_precision: u32,
 }
 
 pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
@@ -115,6 +118,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
         security_level,
         maximum_acceptable_error_probability,
         ciphertext_modulus_log: args.ciphertext_modulus_log,
+        fft_precision: args.fft_precision,
         complexity_model: &CpuComplexity::default(),
     };
 
@@ -124,6 +128,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
         None,
         cache_on_disk,
         args.ciphertext_modulus_log,
+        args.fft_precision,
     );
 
     precisions_iter
@@ -287,6 +292,7 @@ mod tests {
                 simulate_dag,
                 cache_on_disk: true,
                 ciphertext_modulus_log: 64,
+                fft_precision: 53,
             };
 
             let mut actual_output = Vec::<u8>::new();
@@ -330,6 +336,7 @@ mod tests {
                 simulate_dag: false,
                 cache_on_disk: true,
                 ciphertext_modulus_log: 64,
+                fft_precision: 53,
             };
 
             let mut actual_output = Vec::<u8>::new();

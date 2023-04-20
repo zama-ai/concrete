@@ -29,6 +29,7 @@ double concrete_cpu_variance_blind_rotate(uint64_t in_lwe_dimension,
                                           uint64_t log2_base,
                                           uint64_t level,
                                           uint32_t ciphertext_modulus_log,
+                                          uint32_t fft_precision,
                                           double variance_bsk);
 
 double concrete_cpu_variance_keyswitch(uint64_t input_lwe_dimension,

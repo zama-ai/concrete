@@ -64,6 +64,7 @@ impl Problem for CGGIConstraint {
             param.base_log_pbs,
             param.level_pbs,
             64,
+            53,
             variance_bsk,
         );
         let v_ms = estimate_modulus_switching_noise_with_binary_key(
@@ -182,6 +183,7 @@ impl CGGISearchSpace {
                                 baselog,
                                 level,
                                 64,
+                                53,
                                 variance_bsk,
                             );
                             if v_pbs <= current_minimal_noise_for_a_given_level {
