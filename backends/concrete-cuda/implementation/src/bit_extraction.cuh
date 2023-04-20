@@ -164,8 +164,7 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
                                           polynomial_size, number_of_inputs) +
       get_buffer_size_bootstrap_amortized<Torus>(
-          glwe_dimension, polynomial_size, number_of_inputs,
-          max_shared_memory);
+          glwe_dimension, polynomial_size, number_of_inputs, max_shared_memory);
   // allocate and initialize device pointers for bit extraction
   if (allocate_gpu_memory) {
     *bit_extract_buffer =
@@ -210,8 +209,7 @@ __host__ void single_ciphertext_extract_bits(
   Torus *lut_pbs =
       (Torus *)pbs_buffer +
       (ptrdiff_t)(get_buffer_size_bootstrap_amortized<Torus>(
-                      glwe_dimension, polynomial_size,
-                      1, max_shared_memory) /
+                      glwe_dimension, polynomial_size, 1, max_shared_memory) /
                   sizeof(Torus));
   Torus *lwe_array_in_buffer =
       (Torus *)lut_pbs + (ptrdiff_t)((glwe_dimension + 1) * polynomial_size);
@@ -309,9 +307,8 @@ host_extract_bits(void *v_stream, uint32_t gpu_index, Torus *list_lwe_array_out,
   int bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension_out,
                                           polynomial_size, 1) +
-      get_buffer_size_bootstrap_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count_bsk, 1,
-          max_shared_memory);
+      get_buffer_size_bootstrap_amortized<Torus>(
+          glwe_dimension, polynomial_size, 1, max_shared_memory);
 
   int cur_total_lwe = 0;
   for (int i = 0; i < number_of_samples; i++) {
