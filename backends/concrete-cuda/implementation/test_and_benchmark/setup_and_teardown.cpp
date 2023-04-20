@@ -596,7 +596,10 @@ void cmux_tree_setup(cudaStream_t *stream, Csprng **csprng, uint64_t **glwe_sk,
       *csprng, Uint128{.little_endian_bytes = {*seed}});
 
   // Generate the keys
-  uint32_t r_lut = tau * p - log2(polynomial_size);
+  uint32_t r_lut = 1;
+  if (tau * p > log2(polynomial_size)) {
+    r_lut = tau * p - log2(polynomial_size);
+  }
   generate_glwe_secret_keys(glwe_sk, glwe_dimension, polynomial_size, *csprng,
                             repetitions);
   *plaintexts = generate_plaintexts(r_lut, 1, 1, repetitions, samples);
