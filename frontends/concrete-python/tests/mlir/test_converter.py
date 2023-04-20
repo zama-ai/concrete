@@ -561,6 +561,86 @@ return %2
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y: x | y,
+            {"x": "encrypted", "y": "encrypted"},
+            [(100_000, 300_000)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a bitwise operation
+                                                                                   (note that it's assigned 19-bits during compilation because of its relation with other operations)
+%1 = y                         # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a bitwise operation
+%2 = bitwise_or(%0, %1)        # EncryptedScalar<uint19>        ∈ [366560, 366560]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit bitwise operations are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x != y,
+            {"x": "encrypted", "y": "encrypted"},
+            [(300_000, 100_000)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                        # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+%1 = y                        # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+                                                                                  (note that it's assigned 19-bits during compilation because of its relation with other operations)
+%2 = not_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x >= y,
+            {"x": "encrypted", "y": "encrypted"},
+            [(300_000, 100_000)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                            # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+%1 = y                            # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+                                                                                      (note that it's assigned 19-bits during compilation because of its relation with other operations)
+%2 = greater_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x << y,
+            {"x": "encrypted", "y": "encrypted"},
+            [(100_000, 20)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 37-bit value is used as the operand of a shift operation
+                                                                                   (note that it's assigned 37-bits during compilation because of its relation with other operations)
+%1 = y                         # EncryptedScalar<uint5>         ∈ [20, 20]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 5-bit value is used as the shift amount of a shift operation
+%2 = left_shift(%0, %1)        # EncryptedScalar<uint37>        ∈ [104857600000, 104857600000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 4-bit shift operations on up to 16-bit operands are supported
+return %2
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(
