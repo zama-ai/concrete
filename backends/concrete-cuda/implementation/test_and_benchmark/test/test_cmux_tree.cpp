@@ -80,7 +80,10 @@ TEST_P(CMUXTreeTestPrimitives_u64, cmux_tree) {
   int ggsw_size = polynomial_size * (glwe_dimension + 1) *
                   (glwe_dimension + 1) * level_count;
   int glwe_size = (glwe_dimension + 1) * polynomial_size;
-  uint32_t r_lut = tau * p - log2(polynomial_size);
+  uint32_t r_lut = 1;
+  if (tau * p > log2(polynomial_size)) {
+    r_lut = tau * p - log2(polynomial_size);
+  }
 
   // Here execute the PBS
   for (uint r = 0; r < REPETITIONS; r++) {
@@ -128,8 +131,8 @@ TEST_P(CMUXTreeTestPrimitives_u64, cmux_tree) {
 ::testing::internal::ParamGenerator<CMUXTreeTestParams> cmux_tree_params_u64 =
     ::testing::Values(
         // k, N, p, tau, glwe_variance, base_log, level_count
-        (CMUXTreeTestParams){2, 256, 10, 1, 2.9403601535432533e-16, 6, 3},
-        (CMUXTreeTestParams){2, 512, 13, 1, 2.9403601535432533e-16, 6, 3},
+        (CMUXTreeTestParams){2, 256, 3, 4, 2.9403601535432533e-16, 6, 3},
+        (CMUXTreeTestParams){2, 512, 4, 2, 2.9403601535432533e-16, 6, 3},
         (CMUXTreeTestParams){1, 1024, 11, 1, 2.9403601535432533e-16, 6, 3});
 
 std::string printParamName(::testing::TestParamInfo<CMUXTreeTestParams> p) {
