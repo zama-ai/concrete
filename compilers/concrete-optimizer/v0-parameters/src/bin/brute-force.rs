@@ -5,7 +5,8 @@ use brute_force_optimizer::ks_free::solve_all_ksfree;
 
 use brute_force_optimizer::gba::solve_all_gba;
 use brute_force_optimizer::lmp::solve_all_lmp;
-use brute_force_optimizer::multi_bit_cjp::solve_all_multi_bit_cjp;
+// use brute_force_optimizer::multi_bit_cjp::solve_all_multi_bit_cjp;
+use brute_force_optimizer::cjp_with_pke::solve_all_cjp_pke;
 use clap::Parser;
 use std::fs::File;
 use v0_parameters::_4_SIGMA;
@@ -37,12 +38,13 @@ fn main() {
 
     match args.atomic_pattern.as_str() {
         "CJP" => solve_all_cjp(args.p_fail, file),
+        "CJPPKE" => solve_all_cjp_pke(args.p_fail, file),
         "CJPKT" => solve_all_cjp_kt(args.p_fail, file),
         "CGGI" => solve_all_cggi(args.p_fail, file),
         "KSfree" => solve_all_ksfree(args.p_fail, file),
         "LMP" => solve_all_lmp(args.p_fail, file),
         "GBA" => solve_all_gba(args.p_fail, file),
-        "MBCJP" => solve_all_multi_bit_cjp(args.p_fail, file),
+        // "MBCJP" => solve_all_multi_bit_cjp(args.p_fail, file),
         _ => {
             panic!(
                 "The resquested AP is not supported ({})",

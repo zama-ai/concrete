@@ -283,7 +283,7 @@ pub fn solve_all_cjp(p_fail: f64, mut writer: impl Write) {
     let start = Instant::now();
 
     let precisions = 1..24;
-    let log_norms = vec![4, 6, 8, 10];
+    let log_norms = vec![2, 3]; // [4, 6, 8, 10];
 
     // find the minimal added noise by the modulus switching
     // for KS

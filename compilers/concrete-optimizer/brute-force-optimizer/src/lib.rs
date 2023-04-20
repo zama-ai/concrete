@@ -88,6 +88,7 @@ const STEP: usize = 4; // 4;
 pub mod cggi;
 pub mod cjp;
 pub mod cjp_kt;
+pub mod cjp_with_pke;
 pub mod gba;
 pub mod generic;
 pub mod ks_free;
