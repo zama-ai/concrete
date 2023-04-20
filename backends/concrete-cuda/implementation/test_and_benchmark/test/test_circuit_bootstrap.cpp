@@ -196,9 +196,9 @@ TEST_P(CircuitBootstrapTestPrimitives_u64, circuit_bootstrap) {
     ::testing::Values(
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
         // pksk_base_log, pksk_level, cbs_base_log, cbs_level, number_of_inputs
-        (CircuitBootstrapTestParams){10, 2, 512, 7.52316384526264e-37,
-                                     7.52316384526264e-37, 11, 2, 15, 2, 10, 1,
-                                     10});
+        (CircuitBootstrapTestParams){760, 2, 1024, 7.52316384526264e-37,
+                                     7.52316384526264e-37, 12, 3, 17, 2, 8, 2,
+                                     13});
 
 std::string
 printParamName(::testing::TestParamInfo<CircuitBootstrapTestParams> p) {

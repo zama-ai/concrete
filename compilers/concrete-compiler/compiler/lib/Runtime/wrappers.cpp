@@ -157,6 +157,11 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   assert(lwe_big_dim % polynomial_size == 0);
   uint64_t glwe_dim = lwe_big_dim / polynomial_size;
 
+  size_t fftKeyId = 0;
+  const auto &fft = context->fft(fftKeyId);
+  size_t bskKeyId = 0;
+  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bskKeyId);
+
   // Compute the numbers of bits to extract for each block and the total one.
   uint64_t total_number_of_bits_per_block = 0;
   auto number_of_bits_per_block = new uint64_t[crt_decomp_size]();
@@ -256,6 +261,15 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
     cuda_drop_async(in_gpu, (cudaStream_t *)stream, gpu_idx);
   }
 
+  printf("CBS-VP params: N: %u, glwe_dim: %lu, lwe_dim: %u, pbs_level: %u, "
+         "pbs_b: %u, "
+         "ks_l: %u, ks_b: %u, fpksk_l: %u, fpksk_b: %u, cbs_l: %u, cbs_b: "
+         "%u, inputs: %lu, "
+         "luts: %lu\n",
+         polynomial_size, glwe_dim, lwe_small_dim, bsk_level_count,
+         bsk_base_log, ksk_level_count, ksk_base_log, fpksk_level_count,
+         fpksk_base_log, cbs_level_count, cbs_base_log,
+         total_number_of_bits_per_block, lut_count);
   // CBS + vertical packing
   cuda_circuit_bootstrap_vertical_packing_64(
       stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
@@ -267,6 +281,46 @@ void memref_wop_pbs_crt_buffer_cuda_u64(
   // Copy the output batch of ciphertext back to CPU
   memcpy_async_to_cpu(out_aligned, out_offset, copy_size, out_gpu, gpu_idx,
                       stream);
+  auto *cbs_vp_output_buffer =
+      (uint64_t *)malloc(copy_size * sizeof(uint64_t));
+  // Execute the cbs_vp on CPU to compare
+  auto *extract_bits_output_buffer = (uint64_t *)malloc(
+      lwe_small_size * total_number_of_bits_per_block * sizeof(uint64_t));
+  memcpy_async_to_cpu(extract_bits_output_buffer, 0,
+                      lwe_small_size * total_number_of_bits_per_block,
+                      bit_extract_out_gpu, gpu_idx, stream);
+  size_t scratch_size;
+  size_t scratch_align;
+  concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64_scratch(
+      &scratch_size, &scratch_align, lut_count, lwe_small_dim,
+      total_number_of_bits_per_block, lut_size, lut_count, glwe_dim,
+      polynomial_size, polynomial_size, cbs_level_count, fft);
+
+  auto *scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
+
+  size_t fpkskKeyId = 0;
+  auto fp_keyswicth_key = context->fp_keyswitch_key_buffer(fpkskKeyId);
+
+  concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
+      cbs_vp_output_buffer, extract_bits_output_buffer,
+      lut_ct_aligned + lut_ct_offset, bootstrap_key, fp_keyswicth_key,
+      lwe_big_dim, ct_out_count, lwe_small_dim,
+      total_number_of_bits_per_block, lut_size, lut_count, bsk_level_count,
+      bsk_base_log, glwe_dim, polynomial_size, lwe_small_dim,
+      fpksk_level_count, fpksk_base_log, lwe_big_dim, glwe_dim,
+      polynomial_size, glwe_dim + 1, cbs_level_count, cbs_base_log, fft,
+      scratch, scratch_size);
+
+  auto out_gpu_copied = out_aligned + out_offset;
+  for (int k = 0; k < crt_decomp_size; k++) {
+    printf("crt decomp: %d | CPU output body: %lu, GPU output body: %lu\n", k,
+           cbs_vp_output_buffer[k * lwe_big_size + lwe_big_dim],
+           out_gpu_copied[k * lwe_big_size + lwe_big_dim]);
+  }
+
+  free(scratch);
+  free(cbs_vp_output_buffer);
+  free(extract_bits_output_buffer);
   // free memory that we allocated on gpu
   cuda_drop_async(out_gpu, (cudaStream_t *)stream, gpu_idx);
   cuda_drop_async(bit_extract_out_gpu, (cudaStream_t *)stream, gpu_idx);
@@ -409,6 +463,7 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   free(test_vector_idxes);
   cuda_destroy_stream((cudaStream_t *)stream, gpu_idx);
 }
+
 
 #endif
 

@@ -166,6 +166,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       level_count_pksk, base_log_pksk, level_count_cbs, base_log_cbs,
       number_of_inputs, max_shared_memory);
   check_cuda_error(cudaGetLastError());
+  printf("Hello after cbs\n");
 
   // CMUX Tree
   uint64_t lut_vector_size = (1 << number_of_inputs);
@@ -176,6 +177,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       max_shared_memory);
   check_cuda_error(cudaGetLastError());
 
+  printf("Hello after cmux tree\n");
   // Blind rotation + sample extraction
   // mbr = tau * p - r = log2(N)
   // br_ggsw is a pointer to a sub-part of the ggsw_out_cbs buffer, for the
@@ -192,6 +194,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       (Torus *)glwe_array_out_cmux_tree, br_se_buffer, mbr_size, tau,
       glwe_dimension, polynomial_size, base_log_cbs, level_count_cbs,
       max_shared_memory);
+  printf("Hello after br\n");
 }
 
 template <typename Torus>
