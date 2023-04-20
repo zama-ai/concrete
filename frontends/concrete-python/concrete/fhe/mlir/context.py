@@ -509,7 +509,7 @@ class Context:
         operation: Callable[[int, int], int],
     ) -> Conversion:
         if x.is_signed or y.is_signed:
-            highlights = {
+            highlights: Dict[Node, Union[str, List[str]]] = {
                 self.converting: "but only unsigned-unsigned bitwise operations are supported",
             }
             if x.is_signed:
@@ -518,6 +518,29 @@ class Context:
                 highlights[y.origin] = (
                     "rhs is signed" if x.origin is not y.origin else "operand is signed"
                 )
+            self.error(highlights)
+
+        if x.bit_width > MAXIMUM_TLU_BIT_WIDTH or y.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            highlights = {
+                self.converting: [
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit bitwise operations are supported"
+                ],
+            }
+
+            for operand in [x, y]:
+                if operand.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                    highlights[operand.origin] = [
+                        f"this {operand.bit_width}-bit value "
+                        f"is used as an operand to a bitwise operation"
+                    ]
+                    if operand.bit_width != operand.original_bit_width:
+                        highlights[operand.origin].append(  # type: ignore
+                            "("
+                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"during compilation because of its relation with other operations"
+                            ")"
+                        )
+
             self.error(highlights)
 
         assert self.is_bit_width_compatible(resulting_type, x, y)
@@ -801,6 +824,30 @@ class Context:
         y: Conversion,
         equals: bool,
     ) -> Conversion:
+        if x.bit_width > MAXIMUM_TLU_BIT_WIDTH or y.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            highlights = {
+                self.converting: [
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit "
+                    f"comparison operations are supported"
+                ],
+            }
+
+            for operand in [x, y]:
+                if operand.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                    highlights[operand.origin] = [
+                        f"this {operand.bit_width}-bit value "
+                        f"is used as an operand to a comparison operation"
+                    ]
+                    if operand.bit_width != operand.original_bit_width:
+                        highlights[operand.origin].append(
+                            "("
+                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"during compilation because of its relation with other operations"
+                            ")"
+                        )
+
+            self.error(highlights)
+
         assert self.is_bit_width_compatible(resulting_type, x, y)
         assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
 
@@ -1051,6 +1098,30 @@ class Context:
         y: Conversion,
         equal: bool = False,
     ) -> Conversion:
+        if x.bit_width > MAXIMUM_TLU_BIT_WIDTH or y.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            highlights = {
+                self.converting: [
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit "
+                    f"comparison operations are supported"
+                ],
+            }
+
+            for operand in [x, y]:
+                if operand.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                    highlights[operand.origin] = [
+                        f"this {operand.bit_width}-bit value "
+                        f"is used as an operand to a comparison operation"
+                    ]
+                    if operand.bit_width != operand.original_bit_width:
+                        highlights[operand.origin].append(
+                            "("
+                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"during compilation because of its relation with other operations"
+                            ")"
+                        )
+
+            self.error(highlights)
+
         assert self.is_bit_width_compatible(resulting_type, x, y)
         assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
 
@@ -1592,6 +1663,35 @@ class Context:
         orientation: str,
         original_resulting_bit_width: int,
     ) -> Conversion:
+        if x.bit_width > MAXIMUM_TLU_BIT_WIDTH or 2**b.original_bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            highlights: Dict[Node, Union[str, List[str]]] = {
+                self.converting: [
+                    f"but only up to {round(np.log2(MAXIMUM_TLU_BIT_WIDTH))}-bit shift operations "
+                    f"on up to {MAXIMUM_TLU_BIT_WIDTH}-bit operands are supported"
+                ],
+            }
+
+            if x.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                highlights[x.origin] = [
+                    f"this {x.bit_width}-bit value " f"is used as the operand of a shift operation"
+                ]
+                if x.bit_width != x.original_bit_width:
+                    assert isinstance(highlights[x.origin], list)
+                    highlights[x.origin].append(  # type: ignore
+                        "("
+                        f"note that it's assigned {x.bit_width}-bits "
+                        f"during compilation because of its relation with other operations"
+                        ")"
+                    )
+
+            if 2**b.original_bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                highlights[b.origin] = [
+                    f"this {b.original_bit_width}-bit value "
+                    f"is used as the shift amount of a shift operation"
+                ]
+
+            self.error(highlights)
+
         if x.is_signed or b.is_signed:
             highlights = {
                 self.converting: "but only unsigned-unsigned bitwise shifts are supported",
