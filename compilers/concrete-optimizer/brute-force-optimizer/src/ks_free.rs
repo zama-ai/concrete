@@ -50,6 +50,7 @@ impl Problem for KSFreeConstraint {
             param.base_log_pbs,
             param.level_pbs,
             64,
+            53,
             variance_bsk,
         );
         let v_ms = estimate_modulus_switching_noise_with_binary_key(

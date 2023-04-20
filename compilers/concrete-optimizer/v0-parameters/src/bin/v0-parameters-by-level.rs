@@ -28,16 +28,18 @@ fn main() {
     }
 
     for security_level in supported_security_levels() {
-        let filename_date = if args.wop_pbs {
-            format!("ref/wop_pbs_{year}-{month}-{day}_{security_level}")
+        let ap_type = if args.wop_pbs { "wop_pbs" } else { "v0" };
+
+        let suffix = if args.ciphertext_modulus_log == 64 && args.fft_precision == 53 {
+            String::new()
         } else {
-            format!("ref/v0_{year}-{month}-{day}_{security_level}")
+            format!("_{}_{}", args.ciphertext_modulus_log, args.fft_precision)
         };
-        let filename_last = if args.wop_pbs {
-            format!("ref/wop_pbs_last_{security_level}")
-        } else {
-            format!("ref/v0_last_{security_level}")
-        };
+
+        let filename_date: String =
+            format!("ref/{ap_type}_{year}-{month}-{day}_{security_level}{suffix}");
+        let filename_last = format!("ref/{ap_type}_last_{security_level}{suffix}");
+
         args.security_level = security_level;
         let file = File::create(&filename_date).unwrap();
         compute_print_results(file, &args).unwrap();

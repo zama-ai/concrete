@@ -32,6 +32,7 @@ pub fn cache(
     complexity_model: Option<Arc<dyn ComplexityModel>>,
     cache_on_disk: bool,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> PersistDecompCaches {
     PersistDecompCaches::new(
         security_level,
@@ -39,6 +40,7 @@ pub fn cache(
         complexity_model,
         cache_on_disk,
         ciphertext_modulus_log,
+        fft_precision,
     )
 }
 
@@ -49,6 +51,7 @@ impl PersistDecompCaches {
         complexity_model: Option<Arc<dyn ComplexityModel>>,
         cache_on_disk: bool,
         ciphertext_modulus_log: u32,
+        fft_precision: u32,
     ) -> Self {
         let complexity_model =
             complexity_model.unwrap_or_else(|| processing_unit.complexity_model());
@@ -64,6 +67,7 @@ impl PersistDecompCaches {
                 processing_unit,
                 complexity_model.clone(),
                 ciphertext_modulus_log,
+                fft_precision,
             ),
             pp: pp_switch::cache(
                 security_level,
@@ -76,6 +80,7 @@ impl PersistDecompCaches {
                 processing_unit,
                 complexity_model,
                 ciphertext_modulus_log,
+                fft_precision,
             ),
             cache_on_disk,
         };

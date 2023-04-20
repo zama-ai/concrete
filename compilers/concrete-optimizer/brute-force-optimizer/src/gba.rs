@@ -73,6 +73,7 @@ impl Problem for GBAConstraint {
             param.base_log_pbs,
             param.level_pbs,
             64,
+            53,
             variance_bsk,
         );
         let square = |x| x * x;
@@ -245,6 +246,7 @@ impl GBASearchSpace {
                                 baselog,
                                 level,
                                 64,
+                                53,
                                 variance_bsk,
                             );
                             if v_pbs <= current_minimal_noise_for_a_given_level {

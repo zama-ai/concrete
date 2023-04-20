@@ -1,4 +1,5 @@
-use crate::{gaussian_noise::conversion::modular_variance_to_variance, utils::square};
+use crate::gaussian_noise::conversion::modular_variance_to_variance;
+use crate::utils::square;
 
 pub fn variance_external_product_glwe(
     glwe_dimension: u64,
@@ -6,6 +7,7 @@ pub fn variance_external_product_glwe(
     log2_base: u64,
     level: u64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
     variance_ggsw: f64,
 ) -> f64 {
     theoretical_variance_external_product_glwe(
@@ -21,6 +23,7 @@ pub fn variance_external_product_glwe(
         log2_base,
         level,
         ciphertext_modulus_log,
+        fft_precision,
     )
 }
 
@@ -66,6 +69,7 @@ fn fft_noise_variance_external_product_glwe(
     log2_base: u64,
     level: u64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> f64 {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L25
     let b = 2_f64.powi(log2_base as i32);
@@ -75,8 +79,10 @@ fn fft_noise_variance_external_product_glwe(
     assert!(k > 0, "k = {k}");
     assert!(k < 7, "k = {k}");
 
-    // 22 = 2 x 11, 11 = 64 -53
-    let scale_margin = (1_u64 << 22) as f64;
+    let lost_bits = ciphertext_modulus_log as i32 - fft_precision as i32;
+
+    let scale_margin = 2_f64.powi(2 * lost_bits);
+
     let res =
         f64::exp2(FFT_SCALING_WEIGHT) * scale_margin * l * b * b * big_n.powi(2) * (k as f64 + 1.);
     modular_variance_to_variance(res, ciphertext_modulus_log)

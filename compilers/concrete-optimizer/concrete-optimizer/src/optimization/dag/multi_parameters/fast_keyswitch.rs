@@ -28,6 +28,7 @@ fn fft_noise_variance_external_product_glwe(
     log2_base: u64,
     level: u64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> f64 {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L25
     let b = 2_f64.powi(log2_base as i32);
@@ -36,11 +37,11 @@ fn fft_noise_variance_external_product_glwe(
     let k = glwe_dimension;
     assert!(k > 0, "k = {k}");
 
-    assert!(ciphertext_modulus_log > 53);
+    #[allow(clippy::cast_possible_wrap)]
+    let lost_bits = ciphertext_modulus_log as i32 - fft_precision as i32;
 
-    let lost_bits = ciphertext_modulus_log - 53;
+    let scale_margin = 2_f64.powi(2 * lost_bits);
 
-    let scale_margin = (1_u64 << (2 * lost_bits)) as f64;
     let res =
         f64::exp2(FFT_SCALING_WEIGHT) * scale_margin * l * b * b * big_n.powi(2) * (k as f64 + 1.);
     modular_variance_to_variance(res, ciphertext_modulus_log)
@@ -79,6 +80,7 @@ pub fn noise(
     input_glwe: &GlweParameters,
     output_glwe: &GlweParameters,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> f64 {
     let N0 = output_glwe.polynomial_size();
     let upper_k0 = upper_k0(input_glwe, output_glwe);
@@ -89,5 +91,6 @@ pub fn noise(
             ks.decomp.log2_base,
             ks.decomp.level,
             ciphertext_modulus_log,
+            fft_precision,
         )
 }

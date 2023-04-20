@@ -148,10 +148,11 @@ MLIR_CAPI_EXPORTED void compilationOptionsDestroy(CompilationOptions options);
 
 /// ********** OptimizerConfig CAPI ********************************************
 
-MLIR_CAPI_EXPORTED OptimizerConfig optimizerConfigCreate(
-    bool display, double fallback_log_norm_woppbs, double global_p_error,
-    double p_error, uint64_t security, bool strategy_v0,
-    bool use_gpu_constraints, uint32_t ciphertext_modulus_log);
+MLIR_CAPI_EXPORTED OptimizerConfig
+optimizerConfigCreate(bool display, double fallback_log_norm_woppbs,
+                      double global_p_error, double p_error, uint64_t security,
+                      bool strategy_v0, bool use_gpu_constraints,
+                      uint32_t ciphertext_modulus_log, uint32_t fft_precision);
 
 MLIR_CAPI_EXPORTED OptimizerConfig optimizerConfigCreateDefault();
 

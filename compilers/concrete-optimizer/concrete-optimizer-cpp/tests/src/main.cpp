@@ -27,6 +27,7 @@ concrete_optimizer::Options default_options() {
       .encoding = concrete_optimizer::Encoding::Auto,
       .cache_on_disk = true,
       .ciphertext_modulus_log = CIPHERTEXT_MODULUS_LOG,
+      .fft_precision = 53,
   };
 }
 
