@@ -394,8 +394,7 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
   scratch_cuda_extract_bits_64(stream, gpu_idx, &bit_extract_buffer, glwe_dim,
                                lwe_small_dim, polynomial_size, bsk_level_count,
                                1, cuda_get_max_shared_memory(gpu_idx), true);
-  size_t cbs_vp_in_count = total_number_of_bits_per_block;
-  size_t lut_size = 1 << cbs_vp_in_count;
+  size_t lut_size = 1 << total_number_of_bits_per_block;
   size_t ct_out_count = crt_decomp_size;
   size_t lut_count = ct_out_count;
 
@@ -404,8 +403,8 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
 
   scratch_cuda_circuit_bootstrap_vertical_packing_64(
       stream, gpu_idx, &cbs_vp_buffer, &cbs_delta_log, glwe_dim, lwe_small_dim,
-      polynomial_size, cbs_level_count, cbs_vp_in_count, lut_count,
-      cuda_get_max_shared_memory(gpu_idx), true);
+      polynomial_size, cbs_level_count, total_number_of_bits_per_block,
+      lut_count, cuda_get_max_shared_memory(gpu_idx), true);
 
   for (uint64_t c = 0; c < number_of_input_lwe; c++) {
     uint64_t ciphertext_offset = c * lwe_big_size * crt_decomp_size;
@@ -452,16 +451,17 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
            "luts: %lu\n",
            polynomial_size, glwe_dim, lwe_small_dim, bsk_level_count,
            bsk_base_log, ksk_level_count, ksk_base_log, fpksk_level_count,
-           fpksk_base_log, cbs_level_count, cbs_base_log, cbs_vp_in_count,
-           lut_count);
+           fpksk_base_log, cbs_level_count, cbs_base_log,
+           total_number_of_bits_per_block, lut_count);
     // CBS + vertical packing
-    printf("cbs vp in count: %lu\n", cbs_vp_in_count);
+    printf("cbs vp in count: %lu\n", total_number_of_bits_per_block);
     cuda_circuit_bootstrap_vertical_packing_64(
         stream, gpu_idx, out_gpu, bit_extract_out_gpu, fbsk_gpu, pksk_gpu,
         lut_vector_gpu, cbs_vp_buffer, cbs_delta_log, polynomial_size, glwe_dim,
         lwe_small_dim, bsk_level_count, bsk_base_log, fpksk_level_count,
-        fpksk_base_log, cbs_level_count, cbs_base_log, cbs_vp_in_count,
-        lut_count, cuda_get_max_shared_memory(gpu_idx));
+        fpksk_base_log, cbs_level_count, cbs_base_log,
+        total_number_of_bits_per_block, lut_count,
+        cuda_get_max_shared_memory(gpu_idx));
 
     auto *cbs_vp_output_buffer =
         (uint64_t *)malloc(copy_size * sizeof(uint64_t));
@@ -479,8 +479,8 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     size_t scratch_align;
     concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64_scratch(
         &scratch_size, &scratch_align, lut_count, lwe_small_dim,
-        cbs_vp_in_count, lut_size, lut_count, glwe_dim, polynomial_size,
-        polynomial_size, cbs_level_count, fft);
+        total_number_of_bits_per_block, lut_size, lut_count, glwe_dim,
+        polynomial_size, polynomial_size, cbs_level_count, fft);
 
     auto *scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
 
@@ -488,10 +488,10 @@ void memref_batched_wop_pbs_crt_buffer_cuda_u64(
     auto fp_keyswicth_key = context->fp_keyswitch_key_buffer(fpkskKeyId);
 
     concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
-        out_aligned + out_offset + ciphertext_offset,
-        extract_bits_output_buffer, lut_ct_aligned + lut_ct_offset,
-        bootstrap_key, fp_keyswicth_key, lwe_big_dim, ct_out_count,
-        lwe_small_dim, cbs_vp_in_count, lut_size, lut_count, bsk_level_count,
+        cbs_vp_output_buffer, extract_bits_output_buffer,
+        lut_ct_aligned + lut_ct_offset, bootstrap_key, fp_keyswicth_key,
+        lwe_big_dim, ct_out_count, lwe_small_dim,
+        total_number_of_bits_per_block, lut_size, lut_count, bsk_level_count,
         bsk_base_log, glwe_dim, polynomial_size, lwe_small_dim,
         fpksk_level_count, fpksk_base_log, lwe_big_dim, glwe_dim,
         polynomial_size, glwe_dim + 1, cbs_level_count, cbs_base_log, fft,

@@ -98,23 +98,28 @@ uint64_t *generate_identity_lut_pbs(int polynomial_size, int glwe_dimension,
 
 uint64_t *generate_identity_lut_cmux_tree(int polynomial_size, int lut_size,
                                           int tau, int delta_log) {
-  int r = log2(lut_size) - log2(polynomial_size);
+  int r = 1;
+  if (log2(lut_size) > log2(polynomial_size)) {
+    r = log2(lut_size) - log2(polynomial_size);
+  }
   uint64_t num_lut = (1 << r);
   // Create the plaintext lut_pbs
   uint64_t *plaintext_lut_cmux_tree =
       (uint64_t *)malloc(num_lut * tau * polynomial_size * sizeof(uint64_t));
 
   // This plaintext_lut_cmux_tree extracts the carry bits
-  for (int tree = 0; tree < tau; tree++)
+  for (int tree = 0; tree < tau; tree++) {
     for (int i = 0; i < num_lut; i++) {
       uint64_t *plaintext_lut_slice = plaintext_lut_cmux_tree +
                                       i * polynomial_size +
                                       tree * num_lut * polynomial_size;
-      uint64_t coeff = (((uint64_t)(i + tree) % (1 << (64 - delta_log))))
-                       << delta_log;
+      uint64_t coeff =
+          (((uint64_t)(i + tree * num_lut) % (1 << (64 - delta_log))))
+          << delta_log;
       for (int p = 0; p < polynomial_size; p++)
         plaintext_lut_slice[p] = coeff;
     }
+  }
 
   return plaintext_lut_cmux_tree;
 }

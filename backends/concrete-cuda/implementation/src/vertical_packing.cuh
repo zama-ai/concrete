@@ -159,14 +159,14 @@ plaintext_to_glwe_array(Torus *lut_out, Torus *lut_in, uint32_t glwe_dimension,
    * if r <= 0 we simply copy the LUT to lut_out, adding zeroes to the highest
    * positions if needed.
    */
-  int num_lut = std::max(1, r);
+  int num_lut = std::max(1, 1 << r);
   check_cuda_error(cudaMemsetAsync(lut_out, 0,
                                    num_lut * number_of_trees *
                                        (glwe_dimension + 1) * params::degree *
                                        sizeof(Torus),
                                    *stream));
 
-  uint32_t small_lut_size = lut_vector_size / (1 << num_lut);
+  uint32_t small_lut_size = lut_vector_size / num_lut;
   for (uint32_t i = 0; i < number_of_trees * num_lut; i++)
     check_cuda_error(cudaMemcpyAsync(
         lut_out + ((glwe_dimension + 1) * i + glwe_dimension) * params::degree,
@@ -250,7 +250,7 @@ __host__ __device__ uint64_t get_buffer_size_cmux_tree(
   uint64_t memory_needed_per_block =
       get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
                                                    polynomial_size);
-  uint64_t num_lut = (1 << r);
+  uint64_t num_lut = 1 << r;
   uint64_t ggsw_size = polynomial_size * (glwe_dimension + 1) *
                        (glwe_dimension + 1) * level_count;
   uint64_t glwe_size = (glwe_dimension + 1) * polynomial_size;
@@ -325,8 +325,6 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
                              uint32_t max_shared_memory) {
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
-  printf("lut vector size: %u, N: %u, tau: %u\n\n", lut_vector_size,
-         params::degree, tau);
   if (lut_vector_size <= params::degree) {
     // The LUT itself is the result
     plaintext_to_glwe_array<Torus, params>(glwe_array_out, lut_vector,
@@ -336,8 +334,7 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
   }
   // r = tau * p - log2(N)
   uint32_t r = log2(lut_vector_size) - params::log2_degree;
-  uint32_t num_lut = (1 << r);
-  printf("r: %u, num_lut: %u\n", r, num_lut);
+  uint32_t num_lut = 1 << r;
 
   uint64_t memory_needed_per_block =
       get_memory_needed_per_block_cmux_tree<Torus>(glwe_dimension,
@@ -359,7 +356,7 @@ __host__ void host_cmux_tree(void *v_stream, uint32_t gpu_index,
   int8_t *d_mem_fft = d_mem;
   if (max_shared_memory < memory_needed_per_block) {
     d_mem_fft =
-        d_mem + (ptrdiff_t)(memory_needed_per_block * (1 << (r - 1)) * tau);
+        d_mem + (ptrdiff_t)(memory_needed_per_block * num_lut / 2 * tau);
   }
   int8_t *d_buffer1 = d_mem_fft;
   if (max_shared_memory < polynomial_size * sizeof(double)) {
