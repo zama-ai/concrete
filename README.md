@@ -18,7 +18,7 @@
 </p>
 <hr/>
 
-:warning: Starting from v1, Concrete Rust Libraries are now deprecated and replaced by [TFHE-rs](https://github.com/tfhe-rs), Concrete
+:warning: Starting from v1, Concrete Rust Libraries are now deprecated and replaced by [TFHE-rs](https://github.com/zama-ai/tfhe-rs), Concrete
 is now, exclusively, Zama TFHE Compiler. Read full announcement [here](https://www.zama.ai/post/announcing-concrete-v1-0-0)
 
 **Concrete** is an open-source FHE Compiler which simplifies the use of fully homomorphic encryption (FHE).
