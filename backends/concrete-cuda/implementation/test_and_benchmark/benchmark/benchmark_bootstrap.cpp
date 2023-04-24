@@ -154,8 +154,6 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
 (benchmark::State &st) {
   size_t free, total;
   cudaMemGetInfo(&free, &total);
-  // Only bench for 1 input for the low lat PBS
-  input_lwe_ciphertext_count = 1;
   uint64_t buffer_size = get_buffer_size_bootstrap_low_latency_64(
       glwe_dimension, polynomial_size, pbs_level, input_lwe_ciphertext_count,
       cuda_get_max_shared_memory(gpu_index));
@@ -192,7 +190,7 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
 }
 
 static void
-BootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
+AmortizedBootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
   // Define the parameters to benchmark
   // lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
   // input_lwe_ciphertext_count
@@ -235,10 +233,55 @@ BootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
   }
 }
 
+
+static void
+LowLatencyBootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
+  // Define the parameters to benchmark
+  // lwe_dimension, glwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+  // input_lwe_ciphertext_count
+  std::vector<BootstrapBenchmarkParams> params = {
+      // BOOLEAN_DEFAULT_PARAMETERS
+      (BootstrapBenchmarkParams){777, 3, 512, 18, 1, 1},
+      // BOOLEAN_TFHE_LIB_PARAMETERS
+      (BootstrapBenchmarkParams){830, 2, 1024, 23, 1, 1},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_0
+      (BootstrapBenchmarkParams){678, 5, 256, 15, 1, 1},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_1
+      (BootstrapBenchmarkParams){684, 3, 512, 18, 1, 1},
+      // SHORTINT_PARAM_MESSAGE_2_CARRY_0
+      (BootstrapBenchmarkParams){656, 2, 512, 8, 2, 1},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_2
+      // SHORTINT_PARAM_MESSAGE_2_CARRY_1
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_0
+      (BootstrapBenchmarkParams){742, 2, 1024, 23, 1, 1},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_3
+      // SHORTINT_PARAM_MESSAGE_2_CARRY_2
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_1
+      // SHORTINT_PARAM_MESSAGE_4_CARRY_0
+      (BootstrapBenchmarkParams){745, 1, 2048, 23, 1, 1},
+      // SHORTINT_PARAM_MESSAGE_5_CARRY_0
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_2
+      (BootstrapBenchmarkParams){807, 1, 4096, 22, 1, 1},
+      // SHORTINT_PARAM_MESSAGE_6_CARRY_0
+      (BootstrapBenchmarkParams){915, 1, 8192, 22, 1, 1},
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_3
+      //(BootstrapBenchmarkParams){864, 1, 8192, 15, 2, 1},
+      // SHORTINT_PARAM_MESSAGE_4_CARRY_3
+      // SHORTINT_PARAM_MESSAGE_7_CARRY_0
+      (BootstrapBenchmarkParams){930, 1, 16384, 15, 2, 1},
+  };
+
+  // Add to the list of parameters to benchmark
+  for (auto x : params) {
+    b->Args({x.lwe_dimension, x.glwe_dimension, x.polynomial_size,
+             x.pbs_base_log, x.pbs_level, x.input_lwe_ciphertext_count});
+  }
+}
+
 BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_AmortizedPBS)
-    ->Apply(BootstrapBenchmarkGenerateParams);
+    ->Apply(AmortizedBootstrapBenchmarkGenerateParams);
 BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
-    ->Apply(BootstrapBenchmarkGenerateParams);
+    ->Apply(LowLatencyBootstrapBenchmarkGenerateParams);
 
 BENCHMARK_REGISTER_F(Bootstrap_u64, ConcreteCuda_CopiesPlusAmortizedPBS)
-    ->Apply(BootstrapBenchmarkGenerateParams);
+    ->Apply(AmortizedBootstrapBenchmarkGenerateParams);
