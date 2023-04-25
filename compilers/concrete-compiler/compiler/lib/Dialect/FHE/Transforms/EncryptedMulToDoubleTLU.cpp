@@ -168,13 +168,25 @@ private:
 /// Gotchas:
 /// --------
 ///
-/// + Since we use the leveled addition and subtraction, we have to increment
-/// the bitwidth of the inputs to properly
-///   encode the carry of the computation. This change in bitwidth must then be
-///   propagated to the whole graph, both upstream and downstream.
-/// + This graph-wide update may reach existing `apply_lookup_table` operations,
-/// which in turn will necessitate an
-///   update of the size of the lookup table.
+/// Since we use the leveled addition and subtraction, we have to increment the
+/// bitwidth of the inputs to properly encode the carry of the computation. For
+/// this reason the user must ensure that an extra bit is provided.
+///
+/// Assuming a precision of N, `(x+y)^2/4` may evaluate to a value that
+/// overflows the container. It turns out that this is not important in this
+/// particular case for the following reason. One can easily show that the
+/// following property holds: (a+b) mod c = (a mod c + b mod c) mod c
+///
+/// In our case, all operations are reduced mod 2^N, and the result we want to
+/// compute is:
+/// ((x+y)^2/4 - (x-y)^2/4) mod 2^N
+/// Which can be turned to:
+/// ((x+y)^2/4 mod 2^N - (x-y)^2/4 mod 2^N) mod 2^N
+///
+/// It turns out this is exactly what we compute. (x+y)^2/4 and (x-y)^2/4 is
+/// computed mod 2^N with the table lookup (because the output is N bit wide).
+/// And the subtraction is also computed mod 2^N because it is also on N bits
+/// wide eints.
 class EncryptedMulToDoubleTLU
     : public EncryptedMulToDoubleTLUBase<EncryptedMulToDoubleTLU> {
 
