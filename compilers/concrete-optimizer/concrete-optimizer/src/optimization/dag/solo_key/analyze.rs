@@ -899,7 +899,7 @@ pub mod tests {
         let input2 = graph.add_input(1, &shape);
         let lut2 = graph.add_lut(input2, FunctionTable::UNKWOWN, 1);
         let weights = &Weights::vector([2, 3]);
-        let _ = graph.add_dot([input1, lut2], weights);
+        _ = graph.add_dot([input1, lut2], weights);
         assert!(*graph.out_shapes.last().unwrap() == Shape::vector(2));
         let analysis = analyze(&graph);
         assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);

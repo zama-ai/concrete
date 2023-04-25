@@ -275,7 +275,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
                 cut_complexity,
             )?;
             result.push(bests);
-            let _ = std::mem::replace(&mut acc_operations, operations);
+            _ = std::mem::replace(&mut acc_operations, operations);
         } else {
             // There is no fks to optimize
             let (many_ks, operations) = optimize_many_independant_ks(
@@ -290,7 +290,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
                 cut_complexity,
             )?;
             result.push(Best1FksAndManyKs { fks: None, many_ks });
-            let _ = std::mem::replace(&mut acc_operations, operations);
+            _ = std::mem::replace(&mut acc_operations, operations);
         }
     }
     Some((result, acc_operations))
