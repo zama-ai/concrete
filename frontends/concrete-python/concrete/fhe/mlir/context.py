@@ -28,7 +28,7 @@ from ..representation import Graph, Node
 from ..values import Value
 from .conversion import Conversion, ConversionType
 from .processors import GraphProcessor
-from .utils import MAXIMUM_TLU_BIT_WIDTH
+from .utils import MAXIMUM_TLU_BIT_WIDTH, _FromElementsOp
 
 # pylint: enable=import-error,no-name-in-module
 
@@ -48,11 +48,6 @@ class Context:
     conversion_cache: Dict[Tuple, Conversion]
     constant_cache: Dict[MlirAttribute, MlirOperation]
 
-    tensorize_cache: Dict[MlirOperation, Conversion]
-    array_cache: Dict[Tuple[Tuple[Conversion, ...], Tuple[int, ...]], Conversion]
-
-    from_elements_operations: Dict[MlirOperation, List[MlirOperation]]
-
     def __init__(self, context: MlirContext, graph: Graph):
         self.context = context
 
@@ -62,11 +57,6 @@ class Context:
 
         self.conversion_cache = {}
         self.constant_cache = {}
-
-        self.tensorize_cache = {}
-        self.array_cache = {}
-
-        self.from_elements_operations = {}
 
     # types
 
@@ -361,11 +351,6 @@ class Context:
         )
 
     def array(self, resulting_type: ConversionType, elements: List[Conversion]) -> Conversion:
-        cache_key = (tuple(elements), resulting_type.shape)
-        cached_conversion = self.array_cache.get(cache_key)
-        if cached_conversion is not None:
-            return cached_conversion
-
         assert resulting_type.is_encrypted
         assert self.is_bit_width_compatible(resulting_type, *elements)
 
@@ -395,19 +380,11 @@ class Context:
 
             sanitized_elements.append(encrypted_element)
 
-        placeholder_result = fhe.ZeroTensorOp(resulting_type.mlir).result
-
-        self.from_elements_operations[placeholder_result] = [
-            element.result for element in sanitized_elements
-        ]
-
-        conversion = Conversion(self.converting, placeholder_result)
-        conversion.set_original_bit_width(
-            max(element.original_bit_width for element in sanitized_elements)
+        original_bit_width = max(element.original_bit_width for element in sanitized_elements)
+        mlir_elements = [element.result for element in sanitized_elements]
+        return self.operation(
+            _FromElementsOp, resulting_type, *mlir_elements, original_bit_width=original_bit_width
         )
-
-        self.array_cache[cache_key] = conversion
-        return conversion
 
     def assign_static(
         self,
@@ -1950,10 +1927,6 @@ class Context:
         if x.is_tensor:
             return x
 
-        cached_conversion = self.tensorize_cache.get(x.result)
-        if cached_conversion is not None:
-            return cached_conversion
-
         resulting_type = self.typeof(
             Value(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
@@ -1962,19 +1935,9 @@ class Context:
             )
         )
 
-        if x.is_encrypted:
-            placeholder_result = fhe.ZeroTensorOp(resulting_type.mlir).result
-        else:
-            placeholder_attribute = MlirAttribute.parse(f"dense<0> : {resulting_type.mlir}")
-            placeholder_result = arith.ConstantOp(resulting_type.mlir, placeholder_attribute).result
-
-        self.from_elements_operations[placeholder_result] = [x.result]
-
-        conversion = Conversion(self.converting, placeholder_result)
-        conversion.set_original_bit_width(x.original_bit_width)
-
-        self.tensorize_cache[x.result] = conversion
-        return conversion
+        return self.operation(
+            _FromElementsOp, resulting_type, x.result, original_bit_width=x.original_bit_width
+        )
 
     def tlu(self, resulting_type: ConversionType, on: Conversion, table: Sequence[int]):
         if on.is_clear:

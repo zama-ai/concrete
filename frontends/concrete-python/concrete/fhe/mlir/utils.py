@@ -8,6 +8,11 @@ from itertools import chain, product
 from typing import Any, DefaultDict, List, Optional, Tuple, Union, cast
 
 import numpy as np
+from mlir.dialects import tensor
+from mlir.dialects._ods_common import get_op_results_or_values
+from mlir.ir import OpResult as MlirOperation
+from mlir.ir import Type as MlirType
+from mlir.ir import Value as MlirValue
 
 from ..dtypes import Integer
 from ..internal.utils import assert_that
@@ -195,3 +200,23 @@ def construct_deduplicated_tables(
     return tuple(
         (hashable_array.array, indices) for hashable_array, indices in tables_to_cell_idx.items()
     )
+
+
+class _FromElementsOp(tensor.FromElementsOp):
+    """Replace missing tensor.FromElementsOp.__init__."""
+
+    def __init__(self, result: MlirType, *elements: MlirOperation):
+        assert isinstance(result, MlirType)
+        elements = get_op_results_or_values(list(elements))
+        assert all(isinstance(element, (MlirOperation, MlirValue)) for element in elements)
+        super(tensor.FromElementsOp, self).__init__(
+            self.build_generic(
+                attributes={},
+                results=[result],
+                operands=elements,
+                successors=None,
+                regions=None,
+                loc=None,
+                ip=None,
+            )
+        )
