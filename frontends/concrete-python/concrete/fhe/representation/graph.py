@@ -555,21 +555,17 @@ class Graph:
         """
         Remove unreachable nodes from the graph.
         """
-
-        useful_nodes: Dict[Node, None] = {}
-
-        current_nodes = {node: None for node in self.ordered_outputs()}
-        while current_nodes:
-            useful_nodes.update(current_nodes)
-
-            next_nodes: Dict[Node, None] = {}
-            for node in current_nodes:
-                next_nodes.update({node: None for node in self.graph.predecessors(node)})
-
-            current_nodes = next_nodes
-
-        useless_nodes = [node for node in self.graph.nodes() if node not in useful_nodes]
-        self.graph.remove_nodes_from(useless_nodes)
+        outputs = self.ordered_outputs()
+        used = nx.ancestors(self.graph, outputs[0])
+        for output in outputs[1:]:
+            used.update(nx.ancestors(self.graph, output))
+        used.update(outputs)
+        if len(used) == len(self.graph):
+            return
+        # unused in original order: facilitates graph format based tests
+        # copy to avoid modifying the graph while iterating on it
+        unused = [node for node in self.graph if node not in used]
+        self.graph.remove_nodes_from(unused)
 
     def query_nodes(
         self,
