@@ -128,9 +128,6 @@ class Conversion:
 
         self._original_bit_width = None
 
-    def __hash__(self):
-        return hash(self.result)
-
     def set_original_bit_width(self, original_bit_width: int):
         """
         Set the original bit-width of the conversion.

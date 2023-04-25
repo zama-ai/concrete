@@ -11,12 +11,10 @@ import concrete.lang
 import networkx as nx
 import numpy as np
 from mlir.dialects import func
-from mlir.ir import BlockArgument as MlirBlockArgument
 from mlir.ir import Context as MlirContext
 from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import Location as MlirLocation
 from mlir.ir import Module as MlirModule
-from mlir.ir import OpResult as MlirOperation
 
 from concrete.fhe.compilation.configuration import Configuration
 
@@ -83,32 +81,7 @@ class Converter:
 
                     return tuple(outputs)
 
-        def extract_mlir_name(result: MlirOperation) -> str:
-            return (
-                f"%arg{result.arg_number}"
-                if isinstance(result, MlirBlockArgument)
-                else str(result).replace("Value(", "").split("=", maxsplit=1)[0].strip()
-            )
-
-        direct_replacements = {}
-        for placeholder, elements in ctx.from_elements_operations.items():
-            element_names = [extract_mlir_name(element) for element in elements]
-            actual_value = f"tensor.from_elements {', '.join(element_names)} : {placeholder.type}"
-            direct_replacements[extract_mlir_name(placeholder)] = actual_value
-
-        module_lines_after_direct_replacements_are_applied = []
-        for line in str(module).split("\n"):
-            mlir_name = line.split("=")[0].strip()
-            if mlir_name not in direct_replacements:
-                module_lines_after_direct_replacements_are_applied.append(line)
-                continue
-
-            new_value = direct_replacements[mlir_name]
-            new_line = f"    {mlir_name} = {new_value}"
-
-            module_lines_after_direct_replacements_are_applied.append(new_line)
-
-        return "\n".join(module_lines_after_direct_replacements_are_applied).strip()
+        return str(module)
 
     def process(self, graph: Graph, configuration: Configuration) -> Graph:
         """
