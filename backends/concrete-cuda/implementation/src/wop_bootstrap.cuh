@@ -275,12 +275,22 @@ __host__ void scratch_wop_pbs(
       crt_decomposition_size, max_shared_memory, false);
 }
 
+
 template <typename T>
-__global__ void print_debug(const char *name, T *src, int N) {
-  //printf("%s: ", name);
+__global__ void print_debug_kernel(T *src, int N) {
   for (int i = 0; i < N; i++) {
     printf("%ul, ", src[i]);
   }
+
+}
+
+template <typename T>
+void print_debug(const char *name, T *src, int N) {
+  printf("%s: ", name);
+  cudaDeviceSynchronize();
+  print_debug_kernel<<<1, 1>>>(src, N);
+  cudaDeviceSynchronize();
+  printf("\n");
 
 }
 template <typename Torus, typename STorus, class params>
@@ -312,7 +322,7 @@ __host__ void host_wop_pbs(
   printf("polynomial_size %u\n", polynomial_size);
   printf("lwe_dimension %u\n", lwe_dimension);
   printf("glwe_dimension %u\n", glwe_dimension);
-  print_debug<<<1, 1>>>("lwe_array_in", lwe_array_in, polynomial_size + 1);
+  print_debug("lwe_array_in", lwe_array_in, polynomial_size + 1);
   host_extract_bits<Torus, params>(
       v_stream, gpu_index, (Torus *)lwe_array_out_bit_extract, lwe_array_in,
       bit_extract_buffer, ksk, fourier_bsk, number_of_bits_to_extract_array,
@@ -320,6 +330,11 @@ __host__ void host_wop_pbs(
       glwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
       base_log_ksk, level_count_ksk, crt_decomposition_size, max_shared_memory);
   check_cuda_error(cudaGetLastError());
+
+  for (int i = 0; i < total_bits_to_extract; i++)
+    print_debug("lwe_array_out_bit_extract",
+                &lwe_array_out_bit_extract[i * (lwe_dimension+  1)],
+                lwe_dimension + 1);
 
   int8_t *cbs_vp_buffer =
       lwe_array_out_bit_extract + (ptrdiff_t)(get_buffer_size_wop_pbs<Torus>(
@@ -332,5 +347,6 @@ __host__ void host_wop_pbs(
       level_count_cbs, total_bits_to_extract, crt_decomposition_size,
       max_shared_memory);
   check_cuda_error(cudaGetLastError());
+  print_debug("lwe_array_out", lwe_array_out, polynomial_size + 1);
 }
 #endif // WOP_PBS_H
