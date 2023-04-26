@@ -74,8 +74,9 @@ BENCHMARK_DEFINE_F(CMUXTree_u64, ConcreteCuda_CMUXTree)(benchmark::State &st) {
                       cuda_get_max_shared_memory(gpu_index));
     cuda_synchronize_stream(stream);
   }
-  st.counters["Throughput"] = benchmark::Counter(tau * p / get_aws_cost_per_second(),
-                                                 benchmark::Counter::kIsIterationInvariantRate);
+  st.counters["Throughput"] =
+      benchmark::Counter(tau * p / get_aws_cost_per_second(),
+                         benchmark::Counter::kIsIterationInvariantRate);
 }
 
 static void CMUXTreeBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {

@@ -71,8 +71,9 @@ BENCHMARK_DEFINE_F(Keyswitch_u64, ConcreteCuda_Keyswitch)
         output_lwe_dimension, ksk_base_log, ksk_level, number_of_inputs);
     cuda_synchronize_stream(stream);
   }
-  st.counters["Throughput"] = benchmark::Counter(number_of_inputs / get_aws_cost_per_second(),
-                                                 benchmark::Counter::kIsIterationInvariantRate);
+  st.counters["Throughput"] =
+      benchmark::Counter(number_of_inputs / get_aws_cost_per_second(),
+                         benchmark::Counter::kIsIterationInvariantRate);
 }
 
 BENCHMARK_DEFINE_F(Keyswitch_u64, ConcreteCuda_CopiesPlusKeyswitch)
@@ -98,8 +99,9 @@ BENCHMARK_DEFINE_F(Keyswitch_u64, ConcreteCuda_CopiesPlusKeyswitch)
                              stream, gpu_index);
     cuda_synchronize_stream(v_stream);
   }
-  st.counters["Throughput"] = benchmark::Counter(number_of_inputs / get_aws_cost_per_second(),
-                                                 benchmark::Counter::kIsIterationInvariantRate);
+  st.counters["Throughput"] =
+      benchmark::Counter(number_of_inputs / get_aws_cost_per_second(),
+                         benchmark::Counter::kIsIterationInvariantRate);
   free(lwe_in_ct);
   free(lwe_out_ct);
 }
