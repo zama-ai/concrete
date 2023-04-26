@@ -66,6 +66,7 @@ static inline ElementType getElementTypeFromWidthAndSign(size_t width,
     return (sign) ? ElementType::i8 : ElementType::u8;
   default:
     assert(false && "Unsupported scalar width");
+    return ElementType::i64;
   }
 }
 
@@ -563,8 +564,8 @@ public:
           detail::TensorData::getElementPointer<int8_t>(values, index,
                                                         elementType));
     }
-
     assert(false && "Unknown element type");
+    return nullptr;
   }
 
   // Returns the element type of the tensor
@@ -706,9 +707,10 @@ public:
       return static_cast<void *>(values.u8->data());
     case ElementType::i8:
       return static_cast<void *>(values.i8->data());
+    default:
+      assert(false && "Unhandled element type");
+      return static_cast<void *>(values.u64->data());
     }
-
-    assert(false && "Unhandled element type");
   }
 };
 

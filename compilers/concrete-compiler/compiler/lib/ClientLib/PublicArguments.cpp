@@ -245,6 +245,9 @@ TensorData tensorDataFromMemRef(size_t memref_rank, size_t element_width,
   ElementType et = getElementTypeFromWidthAndSign(element_width, is_signed);
 
   switch (et) {
+  default:
+    // Cannot happen
+    assert(false);
   case ElementType::i64:
     return tensorDataFromMemRefTyped<int64_t>(memref_rank, allocated, aligned,
                                               offset, sizes, strides);
@@ -270,9 +273,6 @@ TensorData tensorDataFromMemRef(size_t memref_rank, size_t element_width,
     return tensorDataFromMemRefTyped<uint8_t>(memref_rank, allocated, aligned,
                                               offset, sizes, strides);
   }
-
-  // Cannot happen
-  assert(false);
 }
 
 } // namespace clientlib

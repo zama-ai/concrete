@@ -391,8 +391,8 @@ unserializeScalarData(std::istream &istream) {
     return (scalarSignedness) ? unserializeScalarValue<int8_t>(istream)
                               : unserializeScalarValue<uint8_t>(istream);
   }
-
   assert(false && "Unhandled scalar type");
+  return StringError("Unhandled scalar type");
 }
 
 template <typename T>
@@ -440,8 +440,9 @@ std::ostream &serializeTensorData(const TensorData &values_and_sizes,
         values_and_sizes.getDimensions(),
         values_and_sizes.getElements<int8_t>(), ostream);
   }
-
   assert(false && "Unhandled element type");
+  ostream.setstate(std::ios::badbit);
+  return ostream;
 }
 
 outcome::checked<TensorData, StringError> unserializeTensorData(

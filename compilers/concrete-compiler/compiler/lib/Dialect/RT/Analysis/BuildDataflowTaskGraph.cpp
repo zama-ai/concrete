@@ -93,7 +93,7 @@ aggregateBeneficiaryOps(Operation *op, SetVector<Operation *> &beneficiaryOps,
   return true;
 }
 
-LogicalResult coarsenDFTask(RT::DataflowTaskOp taskOp) {
+[[maybe_unused]] LogicalResult coarsenDFTask(RT::DataflowTaskOp taskOp) {
   Region &taskOpBody = taskOp.getBody();
 
   // Identify uses from values defined outside of the scope.

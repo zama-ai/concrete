@@ -239,8 +239,8 @@ typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
                     : buildTensorLambdaResult<uint8_t>(keySet, result);
     }
   }
-
   assert(false && "Cannot happen");
+  return StreamStringError("Cannot handle impossible values");
 }
 } // namespace
 

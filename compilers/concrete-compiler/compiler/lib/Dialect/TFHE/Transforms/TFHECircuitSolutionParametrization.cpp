@@ -236,13 +236,14 @@ public:
       return newGlwe;
     } else if (auto oldTensor = originalType.dyn_cast<mlir::RankedTensorType>();
                oldTensor != nullptr) {
-      auto oldGlwe =
+      [[maybe_unused]] auto oldGlwe =
           oldTensor.getElementType().dyn_cast<TFHE::GLWECipherTextType>();
       assert(oldGlwe != nullptr);
       assert(oldGlwe.getKey().isNone());
       return mlir::RankedTensorType::get(oldTensor.getShape(), newGlwe);
     }
     assert(false);
+    return originalType;
   }
 
   mlir::Type getParametrizedType(mlir::Type originalType,
@@ -460,7 +461,7 @@ public:
     for (const auto &convKSKID : instructionKey.extra_conversion_keys) {
       DEBUG("try extra conversion keyswitch #" << convKSKID)
       auto convKSK = solution.circuit_keys.conversion_keyswitch_keys[convKSKID];
-      auto key = operandType.getKey();
+      [[maybe_unused]] auto key = operandType.getKey();
       assert(key.isParameterized());
       if (operandType.getKey().getParameterized().value().identifier ==
           convKSK.input_key.identifier) {

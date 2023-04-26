@@ -29,6 +29,7 @@ inline size_t bitWidthAsWord(size_t exactBitWidth) {
   if (exactBitWidth <= 64)
     return 64;
   assert(false && "Bit witdh > 64 not supported");
+  return 128;
 }
 
 namespace clientlib {

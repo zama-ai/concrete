@@ -99,9 +99,10 @@ public:
     assert(shape.size() == 1 &&
            "chunked integer should be converted to flat tensors, but tensor "
            "have more than one dimension");
-    auto eintChunkWidth = tensorType.getElementType()
-                              .dyn_cast<FHE::EncryptedIntegerType>()
-                              .getWidth();
+    [[maybe_unused]] auto eintChunkWidth =
+        tensorType.getElementType()
+            .dyn_cast<FHE::EncryptedIntegerType>()
+            .getWidth();
     assert(eintChunkWidth == chunkSize && "wrong tensor elements width");
     auto numberOfChunks = shape[0];
 

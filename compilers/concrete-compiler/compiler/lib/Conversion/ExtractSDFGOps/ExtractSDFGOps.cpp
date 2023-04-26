@@ -241,7 +241,8 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
       }
 
       ilb.setInsertionPoint(start);
-      SDFG::MakeProcess process = convertibleOp.convert(ilb, dfg, ins, outs);
+      [[maybe_unused]] SDFG::MakeProcess process =
+          convertibleOp.convert(ilb, dfg, ins, outs);
 
       assert(process && "Conversion to SDFG operation failed");
     }

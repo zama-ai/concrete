@@ -791,7 +791,7 @@ getPaddingFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
       convOp.getPadding();
   if (optionalPadding.has_value()) {
     auto paddingAttr = optionalPadding.value();
-    auto paddingAttrShape =
+    [[maybe_unused]] auto paddingAttrShape =
         paddingAttr.getType().cast<RankedTensorType>().getShape();
     assert(paddingAttrShape.size() == 1 && paddingAttrShape[0] == 4 &&
            "incorrect padding shape");
@@ -810,7 +810,7 @@ getStridesFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
       convOp.getStrides();
   if (optionalStrides.has_value()) {
     auto stridesAttr = optionalStrides.value();
-    auto stridesAttrShape =
+    [[maybe_unused]] auto stridesAttrShape =
         stridesAttr.getType().cast<RankedTensorType>().getShape();
     assert(stridesAttrShape.size() == 1 && stridesAttrShape[0] == 2 &&
            "incorrect strides shape");
@@ -829,7 +829,7 @@ getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
       convOp.getDilations();
   if (optionalDilations.has_value()) {
     auto dilationsAttr = optionalDilations.value();
-    auto dilationsAttrShape =
+    [[maybe_unused]] auto dilationsAttrShape =
         dilationsAttr.getType().cast<RankedTensorType>().getShape();
     assert(dilationsAttrShape.size() == 1 && dilationsAttrShape[0] == 2 &&
            "incorrect dilations shape");
