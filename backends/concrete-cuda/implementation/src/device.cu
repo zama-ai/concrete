@@ -26,6 +26,7 @@ void *cuda_malloc(uint64_t size, uint32_t gpu_index) {
   cudaMalloc((void **)&ptr, size);
   check_cuda_error(cudaGetLastError());
 
+  printf("cuda_malloc: %u\n", size);
   return ptr;
 }
 
@@ -51,6 +52,8 @@ void *cuda_malloc_async(uint64_t size, cudaStream_t *stream,
 #else
   check_cuda_error(cudaMalloc((void **)&ptr, size));
 #endif
+  printf("cuda_malloc_async: %u\n", size);
+
   return ptr;
 }
 
