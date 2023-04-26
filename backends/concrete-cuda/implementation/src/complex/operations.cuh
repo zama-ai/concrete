@@ -84,4 +84,18 @@ __device__ inline double2 operator*(double a, double2 b) {
   return res;
 }
 
+template <typename T> __global__ void print_debug_kernel(T *src, int N) {
+  for (int i = 0; i < N; i++) {
+    printf("%ul, ", src[i]);
+  }
+}
+
+template <typename T> void print_debug(const char *name, T *src, int N) {
+  printf("%s: ", name);
+  cudaDeviceSynchronize();
+  print_debug_kernel<<<1, 1>>>(src, N);
+  cudaDeviceSynchronize();
+  printf("\n");
+}
+
 #endif

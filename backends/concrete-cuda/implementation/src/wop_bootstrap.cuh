@@ -119,6 +119,7 @@ __host__ void host_circuit_bootstrap_vertical_packing(
     uint32_t level_count_pksk, uint32_t base_log_cbs, uint32_t level_count_cbs,
     uint32_t number_of_inputs, uint32_t tau, uint32_t max_shared_memory) {
 
+  printf("movide #1\n");
   // Define the buffers
   // Always define the buffers with strongest memory alignment requirement first
   // Here the only requirement is that lut_vector_indexes should be defined
@@ -167,6 +168,8 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       number_of_inputs, max_shared_memory);
   check_cuda_error(cudaGetLastError());
 
+  print_debug("ggsw_out_cbs", ggsw_out_cbs, ggsw_size);
+
   // CMUX Tree
   uint64_t lut_vector_size = (1 << number_of_inputs);
   host_cmux_tree<Torus, STorus, params>(
@@ -195,9 +198,8 @@ __host__ void host_circuit_bootstrap_vertical_packing(
 }
 
 template <typename Torus>
-__host__ __device__ uint64_t
-get_buffer_size_wop_pbs(uint32_t lwe_dimension,
-                        uint32_t total_bits_of_crt_decomposition) {
+__host__ __device__ uint64_t get_buffer_size_wop_pbs(
+    uint32_t lwe_dimension, uint32_t total_bits_of_crt_decomposition) {
 
   uint64_t buffer_size = (lwe_dimension + 1) *
                          (total_bits_of_crt_decomposition) *
@@ -208,11 +210,11 @@ get_buffer_size_wop_pbs(uint32_t lwe_dimension,
 template <typename Torus, typename STorus, typename params>
 __host__ void scratch_wop_pbs(
     void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
-    uint32_t *delta_log_array, uint32_t *cbs_delta_log,
-    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t level_count_cbs, uint32_t level_count_bsk,
-    uint32_t *number_of_bits_to_extract_array, uint32_t crt_decomposition_size,
-    uint32_t max_shared_memory, bool allocate_gpu_memory) {
+    uint32_t *delta_log_array, uint32_t *cbs_delta_log, uint32_t glwe_dimension,
+    uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t level_count_bsk, uint32_t *number_of_bits_to_extract_array,
+    uint32_t crt_decomposition_size, uint32_t max_shared_memory,
+    bool allocate_gpu_memory) {
 
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
@@ -227,10 +229,11 @@ __host__ void scratch_wop_pbs(
 
   uint64_t bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
-                                          polynomial_size, crt_decomposition_size) +
+                                          polynomial_size,
+                                          crt_decomposition_size) +
       get_buffer_size_bootstrap_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count_bsk, crt_decomposition_size,
-          max_shared_memory);
+          glwe_dimension, polynomial_size, level_count_bsk,
+          crt_decomposition_size, max_shared_memory);
   uint32_t cbs_vp_number_of_inputs = total_bits_to_extract;
   uint32_t mbr_size =
       std::min(params::log2_degree, (int)(total_bits_to_extract));
@@ -264,8 +267,8 @@ __host__ void scratch_wop_pbs(
                                       lwe_dimension, total_bits_to_extract));
   scratch_extract_bits<Torus, STorus, params>(
       v_stream, gpu_index, &bit_extract_buffer, glwe_dimension, lwe_dimension,
-      polynomial_size, level_count_bsk, crt_decomposition_size, max_shared_memory,
-      false);
+      polynomial_size, level_count_bsk, crt_decomposition_size,
+      max_shared_memory, false);
 
   int8_t *cbs_vp_buffer =
       bit_extract_buffer + (ptrdiff_t)bit_extract_buffer_size;
@@ -275,24 +278,6 @@ __host__ void scratch_wop_pbs(
       crt_decomposition_size, max_shared_memory, false);
 }
 
-
-template <typename T>
-__global__ void print_debug_kernel(T *src, int N) {
-  for (int i = 0; i < N; i++) {
-    printf("%ul, ", src[i]);
-  }
-
-}
-
-template <typename T>
-void print_debug(const char *name, T *src, int N) {
-  printf("%s: ", name);
-  cudaDeviceSynchronize();
-  print_debug_kernel<<<1, 1>>>(src, N);
-  cudaDeviceSynchronize();
-  printf("\n");
-
-}
 template <typename Torus, typename STorus, class params>
 __host__ void host_wop_pbs(
     void *v_stream, uint32_t gpu_index, Torus *lwe_array_out,
@@ -333,7 +318,7 @@ __host__ void host_wop_pbs(
 
   for (int i = 0; i < total_bits_to_extract; i++)
     print_debug("lwe_array_out_bit_extract",
-                &lwe_array_out_bit_extract[i * (lwe_dimension+  1)],
+                &lwe_array_out_bit_extract[i * (lwe_dimension + 1)],
                 lwe_dimension + 1);
 
   int8_t *cbs_vp_buffer =
