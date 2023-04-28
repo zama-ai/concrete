@@ -6,8 +6,6 @@
 #ifndef CNCRT_AMORTIZED_PBS_H
 #define CNCRT_AMORTIZED_PBS_H
 
-#include "cooperative_groups.h"
-
 #include "bootstrap.h"
 #include "complex/operations.cuh"
 #include "crypto/gadget.cuh"

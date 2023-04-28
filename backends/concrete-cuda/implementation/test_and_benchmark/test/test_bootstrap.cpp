@@ -159,8 +159,6 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
 
   int number_of_sm = 0;
   cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  if (number_of_inputs > number_of_sm * 4 / (glwe_dimension + 1) / pbs_level)
-    GTEST_SKIP() << "The Low Latency PBS does not support this configuration";
   int bsk_size = (glwe_dimension + 1) * (glwe_dimension + 1) * pbs_level *
                  polynomial_size * (lwe_dimension + 1);
   // Here execute the PBS
@@ -259,7 +257,48 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
         // SHORTINT_PARAM_MESSAGE_4_CARRY_3
         // SHORTINT_PARAM_MESSAGE_7_CARRY_0
         (BootstrapTestParams){930, 1, 16384, 5.129877458078009e-14,
-                              4.70197740328915e-38, 15, 2, 128, 1, 2, 1, 5});
+                              4.70197740328915e-38, 15, 2, 128, 1, 2, 1, 5},
+
+        // BOOLEAN_DEFAULT_PARAMETERS
+        (BootstrapTestParams){777, 3, 512, 1.3880686109937e-11,
+                              1.1919984450689246e-23, 18, 1, 2, 2, 100, 2, 40},
+        // BOOLEAN_TFHE_LIB_PARAMETERS
+        (BootstrapTestParams){830, 2, 1024, 1.994564705573226e-12,
+                              8.645717832544903e-32, 23, 1, 2, 2, 100, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_0
+        (BootstrapTestParams){678, 5, 256, 5.203010004723453e-10,
+                              1.3996292326131784e-19, 15, 1, 2, 1, 100, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_1
+        (BootstrapTestParams){684, 3, 512, 4.177054989616946e-10,
+                              1.1919984450689246e-23, 18, 1, 2, 2, 100, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_2_CARRY_0
+        (BootstrapTestParams){656, 2, 512, 1.1641198952558192e-09,
+                              1.6434266310406663e-15, 8, 2, 4, 1, 100, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_2
+        // SHORTINT_PARAM_MESSAGE_2_CARRY_1
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_0
+        (BootstrapTestParams){742, 2, 1024, 4.998277131225527e-11,
+                              8.645717832544903e-32, 23, 1, 2, 4, 100, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_1_CARRY_3
+        // SHORTINT_PARAM_MESSAGE_2_CARRY_2
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_1
+        // SHORTINT_PARAM_MESSAGE_4_CARRY_0
+        (BootstrapTestParams){745, 1, 2048, 4.478453795193731e-11,
+                              8.645717832544903e-32, 23, 1, 2, 8, 100, 2, 40},
+        // SHORTINT_PARAM_MESSAGE_5_CARRY_0
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_2
+        (BootstrapTestParams){807, 1, 4096, 4.629015039118823e-12,
+                              4.70197740328915e-38, 22, 1, 32, 1, 100, 1, 40},
+        // SHORTINT_PARAM_MESSAGE_6_CARRY_0
+        (BootstrapTestParams){915, 1, 8192, 8.883173851180252e-14,
+                              4.70197740328915e-38, 22, 1, 64, 1, 100, 1, 5},
+        // SHORTINT_PARAM_MESSAGE_3_CARRY_3
+        (BootstrapTestParams){864, 1, 8192, 1.5843564961097632e-15,
+                              4.70197740328915e-38, 15, 2, 8, 8, 100, 1, 5},
+        // SHORTINT_PARAM_MESSAGE_4_CARRY_3
+        // SHORTINT_PARAM_MESSAGE_7_CARRY_0
+        (BootstrapTestParams){930, 1, 16384, 5.129877458078009e-14,
+                              4.70197740328915e-38, 15, 2, 128, 1, 100, 1, 5});
 std::string printParamName(::testing::TestParamInfo<BootstrapTestParams> p) {
   BootstrapTestParams params = p.param;
 

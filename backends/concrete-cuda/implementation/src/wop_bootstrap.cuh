@@ -1,8 +1,6 @@
 #ifndef WOP_PBS_H
 #define WOP_PBS_H
 
-#include "cooperative_groups.h"
-
 #include "bit_extraction.cuh"
 #include "bootstrap.h"
 #include "circuit_bootstrap.cuh"
@@ -226,11 +224,10 @@ __host__ void scratch_wop_pbs(
 
   uint64_t bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
-                                          polynomial_size,
-                                          crt_decomposition_size) +
-      get_buffer_size_bootstrap_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count_bsk,
-          crt_decomposition_size, max_shared_memory);
+                                          polynomial_size, crt_decomposition_size) +
+      get_buffer_size_bootstrap_fast_low_latency<Torus>(
+          glwe_dimension, polynomial_size, level_count_bsk, crt_decomposition_size,
+          max_shared_memory);
   uint32_t cbs_vp_number_of_inputs = total_bits_to_extract;
   uint32_t mbr_size =
       std::min(params::log2_degree, (int)(total_bits_to_extract));
@@ -297,7 +294,7 @@ __host__ void host_wop_pbs(
       (ptrdiff_t)(get_buffer_size_extract_bits<Torus>(
                       glwe_dimension, lwe_dimension, polynomial_size,
                       crt_decomposition_size) +
-                  get_buffer_size_bootstrap_low_latency<Torus>(
+                  get_buffer_size_bootstrap_fast_low_latency<Torus>(
                       glwe_dimension, polynomial_size, level_count_bsk,
                       crt_decomposition_size, max_shared_memory));
 

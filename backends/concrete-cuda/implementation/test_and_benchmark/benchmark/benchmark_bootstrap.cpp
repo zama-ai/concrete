@@ -162,11 +162,6 @@ BENCHMARK_DEFINE_F(Bootstrap_u64, ConcreteCuda_LowLatencyPBS)
 
   if (buffer_size > free)
     st.SkipWithError("Not enough free memory in the device. Skipping...");
-  if (!verify_cuda_bootstrap_low_latency_grid_size_64(
-          glwe_dimension, polynomial_size, pbs_level,
-          input_lwe_ciphertext_count, cuda_get_max_shared_memory(gpu_index)))
-    st.SkipWithError(
-        "Not enough SM on device to run this configuration. Skipping...");
 
   int8_t *pbs_buffer;
   scratch_cuda_bootstrap_low_latency_64(
@@ -267,10 +262,39 @@ LowLatencyBootstrapBenchmarkGenerateParams(benchmark::internal::Benchmark *b) {
       // SHORTINT_PARAM_MESSAGE_6_CARRY_0
       (BootstrapBenchmarkParams){915, 1, 8192, 22, 1, 1},
       // SHORTINT_PARAM_MESSAGE_3_CARRY_3
-      //(BootstrapBenchmarkParams){864, 1, 8192, 15, 2, 1},
+      //      (BootstrapBenchmarkParams){864, 1, 8192, 15, 2, 1},
       // SHORTINT_PARAM_MESSAGE_4_CARRY_3
       // SHORTINT_PARAM_MESSAGE_7_CARRY_0
       (BootstrapBenchmarkParams){930, 1, 16384, 15, 2, 1},
+      // BOOLEAN_DEFAULT_PARAMETERS
+      (BootstrapBenchmarkParams){777, 3, 512, 18, 1, 1000},
+      // BOOLEAN_TFHE_LIB_PARAMETERS
+      (BootstrapBenchmarkParams){830, 2, 1024, 23, 1, 1000},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_0
+      (BootstrapBenchmarkParams){678, 5, 256, 15, 1, 1000},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_1
+      (BootstrapBenchmarkParams){684, 3, 512, 18, 1, 1000},
+      // SHORTINT_PARAM_MESSAGE_2_CARRY_0
+      (BootstrapBenchmarkParams){656, 2, 512, 8, 2, 1000},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_2
+      // SHORTINT_PARAM_MESSAGE_2_CARRY_1
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_0
+      (BootstrapBenchmarkParams){742, 2, 1024, 23, 1, 1000},
+      // SHORTINT_PARAM_MESSAGE_1_CARRY_3
+      // SHORTINT_PARAM_MESSAGE_2_CARRY_2
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_1
+      // SHORTINT_PARAM_MESSAGE_4_CARRY_0
+      (BootstrapBenchmarkParams){745, 1, 2048, 23, 1, 1000},
+      // SHORTINT_PARAM_MESSAGE_5_CARRY_0
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_2
+      (BootstrapBenchmarkParams){807, 1, 4096, 22, 1, 1000},
+      // SHORTINT_PARAM_MESSAGE_6_CARRY_0
+      (BootstrapBenchmarkParams){915, 1, 8192, 22, 1, 100},
+      // SHORTINT_PARAM_MESSAGE_3_CARRY_3
+      //      (BootstrapBenchmarkParams){864, 1, 8192, 15, 2, 100},
+      // SHORTINT_PARAM_MESSAGE_4_CARRY_3
+      // SHORTINT_PARAM_MESSAGE_7_CARRY_0
+      (BootstrapBenchmarkParams){930, 1, 16384, 15, 2, 100},
   };
 
   // Add to the list of parameters to benchmark
