@@ -29,13 +29,19 @@ __device__ void polynomial_product_in_fourier_domain(T *result, T *first,
   }
 }
 
+// Computes result += first * second
+// If init_accumulator is set, assumes that result was not initialized and does
+// that with the outcome of first * second
 template <class params, typename T>
-__device__ void polynomial_product_accumulate_in_fourier_domain(T *result,
-                                                                T *first,
-                                                                T *second) {
+__device__ void
+polynomial_product_accumulate_in_fourier_domain(T *result, T *first, T *second,
+                                                bool init_accumulator = false) {
   int tid = threadIdx.x;
   for (int i = 0; i < params::opt / 2; i++) {
-    result[tid] += first[tid] * second[tid];
+    if (init_accumulator)
+      result[tid] = first[tid] * second[tid];
+    else
+      result[tid] += first[tid] * second[tid];
     tid += params::degree / params::opt;
   }
 }

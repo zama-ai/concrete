@@ -1,10 +1,8 @@
 #ifndef BIT_EXTRACT_CUH
 #define BIT_EXTRACT_CUH
 
-#include "cooperative_groups.h"
-
 #include "bit_extraction.h"
-#include "bootstrap_low_latency.cuh"
+#include "bootstrap_fast_low_latency.cuh"
 #include "device.h"
 #include "keyswitch.cuh"
 #include "polynomial/parameters.cuh"
@@ -160,12 +158,12 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  uint64_t buffer_size = get_buffer_size_extract_bits<Torus>(
-                             glwe_dimension, lwe_dimension, polynomial_size,
-                             crt_decomposition_size) +
-                         get_buffer_size_bootstrap_low_latency<Torus>(
-                             glwe_dimension, polynomial_size, level_count,
-                             crt_decomposition_size, max_shared_memory);
+  uint64_t buffer_size =
+      get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
+                                          polynomial_size, crt_decomposition_size) +
+      get_buffer_size_bootstrap_fast_low_latency<Torus>(
+          glwe_dimension, polynomial_size, level_count, crt_decomposition_size,
+          max_shared_memory);
   // allocate and initialize device pointers for bit extraction
   if (allocate_gpu_memory) {
     *bit_extract_buffer =
@@ -178,7 +176,7 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
   check_cuda_error(
       cudaMemsetAsync(*bit_extract_buffer, 0, buffer_size, *stream));
 
-  scratch_bootstrap_low_latency<Torus, STorus, params>(
+  scratch_bootstrap_fast_low_latency<Torus, STorus, params>(
       v_stream, gpu_index, bit_extract_buffer, glwe_dimension, polynomial_size,
       level_count, crt_decomposition_size, max_shared_memory, false);
 }
@@ -207,11 +205,12 @@ __host__ void host_single_ciphertext_extract_bits(
   // Always define the PBS buffer first, because it has the strongest memory
   // alignment requirement (16 bytes for double2)
   int8_t *pbs_buffer = (int8_t *)bit_extract_buffer;
-  Torus *lut_pbs = (Torus *)pbs_buffer +
-                   (ptrdiff_t)(get_buffer_size_bootstrap_low_latency<Torus>(
-                                   glwe_dimension, polynomial_size,
-                                   level_count_bsk, 1, max_shared_memory) /
-                               sizeof(Torus));
+  Torus *lut_pbs =
+      (Torus *)pbs_buffer +
+      (ptrdiff_t)(get_buffer_size_bootstrap_fast_low_latency<Torus>(
+                      glwe_dimension, polynomial_size, level_count_bsk,
+                      1, max_shared_memory) /
+                  sizeof(Torus));
   Torus *lwe_array_in_buffer =
       (Torus *)lut_pbs + (ptrdiff_t)((glwe_dimension + 1) * polynomial_size);
   Torus *lwe_array_in_shifted_buffer =
@@ -264,7 +263,7 @@ __host__ void host_single_ciphertext_extract_bits(
         lut_pbs, (Torus)(0ll - 1ll << (delta_log - 1 + bit_idx)),
         glwe_dimension);
     check_cuda_error(cudaGetLastError());
-    host_bootstrap_low_latency<Torus, params>(
+    host_bootstrap_fast_low_latency<Torus, params>(
         v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_pbs,
         lut_vector_indexes, lwe_array_out_ks_buffer, fourier_bsk, pbs_buffer,
         glwe_dimension, lwe_dimension_out, polynomial_size, base_log_bsk,
@@ -309,7 +308,7 @@ host_extract_bits(void *v_stream, uint32_t gpu_index, Torus *list_lwe_array_out,
   int bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension_out,
                                           polynomial_size, 1) +
-      get_buffer_size_bootstrap_low_latency<Torus>(
+      get_buffer_size_bootstrap_fast_low_latency<Torus>(
           glwe_dimension, polynomial_size, level_count_bsk, 1,
           max_shared_memory);
 

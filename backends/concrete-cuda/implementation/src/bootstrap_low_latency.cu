@@ -1,65 +1,107 @@
+#include "bootstrap_fast_low_latency.cuh"
 #include "bootstrap_low_latency.cuh"
-
 /*
  * Returns the buffer size for 64 bits executions
  */
 uint64_t get_buffer_size_bootstrap_low_latency_64(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory) {
-  return get_buffer_size_bootstrap_low_latency<uint64_t>(
-      glwe_dimension, polynomial_size, level_count, input_lwe_ciphertext_count,
-      max_shared_memory);
-}
 
-// The number of samples should be lower than 4 * SM/((k + 1) * l) (the
-// factor 4 being related to the occupancy of 50%).
-bool verify_cuda_bootstrap_low_latency_grid_size_64(
-    int glwe_dimension, int polynomial_size, int level_count, int num_samples,
-    uint32_t max_shared_memory) {
-
-  int ret;
   switch (polynomial_size) {
   case 256:
-    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<256>>(
-        glwe_dimension, polynomial_size, level_count, num_samples,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t, Degree<256>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      return get_buffer_size_bootstrap_fast_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
+    else
+      return get_buffer_size_bootstrap_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
     break;
   case 512:
-    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<512>>(
-        glwe_dimension, polynomial_size, level_count, num_samples,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t, Degree<512>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      return get_buffer_size_bootstrap_fast_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
+    else
+      return get_buffer_size_bootstrap_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
     break;
   case 1024:
-    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<1024>>(
-        glwe_dimension, polynomial_size, level_count, num_samples,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<1024>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      return get_buffer_size_bootstrap_fast_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
+    else
+      return get_buffer_size_bootstrap_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
     break;
   case 2048:
-    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<2048>>(
-        glwe_dimension, polynomial_size, level_count, num_samples,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<2048>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      return get_buffer_size_bootstrap_fast_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
+    else
+      return get_buffer_size_bootstrap_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
     break;
   case 4096:
-    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<4096>>(
-        glwe_dimension, polynomial_size, level_count, num_samples,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<4096>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      return get_buffer_size_bootstrap_fast_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
+    else
+      return get_buffer_size_bootstrap_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
     break;
   case 8192:
-    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<8192>>(
-        glwe_dimension, polynomial_size, level_count, num_samples,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<8192>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      return get_buffer_size_bootstrap_fast_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
+    else
+      return get_buffer_size_bootstrap_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
     break;
   case 16384:
-    ret = verify_cuda_bootstrap_low_latency_grid_size<uint64_t, Degree<16384>>(
-        glwe_dimension, polynomial_size, level_count, num_samples,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<16384>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      return get_buffer_size_bootstrap_fast_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
+    else
+      return get_buffer_size_bootstrap_low_latency<uint64_t>(
+          glwe_dimension, polynomial_size, level_count,
+          input_lwe_ciphertext_count, max_shared_memory);
     break;
   default:
     break;
   }
-
-  return ret;
 }
+
 /*
  * Runs standard checks to validate the inputs
  */
@@ -73,15 +115,6 @@ void checks_fast_bootstrap_low_latency(int glwe_dimension, int level_count,
           polynomial_size == 1024 || polynomial_size == 2048 ||
           polynomial_size == 4096 || polynomial_size == 8192 ||
           polynomial_size == 16384));
-  // The number of samples should be lower than 4 * SM/((k + 1) * l) (the
-  // factor 4 being related to the occupancy of 50%).
-  int number_of_sm = 0;
-  cudaDeviceGetAttribute(&number_of_sm, cudaDevAttrMultiProcessorCount, 0);
-  assert(("Error (GPU low latency PBS): the number of input LWEs must be lower "
-          "or equal to the number of streaming multiprocessors on the device "
-          "divided by 4 * (k + 1) * level_count",
-          verify_cuda_bootstrap_low_latency_grid_size(
-              glwe_dimension, level_count, num_samples)));
 }
 
 /*
@@ -112,46 +145,92 @@ void scratch_cuda_bootstrap_low_latency_32(
 
   switch (polynomial_size) {
   case 256:
-    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<256>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t, Degree<256>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint32_t, int32_t, Degree<256>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<256>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 512:
-    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<512>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
-    break;
-  case 1024:
-    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<1024>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t, Degree<512>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint32_t, int32_t, Degree<512>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<512>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 2048:
-    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<2048>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<2048>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint32_t, int32_t, Degree<2048>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<2048>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 4096:
-    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<4096>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<4096>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint32_t, int32_t, Degree<4096>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<4096>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 8192:
-    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<8192>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<8192>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint32_t, int32_t, Degree<8192>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<8192>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 16384:
-    scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<16384>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<16384>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint32_t, int32_t, Degree<16384>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint32_t, int32_t, Degree<16384>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   default:
     break;
@@ -169,51 +248,113 @@ void scratch_cuda_bootstrap_low_latency_64(
     uint32_t glwe_dimension, uint32_t polynomial_size, uint32_t level_count,
     uint32_t input_lwe_ciphertext_count, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
+
   checks_fast_bootstrap_low_latency(
       glwe_dimension, level_count, polynomial_size, input_lwe_ciphertext_count);
 
   switch (polynomial_size) {
   case 256:
-    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<256>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t, Degree<256>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint64_t, int64_t, Degree<256>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<256>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 512:
-    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<512>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t, Degree<512>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint64_t, int64_t, Degree<512>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<512>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 1024:
-    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<1024>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<1024>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint64_t, int64_t, Degree<1024>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<1024>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 2048:
-    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<2048>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<2048>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint64_t, int64_t, Degree<2048>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<2048>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 4096:
-    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<4096>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<4096>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint64_t, int64_t, Degree<4096>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<4096>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 8192:
-    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<8192>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<8192>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint64_t, int64_t, Degree<8192>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<8192>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   case 16384:
-    scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<16384>>(
-        v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
-        level_count, input_lwe_ciphertext_count, max_shared_memory,
-        allocate_gpu_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<16384>>(
+            glwe_dimension, level_count, input_lwe_ciphertext_count,
+            max_shared_memory))
+      scratch_bootstrap_fast_low_latency<uint64_t, int64_t, Degree<16384>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
+    else
+      scratch_bootstrap_low_latency<uint64_t, int64_t, Degree<16384>>(
+          v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
+          level_count, input_lwe_ciphertext_count, max_shared_memory,
+          allocate_gpu_memory);
     break;
   default:
     break;
@@ -240,60 +381,128 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
 
   switch (polynomial_size) {
   case 256:
-    host_bootstrap_low_latency<uint32_t, Degree<256>>(
-        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t, Degree<256>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint32_t, Degree<256>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint32_t, Degree<256>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 512:
-    host_bootstrap_low_latency<uint32_t, Degree<512>>(
-        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t, Degree<512>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint32_t, Degree<512>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint32_t, Degree<512>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 1024:
-    host_bootstrap_low_latency<uint32_t, Degree<1024>>(
-        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<1024>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint32_t, Degree<1024>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint32_t, Degree<1024>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 2048:
-    host_bootstrap_low_latency<uint32_t, Degree<2048>>(
-        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<2048>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint32_t, Degree<2048>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint32_t, Degree<2048>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 4096:
-    host_bootstrap_low_latency<uint32_t, Degree<4096>>(
-        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<4096>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint32_t, Degree<4096>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint32_t, Degree<4096>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 8192:
-    host_bootstrap_low_latency<uint32_t, Degree<8192>>(
-        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<8192>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint32_t, Degree<8192>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint32_t, Degree<8192>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 16384:
-    host_bootstrap_low_latency<uint32_t, Degree<16384>>(
-        v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
-        (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<16384>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint32_t, Degree<16384>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint32_t, Degree<16384>>(
+          v_stream, gpu_index, (uint32_t *)lwe_array_out,
+          (uint32_t *)lut_vector, (uint32_t *)lut_vector_indexes,
+          (uint32_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   default:
     break;
@@ -389,61 +598,128 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
 
   switch (polynomial_size) {
   case 256:
-    host_bootstrap_low_latency<uint64_t, Degree<256>>(
-        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t, Degree<256>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint64_t, Degree<256>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint64_t, Degree<256>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 512:
-    host_bootstrap_low_latency<uint64_t, Degree<512>>(
-        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t, Degree<512>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint64_t, Degree<512>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint64_t, Degree<512>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 1024:
-    host_bootstrap_low_latency<uint64_t, Degree<1024>>(
-        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<1024>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint64_t, Degree<1024>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint64_t, Degree<1024>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 2048:
-    host_bootstrap_low_latency<uint64_t, Degree<2048>>(
-        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<2048>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint64_t, Degree<2048>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint64_t, Degree<2048>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 4096:
-    host_bootstrap_low_latency<uint64_t, Degree<4096>>(
-        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<4096>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint64_t, Degree<4096>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint64_t, Degree<4096>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 8192:
-    host_bootstrap_low_latency<uint64_t, Degree<8192>>(
-        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint32_t,
+                                                         Degree<8192>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint64_t, Degree<8192>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint64_t, Degree<8192>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
     break;
   case 16384:
-    host_bootstrap_low_latency<uint64_t, Degree<16384>>(
-        v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
-        (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
-        (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
-        polynomial_size, base_log, level_count, num_samples, num_lut_vectors,
-        max_shared_memory);
-    break;
+    if (verify_cuda_bootstrap_fast_low_latency_grid_size<uint64_t,
+                                                         Degree<16384>>(
+            glwe_dimension, level_count, num_samples, max_shared_memory))
+      host_bootstrap_fast_low_latency<uint64_t, Degree<16384>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
+    else
+      host_bootstrap_low_latency<uint64_t, Degree<16384>>(
+          v_stream, gpu_index, (uint64_t *)lwe_array_out,
+          (uint64_t *)lut_vector, (uint64_t *)lut_vector_indexes,
+          (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
+          glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
+          num_samples, num_lut_vectors, max_shared_memory);
   default:
     break;
   }
