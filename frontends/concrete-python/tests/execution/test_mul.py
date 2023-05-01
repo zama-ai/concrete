@@ -169,3 +169,30 @@ def test_mul(function, parameters, helpers):
 
     sample = helpers.generate_sample(parameters)
     helpers.check_execution(circuit, function, sample)
+
+
+@pytest.mark.parametrize(
+    "parameter_encryption_statuses,function,inputs",
+    [
+        pytest.param(
+            {"x": "encrypted", "y": "encrypted"},
+            lambda x, y: (x - y) * ((x - y) > 0),
+            [
+                np.array([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]),
+                np.array([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]),
+            ],
+            id="(x - y) * ((x - y) > 0)",
+        ),
+    ],
+)
+def test_mul_specific(parameter_encryption_statuses, function, inputs, helpers):
+    """
+    Test mul with specific inputs.
+    """
+
+    configuration = helpers.configuration()
+
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
+    circuit = compiler.compile([tuple(inputs)], configuration)
+
+    helpers.check_execution(circuit, function, inputs)
