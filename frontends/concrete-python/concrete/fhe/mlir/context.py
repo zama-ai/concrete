@@ -1401,9 +1401,6 @@ class Context:
 
         assert self.is_bit_width_compatible(resulting_type, x, y)
 
-        x = self.to_signedness(x, of=resulting_type)
-        y = self.to_signedness(y, of=resulting_type)
-
         use_linalg = x.is_tensor or y.is_tensor
 
         x = self.tensorize(x) if use_linalg else x
@@ -1414,6 +1411,29 @@ class Context:
 
         dialect = fhelinalg if use_linalg else fhe
         operation = dialect.MulEintIntOp if y.is_clear else dialect.MulEintOp
+
+        if (x.is_signed or y.is_signed) and resulting_type.is_unsigned:
+            x = self.to_signed(x)
+            y = self.to_signed(y)
+
+            signed_resulting_type = self.typeof(
+                Value(
+                    dtype=Integer(is_signed=True, bit_width=resulting_type.bit_width),
+                    shape=resulting_type.shape,
+                    is_encrypted=resulting_type.is_encrypted,
+                )
+            )
+            intermediate_result = self.operation(
+                operation,
+                signed_resulting_type,
+                x.result,
+                y.result,
+            )
+
+            return self.to_unsigned(intermediate_result)
+
+        x = self.to_signedness(x, of=resulting_type)
+        y = self.to_signedness(y, of=resulting_type)
 
         return self.operation(
             operation,
