@@ -7,6 +7,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Union, get_type_hints
 
+from .utils import friendly_type_format
+
 DEFAULT_P_ERROR = None
 DEFAULT_GLOBAL_P_ERROR = 1 / 100_000
 
@@ -19,6 +21,23 @@ class ParameterSelectionStrategy(str, Enum):
     V0 = "v0"
     MONO = "mono"
     MULTI = "multi"
+
+    @classmethod
+    def parse(cls, string: str) -> "ParameterSelectionStrategy":
+        """Convert a string to a ParameterSelectionStrategy."""
+        if isinstance(string, cls):
+            return string
+        if not isinstance(string, str):
+            message = f"{string} cannot be parsed to a {cls.__name__}"
+            raise TypeError(message)
+        for value in ParameterSelectionStrategy:
+            if string.lower() == value.value:
+                return value
+        message = (
+            f"'{string}' is not a valid '{friendly_type_format(cls)}' ("
+            f"{', '.join(v.value for v in ParameterSelectionStrategy)})"
+        )
+        raise ValueError(message)
 
 
 class Configuration:
@@ -42,23 +61,10 @@ class Configuration:
     insecure_key_cache_location: Optional[str]
     auto_adjust_rounders: bool
     single_precision: bool
-    parameter_selection_strategy: ParameterSelectionStrategy
-
-    def _validate(self):
-        """
-        Validate configuration.
-        """
-
-        if not self.enable_unsafe_features:  # noqa: SIM102
-            if self.use_insecure_key_cache:
-                message = "Insecure key cache cannot be used without enabling unsafe features"
-                raise RuntimeError(message)
-
-        if self.use_insecure_key_cache and self.insecure_key_cache_location is None:
-            message = "Insecure key cache cannot be enabled without specifying its location"
-            raise RuntimeError(message)
-
-    # pylint: disable=too-many-arguments
+    parameter_selection_strategy: Union[ParameterSelectionStrategy, str]
+    show_progress: bool
+    progress_title: str
+    progress_tag: Union[bool, int]
 
     def __init__(
         self,
@@ -78,8 +84,13 @@ class Configuration:
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
         single_precision: bool = True,
-        parameter_selection_strategy: ParameterSelectionStrategy = ParameterSelectionStrategy.MONO,
-    ):
+        parameter_selection_strategy: Union[
+            ParameterSelectionStrategy, str
+        ] = ParameterSelectionStrategy.MONO,
+        show_progress: bool = False,
+        progress_title: str = "",
+        progress_tag: Union[bool, int] = False,
+    ):  # pylint: disable=too-many-arguments
         self.verbose = verbose
         self.show_graph = show_graph
         self.show_mlir = show_mlir
@@ -99,72 +110,54 @@ class Configuration:
         self.auto_adjust_rounders = auto_adjust_rounders
         self.single_precision = single_precision
         self.parameter_selection_strategy = parameter_selection_strategy
+        self.show_progress = show_progress
+        self.progress_title = progress_title
+        self.progress_tag = progress_tag
 
         self._validate()
 
-    # pylint: enable=too-many-arguments
+    class Keep:
+        """Keep previous arg value during fork."""
 
-    def fork(self, **kwargs) -> "Configuration":
+    KEEP = Keep()
+
+    def fork(
+        self,
+        /,
+        # pylint: disable=unused-argument
+        verbose: Union[Keep, bool] = KEEP,
+        show_graph: Union[Keep, Optional[bool]] = KEEP,
+        show_mlir: Union[Keep, Optional[bool]] = KEEP,
+        show_optimizer: Union[Keep, Optional[bool]] = KEEP,
+        dump_artifacts_on_unexpected_failures: Union[Keep, bool] = KEEP,
+        enable_unsafe_features: Union[Keep, bool] = KEEP,
+        use_insecure_key_cache: Union[Keep, bool] = KEEP,
+        insecure_key_cache_location: Union[Keep, Optional[Union[Path, str]]] = KEEP,
+        loop_parallelize: Union[Keep, bool] = KEEP,
+        dataflow_parallelize: Union[Keep, bool] = KEEP,
+        auto_parallelize: Union[Keep, bool] = KEEP,
+        jit: Union[Keep, bool] = KEEP,
+        p_error: Union[Keep, Optional[float]] = KEEP,
+        global_p_error: Union[Keep, Optional[float]] = KEEP,
+        auto_adjust_rounders: Union[Keep, bool] = KEEP,
+        single_precision: Union[Keep, bool] = KEEP,
+        parameter_selection_strategy: Union[Keep, Union[ParameterSelectionStrategy, str]] = KEEP,
+        show_progress: Union[Keep, bool] = KEEP,
+        progress_title: Union[Keep, str] = KEEP,
+        progress_tag: Union[Keep, Union[bool, int]] = KEEP,
+    ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
 
-        Args:
-            **kwargs:
-                changes to make
+        See Configuration.
 
-        Returns:
-            Configuration:
-                configuration that is forked from self and updated using kwargs
         """
-
-        # pylint: disable=too-many-branches
-
+        args = locals()
         result = deepcopy(self)
-
-        hints = get_type_hints(Configuration)
-        for name, value in kwargs.items():
-            if name not in hints:
-                message = f"Unexpected keyword argument '{name}'"
-                raise TypeError(message)
-
-            hint = hints[name]
-            expected = None
-            is_correctly_typed = True
-
-            if name == "insecure_key_cache_location":
-                if not (value is None or isinstance(value, str)):
-                    is_correctly_typed = False
-                    expected = "Optional[str]"
-
-            elif name in ["p_error", "global_p_error"]:
-                if not (value is None or isinstance(value, float)):
-                    is_correctly_typed = False
-                    expected = "Optional[float]"
-
-            elif name in ["show_graph", "show_mlir", "show_optimizer"]:
-                if not (value is None or isinstance(value, bool)):
-                    is_correctly_typed = False
-                    expected = "Optional[bool]"
-
-            elif name == "parameter_selection_strategy":
-                if not isinstance(value, (ParameterSelectionStrategy, str)):
-                    is_correctly_typed = False
-                    expected = "Union[ParameterSelectionStrategy, str]"
-                else:
-                    value = ParameterSelectionStrategy(value)
-
-            elif not isinstance(value, hint):  # type: ignore
-                is_correctly_typed = False
-
-            if not is_correctly_typed:
-                if expected is None:
-                    expected = hint.__name__ if hasattr(hint, "__name__") else str(hint)
-                message = (
-                    f"Unexpected type for keyword argument '{name}' "
-                    f"(expected '{expected}', got '{type(value).__name__}')"
-                )
-                raise TypeError(message)
-
+        for name in get_type_hints(Configuration.__init__):
+            value = args[name]
+            if isinstance(value, Configuration.Keep):
+                continue
             setattr(result, name, value)
 
         # pylint: disable=protected-access
@@ -173,4 +166,62 @@ class Configuration:
 
         return result
 
-        # pylint: enable=too-many-branches
+    def _validate(self):
+        """
+        Validate configuration.
+        """
+        for name, hint in get_type_hints(Configuration.__init__).items():
+            original_hint = hint
+            value = getattr(self, name)
+            if name == "parameter_selection_strategy":
+                try:
+                    value = ParameterSelectionStrategy.parse(value)
+                except ValueError as exc:
+                    message = f"Unexpected value for keyword argument '{name}', {str(exc)}"
+                    # pylint: disable=raise-missing-from
+                    raise ValueError(message)  # noqa: B904
+                except TypeError:
+                    pass  # handle by the generic check
+            if str(hint).startswith("typing.Union") or str(hint).startswith("typing.Optional"):
+                if isinstance(value, tuple(hint.__args__)):
+                    continue
+            elif isinstance(value, hint):
+                continue
+            hint = friendly_type_format(original_hint)
+            value_type = friendly_type_format(type(value))
+            message = (
+                f"Unexpected type for keyword argument '{name}' "
+                f"(expected '{hint}', got '{value_type}')"
+            )
+            raise TypeError(message)
+
+        if not self.enable_unsafe_features:  # noqa: SIM102
+            if self.use_insecure_key_cache:
+                message = "Insecure key cache cannot be used without enabling unsafe features"
+                raise RuntimeError(message)
+
+        if self.use_insecure_key_cache and self.insecure_key_cache_location is None:
+            message = "Insecure key cache cannot be enabled without specifying its location"
+            raise RuntimeError(message)
+
+
+def __check_fork_consistency():
+    hints_init = get_type_hints(Configuration.__init__)
+    hints_fork = get_type_hints(Configuration.fork)
+    diff = set.symmetric_difference(set(hints_init), set(hints_fork) - {"return"})
+    if diff:  # pragma: no cover
+        message = f"Configuration.fork is inconsistent with Configuration for: {diff}"
+        raise TypeError(message)
+    for name, init_hint in hints_init.items():
+        fork_hint = hints_fork[name]
+        if Union[Configuration.Keep, init_hint] != fork_hint:  # pragma: no cover
+            fork_hint = friendly_type_format(fork_hint)
+            init_hint = friendly_type_format(init_hint)
+            message = (
+                f"Configuration.fork parameter {name}: {fork_hint} is inconsistent"
+                f"with Configuration type: {init_hint}"
+            )
+            raise TypeError(message)
+
+
+__check_fork_consistency()

@@ -2,6 +2,7 @@
 Declaration of various functions and constants related to compilation.
 """
 
+import re
 from copy import deepcopy
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
@@ -683,3 +684,21 @@ def check_subgraph_fusability(
             )
 
     return True
+
+
+def friendly_type_format(type_: type) -> str:
+    """Convert a type to a string. Remove package name and class/type keywords."""
+    result = str(type_)
+    result = re.sub(r"<\w+ '(\w+)'>", r"\1", result)
+    result = re.sub(r"(\w+\.)+", "", result)
+    if result.startswith("Union"):
+        # py3.8: Optional are Union
+        try:
+            arg0, arg1 = type_.__args__  # type: ignore
+        except (AttributeError, ValueError):
+            pass
+        else:
+            if arg1 == None.__class__:
+                return f"Optional[{friendly_type_format(arg0)}]"
+
+    return result

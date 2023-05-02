@@ -53,34 +53,40 @@ Additional kwarg to `compile` functions take higher precedence. So if you set th
 ## Options
 
 * **show\_graph**: Optional\[bool] = None
-  * Whether to print computation graph during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
+  * Print computation graph during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
 * **show\_mlir**: Optional\[bool] = None
-  * Whether to print MLIR during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
+  * Print MLIR during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
 * **show\_optimizer**: Optional\[bool] = None
-  * Whether to print optimizer output during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
+  * Print optimizer output during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
 * **verbose**: bool = False
-  * Whether to print details related to compilation.
+  * Print details related to compilation.
 * **dump\_artifacts\_on\_unexpected\_failures**: bool = True
-  * Whether to export debugging artifacts automatically on compilation failures.
+  * Export debugging artifacts automatically on compilation failures.
 * **auto\_adjust\_rounders**: bool = False
-  * Whether to adjust rounders automatically.
+  * Adjust rounders automatically.
 * **p\_error**: Optional\[float] = None
   * Error probability for individual table lookups. If set, all table lookups will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
 * **global\_p\_error**: Optional\[float] = None
   * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
 * **single\_precision**: bool = True
-  * Whether to use single precision for the whole circuit.
+  * Use single precision for the whole circuit.
 * **jit**: bool = False
-  * Whether to use JIT compilation.
+  * Enable JIT compilation.
 * **loop\_parallelize**: bool = True
-  * Whether to enable loop parallelization in the compiler.
+  * Enable loop parallelization in the compiler.
 * **dataflow\_parallelize**: bool = False
-  * Whether to enable dataflow parallelization in the compiler.
+  * Enable dataflow parallelization in the compiler.
 * **auto\_parallelize**: bool = False
-  * Whether to enable auto parallelization in the compiler.
+  * Enable auto parallelization in the compiler.
 * **enable\_unsafe\_features**: bool = False
-  * Whether to enable unsafe features.
+  * Enable unsafe features.
 * **use\_insecure\_key\_cache**: bool = False _(Unsafe)_
-  * Whether to use the insecure key cache.
+  * Use the insecure key cache.
 * **insecure\_key\_cache\_location**: Optional\[Union\[Path, str]] = None
   * Location of insecure key cache.
+* **show_progress**: bool = False,
+  * Display a progress bar during circuit execution
+* **progress_title**: str = "",
+  * Title of the progress bar
+* **progress_tag**: Union[bool, int] = False,
+  * How many nested tag elements to display with the progress bar. `True` means all tag elements and `False` disables the display. `2` will display `elmt1.elmt2`
