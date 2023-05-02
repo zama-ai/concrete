@@ -14,6 +14,7 @@ ignore = [
 
 [per-file-ignores]
 "**/__init__.py" = ["F401"]
+"concrete/fhe/compilation/configuration.py" = ["ARG002"]
 "concrete/fhe/mlir/processors/all.py" = ["F401"]
 "concrete/fhe/mlir/converter.py" = ["ARG002", "B011", "F403", "F405"]
 "examples/**" = ["PLR2004"]

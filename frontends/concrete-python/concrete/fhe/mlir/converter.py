@@ -4,10 +4,12 @@ Declaration of `Converter` class.
 
 # pylint: disable=import-error,no-name-in-module
 
+import sys
 from copy import deepcopy
 from typing import List, Tuple
 
 import concrete.lang
+import concrete.lang.dialects.tracing
 import networkx as nx
 import numpy as np
 from mlir.dialects import func
@@ -67,12 +69,17 @@ class Converter:
                             conversion.set_original_bit_width(node.properties["original_bit_width"])
                         ctx.conversions[node] = conversion
 
-                    for node in nx.lexicographical_topological_sort(graph.graph):
-                        if node.operation == Operation.Input:
-                            continue
+                    ordered_nodes = [
+                        node
+                        for node in nx.lexicographical_topological_sort(graph.graph)
+                        if node.operation != Operation.Input
+                    ]
 
+                    for progress_index, node in enumerate(ordered_nodes):
+                        self.trace_progress(configuration, progress_index, ordered_nodes)
                         preds = [ctx.conversions[pred] for pred in graph.ordered_preds_of(node)]
                         self.node(ctx, node, preds)
+                    self.trace_progress(configuration, len(ordered_nodes), ordered_nodes)
 
                     outputs = []
                     for node in graph.ordered_outputs():
@@ -82,6 +89,81 @@ class Converter:
                     return tuple(outputs)
 
         return str(module).strip()
+
+    @staticmethod
+    def stdout_with_ansi_support() -> bool:
+        """Detect if ansi characters can be used (e.g. not the case in notebooks)."""
+        return sys.stdout.isatty()
+
+    @staticmethod
+    def simplify_tag(configuration: Configuration, tag: str) -> str:
+        """Keep only `n` higher tag parts."""
+        if configuration.progress_tag is True or not tag:
+            return tag
+        last_dot_pos = 0
+        for _ in range(configuration.progress_tag):
+            last_dot_pos = tag.find(".", last_dot_pos + 1)
+            if last_dot_pos == -1:
+                return tag
+        return tag[:last_dot_pos]
+
+    @classmethod
+    def trace_progress(cls, configuration: Configuration, progress_index: int, nodes: List[Node]):
+        """
+        Add a trace_message for progress.
+
+        Args:
+            configuration:
+                configuration for title, tags options
+
+            progress_index:
+                index of the next node to process
+
+            nodes:
+                all nodes
+        """
+        if not nodes or not configuration.show_progress:
+            return
+
+        total = len(nodes)
+        title = configuration.progress_title
+        max_nb_steps = 50
+
+        assert 0 <= progress_index <= total
+
+        nb_ops_to_percent = lambda current: int(100 * current / total)
+        percent = nb_ops_to_percent(progress_index)
+        prev_percent = nb_ops_to_percent(progress_index - 1)
+        steps_done = percent // 2
+        prev_steps_done = prev_percent // 2
+
+        step = "█"
+        if not cls.stdout_with_ansi_support():
+            if progress_index == 0:
+                msg = f"{' ' * len(title)}{'_' * max_nb_steps}\n{title}"
+            else:
+                if steps_done == prev_steps_done:
+                    return
+                msg = step
+                if percent == 100:
+                    msg += " 100%\n"
+
+        elif progress_index == 0 or percent != prev_percent:
+            if configuration.progress_tag and progress_index != total:
+                tag = nodes[progress_index].tag
+                tag = cls.simplify_tag(configuration, tag)
+                if tag:
+                    tag = f" ({tag})"
+            else:
+                tag = ""
+            cleared_line = "\033[512D\033[2K"
+            full_bar = f"|{step * steps_done}{'.' * (max_nb_steps - steps_done)}|"
+            msg = f"{cleared_line}{title}{percent:>3}% {full_bar} {percent:>3}%{tag}"
+            if percent == 100:
+                msg += "\n"
+        else:
+            return
+        concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)  # pylint: disable=no-member
 
     def process(self, graph: Graph, configuration: Configuration) -> Graph:
         """
