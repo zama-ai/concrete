@@ -43,6 +43,7 @@ class Configuration:
     auto_adjust_rounders: bool
     single_precision: bool
     parameter_selection_strategy: ParameterSelectionStrategy
+    show_fhe_execution_progress: bool
 
     def _validate(self):
         """
@@ -79,6 +80,7 @@ class Configuration:
         auto_adjust_rounders: bool = False,
         single_precision: bool = True,
         parameter_selection_strategy: ParameterSelectionStrategy = ParameterSelectionStrategy.MONO,
+        show_fhe_execution_progress: bool = False,
     ):
         self.verbose = verbose
         self.show_graph = show_graph
@@ -99,6 +101,7 @@ class Configuration:
         self.auto_adjust_rounders = auto_adjust_rounders
         self.single_precision = single_precision
         self.parameter_selection_strategy = parameter_selection_strategy
+        self.show_fhe_execution_progress = show_fhe_execution_progress
 
         self._validate()
 

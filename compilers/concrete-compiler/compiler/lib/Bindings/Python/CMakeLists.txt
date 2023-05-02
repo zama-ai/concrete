@@ -30,6 +30,7 @@ declare_mlir_python_extension(
   MLIRCAPIRegisterEverything
   CONCRETELANGCAPIFHE
   CONCRETELANGCAPIFHELINALG
+  CONCRETELANGCAPITRACING
   CONCRETELANGPySupport)
 
 # ######################################################################################################################
@@ -96,6 +97,19 @@ declare_mlir_dialect_python_bindings(
   concrete/lang/dialects/fhelinalg.py
   DIALECT_NAME
   FHELinalg)
+
+declare_mlir_dialect_python_bindings(
+  ADD_TO_PARENT
+  ConcretelangBindingsPythonSources.Dialects
+  ROOT_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  CONCRETELANGBindingsPythonTracingOps
+  TD_FILE
+  concrete/lang/dialects/TracingOps.td
+  SOURCES
+  concrete/lang/dialects/tracing.py
+  DIALECT_NAME
+  Tracing)
 
 # ######################################################################################################################
 # Build composite binaries

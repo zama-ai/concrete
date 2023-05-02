@@ -5,6 +5,7 @@
 
 #include "concretelang-c/Dialect/FHE.h"
 #include "concretelang-c/Dialect/FHELinalg.h"
+#include "concretelang-c/Dialect/Tracing.h"
 #include "concretelang/Bindings/Python/CompilerAPIModule.h"
 #include "concretelang/Bindings/Python/DialectModules.h"
 #include "concretelang/Support/Constants.h"
@@ -42,6 +43,9 @@ PYBIND11_MODULE(_concretelang, m) {
 
         const MlirDialectHandle fhelinalg = mlirGetDialectHandle__fhelinalg__();
         mlirDialectHandleRegisterDialect(fhelinalg, context);
+
+        const MlirDialectHandle tracing = mlirGetDialectHandle__tracing__();
+        mlirDialectHandleRegisterDialect(tracing, context);
 
         mlirContextLoadAllAvailableDialects(context);
       },

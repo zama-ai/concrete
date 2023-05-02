@@ -10,6 +10,7 @@ from typing import List, Tuple
 import concrete.lang
 import networkx as nx
 import numpy as np
+from concrete.lang.dialects import tracing
 from mlir.dialects import func
 from mlir.ir import Context as MlirContext
 from mlir.ir import InsertionPoint as MlirInsertionPoint
@@ -67,12 +68,20 @@ class Converter:
                             conversion.set_original_bit_width(node.properties["original_bit_width"])
                         ctx.conversions[node] = conversion
 
-                    for node in nx.lexicographical_topological_sort(graph.graph):
-                        if node.operation == Operation.Input:
-                            continue
+                    ops_nodes = [
+                        node
+                        for node in nx.lexicographical_topological_sort(graph.graph)
+                        if node.operation != Operation.Input
+                    ]
 
+                    total_ops = len(ops_nodes)
+                    if configuration.show_fhe_execution_progress:
+                        self.trace_progress(0, total_ops)
+                    for nb_ops, node in enumerate(ops_nodes, 1):
                         preds = [ctx.conversions[pred] for pred in graph.ordered_preds_of(node)]
                         self.node(ctx, node, preds)
+                        if configuration.show_fhe_execution_progress:
+                            self.trace_progress(nb_ops, total_ops)
 
                     outputs = []
                     for node in graph.ordered_outputs():
@@ -82,6 +91,23 @@ class Converter:
                     return tuple(outputs)
 
         return str(module)
+
+    def trace_progress(self, current, total):
+        assert 0 <= current <= total
+        nb_ops_to_percent = lambda current: int(100 * current / total)
+        percent = nb_ops_to_percent(current)
+        prev_percent = nb_ops_to_percent(current - 1)
+        if current == 0 and percent == prev_percent:
+            return
+        if current == 0:
+            CURSOR_MOVE = ""
+        else:
+            CURSOR_MOVE = "\033[1A\x1b[2K"  # line up and clear
+        bar_done = percent // 2
+        bar_size = 50
+        bar = f"|{'█' * bar_done}{'.' * (bar_size - bar_done)}|"
+        msg = f"{CURSOR_MOVE}Fhe: {percent:>3}% {bar} {percent:>3}%"
+        tracing.TraceMessageOp(msg=msg)
 
     def process(self, graph: Graph, configuration: Configuration) -> Graph:
         """
