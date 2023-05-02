@@ -97,8 +97,8 @@ __global__ void device_bootstrap_low_latency_step_one(
 
   // Perform ACC * (X^ä - 1)
   multiply_by_monomial_negacyclic_and_sub_polynomial<
-      Torus, params::opt, params::degree / params::opt>(
-      global_slice, accumulator, a_hat);
+      Torus, params::opt, params::degree / params::opt>(global_slice,
+                                                        accumulator, a_hat);
 
   // Perform a rounding to increase the accuracy of the
   // bootstrapped ciphertext
@@ -111,8 +111,7 @@ __global__ void device_bootstrap_low_latency_step_one(
   // Decompose the accumulator. Each block gets one level of the
   // decomposition, for the mask and the body (so block 0 will have the
   // accumulator decomposed at level 0, 1 at 1, etc.)
-  GadgetMatrix<Torus, params> gadget_acc(base_log, level_count,
-                                         accumulator);
+  GadgetMatrix<Torus, params> gadget_acc(base_log, level_count, accumulator);
   gadget_acc.decompose_and_compress_level(accumulator_fft, blockIdx.x);
 
   // We are using the same memory space for accumulator_fft and
@@ -179,7 +178,7 @@ __global__ void device_bootstrap_low_latency_step_two(
 
       polynomial_product_accumulate_in_fourier_domain<params, double2>(
           accumulator_fft, fft, bsk_poly, !level && !j);
-  }
+    }
   }
 
   Torus *global_slice =

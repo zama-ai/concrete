@@ -45,7 +45,7 @@ template <typename Torus, typename STorus, typename params>
 __host__ void scratch_circuit_bootstrap_vertical_packing(
     void *v_stream, uint32_t gpu_index, int8_t **cbs_vp_buffer,
     uint32_t *cbs_delta_log, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t polynomial_size, uint32_t level_bsk, uint32_t level_count_cbs,
     uint32_t number_of_inputs, uint32_t tau, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
   cudaSetDevice(gpu_index);
@@ -59,9 +59,9 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
                                     level_count_cbs, tau, number_of_inputs) +
       get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension, polynomial_size,
                                  level_count_cbs, number_of_inputs) +
-      get_buffer_size_bootstrap_amortized<Torus>(
-          glwe_dimension, polynomial_size, number_of_inputs * level_count_cbs,
-          max_shared_memory) +
+      get_buffer_size_bootstrap_low_latency<Torus>(
+          glwe_dimension, polynomial_size, level_bsk,
+          number_of_inputs * level_count_cbs, max_shared_memory) +
       get_buffer_size_cmux_tree<Torus, params>(
           glwe_dimension, polynomial_size, level_count_cbs,
           1 << number_of_inputs, tau, max_shared_memory) +
@@ -94,8 +94,8 @@ __host__ void scratch_circuit_bootstrap_vertical_packing(
   *cbs_delta_log = (bits - 1);
   scratch_circuit_bootstrap<Torus, STorus, params>(
       v_stream, gpu_index, cbs_vp_buffer, glwe_dimension, lwe_dimension,
-      polynomial_size, level_count_cbs, number_of_inputs, max_shared_memory,
-      false);
+      polynomial_size, level_bsk, level_count_cbs, number_of_inputs,
+      max_shared_memory, false);
   scratch_cmux_tree<Torus, STorus, params>(
       v_stream, gpu_index, cbs_vp_buffer, glwe_dimension, polynomial_size,
       level_count_cbs, number_of_inputs, tau, max_shared_memory, false);
@@ -132,8 +132,8 @@ __host__ void host_circuit_bootstrap_vertical_packing(
       (ptrdiff_t)(get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
                                              polynomial_size, level_count_cbs,
                                              number_of_inputs) +
-                  get_buffer_size_bootstrap_amortized<Torus>(
-                      glwe_dimension, polynomial_size,
+                  get_buffer_size_bootstrap_low_latency<Torus>(
+                      glwe_dimension, polynomial_size, level_count_bsk,
                       number_of_inputs * level_count_cbs, max_shared_memory));
   // number_of_inputs = tau * p is the total number of GGSWs
   // split the vec of GGSW in two, the msb GGSW is for the CMux tree and the
@@ -224,10 +224,11 @@ __host__ void scratch_wop_pbs(
 
   uint64_t bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
-                                          polynomial_size, crt_decomposition_size) +
+                                          polynomial_size,
+                                          crt_decomposition_size) +
       get_buffer_size_bootstrap_fast_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count_bsk, crt_decomposition_size,
-          max_shared_memory);
+          glwe_dimension, polynomial_size, level_count_bsk,
+          crt_decomposition_size, max_shared_memory);
   uint32_t cbs_vp_number_of_inputs = total_bits_to_extract;
   uint32_t mbr_size =
       std::min(params::log2_degree, (int)(total_bits_to_extract));
@@ -241,8 +242,8 @@ __host__ void scratch_wop_pbs(
         get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
                                    polynomial_size, level_count_cbs,
                                    cbs_vp_number_of_inputs) +
-        get_buffer_size_bootstrap_amortized<Torus>(
-            glwe_dimension, polynomial_size,
+        get_buffer_size_bootstrap_low_latency<Torus>(
+            glwe_dimension, polynomial_size, level_count_bsk,
             cbs_vp_number_of_inputs * level_count_cbs, max_shared_memory) +
         get_buffer_size_cmux_tree<Torus, params>(
             glwe_dimension, polynomial_size, level_count_cbs,
@@ -268,8 +269,8 @@ __host__ void scratch_wop_pbs(
       bit_extract_buffer + (ptrdiff_t)bit_extract_buffer_size;
   scratch_circuit_bootstrap_vertical_packing<Torus, STorus, params>(
       v_stream, gpu_index, &cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-      lwe_dimension, polynomial_size, level_count_cbs, total_bits_to_extract,
-      crt_decomposition_size, max_shared_memory, false);
+      lwe_dimension, polynomial_size, level_count_bsk, level_count_cbs,
+      total_bits_to_extract, crt_decomposition_size, max_shared_memory, false);
 }
 
 template <typename Torus, typename STorus, class params>

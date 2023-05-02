@@ -2,7 +2,7 @@
 #define CBS_CUH
 
 #include "bit_extraction.cuh"
-#include "bootstrap_amortized.cuh"
+#include "bootstrap_low_latency.cuh"
 #include "device.h"
 #include "keyswitch.cuh"
 #include "polynomial/parameters.cuh"
@@ -125,7 +125,7 @@ template <typename Torus, typename STorus, typename params>
 __host__ void scratch_circuit_bootstrap(
     void *v_stream, uint32_t gpu_index, int8_t **cbs_buffer,
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t level_count_cbs, uint32_t number_of_inputs,
+    uint32_t level_bsk, uint32_t level_count_cbs, uint32_t number_of_inputs,
     uint32_t max_shared_memory, bool allocate_gpu_memory) {
 
   cudaSetDevice(gpu_index);
@@ -134,18 +134,18 @@ __host__ void scratch_circuit_bootstrap(
   int pbs_count = number_of_inputs * level_count_cbs;
   // allocate and initialize device pointers for circuit bootstrap
   if (allocate_gpu_memory) {
-    uint64_t buffer_size =
-        get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
-                                   polynomial_size, level_count_cbs,
-                                   number_of_inputs) +
-        get_buffer_size_bootstrap_amortized<Torus>(
-            glwe_dimension, polynomial_size, pbs_count, max_shared_memory);
+    uint64_t buffer_size = get_buffer_size_cbs<Torus>(
+                               glwe_dimension, lwe_dimension, polynomial_size,
+                               level_count_cbs, number_of_inputs) +
+                           get_buffer_size_bootstrap_low_latency<Torus>(
+                               glwe_dimension, polynomial_size, level_bsk,
+                               pbs_count, max_shared_memory);
     *cbs_buffer = (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
   }
 
-  scratch_bootstrap_amortized<Torus, STorus, params>(
+  scratch_bootstrap_low_latency<Torus, STorus, params>(
       v_stream, gpu_index, cbs_buffer, glwe_dimension, polynomial_size,
-      pbs_count, max_shared_memory, false);
+      level_bsk, pbs_count, max_shared_memory, false);
 }
 
 /*
@@ -177,10 +177,10 @@ __host__ void host_circuit_bootstrap(
   int8_t *pbs_buffer = (int8_t *)cbs_buffer;
   Torus *lwe_array_out_pbs_buffer =
       (Torus *)pbs_buffer +
-      (ptrdiff_t)(
-          get_buffer_size_bootstrap_amortized<Torus>(
-              glwe_dimension, polynomial_size, pbs_count, max_shared_memory) /
-          sizeof(Torus));
+      (ptrdiff_t)(get_buffer_size_bootstrap_low_latency<Torus>(
+                      glwe_dimension, polynomial_size, level_bsk, pbs_count,
+                      max_shared_memory) /
+                  sizeof(Torus));
   Torus *lwe_array_in_shifted_buffer =
       lwe_array_out_pbs_buffer +
       (ptrdiff_t)(number_of_inputs * level_cbs *
@@ -215,11 +215,11 @@ __host__ void host_circuit_bootstrap(
 
   // Applying a negacyclic LUT on a ciphertext with one bit of message in the
   // MSB and no bit of padding
-  host_bootstrap_amortized<Torus, params>(
+  host_bootstrap_low_latency<Torus, params>(
       v_stream, gpu_index, lwe_array_out_pbs_buffer, lut_vector,
       lut_vector_indexes, lwe_array_in_shifted_buffer, fourier_bsk, pbs_buffer,
       glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk, level_bsk,
-      pbs_count, level_cbs, 0, max_shared_memory);
+      pbs_count, level_cbs, max_shared_memory);
 
   dim3 copy_grid(pbs_count * (glwe_dimension + 1), glwe_dimension, 1);
   dim3 copy_block(params::degree / params::opt, 1, 1);

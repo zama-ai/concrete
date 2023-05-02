@@ -72,7 +72,7 @@ void checks_circuit_bootstrap_vertical_packing(int glwe_dimension,
 void scratch_cuda_circuit_bootstrap_vertical_packing_32(
     void *v_stream, uint32_t gpu_index, int8_t **cbs_vp_buffer,
     uint32_t *cbs_delta_log, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t polynomial_size, uint32_t level_bsk, uint32_t level_count_cbs,
     uint32_t number_of_inputs, uint32_t tau, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
 
@@ -82,38 +82,38 @@ void scratch_cuda_circuit_bootstrap_vertical_packing_32(
   case 256:
     scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<256>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 512:
     scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<512>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 1024:
     scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<1024>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 2048:
     scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<2048>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 4096:
     scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<4096>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 8192:
     scratch_circuit_bootstrap_vertical_packing<uint32_t, int32_t, Degree<8192>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   default:
     break;
@@ -129,7 +129,7 @@ void scratch_cuda_circuit_bootstrap_vertical_packing_32(
 void scratch_cuda_circuit_bootstrap_vertical_packing_64(
     void *v_stream, uint32_t gpu_index, int8_t **cbs_vp_buffer,
     uint32_t *cbs_delta_log, uint32_t glwe_dimension, uint32_t lwe_dimension,
-    uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t polynomial_size, uint32_t level_bsk, uint32_t level_count_cbs,
     uint32_t number_of_inputs, uint32_t tau, uint32_t max_shared_memory,
     bool allocate_gpu_memory) {
 
@@ -139,38 +139,38 @@ void scratch_cuda_circuit_bootstrap_vertical_packing_64(
   case 256:
     scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<256>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 512:
     scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<512>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 1024:
     scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<1024>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 2048:
     scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<2048>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 4096:
     scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<4096>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   case 8192:
     scratch_circuit_bootstrap_vertical_packing<uint64_t, int64_t, Degree<8192>>(
         v_stream, gpu_index, cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-        lwe_dimension, polynomial_size, level_count_cbs, number_of_inputs, tau,
-        max_shared_memory, allocate_gpu_memory);
+        lwe_dimension, polynomial_size, level_bsk, level_count_cbs,
+        number_of_inputs, tau, max_shared_memory, allocate_gpu_memory);
     break;
   default:
     break;
