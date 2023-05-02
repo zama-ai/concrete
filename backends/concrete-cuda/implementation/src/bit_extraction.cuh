@@ -158,12 +158,12 @@ scratch_extract_bits(void *v_stream, uint32_t gpu_index,
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
-  uint64_t buffer_size =
-      get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
-                                          polynomial_size, crt_decomposition_size) +
-      get_buffer_size_bootstrap_fast_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count, crt_decomposition_size,
-          max_shared_memory);
+  uint64_t buffer_size = get_buffer_size_extract_bits<Torus>(
+                             glwe_dimension, lwe_dimension, polynomial_size,
+                             crt_decomposition_size) +
+                         get_buffer_size_bootstrap_fast_low_latency<Torus>(
+                             glwe_dimension, polynomial_size, level_count,
+                             crt_decomposition_size, max_shared_memory);
   // allocate and initialize device pointers for bit extraction
   if (allocate_gpu_memory) {
     *bit_extract_buffer =
@@ -208,8 +208,8 @@ __host__ void host_single_ciphertext_extract_bits(
   Torus *lut_pbs =
       (Torus *)pbs_buffer +
       (ptrdiff_t)(get_buffer_size_bootstrap_fast_low_latency<Torus>(
-                      glwe_dimension, polynomial_size, level_count_bsk,
-                      1, max_shared_memory) /
+                      glwe_dimension, polynomial_size, level_count_bsk, 1,
+                      max_shared_memory) /
                   sizeof(Torus));
   Torus *lwe_array_in_buffer =
       (Torus *)lut_pbs + (ptrdiff_t)((glwe_dimension + 1) * polynomial_size);

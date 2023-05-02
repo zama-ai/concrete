@@ -8,14 +8,16 @@ extern "C" {
 void scratch_cuda_circuit_bootstrap_32(
     void *v_stream, uint32_t gpu_index, int8_t **cbs_buffer,
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t level_count_cbs, uint32_t number_of_inputs,
-    uint32_t max_shared_memory, bool allocate_gpu_memory);
+    uint32_t level_count_bsk, uint32_t level_count_cbs,
+    uint32_t number_of_inputs, uint32_t max_shared_memory,
+    bool allocate_gpu_memory);
 
 void scratch_cuda_circuit_bootstrap_64(
     void *v_stream, uint32_t gpu_index, int8_t **cbs_buffer,
     uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
-    uint32_t level_count_cbs, uint32_t number_of_inputs,
-    uint32_t max_shared_memory, bool allocate_gpu_memory);
+    uint32_t level_count_bsk, uint32_t level_count_cbs,
+    uint32_t number_of_inputs, uint32_t max_shared_memory,
+    bool allocate_gpu_memory);
 
 void cuda_circuit_bootstrap_32(
     void *v_stream, uint32_t gpu_index, void *ggsw_out, void *lwe_array_in,

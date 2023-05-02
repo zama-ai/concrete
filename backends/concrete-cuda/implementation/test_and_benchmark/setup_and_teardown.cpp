@@ -559,7 +559,7 @@ void circuit_bootstrap_setup(
   // Execute cbs scratch
   scratch_cuda_circuit_bootstrap_64(
       stream, gpu_index, cbs_buffer, glwe_dimension, lwe_dimension,
-      polynomial_size, cbs_level, number_of_inputs,
+      polynomial_size, pbs_level, cbs_level, number_of_inputs,
       cuda_get_max_shared_memory(gpu_index), true);
 
   // Build LUT vector indexes
