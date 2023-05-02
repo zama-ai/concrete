@@ -6,7 +6,6 @@
 #define COMPRESSLWE_UTILS_H
 
 #include "defines.h"
-#include "ipcl/ipcl.hpp"
 #include <cmath>
 
 BigNumber from64(const uint64_t &num);
@@ -19,7 +18,7 @@ std::vector<BigNumber> from64(std::vector<uint64_t> nums);
 uint64_t sample(uint64_t log_q);
 
 // uncompressed LWE decryption function, for testing purposes
-uint64_t decryptLWE(std::vector<uint64_t> lwe_ct, std::vector<uint64_t> lwe_key,
+uint64_t decryptLWE(uint64_t *lwe_ct, std::vector<uint64_t> lwe_key,
                     const LWEParams &params);
 
 #endif // COMPRESSLWE_UTILS_H

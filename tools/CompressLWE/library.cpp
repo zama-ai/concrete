@@ -1,27 +1,26 @@
 #include "library.h"
-#include <cassert>
-#include <cmath>
+#include "defines.h"
 
-ipcl::CipherText compressSingle(const ipcl::CipherText &compressionKey,
-                                const std::vector<uint64_t> &lweCt,
-                                const LWEParams &params) {
+#include "ipcl/ipcl.hpp"
+
+PaiCiphertext compressSingle(const PaiCiphertext &compressionKey,
+                             const uint64_t *lweCt, const LWEParams &params) {
 
   uint64_t n = params.n;
-  assert(lweCt.size() == n + 1); // LWE cipher is [a, b]
 
   // Paillier public parameters
-  const ipcl::PublicKey &a_pk = *(compressionKey.getPubKey());
+  const ipcl::PublicKey &a_pk = *compressionKey.ptr->getPubKey();
   const BigNumber &sq = *(a_pk.getNSQ());
 
   // Construct a plaintext of -a
   std::vector<BigNumber> _a(n);
   for (uint64_t i = 0; i < n; i++) {
-    _a[i] = params.qBig - from64(lweCt[i]);
+    _a[i] = *params.qBig.ptr - from64(lweCt[i]);
   }
   ipcl::PlainText _a_pt(_a);
 
   // Multiply: (-a*E(sk))
-  ipcl::CipherText prod = _a_pt * compressionKey;
+  ipcl::CipherText prod = _a_pt * *compressionKey.ptr;
 
   // Compute sum (over the batched ciphertext): sum(-a*E(sk))
   auto sum = prod[0];
@@ -29,80 +28,96 @@ ipcl::CipherText compressSingle(const ipcl::CipherText &compressionKey,
     sum = sum * prod[i] % sq; // paillier for addition: [multiply coeffs]
   }
   // cast as a ciphertext
-  auto ret = ipcl::CipherText(a_pk, sum);
+  auto ret = new ipcl::CipherText(a_pk, sum);
 
   // add b
-  auto b_pt = ipcl::PlainText(from64(lweCt[lweCt.size() - 1]));
-  ret = ret + b_pt;
-  return ret;
+  auto b_pt = ipcl::PlainText(from64(lweCt[n]));
+  *ret = *ret + b_pt;
+  return PaiCiphertext(ret);
 }
 
-CompressedCiphertext
-compressBatched(const ipcl::CipherText &compressionKey,
-                const std::vector<std::vector<uint64_t>> &cts,
-                const LWEParams &params) {
+CompressedCiphertext compressBatched(const PaiCiphertext &compressionKey,
+                                     const uint64_t *cts, uint64_t cts_count,
+                                     const LWEParams &params) {
 
   // Initialize an empty compressed ciphertext
-  CompressedCiphertext c_ct(params.n, params.logQ, params.p);
+  CompressedCiphertext c_ct(params.n, params.logQ);
 
   // cast ciphertext width as a paillier plaintext
-  BigNumber scale_bn = c_ct.scale;
+  const BigNumber &scale_bn = *c_ct.scale.ptr;
+
   ipcl::PlainText scale_pt(scale_bn);
 
   // compute number of paillier ciphertexts needed
-  uint64_t num_paillier_cts = std::ceil((float)cts.size() / (float)c_ct.maxCts);
-  c_ct.pCts.resize(num_paillier_cts);
+  uint64_t num_paillier_cts = std::ceil((float)cts_count / (float)c_ct.maxCts);
 
   // construct every paillier ciphertext
   for (uint64_t i = 0; i < num_paillier_cts; i++) {
     // start by compressing the first ciphertext
-    auto p_ct = compressSingle(compressionKey, cts[i * c_ct.maxCts], params);
+    PaiCiphertext p_ct = compressSingle(
+        compressionKey, cts + (params.n + 1) * i * c_ct.maxCts, params);
+
     for (uint64_t j = 1; j < c_ct.maxCts; j++) {
       // check if we compressed everything, we break
-      if (i * c_ct.maxCts + j >= cts.size())
+      if (i * c_ct.maxCts + j >= cts_count)
         break;
       // scale the paillier ciphertext to leave room for the next lwe ct in the
       // lower bits
-      p_ct = p_ct * scale_pt;
+      *p_ct.ptr = *p_ct.ptr * scale_pt;
       // add the compressed lwe ct to the lower bits
-      p_ct = p_ct +
-             compressSingle(compressionKey, cts[i * c_ct.maxCts + j], params);
+      *p_ct.ptr =
+          *p_ct.ptr +
+          *compressSingle(compressionKey,
+                          cts + (params.n + 1) * (i * c_ct.maxCts + j), params)
+               .ptr;
     }
     // assign the new paillier ct
-    c_ct.pCts[i] = p_ct;
+    c_ct.pCts.push_back(std::move(p_ct));
   }
   return c_ct;
 }
 
-Keys generateKeys(const std::vector<uint64_t> &lweKey) {
+PaiFullKeys generateKeys(const std::vector<uint64_t> &lweKey) {
   ipcl::KeyPair paiKeys = ipcl::generateKeypair(2048, true);
   // TODO: switch modulus of lweKey here
   ipcl::PlainText sk_pt(from64(lweKey));
   ipcl::CipherText compressionKey = paiKeys.pub_key.encrypt(sk_pt);
-  return {paiKeys, compressionKey};
+
+  return PaiFullKeys{
+      .pub_key = std::make_shared<PaiPublicKey>(
+          PaiPublicKey(new ipcl::PublicKey(paiKeys.pub_key))),
+      .priv_key = std::make_shared<PaiPrivateKey>(
+          PaiPrivateKey(new ipcl::PrivateKey(paiKeys.priv_key))),
+      .compKey = std::make_shared<PaiCiphertext>(
+          PaiCiphertext(new ipcl::CipherText(compressionKey))),
+  };
 }
 
-uint64_t decryptCompressedSingle(const ipcl::CipherText &resultCt,
-                                 const ipcl::PrivateKey &paiSk,
+uint64_t decryptCompressedSingle(const PaiCiphertext &resultCt,
+                                 const PaiPrivateKey &paiSk,
                                  const LWEParams &params) {
-  BigNumber res = paiSk.decrypt(resultCt);
-  finalizeDecryption(res, params);
-  return to64(res);
+
+  BigNumber_ res(new BigNumber(paiSk.ptr->decrypt(*resultCt.ptr)));
+
+  *res.ptr %= *params.qBig.ptr;
+
+  return to64(*res.ptr);
 }
 
 std::vector<uint64_t>
 decryptCompressedBatched(const CompressedCiphertext &compressedCiphertext,
-                         const ipcl::PrivateKey &paiSk, const LWEParams &params,
+                         const PaiPrivateKey &paiSk, const LWEParams &params,
                          uint64_t ciphers) {
 
-  BigNumber scale_bn = compressedCiphertext.scale;
+  const BigNumber &scale_bn = *compressedCiphertext.scale.ptr;
   std::vector<uint64_t> all_results;
 
   uint64_t remaining = ciphers;
   // iterate over paillier ciphertexts
-  for (const ipcl::CipherText &result_ct : compressedCiphertext.pCts) {
+  for (const PaiCiphertext &result_ct : compressedCiphertext.pCts) {
+
     // decryptLWE and cast as in single
-    ipcl::PlainText r_pt = paiSk.decrypt(result_ct);
+    ipcl::PlainText r_pt = paiSk.ptr->decrypt(*result_ct.ptr);
     BigNumber all_ciphers = r_pt;
     // get num of lwe ciphers needed from this paillier ct
     uint64_t num_lwe_cts = std::min(remaining, compressedCiphertext.maxCts);
@@ -110,9 +125,11 @@ decryptCompressedBatched(const CompressedCiphertext &compressedCiphertext,
     // pack results one by one
     for (uint64_t i = 0; i < num_lwe_cts; i++) {
       // finalize decryption as in single
-      BigNumber cipher = all_ciphers % scale_bn;
-      finalizeDecryption(cipher, params);
-      results[i] = to64(cipher);
+
+      BigNumber *cipher(new BigNumber());
+      *cipher = all_ciphers % scale_bn;
+
+      results[i] = to64(*cipher % *params.qBig.ptr);
       // unscale the plaintext, removing the ciphertext we just took
       all_ciphers = all_ciphers / scale_bn;
     }
@@ -124,14 +141,4 @@ decryptCompressedBatched(const CompressedCiphertext &compressedCiphertext,
     remaining -= num_lwe_cts;
   }
   return all_results;
-}
-
-void finalizeDecryption(BigNumber &res, const LWEParams &params) {
-  // lwe decryption rounding step
-  res %= params.qBig;
-  res += (params.qBig / from64(params.p * 2));
-  if (res > params.qBig) {
-    res -= params.qBig; // faster modularization for case of addition
-  }
-  res = (res * from64(params.p)) / params.qBig;
 }

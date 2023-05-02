@@ -1,11 +1,57 @@
 #include "chrono"
+#include "defines.h"
+#include "ipcl/ipcl.hpp"
 #include "library.h"
+#include "serialization.h"
 #include <cassert>
-#include <iostream>
+
 using namespace std::chrono;
 void test_single_lwe_compress() {
 
-  uint64_t n = 630;
+  uint64_t n = 10;
+  uint64_t log_q = 64;
+  uint64_t p = 32;
+
+  // Generate a random vector<uint64_t> of size n+1 with values in [0, q) and
+  // call it the secret key
+  std::vector<uint64_t> lwe_key(n);
+  for (int i = 0; i < n; i++) {
+    lwe_key[i] = rand() % 2;
+  }
+
+  // Generate a ciphertext
+  std::vector<uint64_t> lwe_ct(n + 1);
+  for (int i = 0; i < n + 1; i++) {
+    lwe_ct[i] = sample(log_q);
+  }
+
+  // Call the generate Keys function with the lwe_key
+  auto key = generateKeys(lwe_key);
+
+  // Call the compressSingle function with the compression key, the ciphertext,
+  // and the LWEParams
+  LWEParams params(n, log_q);
+
+  auto compressed_ct = compressSingle(*key.compKey, lwe_ct.data(), params);
+
+  // Call the decryptCompressedSingle function with the compressed ciphertext,
+  // the paillier private key, and the LWEParams
+  auto decrypted =
+      decryptCompressedSingle(compressed_ct, *key.priv_key, params);
+
+  uint64_t lwe_decrypted = decryptLWE(lwe_ct.data(), lwe_key, params);
+
+  if (decrypted != lwe_decrypted) {
+    exit(-1);
+  }
+
+  // print success message
+  std::cout << "Single Test Passed!" << std::endl;
+}
+
+void test_serialize() {
+
+  uint64_t n = 10;
   uint64_t log_q = 64;
   uint64_t p = 32;
 
@@ -23,23 +69,64 @@ void test_single_lwe_compress() {
   }
 
   // Call the generate Keys function with the lwe_key
-  auto key = generateKeys(lwe_key);
+  PaiFullKeys key = generateKeys(lwe_key);
 
   // Call the compressSingle function with the compression key, the ciphertext,
   // and the LWEParams
-  LWEParams params(n, log_q, p);
-  auto compressed_ct = compressSingle(key.compKey, lwe_ct, params);
+  LWEParams params(n, log_q);
+
+  std::string filename = "/tmp/paikeys.txt";
+  {
+    std::ofstream ofs(filename);
+
+    ofs << *key.priv_key;
+    ofs << *key.pub_key;
+    ofs << *key.compKey;
+  }
+  PaiFullKeys key2;
+
+  key2.priv_key = std::make_shared<PaiPrivateKey>(PaiPrivateKey());
+  key2.pub_key = std::make_shared<PaiPublicKey>(PaiPublicKey());
+  key2.compKey = std::make_shared<PaiCiphertext>(PaiCiphertext());
+
+  {
+    std::ifstream ifs(filename);
+
+    ifs >> *key2.priv_key;
+    ifs >> *key2.pub_key;
+    ifs >> *key2.compKey;
+  }
+
+  auto compressed_ct = compressSingle(*key2.compKey, lwe_ct.data(), params);
+
+  std::string filename2 = "/tmp/ct.txt";
+  {
+    std::ofstream ofs(filename2);
+
+    ofs << compressed_ct;
+  }
+  PaiCiphertext compressed_ct2;
+
+  {
+    std::ifstream ifs(filename2);
+
+    ifs >> compressed_ct2;
+  }
 
   // Call the decryptCompressedSingle function with the compressed ciphertext,
   // the paillier private key, and the LWEParams
   auto decrypted =
-      decryptCompressedSingle(compressed_ct, key.paiKeys.priv_key, params);
+      decryptCompressedSingle(compressed_ct2, *key2.priv_key, params);
 
-  uint64_t lwe_decrypted = decryptLWE(lwe_ct, lwe_key, params);
-  assert(decrypted == lwe_decrypted);
+  uint64_t lwe_decrypted = decryptLWE(lwe_ct.data(), lwe_key, params);
+
+  if (decrypted != lwe_decrypted) {
+
+    exit(-1);
+  }
 
   // print success message
-  std::cout << "Single Test Passed!" << std::endl;
+  std::cout << "Serialization Test Passed!" << std::endl;
 }
 
 void test_batched_lwe_compress() {
@@ -63,13 +150,12 @@ void test_batched_lwe_compress() {
 
   start = stop;
 
-  uint64_t num_cts = 784;
+  uint64_t num_cts = 100;
   // Generate a batch of lwe ciphertexts
-  std::vector<std::vector<uint64_t>> lwe_cts(num_cts);
+  std::vector<uint64_t> lwe_cts(num_cts * (n + 1));
   for (int i = 0; i < num_cts; i++) {
-    lwe_cts[i] = std::vector<uint64_t>(n + 1);
     for (int j = 0; j < n + 1; j++) {
-      lwe_cts[i][j] = sample(log_q);
+      lwe_cts[(n + 1) * i + j] = sample(log_q);
     }
   }
   // Get ending timepoint
@@ -88,10 +174,26 @@ void test_batched_lwe_compress() {
 
   start = stop;
 
-  LWEParams params(n, log_q, p);
+  LWEParams params(n, log_q);
 
   CompressedCiphertext compressed_ct =
-      compressBatched(key.compKey, lwe_cts, params);
+      compressBatched(*key.compKey, lwe_cts.data(), num_cts, params);
+
+  std::string filename2 = "/tmp/batched_ct.txt";
+  {
+    std::ofstream ofs(filename2);
+
+    ofs << compressed_ct;
+    assert(ofs.good());
+  }
+  CompressedCiphertext compressed_ct2(100, 64);
+  {
+    std::ifstream ifs(filename2);
+
+    ifs >> compressed_ct2;
+
+    assert(ifs.good());
+  }
 
   // Get ending timepoint
   stop = high_resolution_clock::now();
@@ -100,8 +202,8 @@ void test_batched_lwe_compress() {
 
   start = stop;
 
-  std::vector<uint64_t> decrypted = decryptCompressedBatched(
-      compressed_ct, key.paiKeys.priv_key, params, num_cts);
+  std::vector<uint64_t> decrypted =
+      decryptCompressedBatched(compressed_ct2, *key.priv_key, params, num_cts);
 
   // Get ending timepoint
   stop = high_resolution_clock::now();
@@ -109,8 +211,12 @@ void test_batched_lwe_compress() {
   auto d_decrypt = duration_cast<microseconds>(stop - start);
 
   for (int i = 0; i < num_cts; i++) {
-    uint64_t lwe_decrypted = decryptLWE(lwe_cts[i], lwe_key, params);
-    assert(decrypted[i] == lwe_decrypted);
+    uint64_t lwe_decrypted =
+        decryptLWE(lwe_cts.data() + i * (n + 1), lwe_key, params);
+
+    if (decrypted[i] != lwe_decrypted) {
+      exit(-1);
+    }
   }
   std::cout << "Batched Test Passed!" << std::endl;
   std::cout << "Time taken by LWE key:  " << d_lwe_key.count()
@@ -140,5 +246,6 @@ int main() {
   test_conversion();
   test_single_lwe_compress();
   test_batched_lwe_compress();
+  test_serialize();
   return 0;
 }

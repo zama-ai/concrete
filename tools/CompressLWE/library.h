@@ -1,28 +1,25 @@
 #ifndef LIBRARY_H
 #define LIBRARY_H
 
+#include "defines.h"
 #include "utils.h"
 
-ipcl::CipherText compressSingle(const ipcl::CipherText &compressionKey,
-                                const std::vector<uint64_t> &lweCt,
-                                const LWEParams &params);
+PaiCiphertext compressSingle(const PaiCiphertext &compressionKey,
+                             const uint64_t *lweCt, const LWEParams &params);
 
-CompressedCiphertext
-compressBatched(const ipcl::CipherText &compressionKey,
-                const std::vector<std::vector<uint64_t>> &cts,
-                const LWEParams &params);
+CompressedCiphertext compressBatched(const PaiCiphertext &compressionKey,
+                                     const uint64_t *cts, uint64_t cts_count,
+                                     const LWEParams &params);
 
-uint64_t decryptCompressedSingle(const ipcl::CipherText &resultCt,
-                                 const ipcl::PrivateKey &paiSk,
+uint64_t decryptCompressedSingle(const PaiCiphertext &resultCt,
+                                 const PaiPrivateKey &paiSk,
                                  const LWEParams &params);
 
 std::vector<uint64_t>
 decryptCompressedBatched(const CompressedCiphertext &compressedCiphertext,
-                         const ipcl::PrivateKey &paiSk, const LWEParams &params,
+                         const PaiPrivateKey &paiSk, const LWEParams &params,
                          uint64_t ciphers);
 
-Keys generateKeys(const std::vector<uint64_t> &lweKey);
-
-void finalizeDecryption(BigNumber &res, const LWEParams &params);
+PaiFullKeys generateKeys(const std::vector<uint64_t> &lweKey);
 
 #endif // LIBRARY_H

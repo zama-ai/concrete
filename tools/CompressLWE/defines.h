@@ -1,46 +1,89 @@
 #ifndef COMPRESSLWE_DEFINES_H
 #define COMPRESSLWE_DEFINES_H
 
-#include "ipcl/ipcl.hpp"
-#include <cmath>
-#include <utility>
+#include <memory>
+#include <vector>
 
-struct Keys {
-  ipcl::KeyPair paiKeys;    // Paillier keypair
-  ipcl::CipherText compKey; // A vector of paillier ciphers
+struct BigNumber;
+
+namespace ipcl {
+struct PublicKey;
+struct PrivateKey;
+struct CipherText;
+} // namespace ipcl
+
+class PaiPublicKey {
+public:
+  PaiPublicKey() : ptr(nullptr){};
+  PaiPublicKey(ipcl::PublicKey *ptr) : ptr(ptr){};
+  PaiPublicKey(const PaiPublicKey &) = delete;
+  PaiPublicKey(PaiPublicKey &&other) : ptr(other.ptr) { other.ptr = nullptr; };
+  ~PaiPublicKey();
+
+  ipcl::PublicKey *ptr;
+};
+
+class PaiPrivateKey {
+public:
+  PaiPrivateKey() : ptr(nullptr){};
+  PaiPrivateKey(ipcl::PrivateKey *ptr) : ptr(ptr){};
+  PaiPrivateKey(const PaiPrivateKey &) = delete;
+  PaiPrivateKey(PaiPrivateKey &&other) : ptr(other.ptr) {
+    other.ptr = nullptr;
+  };
+  ~PaiPrivateKey();
+
+  ipcl::PrivateKey *ptr;
+};
+class PaiCiphertext {
+public:
+  PaiCiphertext() : ptr(nullptr){};
+  PaiCiphertext(ipcl::CipherText *ptr) : ptr(ptr){};
+  PaiCiphertext(const PaiCiphertext &other);
+  PaiCiphertext(PaiCiphertext &&other) : ptr(other.ptr) {
+    other.ptr = nullptr;
+  };
+  ~PaiCiphertext();
+  PaiCiphertext &operator=(const PaiCiphertext &other);
+
+  ipcl::CipherText *ptr;
+};
+
+struct BigNumber_ {
+public:
+  BigNumber_() : ptr(nullptr){};
+  BigNumber_(BigNumber *ptr) : ptr(ptr){};
+  BigNumber_(const BigNumber_ &) = delete;
+  BigNumber_(BigNumber_ &&other) : ptr(other.ptr) { other.ptr = nullptr; };
+  ~BigNumber_();
+
+  BigNumber *ptr;
+};
+
+struct PaiFullKeys {
+  std::shared_ptr<PaiPublicKey> pub_key;
+  std::shared_ptr<PaiPrivateKey> priv_key;
+  std::shared_ptr<PaiCiphertext> compKey; // A vector of paillier ciphers
 };
 
 struct LWEParams {
   uint64_t n; // Ciphertext dimension of underlying lwe scheme
-  uint64_t p; // Plaintext modulus of underlying lwe scheme
   uint64_t logQ;
-  BigNumber qBig;
+  BigNumber_ qBig;
 
-  LWEParams(uint64_t n, uint64_t log_q, uint64_t p) : n(n), logQ(log_q), p(p) {
-    this->qBig = 1;
-    for (uint64_t i = 0; i < log_q; i++) {
-      this->qBig *= 2;
-    }
-  }
+  LWEParams(uint64_t n, uint64_t log_q);
 };
 
 struct CompressedCiphertext {
-  BigNumber scale; // width of every lwe cipher in packed paillier cipher
+  BigNumber_ scale; // width of every lwe cipher in packed paillier cipher
   uint64_t paiBitLen = 2048;
 
   uint64_t logScale;
   uint64_t maxCts;
 
-  std::vector<ipcl::CipherText> pCts;
+  std::vector<PaiCiphertext> pCts;
 
-  CompressedCiphertext(uint64_t n, uint64_t log_q, uint64_t p) {
-    logScale = (uint64_t)ceil(log2(n + 1) + 2 * log_q);
-    scale = 1;
-    for (uint64_t i = 0; i < logScale; i++) {
-      scale *= 2;
-    }
-    maxCts = (uint64_t)std::floor((float)paiBitLen / logScale);
-  }
+  CompressedCiphertext(uint64_t n, uint64_t log_q);
 };
 
 #endif // COMPRESSLWE_DEFINES_H

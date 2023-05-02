@@ -3,6 +3,7 @@
 //
 
 #include "utils.h"
+#include "ipcl/ipcl.hpp"
 
 BigNumber from64(const uint64_t &num) {
   char hex[20];
@@ -35,17 +36,17 @@ uint64_t sample(uint64_t log_q) {
 }
 
 // uncompressed LWE decryption function, for testing purposes
-uint64_t decryptLWE(std::vector<uint64_t> lwe_ct, std::vector<uint64_t> lwe_key,
+uint64_t decryptLWE(uint64_t *lwe_ct, std::vector<uint64_t> lwe_key,
                     const LWEParams &params) {
   uint64_t n = params.n;
-  uint64_t p = params.p;
+
+  auto qBig = *params.qBig.ptr;
+
   BigNumber res = from64(lwe_ct[n]);
+
   for (int i = 0; i < n; i++) {
-    res += (params.qBig - from64(lwe_ct[i])) * from64(lwe_key[i]) % params.qBig;
+    res += (qBig - from64(lwe_ct[i])) * from64(lwe_key[i]) % qBig;
   }
-  res = res % params.qBig;
-  res += params.qBig / (2 * p);
-  res = res % params.qBig;
-  res = res * p / params.qBig;
+  res = res % qBig;
   return to64(res);
 }
