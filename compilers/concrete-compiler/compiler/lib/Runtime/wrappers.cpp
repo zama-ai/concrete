@@ -793,3 +793,11 @@ void memref_trace_message(char *message_ptr, uint32_t message_len) {
   std::string message{message_ptr, (size_t)message_len};
   std::cout << message << std::endl;
 }
+
+void *checked_malloc(size_t size) {
+  void *ptr = malloc(size);
+  if (ptr == nullptr) {
+    throw std::bad_alloc();
+  }
+  return ptr;
+}
