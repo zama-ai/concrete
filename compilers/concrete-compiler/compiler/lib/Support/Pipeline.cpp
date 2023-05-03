@@ -345,6 +345,17 @@ mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
   return pm.run(module.getOperation());
 }
 
+mlir::LogicalResult simulateTFHE(mlir::MLIRContext &context,
+                                 mlir::ModuleOp &module,
+                                 std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("TFHESimulation", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createSimulateTFHEPass(),
+                           enablePass);
+
+  return pm.run(module.getOperation());
+}
+
 mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
                                    mlir::ModuleOp &module,
                                    std::function<bool(mlir::Pass *)> enablePass,

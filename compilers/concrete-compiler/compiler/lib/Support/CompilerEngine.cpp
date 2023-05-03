@@ -450,6 +450,17 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::BATCHED_TFHE)
     return std::move(res);
 
+  if (options.simulate) {
+    if (mlir::concretelang::pipeline::simulateTFHE(mlirContext, module,
+                                                   this->enablePass)
+            .failed()) {
+      return errorDiag("Simulating TFHE failed");
+    }
+  }
+
+  if (target == Target::SIMULATED_TFHE)
+    return std::move(res);
+
   // TFHE -> Concrete
   if (mlir::concretelang::pipeline::lowerTFHEToConcrete(mlirContext, module,
                                                         this->enablePass)

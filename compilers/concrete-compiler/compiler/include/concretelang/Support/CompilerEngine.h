@@ -65,6 +65,8 @@ struct CompilationOptions {
   bool unrollLoopsWithSDFGConvertibleOps;
   bool dataflowParallelize;
   bool optimizeTFHE;
+  /// simulate crypto operations
+  bool simulate;
   /// use GPU during execution by generating GPU operations if possible
   bool emitGPUOps;
   std::optional<std::vector<int64_t>> fhelinalgTileSizes;
@@ -89,7 +91,7 @@ struct CompilationOptions {
         autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
         maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
         unrollLoopsWithSDFGConvertibleOps(false), dataflowParallelize(false),
-        optimizeTFHE(true), emitGPUOps(false),
+        optimizeTFHE(true), simulate(false), emitGPUOps(false),
         clientParametersFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
         chunkSize(4), chunkWidth(2), encodings(std::nullopt){};
@@ -226,6 +228,9 @@ public:
     /// Read sources and lower all FHE operations to normalized TFHE
     /// operations
     NORMALIZED_TFHE,
+
+    /// Read sources and lower all FHE operations to simulated TFHE
+    SIMULATED_TFHE,
 
     /// Read sources and lower all FHE and TFHE operations to Concrete
     /// operations
