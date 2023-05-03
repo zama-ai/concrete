@@ -56,6 +56,7 @@ enum Action {
   DUMP_NORMALIZED_TFHE,
   DUMP_PARAMETRIZED_TFHE,
   DUMP_BATCHED_TFHE,
+  DUMP_SIMULATED_TFHE,
   DUMP_CONCRETE,
   DUMP_SDFG,
   DUMP_STD,
@@ -107,6 +108,12 @@ llvm::cl::opt<bool>
                                 "dialects. (Enabled by default)"),
                  llvm::cl::init<bool>(true));
 
+llvm::cl::opt<bool>
+    simulate("simulate",
+             llvm::cl::desc("enable/disable simulation of crypto operations "
+                            "(Disabled by default)"),
+             llvm::cl::init<bool>(false));
+
 llvm::cl::opt<bool> emitGPUOps(
     "emit-gpu-ops",
     llvm::cl::desc(
@@ -141,6 +148,9 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(clEnumValN(Action::DUMP_BATCHED_TFHE, "dump-batched-tfhe",
                                 "Lower to TFHE, parametrize and then attempt "
                                 "to batch TFHE operations")),
+    llvm::cl::values(
+        clEnumValN(Action::DUMP_SIMULATED_TFHE, "dump-simulated-tfhe",
+                   "Lower to TFHE, then simulate crypto operations")),
     llvm::cl::values(clEnumValN(Action::DUMP_CONCRETE, "dump-concrete",
                                 "Lower to Concrete and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_SDFG, "dump-sdfg",
@@ -392,6 +402,7 @@ cmdlineCompilationOptions() {
   options.unrollLoopsWithSDFGConvertibleOps =
       cmdline::unrollLoopsWithSDFGConvertibleOps;
   options.optimizeTFHE = cmdline::optimizeTFHE;
+  options.simulate = cmdline::simulate;
   options.emitGPUOps = cmdline::emitGPUOps;
   options.chunkIntegers = cmdline::chunkIntegers;
   options.chunkSize = cmdline::chunkSize;
@@ -587,6 +598,9 @@ mlir::LogicalResult processInputBuffer(
       break;
     case Action::DUMP_BATCHED_TFHE:
       target = mlir::concretelang::CompilerEngine::Target::BATCHED_TFHE;
+      break;
+    case Action::DUMP_SIMULATED_TFHE:
+      target = mlir::concretelang::CompilerEngine::Target::SIMULATED_TFHE;
       break;
     case Action::DUMP_CONCRETE:
       target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
