@@ -283,6 +283,7 @@ const CONCRETE_COMPILER_STATIC_LIBS: &[&str] = &[
     "TracingToCAPI",
     "ConcretelangInterfaces",
     "TFHEDialect",
+    "SimulateTFHE",
     "CONCRETELANGCAPIFHELINALG",
     "FHELinalgDialectTransforms",
     "FHEDialect",
