@@ -24,6 +24,7 @@ add_mlir_library(
   FHEDialectTransforms
   FHEToTFHECrt
   FHEToTFHEScalar
+  SimulateTFHE
   ExtractSDFGOps
   MLIRLowerableDialectsToLLVM
   FHEDialectAnalysis
