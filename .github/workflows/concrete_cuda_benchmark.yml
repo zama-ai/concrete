@@ -66,12 +66,11 @@ jobs:
       - name: Rust install
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
 
       - name: Build concrete-cuda
         if: ${{ !cancelled() }}
         run: |
-          git config --global --add safe.directory /home/ubuntu/.cargo/registry/index/github.com-1ecc6299db9ec823/.git
           cd backends/concrete-cuda/implementation
           mkdir build
           cd build
