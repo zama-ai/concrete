@@ -9,3 +9,9 @@ edition = "2021"
 
 [dev-dependencies]
 approx = "0.5"
+
+[build-dependencies]
+cbindgen = "0.24"
+
+[lib]
+crate-type = ["lib", "staticlib"]
