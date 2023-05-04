@@ -1,6 +1,7 @@
 [submodule "llvm-project"]
 	path = third_party/llvm-project
-	url = git@github.com:zama-ai/concrete-compiler-internal-llvm-project.git
+	# .. refers to ssh|https://github.com/zama-ai
+	url = ../concrete-compiler-internal-llvm-project.git
 	shallow = true
 [submodule "lattice-estimator"]
 	path = third_party/lattice-estimator
