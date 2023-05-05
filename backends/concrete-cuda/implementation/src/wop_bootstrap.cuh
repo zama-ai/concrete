@@ -195,47 +195,51 @@ __host__ void host_circuit_bootstrap_vertical_packing(
 }
 
 template <typename Torus>
-__host__ __device__ uint64_t
-get_buffer_size_wop_pbs(uint32_t lwe_dimension,
-                        uint32_t number_of_bits_of_message_including_padding) {
+__host__ __device__ uint64_t get_buffer_size_wop_pbs(
+    uint32_t lwe_dimension, uint32_t total_bits_of_crt_decomposition) {
 
   uint64_t buffer_size = (lwe_dimension + 1) *
-                         (number_of_bits_of_message_including_padding) *
+                         (total_bits_of_crt_decomposition) *
                          sizeof(Torus); // lwe_array_out_bit_extract
   return buffer_size + buffer_size % sizeof(double2);
 }
 
 template <typename Torus, typename STorus, typename params>
-__host__ void
-scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
-                uint32_t *delta_log, uint32_t *cbs_delta_log,
-                uint32_t glwe_dimension, uint32_t lwe_dimension,
-                uint32_t polynomial_size, uint32_t level_count_cbs,
-                uint32_t level_count_bsk,
-                uint32_t number_of_bits_of_message_including_padding,
-                uint32_t number_of_bits_to_extract, uint32_t number_of_inputs,
-                uint32_t max_shared_memory, bool allocate_gpu_memory) {
+__host__ void scratch_wop_pbs(
+    void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
+    uint32_t *delta_log_array, uint32_t *cbs_delta_log, uint32_t glwe_dimension,
+    uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t level_count_cbs,
+    uint32_t level_count_bsk, uint32_t *number_of_bits_to_extract_array,
+    uint32_t crt_decomposition_size, uint32_t max_shared_memory,
+    bool allocate_gpu_memory) {
 
   cudaSetDevice(gpu_index);
   auto stream = static_cast<cudaStream_t *>(v_stream);
 
+  uint32_t ciphertext_total_bits_count = sizeof(Torus) * 8;
+  int total_bits_to_extract = 0;
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    total_bits_to_extract += number_of_bits_to_extract_array[i];
+    delta_log_array[i] =
+        ciphertext_total_bits_count - number_of_bits_to_extract_array[i];
+  }
+
   uint64_t bit_extract_buffer_size =
       get_buffer_size_extract_bits<Torus>(glwe_dimension, lwe_dimension,
-                                          polynomial_size, number_of_inputs) +
+                                          polynomial_size,
+                                          crt_decomposition_size) +
       get_buffer_size_bootstrap_low_latency<Torus>(
-          glwe_dimension, polynomial_size, level_count_bsk, number_of_inputs,
-          max_shared_memory);
-  uint32_t cbs_vp_number_of_inputs =
-      number_of_inputs * number_of_bits_to_extract;
-  uint32_t mbr_size = std::min(
-      params::log2_degree, (int)(number_of_inputs * number_of_bits_to_extract));
+          glwe_dimension, polynomial_size, level_count_bsk,
+          crt_decomposition_size, max_shared_memory);
+  uint32_t cbs_vp_number_of_inputs = total_bits_to_extract;
+  uint32_t mbr_size =
+      std::min(params::log2_degree, (int)(total_bits_to_extract));
   if (allocate_gpu_memory) {
     uint64_t buffer_size =
         bit_extract_buffer_size +
-        get_buffer_size_wop_pbs<Torus>(
-            lwe_dimension, number_of_bits_of_message_including_padding) +
+        get_buffer_size_wop_pbs<Torus>(lwe_dimension, total_bits_to_extract) +
         get_buffer_size_cbs_vp<Torus>(glwe_dimension, polynomial_size,
-                                      level_count_cbs, number_of_inputs,
+                                      level_count_cbs, crt_decomposition_size,
                                       cbs_vp_number_of_inputs) +
         get_buffer_size_cbs<Torus>(glwe_dimension, lwe_dimension,
                                    polynomial_size, level_count_cbs,
@@ -245,35 +249,30 @@ scratch_wop_pbs(void *v_stream, uint32_t gpu_index, int8_t **wop_pbs_buffer,
             cbs_vp_number_of_inputs * level_count_cbs, max_shared_memory) +
         get_buffer_size_cmux_tree<Torus, params>(
             glwe_dimension, polynomial_size, level_count_cbs,
-            (1 << cbs_vp_number_of_inputs), number_of_inputs,
+            (1 << cbs_vp_number_of_inputs), crt_decomposition_size,
             max_shared_memory) +
         get_buffer_size_blind_rotation_sample_extraction<Torus>(
             glwe_dimension, polynomial_size, level_count_cbs, mbr_size,
-            number_of_inputs, max_shared_memory);
+            crt_decomposition_size, max_shared_memory);
 
     *wop_pbs_buffer =
         (int8_t *)cuda_malloc_async(buffer_size, stream, gpu_index);
   }
-  uint32_t ciphertext_total_bits_count = sizeof(Torus) * 8;
-  *delta_log =
-      ciphertext_total_bits_count - number_of_bits_of_message_including_padding;
 
   int8_t *bit_extract_buffer =
-      (int8_t *)*wop_pbs_buffer +
-      (ptrdiff_t)(get_buffer_size_wop_pbs<Torus>(
-          lwe_dimension, number_of_bits_of_message_including_padding));
+      (int8_t *)*wop_pbs_buffer + (ptrdiff_t)(get_buffer_size_wop_pbs<Torus>(
+                                      lwe_dimension, total_bits_to_extract));
   scratch_extract_bits<Torus, STorus, params>(
       v_stream, gpu_index, &bit_extract_buffer, glwe_dimension, lwe_dimension,
-      polynomial_size, level_count_bsk, number_of_inputs, max_shared_memory,
-      false);
+      polynomial_size, level_count_bsk, crt_decomposition_size,
+      max_shared_memory, false);
 
   int8_t *cbs_vp_buffer =
       bit_extract_buffer + (ptrdiff_t)bit_extract_buffer_size;
   scratch_circuit_bootstrap_vertical_packing<Torus, STorus, params>(
       v_stream, gpu_index, &cbs_vp_buffer, cbs_delta_log, glwe_dimension,
-      lwe_dimension, polynomial_size, level_count_cbs,
-      number_of_inputs * number_of_bits_to_extract, number_of_inputs,
-      max_shared_memory, false);
+      lwe_dimension, polynomial_size, level_count_cbs, total_bits_to_extract,
+      crt_decomposition_size, max_shared_memory, false);
 }
 
 template <typename Torus, typename STorus, class params>
@@ -285,38 +284,41 @@ __host__ void host_wop_pbs(
     uint32_t base_log_bsk, uint32_t level_count_bsk, uint32_t base_log_ksk,
     uint32_t level_count_ksk, uint32_t base_log_pksk, uint32_t level_count_pksk,
     uint32_t base_log_cbs, uint32_t level_count_cbs,
-    uint32_t number_of_bits_of_message_including_padding,
-    uint32_t number_of_bits_to_extract, uint32_t delta_log,
-    uint32_t number_of_inputs, uint32_t max_shared_memory) {
+    uint32_t *number_of_bits_to_extract_array, uint32_t *delta_log_array,
+    uint32_t crt_decomposition_size, uint32_t max_shared_memory) {
 
+  int total_bits_to_extract = 0;
+  for (int i = 0; i < crt_decomposition_size; i++) {
+    total_bits_to_extract += number_of_bits_to_extract_array[i];
+  }
   int8_t *bit_extract_buffer = wop_pbs_buffer;
   int8_t *lwe_array_out_bit_extract =
       bit_extract_buffer +
       (ptrdiff_t)(get_buffer_size_extract_bits<Torus>(
                       glwe_dimension, lwe_dimension, polynomial_size,
-                      number_of_inputs) +
+                      crt_decomposition_size) +
                   get_buffer_size_bootstrap_low_latency<Torus>(
                       glwe_dimension, polynomial_size, level_count_bsk,
-                      number_of_inputs, max_shared_memory));
+                      crt_decomposition_size, max_shared_memory));
+
   host_extract_bits<Torus, params>(
       v_stream, gpu_index, (Torus *)lwe_array_out_bit_extract, lwe_array_in,
-      bit_extract_buffer, ksk, fourier_bsk, number_of_bits_to_extract,
-      delta_log, glwe_dimension * polynomial_size, lwe_dimension,
+      bit_extract_buffer, ksk, fourier_bsk, number_of_bits_to_extract_array,
+      delta_log_array, glwe_dimension * polynomial_size, lwe_dimension,
       glwe_dimension, polynomial_size, base_log_bsk, level_count_bsk,
-      base_log_ksk, level_count_ksk, number_of_inputs, max_shared_memory);
+      base_log_ksk, level_count_ksk, crt_decomposition_size, max_shared_memory);
   check_cuda_error(cudaGetLastError());
 
   int8_t *cbs_vp_buffer =
-      lwe_array_out_bit_extract +
-      (ptrdiff_t)(get_buffer_size_wop_pbs<Torus>(
-          lwe_dimension, number_of_bits_of_message_including_padding));
+      lwe_array_out_bit_extract + (ptrdiff_t)(get_buffer_size_wop_pbs<Torus>(
+                                      lwe_dimension, total_bits_to_extract));
   host_circuit_bootstrap_vertical_packing<Torus, STorus, params>(
       v_stream, gpu_index, lwe_array_out, (Torus *)lwe_array_out_bit_extract,
       lut_vector, fourier_bsk, cbs_fpksk, cbs_vp_buffer, cbs_delta_log,
       glwe_dimension, lwe_dimension, polynomial_size, base_log_bsk,
       level_count_bsk, base_log_pksk, level_count_pksk, base_log_cbs,
-      level_count_cbs, number_of_inputs * number_of_bits_to_extract,
-      number_of_inputs, max_shared_memory);
+      level_count_cbs, total_bits_to_extract, crt_decomposition_size,
+      max_shared_memory);
   check_cuda_error(cudaGetLastError());
 }
 #endif // WOP_PBS_H
