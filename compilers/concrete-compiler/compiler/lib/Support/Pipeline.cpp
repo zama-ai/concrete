@@ -396,7 +396,7 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
             value.getType().cast<TensorType>(), memorySpace);
       };
   bufferizationOptions.bufferizeFunctionBoundaries = true;
-  bufferizationOptions.createDeallocs = true;
+  bufferizationOptions.createDeallocs = false;
 
   std::unique_ptr<mlir::Pass> comprBuffPass =
       mlir::bufferization::createOneShotBufferizePass(bufferizationOptions);
