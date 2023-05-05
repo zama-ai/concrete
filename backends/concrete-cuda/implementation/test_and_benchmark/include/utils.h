@@ -14,6 +14,12 @@ uint64_t *generate_plaintexts(uint64_t payload_modulus, uint64_t delta,
                               int number_of_inputs, const unsigned repetitions,
                               const unsigned samples);
 
+uint64_t *generate_plaintexts_bit_extract(uint64_t *payload_modulus,
+                                          uint64_t *delta,
+                                          int crt_decomposition_size,
+                                          const unsigned repetitions,
+                                          const unsigned samples);
+
 uint64_t *generate_identity_lut_pbs(int polynomial_size, int glwe_dimension,
                                     int message_modulus, int carry_modulus,
                                     std::function<uint64_t(uint64_t)> func);
