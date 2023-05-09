@@ -1393,10 +1393,36 @@ class Context:
     def mul(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         if x.is_clear and y.is_clear:
             highlights = {
-                x.origin: "lhs is clear",
-                y.origin: "rhs is clear" if x.origin is not y.origin else "operand is clear",
-                self.converting: "but clear-clear multiplications are not supported",
+                x.origin: ["lhs is clear"],
+                y.origin: ["rhs is clear" if x.origin is not y.origin else "operand is clear"],
+                self.converting: ["but clear-clear multiplications are not supported"],
             }
+            self.error(highlights)
+
+        if (x.is_encrypted and y.is_encrypted) and (
+            x.bit_width > MAXIMUM_TLU_BIT_WIDTH or y.bit_width > MAXIMUM_TLU_BIT_WIDTH
+        ):
+            highlights = {
+                self.converting: [
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit "
+                    f"encrypted multiplications are supported"
+                ],
+            }
+
+            for operand in [x, y]:
+                if operand.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                    highlights[operand.origin] = [
+                        f"this {operand.bit_width}-bit value "
+                        f"is used as an operand to an encrypted multiplication"
+                    ]
+                    if operand.bit_width != operand.original_bit_width:
+                        highlights[operand.origin].append(
+                            "("
+                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"during compilation because of its relation with other operations"
+                            ")"
+                        )
+
             self.error(highlights)
 
         assert self.is_bit_width_compatible(resulting_type, x, y)
