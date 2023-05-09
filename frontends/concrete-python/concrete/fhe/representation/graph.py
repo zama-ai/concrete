@@ -191,6 +191,7 @@ class Graph:
         self,
         maximum_constant_length: int = 25,
         highlighted_nodes: Optional[Dict[Node, List[str]]] = None,
+        highlighted_result: Optional[List[str]] = None,
         show_types: bool = True,
         show_bounds: bool = True,
         show_tags: bool = True,
@@ -358,6 +359,16 @@ class Graph:
                 for line, metadata in zip(lines, line_metadata)
             ]
 
+        # add return information
+        # (if there is a single return, it's in the form `return %id`
+        # (otherwise, it's in the form `return (%id1, %id2, ..., %idN)`
+        returns: List[str] = []
+        for node in self.ordered_outputs():
+            returns.append(f"%{id_map[node]}")
+        lines.append(f"return {', '.join(returns)}")
+        if highlighted_result:
+            highlighted_lines[len(lines) - 1] = highlighted_result
+
         # strip whitespaces
         lines = [line.rstrip() for line in lines]
 
@@ -367,14 +378,6 @@ class Graph:
                 for j, message in enumerate(highlighted_lines[i]):
                     highlight = "^" if j == 0 else " "
                     lines.insert(i + 1 + j, f"{highlight * len(lines[i])} {message}")
-
-        # add return information
-        # (if there is a single return, it's in the form `return %id`
-        # (otherwise, it's in the form `return (%id1, %id2, ..., %idN)`
-        returns: List[str] = []
-        for node in self.output_nodes.values():
-            returns.append(f"%{id_map[node]}")
-        lines.append("return " + (returns[0] if len(returns) == 1 else f"({', '.join(returns)})"))
 
         # format subgraphs after the actual graph
         result = "\n".join(lines)
