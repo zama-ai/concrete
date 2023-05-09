@@ -515,8 +515,6 @@ class Compiler:
                 print("-" * columns)
                 print()
 
-            return circuit
-
         except Exception:  # pragma: no cover
             # this branch is reserved for unexpected issues and hence it shouldn't be tested
             # if it could be tested, we would have fixed the underlying issue
@@ -537,5 +535,15 @@ class Compiler:
         finally:
             self.configuration = old_configuration
             self.artifacts = old_artifacts
+
+        if self.graph and len(self.graph.output_nodes) > 1:
+            graph = self.graph.format(
+                highlighted_result=["multiple outputs are not supported"],
+                show_bounds=False,
+            )
+            message = "Function you are trying to compile cannot be compiled\n\n" + graph
+            raise RuntimeError(message)
+
+        return circuit
 
     # pylint: enable=too-many-branches,too-many-statements
