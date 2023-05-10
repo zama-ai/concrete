@@ -461,6 +461,7 @@ def FHE_RoundEintOp: FHE_Op<"round", [Pure]> {
     let arguments = (ins FHE_AnyEncryptedInteger:$input);
     let results = (outs FHE_AnyEncryptedInteger);
     let hasVerifier = 1;
+    let hasFolder = 1;
 }
 
 // FHE Boolean Operations

@@ -284,7 +284,7 @@ mlir::LogicalResult RoundEintOp::verify() {
   auto input = this->getInput().getType().cast<FheIntegerInterface>();
   auto output = this->getResult().getType().cast<FheIntegerInterface>();
 
-  if (input.getWidth() <= output.getWidth()) {
+  if (input.getWidth() < output.getWidth()) {
     this->emitOpError(
         "should have the input width larger than the output width.");
     return mlir::failure();
@@ -297,6 +297,16 @@ mlir::LogicalResult RoundEintOp::verify() {
   }
 
   return mlir::success();
+}
+
+OpFoldResult RoundEintOp::fold(FoldAdaptor operands) {
+  auto input = this->getInput();
+  auto inputTy = input.getType().dyn_cast_or_null<FheIntegerInterface>();
+  auto outputTy = this->getResult().getType().cast<FheIntegerInterface>();
+  if (inputTy.getWidth() == outputTy.getWidth()) {
+    return input;
+  }
+  return nullptr;
 }
 
 /// Avoid addition with constant 0

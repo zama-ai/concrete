@@ -80,3 +80,11 @@ func.func @mul_eint_int_2D_broadcast(%a0: tensor<4x3x!FHE.eint<2>>) -> tensor<4x
   %1 = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x3x!FHE.eint<2>>, tensor<1x1xi3>) -> tensor<4x3x!FHE.eint<2>>
   return %1: tensor<4x3x!FHE.eint<2>>
 }
+
+// CHECK-LABEL: func.func @round(%arg0: tensor<4x!FHE.eint<5>>) -> tensor<4x!FHE.eint<5>>
+func.func @round(%arg0: tensor<4x!FHE.eint<5>>) -> tensor<4x!FHE.eint<5>> {
+  // CHECK-NEXT: return %arg0 : tensor<4x!FHE.eint<5>>
+
+  %1 = "FHELinalg.round"(%arg0) : (tensor<4x!FHE.eint<5>>) -> tensor<4x!FHE.eint<5>>
+  return %1: tensor<4x!FHE.eint<5>>
+}
