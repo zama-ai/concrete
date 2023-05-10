@@ -1163,6 +1163,7 @@ def FHELinalg_RoundOp : FHELinalg_Op<"round", [TensorUnaryEint]> {
     );
 
     let hasVerifier = 1;
+    let hasFolder = 1;
 }
 
 #endif

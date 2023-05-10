@@ -10,14 +10,6 @@ func.func @mismatched_shape(%arg0: tensor<5x!FHE.eint<8>>) -> tensor<4x!FHE.eint
 
 // -----
 
-func.func @same_bit_width(%arg0: tensor<5x!FHE.eint<8>>) -> tensor<5x!FHE.eint<8>> {
-  // expected-error @+1 {{'FHELinalg.round' op input tensor should have bigger bit width than output tensor}}
-  %0 = "FHELinalg.round"(%arg0): (tensor<5x!FHE.eint<8>>) -> tensor<5x!FHE.eint<8>>
-  return %0 : tensor<5x!FHE.eint<8>>
-}
-
-// -----
-
 func.func @bigger_output_bit_width(%arg0: tensor<5x!FHE.eint<8>>) -> tensor<5x!FHE.eint<10>> {
   // expected-error @+1 {{'FHELinalg.round' op input tensor should have bigger bit width than output tensor}}
   %0 = "FHELinalg.round"(%arg0): (tensor<5x!FHE.eint<8>>) -> tensor<5x!FHE.eint<10>>

@@ -1373,7 +1373,7 @@ mlir::LogicalResult RoundOp::verify() {
   auto outputElementType =
       outputType.getElementType().cast<FHE::FheIntegerInterface>();
 
-  if (inputElementType.getWidth() <= outputElementType.getWidth()) {
+  if (inputElementType.getWidth() < outputElementType.getWidth()) {
     this->emitOpError()
         << "input tensor should have bigger bit width than output tensor";
     return mlir::failure();
@@ -1425,6 +1425,25 @@ OpFoldResult MulEintIntOp::fold(FoldAdaptor operands) {
     }
   }
   return getOperand(0);
+}
+
+/// Avoid multiplication with constant tensor of 1s
+OpFoldResult RoundOp::fold(FoldAdaptor operands) {
+  auto input = this->getInput();
+  auto inputType =
+      this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+  auto inputElementType =
+      inputType.getElementType().cast<FHE::FheIntegerInterface>();
+  auto outputElementType =
+      outputType.getElementType().cast<FHE::FheIntegerInterface>();
+
+  if (inputElementType.getWidth() == outputElementType.getWidth()) {
+    return input;
+  }
+  return nullptr;
 }
 
 } // namespace FHELinalg
