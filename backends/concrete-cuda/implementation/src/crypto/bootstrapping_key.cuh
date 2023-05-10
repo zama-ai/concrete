@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cstdint>
 
+////////////////////////////////////////////////
 __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
                                          int glwe_dimension,
                                          uint32_t level_count) {
@@ -15,7 +16,6 @@ __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
          level_count;
 }
 
-////////////////////////////////////////////////
 template <typename T>
 __device__ T *get_ith_mask_kth_block(T *ptr, int i, int k, int level,
                                      uint32_t polynomial_size,
@@ -39,18 +39,34 @@ __device__ T *get_ith_body_kth_block(T *ptr, int i, int k, int level,
               glwe_dimension * polynomial_size / 2];
 }
 ////////////////////////////////////////////////
+__device__ inline int get_start_ith_lwe(uint32_t i, uint32_t grouping_factor,
+                                        uint32_t polynomial_size,
+                                        uint32_t glwe_dimension,
+                                        uint32_t level_count) {
+  return i * (1 << grouping_factor) * polynomial_size / 2 *
+         (glwe_dimension + 1) * (glwe_dimension + 1) * level_count;
+}
 
+template <typename T>
+__device__ T *get_multi_bit_ith_lwe_gth_group_kth_block(
+    T *ptr, int g, int i, int k, int level, uint32_t grouping_factor,
+    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t level_count) {
+  T *ptr_group = ptr + get_start_ith_lwe(i, grouping_factor, polynomial_size,
+                                         glwe_dimension, level_count);
+  return get_ith_mask_kth_block(ptr_group, g, k, level, polynomial_size,
+                                glwe_dimension, level_count);
+}
+
+////////////////////////////////////////////////
 template <typename T, typename ST>
 void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
                                     uint32_t gpu_index, uint32_t input_lwe_dim,
                                     uint32_t glwe_dim, uint32_t level_count,
-                                    uint32_t polynomial_size) {
+                                    uint32_t polynomial_size,
+                                    uint32_t total_polynomials) {
 
   cudaSetDevice(gpu_index);
   int shared_memory_size = sizeof(double) * polynomial_size;
-
-  int total_polynomials =
-      input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
 
   // Here the buffer size is the size of double2 times the number of polynomials
   // times the polynomial size over 2 because the polynomials are compressed
@@ -231,9 +247,11 @@ void cuda_convert_lwe_bootstrap_key_32(void *dest, void *src, void *v_stream,
                                        uint32_t input_lwe_dim,
                                        uint32_t glwe_dim, uint32_t level_count,
                                        uint32_t polynomial_size) {
+  uint32_t total_polynomials =
+      input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
   cuda_convert_lwe_bootstrap_key<uint32_t, int32_t>(
       (double2 *)dest, (int32_t *)src, v_stream, gpu_index, input_lwe_dim,
-      glwe_dim, level_count, polynomial_size);
+      glwe_dim, level_count, polynomial_size, total_polynomials);
 }
 
 void cuda_convert_lwe_bootstrap_key_64(void *dest, void *src, void *v_stream,
@@ -241,9 +259,23 @@ void cuda_convert_lwe_bootstrap_key_64(void *dest, void *src, void *v_stream,
                                        uint32_t input_lwe_dim,
                                        uint32_t glwe_dim, uint32_t level_count,
                                        uint32_t polynomial_size) {
+  uint32_t total_polynomials =
+      input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) * level_count;
   cuda_convert_lwe_bootstrap_key<uint64_t, int64_t>(
       (double2 *)dest, (int64_t *)src, v_stream, gpu_index, input_lwe_dim,
-      glwe_dim, level_count, polynomial_size);
+      glwe_dim, level_count, polynomial_size, total_polynomials);
+}
+
+void cuda_convert_lwe_multi_bit_bootstrap_key_64(
+    void *dest, void *src, void *v_stream, uint32_t gpu_index,
+    uint32_t input_lwe_dim, uint32_t glwe_dim, uint32_t level_count,
+    uint32_t polynomial_size, uint32_t grouping_factor) {
+  uint32_t total_polynomials = input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) *
+                               level_count * (1 << grouping_factor) /
+                               grouping_factor;
+  cuda_convert_lwe_bootstrap_key<uint64_t, int64_t>(
+      (double2 *)dest, (int64_t *)src, v_stream, gpu_index, input_lwe_dim,
+      glwe_dim, level_count, polynomial_size, total_polynomials);
 }
 
 void cuda_fourier_polynomial_mul(void *_input1, void *_input2, void *_output,
@@ -448,5 +480,13 @@ template __device__ double2 *get_ith_body_kth_block(double2 *ptr, int i, int k,
                                                     uint32_t polynomial_size,
                                                     int glwe_dimension,
                                                     uint32_t level_count);
+
+template __device__ uint64_t *get_multi_bit_ith_lwe_gth_group_kth_block(
+    uint64_t *ptr, int g, int i, int k, int level, uint32_t grouping_factor,
+    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t level_count);
+
+template __device__ double2 *get_multi_bit_ith_lwe_gth_group_kth_block(
+    double2 *ptr, int g, int i, int k, int level, uint32_t grouping_factor,
+    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t level_count);
 
 #endif // CNCRT_BSK_H

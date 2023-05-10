@@ -18,11 +18,10 @@ __global__ void device_batch_fft_ggsw_vector(double2 *dest, T *src,
 
   // Compression
   int offset = blockIdx.x * blockDim.x;
-  int tid = threadIdx.x;
-  int log_2_opt = params::opt >> 1;
 
+  int tid = threadIdx.x;
 #pragma unroll
-  for (int i = 0; i < log_2_opt; i++) {
+  for (int i = 0; i < params::opt / 2; i++) {
     ST x = src[(tid) + params::opt * offset];
     ST y = src[(tid + params::degree / 2) + params::opt * offset];
     selected_memory[tid].x = x / (double)std::numeric_limits<T>::max();
@@ -38,7 +37,7 @@ __global__ void device_batch_fft_ggsw_vector(double2 *dest, T *src,
   // Write the output to global memory
   tid = threadIdx.x;
 #pragma unroll
-  for (int j = 0; j < log_2_opt; j++) {
+  for (int j = 0; j < params::opt / 2; j++) {
     dest[tid + (params::opt >> 1) * offset] = selected_memory[tid];
     tid += params::degree / params::opt;
   }
@@ -53,6 +52,7 @@ void batch_fft_ggsw_vector(cudaStream_t *stream, double2 *dest, T *src,
                            int8_t *d_mem, uint32_t r, uint32_t glwe_dim,
                            uint32_t polynomial_size, uint32_t level_count,
                            uint32_t gpu_index, uint32_t max_shared_memory) {
+  cudaSetDevice(gpu_index);
 
   int shared_memory_size = sizeof(double) * polynomial_size;
 

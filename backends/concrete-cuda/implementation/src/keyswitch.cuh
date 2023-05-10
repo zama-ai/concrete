@@ -130,10 +130,10 @@ __global__ void keyswitch(Torus *lwe_array_out, Torus *lwe_array_in, Torus *ksk,
     local_lwe_array_out[idx] = 0;
   }
 
-  if (tid == 0) {
-    local_lwe_array_out[lwe_dimension_out] =
-        block_lwe_array_in[lwe_dimension_in];
-  }
+  __syncthreads();
+  //  if (tid == 0) {
+  local_lwe_array_out[lwe_dimension_out] = block_lwe_array_in[lwe_dimension_in];
+  //  }
 
   for (int i = 0; i < lwe_dimension_in; i++) {
 

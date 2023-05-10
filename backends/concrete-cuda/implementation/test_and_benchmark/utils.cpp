@@ -220,6 +220,44 @@ void generate_lwe_bootstrap_keys(
   free(bsk_array);
 }
 
+void generate_lwe_multi_bit_pbs_keys(
+    cudaStream_t *stream, int gpu_index, uint64_t **d_bsk_array,
+    uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array, int lwe_dimension,
+    int glwe_dimension, int polynomial_size, int grouping_factor, int pbs_level,
+    int pbs_base_log, Csprng *csprng, double variance,
+    const unsigned repetitions) {
+
+  void *v_stream = (void *)stream;
+
+  int bsk_size = lwe_dimension * pbs_level * (glwe_dimension + 1) *
+                 (glwe_dimension + 1) * polynomial_size *
+                 (1 << grouping_factor) / grouping_factor;
+  int bsk_array_size = bsk_size * repetitions;
+  uint64_t *bsk_array = (uint64_t *)malloc(bsk_array_size * sizeof(uint64_t));
+
+  *d_bsk_array = (uint64_t *)cuda_malloc_async(
+      bsk_array_size * sizeof(uint64_t), stream, gpu_index);
+  for (uint r = 0; r < repetitions; r++) {
+    int shift_in = 0;
+    int shift_out = 0;
+    int shift_bsk = 0;
+    core_crypto_par_generate_lwe_multi_bit_bootstrapping_key(
+        lwe_sk_in_array + (ptrdiff_t)(shift_in), lwe_dimension,
+        lwe_sk_out_array + (ptrdiff_t)(shift_out), glwe_dimension,
+        polynomial_size, bsk_array + (ptrdiff_t)(shift_bsk), pbs_base_log,
+        pbs_level, grouping_factor, sqrt(variance), 0, 0);
+    uint64_t *d_bsk = *d_bsk_array + (ptrdiff_t)(shift_bsk);
+    uint64_t *bsk = bsk_array + (ptrdiff_t)(shift_bsk);
+    cuda_memcpy_async_to_gpu(d_bsk, bsk, bsk_size * sizeof(uint64_t), stream,
+                             gpu_index);
+    shift_in += lwe_dimension;
+    shift_out += glwe_dimension * polynomial_size;
+    shift_bsk += bsk_size;
+  }
+  cuda_synchronize_stream(v_stream);
+  free(bsk_array);
+}
+
 // Generate repetitions keyswitch keys
 void generate_lwe_keyswitch_keys(cudaStream_t *stream, int gpu_index,
                                  uint64_t **d_ksk_array,
@@ -250,6 +288,8 @@ void generate_lwe_keyswitch_keys(cudaStream_t *stream, int gpu_index,
         &CONCRETE_CSPRNG_VTABLE);
     uint64_t *d_ksk = *d_ksk_array + (ptrdiff_t)(shift_ksk);
     uint64_t *ksk = ksk_array + (ptrdiff_t)(shift_ksk);
+    //    ksk_array[0] = 17;
+    //    ksk_array[ksk_size - 1] = 19;
     cuda_memcpy_async_to_gpu(d_ksk, ksk, ksk_size * sizeof(uint64_t), stream,
                              gpu_index);
 
@@ -335,4 +375,35 @@ uint64_t number_of_inputs_on_gpu(uint64_t gpu_index,
     samples += lwe_ciphertext_count % number_of_gpus;
   }
   return samples;
+}
+
+// See tfhe-rs for more explanations
+// tfhe/src/integer/encryption.rs:152
+void encrypt_integer_u64_blocks(uint64_t **ct, uint64_t *lwe_sk,
+                                uint64_t *message_blocks, int lwe_dimension,
+                                int num_blocks, Csprng *csprng,
+                                double variance) {
+
+  for (int i = 0; i < num_blocks; i++) {
+    concrete_cpu_encrypt_lwe_ciphertext_u64(
+        lwe_sk, *ct + (ptrdiff_t)(i * (lwe_dimension + 1)), message_blocks[i],
+        lwe_dimension, variance, csprng, &CONCRETE_CSPRNG_VTABLE);
+  }
+}
+
+void decrypt_integer_u64_blocks(uint64_t *ct, uint64_t *lwe_sk,
+                                uint64_t **message_blocks, int lwe_dimension,
+                                int num_blocks, uint64_t delta,
+                                int message_modulus) {
+  uint64_t rounding_bit = delta >> 1;
+  for (int i = 0; i < num_blocks; i++) {
+    uint64_t decrypted_u64 = 0;
+    concrete_cpu_decrypt_lwe_ciphertext_u64(
+        lwe_sk, ct + (ptrdiff_t)((lwe_dimension + 1) * i), lwe_dimension,
+        &decrypted_u64);
+    uint64_t rounding = (decrypted_u64 & rounding_bit) << 1;
+    uint64_t block_value =
+        ((decrypted_u64 + rounding) / delta) % message_modulus;
+    (*message_blocks)[i] = block_value;
+  }
 }

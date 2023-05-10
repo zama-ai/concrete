@@ -8,8 +8,42 @@
 #include <device.h>
 #include <keyswitch.h>
 #include <linear_algebra.h>
+#include <multi_bit_pbs.h>
 #include <utils.h>
 #include <vertical_packing.h>
+
+template <typename Torus> struct int_mul_memory {
+  Torus *vector_result_sb;
+  Torus *block_mul_res;
+  Torus *small_lwe_vector;
+  Torus *lwe_pbs_out_array;
+  Torus *test_vector_array;
+  Torus *message_acc;
+  Torus *carry_acc;
+  Torus *test_vector_indexes;
+  Torus *tvi_message;
+  Torus *tvi_carry;
+  int8_t *pbs_buffer;
+
+  int p2p_gpu_count = 0;
+
+  cudaStream_t *streams[32];
+
+  int8_t *pbs_buffer_multi_gpu[32];
+  Torus *pbs_input_multi_gpu[32];
+  Torus *pbs_output_multi_gpu[32];
+  Torus *test_vector_multi_gpu[32];
+  Torus *tvi_lsb_multi_gpu[32];
+  Torus *tvi_msb_multi_gpu[32];
+  Torus *tvi_message_multi_gpu[32];
+  Torus *tvi_carry_multi_gpu[32];
+  Torus *bsk_multi_gpu[32];
+  Torus *ksk_multi_gpu[32];
+
+  Torus *device_to_device_buffer[8];
+
+  bool IsAppBuiltAs64() { return sizeof(void *) == 8; }
+};
 
 void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
                      uint64_t **lwe_sk_in_array, uint64_t **lwe_sk_out_array,
@@ -152,4 +186,44 @@ void fft_teardown(cudaStream_t *stream, double *poly1, double *poly2,
                   double2 *h_cpoly1, double2 *h_cpoly2, double2 *d_cpoly1,
                   double2 *d_cpoly2, int gpu_index);
 
+void integer_multiplication_setup(
+    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    uint64_t **lwe_sk_out_array, void **d_bsk_array, uint64_t **d_ksk_array,
+    uint64_t **plaintexts_1, uint64_t **plaintexts_2,
+    uint64_t **d_lwe_ct_in_array_1, uint64_t **d_lwe_ct_in_array_2,
+    uint64_t **d_lwe_ct_out_array, int_mul_memory<uint64_t> *mem_ptr,
+    int lwe_dimension, int glwe_dimension, int polynomial_size,
+    double lwe_modular_variance, double glwe_modular_variance, int pbs_base_log,
+    int pbs_level, int ksk_base_log, int ksk_level, int total_message_bits,
+    int number_of_blocks, int message_modulus, int carry_modulus,
+    uint64_t *delta, int repetitions, int samples, PBS_TYPE pbs_type,
+    int gpu_index);
+
+void integer_multiplication_teardown(
+    cudaStream_t *stream, Csprng *csprng, uint64_t *lwe_sk_in_array,
+    uint64_t *lwe_sk_out_array, void *d_bsk_array, uint64_t *d_ksk_array,
+    uint64_t *plaintexts_1, uint64_t *plaintexts_2,
+    uint64_t *d_lwe_ct_in_array_1, uint64_t *d_lwe_ct_in_array_2,
+    uint64_t *d_lwe_ct_out_array, int_mul_memory<uint64_t> *mem_ptr);
+
+void multi_bit_pbs_setup(
+    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    uint64_t **lwe_sk_out_array, uint64_t **d_bsk_array, uint64_t **plaintexts,
+    uint64_t **d_lut_pbs_identity, uint64_t **d_lut_pbs_indexes,
+    uint64_t **d_lwe_ct_in_array, uint64_t **d_lwe_ct_out_array,
+    int8_t **pbs_buffer, int lwe_dimension, int glwe_dimension,
+    int polynomial_size, int grouping_factor, double lwe_modular_variance,
+    double glwe_modular_variance, int pbs_base_log, int pbs_level,
+    int message_modulus, int carry_modulus, int *payload_modulus,
+    uint64_t *delta, int number_of_inputs, int repetitions, int samples,
+    int gpu_index);
+
+void multi_bit_pbs_teardown(cudaStream_t *stream, Csprng *csprng,
+                            uint64_t *lwe_sk_in_array,
+                            uint64_t *lwe_sk_out_array, uint64_t *d_bsk_array,
+                            uint64_t *plaintexts, uint64_t *d_lut_pbs_identity,
+                            uint64_t *d_lut_pbs_indexes,
+                            uint64_t *d_lwe_ct_in_array,
+                            uint64_t *d_lwe_ct_out_array, int8_t **pbs_buffer,
+                            int gpu_index);
 #endif // SETUP_AND_TEARDOWN_H

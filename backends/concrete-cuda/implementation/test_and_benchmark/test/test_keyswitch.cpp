@@ -134,6 +134,8 @@ TEST_P(KeyswitchTestPrimitives_u64, keyswitch) {
         (KeyswitchTestParams){847, 4096, 2.9802322387695312e-18, 4, 4, 2, 1,
                               10},
         (KeyswitchTestParams){881, 8192, 2.9802322387695312e-18, 3, 6, 2, 1,
+                              10},
+        (KeyswitchTestParams){2048, 742, 2.9802322387695312e-18, 3, 5, 4, 4,
                               10});
 
 std::string printParamName(::testing::TestParamInfo<KeyswitchTestParams> p) {

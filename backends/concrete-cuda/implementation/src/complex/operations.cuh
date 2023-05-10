@@ -48,6 +48,13 @@ __device__ inline double2 operator-(const double2 a, const double2 b) {
   return res;
 }
 
+__device__ inline double2 operator-(const double2 a) {
+  double2 res;
+  res.x = -a.x;
+  res.y = -a.y;
+  return res;
+}
+
 __device__ inline double2 operator*(const double2 a, const double2 b) {
   double xx = a.x * b.x;
   double xy = a.x * b.y;
@@ -83,5 +90,52 @@ __device__ inline double2 operator*(double a, double2 b) {
   res.y = b.y * a;
   return res;
 }
+
+template <typename T> __global__ void print_debug_kernel(T *src, int N) {
+  for (int i = 0; i < N; i++) {
+    printf("%lu, ", src[i]);
+  }
+}
+
+template <typename T> void print_debug(const char *name, T *src, int N) {
+  printf("%s: ", name);
+  cudaDeviceSynchronize();
+  print_debug_kernel<<<1, 1>>>(src, N);
+  cudaDeviceSynchronize();
+  printf("\n");
+}
+
+template <typename Torus> struct int_mul_memory {
+  Torus *vector_result_sb;
+  Torus *block_mul_res;
+  Torus *small_lwe_vector;
+  Torus *lwe_pbs_out_array;
+  Torus *test_vector_array;
+  Torus *message_acc;
+  Torus *carry_acc;
+  Torus *test_vector_indexes;
+  Torus *tvi_message;
+  Torus *tvi_carry;
+  int8_t *pbs_buffer;
+
+  int p2p_gpu_count = 0;
+
+  cudaStream_t *streams[32];
+
+  int8_t *pbs_buffer_multi_gpu[32];
+  Torus *pbs_input_multi_gpu[32];
+  Torus *pbs_output_multi_gpu[32];
+  Torus *test_vector_multi_gpu[32];
+  Torus *tvi_lsb_multi_gpu[32];
+  Torus *tvi_msb_multi_gpu[32];
+  Torus *tvi_message_multi_gpu[32];
+  Torus *tvi_carry_multi_gpu[32];
+  Torus *bsk_multi_gpu[32];
+  Torus *ksk_multi_gpu[32];
+
+  Torus *device_to_device_buffer[8];
+
+  bool IsAppBuiltAs64() { return sizeof(void *) == 8; }
+};
 
 #endif

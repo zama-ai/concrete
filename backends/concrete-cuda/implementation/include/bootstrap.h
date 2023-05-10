@@ -21,6 +21,11 @@ void cuda_convert_lwe_bootstrap_key_64(void *dest, void *src, void *v_stream,
                                        uint32_t glwe_dim, uint32_t level_count,
                                        uint32_t polynomial_size);
 
+void cuda_convert_lwe_multi_bit_bootstrap_key_64(
+    void *dest, void *src, void *v_stream, uint32_t gpu_index,
+    uint32_t input_lwe_dim, uint32_t glwe_dim, uint32_t level_count,
+    uint32_t polynomial_size, uint32_t grouping_factor);
+
 void scratch_cuda_bootstrap_amortized_32(void *v_stream, uint32_t gpu_index,
                                          int8_t **pbs_buffer,
                                          uint32_t glwe_dimension,
@@ -173,6 +178,12 @@ template <typename T>
 __device__ T *get_ith_body_kth_block(T *ptr, int i, int k, int level,
                                      uint32_t polynomial_size,
                                      int glwe_dimension, uint32_t level_count);
+
+template <typename T>
+__device__ T *get_multi_bit_ith_lwe_gth_group_kth_block(
+    T *ptr, int g, int i, int k, int level, uint32_t grouping_factor,
+    uint32_t polynomial_size, uint32_t glwe_dimension, uint32_t level_count);
+
 #endif
 
 #endif // CUDA_BOOTSTRAP_H

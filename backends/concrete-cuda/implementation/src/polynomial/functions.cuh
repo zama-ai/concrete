@@ -20,6 +20,29 @@ __device__ void real_to_complex_compressed(int16_t *src, double2 *dst) {
   }
 }
 
+template <typename Torus, typename STorus, class params>
+__device__ void torus_to_complex_compressed(Torus *src, double2 *dst) {
+  int tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    dst[tid].x = __ll2double_rn((STorus)src[tid]);
+    dst[tid].y = __ll2double_rn((STorus)src[tid + params::degree / 2]);
+
+    tid += params::degree / params::opt;
+  }
+}
+
+template <typename Torus, typename STorus, class params>
+__device__ void complex_to_torus_compressed(double2 *src, Torus *dst) {
+  int tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    dst[tid] = src[tid].x;
+    dst[tid + params::degree / 2] = src[tid].y;
+    tid += params::degree / params::opt;
+  }
+}
+
 /*
  * copy source polynomial to specific slice of batched polynomials
  * used only in low latency version
@@ -36,6 +59,16 @@ __device__ void copy_into_ith_polynomial_low_lat(T *source, T *dst, int i) {
 
   if (threadIdx.x == 0) {
     dst[params::degree / 2 + begin] = source[params::degree / 2];
+  }
+}
+
+template <typename T, int elems_per_thread, int block_size>
+__device__ void copy_polynomial(T *source, T *dst) {
+  int tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < elems_per_thread; i++) {
+    dst[tid] = source[tid];
+    tid = tid + block_size;
   }
 }
 
@@ -149,6 +182,118 @@ __device__ void multiply_by_monomial_negacyclic_and_sub_polynomial(
   }
 }
 
+template <typename Torus, class params>
+__device__ void pbs_modulus_switch(Torus input) {
+  Torus output = input;
+  output >>= sizeof(Torus) * 8 - params::log2_degree - 2;
+  output += output & 1;
+  output >>= 1;
+  return output;
+}
+
+template <typename Torus, class params>
+__device__ void set_monomial(Torus *acc, uint32_t monomial_degree) {
+  int full_cycles_count = monomial_degree / params::degree;
+  int remainder_degrees = monomial_degree % params::degree;
+
+  Torus x = (full_cycles_count % 2 ? -1 : 1);
+
+  int tid = threadIdx.x;
+  for (int i = 0; i < params::opt; i++) {
+    acc[tid] = (tid == remainder_degrees) * x;
+    tid += params::degree / params::opt;
+  }
+}
+
+template <typename Torus, class params>
+__device__ void set_monomial_double2(double2 *dst, uint32_t monomial_degree) {
+  int full_cycles_count = monomial_degree / params::degree;
+  int remainder_degrees = monomial_degree % params::degree;
+
+  Torus x = (full_cycles_count % 2 ? -1 : 1);
+  int tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < params::opt / 2; i++) {
+    dst[tid].x = __ll2double_rn((tid == remainder_degrees) * x);
+    dst[tid].y =
+        __ll2double_rn(((tid + params::degree / 2) == remainder_degrees) * x);
+
+    tid += params::degree / params::opt;
+  }
+}
+
+// Perform RESULT_ACC += ACC * (X^ä + 1)
+template <typename Torus, class params>
+__device__ void multiply_by_monomial_negacyclic_and_add(double2 *acc,
+                                                        double2 *result_acc,
+                                                        Torus monomial_degree) {
+  // REWRITE THIS FUNCTION TO AVOID BRANCHING!!
+
+  int tid = threadIdx.x;
+  for (int i = 0; i < params::opt / 2; i++) {
+    if (monomial_degree < params::degree) {
+      if (tid < monomial_degree) {
+        result_acc[tid] += -acc[tid - monomial_degree + params::degree];
+      } else {
+        result_acc[tid] += acc[tid - monomial_degree];
+      }
+    } else {
+      uint32_t jj = monomial_degree - params::degree;
+      if (tid < jj) {
+        result_acc[tid] += acc[tid - jj + params::degree];
+      } else {
+        result_acc[tid] += -acc[tid - jj];
+      }
+    }
+    //           if (monomial_degree < params::degree) {
+    //              result_acc[tid] += (1 - 2 * (tid < monomial_degree)) *
+    //              acc[tid - monomial_degree + (tid < monomial_degree) *
+    //              params::degree];
+    //            } else {
+    //              uint32_t jj = monomial_degree - params::degree;
+    //              result_acc[tid] += (1 - 2 * (tid >= jj)) * acc[tid - jj +
+    //              (tid < jj) * params::degree];
+    //            }
+    tid += params::degree / params::opt;
+  }
+}
+
+// Perform RESULT_ACC -= ACC * (X^ä + 1)
+template <typename Torus, class params>
+__device__ void multiply_by_monomial_negacyclic_and_sub(double2 *acc,
+                                                        double2 *result_acc,
+                                                        Torus monomial_degree) {
+  // REWRITE THIS FUNCTION TO AVOID BRANCHING!!
+
+  int tid = threadIdx.x;
+  for (int i = 0; i < params::opt / 2; i++) {
+    if (monomial_degree < params::degree) {
+      if (tid < monomial_degree) {
+        result_acc[tid] -= -acc[tid - monomial_degree + params::degree];
+      } else {
+        result_acc[tid] -= acc[tid - monomial_degree];
+      }
+    } else {
+      uint32_t jj = monomial_degree - params::degree;
+      if (tid < jj) {
+        result_acc[tid] -= acc[tid - jj + params::degree];
+      } else {
+        result_acc[tid] -= -acc[tid - jj];
+      }
+    }
+    //           if (monomial_degree < params::degree) {
+    //              result_acc[tid] -= (1 - 2 * (tid < monomial_degree)) *
+    //              acc[tid - monomial_degree + (tid < monomial_degree) *
+    //              params::degree];
+    //            } else {
+    //              uint32_t jj = monomial_degree - params::degree;
+    //              result_acc[tid] -= (1 - 2 * (tid >= jj)) * acc[tid - jj +
+    //              (tid < jj) * params::degree];
+    //            }
+    tid += params::degree / params::opt;
+  }
+}
+
 /*
  * Receives num_poly  concatenated polynomials of type T. For each performs a
  * rounding to increase accuracy of the PBS. Calculates inplace.
@@ -178,7 +323,8 @@ __device__ void round_to_closest_multiple_inplace(T *rotated_acc, int base_log,
 }
 
 template <typename Torus, class params>
-__device__ void add_to_torus(double2 *m_values, Torus *result) {
+__device__ void add_to_torus(double2 *m_values, Torus *result,
+                             bool init_torus = false) {
   Torus mx = (sizeof(Torus) == 4) ? UINT32_MAX : UINT64_MAX;
   int tid = threadIdx.x;
 #pragma unroll
@@ -202,8 +348,13 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
     Torus V2 = 0;
     typecast_double_to_torus<Torus>(frac, V2);
 
-    result[tid] += V1;
-    result[tid + params::degree / 2] += V2;
+    if (init_torus) {
+      result[tid] = V1;
+      result[tid + params::degree / 2] = V2;
+    } else {
+      result[tid] += V1;
+      result[tid + params::degree / 2] += V2;
+    }
     tid = tid + params::degree / params::opt;
   }
 }

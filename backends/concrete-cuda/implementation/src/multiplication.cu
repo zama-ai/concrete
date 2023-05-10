@@ -54,3 +54,122 @@ void cuda_mult_lwe_ciphertext_vector_cleartext_vector_64(
       static_cast<uint64_t *>(cleartext_array_in), input_lwe_dimension,
       input_lwe_ciphertext_count);
 }
+
+/*
+ * This scratch function allocates the necessary amount of data on the GPU for
+ * the integer radix multiplication in keyswitch->bootstrap order.
+ */
+void scratch_cuda_integer_mult_radix_ciphertext_kb_64(
+    void *v_stream, uint32_t gpu_index, void *mem_ptr, uint32_t message_modulus,
+    uint32_t carry_modulus, uint32_t glwe_dimension, uint32_t lwe_dimension,
+    uint32_t polynomial_size, uint32_t pbs_base_log, uint32_t pbs_level,
+    uint32_t ks_base_log, uint32_t ks_level, uint32_t num_blocks,
+    PBS_TYPE pbs_type, uint32_t max_shared_memory, bool allocate_gpu_memory) {
+  switch (polynomial_size) {
+  case 2048:
+    scratch_cuda_integer_mult_radix_ciphertext_kb<uint64_t, Degree<2048>>(
+        v_stream, gpu_index, (int_mul_memory<uint64_t> *)mem_ptr,
+        message_modulus, carry_modulus, glwe_dimension, lwe_dimension,
+        polynomial_size, pbs_base_log, pbs_level, ks_base_log, ks_level,
+        num_blocks, pbs_type, max_shared_memory, allocate_gpu_memory);
+    break;
+  default:
+    break;
+  }
+}
+
+/*
+ * Computes a multiplication between two 64 bit radix lwe ciphertexts
+ * encrypting integer values. keyswitch -> bootstrap pattern is used, function
+ * works for single pair of radix ciphertexts, 'v_stream' can be used for
+ * parallelization
+ * - 'v_stream' is a void pointer to the Cuda stream to be used in the kernel
+ * launch
+ * - 'gpu_index' is the index of the GPU to be used in the kernel launch
+ * - 'radix_lwe_out' is 64 bit radix big lwe ciphertext, product of
+ * multiplication
+ * - 'radix_lwe_left' left radix big lwe ciphertext
+ * - 'radix_lwe_right' right radix big lwe ciphertext
+ * - 'ct_degree_out' degree for each lwe ciphertext block for out
+ * RadixCiphertext
+ * - 'ct_degree_left' degree for each lwe ciphertext block for left
+ * RadixCiphertext
+ * - 'ct_degree_right' degree for each lwe ciphertext block for right
+ * RadixCiphertext
+ * - 'fourier_bsk' bootstrapping key in fourier domain
+ * - 'ksk' keyswitching key
+ * - 'mult_buffer' device pointer to be used for intermediate calculations
+ * - 'glwe_dimension' glwe_dimension
+ * - 'lwe_dimension' is the dimension of small lwe ciphertext
+ * - 'polynomial_size' polynomial size
+ * - 'num_blocks' is the number of big lwe ciphertext blocks inside radix
+ * ciphertext
+ */
+void cuda_integer_mult_radix_ciphertext_kb_64(
+    void *v_stream, uint32_t gpu_index, void *radix_lwe_out,
+    void *radix_lwe_left, void *radix_lwe_right, uint32_t *ct_degree_out,
+    uint32_t *ct_degree_left, uint32_t *ct_degree_right, void *bsk, void *ksk,
+    void *mem_ptr, uint32_t message_modulus, uint32_t carry_modulus,
+    uint32_t glwe_dimension, uint32_t lwe_dimension, uint32_t polynomial_size,
+    uint32_t pbs_base_log, uint32_t pbs_level, uint32_t ks_base_log,
+    uint32_t ks_level, uint32_t num_blocks, PBS_TYPE pbs_type,
+    uint32_t max_shared_memory) {
+
+  switch (polynomial_size) {
+  case 2048:
+    host_integer_mult_radix_kb<uint64_t, int64_t, AmortizedDegree<2048>>(
+        v_stream, gpu_index, (uint64_t *)radix_lwe_out,
+        (uint64_t *)radix_lwe_left, (uint64_t *)radix_lwe_right, ct_degree_out,
+        ct_degree_left, ct_degree_right, bsk, (uint64_t *)ksk,
+        (int_mul_memory<uint64_t> *)mem_ptr, message_modulus, carry_modulus,
+        glwe_dimension, lwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+        ks_base_log, ks_level, num_blocks, pbs_type, max_shared_memory);
+    break;
+  default:
+    break;
+  }
+}
+
+void scratch_cuda_integer_mult_radix_ciphertext_kb_64_multi_gpu(
+    void *mem_ptr, void *bsk, void *ksk, uint32_t message_modulus,
+    uint32_t carry_modulus, uint32_t glwe_dimension, uint32_t lwe_dimension,
+    uint32_t polynomial_size, uint32_t pbs_base_log, uint32_t pbs_level,
+    uint32_t ks_base_log, uint32_t ks_level, uint32_t num_blocks,
+    PBS_TYPE pbs_type, uint32_t max_shared_memory, bool allocate_gpu_memory) {
+  switch (polynomial_size) {
+  case 2048:
+    scratch_cuda_integer_mult_radix_ciphertext_kb_multi_gpu<uint64_t,
+                                                            Degree<2048>>(
+        (int_mul_memory<uint64_t> *)mem_ptr, (uint64_t *)bsk, (uint64_t *)ksk,
+        message_modulus, carry_modulus, glwe_dimension, lwe_dimension,
+        polynomial_size, pbs_base_log, pbs_level, ks_base_log, ks_level,
+        num_blocks, pbs_type, max_shared_memory, allocate_gpu_memory);
+    break;
+  default:
+    break;
+  }
+}
+
+void cuda_integer_mult_radix_ciphertext_kb_64_multi_gpu(
+    void *radix_lwe_out, void *radix_lwe_left, void *radix_lwe_right,
+    uint32_t *ct_degree_out, uint32_t *ct_degree_left,
+    uint32_t *ct_degree_right, void *bsk, void *ksk, void *mem_ptr,
+    uint32_t message_modulus, uint32_t carry_modulus, uint32_t glwe_dimension,
+    uint32_t lwe_dimension, uint32_t polynomial_size, uint32_t pbs_base_log,
+    uint32_t pbs_level, uint32_t ks_base_log, uint32_t ks_level,
+    uint32_t num_blocks, PBS_TYPE pbs_type, uint32_t max_shared_memory) {
+
+  switch (polynomial_size) {
+  case 2048:
+    host_integer_mult_radix_kb_multi_gpu<uint64_t, int64_t, Degree<2048>>(
+        (uint64_t *)radix_lwe_out, (uint64_t *)radix_lwe_left,
+        (uint64_t *)radix_lwe_right, ct_degree_out, ct_degree_left,
+        ct_degree_right, (uint64_t *)bsk, (uint64_t *)ksk,
+        (int_mul_memory<uint64_t> *)mem_ptr, message_modulus, carry_modulus,
+        glwe_dimension, lwe_dimension, polynomial_size, pbs_base_log, pbs_level,
+        ks_base_log, ks_level, num_blocks, max_shared_memory);
+    break;
+  default:
+    break;
+  }
+}

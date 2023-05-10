@@ -4,6 +4,10 @@
 #include <concrete-cpu.h>
 #include <device.h>
 #include <functional>
+#include <tfhe.h>
+
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
 
 // This is the price per hour of a p3.2xlarge instance on Amazon AWS
 #define AWS_VM_COST_PER_HOUR (double)3.06
@@ -40,6 +44,13 @@ void generate_lwe_bootstrap_keys(
     int glwe_dimension, int polynomial_size, int pbs_level, int pbs_base_log,
     Csprng *csprng, double variance, const unsigned repetitions);
 
+void generate_lwe_multi_bit_pbs_keys(
+    cudaStream_t *stream, int gpu_index, uint64_t **d_bsk_array,
+    uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array, int lwe_dimension,
+    int glwe_dimension, int polynomial_size, int pbs_level, int pbs_base_log,
+    int grouping_factor, Csprng *csprng, double variance,
+    const unsigned repetitions);
+
 void generate_lwe_keyswitch_keys(cudaStream_t *stream, int gpu_index,
                                  uint64_t **d_ksk_array,
                                  uint64_t *lwe_sk_in_array,
@@ -64,4 +75,12 @@ uint64_t number_of_inputs_on_gpu(uint64_t gpu_index,
                                  uint64_t lwe_ciphertext_count,
                                  uint64_t number_of_gpus);
 
+void encrypt_integer_u64_blocks(uint64_t **ct, uint64_t *lwe_sk,
+                                uint64_t *message_blocks, int lwe_dimension,
+                                int num_blocks, Csprng *csprng,
+                                double variance);
+void decrypt_integer_u64_blocks(uint64_t *ct, uint64_t *lwe_sk,
+                                uint64_t **message_blocks, int lwe_dimension,
+                                int num_blocks, uint64_t delta,
+                                int message_modulus);
 #endif
