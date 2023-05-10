@@ -587,6 +587,13 @@ def deterministic_unary_function(x):
             id="fhe.LookupTable(list(range(32)))[x + y]",
         ),
         pytest.param(
+            lambda x: np.expand_dims(x, 0),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
+            },
+            id="np.expand_dims(x, 0)",
+        ),
+        pytest.param(
             lambda x: np.expand_dims(x, axis=0),
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},

@@ -466,6 +466,10 @@ class Tracer:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
                 kwargs["axes"] = args[1]
+        elif func is np.expand_dims:
+            sanitized_args = [self.sanitize(args[0])]
+            if len(args) > 1:
+                kwargs["axis"] = args[1]
         else:
             sanitized_args = [self.sanitize(arg) for arg in args]
 
