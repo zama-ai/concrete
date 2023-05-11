@@ -42,6 +42,20 @@ pip install -r ./llvm-project/mlir/python/requirements.txt
 pip install -r ../llvm-project/mlir/python/requirements.txt
 ```
 
+### Prerequisite: nightly rust toolchain
+
+If you see a build error like
+
+```
+error: toolchain 'nightly-x86_64-unknown-linux-gnu' is not installed
+```
+
+it means you need to install the nightly rust toolchain
+
+```bash
+rustup toolchain install nightly
+```
+
 ### Build from source
 
 We use cmake as the main build system but in order to initialize the build system and define straightforward target for the main artifacts of the project. You can initialize and build all the main artifacts thanks the following command:
