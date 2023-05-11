@@ -914,3 +914,33 @@ def test_others_bad_univariate(helpers):
         "Function bad_univariate cannot be used with fhe.univariate",
         str(excinfo.value),
     )
+
+
+def test_dynamic_indexing_hack(helpers):
+    """
+    Test dynamic indexing using basic operators.
+    """
+
+    @fhe.compiler({"array": "encrypted", "index": "encrypted"})
+    def function(array, index):
+        all_indices = np.arange(array.size)
+        index_selection = index == all_indices
+        selection_and_zeros = array * index_selection
+        selection = np.sum(selection_and_zeros)
+        return selection
+
+    inputset = [
+        (
+            np.random.randint(0, 16, size=(4,)),
+            np.random.randint(0, 4, size=()),
+        )
+        for _ in range(100)
+    ]
+    circuit = function.compile(inputset, helpers.configuration())
+
+    sample = np.random.randint(0, 16, size=(4,))
+
+    helpers.check_execution(circuit, function, [sample, 0], retries=3)
+    helpers.check_execution(circuit, function, [sample, 1], retries=3)
+    helpers.check_execution(circuit, function, [sample, 2], retries=3)
+    helpers.check_execution(circuit, function, [sample, 3], retries=3)
