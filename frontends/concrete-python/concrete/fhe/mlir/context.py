@@ -1487,6 +1487,8 @@ class Context:
 
         mapping = np.array(mapping, dtype=np.uint64)
 
+        on = self.broadcast_to(on, mapping.shape)
+
         assert mapping.shape == on.shape
         assert mapping.min() == 0
         assert mapping.max() == len(tables) - 1
