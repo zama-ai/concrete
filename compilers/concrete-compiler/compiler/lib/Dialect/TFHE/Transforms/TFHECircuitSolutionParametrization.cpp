@@ -66,12 +66,12 @@ public:
       // outputs
       VERBOSE("\n### BEFORE Fixup keys \n" << func);
       fixupKeyswitchOuputs(func);
-      // Fixup incompatible operators with extra conversion keys
-      VERBOSE("\n### BEFORE Fixup with extra conversion keys \n" << func);
-      fixupIncompatibleLeveledOpWithExtraConversionKeys(func);
       // Propagate types on non parametrized operators
       VERBOSE("\n### BEFORE Fixup non parametrized ops \n" << func);
       fixupNonParametrizedOps(func);
+      // Fixup incompatible operators with extra conversion keys
+      VERBOSE("\n### BEFORE Fixup with extra conversion keys \n" << func);
+      fixupIncompatibleLeveledOpWithExtraConversionKeys(func);
       // Fixup the function signature
       VERBOSE("\n### BEFORE Fixup function signature \n" << func);
       fixupFunctionSignature(func);
@@ -330,20 +330,9 @@ public:
           continue;
         }
         // Lookup for the extra conversion key
-        auto definingOp = operand.getDefiningOp();
-        if (definingOp == nullptr) {
-          DEBUG("      -> skip operand, no defining operator");
-          continue;
-        }
-        auto definingOpOptimizerIDAttr =
-            definingOp->getAttrOfType<mlir::IntegerAttr>("TFHE.OId");
-        if (definingOpOptimizerIDAttr == nullptr) {
-          DEBUG("      -> cannot find optimizer id of the defining op");
-          continue;
-        }
         DEBUG("      -> get extra conversion key")
         auto extraConvKey = getExtraConversionKeyAttr(
-            context, definingOpOptimizerIDAttr.getInt(), operandType);
+            context, operandType.getKey(), resType.getKey());
         if (extraConvKey == nullptr) {
           DEBUG("      -> extra conversion key, not found")
           assert(false);
@@ -351,7 +340,7 @@ public:
         mlir::IRRewriter rewriter(context);
         rewriter.setInsertionPoint(op);
         auto newKSK = rewriter.create<TFHE::KeySwitchGLWEOp>(
-            definingOp->getLoc(), resType, operand, extraConvKey);
+            op->getLoc(), resType, operand, extraConvKey);
         DEBUG("create extra conversion keyswitch: " << newKSK);
         op->setOperand(operandIdx, newKSK);
       }
@@ -472,26 +461,25 @@ public:
   }
 
   const TFHE::GLWEKeyswitchKeyAttr
-  getExtraConversionKeyAttr(mlir::MLIRContext *context, size_t optimizerID,
-                            TFHE::GLWECipherTextType operandType) {
-    DEBUG("get extra conversion key for " << operandType);
-    auto instructionKey = getInstructionKey(optimizerID);
-    for (const auto &convKSKID : instructionKey.extra_conversion_keys) {
-      DEBUG("try extra conversion keyswitch #" << convKSKID)
-      auto convKSK = solution.circuit_keys.conversion_keyswitch_keys[convKSKID];
-      auto key = operandType.getKey();
-      assert(key.isParameterized());
-      if (operandType.getKey().getParameterized().value().identifier ==
-          convKSK.input_key.identifier) {
-        return TFHE::GLWEKeyswitchKeyAttr::get(
-            context, toLWESecretKey(convKSK.input_key),
-            toLWESecretKey(convKSK.output_key),
-            convKSK.ks_decomposition_parameter.level,
-            convKSK.ks_decomposition_parameter.log2_base, -1);
-      }
-    }
-    DEBUG("!!! extra conversion key not found");
-    return nullptr;
+  getExtraConversionKeyAttr(mlir::MLIRContext *context,
+                            TFHE::GLWESecretKey inputKey,
+                            TFHE::GLWESecretKey ouputKey) {
+    auto convKSK = std::find_if(
+        solution.circuit_keys.conversion_keyswitch_keys.begin(),
+        solution.circuit_keys.conversion_keyswitch_keys.end(),
+        [&](concrete_optimizer::dag::ConversionKeySwitchKey &arg) {
+          assert(ouputKey.isParameterized() && inputKey.isParameterized());
+          return arg.input_key.identifier ==
+                     inputKey.getParameterized()->identifier &&
+                 arg.output_key.identifier ==
+                     ouputKey.getParameterized()->identifier;
+        });
+    assert(convKSK != solution.circuit_keys.conversion_keyswitch_keys.end());
+    return TFHE::GLWEKeyswitchKeyAttr::get(
+        context, toLWESecretKey(convKSK->input_key),
+        toLWESecretKey(convKSK->output_key),
+        convKSK->ks_decomposition_parameter.level,
+        convKSK->ks_decomposition_parameter.log2_base, -1);
   }
 
   const TFHE::GLWEBootstrapKeyAttr
