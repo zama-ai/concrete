@@ -54,6 +54,20 @@ pip install -r ../llvm-project/mlir/python/requirements.txt
 
 You should also have the python development package installed.
 
+### Prerequisite: nightly rust toolchain
+
+If you see a build error like
+
+```
+error: toolchain 'nightly-x86_64-unknown-linux-gnu' is not installed
+```
+
+it means you need to install the nightly rust toolchain
+
+```bash
+rustup toolchain install nightly
+```
+
 ### Build from source
 
 We use cmake as the main build system but in order to initialize the build system and define straightforward target for the main artifacts of the project. You can initialize and build all the main artifacts thanks the following command:
@@ -84,9 +98,9 @@ Run the compiler
 
 #### Debug build and custom linker
 
-To build a debug version of the project, you can set `BUILD_TYPE=Debug` in the `Makefile`. In `Debug` 
+To build a debug version of the project, you can set `BUILD_TYPE=Debug` in the `Makefile`. In `Debug`
 the build system will detect if the `lld` linker is installed on the system and use it. `lld` is much faster
-than the default `ld` linker. Release builds with `lld` can also be enabled by modifying the `Makefile`. 
+than the default `ld` linker. Release builds with `lld` can also be enabled by modifying the `Makefile`.
 
 ### Installation from source
 
