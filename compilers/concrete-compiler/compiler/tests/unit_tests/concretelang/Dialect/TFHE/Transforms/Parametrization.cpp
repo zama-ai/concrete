@@ -8,6 +8,8 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/Transforms/Transforms.h"
@@ -16,8 +18,9 @@ std::string transform(std::string source,
                       concrete_optimizer::dag::CircuitSolution solution) {
   // Register dialect
   mlir::DialectRegistry registry;
-  registry
-      .insert<mlir::concretelang::TFHE::TFHEDialect, mlir::func::FuncDialect>();
+  registry.insert<mlir::concretelang::TFHE::TFHEDialect,
+                  mlir::func::FuncDialect, mlir::scf::SCFDialect,
+                  mlir::bufferization::BufferizationDialect>();
   mlir::MLIRContext mlirContext;
   mlirContext.appendDialectRegistry(registry);
 
@@ -242,5 +245,79 @@ TEST(TFHECircuitParametrization, extra_conversion_key) {
   // #3: %1 - partition 1
   addInstructionKey(solution, sk1, sk1);
   std::string output = transform(source, solution);
+  ASSERT_EQ(output, expected);
+}
+
+// Test the extra conversion keys used to switch between two partitions without
+// boostrap, with tensor (avoid direct link between TFHE operators in different
+// partition) Minimized test for bug report:
+// https://github.com/zama-ai/concrete-internal/issues/277
+TEST(TFHECircuitParametrization, extra_conversion_key_tensor) {
+  std::string source = R"(
+  func.func @main(%arg0: tensor<1x!TFHE.glwe<sk?>> {TFHE.OId = 0 : i32}, %arg1: tensor<1x!TFHE.glwe<sk?>> {TFHE.OId = 1 : i32}, %arg2: i64) -> tensor<1x!TFHE.glwe<sk?>> {
+    %c0 = arith.constant 0 : index
+    %c1 = arith.constant 1 : index
+    // Partition 0
+    %0 = bufferization.alloc_tensor() : tensor<1x!TFHE.glwe<sk?>>
+    %1 = scf.for %arg3 = %c0 to %c1 step %c1 iter_args(%arg4 = %0) -> (tensor<1x!TFHE.glwe<sk?>>) {
+      %extracted = tensor.extract %arg0[%arg3] : tensor<1x!TFHE.glwe<sk?>>
+      %2 = "TFHE.add_glwe_int"(%extracted, %arg2) {TFHE.OId = 2 : i32} : (!TFHE.glwe<sk?>, i64) -> !TFHE.glwe<sk?>
+      %inserted = tensor.insert %2 into %arg4[%arg3] : tensor<1x!TFHE.glwe<sk?>>
+      scf.yield %inserted : tensor<1x!TFHE.glwe<sk?>>
+    }
+    // Partition 1
+    %2 = bufferization.alloc_tensor() : tensor<1x!TFHE.glwe<sk?>>
+    %3 = scf.for %arg3 = %c0 to %c1 step %c1 iter_args(%arg4 = %2) -> (tensor<1x!TFHE.glwe<sk?>>) {
+      %extracted = tensor.extract %1[%arg3] : tensor<1x!TFHE.glwe<sk?>>
+      %extracted_1 = tensor.extract %arg1[%arg3] : tensor<1x!TFHE.glwe<sk?>>
+      %4 = "TFHE.add_glwe"(%extracted, %extracted_1) {TFHE.OId = 3 : i32} : (!TFHE.glwe<sk?>, !TFHE.glwe<sk?>) -> !TFHE.glwe<sk?>
+      %inserted = tensor.insert %4 into %arg4[%arg3] : tensor<1x!TFHE.glwe<sk?>>
+      scf.yield %inserted : tensor<1x!TFHE.glwe<sk?>>
+    }
+    return %1 : tensor<1x!TFHE.glwe<sk?>>
+  }
+)";
+  std::string expected = R"(module {
+  func.func @main(%arg0: tensor<1x!TFHE.glwe<sk<0,1,6144>>>, %arg1: tensor<1x!TFHE.glwe<sk<1,1,1024>>>, %arg2: i64) -> tensor<1x!TFHE.glwe<sk<0,1,6144>>> {
+    %c0 = arith.constant 0 : index
+    %c1 = arith.constant 1 : index
+    %0 = bufferization.alloc_tensor() : tensor<1x!TFHE.glwe<sk<0,1,6144>>>
+    %1 = scf.for %arg3 = %c0 to %c1 step %c1 iter_args(%arg4 = %0) -> (tensor<1x!TFHE.glwe<sk<0,1,6144>>>) {
+      %extracted = tensor.extract %arg0[%arg3] : tensor<1x!TFHE.glwe<sk<0,1,6144>>>
+      %4 = "TFHE.add_glwe_int"(%extracted, %arg2) : (!TFHE.glwe<sk<0,1,6144>>, i64) -> !TFHE.glwe<sk<0,1,6144>>
+      %inserted = tensor.insert %4 into %arg4[%arg3] : tensor<1x!TFHE.glwe<sk<0,1,6144>>>
+      scf.yield %inserted : tensor<1x!TFHE.glwe<sk<0,1,6144>>>
+    }
+    %2 = bufferization.alloc_tensor() : tensor<1x!TFHE.glwe<sk<1,1,1024>>>
+    %3 = scf.for %arg3 = %c0 to %c1 step %c1 iter_args(%arg4 = %2) -> (tensor<1x!TFHE.glwe<sk<1,1,1024>>>) {
+      %extracted = tensor.extract %1[%arg3] : tensor<1x!TFHE.glwe<sk<0,1,6144>>>
+      %extracted_0 = tensor.extract %arg1[%arg3] : tensor<1x!TFHE.glwe<sk<1,1,1024>>>
+      %4 = "TFHE.keyswitch_glwe"(%extracted) {key = #TFHE.ksk<sk<0,1,6144>, sk<1,1,1024>, 2, 12>} : (!TFHE.glwe<sk<0,1,6144>>) -> !TFHE.glwe<sk<1,1,1024>>
+      %5 = "TFHE.add_glwe"(%4, %extracted_0) : (!TFHE.glwe<sk<1,1,1024>>, !TFHE.glwe<sk<1,1,1024>>) -> !TFHE.glwe<sk<1,1,1024>>
+      %inserted = tensor.insert %5 into %arg4[%arg3] : tensor<1x!TFHE.glwe<sk<1,1,1024>>>
+      scf.yield %inserted : tensor<1x!TFHE.glwe<sk<1,1,1024>>>
+    }
+    return %1 : tensor<1x!TFHE.glwe<sk<0,1,6144>>>
+  }
+)";
+  concrete_optimizer::dag::CircuitSolution solution;
+  // Add secret key for partition 0
+  auto sk0 = addSecretKey(solution, 3, 2048);
+  // Add secret key for partition 1
+  auto sk1 = addSecretKey(solution, 1, 1024);
+  // Extra conversion key
+  auto ksk = addExtraKeyswitchKey(solution, sk0, sk1, 2, 12);
+  std::vector<uint64_t> extra_conversion_keys{(uint64_t)ksk};
+  // Add instruction keys
+  // #0: %arg0 - partition 0
+  addInstructionKey(solution, sk0, sk0);
+  // #1: %arg1 - partition 1
+  addInstructionKey(solution, sk1, sk1);
+  // #2: %0 - partition 0 with conversion to partition 1
+  addInstructionKey(solution, sk0, sk0, -1, -1, extra_conversion_keys);
+  // #3: %1 - partition 1
+  addInstructionKey(solution, sk1, sk1);
+  std::string output = transform(source, solution);
+  llvm::errs() << output;
   ASSERT_EQ(output, expected);
 }

@@ -21,7 +21,7 @@ namespace {
 
 #define DEBUG(MSG)                                                             \
   if (llvm::DebugFlag)                                                         \
-    llvm::errs() << MSG;
+    llvm::errs() << MSG << "\n";
 
 #define VERBOSE(MSG)                                                           \
   if (mlir::concretelang::isVerbose()) {                                       \
@@ -72,6 +72,8 @@ public:
       // Fixup incompatible operators with extra conversion keys
       VERBOSE("\n### BEFORE Fixup with extra conversion keys \n" << func);
       fixupIncompatibleLeveledOpWithExtraConversionKeys(func);
+      VERBOSE("\n### BEFORE Fixup non parametrized producer \n" << func);
+      fixupNonParametrizedProducer(func);
       // Fixup the function signature
       VERBOSE("\n### BEFORE Fixup function signature \n" << func);
       fixupFunctionSignature(func);
@@ -236,7 +238,6 @@ public:
     DEBUG("  START Fixup {" << *op)
     for (auto result : op->getResults()) {
       if (isNoneGlweType(result.getType())) {
-        DEBUG("      -> Fixing result " << result)
         result.setType(
             getParametrizedType(result.getType(), parametrizedGlweType));
         DEBUG("      -> Fixed result " << result)
@@ -251,12 +252,6 @@ public:
     mlir::Block *parentBlock = nullptr;
     for (auto operand : op->getOperands()) {
       if (isNoneGlweType(operand.getType())) {
-        DEBUG("      -> Propagate on operand " << operand.getType())
-        if (auto opResult = operand.dyn_cast<mlir::OpResult>();
-            opResult != nullptr) {
-          fixupNonParametrizedOp(opResult.getOwner(), parametrizedGlweType);
-          continue;
-        }
         if (auto blockArg = operand.dyn_cast<mlir::BlockArgument>();
             blockArg != nullptr) {
           DEBUG("    -> Fixing block arg " << blockArg)
@@ -274,14 +269,67 @@ public:
           }
           continue;
         }
-        // An mlir::Value should always be an OpResult or a BlockArgument
-        assert(false);
       }
     }
     DEBUG("  } END Fixup")
     if (parentBlock != nullptr) {
       fixupNonParametrizedOp(parentBlock->getParentOp(), parametrizedGlweType);
     }
+  }
+
+  static void fixupNonParametrizedOps(mlir::func::FuncOp func) {
+    // Lookup all operators that uses function arguments
+    for (const auto arg : func.getArguments()) {
+      auto parametrizedGlweType =
+          getParametrizedGlweTypeFromType(arg.getType());
+      if (parametrizedGlweType != nullptr) {
+        DEBUG("  -> Fixup uses of arg " << arg)
+        // The argument is glwe, so propagate the glwe parametrization to all
+        // operators which use it
+        for (auto userOp : arg.getUsers()) {
+          fixupNonParametrizedOp(userOp, parametrizedGlweType);
+        }
+      }
+    }
+    // Fixup all operators that take at least a parametrized glwe and produce an
+    // none glwe
+    func.walk([&](mlir::Operation *op) {
+      for (auto operand : op->getOperands()) {
+        auto parametrizedGlweType =
+            getParametrizedGlweTypeFromType(operand.getType());
+        if (parametrizedGlweType != nullptr) {
+          // An operand is a parametrized glwe
+          for (auto result : op->getResults()) {
+            if (isNoneGlweType(result.getType())) {
+              DEBUG("  -> Fixup illegal op " << *op)
+              fixupNonParametrizedOp(op, parametrizedGlweType);
+              return;
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Some of TFHE.glwe producer may not be a TFHE operators (like the tensor
+  // allocation), this pass is use to propagate parametrized type on those kind
+  // of
+  void fixupNonParametrizedProducer(mlir::func::FuncOp func) {
+    func.walk([&](mlir::Operation *op) {
+      for (auto result : op->getResults()) {
+        auto parametrizedGlweType =
+            getParametrizedGlweTypeFromType(result.getType());
+        if (parametrizedGlweType == nullptr)
+          continue;
+        for (auto operand : op->getOperands()) {
+          auto glwe = getGlweTypeFromType(operand.getType());
+          if (glwe != nullptr && glwe.getKey().isNone()) {
+            operand.setType(
+                getParametrizedType(operand.getType(), parametrizedGlweType));
+          }
+        }
+      }
+    });
   }
 
   void
@@ -307,9 +355,9 @@ public:
       for (const auto &p : llvm::enumerate(op->getOperands())) {
         if (resType == nullptr) {
           // We don't expect tensor operands to exist at this point of the
-          // pipeline for now, but if we happen to have some, this assert will
-          // break, and things will need to be changed to allow tensor ops to
-          // be parameterized.
+          // pipeline for now, but if we happen to have some, this assert
+          // will break, and things will need to be changed to allow tensor
+          // ops to be parameterized.
           // TODO: Actually this case could happens with tensor manipulation
           // operators, so for now we just skip it and that should be fixed
           // and tested. As the operand will not be fixed the validation of
@@ -343,40 +391,6 @@ public:
             op->getLoc(), resType, operand, extraConvKey);
         DEBUG("create extra conversion keyswitch: " << newKSK);
         op->setOperand(operandIdx, newKSK);
-      }
-    });
-  }
-
-  static void fixupNonParametrizedOps(mlir::func::FuncOp func) {
-    // Lookup all operators that uses function arguments
-    for (const auto arg : func.getArguments()) {
-      auto parametrizedGlweType =
-          getParametrizedGlweTypeFromType(arg.getType());
-      if (parametrizedGlweType != nullptr) {
-        DEBUG("  -> Fixup uses of arg " << arg)
-        // The argument is glwe, so propagate the glwe parametrization to all
-        // operators which use it
-        for (auto userOp : arg.getUsers()) {
-          fixupNonParametrizedOp(userOp, parametrizedGlweType);
-        }
-      }
-    }
-    // Fixup all operators that take at least a parametrized glwe and produce an
-    // none glwe
-    func.walk([&](mlir::Operation *op) {
-      for (auto operand : op->getOperands()) {
-        auto parametrizedGlweType =
-            getParametrizedGlweTypeFromType(operand.getType());
-        if (parametrizedGlweType != nullptr) {
-          // An operand is a parametrized glwe
-          for (auto result : op->getResults()) {
-            if (isNoneGlweType(result.getType())) {
-              DEBUG("  -> Fixup illegal op " << *op)
-              fixupNonParametrizedOp(op, parametrizedGlweType);
-              return;
-            }
-          }
-        }
       }
     });
   }
