@@ -191,6 +191,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](LibrarySupport_Py &support, serverlib::ServerLambda lambda,
               clientlib::PublicArguments &publicArguments,
               clientlib::EvaluationKeys &evaluationKeys) {
+             pybind11::gil_scoped_release release;
              return library_server_call(support, lambda, publicArguments,
                                         evaluationKeys);
            })

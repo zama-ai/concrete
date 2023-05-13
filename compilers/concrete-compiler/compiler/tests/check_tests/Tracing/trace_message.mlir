@@ -3,6 +3,6 @@
 // CHECK: Arbitrary message
 // CHECK-NEXT: 1
 func.func @main(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
-  "Tracing.trace_message"(){msg="Arbitrary message"}: () -> ()
+  "Tracing.trace_message"(){msg="Arbitrary message\n"}: () -> ()
   return %arg0: !FHE.eint<5>
 }

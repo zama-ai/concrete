@@ -4,6 +4,7 @@ Declaration of `Converter` class.
 
 # pylint: disable=import-error,no-name-in-module
 
+import sys
 from copy import deepcopy
 from typing import List, Tuple
 
@@ -92,21 +93,44 @@ class Converter:
 
         return str(module)
 
-    def trace_progress(self, current, total):
+    @staticmethod
+    def stdout_with_ansi_support():
+        return sys.stdout.isatty()
+
+    @classmethod
+    def trace_progress(cls, current, total):
         assert 0 <= current <= total
         nb_ops_to_percent = lambda current: int(100 * current / total)
         percent = nb_ops_to_percent(current)
         prev_percent = nb_ops_to_percent(current - 1)
-        if current == 0 and percent == prev_percent:
-            return
-        if current == 0:
-            CURSOR_MOVE = ""
-        else:
-            CURSOR_MOVE = "\033[1A\x1b[2K"  # line up and clear
         bar_done = percent // 2
+        prev_bar_one = prev_percent // 2
         bar_size = 50
-        bar = f"|{'█' * bar_done}{'.' * (bar_size - bar_done)}|"
-        msg = f"{CURSOR_MOVE}Fhe: {percent:>3}% {bar} {percent:>3}%"
+        FINISHED = " Finished\n"
+        STEP = "█"
+        if not cls.stdout_with_ansi_support():
+            if current == 0:
+                msg1 = f"     {'_' * bar_size}\n"
+                msg2 = f"Fhe: "
+                tracing.TraceMessageOp(msg=msg1 + msg2)
+                return
+            else:
+                if bar_done == prev_bar_one:
+                    return
+                if percent == 100:
+                    msg = STEP + FINISHED
+                else:
+                    msg = STEP
+                tracing.TraceMessageOp(msg=msg)
+            return
+        if current > 0 and percent == prev_percent:
+            return
+        CLEARED_LINE = "\033[512D\033[2K"
+        bar_done = percent // 2
+        bar = f"|{STEP * bar_done}{'.' * (bar_size - bar_done)}|"
+        msg = f"{CLEARED_LINE}Fhe: {percent:>3}% {bar} {percent:>3}%"
+        if percent == 100:
+            msg += FINISHED
         tracing.TraceMessageOp(msg=msg)
 
     def process(self, graph: Graph, configuration: Configuration) -> Graph:

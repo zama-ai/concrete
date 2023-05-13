@@ -791,5 +791,5 @@ void memref_trace_plaintext(uint64_t input, uint64_t input_width,
 
 void memref_trace_message(char *message_ptr, uint32_t message_len) {
   std::string message{message_ptr, (size_t)message_len};
-  std::cout << message << std::endl;
+  std::cout << message << std::flush;
 }
