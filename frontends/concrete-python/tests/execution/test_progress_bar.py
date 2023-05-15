@@ -13,7 +13,7 @@ def test_progress_bar(helpers, monkeypatch):
     )
 
     def function(x):
-        for _ in range(3):
+        for _ in range(200):
             x += x
         return x
 
@@ -22,21 +22,17 @@ def test_progress_bar(helpers, monkeypatch):
     inputset = [0, 4]
     circuit = compiler.compile(inputset, configuration)
 
-    expecteds = [
-        ("Fhe:   0% |", 50),
-        ("Fhe:  33% |", 50 - 16),
-        ("Fhe:  66% |", 50 - 33),
-        ("Fhe: 100% |", 0),
-    ]
+    expecteds = [("Fhe:   {i}% |", i // 50) for i in range(101)]
     for line in circuit.mlir.splitlines():
-        print(line)
         if "FHE.add_eint" in line:
-            expecteds.pop(0)
+            next_is_tracing = True
         elif "Tracing.trace_message" in line:
-            expected = expecteds[0]
+            assert next_is_tracing
+            expected = expecteds.pop(0)
             msg = line.split("msg = ")[1].split('"')[1]
             assert expected[0] in msg
             assert "." * expected[1] in msg
+            next_is_tracing = False
 
 
 def test_progress_bar_no_ansi(helpers):
@@ -45,7 +41,7 @@ def test_progress_bar_no_ansi(helpers):
     """
 
     def function(x):
-        for _ in range(3):
+        for _ in range(100):
             x += x
         return x
 
