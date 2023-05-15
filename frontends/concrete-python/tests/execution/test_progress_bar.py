@@ -3,6 +3,8 @@ Tests of execution of the progress bar.
 """
 from concrete import fhe
 
+STEP_ESCAPED = "\\E2\\96\\88"
+
 
 def test_progress_bar(helpers, monkeypatch):
     """
@@ -13,16 +15,17 @@ def test_progress_bar(helpers, monkeypatch):
     )
 
     def function(x):
+        acc = x
         for _ in range(200):
-            x += x
-        return x
+            acc += x
+        return acc
 
     configuration = helpers.configuration().fork(show_fhe_execution_progress=True)
     compiler = fhe.Compiler(function, {"x": "encrypted"})
     inputset = [0, 4]
     circuit = compiler.compile(inputset, configuration)
-
-    expecteds = [("Fhe:   {i}% |", i // 50) for i in range(101)]
+    next_is_tracing = True
+    expecteds = [(f" {i:>3}% ", i // 2) for i in range(101)]
     for line in circuit.mlir.splitlines():
         if "FHE.add_eint" in line:
             next_is_tracing = True
@@ -31,7 +34,7 @@ def test_progress_bar(helpers, monkeypatch):
             expected = expecteds.pop(0)
             msg = line.split("msg = ")[1].split('"')[1]
             assert expected[0] in msg
-            assert "." * expected[1] in msg
+            assert msg.count(STEP_ESCAPED) == expected[1]
             next_is_tracing = False
 
 
@@ -41,17 +44,17 @@ def test_progress_bar_no_ansi(helpers):
     """
 
     def function(x):
+        acc = x
         for _ in range(100):
-            x += x
-        return x
+            acc += x
+        return acc
 
     configuration = helpers.configuration().fork(show_fhe_execution_progress=True)
     compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [0, 4]
     circuit = compiler.compile(inputset, configuration)
-    print(circuit.mlir)
-    next_is_tracing = False
+    next_is_tracing = True
     for line in circuit.mlir.splitlines():
         print(line)
         if "FHE.add_eint" in line:
@@ -61,6 +64,6 @@ def test_progress_bar_no_ansi(helpers):
                 continue
             assert next_is_tracing
             msg = line.split("msg = ")[1].split('"')[1]
-            assert msg.count("\\E2\\96\\88") == 1  # add one stone
+            assert msg.count(STEP_ESCAPED) == 1  # add one stone
             next_is_tracing = False
     assert "Finished" in msg

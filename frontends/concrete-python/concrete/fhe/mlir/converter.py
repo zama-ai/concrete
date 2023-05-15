@@ -112,6 +112,8 @@ class Converter:
 
 
         """
+        if total == 0:
+            return
         max_nb_steps = 50
         finished = " Finished\n"
         step = "█"
