@@ -95,8 +95,8 @@ extern "C" void cuda_boolean_and_32(
 
   int8_t *pbs_buffer = nullptr;
   scratch_cuda_bootstrap_low_latency_32(
-      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size, pbs_level_count,
-      input_lwe_ciphertext_count, max_shared_memory, true);
+      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level_count, input_lwe_ciphertext_count, max_shared_memory, true);
   cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_2, bootstrapping_key, pbs_buffer, input_lwe_dimension,
@@ -203,8 +203,8 @@ extern "C" void cuda_boolean_nand_32(
 
   int8_t *pbs_buffer = nullptr;
   scratch_cuda_bootstrap_low_latency_32(
-      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size, pbs_level_count,
-      input_lwe_ciphertext_count, max_shared_memory, true);
+      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level_count, input_lwe_ciphertext_count, max_shared_memory, true);
   cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_3, bootstrapping_key, pbs_buffer, input_lwe_dimension,
@@ -311,8 +311,8 @@ extern "C" void cuda_boolean_nor_32(
 
   int8_t *pbs_buffer = nullptr;
   scratch_cuda_bootstrap_low_latency_32(
-      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size, pbs_level_count,
-      input_lwe_ciphertext_count, max_shared_memory, true);
+      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level_count, input_lwe_ciphertext_count, max_shared_memory, true);
   cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_3, bootstrapping_key, pbs_buffer, input_lwe_dimension,
@@ -411,8 +411,8 @@ extern "C" void cuda_boolean_or_32(
 
   int8_t *pbs_buffer = nullptr;
   scratch_cuda_bootstrap_low_latency_32(
-      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size, pbs_level_count,
-      input_lwe_ciphertext_count, max_shared_memory, true);
+      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level_count, input_lwe_ciphertext_count, max_shared_memory, true);
   cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_2, bootstrapping_key, pbs_buffer, input_lwe_dimension,
@@ -532,8 +532,8 @@ extern "C" void cuda_boolean_xor_32(
 
   int8_t *pbs_buffer = nullptr;
   scratch_cuda_bootstrap_low_latency_32(
-      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size, pbs_level_count,
-      input_lwe_ciphertext_count, max_shared_memory, true);
+      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level_count, input_lwe_ciphertext_count, max_shared_memory, true);
   cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_3, bootstrapping_key, pbs_buffer, input_lwe_dimension,
@@ -660,8 +660,8 @@ extern "C" void cuda_boolean_xnor_32(
 
   int8_t *pbs_buffer = nullptr;
   scratch_cuda_bootstrap_low_latency_32(
-      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size, pbs_level_count,
-      input_lwe_ciphertext_count, max_shared_memory, true);
+      v_stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
+      pbs_level_count, input_lwe_ciphertext_count, max_shared_memory, true);
   cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
       v_stream, gpu_index, lwe_pbs_buffer, pbs_lut, pbs_lut_indexes,
       lwe_buffer_4, bootstrapping_key, pbs_buffer, input_lwe_dimension,
