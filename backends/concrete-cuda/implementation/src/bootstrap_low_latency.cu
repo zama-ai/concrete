@@ -98,6 +98,7 @@ uint64_t get_buffer_size_bootstrap_low_latency_64(
           input_lwe_ciphertext_count, max_shared_memory);
     break;
   default:
+    return 0;
     break;
   }
 }
