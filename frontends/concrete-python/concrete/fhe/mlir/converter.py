@@ -9,9 +9,9 @@ from copy import deepcopy
 from typing import List, Tuple
 
 import concrete.lang
+import concrete.lang.dialects.tracing
 import networkx as nx
 import numpy as np
-from concrete.lang.dialects import tracing
 from mlir.dialects import func
 from mlir.ir import Context as MlirContext
 from mlir.ir import InsertionPoint as MlirInsertionPoint
@@ -94,44 +94,49 @@ class Converter:
         return str(module)
 
     @staticmethod
-    def stdout_with_ansi_support():
+    def stdout_with_ansi_support() -> bool:
+        """Detect if ansi characters can be used (e.g. not the case in notebooks)."""
         return sys.stdout.isatty()
 
     @classmethod
-    def trace_progress(cls, current, total):
+    def trace_progress(cls, current, total) -> None:
+        """
+        Add a trace_message for progress.
+
+        Args:
+            current:
+                number of steps done
+
+            total:
+                total number of steps
+
+
+        """
+        max_nb_steps = 50
+        finished = " Finished\n"
+        step = "█"
         assert 0 <= current <= total
         nb_ops_to_percent = lambda current: int(100 * current / total)
         percent = nb_ops_to_percent(current)
         prev_percent = nb_ops_to_percent(current - 1)
-        bar_done = percent // 2
-        prev_bar_one = prev_percent // 2
-        bar_size = 50
-        FINISHED = " Finished\n"
-        STEP = "█"
+        steps_done = percent // 2
+        prev_steps_done = prev_percent // 2
         if not cls.stdout_with_ansi_support():
             if current == 0:
-                msg1 = f"     {'_' * bar_size}\n"
-                msg2 = f"Fhe: "
-                tracing.TraceMessageOp(msg=msg1 + msg2)
-                return
+                msg = f"     {'_' * max_nb_steps}\nFhe: "
             else:
-                if bar_done == prev_bar_one:
+                if steps_done == prev_steps_done:
                     return
-                if percent == 100:
-                    msg = STEP + FINISHED
-                else:
-                    msg = STEP
-                tracing.TraceMessageOp(msg=msg)
+                msg = step
+        elif current == 0 or percent != prev_percent:
+            cleared_line = "\033[512D\033[2K"
+            full_bar = f"|{step * steps_done}{'.' * (max_nb_steps - steps_done)}|"
+            msg = f"{cleared_line}Fhe: {percent:>3}% {full_bar} {percent:>3}%"
+        else:
             return
-        if current > 0 and percent == prev_percent:
-            return
-        CLEARED_LINE = "\033[512D\033[2K"
-        bar_done = percent // 2
-        bar = f"|{STEP * bar_done}{'.' * (bar_size - bar_done)}|"
-        msg = f"{CLEARED_LINE}Fhe: {percent:>3}% {bar} {percent:>3}%"
         if percent == 100:
-            msg += FINISHED
-        tracing.TraceMessageOp(msg=msg)
+            msg += finished
+        concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)
 
     def process(self, graph: Graph, configuration: Configuration) -> Graph:
         """
