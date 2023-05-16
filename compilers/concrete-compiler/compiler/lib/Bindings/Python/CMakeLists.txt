@@ -60,6 +60,7 @@ declare_mlir_python_sources(
   concrete/compiler/evaluation_keys.py
   concrete/compiler/utils.py
   concrete/compiler/wrapper.py
+  concrete/compiler/data.py
   concrete/__init__.py
   concrete/lang/__init__.py
   concrete/lang/dialects/__init__.py

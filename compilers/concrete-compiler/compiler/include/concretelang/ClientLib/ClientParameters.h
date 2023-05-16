@@ -188,7 +188,7 @@ struct CircuitGate {
   CircuitGateShape shape;
   std::optional<ChunkInfo> chunkInfo;
 
-  bool isEncrypted() { return encryption.has_value(); }
+  bool isEncrypted() const { return encryption.has_value(); }
 
   /// byteSize returns the size in bytes for this gate.
   size_t byteSize(std::vector<LweSecretKeyParam> secretKeys) {

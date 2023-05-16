@@ -18,7 +18,7 @@ from .public_arguments import PublicArguments
 from .lambda_argument import LambdaArgument
 from .wrapper import WrapperCpp
 from .utils import ACCEPTED_INTS, ACCEPTED_NUMPY_UINTS, ACCEPTED_TYPES
-
+from .data import Data
 
 class ClientSupport(WrapperCpp):
     """Client interface for doing key generation and encryption.
@@ -147,6 +147,55 @@ class ClientSupport(WrapperCpp):
                 [arg.cpp() for arg in lambda_arguments],
             )
         )
+
+    @staticmethod
+    def encrypt_arguments_new(
+        client_parameters: ClientParameters,
+        keyset: KeySet,
+        args: List[Union[int, np.ndarray]],
+    ) -> List[Data]:
+        """Prepare arguments for encrypted computation.
+
+        Pack public arguments by encrypting the ones that requires encryption, and leaving the rest as plain.
+        It also pack public materials (public keys) that are required during the computation.
+
+        Args:
+            client_parameters (ClientParameters): client parameters specification
+            keyset (KeySet): keyset used to encrypt arguments that require encryption
+            args (List[Union[int, np.ndarray]]): list of scalar or tensor arguments
+
+        Raises:
+            TypeError: if client_parameters is not of type ClientParameters
+            TypeError: if keyset is not of type KeySet
+
+        Returns:
+            PublicArguments: public arguments for execution
+        """
+        if not isinstance(client_parameters, ClientParameters):
+            raise TypeError(
+                f"client_parameters must be of type ClientParameters, not {type(client_parameters)}"
+            )
+        if not isinstance(keyset, KeySet):
+            raise TypeError(f"keyset must be of type KeySet, not {type(keyset)}")
+
+        signs = client_parameters.input_signs()
+        if len(signs) != len(args):
+            raise RuntimeError(
+                f"function has arity {len(signs)} but is applied to too many arguments"
+            )
+
+        lambda_arguments = [
+            ClientSupport._create_lambda_argument(arg, signed)
+            for arg, signed in zip(args, signs)
+        ]
+        return [
+            Data.wrap(data)
+            for data in _ClientSupport.encrypt_arguments_new(
+                client_parameters.cpp(),
+                keyset.cpp(),
+                [arg.cpp() for arg in lambda_arguments],
+            )
+        ]
 
     @staticmethod
     def decrypt_result(

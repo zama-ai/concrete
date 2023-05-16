@@ -17,6 +17,23 @@ EncryptedArguments::exportPublicArguments(ClientParameters clientParameters) {
       clientParameters, std::move(preparedArgs), std::move(ciphertextBuffers));
 }
 
+outcome::checked<std::vector<Data>, StringError>
+EncryptedArguments::exportData(ClientParameters clientParameters) {
+  size_t number_of_inputs = clientParameters.inputs.size();
+  assert(this->ciphertextBuffers.size() == number_of_inputs);
+
+  auto result = std::vector<Data>();
+  result.reserve(number_of_inputs);
+
+  for (size_t i = 0; i < clientParameters.inputs.size(); i++) {
+    CircuitGate description = clientParameters.inputs[i];
+    ScalarOrTensorData data = std::move(this->ciphertextBuffers[i]);
+    result.push_back(Data(description, std::move(data)));
+  }
+
+  return result;
+}
+
 /// Split the input integer into `size` chunks of `chunkWidth` bits each
 std::vector<uint64_t> chunkInput(uint64_t value, size_t size,
                                  unsigned int chunkWidth) {

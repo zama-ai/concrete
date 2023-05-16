@@ -9,6 +9,7 @@ add_mlir_library(
   KeySetCache.cpp
   PublicArguments.cpp
   Serializers.cpp
+  Data.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/ClientLib
   LINK_LIBS

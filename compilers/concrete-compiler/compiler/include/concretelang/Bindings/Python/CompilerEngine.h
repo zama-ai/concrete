@@ -6,6 +6,7 @@
 #ifndef CONCRETELANG_BINDINGS_PYTHON_COMPILER_ENGINE_H
 #define CONCRETELANG_BINDINGS_PYTHON_COMPILER_ENGINE_H
 
+#include "concretelang/ClientLib/Data.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
@@ -112,6 +113,12 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
                   concretelang::clientlib::KeySet &keySet,
                   llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args);
 
+MLIR_CAPI_EXPORTED std::vector<concretelang::clientlib::Data>
+encrypt_arguments_new(
+    concretelang::clientlib::ClientParameters clientParameters,
+    concretelang::clientlib::KeySet &keySet,
+    llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args);
+
 MLIR_CAPI_EXPORTED lambdaArgument
 decrypt_result(concretelang::clientlib::KeySet &keySet,
                concretelang::clientlib::PublicResult &publicResult);
@@ -201,5 +208,11 @@ lambdaArgumentGetSignedScalar(lambdaArgument &lambda_arg);
 /// Compile the textual representation of MLIR modules to a library.
 MLIR_CAPI_EXPORTED std::string library(std::string libraryPath,
                                        std::vector<std::string> modules);
+
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::Data>
+dataDeserialize(const std::string &buffer);
+
+MLIR_CAPI_EXPORTED std::string
+dataSerialize(concretelang::clientlib::Data &data);
 
 #endif // CONCRETELANG_BINDINGS_PYTHON_COMPILER_ENGINE_H

@@ -12,6 +12,7 @@
 
 #include "concretelang/ClientLib/ClientLambda.h"
 #include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/ClientLib/Data.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Common/Error.h"
@@ -344,6 +345,30 @@ public:
     }
     return std::move(publicArguments.value());
   }
+
+  /// Encrypts and build public arguments from lambda arguments
+  static llvm::Expected<std::vector<clientlib::Data>>
+  exportArgumentsNew(llvm::ArrayRef<const LambdaArgument *> args,
+                     clientlib::ClientParameters clientParameters,
+                     clientlib::KeySet &keySet) {
+
+    auto encryptedArgs = clientlib::EncryptedArguments::empty();
+    for (auto arg : args) {
+      if (auto err = LambdaArgumentAdaptor::addArgument(*encryptedArgs, *arg,
+                                                        keySet)) {
+        return std::move(err);
+      }
+    }
+    auto check = encryptedArgs->checkAllArgs(keySet);
+    if (check.has_error()) {
+      return StreamStringError(check.error().mesg);
+    }
+    auto publicArguments = encryptedArgs->exportData(clientParameters);
+    if (publicArguments.has_error()) {
+      return StreamStringError(publicArguments.error().mesg);
+    }
+    return std::move(publicArguments.value());
+  }
 };
 
 template <typename Lambda, typename CompilationResult> class LambdaSupport {
@@ -412,6 +437,14 @@ public:
                   llvm::ArrayRef<const LambdaArgument *> args) {
     return LambdaArgumentAdaptor::exportArguments(args, clientParameters,
                                                   keySet);
+  }
+
+  static llvm::Expected<std::vector<clientlib::Data>>
+  exportArgumentsNew(clientlib::ClientParameters clientParameters,
+                     clientlib::KeySet &keySet,
+                     llvm::ArrayRef<const LambdaArgument *> args) {
+    return LambdaArgumentAdaptor::exportArgumentsNew(args, clientParameters,
+                                                     keySet);
   }
 
   template <typename ResT>

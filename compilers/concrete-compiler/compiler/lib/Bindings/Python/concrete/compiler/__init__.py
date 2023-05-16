@@ -29,6 +29,7 @@ from .client_support import ClientSupport
 from .jit_support import JITSupport
 from .library_support import LibrarySupport
 from .evaluation_keys import EvaluationKeys
+from .data import Data
 
 
 def init_dfr():

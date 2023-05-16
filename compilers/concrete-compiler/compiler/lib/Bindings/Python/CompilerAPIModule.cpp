@@ -227,6 +227,16 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                     }
                     return encrypt_arguments(clientParameters, keySet, argsRef);
                   })
+      .def_static(
+          "encrypt_arguments_new",
+          [](clientlib::ClientParameters clientParameters,
+             clientlib::KeySet &keySet, std::vector<lambdaArgument> args) {
+            std::vector<mlir::concretelang::LambdaArgument *> argsRef;
+            for (auto i = 0u; i < args.size(); i++) {
+              argsRef.push_back(args[i].ptr.get());
+            }
+            return encrypt_arguments_new(clientParameters, keySet, argsRef);
+          })
       .def_static("decrypt_result", [](clientlib::KeySet &keySet,
                                        clientlib::PublicResult &publicResult) {
         return decrypt_result(keySet, publicResult);
@@ -380,4 +390,23 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("get_signed_scalar", [](lambdaArgument &lambda_arg) {
         return lambdaArgumentGetSignedScalar(lambda_arg);
       });
+
+  pybind11::class_<clientlib::Data>(m, "Data")
+      .def_static(
+          "deserialize",
+          [](const pybind11::bytes &buffer) { return dataDeserialize(buffer); })
+      .def("serialize",
+           [](clientlib::Data &data) {
+             return pybind11::bytes(dataSerialize(data));
+           })
+      .def("is_encrypted",
+           [](clientlib::Data &data) { return data.isEncrypted(); })
+      .def("is_clear", [](clientlib::Data &data) { return data.isClear(); })
+      .def("is_scalar", [](clientlib::Data &data) { return data.isScalar(); })
+      .def("is_tensor", [](clientlib::Data &data) { return data.isTensor(); })
+      .def("is_signed", [](clientlib::Data &data) { return data.isSigned(); })
+      .def("is_unsigned",
+           [](clientlib::Data &data) { return data.isUnsigned(); })
+      .def("shape", [](clientlib::Data &data) { return data.shape(); })
+      .def("ndims", [](clientlib::Data &data) { return data.ndims(); });
 }

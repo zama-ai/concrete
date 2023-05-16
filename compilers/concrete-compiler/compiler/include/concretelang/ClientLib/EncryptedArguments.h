@@ -12,6 +12,7 @@
 
 #include "../Common/Error.h"
 #include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/ClientLib/Data.h"
 #include "concretelang/ClientLib/KeySet.h"
 #include "concretelang/ClientLib/Types.h"
 #include "concretelang/Common/BitsSize.h"
@@ -62,6 +63,9 @@ public:
   /// positional counter.
   outcome::checked<std::unique_ptr<PublicArguments>, StringError>
   exportPublicArguments(ClientParameters clientParameters);
+
+  outcome::checked<std::vector<Data>, StringError>
+  exportData(ClientParameters clientParameters);
 
   /// Check that all arguments as been pushed.
   // TODO: Remove public method here

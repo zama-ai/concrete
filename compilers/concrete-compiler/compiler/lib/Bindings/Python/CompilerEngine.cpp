@@ -158,6 +158,18 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
   return std::move(*publicArguments);
 }
 
+MLIR_CAPI_EXPORTED std::vector<concretelang::clientlib::Data>
+encrypt_arguments_new(
+    concretelang::clientlib::ClientParameters clientParameters,
+    concretelang::clientlib::KeySet &keySet,
+    llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args) {
+  GET_OR_THROW_LLVM_EXPECTED(
+      arguments,
+      (mlir::concretelang::LambdaSupport<int, int>::exportArgumentsNew(
+          clientParameters, keySet, args)));
+  return std::move(*arguments);
+}
+
 MLIR_CAPI_EXPORTED lambdaArgument
 decrypt_result(concretelang::clientlib::KeySet &keySet,
                concretelang::clientlib::PublicResult &publicResult) {
@@ -580,4 +592,31 @@ lambdaArgumentFromSignedScalar(int64_t scalar) {
   lambdaArgument scalar_arg{
       std::make_shared<mlir::concretelang::IntLambdaArgument<int64_t>>(scalar)};
   return scalar_arg;
+}
+
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::Data>
+dataDeserialize(const std::string &buffer) {
+
+  std::stringstream istream(buffer);
+
+  auto deserializationResult =
+      concretelang::clientlib::Data::deserialize(istream);
+  if (!deserializationResult) {
+    throw std::runtime_error(deserializationResult.error().mesg);
+  }
+
+  return std::move(deserializationResult.value());
+}
+
+MLIR_CAPI_EXPORTED std::string
+dataSerialize(concretelang::clientlib::Data &data) {
+
+  std::ostringstream buffer(std::ios::binary);
+
+  auto serializationResult = data.serialize(buffer);
+  if (!serializationResult) {
+    throw std::runtime_error(serializationResult.error().mesg);
+  }
+
+  return buffer.str();
 }
