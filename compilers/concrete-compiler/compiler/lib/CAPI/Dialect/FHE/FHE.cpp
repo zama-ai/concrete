@@ -45,12 +45,12 @@ MlirTypeOrError IntegerTypeGetChecked(MlirContext ctx, unsigned width) {
 }
 
 bool fheTypeIsAnEncryptedIntegerType(MlirType type) {
-  return unwrap(type).isa<EncryptedIntegerType>();
+  return unwrap(type).isa<EncryptedUnsignedIntegerType>();
 }
 
 MlirTypeOrError fheEncryptedIntegerTypeGetChecked(MlirContext ctx,
                                                   unsigned width) {
-  return IntegerTypeGetChecked<EncryptedIntegerType>(ctx, width);
+  return IntegerTypeGetChecked<EncryptedUnsignedIntegerType>(ctx, width);
 }
 
 bool fheTypeIsAnEncryptedSignedIntegerType(MlirType type) {
@@ -64,7 +64,7 @@ MlirTypeOrError fheEncryptedSignedIntegerTypeGetChecked(MlirContext ctx,
 
 unsigned fheTypeIntegerWidthGet(MlirType integerType) {
   mlir::Type type = unwrap(integerType);
-  auto eint = type.dyn_cast_or_null<EncryptedIntegerType>();
+  auto eint = type.dyn_cast_or_null<EncryptedUnsignedIntegerType>();
   if (eint) {
     return eint.getWidth();
   }

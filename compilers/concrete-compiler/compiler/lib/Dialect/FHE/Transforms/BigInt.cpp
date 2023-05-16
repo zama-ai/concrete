@@ -49,11 +49,11 @@ namespace typing {
 
 /// Converts `FHE::ChunkedEncryptedInteger` into a tensor of
 /// `FHE::EncryptedInteger`.
-mlir::RankedTensorType convertChunkedEint(mlir::MLIRContext *context,
-                                          FHE::EncryptedIntegerType chunkedEint,
-                                          unsigned int chunkSize,
-                                          unsigned int chunkWidth) {
-  auto eint = FHE::EncryptedIntegerType::get(context, chunkSize);
+mlir::RankedTensorType
+convertChunkedEint(mlir::MLIRContext *context,
+                   FHE::EncryptedUnsignedIntegerType chunkedEint,
+                   unsigned int chunkSize, unsigned int chunkWidth) {
+  auto eint = FHE::EncryptedUnsignedIntegerType::get(context, chunkSize);
   auto bigIntWidth = chunkedEint.getWidth();
   assert(bigIntWidth % chunkWidth == 0 &&
          "chunkWidth must divide width of the big integer");
@@ -68,14 +68,15 @@ class TypeConverter : public mlir::TypeConverter {
 public:
   TypeConverter(unsigned int chunkSize, unsigned int chunkWidth) {
     addConversion([](mlir::Type type) { return type; });
-    addConversion([chunkSize, chunkWidth](FHE::EncryptedIntegerType type) {
-      if (type.getWidth() > chunkSize) {
-        return (mlir::Type)convertChunkedEint(type.getContext(), type,
-                                              chunkSize, chunkWidth);
-      } else {
-        return (mlir::Type)type;
-      }
-    });
+    addConversion(
+        [chunkSize, chunkWidth](FHE::EncryptedUnsignedIntegerType type) {
+          if (type.getWidth() > chunkSize) {
+            return (mlir::Type)convertChunkedEint(type.getContext(), type,
+                                                  chunkSize, chunkWidth);
+          } else {
+            return (mlir::Type)type;
+          }
+        });
   }
 };
 
@@ -100,7 +101,7 @@ public:
            "chunked integer should be converted to flat tensors, but tensor "
            "have more than one dimension");
     auto eintChunkWidth = tensorType.getElementType()
-                              .dyn_cast<FHE::EncryptedIntegerType>()
+                              .dyn_cast<FHE::EncryptedUnsignedIntegerType>()
                               .getWidth();
     assert(eintChunkWidth == chunkSize && "wrong tensor elements width");
     auto numberOfChunks = shape[0];
@@ -108,7 +109,7 @@ public:
     mlir::Value carry =
         rewriter
             .create<FHE::ZeroEintOp>(op.getLoc(),
-                                     FHE::EncryptedIntegerType::get(
+                                     FHE::EncryptedUnsignedIntegerType::get(
                                          rewriter.getContext(), chunkSize))
             .getResult();
 
@@ -142,8 +143,8 @@ public:
           carry =
               rewriter.create<mlir::concretelang::FHE::ApplyLookupTableEintOp>(
                   op.getLoc(),
-                  FHE::EncryptedIntegerType::get(rewriter.getContext(),
-                                                 chunkSize),
+                  FHE::EncryptedUnsignedIntegerType::get(rewriter.getContext(),
+                                                         chunkSize),
                   resultWithCarry,
                   getTruthTableCarryExtract(rewriter, op.getLoc(), chunkSize,
                                             chunkWidth));

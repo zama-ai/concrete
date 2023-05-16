@@ -209,7 +209,7 @@ mlir::LogicalResult MaxEintOp::verify() {
 }
 
 mlir::LogicalResult ToSignedOp::verify() {
-  auto input = this->getInput().getType().cast<EncryptedIntegerType>();
+  auto input = this->getInput().getType().cast<EncryptedUnsignedIntegerType>();
   auto output = this->getResult().getType().cast<EncryptedSignedIntegerType>();
 
   if (input.getWidth() != output.getWidth()) {
@@ -223,7 +223,8 @@ mlir::LogicalResult ToSignedOp::verify() {
 
 mlir::LogicalResult ToUnsignedOp::verify() {
   auto input = this->getInput().getType().cast<EncryptedSignedIntegerType>();
-  auto output = this->getResult().getType().cast<EncryptedIntegerType>();
+  auto output =
+      this->getResult().getType().cast<EncryptedUnsignedIntegerType>();
 
   if (input.getWidth() != output.getWidth()) {
     this->emitOpError(
@@ -235,7 +236,7 @@ mlir::LogicalResult ToUnsignedOp::verify() {
 }
 
 mlir::LogicalResult ToBoolOp::verify() {
-  auto input = this->getInput().getType().cast<EncryptedIntegerType>();
+  auto input = this->getInput().getType().cast<EncryptedUnsignedIntegerType>();
 
   if (input.getWidth() != 1 && input.getWidth() != 2) {
     this->emitOpError("should have 1 or 2 as the width of encrypted input to "

@@ -652,10 +652,11 @@ struct ToBoolOpPattern : public mlir::OpRewritePattern<FHE::ToBoolOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::ToBoolOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto width = op.getInput()
-                     .getType()
-                     .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
-                     .getWidth();
+    auto width =
+        op.getInput()
+            .getType()
+            .dyn_cast<mlir::concretelang::FHE::EncryptedUnsignedIntegerType>()
+            .getWidth();
     if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
       rewriter.replaceOp(op, op.getInput());
       return mlir::success();
@@ -675,10 +676,11 @@ struct FromBoolOpPattern : public mlir::OpRewritePattern<FHE::FromBoolOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::FromBoolOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto width = op.getResult()
-                     .getType()
-                     .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
-                     .getWidth();
+    auto width =
+        op.getResult()
+            .getType()
+            .dyn_cast<mlir::concretelang::FHE::EncryptedUnsignedIntegerType>()
+            .getWidth();
     if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
       rewriter.replaceOp(op, op.getInput());
       return mlir::success();

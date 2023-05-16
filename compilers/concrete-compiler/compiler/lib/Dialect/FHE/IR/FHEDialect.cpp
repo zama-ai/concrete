@@ -6,8 +6,7 @@
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
-
-#include "concretelang/Dialect/FHE/IR/FHETypesInterfaces.cpp.inc"
+#include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.h"
 
 #define GET_TYPEDEF_CLASSES
 #include "concretelang/Dialect/FHE/IR/FHEOpsTypes.cpp.inc"
@@ -30,7 +29,7 @@ void FHEDialect::initialize() {
       >();
 }
 
-mlir::LogicalResult EncryptedIntegerType::verify(
+mlir::LogicalResult EncryptedUnsignedIntegerType::verify(
     llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
   if (p == 0) {
     emitError() << "FHE.eint doesn't support precision of 0";
@@ -39,11 +38,11 @@ mlir::LogicalResult EncryptedIntegerType::verify(
   return mlir::success();
 }
 
-void EncryptedIntegerType::print(mlir::AsmPrinter &p) const {
+void EncryptedUnsignedIntegerType::print(mlir::AsmPrinter &p) const {
   p << "<" << getWidth() << ">";
 }
 
-mlir::Type EncryptedIntegerType::parse(mlir::AsmParser &p) {
+mlir::Type EncryptedUnsignedIntegerType::parse(mlir::AsmParser &p) {
   if (p.parseLess())
     return mlir::Type();
 

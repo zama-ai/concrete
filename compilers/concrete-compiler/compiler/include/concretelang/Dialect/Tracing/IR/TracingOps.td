@@ -17,7 +17,7 @@ def Tracing_TraceCiphertextOp : Tracing_Op<"trace_ciphertext"> {
 
   let arguments = (ins
         Type<Or<[
-            FHE_EncryptedIntegerType.predicate,
+            FHE_EncryptedUnsignedIntegerType.predicate,
             FHE_EncryptedSignedIntegerType.predicate,
             TFHE_GLWECipherTextType.predicate,
             1DTensorOf<[I64]>.predicate,
