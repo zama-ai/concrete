@@ -81,7 +81,7 @@ class Converter:
 
                     return tuple(outputs)
 
-        return str(module)
+        return str(module).strip()
 
     def process(self, graph: Graph, configuration: Configuration) -> Graph:
         """
