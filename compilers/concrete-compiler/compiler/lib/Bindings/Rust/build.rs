@@ -288,6 +288,7 @@ const CONCRETE_COMPILER_STATIC_LIBS: &[&str] = &[
     "CONCRETELANGCAPIFHELINALG",
     "FHELinalgDialectTransforms",
     "FHEDialect",
+    "FHEInterfaces",
     "FHEDialectTransforms",
     "TFHEToConcrete",
     "FHEToTFHECrt",

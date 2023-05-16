@@ -1350,7 +1350,7 @@ mlir::LogicalResult ToSignedOp::verify() {
   }
 
   auto inputElementType =
-      inputType.getElementType().cast<FHE::EncryptedIntegerType>();
+      inputType.getElementType().cast<FHE::EncryptedUnsignedIntegerType>();
   auto outputElementType =
       outputType.getElementType().cast<FHE::EncryptedSignedIntegerType>();
 
@@ -1381,7 +1381,7 @@ mlir::LogicalResult ToUnsignedOp::verify() {
   auto inputElementType =
       inputType.getElementType().cast<FHE::EncryptedSignedIntegerType>();
   auto outputElementType =
-      outputType.getElementType().cast<FHE::EncryptedIntegerType>();
+      outputType.getElementType().cast<FHE::EncryptedUnsignedIntegerType>();
 
   if (inputElementType.getWidth() != outputElementType.getWidth()) {
     this->emitOpError()

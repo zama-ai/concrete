@@ -207,7 +207,7 @@ func.func @apply_lookup_table(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.e
 
 func.func @apply_lookup_table_after_op(%t: tensor<8x!FHE.eint<2>>, %i: tensor<8xi3>) -> tensor<8x!FHE.eint<3>> {
   %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
-  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 7 : ui{{[0-9]+}}} : (tensor<8x!FHE.eint<2>>, tensor<8xi3>) -> tensor<8x!FHE.eint<2>>
+  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 3 : ui{{[0-9]+}}} : (tensor<8x!FHE.eint<2>>, tensor<8xi3>) -> tensor<8x!FHE.eint<2>>
   %0 = "FHELinalg.mul_eint_int"(%t, %i) : (tensor<8x!FHE.eint<2>>, tensor<8xi3>) -> tensor<8x!FHE.eint<2>>
   // CHECK-NEXT: %[[RES:.*]] = "FHELinalg.apply_lookup_table"(%[[V0]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<8x!FHE.eint<2>>, tensor<4xi64>) -> tensor<8x!FHE.eint<3>>
   %res = "FHELinalg.apply_lookup_table"(%0, %lut) : (tensor<8x!FHE.eint<2>>, tensor<4xi64>) -> tensor<8x!FHE.eint<3>>
@@ -226,7 +226,7 @@ func.func @apply_multi_lookup_table(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<
 // -----
 
 func.func @apply_multi_lookup_table_after_op(%t: tensor<8x!FHE.eint<2>>, %i: tensor<8xi3>, %luts: tensor<8x4xi64>) -> tensor<8x!FHE.eint<3>> {
-  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 7 : ui{{[0-9]+}}} : (tensor<8x!FHE.eint<2>>, tensor<8xi3>) -> tensor<8x!FHE.eint<2>>
+  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 3 : ui{{[0-9]+}}} : (tensor<8x!FHE.eint<2>>, tensor<8xi3>) -> tensor<8x!FHE.eint<2>>
   %0 = "FHELinalg.mul_eint_int"(%t, %i) : (tensor<8x!FHE.eint<2>>, tensor<8xi3>) -> tensor<8x!FHE.eint<2>>
   // CHECK-NEXT: %[[RES:.*]] = "FHELinalg.apply_multi_lookup_table"(%[[V0]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<8x!FHE.eint<2>>, tensor<8x4xi64>) -> tensor<8x!FHE.eint<3>>
   %res = "FHELinalg.apply_multi_lookup_table"(%0, %luts) : (tensor<8x!FHE.eint<2>>, tensor<8x4xi64>) -> tensor<8x!FHE.eint<3>>
@@ -253,7 +253,7 @@ func.func @single_cst_dot(%t: tensor<4x!FHE.eint<2>>) -> !FHE.eint<2>
 
 func.func @single_dyn_dot(%t: tensor<4x!FHE.eint<2>>, %dyn: tensor<4xi3>) -> !FHE.eint<2>
 {
-  // sqrt(1*(2^2-1)^2*4) = 16
+  // sqrt(1^2*(2^2-1)^2*4) = 6
   // CHECK: %[[V0:.*]] = "FHELinalg.dot_eint_int"([[T:.*]], %[[DYN:.*]]) {MANP = 6 : ui{{[[0-9]+}}} : (tensor<4x!FHE.eint<2>>, tensor<4xi3>) -> !FHE.eint<2>
   %0 = "FHELinalg.dot_eint_int"(%t, %dyn) : (tensor<4x!FHE.eint<2>>, tensor<4xi3>) -> !FHE.eint<2>
 
@@ -265,12 +265,12 @@ func.func @single_dyn_dot(%t: tensor<4x!FHE.eint<2>>, %dyn: tensor<4xi3>) -> !FH
 func.func @single_cst_dot_after_op(%t: tensor<4x!FHE.eint<2>>, %i: tensor<4xi3>) -> !FHE.eint<2>
 {
   // sqrt((2^2-1)^2*1) = sqrt(9) = 3
-  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 7 : ui{{[0-9]+}}}
+  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 3 : ui{{[0-9]+}}}
   %0 = "FHELinalg.mul_eint_int"(%t, %i) : (tensor<4x!FHE.eint<2>>, tensor<4xi3>) -> tensor<4x!FHE.eint<2>>
 
   %cst = arith.constant dense<[1, 2, 3, -1]> : tensor<4xi3>
   // sqrt(1^2*9 + 2^2*9 + 3^2*9 + 1^2*9) = sqrt(135) = 12
-  // CHECK: %[[V1:.*]] = "FHELinalg.dot_eint_int"(%[[V0]], %[[CST:.*]]) {MANP = 28 : ui{{[[0-9]+}}}
+  // CHECK: %[[V1:.*]] = "FHELinalg.dot_eint_int"(%[[V0]], %[[CST:.*]]) {MANP = 12 : ui{{[[0-9]+}}}
   %1 = "FHELinalg.dot_eint_int"(%0, %cst) : (tensor<4x!FHE.eint<2>>, tensor<4xi3>) -> !FHE.eint<2>
 
   return %1 : !FHE.eint<2>
@@ -281,12 +281,11 @@ func.func @single_cst_dot_after_op(%t: tensor<4x!FHE.eint<2>>, %i: tensor<4xi3>)
 func.func @single_dyn_dot_after_op(%t: tensor<4x!FHE.eint<2>>, %i: tensor<4xi3>) -> !FHE.eint<2>
 {
   // sqrt((2^2-1)^2*1) = sqrt(9) = 3
-  // FIXME: the dynamic clear value MANP computation is wrong, update the MANP to the correct one when it's fixed
-  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 7 : ui{{[0-9]+}}}
+  // CHECK: %[[V0:.*]] = "FHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 3 : ui{{[0-9]+}}}
   %0 = "FHELinalg.mul_eint_int"(%t, %i) : (tensor<4x!FHE.eint<2>>, tensor<4xi3>) -> tensor<4x!FHE.eint<2>>
 
-  // sqrt(4*(2^2-1)^2*9) = sqrt(324) = 18
-  // CHECK: %[[V1:.*]] = "FHELinalg.dot_eint_int"(%[[V0]], %[[I:.*]]) {MANP = 42 : ui{{[0-9]+}}}
+  // sqrt(3^2*(2^2-1)^2*4) = sqrt(324) = 18
+  // CHECK: %[[V1:.*]] = "FHELinalg.dot_eint_int"(%[[V0]], %[[I:.*]]) {MANP = 18 : ui{{[0-9]+}}}
   %1 = "FHELinalg.dot_eint_int"(%0, %i) : (tensor<4x!FHE.eint<2>>, tensor<4xi3>) -> !FHE.eint<2>
 
   return %1 : !FHE.eint<2>
@@ -304,8 +303,7 @@ func.func @matmul_eint_int_dyn_p_1(%arg0: tensor<3x1x!FHE.eint<2>>, %arg1: tenso
   // mul = manp(mul_eint_int(eint<2>, i3) = 1 * (2^2-1)^2 = 9
   // manp(add_eint(mul, acc)) = 9
   // ceil(sqrt(9)) = 3
-  // FIXME: the dynamic clear value MANP computation is wrong, update the MANP to the correct one when it's fixed
-  // CHECK: %[[V0:.*]] = "FHELinalg.matmul_eint_int"(%[[A0:.*]], %[[A1:.*]]) {MANP = 7 : ui{{[0-9]+}}}
+  // CHECK: %[[V0:.*]] = "FHELinalg.matmul_eint_int"(%[[A0:.*]], %[[A1:.*]]) {MANP = 3 : ui{{[0-9]+}}}
   %0 = "FHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<3x1x!FHE.eint<2>>, tensor<1x2xi3>) -> tensor<3x2x!FHE.eint<2>>
   return %0 : tensor<3x2x!FHE.eint<2>>
 }
@@ -321,8 +319,7 @@ func.func @matmul_eint_int_dyn_p_2(%arg0: tensor<3x2x!FHE.eint<2>>, %arg1: tenso
   // manp(mul_eint_int(eint<2>, i3) = 1 * (2^2-1)^2 = 9
   // manp(add_eint(mul, acc)) = 9 + 9 = 18
   // ceil(sqrt(18)) = 5
-  // FIXME: the dynamic clear value MANP computation is wrong, update the MANP to the correct one when it's fixed
-  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_eint_int"(%[[A0:.*]], %[[A1:.*]]) {MANP = 10 : ui{{[0-9]+}}}
+  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_eint_int"(%[[A0:.*]], %[[A1:.*]]) {MANP = 5 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<3x2x!FHE.eint<2>>, tensor<2x2xi3>) -> tensor<3x2x!FHE.eint<2>>
   return %1 : tensor<3x2x!FHE.eint<2>>
 }
@@ -587,9 +584,9 @@ func.func @matmul_int_eint_dyn_p_1(%arg0: tensor<3x1xi3>, %arg1: tensor<1x2x!FHE
   // p = 0
   // acc = manp(0) = 0
   // mul = manp(mul_eint_int(eint<2>, i3) = 1 * (2^2-1)^2 = 9
-  // manp(add_eint(mul, acc)) = 64
-  // ceil(sqrt(64)) = 8
-  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 7 : ui{{[0-9]+}}}
+  // manp(add_eint(mul, acc)) = 9
+  // ceil(sqrt(9)) = 3
+  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 3 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x1xi3>, tensor<1x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>>
   return %1 : tensor<3x2x!FHE.eint<2>>
 }
@@ -598,14 +595,13 @@ func.func @matmul_int_eint_dyn_p_1(%arg0: tensor<3x1xi3>, %arg1: tensor<1x2x!FHE
 
 func.func @matmul_int_eint_dyn_p_2(%arg0: tensor<3x2xi3>, %arg1: tensor<2x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>> {
   // p = 0
-  // acc = manp(0) = 1
+  // acc = manp(0) = 0
   // mul = manp(mul_eint_int(eint<2>, i3) = 1 * (2^2-1)^2 = 9
-  // manp(add_eint(mul, acc)) = 64 + 1 = 10
-  // p = 1
+  // manp(add_eint(mul, acc)) = 0 + 9 = 9
   // manp(mul_eint_int(eint<2>, i3) = 1 * (2^2-1)^2 = 9
-  // manp(add_eint(mul, acc)) = 10 + 9 = 19
-  // ceil(sqrt(129)) = 12
-  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 10 : ui{{[0-9]+}}}
+  // manp(add_eint(mul, acc)) = 9 + 9 = 18
+  // ceil(sqrt(18)) = 5
+  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 5 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x2xi3>, tensor<2x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>>
   return %1 : tensor<3x2x!FHE.eint<2>>
 }
@@ -619,7 +615,7 @@ func.func @matmul_int_eint_cst_p_1(%arg0: tensor<1x3x!FHE.eint<2>>) -> tensor<2x
   // mul = manp(mul_eint_int(eint<2>, 3) = 1^2 + 3^2 = 10
   // manp(add_eint(mul, acc)) = 10
   // ceil(sqrt(10)) = 4
-  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 4 : ui{{[0-9]+}}}
+  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 3 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_int_eint"(%0, %arg0): (tensor<2x1xi3>, tensor<1x3x!FHE.eint<2>>) -> tensor<2x3x!FHE.eint<2>>
   return %1 : tensor<2x3x!FHE.eint<2>>
 }
@@ -637,7 +633,7 @@ func.func @matmul_int_eint_cst_p_2_n_0(%arg0: tensor<2x3x!FHE.eint<2>>) -> tenso
   // mul = manp(mul_eint_int(eint<2>, 4) = 1 * 4^2 = 17
   // manp(add_eint(mul, acc)) = 17 + 9 = 26
   // ceil(sqrt(26)) = 6
-  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 6 : ui{{[0-9]+}}}
+  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 5 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_int_eint"(%0, %arg0): (tensor<2x2xi3>, tensor<2x3x!FHE.eint<2>>) -> tensor<2x3x!FHE.eint<2>>
   return %1 : tensor<2x3x!FHE.eint<2>>
 }
@@ -685,7 +681,7 @@ func.func @matmul_int_eint_cst(%0: tensor<3x2x!FHE.eint<7>>) -> (tensor<2x!FHE.e
     ]
   > : tensor<2x3xi8>
 
-  // CHECK: MANP = 8 : ui{{[0-9]+}}
+  // CHECK: MANP = 7 : ui{{[0-9]+}}
   %4 = "FHELinalg.matmul_int_eint"(%3, %0) : (tensor<2x3xi8>, tensor<3x2x!FHE.eint<7>>) -> tensor<2x2x!FHE.eint<7>>
 
   // ===============================

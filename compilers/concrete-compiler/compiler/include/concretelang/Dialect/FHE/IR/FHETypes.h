@@ -11,7 +11,9 @@
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/DialectImplementation.h>
 
-#include "concretelang/Dialect/FHE/IR/FHETypesInterfaces.h.inc"
+#include <mlir/Dialect/Arith/IR/Arith.h>
+
+#include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.h"
 
 #define GET_TYPEDEF_CLASSES
 #include "concretelang/Dialect/FHE/IR/FHEOpsTypes.h.inc"

@@ -10,20 +10,20 @@
 #define CONCRETELANG_DIALECT_FHE_IR_FHE_TYPES
 
 include "concretelang/Dialect/FHE/IR/FHEDialect.td"
-include "concretelang/Dialect/FHE/IR/FHEInterfaces.td"
+include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.td"
 include "mlir/IR/BuiltinTypes.td"
 
 class FHE_Type<string name, list<Trait> traits = []> :
   TypeDef<FHE_Dialect, name, traits> { }
 
-def FHE_EncryptedIntegerType : FHE_Type<"EncryptedInteger",
+def FHE_EncryptedUnsignedIntegerType : FHE_Type<"EncryptedUnsignedInteger",
         [MemRefElementTypeInterface, FheIntegerInterface]> {
   let mnemonic = "eint";
 
-  let summary = "An encrypted integer";
+  let summary = "An encrypted unsigned integer";
 
   let description = [{
-    An encrypted integer with `width` bits to performs FHE Operations.
+    An encrypted unsigned integer with `width` bits to performs FHE Operations.
 
     Examples:
     ```mlir
@@ -73,7 +73,7 @@ def FHE_EncryptedSignedIntegerType : FHE_Type<"EncryptedSignedInteger",
 }
 
 def FHE_AnyEncryptedInteger : Type<Or<[
-  FHE_EncryptedIntegerType.predicate,
+  FHE_EncryptedUnsignedIntegerType.predicate,
   FHE_EncryptedSignedIntegerType.predicate
 ]>>;
 

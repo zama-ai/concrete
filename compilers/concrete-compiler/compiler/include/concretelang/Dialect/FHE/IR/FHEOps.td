@@ -14,11 +14,12 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 
 include "concretelang/Dialect/FHE/IR/FHEDialect.td"
 include "concretelang/Dialect/FHE/IR/FHETypes.td"
+include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.td"
 
 class FHE_Op<string mnemonic, list<Trait> traits = []> :
     Op<FHE_Dialect, mnemonic, traits>;
 
-def FHE_ZeroEintOp : FHE_Op<"zero", [Pure]> {
+def FHE_ZeroEintOp : FHE_Op<"zero", [Pure, ConstantNoise]> {
     let summary = "Returns a trivial encrypted integer of 0";
 
     let description = [{
@@ -33,7 +34,7 @@ def FHE_ZeroEintOp : FHE_Op<"zero", [Pure]> {
     let results = (outs FHE_AnyEncryptedInteger:$out);
 }
 
-def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure]> {
+def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure, ConstantNoise]> {
     let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
 
     let description = [{
@@ -51,7 +52,7 @@ def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure]> {
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure]> {
+def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure, BinaryEintInt, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Adds an encrypted integer and a clear integer";
 
     let description = [{
@@ -84,7 +85,7 @@ def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure]> {
     let hasFolder = 1;
 }
 
-def FHE_AddEintOp : FHE_Op<"add_eint", [Pure]> {
+def FHE_AddEintOp : FHE_Op<"add_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
     let summary = "Adds two encrypted integers";
 
     let description = [{
@@ -116,7 +117,7 @@ def FHE_AddEintOp : FHE_Op<"add_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure]> {
+def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure, BinaryIntEint]> {
     let summary = "Subtract an encrypted integer from a clear integer";
 
     let description = [{
@@ -148,7 +149,7 @@ def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure]> {
+def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure, BinaryEintInt, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Subtract a clear integer from an encrypted integer";
 
     let description = [{
@@ -181,7 +182,7 @@ def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure]> {
     let hasFolder = 1;
 }
 
-def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure]> {
+def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
     let summary = "Subtract an encrypted integer from an encrypted integer";
 
     let description = [{
@@ -213,7 +214,7 @@ def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure]> {
+def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
 
     let summary = "Negates an encrypted integer";
 
@@ -243,7 +244,7 @@ def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure]> {
+def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure, BinaryEintInt, DeclareOpInterfaceMethods<Binary, ["sqMANP"]>]> {
     let summary = "Multiply an encrypted integer with a clear integer";
 
     let description = [{
@@ -277,7 +278,7 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure]> {
     let hasCanonicalizer = 1;
 }
 
-def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
+def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
     let summary = "Multiplies two encrypted integers";
 
     let description = [{
@@ -313,7 +314,7 @@ def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure]> {
+def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
     let summary = "Retrieve the maximum of two encrypted integers.";
 
     let description = [{
@@ -348,7 +349,7 @@ def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure]> {
+def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
     let summary = "Cast an unsigned integer to a signed one";
 
     let description = [{
@@ -366,14 +367,14 @@ def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure]> {
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$input);
+    let arguments = (ins FHE_EncryptedUnsignedIntegerType:$input);
     let results = (outs FHE_EncryptedSignedIntegerType);
 
     let hasVerifier = 1;
     let hasCanonicalizer = 1;
 }
 
-def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
+def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
     let summary = "Cast a signed integer to an unsigned one";
 
     let description = [{
@@ -392,13 +393,13 @@ def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
     }];
 
     let arguments = (ins FHE_EncryptedSignedIntegerType:$input);
-    let results = (outs FHE_EncryptedIntegerType);
+    let results = (outs FHE_EncryptedUnsignedIntegerType);
 
     let hasVerifier = 1;
     let hasCanonicalizer = 1;
 }
 
-def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure]> {
+def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure, ConstantNoise]> {
 
     let summary = "Applies a clear lookup table to an encrypted integer";
 
@@ -424,7 +425,7 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_RoundEintOp: FHE_Op<"round", [Pure]> {
+def FHE_RoundEintOp: FHE_Op<"round", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint, ["sqMANP"]>]> {
 
     let summary = "Rounds a ciphertext to a smaller precision.";
 
@@ -556,7 +557,7 @@ def FHE_BoolXorOp : FHE_Op<"xor", [Pure]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_BoolNotOp : FHE_Op<"not", [Pure]> {
+def FHE_BoolNotOp : FHE_Op<"not", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
 
     let summary = "Applies a NOT gate to an encrypted boolean value";
 
@@ -571,7 +572,7 @@ def FHE_BoolNotOp : FHE_Op<"not", [Pure]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure]> {
+def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure, UnaryEint]> {
     let summary = "Cast an unsigned integer to a boolean";
 
     let description = [{
@@ -589,13 +590,13 @@ def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure]> {
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$input);
+    let arguments = (ins FHE_EncryptedUnsignedIntegerType:$input);
     let results = (outs FHE_EncryptedBooleanType);
 
     let hasVerifier = 1;
 }
 
-def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure]> {
+def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure, UnaryEint]> {
     let summary = "Cast a boolean to an unsigned integer";
 
     let description = [{
@@ -608,7 +609,7 @@ def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure]> {
     }];
 
     let arguments = (ins FHE_EncryptedBooleanType:$input);
-    let results = (outs FHE_EncryptedIntegerType);
+    let results = (outs FHE_EncryptedUnsignedIntegerType);
 }
 
 

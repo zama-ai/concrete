@@ -29,7 +29,7 @@ public:
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHE::GenGateOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto eint2 = mlir::concretelang::FHE::EncryptedIntegerType::get(
+    auto eint2 = mlir::concretelang::FHE::EncryptedUnsignedIntegerType::get(
         rewriter.getContext(), 2);
     auto left = rewriter
                     .create<mlir::concretelang::FHE::FromBoolOp>(
@@ -104,7 +104,7 @@ public:
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHE::MuxOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto eint2 = mlir::concretelang::FHE::EncryptedIntegerType::get(
+    auto eint2 = mlir::concretelang::FHE::EncryptedUnsignedIntegerType::get(
         rewriter.getContext(), 2);
     auto boolType = mlir::concretelang::FHE::EncryptedBooleanType::get(
         rewriter.getContext());
