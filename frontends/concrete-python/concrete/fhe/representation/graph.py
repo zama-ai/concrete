@@ -208,6 +208,9 @@ class Graph:
             highlighted_nodes (Optional[Dict[Node, List[str]]], default = None):
                 nodes to be highlighted and their corresponding messages
 
+            highlighted_result (Optional[List[str]], default = None):
+                messages corresponding to highlighted return line
+
             show_types (bool, default = True):
                 whether to show types of nodes
 
