@@ -66,7 +66,7 @@ CHUNKED_COMPARISON = {"greater", "greater_equal", "less", "less_equal"}
 CHUNKED_COMPARISON_MIN_BITWIDTH = 4
 MAX_POOLS = {"maxpool1d", "maxpool2d", "maxpool3d"}
 ROUNDING = {"round_bit_pattern"}
-MULTIPLY = {"multiply", "matmul"}
+MULTIPLY = {"multiply", "matmul", "dot"}
 
 
 def max_encrypted_bitwidth_node(node: Node):
