@@ -2,6 +2,8 @@
 Declaration of various functions and constants related to MLIR conversion.
 """
 
+# pylint: disable=import-error
+
 from collections import defaultdict, deque
 from copy import deepcopy
 from itertools import chain, product
@@ -17,6 +19,8 @@ from mlir.ir import Value as MlirValue
 from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Node, Operation
+
+# pylint: enable=import-error
 
 MAXIMUM_TLU_BIT_WIDTH = 16
 
