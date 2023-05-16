@@ -619,6 +619,64 @@ return %2
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y: np.dot(x, y),
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    [100_000, 200_000],
+                    [200_000, 100_000],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted dot products
+                                                                                        (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%1 = y                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted dot products
+                                                                                        (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%2 = dot(%0, %1)        # EncryptedScalar<uint36>                    ∈ [40000000000, 40000000000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x @ y,
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    [
+                        [100_000, 200_000],
+                        [200_000, 100_000],
+                    ],
+                    [
+                        [100_000, 200_000],
+                        [200_000, 100_000],
+                    ],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                             (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%1 = y                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                             (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%2 = matmul(%0, %1)        # EncryptedTensor<uint36, shape=(2, 2)>        ∈ [40000000000, 50000000000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
+return %2
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(
