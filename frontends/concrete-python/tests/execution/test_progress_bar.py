@@ -8,7 +8,7 @@ STEP_ESCAPED = "\\E2\\96\\88"
 
 def test_progress_bar(helpers, monkeypatch):
     """
-    Test progress bar.
+    Test progress bar with interactive terminal.
     """
     monkeypatch.setattr(
         "concrete.fhe.mlir.converter.Converter.stdout_with_ansi_support", lambda: True
@@ -40,7 +40,7 @@ def test_progress_bar(helpers, monkeypatch):
 
 def test_progress_bar_no_ansi(helpers):
     """
-    Test progress bar.
+    Test progress bar with non interactive terminal (pipe, notebook, etc).
     """
 
     def function(x):
@@ -67,3 +67,19 @@ def test_progress_bar_no_ansi(helpers):
             assert msg.count(STEP_ESCAPED) == 1  # add one stone
             next_is_tracing = False
     assert "Finished" in msg
+
+
+def test_progress_bar_empty_circuit(helpers):
+    """
+    Test progress bar on empty circuit.
+    """
+
+    def function(x):
+        return x
+
+    configuration = helpers.configuration().fork(show_fhe_execution_progress=True)
+    compiler = fhe.Compiler(function, {"x": "encrypted"})
+
+    inputset = [0, 4]
+    circuit = compiler.compile(inputset, configuration)
+    assert "Tracing.trace_message" not in circuit.mlir

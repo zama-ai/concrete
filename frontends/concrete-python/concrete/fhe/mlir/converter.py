@@ -113,7 +113,7 @@ class Converter:
 
         """
         if total == 0:
-            return
+            return  # graph with no operations
         max_nb_steps = 50
         finished = " Finished\n"
         step = "█"
