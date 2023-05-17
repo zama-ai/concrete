@@ -21,6 +21,7 @@ target_link_libraries(
           MLIRIR
           MLIRLLVMIRTransforms
           MLIRLLVMToLLVMIRTranslation
-          RTDialect)
+          RTDialect
+          concrete-protocol)
 
 mlir_check_all_link_libraries(concretecompiler)
