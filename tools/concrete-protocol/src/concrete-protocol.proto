@@ -1,0 +1,296 @@
+syntax = "proto3";
+
+package concreteprotocol;
+
+/////////////////////////////////////////////////////////////////////////////////////////// Commons
+
+enum KeyType{
+    binary = 0;
+    ternary = 1;
+}
+
+message NativeModulus{}
+
+message PowerOfTwoModulus{
+    uint32 power = 1;
+}
+
+message IntegerModulus{
+    uint32 modulus = 1;
+}
+
+message Modulus {
+    oneof modulus {
+        NativeModulus native = 1;
+        PowerOfTwoModulus powerOfTwo = 2;
+        IntegerModulus integer = 3;
+    }
+}
+
+message Shape{
+    // If dimensions is empty, the message is interpreted as scalar.
+    repeated uint32 dimensions = 1;
+}
+
+//////////////////////////////////////////////////////////////////////////////////// Lwe Secret Key
+
+message LweSecretKeyParams {
+    uint32 lweDimension = 1;
+    uint32 integerPrecision = 2;
+    KeyType keyType = 3;
+}
+
+message LweSecretKeyInfo {
+    uint32 id = 1;
+    LweSecretKeyParams parameters = 2;
+}
+
+message LweSecretKey {
+    LweSecretKeyInfo info = 1;
+    bytes data = 2;
+}
+
+///////////////////////////////////////////////////////////////////////////////// Lwe Bootstrap Key
+
+message LweBootstrapKeyParams {
+    uint32 levelCount = 1;
+    uint32 baseLog = 2;
+    uint32 glweDimension = 3;
+    uint32 polynomialSize = 4;
+    double variance = 5;
+    uint32 integerPrecision = 6;
+    Modulus modulus = 7;
+    KeyType keyType = 8;
+}
+
+message LweBootstrapKeyInfo {
+    uint32 id = 1;
+    uint32 inputId = 2;
+    uint32 outputId = 3;
+    LweBootstrapKeyParams params = 4;
+    enum Compression {
+        none = 0;
+        seed = 1;
+    }
+    Compression compression = 5;
+}
+
+message LweBootstrapKey {
+    LweBootstrapKeyInfo info = 1;
+    bytes data = 2;
+}
+
+///////////////////////////////////////////////////////////////////////////////// Lwe Keyswitch Key
+
+message LweKeyswitchKeyParams {
+    uint32 levelCount = 1;
+    uint32 baseLog = 2;
+    double variance = 3;
+    uint32 integerPrecision = 4;
+    Modulus modulus = 5;
+    KeyType keyType = 6;
+}
+
+message LweKeyswitchKeyInfo {
+    uint32 id = 1;
+    uint32 inputId = 2;
+    uint32 outputId = 3;
+    LweKeyswitchKeyParams params = 4;
+    enum Compression {
+        none = 0;
+        seed = 1;
+    }
+    Compression compression = 5;
+}
+
+message LweKeyswitchKey {
+    LweKeyswitchKeyInfo info = 1;
+    bytes data = 2;
+}
+
+///////////////////////////////////////////////////////////////////////////// Packing Keyswitch Key
+
+message PackingKeyswitchKeyParams {
+    uint32 levelCount = 1;
+    uint32 baseLog = 2;
+    uint32 glweDimension = 3;
+    uint32 polynomialSize = 4;
+    uint32 lweDimension = 5;
+    double variance = 6;
+    uint32 integerPrecision = 7;
+    Modulus modulus = 8;
+    KeyType keyType = 9;
+}
+
+message PackingKeyswitchKeyInfo {
+    uint32 id = 1;
+    uint32 inputId = 2;
+    uint32 outputId = 3;
+    PackingKeyswitchKeyParams params = 4;
+    enum Compression {
+        none = 0;
+        seed = 1;
+    }
+    Compression compression = 5;
+}
+
+message PackingKeyswitchKey {
+    PackingKeyswitchKeyInfo info = 1;
+    bytes data = 2;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////// Keyset
+
+message KeysetInfo {
+    repeated LweSecretKeyInfo lweSecretKeys = 1;
+    repeated LweBootstrapKeyInfo lweBootstrapKeys = 2;
+    repeated LweKeyswitchKeyInfo lweKeyswitchKeys = 3;
+    repeated PackingKeyswitchKeyInfo packingKeyswitchKeys = 4;
+}
+
+message ServerKeyset {
+    repeated LweBootstrapKey lweBootstrapKeys = 1;
+    repeated LweKeyswitchKey lweKeyswitchKeys = 2;
+    repeated PackingKeyswitchKey packingKeyswitchKeys = 3;
+}
+
+message ClientKeyset {
+    repeated LweSecretKey lweSecretKeys = 1;
+}
+
+message Keyset {
+    ServerKeyset server = 1;
+    ClientKeyset client = 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////// Encoding
+
+message IntegerCiphertextEncodingInfo {
+    uint32 width = 1;
+    bool isSigned = 2;
+
+    message NativeMode {}
+    
+    message ChunkedMode {
+        uint32 size = 1;
+        uint32 width = 2;
+    }
+
+    message CrtMode {
+        repeated uint32 moduli = 1;
+    }
+
+    oneof mode {
+        NativeMode native = 3;
+        ChunkedMode chunked = 4;
+        CrtMode crt = 5;
+    }
+}
+
+message BooleanCiphertextEncodingInfo {}
+
+message PlaintextEncodingInfo {}
+
+message IndexEncodingInfo {}
+
+message EncodingInfo {
+    Shape shape = 1;
+    oneof encoding {
+        IntegerCiphertextEncodingInfo integerCiphertext = 2;
+        BooleanCiphertextEncodingInfo booleanCiphertext = 3;
+        PlaintextEncodingInfo plaintext = 4;
+        IndexEncodingInfo index = 5;
+    }
+}
+
+message CircuitEncodingInfo {
+    repeated EncodingInfo inputs = 1;
+    repeated EncodingInfo outputs = 2;
+    string name = 3;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////// Encryption
+
+message LweCiphertextEncryptionInfo {
+    uint32 keyId = 1;
+    double variance = 2;
+    uint32 integerPrecision = 3;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////// Gates
+
+message GateInfo {
+    Shape shape = 1;
+    oneof kind {
+        LweCiphertextGateInfo lweCiphertext = 2;
+        PlaintextGateInfo plaintext = 3;
+        IndexGateInfo index = 4;
+    }
+}
+
+message LweCiphertextGateInfo {
+    LweCiphertextEncryptionInfo encryption = 1;
+    oneof encoding {
+        IntegerCiphertextEncodingInfo integer = 2;
+        BooleanCiphertextEncodingInfo boolean = 3;
+    }
+}
+
+message PlaintextGateInfo {
+    uint32 integerPrecision = 1;
+    bool isSigned = 2;
+}
+
+message IndexGateInfo {
+    uint32 integerPrecision = 1;
+    bool isSigned = 2;
+}
+
+/////////////////////////////////////////////////////////////////////////////// Circuit Description
+
+message CircuitInfo {
+    repeated GateInfo inputs = 1;
+    repeated GateInfo outputs = 2;
+    string name = 3;
+}
+
+message ProgramInfo {
+    KeysetInfo keyset = 1;
+    repeated CircuitInfo circuits = 2;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////// Values
+
+message Value {
+    ValueInfo info = 1;
+    bytes data = 2;
+}
+
+message ValueInfo {
+    Shape shape = 1;
+    oneof kind {
+        LweCiphertextValueInfo lweCiphertext = 2;
+        PlaintextValueInfo plaintext = 3;
+        IndexValueInfo index = 4; 
+    }
+}
+
+message LweCiphertextValueInfo {
+    uint32 lweDimension = 1;
+    uint32 integerPrecision = 2;
+    Modulus modulus = 3;
+    enum Compression {
+        none = 0;
+        seed = 1;
+        paillier = 2;
+    }
+    Compression compression = 4;
+}
+
+message PlaintextValueInfo {
+    uint32 integerPrecision = 1;
+}
+
+message IndexValueInfo {
+    uint32 integerPrecision = 1;
+}
