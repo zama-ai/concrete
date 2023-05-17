@@ -3,7 +3,7 @@
 
 constexpr int log2(int n) { return (n <= 2) ? 1 : 1 + log2(n / 2); }
 
-constexpr int choose_opt(int degree) {
+constexpr int choose_opt_amortized(int degree) {
   if (degree <= 1024)
     return 4;
   else if (degree == 2048)
@@ -12,6 +12,21 @@ constexpr int choose_opt(int degree) {
     return 16;
   else if (degree == 8192)
     return 32;
+  else
+    return 64;
+}
+
+constexpr int choose_opt(int degree) {
+  if (degree <= 1024)
+    return 4;
+  else if (degree == 2048)
+    return 4;
+  else if (degree == 4096)
+    return 4;
+  else if (degree == 8192)
+    return 8;
+  else if (degree == 16384)
+    return 16;
   else
     return 64;
 }
@@ -39,6 +54,17 @@ public:
   constexpr static int fft_sm_required = N + 32;
 };
 
+template <int N> class AmortizedDegree {
+public:
+  constexpr static int degree = N;
+  constexpr static int opt = choose_opt_amortized(N);
+  constexpr static int log2_degree = log2(N);
+  constexpr static int quarter = N / 4;
+  constexpr static int half = N / 2;
+  constexpr static int three_quarters = half + quarter;
+  constexpr static int warp = 32;
+  constexpr static int fft_sm_required = N + 32;
+};
 enum sharedMemDegree {
   NOSM = 0,
   PARTIALSM = 1,

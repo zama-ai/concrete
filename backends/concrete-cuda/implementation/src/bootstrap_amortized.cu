@@ -50,37 +50,37 @@ void scratch_cuda_bootstrap_amortized_32(void *v_stream, uint32_t gpu_index,
 
   switch (polynomial_size) {
   case 256:
-    scratch_bootstrap_amortized<uint32_t, int32_t, Degree<256>>(
+    scratch_bootstrap_amortized<uint32_t, int32_t, AmortizedDegree<256>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 512:
-    scratch_bootstrap_amortized<uint32_t, int32_t, Degree<512>>(
+    scratch_bootstrap_amortized<uint32_t, int32_t, AmortizedDegree<512>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 1024:
-    scratch_bootstrap_amortized<uint32_t, int32_t, Degree<1024>>(
+    scratch_bootstrap_amortized<uint32_t, int32_t, AmortizedDegree<1024>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 2048:
-    scratch_bootstrap_amortized<uint32_t, int32_t, Degree<2048>>(
+    scratch_bootstrap_amortized<uint32_t, int32_t, AmortizedDegree<2048>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 4096:
-    scratch_bootstrap_amortized<uint32_t, int32_t, Degree<4096>>(
+    scratch_bootstrap_amortized<uint32_t, int32_t, AmortizedDegree<4096>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 8192:
-    scratch_bootstrap_amortized<uint32_t, int32_t, Degree<8192>>(
+    scratch_bootstrap_amortized<uint32_t, int32_t, AmortizedDegree<8192>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 16384:
-    scratch_bootstrap_amortized<uint32_t, int32_t, Degree<16384>>(
+    scratch_bootstrap_amortized<uint32_t, int32_t, AmortizedDegree<16384>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
@@ -106,37 +106,37 @@ void scratch_cuda_bootstrap_amortized_64(void *v_stream, uint32_t gpu_index,
 
   switch (polynomial_size) {
   case 256:
-    scratch_bootstrap_amortized<uint64_t, int64_t, Degree<256>>(
+    scratch_bootstrap_amortized<uint64_t, int64_t, AmortizedDegree<256>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 512:
-    scratch_bootstrap_amortized<uint64_t, int64_t, Degree<512>>(
+    scratch_bootstrap_amortized<uint64_t, int64_t, AmortizedDegree<512>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 1024:
-    scratch_bootstrap_amortized<uint64_t, int64_t, Degree<1024>>(
+    scratch_bootstrap_amortized<uint64_t, int64_t, AmortizedDegree<1024>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 2048:
-    scratch_bootstrap_amortized<uint64_t, int64_t, Degree<2048>>(
+    scratch_bootstrap_amortized<uint64_t, int64_t, AmortizedDegree<2048>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 4096:
-    scratch_bootstrap_amortized<uint64_t, int64_t, Degree<4096>>(
+    scratch_bootstrap_amortized<uint64_t, int64_t, AmortizedDegree<4096>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 8192:
-    scratch_bootstrap_amortized<uint64_t, int64_t, Degree<8192>>(
+    scratch_bootstrap_amortized<uint64_t, int64_t, AmortizedDegree<8192>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   case 16384:
-    scratch_bootstrap_amortized<uint64_t, int64_t, Degree<16384>>(
+    scratch_bootstrap_amortized<uint64_t, int64_t, AmortizedDegree<16384>>(
         v_stream, gpu_index, pbs_buffer, glwe_dimension, polynomial_size,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
@@ -160,7 +160,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
 
   switch (polynomial_size) {
   case 256:
-    host_bootstrap_amortized<uint32_t, Degree<256>>(
+    host_bootstrap_amortized<uint32_t, AmortizedDegree<256>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -168,7 +168,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
         lwe_idx, max_shared_memory);
     break;
   case 512:
-    host_bootstrap_amortized<uint32_t, Degree<512>>(
+    host_bootstrap_amortized<uint32_t, AmortizedDegree<512>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -176,7 +176,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
         lwe_idx, max_shared_memory);
     break;
   case 1024:
-    host_bootstrap_amortized<uint32_t, Degree<1024>>(
+    host_bootstrap_amortized<uint32_t, AmortizedDegree<1024>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -184,7 +184,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
         lwe_idx, max_shared_memory);
     break;
   case 2048:
-    host_bootstrap_amortized<uint32_t, Degree<2048>>(
+    host_bootstrap_amortized<uint32_t, AmortizedDegree<2048>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -192,7 +192,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
         lwe_idx, max_shared_memory);
     break;
   case 4096:
-    host_bootstrap_amortized<uint32_t, Degree<4096>>(
+    host_bootstrap_amortized<uint32_t, AmortizedDegree<4096>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -200,7 +200,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
         lwe_idx, max_shared_memory);
     break;
   case 8192:
-    host_bootstrap_amortized<uint32_t, Degree<8192>>(
+    host_bootstrap_amortized<uint32_t, AmortizedDegree<8192>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -208,7 +208,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
         lwe_idx, max_shared_memory);
     break;
   case 16384:
-    host_bootstrap_amortized<uint32_t, Degree<16384>>(
+    host_bootstrap_amortized<uint32_t, AmortizedDegree<16384>>(
         v_stream, gpu_index, (uint32_t *)lwe_array_out, (uint32_t *)lut_vector,
         (uint32_t *)lut_vector_indexes, (uint32_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -297,7 +297,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
 
   switch (polynomial_size) {
   case 256:
-    host_bootstrap_amortized<uint64_t, Degree<256>>(
+    host_bootstrap_amortized<uint64_t, AmortizedDegree<256>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -305,7 +305,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         lwe_idx, max_shared_memory);
     break;
   case 512:
-    host_bootstrap_amortized<uint64_t, Degree<512>>(
+    host_bootstrap_amortized<uint64_t, AmortizedDegree<512>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -313,7 +313,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         lwe_idx, max_shared_memory);
     break;
   case 1024:
-    host_bootstrap_amortized<uint64_t, Degree<1024>>(
+    host_bootstrap_amortized<uint64_t, AmortizedDegree<1024>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -321,7 +321,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         lwe_idx, max_shared_memory);
     break;
   case 2048:
-    host_bootstrap_amortized<uint64_t, Degree<2048>>(
+    host_bootstrap_amortized<uint64_t, AmortizedDegree<2048>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -329,7 +329,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         lwe_idx, max_shared_memory);
     break;
   case 4096:
-    host_bootstrap_amortized<uint64_t, Degree<4096>>(
+    host_bootstrap_amortized<uint64_t, AmortizedDegree<4096>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -337,7 +337,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         lwe_idx, max_shared_memory);
     break;
   case 8192:
-    host_bootstrap_amortized<uint64_t, Degree<8192>>(
+    host_bootstrap_amortized<uint64_t, AmortizedDegree<8192>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
@@ -345,7 +345,7 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         lwe_idx, max_shared_memory);
     break;
   case 16384:
-    host_bootstrap_amortized<uint64_t, Degree<16384>>(
+    host_bootstrap_amortized<uint64_t, AmortizedDegree<16384>>(
         v_stream, gpu_index, (uint64_t *)lwe_array_out, (uint64_t *)lut_vector,
         (uint64_t *)lut_vector_indexes, (uint64_t *)lwe_array_in,
         (double2 *)bootstrapping_key, pbs_buffer, glwe_dimension, lwe_dimension,
