@@ -60,6 +60,7 @@ struct CompilationOptions {
   bool autoParallelize;
   bool loopParallelize;
   bool batchTFHEOps;
+  int64_t maxBatchSize;
   bool emitSDFGOps;
   bool unrollLoopsWithSDFGConvertibleOps;
   bool dataflowParallelize;
@@ -86,8 +87,9 @@ struct CompilationOptions {
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
-        emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
-        dataflowParallelize(false), optimizeTFHE(true), emitGPUOps(false),
+        maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
+        unrollLoopsWithSDFGConvertibleOps(false), dataflowParallelize(false),
+        optimizeTFHE(true), emitGPUOps(false),
         clientParametersFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
         chunkSize(4), chunkWidth(2), encodings(std::nullopt){};

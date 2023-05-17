@@ -1390,8 +1390,10 @@ operandsToValueSet(llvm::ArrayRef<mlir::OpOperand *> operands) {
 /// tensors themselves.
 class BatchingPattern : public mlir::OpRewritePattern<mlir::func::FuncOp> {
 public:
-  BatchingPattern(mlir::MLIRContext *context)
-      : mlir::OpRewritePattern<mlir::func::FuncOp>(context) {}
+  BatchingPattern(mlir::MLIRContext *context,
+                  int64_t maxBatchSize = std::numeric_limits<int64_t>::max())
+      : mlir::OpRewritePattern<mlir::func::FuncOp>(context),
+        maxBatchSize(maxBatchSize) {}
 
   mlir::LogicalResult
   matchAndRewrite(mlir::func::FuncOp func,
@@ -1495,9 +1497,18 @@ public:
         llvm::DenseSet<mlir::Value> candidateVisitedNonBatched;
         llvm::SmallVector<mlir::scf::ForOp> revNest;
 
+        int64_t candidateBatchSize = 1;
         for (mlir::scf::ForOp forOp = innermostFor;
              forOp && isCandidateLoop(forOp);
              forOp = llvm::dyn_cast<mlir::scf::ForOp>(forOp->getParentOp())) {
+
+          int64_t thisTripCount = getStaticTripCount(forOp);
+
+          if (maxBatchSize / candidateBatchSize < thisTripCount)
+            break;
+          else
+            candidateBatchSize *= thisTripCount;
+
           std::optional<llvm::DenseSet<mlir::Value>> nextFrontierBatched =
               extendFrontier(frontierBatched, candidateVisitedBatched, forOp,
                              batchableOperandProducerPredicate);
@@ -1764,6 +1775,9 @@ public:
 
     return mlir::success();
   }
+
+private:
+  int64_t maxBatchSize;
 };
 
 // Returns the set of loops whose IVs are referenced in the indexing
@@ -1999,13 +2013,14 @@ public:
 
 class BatchingPass : public BatchingBase<BatchingPass> {
 public:
+  BatchingPass(int64_t maxBatchSize) : maxBatchSize(maxBatchSize) {}
   void runOnOperation() override {
     mlir::Operation *op = getOperation();
 
     mlir::RewritePatternSet patterns(op->getContext());
+    patterns.add<BatchingPattern>(op->getContext(), maxBatchSize);
     patterns
-        .add<BatchingPattern,
-             CleanupPattern<mlir::tensor::ExtractOp, mlir::tensor::InsertOp>,
+        .add<CleanupPattern<mlir::tensor::ExtractOp, mlir::tensor::InsertOp>,
              CleanupPattern<mlir::tensor::ExtractSliceOp,
                             mlir::tensor::InsertSliceOp>,
              TensorAllocationCleanupPattern>(op->getContext());
@@ -2013,10 +2028,14 @@ public:
     if (mlir::applyPatternsAndFoldGreedily(op, std::move(patterns)).failed())
       this->signalPassFailure();
   }
+
+private:
+  int64_t maxBatchSize;
 };
 
-std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>> createBatchingPass() {
-  return std::make_unique<BatchingPass>();
+std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
+createBatchingPass(int64_t maxBatchSize) {
+  return std::make_unique<BatchingPass>(maxBatchSize);
 }
 
 } // namespace concretelang
