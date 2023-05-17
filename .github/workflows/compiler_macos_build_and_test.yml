@@ -42,7 +42,7 @@ jobs:
 
       - name: Install Deps
         run: |
-          brew install ninja ccache
+          brew install ninja ccache protobuf
           pip3.10 install numpy pybind11==2.8 wheel delocate
           pip3.10 install pytest
 
