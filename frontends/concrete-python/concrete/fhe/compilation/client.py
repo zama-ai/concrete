@@ -158,6 +158,11 @@ class Client:
                 expected_min = expected_dtype.min()
                 expected_max = expected_dtype.max()
 
+                if not is_encrypted:
+                    # clear integers are signless
+                    # (e.g., 8-bit clear integer can be in range -128, 255)
+                    expected_min = -(expected_max // 2) - 1
+
                 actual_min = arg if isinstance(arg, int) else arg.min()
                 actual_max = arg if isinstance(arg, int) else arg.max()
                 actual_shape = () if isinstance(arg, int) else arg.shape
