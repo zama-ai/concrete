@@ -37,7 +37,6 @@ class EncryptedArguments;
 class PublicArguments {
 public:
   PublicArguments(const ClientParameters &clientParameters,
-                  std::vector<void *> &&preparedArgs,
                   std::vector<ScalarOrTensorData> &&ciphertextBuffers);
   ~PublicArguments();
   PublicArguments(PublicArguments &other) = delete;
@@ -48,16 +47,18 @@ public:
 
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 
-private:
+  std::vector<ScalarOrTensorData> &getArguments() { return arguments; }
+  ClientParameters &getClientParameters() { return clientParameters; }
+
   friend class ::concretelang::serverlib::ServerLambda;
   friend class ::mlir::concretelang::JITLambda;
 
+private:
   outcome::checked<void, StringError> unserializeArgs(std::istream &istream);
 
   ClientParameters clientParameters;
-  std::vector<void *> preparedArgs;
   /// Store buffers of ciphertexts
-  std::vector<ScalarOrTensorData> ciphertextBuffers;
+  std::vector<ScalarOrTensorData> arguments;
 };
 
 /// PublicResult is a result of a ServerLambda call which contains encrypted

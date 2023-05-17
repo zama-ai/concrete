@@ -101,8 +101,7 @@ JITLambda::call(clientlib::PublicArguments &args,
   }
 #endif
 
-  return ::concretelang::invokeRawOnLambda(this, args.clientParameters,
-                                           args.preparedArgs, evaluationKeys);
+  return ::concretelang::invokeRawOnLambda(this, args, evaluationKeys);
 }
 
 } // namespace concretelang

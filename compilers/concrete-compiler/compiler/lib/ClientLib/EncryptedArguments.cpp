@@ -13,8 +13,8 @@ using StringError = concretelang::error::StringError;
 
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 EncryptedArguments::exportPublicArguments(ClientParameters clientParameters) {
-  return std::make_unique<PublicArguments>(
-      clientParameters, std::move(preparedArgs), std::move(ciphertextBuffers));
+  return std::make_unique<PublicArguments>(clientParameters,
+                                           std::move(ciphertextBuffers));
 }
 
 /// Split the input integer into `size` chunks of `chunkWidth` bits each
@@ -49,7 +49,7 @@ EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
   }
   if (!input.encryption.has_value()) {
     // clear scalar: just push the argument
-    preparedArgs.push_back((void *)arg);
+    ciphertextBuffers.push_back(ScalarData(arg));
     return outcome::success();
   }
 
@@ -63,24 +63,6 @@ EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
 
   OUTCOME_TRYV(keySet.encrypt_lwe(
       pos, values_and_sizes.getElementPointer<decrypted_scalar_t>(0), arg));
-  // Note: Since we bufferized lwe ciphertext take care of memref calling
-  // convention
-  // allocated
-  preparedArgs.push_back(nullptr);
-  // aligned
-  preparedArgs.push_back((void *)values_and_sizes.getValuesAsOpaquePointer());
-  // offset
-  preparedArgs.push_back((void *)0);
-  // sizes
-  for (auto size : values_and_sizes.getDimensions()) {
-    preparedArgs.push_back((void *)size);
-  }
-  // strides
-  int64_t stride = TensorData::getNumElements(shape);
-  for (size_t size : values_and_sizes.getDimensions()) {
-    stride = (size == 0 ? 0 : (stride / size));
-    preparedArgs.push_back((void *)stride);
-  }
 
   return outcome::success();
 }

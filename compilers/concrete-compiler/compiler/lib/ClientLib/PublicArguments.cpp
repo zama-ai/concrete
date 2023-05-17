@@ -15,13 +15,10 @@ namespace clientlib {
 using concretelang::error::StringError;
 
 // TODO: optimize the move
-PublicArguments::PublicArguments(
-    const ClientParameters &clientParameters,
-    std::vector<void *> &&preparedArgs_,
-    std::vector<ScalarOrTensorData> &&ciphertextBuffers_)
+PublicArguments::PublicArguments(const ClientParameters &clientParameters,
+                                 std::vector<ScalarOrTensorData> &&arguments_)
     : clientParameters(clientParameters) {
-  preparedArgs = std::move(preparedArgs_);
-  ciphertextBuffers = std::move(ciphertextBuffers_);
+  arguments = std::move(arguments_);
 }
 
 PublicArguments::~PublicArguments() {}
@@ -32,146 +29,41 @@ PublicArguments::serialize(std::ostream &ostream) {
     return StringError(
         "PublicArguments::serialize: ostream should be in binary mode");
   }
-  size_t iPreparedArgs = 0;
-  int iGate = -1;
-  for (auto gate : clientParameters.inputs) {
-    iGate++;
-    size_t rank = gate.shape.dimensions.size();
-    if (!gate.encryption.has_value()) {
-      return StringError("PublicArguments::serialize: Clear arguments "
-                         "are not yet supported. Argument ")
-             << iGate;
-    }
-
-    /*auto allocated = */ iPreparedArgs++;
-    auto aligned = (encrypted_scalars_t)preparedArgs[iPreparedArgs++];
-    assert(aligned != nullptr);
-    auto offset = (size_t)preparedArgs[iPreparedArgs++];
-    std::vector<size_t> sizes; // includes lweSize as last dim
-    sizes.resize(rank + (gate.encryption->encoding.crt.empty() ? 1 : 2));
-    for (auto dim = 0u; dim < sizes.size(); dim++) {
-      // sizes are part of the client parameters signature
-      // it's static now but some day it could be dynamic so we serialize
-      // them.
-      sizes[dim] = (size_t)preparedArgs[iPreparedArgs++];
-    }
-    std::vector<size_t> strides(rank + 1);
-    /* strides should be zero here and are not serialized */
-    for (auto dim = 0u; dim < strides.size(); dim++) {
-      strides[dim] = (size_t)preparedArgs[iPreparedArgs++];
-    }
-    // TODO: STRIDES
-    auto values = aligned + offset;
-
-    writeWord<uint8_t>(ostream, 1);
-    serializeTensorDataRaw(sizes,
-                           llvm::ArrayRef<clientlib::EncryptedScalarElement>{
-                               values, TensorData::getNumElements(sizes)},
-                           ostream);
+  serializeVectorOfScalarOrTensorData(arguments, ostream);
+  if (ostream.bad()) {
+    return StringError(
+        "PublicArguments::serialize: cannot serialize public arguments");
   }
-
   return outcome::success();
 }
 
 outcome::checked<void, StringError>
 PublicArguments::unserializeArgs(std::istream &istream) {
-  int iGate = -1;
-  for (auto gate : clientParameters.inputs) {
-    iGate++;
-    if (!gate.encryption.has_value()) {
-      return StringError("Clear values are not handled");
-    }
-
-    std::vector<int64_t> sizes = gate.shape.dimensions;
-    if (gate.encryption.has_value() && !gate.encryption->encoding.crt.empty()) {
-      sizes.push_back(gate.encryption->encoding.crt.size());
-    }
-    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
-    sizes.push_back(lweSize);
-
-    auto sotdOrErr = unserializeScalarOrTensorData(sizes, istream);
-
-    if (sotdOrErr.has_error())
-      return sotdOrErr.error();
-
-    ciphertextBuffers.push_back(std::move(sotdOrErr.value()));
-    auto &buffer = ciphertextBuffers.back();
-
-    if (istream.fail()) {
-      return StringError(
-                 "PublicArguments::unserializeArgs: Failed to read argument ")
-             << iGate;
-    }
-
-    if (buffer.isTensor()) {
-      TensorData &td = buffer.getTensor();
-      preparedArgs.push_back(/*allocated*/ nullptr);
-      preparedArgs.push_back(td.getValuesAsOpaquePointer());
-      preparedArgs.push_back(/*offset*/ 0);
-      // sizes
-      for (auto size : td.getDimensions()) {
-        preparedArgs.push_back((void *)size);
-      }
-      // strides has been removed by serialization
-      auto stride = td.length();
-      for (auto size : sizes) {
-        stride /= size;
-        preparedArgs.push_back((void *)stride);
-      }
-    } else {
-      ScalarData &sd = buffer.getScalar();
-      preparedArgs.push_back((void *)sd.getValueAsU64());
-    }
-  }
+  OUTCOME_TRY(arguments, unserializeVectorOfScalarOrTensorData(istream));
   return outcome::success();
 }
 
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 PublicArguments::unserialize(ClientParameters &clientParameters,
                              std::istream &istream) {
-  std::vector<void *> empty;
   std::vector<ScalarOrTensorData> emptyBuffers;
-  auto sArguments = std::make_unique<PublicArguments>(
-      clientParameters, std::move(empty), std::move(emptyBuffers));
+  auto sArguments = std::make_unique<PublicArguments>(clientParameters,
+                                                      std::move(emptyBuffers));
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));
   return std::move(sArguments);
 }
 
 outcome::checked<void, StringError>
 PublicResult::unserialize(std::istream &istream) {
-  for (auto gate : clientParameters.outputs) {
-    if (!gate.encryption.has_value()) {
-      return StringError("Clear values are not handled");
-    }
-
-    std::vector<int64_t> sizes = gate.shape.dimensions;
-    if (gate.encryption.has_value() && !gate.encryption->encoding.crt.empty()) {
-      sizes.push_back(gate.encryption->encoding.crt.size());
-    }
-    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
-    sizes.push_back(lweSize);
-
-    auto sotd = unserializeScalarOrTensorData(sizes, istream);
-
-    if (sotd.has_error())
-      return sotd.error();
-
-    buffers.push_back(std::move(sotd.value()));
-  }
+  OUTCOME_TRY(buffers, unserializeVectorOfScalarOrTensorData(istream));
   return outcome::success();
 }
 
 outcome::checked<void, StringError>
 PublicResult::serialize(std::ostream &ostream) {
-  if (incorrectMode(ostream)) {
-    return StringError(
-        "PublicResult::serialize: ostream should be in binary mode");
-  }
-  for (const ScalarOrTensorData &sotd : buffers) {
-    serializeScalarOrTensorData(sotd, ostream);
-    if (ostream.fail()) {
-      return StringError("Cannot write data");
-    }
+  serializeVectorOfScalarOrTensorData(buffers, ostream);
+  if (ostream.bad()) {
+    return StringError("PublicResult::serialize: cannot serialize");
   }
   return outcome::success();
 }

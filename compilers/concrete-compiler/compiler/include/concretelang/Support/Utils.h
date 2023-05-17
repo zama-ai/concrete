@@ -114,6 +114,42 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
                                               std::move(buffers));
 }
 
+template <typename Lambda>
+llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
+invokeRawOnLambda(Lambda *lambda, clientlib::PublicArguments &arguments,
+                  clientlib::EvaluationKeys &evaluationKeys) {
+  // Prepare arguments with the right calling convention
+  std::vector<void *> preparedArgs;
+  for (auto &arg : arguments.getArguments()) {
+    if (arg.isScalar()) {
+      auto scalar = arg.getScalar().getValueAsU64();
+      preparedArgs.push_back((void *)scalar);
+    } else {
+      clientlib::TensorData &td = arg.getTensor();
+      // allocated
+      preparedArgs.push_back(nullptr);
+      // aligned
+      preparedArgs.push_back(td.getValuesAsOpaquePointer());
+      // offset
+      preparedArgs.push_back((void *)0);
+      // sizes
+      for (size_t size : td.getDimensions()) {
+        preparedArgs.push_back((void *)size);
+      }
+
+      // Set the stride for each dimension, equal to the product of the
+      // following dimensions.
+      int64_t stride = td.getNumElements();
+      for (size_t size : td.getDimensions()) {
+        stride = (size == 0 ? 0 : (stride / size));
+        preparedArgs.push_back((void *)stride);
+      }
+    }
+  }
+  return invokeRawOnLambda(lambda, arguments.getClientParameters(),
+                           preparedArgs, evaluationKeys);
+}
+
 template <typename V, unsigned int N>
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
                               const llvm::SmallVector<V, N> vect) {
