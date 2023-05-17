@@ -6,6 +6,7 @@ RUN dnf install -y epel-release
 RUN dnf update -y
 RUN dnf install -y ninja-build hwloc-devel ccache clang ncurses-devel
 RUN dnf install -y openssh-clients
+RUN dnf install -y protobuf protobuf-devel protobuf-compiler
 RUN dnf clean all
 RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 # setup ccache with an unlimited amount of files and storage

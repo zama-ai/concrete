@@ -67,6 +67,13 @@ set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/../../../tools/parameter-curves/concrete-security-curves-cpp/include)
 
 # -------------------------------------------------------------------------------
+# Concrete Protocol
+# -------------------------------------------------------------------------------
+set(CONCRETE_PROTOCOL_DIR "${PROJECT_SOURCE_DIR}/../../../tools/concrete-protocol")
+add_subdirectory(${CONCRETE_PROTOCOL_DIR} concrete-protocol)
+include_directories(${CONCRETE_PROTOCOL_DIR}/gen)
+
+# -------------------------------------------------------------------------------
 # Concrete Optimizer
 # -------------------------------------------------------------------------------
 
