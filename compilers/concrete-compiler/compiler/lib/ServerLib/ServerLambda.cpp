@@ -79,8 +79,7 @@ llvm::Error ServerLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
 
 llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
 ServerLambda::call(PublicArguments &args, EvaluationKeys &evaluationKeys) {
-  return invokeRawOnLambda(this, args.clientParameters, args.preparedArgs,
-                           evaluationKeys);
+  return invokeRawOnLambda(this, args, evaluationKeys);
 }
 
 } // namespace serverlib

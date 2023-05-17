@@ -79,11 +79,33 @@ public:
     stream << evaluationKeys;
     stream.seekg(0, std::ios::beg);
     evaluationKeys = concretelang::clientlib::readEvaluationKeys(stream);
+    stream.str("");
+    stream.clear();
+
+    /* Serialize and unserialize public arguments */
+    auto serializeRes = publicArguments->serialize(stream);
+    ASSERT_FALSE(serializeRes.has_error());
+    stream.seekg(0, std::ios::beg);
+    auto unserializedArgs =
+        concretelang::clientlib::PublicArguments::unserialize(clientParameters,
+                                                              stream);
+    stream.str("");
+    stream.clear();
+    ASSERT_FALSE(unserializedArgs.has_error());
 
     /* Call the server lambda */
-    auto publicResult =
-        support.serverCall(serverLambda, *publicArguments, evaluationKeys);
+    auto publicResult = support.serverCall(
+        serverLambda, *unserializedArgs.value(), evaluationKeys);
     ASSERT_EXPECTED_SUCCESS(publicResult);
+
+    /* Serialize and unserialize public result */
+    serializeRes = (*publicResult)->serialize(stream);
+    ASSERT_FALSE(serializeRes.has_error());
+
+    auto unserializedResult =
+        concretelang::clientlib::PublicResult::unserialize(clientParameters,
+                                                           stream);
+    ASSERT_FALSE(unserializedResult.has_error());
 
     /* Decrypt the public result */
     auto result = mlir::concretelang::typedResult<

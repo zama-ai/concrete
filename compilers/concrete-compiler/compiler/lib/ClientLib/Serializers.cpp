@@ -444,10 +444,8 @@ std::ostream &serializeTensorData(const TensorData &values_and_sizes,
   assert(false && "Unhandled element type");
 }
 
-outcome::checked<TensorData, StringError> unserializeTensorData(
-    const std::vector<int64_t> &expectedSizes, // includes lweSize, unsigned to
-                                               // accomodate non static sizes
-    std::istream &istream) {
+outcome::checked<TensorData, StringError>
+unserializeTensorData(std::istream &istream) {
 
   if (incorrectMode(istream)) {
     return StringError("Stream is in incorrect mode");
@@ -461,13 +459,6 @@ outcome::checked<TensorData, StringError> unserializeTensorData(
   for (uint64_t i = 0; i < numDimensions; i++) {
     int64_t dimSize;
     readWord(istream, dimSize);
-
-    if (dimSize != expectedSizes[i]) {
-      istream.setstate(std::ios::badbit);
-      return StringError("Number of dimensions did not match the number of "
-                         "expected dimensions");
-    }
-
     dims.push_back(dimSize);
   }
 
@@ -537,8 +528,7 @@ std::ostream &serializeScalarOrTensorData(const ScalarOrTensorData &sotd,
 }
 
 outcome::checked<ScalarOrTensorData, StringError>
-unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
-                              std::istream &istream) {
+unserializeScalarOrTensorData(std::istream &istream) {
   uint8_t isTensor;
   readWord(istream, isTensor);
 
@@ -549,7 +539,7 @@ unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
   }
 
   if (isTensor) {
-    auto tdOrErr = unserializeTensorData(expectedSizes, istream);
+    auto tdOrErr = unserializeTensorData(istream);
 
     if (tdOrErr.has_error())
       return std::move(tdOrErr.error());
@@ -563,6 +553,30 @@ unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
     else
       return ScalarOrTensorData(std::move(tdOrErr.value()));
   }
+}
+
+std::ostream &
+serializeVectorOfScalarOrTensorData(const std::vector<ScalarOrTensorData> &v,
+                                    std::ostream &ostream) {
+  writeSize(ostream, v.size());
+  for (auto &sotd : v) {
+    serializeScalarOrTensorData(sotd, ostream);
+    if (!ostream.good()) {
+      return ostream;
+    }
+  }
+  return ostream;
+}
+outcome::checked<std::vector<ScalarOrTensorData>, StringError>
+unserializeVectorOfScalarOrTensorData(std::istream &istream) {
+  uint64_t nbElt;
+  readSize(istream, nbElt);
+  std::vector<ScalarOrTensorData> v;
+  for (uint64_t i = 0; i < nbElt; i++) {
+    OUTCOME_TRY(auto elt, unserializeScalarOrTensorData(istream));
+    v.push_back(std::move(elt));
+  }
+  return v;
 }
 
 } // namespace clientlib

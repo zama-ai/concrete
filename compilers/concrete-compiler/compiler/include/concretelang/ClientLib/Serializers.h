@@ -87,17 +87,20 @@ std::ostream &serializeTensorDataRaw(const llvm::ArrayRef<size_t> &dimensions,
   return ostream;
 }
 
-outcome::checked<TensorData, StringError> unserializeTensorData(
-    std::vector<int64_t> &expectedSizes, // includes unsigned to
-                                         // accomodate non static sizes
-    std::istream &istream);
+outcome::checked<TensorData, StringError>
+unserializeTensorData(std::istream &istream);
 
 std::ostream &serializeScalarOrTensorData(const ScalarOrTensorData &sotd,
                                           std::ostream &ostream);
 
 outcome::checked<ScalarOrTensorData, StringError>
-unserializeScalarOrTensorData(const std::vector<int64_t> &expectedSizes,
-                              std::istream &istream);
+unserializeScalarOrTensorData(std::istream &istream);
+
+std::ostream &
+serializeVectorOfScalarOrTensorData(const std::vector<ScalarOrTensorData> &sotd,
+                                    std::ostream &ostream);
+outcome::checked<std::vector<ScalarOrTensorData>, StringError>
+unserializeVectorOfScalarOrTensorData(std::istream &istream);
 
 std::ostream &operator<<(std::ostream &ostream, const LweSecretKey &wrappedKsk);
 LweSecretKey readLweSecretKey(std::istream &istream);

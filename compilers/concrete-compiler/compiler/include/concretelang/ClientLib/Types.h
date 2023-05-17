@@ -7,6 +7,7 @@
 #define CONCRETELANG_CLIENTLIB_TYPES_H_
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <cstdint>
 #include <stddef.h>
@@ -818,6 +819,8 @@ public:
   // Retrieves the value as a generic `uint64_t`
   uint64_t getValueAsU64() const {
     size_t width = getElementTypeWidth(type);
+    if (width == 64)
+      return value.u64;
     uint64_t mask = ((uint64_t)1 << width) - 1;
     uint64_t val = value.u64 & mask;
     return val;

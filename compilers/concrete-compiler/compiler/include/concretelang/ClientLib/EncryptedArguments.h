@@ -179,26 +179,7 @@ public:
       td.bulkAssign(values);
       ciphertextBuffers.push_back(std::move(td));
     }
-    TensorData &td = ciphertextBuffers.back().getTensor();
 
-    // allocated
-    preparedArgs.push_back(nullptr);
-    // aligned
-    preparedArgs.push_back(td.getValuesAsOpaquePointer());
-    // offset
-    preparedArgs.push_back((void *)0);
-    // sizes
-    for (size_t size : td.getDimensions()) {
-      preparedArgs.push_back((void *)size);
-    }
-
-    // Set the stride for each dimension, equal to the product of the
-    // following dimensions.
-    int64_t stride = td.getNumElements();
-    for (size_t size : td.getDimensions()) {
-      stride = (size == 0 ? 0 : (stride / size));
-      preparedArgs.push_back((void *)stride);
-    }
     currentPos++;
     return outcome::success();
   }
@@ -232,7 +213,6 @@ private:
 private:
   /// Position of the next pushed argument
   size_t currentPos;
-  std::vector<void *> preparedArgs;
 
   /// Store buffers of ciphertexts
   std::vector<ScalarOrTensorData> ciphertextBuffers;
