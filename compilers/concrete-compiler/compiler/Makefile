@@ -1,9 +1,14 @@
 LLVM_PROJECT_DIR=../llvm-project
 
 BUILD_TYPE?=Release
+
 # Build dir is `build` for Release builds and `build_BUILD_TYPE` for 
 # other build types (e.g. Debug, ReleaseWithDebugInfo, etc.)
-BUILD_DIR?=./$(shell ./get_build_dir.sh "$(BUILD_TYPE)")
+ifneq ($(BUILD_TYPE),Release)
+	BUILD_DIR?=build_$(BUILD_TYPE)
+else
+	BUILD_DIR?=build
+endif
 Python3_EXECUTABLE?=$(shell which python3)
 BINDINGS_PYTHON_ENABLED=ON
 DATAFLOW_EXECUTION_ENABLED=OFF
