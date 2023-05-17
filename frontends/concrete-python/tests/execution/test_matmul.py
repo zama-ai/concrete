@@ -123,9 +123,9 @@ from concrete import fhe
         ),
     ],
 )
-def test_matmul(lhs_shape, rhs_shape, bounds, helpers):
+def test_constant_matmul(lhs_shape, rhs_shape, bounds, helpers):
     """
-    Test matmul.
+    Test matmul where one of the operators is a constant.
     """
 
     configuration = helpers.configuration()
@@ -288,7 +288,7 @@ def test_matmul(lhs_shape, rhs_shape, bounds, helpers):
         ),
     ],
 )
-def test_matmul_enc_enc_and_clear(lhs_shape, rhs_shape, bounds, helpers):
+def test_matmul(lhs_shape, rhs_shape, bounds, helpers):
     """
     Test matmul.
     """
@@ -297,69 +297,63 @@ def test_matmul_enc_enc_and_clear(lhs_shape, rhs_shape, bounds, helpers):
 
     minimum, maximum = bounds
 
-    # Matmul of clear values and encrypted matrices
     @fhe.compiler({"x": "encrypted", "y": "clear"})
-    def lhs_operator_clear(x, y):
+    def clear(x, y):
         return x @ y
 
-    # Matmul of two encrypted matrices
     @fhe.compiler({"x": "encrypted", "y": "encrypted"})
-    def enc_function_xy(x, y):
+    def encrypted(x, y):
         return np.matmul(x, y)
 
-    # Put all the dual operand functions in a list
-
-    # FIXME: add lhs_operator_clear to this list to
-    # re-enable the testing with clear values
-    dual_operand_functions = [enc_function_xy]
-
-    # Compile each dual operand function and test it on random data
-    for func in dual_operand_functions:
-        dual_op_inputset = [
+    for implementation in [clear, encrypted]:
+        inputset = [
             (
                 np.random.randint(minimum, maximum, size=lhs_shape),
                 np.random.randint(minimum, maximum, size=rhs_shape),
             )
             for i in range(100)
         ]
-        dual_op_circuit = func.compile(dual_op_inputset, configuration)
+        circuit = implementation.compile(inputset, configuration)
 
-        lhs_sample, rhs_sample = np.random.randint(
-            minimum, maximum, size=lhs_shape
-        ), np.random.randint(minimum, maximum, size=rhs_shape)
+        sample = [
+            np.random.randint(minimum, maximum, size=lhs_shape),
+            np.random.randint(minimum, maximum, size=rhs_shape),
+        ]
 
-        helpers.check_execution(dual_op_circuit, func, [lhs_sample, rhs_sample], retries=3)
+        helpers.check_execution(circuit, implementation, sample, retries=3)
 
 
-@pytest.mark.parametrize("bitwidth", [4, 10])
+@pytest.mark.parametrize("bit_width", [4, 10])
 @pytest.mark.parametrize("signed", [True, False])
-def test_matmul_zero(bitwidth, signed, helpers):
+def test_zero_matmul(bit_width, signed, helpers):
     """
-    Test matmul.
+    Test matmul where one of the operators is all zeros.
     """
-
-    lhs_shape = (2, 1)
-    rhs_shape = (1, 2)
-    range_lhs = (-(2 ** (bitwidth - 1)), 2 ** (bitwidth - 1) - 1) if signed else (0, 2**bitwidth)
 
     configuration = helpers.configuration()
 
-    # Matmul of two encrypted matrices
+    lhs_shape = (2, 1)
+    rhs_shape = (1, 2)
+
+    bounds = (-(2 ** (bit_width - 1)), 2 ** (bit_width - 1) - 1) if signed else (0, 2**bit_width)
+    minimum, maximum = bounds
+
     @fhe.compiler({"x": "encrypted", "y": "encrypted"})
-    def enc_function_xy(x, y):
+    def function(x, y):
         return x * y
 
-    dual_op_inputset = [
+    inputset = [
         (
-            np.random.randint(range_lhs[0], range_lhs[1], size=lhs_shape),
+            np.random.randint(minimum, maximum, size=lhs_shape),
             np.zeros(rhs_shape, dtype=np.int64),
         )
         for i in range(100)
     ]
-    dual_op_circuit = enc_function_xy.compile(dual_op_inputset, configuration)
+    circuit = function.compile(inputset, configuration)
 
-    lhs_sample, rhs_sample = np.random.randint(
-        range_lhs[0], range_lhs[1], size=lhs_shape
-    ), np.zeros(rhs_shape, dtype=np.int64)
+    sample = [
+        np.random.randint(minimum, maximum, size=lhs_shape),
+        np.zeros(rhs_shape, dtype=np.int64),
+    ]
 
-    helpers.check_execution(dual_op_circuit, enc_function_xy, [lhs_sample, rhs_sample], retries=3)
+    helpers.check_execution(circuit, function, sample, retries=3)
