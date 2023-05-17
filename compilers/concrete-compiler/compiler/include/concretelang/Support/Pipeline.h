@@ -65,7 +65,8 @@ parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
                               mlir::ModuleOp &module,
-                              std::function<bool(mlir::Pass *)> enablePass);
+                              std::function<bool(mlir::Pass *)> enablePass,
+                              int64_t maxBatchSize);
 
 mlir::LogicalResult
 normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,

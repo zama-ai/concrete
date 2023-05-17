@@ -440,7 +440,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return std::move(res);
 
   if (options.batchTFHEOps) {
-    if (mlir::concretelang::pipeline::batchTFHE(mlirContext, module, enablePass)
+    if (mlir::concretelang::pipeline::batchTFHE(mlirContext, module, enablePass,
+                                                options.maxBatchSize)
             .failed()) {
       return errorDiag("Batching of TFHE operations");
     }

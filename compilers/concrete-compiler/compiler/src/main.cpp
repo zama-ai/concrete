@@ -189,6 +189,12 @@ llvm::cl::opt<bool> batchTFHEOps(
                    "operations out of loop nests as batched operations"),
     llvm::cl::init(false));
 
+llvm::cl::opt<int64_t>
+    maxBatchSize("max-batch-size",
+                 llvm::cl::desc("Maximum number of operands materialized in a "
+                                "batch for --batch-tfhe-ops"),
+                 llvm::cl::init(std::numeric_limits<int64_t>::max()));
+
 llvm::cl::opt<bool> emitSDFGOps(
     "emit-sdfg-ops",
     llvm::cl::desc(
@@ -381,6 +387,7 @@ cmdlineCompilationOptions() {
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.batchTFHEOps = cmdline::batchTFHEOps;
+  options.maxBatchSize = cmdline::maxBatchSize;
   options.emitSDFGOps = cmdline::emitSDFGOps;
   options.unrollLoopsWithSDFGConvertibleOps =
       cmdline::unrollLoopsWithSDFGConvertibleOps;

@@ -299,12 +299,13 @@ parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
                               mlir::ModuleOp &module,
-                              std::function<bool(mlir::Pass *)> enablePass) {
+                              std::function<bool(mlir::Pass *)> enablePass,
+                              int64_t maxBatchSize) {
   mlir::PassManager pm(&context);
   pipelinePrinting("BatchTFHE", pm, context);
 
-  addPotentiallyNestedPass(pm, mlir::concretelang::createBatchingPass(),
-                           enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createBatchingPass(maxBatchSize), enablePass);
 
   return pm.run(module.getOperation());
 }
