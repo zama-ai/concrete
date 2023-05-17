@@ -67,7 +67,7 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
   return OS;
 }
 
-TFHECircuitKeys extractCircuitKeys(mlir::ModuleOp moduleOp) {
+TFHECircuitKeys extractKeysetInfo(mlir::ModuleOp moduleOp) {
   // Gathering circuit secret keys
   SmallSet<TFHE::GLWESecretKey> secretKeys;
   auto tryInsert = [&](mlir::Type type) {

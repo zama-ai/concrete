@@ -3,7 +3,7 @@ LLVM_PROJECT_DIR=../llvm-project
 BUILD_TYPE?=Release
 
 # Build dir is `build` for Release builds and `build_BUILD_TYPE` for 
-# other build types (e.g. Debug, ReleaseWithDebugInfo, etc.)
+# other build types (e.g. Release, ReleaseWithReleaseInfo, etc.)
 ifneq ($(BUILD_TYPE),Release)
 	BUILD_DIR?=build_$(BUILD_TYPE)
 else
@@ -93,11 +93,11 @@ else
 		CXX_COMPILER_OPTION=
 endif
 
-# If the build type is Debug, and the lld linked is installed
+# If the build type is Release, and the lld linked is installed
 # then use it
 CUSTOM_LINKER_OPTS=
 ifneq ($(shell which lld),)
-ifeq ($(BUILD_TYPE),Debug)
+ifeq ($(BUILD_TYPE),Release)
 	CUSTOM_LINKER_OPTS=-DLLVM_USE_LINKER=lld
 endif
 endif
