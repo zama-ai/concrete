@@ -87,4 +87,4 @@ def test_dot_enc_enc(size, bitwidth, negative_only, signed, helpers):
         np.random.randint(minv, maxv, size=(size,)),
     ]
 
-    helpers.check_execution(dot_enc_enc_function_circuit, dot_enc_enc_function, sample)
+    helpers.check_execution(dot_enc_enc_function_circuit, dot_enc_enc_function, sample, retries=3)

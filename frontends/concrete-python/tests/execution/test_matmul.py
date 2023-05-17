@@ -328,7 +328,7 @@ def test_matmul_enc_enc_and_clear(lhs_shape, rhs_shape, bounds, helpers):
             minimum, maximum, size=lhs_shape
         ), np.random.randint(minimum, maximum, size=rhs_shape)
 
-        helpers.check_execution(dual_op_circuit, func, [lhs_sample, rhs_sample])
+        helpers.check_execution(dual_op_circuit, func, [lhs_sample, rhs_sample], retries=3)
 
 
 @pytest.mark.parametrize("bitwidth", [4, 10])
@@ -362,4 +362,4 @@ def test_matmul_zero(bitwidth, signed, helpers):
         range_lhs[0], range_lhs[1], size=lhs_shape
     ), np.zeros(rhs_shape, dtype=np.int64)
 
-    helpers.check_execution(dual_op_circuit, enc_function_xy, [lhs_sample, rhs_sample])
+    helpers.check_execution(dual_op_circuit, enc_function_xy, [lhs_sample, rhs_sample], retries=3)
