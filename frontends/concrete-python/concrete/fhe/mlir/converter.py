@@ -75,14 +75,11 @@ class Converter:
                         if node.operation != Operation.Input
                     ]
 
-                    total_ops = len(ops_nodes)
-                    if configuration.show_fhe_execution_progress:
-                        self.trace_progress(0, total_ops)
-                    for nb_ops, node in enumerate(ops_nodes, 1):
+                    for todo_index, node in enumerate(ops_nodes):
+                        self.trace_progress(configuration, todo_index, ops_nodes)
                         preds = [ctx.conversions[pred] for pred in graph.ordered_preds_of(node)]
                         self.node(ctx, node, preds)
-                        if configuration.show_fhe_execution_progress:
-                            self.trace_progress(nb_ops, total_ops)
+                    self.trace_progress(configuration, len(ops_nodes), ops_nodes)
 
                     outputs = []
                     for node in graph.ordered_outputs():
@@ -98,46 +95,70 @@ class Converter:
         """Detect if ansi characters can be used (e.g. not the case in notebooks)."""
         return sys.stdout.isatty()
 
+    @staticmethod
+    def simplify_tag(configuration, tag) -> str:
+        """Keep only `n` higher tag parts."""
+        if configuration.progress_tag is True or not tag:
+            return tag
+        last_dot_pos = 0
+        for _ in range(configuration.progress_tag):
+            last_dot_pos = tag.find(".", last_dot_pos + 1)
+            if last_dot_pos == -1:
+                return tag
+        return tag[:last_dot_pos]
+
     @classmethod
-    def trace_progress(cls, current, total) -> None:
+    def trace_progress(cls, configuration, todo_index, nodes) -> None:
         """
         Add a trace_message for progress.
 
         Args:
-            current:
-                number of steps done
+            configuration:
+                configuration for title, tags options
 
-            total:
-                total number of steps
+            todo_index:
+                index of the next node to process
+
+            nodes:
+                all nodes
 
 
         """
-        if total == 0:
-            return  # graph with no operations
+        if not nodes or not configuration.show_progress:
+            return
+        total = len(nodes)
+        title = configuration.progress_title
         max_nb_steps = 50
-        finished = " Finished\n"
         step = "█"
-        assert 0 <= current <= total
+        assert 0 <= todo_index <= total
         nb_ops_to_percent = lambda current: int(100 * current / total)
-        percent = nb_ops_to_percent(current)
-        prev_percent = nb_ops_to_percent(current - 1)
+        percent = nb_ops_to_percent(todo_index)
+        prev_percent = nb_ops_to_percent(todo_index - 1)
         steps_done = percent // 2
         prev_steps_done = prev_percent // 2
         if not cls.stdout_with_ansi_support():
-            if current == 0:
-                msg = f"     {'_' * max_nb_steps}\nFhe: "
+            if todo_index == 0:
+                msg = f"{' ' * len(title)}{'_' * max_nb_steps}\n{title}"
             else:
                 if steps_done == prev_steps_done:
                     return
                 msg = step
-        elif current == 0 or percent != prev_percent:
+                if percent == 100:
+                    msg += " 100%"
+
+        elif todo_index == 0 or percent != prev_percent:
+            if configuration.progress_tag and todo_index != total:
+                tag = nodes[todo_index].tag
+                tag = cls.simplify_tag(configuration, tag)
+                if tag:
+                    tag = f" ({tag})"
+            else:
+                tag = ""
             cleared_line = "\033[512D\033[2K"
             full_bar = f"|{step * steps_done}{'.' * (max_nb_steps - steps_done)}|"
-            msg = f"{cleared_line}Fhe: {percent:>3}% {full_bar} {percent:>3}%"
+            msg = f"{cleared_line}{title}{percent:>3}% {full_bar} {percent:>3}%{tag}"
         else:
             return
-        if percent == 100:
-            msg += finished
         concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)
 
     def process(self, graph: Graph, configuration: Configuration) -> Graph:

@@ -16,25 +16,35 @@ def test_progress_bar(helpers, monkeypatch):
 
     def function(x):
         acc = x
-        for _ in range(200):
-            acc += x
+        acc += x
+        with fhe.tag("loop"):
+            for i in range(200):
+                with fhe.tag(f"round_{i}"):
+                    acc += x
         return acc
 
-    configuration = helpers.configuration().fork(show_fhe_execution_progress=True)
+    configuration = helpers.configuration().fork(
+        show_progress=True,
+        progress_title="TestTitle: ",
+        progress_tag=1,
+    )
     compiler = fhe.Compiler(function, {"x": "encrypted"})
     inputset = [0, 4]
     circuit = compiler.compile(inputset, configuration)
     next_is_tracing = True
-    expecteds = [(f" {i:>3}% ", i // 2) for i in range(101)]
+    percents = [f" {i:>3}% " for i in range(101)]
+    steps_done = [i // 2 for i in range(101)]
+    tags = [""] + ["(loop)"] * 99 + [""]
     for line in circuit.mlir.splitlines():
         if "FHE.add_eint" in line:
             next_is_tracing = True
         elif "Tracing.trace_message" in line:
             assert next_is_tracing
-            expected = expecteds.pop(0)
             msg = line.split("msg = ")[1].split('"')[1]
-            assert expected[0] in msg
-            assert msg.count(STEP_ESCAPED) == expected[1]
+            assert configuration.progress_title in msg
+            assert percents.pop(0) in msg
+            assert msg.count(STEP_ESCAPED) == steps_done.pop(0)
+            assert tags.pop(0) in msg.rsplit("%", 1)[1]
             next_is_tracing = False
 
 
@@ -49,7 +59,7 @@ def test_progress_bar_no_ansi(helpers):
             acc += x
         return acc
 
-    configuration = helpers.configuration().fork(show_fhe_execution_progress=True)
+    configuration = helpers.configuration().fork(show_progress=True)
     compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [0, 4]
@@ -66,7 +76,7 @@ def test_progress_bar_no_ansi(helpers):
             msg = line.split("msg = ")[1].split('"')[1]
             assert msg.count(STEP_ESCAPED) == 1  # add one stone
             next_is_tracing = False
-    assert "Finished" in msg
+    assert "100%" in msg
 
 
 def test_progress_bar_empty_circuit(helpers):
@@ -77,7 +87,7 @@ def test_progress_bar_empty_circuit(helpers):
     def function(x):
         return x
 
-    configuration = helpers.configuration().fork(show_fhe_execution_progress=True)
+    configuration = helpers.configuration().fork(show_progress=True)
     compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [0, 4]
