@@ -570,6 +570,40 @@ class Graph:
         unused = [node for node in self.graph if node not in used]
         self.graph.remove_nodes_from(unused)
 
+    def node_count(self) -> int:
+        """
+        Get node count of the graph.
+
+        Returns:
+             int:
+                number of nodes in the graph
+        """
+
+        return len(self.graph.nodes)
+
+    def node_count_by_name(self) -> Dict[str, int]:
+        """
+        Get node count of the graph grouped by node name.
+
+        Returns:
+             Dict[str, int]:
+                number of nodes per node name in the graph
+        """
+
+        result = {}
+        for node in self.graph.nodes:
+            operation = (
+                "constant"
+                if node.operation == Operation.Constant
+                else ("input" if node.operation == Operation.Input else node.properties["name"])
+            )
+            if operation not in result:
+                result[operation] = 1
+            else:
+                result[operation] += 1
+
+        return dict(sorted(result.items(), key=lambda item: item[1], reverse=True))
+
     def query_nodes(
         self,
         tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,

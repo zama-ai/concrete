@@ -17,5 +17,6 @@ ignore = [
 "concrete/fhe/compilation/configuration.py" = ["ARG002"]
 "concrete/fhe/mlir/processors/all.py" = ["F401"]
 "concrete/fhe/mlir/converter.py" = ["ARG002", "B011", "F403", "F405"]
-"examples/**" = ["PLR2004"]
+"examples/**" = ["PLR2004", "SIM108"]
+"examples/sha256/**" = ["E741", "N802"]
 "tests/**" = ["PLR2004", "PLW0603", "SIM300", "S311"]
