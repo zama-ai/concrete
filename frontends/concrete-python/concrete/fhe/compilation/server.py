@@ -4,9 +4,14 @@ Declaration of `Server` class.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
+import atexit
 import json
+import os
 import shutil
+import signal
 import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, Union
 
@@ -37,6 +42,37 @@ from .configuration import (
 from .specs import ClientSpecs
 
 # pylint: enable=import-error,no-member,no-name-in-module
+
+
+def manual_ctrl_c_message():
+    # pragma: no cover
+    print()
+    print("The computation will be aborted in a few seconds.")
+    print("You can force an immediate abort by pressing Ctrl+C again.")
+
+
+def abortable_cpp_run(f):
+    """
+    Run a cpp function `f` in a thread to support Ctrl+C.
+
+    Note that the function must release the gil in pybind11 to make it work.
+    """
+    atexit.register(manual_ctrl_c_message)
+    executor = ThreadPoolExecutor(1)
+    try:
+        thread_f = executor.submit(f)
+        return thread_f.result()
+    except KeyboardInterrupt as exc:
+        # pragma: no cover
+        # a second ctrl+c is needed to abort the executor wait in atexit.
+        pid = os.getpid()
+
+        def wait_and_ctrl_c():
+            time.sleep(0.2)  # wait so atexit can progress to the executor
+            os.kill(pid, signal.SIGINT)
+
+        ThreadPoolExecutor(1).submit(wait_and_ctrl_c)
+        raise exc
 
 
 class Server:
@@ -273,8 +309,9 @@ class Server:
             PublicResult:
                 encrypted result of the computation
         """
-
-        return self._support.server_call(self._server_lambda, args, evaluation_keys)
+        return abortable_cpp_run(
+            lambda: self._support.server_call(self._server_lambda, args, evaluation_keys)
+        )
 
     def cleanup(self):
         """
