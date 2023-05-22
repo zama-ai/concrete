@@ -354,7 +354,17 @@ llvm::Expected<optimizer::Solution> getSolution(optimizer::Description &descr,
     assert(descr.dag.has_value());
     auto sol = getDagMonoSolution(descr.dag.value(), config);
     displayOptimizer(sol, descr, config);
-    return toCompilerSolution(sol, feedback, config);
+    auto compSol = toCompilerSolution(sol, feedback, config);
+    // Fallback to V0 strategy
+    // Note: in theory we could not find parameters in V0 if
+    // we can't in DAG_MONO but in pratice we found a case reported by @jfrery
+    // here https://github.com/zama-ai/concrete-internal/issues/297
+    if (auto err = compSol.takeError()) {
+      llvm::consumeError(std::move(err));
+      config.strategy = optimizer::Strategy::V0;
+      return getSolution(descr, feedback, config);
+    }
+    return compSol;
   }
   case optimizer::Strategy::DAG_MULTI: {
     assert(descr.dag.has_value());
