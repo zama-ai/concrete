@@ -323,3 +323,16 @@ uint64_t closest_representable(uint64_t input, int level_count, int base_log) {
   res += non_rep_msb;
   return res << non_rep_bit_count;
 }
+
+uint64_t number_of_inputs_on_gpu(uint64_t gpu_index,
+                                 uint64_t lwe_ciphertext_count,
+                                 uint64_t number_of_gpus) {
+  uint64_t samples_per_gpu = lwe_ciphertext_count / number_of_gpus;
+  uint64_t samples = samples_per_gpu;
+  // We add the remainder of the integer division lwe_count/num_gpus to the load
+  // of the last GPU
+  if (gpu_index == number_of_gpus - 1) {
+    samples += lwe_ciphertext_count % number_of_gpus;
+  }
+  return samples;
+}
