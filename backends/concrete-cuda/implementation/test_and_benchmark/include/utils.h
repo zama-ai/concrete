@@ -60,4 +60,8 @@ uint64_t closest_representable(uint64_t input, int level_count, int base_log);
 
 uint64_t *bit_decompose_value(uint64_t value, int r);
 
+uint64_t number_of_inputs_on_gpu(uint64_t gpu_index,
+                                 uint64_t lwe_ciphertext_count,
+                                 uint64_t number_of_gpus);
+
 #endif

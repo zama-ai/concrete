@@ -25,6 +25,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
 include_directories(${CONCRETE_CPU_SOURCE_DIR}/include)
 include_directories(${CONCRETE_CUDA_SOURCE_DIR}/include)
 
+find_package(OpenMP REQUIRED)
+# Add the OpenMP flag to the compiler flags
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
 add_library(concrete_cpu_lib STATIC IMPORTED)
 set_target_properties(concrete_cpu_lib PROPERTIES IMPORTED_LOCATION ${CONCRETE_CPU_BINARY_DIR}/libconcrete_cpu.a)
 
@@ -43,5 +47,5 @@ add_executable(${BINARY} ${BENCH_SOURCES} ../utils.cpp ../setup_and_teardown.cpp
 set_target_properties(benchmark_concrete_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 target_link_libraries(
   benchmark_concrete_cuda
-  PUBLIC benchmark::benchmark concrete_cpu_lib concrete_cuda
+  PUBLIC benchmark::benchmark concrete_cpu_lib concrete_cuda OpenMP::OpenMP_CXX
   PRIVATE CUDA::cudart)
