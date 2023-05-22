@@ -861,7 +861,7 @@ pub fn optimize(
 
     let mut fix_point = params.clone();
     for iter in 0..=10 {
-        for partition in 0..nb_partitions {
+        for partition in (0..nb_partitions).rev() {
             let new_params = optimize_macro(
                 security_level,
                 ciphertext_modulus_log,
