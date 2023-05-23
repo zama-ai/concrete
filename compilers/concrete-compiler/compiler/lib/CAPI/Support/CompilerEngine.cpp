@@ -414,17 +414,23 @@ void encodingDestroy(Encoding encoding){C_STRUCT_CLEANER(encoding)}
 
 /// ********** KeySet CAPI *****************************************************
 
-KeySet keySetGenerate(ClientParameters params, uint64_t seed_msb,
-                      uint64_t seed_lsb) {
+KeySet keySetGenerate(ClientParameters params, uint64_t secret_seed_msb,
+                      uint64_t secret_seed_lsb, uint64_t encryption_seed_msb,
+                      uint64_t encryption_seed_lsb) {
 
-  __uint128_t seed = seed_msb;
-  seed <<= 64;
-  seed += seed_lsb;
+  __uint128_t secret_seed = secret_seed_msb;
+  secret_seed <<= 64;
+  secret_seed += secret_seed_lsb;
 
-  auto csprng = concretelang::clientlib::ConcreteCSPRNG(seed);
+  __uint128_t encryption_seed = encryption_seed_msb;
+  encryption_seed <<= 64;
+  encryption_seed += encryption_seed_lsb;
+
+  auto sec_csprng = concretelang::clientlib::SecretCSPRNG(secret_seed);
+  auto enc_csprng = concretelang::clientlib::EncryptionCSPRNG(encryption_seed);
 
   auto keySet = mlir::concretelang::clientlib::KeySet::generate(
-      *unwrap(params), std::move(csprng));
+      *unwrap(params), std::move(sec_csprng), std::move(enc_csprng));
   if (keySet.has_error()) {
     return wrap((mlir::concretelang::clientlib::KeySet *)NULL,
                 keySet.error().mesg);
@@ -448,9 +454,13 @@ KeySetCache keySetCacheCreate(MlirStringRef cachePath) {
 
 KeySet keySetCacheLoadOrGenerateKeySet(KeySetCache cache,
                                        ClientParameters params,
-                                       uint64_t seed_msb, uint64_t seed_lsb) {
+                                       uint64_t secret_seed_msb,
+                                       uint64_t secret_seed_lsb,
+                                       uint64_t encryption_seed_msb,
+                                       uint64_t encryption_seed_lsb) {
   auto keySetOrError =
-      unwrap(cache)->generate(*unwrap(params), seed_msb, seed_lsb);
+      unwrap(cache)->generate(*unwrap(params), secret_seed_msb, secret_seed_lsb,
+                              encryption_seed_msb, encryption_seed_lsb);
   if (keySetOrError.has_error()) {
     return wrap((mlir::concretelang::clientlib::KeySet *)NULL,
                 keySetOrError.error().mesg);

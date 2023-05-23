@@ -39,9 +39,12 @@ ClientLambda::load(std::string functionName, std::string jsonPath) {
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
 ClientLambda::keySet(std::shared_ptr<KeySetCache> optionalCache,
-                     uint64_t seed_msb, uint64_t seed_lsb) {
-  return KeySetCache::generate(optionalCache, clientParameters, seed_msb,
-                               seed_lsb);
+                     uint64_t secret_seed_msb, uint64_t secret_seed_lsb,
+                     uint64_t encryption_seed_msb,
+                     uint64_t encryption_seed_lsb) {
+  return KeySetCache::generate(optionalCache, clientParameters, secret_seed_msb,
+                               secret_seed_lsb, encryption_seed_msb,
+                               encryption_seed_lsb);
 }
 
 outcome::checked<decrypted_scalar_t, StringError>

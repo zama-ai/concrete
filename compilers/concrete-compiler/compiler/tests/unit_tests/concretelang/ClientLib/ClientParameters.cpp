@@ -18,6 +18,7 @@ TEST(Support, client_parameters_json_serde) {
   params0.bootstrapKeys.push_back({
       /*.inputSecretKeyID = */ clientlib::SMALL_KEY,
       /*.outputSecretKeyID = */ clientlib::BIG_KEY,
+      /*.compression = */ false,
       /*.level = */ 1,
       /*.baseLog = */ 2,
       /*.glweDimension = */ 3,
@@ -29,6 +30,7 @@ TEST(Support, client_parameters_json_serde) {
   params0.bootstrapKeys.push_back({
       /*.inputSecretKeyID = */ clientlib::BIG_KEY,
       /*.outputSecretKeyID = */ clientlib::SMALL_KEY,
+      /*.compression = */ false,
       /*.level = */ 3,
       /*.baseLog = */ 2,
       /*.glweDimension = */ 1,
@@ -41,9 +43,12 @@ TEST(Support, client_parameters_json_serde) {
       clientlib::BIG_KEY,
       /*.outputSecretKeyID = */
       clientlib::SMALL_KEY,
+      /*.compression = */ false,
       /*.level = */ 1,
       /*.baseLog = */ 2,
       /*.variance = */ 3,
+      /*.inputLweDimension = */ 14,
+      /*.outputLweDimension = */ 12,
   });
   params0.inputs = {
       {

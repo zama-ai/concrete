@@ -79,6 +79,7 @@ llvm::json::Value toJSON(const BootstrapKeyParam &v) {
   llvm::json::Object object{
       {"inputSecretKeyID", v.inputSecretKeyID},
       {"outputSecretKeyID", v.outputSecretKeyID},
+      {"compression", v.compression},
       {"level", v.level},
       {"glweDimension", v.glweDimension},
       {"baseLog", v.baseLog},
@@ -94,7 +95,8 @@ bool fromJSON(const llvm::json::Value j, BootstrapKeyParam &v,
   llvm::json::ObjectMapper O(j, p);
   return O && O.map("inputSecretKeyID", v.inputSecretKeyID) &&
          O.map("outputSecretKeyID", v.outputSecretKeyID) &&
-         O.map("level", v.level) && O.map("baseLog", v.baseLog) &&
+         O.map("compression", v.compression) && O.map("level", v.level) &&
+         O.map("baseLog", v.baseLog) &&
          O.map("glweDimension", v.glweDimension) &&
          O.map("variance", v.variance) &&
          O.map("polynomialSize", v.polynomialSize) &&
@@ -105,9 +107,12 @@ llvm::json::Value toJSON(const KeyswitchKeyParam &v) {
   llvm::json::Object object{
       {"inputSecretKeyID", v.inputSecretKeyID},
       {"outputSecretKeyID", v.outputSecretKeyID},
+      {"compression", v.compression},
       {"level", v.level},
       {"baseLog", v.baseLog},
       {"variance", v.variance},
+      {"inputLweDimension", v.inputLweDimension},
+      {"outputLweDimension", v.outputLweDimension},
   };
   return object;
 }
@@ -116,14 +121,17 @@ bool fromJSON(const llvm::json::Value j, KeyswitchKeyParam &v,
   llvm::json::ObjectMapper O(j, p);
   return O && O.map("inputSecretKeyID", v.inputSecretKeyID) &&
          O.map("outputSecretKeyID", v.outputSecretKeyID) &&
-         O.map("level", v.level) && O.map("baseLog", v.baseLog) &&
-         O.map("variance", v.variance);
+         O.map("compression", v.compression) && O.map("level", v.level) &&
+         O.map("baseLog", v.baseLog) && O.map("variance", v.variance) &&
+         O.map("inputLweDimension", v.inputLweDimension) &&
+         O.map("outputLweDimension", v.outputLweDimension);
 }
 
 llvm::json::Value toJSON(const PackingKeyswitchKeyParam &v) {
   llvm::json::Object object{
       {"inputSecretKeyID", v.inputSecretKeyID},
       {"outputSecretKeyID", v.outputSecretKeyID},
+      {"compression", v.compression},
       {"level", v.level},
       {"baseLog", v.baseLog},
       {"glweDimension", v.glweDimension},
@@ -139,7 +147,8 @@ bool fromJSON(const llvm::json::Value j, PackingKeyswitchKeyParam &v,
   llvm::json::ObjectMapper O(j, p);
   return O && O.map("inputSecretKeyID", v.inputSecretKeyID) &&
          O.map("outputSecretKeyID", v.outputSecretKeyID) &&
-         O.map("level", v.level) && O.map("baseLog", v.baseLog) &&
+         O.map("compression", v.compression) && O.map("level", v.level) &&
+         O.map("baseLog", v.baseLog) &&
          O.map("glweDimension", v.glweDimension) &&
          O.map("polynomialSize", v.polynomialSize) &&
          O.map("inputLweDimension", v.inputLweDimension) &&

@@ -7,6 +7,7 @@
 #define CONCRETELANG_RUNTIME_CONTEXT_H
 
 #include <assert.h>
+#include <complex>
 #include <map>
 #include <mutex>
 #include <pthread.h>
@@ -56,7 +57,7 @@ typedef struct RuntimeContext {
     return evaluationKeys.getKeyswitchKey(keyId).buffer();
   }
 
-  const double *fourier_bootstrap_key_buffer(size_t keyId) {
+  const std::complex<double> *fourier_bootstrap_key_buffer(size_t keyId) {
     return fourier_bootstrap_keys[keyId]->data();
   }
 
@@ -72,7 +73,8 @@ typedef struct RuntimeContext {
 
 private:
   ::concretelang::clientlib::EvaluationKeys evaluationKeys;
-  std::vector<std::shared_ptr<std::vector<double>>> fourier_bootstrap_keys;
+  std::vector<std::shared_ptr<std::vector<std::complex<double>>>>
+      fourier_bootstrap_keys;
   std::vector<FFT> ffts;
 
 #ifdef CONCRETELANG_CUDA_SUPPORT

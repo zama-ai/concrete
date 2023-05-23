@@ -11,7 +11,7 @@ const cpu = @cImport({
 });
 
 pub fn new_bsk(
-    csprng: *cpu.Csprng,
+    csprng: *cpu.EncCsprng,
     in_dim: usize,
     glwe_dim: u64,
     polynomial_size: u64,
@@ -21,9 +21,8 @@ pub fn new_bsk(
     in_sk: []u64,
     out_sk: []u64,
     fft: *cpu.Fft,
-) ![]f64 {
+) ![]cpu.c_double_complex {
     const bsk_size = cpu.concrete_cpu_bootstrap_key_size_u64(level, glwe_dim, polynomial_size, in_dim);
-
     const bsk = try allocator.alloc(u64, bsk_size);
     defer allocator.free(bsk);
 
@@ -39,10 +38,10 @@ pub fn new_bsk(
         key_variance,
         1,
         csprng,
-        &cpu.CONCRETE_CSPRNG_VTABLE,
     );
 
-    const bsk_f = try allocator.alloc(f64, bsk_size);
+    const bsk_f_size = cpu.concrete_cpu_fourier_bootstrap_key_size_u64(level, glwe_dim, polynomial_size, in_dim);
+    const bsk_f = try allocator.alloc(cpu.c_double_complex, bsk_f_size);
     {
         var stack_size: u64 = 0;
         var stack_align: u64 = 0;

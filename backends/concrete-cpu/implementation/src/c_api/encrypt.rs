@@ -1,8 +1,7 @@
-use crate::c_api::csprng::CONCRETE_CSPRNG_VTABLE;
 use crate::c_api::types::Csprng;
-use crate::implementation::encrypt::fill_with_random_gaussian;
-use crate::implementation::types::CsprngMut;
+use concrete_csprng::generators::SoftwareRandomGenerator;
 use std::slice;
+use tfhe::core_crypto::commons::math::random::RandomGenerator;
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_fill_with_random_gaussian(
@@ -13,7 +12,7 @@ pub unsafe extern "C" fn concrete_cpu_fill_with_random_gaussian(
 ) {
     unsafe {
         let buff: &mut [u64] = slice::from_raw_parts_mut(buffer, size);
-        let csprng_mut: CsprngMut<'_, '_> = CsprngMut::new(csprng, &CONCRETE_CSPRNG_VTABLE);
-        fill_with_random_gaussian(buff, variance, csprng_mut)
+        let csprng = &mut *(csprng as *mut RandomGenerator<SoftwareRandomGenerator>);
+        csprng.fill_slice_with_random_gaussian(buff, 0.0, variance)
     }
 }

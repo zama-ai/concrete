@@ -69,7 +69,8 @@ template <typename Info> std::string outputLibFromThis(Info *info) {
 }
 
 template <typename Lambda> Lambda load(std::string outputLib) {
-  auto l = Lambda::load(FUNCNAME, outputLib, 0, 0, getTestKeySetCachePtr());
+  auto l =
+      Lambda::load(FUNCNAME, outputLib, 0, 0, 0, 0, getTestKeySetCachePtr());
   assert(l.has_value());
   return l.value();
 }

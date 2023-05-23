@@ -51,6 +51,8 @@ typedef uint64_t LweDimension;
 typedef uint64_t GlweDimension;
 
 typedef uint64_t LweSecretKeyID;
+typedef bool Compression;
+
 struct LweSecretKeyParam {
   LweDimension dimension;
 
@@ -68,6 +70,8 @@ typedef uint64_t BootstrapKeyID;
 struct BootstrapKeyParam {
   LweSecretKeyID inputSecretKeyID;
   LweSecretKeyID outputSecretKeyID;
+  Compression compression;
+
   DecompositionLevelCount level;
   DecompositionBaseLog baseLog;
   GlweDimension glweDimension;
@@ -86,17 +90,22 @@ static inline bool operator==(const BootstrapKeyParam &lhs,
                               const BootstrapKeyParam &rhs) {
   return lhs.inputSecretKeyID == rhs.inputSecretKeyID &&
          lhs.outputSecretKeyID == rhs.outputSecretKeyID &&
-         lhs.level == rhs.level && lhs.baseLog == rhs.baseLog &&
-         lhs.glweDimension == rhs.glweDimension && lhs.variance == rhs.variance;
+         lhs.compression == rhs.compression && lhs.level == rhs.level &&
+         lhs.baseLog == rhs.baseLog && lhs.glweDimension == rhs.glweDimension &&
+         lhs.variance == rhs.variance;
 }
 
 typedef uint64_t KeyswitchKeyID;
 struct KeyswitchKeyParam {
   LweSecretKeyID inputSecretKeyID;
   LweSecretKeyID outputSecretKeyID;
+  Compression compression;
+
   DecompositionLevelCount level;
   DecompositionBaseLog baseLog;
   Variance variance;
+  LweDimension inputLweDimension;
+  LweDimension outputLweDimension;
 
   void hash(size_t &seed);
 
@@ -108,14 +117,15 @@ static inline bool operator==(const KeyswitchKeyParam &lhs,
                               const KeyswitchKeyParam &rhs) {
   return lhs.inputSecretKeyID == rhs.inputSecretKeyID &&
          lhs.outputSecretKeyID == rhs.outputSecretKeyID &&
-         lhs.level == rhs.level && lhs.baseLog == rhs.baseLog &&
-         lhs.variance == rhs.variance;
+         lhs.compression == rhs.compression && lhs.level == rhs.level &&
+         lhs.baseLog == rhs.baseLog && lhs.variance == rhs.variance;
 }
 
 typedef uint64_t PackingKeyswitchKeyID;
 struct PackingKeyswitchKeyParam {
   LweSecretKeyID inputSecretKeyID;
   LweSecretKeyID outputSecretKeyID;
+  Compression compression;
   DecompositionLevelCount level;
   DecompositionBaseLog baseLog;
   GlweDimension glweDimension;

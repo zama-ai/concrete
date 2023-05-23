@@ -15,8 +15,10 @@ namespace concretelang {
 namespace clientlib {
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
-KeySet::generate(ClientParameters clientParameters, CSPRNG &&csprng) {
-  auto keySet = std::make_unique<KeySet>(clientParameters, std::move(csprng));
+KeySet::generate(ClientParameters clientParameters, SecretCSPRNG &&secretCsprng,
+                 EncryptionCSPRNG &&encryptionCsprng) {
+  auto keySet = std::make_unique<KeySet>(
+      clientParameters, std::move(secretCsprng), std::move(encryptionCsprng));
   OUTCOME_TRYV(keySet->generateKeysFromParams());
   OUTCOME_TRYV(keySet->setupEncryptionMaterial());
   return std::move(keySet);
@@ -26,9 +28,11 @@ outcome::checked<std::unique_ptr<KeySet>, StringError> KeySet::fromKeys(
     ClientParameters clientParameters, std::vector<LweSecretKey> secretKeys,
     std::vector<LweBootstrapKey> bootstrapKeys,
     std::vector<LweKeyswitchKey> keyswitchKeys,
-    std::vector<PackingKeyswitchKey> packingKeyswitchKeys, CSPRNG &&csprng) {
+    std::vector<PackingKeyswitchKey> packingKeyswitchKeys,
+    SecretCSPRNG &&secretCsprng, EncryptionCSPRNG &&encryptionCsprng) {
 
-  auto keySet = std::make_unique<KeySet>(clientParameters, std::move(csprng));
+  auto keySet = std::make_unique<KeySet>(
+      clientParameters, std::move(secretCsprng), std::move(encryptionCsprng));
   keySet->secretKeys = secretKeys;
   keySet->bootstrapKeys = bootstrapKeys;
   keySet->keyswitchKeys = keyswitchKeys;
@@ -92,7 +96,7 @@ outcome::checked<void, StringError> KeySet::generateKeysFromParams() {
 outcome::checked<void, StringError>
 KeySet::generateSecretKey(LweSecretKeyParam param) {
   // Init the lwe secret key
-  LweSecretKey sk(param, csprng);
+  LweSecretKey sk(param, secretCsprng);
   // Store the lwe secret key
   secretKeys.push_back(sk);
   return outcome::success();
@@ -112,7 +116,7 @@ KeySet::generateBootstrapKey(BootstrapKeyParam param) {
   OUTCOME_TRY(auto inputKey, findLweSecretKey(param.inputSecretKeyID));
   OUTCOME_TRY(auto outputKey, findLweSecretKey(param.outputSecretKeyID));
   // Initialize the bootstrap key
-  LweBootstrapKey bootstrapKey(param, inputKey, outputKey, csprng);
+  LweBootstrapKey bootstrapKey(param, inputKey, outputKey, encryptionCsprng);
   // Store the bootstrap key
   bootstrapKeys.push_back(std::move(bootstrapKey));
   return outcome::success();
@@ -124,7 +128,7 @@ KeySet::generateKeyswitchKey(KeyswitchKeyParam param) {
   OUTCOME_TRY(auto inputKey, findLweSecretKey(param.inputSecretKeyID));
   OUTCOME_TRY(auto outputKey, findLweSecretKey(param.outputSecretKeyID));
   // Initialize the bootstrap key
-  LweKeyswitchKey keyswitchKey(param, inputKey, outputKey, csprng);
+  LweKeyswitchKey keyswitchKey(param, inputKey, outputKey, encryptionCsprng);
   // Store the keyswitch key
   keyswitchKeys.push_back(keyswitchKey);
   return outcome::success();
@@ -139,7 +143,8 @@ KeySet::generatePackingKeyswitchKey(PackingKeyswitchKeyParam param) {
   assert(param.outputSecretKeyID < secretKeys.size());
   auto outputSk = secretKeys[param.outputSecretKeyID];
 
-  PackingKeyswitchKey packingKeyswitchKey(param, inputSk, outputSk, csprng);
+  PackingKeyswitchKey packingKeyswitchKey(param, inputSk, outputSk,
+                                          encryptionCsprng);
   // Store the keyswitch key
   packingKeyswitchKeys.push_back(packingKeyswitchKey);
   return outcome::success();
@@ -199,7 +204,8 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
     auto product = crt::productOfModuli(crt);
     for (auto modulus : crt) {
       auto plaintext = crt::encode(input, modulus, product);
-      lweSecretKey.encrypt(ciphertext, plaintext, encryption->variance, csprng);
+      lweSecretKey.encrypt(ciphertext, plaintext, encryption->variance,
+                           encryptionCsprng);
       ciphertext = ciphertext + lweSecretKeyParam.lweSize();
     }
     return outcome::success();
@@ -207,7 +213,8 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
   // Simple TFHE integers - 1 blocks with one padding bits
   // TODO we could check if the input value is in the right range
   uint64_t plaintext = input << (64 - (encryption->encoding.precision + 1));
-  lweSecretKey.encrypt(ciphertext, plaintext, encryption->variance, csprng);
+  lweSecretKey.encrypt(ciphertext, plaintext, encryption->variance,
+                       encryptionCsprng);
   return outcome::success();
 }
 

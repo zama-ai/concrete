@@ -40,8 +40,9 @@ class TestTypedLambda
 
 public:
   static outcome::checked<TestTypedLambda, StringError>
-  load(std::string funcName, std::string outputLib, uint64_t seed_msb = 0,
-       uint64_t seed_lsb = 0,
+  load(std::string funcName, std::string outputLib,
+       uint64_t secret_seed_msb = 0, uint64_t secret_seed_lsb = 0,
+       uint64_t encryption_seed_msb = 0, uint64_t encryption_seed_lsb = 0,
        std::shared_ptr<KeySetCache> unsecure_cache = nullptr) {
     std::string jsonPath =
         mlir::concretelang::CompilerEngine::Library::getClientParametersPath(
@@ -49,8 +50,9 @@ public:
     OUTCOME_TRY(auto cLambda, ClientLambda::load(funcName, jsonPath));
     OUTCOME_TRY(auto sLambda, ServerLambda::load(funcName, outputLib));
     OUTCOME_TRY(std::shared_ptr<KeySet> keySet,
-                KeySetCache::generate(unsecure_cache, cLambda.clientParameters,
-                                      seed_msb, seed_lsb));
+                KeySetCache::generate(
+                    unsecure_cache, cLambda.clientParameters, secret_seed_msb,
+                    secret_seed_lsb, encryption_seed_msb, encryption_seed_lsb));
     return TestTypedLambda(cLambda, sLambda, keySet);
   }
 

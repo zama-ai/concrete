@@ -10,38 +10,55 @@
 #include <memory>
 #include <vector>
 
+#include "concrete-cpu.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
-
-struct Csprng;
-struct CsprngVtable;
 
 namespace concretelang {
 namespace clientlib {
 
-class CSPRNG {
+void getRandomSeed(struct Uint128 *u128);
+
+template <typename Csprng> class CSPRNG {
 public:
-  struct Csprng *ptr;
-  const struct CsprngVtable *vtable;
+  Csprng *ptr;
 
   CSPRNG() = delete;
   CSPRNG(CSPRNG &) = delete;
 
-  CSPRNG(CSPRNG &&other) : ptr(other.ptr), vtable(other.vtable) {
+  CSPRNG(CSPRNG &&other) : ptr(other.ptr) {
     assert(ptr != nullptr);
     other.ptr = nullptr;
   };
 
-  CSPRNG(Csprng *ptr, const CsprngVtable *vtable) : ptr(ptr), vtable(vtable){};
+  CSPRNG(Csprng *ptr) : ptr(ptr){};
 };
 
-class ConcreteCSPRNG : public CSPRNG {
+class SoftCSPRNG : public CSPRNG<Csprng> {
 public:
-  ConcreteCSPRNG(__uint128_t seed);
-  ConcreteCSPRNG() = delete;
-  ConcreteCSPRNG(ConcreteCSPRNG &) = delete;
-  ConcreteCSPRNG(ConcreteCSPRNG &&other);
-  ~ConcreteCSPRNG();
+  SoftCSPRNG(__uint128_t seed);
+  SoftCSPRNG() = delete;
+  SoftCSPRNG(SoftCSPRNG &) = delete;
+  SoftCSPRNG(SoftCSPRNG &&other);
+  ~SoftCSPRNG();
+};
+
+class SecretCSPRNG : public CSPRNG<SecCsprng> {
+public:
+  SecretCSPRNG(__uint128_t seed);
+  SecretCSPRNG() = delete;
+  SecretCSPRNG(SecretCSPRNG &) = delete;
+  SecretCSPRNG(SecretCSPRNG &&other);
+  ~SecretCSPRNG();
+};
+
+class EncryptionCSPRNG : public CSPRNG<EncCsprng> {
+public:
+  EncryptionCSPRNG(__uint128_t seed);
+  EncryptionCSPRNG() = delete;
+  EncryptionCSPRNG(EncryptionCSPRNG &) = delete;
+  EncryptionCSPRNG(EncryptionCSPRNG &&other);
+  ~EncryptionCSPRNG();
 };
 
 /// @brief LweSecretKey implements tools for manipulating lwe secret key on
@@ -52,14 +69,14 @@ class LweSecretKey {
 
 public:
   LweSecretKey() = delete;
-  LweSecretKey(LweSecretKeyParam &parameters, CSPRNG &csprng);
+  LweSecretKey(LweSecretKeyParam &parameters, SecretCSPRNG &csprng);
   LweSecretKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                LweSecretKeyParam parameters)
       : _buffer(buffer), _parameters(parameters){};
 
   /// @brief Encrypt the plaintext to the lwe ciphertext buffer.
   void encrypt(uint64_t *ciphertext, uint64_t plaintext, double variance,
-               CSPRNG &csprng) const;
+               EncryptionCSPRNG &csprng) const;
 
   /// @brief Decrypt the ciphertext to the plaintext
   void decrypt(const uint64_t *ciphertext, uint64_t &plaintext) const;
@@ -85,7 +102,7 @@ private:
 public:
   LweKeyswitchKey() = delete;
   LweKeyswitchKey(KeyswitchKeyParam &parameters, LweSecretKey &inputKey,
-                  LweSecretKey &outputKey, CSPRNG &csprng);
+                  LweSecretKey &outputKey, EncryptionCSPRNG &csprng);
   LweKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                   KeyswitchKeyParam parameters)
       : _buffer(buffer), _parameters(parameters){};
@@ -111,7 +128,7 @@ public:
                   BootstrapKeyParam &parameters)
       : _buffer(buffer), _parameters(parameters){};
   LweBootstrapKey(BootstrapKeyParam &parameters, LweSecretKey &inputKey,
-                  LweSecretKey &outputKey, CSPRNG &csprng);
+                  LweSecretKey &outputKey, EncryptionCSPRNG &csprng);
 
   ///// @brief Returns the buffer that hold the bootstrap key.
   const uint64_t *buffer() const { return _buffer->data(); }
@@ -132,7 +149,7 @@ public:
   PackingKeyswitchKey() = delete;
   PackingKeyswitchKey(PackingKeyswitchKeyParam &parameters,
                       LweSecretKey &inputKey, LweSecretKey &outputKey,
-                      CSPRNG &csprng);
+                      EncryptionCSPRNG &csprng);
   PackingKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                       PackingKeyswitchKeyParam parameters)
       : _buffer(buffer), _parameters(parameters){};

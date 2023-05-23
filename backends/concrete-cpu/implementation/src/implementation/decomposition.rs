@@ -2,8 +2,6 @@ use core::iter::Map;
 use core::slice::IterMut;
 use dyn_stack::{DynArray, DynStack};
 
-use super::types::DecompParams;
-
 /// An iterator that yields the terms of the signed decomposition of an integer.
 ///
 /// # Warning
@@ -13,7 +11,8 @@ use super::types::DecompParams;
 pub struct SignedDecompositionIter {
     // The value being decomposed
     input: u64,
-    decomp_params: DecompParams,
+    level: usize,
+    base_log: usize,
     // The internal state of the decomposition
     state: u64,
     // The current level
@@ -73,13 +72,14 @@ impl DecompositionTerm {
 }
 
 impl SignedDecompositionIter {
-    pub(crate) fn new(input: u64, decomp_params: DecompParams) -> Self {
+    pub(crate) fn new(input: u64, level: usize, base_log: usize) -> Self {
         Self {
             input,
-            decomp_params,
-            state: input >> (u64::BITS as usize - decomp_params.base_log * decomp_params.level),
-            current_level: decomp_params.level,
-            mod_b_mask: (1 << decomp_params.base_log) - 1,
+            level,
+            base_log,
+            state: input >> (u64::BITS as usize - base_log * level),
+            current_level: level,
+            mod_b_mask: (1 << base_log) - 1,
             fresh: true,
         }
     }
@@ -96,16 +96,12 @@ impl Iterator for SignedDecompositionIter {
             return None;
         }
         // We decompose the current level
-        let output = decompose_one_level(
-            self.decomp_params.base_log,
-            &mut self.state,
-            self.mod_b_mask,
-        );
+        let output = decompose_one_level(self.base_log, &mut self.state, self.mod_b_mask);
         self.current_level -= 1;
         // We return the output for this level
         Some(DecompositionTerm::new(
             self.current_level + 1,
-            self.decomp_params.base_log,
+            self.base_log,
             output,
         ))
     }

@@ -243,7 +243,7 @@ template <typename V> using Set = llvm::SmallSet<V, 10, HashValComparator<V>>;
 
 void extractCircuitKeys(ClientParameters &output,
                         TFHE::TFHECircuitKeys circuitKeys,
-                        concrete::SecurityCurve curve) {
+                        concrete::SecurityCurve curve, bool compressInputs) {
 
   // Pushing secret keys
   for (auto sk : circuitKeys.secretKeys) {
@@ -259,6 +259,7 @@ void extractCircuitKeys(ClientParameters &output,
     auto outputNormKey = ksk.getOutputKey().getNormalized().value();
     kskParam.inputSecretKeyID = inputNormKey.index;
     kskParam.outputSecretKeyID = outputNormKey.index;
+    kskParam.compression = compressInputs;
     kskParam.level = ksk.getLevels();
     kskParam.baseLog = ksk.getBaseLog();
     kskParam.variance = curve.getVariance(1, outputNormKey.dimension, 64);
@@ -272,6 +273,7 @@ void extractCircuitKeys(ClientParameters &output,
     auto outputNormKey = bsk.getOutputKey().getNormalized().value();
     bskParam.inputSecretKeyID = inputNormKey.index;
     bskParam.outputSecretKeyID = outputNormKey.index;
+    bskParam.compression = compressInputs;
     bskParam.level = bsk.getLevels();
     bskParam.baseLog = bsk.getBaseLog();
     bskParam.glweDimension = bsk.getGlweDim();
@@ -331,11 +333,10 @@ extractCircuitGates(ClientParameters &output, mlir::func::FuncOp funcOp,
   return std::monostate();
 }
 
-llvm::Expected<ClientParameters>
-createClientParametersFromTFHE(mlir::ModuleOp module,
-                               llvm::StringRef functionName, int bitsOfSecurity,
-                               encodings::CircuitEncodings encodings,
-                               std::optional<CRTDecomposition> maybeCrt) {
+llvm::Expected<ClientParameters> createClientParametersFromTFHE(
+    mlir::ModuleOp module, llvm::StringRef functionName, int bitsOfSecurity,
+    encodings::CircuitEncodings encodings, bool compressInputs,
+    std::optional<CRTDecomposition> maybeCrt) {
 
   // Check that security curves exist
   const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
@@ -363,7 +364,7 @@ createClientParametersFromTFHE(mlir::ModuleOp module,
   auto circuitKeys = TFHE::extractCircuitKeys(module);
 
   // We extract all the keys used in the circuit
-  extractCircuitKeys(output, circuitKeys, *curve);
+  extractCircuitKeys(output, circuitKeys, *curve, compressInputs);
 
   // We generate the gates for the inputs aud outputs
   if (auto err =

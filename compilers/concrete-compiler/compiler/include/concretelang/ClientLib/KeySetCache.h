@@ -22,19 +22,24 @@ public:
 
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
   generate(std::shared_ptr<KeySetCache> optionalCache, ClientParameters &params,
-           uint64_t seed_msb, uint64_t seed_lsb);
+           uint64_t secret_seed_msb, uint64_t secret_seed_lsb,
+           uint64_t encryption_seed_msb, uint64_t encryption_seed_lsb);
 
   outcome::checked<std::unique_ptr<KeySet>, StringError>
-  generate(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb);
+  generate(ClientParameters &params, uint64_t secret_seed_msb,
+           uint64_t secret_seed_lsb, uint64_t encryption_seed_msb,
+           uint64_t encryption_seed_lsb);
 
 private:
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
-  loadKeys(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb,
-           std::string folderPath);
+  loadKeys(ClientParameters &params, uint64_t secret_seed_msb,
+           uint64_t secret_seed_lsb, uint64_t encryption_seed_msb,
+           uint64_t encryption_seed_lsb, std::string folderPath);
 
   outcome::checked<std::unique_ptr<KeySet>, StringError>
-  loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
-                     uint64_t seed_lsb);
+  loadOrGenerateSave(ClientParameters &params, uint64_t secret_seed_msb,
+                     uint64_t secret_seed_lsb, uint64_t encryption_seed_msb,
+                     uint64_t encryption_seed_lsb);
 };
 
 } // namespace clientlib

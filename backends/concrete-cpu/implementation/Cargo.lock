@@ -18,6 +18,9 @@ name = "aligned-vec"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4aa90d7ce82d4be67b64039a3d588d38dbcc6736577de4a847025ce5b0c468d1"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "anes"
@@ -172,9 +175,10 @@ dependencies = [
  "libc",
  "num-complex",
  "once_cell",
- "pulp",
+ "pulp 0.10.4",
  "rayon",
  "readonly",
+ "tfhe",
 ]
 
 [[package]]
@@ -185,17 +189,21 @@ checksum = "d821845d1b3262c10d74341a7e1fa4c287bedd30d192a0df51ef780b6901830e"
 dependencies = [
  "aes",
  "libc",
+ "rayon",
 ]
 
 [[package]]
 name = "concrete-fft"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55f4c28b64f48194903ef4415b1cbcb0ba3dc3ea06c77a2a89110363d642033b"
+checksum = "7ab720f85aa80be9d78fba5a941458ec50d97c7856aced76707f0bf227a0c6ca"
 dependencies = [
  "aligned-vec",
+ "bytemuck",
  "dyn-stack",
  "num-complex",
+ "pulp 0.11.11",
+ "serde",
 ]
 
 [[package]]
@@ -298,10 +306,11 @@ dependencies = [
 
 [[package]]
 name = "dyn-stack"
-version = "0.8.3"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c63c3199ff7026af3c8149907c5677a6d3431e1d3cd16b7fffbfcf158b788ca"
+checksum = "24269739c7c175bc12130622ef1a60b9ab2d5b30c0b9ce5110cd406d7fd497bc"
 dependencies = [
+ "bytemuck",
  "reborrow",
 ]
 
@@ -493,6 +502,7 @@ checksum = "02e0d21255c828d6f128a1e41534206671e8c3ea0c62f32291e808dc82cff17d"
 dependencies = [
  "bytemuck",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -531,6 +541,12 @@ name = "os_str_bytes"
 version = "6.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
+
+[[package]]
+name = "paste"
+version = "1.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
 
 [[package]]
 name = "plotters"
@@ -574,6 +590,15 @@ name = "pulp"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "284c392c810680912400c6f70879a8cde404344db6b68ff52cc3990c020324d1"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
+name = "pulp"
+version = "0.11.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "866e8018d6397b0717100dd4a7948fc8cbc8c4b8ce3e39e98a0e1e878d3ba925"
 dependencies = [
  "bytemuck",
 ]
@@ -760,6 +785,25 @@ name = "textwrap"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d"
+
+[[package]]
+name = "tfhe"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3190f4b71a71fb8d751313b9d7a5a9b1d439fdf8faedb416999cb82fce5500e"
+dependencies = [
+ "aligned-vec",
+ "bytemuck",
+ "concrete-csprng",
+ "concrete-fft",
+ "dyn-stack",
+ "itertools",
+ "once_cell",
+ "paste",
+ "pulp 0.11.11",
+ "rayon",
+ "serde",
+]
 
 [[package]]
 name = "tinytemplate"

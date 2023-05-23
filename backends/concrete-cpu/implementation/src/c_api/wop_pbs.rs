@@ -1,16 +1,17 @@
+use concrete_csprng::generators::SoftwareRandomGenerator;
+use concrete_fft::c64;
+use tfhe::core_crypto::prelude::*;
+
+use crate::c_api::bootstrap::concrete_cpu_fourier_bootstrap_key_size_u64;
+use crate::c_api::keyswitch::concrete_cpu_keyswitch_key_size_u64;
 use crate::c_api::types::*;
 use crate::c_api::utils::nounwind;
-use crate::implementation::fft::Fft;
-use crate::implementation::types::ciphertext_list::LweCiphertextList;
-use crate::implementation::types::packing_keyswitch_key_list::PackingKeyswitchKeyList;
-use crate::implementation::types::polynomial_list::PolynomialList;
-use crate::implementation::types::*;
-use crate::implementation::wop::{
-    circuit_bootstrap_boolean_vertical_packing, circuit_bootstrap_boolean_vertical_packing_scratch,
-    extract_bits, extract_bits_scratch,
-};
 use core::slice;
-use dyn_stack::DynStack;
+use dyn_stack::PodStack;
+
+use super::secret_key::{
+    concrete_cpu_glwe_secret_key_size_u64, concrete_cpu_lwe_secret_key_size_u64,
+};
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_init_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
@@ -30,42 +31,55 @@ pub unsafe extern "C" fn concrete_cpu_init_lwe_circuit_bootstrap_private_functio
     variance: f64,
     parallelism: Parallelism,
     // csprng
-    csprng: *mut Csprng,
-    csprng_vtable: *const CsprngVtable,
+    csprng: *mut EncCsprng,
 ) {
     nounwind(|| {
-        let glwe_params = GlweParams {
-            dimension: output_glwe_dimension,
-            polynomial_size: output_polynomial_size,
-        };
-
-        let decomp_params = DecompParams {
-            level: decomposition_level_count,
-            base_log: decomposition_base_log,
-        };
-
-        let input_key = LweSecretKey::<&[u64]>::from_raw_parts(input_lwe_sk, input_lwe_dimension);
-        let output_key = GlweSecretKey::<&[u64]>::from_raw_parts(output_glwe_sk, glwe_params);
-        let mut fpksk_list = PackingKeyswitchKeyList::<&mut [u64]>::from_raw_parts(
-            lwe_pksk,
-            glwe_params,
-            input_lwe_dimension,
-            decomp_params,
-            glwe_params.dimension + 1,
+        let input_key = LweSecretKey::from_container(slice::from_raw_parts(
+            input_lwe_sk,
+            concrete_cpu_lwe_secret_key_size_u64(input_lwe_dimension),
+        ));
+        let output_key = GlweSecretKey::from_container(
+            slice::from_raw_parts(
+                output_glwe_sk,
+                concrete_cpu_glwe_secret_key_size_u64(
+                    output_glwe_dimension,
+                    output_polynomial_size,
+                ),
+            ),
+            PolynomialSize(output_polynomial_size),
+        );
+        let mut fpksk_list = LwePrivateFunctionalPackingKeyswitchKeyList::from_container(
+            slice::from_raw_parts_mut(
+                lwe_pksk,
+                concrete_cpu_lwe_packing_keyswitch_key_size(
+                    output_glwe_dimension,
+                    output_polynomial_size,
+                    decomposition_level_count,
+                    input_lwe_dimension,
+                ) * (output_glwe_dimension + 1),
+            ),
+            DecompositionBaseLog(decomposition_base_log),
+            DecompositionLevelCount(decomposition_level_count),
+            LweDimension(input_lwe_dimension).to_lwe_size(),
+            GlweDimension(output_glwe_dimension).to_glwe_size(),
+            PolynomialSize(output_polynomial_size),
+            CiphertextModulus::new_native(),
         );
 
         match parallelism {
-            Parallelism::No => fpksk_list.fill_with_fpksk_for_circuit_bootstrap(
+            Parallelism::No => generate_circuit_bootstrap_lwe_pfpksk_list(
+                &mut fpksk_list,
                 &input_key,
                 &output_key,
-                variance,
-                CsprngMut::new(csprng, csprng_vtable),
+                Variance::from_variance(variance),
+                &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
             ),
-            Parallelism::Rayon => fpksk_list.fill_with_fpksk_for_circuit_bootstrap_par(
+            Parallelism::Rayon => par_generate_circuit_bootstrap_lwe_pfpksk_list(
+                &mut fpksk_list,
                 &input_key,
                 &output_key,
-                variance,
-                CsprngMut::new(csprng, csprng_vtable),
+                Variance::from_variance(variance),
+                &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
             ),
         }
     })
@@ -85,13 +99,11 @@ pub unsafe extern "C" fn concrete_cpu_extract_bit_lwe_ciphertext_u64_scratch(
     fft: *const Fft,
 ) -> ScratchStatus {
     nounwind(|| {
-        if let Ok(scratch) = extract_bits_scratch(
-            ct_in_dimension,
-            ct_out_dimension + 1,
-            GlweParams {
-                dimension: bsk_glwe_dimension,
-                polynomial_size: bsk_polynomial_size,
-            },
+        if let Ok(scratch) = extract_bits_from_lwe_ciphertext_mem_optimized_requirement::<u64>(
+            LweDimension(ct_in_dimension),
+            LweDimension(ct_out_dimension + 1),
+            GlweDimension(bsk_glwe_dimension).to_glwe_size(),
+            PolynomialSize(bsk_polynomial_size),
             (*fft).as_view(),
         ) {
             *stack_size = scratch.size_bytes();
@@ -109,7 +121,7 @@ pub unsafe extern "C" fn concrete_cpu_extract_bit_lwe_ciphertext_u64(
     ct_vec_out: *mut u64,
     ct_in: *const u64,
     // bootstrap key
-    fourier_bsk: *const f64,
+    fourier_bsk: *const c64,
     // keyswitch key
     ksk: *const u64,
     // ciphertexts dimensions
@@ -143,43 +155,58 @@ pub unsafe extern "C" fn concrete_cpu_extract_bit_lwe_ciphertext_u64(
         assert_eq!(ksk_output_dimension, bsk_input_lwe_dimension);
         assert!(64 <= number_of_bits + delta_log);
 
-        let lwe_list_out =
-            LweCiphertextList::from_raw_parts(ct_vec_out, ct_out_dimension, ct_out_count);
-
-        let lwe_in = LweCiphertext::from_raw_parts(ct_in, ct_in_dimension);
-
-        let ksk = LweKeyswitchKey::from_raw_parts(
-            ksk,
-            ksk_output_dimension,
-            ksk_input_dimension,
-            DecompParams {
-                level: ksk_decomposition_level_count,
-                base_log: ksk_decomposition_base_log,
-            },
+        let mut lwe_list_out = LweCiphertextList::from_container(
+            slice::from_raw_parts_mut(ct_vec_out, (ct_out_dimension + 1) * ct_out_count),
+            LweDimension(ct_out_dimension).to_lwe_size(),
+            CiphertextModulus::new_native(),
         );
 
-        let fourier_bsk = BootstrapKey::from_raw_parts(
-            fourier_bsk,
-            GlweParams {
-                dimension: bsk_glwe_dimension,
-                polynomial_size: bsk_polynomial_size,
-            },
-            bsk_input_lwe_dimension,
-            DecompParams {
-                level: bsk_decomposition_level_count,
-                base_log: bsk_decomposition_base_log,
-            },
+        let lwe_in = LweCiphertext::from_container(
+            slice::from_raw_parts(ct_in, ct_in_dimension + 1),
+            CiphertextModulus::new_native(),
         );
 
-        extract_bits(
-            lwe_list_out,
-            lwe_in,
-            ksk,
-            fourier_bsk,
-            delta_log,
-            number_of_bits,
+        let ksk = LweKeyswitchKey::from_container(
+            slice::from_raw_parts(
+                ksk,
+                concrete_cpu_keyswitch_key_size_u64(
+                    ksk_decomposition_level_count,
+                    ksk_input_dimension,
+                    ksk_output_dimension,
+                ),
+            ),
+            DecompositionBaseLog(ksk_decomposition_base_log),
+            DecompositionLevelCount(ksk_decomposition_level_count),
+            LweDimension(ksk_output_dimension).to_lwe_size(),
+            CiphertextModulus::new_native(),
+        );
+
+        let fourier_bsk = FourierLweBootstrapKey::from_container(
+            slice::from_raw_parts(
+                fourier_bsk,
+                concrete_cpu_fourier_bootstrap_key_size_u64(
+                    bsk_decomposition_level_count,
+                    bsk_glwe_dimension,
+                    bsk_polynomial_size,
+                    bsk_input_lwe_dimension,
+                ),
+            ),
+            LweDimension(bsk_input_lwe_dimension),
+            GlweDimension(bsk_glwe_dimension).to_glwe_size(),
+            PolynomialSize(bsk_polynomial_size),
+            DecompositionBaseLog(bsk_decomposition_base_log),
+            DecompositionLevelCount(bsk_decomposition_level_count),
+        );
+
+        extract_bits_from_lwe_ciphertext_mem_optimized(
+            &lwe_in,
+            &mut lwe_list_out,
+            &fourier_bsk,
+            &ksk,
+            DeltaLog(delta_log),
+            ExtractedBitsCount(number_of_bits),
             (*fft).as_view(),
-            DynStack::new(slice::from_raw_parts_mut(stack as _, stack_size)),
+            PodStack::new(slice::from_raw_parts_mut(stack as _, stack_size)),
         );
     })
 }
@@ -212,17 +239,21 @@ pub unsafe extern "C" fn concrete_cpu_circuit_bootstrap_boolean_vertical_packing
 
         assert_ne!(cbs_decomposition_level_count, 0);
 
-        if let Ok(scratch) = circuit_bootstrap_boolean_vertical_packing_scratch(
-            ct_in_count,
-            ct_out_count,
-            ct_in_dimension + 1,
-            lut_count,
-            bsk_output_lwe_dimension + 1,
-            fpksk_output_polynomial_size,
-            bsk_glwe_dimension + 1,
-            cbs_decomposition_level_count,
-            (*fft).as_view(),
-        ) {
+        if let Ok(scratch) =
+            circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_list_mem_optimized_requirement::<
+                u64,
+            >(
+                LweCiphertextCount(ct_in_count),
+                LweCiphertextCount(ct_out_count),
+                LweDimension(ct_in_dimension).to_lwe_size(),
+                PolynomialCount(lut_count),
+                LweDimension(bsk_output_lwe_dimension).to_lwe_size(),
+                GlweDimension(bsk_glwe_dimension).to_glwe_size(),
+                PolynomialSize(fpksk_output_polynomial_size),
+                DecompositionLevelCount(cbs_decomposition_level_count),
+                (*fft).as_view(),
+            )
+        {
             *stack_size = scratch.size_bytes();
             *stack_align = scratch.align_bytes();
             ScratchStatus::Valid
@@ -240,7 +271,7 @@ pub unsafe extern "C" fn concrete_cpu_circuit_bootstrap_boolean_vertical_packing
     // lookup table
     lut: *const u64,
     // bootstrap key
-    fourier_bsk: *const f64,
+    fourier_bsk: *const c64,
     // packing keyswitch key
     fpksk: *const u64,
     // ciphertext dimensions
@@ -262,7 +293,7 @@ pub unsafe extern "C" fn concrete_cpu_circuit_bootstrap_boolean_vertical_packing
     fpksk_input_dimension: usize,
     fpksk_output_glwe_dimension: usize,
     fpksk_output_polynomial_size: usize,
-    fpksk_count: usize,
+    _fpksk_count: usize,
     // circuit bootstrap parameters
     cbs_decomposition_level_count: usize,
     cbs_decomposition_base_log: usize,
@@ -286,86 +317,83 @@ pub unsafe extern "C" fn concrete_cpu_circuit_bootstrap_boolean_vertical_packing
         assert_ne!(cbs_decomposition_level_count, 0);
         assert!(cbs_decomposition_level_count * cbs_decomposition_base_log <= 64);
 
-        let bsk_glwe_params = GlweParams {
-            dimension: bsk_glwe_dimension,
-            polynomial_size: bsk_polynomial_size,
-        };
-
-        let luts = PolynomialList::new(
+        let luts = PolynomialList::from_container(
             slice::from_raw_parts(lut, lut_size * lut_count),
-            lut_size,
-            lut_count,
+            PolynomialSize(lut_size),
         );
 
-        let fourier_bsk = BootstrapKey::<&[f64]>::from_raw_parts(
-            fourier_bsk,
-            bsk_glwe_params,
-            bsk_input_lwe_dimension,
-            DecompParams {
-                level: bsk_decomposition_level_count,
-                base_log: bsk_decomposition_base_log,
-            },
+        let fourier_bsk = FourierLweBootstrapKey::from_container(
+            slice::from_raw_parts(
+                fourier_bsk,
+                concrete_cpu_fourier_bootstrap_key_size_u64(
+                    bsk_decomposition_level_count,
+                    bsk_glwe_dimension,
+                    bsk_polynomial_size,
+                    bsk_input_lwe_dimension,
+                ),
+            ),
+            LweDimension(bsk_input_lwe_dimension),
+            GlweDimension(bsk_glwe_dimension).to_glwe_size(),
+            PolynomialSize(bsk_polynomial_size),
+            DecompositionBaseLog(bsk_decomposition_base_log),
+            DecompositionLevelCount(bsk_decomposition_level_count),
         );
 
-        let lwe_list_out = LweCiphertextList::<&mut [u64]>::from_raw_parts(
-            ct_out_vec,
-            ct_out_dimension,
-            ct_out_count,
+        let mut lwe_list_out = LweCiphertextList::from_container(
+            slice::from_raw_parts_mut(ct_out_vec, (ct_out_dimension + 1) * ct_out_count),
+            LweDimension(ct_out_dimension).to_lwe_size(),
+            CiphertextModulus::new_native(),
         );
 
-        let lwe_list_in =
-            LweCiphertextList::<&[u64]>::from_raw_parts(ct_in_vec, ct_in_dimension, ct_in_count);
+        let lwe_list_in = LweCiphertextList::from_container(
+            slice::from_raw_parts(ct_in_vec, (ct_in_dimension + 1) * ct_in_count),
+            LweDimension(ct_in_dimension).to_lwe_size(),
+            CiphertextModulus::new_native(),
+        );
 
-        let fpksk_list = PackingKeyswitchKeyList::new(
+        let fpksk_list = LwePrivateFunctionalPackingKeyswitchKeyList::from_container(
             slice::from_raw_parts(
                 fpksk,
-                fpksk_decomposition_level_count
-                    * (fpksk_output_glwe_dimension + 1)
-                    * fpksk_output_polynomial_size
-                    * (fpksk_input_dimension + 1)
-                    * fpksk_count,
+                concrete_cpu_lwe_packing_keyswitch_key_size(
+                    fpksk_output_glwe_dimension,
+                    fpksk_output_polynomial_size,
+                    fpksk_decomposition_level_count,
+                    fpksk_input_dimension,
+                ) * (fpksk_output_glwe_dimension + 1),
             ),
-            GlweParams {
-                dimension: fpksk_output_glwe_dimension,
-                polynomial_size: fpksk_output_polynomial_size,
-            },
-            fpksk_input_dimension,
-            DecompParams {
-                level: fpksk_decomposition_level_count,
-                base_log: fpksk_decomposition_base_log,
-            },
-            fpksk_count,
+            DecompositionBaseLog(fpksk_decomposition_base_log),
+            DecompositionLevelCount(fpksk_decomposition_level_count),
+            LweDimension(fpksk_input_dimension).to_lwe_size(),
+            GlweDimension(fpksk_output_glwe_dimension).to_glwe_size(),
+            PolynomialSize(fpksk_output_polynomial_size),
+            CiphertextModulus::new_native(),
         );
 
-        circuit_bootstrap_boolean_vertical_packing(
-            luts,
-            fourier_bsk,
-            lwe_list_out,
-            lwe_list_in,
-            fpksk_list,
-            DecompParams {
-                level: cbs_decomposition_level_count,
-                base_log: cbs_decomposition_base_log,
-            },
+        circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_list_mem_optimized(
+            &lwe_list_in,
+            &mut lwe_list_out,
+            &luts,
+            &fourier_bsk,
+            &fpksk_list,
+            DecompositionBaseLog(cbs_decomposition_base_log),
+            DecompositionLevelCount(cbs_decomposition_level_count),
             (*fft).as_view(),
-            DynStack::new(slice::from_raw_parts_mut(stack as _, stack_size)),
+            PodStack::new(slice::from_raw_parts_mut(stack as _, stack_size)),
         );
     })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_lwe_packing_keyswitch_key_size(
-    glwe_dimension: usize,
+    output_glwe_dimension: usize,
     polynomial_size: usize,
     decomposition_level_count: usize,
-    input_dimension: usize,
+    input_lwe_dimension: usize,
 ) -> usize {
-    PackingKeyswitchKey::<&[u64]>::data_len(
-        GlweParams {
-            dimension: glwe_dimension,
-            polynomial_size,
-        },
-        decomposition_level_count,
-        input_dimension,
+    lwe_pfpksk_size(
+        LweDimension(input_lwe_dimension).to_lwe_size(),
+        DecompositionLevelCount(decomposition_level_count),
+        GlweDimension(output_glwe_dimension).to_glwe_size(),
+        PolynomialSize(polynomial_size),
     )
 }

@@ -138,6 +138,8 @@ add_mlir_python_common_capi_library(
   ConcretelangBindingsPythonSources
   ConcretelangBindingsPythonExtension)
 
+target_include_directories(ConcretelangBindingsPythonCAPI PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
+
 # Bundle the MLIR python sources into our package. The MLIR API is position independent, so we explicitly output it to
 # the mlir/ folder as a temporary measure. It will eventually migrate under the concretelang/ folder and be accessible
 # under the unified "import concretelang..." namespace.

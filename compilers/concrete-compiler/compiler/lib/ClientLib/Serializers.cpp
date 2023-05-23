@@ -7,6 +7,8 @@
 #include <iostream>
 #include <stdlib.h>
 
+#include "concrete-cpu.h"
+#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Common/Error.h"
@@ -65,20 +67,27 @@ LweSecretKey readLweSecretKey(std::istream &istream) {
 // KeyswitchKeyParam ////////////////////////////
 
 std::ostream &operator<<(std::ostream &ostream, const KeyswitchKeyParam param) {
-  // TODO keys id
+  writeWord(ostream, param.inputSecretKeyID);
+  writeWord(ostream, param.outputSecretKeyID);
+  writeWord(ostream, param.compression);
   writeWord(ostream, param.level);
   writeWord(ostream, param.baseLog);
   writeWord(ostream, param.variance);
+  writeWord(ostream, param.inputLweDimension);
+  writeWord(ostream, param.outputLweDimension);
   return ostream;
 }
 
 std::istream &operator>>(std::istream &istream, KeyswitchKeyParam &param) {
-  // TODO keys id
-  param.outputSecretKeyID = 1234;
-  param.inputSecretKeyID = 1234;
+  readWord(istream, param.inputSecretKeyID);
+  readWord(istream, param.outputSecretKeyID);
+  readWord(istream, param.compression);
   readWord(istream, param.level);
   readWord(istream, param.baseLog);
   readWord(istream, param.variance);
+  readWord(istream, param.inputLweDimension);
+  readWord(istream, param.outputLweDimension);
+
   return istream;
 }
 
@@ -95,13 +104,25 @@ LweKeyswitchKey readLweKeyswitchKey(std::istream &istream) {
   istream >> param;
   auto buffer = std::make_shared<std::vector<uint64_t>>();
   istream >> buffer;
-  return LweKeyswitchKey(buffer, param);
+  if (!param.compression) {
+    return LweKeyswitchKey(buffer, param);
+  } else {
+    auto decompressed = std::make_shared<std::vector<uint64_t>>();
+    struct Uint128 u128;
+    getRandomSeed(&u128);
+    concrete_cpu_decompress_seeded_lwe_keyswitch_key_u64(
+        decompressed->data(), buffer->data(), param.inputLweDimension,
+        param.outputLweDimension, param.level, param.baseLog, u128);
+    return LweKeyswitchKey(decompressed, param);
+  }
 }
 
 // BootstrapKeyParam ////////////////////////////
 
 std::ostream &operator<<(std::ostream &ostream, const BootstrapKeyParam param) {
-  // TODO keys id
+  writeWord(ostream, param.inputSecretKeyID);
+  writeWord(ostream, param.outputSecretKeyID);
+  writeWord(ostream, param.compression);
   writeWord(ostream, param.level);
   writeWord(ostream, param.baseLog);
   writeWord(ostream, param.glweDimension);
@@ -112,7 +133,9 @@ std::ostream &operator<<(std::ostream &ostream, const BootstrapKeyParam param) {
 }
 
 std::istream &operator>>(std::istream &istream, BootstrapKeyParam &param) {
-  // TODO keys id
+  readWord(istream, param.inputSecretKeyID);
+  readWord(istream, param.outputSecretKeyID);
+  readWord(istream, param.compression);
   readWord(istream, param.level);
   readWord(istream, param.baseLog);
   readWord(istream, param.glweDimension);
@@ -135,7 +158,18 @@ LweBootstrapKey readLweBootstrapKey(std::istream &istream) {
   istream >> param;
   auto buffer = std::make_shared<std::vector<uint64_t>>();
   istream >> buffer;
-  return LweBootstrapKey(buffer, param);
+  if (!param.compression) {
+    return LweBootstrapKey(buffer, param);
+  } else {
+    auto decompressed = std::make_shared<std::vector<uint64_t>>();
+    struct Uint128 u128;
+    getRandomSeed(&u128);
+    concrete_cpu_decompress_seeded_lwe_bootstrap_key_u64(
+        decompressed->data(), buffer->data(), param.inputLweDimension,
+        param.polynomialSize, param.glweDimension, param.level, param.baseLog,
+        u128);
+    return LweBootstrapKey(decompressed, param);
+  }
 }
 
 // PackingKeyswitchKeyParam ////////////////////////////
@@ -144,6 +178,7 @@ std::ostream &operator<<(std::ostream &ostream,
                          const PackingKeyswitchKeyParam param) {
 
   // TODO keys id
+  writeWord(ostream, param.compression);
   writeWord(ostream, param.level);
   writeWord(ostream, param.baseLog);
   writeWord(ostream, param.glweDimension);
@@ -160,6 +195,7 @@ std::istream &operator>>(std::istream &istream,
   // TODO keys id
   param.outputSecretKeyID = 1234;
   param.inputSecretKeyID = 1234;
+  readWord(istream, param.compression);
   readWord(istream, param.level);
   readWord(istream, param.baseLog);
   readWord(istream, param.glweDimension);
@@ -227,10 +263,12 @@ std::unique_ptr<KeySet> readKeySet(std::istream &istream) {
     return std::unique_ptr<KeySet>(nullptr);
   }
 
-  auto csprng = ConcreteCSPRNG(0);
+  auto secretCsprng = SecretCSPRNG(0);
+  auto encryptionCsprng = EncryptionCSPRNG(0);
   auto keySet =
       KeySet::fromKeys(clientParameters.get(), secretKeys, bootstrapKeys,
-                       keyswitchKeys, packingKeyswitchKeys, std::move(csprng));
+                       keyswitchKeys, packingKeyswitchKeys,
+                       std::move(secretCsprng), std::move(encryptionCsprng));
 
   return std::move(keySet.value());
 }

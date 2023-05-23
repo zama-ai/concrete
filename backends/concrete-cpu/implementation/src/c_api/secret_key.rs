@@ -1,29 +1,26 @@
-use super::types::{Csprng, CsprngVtable};
-use super::utils::nounwind;
-use crate::implementation::types::{
-    CsprngMut, DecompParams, GgswCiphertext, GlweCiphertext, GlweParams, GlweSecretKey,
-    LweCiphertext, LweSecretKey,
-};
-use std::slice;
+use concrete_csprng::generators::SoftwareRandomGenerator;
+use tfhe::core_crypto::commons::math::random::{CompressionSeed, Seed};
+use tfhe::core_crypto::prelude::*;
 
-#[no_mangle]
-pub unsafe extern "C" fn concrete_cpu_secret_key_size_u64(lwe_dimension: usize) -> usize {
-    LweSecretKey::<&[u64]>::data_len(lwe_dimension)
-}
+use super::types::{EncCsprng, SecCsprng, Uint128};
+use super::utils::nounwind;
+use core::slice;
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_init_secret_key_u64(
     sk: *mut u64,
     dimension: usize,
-    csprng: *mut Csprng,
-    csprng_vtable: *const CsprngVtable,
+    csprng: *mut SecCsprng,
 ) {
     nounwind(|| {
-        let csprng = CsprngMut::new(csprng, csprng_vtable);
-
-        let sk = LweSecretKey::<&mut [u64]>::from_raw_parts(sk, dimension);
-
-        sk.fill_with_new_key(csprng);
+        let mut sk = LweSecretKey::from_container(slice::from_raw_parts_mut(
+            sk,
+            concrete_cpu_lwe_secret_key_size_u64(dimension),
+        ));
+        tfhe::core_crypto::algorithms::generate_binary_lwe_secret_key(
+            &mut sk,
+            &mut *(csprng as *mut SecretRandomGenerator<SoftwareRandomGenerator>),
+        );
     })
 }
 
@@ -35,23 +32,72 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_lwe_ciphertext_u64(
     lwe_out: *mut u64,
     // plaintext
     input: u64,
-    // lwe size
+    // lwe dimension
     lwe_dimension: usize,
     // encryption parameters
     variance: f64,
     // csprng
-    csprng: *mut Csprng,
-    csprng_vtable: *const CsprngVtable,
+    csprng: *mut EncCsprng,
 ) {
     nounwind(|| {
-        let lwe_sk = LweSecretKey::from_raw_parts(lwe_sk, lwe_dimension);
-        let lwe_out = LweCiphertext::from_raw_parts(lwe_out, lwe_dimension);
-        lwe_sk.encrypt_lwe(
-            lwe_out,
-            input,
-            variance,
-            CsprngMut::new(csprng, csprng_vtable),
+        let lwe_sk = LweSecretKey::from_container(slice::from_raw_parts(
+            lwe_sk,
+            concrete_cpu_lwe_secret_key_size_u64(lwe_dimension),
+        ));
+        let mut lwe_out = LweCiphertext::from_container(
+            slice::from_raw_parts_mut(lwe_out, concrete_cpu_lwe_ciphertext_size_u64(lwe_dimension)),
+            CiphertextModulus::new_native(),
         );
+        encrypt_lwe_ciphertext(
+            &lwe_sk,
+            &mut lwe_out,
+            Plaintext(input),
+            Variance::from_variance(variance),
+            &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
+        );
+    });
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_encrypt_seeded_lwe_ciphertext_u64(
+    // secret key
+    lwe_sk: *const u64,
+    // seeded ciphertext
+    seeded_lwe_out: *mut u64,
+    // plaintext
+    input: u64,
+    // lwe dimension
+    lwe_dimension: usize,
+    // compression seed
+    compression_seed: Uint128,
+    // encryption parameters
+    variance: f64,
+) {
+    nounwind(|| {
+        let lwe_sk = LweSecretKey::from_container(slice::from_raw_parts(
+            lwe_sk,
+            concrete_cpu_lwe_secret_key_size_u64(lwe_dimension),
+        ));
+
+        let seed = Seed(u128::from_le_bytes(compression_seed.little_endian_bytes));
+
+        let mut seeded_lwe_out = SeededLweCiphertext::from_scalar(
+            *seeded_lwe_out,
+            LweDimension(lwe_dimension).to_lwe_size(),
+            CompressionSeed { seed },
+            CiphertextModulus::new_native(),
+        );
+
+        let mut boxed_seeder = new_seeder();
+        let seeder = boxed_seeder.as_mut();
+
+        encrypt_seeded_lwe_ciphertext(
+            &lwe_sk,
+            &mut seeded_lwe_out,
+            Plaintext(input),
+            Variance::from_variance(variance),
+            seeder,
+        )
     });
 }
 
@@ -74,22 +120,32 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_ggsw_ciphertext_u64(
     // encryption parameters
     variance: f64,
     // csprng
-    csprng: *mut Csprng,
-    csprng_vtable: *const CsprngVtable,
+    csprng: *mut EncCsprng,
 ) {
     nounwind(|| {
-        let glwe_params = GlweParams {
-            dimension: glwe_dimension,
-            polynomial_size,
-        };
-        let glwe_sk = GlweSecretKey::from_raw_parts(glwe_sk, glwe_params);
-        let decomp_params = DecompParams { level, base_log };
-        let ggsw_out = GgswCiphertext::from_raw_parts(ggsw_out, glwe_params, decomp_params);
-        glwe_sk.encrypt_constant_ggsw(
-            ggsw_out,
-            input,
-            variance,
-            CsprngMut::new(csprng, csprng_vtable),
+        let glwe_sk = GlweSecretKey::from_container(
+            slice::from_raw_parts(
+                glwe_sk,
+                concrete_cpu_glwe_secret_key_size_u64(glwe_dimension, polynomial_size),
+            ),
+            PolynomialSize(polynomial_size),
+        );
+        let mut ggsw_out = GgswCiphertext::from_container(
+            slice::from_raw_parts_mut(
+                ggsw_out,
+                concrete_cpu_ggsw_ciphertext_size_u64(glwe_dimension, polynomial_size, level),
+            ),
+            GlweDimension(glwe_dimension).to_glwe_size(),
+            PolynomialSize(polynomial_size),
+            DecompositionBaseLog(base_log),
+            CiphertextModulus::new_native(),
+        );
+        encrypt_constant_ggsw_ciphertext(
+            &glwe_sk,
+            &mut ggsw_out,
+            Plaintext(input),
+            Variance::from_variance(variance),
+            &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
         );
     });
 }
@@ -106,31 +162,125 @@ pub unsafe extern "C" fn concrete_cpu_decrypt_lwe_ciphertext_u64(
     plaintext: *mut u64,
 ) {
     nounwind(|| {
-        let lwe_sk = LweSecretKey::from_raw_parts(lwe_sk, lwe_dimension);
-        let lwe_ct_in = LweCiphertext::from_raw_parts(lwe_ct_in, lwe_dimension);
-        *plaintext = lwe_sk.decrypt_lwe(lwe_ct_in);
+        let lwe_sk = LweSecretKey::from_container(slice::from_raw_parts(
+            lwe_sk,
+            concrete_cpu_lwe_secret_key_size_u64(lwe_dimension),
+        ));
+        let lwe_ct_in = LweCiphertext::from_container(
+            slice::from_raw_parts(
+                lwe_ct_in,
+                concrete_cpu_lwe_ciphertext_size_u64(lwe_dimension),
+            ),
+            CiphertextModulus::new_native(),
+        );
+        *plaintext = decrypt_lwe_ciphertext(&lwe_sk, &lwe_ct_in).0;
+    });
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_decompress_seeded_lwe_ciphertext_u64(
+    // ciphertext
+    lwe_out: *mut u64,
+    // seeded ciphertext
+    seeded_lwe_in: *const u64,
+    // lwe dimension
+    lwe_dimension: usize,
+    // compression seed
+    compression_seed: Uint128,
+) {
+    nounwind(|| {
+        let mut lwe_out = LweCiphertext::from_container(
+            slice::from_raw_parts_mut(lwe_out, concrete_cpu_lwe_ciphertext_size_u64(lwe_dimension)),
+            CiphertextModulus::new_native(),
+        );
+
+        let seed = Seed(u128::from_le_bytes(compression_seed.little_endian_bytes));
+
+        let seeded_lwe_in = SeededLweCiphertext::from_scalar(
+            *seeded_lwe_in,
+            LweDimension(lwe_dimension).to_lwe_size(),
+            CompressionSeed { seed },
+            CiphertextModulus::new_native(),
+        );
+
+        decompress_seeded_lwe_ciphertext::<_, _, SoftwareRandomGenerator>(
+            &mut lwe_out,
+            &seeded_lwe_in,
+        )
     });
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_decrypt_glwe_ciphertext_u64(
     glwe_sk: *const u64,
-    polynomial_out: *mut u64,
+    output: *mut u64,
     glwe_ct_in: *const u64,
     glwe_dimension: usize,
     polynomial_size: usize,
 ) {
     nounwind(|| {
-        let glwe_params = GlweParams {
-            dimension: glwe_dimension,
-            polynomial_size,
-        };
+        let glwe_sk = GlweSecretKey::from_container(
+            slice::from_raw_parts(
+                glwe_sk,
+                concrete_cpu_glwe_secret_key_size_u64(glwe_dimension, polynomial_size),
+            ),
+            PolynomialSize(polynomial_size),
+        );
 
-        let lwe_sk = GlweSecretKey::from_raw_parts(glwe_sk, glwe_params);
-        let polynomial_out = slice::from_raw_parts_mut(polynomial_out, polynomial_size);
+        let glwe_ct_in = GlweCiphertext::from_container(
+            slice::from_raw_parts(
+                glwe_ct_in,
+                concrete_cpu_glwe_ciphertext_size_u64(glwe_dimension, polynomial_size),
+            ),
+            PolynomialSize(polynomial_size),
+            CiphertextModulus::new_native(),
+        );
 
-        let glwe_ct_in = GlweCiphertext::from_raw_parts(glwe_ct_in, glwe_params);
+        let mut output =
+            PlaintextList::from_container(slice::from_raw_parts_mut(output, polynomial_size));
 
-        lwe_sk.decrypt_glwe_inplace(glwe_ct_in, polynomial_out);
+        decrypt_glwe_ciphertext(&glwe_sk, &glwe_ct_in, &mut output);
     });
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_lwe_secret_key_size_u64(lwe_dimension: usize) -> usize {
+    lwe_dimension
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_glwe_secret_key_size_u64(
+    lwe_dimension: usize,
+    polynomial_size: usize,
+) -> usize {
+    lwe_dimension * polynomial_size
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_lwe_ciphertext_size_u64(lwe_dimension: usize) -> usize {
+    lwe_dimension + 1
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_glwe_ciphertext_size_u64(
+    glwe_dimension: usize,
+    polynomial_size: usize,
+) -> usize {
+    glwe_ciphertext_size(
+        GlweDimension(glwe_dimension).to_glwe_size(),
+        PolynomialSize(polynomial_size),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_ggsw_ciphertext_size_u64(
+    glwe_dimension: usize,
+    polynomial_size: usize,
+    decomposition_level_count: usize,
+) -> usize {
+    ggsw_ciphertext_size(
+        GlweDimension(glwe_dimension).to_glwe_size(),
+        PolynomialSize(polynomial_size),
+        DecompositionLevelCount(decomposition_level_count),
+    )
 }

@@ -265,7 +265,7 @@ protected:
 
 private:
   ClientParameters _clientParameters;
-  concretelang::clientlib::ConcreteCSPRNG csprng;
+  concretelang::clientlib::SoftCSPRNG csprng;
 };
 
 } // namespace clientlib

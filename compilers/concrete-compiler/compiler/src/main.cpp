@@ -120,6 +120,12 @@ llvm::cl::opt<bool> emitGPUOps(
         "enable/disable generating GPU operations (Disabled by default)"),
     llvm::cl::init<bool>(false));
 
+llvm::cl::opt<bool>
+    compressInputs("compress-inputs",
+                   llvm::cl::desc("Force the use of compressed (seeded) input "
+                                  "evaluation keys and ciphertexts"),
+                   llvm::cl::init<bool>(false));
+
 llvm::cl::list<std::string> passes(
     "passes",
     llvm::cl::desc("Specify the passes to run (use only for compiler tests)"),
@@ -404,6 +410,7 @@ cmdlineCompilationOptions() {
   options.optimizeTFHE = cmdline::optimizeTFHE;
   options.simulate = cmdline::simulate;
   options.emitGPUOps = cmdline::emitGPUOps;
+  options.compressInputs = cmdline::compressInputs;
   options.chunkIntegers = cmdline::chunkIntegers;
   options.chunkSize = cmdline::chunkSize;
   options.chunkWidth = cmdline::chunkWidth;
@@ -744,7 +751,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   if (cmdline::action == Action::COMPILE) {
     auto err = outputLib->emitArtifacts(
         /*sharedLib=*/true, /*staticLib=*/true,
-        /*clientParameters=*/true, /*compilationFeedback=*/true,
+        /*clientsParameters=*/true, /*compilationFeedback=*/true,
         /*cppHeader=*/true);
     if (err) {
       return mlir::failure();

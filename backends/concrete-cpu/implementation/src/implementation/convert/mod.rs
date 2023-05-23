@@ -1,11 +1,11 @@
-use crate::implementation::{assume_init_mut, from_torus};
+use crate::implementation::from_torus;
 
-use super::as_mut_uninit;
-use super::fft::{FftView, Twisties};
-use bytemuck::cast_slice_mut;
-use concrete_fft::c64;
+//use super::as_mut_uninit;
+use super::fft::Twisties;
+//use bytemuck::cast_slice_mut;
+//use concrete_fft::c64;
 use core::mem::MaybeUninit;
-use dyn_stack::{DynStack, SizeOverflow, StackReq};
+//use dyn_stack::{DynStack, SizeOverflow, StackReq};
 use pulp::{as_arrays, as_arrays_mut};
 
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
@@ -118,6 +118,7 @@ fn convert_add_backward_torus_u64(
     convert_add_backward_torus_u64_scalar(out_re, out_im, inp, twisties);
 }
 
+/*
 impl FftView<'_> {
     /// Returns the polynomial size that this FFT was made for.
     pub fn polynomial_size(self) -> usize {
@@ -263,4 +264,4 @@ impl FftView<'_> {
         let (standard_re, standard_im) = standard.split_at_mut(n / 2);
         conv_fn(standard_re, standard_im, &tmp, self.twisties);
     }
-}
+} */

@@ -23,20 +23,26 @@ using concretelang::error::StringError;
 
 class KeySet {
 public:
-  KeySet(ClientParameters clientParameters, CSPRNG &&csprng)
-      : csprng(std::move(csprng)), _clientParameters(clientParameters){};
+  KeySet(ClientParameters clientParameters, SecretCSPRNG &&secretCsprng,
+         EncryptionCSPRNG &&encryptionCsprng)
+      : secretCsprng(std::move(secretCsprng)),
+        encryptionCsprng(std::move(encryptionCsprng)),
+        _clientParameters(clientParameters){};
   KeySet(KeySet &other) = delete;
 
   /// Generate a KeySet from a ClientParameters specification.
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
-  generate(ClientParameters clientParameters, CSPRNG &&csprng);
+  generate(ClientParameters clientParameters, SecretCSPRNG &&secretCsprng,
+           EncryptionCSPRNG &&encryptionCsprng);
 
   /// Create a KeySet from a set of given keys
-  static outcome::checked<std::unique_ptr<KeySet>, StringError> fromKeys(
-      ClientParameters clientParameters, std::vector<LweSecretKey> secretKeys,
-      std::vector<LweBootstrapKey> bootstrapKeys,
-      std::vector<LweKeyswitchKey> keyswitchKeys,
-      std::vector<PackingKeyswitchKey> packingKeyswitchKeys, CSPRNG &&csprng);
+  static outcome::checked<std::unique_ptr<KeySet>, StringError>
+  fromKeys(ClientParameters clientParameters,
+           std::vector<LweSecretKey> secretKeys,
+           std::vector<LweBootstrapKey> bootstrapKeys,
+           std::vector<LweKeyswitchKey> keyswitchKeys,
+           std::vector<PackingKeyswitchKey> packingKeyswitchKeys,
+           SecretCSPRNG &&secretCsprng, EncryptionCSPRNG &&encryptionCsprng);
 
   /// Returns the ClientParameters associated with the KeySet.
   ClientParameters clientParameters() const { return _clientParameters; }
@@ -98,7 +104,8 @@ protected:
   friend class KeySetCache;
 
 private:
-  CSPRNG csprng;
+  SecretCSPRNG secretCsprng;
+  EncryptionCSPRNG encryptionCsprng;
 
   ///////////////////////////////////////////////
   // Keys mappings

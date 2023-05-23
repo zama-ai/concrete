@@ -54,7 +54,7 @@ RuntimeContext::RuntimeContext(clientlib::EvaluationKeys evaluationKeys)
       auto scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
 
       // Allocate the fourier_bootstrap_key
-      auto fourier_data = std::make_shared<std::vector<double>>();
+      auto fourier_data = std::make_shared<std::vector<std::complex<double>>>();
       fourier_data->resize(bsk.size());
       auto bsk_data = bsk.buffer();
 

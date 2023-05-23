@@ -24,9 +24,9 @@ TEST_P(KeySetTest, encrypt_decrypt) {
 
   // Generate the client keySet
   ASSERT_ASSIGN_OUTCOME_VALUE(
-      keySet,
-      clientlib::KeySet::generate(
-          clientParameters, concretelang::clientlib::ConcreteCSPRNG(seed)));
+      keySet, clientlib::KeySet::generate(
+                  clientParameters, concretelang::clientlib::SecretCSPRNG(seed),
+                  concretelang::clientlib::EncryptionCSPRNG(seed)));
 
   // Allocate the ciphertext
   uint64_t *ciphertext = nullptr;

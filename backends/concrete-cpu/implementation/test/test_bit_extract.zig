@@ -12,7 +12,7 @@ const cpu = @cImport({
     @cInclude("concrete-cpu.h");
 });
 
-fn test3(csprng: *cpu.Csprng) !void {
+fn test3(sec_csprng: *cpu.SecCsprng, enc_csprng: *cpu.EncCsprng) !void {
     const polynomial_size: usize = 1024;
     const glwe_dim: usize = 1;
     const small_dim: usize = 585;
@@ -32,13 +32,13 @@ fn test3(csprng: *cpu.Csprng) !void {
     const big_dim = glwe_dim * polynomial_size;
 
     const small_sk = try allocator.alloc(u64, small_dim);
-    cpu.concrete_cpu_init_secret_key_u64(small_sk.ptr, small_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+    cpu.concrete_cpu_init_secret_key_u64(small_sk.ptr, small_dim, sec_csprng);
 
     const big_sk = try allocator.alloc(u64, big_dim);
-    cpu.concrete_cpu_init_secret_key_u64(big_sk.ptr, big_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+    cpu.concrete_cpu_init_secret_key_u64(big_sk.ptr, big_dim, sec_csprng);
 
     const bsk_f = try common.new_bsk(
-        csprng,
+        enc_csprng,
         small_dim,
         glwe_dim,
         polynomial_size,
@@ -51,7 +51,7 @@ fn test3(csprng: *cpu.Csprng) !void {
     );
     defer allocator.free(bsk_f);
 
-    const ksk_size = cpu.concrete_cpu_keyswitch_key_size_u64(level_ksk, base_log_ksk, big_dim, small_dim);
+    const ksk_size = cpu.concrete_cpu_keyswitch_key_size_u64(level_ksk, big_dim, small_dim);
 
     const ksk = try allocator.alloc(u64, ksk_size);
     defer allocator.free(ksk);
@@ -65,8 +65,7 @@ fn test3(csprng: *cpu.Csprng) !void {
         level_ksk,
         base_log_ksk,
         variance,
-        csprng,
-        &cpu.CONCRETE_CSPRNG_VTABLE,
+        enc_csprng,
     );
 
     const delta_log = 64 - number_of_bits_of_message;
@@ -89,8 +88,7 @@ fn test3(csprng: *cpu.Csprng) !void {
         message,
         big_dim,
         variance,
-        csprng,
-        &cpu.CONCRETE_CSPRNG_VTABLE,
+        enc_csprng,
     );
 
     const out_cts = try allocator.alloc(u64, (small_dim + 1) * number_of_bits_to_extract);
@@ -151,14 +149,23 @@ fn test3(csprng: *cpu.Csprng) !void {
 }
 
 test "bit_extract" {
-    var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
-    defer c.free(raw_csprng);
-    const csprng = @ptrCast(*cpu.Csprng, raw_csprng);
-    cpu.concrete_cpu_construct_concrete_csprng(
-        csprng,
+    var raw_sec_csprng = c.aligned_alloc(cpu.SECRET_CSPRNG_ALIGN, cpu.SECRET_CSPRNG_SIZE);
+    defer c.free(raw_sec_csprng);
+    const sec_csprng = @ptrCast(*cpu.SecCsprng, raw_sec_csprng);
+    cpu.concrete_cpu_construct_secret_csprng(
+        sec_csprng,
         cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },
     );
-    defer cpu.concrete_cpu_destroy_concrete_csprng(csprng);
+    defer cpu.concrete_cpu_destroy_secret_csprng(sec_csprng);
 
-    try test3(csprng);
+    var raw_enc_csprng = c.aligned_alloc(cpu.ENCRYPTION_CSPRNG_ALIGN, cpu.ENCRYPTION_CSPRNG_SIZE);
+    defer c.free(raw_enc_csprng);
+    const enc_csprng = @ptrCast(*cpu.EncCsprng, raw_enc_csprng);
+    cpu.concrete_cpu_construct_encryption_csprng(
+        enc_csprng,
+        cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },
+    );
+    defer cpu.concrete_cpu_destroy_encryption_csprng(enc_csprng);
+
+    try test3(sec_csprng, enc_csprng);
 }

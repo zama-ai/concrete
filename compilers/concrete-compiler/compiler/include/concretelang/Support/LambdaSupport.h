@@ -392,14 +392,16 @@ public:
   /// Build the client KeySet from the client parameters.
   static llvm::Expected<std::unique_ptr<clientlib::KeySet>>
   keySet(clientlib::ClientParameters clientParameters,
-         std::optional<clientlib::KeySetCache> cache, uint64_t seed_msb = 0,
-         uint64_t seed_lsb = 0) {
+         std::optional<clientlib::KeySetCache> cache,
+         uint64_t secret_seed_msb = 0, uint64_t secret_seed_lsb = 0,
+         uint64_t encryption_seed_msb = 0, uint64_t encryption_seed_lsb = 0) {
     std::shared_ptr<clientlib::KeySetCache> cachePtr;
     if (cache.has_value()) {
       cachePtr = std::make_shared<clientlib::KeySetCache>(cache.value());
     }
-    auto keySet = clientlib::KeySetCache::generate(cachePtr, clientParameters,
-                                                   seed_msb, seed_lsb);
+    auto keySet = clientlib::KeySetCache::generate(
+        cachePtr, clientParameters, secret_seed_msb, secret_seed_lsb,
+        encryption_seed_msb, encryption_seed_lsb);
     if (keySet.has_error()) {
       return StreamStringError(keySet.error().mesg);
     }

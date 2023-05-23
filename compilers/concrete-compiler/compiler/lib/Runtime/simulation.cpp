@@ -27,7 +27,7 @@ uint64_t from_torus(double torus) {
 // single one?
 uint64_t gaussian_noise(double mean, double variance) {
   uint64_t random_gaussian_buff[2];
-  auto csprng = concretelang::clientlib::ConcreteCSPRNG(0);
+  auto csprng = concretelang::clientlib::SoftCSPRNG(0);
   concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, variance,
                                          csprng.ptr);
   return random_gaussian_buff[0];

@@ -67,7 +67,8 @@ template <typename Info> std::string outputLibFromThis(Info *info) {
 }
 
 template <typename Lambda> Lambda load(std::string outputLib) {
-  auto l = Lambda::load(FUNCNAME, outputLib, 0, 0, getTestKeySetCachePtr());
+  auto l =
+      Lambda::load(FUNCNAME, outputLib, 0, 0, 0, 0, getTestKeySetCachePtr());
   assert(l.has_value());
   return l.value();
 }
@@ -86,7 +87,7 @@ func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   auto maybeLambda = MyLambda::load("main", jsonPath);
   ASSERT_TRUE(maybeLambda.has_value());
   auto lambda = maybeLambda.value();
-  auto maybeKeySet = lambda.keySet(getTestKeySetCachePtr(), 0, 0);
+  auto maybeKeySet = lambda.keySet(getTestKeySetCachePtr(), 0, 0, 0, 0);
   ASSERT_TRUE(maybeKeySet.has_value());
   std::shared_ptr<KeySet> keySet = std::move(maybeKeySet.value());
   auto maybePublicArguments = lambda.publicArguments(1, *keySet);
@@ -367,7 +368,7 @@ func.func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>)
   ASSERT_TRUE(sLambda_);
   auto cLambda = cLambda_.value();
   auto sLambda = sLambda_.value();
-  auto keySet_ = cLambda.keySet(getTestKeySetCachePtr(), 0, 0);
+  auto keySet_ = cLambda.keySet(getTestKeySetCachePtr(), 0, 0, 0, 0);
   ASSERT_TRUE(keySet_.has_value());
   std::shared_ptr<KeySet> keySet = std::move(keySet_.value());
   auto testLambda = TestTypedLambdaFrom(cLambda, sLambda, keySet);

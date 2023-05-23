@@ -40,8 +40,9 @@ public:
 
   /// Generate or get from cache a KeySet suitable for this ClientLambda
   outcome::checked<std::unique_ptr<KeySet>, StringError>
-  keySet(std::shared_ptr<KeySetCache> optionalCache, uint64_t seed_msb,
-         uint64_t seed_lsb);
+  keySet(std::shared_ptr<KeySetCache> optionalCache, uint64_t secret_seed_msb,
+         uint64_t secret_seed_lsb, uint64_t encryption_seed_msb,
+         uint64_t encryption_seed_lsb);
 
   outcome::checked<std::vector<decrypted_scalar_t>, StringError>
   decryptReturnedValues(KeySet &keySet, PublicResult &result);

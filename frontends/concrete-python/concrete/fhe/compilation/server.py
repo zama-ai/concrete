@@ -5,6 +5,7 @@ Declaration of `Server` class.
 # pylint: disable=import-error,no-member,no-name-in-module
 
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -102,6 +103,7 @@ class Server:
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
+        options.set_compress_inputs(configuration.compress_inputs)
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member
@@ -163,8 +165,15 @@ class Server:
             output_dir_path = Path(output_dir.name)
             # pylint: enable=consider-using-with
 
+            runtime_library_path = None
+            compiler_build_dir = os.environ.get("COMPILER_BUILD_DIRECTORY")
+            if compiler_build_dir is not None and compiler_build_dir != "":
+                runtime_library_path = compiler_build_dir + "/lib/libConcretelangRuntime.so"
             support = LibrarySupport.new(
-                str(output_dir_path), generateCppHeader=False, generateStaticLib=False
+                str(output_dir_path),
+                runtime_library_path,
+                generateCppHeader=False,
+                generateStaticLib=False,
             )
             compilation_result = support.compile(mlir, options)
             server_lambda = support.load_server_lambda(compilation_result)

@@ -426,7 +426,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       auto clientParametersOrErr =
           mlir::concretelang::createClientParametersFromTFHE(
               module, funcName, options.optimizerConfig.security,
-              options.encodings.value(), maybeCrt);
+              options.encodings.value(), options.compressInputs, maybeCrt);
 
       if (!clientParametersOrErr)
         return clientParametersOrErr.takeError();
@@ -893,9 +893,10 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
       extraArgs.push_back("-rpath " + rpath);
     }
 #else // Linux
-    extraArgs.push_back(runtimeLibraryPath);
-    if (!rpath.empty()) {
-      extraArgs.push_back("-rpath=" + rpath);
+    if (!rpath.empty() && !runtimeLibraryName.empty()) {
+      extraArgs.push_back("-l" + runtimeLibraryName);
+      extraArgs.push_back("-L" + rpath);
+      extraArgs.push_back("-rpath " + rpath);
       // Use RPATH instead of RUNPATH for transitive dependencies
       extraArgs.push_back("--disable-new-dtags");
     }

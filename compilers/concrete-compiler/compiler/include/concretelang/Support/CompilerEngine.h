@@ -69,6 +69,8 @@ struct CompilationOptions {
   bool simulate;
   /// use GPU during execution by generating GPU operations if possible
   bool emitGPUOps;
+  bool compressInputs;
+
   std::optional<std::vector<int64_t>> fhelinalgTileSizes;
 
   std::optional<std::string> clientParametersFuncName;
@@ -92,7 +94,7 @@ struct CompilationOptions {
         maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
         unrollLoopsWithSDFGConvertibleOps(false), dataflowParallelize(false),
         optimizeTFHE(true), simulate(false), emitGPUOps(false),
-        clientParametersFuncName(std::nullopt),
+        compressInputs(false), clientParametersFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
         chunkSize(4), chunkWidth(2), encodings(std::nullopt){};
 

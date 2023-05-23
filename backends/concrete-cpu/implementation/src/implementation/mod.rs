@@ -39,22 +39,11 @@ macro_rules! izip {
     };
 }
 
-mod ciphertext;
-
 mod convert;
-mod decomposer;
 mod decomposition;
 pub mod fft;
-pub mod fpks;
-mod polynomial;
 
-pub mod types;
-
-pub mod bootstrap;
-pub mod cmux;
 pub mod encrypt;
-pub mod external_product;
-pub mod keyswitch;
 pub mod wop;
 
 /// Convert a mutable slice reference to an uninitialized mutable slice reference.

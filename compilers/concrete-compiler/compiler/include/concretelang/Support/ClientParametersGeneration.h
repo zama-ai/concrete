@@ -19,11 +19,10 @@ namespace concretelang {
 using ::concretelang::clientlib::ChunkInfo;
 using ::concretelang::clientlib::ClientParameters;
 
-llvm::Expected<ClientParameters>
-createClientParametersFromTFHE(mlir::ModuleOp module,
-                               llvm::StringRef functionName, int bitsOfSecurity,
-                               encodings::CircuitEncodings encodings,
-                               std::optional<CRTDecomposition> maybeCrt);
+llvm::Expected<ClientParameters> createClientParametersFromTFHE(
+    mlir::ModuleOp module, llvm::StringRef functionName, int bitsOfSecurity,
+    encodings::CircuitEncodings encodings, bool compressInputs,
+    std::optional<CRTDecomposition> maybeCrt);
 
 } // namespace concretelang
 } // namespace mlir
