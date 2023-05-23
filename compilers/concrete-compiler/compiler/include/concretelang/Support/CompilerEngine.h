@@ -6,12 +6,14 @@
 #ifndef CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 #define CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 
+#include "concrete-protocol.pb.h"
 #include <concretelang/Conversion/Utils/GlobalFHEContext.h>
 #include <concretelang/Support/ClientParametersGeneration.h>
 #include <concretelang/Support/Encodings.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/SourceMgr.h>
+#include <memory>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Pass/Pass.h>
@@ -80,8 +82,9 @@ struct CompilationOptions {
   unsigned int chunkWidth;
 
   /// When compiling from a dialect lower than FHE, one needs to provide
-  /// encodings info manually to allow the client lib to be generated.
-  std::optional<mlir::concretelang::encodings::CircuitEncodings> encodings;
+  /// encodings info manually to allow the client lib to be generated. Note that
+  /// the `unique_ptr` here also plays the role of `optional`.
+  std::unique_ptr<protocol::CircuitEncodingInfo> encodings;
 
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
@@ -90,7 +93,7 @@ struct CompilationOptions {
         dataflowParallelize(false), optimizeTFHE(true), emitGPUOps(false),
         clientParametersFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
-        chunkSize(4), chunkWidth(2), encodings(std::nullopt){};
+        chunkSize(4), chunkWidth(2), encodings(std::unique_ptr<protocol::CircuitEncodingInfo>()){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {
     clientParametersFuncName = funcname;
@@ -125,7 +128,7 @@ public:
         : compilationContext(compilationContext) {}
 
     std::optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
-    std::optional<mlir::concretelang::ClientParameters> clientParameters;
+    std::unique_ptr<protocol::ProgramInfo> clientParameters;
     std::optional<CompilationFeedback> feedback;
     std::unique_ptr<llvm::Module> llvmModule;
     std::optional<mlir::concretelang::V0FHEContext> fheContext;
@@ -137,7 +140,7 @@ public:
   class Library {
     std::string outputDirPath;
     std::vector<std::string> objectsPath;
-    std::vector<mlir::concretelang::ClientParameters> clientParametersList;
+    std::vector<std::unique_ptr<protocol::ProgramInfo>> clientParametersList;
     std::vector<mlir::concretelang::CompilationFeedback>
         compilationFeedbackList;
     /// Path to the runtime library. Will be linked to the output library if set
@@ -290,15 +293,19 @@ public:
           bool generateCompilationFeedback = true,
           bool generateCppHeader = true);
 
-  void setCompilationOptions(CompilationOptions &options) {
-    compilerOptions = options;
-    if (options.v0FHEConstraints.has_value()) {
-      setFHEConstraints(*options.v0FHEConstraints);
+  void setCompilationOptions(CompilationOptions options) {
+    compilerOptions = std::move(options);
+    if (compilerOptions.v0FHEConstraints.has_value()) {
+      setFHEConstraints(*compilerOptions.v0FHEConstraints);
     }
 
-    if (options.clientParametersFuncName.has_value()) {
+    if (compilerOptions.clientParametersFuncName.has_value()) {
       setGenerateClientParameters(true);
     }
+  }
+
+  CompilationOptions& getCompilationOptions() {
+    return compilerOptions;
   }
 
   void setFHEConstraints(const mlir::concretelang::V0FHEConstraint &c);

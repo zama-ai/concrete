@@ -14,6 +14,7 @@
 #include <concretelang/ServerLib/ServerLambda.h>
 #include <concretelang/Support/Error.h>
 #include <llvm/ADT/SmallVector.h>
+#include <memory>
 
 namespace concretelang {
 

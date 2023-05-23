@@ -12,6 +12,9 @@
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
 #include "llvm/Support/Error.h"
+#include "concrete-protocol.pb.h"
+
+namespace protocol = concreteprotocol;
 
 namespace mlir {
 namespace concretelang {
@@ -47,7 +50,7 @@ struct CompilationFeedback {
 
   /// Fill the sizes from the client parameters.
   void
-  fillFromClientParameters(::concretelang::clientlib::ClientParameters params);
+  fillFromClientParameters(protocol::ProgramInfo& params);
 
   /// Load the compilation feedback from a path
   static outcome::checked<CompilationFeedback, StringError>

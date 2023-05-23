@@ -77,14 +77,14 @@ getCircuitEncodings(llvm::StringRef functionName, mlir::ModuleOp module) {
     if (!maybeEncoding) {
       return maybeEncoding.takeError();
     }
-    circuitEncodings->mutable_inputs()->AddAllocated(*maybeEncoding);
+    circuitEncodings->mutable_inputs()->AddAllocated((*maybeEncoding).release());
   }
   for (auto ty : funcType.getResults()) {
     auto maybeEncoding = encodingFromType(ty);
     if (!maybeEncoding) {
       return maybeEncoding.takeError();
     }
-    circuitEncodings->mutable_outputs()->AddAllocated(*maybeEncoding);
+    circuitEncodings->mutable_outputs()->AddAllocated((*maybeEncoding).release());
   }
 
   return circuitEncodings;

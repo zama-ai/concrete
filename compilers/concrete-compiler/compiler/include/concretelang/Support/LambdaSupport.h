@@ -377,7 +377,7 @@ public:
       CompilationResult &result) = 0;
 
   /// Load the client parameters from the compilation result.
-  llvm::Expected<clientlib::ClientParameters> virtual loadClientParameters(
+  llvm::Expected<protocol::ProgramInfo&> virtual loadClientParameters(
       CompilationResult &result) = 0;
 
   /// Load the compilation feedback from the compilation result.

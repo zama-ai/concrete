@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <llvm/Support/Debug.h>
+#include <memory>
 #include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h>
@@ -27,6 +28,7 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser/Parser.h>
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include <concretelang/ClientLib/ClientParameters.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
@@ -291,7 +293,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   // Retrieves the encoding informations before any transformation is performed
   // on the `FHE` dialect.
   if ((this->generateClientParameters || target == Target::LIBRARY) &&
-      !options.encodings.has_value()) {
+      !options.encodings) {
     auto funcName = options.clientParametersFuncName.value_or("main");
     auto maybeChunkInfo =
         options.chunkIntegers
@@ -304,7 +306,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     if (!encodingInfosOrErr) {
       return encodingInfosOrErr.takeError();
     }
-    options.encodings = encodingInfosOrErr.get();
+    options.encodings = std::move(*encodingInfosOrErr);
   }
 
   if (mlir::concretelang::pipeline::transformFHEBoolean(mlirContext, module,
@@ -418,20 +420,28 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     auto funcName = options.clientParametersFuncName.value_or("main");
     if (!res.fheContext.has_value()) {
       // Some tests involve call a to non encrypted functions
-      ClientParameters emptyParams;
-      emptyParams.functionName = funcName;
-      res.clientParameters = emptyParams;
+      auto programInfo = std::make_unique<protocol::ProgramInfo>();
+      auto circuitInfo = new protocol::CircuitInfo();
+      auto allocatedFuncName = new std::string(funcName);
+      circuitInfo->set_allocated_name(allocatedFuncName);
+      programInfo->mutable_circuits()->AddAllocated(circuitInfo);
+      res.clientParameters = std::move(programInfo);
     } else {
-      auto maybeCrt = getCrtDecompositionFromSolution(res.fheContext->solution);
       auto clientParametersOrErr =
-          mlir::concretelang::createClientParametersFromTFHE(
+          mlir::concretelang::createProgramInfoFromTFHE(
               module, funcName, options.optimizerConfig.security,
-              options.encodings.value(), maybeCrt);
+              std::unique_ptr<protocol::CircuitEncodingInfo>(options.encodings.release()));
 
       if (!clientParametersOrErr)
         return clientParametersOrErr.takeError();
 
-      res.clientParameters = clientParametersOrErr.get();
+      res.clientParameters = std::move(*clientParametersOrErr);
+      // If more than 
+      if(res.clientParameters->circuits().size() != 1){
+        return StreamStringError(
+          "Cannot generate feedback for program with more than one circuit."
+        );
+      }
       res.feedback->fillFromClientParameters(*res.clientParameters);
     }
   }
@@ -724,13 +734,13 @@ static std::string ccpArgType(size_t rank) {
   }
 }
 
-static std::string cppArgsType(std::vector<CircuitGate> inputs) {
+static std::string cppArgsType(const google::protobuf::RepeatedPtrField<protocol::GateInfo>& inputs) {
   std::string args;
   for (auto input : inputs) {
     if (!args.empty()) {
       args += ", ";
     }
-    args += ccpArgType(input.shape.dimensions.size());
+    args += ccpArgType(input.shape().dimensions_size());
   }
   return args;
 }
@@ -757,35 +767,38 @@ llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
   out << "namespace " << libraryName << " {\n";
   out << "namespace client {\n";
 
-  for (auto params : clientParametersList) {
+  for (std::unique_ptr<protocol::ProgramInfo>& programInfoPtr : clientParametersList) {
     std::string args;
     std::string result;
-    if (params.outputs.size() > 0) {
-      args = cppArgsType(params.inputs);
+    protocol::ProgramInfo& programInfo = *programInfoPtr;
+    assert(programInfo.circuits_size() == 1);
+    auto circuitInfo = programInfo.circuits(0);
+    if (circuitInfo.outputs_size() > 0) {
+      args = cppArgsType(circuitInfo.inputs());
     } else {
       args = "void";
     }
-    if (params.outputs.size() > 0) {
-      size_t rank = params.outputs[0].shape.dimensions.size();
+    if (circuitInfo.outputs_size() > 0) {
+      size_t rank = circuitInfo.outputs(0).shape().dimensions_size();
       result = ccpResultType(rank);
     } else {
       result = "void";
     }
     out << "\n";
-    out << "namespace " << params.functionName << " {\n";
+    out << "namespace " << circuitInfo.name() << " {\n";
     out << "  using namespace concretelang::clientlib;\n";
     out << "  using concretelang::error::StringError;\n";
-    out << "  using " << params.functionName << "_t = TypedClientLambda<"
+    out << "  using " << circuitInfo.name() << "_t = TypedClientLambda<"
         << result << ", " << args << ">;\n";
-    out << "  static const std::string name = \"" << params.functionName
+    out << "  static const std::string name = \"" << circuitInfo.name()
         << "\";\n";
     out << "\n";
-    out << "  static outcome::checked<" << params.functionName
+    out << "  static outcome::checked<" << circuitInfo.name()
         << "_t, StringError>\n";
     out << "  load(std::string outputLib)\n";
-    out << "  { return " << params.functionName
+    out << "  { return " << circuitInfo.name()
         << "_t::load(name, outputLib); }\n";
-    out << "} // namespace " << params.functionName << "\n";
+    out << "} // namespace " << circuitInfo.name() << "\n";
   }
   out << "\n";
   out << "} // namespace client\n";

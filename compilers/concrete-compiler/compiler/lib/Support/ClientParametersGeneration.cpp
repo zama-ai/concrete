@@ -136,7 +136,7 @@ std::unique_ptr<protocol::KeysetInfo> extractCircuitKeys(
     params->set_integerprecision(64);
     params->set_lwedimension(sk.getNormalized().value().dimension);
     params->set_keytype(protocol::KeyType::binary);
-    info->set_allocated_parameters(params);
+    info->set_allocated_params(params);
     output->mutable_lwesecretkeys()->AddAllocated(info);
   }
 
@@ -211,7 +211,7 @@ std::unique_ptr<protocol::KeysetInfo> extractCircuitKeys(
 llvm::Expected<std::unique_ptr<protocol::CircuitInfo>>
 extractCircuitInfo(mlir::ModuleOp module,
                    llvm::StringRef functionName,
-                   encodings::CircuitEncodings encodings,
+                   std::unique_ptr<protocol::CircuitEncodingInfo> encodings,
                    concrete::SecurityCurve curve) {
   
   auto output = std::make_unique<protocol::CircuitInfo>();
@@ -230,19 +230,19 @@ extractCircuitInfo(mlir::ModuleOp module,
 
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getFunctionType();
-  for (auto val : llvm::zip(funcType.getInputs(), encodings.inputEncodings)) {
-    auto ty = std::get<0>(val);
-    auto encoding = std::unique_ptr<protocol::EncodingInfo>(std::get<1>(val).release());
-    auto maybeGate = generateGate(ty, std::move(encoding), curve);
+  for (unsigned int i = 0; i<funcType.getNumInputs(); i++) {
+    auto ty = funcType.getInput(i);
+    auto encoding = encodings->mutable_inputs(i);
+    auto maybeGate = generateGate(ty, std::unique_ptr<protocol::EncodingInfo>(encoding), curve);
     if (!maybeGate){
       return std::move(maybeGate.takeError());
     }
     output->mutable_inputs()->AddAllocated((*maybeGate).release());
   }
-  for (auto val : llvm::zip(funcType.getResults(), encodings.outputEncodings)) {
-    auto ty = std::get<0>(val);
-    auto encoding = std::unique_ptr<protocol::EncodingInfo>(std::get<1>(val).release());
-    auto maybeGate = generateGate(ty, std::move(encoding), curve);
+  for (unsigned int i = 0; i<funcType.getNumResults(); i++) {
+    auto ty = funcType.getResult(i);
+    auto encoding = encodings->mutable_outputs(i);
+    auto maybeGate = generateGate(ty, std::unique_ptr<protocol::EncodingInfo>(encoding), curve);
     if (!maybeGate){
       return std::move(maybeGate.takeError());
     }
@@ -256,7 +256,7 @@ llvm::Expected<std::unique_ptr<protocol::ProgramInfo>>
 createClientParametersFromTFHE(mlir::ModuleOp module,
                                llvm::StringRef functionName, 
                                int bitsOfSecurity,
-                               encodings::CircuitEncodings encodings) {
+                               std::unique_ptr<protocol::CircuitEncodingInfo> encodings) {
 
   // Check that security curves exist
   const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
@@ -273,7 +273,7 @@ createClientParametersFromTFHE(mlir::ModuleOp module,
   output->set_allocated_keyset(keysetInfo.release());
 
   // We generate the gates for the inputs aud outputs
-  auto maybeCircuitInfo = extractCircuitInfo(module, functionName, encodings, *curve);
+  auto maybeCircuitInfo = extractCircuitInfo(module, functionName, std::move(encodings), *curve);
   if (!maybeCircuitInfo){
     return std::move(maybeCircuitInfo.takeError());
   }

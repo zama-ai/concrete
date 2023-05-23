@@ -6,24 +6,27 @@
 #ifndef CONCRETELANG_SUPPORT_CLIENTPARAMETERS_H_
 #define CONCRETELANG_SUPPORT_CLIENTPARAMETERS_H_
 
+#include <memory>
 #include <mlir/Dialect/LLVMIR/LLVMTypes.h>
 #include <mlir/IR/BuiltinOps.h>
 
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Support/Encodings.h"
 #include "concretelang/Support/V0Parameters.h"
+#include "concrete-protocol.pb.h"
 
 namespace mlir {
 namespace concretelang {
 
 using ::concretelang::clientlib::ChunkInfo;
 using ::concretelang::clientlib::ClientParameters;
+namespace protocol = concreteprotocol;
 
-llvm::Expected<ClientParameters>
-createClientParametersFromTFHE(mlir::ModuleOp module,
-                               llvm::StringRef functionName, int bitsOfSecurity,
-                               encodings::CircuitEncodings encodings,
-                               std::optional<CRTDecomposition> maybeCrt);
+llvm::Expected<std::unique_ptr<protocol::ProgramInfo>>
+createProgramInfoFromTFHE(mlir::ModuleOp module,
+                               llvm::StringRef functionName, 
+                               int bitsOfSecurity,
+                               std::unique_ptr<protocol::CircuitEncodingInfo> encodings);
 
 } // namespace concretelang
 } // namespace mlir

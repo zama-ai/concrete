@@ -6,6 +6,9 @@
 #ifndef CONCRETELANG_SUPPORT_JIT_SUPPORT
 #define CONCRETELANG_SUPPORT_JIT_SUPPORT
 
+#include "concrete-protocol.pb.h"
+#include "concretelang/Support/Utils.h"
+#include <memory>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -24,7 +27,7 @@ namespace clientlib = ::concretelang::clientlib;
 /// lambda and the clientParameters.
 struct JitCompilationResult {
   std::shared_ptr<concretelang::JITLambda> lambda;
-  clientlib::ClientParameters clientParameters;
+  std::unique_ptr<protocol::ProgramInfo> clientParameters;
   CompilationFeedback feedback;
 };
 
@@ -45,9 +48,9 @@ public:
     return result.lambda;
   }
 
-  llvm::Expected<clientlib::ClientParameters>
+  llvm::Expected<protocol::ProgramInfo&>
   loadClientParameters(JitCompilationResult &result) override {
-    return result.clientParameters;
+    return *result.clientParameters;
   }
 
   llvm::Expected<CompilationFeedback>
