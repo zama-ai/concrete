@@ -1470,8 +1470,58 @@ OpFoldResult MulEintIntOp::fold(FoldAdaptor operands) {
   return getOperand(0);
 }
 
+void MulEintIntOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+
+  // Replace multiplication by clear zero cst to a trivial encrypted zero tensor
+  class ZeroCstOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroCstOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getRhs().getDefiningOp<arith::ConstantOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      auto vals = cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value");
+      for (auto it = vals.begin(); it != vals.end(); it++) {
+        if (*it != 0) {
+          return mlir::failure();
+        }
+      }
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+
+  // Replace multiplication by encrypted zero cst to a trivial encrypted zero
+  // tensor
+  class ZeroEncOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroEncOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getLhs().getDefiningOp<FHE::ZeroTensorOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceAllUsesWith(op, cstOp);
+      rewriter.eraseOp(op);
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroCstOpPattern>(context);
+  patterns.add<ZeroEncOpPattern>(context);
+}
+
 /// Avoid multiplication with constant tensor of 1s
 OpFoldResult RoundOp::fold(FoldAdaptor operands) {
+
   auto input = this->getInput();
   auto inputType =
       this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
@@ -1487,6 +1537,69 @@ OpFoldResult RoundOp::fold(FoldAdaptor operands) {
     return input;
   }
   return nullptr;
+}
+
+template <typename MatMulOp>
+void getMatMulCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                       mlir::MLIRContext *context) {
+
+  // Replace multiplication by clear zero cst to a trivial encrypted zero tensor
+  class ZeroCstOpPattern : public mlir::OpRewritePattern<MatMulOp> {
+  public:
+    ZeroCstOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MatMulOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MatMulOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp =
+          op.getClearMatrix().template getDefiningOp<arith::ConstantOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      auto vals =
+          cstOp->template getAttrOfType<mlir::DenseIntElementsAttr>("value");
+      for (auto it = vals.begin(); it != vals.end(); it++) {
+        if (*it != 0) {
+          return mlir::failure();
+        }
+      }
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+
+  // Replace multiplication by encrypted zero cst to a trivial encrypted zero
+  // tensor
+  class ZeroEncOpPattern : public mlir::OpRewritePattern<MatMulOp> {
+  public:
+    ZeroEncOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MatMulOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MatMulOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp =
+          op.getEncryptedMatrix().template getDefiningOp<FHE::ZeroTensorOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroCstOpPattern>(context);
+  patterns.add<ZeroEncOpPattern>(context);
+}
+
+void MatMulIntEintOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+  getMatMulCanonicalizationPatterns<MatMulIntEintOp>(patterns, context);
+}
+
+void MatMulEintIntOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+  getMatMulCanonicalizationPatterns<MatMulEintIntOp>(patterns, context);
 }
 
 } // namespace FHELinalg

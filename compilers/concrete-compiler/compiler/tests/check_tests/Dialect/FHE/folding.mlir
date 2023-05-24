@@ -27,6 +27,26 @@ func.func @mul_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   return %1: !FHE.eint<2>
 }
 
+// CHECK-LABEL: func.func @mul_eint_int_zero(%arg0: !FHE.eint<2>) -> !FHE.eint<2>
+func.func @mul_eint_int_zero(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHE.zero"()
+  // CHECK-NEXT: return %[[v0]] : !FHE.eint<2>
+
+  %0 = arith.constant 0 : i3
+  %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+  return %1: !FHE.eint<2>
+}
+
+// CHECK-LABEL: func.func @mul_eint_zero_int(%arg0: i3) -> !FHE.eint<2>
+func.func @mul_eint_zero_int(%arg0: i3) -> !FHE.eint<2> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHE.zero"()
+  // CHECK-NEXT: return %[[v0]] : !FHE.eint<2>
+
+  %0 = "FHE.zero"() : () -> !FHE.eint<2>
+  %1 = "FHE.mul_eint_int"(%0, %arg0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+  return %1: !FHE.eint<2>
+}
+
 // CHECK-LABEL: func.func @round(%arg0: !FHE.eint<5>) -> !FHE.eint<5>
 func.func @round(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
   // CHECK-NEXT: return %arg0 : !FHE.eint<5>

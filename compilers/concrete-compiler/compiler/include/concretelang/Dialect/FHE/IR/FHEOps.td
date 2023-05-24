@@ -283,6 +283,7 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure]> {
 
     let hasVerifier = 1;
     let hasFolder = 1;
+    let hasCanonicalizer = 1;
 }
 
 def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
