@@ -373,6 +373,8 @@ def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRul
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
 
     let hasFolder = 1;
+
+    let hasCanonicalizer = 1;
 }
 
 def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
@@ -748,6 +750,13 @@ def FHELinalg_MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEin
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
+
+    let hasCanonicalizer = 1;
+
+    let extraClassDeclaration = [{
+        mlir::Value getClearMatrix() { return getRhs(); }
+        mlir::Value getEncryptedMatrix () { return getLhs(); }
+    }];
 }
 
 def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
@@ -886,6 +895,13 @@ def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryInt
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
+
+    let hasCanonicalizer = 1;
+
+    let extraClassDeclaration = [{
+        mlir::Value getClearMatrix() { return getLhs(); }
+        mlir::Value getEncryptedMatrix () { return getRhs(); }
+    }];
 }
 
 

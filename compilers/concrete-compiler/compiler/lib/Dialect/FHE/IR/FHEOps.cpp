@@ -3,6 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Region.h"
 #include "mlir/IR/TypeUtilities.h"
 
@@ -343,6 +345,53 @@ OpFoldResult MulEintIntOp::fold(FoldAdaptor operands) {
     }
   }
   return nullptr;
+}
+
+void MulEintIntOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+
+  // Replace multiplication by clear zero cst to a trivial encrypted zero tensor
+  class ZeroCstOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroCstOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getB().getDefiningOp<arith::ConstantOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      auto val = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
+      if (val.getInt() != 0) {
+        return mlir::failure();
+      }
+      rewriter.replaceOpWithNewOp<FHE::ZeroEintOp>(op,
+                                                   op.getResult().getType());
+      return mlir::success();
+    }
+  };
+
+  // Replace multiplication by encrypted zero cst to a trivial encrypted zero
+  // tensor
+  class ZeroEncOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroEncOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getA().getDefiningOp<FHE::ZeroEintOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceAllUsesWith(op, cstOp);
+      rewriter.eraseOp(op);
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroCstOpPattern>(context);
+  patterns.add<ZeroEncOpPattern>(context);
 }
 
 } // namespace FHE

@@ -379,8 +379,7 @@ func.func @matmul_eint_int_cst_p_2_n_1(%arg0: tensor<3x2x!FHE.eint<2>>) -> tenso
 
 // -----
 
-func.func @matmul_eint_int_cst() -> tensor<4x3x!FHE.eint<7>> {
-  %0 = "FHE.zero_tensor"() : () -> tensor<4x3x!FHE.eint<7>>
+func.func @matmul_eint_int_cst(%0: tensor<4x3x!FHE.eint<7>>) -> tensor<4x3x!FHE.eint<7>> {
 
   // ===============================
 
@@ -663,8 +662,7 @@ func.func @matmul_int_eint_cst_p_2_n_1(%arg0: tensor<2x3x!FHE.eint<2>>) -> tenso
 
 // -----
 
-func.func @matmul_int_eint_cst() -> tensor<3x2x!FHE.eint<7>> {
-  %0 = "FHE.zero_tensor"() : () -> tensor<3x2x!FHE.eint<7>>
+func.func @matmul_int_eint_cst(%0: tensor<3x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
 
   // ===============================
 
