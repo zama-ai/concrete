@@ -15,6 +15,7 @@ using concretelang::error::StringError;
 
 outcome::checked<ClientLambda, StringError>
 ClientLambda::load(std::string functionName, std::string jsonPath) {
+  auto circuit
   OUTCOME_TRY(auto all_params, ClientParameters::load(jsonPath));
   auto param = llvm::find_if(all_params, [&](ClientParameters param) {
     return param.functionName == functionName;

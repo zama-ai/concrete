@@ -24,10 +24,10 @@ namespace concretelang {
 namespace clientlib = ::concretelang::clientlib;
 
 /// JitCompilationResult is the result of a Jit compilation, the server JIT
-/// lambda and the clientParameters.
+/// lambda and the program info.
 struct JitCompilationResult {
   std::shared_ptr<concretelang::JITLambda> lambda;
-  std::unique_ptr<protocol::ProgramInfo> clientParameters;
+  std::unique_ptr<protocol::ProgramInfo> programInfo;
   CompilationFeedback feedback;
 };
 
@@ -49,8 +49,8 @@ public:
   }
 
   llvm::Expected<protocol::ProgramInfo&>
-  loadClientParameters(JitCompilationResult &result) override {
-    return *result.clientParameters;
+  loadProgramInfo(JitCompilationResult &result) override {
+    return *result.programInfo;
   }
 
   llvm::Expected<CompilationFeedback>

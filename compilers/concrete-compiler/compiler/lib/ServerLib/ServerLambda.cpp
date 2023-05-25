@@ -4,9 +4,11 @@
 // for license information.
 
 #include <dlfcn.h>
+#include <memory>
 
 #include "boost/outcome.h"
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/ServerLib/DynamicModule.h"
@@ -39,23 +41,25 @@ ServerLambda::loadFromModule(std::shared_ptr<DynamicModule> module,
     return StringError("Cannot open lambda:") << std::string(err);
   }
 
-  auto param =
-      llvm::find_if(module->clientParametersList, [&](ClientParameters param) {
-        return param.functionName == funcName;
-      });
-
-  if (param == module->clientParametersList.end()) {
-    return StringError("cannot find function ")
-           << funcName << "in client parameters";
-  }
-
-  if (param->outputs.size() != 1) {
-    return StringError("ServerLambda: output arity (")
-           << std::to_string(param->outputs.size())
+  auto circuitInfo = std::unique_ptr<protocol::CircuitInfo>();
+  for (auto circuitRef: module->programInfo->circuits()){
+    if (circuitRef.name() == funcName){
+      if (circuitRef.outputs_size() != 1) {
+        return StringError("ServerLambda: output arity (")
+           << std::to_string(circuitRef.outputs_size())
            << ") != 1 is not supported";
+      }
+      circuitInfo.reset(new protocol::CircuitInfo(circuitRef));
+    }
   }
 
-  lambda.clientParameters = *param;
+  if(!circuitInfo){
+    return StringError("cannot find circuit ")
+           << funcName << "in program info";
+  }
+
+  lambda.circuitInfo = std::move(circuitInfo);
+
   return lambda;
 }
 

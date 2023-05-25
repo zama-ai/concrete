@@ -7,7 +7,9 @@
 #define CONCRETELANG_CLIENTLIB_CLIENT_LAMBDA_H
 
 #include <cassert>
+#include <memory>
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EncryptedArguments.h"
 #include "concretelang/ClientLib/KeySet.h"
@@ -59,7 +61,7 @@ public:
   decryptReturnedTensor3(KeySet &keySet, PublicResult &result);
 
 public:
-  ClientParameters clientParameters;
+  std::unique_ptr<protocol::CircuitInfo> circuitInfo;
 };
 
 template <typename Result>
@@ -92,7 +94,7 @@ public:
     OUTCOME_TRY(auto clientArguments,
                 EncryptedArguments::create(keySet, args...));
 
-    return clientArguments->exportPublicArguments(clientParameters);
+    return clientArguments->exportPublicArguments(circuitInfo);
   }
 
   outcome::checked<Result, StringError> decryptResult(KeySet &keySet,

@@ -125,6 +125,34 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
   OS << "]";
   return OS;
 }
+
+template <typename Message> 
+std::unique_ptr<Message> deepCopyMessage(std::unique_ptr<Message>& original){
+  Message* copy = new Message();
+  copy->CopyFrom(*original);
+  return std::unique_ptr<Message>(copy);
+}
+
+template <typename Message>
+llvm::Expected<std::unique_ptr<Message>> loadMessageFromJSONFile(std::string path);
+  std::ifstream file(path);
+  std::string content((std::istreambuf_iterator<char>(file)),
+                      (std::istreambuf_iterator<char>()));
+  if (file.fail()) {
+    return StringError("Cannot read file: ") << jsonPath;
+  }
+
+  auto output = new Message();
+  auto parseRes = google::protobuf::util::JsonStringToMessage(content, output);
+  if(!parseRes.ok()){
+    return StringError("Failed to parse: ")
+           << parseRes.message().as_string() << "\n"
+           << content << "\n";
+  }
+
+  return std::unique_ptr<Message>(output);
+}
+
 } // namespace concretelang
 
 #endif

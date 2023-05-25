@@ -14,6 +14,7 @@
 #include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
 #include <stdio.h>
 #include <string>
+#include <google/protobuf/util/json_util.h>
 
 #include <llvm/Support/Error.h>
 #include <llvm/Support/Path.h>
@@ -30,6 +31,7 @@
 
 #include "concrete-protocol.pb.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
+#include "concretelang/Support/Utils.h"
 #include <concretelang/ClientLib/ClientParameters.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/Concrete/Transforms/BufferizableOpInterfaceImpl.h>
@@ -127,7 +129,7 @@ void CompilerEngine::setFHEConstraints(
 }
 
 void CompilerEngine::setGenerateClientParameters(bool v) {
-  this->generateClientParameters = v;
+  this->generateProgramInfo = v;
 }
 
 void CompilerEngine::setMaxEintPrecision(size_t v) {
@@ -162,8 +164,8 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
   if (descriptions->empty()) { // The pass has not been run
     return std::nullopt;
   }
-  if (this->compilerOptions.clientParametersFuncName.has_value()) {
-    auto name = this->compilerOptions.clientParametersFuncName.value();
+  if (this->compilerOptions.mainFuncName.has_value()) {
+    auto name = this->compilerOptions.mainFuncName.value();
     auto description = descriptions->find(name);
     if (description == descriptions->end()) {
       std::string names;
@@ -292,9 +294,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Retrieves the encoding informations before any transformation is performed
   // on the `FHE` dialect.
-  if ((this->generateClientParameters || target == Target::LIBRARY) &&
+  if ((this->generateProgramInfo || target == Target::LIBRARY) &&
       !options.encodings) {
-    auto funcName = options.clientParametersFuncName.value_or("main");
+    auto funcName = options.mainFuncName.value_or("main");
     auto maybeChunkInfo =
         options.chunkIntegers
             ? std::optional(concretelang::clientlib::ChunkInfo{
@@ -403,8 +405,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   // Generate client parameters if requested
-  if (this->generateClientParameters) {
-    if (!options.clientParametersFuncName.has_value()) {
+  if (this->generateProgramInfo) {
+    if (!options.mainFuncName.has_value()) {
       return StreamStringError(
           "Generation of client parameters requested, but no function name "
           "specified");
@@ -412,12 +414,12 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     if (!res.fheContext.has_value()) {
       return StreamStringError(
           "Cannot generate client parameters, the fhe context is empty for " +
-          options.clientParametersFuncName.value());
+          options.mainFuncName.value());
     }
   }
-  // Generate client parameters if requested
-  if (this->generateClientParameters || target == Target::LIBRARY) {
-    auto funcName = options.clientParametersFuncName.value_or("main");
+  // Generate program info if requested
+  if (this->generateProgramInfo || target == Target::LIBRARY) {
+    auto funcName = options.mainFuncName.value_or("main");
     if (!res.fheContext.has_value()) {
       // Some tests involve call a to non encrypted functions
       auto programInfo = std::make_unique<protocol::ProgramInfo>();
@@ -425,24 +427,24 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       auto allocatedFuncName = new std::string(funcName);
       circuitInfo->set_allocated_name(allocatedFuncName);
       programInfo->mutable_circuits()->AddAllocated(circuitInfo);
-      res.clientParameters = std::move(programInfo);
+      res.programInfo = std::move(programInfo);
     } else {
-      auto clientParametersOrErr =
+      auto programInfoOrErr =
           mlir::concretelang::createProgramInfoFromTFHE(
               module, funcName, options.optimizerConfig.security,
               std::unique_ptr<protocol::CircuitEncodingInfo>(options.encodings.release()));
 
-      if (!clientParametersOrErr)
-        return clientParametersOrErr.takeError();
+      if (!programInfoOrErr)
+        return programInfoOrErr.takeError();
 
-      res.clientParameters = std::move(*clientParametersOrErr);
-      // If more than 
-      if(res.clientParameters->circuits().size() != 1){
+      res.programInfo = std::move(*programInfoOrErr);
+      // If more than one circuit, feedback can not be generated for now ..
+      if(res.programInfo->circuits().size() != 1){
         return StreamStringError(
           "Cannot generate feedback for program with more than one circuit."
         );
       }
-      res.feedback->fillFromClientParameters(*res.clientParameters);
+      res.feedback->fillFromProgramInfo(*res.programInfo);
     }
   }
 
@@ -539,7 +541,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       return StreamStringError(
           "Internal Error: Please provide a library parameter");
     }
-    auto objPath = lib.value()->addCompilation(res);
+    auto objPath = lib.value()->setCompilationResult(res);
     if (!objPath) {
       return StreamStringError(llvm::toString(objPath.takeError()));
     }
@@ -636,14 +638,14 @@ CompilerEngine::Library::getStaticLibraryPath(std::string outputDirPath) {
   return staticLibraryPath.str().str();
 }
 
-/// Returns the path of the client parameter
+/// Returns the path of the program info
 std::string
-CompilerEngine::Library::getClientParametersPath(std::string outputDirPath) {
-  llvm::SmallString<0> clientParametersPath(outputDirPath);
+CompilerEngine::Library::getProgramInfoPath(std::string outputDirPath) {
+  llvm::SmallString<0> programInfoPath(outputDirPath);
   llvm::sys::path::append(
-      clientParametersPath,
+      programInfoPath,
       ClientParameters::getClientParametersPath("client_parameters"));
-  return clientParametersPath.str().str();
+  return programInfoPath.str().str();
 }
 
 /// Returns the path of the compiler feedback
@@ -682,29 +684,27 @@ void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
 }
 
 llvm::Expected<std::string>
-CompilerEngine::Library::emitClientParametersJSON() {
-  auto clientParamsPath = getClientParametersPath(outputDirPath);
-  llvm::json::Value value(clientParametersList);
+CompilerEngine::Library::emitProgramInfoJSON() {
+  auto programInfoPath = getProgramInfoPath(outputDirPath);
   std::error_code error;
-  llvm::raw_fd_ostream out(clientParamsPath, error);
+  llvm::raw_fd_ostream out(programInfoPath, error);
 
-  if (error) {
-    return StreamStringError("cannot emit client parameters, error: ")
-           << error.message();
+  std::string value;
+  auto maybeErr = google::protobuf::util::MessageToJsonString(*programInfo, &value);
+  if (!maybeErr.ok()) {
+    return StreamStringError("cannot emit program info, error: ")
+           << maybeErr.message().as_string();
   }
-  out << llvm::formatv("{0:2}", value);
+  out << value;
   out.close();
 
-  return clientParamsPath;
+  return programInfoPath;
 }
 
 llvm::Expected<std::string>
 CompilerEngine::Library::emitCompilationFeedbackJSON() {
   auto path = getCompilationFeedbackPath(outputDirPath);
-  if (compilationFeedbackList.size() != 1) {
-    return StreamStringError("multiple compilation feedback not supported");
-  }
-  llvm::json::Value value(compilationFeedbackList[0]);
+  llvm::json::Value value(compilationFeedback);
   std::error_code error;
   llvm::raw_fd_ostream out(path, error);
 
@@ -767,12 +767,9 @@ llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
   out << "namespace " << libraryName << " {\n";
   out << "namespace client {\n";
 
-  for (std::unique_ptr<protocol::ProgramInfo>& programInfoPtr : clientParametersList) {
+  for (auto circuitInfo : programInfo->circuits()) {
     std::string args;
     std::string result;
-    protocol::ProgramInfo& programInfo = *programInfoPtr;
-    assert(programInfo.circuits_size() == 1);
-    auto circuitInfo = programInfo.circuits(0);
     if (circuitInfo.outputs_size() > 0) {
       args = cppArgsType(circuitInfo.inputs());
     } else {
@@ -810,7 +807,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
 }
 
 llvm::Expected<std::string>
-CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
+CompilerEngine::Library::setCompilationResult(CompilationResult &compilation) {
   llvm::Module *module = compilation.llvmModule.get();
   auto sourceName = module->getSourceFileName();
   if (sourceName == "" || sourceName == "LLVMDialectModule") {
@@ -823,11 +820,11 @@ CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
   }
 
   addExtraObjectFilePath(objectPath);
-  if (compilation.clientParameters.has_value()) {
-    clientParametersList.push_back(compilation.clientParameters.value());
+  if (compilation.programInfo) {
+    programInfo.reset(compilation.programInfo.release());
   }
   if (compilation.feedback.has_value()) {
-    compilationFeedbackList.push_back(compilation.feedback.value());
+    compilationFeedback = compilation.feedback.value();
   }
   return objectPath;
 }
@@ -959,7 +956,7 @@ llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
     }
   }
   if (clientParameters) {
-    if (auto err = emitClientParametersJSON().takeError()) {
+    if (auto err = emitProgramInfoJSON().takeError()) {
       return err;
     }
   }

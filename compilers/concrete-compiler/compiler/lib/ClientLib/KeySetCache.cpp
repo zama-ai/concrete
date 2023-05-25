@@ -5,6 +5,7 @@
 
 #include "boost/outcome.h"
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/ClientLib/Serializers.h"
@@ -191,7 +192,7 @@ outcome::checked<void, StringError> saveKeys(KeySet &key_set,
 }
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
-KeySetCache::loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
+KeySetCache::loadOrGenerateSave(protocol::KeysetInfo& keysetInfo, uint64_t seed_msb,
                                 uint64_t seed_lsb) {
 
 #ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
@@ -263,7 +264,7 @@ KeySetCache::loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySetCache::generate(std::shared_ptr<KeySetCache> cache,
-                      ClientParameters &params, uint64_t seed_msb,
+                      protocol::KeysetInfo& keysetInfo, uint64_t seed_msb,
                       uint64_t seed_lsb) {
 #ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
   getApproval();
@@ -274,18 +275,18 @@ KeySetCache::generate(std::shared_ptr<KeySetCache> cache,
   seed += seed_lsb;
 
   auto csprng = ConcreteCSPRNG(seed);
-  return cache ? cache->loadOrGenerateSave(params, seed_msb, seed_lsb)
-               : KeySet::generate(params, std::move(csprng));
+  return cache ? cache->loadOrGenerateSave(keysetInfo, seed_msb, seed_lsb)
+               : KeySet::generate(keysetInfo, std::move(csprng));
 }
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
-KeySetCache::generate(ClientParameters &params, uint64_t seed_msb,
+KeySetCache::generate(protocol::KeysetInfo& keysetInfo, uint64_t seed_msb,
                       uint64_t seed_lsb) {
 #ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
   getApproval();
 #endif
 
-  return loadOrGenerateSave(params, seed_msb, seed_lsb);
+  return loadOrGenerateSave(keysetInfo, seed_msb, seed_lsb);
 }
 
 } // namespace clientlib

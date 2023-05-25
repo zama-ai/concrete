@@ -7,10 +7,16 @@
 #include <fstream>
 
 #include "boost/outcome.h"
+#include "concrete-protocol.pb.h"
 #include "concretelang/ServerLib/DynamicModule.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
+#include "concretelang/Support/Utils.h"
+#include <google/protobuf/message.h>
+#include <google/protobuf/stubs/stringpiece.h>
+#include <google/protobuf/util/json_util.h>
 #include <llvm/Support/Path.h>
+#include <memory>
 
 namespace concretelang {
 namespace serverlib {
@@ -27,7 +33,7 @@ DynamicModule::~DynamicModule() {
 outcome::checked<std::shared_ptr<DynamicModule>, StringError>
 DynamicModule::open(std::string outputPath) {
   std::shared_ptr<DynamicModule> module = std::make_shared<DynamicModule>();
-  OUTCOME_TRYV(module->loadClientParametersJSON(outputPath));
+  OUTCOME_TRYV(module->loadProgramInfoJSON(outputPath));
   OUTCOME_TRYV(module->loadSharedLibrary(outputPath));
   return module;
 }
@@ -44,10 +50,13 @@ DynamicModule::loadSharedLibrary(std::string outputPath) {
 }
 
 outcome::checked<void, StringError>
-DynamicModule::loadClientParametersJSON(std::string outputPath) {
-  auto jsonPath = CompilerEngine::Library::getClientParametersPath(outputPath);
-  OUTCOME_TRY(auto clientParams, ClientParameters::load(jsonPath));
-  this->clientParametersList = clientParams;
+DynamicModule::loadProgramInfoJSON(std::string outputPath) {
+  auto jsonPath = CompilerEngine::Library::getProgramInfoPath(outputPath);
+  auto maybeProgramInfo = loadMessageFromJSONFile<protocol::ProgramInfo>(jsonPath);
+  if(!maybeProgramInfo){
+    return maybeProgramInfo.takeError();
+  }
+  this->programInfo = *maybeProgramInfo;
   return outcome::success();
 }
 

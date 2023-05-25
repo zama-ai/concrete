@@ -48,9 +48,9 @@ struct CompilationFeedback {
   /// @brief crt decomposition of outputs, if crt is not used, empty vectors
   std::vector<std::vector<int64_t>> crtDecompositionsOfOutputs;
 
-  /// Fill the sizes from the client parameters.
+  /// Fill the sizes from the program info.
   void
-  fillFromClientParameters(protocol::ProgramInfo& params);
+  fillFromProgramInfo(protocol::ProgramInfo& params);
 
   /// Load the compilation feedback from a path
   static outcome::checked<CompilationFeedback, StringError>

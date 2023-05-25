@@ -7,9 +7,12 @@
 #define CONCRETELANG_CLIENTLIB_KEYSETCACHE_H_
 
 #include "concretelang/ClientLib/KeySet.h"
+#include "concrete-protocol.pb.h"
 
 namespace concretelang {
 namespace clientlib {
+
+  namespace protocol = concreteprotocol;
 
 class KeySet;
 
@@ -21,7 +24,7 @@ public:
       : backingDirectoryPath(backingDirectoryPath) {}
 
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
-  generate(std::shared_ptr<KeySetCache> optionalCache, ClientParameters &params,
+  generate(std::shared_ptr<KeySetCache> optionalCache, protocol::KeysetInfo &keysetInfo,
            uint64_t seed_msb, uint64_t seed_lsb);
 
   outcome::checked<std::unique_ptr<KeySet>, StringError>

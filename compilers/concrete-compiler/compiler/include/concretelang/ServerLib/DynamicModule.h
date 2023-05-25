@@ -10,12 +10,15 @@
 
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
+#include "concrete-protocol.pb.h"
+#include <memory>
 
 namespace concretelang {
 namespace serverlib {
 
 using concretelang::clientlib::ClientParameters;
 using concretelang::error::StringError;
+namespace protocol = concreteprotocol;
 
 class DynamicModule {
 public:
@@ -26,12 +29,12 @@ public:
 
 private:
   outcome::checked<void, StringError>
-  loadClientParametersJSON(std::string outputPath);
+  loadProgramInfoJSON(std::string outputPath);
 
   outcome::checked<void, StringError> loadSharedLibrary(std::string outputPath);
 
 private:
-  std::vector<ClientParameters> clientParametersList;
+  std::unique_ptr<protocol::ProgramInfo> programInfo;
   void *libraryHandle;
 
   friend class ServerLambda;

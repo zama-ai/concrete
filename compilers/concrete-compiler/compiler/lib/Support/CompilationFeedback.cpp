@@ -15,7 +15,7 @@
 namespace mlir {
 namespace concretelang {
 
-void CompilationFeedback::fillFromClientParameters(
+void CompilationFeedback::fillFromProgramInfo(
     protocol::ProgramInfo& params) {
   // Compute the size of secret keys
   totalSecretKeysSize = 0;

@@ -376,8 +376,8 @@ public:
   llvm::Expected<Lambda> virtual loadServerLambda(
       CompilationResult &result) = 0;
 
-  /// Load the client parameters from the compilation result.
-  llvm::Expected<protocol::ProgramInfo&> virtual loadClientParameters(
+  /// Load the program info from the compilation result.
+  llvm::Expected<protocol::ProgramInfo&> virtual loadProgramInfo(
       CompilationResult &result) = 0;
 
   /// Load the compilation feedback from the compilation result.
@@ -391,14 +391,14 @@ public:
 
   /// Build the client KeySet from the client parameters.
   static llvm::Expected<std::unique_ptr<clientlib::KeySet>>
-  keySet(clientlib::ClientParameters clientParameters,
+  keySet(protocol::ProgramInfo& programInfo,
          std::optional<clientlib::KeySetCache> cache, uint64_t seed_msb = 0,
          uint64_t seed_lsb = 0) {
     std::shared_ptr<clientlib::KeySetCache> cachePtr;
     if (cache.has_value()) {
       cachePtr = std::make_shared<clientlib::KeySetCache>(cache.value());
     }
-    auto keySet = clientlib::KeySetCache::generate(cachePtr, clientParameters,
+    auto keySet = clientlib::KeySetCache::generate(cachePtr, programInfo,
                                                    seed_msb, seed_lsb);
     if (keySet.has_error()) {
       return StreamStringError(keySet.error().mesg);
@@ -437,7 +437,7 @@ public:
          CompilationOptions options = CompilationOptions("main"),
          std::optional<clientlib::KeySetCache> cache = {},
          LambdaSupport support = LambdaSupport()) {
-    auto compilationResult = support.compile(program, options);
+    auto compilationResult = support.compile(program, std::move(options));
     if (auto err = compilationResult.takeError()) {
       return std::move(err);
     }
@@ -445,7 +445,7 @@ public:
     if (auto err = lambda.takeError()) {
       return std::move(err);
     }
-    auto clientParameters = support.loadClientParameters(**compilationResult);
+    auto clientParameters = support.loadProgramInfo(**compilationResult);
     if (auto err = clientParameters.takeError()) {
       return std::move(err);
     }

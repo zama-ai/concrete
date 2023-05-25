@@ -10,6 +10,7 @@
 
 #include "boost/outcome.h"
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/ClientLib/Types.h"
@@ -49,7 +50,7 @@ public:
   llvm::Error invokeRaw(llvm::MutableArrayRef<void *> args);
 
 protected:
-  ClientParameters clientParameters;
+  std::unique_ptr<protocol::CircuitInfo> circuitInfo;
   /// holds a pointer to the entrypoint of the shared lib which
   void (*func)(void *...);
   /// Retain module and open shared lib alive
