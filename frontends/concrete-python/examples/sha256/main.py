@@ -231,24 +231,26 @@ def sha256(data, number_of_rounds=64):
     k_chunks = deepcopy(K_CHUNKED)
 
     for i in range(0, (data.shape[0] * 32) // 512):
-        start = i * 16
-        end = start + 16
-        chunks = data[start:end]
+        with fhe.tag(f"data[{i * 16}:{(i + 1) * 16}]"):
+            start = i * 16
+            end = start + 16
+            chunks = data[start:end]
 
-        state = h_chunks
+            state = h_chunks
 
-        w = [None for _ in range(number_of_rounds)]
-        for j in range(0, number_of_rounds):
-            if j < 16:
-                w[j] = chunks[j]
-            else:
-                w[j] = add(w[j - 16], s0(w[j - 15]), w[j - 7], s1(w[j - 2]))
+            w = [None for _ in range(number_of_rounds)]
+            for j in range(0, number_of_rounds):
+                with fhe.tag(f"round-{j + 1}"):
+                    if j < 16:
+                        w[j] = chunks[j]
+                    else:
+                        w[j] = add(w[j - 16], s0(w[j - 15]), w[j - 7], s1(w[j - 2]))
 
-            w_i_plus_k_i = add(w[j], k_chunks[j])
-            state = loop(state, w_i_plus_k_i)
+                    w_i_plus_k_i = add(w[j], k_chunks[j])
+                    state = loop(state, w_i_plus_k_i)
 
-        for j in range(8):
-            h_chunks[j] = add(h_chunks[j], state[j])
+            for j in range(8):
+                h_chunks[j] = add(h_chunks[j], state[j])
 
     result = []
     for chunk in h_chunks:
@@ -338,7 +340,11 @@ def main():
         for number_of_rounds in [1, 2, 3, 10, 16, 32, 64]:
             print()
 
-            title = f"number_of_rounds={number_of_rounds}, input_size={input_size}"
+            title = (
+                f"chunk_width={CHUNK_WIDTH}, "
+                f"number_of_rounds={number_of_rounds}, "
+                f"input_size={input_size}"
+            )
             print(title)
             print("-" * len(title))
 
