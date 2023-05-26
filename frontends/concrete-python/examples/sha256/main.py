@@ -231,12 +231,13 @@ def sha256(data, number_of_rounds=64):
     k_chunks = deepcopy(K_CHUNKED)
 
     for i in range(0, (data.shape[0] * 32) // 512):
-        with fhe.tag(f"data[{i * 16}:{(i + 1) * 16}]"):
-            start = i * 16
-            end = start + 16
-            chunks = data[start:end]
+        with fhe.tag(f"input[{i * 16 * 4}:{(i + 1) * 16 * 4}]"):
+            with fhe.tag("extraction"):
+                start = i * 16
+                end = start + 16
+                chunks = data[start:end]
 
-            state = h_chunks
+                state = h_chunks
 
             w = [None for _ in range(number_of_rounds)]
             for j in range(0, number_of_rounds):
@@ -249,10 +250,12 @@ def sha256(data, number_of_rounds=64):
                     w_i_plus_k_i = add(w[j], k_chunks[j])
                     state = state_update(state, w_i_plus_k_i)
 
-            h_chunks = [add(a, b) for a, b in zip(h_chunks, state)]
+            with fhe.tag("state-update"):
+                h_chunks = [add(a, b) for a, b in zip(h_chunks, state)]
 
-    result = [[chunks[i] for i in range(chunks.size)] for chunks in h_chunks]
-    return fhe.array(result)
+    with fhe.tag("result"):
+        result = [[chunks[i] for i in range(chunks.size)] for chunks in h_chunks]
+        return fhe.array(result)
 
 
 def sha256_preprocess(text):
@@ -305,6 +308,8 @@ class HomomorphicSHA:
                 use_insecure_key_cache=True,
                 insecure_key_cache_location=".keys",
                 dataflow_parallelize=True,
+                show_progress=True,
+                progress_tag=True,
             ),
         )
 
