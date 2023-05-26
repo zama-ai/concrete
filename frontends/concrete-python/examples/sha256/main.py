@@ -249,8 +249,7 @@ def sha256(data, number_of_rounds=64):
                     w_i_plus_k_i = add(w[j], k_chunks[j])
                     state = state_update(state, w_i_plus_k_i)
 
-            for j, (h_chunks_j, state_j) in enumerate(zip(h_chunks, state)):
-                h_chunks[j] = add(h_chunks_j, state_j)
+            h_chunks = [add(a, b) for a, b in zip(h_chunks, state)]
 
     result = [[chunks[i] for i in range(chunks.size)] for chunks in h_chunks]
     return fhe.array(result)
