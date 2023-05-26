@@ -127,6 +127,30 @@ add_library(concrete_cpu STATIC IMPORTED)
 set_target_properties(concrete_cpu PROPERTIES IMPORTED_LOCATION "${CONCRETE_CPU_STATIC_LIB}")
 add_dependencies(concrete_cpu concrete_cpu_rust)
 
+# -------------------------------------------------------------------------------
+# Concrete CPU Noise Model Configuration
+# -------------------------------------------------------------------------------
+
+set(CONCRETE_CPU_NOISE_MODEL_DIR "${CONCRETE_BACKENDS_DIR}/concrete-cpu/noise-model")
+set(CONCRETE_CPU_NOISE_MODEL_RELEASE_DIR "${CONCRETE_CPU_NOISE_MODEL_DIR}/target/release")
+set(CONCRETE_CPU_NOISE_MODEL_INCLUDE_DIR "${CONCRETE_CPU_NOISE_MODEL_DIR}/include")
+set(CONCRETE_CPU_NOISE_MODEL_STATIC_LIB "${CONCRETE_CPU_NOISE_MODEL_RELEASE_DIR}/libconcrete_cpu_noise_model.a")
+
+ExternalProject_Add(
+  concrete_cpu_noise_model_rust
+  DOWNLOAD_COMMAND ""
+  CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_CPU_NOISE_MODEL_STATIC_LIB}"
+  BUILD_ALWAYS true
+  BUILD_COMMAND cargo +nightly build --release
+  BINARY_DIR "${CONCRETE_CPU_NOISE_MODEL_DIR}"
+  INSTALL_COMMAND ""
+  LOG_BUILD ON
+  LOG_OUTPUT_ON_FAILURE ON)
+
+add_library(concrete_cpu_noise_model STATIC IMPORTED)
+set_target_properties(concrete_cpu_noise_model PROPERTIES IMPORTED_LOCATION "${CONCRETE_CPU_NOISE_MODEL_STATIC_LIB}")
+add_dependencies(concrete_cpu_noise_model concrete_cpu_noise_model_rust)
+
 # --------------------------------------------------------------------------------
 # Concrete Cuda Configuration
 # --------------------------------------------------------------------------------
