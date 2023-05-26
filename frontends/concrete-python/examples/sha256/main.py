@@ -214,7 +214,7 @@ def Maj(a_word, b_word, c_word):
     return (a_word & b_word) ^ (a_word & c_word) ^ (b_word & c_word)
 
 
-def loop(state, w_i_plus_k_i):
+def state_update(state, w_i_plus_k_i):
     a, b, c, d, e, f, g, h = state
 
     temp1 = add(h, S1(e), Ch(e, f, g), w_i_plus_k_i)
@@ -247,18 +247,12 @@ def sha256(data, number_of_rounds=64):
                         w[j] = add(w[j - 16], s0(w[j - 15]), w[j - 7], s1(w[j - 2]))
 
                     w_i_plus_k_i = add(w[j], k_chunks[j])
-                    state = loop(state, w_i_plus_k_i)
+                    state = state_update(state, w_i_plus_k_i)
 
-            for j in range(8):
-                h_chunks[j] = add(h_chunks[j], state[j])
+            for j, (h_chunks_j, state_j) in enumerate(zip(h_chunks, state)):
+                h_chunks[j] = add(h_chunks_j, state_j)
 
-    result = []
-    for chunk in h_chunks:
-        flattened = []
-        for i in range(chunk.size):
-            flattened.append(chunk[i])
-        result.append(flattened)
-
+    result = [[chunks[i] for i in range(chunks.size)] for chunks in h_chunks]
     return fhe.array(result)
 
 
@@ -283,7 +277,7 @@ def sha256_preprocess(text):
 
 def chunks_to_hexdigest(chunked_numbers):
     hexes = [hex(chunks_to_number(chunks))[2:] for chunks in chunked_numbers]
-    return "".join([(8 - len(h)) * "0" + h for h in hexes])
+    return "".join([("0" * (8 - len(h))) + h for h in hexes])
 
 
 class HomomorphicSHA:
