@@ -842,6 +842,7 @@ protected:
   std::unique_ptr<TensorData> tensor;
 
 public:
+  ScalarOrTensorData(const ScalarOrTensorData &td) = delete;
   ScalarOrTensorData(ScalarOrTensorData &&td)
       : scalar(std::move(td.scalar)), tensor(std::move(td.tensor)) {}
 

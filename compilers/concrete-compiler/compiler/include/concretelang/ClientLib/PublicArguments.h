@@ -32,6 +32,81 @@ using concretelang::error::StringError;
 
 class EncryptedArguments;
 
+/// @brief allows to transform a serializable value into a clear value
+class ValueDecrypter {
+public:
+  ValueDecrypter(KeySet &keySet, ClientParameters clientParameters)
+      : _keySet(keySet), _clientParameters(clientParameters) {}
+
+  /// @brief Transforms a FHE value into a clear scalar value
+  /// @tparam T The type of the clear scalar value
+  /// @param value The value to decrypt
+  /// @param pos The position of the argument
+  /// @return Either the decrypted value or an error if the gate doesn't match
+  /// the expected result.
+  template <typename T>
+  outcome::checked<T, StringError> decrypt(ScalarOrTensorData &value,
+                                           size_t pos) {
+    OUTCOME_TRY(auto gate, _clientParameters.ouput(pos));
+    if (!gate.isEncrypted())
+      return value.getScalar().getValue<T>();
+
+    auto &buffer = value.getTensor();
+
+    auto ciphertext = buffer.getOpaqueElementPointer(0);
+    uint64_t decrypted;
+
+    // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
+    // FIXME: this may break alignment restrictions on some
+    // architectures
+    auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
+    OUTCOME_TRYV(_keySet.decrypt_lwe(0, ciphertextu64, decrypted));
+
+    return (T)decrypted;
+  }
+
+  /// @brief Transforms a FHE value  into a vector of clear value
+  /// @tparam T The type of the clear scalar value
+  /// @param value The value to decrypt
+  /// @param pos The position of the argument
+  /// @return Either the decrypted value or an error if the gate doesn't match
+  /// the expected result.
+  template <typename T>
+  outcome::checked<std::vector<T>, StringError>
+  decryptTensor(ScalarOrTensorData &value, size_t pos) {
+    OUTCOME_TRY(auto gate, _clientParameters.ouput(pos));
+    if (!gate.isEncrypted())
+      return value.getTensor().asFlatVector<T>();
+
+    auto &buffer = value.getTensor();
+    auto lweSize = _clientParameters.lweBufferSize(gate);
+
+    std::vector<T> decryptedValues(buffer.length() / lweSize);
+    for (size_t i = 0; i < decryptedValues.size(); i++) {
+      auto ciphertext = buffer.getOpaqueElementPointer(i * lweSize);
+      uint64_t decrypted;
+
+      // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
+      // FIXME: this may break alignment restrictions on some
+      // architectures
+      auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
+      OUTCOME_TRYV(_keySet.decrypt_lwe(0, ciphertextu64, decrypted));
+      decryptedValues[i] = decrypted;
+    }
+    return decryptedValues;
+  }
+
+  /// Return the shape of the clear tensor of a result.
+  outcome::checked<std::vector<int64_t>, StringError> getShape(size_t pos) {
+    OUTCOME_TRY(auto gate, _clientParameters.ouput(pos));
+    return gate.shape.dimensions;
+  }
+
+private:
+  KeySet &_keySet;
+  ClientParameters _clientParameters;
+};
+
 /// PublicArguments will be sended to the server. It includes encrypted
 /// arguments and public keys.
 class PublicArguments {
@@ -71,6 +146,17 @@ struct PublicResult {
 
   PublicResult(PublicResult &) = delete;
 
+  /// @brief Return a value from the PublicResult
+  /// @param argPos The position of the value in the PublicResult
+  /// @return Either the value or an error if there are no value at this
+  /// position
+  outcome::checked<ScalarOrTensorData, StringError> getValue(size_t argPos) {
+    if (argPos >= buffers.size()) {
+      return StringError("result #") << argPos << " does not exists";
+    }
+    return std::move(buffers[argPos]);
+  }
+
   /// Create a public result from buffers.
   static std::unique_ptr<PublicResult>
   fromBuffers(const ClientParameters &clientParameters,
@@ -90,49 +176,14 @@ struct PublicResult {
   /// Serialize into an output stream.
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 
-  /// Get the original integer that was decomposed into chunks of `chunkWidth`
-  /// bits each
-  uint64_t fromChunks(std::vector<uint64_t> chunks, unsigned int chunkWidth) {
-    uint64_t value = 0;
-    uint64_t mask = (1 << chunkWidth) - 1;
-    for (size_t i = 0; i < chunks.size(); i++) {
-      auto chunk = chunks[i] & mask;
-      value += chunk << (chunkWidth * i);
-    }
-    return value;
-  }
-
   /// Get the result at `pos` as a scalar. Decryption happens if the
   /// result is encrypted.
   template <typename T>
   outcome::checked<T, StringError> asClearTextScalar(KeySet &keySet,
                                                      size_t pos) {
-    OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
-    if (!gate.isEncrypted())
-      return buffers[pos].getScalar().getValue<T>();
-
-    // Chunked integers are represented as tensors at a lower level, so we need
-    // to deal with them as tensors, then build the resulting scalar out of the
-    // tensor values
-    if (gate.chunkInfo.has_value()) {
-      OUTCOME_TRY(std::vector<uint64_t> decryptedChunks,
-                  this->asClearTextVector<uint64_t>(keySet, pos));
-      uint64_t decrypted = fromChunks(decryptedChunks, gate.chunkInfo->width);
-      return (T)decrypted;
-    }
-
-    auto &buffer = buffers[pos].getTensor();
-
-    auto ciphertext = buffer.getOpaqueElementPointer(0);
-    uint64_t decrypted;
-
-    // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
-    // FIXME: this may break alignment restrictions on some
-    // architectures
-    auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
-    OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertextu64, decrypted));
-
-    return (T)decrypted;
+    ValueDecrypter decrypter(keySet, clientParameters);
+    auto &data = buffers[pos];
+    return decrypter.template decrypt<T>(data, pos);
   }
 
   /// Get the result at `pos` as a vector. Decryption happens if the
@@ -140,26 +191,8 @@ struct PublicResult {
   template <typename T>
   outcome::checked<std::vector<T>, StringError>
   asClearTextVector(KeySet &keySet, size_t pos) {
-    OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
-    if (!gate.isEncrypted())
-      return buffers[pos].getTensor().asFlatVector<T>();
-
-    auto &buffer = buffers[pos].getTensor();
-    auto lweSize = clientParameters.lweBufferSize(gate);
-
-    std::vector<T> decryptedValues(buffer.length() / lweSize);
-    for (size_t i = 0; i < decryptedValues.size(); i++) {
-      auto ciphertext = buffer.getOpaqueElementPointer(i * lweSize);
-      uint64_t decrypted;
-
-      // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
-      // FIXME: this may break alignment restrictions on some
-      // architectures
-      auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
-      OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertextu64, decrypted));
-      decryptedValues[i] = decrypted;
-    }
-    return decryptedValues;
+    ValueDecrypter decrypter(keySet, clientParameters);
+    return decrypter.template decryptTensor<T>(buffers[pos], pos);
   }
 
   /// Return the shape of the clear tensor of a result.

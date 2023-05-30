@@ -13,8 +13,7 @@ using StringError = concretelang::error::StringError;
 
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 EncryptedArguments::exportPublicArguments(ClientParameters clientParameters) {
-  return std::make_unique<PublicArguments>(clientParameters,
-                                           std::move(ciphertextBuffers));
+  return std::make_unique<PublicArguments>(clientParameters, std::move(values));
 }
 
 /// Split the input integer into `size` chunks of `chunkWidth` bits each
@@ -32,59 +31,13 @@ std::vector<uint64_t> chunkInput(uint64_t value, size_t size,
 }
 
 outcome::checked<void, StringError>
-EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
-  OUTCOME_TRYV(checkPushTooManyArgs(keySet));
-  OUTCOME_TRY(CircuitGate input, keySet.clientParameters().input(currentPos));
-  // a chunked input is represented as a tensor in lower levels, and need to to
-  // splitted into chunks and encrypted as such
-  if (input.chunkInfo.has_value()) {
-    std::vector<uint64_t> chunks =
-        chunkInput(arg, input.shape.size, input.chunkInfo.value().width);
-    return this->pushArg(chunks.data(), input.shape.size, keySet);
-  }
-  // we only increment if we don't forward the call to another pushArg method
-  auto pos = currentPos++;
-  if (input.shape.size != 0) {
-    return StringError("argument #") << pos << " is not a scalar";
-  }
-  if (!input.encryption.has_value()) {
-    // clear scalar: just push the argument
-    ciphertextBuffers.push_back(ScalarData(arg));
-    return outcome::success();
-  }
-
-  std::vector<int64_t> shape = keySet.clientParameters().bufferShape(input);
-
-  // Allocate empty
-  ciphertextBuffers.emplace_back(
-      TensorData(shape, clientlib::EncryptedScalarElementType,
-                 clientlib::EncryptedScalarElementWidth));
-  TensorData &values_and_sizes = ciphertextBuffers.back().getTensor();
-
-  OUTCOME_TRYV(keySet.encrypt_lwe(
-      pos, values_and_sizes.getElementPointer<decrypted_scalar_t>(0), arg));
-
-  return outcome::success();
-}
-
-outcome::checked<void, StringError>
-EncryptedArguments::checkPushTooManyArgs(KeySet &keySet) {
-  size_t arity = keySet.numInputs();
-  if (currentPos < arity) {
-    return outcome::success();
-  }
-  return StringError("function has arity ")
-         << arity << " but is applied to too many arguments";
-}
-
-outcome::checked<void, StringError>
 EncryptedArguments::checkAllArgs(KeySet &keySet) {
   size_t arity = keySet.numInputs();
-  if (currentPos == arity) {
+  if (values.size() == arity) {
     return outcome::success();
   }
   return StringError("function expects ")
-         << arity << " arguments but has been called with " << currentPos
+         << arity << " arguments but has been called with " << values.size()
          << " arguments";
 }
 

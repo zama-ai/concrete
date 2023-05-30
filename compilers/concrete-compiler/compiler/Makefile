@@ -295,9 +295,7 @@ generate-cpu-tests: \
 
 SECURITY_TO_TEST=128
 OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
-PARALLEL_END_2_END_TESTS= end_to_end_jit_test \
-	end_to_end_jit_lambda \
-	end_to_end_jit_lambda
+PARALLEL_END_2_END_TESTS= end_to_end_jit_test end_to_end_jit_lambda
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
 	$(foreach TEST,$(PARALLEL_END_2_END_TESTS), \
 	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST);)
