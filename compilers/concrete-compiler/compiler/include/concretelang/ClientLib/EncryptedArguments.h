@@ -16,12 +16,113 @@
 #include "concretelang/ClientLib/Types.h"
 #include "concretelang/Common/BitsSize.h"
 
+#include "concrete-protocol.pb.h"
+
 namespace concretelang {
 namespace clientlib {
 
 using concretelang::error::StringError;
 
 class PublicArguments;
+
+/// @brief The ArgumentsExporter class is a class that allows to transform clear
+/// arguments to the one expected by a server lambda.
+class ValueExporter {
+
+public:
+  /// @brief
+  /// @param keySet
+  /// @param clientParameters TODO CircuitInfo here
+  // TODO: Get rid of the reference here could make troubles (see for KeySet
+  // copy constructor or shared pointers)
+  ValueExporter(KeySet &keySet, ClientParameters clientParameters)
+      : _keySet(keySet), _clientParameters(clientParameters) {}
+
+  /// @brief Export a scalar 64 bits integer to a concreteprocol::Value
+  /// @param arg An 64 bits integer
+  /// @param argPos The position of the argument to export
+  /// @return Either the exported value ready to be sent to the server or an
+  /// error if the gate doesn't match the expected argument.
+  outcome::checked<concreteprotocol::Value, StringError>
+  exportValue(uint64_t arg, size_t argPos);
+
+  /// @brief Export a tensor like buffer of values to a concreteprotocol::Value
+  /// @tparam T The type of values hold by the buffer
+  /// @param arg A pointer to a memory area where the values are stored
+  /// @param shape The shape of the tensor
+  /// @param argPos The position of the argument to export
+  /// @return Either the exported value ready to be sent to the server or an
+  /// error if the gate doesn't match the expected argument.
+  template <typename T>
+  outcome::checked<concreteprotocol::Value, StringError>
+  exportValue(const T *arg, llvm::ArrayRef<int64_t> shape, size_t argPos) {
+    OUTCOME_TRY(auto gate, _clientParameters.input(argPos));
+    OUTCOME_TRY_V(checkShape(shape, gate.shape));
+    if (gate.encryption.has_value()) {
+      return encryptTensor(arg, shape, gate.encryption.value());
+    }
+    // Set sizes
+    std::vector<int64_t> sizes = keySet.clientParameters().bufferShape(input);
+
+    if (input.encryption.has_value()) {
+      TensorData td(sizes, EncryptedScalarElementType,
+                    EncryptedScalarElementWidth);
+
+      auto lweSize = keySet.clientParameters().lweBufferSize(input);
+
+      for (size_t i = 0, offset = 0; i < input.shape.size;
+           i++, offset += lweSize) {
+        OUTCOME_TRYV(keySet.encrypt_lwe(
+            pos, td.getElementPointer<uint64_t>(offset), data[i]));
+      }
+      ciphertextBuffers.push_back(std::move(td));
+    } else {
+      auto bitsPerValue = bitWidthAsWord(input.shape.width);
+
+      TensorData td(sizes, bitsPerValue, input.shape.sign);
+      llvm::ArrayRef<T> values(data, TensorData::getNumElements(sizes));
+      td.bulkAssign(values);
+      ciphertextBuffers.push_back(std::move(td));
+    }
+  }
+
+  template <typename T>
+  static outcome::checked<concreteprotocol::Value, StringError>
+  encryptTensor(const T *arg, llvm::ArrayRef<int64_t> shape,
+                EncryptionGate &encryptionInfo) {
+    return StringError("encryptTensor NYI");
+  }
+
+  // TODO: concreteprotocol::Shape
+  static outcome::checked<void, StringError>
+  checkShape(llvm::ArrayRef<int64_t> shape, CircuitGateShape expected,
+             size_t argPos) {
+    // Check the shape of tensor
+    if (expected.dimensions.empty()) {
+      return StringError("argument #") << argPos << "is not a tensor";
+    }
+    if (shape.size() != expected.dimensions.size()) {
+      return StringError("argument #")
+             << argPos << "has not the expected number of dimension, got "
+             << shape.size() << " expected " << expected.dimensions.size();
+    }
+
+    // Check shape
+    for (size_t i = 0; i < shape.size(); i++) {
+      if (shape[i] != expected.dimensions[i]) {
+        return StringError("argument #")
+               << argPos << " has not the expected dimension #" << i
+               << " , got " << shape[i] << " expected "
+               << expected.dimensions[i];
+      }
+    }
+    return outcome::success()
+  }
+
+private:
+  KeySet &_keySet;
+  ClientParameters _clientParameters;
+};
 
 /// Temporary object used to hold and encrypt parameters before calling a
 /// ClientLambda. Use preferably TypeClientLambda and serializeCall(Args...).
@@ -32,8 +133,8 @@ class EncryptedArguments {
 public:
   EncryptedArguments() : currentPos(0) {}
 
-  /// Encrypts args thanks the given KeySet and pack the encrypted arguments to
-  /// an EncryptedArguments
+  /// Encrypts args thanks the given KeySet and pack the encrypted arguments
+  /// to an EncryptedArguments
   template <typename... Args>
   static outcome::checked<std::unique_ptr<EncryptedArguments>, StringError>
   create(KeySet &keySet, Args... args) {
@@ -215,7 +316,7 @@ private:
   size_t currentPos;
 
   /// Store buffers of ciphertexts
-  std::vector<ScalarOrTensorData> ciphertextBuffers;
+  std::vector<concreteprotocol::Value> values;
 };
 
 } // namespace clientlib

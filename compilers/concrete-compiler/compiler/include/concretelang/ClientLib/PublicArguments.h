@@ -15,6 +15,10 @@
 #include "concretelang/ClientLib/Types.h"
 #include "concretelang/Common/Error.h"
 
+#include "concrete-protocol.pb.h"
+
+namespace proto = concreteprotocol;
+
 namespace concretelang {
 namespace serverlib {
 class ServerLambda;
