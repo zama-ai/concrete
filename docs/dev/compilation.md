@@ -1,12 +1,18 @@
 # Compilation
 
-Compilation begins with tracing to get an easy-to-manipulate representation of the function. We call this representation a `Computation Graph`, which is basically a Directed Acyclic Graph (DAG) containing nodes representing computations done in the function. Working with graphs is good because they have been studied extensively and there are a lot of available algorithms to manipulate them. Internally, we use [networkx](https://networkx.org), which is an excellent graph library for Python.
+There are two main entrypoints to the Concrete Compiler. The first is to use the Concrete Python frontend. The second is to use the Compiler directly, which takes [MLIR](https://mlir.llvm.org/) as input. The first one is more high level and uses the second under the hood.
+
+Compilation begins in the **frontend** with tracing to get an easy-to-manipulate representation of the function. We call this representation a `Computation Graph`, which is basically a Directed Acyclic Graph (DAG) containing nodes representing computations done in the function. Working with graphs is good because they have been studied extensively and there are a lot of available algorithms to manipulate them. Internally, we use [networkx](https://networkx.org), which is an excellent graph library for Python.
 
 The next step in compilation is transforming the computation graph. There are many transformations we perform, and they will be discussed in their own sections. The result of transformations is just another computation graph.
 
 After transformations are applied, we need to determine the bounds (i.e., the minimum and the maximum values) of each intermediate node. This is required because FHE currently allows limited precision for computations. Bound measurement helps determine the required precision for the function.
 
-The final step is to transform the computation graph to equivalent `MLIR` code. Once the MLIR is generated, our Compiler backend compiles it down to native binaries.
+The **frontend** is almost done at this stage and only need to transform the computation graph to equivalent `MLIR` code. Once the `MLIR` is generated, our Compiler **backend** takes over. Any other **frontend** wishing to use the Compiler needs to plugin at this stage.
+
+The Compiler takes `MLIR` code that makes use of both the `FHE` and `FHELinalg` [dialects](https://mlir.llvm.org/docs/LangRef/#dialects) for scalar and tensor operations respectively.
+
+Compilation then ends with a series of [passes](#mlir-compiler-passes) that generates a native binary which contains executable code. Crypto parameters are generated along the way as well.
 
 ## Tracing
 
@@ -140,3 +146,23 @@ Assigned data types:
 * `*`: EncryptedScalar<**uint3**>
 * `3`: ClearScalar<**uint2**>
 * `+`: EncryptedScalar<**uint4**>
+
+## MLIR Compiler Passes
+
+We describe below some of the main passes in the compilation pipeline.
+
+### FHE to TFHE
+
+This pass converts high level operations which are not crypto specific get lowered to operations from the TFHE scheme. Ciphertexts get introduced in the code as well. TFHE operations and ciphertexts require some parameters which need to be chosen, and the [TFHE Parameterization](#tfhe-parameterization) pass does just that.
+
+### TFHE Parameterization
+
+TFHE Parameterization takes care of introducing the chosen parameters in the Intermediate Representation (IR). After this pass, you should be able to see ciphertexts' dimensions, as well as other parameters in the IR.
+
+### TFHE to Concrete
+
+This pass lowers TFHE operations to low level operations that are closer to the backend implementations, working on tensors and memory buffers (after a bufferization pass).
+
+### Concrete to LLVM
+
+At the end, we lower everything to LLVM-IR in order to generate the final binary.
