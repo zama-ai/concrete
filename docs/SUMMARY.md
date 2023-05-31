@@ -42,9 +42,9 @@
 * [Terminology and Structure](dev/terminology_and_structure.md)
 * [Frontend fusing](dev/fusing.md)
 
-### Compilation workflow
+### Compilation
 
-* [Compilation](dev/compilation/README.md)
+* [Compilation Workflow](dev/compilation/README.md)
 * [Automatic Crypto Parameters choice](dev/compilation/optimizer.md)
 * [MLIR FHE Dialects](dev/compilation/dialects.md)
     * [FHE Dialect](dev/compilation/fhe_dialect.md)
