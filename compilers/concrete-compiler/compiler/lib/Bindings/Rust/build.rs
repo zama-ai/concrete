@@ -5,7 +5,22 @@ use std::error::Error;
 use std::path::Path;
 use std::process::exit;
 
-const MLIR_STATIC_LIBS: [&str; 174] = [
+const MLIR_STATIC_LIBS: &[&str] = &[
+    "MLIRArithAttrToLLVMConversion",
+    "MLIRDestinationStyleOpInterface",
+    "MLIRVectorTransformOps",
+    "MLIRMemRefTransformOps",
+    "MLIRGPUTransformOps",
+    "MLIRAffineTransformOps",
+    "MLIRBytecodeReader",
+    "MLIRAsmParser",
+    "MLIRIndexDialect",
+    "MLIRMaskableOpInterface",
+    "MLIRMaskingOpInterface",
+    "MLIRInferIntRangeCommon",
+    "MLIRShapedOpInterfaces",
+    "MLIRTransformDialectUtils",
+    "MLIRParallelCombiningOpInterface",
     "MLIRMemRefDialect",
     "MLIRVectorToSPIRV",
     "MLIRControlFlowInterfaces",
@@ -182,7 +197,7 @@ const MLIR_STATIC_LIBS: [&str; 174] = [
     "MLIRArithToLLVM",
 ];
 
-const LLVM_STATIC_LIBS: [&str; 48] = [
+const LLVM_STATIC_LIBS: &[&str] = &[
     "LLVMAggressiveInstCombine",
     "LLVMAnalysis",
     "LLVMAsmParser",
@@ -214,6 +229,7 @@ const LLVM_STATIC_LIBS: [&str; 48] = [
     "LLVMMCParser",
     "LLVMObjCARCOpts",
     "LLVMObject",
+    "LLVMOption",
     "LLVMOrcJIT",
     "LLVMOrcShared",
     "LLVMOrcTargetProcess",
@@ -228,13 +244,14 @@ const LLVM_STATIC_LIBS: [&str; 48] = [
     "LLVMTableGen",
     "LLVMTableGenGlobalISel",
     "LLVMTarget",
+    "LLVMTargetParser",
     "LLVMTextAPI",
     "LLVMTransformUtils",
     "LLVMVectorize",
 ];
 
 #[cfg(target_arch = "aarch64")]
-const LLVM_TARGET_SPECIFIC_STATIC_LIBS: [&str; 4] = [
+const LLVM_TARGET_SPECIFIC_STATIC_LIBS: [&str; 4] = &[
     "LLVMAArch64Utils",
     "LLVMAArch64Info",
     "LLVMAArch64Desc",
@@ -242,10 +259,9 @@ const LLVM_TARGET_SPECIFIC_STATIC_LIBS: [&str; 4] = [
 ];
 
 #[cfg(target_arch = "x86_64")]
-const LLVM_TARGET_SPECIFIC_STATIC_LIBS: [&str; 3] =
-    ["LLVMX86CodeGen", "LLVMX86Desc", "LLVMX86Info"];
+const LLVM_TARGET_SPECIFIC_STATIC_LIBS: &[&str] = &["LLVMX86CodeGen", "LLVMX86Desc", "LLVMX86Info"];
 
-const CONCRETE_COMPILER_STATIC_LIBS: [&str; 33] = [
+const CONCRETE_COMPILER_STATIC_LIBS: &[&str] = &[
     "RTDialect",
     "RTDialectTransforms",
     "ConcretelangSupport",
@@ -262,15 +278,20 @@ const CONCRETE_COMPILER_STATIC_LIBS: [&str; 33] = [
     "ConcretelangSDFGTransforms",
     "CONCRETELANGCAPISupport",
     "FHELinalgDialect",
+    "TracingDialect",
+    "TracingDialectTransforms",
+    "TracingToCAPI",
     "ConcretelangInterfaces",
     "TFHEDialect",
     "CONCRETELANGCAPIFHELINALG",
     "FHELinalgDialectTransforms",
     "FHEDialect",
+    "FHEDialectTransforms",
     "TFHEToConcrete",
     "FHEToTFHECrt",
     "FHEToTFHEScalar",
     "TFHEDialectTransforms",
+    "TFHEKeyNormalization",
     "concrete_optimizer",
     "LinalgExtras",
     "FHEDialectAnalysis",
