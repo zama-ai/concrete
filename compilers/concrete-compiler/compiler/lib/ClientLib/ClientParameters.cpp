@@ -4,11 +4,15 @@
 // for license information.
 
 #include <fstream>
+#include <optional>
+#include <vector>
 
 #include "boost/outcome.h"
 #include "llvm/ADT/Hashing.h"
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/Common/Protobuf.h"
 
 namespace concretelang {
 namespace clientlib {
@@ -60,6 +64,198 @@ std::size_t ClientParameters::hash() {
     packingKeyswitchKeyParam.hash(currentHash);
   }
   return currentHash;
+}
+
+std::string ClientParameters::getClientParametersPath(std::string path) {
+  return path + CLIENT_PARAMETERS_EXT;
+}
+
+typedef std::tuple<
+    std::vector<LweSecretKeyParam>, std::vector<BootstrapKeyParam>,
+    std::vector<KeyswitchKeyParam>, std::vector<PackingKeyswitchKeyParam>>
+    ClientParametersKeysetParams;
+
+ClientParametersKeysetParams
+extractKeysetParams(const concreteprotocol::KeysetInfo &keysetInfo) {
+  std::vector<LweSecretKeyParam> secretKeys;
+  for (auto keyInfo : keysetInfo.lwesecretkeys()) {
+    secretKeys.push_back(LweSecretKeyParam{keyInfo.params().lwedimension()});
+  }
+
+  std::vector<BootstrapKeyParam> bootstrapKeys;
+  for (auto keyInfo : keysetInfo.lwebootstrapkeys()) {
+    bootstrapKeys.push_back(BootstrapKeyParam{
+        keyInfo.inputid(), keyInfo.outputid(), keyInfo.params().levelcount(),
+        keyInfo.params().baselog(), keyInfo.params().glwedimension(),
+        keyInfo.params().variance(), keyInfo.params().polynomialsize(),
+        secretKeys[keyInfo.inputid()].lweDimension()});
+  }
+
+  std::vector<KeyswitchKeyParam> keyswitchKeys;
+  for (auto keyInfo : keysetInfo.lwekeyswitchkeys()) {
+    keyswitchKeys.push_back(KeyswitchKeyParam{
+        keyInfo.inputid(),
+        keyInfo.outputid(),
+        keyInfo.params().levelcount(),
+        keyInfo.params().baselog(),
+        keyInfo.params().variance(),
+    });
+  }
+
+  std::vector<PackingKeyswitchKeyParam> packingKeyswitchKeys;
+  for (auto keyInfo : keysetInfo.packingkeyswitchkeys()) {
+    packingKeyswitchKeys.push_back(PackingKeyswitchKeyParam{
+        keyInfo.inputid(), keyInfo.outputid(), keyInfo.params().levelcount(),
+        keyInfo.params().baselog(), keyInfo.params().glwedimension(),
+        keyInfo.params().polynomialsize(),
+        secretKeys[keyInfo.inputid()].lweDimension(),
+        keyInfo.params().variance()});
+  }
+
+  return {secretKeys, bootstrapKeys, keyswitchKeys, packingKeyswitchKeys};
+}
+
+CircuitGate gateInfoToCircuitGate(concreteprotocol::GateInfo &gateInfo) {
+
+  uint64_t size = 0;
+  if (gateInfo.shape().dimensions_size() > 0) {
+    size = 1;
+    for (auto dim : gateInfo.shape().dimensions()) {
+      size *= dim;
+    }
+  }
+  std::vector<int64_t> dims{gateInfo.shape().dimensions().begin(),
+                            gateInfo.shape().dimensions().end()};
+
+  if (gateInfo.has_lweciphertext() && gateInfo.lweciphertext().has_integer()) {
+    auto encryptionInfo = gateInfo.lweciphertext().encryption();
+    auto encodingInfo = gateInfo.lweciphertext().integer();
+    size_t width = encodingInfo.width();
+    bool isSigned = encodingInfo.issigned();
+    LweSecretKeyID secretKeyID = encryptionInfo.keyid();
+    Variance variance = encryptionInfo.variance();
+    CRTDecomposition crt = std::vector<int64_t>();
+    std::optional<ChunkInfo> chunkInfo = std::nullopt;
+    if (encodingInfo.has_chunked()) {
+      auto chunkedMode = encodingInfo.chunked();
+      width = chunkedMode.width();
+      chunkInfo = ChunkInfo{chunkedMode.size(), chunkedMode.width()};
+    }
+    if (encodingInfo.has_crt()) {
+      auto crtMode = encodingInfo.crt();
+      crt = std::vector<int64_t>(crtMode.moduli().begin(),
+                                 crtMode.moduli().end());
+    }
+    return CircuitGate{
+        /* .encryption = */ std::optional<EncryptionGate>({
+            /* .secretKeyID = */ secretKeyID,
+            /* .variance = */ variance,
+            /* .encoding = */
+            {
+                /* .precision = */ width,
+                /* .crt = */ crt,
+                /*.sign = */ isSigned,
+            },
+        }),
+        /*.shape = */
+        {
+            /*.width = */ width,
+            /*.dimensions = */ dims,
+            /*.size = */ size,
+            /*.sign = */ isSigned,
+        },
+        /*.chunkInfo = */ chunkInfo,
+    };
+  } else if (gateInfo.has_lweciphertext() &&
+             gateInfo.lweciphertext().has_boolean()) {
+    auto encryptionInfo = gateInfo.lweciphertext().encryption();
+    auto encodingInfo = gateInfo.lweciphertext().boolean();
+    size_t width = 2;
+    bool isSigned = false;
+    LweSecretKeyID secretKeyID = encryptionInfo.keyid();
+    Variance variance = encryptionInfo.variance();
+    CRTDecomposition crt = std::vector<int64_t>();
+    return CircuitGate{
+        /* .encryption = */ std::optional<EncryptionGate>({
+            /* .secretKeyID = */ secretKeyID,
+            /* .variance = */ variance,
+            /* .encoding = */
+            {
+                /* .precision = */ width,
+                /* .crt = */ crt,
+                /*.sign = */ isSigned,
+            },
+        }),
+        /*.shape = */
+        {
+            /*.width = */ width,
+            /*.dimensions = */ dims,
+            /*.size = */ size,
+            /*.sign = */ isSigned,
+        },
+        /*.chunkInfo = */ std::nullopt,
+    };
+  } else if (gateInfo.has_plaintext()) {
+    auto encodingInfo = gateInfo.plaintext();
+    size_t width = encodingInfo.integerprecision();
+    bool sign = encodingInfo.issigned();
+    return CircuitGate{
+        /*.encryption = */ std::nullopt,
+        /*.shape = */
+        {/*.width = */ width,
+         /*.dimensions = */ dims,
+         /*.size = */ size,
+         /* .sign */ sign},
+        /*.chunkInfo = */ std::nullopt,
+    };
+  } else if (gateInfo.has_index()) {
+    auto encodingInfo = gateInfo.index();
+    size_t width = encodingInfo.integerprecision();
+    bool sign = encodingInfo.issigned();
+    return CircuitGate{
+        /*.encryption = */ std::nullopt,
+        /*.shape = */
+        {/*.width = */ width,
+         /*.dimensions = */ dims,
+         /*.size = */ size,
+         /* .sign */ sign},
+        /*.chunkInfo = */ std::nullopt,
+    };
+  } else {
+    assert(false && "Fatal error");
+  }
+}
+
+typedef std::tuple<std::vector<CircuitGate>, std::vector<CircuitGate>,
+                   std::string>
+    ClientParametersCircuitParams;
+
+ClientParametersCircuitParams
+extractCircuitParams(const concreteprotocol::CircuitInfo &circuitInfo) {
+  std::vector<CircuitGate> inputs;
+  for (auto gateInfo : circuitInfo.inputs()) {
+    inputs.push_back(gateInfoToCircuitGate(gateInfo));
+  }
+  std::vector<CircuitGate> outputs;
+  for (auto gateInfo : circuitInfo.outputs()) {
+    outputs.push_back(gateInfoToCircuitGate(gateInfo));
+  }
+  return {inputs, outputs, circuitInfo.name()};
+}
+
+ClientParameters ClientParameters::fromProgramInfo(
+    const concreteprotocol::ProgramInfo &programInfo) {
+  auto output = ClientParameters{};
+  auto keysetParams = extractKeysetParams(programInfo.keyset());
+  auto circuitParams = extractCircuitParams(programInfo.circuits(0));
+  output.secretKeys = std::get<0>(keysetParams);
+  output.bootstrapKeys = std::get<1>(keysetParams);
+  output.keyswitchKeys = std::get<2>(keysetParams);
+  output.packingKeyswitchKeys = std::get<3>(keysetParams);
+  output.inputs = std::get<0>(circuitParams);
+  output.outputs = std::get<1>(circuitParams);
+  output.functionName = std::get<2>(circuitParams);
+  return output;
 }
 
 llvm::json::Value toJSON(const LweSecretKeyParam &v) {
@@ -232,10 +428,6 @@ bool fromJSON(const llvm::json::Value j, ClientParameters &v,
          O.map("packingKeyswitchKeys", v.packingKeyswitchKeys) &&
          O.map("inputs", v.inputs) && O.map("outputs", v.outputs) &&
          O.map("functionName", v.functionName);
-}
-
-std::string ClientParameters::getClientParametersPath(std::string path) {
-  return path + CLIENT_PARAMETERS_EXT;
 }
 
 outcome::checked<std::vector<ClientParameters>, StringError>

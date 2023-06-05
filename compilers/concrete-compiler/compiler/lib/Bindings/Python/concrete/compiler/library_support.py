@@ -319,10 +319,10 @@ class LibrarySupport(WrapperCpp):
         """
         return self.cpp().get_shared_lib_path()
 
-    def get_client_parameters_path(self) -> str:
-        """Get the path where the client parameters file is expected to be.
+    def get_program_info_path(self) -> str:
+        """Get the path where the program info file is expected to be.
 
         Returns:
-            str: path to the client parameters file
+            str: path to the program info file
         """
-        return self.cpp().get_client_parameters_path()
+        return self.cpp().get_program_info_path()

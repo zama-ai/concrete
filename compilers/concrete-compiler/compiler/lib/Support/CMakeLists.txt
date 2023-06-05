@@ -9,7 +9,7 @@ add_mlir_library(
   JITSupport.cpp
   LambdaArgument.cpp
   V0Parameters.cpp
-  ClientParametersGeneration.cpp
+  ProgramInfoGeneration.cpp
   logging.cpp
   Jit.cpp
   LLVMEmitFile.cpp
@@ -37,6 +37,7 @@ add_mlir_library(
   LinalgExtras
   TFHEDialectTransforms
   concrete_optimizer
+  concrete-protocol
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
   ConcretelangRuntime

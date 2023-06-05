@@ -150,7 +150,8 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
-	-DCUDAToolkit_ROOT=$(CUDA_PATH)
+	-DCUDAToolkit_ROOT=$(CUDA_PATH)\
+	-DGOOGLE_PROTOBUF_NO_RTTI=ON
 	touch $@
 
 build-initialized: $(BUILD_DIR)/configured.stamp

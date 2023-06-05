@@ -234,10 +234,10 @@ def test_lib_compilation_artifacts():
     artifact_dir = "./test_artifacts"
     engine = LibrarySupport.new(artifact_dir)
     engine.compile(mlir_str)
-    assert os.path.exists(engine.get_client_parameters_path())
+    assert os.path.exists(engine.get_program_info_path())
     assert os.path.exists(engine.get_shared_lib_path())
     shutil.rmtree(artifact_dir)
-    assert not os.path.exists(engine.get_client_parameters_path())
+    assert not os.path.exists(engine.get_program_info_path())
     assert not os.path.exists(engine.get_shared_lib_path())
 
 

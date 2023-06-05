@@ -60,7 +60,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](std::string funcname) { return CompilationOptions(funcname); }))
       .def("set_funcname",
            [](CompilationOptions &options, std::string funcname) {
-             options.clientParametersFuncName = funcname;
+             options.mainFuncName = funcname;
            })
       .def("set_verify_diagnostics",
            [](CompilationOptions &options, bool b) {
@@ -226,8 +226,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](LibrarySupport_Py &support) {
              return library_get_shared_lib_path(support);
            })
-      .def("get_client_parameters_path", [](LibrarySupport_Py &support) {
-        return library_get_client_parameters_path(support);
+      .def("get_program_info_path", [](LibrarySupport_Py &support) {
+        return library_get_program_info_path(support);
       });
 
   class ClientSupport {};

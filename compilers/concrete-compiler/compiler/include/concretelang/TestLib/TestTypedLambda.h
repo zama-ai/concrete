@@ -44,7 +44,7 @@ public:
        uint64_t seed_lsb = 0,
        std::shared_ptr<KeySetCache> unsecure_cache = nullptr) {
     std::string jsonPath =
-        mlir::concretelang::CompilerEngine::Library::getClientParametersPath(
+        mlir::concretelang::CompilerEngine::Library::getProgramInfoPath(
             outputLib);
     OUTCOME_TRY(auto cLambda, ClientLambda::load(funcName, jsonPath));
     OUTCOME_TRY(auto sLambda, ServerLambda::load(funcName, outputLib));

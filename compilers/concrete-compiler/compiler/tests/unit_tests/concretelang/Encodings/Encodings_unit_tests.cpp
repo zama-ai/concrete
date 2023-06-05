@@ -7,6 +7,7 @@
 
 #include "boost/outcome.h"
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/ClientLambda.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
@@ -40,14 +41,23 @@ compile(std::string outputLib, std::string source,
       mlir::concretelang::CompilationContext::createShared();
   mlir::concretelang::CompilerEngine ce{ccx};
   mlir::concretelang::CompilationOptions options(funcname);
-  options.encodings = encodings::CircuitEncodings{
-      {
-          encodings::EncryptedIntegerScalarEncoding{3, false},
-          encodings::EncryptedIntegerScalarEncoding{3, false},
-      },
-      {
-          encodings::EncryptedIntegerScalarEncoding{3, false},
-      }};
+
+  auto encoding = concreteprotocol::EncodingInfo();
+  encoding.set_allocated_shape(new concreteprotocol::Shape());
+  auto integer = new concreteprotocol::IntegerCiphertextEncodingInfo();
+  integer->set_allocated_native(
+      new concreteprotocol::IntegerCiphertextEncodingInfo::NativeMode());
+  integer->set_width(3);
+  integer->set_issigned(false);
+  encoding.set_allocated_integerciphertext(integer);
+  options.encodings = concreteprotocol::CircuitEncodingInfo();
+  options.encodings->mutable_inputs()->AddAllocated(
+      new concreteprotocol::EncodingInfo(encoding));
+  options.encodings->mutable_inputs()->AddAllocated(
+      new concreteprotocol::EncodingInfo(encoding));
+  options.encodings->mutable_outputs()->AddAllocated(
+      new concreteprotocol::EncodingInfo(encoding));
+  options.encodings->set_allocated_name(new std::string("main"));
   options.v0Parameter = {2, 10, 693, 4, 9, 7, 2, std::nullopt};
   ce.setCompilationOptions(options);
   auto result = ce.compile(sources, outputLib);

@@ -9,9 +9,12 @@
 #include <cstddef>
 #include <vector>
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
 #include "llvm/Support/Error.h"
+
+namespace protocol = concreteprotocol;
 
 namespace mlir {
 namespace concretelang {
@@ -45,9 +48,8 @@ struct CompilationFeedback {
   /// @brief crt decomposition of outputs, if crt is not used, empty vectors
   std::vector<std::vector<int64_t>> crtDecompositionsOfOutputs;
 
-  /// Fill the sizes from the client parameters.
-  void
-  fillFromClientParameters(::concretelang::clientlib::ClientParameters params);
+  /// Fill the sizes from the program info.
+  void fillFromProgramInfo(protocol::ProgramInfo &params);
 
   /// Load the compilation feedback from a path
   static outcome::checked<CompilationFeedback, StringError>
