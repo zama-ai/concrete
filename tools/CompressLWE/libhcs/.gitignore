@@ -1,0 +1,18 @@
+doc/man
+doc/html
+doc/doxygen_sqlite3.db
+a.out
+lib/*
+*.skip
+Makefile*
+bin/*
+build/*
+
+# Ignore all cmake build files
+Testing
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+!bench/Makefile
