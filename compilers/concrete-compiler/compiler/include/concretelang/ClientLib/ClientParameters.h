@@ -13,6 +13,7 @@
 
 #include "boost/outcome.h"
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/Common/Error.h"
 
 #include <llvm/Support/JSON.h>
@@ -216,6 +217,9 @@ struct ClientParameters {
   std::vector<CircuitGate> inputs;
   std::vector<CircuitGate> outputs;
   std::string functionName;
+
+  static ClientParameters
+  fromProgramInfo(const concreteprotocol::ProgramInfo &programInfo);
 
   size_t hash();
 

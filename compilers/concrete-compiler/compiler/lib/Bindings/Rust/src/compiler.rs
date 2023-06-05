@@ -600,10 +600,10 @@ impl LibrarySupport {
         }
     }
 
-    /// Get path to the client parameters
-    pub fn client_parameters_path(&self) -> String {
+    /// Get path to the program info
+    pub fn program_info_path(&self) -> String {
         unsafe {
-            MlirStringRef(ffi::librarySupportGetClientParametersPath(self._c))
+            MlirStringRef(ffi::librarySupportGetProgramInfoPath(self._c))
                 .to_string()
                 .unwrap()
         }
@@ -1182,7 +1182,7 @@ mod test {
         assert!(!lib.is_null());
         // the sharedlib should be enough as a sign that the compilation worked
         assert!(Path::new(support.shared_lib_path().as_str()).exists());
-        assert!(Path::new(support.client_parameters_path().as_str()).exists());
+        assert!(Path::new(support.program_info_path().as_str()).exists());
     }
 
     /// We want to make sure setting a pointer to null in rust passes the nullptr check in C/Cpp

@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.17)
 
 project(concrete-protocol CXX)
 
-
-
 get_filename_component(PROTO_FILE "src/concrete-protocol.proto" ABSOLUTE)
 get_filename_component(PROTO_FOLDER "${PROTO_FILE}" DIRECTORY)
 
@@ -20,3 +18,4 @@ add_library(concrete-protocol STATIC
   ${GEN_CPP}
   ${GEN_HDR})
 target_compile_options(concrete-protocol PRIVATE "-Wno-c++98-compat-extra-semi")
+target_link_libraries(concrete-protocol PUBLIC protobuf::libprotobuf)

@@ -98,7 +98,7 @@ MLIR_CAPI_EXPORTED std::string
 library_get_shared_lib_path(LibrarySupport_Py support);
 
 MLIR_CAPI_EXPORTED std::string
-library_get_client_parameters_path(LibrarySupport_Py support);
+library_get_program_info_path(LibrarySupport_Py support);
 
 // Client Support bindings ///////////////////////////////////////////////////
 

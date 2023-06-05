@@ -42,7 +42,7 @@ message LweSecretKeyParams {
 
 message LweSecretKeyInfo {
     uint32 id = 1;
-    LweSecretKeyParams parameters = 2;
+    LweSecretKeyParams params = 2;
 }
 
 message LweSecretKey {
@@ -215,6 +215,7 @@ message LweCiphertextEncryptionInfo {
     uint32 keyId = 1;
     double variance = 2;
     uint32 integerPrecision = 3;
+    uint32 lweDimension = 4;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////// Gates

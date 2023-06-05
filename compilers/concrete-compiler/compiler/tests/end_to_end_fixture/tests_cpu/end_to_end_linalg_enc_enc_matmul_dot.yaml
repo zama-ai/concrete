@@ -1,0 +1,420 @@
+# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY
+# /!\ THIS FILE HAS BEEN GENERATED
+description: matmul_eint_eint_6bits_u_2x3x4x_2x4x2x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.eint<6>>, %y: tensor<2x4x2x!FHE.eint<6>>) -> tensor<2x3x2x!FHE.eint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.eint<6>>, tensor<2x4x2x!FHE.eint<6>>) -> tensor<2x3x2x!FHE.eint<6>>
+       return %0 : tensor<2x3x2x!FHE.eint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [2, 3, 3, 1, 2, 1, 2, 2, 1, 2, 2, 3, 3, 1, 1, 0, 1, 1, 0, 1, 3, 2, 1, 0]
+      shape: [2,3,4]
+    - tensor: [2, 3, 2, 2, 1, 1, 0, 3, 2, 1, 2, 1, 0, 3, 2, 1]
+      shape: [2,4,2]
+    outputs:
+    - tensor: [13, 18, 8, 16, 8, 18, 8, 7, 6, 3, 10, 8]
+      shape: [2,3,2]
+---
+description: matmul_eint_eint_6bits_s_2x3x4x_2x4x2x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.esint<6>>, %y: tensor<2x4x2x!FHE.esint<6>>) -> tensor<2x3x2x!FHE.esint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.esint<6>>, tensor<2x4x2x!FHE.esint<6>>) -> tensor<2x3x2x!FHE.esint<6>>
+       return %0 : tensor<2x3x2x!FHE.esint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [2, 3, 3, 2, 2, 3, 3, 3, 2, 1, 0, 3, 2, 0, 0, 1, 1, 3, 2, 0, 3, 1, 3, 1]
+      shape: [2,3,4]
+    - tensor: [0, 2, 1, 2, 3, 3, 0, 3, 2, 3, 2, 2, 2, 1, 0, 3]
+      shape: [2,4,2]
+    outputs:
+    - tensor: [12, 25, 12, 28, 1, 15, 4, 9, 12, 11, 14, 17]
+      shape: [2,3,2]
+      signed: True
+---
+description: matmul_eint_eint_6bits_u_3x4x_4x2x
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<6>>, %y: tensor<4x2x!FHE.eint<6>>) -> tensor<3x2x!FHE.eint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x4x!FHE.eint<6>>, tensor<4x2x!FHE.eint<6>>) -> tensor<3x2x!FHE.eint<6>>
+       return %0 : tensor<3x2x!FHE.eint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [3, 0, 2, 0, 3, 0, 0, 0, 3, 0, 1, 2]
+      shape: [3,4]
+    - tensor: [2, 3, 2, 1, 1, 0, 3, 3]
+      shape: [4,2]
+    outputs:
+    - tensor: [8, 9, 6, 9, 13, 15]
+      shape: [3,2]
+---
+description: matmul_eint_eint_6bits_s_3x4x_4x2x
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.esint<6>>, %y: tensor<4x2x!FHE.esint<6>>) -> tensor<3x2x!FHE.esint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x4x!FHE.esint<6>>, tensor<4x2x!FHE.esint<6>>) -> tensor<3x2x!FHE.esint<6>>
+       return %0 : tensor<3x2x!FHE.esint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [0, 1, 0, 2, 2, 1, 0, 1, 3, 3, 0, 1]
+      shape: [3,4]
+    - tensor: [0, 2, 2, 2, 1, 3, 2, 3]
+      shape: [4,2]
+    outputs:
+    - tensor: [6, 8, 4, 9, 8, 15]
+      shape: [3,2]
+      signed: True
+---
+description: matmul_eint_eint_6bits_u_3x_4x3x2x
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<6>>, %y: tensor<4x3x2x!FHE.eint<6>>) -> tensor<4x2x!FHE.eint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x!FHE.eint<6>>, tensor<4x3x2x!FHE.eint<6>>) -> tensor<4x2x!FHE.eint<6>>
+       return %0 : tensor<4x2x!FHE.eint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [3, 3, 3]
+      shape: [3]
+    - tensor: [2, 1, 2, 1, 0, 3, 3, 2, 3, 1, 3, 3, 2, 3, 1, 3, 2, 1, 2, 2, 3, 3, 0, 1]
+      shape: [4,3,2]
+    outputs:
+    - tensor: [12, 15, 27, 18, 15, 21, 15, 18]
+      shape: [4,2]
+---
+description: matmul_eint_eint_6bits_s_3x_4x3x2x
+program: |
+  func.func @main(%x: tensor<3x!FHE.esint<6>>, %y: tensor<4x3x2x!FHE.esint<6>>) -> tensor<4x2x!FHE.esint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x!FHE.esint<6>>, tensor<4x3x2x!FHE.esint<6>>) -> tensor<4x2x!FHE.esint<6>>
+       return %0 : tensor<4x2x!FHE.esint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [0, 1, 3]
+      shape: [3]
+    - tensor: [3, 0, 1, 2, 1, 1, 1, 0, 1, 1, 1, 1, 3, 3, 0, 1, 1, 0, 2, 2, 0, 1, 0, 2]
+      shape: [4,3,2]
+    outputs:
+    - tensor: [4, 5, 4, 4, 3, 1, 0, 7]
+      shape: [4,2]
+      signed: True
+---
+description: matmul_eint_eint_6bits_u_2x3x4x_4x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.eint<6>>, %y: tensor<4x!FHE.eint<6>>) -> tensor<2x3x!FHE.eint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<2x3x!FHE.eint<6>>
+       return %0 : tensor<2x3x!FHE.eint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [3, 0, 0, 3, 2, 0, 3, 2, 3, 0, 1, 2, 0, 0, 0, 0, 1, 2, 1, 3, 2, 2, 1, 0]
+      shape: [2,3,4]
+    - tensor: [3, 0, 1, 2]
+      shape: [4]
+    outputs:
+    - tensor: [15, 13, 14, 0, 10, 7]
+      shape: [2,3]
+---
+description: matmul_eint_eint_6bits_s_2x3x4x_4x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.esint<6>>, %y: tensor<4x!FHE.esint<6>>) -> tensor<2x3x!FHE.esint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.esint<6>>, tensor<4x!FHE.esint<6>>) -> tensor<2x3x!FHE.esint<6>>
+       return %0 : tensor<2x3x!FHE.esint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [2, 2, 0, 0, 0, 3, 2, 2, 3, 1, 1, 1, 2, 0, 3, 0, 0, 1, 3, 1, 3, 2, 3, 1]
+      shape: [2,3,4]
+    - tensor: [0, 3, 3, 1]
+      shape: [4]
+    outputs:
+    - tensor: [6, 17, 7, 9, 13, 16]
+      shape: [2,3]
+      signed: True
+---
+description: matmul_eint_eint_6bits_u_2x1x3x4x_5x4x2x
+program: |
+  func.func @main(%x: tensor<2x1x3x4x!FHE.eint<6>>, %y: tensor<5x4x2x!FHE.eint<6>>) -> tensor<2x5x3x2x!FHE.eint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x1x3x4x!FHE.eint<6>>, tensor<5x4x2x!FHE.eint<6>>) -> tensor<2x5x3x2x!FHE.eint<6>>
+       return %0 : tensor<2x5x3x2x!FHE.eint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [2, 0, 1, 2, 2, 1, 2, 1, 2, 1, 3, 1, 3, 1, 0, 3, 0, 0, 3, 1, 1, 2, 3, 1]
+      shape: [2,1,3,4]
+    - tensor: [2, 3, 1, 1, 0, 2, 2, 2, 2, 1, 1, 0, 2, 1, 2, 3, 2, 3, 3, 2, 3, 2, 2, 3, 3, 3, 3, 3, 0, 1, 3, 2, 0, 0, 0, 2, 2, 0, 2, 2]
+      shape: [5,4,2]
+    outputs:
+    - tensor: [8, 12, 7, 13, 7, 15, 10, 9, 11, 7, 13, 8, 11, 14, 15, 15, 18, 17, 12, 11, 12, 13, 12, 14, 6, 4, 6, 4, 8, 4, 13, 16, 2, 8, 6, 13, 13, 12, 8, 6, 12, 7, 15, 20, 11, 9, 19, 16, 21, 18, 3, 5, 12, 14, 6, 8, 8, 2, 8, 6]
+      shape: [2,5,3,2]
+---
+description: matmul_eint_eint_6bits_s_2x1x3x4x_5x4x2x
+program: |
+  func.func @main(%x: tensor<2x1x3x4x!FHE.esint<6>>, %y: tensor<5x4x2x!FHE.esint<6>>) -> tensor<2x5x3x2x!FHE.esint<6>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x1x3x4x!FHE.esint<6>>, tensor<5x4x2x!FHE.esint<6>>) -> tensor<2x5x3x2x!FHE.esint<6>>
+       return %0 : tensor<2x5x3x2x!FHE.esint<6>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [1, 0, 2, 3, 2, 1, 0, 2, 0, 3, 2, 3, 0, 0, 3, 2, 0, 0, 3, 0, 1, 0, 3, 3]
+      shape: [2,1,3,4]
+    - tensor: [1, 3, 3, 2, 3, 1, 1, 0, 0, 0, 2, 3, 0, 2, 1, 0, 0, 1, 3, 2, 0, 2, 0, 1, 3, 0, 3, 3, 0, 0, 1, 2, 3, 0, 2, 0, 3, 1, 1, 0]
+      shape: [5,4,2]
+    outputs:
+    - tensor: [10, 5, 7, 8, 18, 8, 3, 4, 4, 3, 9, 13, 0, 8, 3, 6, 9, 13, 6, 6, 11, 7, 12, 15, 12, 2, 10, 0, 15, 2, 11, 3, 9, 3, 13, 6, 2, 6, 0, 6, 3, 6, 0, 8, 0, 6, 0, 10, 2, 4, 0, 0, 6, 6, 11, 3, 9, 3, 15, 3]
+      shape: [2,5,3,2]
+      signed: True
+---
+description: matmul_eint_eint_16bits_u_2x3x4x_2x4x2x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.eint<16>>, %y: tensor<2x4x2x!FHE.eint<16>>) -> tensor<2x3x2x!FHE.eint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.eint<16>>, tensor<2x4x2x!FHE.eint<16>>) -> tensor<2x3x2x!FHE.eint<16>>
+       return %0 : tensor<2x3x2x!FHE.eint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [21, 124, 41, 125, 90, 52, 110, 94, 119, 56, 26, 28, 47, 109, 86, 17, 117, 14, 10, 74, 44, 41, 59, 96]
+      shape: [2,3,4]
+    - tensor: [127, 10, 64, 86, 115, 95, 44, 48, 121, 45, 126, 117, 7, 40, 38, 119]
+      shape: [2,4,2]
+    outputs:
+    - tensor: [20818, 20769, 31544, 20334, 22919, 9820, 20669, 20331, 18803, 16109, 14551, 20561]
+      shape: [2,3,2]
+---
+description: matmul_eint_eint_16bits_s_2x3x4x_2x4x2x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.esint<16>>, %y: tensor<2x4x2x!FHE.esint<16>>) -> tensor<2x3x2x!FHE.esint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.esint<16>>, tensor<2x4x2x!FHE.esint<16>>) -> tensor<2x3x2x!FHE.esint<16>>
+       return %0 : tensor<2x3x2x!FHE.esint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [111, 117, 108, 83, 48, 35, 1, 4, 68, 79, 37, 106, 102, 72, 105, 83, 11, 103, 1, 9, 13, 52, 19, 106]
+      shape: [2,3,4]
+    - tensor: [17, 119, 113, 2, 76, 55, 99, 61, 70, 126, 6, 110, 60, 75, 58, 93]
+      shape: [2,4,2]
+    outputs:
+    - tensor: [31533, 24446, 5243, 6081, 23389, 16751, 18686, 36366, 1970, 13628, 8510, 18641]
+      shape: [2,3,2]
+      signed: True
+---
+description: matmul_eint_eint_16bits_u_3x4x_4x2x
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.eint<16>>, %y: tensor<4x2x!FHE.eint<16>>) -> tensor<3x2x!FHE.eint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x4x!FHE.eint<16>>, tensor<4x2x!FHE.eint<16>>) -> tensor<3x2x!FHE.eint<16>>
+       return %0 : tensor<3x2x!FHE.eint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [38, 46, 122, 50, 14, 25, 64, 29, 78, 106, 117, 119]
+      shape: [3,4]
+    - tensor: [19, 68, 12, 121, 34, 92, 90, 37]
+      shape: [4,2]
+    outputs:
+    - tensor: [9922, 21224, 5352, 10938, 17442, 33297]
+      shape: [3,2]
+---
+description: matmul_eint_eint_16bits_s_3x4x_4x2x
+program: |
+  func.func @main(%x: tensor<3x4x!FHE.esint<16>>, %y: tensor<4x2x!FHE.esint<16>>) -> tensor<3x2x!FHE.esint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x4x!FHE.esint<16>>, tensor<4x2x!FHE.esint<16>>) -> tensor<3x2x!FHE.esint<16>>
+       return %0 : tensor<3x2x!FHE.esint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [89, 16, 22, 56, 26, 103, 67, 72, 100, 93, 32, 107]
+      shape: [3,4]
+    - tensor: [93, 28, 46, 25, 101, 88, 113, 6]
+      shape: [4,2]
+    outputs:
+    - tensor: [17563, 5164, 22059, 9631, 28901, 8583]
+      shape: [3,2]
+      signed: True
+---
+description: matmul_eint_eint_16bits_u_3x_4x3x2x
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<16>>, %y: tensor<4x3x2x!FHE.eint<16>>) -> tensor<4x2x!FHE.eint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x!FHE.eint<16>>, tensor<4x3x2x!FHE.eint<16>>) -> tensor<4x2x!FHE.eint<16>>
+       return %0 : tensor<4x2x!FHE.eint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [42, 90, 10]
+      shape: [3]
+    - tensor: [31, 127, 95, 10, 59, 112, 107, 6, 12, 65, 108, 20, 21, 38, 83, 117, 118, 92, 61, 119, 104, 66, 112, 58]
+      shape: [4,3,2]
+    outputs:
+    - tensor: [10442, 7354, 6654, 6302, 9532, 13046, 13042, 11518]
+      shape: [4,2]
+---
+description: matmul_eint_eint_16bits_s_3x_4x3x2x
+program: |
+  func.func @main(%x: tensor<3x!FHE.esint<16>>, %y: tensor<4x3x2x!FHE.esint<16>>) -> tensor<4x2x!FHE.esint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<3x!FHE.esint<16>>, tensor<4x3x2x!FHE.esint<16>>) -> tensor<4x2x!FHE.esint<16>>
+       return %0 : tensor<4x2x!FHE.esint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [30, 103, 10]
+      shape: [3]
+    - tensor: [73, 37, 89, 93, 53, 109, 25, 69, 69, 68, 109, 88, 22, 92, 51, 97, 51, 106, 106, 93, 17, 81, 91, 107]
+      shape: [4,3,2]
+    outputs:
+    - tensor: [11887, 11779, 8947, 9954, 6423, 13811, 5841, 12203]
+      shape: [4,2]
+      signed: True
+---
+description: matmul_eint_eint_16bits_u_2x3x4x_4x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.eint<16>>, %y: tensor<4x!FHE.eint<16>>) -> tensor<2x3x!FHE.eint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.eint<16>>, tensor<4x!FHE.eint<16>>) -> tensor<2x3x!FHE.eint<16>>
+       return %0 : tensor<2x3x!FHE.eint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [91, 111, 3, 92, 99, 100, 91, 114, 77, 30, 56, 76, 37, 96, 29, 77, 87, 118, 18, 92, 91, 28, 13, 28]
+      shape: [2,3,4]
+    - tensor: [4, 33, 86, 109]
+      shape: [4]
+    outputs:
+    - tensor: [14313, 23948, 14398, 14203, 15818, 5458]
+      shape: [2,3]
+---
+description: matmul_eint_eint_16bits_s_2x3x4x_4x
+program: |
+  func.func @main(%x: tensor<2x3x4x!FHE.esint<16>>, %y: tensor<4x!FHE.esint<16>>) -> tensor<2x3x!FHE.esint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x3x4x!FHE.esint<16>>, tensor<4x!FHE.esint<16>>) -> tensor<2x3x!FHE.esint<16>>
+       return %0 : tensor<2x3x!FHE.esint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [1, 92, 48, 19, 118, 119, 114, 94, 3, 100, 82, 95, 84, 45, 4, 91, 81, 59, 2, 87, 97, 35, 85, 10]
+      shape: [2,3,4]
+    - tensor: [0, 127, 49, 6]
+      shape: [4]
+    outputs:
+    - tensor: [14150, 21263, 17288, 6457, 8113, 8670]
+      shape: [2,3]
+      signed: True
+---
+description: matmul_eint_eint_16bits_u_2x1x3x4x_5x4x2x
+program: |
+  func.func @main(%x: tensor<2x1x3x4x!FHE.eint<16>>, %y: tensor<5x4x2x!FHE.eint<16>>) -> tensor<2x5x3x2x!FHE.eint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x1x3x4x!FHE.eint<16>>, tensor<5x4x2x!FHE.eint<16>>) -> tensor<2x5x3x2x!FHE.eint<16>>
+       return %0 : tensor<2x5x3x2x!FHE.eint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [31, 86, 51, 36, 6, 74, 52, 102, 22, 18, 38, 52, 37, 54, 34, 106, 38, 35, 73, 46, 116, 6, 2, 46]
+      shape: [2,1,3,4]
+    - tensor: [92, 31, 55, 60, 80, 104, 26, 70, 99, 54, 21, 64, 33, 37, 58, 60, 17, 104, 105, 46, 62, 37, 97, 103, 116, 119, 14, 33, 14, 97, 41, 13, 23, 89, 54, 40, 120, 105, 69, 74]
+      shape: [5,4,2]
+    outputs:
+    - tensor: [12598, 13945, 11434, 17174, 7406, 9354, 8646, 11225, 9780, 13104, 6826, 6866, 16211, 12775, 20990, 16458, 9664, 9878, 6990, 11942, 6642, 9526, 5468, 7574, 13961, 14218, 17412, 16502, 9626, 10516, 11850, 15343, 12457, 14090, 12358, 7384, 12067, 13072, 9574, 9753, 14344, 9482, 18689, 18508, 13309, 13001, 7188, 17152, 9870, 10861, 7806, 13356, 15454, 14794, 15161, 16867, 14698, 15851, 6406, 14178]
+      shape: [2,5,3,2]
+---
+description: matmul_eint_eint_16bits_s_2x1x3x4x_5x4x2x
+program: |
+  func.func @main(%x: tensor<2x1x3x4x!FHE.esint<16>>, %y: tensor<5x4x2x!FHE.esint<16>>) -> tensor<2x5x3x2x!FHE.esint<16>> {
+       %0 = "FHELinalg.matmul_eint_eint"(%x, %y): (tensor<2x1x3x4x!FHE.esint<16>>, tensor<5x4x2x!FHE.esint<16>>) -> tensor<2x5x3x2x!FHE.esint<16>>
+       return %0 : tensor<2x5x3x2x!FHE.esint<16>>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [122, 43, 15, 86, 37, 71, 96, 33, 73, 53, 51, 121, 47, 16, 9, 59, 47, 112, 121, 53, 9, 58, 83, 83]
+      shape: [2,1,3,4]
+    - tensor: [87, 39, 4, 25, 119, 68, 35, 15, 51, 96, 126, 17, 0, 19, 82, 87, 108, 23, 25, 42, 95, 73, 120, 101, 104, 1, 75, 53, 104, 117, 102, 92, 3, 106, 66, 93, 21, 59, 103, 10]
+      shape: [5,4,2]
+    outputs:
+    - tensor: [15581, 8143, 16082, 10241, 16867, 9455, 18692, 20210, 13539, 9454, 20323, 19405, 25996, 14393, 18851, 14174, 28574, 19849, 26245, 12068, 22523, 18068, 29213, 19981, 12377, 18676, 10212, 16519, 17251, 16886, 7289, 3730, 20791, 13656, 13797, 8690, 9251, 10088, 20855, 13326, 14573, 10648, 13411, 8369, 25731, 19971, 20267, 17085, 13042, 7376, 31278, 25016, 22384, 20430, 7463, 7591, 15533, 23067, 14147, 12075]
+      shape: [2,5,3,2]
+      signed: True
+---
+# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY
+# /!\ THIS FILE HAS BEEN GENERATED
+description: dot_eint_eint_6bits_u_3x_3x
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<6>>, %y: tensor<3x!FHE.eint<6>>) -> !FHE.eint<6> {
+       %0 = "FHELinalg.dot_eint_eint"(%x, %y): (tensor<3x!FHE.eint<6>>, tensor<3x!FHE.eint<6>>) -> !FHE.eint<6>
+       return %0 : !FHE.eint<6>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [3, 1, 3]
+      shape: [3]
+    - tensor: [1, 0, 2]
+      shape: [3]
+    outputs:
+    - scalar: 9
+---
+description: dot_eint_eint_6bits_s_3x_3x
+program: |
+  func.func @main(%x: tensor<3x!FHE.esint<6>>, %y: tensor<3x!FHE.esint<6>>) -> !FHE.esint<6> {
+       %0 = "FHELinalg.dot_eint_eint"(%x, %y): (tensor<3x!FHE.esint<6>>, tensor<3x!FHE.esint<6>>) -> !FHE.esint<6>
+       return %0 : !FHE.esint<6>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [2, 0, 2]
+      shape: [3]
+    - tensor: [3, 1, 2]
+      shape: [3]
+    outputs:
+    - scalar: 10
+      signed: True
+---
+description: dot_eint_eint_16bits_u_3x_3x
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<16>>, %y: tensor<3x!FHE.eint<16>>) -> !FHE.eint<16> {
+       %0 = "FHELinalg.dot_eint_eint"(%x, %y): (tensor<3x!FHE.eint<16>>, tensor<3x!FHE.eint<16>>) -> !FHE.eint<16>
+       return %0 : !FHE.eint<16>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [97, 45, 74]
+      shape: [3]
+    - tensor: [120, 34, 93]
+      shape: [3]
+    outputs:
+    - scalar: 20052
+---
+description: dot_eint_eint_16bits_s_3x_3x
+program: |
+  func.func @main(%x: tensor<3x!FHE.esint<16>>, %y: tensor<3x!FHE.esint<16>>) -> !FHE.esint<16> {
+       %0 = "FHELinalg.dot_eint_eint"(%x, %y): (tensor<3x!FHE.esint<16>>, tensor<3x!FHE.esint<16>>) -> !FHE.esint<16>
+       return %0 : !FHE.esint<16>
+  }
+p-error: 1e-06
+tests:
+  - inputs: 
+    - tensor: [86, 8, 19]
+      shape: [3]
+    - tensor: [42, 105, 38]
+      shape: [3]
+    outputs:
+    - scalar: 5174
+      signed: True
+---

@@ -7,10 +7,12 @@
 #include <fstream>
 
 #include "boost/outcome.h"
+#include "concretelang/Common/Protobuf.h"
 #include "concretelang/ServerLib/DynamicModule.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include <llvm/Support/Path.h>
+#include <vector>
 
 namespace concretelang {
 namespace serverlib {
@@ -45,9 +47,13 @@ DynamicModule::loadSharedLibrary(std::string outputPath) {
 
 outcome::checked<void, StringError>
 DynamicModule::loadClientParametersJSON(std::string outputPath) {
-  auto jsonPath = CompilerEngine::Library::getClientParametersPath(outputPath);
-  OUTCOME_TRY(auto clientParams, ClientParameters::load(jsonPath));
-  this->clientParametersList = clientParams;
+  auto jsonPath = CompilerEngine::Library::getProgramInfoPath(outputPath);
+  OUTCOME_TRY(
+      auto programInfo,
+      common::JSONFileToMessage<concreteprotocol::ProgramInfo>(jsonPath));
+  std::vector<ClientParameters> clientParamsList;
+  clientParamsList.push_back(ClientParameters::fromProgramInfo(programInfo));
+  this->clientParametersList = clientParamsList;
   return outcome::success();
 }
 

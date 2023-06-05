@@ -6,10 +6,12 @@
 #include <cstdint>
 #include <iostream>
 
+#include <google/protobuf/util/json_util.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/JSON.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/ToolOutputFile.h>
+#include <memory>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -21,6 +23,7 @@
 #include <optional>
 #include <sstream>
 
+#include "concrete-protocol.pb.h"
 #include "concretelang/ClientLib/KeySet.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Common/Error.h"
@@ -408,7 +411,7 @@ cmdlineCompilationOptions() {
   }
 
   if (!cmdline::funcName.empty()) {
-    options.clientParametersFuncName = cmdline::funcName;
+    options.mainFuncName = cmdline::funcName;
   }
 
   // Convert tile sizes to `Optional`
@@ -482,16 +485,15 @@ cmdlineCompilationOptions() {
 
   if (!cmdline::circuitEncodings.empty()) {
     auto jsonString = cmdline::circuitEncodings.getValue();
-    auto maybeEncodings =
-        llvm::json::parse<encodings::CircuitEncodings>(jsonString);
-    if (auto err = maybeEncodings.takeError()) {
+    auto output = new protocol::CircuitEncodingInfo();
+    auto maybeErr =
+        google::protobuf::util::JsonStringToMessage(jsonString, output);
+    if (!maybeErr.ok()) {
       return llvm::make_error<llvm::StringError>(
           "Failed to parse the --circuit-encodings option.",
           llvm::inconvertibleErrorCode());
     }
-    options.encodings = maybeEncodings.get();
-  } else {
-    options.encodings = std::nullopt;
+    options.encodings = concreteprotocol::CircuitEncodingInfo(*output);
   }
 
   return options;
@@ -532,11 +534,11 @@ mlir::LogicalResult processInputBuffer(
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
 
-  std::string funcName = options.clientParametersFuncName.value_or("");
+  std::string funcName = options.mainFuncName.value_or("");
   if (action == Action::JIT_INVOKE) {
     auto lambdaOrErr =
         mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::
-            create(buffer->getBuffer(), options, keySetCache,
+            create(buffer->getBuffer(), std::move(options), keySetCache,
                    mlir::concretelang::JITSupport());
     if (!lambdaOrErr) {
       mlir::concretelang::log_error()
@@ -555,7 +557,7 @@ mlir::LogicalResult processInputBuffer(
     os << *resOrErr << "\n";
   } else {
     mlir::concretelang::CompilerEngine ce{ccx};
-    ce.setCompilationOptions(options);
+    ce.setCompilationOptions(std::move(options));
 
     if (cmdline::passes.size() != 0) {
       ce.setEnablePass([](mlir::Pass *pass) {

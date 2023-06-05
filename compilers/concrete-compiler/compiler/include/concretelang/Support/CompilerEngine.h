@@ -6,15 +6,18 @@
 #ifndef CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 #define CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 
+#include "concrete-protocol.pb.h"
 #include <concretelang/Conversion/Utils/GlobalFHEContext.h>
-#include <concretelang/Support/ClientParametersGeneration.h>
 #include <concretelang/Support/Encodings.h>
+#include <concretelang/Support/ProgramInfoGeneration.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/SourceMgr.h>
+#include <memory>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Pass/Pass.h>
+#include <optional>
 
 namespace mlir {
 namespace concretelang {
@@ -69,7 +72,7 @@ struct CompilationOptions {
   bool emitGPUOps;
   std::optional<std::vector<int64_t>> fhelinalgTileSizes;
 
-  std::optional<std::string> clientParametersFuncName;
+  std::optional<std::string> mainFuncName;
 
   optimizer::Config optimizerConfig;
 
@@ -82,20 +85,19 @@ struct CompilationOptions {
 
   /// When compiling from a dialect lower than FHE, one needs to provide
   /// encodings info manually to allow the client lib to be generated.
-  std::optional<mlir::concretelang::encodings::CircuitEncodings> encodings;
+  std::optional<concreteprotocol::CircuitEncodingInfo> encodings;
 
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
         maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
         unrollLoopsWithSDFGConvertibleOps(false), dataflowParallelize(false),
-        optimizeTFHE(true), emitGPUOps(false),
-        clientParametersFuncName(std::nullopt),
+        optimizeTFHE(true), emitGPUOps(false), mainFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
         chunkSize(4), chunkWidth(2), encodings(std::nullopt){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {
-    clientParametersFuncName = funcname;
+    mainFuncName = funcname;
   }
 
   /// @brief Constructor for CompilationOptions with default parameters for a
@@ -128,7 +130,7 @@ public:
         : compilationContext(compilationContext) {}
 
     std::optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
-    std::optional<mlir::concretelang::ClientParameters> clientParameters;
+    std::optional<concreteprotocol::ProgramInfo> programInfo;
     std::optional<CompilationFeedback> feedback;
     std::unique_ptr<llvm::Module> llvmModule;
     std::optional<mlir::concretelang::V0FHEContext> fheContext;
@@ -140,9 +142,8 @@ public:
   class Library {
     std::string outputDirPath;
     std::vector<std::string> objectsPath;
-    std::vector<mlir::concretelang::ClientParameters> clientParametersList;
-    std::vector<mlir::concretelang::CompilationFeedback>
-        compilationFeedbackList;
+    concreteprotocol::ProgramInfo programInfo;
+    mlir::concretelang::CompilationFeedback compilationFeedback;
     /// Path to the runtime library. Will be linked to the output library if set
     std::string runtimeLibraryPath;
     bool cleanUp;
@@ -155,8 +156,9 @@ public:
             bool cleanUp = true)
         : outputDirPath(outputDirPath), runtimeLibraryPath(runtimeLibraryPath),
           cleanUp(cleanUp) {}
-    /// Add a compilation result to the library
-    llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
+    /// Sets the compilation result used by the library
+    llvm::Expected<std::string>
+    setCompilationResult(CompilationResult &compilation);
     /// Emit the library artifacts with the previously added compilation result
     llvm::Error emitArtifacts(bool sharedLib, bool staticLib,
                               bool clientParameters, bool compilationFeedback,
@@ -172,8 +174,8 @@ public:
     /// Returns the path of the static library
     static std::string getStaticLibraryPath(std::string outputDirPath);
 
-    /// Returns the path of the client parameters
-    static std::string getClientParametersPath(std::string outputDirPath);
+    /// Returns the path of the program info
+    static std::string getProgramInfoPath(std::string outputDirPath);
 
     /// Returns the path of the compilation feedback
     static std::string getCompilationFeedbackPath(std::string outputDirPath);
@@ -192,8 +194,8 @@ public:
     llvm::Expected<std::string> emitStatic();
     /// Emit a shared library with the previously added compilation result
     llvm::Expected<std::string> emitShared();
-    /// Emit a json ClientParameters corresponding to library content
-    llvm::Expected<std::string> emitClientParametersJSON();
+    /// Emit a json ProgramInfo corresponding to library content
+    llvm::Expected<std::string> emitProgramInfoJSON();
     /// Emit a json CompilationFeedback corresponding to library content
     llvm::Expected<std::string> emitCompilationFeedbackJSON();
     /// Emit a client header file for this corresponding to library content
@@ -260,8 +262,7 @@ public:
 
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(), compilerOptions(),
-        generateClientParameters(
-            compilerOptions.clientParametersFuncName.has_value()),
+        generateProgramInfo(compilerOptions.mainFuncName.has_value()),
         enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
@@ -293,28 +294,30 @@ public:
           bool generateCompilationFeedback = true,
           bool generateCppHeader = true);
 
-  void setCompilationOptions(CompilationOptions &options) {
-    compilerOptions = options;
-    if (options.v0FHEConstraints.has_value()) {
-      setFHEConstraints(*options.v0FHEConstraints);
+  void setCompilationOptions(CompilationOptions options) {
+    compilerOptions = std::move(options);
+    if (compilerOptions.v0FHEConstraints.has_value()) {
+      setFHEConstraints(*compilerOptions.v0FHEConstraints);
     }
 
-    if (options.clientParametersFuncName.has_value()) {
-      setGenerateClientParameters(true);
+    if (compilerOptions.mainFuncName.has_value()) {
+      setGenerateProgramInfo(true);
     }
   }
+
+  CompilationOptions &getCompilationOptions() { return compilerOptions; }
 
   void setFHEConstraints(const mlir::concretelang::V0FHEConstraint &c);
   void setMaxEintPrecision(size_t v);
   void setMaxMANP(size_t v);
-  void setGenerateClientParameters(bool v);
+  void setGenerateProgramInfo(bool v);
   void setEnablePass(std::function<bool(mlir::Pass *)> enablePass);
 
 protected:
   std::optional<size_t> overrideMaxEintPrecision;
   std::optional<size_t> overrideMaxMANP;
   CompilationOptions compilerOptions;
-  bool generateClientParameters;
+  bool generateProgramInfo;
   std::function<bool(mlir::Pass *)> enablePass;
 
   std::shared_ptr<CompilationContext> compilationContext;

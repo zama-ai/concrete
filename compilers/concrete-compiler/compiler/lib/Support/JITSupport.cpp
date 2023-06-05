@@ -29,20 +29,20 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
     return std::move(err);
   }
 
-  if (!options.clientParametersFuncName.has_value()) {
+  if (!options.mainFuncName.has_value()) {
     return StreamStringError("Need to have a funcname to JIT compile");
   }
   // Compile from LLVM Dialect to JITLambda
   auto mlirModule = compilationResult.get().mlirModuleRef->get();
   auto lambda = concretelang::JITLambda::create(
-      *options.clientParametersFuncName, mlirModule,
+      *options.mainFuncName, mlirModule,
       mlir::makeOptimizingTransformer(3, 0, nullptr), runtimeLibPath);
   if (auto err = lambda.takeError()) {
     return std::move(err);
   }
-  if (!compilationResult.get().clientParameters.has_value()) {
+  if (!compilationResult.get().programInfo.has_value()) {
     // i.e. that should not occurs
-    return StreamStringError("No client parameters has been generated");
+    return StreamStringError("No program info has been generated");
   }
   auto result = std::make_unique<JitCompilationResult>();
   result->lambda = std::shared_ptr<concretelang::JITLambda>(std::move(*lambda));
@@ -52,7 +52,8 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
   if (!mlir::concretelang::dfr::_dfr_is_root_node()) {
     result->clientParameters = clientlib::ClientParameters();
   } else {
-    result->clientParameters = compilationResult.get().clientParameters.value();
+    result->clientParameters = ClientParameters::fromProgramInfo(
+        compilationResult.get().programInfo.value());
     result->feedback = compilationResult.get().feedback.value();
   }
   return std::move(result);

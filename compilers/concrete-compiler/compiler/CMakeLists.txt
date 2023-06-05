@@ -71,7 +71,10 @@ include_directories(${PROJECT_SOURCE_DIR}/../../../tools/parameter-curves/concre
 # -------------------------------------------------------------------------------
 set(CONCRETE_PROTOCOL_DIR "${PROJECT_SOURCE_DIR}/../../../tools/concrete-protocol")
 add_subdirectory(${CONCRETE_PROTOCOL_DIR} concrete-protocol)
-include_directories(${CONCRETE_PROTOCOL_DIR}/gen)
+get_target_property(CONCRETE_PROTOCOL_GEN_DIR concrete-protocol BINARY_DIR)
+include_directories(${CONCRETE_PROTOCOL_GEN_DIR})
+install(TARGETS concrete-protocol EXPORT concrete-protocol)
+install(EXPORT concrete-protocol DESTINATION "./")
 
 # -------------------------------------------------------------------------------
 # Concrete Optimizer

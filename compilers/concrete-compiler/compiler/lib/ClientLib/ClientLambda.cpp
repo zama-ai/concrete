@@ -7,6 +7,7 @@
 
 #include "concretelang/ClientLib/ClientLambda.h"
 #include "concretelang/ClientLib/Serializers.h"
+#include "concretelang/Common/Protobuf.h"
 
 namespace concretelang {
 namespace clientlib {
@@ -15,25 +16,25 @@ using concretelang::error::StringError;
 
 outcome::checked<ClientLambda, StringError>
 ClientLambda::load(std::string functionName, std::string jsonPath) {
-  OUTCOME_TRY(auto all_params, ClientParameters::load(jsonPath));
-  auto param = llvm::find_if(all_params, [&](ClientParameters param) {
-    return param.functionName == functionName;
-  });
+  OUTCOME_TRY(
+      auto programInfo,
+      common::JSONFileToMessage<concreteprotocol::ProgramInfo>(jsonPath));
+  auto param = ClientParameters::fromProgramInfo(programInfo);
 
-  if (param == all_params.end()) {
+  if (param.functionName != functionName) {
     return StringError("ClientLambda: cannot find function ")
-           << functionName << " in client parameters" << jsonPath;
+           << functionName << " in program info" << jsonPath;
   }
-  if (param->outputs.size() != 1) {
+  if (param.outputs.size() != 1) {
     return StringError("ClientLambda: output arity (")
-           << std::to_string(param->outputs.size()) << ") != 1 is not supprted";
+           << std::to_string(param.outputs.size()) << ") != 1 is not supprted";
   }
 
-  if (!param->outputs[0].encryption.has_value()) {
+  if (!param.outputs[0].encryption.has_value()) {
     return StringError("ClientLambda: clear output is not yet supported");
   }
   ClientLambda lambda;
-  lambda.clientParameters = *param;
+  lambda.clientParameters = param;
   return lambda;
 }
 

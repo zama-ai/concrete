@@ -103,7 +103,7 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path,
   auto registe = [&](std::string optionsName,
                      mlir::concretelang::CompilationOptions options) {
     llvm::for_each(loadEndToEndDesc(path), [&](EndToEndDesc &description) {
-      options.clientParametersFuncName = "main";
+      options.mainFuncName = "main";
       mlir::concretelang::JITSupport support;
       auto benchName = [&](std::string name) {
         std::ostringstream s;
