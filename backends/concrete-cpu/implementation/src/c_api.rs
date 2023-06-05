@@ -1,6 +1,7 @@
 pub mod bootstrap;
 #[cfg(feature = "csprng")]
 pub mod csprng;
+pub mod encrypt;
 pub mod fft;
 pub mod keyswitch;
 pub mod linear_op;

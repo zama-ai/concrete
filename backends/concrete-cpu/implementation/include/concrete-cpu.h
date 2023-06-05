@@ -224,6 +224,11 @@ ScratchStatus concrete_cpu_extract_bit_lwe_ciphertext_u64_scratch(size_t *stack_
                                                                   size_t bsk_polynomial_size,
                                                                   const struct Fft *fft);
 
+void concrete_cpu_fill_with_random_gaussian(uint64_t *buffer,
+                                            size_t size,
+                                            double variance,
+                                            struct Csprng *csprng);
+
 void concrete_cpu_init_lwe_bootstrap_key_u64(uint64_t *lwe_bsk,
                                              const uint64_t *input_lwe_sk,
                                              const uint64_t *output_glwe_sk,
