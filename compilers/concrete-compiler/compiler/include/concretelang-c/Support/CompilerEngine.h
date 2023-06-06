@@ -216,6 +216,9 @@ MLIR_CAPI_EXPORTED ServerLambda librarySupportLoadServerLambda(
 MLIR_CAPI_EXPORTED ClientParameters librarySupportLoadClientParameters(
     LibrarySupport support, LibraryCompilationResult result);
 
+MLIR_CAPI_EXPORTED LibraryCompilationResult
+librarySupportLoadCompilationResult(LibrarySupport support);
+
 MLIR_CAPI_EXPORTED CompilationFeedback librarySupportLoadCompilationFeedback(
     LibrarySupport support, LibraryCompilationResult result);
 

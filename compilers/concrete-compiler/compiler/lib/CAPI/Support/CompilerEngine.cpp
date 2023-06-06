@@ -269,6 +269,17 @@ librarySupportLoadClientParameters(LibrarySupport support,
       new mlir::concretelang::clientlib::ClientParameters(paramsOrError.get()));
 }
 
+LibraryCompilationResult
+librarySupportLoadCompilationResult(LibrarySupport support) {
+  auto retOrError = unwrap(support)->loadCompilationResult();
+  if (!retOrError) {
+    return wrap((mlir::concretelang::LibraryCompilationResult *)NULL,
+                llvm::toString(retOrError.takeError()));
+  }
+  return wrap(new mlir::concretelang::LibraryCompilationResult(
+      *retOrError.get().release()));
+}
+
 CompilationFeedback
 librarySupportLoadCompilationFeedback(LibrarySupport support,
                                       LibraryCompilationResult result) {
