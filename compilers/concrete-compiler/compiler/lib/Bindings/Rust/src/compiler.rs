@@ -548,6 +548,23 @@ impl LibrarySupport {
         }
     }
 
+    /// Load compilation result from the library support's output directory.
+    ///
+    /// This should be used when the output directory already has artefacts from a previous compilation.
+    pub fn load_compilation_result(&self) -> Result<LibraryCompilationResult, CompilerError> {
+        unsafe {
+            let result =
+                LibraryCompilationResult::wrap(ffi::librarySupportLoadCompilationResult(self._c));
+            if result.is_null() {
+                return Err(CompilerError(format!(
+                    "Error in compiler (check logs for more info): {}",
+                    result.error_msg()
+                )));
+            }
+            Ok(result)
+        }
+    }
+
     /// Run a compiled circuit.
     pub fn server_lambda_call(
         &self,

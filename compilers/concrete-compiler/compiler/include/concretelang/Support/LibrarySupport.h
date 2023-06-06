@@ -104,6 +104,28 @@ public:
     return *param;
   }
 
+  std::string getFuncName() {
+    auto path = CompilerEngine::Library::getClientParametersPath(outputPath);
+    auto params = ClientParameters::load(path);
+    if (params.has_error() || params.value().empty()) {
+      return "";
+    }
+    return params.value().front().functionName;
+  }
+
+  /// Load the the compilation result if circuit already compiled
+  llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
+  loadCompilationResult() {
+    auto funcName = getFuncName();
+    if (funcName.empty()) {
+      return StreamStringError("couldn't find function name");
+    }
+    auto result = std::make_unique<LibraryCompilationResult>();
+    result->outputDirPath = outputPath;
+    result->funcName = funcName;
+    return std::move(result);
+  }
+
   llvm::Expected<CompilationFeedback>
   loadCompilationFeedback(LibraryCompilationResult &result) override {
     auto path = CompilerEngine::Library::getCompilationFeedbackPath(
