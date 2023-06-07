@@ -251,7 +251,7 @@ const LLVM_STATIC_LIBS: &[&str] = &[
 ];
 
 #[cfg(target_arch = "aarch64")]
-const LLVM_TARGET_SPECIFIC_STATIC_LIBS: [&str; 4] = &[
+const LLVM_TARGET_SPECIFIC_STATIC_LIBS: &[&str] = &[
     "LLVMAArch64Utils",
     "LLVMAArch64Info",
     "LLVMAArch64Desc",
