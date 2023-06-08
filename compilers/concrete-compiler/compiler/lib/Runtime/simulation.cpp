@@ -33,9 +33,12 @@ uint64_t gaussian_noise(double mean, double variance) {
   return random_gaussian_buff[0];
 }
 
-uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim) {
+uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim, void *csprng) {
   double variance = security_curve()->getVariance(1, lwe_dim, 64);
-  uint64_t encryption_noise = gaussian_noise(0, variance);
+  uint64_t random_gaussian_buff[2];
+  concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, variance,
+                                         (Csprng *)csprng);
+  uint64_t encryption_noise = random_gaussian_buff[0];
   return message + encryption_noise;
 }
 
