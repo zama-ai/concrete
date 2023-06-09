@@ -8,7 +8,7 @@ import numpy as np
 
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 
 def ones(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
@@ -35,7 +35,7 @@ def ones(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
         computation = Node.generic(
             "ones",
             [],
-            Value.of(numpy_ones, is_encrypted=True),
+            ValueDescription.of(numpy_ones, is_encrypted=True),
             lambda: np.ones(shape, dtype=np.int64),
         )
         return Tracer(computation, [])

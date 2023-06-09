@@ -5,10 +5,10 @@ Declaration of `ClearTensor` and `EncryptedTensor` wrappers.
 from typing import Tuple
 
 from ..dtypes import BaseDataType
-from .value import Value
+from .value_description import ValueDescription
 
 
-def clear_tensor_builder(dtype: BaseDataType, shape: Tuple[int, ...]) -> Value:
+def clear_tensor_builder(dtype: BaseDataType, shape: Tuple[int, ...]) -> ValueDescription:
     """
     Build a clear tensor value.
 
@@ -20,17 +20,17 @@ def clear_tensor_builder(dtype: BaseDataType, shape: Tuple[int, ...]) -> Value:
             shape of the value
 
     Returns:
-        Value:
-            clear tensor value with given dtype and shape
+        ValueDescription:
+            clear tensor value description with given dtype and shape
     """
 
-    return Value(dtype=dtype, shape=shape, is_encrypted=False)
+    return ValueDescription(dtype=dtype, shape=shape, is_encrypted=False)
 
 
 ClearTensor = clear_tensor_builder
 
 
-def encrypted_tensor_builder(dtype: BaseDataType, shape: Tuple[int, ...]) -> Value:
+def encrypted_tensor_builder(dtype: BaseDataType, shape: Tuple[int, ...]) -> ValueDescription:
     """
     Build an encrypted tensor value.
 
@@ -42,11 +42,11 @@ def encrypted_tensor_builder(dtype: BaseDataType, shape: Tuple[int, ...]) -> Val
             shape of the value
 
     Returns:
-        Value:
-            encrypted tensor value with given dtype and shape
+        ValueDescription:
+            encrypted tensor value description with given dtype and shape
     """
 
-    return Value(dtype=dtype, shape=shape, is_encrypted=True)
+    return ValueDescription(dtype=dtype, shape=shape, is_encrypted=True)
 
 
 EncryptedTensor = encrypted_tensor_builder

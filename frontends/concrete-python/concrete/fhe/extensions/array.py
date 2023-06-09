@@ -10,7 +10,7 @@ import numpy as np
 from ..dtypes.utils import combine_dtypes
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 
 def array(values: Any) -> Union[np.ndarray, Tracer]:
@@ -54,7 +54,7 @@ def array(values: Any) -> Union[np.ndarray, Tracer]:
     computation = Node.generic(
         "array",
         [deepcopy(value.output) for value in values],
-        Value(dtype, shape, is_encrypted),
+        ValueDescription(dtype, shape, is_encrypted),
         lambda *args: np.array(args).reshape(shape),
     )
     return Tracer(computation, values)

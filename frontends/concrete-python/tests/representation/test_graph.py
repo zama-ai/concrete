@@ -410,13 +410,17 @@ def test_direct_graph_integer_range(helpers):
 
     # pylint: disable=import-outside-toplevel
     from concrete.fhe.dtypes import Integer
-    from concrete.fhe.values import Value
+    from concrete.fhe.values import ValueDescription
 
     # pylint: enable=import-outside-toplevel
 
     circuit = fhe.Compiler.assemble(
         lambda x: x,
-        {"x": Value(dtype=Integer(is_signed=False, bit_width=8), shape=(), is_encrypted=True)},
+        {
+            "x": ValueDescription(
+                dtype=Integer(is_signed=False, bit_width=8), shape=(), is_encrypted=True
+            )
+        },
         configuration=helpers.configuration(),
     )
     assert circuit.graph.integer_range() is None

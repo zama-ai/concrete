@@ -15,7 +15,7 @@ from concrete.compiler import EvaluationKeys, ValueDecrypter, ValueExporter
 
 from ..dtypes.integer import SignedInteger, UnsignedInteger
 from ..internal.utils import assert_that
-from ..values.value import Value
+from ..values import ValueDescription
 from .data import Data
 from .keys import Keys
 from .specs import ClientSpecs
@@ -160,7 +160,7 @@ class Client:
             is_encrypted = spec["encryption"] is not None
 
             expected_dtype = SignedInteger(width) if is_signed else UnsignedInteger(width)
-            expected_value = Value(expected_dtype, shape, is_encrypted)
+            expected_value = ValueDescription(expected_dtype, shape, is_encrypted)
             if is_valid:
                 expected_min = expected_dtype.min()
                 expected_max = expected_dtype.max()
@@ -184,7 +184,7 @@ class Client:
                     sanitized_args[index] = arg
 
             if not is_valid:
-                actual_value = Value.of(arg, is_encrypted=is_encrypted)
+                actual_value = ValueDescription.of(arg, is_encrypted=is_encrypted)
                 message = (
                     f"Expected argument {index} to be {expected_value} but it's {actual_value}"
                 )

@@ -25,7 +25,7 @@ from mlir.ir import Type as MlirType
 
 from ..dtypes import Integer
 from ..representation import Graph, Node
-from ..values import Value
+from ..values import ValueDescription
 from .conversion import Conversion, ConversionType
 from .processors import GraphProcessor
 from .utils import MAXIMUM_TLU_BIT_WIDTH, _FromElementsOp
@@ -90,7 +90,7 @@ class Context:
         """
         return ConversionType(RankedTensorType.get(shape, element_type.mlir))
 
-    def typeof(self, value: Union[Value, Node]) -> ConversionType:
+    def typeof(self, value: Union[ValueDescription, Node]) -> ConversionType:
         """
         Get type corresponding to a value or a node.
         """
@@ -363,7 +363,7 @@ class Context:
                 continue
 
             encrypted_element_type = self.typeof(
-                Value(
+                ValueDescription(
                     dtype=Integer(
                         is_signed=resulting_type.is_signed,
                         bit_width=resulting_type.bit_width,
@@ -438,7 +438,7 @@ class Context:
 
         if x.is_encrypted and y.is_clear:
             encrypted_type = self.typeof(
-                Value(
+                ValueDescription(
                     dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                     shape=y.shape,
                     is_encrypted=True,
@@ -525,7 +525,7 @@ class Context:
 
         if x.original_bit_width + y.original_bit_width <= resulting_type.bit_width:
             shifter_type = self.typeof(
-                Value(
+                ValueDescription(
                     dtype=Integer(is_signed=False, bit_width=(x.bit_width + 1)),
                     shape=(),
                     is_encrypted=False,
@@ -611,7 +611,7 @@ class Context:
             return x
 
         resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                 shape=shape,
                 is_encrypted=x.is_encrypted,
@@ -637,7 +637,7 @@ class Context:
         for x in xs:
             if x.is_clear:
                 encrypted_type = self.typeof(
-                    Value(
+                    ValueDescription(
                         dtype=Integer(
                             is_signed=resulting_type.is_signed,
                             bit_width=resulting_type.bit_width,
@@ -805,7 +805,7 @@ class Context:
             y = self.to_signed(y)
 
             signed_resulting_type = self.typeof(
-                Value(
+                ValueDescription(
                     dtype=Integer(is_signed=True, bit_width=resulting_type.bit_width),
                     shape=resulting_type.shape,
                     is_encrypted=resulting_type.is_encrypted,
@@ -1058,7 +1058,7 @@ class Context:
             intermediate_shape.insert(dimension, 1)
 
         intermediate_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                 shape=tuple(intermediate_shape),
                 is_encrypted=x.is_encrypted,
@@ -1373,7 +1373,7 @@ class Context:
             y = self.to_signed(y)
 
             signed_resulting_type = self.typeof(
-                Value(
+                ValueDescription(
                     dtype=Integer(is_signed=True, bit_width=resulting_type.bit_width),
                     shape=resulting_type.shape,
                     is_encrypted=resulting_type.is_encrypted,
@@ -1425,7 +1425,7 @@ class Context:
         )
 
         same_signedness_resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                 shape=resulting_type.shape,
                 is_encrypted=True,
@@ -1495,7 +1495,7 @@ class Context:
             y = self.to_signed(y)
 
             signed_resulting_type = self.typeof(
-                Value(
+                ValueDescription(
                     dtype=Integer(is_signed=True, bit_width=resulting_type.bit_width),
                     shape=resulting_type.shape,
                     is_encrypted=resulting_type.is_encrypted,
@@ -1584,7 +1584,7 @@ class Context:
         assert resulting_type.is_encrypted
 
         one_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=False, bit_width=(resulting_type.bit_width + 1)),
                 shape=(),
                 is_encrypted=False,
@@ -1605,7 +1605,7 @@ class Context:
             return x
 
         resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                 shape=output_shape,
                 is_encrypted=x.is_encrypted,
@@ -1699,7 +1699,7 @@ class Context:
             )
 
         flattened_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                 shape=(int(np.prod(input_shape)),),
                 is_encrypted=x.is_encrypted,
@@ -1742,7 +1742,7 @@ class Context:
         assert x.bit_width > lsbs_to_remove
 
         resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=(x.bit_width - lsbs_to_remove)),
                 shape=x.shape,
                 is_encrypted=x.is_encrypted,
@@ -1814,7 +1814,7 @@ class Context:
 
         if x.original_bit_width + b.original_bit_width <= bit_width:
             shift_multiplier_type = self.typeof(
-                Value(
+                ValueDescription(
                     dtype=Integer(is_signed=False, bit_width=(x.bit_width + 1)),
                     shape=(),
                     is_encrypted=False,
@@ -1979,7 +1979,7 @@ class Context:
                 axes[i] += input_dimensions
 
         same_signedness_resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                 shape=resulting_type.shape,
                 is_encrypted=True,
@@ -2003,7 +2003,7 @@ class Context:
             return x
 
         resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
                 shape=(1,),
                 is_encrypted=x.is_encrypted,
@@ -2039,7 +2039,7 @@ class Context:
             return x
 
         resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=True, bit_width=x.bit_width),
                 shape=x.shape,
                 is_encrypted=True,
@@ -2064,7 +2064,7 @@ class Context:
             return x
 
         resulting_type = self.typeof(
-            Value(
+            ValueDescription(
                 dtype=Integer(is_signed=False, bit_width=x.bit_width),
                 shape=x.shape,
                 is_encrypted=True,

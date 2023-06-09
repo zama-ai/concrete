@@ -8,7 +8,7 @@ import numpy as np
 
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 
 def zeros(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
@@ -35,7 +35,7 @@ def zeros(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
         computation = Node.generic(
             "zeros",
             [],
-            Value.of(numpy_zeros, is_encrypted=True),
+            ValueDescription.of(numpy_zeros, is_encrypted=True),
             lambda: np.zeros(shape, dtype=np.int64),
         )
         return Tracer(computation, [])

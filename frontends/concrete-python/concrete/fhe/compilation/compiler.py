@@ -15,7 +15,7 @@ from ..extensions import AutoRounder
 from ..mlir import GraphConverter
 from ..representation import Graph
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .configuration import Configuration
@@ -47,12 +47,12 @@ class Compiler:
     graph: Optional[Graph]
 
     _is_direct: bool
-    _parameter_values: Dict[str, Value]
+    _parameter_values: Dict[str, ValueDescription]
 
     @staticmethod
     def assemble(
         function: Callable,
-        parameter_values: Dict[str, Value],
+        parameter_values: Dict[str, ValueDescription],
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         **kwargs,
@@ -64,7 +64,7 @@ class Compiler:
             function (Callable):
                 function to convert to a circuit
 
-            parameter_values (Dict[str, Value]):
+            parameter_values (Dict[str, ValueDescription]):
                 parameter values of the function
 
             configuration(Optional[Configuration], default = None):
@@ -197,7 +197,7 @@ class Compiler:
                 self.artifacts.add_parameter_encryption_status(param, encryption_status)
 
         parameters = {
-            param: Value.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
+            param: ValueDescription.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
             for arg, (param, status) in zip(
                 sample if len(self.parameter_encryption_statuses) > 1 else (sample,),
                 self.parameter_encryption_statuses.items(),
