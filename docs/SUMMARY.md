@@ -28,6 +28,7 @@
 * [Configure](howto/configure.md)
 * [Manage Keys](howto/manage\_keys.md)
 * [Deploy](howto/deploy.md)
+* [Reuse Arguments](howto/reuse\_arguments.md)
 * [Debug](howto/debug.md)
 
 ## Developer

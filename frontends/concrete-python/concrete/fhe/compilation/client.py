@@ -8,14 +8,15 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import ClientSupport, EvaluationKeys, PublicArguments, PublicResult
+from concrete.compiler import EvaluationKeys, ValueDecrypter, ValueExporter
 
 from ..dtypes.integer import SignedInteger, UnsignedInteger
 from ..internal.utils import assert_that
 from ..values.value import Value
+from .data import Data
 from .keys import Keys
 from .specs import ClientSpecs
 
@@ -116,17 +117,20 @@ class Client:
 
         self.keys.generate(force=force, seed=seed)
 
-    def encrypt(self, *args: Union[int, np.ndarray]) -> PublicArguments:
+    def encrypt(
+        self,
+        *args: Optional[Union[int, np.ndarray, List]],
+    ) -> Optional[Union[Data, Tuple[Optional[Data], ...]]]:
         """
-        Prepare inputs to be run on the circuit.
+        Encrypt argument(s) to for evaluation.
 
         Args:
-            *args (Union[int, numpy.ndarray]):
-                inputs to the circuit
+            *args (Optional[Union[int, np.ndarray, List]]):
+                argument(s) for evaluation
 
         Returns:
-            PublicArguments:
-                encrypted and plain arguments as well as public keys
+            Optional[Union[Data, Tuple[Optional[Data], ...]]]:
+                encrypted argument(s) for evaluation
         """
 
         client_parameters_json = json.loads(self.specs.client_parameters.serialize())
@@ -137,9 +141,12 @@ class Client:
             message = f"Expected {len(input_specs)} inputs but got {len(args)}"
             raise ValueError(message)
 
-        sanitized_args: Dict[int, Union[int, np.ndarray]] = {}
-        for index, spec in enumerate(input_specs):
-            arg = args[index]
+        sanitized_args: Dict[int, Optional[Union[int, np.ndarray]]] = {}
+        for index, (arg, spec) in enumerate(zip(args, input_specs)):
+            if arg is None:
+                sanitized_args[index] = None
+                continue
+
             if isinstance(arg, list):
                 arg = np.array(arg)
 
@@ -183,35 +190,59 @@ class Client:
                 )
                 raise ValueError(message)
 
+        ordered_sanitized_args = [sanitized_args[i] for i in range(len(sanitized_args))]
+
         self.keygen(force=False)
         keyset = self.keys._keyset  # pylint: disable=protected-access
 
-        return ClientSupport.encrypt_arguments(
-            self.specs.client_parameters,
-            keyset,
-            [sanitized_args[i] for i in range(len(sanitized_args))],
-        )
+        exporter = ValueExporter.create(keyset, self.specs.client_parameters)
+        exported = [
+            None
+            if arg is None
+            else Data(
+                exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
+                if isinstance(arg, np.ndarray) and arg.shape != ()
+                else exporter.export_scalar(position, int(arg))
+            )
+            for position, arg in enumerate(ordered_sanitized_args)
+        ]
+
+        return tuple(exported) if len(exported) != 1 else exported[0]
 
     def decrypt(
         self,
-        result: PublicResult,
-    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+        *results: Union[Data, Tuple[Data, ...]],
+    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
-        Decrypt result of homomorphic evaluation.
+        Decrypt result(s) of evaluation.
 
         Args:
-            result (PublicResult):
-                encrypted result of homomorphic evaluation
+            *results (Union[Data, Tuple[Data, ...]]):
+                result(s) of evaluation
 
         Returns:
-            Union[int, numpy.ndarray]:
-                clear result of homomorphic evaluation
+            Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+                decrypted result(s) of evaluation
         """
+
+        flattened_results: List[Data] = []
+        for result in results:
+            if isinstance(result, tuple):  # pragma: no cover
+                # this branch is impossible to cover without multiple outputs
+                flattened_results.extend(result)
+            else:
+                flattened_results.append(result)
 
         self.keygen(force=False)
         keyset = self.keys._keyset  # pylint: disable=protected-access
-        outputs = ClientSupport.decrypt_result(self.specs.client_parameters, keyset, result)
-        return outputs
+
+        decrypter = ValueDecrypter.create(keyset, self.specs.client_parameters)
+        decrypted = tuple(
+            decrypter.decrypt(position, result.inner)
+            for position, result in enumerate(flattened_results)
+        )
+
+        return decrypted if len(decrypted) != 1 else decrypted[0]
 
     @property
     def evaluation_keys(self) -> EvaluationKeys:

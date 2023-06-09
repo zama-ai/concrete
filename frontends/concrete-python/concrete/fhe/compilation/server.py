@@ -8,7 +8,7 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union
 
 # mypy: disable-error-code=attr-defined
 import concrete.compiler
@@ -23,7 +23,6 @@ from concrete.compiler import (
     LibraryLambda,
     LibrarySupport,
     PublicArguments,
-    PublicResult,
 )
 from mlir._mlir_libs._concretelang._compiler import OptimizerStrategy
 
@@ -34,6 +33,7 @@ from .configuration import (
     Configuration,
     ParameterSelectionStrategy,
 )
+from .data import Data
 from .specs import ClientSpecs
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -258,23 +258,50 @@ class Server:
 
         return Server(client_specs, output_dir, support, compilation_result, server_lambda)
 
-    def run(self, args: PublicArguments, evaluation_keys: EvaluationKeys) -> PublicResult:
+    def run(
+        self,
+        *args: Optional[Union[Data, Tuple[Optional[Data], ...]]],
+        evaluation_keys: EvaluationKeys,
+    ) -> Union[Data, Tuple[Data, ...]]:
         """
-        Evaluate using encrypted arguments.
+        Evaluate.
 
         Args:
-            args (PublicArguments):
-                encrypted arguments of the computation
+            *args (Optional[Union[Data, Tuple[Optional[Data], ...]]]):
+                argument(s) for evaluation
 
             evaluation_keys (EvaluationKeys):
-                evaluation keys for encrypted computation
+                evaluation keys
 
         Returns:
-            PublicResult:
-                encrypted result of the computation
+            Union[Data, Tuple[Data, ...]]:
+                result(s) of evaluation
         """
 
-        return self._support.server_call(self._server_lambda, args, evaluation_keys)
+        flattened_args: List[Optional[Data]] = []
+        for arg in args:
+            if isinstance(arg, tuple):
+                flattened_args.extend(arg)
+            else:
+                flattened_args.append(arg)
+
+        buffers = []
+        for i, arg in enumerate(flattened_args):
+            if arg is None:
+                message = f"Expected argument {i} to be an fhe.Data but it's None"
+                raise ValueError(message)
+
+            if not isinstance(arg, Data):
+                message = f"Expected argument {i} to be an fhe.Data but it's {type(arg).__name__}"
+                raise ValueError(message)
+
+            buffers.append(arg.inner)
+
+        public_args = PublicArguments.create(self.client_specs.client_parameters, buffers)
+        public_result = self._support.server_call(self._server_lambda, public_args, evaluation_keys)
+
+        result = tuple(Data(public_result.get_value(i)) for i in range(public_result.n_values()))
+        return result if len(result) > 1 else result[0]
 
     def cleanup(self):
         """
