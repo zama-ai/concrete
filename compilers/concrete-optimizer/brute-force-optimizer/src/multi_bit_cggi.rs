@@ -1,8 +1,9 @@
 use crate::generic::{Problem, SequentialProblem};
-use crate::{minimal_added_noise_by_modulus_switching, ExplicitRange, MyRange, Solution, STEP};
-use concrete_cpu_noise_model::gaussian_noise::noise::blind_rotate::variance_blind_rotate;
+use crate::{minimal_added_noise_by_modulus_switching, ExplicitRange, MyRange, Solution};
+
 use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch::variance_keyswitch;
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+use concrete_cpu_noise_model::gaussian_noise::noise::multi_bit_blind_rotate::variance_multi_bit_blind_rotate;
 use concrete_optimizer::computing_cost::complexity_model::ComplexityModel;
 use concrete_optimizer::noise_estimator::error;
 use concrete_optimizer::parameters::{
@@ -16,34 +17,37 @@ use std::io::Write;
 use std::time::Instant;
 
 #[derive(Debug, Clone, Copy)]
-pub struct CJPParams {
-    pub base_log_ks: u64,
-    pub level_ks: u64,
-    pub base_log_pbs: u64,
-    pub level_pbs: u64,
-    pub glwe_dim: u64,
-    pub log_poly_size: u64,
-    pub small_lwe_dim: u64,
+pub struct MultiBitCGGIParams {
+    base_log_ks: u64,
+    level_ks: u64,
+    base_log_pbs: u64,
+    level_pbs: u64,
+    glwe_dim: u64,
+    log_poly_size: u64,
+    small_lwe_dim: u64,
 }
 
-impl CJPParams {
+impl MultiBitCGGIParams {
     fn big_lwe_dim(&self) -> u64 {
         let poly_size = 1 << self.log_poly_size;
         self.glwe_dim * poly_size
     }
 }
 
-pub struct CJPConstraint {
-    pub variance_constraint: f64,
-    pub norm2: u64,
-    pub security_level: u64,
-    pub sum_size: u64,
+struct MultiBitCGGIConstraint {
+    variance_constraint: f64,
+    norm2: u64,
+    security_level: u64,
+    sum_size: u64,
+    grouping_factor: u32,
+    jit_fft: bool,
 }
 
-impl Problem for CJPConstraint {
-    type Param = CJPParams;
+impl Problem for MultiBitCGGIConstraint {
+    type Param = MultiBitCGGIParams;
 
     fn verify(&self, param: Self::Param) -> bool {
+        // TODO CHANGE NOISE FORMULAE
         let poly_size = 1 << param.log_poly_size;
 
         let variance_ksk = minimal_variance_lwe(param.small_lwe_dim, 64, self.security_level);
@@ -58,7 +62,7 @@ impl Problem for CJPConstraint {
 
         let variance_bsk =
             minimal_variance_glwe(param.glwe_dim, poly_size, 64, self.security_level);
-        let v_pbs = variance_blind_rotate(
+        let v_pbs = variance_multi_bit_blind_rotate(
             param.small_lwe_dim,
             param.glwe_dim,
             poly_size,
@@ -66,18 +70,19 @@ impl Problem for CJPConstraint {
             param.level_pbs,
             64,
             variance_bsk,
+            self.grouping_factor,
+            self.jit_fft,
         );
         let v_ms = estimate_modulus_switching_noise_with_binary_key(
             param.small_lwe_dim,
             param.log_poly_size,
             64,
         );
-
-        v_pbs * (self.norm2 * self.norm2) as f64 + v_ks + v_ms < self.variance_constraint
+        (v_pbs + v_ks) * (self.norm2 * self.norm2) as f64 + v_ms < self.variance_constraint
     }
 
     fn cost(&self, param: Self::Param) -> f64 {
-        cjp_complexity(
+        multi_cggi_complexity(
             self.sum_size,
             AtomicPatternParameters {
                 input_lwe_dimension: LweDimension(param.big_lwe_dim()),
@@ -96,15 +101,19 @@ impl Problem for CJPConstraint {
                 },
             },
             64,
+            self.grouping_factor,
+            self.jit_fft,
         )
     }
 }
 
 #[allow(dead_code)]
-pub fn cjp_complexity(
+pub fn multi_cggi_complexity(
     sum_size: u64,
     params: AtomicPatternParameters,
     ciphertext_modulus_log: u32,
+    grouping_factor: u32,
+    jit_fft: bool,
 ) -> f64 {
     let complexity_model = concrete_optimizer::computing_cost::cpu::CpuComplexity::default();
     let multisum_complexity = complexity_model.levelled_complexity(
@@ -114,24 +123,33 @@ pub fn cjp_complexity(
     );
     let ks_complexity =
         complexity_model.ks_complexity(params.ks_parameters(), ciphertext_modulus_log);
-    let pbs_complexity =
-        complexity_model.pbs_complexity(params.pbs_parameters(), ciphertext_modulus_log);
+    let pbs_complexity = complexity_model.multi_bit_pbs_complexity(
+        params.pbs_parameters(),
+        ciphertext_modulus_log,
+        grouping_factor,
+        jit_fft,
+    );
 
     multisum_complexity + ks_complexity + pbs_complexity
 }
 
-pub struct CJPSearchSpace {
-    pub range_base_log_ks: MyRange,
-    pub range_level_ks: MyRange,
-    pub _range_base_log_pbs: MyRange,
-    pub _range_level_pbs: MyRange,
-    pub range_glwe_dim: MyRange,
-    pub range_log_poly_size: MyRange,
-    pub range_small_lwe_dim: MyRange,
+struct CGGISearchSpace {
+    range_base_log_ks: MyRange,
+    range_level_ks: MyRange,
+    _range_base_log_pbs: MyRange,
+    _range_level_pbs: MyRange,
+    range_glwe_dim: MyRange,
+    range_log_poly_size: MyRange,
+    range_small_lwe_dim: MyRange,
 }
 
-impl CJPSearchSpace {
-    pub fn to_tighten(&self, security_level: u64) -> CJPSearchSpaceTighten {
+impl CGGISearchSpace {
+    fn to_tighten(
+        &self,
+        security_level: u64,
+        grouping_factor: u32,
+        jit_fft: bool,
+    ) -> CGGISearchSpaceTighten {
         // Keyswitch
         let mut ks_decomp = vec![];
         for log_N in self.range_log_poly_size.to_std_range() {
@@ -168,7 +186,11 @@ impl CJPSearchSpace {
         let mut pbs_decomp = vec![];
         for log_N in self.range_log_poly_size.to_std_range() {
             for k in self.range_glwe_dim.to_std_range() {
-                for n in self.range_small_lwe_dim.to_std_range() {
+                for n in self
+                    .range_small_lwe_dim
+                    .to_std_range()
+                    .step_by(grouping_factor as usize)
+                {
                     let mut current_minimal_noise = f64::INFINITY;
                     for level in self.range_level_ks.to_std_range() {
                         let mut current_minimal_noise_for_a_given_level = current_minimal_noise;
@@ -176,7 +198,7 @@ impl CJPSearchSpace {
                         for baselog in self.range_base_log_ks.to_std_range() {
                             let variance_bsk =
                                 minimal_variance_glwe(k, 1 << log_N, 64, security_level);
-                            let v_pbs = variance_blind_rotate(
+                            let v_pbs = variance_multi_bit_blind_rotate(
                                 n,
                                 k,
                                 1 << log_N,
@@ -184,6 +206,8 @@ impl CJPSearchSpace {
                                 level,
                                 64,
                                 variance_bsk,
+                                grouping_factor,
+                                jit_fft,
                             );
                             if v_pbs <= current_minimal_noise_for_a_given_level {
                                 current_minimal_noise_for_a_given_level = v_pbs;
@@ -207,7 +231,7 @@ impl CJPSearchSpace {
         println!("Only {} couples left for keyswitch", ks_decomp.len());
         println!("Only {} couples left for bootstrap", pbs_decomp.len());
 
-        CJPSearchSpaceTighten {
+        CGGISearchSpaceTighten {
             range_base_log_level_ks: ExplicitRange(ks_decomp.clone()),
             range_base_log_level_pbs: ExplicitRange(pbs_decomp.clone()),
             range_glwe_dim: self.range_glwe_dim,
@@ -218,7 +242,7 @@ impl CJPSearchSpace {
 }
 
 #[derive(Clone)]
-pub struct CJPSearchSpaceTighten {
+struct CGGISearchSpaceTighten {
     range_base_log_level_ks: ExplicitRange,
     range_base_log_level_pbs: ExplicitRange,
     range_glwe_dim: MyRange,
@@ -226,13 +250,13 @@ pub struct CJPSearchSpaceTighten {
     range_small_lwe_dim: MyRange,
 }
 
-impl CJPSearchSpaceTighten {
+impl CGGISearchSpaceTighten {
     #[allow(unused)]
     #[rustfmt::skip]
-    fn par_iter(self) -> impl rayon::iter::ParallelIterator<Item=CJPParams> {
+    fn par_iter(self) -> impl rayon::iter::ParallelIterator<Item=MultiBitCGGIParams> {
         self.range_glwe_dim
             .to_std_range()
-            .into_par_iter().map(|_k| CJPParams {
+            .into_par_iter().map(|_k| MultiBitCGGIParams {
             base_log_ks: 0,
             level_ks: 0,
             base_log_pbs: 0,
@@ -243,11 +267,12 @@ impl CJPSearchSpaceTighten {
         })
     }
 
-    pub(crate) fn iter(
+    fn iter(
         self,
         precision: u64,
         minimal_ms_value: u64,
-    ) -> impl Iterator<Item = CJPParams> {
+        grouping_factor: u32,
+    ) -> impl Iterator<Item = MultiBitCGGIParams> {
         self.range_base_log_level_ks
             .into_iter()
             .flat_map(move |(base_log_ks, level_ks)| {
@@ -259,8 +284,10 @@ impl CJPSearchSpaceTighten {
                                 self.range_log_poly_size
                                     .to_std_range_poly_size(precision + minimal_ms_value)
                                     .flat_map(move |log_poly_size| {
-                                        self.range_small_lwe_dim.to_std_range().step_by(STEP).map(
-                                            move |small_lwe_dim| CJPParams {
+                                        self.range_small_lwe_dim
+                                            .to_std_range()
+                                            .step_by(grouping_factor as usize)
+                                            .map(move |small_lwe_dim| MultiBitCGGIParams {
                                                 base_log_ks,
                                                 level_ks,
                                                 base_log_pbs,
@@ -268,8 +295,7 @@ impl CJPSearchSpaceTighten {
                                                 glwe_dim,
                                                 log_poly_size,
                                                 small_lwe_dim,
-                                            },
-                                        )
+                                            })
                                     })
                             })
                     },
@@ -280,22 +306,39 @@ impl CJPSearchSpaceTighten {
     }
 }
 
-pub fn solve_all_cjp(p_fail: f64, writer: impl Write) {
+pub fn solve_all_multi_bit_cggi(
+    p_fail: f64,
+    writer: impl Write,
+    grouping_factor: u32,
+    jit_fft: bool,
+) {
+    assert_ne!(grouping_factor, 0);
     let start = Instant::now();
+    let TOTAL_PRECISION_CARRY = 8;
+    let precisions = 1..9;
+    let mut experiments = vec![];
+    for precision in precisions {
+        for carry in 1..(TOTAL_PRECISION_CARRY - precision + 1) {
+            experiments.push((
+                precision + carry,
+                carry,
+                ((f64::exp2((precision + carry) as f64) - 1.) / (f64::exp2(carry as f64) - 1.))
+                    .floor() as u64,
+            ));
+        }
+    }
 
-    let precisions = 1..24;
-    let log_norms = vec![4, 6, 8, 10];
-
-    // find the minimal added noise by the modulus switching
-    // for KS
-    let a = CJPSearchSpace {
+    let a = CGGISearchSpace {
         range_base_log_ks: MyRange(1, 40),
         range_level_ks: MyRange(1, 40),
         _range_base_log_pbs: MyRange(1, 40),
         _range_level_pbs: MyRange(1, 53),
         range_glwe_dim: MyRange(1, 7),
         range_log_poly_size: MyRange(8, 19),
-        range_small_lwe_dim: MyRange(500, 1500),
+        range_small_lwe_dim: MyRange(
+            grouping_factor as u64 * (500. / grouping_factor as f64).round() as u64,
+            1500,
+        ),
     };
     let minimal_ms_value = minimal_added_noise_by_modulus_switching(
         (1 << a.range_log_poly_size.0) * a.range_glwe_dim.0,
@@ -303,42 +346,25 @@ pub fn solve_all_cjp(p_fail: f64, writer: impl Write) {
     .sqrt()
     .ceil() as u64;
 
-    // let a = CJPSearchSpace {
-    //     range_base_log_ks: MyRange(1, 53),
-    //     range_level_ks: MyRange(1, 53),
-    //     range_base_log_pbs: MyRange(1, 53),
-    //     range_level_pbs: MyRange(1, 53),
-    //     range_glwe_dim: MyRange(1, 7),
-    //     range_log_poly_size: MyRange(8, 16),
-    //     range_small_lwe_dim: MyRange(500, 1000),
-    // };
-    let a_tighten = a.to_tighten(128);
-    let res: Vec<Solution<CJPParams>> = precisions
+    let a_tighten = a.to_tighten(128, grouping_factor, jit_fft);
+    let res: Vec<_> = experiments
         .into_par_iter()
-        .flat_map(|precision| {
-            log_norms
-                .clone()
-                .into_par_iter()
-                .map(|log_norm| {
-                    let config = CJPConstraint {
-                        variance_constraint: error::safe_variance_bound_2padbits(
-                            precision, 64, p_fail,
-                        ), //5.960464477539063e-08, // 0.0009765625006088146,
-                        norm2: 1 << log_norm,
-                        security_level: 128,
-                        sum_size: 4096,
-                    };
+        .map(|(precision, carry, norm)| {
+            let config = MultiBitCGGIConstraint {
+                variance_constraint: error::safe_variance_bound_2padbits(precision, 64, p_fail), //5.960464477539063e-08, // 0.0009765625006088146,
+                norm2: norm,
+                security_level: 128,
+                sum_size: 0,
+                grouping_factor: grouping_factor,
+                jit_fft: jit_fft,
+            };
 
-                    let intem =
-                        config.brute_force(a_tighten.clone().iter(precision, minimal_ms_value));
-
-                    Solution {
-                        precision,
-                        log_norm,
-                        intem,
-                    }
-                })
-                .collect::<Vec<_>>()
+            let interm = config.brute_force(a_tighten.clone().iter(
+                precision,
+                minimal_ms_value,
+                grouping_factor,
+            ));
+            (precision, carry, interm)
         })
         .collect::<Vec<_>>();
     let duration = start.elapsed();
@@ -351,29 +377,31 @@ pub fn solve_all_cjp(p_fail: f64, writer: impl Write) {
 
 pub fn write_to_file(
     mut writer: impl Write,
-    res: &[Solution<CJPParams>],
+    res: &[(u64, u64, Option<(MultiBitCGGIParams, f64)>)],
 ) -> Result<(), std::io::Error> {
     writeln!(
         writer,
-        "  p,log(nu),  k,  N,    n, br_l,br_b, ks_l,ks_b,  cost"
+        "  pblock,carry,  k,  N,glwestddev,    n, lwestddev, br_l,br_b, ks_l,ks_b,  cost"
     )?;
 
-    for Solution {
-        precision,
-        log_norm,
-        intem,
-    } in res.iter()
-    {
-        match intem {
+    for (precision, carry, interm) in res.iter() {
+        match interm {
             Some((solution, cost)) => {
+                let glwe_stddev =
+                    minimal_variance_glwe(solution.glwe_dim, 1 << solution.log_poly_size, 64, 128)
+                        .sqrt();
+                let lwe_stddev = minimal_variance_lwe(solution.small_lwe_dim, 64, 128).sqrt();
+
                 writeln!(
                     writer,
-                    " {:2},     {:2}, {:2}, {:2}, {:4},   {:2},  {:2},   {:2},  {:2}, {:6}",
-                    precision,
-                    log_norm,
+                    " {:2},     {:2}, {:2}, {:2}, {:4}, {:.4},  {:2}, {:.4}, {:2},   {:2},  {:2}, {:6}",
+                    precision - carry,
+                    carry,
                     solution.glwe_dim,
                     solution.log_poly_size,
+                    glwe_stddev,
                     solution.small_lwe_dim,
+                    lwe_stddev,
                     solution.level_pbs,
                     solution.base_log_pbs,
                     solution.level_ks,

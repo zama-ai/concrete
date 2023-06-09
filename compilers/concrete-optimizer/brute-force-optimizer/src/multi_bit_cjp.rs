@@ -16,9 +16,6 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::io::Write;
 use std::time::Instant;
 
-const GROUPING_FACTOR: u32 = 3;
-const JIT_FFT: bool = true;
-
 #[derive(Debug, Clone, Copy)]
 pub struct MultiBitCJPParams {
     base_log_ks: u64,
@@ -39,7 +36,7 @@ impl MultiBitCJPParams {
 
 struct MultiBitCJPConstraint {
     variance_constraint: f64,
-    log_norm2: u64,
+    norm2: u64,
     security_level: u64,
     sum_size: u64,
     grouping_factor: u32,
@@ -92,7 +89,7 @@ impl Problem for MultiBitCJPConstraint {
         );
         // println!("v_pbs: {}", v_pbs);
         // println!("v_ks: {}", v_ks);
-        v_pbs * (1 << (2 * self.log_norm2)) as f64 + v_ks + v_ms < self.variance_constraint
+        v_pbs * (self.norm2 * self.norm2) as f64 + v_ks + v_ms < self.variance_constraint
     }
 
     fn cost(&self, param: Self::Param) -> f64 {
@@ -147,7 +144,7 @@ pub fn multi_cjp_complexity(
     multisum_complexity + ks_complexity + pbs_complexity
 }
 
-struct CJPSearchSpace {
+struct CJPMultiBitSearchSpace {
     range_base_log_ks: MyRange,
     range_level_ks: MyRange,
     _range_base_log_pbs: MyRange,
@@ -157,13 +154,13 @@ struct CJPSearchSpace {
     range_small_lwe_dim: MyRange,
 }
 
-impl CJPSearchSpace {
+impl CJPMultiBitSearchSpace {
     fn to_tighten(
         &self,
         security_level: u64,
         grouping_factor: u32,
         jit_fft: bool,
-    ) -> CJPSearchSpaceTighten {
+    ) -> CJPMultiBitSearchSpaceTighten {
         // Keyswitch
         let mut ks_decomp = vec![];
         for log_N in self.range_log_poly_size.to_std_range() {
@@ -203,7 +200,7 @@ impl CJPSearchSpace {
                 for n in self
                     .range_small_lwe_dim
                     .to_std_range()
-                    .step_by(GROUPING_FACTOR as usize)
+                    .step_by(grouping_factor as usize)
                 {
                     let mut current_minimal_noise = f64::INFINITY;
                     for level in self.range_level_ks.to_std_range() {
@@ -245,7 +242,7 @@ impl CJPSearchSpace {
         println!("Only {} couples left for keyswitch", ks_decomp.len());
         println!("Only {} couples left for bootstrap", pbs_decomp.len());
 
-        CJPSearchSpaceTighten {
+        CJPMultiBitSearchSpaceTighten {
             range_base_log_level_ks: ExplicitRange(ks_decomp.clone()),
             range_base_log_level_pbs: ExplicitRange(pbs_decomp.clone()),
             range_glwe_dim: self.range_glwe_dim,
@@ -256,7 +253,7 @@ impl CJPSearchSpace {
 }
 
 #[derive(Clone)]
-struct CJPSearchSpaceTighten {
+struct CJPMultiBitSearchSpaceTighten {
     range_base_log_level_ks: ExplicitRange,
     range_base_log_level_pbs: ExplicitRange,
     range_glwe_dim: MyRange,
@@ -264,7 +261,7 @@ struct CJPSearchSpaceTighten {
     range_small_lwe_dim: MyRange,
 }
 
-impl CJPSearchSpaceTighten {
+impl CJPMultiBitSearchSpaceTighten {
     #[allow(unused)]
     #[rustfmt::skip]
     fn par_iter(self) -> impl rayon::iter::ParallelIterator<Item=MultiBitCJPParams> {
@@ -285,6 +282,7 @@ impl CJPSearchSpaceTighten {
         self,
         precision: u64,
         minimal_ms_value: u64,
+        grouping_factor: u32,
     ) -> impl Iterator<Item = MultiBitCJPParams> {
         self.range_base_log_level_ks
             .into_iter()
@@ -299,7 +297,7 @@ impl CJPSearchSpaceTighten {
                                     .flat_map(move |log_poly_size| {
                                         self.range_small_lwe_dim
                                             .to_std_range()
-                                            .step_by(GROUPING_FACTOR as usize)
+                                            .step_by(grouping_factor as usize)
                                             .map(move |small_lwe_dim| MultiBitCJPParams {
                                                 base_log_ks,
                                                 level_ks,
@@ -319,15 +317,29 @@ impl CJPSearchSpaceTighten {
     }
 }
 
-pub fn solve_all_multi_bit_cjp(p_fail: f64, writer: impl Write) {
+pub fn solve_all_multi_bit_cjp(
+    p_fail: f64,
+    writer: impl Write,
+    grouping_factor: u32,
+    jit_fft: bool,
+) {
+    assert_ne!(grouping_factor, 0);
     let start = Instant::now();
+    let TOTAL_PRECISION_CARRY = 8;
+    let precisions = 1..9;
+    let mut experiments = vec![];
+    for precision in precisions {
+        for carry in 1..(TOTAL_PRECISION_CARRY - precision + 1) {
+            experiments.push((
+                precision + carry,
+                carry,
+                ((f64::exp2((precision + carry) as f64) - 1.) / (f64::exp2(carry as f64) - 1.))
+                    .floor() as u64,
+            ));
+        }
+    }
 
-    let precisions = 1..24;
-    let log_norms = vec![4, 6, 8, 10];
-
-    // find the minimal added noise by the modulus switching
-    // for KS
-    let a = CJPSearchSpace {
+    let a = CJPMultiBitSearchSpace {
         range_base_log_ks: MyRange(1, 40),
         range_level_ks: MyRange(1, 40),
         _range_base_log_pbs: MyRange(1, 40),
@@ -335,7 +347,7 @@ pub fn solve_all_multi_bit_cjp(p_fail: f64, writer: impl Write) {
         range_glwe_dim: MyRange(1, 7),
         range_log_poly_size: MyRange(8, 19),
         range_small_lwe_dim: MyRange(
-            GROUPING_FACTOR as u64 * (500. / GROUPING_FACTOR as f64).round() as u64,
+            grouping_factor as u64 * (500. / grouping_factor as f64).round() as u64,
             1500,
         ),
     };
@@ -345,43 +357,25 @@ pub fn solve_all_multi_bit_cjp(p_fail: f64, writer: impl Write) {
     .sqrt()
     .ceil() as u64;
 
-    // let a = CJPSearchSpace {
-    //     range_base_log_ks: MyRange(1, 53),
-    //     range_level_ks: MyRange(1, 53),
-    //     range_base_log_pbs: MyRange(1, 53),
-    //     range_level_pbs: MyRange(1, 53),
-    //     range_glwe_dim: MyRange(1, 7),
-    //     range_log_poly_size: MyRange(8, 16),
-    //     range_small_lwe_dim: MyRange(500, 1000),
-    // };
-    let a_tighten = a.to_tighten(128, GROUPING_FACTOR, JIT_FFT);
-    let res: Vec<Solution<MultiBitCJPParams>> = precisions
+    let a_tighten = a.to_tighten(128, grouping_factor, jit_fft);
+    let res: Vec<_> = experiments
         .into_par_iter()
-        .flat_map(|precision| {
-            log_norms
-                .clone()
-                .into_par_iter()
-                .map(|log_norm| {
-                    let config = MultiBitCJPConstraint {
-                        variance_constraint: error::safe_variance_bound_2padbits(
-                            precision, 64, p_fail,
-                        ), //5.960464477539063e-08, // 0.0009765625006088146,
-                        log_norm2: log_norm,
-                        security_level: 128,
-                        sum_size: 4096,
-                        grouping_factor: GROUPING_FACTOR,
-                        jit_fft: JIT_FFT,
-                    };
+        .map(|(precision, carry, norm)| {
+            let config = MultiBitCJPConstraint {
+                variance_constraint: error::safe_variance_bound_2padbits(precision, 64, p_fail), //5.960464477539063e-08, // 0.0009765625006088146,
+                norm2: norm,
+                security_level: 128,
+                sum_size: 0,
+                grouping_factor: grouping_factor,
+                jit_fft: jit_fft,
+            };
 
-                    let intem =
-                        config.brute_force(a_tighten.clone().iter(precision, minimal_ms_value));
-                    Solution {
-                        precision,
-                        log_norm,
-                        intem,
-                    }
-                })
-                .collect::<Vec<_>>()
+            let interm = config.brute_force(a_tighten.clone().iter(
+                precision,
+                minimal_ms_value,
+                config.grouping_factor,
+            ));
+            (precision, carry, interm)
         })
         .collect::<Vec<_>>();
     let duration = start.elapsed();
@@ -394,29 +388,31 @@ pub fn solve_all_multi_bit_cjp(p_fail: f64, writer: impl Write) {
 
 pub fn write_to_file(
     mut writer: impl Write,
-    res: &[Solution<MultiBitCJPParams>],
+    res: &[(u64, u64, Option<(MultiBitCJPParams, f64)>)],
 ) -> Result<(), std::io::Error> {
     writeln!(
         writer,
-        "  p,log(nu),  k,  N,    n, br_l,br_b, ks_l,ks_b,  cost"
+        "  pblock,carry,  k,  N,glwestddev,    n, lwestddev, br_l,br_b, ks_l,ks_b,  cost"
     )?;
 
-    for Solution {
-        precision,
-        log_norm,
-        intem,
-    } in res.iter()
-    {
-        match intem {
+    for (precision, carry, interm) in res.iter() {
+        match interm {
             Some((solution, cost)) => {
+                let glwe_stddev =
+                    minimal_variance_glwe(solution.glwe_dim, 1 << solution.log_poly_size, 64, 128)
+                        .sqrt();
+                let lwe_stddev = minimal_variance_lwe(solution.small_lwe_dim, 64, 128).sqrt();
+
                 writeln!(
                     writer,
-                    " {:2},     {:2}, {:2}, {:2}, {:4},   {:2},  {:2},   {:2},  {:2}, {:6}",
-                    precision,
-                    log_norm,
+                    " {:2},     {:2}, {:2}, {:2}, {:4}, {:.4},  {:2}, {:.4}, {:2},   {:2},  {:2}, {:6}",
+                    precision - carry,
+                    carry,
                     solution.glwe_dim,
                     solution.log_poly_size,
+                    glwe_stddev,
                     solution.small_lwe_dim,
+                    lwe_stddev,
                     solution.level_pbs,
                     solution.base_log_pbs,
                     solution.level_ks,

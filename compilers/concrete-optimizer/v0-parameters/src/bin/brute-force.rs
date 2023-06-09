@@ -2,8 +2,10 @@ use brute_force_optimizer::cggi::solve_all_cggi;
 use brute_force_optimizer::cjp::solve_all_cjp;
 use brute_force_optimizer::ks_free::solve_all_ksfree;
 
+use brute_force_optimizer::cast_cjp::solve_all_cast_cjp;
 use brute_force_optimizer::gba::solve_all_gba;
 use brute_force_optimizer::lmp::solve_all_lmp;
+use brute_force_optimizer::multi_bit_cggi::solve_all_multi_bit_cggi;
 use brute_force_optimizer::multi_bit_cjp::solve_all_multi_bit_cjp;
 use clap::Parser;
 use std::fs::File;
@@ -19,19 +21,34 @@ pub struct BruteForceArgs {
 
     #[clap(
         long,
-        help = "Supported atomic patterns: CJP, KSfree, CGGI, GBA and LMP and MBCJP"
+        help = "Supported atomic patterns: CJP, KSfree, CGGI, GBA and LMP and MBCJP, MBCGGI, cast"
     )]
     pub atomic_pattern: String,
+    #[clap(long, default_value_t = 0)]
+    pub grouping_factor: u32,
+    #[clap(long, default_value_t = true)]
+    pub jit_fft: bool,
 }
 
 fn main() {
     let args = BruteForceArgs::parse();
 
-    let filename = format!(
-        "exp/{}-pfail-{}.txt",
-        args.atomic_pattern,
-        args.p_fail.log2().round()
-    );
+    let filename =
+        if args.atomic_pattern.as_str() == "MBCJP" || args.atomic_pattern.as_str() == "MBCGGI" {
+            format!(
+                "exp/{}-pfail-{}-grfactor-{}-jitfft-{}.txt",
+                args.atomic_pattern,
+                args.p_fail.log2().round(),
+                args.grouping_factor,
+                args.jit_fft
+            )
+        } else {
+            format!(
+                "exp/{}-pfail-{}.txt",
+                args.atomic_pattern,
+                args.p_fail.log2().round()
+            )
+        };
     let file = File::create(filename).unwrap();
 
     match args.atomic_pattern.as_str() {
@@ -40,7 +57,9 @@ fn main() {
         "KSfree" => solve_all_ksfree(args.p_fail, file),
         "LMP" => solve_all_lmp(args.p_fail, file),
         "GBA" => solve_all_gba(args.p_fail, file),
-        "MBCJP" => solve_all_multi_bit_cjp(args.p_fail, file),
+        "MBCJP" => solve_all_multi_bit_cjp(args.p_fail, file, args.grouping_factor, args.jit_fft),
+        "MBCGGI" => solve_all_multi_bit_cggi(args.p_fail, file, args.grouping_factor, args.jit_fft),
+        "cast" => solve_all_cast_cjp(args.p_fail, file),
         _ => {
             panic!(
                 "The resquested AP is not supported ({})",

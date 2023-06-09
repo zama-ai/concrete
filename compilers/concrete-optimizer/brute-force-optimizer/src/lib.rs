@@ -5,7 +5,7 @@ use std::vec::IntoIter;
 
 // Useful because Range<u64> is not Copy
 #[derive(Clone, Copy)]
-struct MyRange(u64, u64);
+pub struct MyRange(u64, u64);
 
 impl MyRange {
     pub fn to_std_range(self) -> Range<u64> {
@@ -89,12 +89,15 @@ impl ExplicitRange {
 
 const STEP: usize = 4; // 4;
 
+pub mod cast_cjp;
+pub mod casting_keyswitch;
 pub mod cggi;
 pub mod cjp;
 pub mod gba;
 pub mod generic;
 pub mod ks_free;
 pub mod lmp;
+pub mod multi_bit_cggi;
 pub mod multi_bit_cjp;
 
 pub struct Solution<T> {
