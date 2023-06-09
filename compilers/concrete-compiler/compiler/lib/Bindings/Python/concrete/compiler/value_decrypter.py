@@ -41,7 +41,8 @@ class ValueDecrypter(WrapperCpp):
         super().__init__(value_decrypter)
 
     @staticmethod
-    def create(keyset: KeySet, client_parameters: ClientParameters):
+    # pylint: disable=arguments-differ
+    def new(keyset: KeySet, client_parameters: ClientParameters):
         """
         Create a value decrypter.
         """

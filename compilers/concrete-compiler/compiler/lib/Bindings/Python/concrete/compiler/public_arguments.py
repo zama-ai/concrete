@@ -39,7 +39,8 @@ class PublicArguments(WrapperCpp):
         super().__init__(public_arguments)
 
     @staticmethod
-    def create(
+    # pylint: disable=arguments-differ
+    def new(
         client_parameters: ClientParameters, values: List[Value]
     ) -> "PublicArguments":
         """

@@ -195,7 +195,7 @@ class Client:
         self.keygen(force=False)
         keyset = self.keys._keyset  # pylint: disable=protected-access
 
-        exporter = ValueExporter.create(keyset, self.specs.client_parameters)
+        exporter = ValueExporter.new(keyset, self.specs.client_parameters)
         exported = [
             None
             if arg is None
@@ -236,7 +236,7 @@ class Client:
         self.keygen(force=False)
         keyset = self.keys._keyset  # pylint: disable=protected-access
 
-        decrypter = ValueDecrypter.create(keyset, self.specs.client_parameters)
+        decrypter = ValueDecrypter.new(keyset, self.specs.client_parameters)
         decrypted = tuple(
             decrypter.decrypt(position, result.inner)
             for position, result in enumerate(flattened_results)
