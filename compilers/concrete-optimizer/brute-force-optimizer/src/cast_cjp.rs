@@ -19,17 +19,26 @@ pub fn solve_all_cast_cjp(p_fail: f64, writer: impl Write) {
     let start = Instant::now();
     let TOTAL_PRECISION_CARRY = 8;
     let mut experiments: Vec<(u64, u64)> = vec![(1u64, 1), (2, 2)];
-    let mut experiments_with_2norms =
-        // for (exp, exp_with_2norm) in  experiments.iter().zip(experiments_with_2norms.iter_mut())
-        {
-            // let (first_partition, second_partition) = experiments;
-            let first_partition = experiments[0];
-            let second_partition = experiments[1];
-            let (first_pblock, first_carry) = first_partition;
-            let (second_pblock, second_carry) = second_partition;
-            vec![(first_pblock + first_carry, first_carry, norm(first_pblock, first_carry)),
-                 (second_pblock + second_carry, second_carry, norm(second_pblock, second_carry))]
-        };
+    // vec![(2u64, 2), (1, 1)];
+
+    let mut experiments_with_2norms = {
+        let first_partition = experiments[0];
+        let second_partition = experiments[1];
+        let (first_pblock, first_carry) = first_partition;
+        let (second_pblock, second_carry) = second_partition;
+        vec![
+            (
+                first_pblock + first_carry,
+                first_carry,
+                norm(first_pblock, first_carry),
+            ),
+            (
+                second_pblock + second_carry,
+                second_carry,
+                norm(second_pblock, second_carry),
+            ),
+        ]
+    };
 
     let a = CJPSearchSpace {
         range_base_log_ks: MyRange(1, 40),
@@ -46,14 +55,16 @@ pub fn solve_all_cast_cjp(p_fail: f64, writer: impl Write) {
     let res: Vec<_> = experiments_with_2norms
         .iter()
         .map(|(precision, carry, norm)| {
+            let norm = if *precision == 2 { *norm } else { *norm };
             let config = CJPConstraint {
                 variance_constraint: error::safe_variance_bound_2padbits(*precision, 64, p_fail), //5.960464477539063e-08, // 0.0009765625006088146,
-                norm2: *norm,
+                norm2: norm,
                 security_level: 128,
                 sum_size: 4096,
             };
 
             let interm = config.brute_force(a_tighten.clone().iter(*precision, minimal_ms_value));
+
             (precision, carry, interm)
         })
         .collect::<Vec<_>>();
@@ -82,6 +93,7 @@ pub fn solve_all_cast_cjp(p_fail: f64, writer: impl Write) {
     );
     // norm2 of the small partition
     let (_, _, norm2) = experiments_with_2norms[0];
+    let norm2 = 5_f64.sqrt();
     // precision of the big partition
     let (precision, _, _) = experiments_with_2norms[1];
     // some precomputation
