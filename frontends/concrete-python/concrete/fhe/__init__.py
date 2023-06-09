@@ -14,12 +14,12 @@ from .compilation import (
     ClientSpecs,
     Compiler,
     Configuration,
-    Data,
     DebugArtifacts,
     EncryptionStatus,
     Keys,
     ParameterSelectionStrategy,
     Server,
+    Value,
 )
 from .compilation.decorators import circuit, compiler
 from .extensions import (

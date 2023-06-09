@@ -12,9 +12,9 @@ from ..internal.utils import assert_that
 from ..representation import Graph
 from .client import Client
 from .configuration import Configuration
-from .data import Data
 from .keys import Keys
 from .server import Server
+from .value import Value
 
 # pylint: enable=import-error,no-member,no-name-in-module
 
@@ -100,7 +100,7 @@ class Circuit:
     def encrypt(
         self,
         *args: Optional[Union[int, np.ndarray, List]],
-    ) -> Optional[Union[Data, Tuple[Optional[Data], ...]]]:
+    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
 
@@ -109,7 +109,7 @@ class Circuit:
                 argument(s) for evaluation
 
         Returns:
-            Optional[Union[Data, Tuple[Optional[Data], ...]]]:
+            Optional[Union[Value, Tuple[Optional[Value], ...]]]:
                 encrypted argument(s) for evaluation
         """
 
@@ -117,17 +117,17 @@ class Circuit:
 
     def run(
         self,
-        *args: Optional[Union[Data, Tuple[Optional[Data], ...]]],
-    ) -> Union[Data, Tuple[Data, ...]]:
+        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+    ) -> Union[Value, Tuple[Value, ...]]:
         """
         Evaluate the circuit.
 
         Args:
-            *args (Data):
+            *args (Value):
                 argument(s) for evaluation
 
         Returns:
-            Union[Data, Tuple[Data, ...]]:
+            Union[Value, Tuple[Value, ...]]:
                 result(s) of evaluation
         """
 
@@ -136,13 +136,13 @@ class Circuit:
 
     def decrypt(
         self,
-        *results: Union[Data, Tuple[Data, ...]],
+        *results: Union[Value, Tuple[Value, ...]],
     ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
 
         Args:
-            *results (Union[Data, Tuple[Data, ...]]):
+            *results (Union[Value, Tuple[Value, ...]]):
                 result(s) of evaluation
 
         Returns:

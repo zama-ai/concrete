@@ -89,7 +89,7 @@ Now encrypt your inputs and request the server to perform the computation. You c
 
 <!--pytest-codeblocks:skip-->
 ```python
-arg: fhe.Data = client.encrypt(7)
+arg: fhe.Value = client.encrypt(7)
 serialized_arg: bytes = arg.serialize()
 ```
 
@@ -102,14 +102,14 @@ Once you have serialized evaluation keys and serialized arguments, you can deser
 <!--pytest-codeblocks:skip-->
 ```python
 deserialized_evaluation_keys = fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
-deserialized_arg = fhe.Data.deserialize(serialized_arg)
+deserialized_arg = fhe.Value.deserialize(serialized_arg)
 ```
 
 You can perform the computation, as well:
 
 <!--pytest-codeblocks:skip-->
 ```python
-result: fhe.Data = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
+result: fhe.Value = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
 serialized_result: bytes = result.serialize()
 ```
 
@@ -121,7 +121,7 @@ Once you have received the public result of the computation from the server, you
 
 <!--pytest-codeblocks:skip-->
 ```python
-deserialized_result = fhe.Data.deserialize(serialized_result)
+deserialized_result = fhe.Value.deserialize(serialized_result)
 ```
 
 Then, decrypt the result:

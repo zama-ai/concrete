@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from concrete.fhe import Client, ClientSpecs, Data, EvaluationKeys, LookupTable, Server, compiler
+from concrete.fhe import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, Value, compiler
 
 
 def test_circuit_str(helpers):
@@ -134,16 +134,16 @@ def test_circuit_bad_run(helpers):
     with pytest.raises(ValueError) as excinfo:
         circuit.encrypt_run_decrypt(None, 10)
 
-    assert str(excinfo.value) == "Expected argument 0 to be an fhe.Data but it's None"
+    assert str(excinfo.value) == "Expected argument 0 to be an fhe.Value but it's None"
 
-    # with non Data
-    # -------------
+    # with non Value
+    # --------------
 
     with pytest.raises(ValueError) as excinfo:
         _, b = circuit.encrypt(None, 10)
         circuit.run({"yes": "no"}, b)
 
-    assert str(excinfo.value) == "Expected argument 0 to be an fhe.Data but it's dict"
+    assert str(excinfo.value) == "Expected argument 0 to be an fhe.Value but it's dict"
 
 
 def test_circuit_separate_args(helpers):
@@ -222,13 +222,13 @@ def test_client_server_api(helpers):
             serialized_arg = arg.serialize()
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            deserialized_arg = Data.deserialize(serialized_arg)
+            deserialized_arg = Value.deserialize(serialized_arg)
             deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
             result = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
             serialized_result = result.serialize()
 
-            deserialized_result = Data.deserialize(serialized_result)
+            deserialized_result = Value.deserialize(serialized_result)
             output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [45, 50, 43])
@@ -280,13 +280,13 @@ def test_client_server_api_crt(helpers):
             serialized_arg = arg.serialize()
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            deserialized_arg = Data.deserialize(serialized_arg)
+            deserialized_arg = Value.deserialize(serialized_arg)
             deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
             result = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
             serialized_result = result.serialize()
 
-            deserialized_result = Data.deserialize(serialized_result)
+            deserialized_result = Value.deserialize(serialized_result)
             output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [100**2, 150**2, 10**2])
@@ -333,13 +333,13 @@ def test_client_server_api_via_mlir(helpers):
             serialized_arg = arg.serialize()
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            deserialized_arg = Data.deserialize(serialized_arg)
+            deserialized_arg = Value.deserialize(serialized_arg)
             deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
             result = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
             serialized_result = result.serialize()
 
-            deserialized_result = Data.deserialize(serialized_result)
+            deserialized_result = Value.deserialize(serialized_result)
             output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [45, 50, 43])
