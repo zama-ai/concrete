@@ -37,15 +37,26 @@ std::vector<uint64_t> chunkInput(uint64_t value, size_t size,
   return chunks;
 }
 
-outcome::checked<void, StringError>
-EncryptedArguments::checkAllArgs(KeySet &keySet) {
-  size_t arity = keySet.numInputs();
-  if (values.size() == arity) {
+outcome::checked<void, StringError> checkSizes(size_t actualSize,
+                                               size_t expectedSize) {
+  if (actualSize == expectedSize) {
     return outcome::success();
   }
   return StringError("function expects ")
-         << arity << " arguments but has been called with " << values.size()
+         << expectedSize << " arguments but has been called with " << actualSize
          << " arguments";
+}
+
+outcome::checked<void, StringError>
+EncryptedArguments::checkAllArgs(KeySet &keySet) {
+  size_t arity = keySet.numInputs();
+  return checkSizes(values.size(), arity);
+}
+
+outcome::checked<void, StringError>
+EncryptedArguments::checkAllArgs(ClientParameters &params) {
+  size_t arity = params.inputs.size();
+  return checkSizes(values.size(), arity);
 }
 
 } // namespace clientlib

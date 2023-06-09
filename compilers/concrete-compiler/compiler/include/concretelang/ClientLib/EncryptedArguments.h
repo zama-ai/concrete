@@ -31,22 +31,22 @@ class PublicArguments;
 class EncryptedArguments {
 
 public:
-  EncryptedArguments() {}
+  EncryptedArguments(bool simulation = false) : simulation(simulation) {}
 
   /// Encrypts args thanks the given KeySet and pack the encrypted arguments
   /// to an EncryptedArguments
   template <typename... Args>
   static outcome::checked<std::unique_ptr<EncryptedArguments>, StringError>
-  create(KeySet &keySet, Args... args) {
-    auto encryptedArgs = std::make_unique<EncryptedArguments>();
+  create(bool simulation, KeySet &keySet, Args... args) {
+    auto encryptedArgs = std::make_unique<EncryptedArguments>(simulation);
     OUTCOME_TRYV(encryptedArgs->pushArgs(keySet, args...));
     return std::move(encryptedArgs);
   }
 
   template <typename ArgT>
   static outcome::checked<std::unique_ptr<EncryptedArguments>, StringError>
-  create(KeySet &keySet, const llvm::ArrayRef<ArgT> args) {
-    auto encryptedArgs = EncryptedArguments::empty();
+  create(bool simulation, KeySet &keySet, const llvm::ArrayRef<ArgT> args) {
+    auto encryptedArgs = EncryptedArguments::empty(simulation);
     for (size_t i = 0; i < args.size(); i++) {
       OUTCOME_TRYV(encryptedArgs->pushArg(args[i], keySet));
     }
@@ -54,9 +54,11 @@ public:
     return std::move(encryptedArgs);
   }
 
-  static std::unique_ptr<EncryptedArguments> empty() {
-    return std::make_unique<EncryptedArguments>();
+  static std::unique_ptr<EncryptedArguments> empty(bool simulation = false) {
+    return std::make_unique<EncryptedArguments>(simulation);
   }
+
+  bool isSimulated() { return simulation; }
 
   /// Export encrypted arguments as public arguments, reset the encrypted
   /// arguments, i.e. move all buffers to the PublicArguments and reset the
@@ -67,12 +69,13 @@ public:
   /// Check that all arguments as been pushed.
   // TODO: Remove public method here
   outcome::checked<void, StringError> checkAllArgs(KeySet &keySet);
+  outcome::checked<void, StringError> checkAllArgs(ClientParameters &params);
 
 public:
   /// Add a uint64_t scalar argument.
   outcome::checked<void, StringError> pushArg(uint64_t arg, KeySet &keySet) {
-    ValueExporter exporter(keySet, keySet.clientParameters());
-    OUTCOME_TRY(auto value, exporter.exportValue(arg, values.size()));
+    auto exporter = getExporter(keySet);
+    OUTCOME_TRY(auto value, exporter->exportValue(arg, values.size()));
     values.push_back(std::move(value));
     return outcome::success();
   }
@@ -135,8 +138,8 @@ public:
   template <typename T>
   outcome::checked<void, StringError>
   pushArg(const T *data, llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
-    ValueExporter exporter(keySet, keySet.clientParameters());
-    OUTCOME_TRY(auto value, exporter.exportValue(data, shape, values.size()));
+    auto exporter = getExporter(keySet);
+    OUTCOME_TRY(auto value, exporter->exportValue(data, shape, values.size()));
     values.push_back(std::move(value));
     return outcome::success();
   }
@@ -165,8 +168,19 @@ public:
   }
 
 private:
+  std::unique_ptr<ValueExporterInterface> getExporter(KeySet &keySet) {
+    if (isSimulated()) {
+      return std::make_unique<SimulatedValueExporter>(
+          keySet.clientParameters());
+    } else {
+      return std::make_unique<ValueExporter>(keySet, keySet.clientParameters());
+    }
+  }
+
   /// Store buffers of ciphertexts
   std::vector<ScalarOrTensorData> values;
+  /// Whether it a simulates an encrypted argument or not
+  bool simulation;
 };
 
 } // namespace clientlib
