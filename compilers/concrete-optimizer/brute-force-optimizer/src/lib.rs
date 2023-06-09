@@ -66,8 +66,9 @@ impl MyRange {
 }
 
 pub fn minimal_added_noise_by_modulus_switching(lwe_dim: u64) -> f64 {
-    ((1. / 12. + lwe_dim as f64 / 24.)
-        + (lwe_dim as f64 / 48. - 1. / 12.) * 4. / (f64::exp2(2. * 64.)))
+    // ((1. / 12. + lwe_dim as f64 / 24.)
+    //     + (lwe_dim as f64 / 48. - 1. / 12.) * 4. / (f64::exp2(2. * 64.)))
+    0.
 }
 
 pub fn pbs_p_fail_from_global_p_fail(nb_pbs: u64, global_p_fail: f64) -> f64 {

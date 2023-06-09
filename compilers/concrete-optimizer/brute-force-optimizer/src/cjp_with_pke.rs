@@ -74,8 +74,19 @@ impl Problem for CJPConstraint {
             64,
         );
 
-        // (v_pbs + v_ks) * (self.norm2 * self.norm2) as f64 + v_ms < self.variance_constraint
-        (v_pbs) * (self.norm2 * self.norm2) as f64 + v_ks + v_ms < self.variance_constraint
+        // CGGI
+        let v_enc = (1 << param.log_small_lwe_dim + 1) as f64 * variance_ksk;
+        let first_constraint = v_enc < v_pbs;
+        let second_constraint =
+            (v_pbs + v_ks) * (self.norm2 * self.norm2) as f64 + v_ms < self.variance_constraint;
+
+        // CJP
+        // let v_enc = (1 << param.log_small_lwe_dim + 1) as f64 * variance_bsk;
+        // let first_constraint = v_enc < v_pbs;
+        // let second_constraint =
+        //     (v_pbs) * (self.norm2 * self.norm2) as f64 + v_ks + v_ms < self.variance_constraint;
+
+        first_constraint && second_constraint
     }
 
     fn cost(&self, param: Self::Param) -> f64 {
@@ -261,14 +272,14 @@ impl CJPSearchSpaceTighten {
                                     .into_iter()
                                     .flat_map(move |log_poly_size| {
                                         self.range_log_small_lwe_dim.to_std_range().into_iter().map(
-                                            move |small_lwe_dim| CJPParams {
+                                            move |log_small_lwe_dim| CJPParams {
                                                 base_log_ks,
                                                 level_ks,
                                                 base_log_pbs,
                                                 level_pbs,
                                                 glwe_dim,
                                                 log_poly_size,
-                                                log_small_lwe_dim: small_lwe_dim,
+                                                log_small_lwe_dim,
                                             },
                                         )
                                     })
@@ -283,9 +294,29 @@ impl CJPSearchSpaceTighten {
 
 pub fn solve_all_cjp_pke(p_fail: f64, mut writer: impl Write) {
     let start = Instant::now();
+    let TOTAL_PRECISION_CARRY = 8;
+    // p block = 1 ; n_carry \in [1, 7]
+    // p block = 2 ; n_carry \in [1, 6]
+    let precisions = 1..9; // vec![1, 4]; //  1..24;
+                           // let mut norms_per_precisions = vec![];
 
-    let precisions = vec![1, 4]; //  1..24;
-    let norms = vec![18]; // 1, 5]; //4, 6, 8, 10];
+    let mut experiments = vec![];
+    for precision in precisions {
+        // let mut carries = vec![];
+        // let mut norms = vec![];
+        for carry in 1..(TOTAL_PRECISION_CARRY - precision + 1) {
+            experiments.push((
+                precision + carry,
+                carry,
+                ((f64::exp2((precision + carry) as f64) - 1.) / (f64::exp2(carry as f64) - 1.))
+                    .floor() as u64,
+            ));
+            // carries.push(carry);
+            // norms.push();
+        }
+        // norms_per_precisions.push(carries);
+    }
+    // let norms = vec![5]; // 1, 5]; //4, 6, 8, 10];
 
     // find the minimal added noise by the modulus switching
     // for KS
@@ -304,38 +335,20 @@ pub fn solve_all_cjp_pke(p_fail: f64, mut writer: impl Write) {
     .sqrt()
     .ceil() as u64;
 
-    // let a = CJPSearchSpace {
-    //     range_base_log_ks: MyRange(1, 53),
-    //     range_level_ks: MyRange(1, 53),
-    //     range_base_log_pbs: MyRange(1, 53),
-    //     range_level_pbs: MyRange(1, 53),
-    //     range_glwe_dim: MyRange(1, 7),
-    //     range_log_poly_size: MyRange(8, 16),
-    //     range_small_lwe_dim: MyRange(500, 1000),
-    // };
     let a_tighten = a.to_tighten(128);
-    let res: Vec<(u64, u64, Option<(CJPParams, f64)>)> = precisions
+    let res: Vec<(u64, u64, Option<(CJPParams, f64)>)> = experiments
         .into_par_iter()
-        .flat_map(|precision| {
-            norms
-                .clone()
-                .into_par_iter()
-                .map(|norm| {
-                    let config = CJPConstraint {
-                        variance_constraint: error::safe_variance_bound_2padbits(
-                            precision, 64, p_fail,
-                        ), //5.960464477539063e-08, // 0.0009765625006088146,
-                        norm2: norm,
-                        security_level: 128,
-                        sum_size: 4096,
-                    };
+        .map(|(precision, carry, norm)| {
+            let config = CJPConstraint {
+                variance_constraint: error::safe_variance_bound_2padbits(precision, 64, p_fail), //5.960464477539063e-08, // 0.0009765625006088146,
+                norm2: norm,
+                security_level: 128,
+                sum_size: 4096,
+            };
 
-                    let intem =
-                        config.brute_force(a_tighten.clone().iter(precision, minimal_ms_value));
+            let intem = config.brute_force(a_tighten.clone().iter(precision, minimal_ms_value));
 
-                    (precision, norm, intem)
-                })
-                .collect::<Vec<_>>()
+            (precision, carry, intem)
         })
         .collect::<Vec<_>>();
     let duration = start.elapsed();
@@ -350,9 +363,12 @@ pub fn write_to_file(
     mut writer: impl Write,
     res: &[(u64, u64, Option<(CJPParams, f64)>)],
 ) -> Result<(), std::io::Error> {
-    writeln!(writer, "  p, nu,  k,  N,    n, br_l,br_b, ks_l,ks_b,  cost");
+    writeln!(
+        writer,
+        "  pblock, carry,  k,  N,    n, br_l,br_b, ks_l,ks_b,  cost"
+    );
 
-    for (precision, norm, interm) in res.iter() {
+    for (precision, carry, interm) in res.iter() {
         match interm {
             Some((solution, cost)) => {
                 let lwe_stddev =
@@ -365,8 +381,8 @@ pub fn write_to_file(
                 writeln!(
                     writer,
                     " {:2},     {:2}, {:2}, {:2}, {:4},   {:2},  {:2},   {:2},  {:2}, {:6}",
-                    precision,
-                    norm,
+                    precision - carry,
+                    carry,
                     solution.glwe_dim,
                     solution.log_poly_size,
                     solution.log_small_lwe_dim,
