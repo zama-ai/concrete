@@ -285,9 +285,98 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("get_evaluation_keys",
            [](clientlib::KeySet &keySet) { return keySet.evaluationKeys(); });
 
+  pybind11::class_<clientlib::SharedScalarOrTensorData>(m, "Value")
+      .def_static("deserialize",
+                  [](const pybind11::bytes &buffer) {
+                    return valueUnserialize(buffer);
+                  })
+      .def("serialize", [](const clientlib::SharedScalarOrTensorData &value) {
+        return pybind11::bytes(valueSerialize(value));
+      });
+
+  pybind11::class_<clientlib::ValueExporter>(m, "ValueExporter")
+      .def_static("create",
+                  [](clientlib::KeySet &keySet,
+                     mlir::concretelang::ClientParameters &clientParameters) {
+                    return clientlib::ValueExporter(keySet, clientParameters);
+                  })
+      .def("export_scalar",
+           [](clientlib::ValueExporter &exporter, size_t position,
+              int64_t value) {
+             outcome::checked<clientlib::ScalarOrTensorData, StringError>
+                 result = exporter.exportValue(value, position);
+
+             if (result.has_error()) {
+               throw std::runtime_error(result.error().mesg);
+             }
+
+             return clientlib::SharedScalarOrTensorData(
+                 std::move(result.value()));
+           })
+      .def("export_tensor", [](clientlib::ValueExporter &exporter,
+                               size_t position, std::vector<int64_t> values,
+                               std::vector<int64_t> shape) {
+        outcome::checked<clientlib::ScalarOrTensorData, StringError> result =
+            exporter.exportValue(values.data(), shape, position);
+
+        if (result.has_error()) {
+          throw std::runtime_error(result.error().mesg);
+        }
+
+        return clientlib::SharedScalarOrTensorData(std::move(result.value()));
+      });
+
+  pybind11::class_<clientlib::ValueDecrypter>(m, "ValueDecrypter")
+      .def_static("create",
+                  [](clientlib::KeySet &keySet,
+                     mlir::concretelang::ClientParameters &clientParameters) {
+                    return clientlib::ValueDecrypter(keySet, clientParameters);
+                  })
+      .def("get_shape",
+           [](clientlib::ValueDecrypter &decrypter, size_t position) {
+             outcome::checked<std::vector<int64_t>, StringError> result =
+                 decrypter.getShape(position);
+
+             if (result.has_error()) {
+               throw std::runtime_error(result.error().mesg);
+             }
+
+             return result.value();
+           })
+      .def("decrypt_scalar",
+           [](clientlib::ValueDecrypter &decrypter, size_t position,
+              clientlib::SharedScalarOrTensorData &value) {
+             outcome::checked<int64_t, StringError> result =
+                 decrypter.decrypt<int64_t>(value.get(), position);
+
+             if (result.has_error()) {
+               throw std::runtime_error(result.error().mesg);
+             }
+
+             return result.value();
+           })
+      .def("decrypt_tensor",
+           [](clientlib::ValueDecrypter &decrypter, size_t position,
+              clientlib::SharedScalarOrTensorData &value) {
+             outcome::checked<std::vector<int64_t>, StringError> result =
+                 decrypter.decryptTensor<int64_t>(value.get(), position);
+
+             if (result.has_error()) {
+               throw std::runtime_error(result.error().mesg);
+             }
+
+             return result.value();
+           });
+
   pybind11::class_<clientlib::PublicArguments,
                    std::unique_ptr<clientlib::PublicArguments>>(
       m, "PublicArguments")
+      .def_static(
+          "create",
+          [](const mlir::concretelang::ClientParameters &clientParameters,
+             std::vector<clientlib::SharedScalarOrTensorData> &buffers) {
+            return clientlib::PublicArguments(clientParameters, buffers);
+          })
       .def_static("deserialize",
                   [](mlir::concretelang::ClientParameters &clientParameters,
                      const pybind11::bytes &buffer) {
@@ -302,9 +391,25 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                      const pybind11::bytes &buffer) {
                     return publicResultUnserialize(clientParameters, buffer);
                   })
-      .def("serialize", [](clientlib::PublicResult &publicResult) {
-        return pybind11::bytes(publicResultSerialize(publicResult));
-      });
+      .def("serialize",
+           [](clientlib::PublicResult &publicResult) {
+             return pybind11::bytes(publicResultSerialize(publicResult));
+           })
+      .def("n_values",
+           [](const clientlib::PublicResult &publicResult) {
+             return publicResult.buffers.size();
+           })
+      .def("get_value",
+           [](clientlib::PublicResult &publicResult, size_t position) {
+             outcome::checked<clientlib::SharedScalarOrTensorData, StringError>
+                 result = publicResult.getValue(position);
+
+             if (result.has_error()) {
+               throw std::runtime_error(result.error().mesg);
+             }
+
+             return result.value();
+           });
 
   pybind11::class_<clientlib::EvaluationKeys>(m, "EvaluationKeys")
       .def_static("deserialize",

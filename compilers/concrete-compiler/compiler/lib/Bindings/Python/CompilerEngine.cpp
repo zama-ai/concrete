@@ -257,6 +257,26 @@ keySetSerialize(concretelang::clientlib::KeySet &keySet) {
   return buffer.str();
 }
 
+MLIR_CAPI_EXPORTED concretelang::clientlib::SharedScalarOrTensorData
+valueUnserialize(const std::string &buffer) {
+  std::stringstream istream(buffer);
+
+  auto value = concretelang::clientlib::unserializeScalarOrTensorData(istream);
+  if (istream.fail() || value.has_error()) {
+    throw std::runtime_error("Cannot read data");
+  }
+
+  return concretelang::clientlib::SharedScalarOrTensorData(
+      std::move(value.value()));
+}
+
+MLIR_CAPI_EXPORTED std::string
+valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value) {
+  std::ostringstream buffer(std::ios::binary);
+  serializeScalarOrTensorData(value.get(), buffer);
+  return buffer.str();
+}
+
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 clientParametersUnserialize(const std::string &json) {
   GET_OR_THROW_LLVM_EXPECTED(

@@ -29,6 +29,9 @@ from .client_support import ClientSupport
 from .jit_support import JITSupport
 from .library_support import LibrarySupport
 from .evaluation_keys import EvaluationKeys
+from .value import Value
+from .value_decrypter import ValueDecrypter
+from .value_exporter import ValueExporter
 
 
 def init_dfr():

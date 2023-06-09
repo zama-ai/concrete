@@ -112,17 +112,15 @@ private:
 class PublicArguments {
 public:
   PublicArguments(const ClientParameters &clientParameters,
-                  std::vector<ScalarOrTensorData> &&ciphertextBuffers);
+                  std::vector<clientlib::SharedScalarOrTensorData> &buffers);
   ~PublicArguments();
-  PublicArguments(PublicArguments &other) = delete;
-  PublicArguments(PublicArguments &&other) = delete;
 
   static outcome::checked<std::unique_ptr<PublicArguments>, StringError>
-  unserialize(ClientParameters &expectedParams, std::istream &istream);
+  unserialize(const ClientParameters &expectedParams, std::istream &istream);
 
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 
-  std::vector<ScalarOrTensorData> &getArguments() { return arguments; }
+  std::vector<SharedScalarOrTensorData> &getArguments() { return arguments; }
   ClientParameters &getClientParameters() { return clientParameters; }
 
   friend class ::concretelang::serverlib::ServerLambda;
@@ -133,7 +131,7 @@ private:
 
   ClientParameters clientParameters;
   /// Store buffers of ciphertexts
-  std::vector<ScalarOrTensorData> arguments;
+  std::vector<SharedScalarOrTensorData> arguments;
 };
 
 /// PublicResult is a result of a ServerLambda call which contains encrypted
@@ -141,7 +139,7 @@ private:
 struct PublicResult {
 
   PublicResult(const ClientParameters &clientParameters,
-               std::vector<ScalarOrTensorData> &&buffers = {})
+               std::vector<SharedScalarOrTensorData> &&buffers = {})
       : clientParameters(clientParameters), buffers(std::move(buffers)){};
 
   PublicResult(PublicResult &) = delete;
@@ -150,17 +148,18 @@ struct PublicResult {
   /// @param argPos The position of the value in the PublicResult
   /// @return Either the value or an error if there are no value at this
   /// position
-  outcome::checked<ScalarOrTensorData, StringError> getValue(size_t argPos) {
+  outcome::checked<SharedScalarOrTensorData, StringError>
+  getValue(size_t argPos) {
     if (argPos >= buffers.size()) {
       return StringError("result #") << argPos << " does not exists";
     }
-    return std::move(buffers[argPos]);
+    return buffers[argPos];
   }
 
   /// Create a public result from buffers.
   static std::unique_ptr<PublicResult>
   fromBuffers(const ClientParameters &clientParameters,
-              std::vector<ScalarOrTensorData> &&buffers) {
+              std::vector<SharedScalarOrTensorData> &&buffers) {
     return std::make_unique<PublicResult>(clientParameters, std::move(buffers));
   }
 
@@ -182,7 +181,7 @@ struct PublicResult {
   outcome::checked<T, StringError> asClearTextScalar(KeySet &keySet,
                                                      size_t pos) {
     ValueDecrypter decrypter(keySet, clientParameters);
-    auto &data = buffers[pos];
+    auto &data = buffers[pos].get();
     return decrypter.template decrypt<T>(data, pos);
   }
 
@@ -192,7 +191,7 @@ struct PublicResult {
   outcome::checked<std::vector<T>, StringError>
   asClearTextVector(KeySet &keySet, size_t pos) {
     ValueDecrypter decrypter(keySet, clientParameters);
-    return decrypter.template decryptTensor<T>(buffers[pos], pos);
+    return decrypter.template decryptTensor<T>(buffers[pos].get(), pos);
   }
 
   /// Return the shape of the clear tensor of a result.
@@ -205,7 +204,7 @@ struct PublicResult {
   // private: TODO tmp
   friend class ::concretelang::serverlib::ServerLambda;
   ClientParameters clientParameters;
-  std::vector<ScalarOrTensorData> buffers;
+  std::vector<SharedScalarOrTensorData> buffers;
 };
 
 /// Helper function to convert from MemRefDescriptor to
