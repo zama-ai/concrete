@@ -482,7 +482,8 @@ public:
 
   template <typename T, typename ResT = uint64_t>
   llvm::Expected<ResT> operator()(const llvm::ArrayRef<T> args) {
-    auto encryptedArgs = clientlib::EncryptedArguments::create(*keySet, args);
+    auto encryptedArgs = clientlib::EncryptedArguments::create(
+        /*simulation*/ false, *keySet, args);
     if (encryptedArgs.has_error()) {
       return StreamStringError(encryptedArgs.error().mesg);
     }
@@ -502,8 +503,8 @@ public:
 
   template <typename ResT = uint64_t, typename... Args>
   llvm::Expected<ResT> operator()(const Args... args) {
-    auto encryptedArgs =
-        clientlib::EncryptedArguments::create(*keySet, args...);
+    auto encryptedArgs = clientlib::EncryptedArguments::create(
+        /*simulation*/ false, *keySet, args...);
     if (encryptedArgs.has_error()) {
       return StreamStringError(encryptedArgs.error().mesg);
     }

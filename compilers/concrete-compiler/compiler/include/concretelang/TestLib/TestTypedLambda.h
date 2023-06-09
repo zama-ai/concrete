@@ -71,7 +71,8 @@ public:
     // std::ostringstream clientOuput(std::ios::binary);
     // client argument encryption
     OUTCOME_TRY(auto encryptedArgs,
-                clientlib::EncryptedArguments::create(*keySet, args...));
+                clientlib::EncryptedArguments::create(/*simulation*/ false,
+                                                      *keySet, args...));
     OUTCOME_TRY(auto publicArgument,
                 encryptedArgs->exportPublicArguments(this->clientParameters));
     // client argument serialization

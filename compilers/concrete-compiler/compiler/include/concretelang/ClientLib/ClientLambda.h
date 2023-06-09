@@ -89,8 +89,9 @@ public:
 
   outcome::checked<std::unique_ptr<PublicArguments>, StringError>
   publicArguments(Args... args, KeySet &keySet) {
-    OUTCOME_TRY(auto clientArguments,
-                EncryptedArguments::create(keySet, args...));
+    OUTCOME_TRY(
+        auto clientArguments,
+        EncryptedArguments::create(/*simulation*/ false, keySet, args...));
 
     return clientArguments->exportPublicArguments(clientParameters);
   }
