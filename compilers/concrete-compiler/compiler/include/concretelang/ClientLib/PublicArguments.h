@@ -13,6 +13,7 @@
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EncryptedArguments.h"
 #include "concretelang/ClientLib/Types.h"
+#include "concretelang/ClientLib/ValueDecrypter.h"
 #include "concretelang/Common/Error.h"
 
 namespace concretelang {
@@ -28,84 +29,10 @@ class JITLambda;
 namespace concretelang {
 namespace clientlib {
 
+using concretelang::clientlib::ValueDecrypter;
 using concretelang::error::StringError;
 
 class EncryptedArguments;
-
-/// @brief allows to transform a serializable value into a clear value
-class ValueDecrypter {
-public:
-  ValueDecrypter(KeySet &keySet, ClientParameters clientParameters)
-      : _keySet(keySet), _clientParameters(clientParameters) {}
-
-  /// @brief Transforms a FHE value into a clear scalar value
-  /// @tparam T The type of the clear scalar value
-  /// @param value The value to decrypt
-  /// @param pos The position of the argument
-  /// @return Either the decrypted value or an error if the gate doesn't match
-  /// the expected result.
-  template <typename T>
-  outcome::checked<T, StringError> decrypt(ScalarOrTensorData &value,
-                                           size_t pos) {
-    OUTCOME_TRY(auto gate, _clientParameters.ouput(pos));
-    if (!gate.isEncrypted())
-      return value.getScalar().getValue<T>();
-
-    auto &buffer = value.getTensor();
-
-    auto ciphertext = buffer.getOpaqueElementPointer(0);
-    uint64_t decrypted;
-
-    // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
-    // FIXME: this may break alignment restrictions on some
-    // architectures
-    auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
-    OUTCOME_TRYV(_keySet.decrypt_lwe(0, ciphertextu64, decrypted));
-
-    return (T)decrypted;
-  }
-
-  /// @brief Transforms a FHE value  into a vector of clear value
-  /// @tparam T The type of the clear scalar value
-  /// @param value The value to decrypt
-  /// @param pos The position of the argument
-  /// @return Either the decrypted value or an error if the gate doesn't match
-  /// the expected result.
-  template <typename T>
-  outcome::checked<std::vector<T>, StringError>
-  decryptTensor(ScalarOrTensorData &value, size_t pos) {
-    OUTCOME_TRY(auto gate, _clientParameters.ouput(pos));
-    if (!gate.isEncrypted())
-      return value.getTensor().asFlatVector<T>();
-
-    auto &buffer = value.getTensor();
-    auto lweSize = _clientParameters.lweBufferSize(gate);
-
-    std::vector<T> decryptedValues(buffer.length() / lweSize);
-    for (size_t i = 0; i < decryptedValues.size(); i++) {
-      auto ciphertext = buffer.getOpaqueElementPointer(i * lweSize);
-      uint64_t decrypted;
-
-      // Convert to uint64_t* as required by `KeySet::decrypt_lwe`
-      // FIXME: this may break alignment restrictions on some
-      // architectures
-      auto ciphertextu64 = reinterpret_cast<uint64_t *>(ciphertext);
-      OUTCOME_TRYV(_keySet.decrypt_lwe(0, ciphertextu64, decrypted));
-      decryptedValues[i] = decrypted;
-    }
-    return decryptedValues;
-  }
-
-  /// Return the shape of the clear tensor of a result.
-  outcome::checked<std::vector<int64_t>, StringError> getShape(size_t pos) {
-    OUTCOME_TRY(auto gate, _clientParameters.ouput(pos));
-    return gate.shape.dimensions;
-  }
-
-private:
-  KeySet &_keySet;
-  ClientParameters _clientParameters;
-};
 
 /// PublicArguments will be sended to the server. It includes encrypted
 /// arguments and public keys.
