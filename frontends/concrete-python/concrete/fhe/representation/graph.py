@@ -476,7 +476,7 @@ class Graph:
 
     def update_with_bounds(self, bounds: Dict[Node, Dict[str, Union[np.integer, np.floating]]]):
         """
-        Update `Value`s within the `Graph` according to measured bounds.
+        Update `ValueDescription`s within the `Graph` according to measured bounds.
 
         Args:
             bounds (Dict[Node, Dict[str, Union[np.integer, np.floating]]]):

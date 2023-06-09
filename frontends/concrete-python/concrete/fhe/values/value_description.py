@@ -1,5 +1,5 @@
 """
-Declaration of `Value` class.
+Declaration of `ValueDescription` class.
 """
 
 from typing import Any, Tuple
@@ -9,9 +9,9 @@ import numpy as np
 from ..dtypes import BaseDataType, Float, Integer, UnsignedInteger
 
 
-class Value:
+class ValueDescription:
     """
-    Value class, to combine data type, shape, and encryption status into a single object.
+    ValueDescription class, to combine data type, shape, and encryption status into a single object.
     """
 
     dtype: BaseDataType
@@ -19,46 +19,46 @@ class Value:
     is_encrypted: bool
 
     @staticmethod
-    def of(value: Any, is_encrypted: bool = False) -> "Value":  # pylint: disable=invalid-name
+    def of(value: Any, is_encrypted: bool = False) -> "ValueDescription":
         """
-        Get the `Value` that can represent `value`.
+        Get the `ValueDescription` that can represent `value`.
 
         Args:
             value (Any):
                 value that needs to be represented
 
             is_encrypted (bool, default = False):
-                whether the resulting `Value` is encrypted or not
+                whether the resulting `ValueDescription` is encrypted or not
 
         Returns:
-            Value:
-                `Value` that can represent `value`
+            ValueDescription:
+                `ValueDescription` that can represent `value`
 
         Raises:
             ValueError:
-                if `value` cannot be represented by `Value`
+                if `value` cannot be represented by `ValueDescription`
         """
 
         # pylint: disable=too-many-branches,too-many-return-statements
 
         if isinstance(value, (bool, np.bool_)):
-            return Value(dtype=UnsignedInteger(1), shape=(), is_encrypted=is_encrypted)
+            return ValueDescription(dtype=UnsignedInteger(1), shape=(), is_encrypted=is_encrypted)
 
         if isinstance(value, (int, np.integer)):
-            return Value(
+            return ValueDescription(
                 dtype=Integer.that_can_represent(value),
                 shape=(),
                 is_encrypted=is_encrypted,
             )
 
         if isinstance(value, (float, np.float64)):
-            return Value(dtype=Float(64), shape=(), is_encrypted=is_encrypted)
+            return ValueDescription(dtype=Float(64), shape=(), is_encrypted=is_encrypted)
 
         if isinstance(value, np.float32):
-            return Value(dtype=Float(32), shape=(), is_encrypted=is_encrypted)
+            return ValueDescription(dtype=Float(32), shape=(), is_encrypted=is_encrypted)
 
         if isinstance(value, np.float16):
-            return Value(dtype=Float(16), shape=(), is_encrypted=is_encrypted)
+            return ValueDescription(dtype=Float(16), shape=(), is_encrypted=is_encrypted)
 
         if isinstance(value, list):
             try:
@@ -70,25 +70,33 @@ class Value:
 
         if isinstance(value, np.ndarray):
             if np.issubdtype(value.dtype, np.bool_):
-                return Value(dtype=UnsignedInteger(1), shape=value.shape, is_encrypted=is_encrypted)
+                return ValueDescription(
+                    dtype=UnsignedInteger(1), shape=value.shape, is_encrypted=is_encrypted
+                )
 
             if np.issubdtype(value.dtype, np.integer):
-                return Value(
+                return ValueDescription(
                     dtype=Integer.that_can_represent(value),
                     shape=value.shape,
                     is_encrypted=is_encrypted,
                 )
 
             if np.issubdtype(value.dtype, np.float64):
-                return Value(dtype=Float(64), shape=value.shape, is_encrypted=is_encrypted)
+                return ValueDescription(
+                    dtype=Float(64), shape=value.shape, is_encrypted=is_encrypted
+                )
 
             if np.issubdtype(value.dtype, np.float32):
-                return Value(dtype=Float(32), shape=value.shape, is_encrypted=is_encrypted)
+                return ValueDescription(
+                    dtype=Float(32), shape=value.shape, is_encrypted=is_encrypted
+                )
 
             if np.issubdtype(value.dtype, np.float16):
-                return Value(dtype=Float(16), shape=value.shape, is_encrypted=is_encrypted)
+                return ValueDescription(
+                    dtype=Float(16), shape=value.shape, is_encrypted=is_encrypted
+                )
 
-        message = f"Value cannot represent {repr(value)}"
+        message = f"Concrete cannot represent {repr(value)}"
         raise ValueError(message)
 
         # pylint: enable=too-many-branches,too-many-return-statements
@@ -100,7 +108,7 @@ class Value:
 
     def __eq__(self, other: object) -> bool:
         return (
-            isinstance(other, Value)
+            isinstance(other, ValueDescription)
             and self.dtype == other.dtype
             and self.shape == other.shape
             and self.is_encrypted == other.is_encrypted

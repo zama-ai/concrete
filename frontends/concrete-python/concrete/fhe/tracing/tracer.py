@@ -14,7 +14,7 @@ from ..dtypes import BaseDataType, Float, Integer
 from ..internal.utils import assert_that
 from ..representation import Graph, Node, Operation
 from ..representation.utils import format_indexing_element
-from ..values import Value
+from ..values import ValueDescription
 
 
 class Tracer:
@@ -24,7 +24,7 @@ class Tracer:
 
     computation: Node
     input_tracers: List["Tracer"]
-    output: Value
+    output: ValueDescription
 
     # property to keep track of assignments
     last_version: Optional["Tracer"] = None
@@ -34,7 +34,9 @@ class Tracer:
     _is_direct: bool = False
 
     @staticmethod
-    def trace(function: Callable, parameters: Dict[str, Value], is_direct: bool = False) -> Graph:
+    def trace(
+        function: Callable, parameters: Dict[str, ValueDescription], is_direct: bool = False
+    ) -> Graph:
         """
         Trace `function` and create the `Graph` that represents it.
 
@@ -42,7 +44,7 @@ class Tracer:
             function (Callable):
                 function to trace
 
-            parameters (Dict[str, Value]):
+            parameters (Dict[str, ValueDescription]):
                 parameters of function to trace
                 e.g. parameter x is an EncryptedScalar holding a 7-bit UnsignedInteger
 
@@ -414,7 +416,7 @@ class Tracer:
         for arg in args:
             extract_tracers(arg, tracers)
 
-        output_value = Value.of(evaluation)
+        output_value = ValueDescription.of(evaluation)
         output_value.is_encrypted = any(tracer.output.is_encrypted for tracer in tracers)
 
         if Tracer._is_direct and isinstance(output_value.dtype, Integer):
@@ -646,7 +648,7 @@ class Tracer:
             )
 
         output_value = deepcopy(self.output)
-        output_value.dtype = Value.of(dtype(0)).dtype  # type: ignore
+        output_value.dtype = ValueDescription.of(dtype(0)).dtype  # type: ignore
 
         if np.issubdtype(dtype, np.integer):
 

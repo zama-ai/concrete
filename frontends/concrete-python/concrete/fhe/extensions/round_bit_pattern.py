@@ -12,7 +12,7 @@ from ..dtypes import Integer
 from ..mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 local = threading.local()
 
@@ -103,7 +103,7 @@ class AutoRounder:
                         rounder.input_min = min(rounder.input_min, adjuster.input_min)
                         rounder.input_max = max(rounder.input_max, adjuster.input_max)
 
-                        input_value = Value.of([rounder.input_min, rounder.input_max])
+                        input_value = ValueDescription.of([rounder.input_min, rounder.input_max])
                         assert isinstance(input_value.dtype, Integer)
                         rounder.input_bit_width = input_value.dtype.bit_width
 

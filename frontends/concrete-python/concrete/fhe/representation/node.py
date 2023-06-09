@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from ..internal.utils import assert_that
-from ..values import Value
+from ..values import ValueDescription
 from .evaluator import ConstantEvaluator, GenericEvaluator, GenericTupleEvaluator, InputEvaluator
 from .operation import Operation
 from .utils import KWARGS_IGNORED_IN_FORMATTING, format_constant, format_indexing_element
@@ -22,8 +22,8 @@ class Node:
     Node class, to represent computation in a computation graph.
     """
 
-    inputs: List[Value]
-    output: Value
+    inputs: List[ValueDescription]
+    output: ValueDescription
 
     operation: Operation
     evaluator: Callable
@@ -54,7 +54,7 @@ class Node:
         """
 
         try:
-            value = Value.of(constant)
+            value = ValueDescription.of(constant)
         except Exception as error:
             message = f"Constant {repr(constant)} is not supported"
             raise ValueError(message) from error
@@ -65,8 +65,8 @@ class Node:
     @staticmethod
     def generic(
         name: str,
-        inputs: List[Value],
-        output: Value,
+        inputs: List[ValueDescription],
+        output: ValueDescription,
         operation: Callable,
         args: Optional[Tuple[Any, ...]] = None,
         kwargs: Optional[Dict[str, Any]] = None,
@@ -79,10 +79,10 @@ class Node:
             name (str):
                 name of the operation
 
-            inputs (List[Value]):
+            inputs (List[ValueDescription]):
                 inputs to the operation
 
-            output (Value):
+            output (ValueDescription):
                 output of the operation
 
             operation (Callable):
@@ -122,7 +122,7 @@ class Node:
         )
 
     @staticmethod
-    def input(name: str, value: Value) -> "Node":
+    def input(name: str, value: ValueDescription) -> "Node":
         """
         Create an Operation.Input node.
 
@@ -142,8 +142,8 @@ class Node:
 
     def __init__(
         self,
-        inputs: List[Value],
-        output: Value,
+        inputs: List[ValueDescription],
+        output: ValueDescription,
         operation: Operation,
         evaluator: Callable,
         properties: Optional[Dict[str, Any]] = None,
@@ -198,7 +198,7 @@ class Node:
 
         for arg, input_ in zip(args, self.inputs):
             try:
-                arg_value = Value.of(arg)
+                arg_value = ValueDescription.of(arg)
             except Exception as error:
                 arg_str = "the argument" if len(args) == 1 else f"argument {repr(arg)}"
                 message = f"{generic_error_message()} failed because {arg_str} is not valid"
