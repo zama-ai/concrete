@@ -40,7 +40,8 @@ class ValueExporter(WrapperCpp):
         super().__init__(value_exporter)
 
     @staticmethod
-    def create(keyset: KeySet, client_parameters: ClientParameters) -> "ValueExporter":
+    # pylint: disable=arguments-differ
+    def new(keyset: KeySet, client_parameters: ClientParameters) -> "ValueExporter":
         """
         Create a value exporter.
         """
