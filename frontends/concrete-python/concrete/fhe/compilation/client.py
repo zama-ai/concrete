@@ -16,9 +16,9 @@ from concrete.compiler import EvaluationKeys, ValueDecrypter, ValueExporter
 from ..dtypes.integer import SignedInteger, UnsignedInteger
 from ..internal.utils import assert_that
 from ..values import ValueDescription
-from .data import Data
 from .keys import Keys
 from .specs import ClientSpecs
+from .value import Value
 
 # pylint: enable=import-error,no-member,no-name-in-module
 
@@ -120,7 +120,7 @@ class Client:
     def encrypt(
         self,
         *args: Optional[Union[int, np.ndarray, List]],
-    ) -> Optional[Union[Data, Tuple[Optional[Data], ...]]]:
+    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
 
@@ -129,7 +129,7 @@ class Client:
                 argument(s) for evaluation
 
         Returns:
-            Optional[Union[Data, Tuple[Optional[Data], ...]]]:
+            Optional[Union[Value, Tuple[Optional[Value], ...]]]:
                 encrypted argument(s) for evaluation
         """
 
@@ -199,7 +199,7 @@ class Client:
         exported = [
             None
             if arg is None
-            else Data(
+            else Value(
                 exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
                 if isinstance(arg, np.ndarray) and arg.shape != ()
                 else exporter.export_scalar(position, int(arg))
@@ -211,13 +211,13 @@ class Client:
 
     def decrypt(
         self,
-        *results: Union[Data, Tuple[Data, ...]],
+        *results: Union[Value, Tuple[Value, ...]],
     ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
 
         Args:
-            *results (Union[Data, Tuple[Data, ...]]):
+            *results (Union[Value, Tuple[Value, ...]]):
                 result(s) of evaluation
 
         Returns:
@@ -225,7 +225,7 @@ class Client:
                 decrypted result(s) of evaluation
         """
 
-        flattened_results: List[Data] = []
+        flattened_results: List[Value] = []
         for result in results:
             if isinstance(result, tuple):  # pragma: no cover
                 # this branch is impossible to cover without multiple outputs

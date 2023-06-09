@@ -33,8 +33,8 @@ from .configuration import (
     Configuration,
     ParameterSelectionStrategy,
 )
-from .data import Data
 from .specs import ClientSpecs
+from .value import Value
 
 # pylint: enable=import-error,no-member,no-name-in-module
 
@@ -260,25 +260,25 @@ class Server:
 
     def run(
         self,
-        *args: Optional[Union[Data, Tuple[Optional[Data], ...]]],
+        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
         evaluation_keys: EvaluationKeys,
-    ) -> Union[Data, Tuple[Data, ...]]:
+    ) -> Union[Value, Tuple[Value, ...]]:
         """
         Evaluate.
 
         Args:
-            *args (Optional[Union[Data, Tuple[Optional[Data], ...]]]):
+            *args (Optional[Union[Value, Tuple[Optional[Value], ...]]]):
                 argument(s) for evaluation
 
             evaluation_keys (EvaluationKeys):
                 evaluation keys
 
         Returns:
-            Union[Data, Tuple[Data, ...]]:
+            Union[Value, Tuple[Value, ...]]:
                 result(s) of evaluation
         """
 
-        flattened_args: List[Optional[Data]] = []
+        flattened_args: List[Optional[Value]] = []
         for arg in args:
             if isinstance(arg, tuple):
                 flattened_args.extend(arg)
@@ -288,11 +288,11 @@ class Server:
         buffers = []
         for i, arg in enumerate(flattened_args):
             if arg is None:
-                message = f"Expected argument {i} to be an fhe.Data but it's None"
+                message = f"Expected argument {i} to be an fhe.Value but it's None"
                 raise ValueError(message)
 
-            if not isinstance(arg, Data):
-                message = f"Expected argument {i} to be an fhe.Data but it's {type(arg).__name__}"
+            if not isinstance(arg, Value):
+                message = f"Expected argument {i} to be an fhe.Value but it's {type(arg).__name__}"
                 raise ValueError(message)
 
             buffers.append(arg.inner)
@@ -300,7 +300,7 @@ class Server:
         public_args = PublicArguments.create(self.client_specs.client_parameters, buffers)
         public_result = self._support.server_call(self._server_lambda, public_args, evaluation_keys)
 
-        result = tuple(Data(public_result.get_value(i)) for i in range(public_result.n_values()))
+        result = tuple(Value(public_result.get_value(i)) for i in range(public_result.n_values()))
         return result if len(result) > 1 else result[0]
 
     def cleanup(self):

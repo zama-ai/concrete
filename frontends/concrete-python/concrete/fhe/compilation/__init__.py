@@ -12,7 +12,7 @@ from .configuration import (
     Configuration,
     ParameterSelectionStrategy,
 )
-from .data import Data
 from .keys import Keys
 from .server import Server
 from .specs import ClientSpecs
+from .value import Value

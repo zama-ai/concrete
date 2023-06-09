@@ -1,22 +1,22 @@
 """
-Declaration of `Data` class.
+Declaration of `Value` class.
 """
 
 # pylint: disable=import-error,no-name-in-module
 
-from concrete.compiler import Value as NativeData
+from concrete.compiler import Value as NativeValue
 
 # pylint: enable=import-error,no-name-in-module
 
 
-class Data:
+class Value:
     """
-    Data class, to store scalar or tensor data which can be encrypted or clear.
+    Value class, to store scalar or tensor values which can be encrypted or clear.
     """
 
-    inner: NativeData
+    inner: NativeValue
 
-    def __init__(self, inner: NativeData):
+    def __init__(self, inner: NativeValue):
         self.inner = inner
 
     def serialize(self) -> bytes:
@@ -31,7 +31,7 @@ class Data:
         return self.inner.serialize()
 
     @staticmethod
-    def deserialize(serialized_data: bytes) -> "Data":
+    def deserialize(serialized_data: bytes) -> "Value":
         """
         Deserialize data from bytes.
 
@@ -40,8 +40,8 @@ class Data:
                 previously serialized data
 
         Returns:
-            Data:
+            Value:
                 deserialized data
         """
 
-        return Data(NativeData.deserialize(serialized_data))
+        return Value(NativeValue.deserialize(serialized_data))
