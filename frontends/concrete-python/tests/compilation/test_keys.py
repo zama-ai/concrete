@@ -116,7 +116,7 @@ def test_keys_serialize_deserialize(helpers):
     client1.keys.generate()
 
     sample = client1.encrypt(5)
-    evaluation = server.run(sample, client1.evaluation_keys)
+    evaluation = server.run(sample, evaluation_keys=client1.evaluation_keys)
 
     client2 = fhe.Client(server.client_specs)
     client2.keys = fhe.Keys.deserialize(client1.keys.serialize())

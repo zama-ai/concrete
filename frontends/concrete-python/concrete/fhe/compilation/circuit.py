@@ -4,17 +4,15 @@ Declaration of `Circuit` class.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
-from typing import Any, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
-
-# mypy: disable-error-code=attr-defined
-from concrete.compiler import PublicArguments, PublicResult
 
 from ..internal.utils import assert_that
 from ..representation import Graph
 from .client import Client
 from .configuration import Configuration
+from .data import Data
 from .keys import Keys
 from .server import Server
 
@@ -99,54 +97,60 @@ class Circuit:
 
         self.client.keygen(force, seed)
 
-    def encrypt(self, *args: Union[int, np.ndarray]) -> PublicArguments:
+    def encrypt(
+        self,
+        *args: Optional[Union[int, np.ndarray, List]],
+    ) -> Optional[Union[Data, Tuple[Optional[Data], ...]]]:
         """
-        Prepare inputs to be run on the circuit.
+        Encrypt argument(s) to for evaluation.
 
         Args:
-            *args (Union[int, numpy.ndarray]):
-                inputs to the circuit
+            *args (Optional[Union[int, numpy.ndarray, List]]):
+                argument(s) for evaluation
 
         Returns:
-            PublicArguments:
-                encrypted and plain arguments as well as public keys
+            Optional[Union[Data, Tuple[Optional[Data], ...]]]:
+                encrypted argument(s) for evaluation
         """
 
         return self.client.encrypt(*args)
 
-    def run(self, args: PublicArguments) -> PublicResult:
+    def run(
+        self,
+        *args: Optional[Union[Data, Tuple[Optional[Data], ...]]],
+    ) -> Union[Data, Tuple[Data, ...]]:
         """
-        Evaluate circuit using encrypted arguments.
+        Evaluate the circuit.
 
         Args:
-            args (PublicArguments):
-                arguments to the circuit (can be obtained with `encrypt` method of `Circuit`)
+            *args (Data):
+                argument(s) for evaluation
 
         Returns:
-            PublicResult:
-                encrypted result of homomorphic evaluaton
+            Union[Data, Tuple[Data, ...]]:
+                result(s) of evaluation
         """
 
         self.keygen(force=False)
-        return self.server.run(args, self.client.evaluation_keys)
+        return self.server.run(*args, evaluation_keys=self.client.evaluation_keys)
 
     def decrypt(
         self,
-        result: PublicResult,
-    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+        *results: Union[Data, Tuple[Data, ...]],
+    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
-        Decrypt result of homomorphic evaluaton.
+        Decrypt result(s) of evaluation.
 
         Args:
-            result (PublicResult):
-                encrypted result of homomorphic evaluaton
+            *results (Union[Data, Tuple[Data, ...]]):
+                result(s) of evaluation
 
         Returns:
-            Union[int, numpy.ndarray]:
-                clear result of homomorphic evaluaton
+            Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+                decrypted result(s) of evaluation
         """
 
-        return self.client.decrypt(result)
+        return self.client.decrypt(*results)
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """

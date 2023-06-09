@@ -699,6 +699,6 @@ def friendly_type_format(type_: type) -> str:
             pass
         else:
             if arg1 == None.__class__:
-                return f"Optional[{friendly_type_format(arg0)}]"
+                return f"Optional[{friendly_type_format(arg0)}]"  # pragma: no cover
 
     return result

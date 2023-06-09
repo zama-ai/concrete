@@ -80,7 +80,7 @@ serialized_evaluation_keys: bytes = client.evaluation_keys.serialize()
 After serialization, send the evaluation keys to the server.
 
 {% hint style="info" %}
-Serialized evaluation keys are very big in size, so you may want to cache them on the server instead of sending them with each request.
+Serialized evaluation keys are very big in terms of size, so you may want to cache them on the server instead of sending them with each request.
 {% endhint %}
 
 ## Encrypting inputs (on the client)
@@ -89,7 +89,8 @@ Now encrypt your inputs and request the server to perform the computation. You c
 
 <!--pytest-codeblocks:skip-->
 ```python
-serialized_args: bytes = client.encrypt(7).serialize()
+arg: fhe.Data = client.encrypt(7)
+serialized_arg: bytes = arg.serialize()
 ```
 
 Then, send serialized args to the server.
@@ -101,15 +102,15 @@ Once you have serialized evaluation keys and serialized arguments, you can deser
 <!--pytest-codeblocks:skip-->
 ```python
 deserialized_evaluation_keys = fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
-deserialized_args  = server.client_specs.deserialize_public_args(serialized_args)
+deserialized_arg = fhe.Data.deserialize(serialized_arg)
 ```
 
 You can perform the computation, as well:
 
 <!--pytest-codeblocks:skip-->
 ```python
-public_result = server.run(deserialized_args, deserialized_evaluation_keys)
-serialized_public_result: bytes = public_result.serialize()
+result: fhe.Data = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
+serialized_result: bytes = result.serialize()
 ```
 
 Then, send the serialized public result back to the client, so they can decrypt it and get the result of the computation.
@@ -120,13 +121,13 @@ Once you have received the public result of the computation from the server, you
 
 <!--pytest-codeblocks:skip-->
 ```python
-deserialized_public_result = client.specs.deserialize_public_result(serialized_public_result)
+deserialized_result = fhe.Data.deserialize(serialized_result)
 ```
 
 Then, decrypt the result:
 
 <!--pytest-codeblocks:skip-->
 ```python
-result = client.decrypt(deserialized_public_result)
-assert result == 49
+decrypted_result = client.decrypt(deserialized_result)
+assert decrypted_result == 49
 ```

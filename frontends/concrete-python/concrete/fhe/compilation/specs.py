@@ -7,7 +7,7 @@ Declaration of `ClientSpecs` class.
 from typing import Any
 
 # mypy: disable-error-code=attr-defined
-from concrete.compiler import ClientParameters, PublicArguments, PublicResult
+from concrete.compiler import ClientParameters
 
 # pylint: enable=import-error,no-member,no-name-in-module
 
@@ -55,63 +55,3 @@ class ClientSpecs:
 
         client_parameters = ClientParameters.deserialize(serialized_client_specs)
         return ClientSpecs(client_parameters)
-
-    def serialize_public_args(self, args: PublicArguments) -> bytes:
-        """
-        Serialize public arguments to bytes.
-
-        Args:
-            args (PublicArguments):
-                public arguments to serialize
-
-        Returns:
-            bytes:
-                serialized public arguments
-        """
-
-        return args.serialize()
-
-    def deserialize_public_args(self, serialized_args: bytes) -> PublicArguments:
-        """
-        Deserialize public arguments from bytes.
-
-        Args:
-            serialized_args (bytes):
-                serialized public arguments
-
-        Returns:
-            PublicArguments:
-                deserialized public arguments
-        """
-
-        return PublicArguments.deserialize(self.client_parameters, serialized_args)
-
-    def serialize_public_result(self, result: PublicResult) -> bytes:
-        """
-        Serialize public result to bytes.
-
-        Args:
-            result (PublicResult):
-                public result to serialize
-
-        Returns:
-            bytes:
-                serialized public result
-        """
-
-        return result.serialize()
-
-    def deserialize_public_result(self, serialized_result: bytes) -> PublicResult:
-        """
-        Deserialize public result from bytes.
-
-        Args:
-            serialized_result (bytes):
-                serialized public result
-
-        Returns:
-            PublicResult:
-                deserialized public result
-        """
-
-        return PublicResult.deserialize(self.client_parameters, serialized_result)

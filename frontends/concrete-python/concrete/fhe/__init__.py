@@ -14,6 +14,7 @@ from .compilation import (
     ClientSpecs,
     Compiler,
     Configuration,
+    Data,
     DebugArtifacts,
     EncryptionStatus,
     Keys,
