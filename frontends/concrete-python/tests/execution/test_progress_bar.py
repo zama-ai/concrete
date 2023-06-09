@@ -1,6 +1,7 @@
 """
 Tests of execution of the progress bar.
 """
+
 from concrete import fhe
 
 STEP_ESCAPED = "\\E2\\96\\88"
@@ -51,10 +52,13 @@ def test_progress_bar(helpers, monkeypatch):
             next_is_tracing = False
 
 
-def test_progress_bar_no_ansi(helpers):
+def test_progress_bar_no_ansi(helpers, monkeypatch):
     """
-    Test progress bar with non interactive terminal (pipe, notebook, etc).
+    Test progress bar with non-interactive terminal (pipe, notebook, etc).
     """
+    monkeypatch.setattr(
+        "concrete.fhe.mlir.converter.Converter.stdout_with_ansi_support", lambda: False
+    )
 
     def function(x):
         acc = x

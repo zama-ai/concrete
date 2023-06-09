@@ -93,7 +93,7 @@ class Converter:
     @staticmethod
     def stdout_with_ansi_support() -> bool:
         """Detect if ansi characters can be used (e.g. not the case in notebooks)."""
-        return sys.stdout.isatty()
+        return sys.stdout.isatty()  # pragma: no cover
 
     @staticmethod
     def simplify_tag(configuration: Configuration, tag: str) -> str:
