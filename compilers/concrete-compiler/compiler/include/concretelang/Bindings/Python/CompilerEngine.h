@@ -151,6 +151,12 @@ keySetUnserialize(const std::string &buffer);
 MLIR_CAPI_EXPORTED std::string
 keySetSerialize(concretelang::clientlib::KeySet &keySet);
 
+MLIR_CAPI_EXPORTED concretelang::clientlib::SharedScalarOrTensorData
+valueUnserialize(const std::string &buffer);
+
+MLIR_CAPI_EXPORTED std::string
+valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value);
+
 /// Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 

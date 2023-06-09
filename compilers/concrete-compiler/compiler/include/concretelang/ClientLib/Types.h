@@ -689,7 +689,7 @@ public:
 
   // Returns a void pointer to the first element of a flat
   // representation of the tensor
-  void *getValuesAsOpaquePointer() {
+  void *getValuesAsOpaquePointer() const {
     switch (this->elementType) {
     case ElementType::u64:
       return static_cast<void *>(values.u64->data());
@@ -879,6 +879,19 @@ public:
     return *tensor;
   }
 };
+
+struct SharedScalarOrTensorData {
+  std::shared_ptr<ScalarOrTensorData> inner;
+
+  SharedScalarOrTensorData(std::shared_ptr<ScalarOrTensorData> inner)
+      : inner{inner} {}
+
+  SharedScalarOrTensorData(ScalarOrTensorData &&inner)
+      : inner{std::make_shared<ScalarOrTensorData>(std::move(inner))} {}
+
+  ScalarOrTensorData &get() const { return *this->inner; }
+};
+
 } // namespace clientlib
 } // namespace concretelang
 

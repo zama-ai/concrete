@@ -13,7 +13,14 @@ using StringError = concretelang::error::StringError;
 
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 EncryptedArguments::exportPublicArguments(ClientParameters clientParameters) {
-  return std::make_unique<PublicArguments>(clientParameters, std::move(values));
+  auto sharedValues = std::vector<SharedScalarOrTensorData>();
+  sharedValues.reserve(this->values.size());
+
+  for (auto &&value : this->values) {
+    sharedValues.push_back(SharedScalarOrTensorData(std::move(value)));
+  }
+
+  return std::make_unique<PublicArguments>(clientParameters, sharedValues);
 }
 
 /// Split the input integer into `size` chunks of `chunkWidth` bits each

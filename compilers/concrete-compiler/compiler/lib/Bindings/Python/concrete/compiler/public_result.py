@@ -10,6 +10,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 from .client_parameters import ClientParameters
 
 # pylint: enable=no-name-in-module,import-error
+from .value import Value
 from .wrapper import WrapperCpp
 
 
@@ -30,6 +31,18 @@ class PublicResult(WrapperCpp):
                 f"public_result must be of type _PublicResult, not {type(public_result)}"
             )
         super().__init__(public_result)
+
+    def n_values(self) -> int:
+        """
+        Get number of values in the result.
+        """
+        return self.cpp().n_values()
+
+    def get_value(self, position: int) -> Value:
+        """
+        Get a specific value in the result.
+        """
+        return Value(self.cpp().get_value(position))
 
     def serialize(self) -> bytes:
         """Serialize the PublicResult.

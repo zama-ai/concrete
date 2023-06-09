@@ -398,8 +398,11 @@ unserializeScalarData(std::istream &istream) {
 template <typename T>
 static std::istream &unserializeTensorDataElements(TensorData &values_and_sizes,
                                                    std::istream &istream) {
-  readWords(istream, values_and_sizes.getElementPointer<T>(0),
-            values_and_sizes.getNumElements());
+  // getElementPointer is not valid if the tensor contains no data
+  if (values_and_sizes.getNumElements() > 0) {
+    readWords(istream, values_and_sizes.getElementPointer<T>(0),
+              values_and_sizes.getNumElements());
+  }
 
   return istream;
 }
@@ -555,26 +558,25 @@ unserializeScalarOrTensorData(std::istream &istream) {
   }
 }
 
-std::ostream &
-serializeVectorOfScalarOrTensorData(const std::vector<ScalarOrTensorData> &v,
-                                    std::ostream &ostream) {
+std::ostream &serializeVectorOfScalarOrTensorData(
+    const std::vector<SharedScalarOrTensorData> &v, std::ostream &ostream) {
   writeSize(ostream, v.size());
   for (auto &sotd : v) {
-    serializeScalarOrTensorData(sotd, ostream);
+    serializeScalarOrTensorData(sotd.get(), ostream);
     if (!ostream.good()) {
       return ostream;
     }
   }
   return ostream;
 }
-outcome::checked<std::vector<ScalarOrTensorData>, StringError>
+outcome::checked<std::vector<SharedScalarOrTensorData>, StringError>
 unserializeVectorOfScalarOrTensorData(std::istream &istream) {
   uint64_t nbElt;
   readSize(istream, nbElt);
-  std::vector<ScalarOrTensorData> v;
+  std::vector<SharedScalarOrTensorData> v;
   for (uint64_t i = 0; i < nbElt; i++) {
     OUTCOME_TRY(auto elt, unserializeScalarOrTensorData(istream));
-    v.push_back(std::move(elt));
+    v.push_back(SharedScalarOrTensorData(std::move(elt)));
   }
   return v;
 }

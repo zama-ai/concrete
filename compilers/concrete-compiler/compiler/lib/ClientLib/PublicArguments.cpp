@@ -15,10 +15,11 @@ namespace clientlib {
 using concretelang::error::StringError;
 
 // TODO: optimize the move
-PublicArguments::PublicArguments(const ClientParameters &clientParameters,
-                                 std::vector<ScalarOrTensorData> &&arguments_)
+PublicArguments::PublicArguments(
+    const ClientParameters &clientParameters,
+    std::vector<clientlib::SharedScalarOrTensorData> &buffers)
     : clientParameters(clientParameters) {
-  arguments = std::move(arguments_);
+  arguments = buffers;
 }
 
 PublicArguments::~PublicArguments() {}
@@ -44,11 +45,11 @@ PublicArguments::unserializeArgs(std::istream &istream) {
 }
 
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
-PublicArguments::unserialize(ClientParameters &clientParameters,
+PublicArguments::unserialize(const ClientParameters &expectedParams,
                              std::istream &istream) {
-  std::vector<ScalarOrTensorData> emptyBuffers;
-  auto sArguments = std::make_unique<PublicArguments>(clientParameters,
-                                                      std::move(emptyBuffers));
+  std::vector<SharedScalarOrTensorData> emptyBuffers;
+  auto sArguments =
+      std::make_unique<PublicArguments>(expectedParams, emptyBuffers);
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));
   return std::move(sArguments);
 }

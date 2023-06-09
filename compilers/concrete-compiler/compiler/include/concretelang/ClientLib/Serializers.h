@@ -96,10 +96,9 @@ std::ostream &serializeScalarOrTensorData(const ScalarOrTensorData &sotd,
 outcome::checked<ScalarOrTensorData, StringError>
 unserializeScalarOrTensorData(std::istream &istream);
 
-std::ostream &
-serializeVectorOfScalarOrTensorData(const std::vector<ScalarOrTensorData> &sotd,
-                                    std::ostream &ostream);
-outcome::checked<std::vector<ScalarOrTensorData>, StringError>
+std::ostream &serializeVectorOfScalarOrTensorData(
+    const std::vector<SharedScalarOrTensorData> &sotd, std::ostream &ostream);
+outcome::checked<std::vector<SharedScalarOrTensorData>, StringError>
 unserializeVectorOfScalarOrTensorData(std::istream &istream);
 
 std::ostream &operator<<(std::ostream &ostream, const LweSecretKey &wrappedKsk);

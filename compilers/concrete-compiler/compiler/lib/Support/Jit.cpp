@@ -95,7 +95,7 @@ JITLambda::call(clientlib::PublicArguments &args,
     if (auto err = invokeRaw(rawArgs)) {
       return std::move(err);
     }
-    std::vector<clientlib::ScalarOrTensorData> buffers;
+    std::vector<clientlib::SharedScalarOrTensorData> buffers;
     return clientlib::PublicResult::fromBuffers(args.clientParameters,
                                                 std::move(buffers));
   }
