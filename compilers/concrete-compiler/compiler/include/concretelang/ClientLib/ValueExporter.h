@@ -41,6 +41,8 @@ protected:
   inputGate(size_t argPos) = 0;
 
 public:
+  virtual ~ValueExporterInterface() = default;
+
   /// @brief Export a scalar 64 bits integer to a concreteprocol::Value
   /// @param arg An 64 bits integer
   /// @param argPos The position of the argument to export
