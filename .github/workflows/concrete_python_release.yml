@@ -20,6 +20,7 @@ on:
       user_inputs:
         description: 'either "nightly" or "public" to specify the release type'
         required: true
+        default: 'nightly'
         type: string
 
 
@@ -33,7 +34,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
@@ -149,7 +150,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
 
     runs-on: ${{ matrix.runs-on }}
@@ -295,6 +296,12 @@ jobs:
       - uses: actions/download-artifact@v3
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
+          name: wheel-3.11-linux-x86
+          path: wheels
+
+      - uses: actions/download-artifact@v3
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
+        with:
           name: wheel-3.8-aws-mac1-metal
           path: wheels
 
@@ -313,6 +320,12 @@ jobs:
       - uses: actions/download-artifact@v3
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
+          name: wheel-3.11-aws-mac1-metal
+          path: wheels
+
+      - uses: actions/download-artifact@v3
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
+        with:
           name: wheel-3.8-aws-mac2-metal
           path: wheels
 
@@ -326,6 +339,12 @@ jobs:
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.10-aws-mac2-metal
+          path: wheels
+
+      - uses: actions/download-artifact@v3
+        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
+        with:
+          name: wheel-3.11-aws-mac2-metal
           path: wheels
 
       - name: Push wheels to internal PyPI (nightly)
