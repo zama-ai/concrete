@@ -300,6 +300,8 @@ const CONCRETE_COMPILER_STATIC_LIBS: &[&str] = &[
     "SDFGDialect",
     "ExtractSDFGOps",
     "SDFGToStreamEmulator",
+    "concrete-protocol",
+    "protobuf",
 ];
 
 fn main() {
@@ -345,6 +347,8 @@ so your compiler/linker will have to lookup libs and include dirs on their own"
     }
     // zlib
     println!("cargo:rustc-link-lib=z");
+    // zstd
+    println!("cargo:rustc-link-lib=zstd");
 
     println!("cargo:rerun-if-changed=api.h");
     bindgen::builder()

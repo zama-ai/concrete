@@ -6,6 +6,7 @@ else()
 endif()
 
 add_dependencies(ConcretelangRuntime concrete_cpu)
+add_dependencies(ConcretelangRuntime concrete-protocol)
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PRIVATE HPX::hpx HPX::iostreams_component)
@@ -36,6 +37,7 @@ target_include_directories(ConcretelangRuntime PUBLIC ${CONCRETE_CPU_INCLUDE_DIR
 target_link_libraries(
   ConcretelangRuntime
   PUBLIC concrete_cpu
+         concrete-protocol
          ConcretelangClientLib
          pthread
          m
