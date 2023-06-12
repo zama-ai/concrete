@@ -123,7 +123,7 @@ You can create a tarball containing libs, bins, and include files for the tools 
 ### Build the Python Package
 
 Currently supported platforms:
-- Linux x86_64 for python 3.7, 3.8, 3.9, and 3.10
+- Linux x86_64 for python 3.8, 3.9, 3.10, and 3.11
 
 pybind11 is required to build the python package, you can install it in your current environment with:
 
