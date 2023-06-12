@@ -371,11 +371,14 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
 
 mlir::LogicalResult
 lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                   std::function<bool(mlir::Pass *)> enablePass) {
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   bool simulation) {
   mlir::PassManager pm(&context);
   pipelinePrinting("ConcreteToStd", pm, context);
-  addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
-                           enablePass);
+  if (!simulation) {
+    addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
+                             enablePass);
+  }
   return pm.run(module.getOperation());
 }
 
