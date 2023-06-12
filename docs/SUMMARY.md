@@ -17,7 +17,7 @@
 * [Tagging](tutorial/tagging.md)
 * [Extensions](tutorial/extensions.md)
 * [Table Lookups](tutorial/table\_lookups.md)
-* [Rounded Table Lookups](tutorial/rounded\_table\_lookups.md)
+* [Rounding](tutorial/rounding.md)
 * [Floating Points](tutorial/floating\_points.md)
 * [Simulation](tutorial/simulation.md)
 * [Direct Circuits](tutorial/direct\_circuits.md)
