@@ -144,6 +144,12 @@ public:
     return lambda.call(args, evaluationKeys);
   }
 
+  /// Call the lambda with the public arguments.
+  llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
+  simulate(serverlib::ServerLambda lambda, clientlib::PublicArguments &args) {
+    return lambda.call(args, {}, /*simulation*/ true);
+  }
+
   /// Get path to shared library
   std::string getSharedLibPath() {
     return CompilerEngine::Library::getSharedLibraryPath(outputPath);

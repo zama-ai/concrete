@@ -271,8 +271,9 @@ struct ClientParameters {
   }
 
   /// bufferShape returns the shape of the tensor for the given gate. It returns
-  /// the shape used at low-level, i.e. contains the dimensions for ciphertexts.
-  std::vector<int64_t> bufferShape(CircuitGate gate) {
+  /// the shape used at low-level, i.e. contains the dimensions for ciphertexts
+  /// (if not in simulation).
+  std::vector<int64_t> bufferShape(CircuitGate gate, bool simulation = false) {
     if (!gate.encryption.has_value()) {
       // Value is not encrypted just returns the tensor shape
       return gate.shape.dimensions;
@@ -289,8 +290,10 @@ struct ClientParameters {
     if (!crt.empty()) {
       shape.push_back(crt.size());
     }
-    // Add one dimension for the size of ciphertext(s)
-    shape.push_back(lweSecreteKeyParam.value().lweSize());
+    if (!simulation) {
+      // Add one dimension for the size of ciphertext(s)
+      shape.push_back(lweSecreteKeyParam.value().lweSize());
+    }
     return shape;
   }
 };
