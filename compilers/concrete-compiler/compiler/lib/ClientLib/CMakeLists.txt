@@ -13,6 +13,7 @@ add_mlir_library(
   ${PROJECT_SOURCE_DIR}/include/concretelang/ClientLib
   LINK_LIBS
   PUBLIC
-  concrete_cpu)
+  concrete_cpu
+  concrete-protocol)
 
 target_include_directories(ConcretelangClientLib PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})

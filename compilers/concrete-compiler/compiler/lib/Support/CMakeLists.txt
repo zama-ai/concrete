@@ -16,6 +16,7 @@ add_mlir_library(
   Utils.cpp
   DEPENDS
   mlir-headers
+  concrete-protocol
   LINK_LIBS
   PUBLIC
   FHELinalgDialect

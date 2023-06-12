@@ -150,8 +150,7 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
-	-DCUDAToolkit_ROOT=$(CUDA_PATH)\
-	-DGOOGLE_PROTOBUF_NO_RTTI=ON
+	-DCUDAToolkit_ROOT=$(CUDA_PATH)
 	touch $@
 
 build-initialized: $(BUILD_DIR)/configured.stamp
@@ -250,7 +249,7 @@ test-compiler-file-output: concretecompiler
 run-rust-tests: rust-bindings
 	cd lib/Bindings/Rust && \
 		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		LD_LIBRARY_PATH=$(INSTALL_PATH)/lib \
+		LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(INSTALL_PATH)/lib \
 		cargo test --release
 
 ## end-to-end-tests
