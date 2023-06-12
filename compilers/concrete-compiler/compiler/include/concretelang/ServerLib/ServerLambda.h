@@ -39,7 +39,8 @@ public:
   /// Call the ServerLambda with public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
   call(clientlib::PublicArguments &args,
-       clientlib::EvaluationKeys &evaluationKeys);
+       std::optional<clientlib::EvaluationKeys> evaluationKeys,
+       bool simulation = false);
 
   /// \brief Call the loaded function using opaque pointers to both inputs and
   /// outputs.

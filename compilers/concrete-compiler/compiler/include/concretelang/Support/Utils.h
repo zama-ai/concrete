@@ -32,13 +32,14 @@ template <typename Lambda>
 llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
 invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
                   std::vector<void *> preparedInputArgs,
-                  clientlib::EvaluationKeys &evaluationKeys) {
+                  std::optional<clientlib::EvaluationKeys> evaluationKeys,
+                  bool simulation = false) {
   // invokeRaw needs to have pointers on arguments and a pointers on the result
   // as last argument.
   // Prepare the outputs vector to store the output value of the lambda.
   auto numOutputs = 0;
   for (auto &output : clientParameters.outputs) {
-    auto shape = clientParameters.bufferShape(output);
+    auto shape = clientParameters.bufferShape(output, simulation);
     if (shape.size() == 0) {
       // scalar gate
       numOutputs += 1;
@@ -51,8 +52,9 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
 
   // Prepare the raw arguments of invokeRaw, i.e. a vector with pointer on
   // inputs and outputs.
-  std::vector<void *> rawArgs(
-      preparedInputArgs.size() + 1 /*runtime context*/ + 1 /* outputs */
+  std::vector<void *> rawArgs(preparedInputArgs.size() +
+                              (simulation ? 0 : 1) /*runtime context*/ +
+                              1 /* outputs */
   );
   size_t i = 0;
   // Pointers on inputs
@@ -60,11 +62,19 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
     rawArgs[i++] = &arg;
   }
 
-  mlir::concretelang::RuntimeContext runtimeContext(evaluationKeys);
-  // Pointer on runtime context, the rawArgs take pointer on actual value that
-  // is passed to the compiled function.
-  auto rtCtxPtr = &runtimeContext;
-  rawArgs[i++] = &rtCtxPtr;
+  // Some calls require the runtime context while others don't (in simulation)
+  std::unique_ptr<mlir::concretelang::RuntimeContext> runtimeContext;
+  mlir::concretelang::RuntimeContext *rtCtxPtr;
+  if (!simulation) {
+    assert(evaluationKeys.has_value() &&
+           "evaluation keys are required if not in simulation");
+    runtimeContext = std::make_unique<mlir::concretelang::RuntimeContext>(
+        evaluationKeys.value());
+    // Pointer on runtime context, the rawArgs take pointer on actual value that
+    // is passed to the compiled function.
+    rtCtxPtr = runtimeContext.get();
+    rawArgs[i++] = &rtCtxPtr;
+  }
 
   // Outputs
   rawArgs[i++] = reinterpret_cast<void *>(outputs.data());
@@ -79,17 +89,30 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
   {
     size_t outputOffset = 0;
     for (auto &output : clientParameters.outputs) {
-      auto shape = clientParameters.bufferShape(output);
+      auto shape = clientParameters.bufferShape(output, simulation);
       if (shape.size() == 0) {
-        // scalar scalar
-        auto value = concretelang::clientlib::ScalarOrTensorData(
-            concretelang::clientlib::ScalarData(outputs[outputOffset++],
-                                                output.shape.sign,
-                                                output.shape.width));
-        auto sharedValue =
-            clientlib::SharedScalarOrTensorData(std::move(value));
+        if (simulation) {
+          // value is encrypted (simulated)
+          auto value = concretelang::clientlib::ScalarOrTensorData(
+              concretelang::clientlib::ScalarData(
+                  outputs[outputOffset++],
+                  clientlib::EncryptedScalarElementType,
+                  clientlib::EncryptedScalarElementWidth));
+          auto sharedValue =
+              clientlib::SharedScalarOrTensorData(std::move(value));
 
-        buffers.push_back(sharedValue);
+          buffers.push_back(sharedValue);
+        } else {
+          // plain scalar
+          auto value = concretelang::clientlib::ScalarOrTensorData(
+              concretelang::clientlib::ScalarData(outputs[outputOffset++],
+                                                  output.shape.sign,
+                                                  output.shape.width));
+          auto sharedValue =
+              clientlib::SharedScalarOrTensorData(std::move(value));
+
+          buffers.push_back(sharedValue);
+        }
       } else {
         // buffer gate
         auto rank = shape.size();
@@ -125,7 +148,8 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
 template <typename Lambda>
 llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
 invokeRawOnLambda(Lambda *lambda, clientlib::PublicArguments &arguments,
-                  clientlib::EvaluationKeys &evaluationKeys) {
+                  std::optional<clientlib::EvaluationKeys> evaluationKeys,
+                  bool simulation = false) {
   // Prepare arguments with the right calling convention
   std::vector<void *> preparedArgs;
   for (auto &sharedArg : arguments.getArguments()) {
@@ -156,7 +180,7 @@ invokeRawOnLambda(Lambda *lambda, clientlib::PublicArguments &arguments,
     }
   }
   return invokeRawOnLambda(lambda, arguments.getClientParameters(),
-                           preparedArgs, evaluationKeys);
+                           preparedArgs, evaluationKeys, simulation);
 }
 
 template <typename V, unsigned int N>

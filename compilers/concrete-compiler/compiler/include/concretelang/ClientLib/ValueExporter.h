@@ -248,12 +248,7 @@ protected:
   }
 
   std::vector<int64_t> bufferShape(CircuitGate &gate) override {
-    auto shape = _clientParameters.bufferShape(gate);
-    if (gate.isEncrypted()) {
-      // drop lwe dimension
-      shape.pop_back();
-    }
-    return shape;
+    return _clientParameters.bufferShape(gate, true);
   }
 
   /// @brief Ciphertext size in simulation
