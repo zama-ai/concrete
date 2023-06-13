@@ -1,6 +1,8 @@
 use crate::c_api::types::{Parallelism, ScratchStatus};
 use crate::implementation::fft::Fft;
 use crate::implementation::types::*;
+#[cfg(target_arch = "x86_64")]
+use concrete_ntt::native_binary64::Plan32;
 use core::slice;
 use dyn_stack::DynStack;
 
@@ -46,18 +48,25 @@ pub unsafe extern "C" fn concrete_cpu_init_lwe_bootstrap_key_u64(
         let lwe_sk = LweSecretKey::from_raw_parts(input_lwe_sk, input_lwe_dimension);
         let glwe_sk = GlweSecretKey::from_raw_parts(output_glwe_sk, glwe_params);
 
+        #[cfg(target_arch = "x86_64")]
+        let plan = Plan32::try_new(output_polynomial_size).unwrap();
+
         match parallelism {
             Parallelism::No => bsk.fill_with_new_key(
                 lwe_sk,
                 glwe_sk,
                 variance,
                 CsprngMut::new(csprng, csprng_vtable),
+                #[cfg(target_arch = "x86_64")]
+                &plan,
             ),
             Parallelism::Rayon => bsk.fill_with_new_key_par(
                 lwe_sk,
                 glwe_sk,
                 variance,
                 CsprngMut::new(csprng, csprng_vtable),
+                #[cfg(target_arch = "x86_64")]
+                &plan,
             ),
         }
     });

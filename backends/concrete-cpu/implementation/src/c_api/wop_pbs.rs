@@ -9,6 +9,8 @@ use crate::implementation::wop::{
     circuit_bootstrap_boolean_vertical_packing, circuit_bootstrap_boolean_vertical_packing_scratch,
     extract_bits, extract_bits_scratch,
 };
+#[cfg(target_arch = "x86_64")]
+use concrete_ntt::native_binary64::Plan32;
 use core::slice;
 use dyn_stack::DynStack;
 
@@ -54,18 +56,25 @@ pub unsafe extern "C" fn concrete_cpu_init_lwe_circuit_bootstrap_private_functio
             glwe_params.dimension + 1,
         );
 
+        #[cfg(target_arch = "x86_64")]
+        let plan = Plan32::try_new(output_polynomial_size).unwrap();
+
         match parallelism {
             Parallelism::No => fpksk_list.fill_with_fpksk_for_circuit_bootstrap(
                 &input_key,
                 &output_key,
                 variance,
                 CsprngMut::new(csprng, csprng_vtable),
+                #[cfg(target_arch = "x86_64")]
+                &plan,
             ),
             Parallelism::Rayon => fpksk_list.fill_with_fpksk_for_circuit_bootstrap_par(
                 &input_key,
                 &output_key,
                 variance,
                 CsprngMut::new(csprng, csprng_vtable),
+                #[cfg(target_arch = "x86_64")]
+                &plan,
             ),
         }
     })

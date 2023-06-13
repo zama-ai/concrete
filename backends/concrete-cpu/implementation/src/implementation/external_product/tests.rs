@@ -3,6 +3,8 @@ use std::mem::MaybeUninit;
 use crate::c_api::types::tests::to_generic;
 use crate::implementation::encrypt::encrypt_constant_ggsw;
 use crate::implementation::fft::Fft;
+#[cfg(target_arch = "x86_64")]
+use crate::implementation::types::polynomial::Polynomial;
 use crate::implementation::types::{
     CsprngMut, DecompParams, GgswCiphertext, GlweCiphertext, GlweParams, GlweSecretKey,
     LweSecretKey,
@@ -10,6 +12,8 @@ use crate::implementation::types::{
 use crate::implementation::zip_eq;
 use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
 use concrete_csprng::seeders::Seed;
+#[cfg(target_arch = "x86_64")]
+use concrete_ntt::native_binary64::Plan32;
 use dyn_stack::DynStack;
 
 use super::external_product;
@@ -72,7 +76,26 @@ fn test_g_external_product_change_key() {
         decomp_params,
     );
 
-    encrypt_constant_ggsw(in_sk, out_sk, ggsw.as_mut_view(), 1, 0.0, csprng.as_mut());
+    #[cfg(target_arch = "x86_64")]
+    let plan = Plan32::try_new(polynomial_size).unwrap();
+
+    #[cfg(target_arch = "x86_64")]
+    let mut buffer = vec![0; polynomial_size];
+    #[cfg(target_arch = "x86_64")]
+    let buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
+
+    encrypt_constant_ggsw(
+        in_sk,
+        out_sk,
+        ggsw.as_mut_view(),
+        1,
+        0.0,
+        csprng.as_mut(),
+        #[cfg(target_arch = "x86_64")]
+        &plan,
+        #[cfg(target_arch = "x86_64")]
+        buffer,
+    );
 
     let mut ggsw_f =
         vec![0.0; polynomial_size * (in_glwe_dim + 1) * (out_glwe_dim + 1) * decomp_params.level];
@@ -109,7 +132,23 @@ fn test_g_external_product_change_key() {
         },
     );
 
-    in_sk.encrypt_zero_glwe(in_glwe_ct.as_mut_view(), 0.0, csprng.as_mut());
+    #[cfg(target_arch = "x86_64")]
+    let plan = Plan32::try_new(polynomial_size).unwrap();
+
+    #[cfg(target_arch = "x86_64")]
+    let mut buffer = vec![0; polynomial_size];
+    #[cfg(target_arch = "x86_64")]
+    let buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
+
+    in_sk.encrypt_zero_glwe(
+        in_glwe_ct.as_mut_view(),
+        0.0,
+        csprng.as_mut(),
+        #[cfg(target_arch = "x86_64")]
+        &plan,
+        #[cfg(target_arch = "x86_64")]
+        buffer,
+    );
 
     for (a, b) in zip_eq(
         in_glwe_ct.as_mut_view().into_body().into_data(),

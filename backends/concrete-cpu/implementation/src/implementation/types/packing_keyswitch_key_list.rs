@@ -1,6 +1,8 @@
 use super::*;
 use crate::implementation::types::polynomial::Polynomial;
 use crate::implementation::{zip_eq, Container, ContainerMut, Split};
+#[cfg(target_arch = "x86_64")]
+use concrete_ntt::native_binary64::Plan32;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[readonly::make]
@@ -107,6 +109,7 @@ impl PackingKeyswitchKeyList<&mut [u64]> {
         output_glwe_key: &GlweSecretKey<&[u64]>,
         variance: f64,
         mut csprng: CsprngMut,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
     ) {
         let glwe_params = output_glwe_key.glwe_params;
         let polynomial_size = glwe_params.polynomial_size;
@@ -133,6 +136,8 @@ impl PackingKeyswitchKeyList<&mut [u64]> {
                 csprng.as_mut(),
                 |x: u64| x.wrapping_neg(),
                 polynomial_to_encrypt,
+                #[cfg(target_arch = "x86_64")]
+                plan,
             );
         }
     }
@@ -142,6 +147,7 @@ impl PackingKeyswitchKeyList<&mut [u64]> {
         output_glwe_key: &GlweSecretKey<&[u64]>,
         variance: f64,
         mut csprng: CsprngMut,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
     ) {
         let glwe_params = output_glwe_key.glwe_params;
         let polynomial_size = glwe_params.polynomial_size;
@@ -168,6 +174,8 @@ impl PackingKeyswitchKeyList<&mut [u64]> {
                 csprng.as_mut(),
                 |x: u64| x.wrapping_neg(),
                 polynomial_to_encrypt,
+                #[cfg(target_arch = "x86_64")]
+                plan,
             );
         }
     }

@@ -1,10 +1,14 @@
 use super::types::{Csprng, CsprngVtable};
 use super::utils::nounwind;
 use crate::implementation::encrypt::encrypt_constant_ggsw;
+#[cfg(target_arch = "x86_64")]
+use crate::implementation::types::polynomial::Polynomial;
 use crate::implementation::types::{
     CsprngMut, DecompParams, GgswCiphertext, GlweCiphertext, GlweParams, GlweSecretKey,
     LweCiphertext, LweSecretKey,
 };
+#[cfg(target_arch = "x86_64")]
+use concrete_ntt::native_binary64::Plan32;
 use std::slice;
 
 #[no_mangle]
@@ -92,6 +96,14 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_ggsw_ciphertext_u64(
             glwe_dimension,
             decomp_params,
         );
+        #[cfg(target_arch = "x86_64")]
+        let plan = Plan32::try_new(polynomial_size).unwrap();
+
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = vec![0; polynomial_size];
+        #[cfg(target_arch = "x86_64")]
+        let buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
+
         encrypt_constant_ggsw(
             glwe_sk,
             glwe_sk,
@@ -99,6 +111,10 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_ggsw_ciphertext_u64(
             input,
             variance,
             CsprngMut::new(csprng, csprng_vtable),
+            #[cfg(target_arch = "x86_64")]
+            &plan,
+            #[cfg(target_arch = "x86_64")]
+            buffer,
         );
     });
 }

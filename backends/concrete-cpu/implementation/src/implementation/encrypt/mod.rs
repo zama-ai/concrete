@@ -1,9 +1,14 @@
 use super::decomposition::DecompositionTerm;
 use super::fpks::LweKeyBitDecomposition;
+#[cfg(not(target_arch = "x86_64"))]
 use super::polynomial::{update_with_wrapping_add_mul, update_with_wrapping_sub_mul};
+#[cfg(target_arch = "x86_64")]
+use super::polynomial::{update_with_wrapping_add_mul_ntt, update_with_wrapping_sub_mul_ntt};
 use super::types::polynomial::Polynomial;
 use super::types::*;
 use super::{from_torus, zip_eq};
+#[cfg(target_arch = "x86_64")]
+use concrete_ntt::native_binary64::Plan32;
 use core::slice;
 use rayon::prelude::{IndexedParallelIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
@@ -156,13 +161,31 @@ impl BootstrapKey<&mut [u64]> {
         glwe_sk: GlweSecretKey<&[u64]>,
         variance: f64,
         mut csprng: CsprngMut<'_, '_>,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
     ) {
+        #[cfg(target_arch = "x86_64")]
+        let polynomial_size = glwe_sk.glwe_params.polynomial_size;
+
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = vec![0; polynomial_size];
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
+
         for (mut ggsw, sk_scalar) in
             zip_eq(self.into_ggsw_iter(), lwe_sk.into_data().iter().copied())
         {
             let encoded = sk_scalar;
             gen_noise_ggsw(glwe_sk, ggsw.as_mut_view(), variance, csprng.as_mut());
-            encrypt_constant_ggsw_noise_full(glwe_sk, glwe_sk, ggsw, encoded);
+            encrypt_constant_ggsw_noise_full(
+                glwe_sk,
+                glwe_sk,
+                ggsw,
+                encoded,
+                #[cfg(target_arch = "x86_64")]
+                plan,
+                #[cfg(target_arch = "x86_64")]
+                buffer.as_mut_view(),
+            );
         }
     }
 }
@@ -175,16 +198,34 @@ impl BootstrapKey<&mut [u64]> {
         glwe_sk: GlweSecretKey<&[u64]>,
         variance: f64,
         mut csprng: CsprngMut<'_, '_>,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
     ) {
         for ggsw in self.as_mut_view().into_ggsw_iter() {
             gen_noise_ggsw(glwe_sk, ggsw, variance, csprng.as_mut());
         }
 
+        #[cfg(target_arch = "x86_64")]
+        let polynomial_size = glwe_sk.glwe_params.polynomial_size;
+
         self.into_ggsw_iter_par()
             .zip_eq(lwe_sk.data)
             .for_each(|(ggsw, sk_scalar)| {
+                #[cfg(target_arch = "x86_64")]
+                let mut buffer = vec![0; polynomial_size];
+                #[cfg(target_arch = "x86_64")]
+                let buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
+
                 let encoded = *sk_scalar;
-                encrypt_constant_ggsw_noise_full(glwe_sk, glwe_sk, ggsw, encoded);
+                encrypt_constant_ggsw_noise_full(
+                    glwe_sk,
+                    glwe_sk,
+                    ggsw,
+                    encoded,
+                    #[cfg(target_arch = "x86_64")]
+                    plan,
+                    #[cfg(target_arch = "x86_64")]
+                    buffer,
+                );
             });
     }
 }
@@ -226,9 +267,17 @@ impl PackingKeyswitchKey<&mut [u64]> {
         output_glwe_key: GlweSecretKey<&[u64]>,
         variance: f64,
         mut csprng: CsprngMut<'_, '_>,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
     ) {
         let decomposition_level_count = self.decomp_params.level;
         let decomposition_base_log = self.decomp_params.base_log;
+
+        #[cfg(target_arch = "x86_64")]
+        let polynomial_size = output_glwe_key.glwe_params.polynomial_size;
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = vec![0; polynomial_size];
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
 
         for (input_key_bit, keyswitch_key_block) in zip_eq(
             input_lwe_key.into_data().iter(),
@@ -241,7 +290,15 @@ impl PackingKeyswitchKey<&mut [u64]> {
                     input_key_bit << shift
                 }),
             ) {
-                output_glwe_key.encrypt_zero_glwe(glwe.as_mut_view(), variance, csprng.as_mut());
+                output_glwe_key.encrypt_zero_glwe(
+                    glwe.as_mut_view(),
+                    variance,
+                    csprng.as_mut(),
+                    #[cfg(target_arch = "x86_64")]
+                    plan,
+                    #[cfg(target_arch = "x86_64")]
+                    buffer.as_mut_view(),
+                );
                 let (_, body) = glwe.into_mask_and_body();
                 let body = body.into_data();
                 let first = body.first_mut().unwrap();
@@ -250,6 +307,7 @@ impl PackingKeyswitchKey<&mut [u64]> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_with_private_functional_packing_keyswitch_key(
         &mut self,
         input_lwe_key: &LweSecretKey<&[u64]>,
@@ -258,6 +316,7 @@ impl PackingKeyswitchKey<&mut [u64]> {
         mut csprng: CsprngMut,
         f: impl Fn(u64) -> u64,
         polynomial: Polynomial<&[u64]>,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
     ) {
         // We instantiate a buffer
         let mut messages = vec![0_u64; self.decomp_params.level * self.glwe_params.polynomial_size];
@@ -270,6 +329,11 @@ impl PackingKeyswitchKey<&mut [u64]> {
         // add minus one for the function which will be applied to the decomposed body
         // ( Scalar::MAX = -Scalar::ONE )
         let input_key_bit_iter = input_lwe_key.data.iter().chain(std::iter::once(&u64::MAX));
+
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = vec![0; polynomial_size];
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
 
         // loop over the before key blocks
         for (&input_key_bit, keyswitch_key_block) in
@@ -300,7 +364,15 @@ impl PackingKeyswitchKey<&mut [u64]> {
                 keyswitch_key_block.into_glwe_list().into_glwe_iter(),
                 messages.chunks_exact(polynomial_size),
             ) {
-                output_glwe_key.encrypt_zero_glwe(glwe.as_mut_view(), variance, csprng.as_mut());
+                output_glwe_key.encrypt_zero_glwe(
+                    glwe.as_mut_view(),
+                    variance,
+                    csprng.as_mut(),
+                    #[cfg(target_arch = "x86_64")]
+                    plan,
+                    #[cfg(target_arch = "x86_64")]
+                    buffer.as_mut_view(),
+                );
 
                 let (_, body) = glwe.into_mask_and_body();
 
@@ -312,6 +384,7 @@ impl PackingKeyswitchKey<&mut [u64]> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 impl<'a> PackingKeyswitchKey<&'a mut [u64]> {
     pub fn fill_with_private_functional_packing_keyswitch_key_par(
         &'a mut self,
@@ -321,6 +394,7 @@ impl<'a> PackingKeyswitchKey<&'a mut [u64]> {
         mut csprng: CsprngMut,
         f: impl Sync + Fn(u64) -> u64,
         polynomial: Polynomial<&[u64]>,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
     ) {
         // We retrieve decomposition arguments
         let decomp_level_count = self.decomp_params.level;
@@ -355,6 +429,11 @@ impl<'a> PackingKeyswitchKey<&'a mut [u64]> {
                 // We reset the buffer
                 messages.fill(0);
 
+                #[cfg(target_arch = "x86_64")]
+                let mut buffer = vec![0; polynomial_size];
+                #[cfg(target_arch = "x86_64")]
+                let mut buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
+
                 // We fill the buffer with the powers of the key bits
                 for (level, message) in zip_eq(
                     1..=decomp_level_count,
@@ -377,7 +456,13 @@ impl<'a> PackingKeyswitchKey<&'a mut [u64]> {
                     keyswitch_key_block.into_glwe_list().into_glwe_iter(),
                     messages.chunks_exact(polynomial_size),
                 ) {
-                    output_glwe_key.encrypt_zero_glwe_noise_full(glwe.as_mut_view());
+                    output_glwe_key.encrypt_zero_glwe_noise_full(
+                        glwe.as_mut_view(),
+                        #[cfg(target_arch = "x86_64")]
+                        plan,
+                        #[cfg(target_arch = "x86_64")]
+                        buffer.as_mut_view(),
+                    );
 
                     let (_, body) = glwe.into_mask_and_body();
 
@@ -436,6 +521,7 @@ impl PackingKeyswitchKey<&[u64]> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn encrypt_constant_ggsw(
     in_glwe_sk: GlweSecretKey<&[u64]>,
     out_glwe_sk: GlweSecretKey<&[u64]>,
@@ -443,6 +529,8 @@ pub fn encrypt_constant_ggsw(
     encoded: u64,
     variance: f64,
     mut csprng: CsprngMut<'_, '_>,
+    #[cfg(target_arch = "x86_64")] plan: &Plan32,
+    #[cfg(target_arch = "x86_64")] mut buffer: Polynomial<&mut [u64]>,
 ) {
     debug_assert_eq!(in_glwe_sk.glwe_params, ggsw.in_glwe_params());
     debug_assert_eq!(out_glwe_sk.glwe_params, ggsw.out_glwe_params());
@@ -466,11 +554,16 @@ pub fn encrypt_constant_ggsw(
                 GlweCiphertext::new(row.into_data(), out_glwe_params),
                 variance,
                 csprng.as_mut(),
+                #[cfg(target_arch = "x86_64")]
+                plan,
+                #[cfg(target_arch = "x86_64")]
+                buffer.as_mut_view(),
             );
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn encrypt_constant_ggsw_row(
     in_glwe_sk: GlweSecretKey<&[u64]>,
     out_glwe_sk: GlweSecretKey<&[u64]>,
@@ -479,20 +572,38 @@ pub fn encrypt_constant_ggsw_row(
     mut row: GlweCiphertext<&mut [u64]>,
     variance: f64,
     csprng: CsprngMut<'_, '_>,
+    #[cfg(target_arch = "x86_64")] plan: &Plan32,
+    #[cfg(target_arch = "x86_64")] buffer: Polynomial<&mut [u64]>,
 ) {
     if row_index < last_row_index {
         // Not the last row
         let sk_poly = in_glwe_sk.get_polynomial(row_index);
         let encoded = sk_poly.iter().map(|&e| e.wrapping_mul(factor));
 
-        out_glwe_sk.encrypt_zero_glwe(row.as_mut_view(), variance, csprng);
+        out_glwe_sk.encrypt_zero_glwe(
+            row.as_mut_view(),
+            variance,
+            csprng,
+            #[cfg(target_arch = "x86_64")]
+            plan,
+            #[cfg(target_arch = "x86_64")]
+            buffer,
+        );
         let (_, body) = row.into_mask_and_body();
         for (r, e) in zip_eq(body.into_data().iter_mut(), encoded) {
             *r = r.wrapping_add(e)
         }
     } else {
         // The last row needs a slightly different treatment
-        out_glwe_sk.encrypt_zero_glwe(row.as_mut_view(), variance, csprng);
+        out_glwe_sk.encrypt_zero_glwe(
+            row.as_mut_view(),
+            variance,
+            csprng,
+            #[cfg(target_arch = "x86_64")]
+            plan,
+            #[cfg(target_arch = "x86_64")]
+            buffer,
+        );
         let (_, body) = row.into_mask_and_body();
         let first = body.into_data().first_mut().unwrap();
         *first = first.wrapping_add(factor.wrapping_neg());
@@ -523,20 +634,34 @@ pub fn encrypt_constant_ggsw_row_noise_full(
     (row_index, last_row_index): (usize, usize),
     factor: u64,
     mut row: GlweCiphertext<&mut [u64]>,
+    #[cfg(target_arch = "x86_64")] plan: &Plan32,
+    #[cfg(target_arch = "x86_64")] buffer: Polynomial<&mut [u64]>,
 ) {
     if row_index < last_row_index {
         // Not the last row
         let sk_poly = in_glwe_sk.get_polynomial(row_index);
         let encoded = sk_poly.iter().map(|&e| e.wrapping_mul(factor));
 
-        out_glwe_sk.encrypt_zero_glwe_noise_full(row.as_mut_view());
+        out_glwe_sk.encrypt_zero_glwe_noise_full(
+            row.as_mut_view(),
+            #[cfg(target_arch = "x86_64")]
+            plan,
+            #[cfg(target_arch = "x86_64")]
+            buffer,
+        );
         let (_, body) = row.into_mask_and_body();
         for (r, e) in zip_eq(body.into_data().iter_mut(), encoded) {
             *r = r.wrapping_add(e)
         }
     } else {
         // The last row needs a slightly different treatment
-        out_glwe_sk.encrypt_zero_glwe_noise_full(row.as_mut_view());
+        out_glwe_sk.encrypt_zero_glwe_noise_full(
+            row.as_mut_view(),
+            #[cfg(target_arch = "x86_64")]
+            plan,
+            #[cfg(target_arch = "x86_64")]
+            buffer,
+        );
         let (_, body) = row.into_mask_and_body();
         let first = body.into_data().first_mut().unwrap();
         *first = first.wrapping_add(factor.wrapping_neg());
@@ -548,6 +673,8 @@ pub fn encrypt_constant_ggsw_noise_full(
     out_glwe_sk: GlweSecretKey<&[u64]>,
     ggsw: GgswCiphertext<&mut [u64]>,
     encoded: u64,
+    #[cfg(target_arch = "x86_64")] plan: &Plan32,
+    #[cfg(target_arch = "x86_64")] mut buffer: Polynomial<&mut [u64]>,
 ) {
     let base_log = ggsw.decomp_params.base_log;
 
@@ -566,18 +693,36 @@ pub fn encrypt_constant_ggsw_noise_full(
                 (row_index, last_row_index),
                 factor,
                 GlweCiphertext::new(row.into_data(), out_glwe_params),
+                #[cfg(target_arch = "x86_64")]
+                plan,
+                #[cfg(target_arch = "x86_64")]
+                buffer.as_mut_view(),
             );
         }
     }
 }
 
 impl GlweSecretKey<&[u64]> {
-    pub fn encrypt_zero_glwe_noise_full(self, encrypted: GlweCiphertext<&mut [u64]>) {
+    pub fn encrypt_zero_glwe_noise_full(
+        self,
+        encrypted: GlweCiphertext<&mut [u64]>,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
+        #[cfg(target_arch = "x86_64")] mut buffer: Polynomial<&mut [u64]>,
+    ) {
         let (mask, mut body) = encrypted.into_mask_and_body();
 
         let mask = mask.as_view();
         for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
-            update_with_wrapping_add_mul(body.as_mut_view(), poly, bin_poly)
+            #[cfg(target_arch = "x86_64")]
+            update_with_wrapping_add_mul_ntt(
+                plan,
+                body.as_mut_view(),
+                poly,
+                bin_poly,
+                buffer.as_mut_view(),
+            );
+            #[cfg(not(target_arch = "x86_64"))]
+            update_with_wrapping_add_mul(body.as_mut_view(), poly, bin_poly);
         }
     }
 
@@ -586,6 +731,8 @@ impl GlweSecretKey<&[u64]> {
         encrypted: GlweCiphertext<&mut [u64]>,
         variance: f64,
         mut csprng: CsprngMut<'_, '_>,
+        #[cfg(target_arch = "x86_64")] plan: &Plan32,
+        #[cfg(target_arch = "x86_64")] mut buffer: Polynomial<&mut [u64]>,
     ) {
         let (mut mask, mut body) = encrypted.into_mask_and_body();
         fill_with_random_uniform(mask.as_mut_view().into_data(), csprng.as_mut());
@@ -595,7 +742,10 @@ impl GlweSecretKey<&[u64]> {
 
         for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
             let body = body.as_mut_view();
-            update_with_wrapping_add_mul(body, poly, bin_poly)
+            #[cfg(target_arch = "x86_64")]
+            update_with_wrapping_add_mul_ntt(plan, body, poly, bin_poly, buffer.as_mut_view());
+            #[cfg(not(target_arch = "x86_64"))]
+            update_with_wrapping_add_mul(body, poly, bin_poly);
         }
     }
     pub fn decrypt_glwe_inplace(self, encrypted: GlweCiphertext<&[u64]>, out: &mut [u64]) {
@@ -603,12 +753,32 @@ impl GlweSecretKey<&[u64]> {
 
         let mask = mask.as_view();
         out.copy_from_slice(body.into_data());
+
+        #[cfg(target_arch = "x86_64")]
+        let polynomial_size = encrypted.glwe_params.polynomial_size;
+
+        #[cfg(target_arch = "x86_64")]
+        let plan = Plan32::try_new(polynomial_size).unwrap();
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = vec![0; polynomial_size];
+        #[cfg(target_arch = "x86_64")]
+        let mut buffer = Polynomial::new(buffer.as_mut_slice(), polynomial_size);
+
         for (poly, bin_poly) in zip_eq(mask.iter_polynomial(), self.iter()) {
+            #[cfg(target_arch = "x86_64")]
+            update_with_wrapping_sub_mul_ntt(
+                &plan,
+                Polynomial::new(out, encrypted.glwe_params.polynomial_size),
+                poly,
+                bin_poly,
+                buffer.as_mut_view(),
+            );
+            #[cfg(not(target_arch = "x86_64"))]
             update_with_wrapping_sub_mul(
                 Polynomial::new(out, encrypted.glwe_params.polynomial_size),
                 poly,
                 bin_poly,
-            )
+            );
         }
     }
 

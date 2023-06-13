@@ -5,6 +5,8 @@ use crate::implementation::fft::{Fft, FftView};
 use crate::implementation::types::*;
 use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
 use concrete_csprng::seeders::Seed;
+#[cfg(target_arch = "x86_64")]
+use concrete_ntt::native_binary64::Plan32;
 use dyn_stack::DynStack;
 
 struct KeySet {
@@ -38,8 +40,18 @@ fn new_bsk(
 
     let mut bsk = vec![0_u64; bsk_len];
 
+    #[cfg(target_arch = "x86_64")]
+    let plan = Plan32::try_new(glwe_params.polynomial_size).unwrap();
+
     BootstrapKey::new(bsk.as_mut_slice(), glwe_params, in_dim, decomp_params)
-        .fill_with_new_key_par(in_sk, out_sk, key_variance, csprng);
+        .fill_with_new_key_par(
+            in_sk,
+            out_sk,
+            key_variance,
+            csprng,
+            #[cfg(target_arch = "x86_64")]
+            &plan,
+        );
     let standard = BootstrapKey::new(bsk.as_slice(), glwe_params, in_dim, decomp_params);
 
     let mut bsk_f = vec![0.; bsk_len];
