@@ -101,9 +101,7 @@ impl<'a> BootstrapKey<&'a [f64]> {
         let mut local_accumulator =
             GlweCiphertext::new(&mut *local_accumulator_data, accumulator.glwe_params);
         self.blind_rotate(local_accumulator.as_mut_view(), lwe_in, fft, stack);
-        local_accumulator
-            .as_view()
-            .fill_lwe_with_sample_extraction(lwe_out, 0);
+        local_accumulator.as_view().sample_extract(lwe_out, 0);
     }
 }
 
