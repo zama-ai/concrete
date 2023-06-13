@@ -938,9 +938,7 @@ pub fn vertical_packing(
     );
 
     // sample extract of the RLWE of the Vertical packing
-    cmux_tree_lut_res
-        .as_view()
-        .fill_lwe_with_sample_extraction(lwe_out, 0);
+    cmux_tree_lut_res.as_view().sample_extract(lwe_out, 0);
 }
 
 pub fn blind_rotate_scratch(
