@@ -94,6 +94,11 @@ library_server_call(LibrarySupport_Py support,
                     concretelang::clientlib::PublicArguments &args,
                     concretelang::clientlib::EvaluationKeys &evaluationKeys);
 
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
+library_simulate(LibrarySupport_Py support,
+                 concretelang::serverlib::ServerLambda lambda,
+                 concretelang::clientlib::PublicArguments &args);
+
 MLIR_CAPI_EXPORTED std::string
 library_get_shared_lib_path(LibrarySupport_Py support);
 

@@ -32,6 +32,8 @@ from .evaluation_keys import EvaluationKeys
 from .value import Value
 from .value_decrypter import ValueDecrypter
 from .value_exporter import ValueExporter
+from .simulated_value_decrypter import SimulatedValueDecrypter
+from .simulated_value_exporter import SimulatedValueExporter
 
 
 def init_dfr():

@@ -211,3 +211,16 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(security_level, int):
             raise TypeError("can't set security_level to a non-int value")
         self.cpp().set_security_level(security_level)
+
+    def simulation(self, simulate: bool):
+        """Enable or disable simulation.
+
+        Args:
+            simulate (bool): flag to enable or disable simulation
+
+        Raises:
+            TypeError: if the value to set is not bool
+        """
+        if not isinstance(simulate, bool):
+            raise TypeError("need to pass a boolean value")
+        self.cpp().simulation(simulate)
