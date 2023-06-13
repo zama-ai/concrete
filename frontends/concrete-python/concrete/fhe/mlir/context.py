@@ -531,7 +531,7 @@ class Context:
                     is_encrypted=False,
                 )
             )
-            shifter = self.constant(shifter_type, 2**x.original_bit_width)
+            shifter = self.constant(shifter_type, 2**y.original_bit_width)
 
             shifted_x = self.mul(x.type, x, shifter)
             packed_x_and_y = self.add(resulting_type, shifted_x, y)

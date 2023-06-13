@@ -98,6 +98,14 @@ def test_bitwise(function, parameters, helpers):
             "x": {"range": [0, 7], "status": "encrypted", "shape": (3,)},
             "y": {"range": [0, 7], "status": "encrypted", "shape": (3,)},
         },
+        {
+            "x": {"range": [0, 4], "status": "encrypted"},
+            "y": {"range": [0, 16], "status": "encrypted"},
+        },
+        {
+            "x": {"range": [0, 16], "status": "encrypted"},
+            "y": {"range": [0, 4], "status": "encrypted"},
+        },
     ],
 )
 def test_bitwise_optimized(function, parameters, helpers):
