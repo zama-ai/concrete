@@ -124,6 +124,8 @@ struct CompilationOptions {
       batchTFHEOps = true;
       emitGPUOps = true;
       emitSDFGOps = true;
+      if (maxBatchSize == std::numeric_limits<int64_t>::max())
+        maxBatchSize = 1 << 16;
       break;
     }
   }
