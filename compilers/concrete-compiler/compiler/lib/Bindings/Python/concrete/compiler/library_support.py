@@ -278,6 +278,39 @@ class LibrarySupport(WrapperCpp):
             )
         )
 
+    def simulate(
+        self,
+        library_lambda: LibraryLambda,
+        public_arguments: PublicArguments,
+    ) -> PublicResult:
+        """Call the library with public_arguments in simulation mode.
+
+        Args:
+            library_lambda (LibraryLambda): reference to the compiled library
+            public_arguments (PublicArguments): arguments to use for execution
+
+        Raises:
+            TypeError: if library_lambda is not of type LibraryLambda
+            TypeError: if public_arguments is not of type PublicArguments
+
+        Returns:
+            PublicResult: result of the execution
+        """
+        if not isinstance(library_lambda, LibraryLambda):
+            raise TypeError(
+                f"library_lambda must be of type LibraryLambda, not {type(library_lambda)}"
+            )
+        if not isinstance(public_arguments, PublicArguments):
+            raise TypeError(
+                f"public_arguments must be of type PublicArguments, not {type(public_arguments)}"
+            )
+        return PublicResult.wrap(
+            self.cpp().simulate(
+                library_lambda.cpp(),
+                public_arguments.cpp(),
+            )
+        )
+
     def get_shared_lib_path(self) -> str:
         """Get the path where the shared library is expected to be.
 

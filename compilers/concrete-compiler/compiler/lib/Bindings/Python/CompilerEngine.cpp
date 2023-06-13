@@ -125,6 +125,15 @@ library_server_call(LibrarySupport_Py support,
   return std::move(*publicResult);
 }
 
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
+library_simulate(LibrarySupport_Py support,
+                 concretelang::serverlib::ServerLambda lambda,
+                 concretelang::clientlib::PublicArguments &args) {
+  GET_OR_THROW_LLVM_EXPECTED(publicResult,
+                             support.support.simulate(lambda, args));
+  return std::move(*publicResult);
+}
+
 MLIR_CAPI_EXPORTED std::string
 library_get_shared_lib_path(LibrarySupport_Py support) {
   return support.support.getSharedLibPath();
