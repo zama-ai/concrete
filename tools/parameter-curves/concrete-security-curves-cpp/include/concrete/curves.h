@@ -56,7 +56,7 @@ struct SecurityCurve {
 /// @param keyFormat The format of the key
 /// @return The security curve or nullptr if the curve is not found.
 SecurityCurve *getSecurityCurve(int bitsOfSecurity, KeyFormat keyFormat) {
-  for (size_t i = 0; i < curves.size(); i++) {
+  for (size_t i = 0; i < curvesLen; i++) {
     if (curves[i].bits == bitsOfSecurity && curves[i].keyFormat == keyFormat)
       return &curves[i];
   }
