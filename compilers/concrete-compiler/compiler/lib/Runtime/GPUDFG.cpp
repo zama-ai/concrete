@@ -502,9 +502,13 @@ struct Stream {
     // Do schedule on GPUs
     size_t gpu_free_mem;
     size_t gpu_total_mem;
+    // FIXME: this could be improved
+    // Force deallocation with a synchronization point
+    for (size_t g = 0; g < num_devices; ++g)
+      cudaStreamSynchronize(*(cudaStream_t *)dfg->get_gpu_stream(g));
     auto status = cudaMemGetInfo(&gpu_free_mem, &gpu_total_mem);
     assert(status == cudaSuccess);
-
+    std::cout << "MEM : " << gpu_free_mem << " / " << gpu_total_mem << "\n";
     // TODO - for now assume each device on the system has roughly same
     // available memory.
     size_t available_mem = gpu_free_mem;
@@ -521,6 +525,10 @@ struct Stream {
     num_chunks = (num_chunks / num_devices_to_use +
                   ((num_chunks % num_devices_to_use) ? 1 : 0)) *
                  num_devices_to_use;
+    std::cout << "Num Chunks : " << num_chunks << "\n";
+    std::cout << "Num samples : " << num_samples << "\n";
+    std::cout << "Num samples/chunk : " << num_samples_per_chunk << "\n";
+    std::cout << "Num devices use : " << num_devices_to_use << "\n";
     int32_t target_device = 0;
     for (auto i : inputs) {
       i->dep->split_dependence(num_chunks, (i->ct_stream) ? 0 : 1,
@@ -545,6 +553,7 @@ struct Stream {
     }
     for (size_t chunk = 0; chunk < num_chunks; chunk += num_devices_to_use) {
       for (size_t c = chunk; c < chunk + num_devices_to_use; ++c) {
+	std::cout << "Chunk : " << c << "\n";
         for (auto i : inputs)
           i->put(i->saved_dependence->chunks[c]);
         for (auto p : queue) {
