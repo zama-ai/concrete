@@ -54,6 +54,7 @@ pub mod bootstrap;
 pub mod cmux;
 pub mod encrypt;
 pub mod external_product;
+pub mod fast_keyswitch;
 pub mod keyswitch;
 pub mod wop;
 
