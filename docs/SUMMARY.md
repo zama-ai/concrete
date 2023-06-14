@@ -22,7 +22,9 @@
 * [Floating Points](tutorial/floating\_points.md)
 * [Simulation](tutorial/simulation.md)
 * [Direct Circuits](tutorial/direct\_circuits.md)
-* [Key Value Database](tutorial/key\_value\_database.md)
+
+## Application Tutorials
+* [Key Value Database](application-tutorial/key\_value\_database.md)
 
 ## How To
 
