@@ -25,6 +25,7 @@
 
 ## Application Tutorials
 * [Key Value Database](application-tutorial/key\_value\_database.md)
+* [SHA-256](application-tutorial/sha256.md)
 
 ## How To
 
