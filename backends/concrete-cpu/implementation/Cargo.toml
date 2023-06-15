@@ -13,6 +13,8 @@ crate-type = ["lib", "staticlib"]
 concrete-csprng = { version = "0.3", optional = true, features = [
   "generator_fallback",
 ] }
+concrete-cpu-noise-model = { path = "../noise-model/" }
+concrete-security-curves = { path = "../../../tools/parameter-curves/concrete-security-curves-rust" }
 libc = { version = "0.2", default-features = false }
 pulp = { version = "0.10", default-features = false }
 dyn-stack = { version = "0.8", default-features = false }

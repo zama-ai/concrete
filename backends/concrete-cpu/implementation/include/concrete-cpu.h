@@ -300,6 +300,35 @@ void concrete_cpu_negate_lwe_ciphertext_u64(uint64_t *ct_out,
 
 size_t concrete_cpu_secret_key_size_u64(size_t lwe_dimension);
 
+void simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(const uint64_t *lwe_list_in,
+                                                                              uint64_t *lwe_list_out,
+                                                                              size_t ct_in_count,
+                                                                              size_t ct_out_count,
+                                                                              size_t lut_size,
+                                                                              size_t lut_count,
+                                                                              const uint64_t *luts,
+                                                                              uint64_t glwe_dimension,
+                                                                              uint64_t log_poly_size,
+                                                                              uint64_t lwe_dimension,
+                                                                              uint64_t cb_level,
+                                                                              uint64_t cb_log_base,
+                                                                              uint32_t ciphertext_modulus_log,
+                                                                              uint64_t security_level);
+
+void simulation_extract_bit_lwe_ciphertext_u64(uint64_t *lwe_list_out,
+                                               const uint64_t *lwe_in,
+                                               size_t delta_log,
+                                               size_t number_of_bits_to_extract,
+                                               uint64_t log_poly_size,
+                                               uint64_t glwe_dimension,
+                                               uint64_t lwe_dimension,
+                                               uint64_t ks_log_base,
+                                               uint64_t ks_level,
+                                               uint64_t br_log_base,
+                                               uint64_t br_level,
+                                               uint32_t ciphertext_modulus_log,
+                                               uint64_t security_level);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus

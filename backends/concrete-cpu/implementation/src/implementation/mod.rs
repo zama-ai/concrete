@@ -56,6 +56,7 @@ pub mod encrypt;
 pub mod external_product;
 pub mod keyswitch;
 pub mod wop;
+pub mod wop_simulation;
 
 /// Convert a mutable slice reference to an uninitialized mutable slice reference.
 ///

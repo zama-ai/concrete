@@ -120,7 +120,7 @@ pub fn fill_with_random_uniform(buffer: &mut [u64], mut csprng: CsprngMut<'_, '_
     }
 }
 
-fn random_gaussian_pair(variance: f64, mut csprng: CsprngMut<'_, '_>) -> (f64, f64) {
+pub fn random_gaussian_pair(variance: f64, mut csprng: CsprngMut<'_, '_>) -> (f64, f64) {
     loop {
         let mut uniform_rand = [0_u64, 0_u64];
         fill_with_random_uniform(&mut uniform_rand, csprng.as_mut());
