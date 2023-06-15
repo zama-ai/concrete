@@ -307,6 +307,10 @@ class Converter:
         ctx.error({node: "3-dimensional convolutions are not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
+    def copy(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        return preds[0]
+
     def dot(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.dot(ctx.typeof(node), preds[0], preds[1])

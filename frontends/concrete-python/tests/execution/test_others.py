@@ -202,6 +202,16 @@ def deterministic_unary_function(x):
     return np.vectorize(per_element)(x)
 
 
+def copy_modify(x):
+    """
+    A function that used `np.copy` and then modifies the copied object.
+    """
+
+    y = np.copy(x)
+    y[1] = np.sum(x)
+    return np.concatenate((x, y))
+
+
 @pytest.mark.parametrize(
     "function,parameters",
     [
@@ -690,6 +700,13 @@ def deterministic_unary_function(x):
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
             id="fhe.LookupTable([10, 5])[x > 5]",
+        ),
+        pytest.param(
+            copy_modify,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+            },
+            id="copy_modify",
         ),
     ],
 )

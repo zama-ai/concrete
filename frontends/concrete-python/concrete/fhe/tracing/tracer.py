@@ -226,6 +226,7 @@ class Tracer:
         np.ceil,
         np.clip,
         np.concatenate,
+        np.copy,
         np.copysign,
         np.cos,
         np.cosh,
