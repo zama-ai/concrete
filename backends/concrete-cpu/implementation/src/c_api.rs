@@ -8,6 +8,7 @@ pub mod linear_op;
 pub mod secret_key;
 pub mod types;
 pub mod wop_pbs;
+pub mod wop_pbs_simulation;
 
 mod utils {
     #[inline]
