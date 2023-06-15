@@ -13,7 +13,7 @@ include "mlir/IR/OpBase.td"
 
 def FHE_Dialect : Dialect {
   let name = "FHE";
-  let summary = "High Level Fully Homorphic Encryption dialect";
+  let summary = "High Level Fully Homomorphic Encryption dialect";
   let description = [{
     A dialect for representation of high level operation on fully homomorphic ciphertext.
   }];

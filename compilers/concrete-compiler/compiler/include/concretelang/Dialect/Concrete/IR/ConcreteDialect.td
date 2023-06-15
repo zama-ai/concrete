@@ -13,7 +13,7 @@ include "mlir/IR/OpBase.td"
 
 def Concrete_Dialect : Dialect {
   let name = "Concrete";
-  let summary = "Low Level Fully Homorphic Encryption dialect";
+  let summary = "Low Level Fully Homomorphic Encryption dialect";
   let description = [{
     A dialect for representation of low level operation on fully homomorphic ciphertext.
   }];
