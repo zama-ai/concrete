@@ -49,9 +49,13 @@
 * [Compilation](dev/compilation/README.md)
 * [Automatic Crypto Parameters choice](dev/compilation/optimizer.md)
 * [MLIR FHE Dialects](dev/compilation/dialects.md)
-    * [FHE Dialect](dev/compilation/fhe_dialect.md)
-    * [TFHE Dialect](dev/compilation/tfhe_dialect.md)
-    * [Concrete Dialect](dev/compilation/concrete_dialect.md)
+    * [FHELinalg Dialect](dev/compilation/FHELinalgDialect.md)
+    * [FHE Dialect](dev/compilation/FHEDialect.md)
+    * [TFHE Dialect](dev/compilation/TFHEDialect.md)
+    * [Concrete Dialect](dev/compilation/ConcreteDialect.md)
+    * [Tracing Dialect](dev/compilation/TracingDialect.md)
+    * [Runtime Dialect](dev/compilation/RTDialect.md)
+    * [SDFG Dialect](dev/compilation/SDFGDialect.md)
 
 ### Security
 
