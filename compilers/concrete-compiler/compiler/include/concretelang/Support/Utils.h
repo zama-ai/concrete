@@ -6,6 +6,7 @@
 #ifndef CONCRETELANG_SUPPORT_UTILS_H_
 #define CONCRETELANG_SUPPORT_UTILS_H_
 
+#include "concretelang/ClientLib/Types.h"
 #include <concretelang/ClientLib/ClientLambda.h>
 #include <concretelang/ClientLib/KeySet.h>
 #include <concretelang/ClientLib/PublicArguments.h>
@@ -14,6 +15,8 @@
 #include <concretelang/ServerLib/ServerLambda.h>
 #include <concretelang/Support/Error.h>
 #include <llvm/ADT/SmallVector.h>
+#include <memory>
+#include <variant>
 
 namespace concretelang {
 
@@ -93,21 +96,22 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
       if (shape.size() == 0) {
         if (simulation) {
           // value is encrypted (simulated)
-          auto value = concretelang::clientlib::ScalarOrTensorData(
+          clientlib::ScalarOrTensorData value =
               concretelang::clientlib::ScalarData(
                   outputs[outputOffset++],
                   clientlib::EncryptedScalarElementType,
-                  clientlib::EncryptedScalarElementWidth));
+                  clientlib::EncryptedScalarElementWidth);
+
           auto sharedValue =
               clientlib::SharedScalarOrTensorData(std::move(value));
 
           buffers.push_back(sharedValue);
         } else {
           // plain scalar
-          auto value = concretelang::clientlib::ScalarOrTensorData(
+          clientlib::ScalarOrTensorData value =
               concretelang::clientlib::ScalarData(outputs[outputOffset++],
                                                   output.shape.sign,
-                                                  output.shape.width));
+                                                  output.shape.width);
           auto sharedValue =
               clientlib::SharedScalarOrTensorData(std::move(value));
 
@@ -130,9 +134,9 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
 
         bool sign = (output.isEncrypted()) ? false : output.shape.sign;
 
-        auto value = concretelang::clientlib::ScalarOrTensorData(
+        clientlib::ScalarOrTensorData value =
             clientlib::tensorDataFromMemRef(rank, elementWidth, sign, allocated,
-                                            aligned, offset, sizes, strides));
+                                            aligned, offset, sizes, strides);
         auto sharedValue =
             clientlib::SharedScalarOrTensorData(std::move(value));
 
@@ -154,11 +158,11 @@ invokeRawOnLambda(Lambda *lambda, clientlib::PublicArguments &arguments,
   std::vector<void *> preparedArgs;
   for (auto &sharedArg : arguments.getArguments()) {
     clientlib::ScalarOrTensorData &arg = sharedArg.get();
-    if (arg.isScalar()) {
-      auto scalar = arg.getScalar().getValueAsU64();
+    if (std::holds_alternative<clientlib::ScalarData>(arg)) {
+      auto scalar = std::get<clientlib::ScalarData>(arg).getValueAsU64();
       preparedArgs.push_back((void *)scalar);
     } else {
-      clientlib::TensorData &td = arg.getTensor();
+      clientlib::TensorData &td = std::get<clientlib::TensorData>(arg);
       // allocated
       preparedArgs.push_back(nullptr);
       // aligned

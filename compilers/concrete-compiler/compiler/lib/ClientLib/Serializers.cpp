@@ -5,10 +5,13 @@
 
 #include <iosfwd>
 #include <iostream>
+#include <memory>
 #include <stdlib.h>
+#include <variant>
 
 #include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/ClientLib/Serializers.h"
+#include "concretelang/ClientLib/Types.h"
 #include "concretelang/Common/Error.h"
 
 namespace concretelang {
@@ -522,12 +525,11 @@ unserializeTensorData(std::istream &istream) {
 
 std::ostream &serializeScalarOrTensorData(const ScalarOrTensorData &sotd,
                                           std::ostream &ostream) {
-  writeWord<uint8_t>(ostream, sotd.isTensor());
-
-  if (sotd.isTensor())
-    return serializeTensorData(sotd.getTensor(), ostream);
+  writeWord<uint8_t>(ostream, std::holds_alternative<TensorData>(sotd));
+  if (std::holds_alternative<TensorData>(sotd))
+    return serializeTensorData(std::get<TensorData>(sotd), ostream);
   else
-    return serializeScalarData(sotd.getScalar(), ostream);
+    return serializeScalarData(std::get<ScalarData>(sotd), ostream);
 }
 
 outcome::checked<ScalarOrTensorData, StringError>

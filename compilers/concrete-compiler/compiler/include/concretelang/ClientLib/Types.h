@@ -10,7 +10,9 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <cstdint>
+#include <memory>
 #include <stddef.h>
+#include <variant>
 #include <vector>
 
 namespace concretelang {
@@ -835,50 +837,7 @@ protected:
   size_t width;
 };
 
-// Variant for TensorData and ScalarData
-class ScalarOrTensorData {
-protected:
-  std::unique_ptr<ScalarData> scalar;
-  std::unique_ptr<TensorData> tensor;
-
-public:
-  ScalarOrTensorData(const ScalarOrTensorData &td) = delete;
-  ScalarOrTensorData(ScalarOrTensorData &&td)
-      : scalar(std::move(td.scalar)), tensor(std::move(td.tensor)) {}
-
-  ScalarOrTensorData(TensorData &&td)
-      : scalar(nullptr), tensor(std::make_unique<TensorData>(std::move(td))) {}
-
-  ScalarOrTensorData(const ScalarData &s)
-      : scalar(std::make_unique<ScalarData>(s)), tensor(nullptr) {}
-
-  bool isTensor() const { return tensor != nullptr; }
-  bool isScalar() const { return scalar != nullptr; }
-
-  ScalarData &getScalar() {
-    assert(scalar != nullptr &&
-           "Attempt to get a scalar value from variant that is a tensor");
-    return *scalar;
-  }
-
-  const ScalarData &getScalar() const {
-    assert(scalar != nullptr &&
-           "Attempt to get a scalar value from variant that is a tensor");
-    return *scalar;
-  }
-
-  TensorData &getTensor() {
-    assert(tensor != nullptr &&
-           "Attempt to get a tensor value from variant that is a scalar");
-    return *tensor;
-  }
-
-  const TensorData &getTensor() const {
-    assert(tensor != nullptr &&
-           "Attempt to get a tensor value from variant that is a scalar");
-    return *tensor;
-  }
-};
+typedef std::variant<ScalarData, TensorData> ScalarOrTensorData;
 
 struct SharedScalarOrTensorData {
   std::shared_ptr<ScalarOrTensorData> inner;

@@ -51,16 +51,17 @@ public:
                                            size_t pos) {
     OUTCOME_TRY(auto encrypted, isEncrypted(pos));
     if (!encrypted)
-      return value.getScalar().getValue<T>();
+      return std::get<clientlib::ScalarData>(value).getValue<T>();
 
     if (isSimulated()) {
       // value is a scalar in simulation
-      auto ciphertext = value.getScalar().getValue<uint64_t>();
+      auto ciphertext =
+          std::get<clientlib::ScalarData>(value).getValue<uint64_t>();
       OUTCOME_TRY(auto decrypted, decryptValue(pos, &ciphertext));
       return (T)decrypted;
     }
 
-    auto &buffer = value.getTensor();
+    auto &buffer = std::get<clientlib::TensorData>(value);
 
     auto ciphertext = buffer.getOpaqueElementPointer(0);
 
@@ -84,9 +85,9 @@ public:
   decryptTensor(ScalarOrTensorData &value, size_t pos) {
     OUTCOME_TRY(auto encrypted, isEncrypted(pos));
     if (!encrypted)
-      return value.getTensor().asFlatVector<T>();
+      return std::get<clientlib::TensorData>(value).asFlatVector<T>();
 
-    auto &buffer = value.getTensor();
+    auto &buffer = std::get<clientlib::TensorData>(value);
     OUTCOME_TRY(auto gate, outputGate(pos));
     auto lweSize = ciphertextSize(gate);
 
