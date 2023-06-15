@@ -6,3 +6,6 @@
 [submodule "lattice-estimator"]
 	path = third_party/lattice-estimator
 	url = https://github.com/malb/lattice-estimator
+[submodule "third_party/pailliercryptolib"]
+	path = third_party/pailliercryptolib
+	url = https://github.com/intel/pailliercryptolib
