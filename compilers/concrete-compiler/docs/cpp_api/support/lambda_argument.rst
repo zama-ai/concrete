@@ -1,4 +1,0 @@
-LambdaArgument:
-===============
-
-.. doxygenfile:: LambdaArgument.h

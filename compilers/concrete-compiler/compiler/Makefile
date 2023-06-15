@@ -1,8 +1,9 @@
 LLVM_PROJECT_DIR=../llvm-project
+DOCS_DIR=../../../docs
 
 BUILD_TYPE?=Release
 
-# Build dir is `build` for Release builds and `build_BUILD_TYPE` for 
+# Build dir is `build` for Release builds and `build_BUILD_TYPE` for
 # other build types (e.g. Debug, ReleaseWithDebugInfo, etc.)
 ifneq ($(BUILD_TYPE),Release)
 	BUILD_DIR?=build_$(BUILD_TYPE)
@@ -63,7 +64,7 @@ endif
 ARCHITECTURE=undefined
 ifeq ($(shell uname -m), arm64)
 	ARCHITECTURE=aarch64
-else 
+else
 	ARCHITECTURE=amd64
 endif
 
@@ -123,7 +124,7 @@ install-hpx-from-source: $(HPX_LOCAL_DIR)
 		$(CXX_COMPILER_OPTION) $(CC_COMPILER_OPTION) ..
 	cd $(HPX_LOCAL_DIR)/build && make -j2
 
-$(HPX_TARBALL): 
+$(HPX_TARBALL):
 	curl -L $(HPX_URL) -o $(HPX_TARBALL)
 
 $(HPX_LOCAL_DIR): $(HPX_TARBALL)
@@ -161,6 +162,10 @@ reconfigure:
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
+
+update-dialect-doc: doc
+	cp $(BUILD_DIR)/tools/concretelang/docs/concretelang/*Dialect.md $(DOCS_DIR)/dev/compilation/ && \
+	sed -i -e 's/\[TOC\]//' $(DOCS_DIR)/dev/compilation/*Dialect.md
 
 concretecompiler: build-initialized
 	cmake --build $(BUILD_DIR) --target concretecompiler
@@ -469,7 +474,7 @@ check-rust-format:
 	cd lib/Bindings/Rust && cargo fmt  --check
 
 rust-format:
-	cd lib/Bindings/Rust && cargo fmt 
+	cd lib/Bindings/Rust && cargo fmt
 
 # libraries we want to have in the installation that aren't already a deps of other targets
 install-deps:
