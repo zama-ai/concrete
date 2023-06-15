@@ -6,8 +6,6 @@
 #ifndef CONCRETELANG_CLIENTLIB_PUBLIC_ARGUMENTS_H
 #define CONCRETELANG_CLIENTLIB_PUBLIC_ARGUMENTS_H
 
-#include <iostream>
-
 #include "boost/outcome.h"
 
 #include "concretelang/ClientLib/ClientParameters.h"
