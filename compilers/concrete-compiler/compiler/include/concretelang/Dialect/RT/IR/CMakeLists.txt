@@ -7,3 +7,7 @@ mlir_tablegen(RTOpsDialect.h.inc -gen-dialect-decls -dialect=RT)
 mlir_tablegen(RTOpsDialect.cpp.inc -gen-dialect-defs -dialect=RT)
 add_public_tablegen_target(MLIRRTOpsIncGen)
 add_dependencies(mlir-headers MLIRRTOpsIncGen)
+
+add_concretelang_doc(RTOps RTDialect concretelang/ -gen-dialect-doc -dialect=RT)
+add_concretelang_doc(RTOps RTOps concretelang/ -gen-op-doc)
+add_concretelang_doc(RTTypes RTTypes concretelang/ -gen-typedef-doc)
