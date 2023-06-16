@@ -68,7 +68,6 @@
 ### Development setup
 
 * [Project layout](dev/setup/layout.md)
-* [Project setup instructions](dev/setup/instructions.md)
 
 ### Compiler backend
 
