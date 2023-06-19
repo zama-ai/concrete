@@ -298,11 +298,11 @@ OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
 PARALLEL_END_2_END_TESTS= end_to_end_jit_test end_to_end_jit_lambda
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
 	$(foreach TEST,$(PARALLEL_END_2_END_TESTS), \
-	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST);)
+	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST) || exit $$?;)
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
-	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml;))
+	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
 
 ### end-to-end-tests GPU
 
@@ -365,7 +365,7 @@ run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST),$(foreach security,$(SECURITY_TO_BENCH),$(BUILD_DIR)/bin/end_to_end_benchmark \
 		--backend=cpu --security-level=$(security) --optimizer-strategy=$(optimizer_strategy)\
 		--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
-		$(BENCHMARK_CPU_DIR)/*.yaml;))
+		$(BENCHMARK_CPU_DIR)/*.yaml || exit $$?;))
 
 FIXTURE_APPLICATION_DIR=tests/end_to_end_fixture/application/
 
