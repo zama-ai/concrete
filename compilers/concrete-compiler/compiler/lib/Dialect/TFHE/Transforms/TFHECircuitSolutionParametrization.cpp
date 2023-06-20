@@ -21,7 +21,7 @@ namespace {
 
 #define DEBUG(MSG)                                                             \
   if (llvm::DebugFlag)                                                         \
-    llvm::errs() << MSG;
+    llvm::errs() << MSG << "\n";
 
 #define VERBOSE(MSG)                                                           \
   if (mlir::concretelang::isVerbose()) {                                       \
@@ -60,11 +60,11 @@ public:
       // Process operations, apply the instructions keys according of the
       // optimizer identifier stored in the "TFHE.OId"
       VERBOSE("\n### BEFORE Apply instruction keys " << func);
-      applyConversionKeys(func);
+      applyInstructionKeys(func);
       // The keyswitch operator is an internal node of the optimizer tlu node,
       // so it don't follow the same rule than the other operator on the type of
       // outputs
-      VERBOSE("\n### BEFORE Fixup keys \n" << func);
+      VERBOSE("\n### BEFORE Fixup keyswitch \n" << func);
       fixupKeyswitchOuputs(func);
       // Propagate types on non parametrized operators
       VERBOSE("\n### BEFORE Fixup non parametrized ops \n" << func);
@@ -137,7 +137,7 @@ public:
     return glwe != nullptr && glwe.getKey().isNone();
   }
 
-  void applyConversionKeys(mlir::func::FuncOp func) {
+  void applyInstructionKeys(mlir::func::FuncOp func) {
     auto context = func.getContext();
     func.walk([&](mlir::Operation *op) {
       auto attrOptimizerID = op->getAttrOfType<IntegerAttr>("TFHE.OId");
@@ -169,6 +169,26 @@ public:
         DEBUG("no bootstrap key");
       } else {
         op->setAttr("key", getBootstrapKeyAttr(context, optimizerID));
+        // FIXME: For now we know that if there are an extra conversion key
+        // this result will only be used in another partition. This is a
+        // STRONG assumptions of how the optimization work, this is done like
+        // that to avoid a bug in type propagation, but the extra conversion
+        // key should be added at the use and not here.
+        auto instKeys = getInstructionKey(optimizerID);
+        if (instKeys.extra_conversion_keys.size() != 0) {
+          assert(instKeys.extra_conversion_keys.size() == 1);
+          auto convKSK =
+              solution.circuit_keys
+                  .conversion_keyswitch_keys[instKeys.extra_conversion_keys[0]];
+          auto convKSKAttr = getExtraConversionKeyAttr(context, convKSK);
+          mlir::IRRewriter rewriter(context);
+          rewriter.setInsertionPointAfter(op);
+          auto outputKey = toLWESecretKey(convKSK.output_key);
+          auto resType = TFHE::GLWECipherTextType::get(context, outputKey);
+          auto extraKSK = rewriter.create<TFHE::KeySwitchGLWEOp>(
+              op->getLoc(), resType, op->getResult(0), convKSKAttr);
+          rewriter.replaceAllUsesExcept(op->getResult(0), extraKSK, extraKSK);
+        }
       }
     });
   }
@@ -480,6 +500,16 @@ public:
         toLWESecretKey(convKSK->output_key),
         convKSK->ks_decomposition_parameter.level,
         convKSK->ks_decomposition_parameter.log2_base, -1);
+  }
+
+  const TFHE::GLWEKeyswitchKeyAttr getExtraConversionKeyAttr(
+      mlir::MLIRContext *context,
+      concrete_optimizer::dag::ConversionKeySwitchKey convKSK) {
+    return TFHE::GLWEKeyswitchKeyAttr::get(
+        context, toLWESecretKey(convKSK.input_key),
+        toLWESecretKey(convKSK.output_key),
+        convKSK.ks_decomposition_parameter.level,
+        convKSK.ks_decomposition_parameter.log2_base, -1);
   }
 
   const TFHE::GLWEBootstrapKeyAttr
