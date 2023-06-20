@@ -21,6 +21,8 @@
 * [Table Lookups](tutorial/table\_lookups.md)
 * [Rounding](tutorial/rounding.md)
 * [Floating Points](tutorial/floating\_points.md)
+* [Multi Precision](tutorial/multi\_precision.md)
+* [Multi Parameters](tutorial/multi\_parameters.md)
 * [Simulation](tutorial/simulation.md)
 * [Direct Circuits](tutorial/direct\_circuits.md)
 
