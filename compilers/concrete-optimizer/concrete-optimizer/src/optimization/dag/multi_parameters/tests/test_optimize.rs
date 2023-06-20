@@ -1,3 +1,7 @@
+use crate::optimization::dag::multi_parameters::complexity::OperationsCount;
+use crate::optimization::dag::multi_parameters::partitionning::tests::show_partitionning;
+use crate::optimization::dag::multi_parameters::variance_constraint::VarianceConstraint;
+
 // part of optimize.rs
 #[cfg(test)]
 mod tests {
@@ -13,6 +17,7 @@ mod tests {
     use crate::optimization::dag::solo_key;
     use crate::optimization::dag::solo_key::optimize::{add_v0_dag, v0_dag};
     use crate::optimization::decomposition;
+    use crate::optimization::dag::multi_parameters::analyze::tests::analyze;
 
     static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
         let processing_unit = config::ProcessingUnit::Cpu;
@@ -564,4 +569,83 @@ mod tests {
         let sol = optimize(&dag, &None, 0);
         assert!(sol.is_some());
     }
+
+    #[test]
+    fn test_rounded_v3_classic_first_layer_second_layer_constraints() {
+        let acc_precision = 7;
+        let precision = 4;
+        let mut dag = unparametrized::OperationDag::new();
+        let free_input1 = dag.add_input(precision, Shape::number());
+        let input1 = dag.add_lut(free_input1, FunctionTable::UNKWOWN, acc_precision);
+        let rounded1 = dag.add_expanded_round(input1, precision);
+        let _lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, precision);
+        let old_dag = dag;
+        let dag = analyze(&old_dag);
+        show_partitionning(&old_dag, &dag.instrs_partition);
+        let constraints: Vec<_> = dag
+            .variance_constraints
+            .iter()
+            .map(VarianceConstraint::to_string)
+            .collect();
+        let expected_constraints = [
+            // First lut to force partition HIGH_PRECISION_PARTITION
+            "1σ²In[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
+            // 16384(shift) = (2**7)², for Br[1]
+            "16384σ²Br[1] + 16384σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
+            // 4096(shift) = (2**6)², 1(due to 1 erase bit) for Br[0] and 1 for Br[1]
+            "4096σ²Br[0] + 4096σ²Br[1] + 4096σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
+            // 1024(shift) = (2**5)², 2(due to 2 erase bit for Br[0] and 1 for Br[1]
+            "2048σ²Br[0] + 1024σ²Br[1] + 1024σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
+            // 3(erase bit) Br[0] and 1 initial Br[1]
+            "3σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
+            // Last lut to close the cycle
+            "1σ²Br[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
+        ];
+        for (c, ec) in constraints.iter().zip(expected_constraints) {
+            assert!(
+                c == ec,
+                "\nBad constraint\nActual: {c}\nTruth : {ec} (expected)\n"
+            );
+        }
+        let simplified_constraints: Vec<_> = dag
+            .undominated_variance_constraints
+            .iter()
+            .map(VarianceConstraint::to_string)
+            .collect();
+        let expected_simplified_constraints = [
+            expected_constraints[1], // biggest weights on Br[1]
+            expected_constraints[2], // biggest weights on Br[0]
+            expected_constraints[4], // only one to have K[0→1]
+            expected_constraints[0], // only one to have K[1]
+            // 3 is dominated by 2
+        ];
+        for (c, ec) in simplified_constraints
+            .iter()
+            .zip(expected_simplified_constraints)
+        {
+            assert!(
+                c == ec,
+                "\nBad simplified constraint\nActual: {c}\nTruth : {ec} (expected)\n"
+            );
+        }
+        let instrs_counts: Vec<_> = dag
+            .operations_count_per_instrs
+            .iter()
+            .map(OperationsCount::to_string)
+            .collect();
+        for cost in instrs_counts{
+            println!("{:#?}", cost);
+        }
+
+        println!("{:#?}", dag.operations_count.to_string());
+        let sol = optimize(&old_dag, &None, 0);
+        //println!("{:?}", sol);
+        println!("{:#?}",sol.unwrap());
+
+        //assert!(sol.is_some());
+    }
+
+
+
+
 }
