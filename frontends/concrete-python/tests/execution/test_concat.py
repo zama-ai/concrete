@@ -171,6 +171,13 @@ from concrete import fhe
                 "y": {"shape": (5, 2, 3)},
             },
         ),
+        pytest.param(
+            lambda x, y: np.concatenate((x, y)),
+            {
+                "x": {"range": [0, 10], "shape": (4, 2)},
+                "y": {"range": [-10, 10], "shape": (3, 2)},
+            },
+        ),
     ],
 )
 def test_concatenate(function, parameters, helpers):

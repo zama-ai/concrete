@@ -647,7 +647,7 @@ class Context:
                     )
                 )
                 x = self.encrypt(encrypted_type, x)
-            sanitized_xs.append(x)
+            sanitized_xs.append(self.to_signedness(x, of=resulting_type))
 
         if axis is None:
             return self.operation(
