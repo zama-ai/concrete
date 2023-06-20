@@ -166,6 +166,7 @@ fn optimize_1_fks_and_all_compatible_ks(
         .sample_extract_lwe_dimension();
     let mut operations = operations.clone();
     let mut best_sol = None;
+    let mut best_complexity = f64::INFINITY;
     let same_dim = input_glwe == output_glwe;
 
     for &ks_quantity in &ks_pareto {
@@ -230,6 +231,10 @@ fn optimize_1_fks_and_all_compatible_ks(
         if cost > cut_complexity {
             continue;
         }
+        if cost > best_complexity{
+            continue;
+        }
+        best_complexity = cost;
         // COULD: handle complexity tie
         let bests = Best1FksAndManyKs {
             fks: Some((fks_src, fks_quantity)),
@@ -856,6 +861,85 @@ pub fn optimize(
     };
 
     let mut params = init_parameters;
+
+    // Adding an initial feasible solution
+
+    params.macro_params[0] = Some(MacroParameters{ glwe_params: GlweParameters { log2_polynomial_size: 8, glwe_dimension: 6 }, internal_dim: 554 });
+    params.macro_params[1] = Some(MacroParameters{ glwe_params: GlweParameters { log2_polynomial_size: 10, glwe_dimension: 2 }, internal_dim: 751 });
+    params.micro_params = MicroParameters{
+        pbs: vec![],
+        ks: vec![],
+        fks: vec![vec![None, None], vec![None, None]],
+    };
+    // PBS_0
+    let mut caches = persistent_caches.caches();
+    let cmux_part_0 = caches.cmux.pareto_quantities( GlweParameters { log2_polynomial_size: 8, glwe_dimension: 6 });
+    for l_beta in cmux_part_0{
+        if l_beta.decomp.level == 1{
+            assert!(l_beta.decomp.log2_base == 18);
+            params.micro_params.pbs.push(Some(*l_beta));
+        }
+    }
+    // PBS_1
+    let mut caches = persistent_caches.caches();
+    let cmux_part_1 = caches.cmux.pareto_quantities( GlweParameters { log2_polynomial_size: 10, glwe_dimension: 2 });
+    for l_beta in cmux_part_1{
+        if l_beta.decomp.level == 1 {
+            assert!(l_beta.decomp.log2_base == 23);
+            params.micro_params.pbs.push(Some(*l_beta));
+        }
+    }
+    //KS_0
+    let mut caches = persistent_caches.caches();
+    let ks_to_part_0 = caches.keyswitch.pareto_quantities( 554);
+    for l_beta in ks_to_part_0 {
+        if l_beta.decomp.level == 3{
+            assert!(l_beta.decomp.log2_base == 3);
+            let vec = vec![Some(*l_beta)];
+            params.micro_params.ks.push(vec);
+        }
+    }
+    //KS_0_1
+    let mut caches = persistent_caches.caches();
+    let ks_to_part_1 = caches.keyswitch.pareto_quantities( 751);
+    for l_beta in ks_to_part_1 {
+        if l_beta.decomp.level == 4{
+            assert!(l_beta.decomp.log2_base == 3);
+            params.micro_params.ks[0].push(Some(*l_beta));
+        }
+    }
+    //KS_1
+    params.micro_params.ks.push(vec![None]);
+    let mut caches = persistent_caches.caches();
+    let ks_to_part_1 = caches.keyswitch.pareto_quantities( 751);
+    for l_beta in ks_to_part_1 {
+        if l_beta.decomp.level == 4{
+            assert!(l_beta.decomp.log2_base == 3);
+            params.micro_params.ks[1].push(Some(*l_beta));
+        }
+    }
+    //ks_1_0
+    let mut caches = persistent_caches.caches();
+    let src_glwe_param =  GlweParameters { log2_polynomial_size: 10, glwe_dimension: 2 };
+    let  dst_glwe_param = GlweParameters { log2_polynomial_size: 8, glwe_dimension: 6 };
+    let ks_to_part_0 = caches.keyswitch.pareto_quantities(dst_glwe_param.sample_extract_lwe_dimension());
+    for l_beta in ks_to_part_0 {
+        if l_beta.decomp.level == 1{
+            assert!(l_beta.decomp.log2_base == 19);
+            let noise = l_beta.noise(src_glwe_param.sample_extract_lwe_dimension());
+            let complexity = l_beta.complexity(src_glwe_param.sample_extract_lwe_dimension());
+            let fks_beta_l = FksComplexityNoise {
+                decomp: l_beta.decomp,
+                noise,
+                complexity,
+                src_glwe_param,
+                dst_glwe_param,
+            };
+            params.micro_params.fks[1][0] = Some(fks_beta_l);
+        }
+    }
+
+
     let mut best_complexity = f64::INFINITY;
     let mut best_p_error = f64::INFINITY;
 
