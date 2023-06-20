@@ -1,81 +1,36 @@
 # Overview of FHE-related dialects in Concrete Compiler
 ## Introduction
 
-Compilation of a Python program starts with Concrete's Python
-frontend, which first traces and transforms it and then converts it
-into an intermediate representation (IR) that is further processed by
-Concrete Compiler. This IR is based on the [MLIR
-subproject](https://mlir.llvm.org/) of the [LLVM compiler
-infrastructure](https://www.llvm.org). This document provides an
-overview of Concrete's FHE-specific representations based on the MLIR
-framework.
+Compilation of a Python program starts with Concrete's Python frontend, which first traces and transforms it and then converts it into an intermediate representation (IR) that is further processed by Concrete Compiler. This IR is based on the [MLIR subproject](https://mlir.llvm.org/) of the [LLVM compiler infrastructure](https://www.llvm.org). This document provides an overview of Concrete's FHE-specific representations based on the MLIR framework.
 
-In contrast to traditional infrastructure for compilers, the set of
-operations and data types that constitute the IR, as well as the level
-of abstraction that the IR represents, are not fixed in MLIR and can
-easily be extended. All operations and data types are grouped into
-[dialects](https://mlir.llvm.org/docs/LangRef/#dialects), with each
-dialect representing a specific domain or a specific level of
-abstraction. Mixing operations and types from different dialects
-within the same IR is allowed and even encouraged, with all
-dialects--builtin or developed as an extension--being first-class
-citizens.
+In contrast to traditional infrastructure for compilers, the set of operations and data types that constitute the IR, as well as the level of abstraction that the IR represents, are not fixed in MLIR and can easily be extended. All operations and data types are grouped into [dialects](https://mlir.llvm.org/docs/LangRef/#dialects), with each dialect representing a specific domain or a specific level of abstraction. Mixing operations and types from different dialects within the same IR is allowed and even encouraged, with all dialects--builtin or developed as an extension--being first-class citizens.
 
-Concrete compiler takes advantage of these concepts by defining a set
-of dialects, capable of representing an FHE program from an abstract
-specification that is independent of the actual cryptosystem down to a
-program that can easily be mapped to function calls of a cryptographic
-library. The dialects for the representation of an FHE program are:
+Concrete compiler takes advantage of these concepts by defining a set of dialects, capable of representing an FHE program from an abstract specification that is independent of the actual cryptosystem down to a program that can easily be mapped to function calls of a cryptographic library. The dialects for the representation of an FHE program are:
 
-* The FHELinalg Dialect ([documentation](fhelinalg_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHELinalg/IR/FHELinalgOps.td))
-* The FHE Dialect ([documentation](fhe_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHE/IR/FHEOps.td))
-* The TFHE Dialect ([documentation](tfhe_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/TFHE/IR/TFHEOps.td))
-* The Concrete Dialect ([documentation](concrete_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/Concrete/IR/ConcreteOps.td))
-* and for debugging purposes, the Tracing Dialect ([documentation](tracing_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/Tracing/IR/TracingOps.td)).
+* The FHELinalg Dialect ([documentation](FHELinalgDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHELinalg/IR/FHELinalgOps.td))
+* The FHE Dialect ([documentation](FHEDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHE/IR/FHEOps.td))
+* The TFHE Dialect ([documentation](TFHEDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/TFHE/IR/TFHEOps.td))
+* The Concrete Dialect ([documentation](ConcreteDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/Concrete/IR/ConcreteOps.td))
+* and for debugging purposes, the Tracing Dialect ([documentation](TracingDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/Tracing/IR/TracingOps.td)).
 
-In addition, the project further defines two dialects that help expose
-dynamic task-parallelism and static data-flow graphs in order to
-benefit from multi-core, multi-accelerator and distributed
-systems. These are:
+In addition, the project further defines two dialects that help expose dynamic task-parallelism and static data-flow graphs in order to benefit from multi-core, multi-accelerator and distributed systems. These are:
 
 * The RT Dialect ([documentation](rt_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/RT/IR/RTOps.td)) and
 * The SDFG Dialect ([documentation](sdfg_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/SDFG/IR/SDFGOps.td)).
 
-The figure below illustrates the relationship between the dialects and
-their embedding into the compilation pipeline.
+The figure below illustrates the relationship between the dialects and their embedding into the compilation pipeline.
 
 ![](../../\_static/compilation-pipeline/compilation-flow.png)
 
-The following sections focus on the FHE-related dialects, i.e., on the
-FHELinalg Dialect, the FHE Dialect, the TFHE Dialect and the Concrete
-Dialect.
+The following sections focus on the FHE-related dialects, i.e., on the FHELinalg Dialect, the FHE Dialect, the TFHE Dialect and the Concrete Dialect.
 
 ## The FHE and FHELinalg Dialects: An abstract specification of an FHE program
 
-The top part of the figure shows the components which are involved in
-the generation of the initial IR, ending with the step labelled *MLIR
-translation*. When the initial IR is passed on to Concrete Compiler
-through its Python bindings, all FHE-related operations are specified
-using either the FHE or FHELinalg Dialect. Both of these dialects
-provide operations and data types for the abstract specification of an
-FHE program, completely independently of a cryptosystem. At this
-point, the IR simply indicates whether an operand is encrypted (via
-the type `FHE.eint<n>`, where `n` stands for the precision in bits)
-and what operations are applied to encrypted values. Plaintext values
-simply use MLIR's builtin integer type `in` (e.g., `i3` or `i64`).
+The top part of the figure shows the components which are involved in the generation of the initial IR, ending with the step labelled *MLIR translation*. When the initial IR is passed on to Concrete Compiler through its Python bindings, all FHE-related operations are specified using either the FHE or FHELinalg Dialect. Both of these dialects provide operations and data types for the abstract specification of an FHE program, completely independently of a cryptosystem. At this point, the IR simply indicates whether an operand is encrypted (via the type `FHE.eint<n>`, where `n` stands for the precision in bits) and what operations are applied to encrypted values. Plaintext values simply use MLIR's builtin integer type `in` (e.g., `i3` or `i64`).
 
-The FHE Dialect provides scalar operations on encrypted integers, such
-as additions (`FHE.add_eint`) or multiplications (`FHE.mul_eint`),
-while the FHELinalg Dialect offers operations on tensors of encrypted
-integers, e.g., matrix products (`FHELinalg.matmul_eint_eint`) or
-convolutions (`FHELinalg.conv2d`).
+The FHE Dialect provides scalar operations on encrypted integers, such as additions (`FHE.add_eint`) or multiplications (`FHE.mul_eint`), while the FHELinalg Dialect offers operations on tensors of encrypted integers, e.g., matrix products (`FHELinalg.matmul_eint_eint`) or convolutions (`FHELinalg.conv2d`).
 
-In a first lowering step of the pipeline, all FHELinalg operations are
-lowered to operations from [MLIR's builtin Linalg
-Dialect](https://mlir.llvm.org/docs/Dialects/Linalg/) using scalar
-operations from the FHE Dialect. Consider the following example, which
-consists of a function that performs a multiplication of a matrix of
-encrypted integers and a matrix of cleartext values:
+In a first lowering step of the pipeline, all FHELinalg operations are lowered to operations from [MLIR's builtin Linalg Dialect](https://mlir.llvm.org/docs/Dialects/Linalg/) using scalar operations from the FHE Dialect. Consider the following example, which consists of a function that performs a multiplication of a matrix of encrypted integers and a matrix of cleartext values:
 
 ```mlir
 func.func @main(%arg0: tensor<4x3x!FHE.eint<2>>, %arg1: tensor<3x2xi3>) -> tensor<4x2x!FHE.eint<2>> {
@@ -84,9 +39,7 @@ func.func @main(%arg0: tensor<4x3x!FHE.eint<2>>, %arg1: tensor<3x2xi3>) -> tenso
 }
 ```
 
-Upon conversion, the `FHELinalg.matmul` operation is converted to a
-`linalg.generic` operation whose body contains a scalar multiplication
-(`FHE.mul_eint_int`) and a scalar addition (`FHE.add_eint_int`):
+Upon conversion, the `FHELinalg.matmul` operation is converted to a `linalg.generic` operation whose body contains a scalar multiplication (`FHE.mul_eint_int`) and a scalar addition (`FHE.add_eint_int`):
 
 
 ```mlir
@@ -106,10 +59,7 @@ func.func @main(%arg0: tensor<4x3x!FHE.eint<2>>, %arg1: tensor<3x2xi3>) -> tenso
 }
 ```
 
-This is then further lowered to a nest of loops from [MLIR's SCF
-Dialect](https://mlir.llvm.org/docs/Dialects/SCFDialect/),
-implementing the parallel and reduction dimensions from the
-`linalg.generic` operation above:
+This is then further lowered to a nest of loops from [MLIR's SCF Dialect](https://mlir.llvm.org/docs/Dialects/SCFDialect/), implementing the parallel and reduction dimensions from the `linalg.generic` operation above:
 
 ```mlir
 func.func @main(%arg0: tensor<4x3x!FHE.eint<2>>, %arg1: tensor<3x2xi3>) -> tensor<4x2x!FHE.eint<2>> {
@@ -140,26 +90,14 @@ func.func @main(%arg0: tensor<4x3x!FHE.eint<2>>, %arg1: tensor<3x2xi3>) -> tenso
 
 ## The TFHE Dialect: Binding to the TFHE cryptosystem and parametrization
 
-In order to obtain an executable program at the end of the compilation
-pipeline, the abstract specification of the FHE program must at some
-point be bound to a specific cryptosystem. This is the role of the
-TFHE Dialect, whose purpose is:
-
-* to indicate operations to be carried out using an implementation of the
-  TFHE cryptosystem
+In order to obtain an executable program at the end of the compilation pipeline, the abstract specification of the FHE program must at some point be bound to a specific cryptosystem. This is the role of the TFHE Dialect, whose purpose is:
+* to indicate operations to be carried out using an implementation of the TFHE cryptosystem
 * to parametrize the cryptosystem with key sizes, and
 * to provide a mapping between keys and encrypted values
 
-When lowering the IR based on the FHE Dialect to the TFHE Dialect, the
-compiler first generates a generic form, in which FHE operations are
-lowered to TFHE operations and where values are converted to
-unparametrized `TFHE.glwe` values. The unparametrized form
-`TFHE.glwe<sk?>` simply indicates that a `TFHE.glwe` value is to be
-used, but without any indication of the cryptographic parameters and
-the actual key.
+When lowering the IR based on the FHE Dialect to the TFHE Dialect, the compiler first generates a generic form, in which FHE operations are lowered to TFHE operations and where values are converted to unparametrized `TFHE.glwe` values. The unparametrized form `TFHE.glwe<sk?>` simply indicates that a `TFHE.glwe` value is to be used, but without any indication of the cryptographic parameters and the actual key.
 
-The IR below shows the example program after lowering to
-unparametrized TFHE:
+The IR below shows the example program after lowering to unparametrized TFHE:
 
 ```mlir
 func.func @main(%arg0: tensor<4x3x!TFHE.glwe<sk?>>, %arg1: tensor<3x2xi3>) -> tensor<4x2x!TFHE.glwe<sk?>> {
@@ -189,16 +127,9 @@ func.func @main(%arg0: tensor<4x3x!TFHE.glwe<sk?>>, %arg1: tensor<3x2xi3>) -> te
 }
 ```
 
-All operations from the FHE dialect have been replaced with
-corresponding operations from the TFHE Dialect.
+All operations from the FHE dialect have been replaced with corresponding operations from the TFHE Dialect.
 
-During subsequent parametrization, the compiler can either use a set
-of default parameters or can obtain a set of parameters from
-Concrete's optimizer. Either way, an additional pass injects the
-parameters into the IR, replacing all `TFHE.glwe<sk?>` instances with
-`TFHE.glwe<i,d,n>`, where `i` is a sequential identifier for a key,
-`d` the number of GLWE dimensions and `n` the size of the GLWE
-polynomial.
+During subsequent parametrization, the compiler can either use a set of default parameters or can obtain a set of parameters from Concrete's optimizer. Either way, an additional pass injects the parameters into the IR, replacing all `TFHE.glwe<sk?>` instances with `TFHE.glwe<i,d,n>`, where `i` is a sequential identifier for a key, `d` the number of GLWE dimensions and `n` the size of the GLWE polynomial.
 
 The result of such a parametrization for the example is given below:
 
@@ -230,25 +161,13 @@ func.func @main(%arg0: tensor<4x3x!TFHE.glwe<sk<0,1,512>>>, %arg1: tensor<3x2xi3
 }
 ```
 
-In this parametrization, a single key with the ID `0` is used, with a
-single dimension and a polynomial of size 512.
+In this parametrization, a single key with the ID `0` is used, with a single dimension and a polynomial of size 512.
 
 ## The Concrete Dialect: Preparing bindings with a crypto library
 
-In the next step of the pipeline, operations and types are lowered to
-the Concrete Dialect. This dialect provides operations, which are
-implemented by one of Concrete's backend libraries, but still
-abstracts from any technical details required for interaction with an
-actual library. The goal is to maintain a high-level representation
-with value-based semantics and actual operations instead of buffer
-semantics and library calls, while ensuring that all operations can
-effectively be lowered to a library call later in the
-pipeline. However, the abstract types from TFHE are already lowered to
-tensors of integers with a suitable shape that will hold the binary
-data of the encrypted values.
+In the next step of the pipeline, operations and types are lowered to the Concrete Dialect. This dialect provides operations, which are implemented by one of Concrete's backend libraries, but still abstracts from any technical details required for interaction with an actual library. The goal is to maintain a high-level representation with value-based semantics and actual operations instead of buffer semantics and library calls, while ensuring that all operations  an effectively be lowered to a library call later in the pipeline. However, the abstract types from TFHE are already lowered to tensors of integers with a suitable shape that will hold the binary data of the encrypted values.
 
-The result of the lowering of the example to the Concrete Dialect is
-shown below:
+The result of the lowering of the example to the Concrete Dialect is shown below:
 
 ```mlir
 func.func @main(%arg0: tensor<4x3x513xi64>, %arg1: tensor<3x2xi3>) -> tensor<4x2x513xi64> {
@@ -284,16 +203,8 @@ func.func @main(%arg0: tensor<4x3x513xi64>, %arg1: tensor<3x2xi3>) -> tensor<4x2
 
 ## Bufferization and emitting library calls
 
-The remaining stages of the pipeline are rather technical. Before any
-binding to an actual Concrete backend library, the compiler first
-invokes [MLIR's bufferization
-infrastructure](https://mlir.llvm.org/docs/Bufferization/) to convert
-the value-based IR into an IR with buffer semantics. In particular,
-this means that keys and encrypted values are no longer abstract
-values in a mathematical sense, but values backed by a memory location
-that holds the actual data. This form of IR is then suitable for a
-pass emitting actual library calls that implement the corresponding
-operations from the Concrete Dialect for a specific backend.
+The remaining stages of the pipeline are rather technical. Before any binding to an actual Concrete backend library, the compiler first
+invokes [MLIR's bufferization infrastructure](https://mlir.llvm.org/docs/Bufferization/) to convert the value-based IR into an IR with buffer semantics. In particular, this means that keys and encrypted values are no longer abstract values in a mathematical sense, but values backed by a memory location that holds the actual data. This form of IR is then suitable for a pass emitting actual library calls that implement the corresponding operations from the Concrete Dialect for a specific backend.
 
 The result for the example is given below:
 
@@ -343,6 +254,4 @@ func.func @main(%arg0: memref<4x3x513xi64, strided<[?, ?, ?], offset: ?>>, %arg1
 }
 ```
 
-At this stage, the IR is only composed of operations from builtin
-Dialects and thus amenable to lowering to LLVM-IR using the lowering
-passes provided by MLIR.
+At this stage, the IR is only composed of operations from builtin Dialects and thus amenable to lowering to LLVM-IR using the lowering passes provided by MLIR.
