@@ -7,3 +7,6 @@ mlir_tablegen(TracingOpsDialect.h.inc -gen-dialect-decls -dialect=Tracing)
 mlir_tablegen(TracingOpsDialect.cpp.inc -gen-dialect-defs -dialect=Tracing)
 add_public_tablegen_target(MLIRTracingOpsIncGen)
 add_dependencies(mlir-headers MLIRTracingOpsIncGen)
+
+add_concretelang_doc(TracingOps TracingDialect concretelang/ -gen-dialect-doc -dialect=Tracing)
+add_concretelang_doc(TracingOps TracingOps concretelang/ -gen-op-doc)
