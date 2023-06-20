@@ -210,9 +210,10 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
         if (auto err = scalarGate.takeError()) {
           return std::move(err);
         }
-        if (maybeCrt.has_value()) {
-          // When using crt, the last dimension of the tensor is for the members
-          // of the decomposition. It should not be used.
+        if (maybeCrt.has_value() && scalarGate->isEncrypted()) {
+          // When using crt with encrypted tensors, the last dimension of the
+          // tensor is for the members of the decomposition. It should not be
+          // used.
           scalarGate->shape.dimensions =
               tensor.getShape().take_front(tensor.getShape().size() - 1).vec();
         } else {
