@@ -10,9 +10,10 @@
 #include <vector>
 
 #include "concrete-protocol.pb.h"
-#include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/JSON.h"
+#include "boost/outcome.h"
 
 namespace protocol = concreteprotocol;
 
@@ -57,6 +58,7 @@ struct CompilationFeedback {
 };
 
 llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &);
+
 bool fromJSON(const llvm::json::Value,
               mlir::concretelang::CompilationFeedback &, llvm::json::Path);
 

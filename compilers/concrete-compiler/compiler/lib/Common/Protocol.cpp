@@ -3,21 +3,39 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#ifndef CONCRETELANG_COMMON_PROTOBUF_H
-#define CONCRETELANG_COMMON_PROTOBUF_H
-
 #include <boost/outcome.h>
 #include <concretelang/Common/Error.h>
+#include <concretelang/Common/Protocol.h>
 #include <cstddef>
 #include <fstream>
 #include <google/protobuf/message.h>
 #include <google/protobuf/util/json_util.h>
+#include "concrete-protocol.pb.h"
 #include <llvm/ADT/Hashing.h>
 #include <memory>
 #include <stdlib.h>
 
 namespace concretelang {
-namespace common {
+namespace protocol {
+
+/// Helper function turning a protocol `Shape` object into a vector of dimensions.
+std::vector<size_t> protoShapeToDimensions(const concreteprotocol::Shape &shape) {
+  auto output = std::vector<size_t>();
+  output.resize(shape.dimensions_size());
+  for (auto dim : shape.dimensions()) {
+    output.push_back(dim);
+  }
+  return output;
+}
+
+/// Helper function turning a protocol `Shape` object into a vector of dimensions.
+concreteprotocol::Shape *dimensionsToProtoShape(const std::vector<size_t> &input) {
+  auto output = new concreteprotocol::Shape();
+  for (auto dim : input) {
+    output->mutable_dimensions()->Add(dim);
+  }
+  return output;
+}
 
 template <typename Message>
 outcome::checked<Message, concretelang::error::StringError>
@@ -62,7 +80,6 @@ template <typename Message> size_t hashMessage(Message &mess) {
   return output;
 }
 
-} // namespace common
+} // namespace protocol
 } // namespace concretelang
 
-#endif

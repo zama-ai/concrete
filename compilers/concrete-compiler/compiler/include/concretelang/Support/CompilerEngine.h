@@ -163,12 +163,14 @@ public:
     setCompilationResult(CompilationResult &compilation);
     /// Emit the library artifacts with the previously added compilation result
     llvm::Error emitArtifacts(bool sharedLib, bool staticLib,
-                              bool clientParameters, bool compilationFeedback,
-                              bool cppHeader);
+                              bool clientParameters, bool compilationFeedback);
     /// After a shared library has been emitted, its path is here
     std::string sharedLibraryPath;
     /// After a static library has been emitted, its path is here
     std::string staticLibraryPath;
+
+    /// Returns the program info of the library.
+    const concreteprotocol::ProgramInfo &getProgramInfo() const;
 
     /// Returns the path of the shared library
     static std::string getSharedLibraryPath(std::string outputDirPath);
@@ -200,8 +202,6 @@ public:
     llvm::Expected<std::string> emitProgramInfoJSON();
     /// Emit a json CompilationFeedback corresponding to library content
     llvm::Expected<std::string> emitCompilationFeedbackJSON();
-    /// Emit a client header file for this corresponding to library content
-    llvm::Expected<std::string> emitCppHeader();
   };
 
   /// Specification of the exit stage of the compilation pipeline
@@ -287,8 +287,7 @@ public:
   compile(std::vector<std::string> inputs, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
-          bool generateCompilationFeedback = true,
-          bool generateCppHeader = true);
+          bool generateCompilationFeedback = true);
 
   /// Compile and emit artifact to the given outputDirPath from an LLVM source
   /// manager.
@@ -296,8 +295,7 @@ public:
   compile(llvm::SourceMgr &sm, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
-          bool generateCompilationFeedback = true,
-          bool generateCppHeader = true);
+          bool generateCompilationFeedback = true);
 
   void setCompilationOptions(CompilationOptions options) {
     compilerOptions = std::move(options);

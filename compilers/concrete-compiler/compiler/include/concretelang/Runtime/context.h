@@ -11,11 +11,11 @@
 #include <mutex>
 #include <pthread.h>
 #include <vector>
-
-#include "concretelang/ClientLib/EvaluationKeys.h"
+#include "concretelang/Common/Keysets.h"
 #include "concretelang/Common/Error.h"
-
 #include "concrete-cpu.h"
+
+using ::concretelang::keysets::ServerKeyset;
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
 #include "bootstrap.h"
@@ -40,7 +40,7 @@ typedef struct FFT {
 typedef struct RuntimeContext {
 
   RuntimeContext() = delete;
-  RuntimeContext(::concretelang::clientlib::EvaluationKeys evaluationKeys);
+  RuntimeContext(ServerKeyset serverKeyset);
   ~RuntimeContext() {
 #ifdef CONCRETELANG_CUDA_SUPPORT
     for (int i = 0; i < num_devices; ++i) {
@@ -53,7 +53,7 @@ typedef struct RuntimeContext {
   };
 
   const uint64_t *keyswitch_key_buffer(size_t keyId) {
-    return evaluationKeys.getKeyswitchKey(keyId).buffer();
+    return serverKeyset.lweKeyswitchKeys[keyId].getRawPtr();
   }
 
   const double *fourier_bootstrap_key_buffer(size_t keyId) {
@@ -61,17 +61,17 @@ typedef struct RuntimeContext {
   }
 
   const uint64_t *fp_keyswitch_key_buffer(size_t keyId) {
-    return evaluationKeys.getPackingKeyswitchKey(keyId).buffer();
+    return serverKeyset.packingKeyswitchKeys[keyId].getRawPtr();
   }
 
   const struct Fft *fft(size_t keyId) { return ffts[keyId].fft; }
 
-  const ::concretelang::clientlib::EvaluationKeys getKeys() const {
-    return evaluationKeys;
+  const ServerKeyset getKeys() const {
+    return serverKeyset;
   }
 
 private:
-  ::concretelang::clientlib::EvaluationKeys evaluationKeys;
+  ServerKeyset serverKeyset;
   std::vector<std::shared_ptr<std::vector<double>>> fourier_bootstrap_keys;
   std::vector<FFT> ffts;
 
@@ -89,7 +89,7 @@ public:
       return bsk_gpu[gpu_idx];
     }
 
-    auto bsk = evaluationKeys.getBootstrapKey(0);
+    auto bsk = serverKeyset.getBootstrapKey(0);
 
     size_t bsk_buffer_len = bsk.size();
     size_t bsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
@@ -118,7 +118,7 @@ public:
     if (ksk_gpu[gpu_idx] != nullptr) {
       return ksk_gpu[gpu_idx];
     }
-    auto ksk = evaluationKeys.getKeyswitchKey(0);
+    auto ksk = serverKeyset.getKeyswitchKey(0);
 
     size_t ksk_buffer_size = sizeof(uint64_t) * ksk.size();
 

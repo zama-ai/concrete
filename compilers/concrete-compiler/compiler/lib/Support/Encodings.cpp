@@ -6,8 +6,7 @@
 #include "concrete-protocol.pb.h"
 #include "concretelang/Support/Utils.h"
 #include "concretelang/Support/V0Parameters.h"
-#include <concretelang/ClientLib/ClientParameters.h>
-#include <concretelang/Common/Protobuf.h>
+#include <concretelang/Common/Protocol.h>
 #include <concretelang/Dialect/FHE/IR/FHETypes.h>
 #include <concretelang/Support/Encodings.h>
 #include <concretelang/Support/Error.h>
@@ -18,7 +17,6 @@
 #include <variant>
 
 namespace FHE = mlir::concretelang::FHE;
-namespace clientlib = concretelang::clientlib;
 
 namespace mlir {
 namespace concretelang {

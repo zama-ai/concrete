@@ -6,10 +6,12 @@
 #define CONCRETELANG_COMMON_ERROR_H
 
 #include <string>
+#include "boost/outcome.h"
 
 namespace concretelang {
 namespace error {
 
+/// The type of error used throughout the client/server libs.
 class StringError {
 public:
   StringError(std::string mesg) : mesg(mesg){};
@@ -36,6 +38,9 @@ public:
     return *this;
   }
 };
+
+/// A result type used throughout the client/server libs.
+template <typename T> using Result = outcome::checked<T, StringError>;
 
 } // namespace error
 } // namespace concretelang

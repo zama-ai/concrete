@@ -69,40 +69,11 @@ void CompilationFeedback::fillFromProgramInfo(
   auto circuitInfo = params.circuits(0);
   auto computeGateSize = [&](concreteprotocol::GateInfo &gateInfo) {
     unsigned int nElements = 1;
-    for (auto dimension : gateInfo.shape().dimensions()) {
+    // TODO: CHANGE THAT ITS WRONG
+    for (auto dimension : gateInfo.rawinfo().shape().dimensions()) {
       nElements *= dimension;
     }
-    unsigned int gateScalarSize = 0;
-    if (gateInfo.has_plaintext()) {
-      auto plaintextGate = gateInfo.plaintext();
-      gateScalarSize = bitWidthAsWord(plaintextGate.integerprecision()) / 8;
-    } else if (gateInfo.has_index()) {
-      auto indexGate = gateInfo.index();
-      gateScalarSize = bitWidthAsWord(indexGate.integerprecision()) / 8;
-    } else if (gateInfo.has_lweciphertext()) {
-      auto lweCiphertextGate = gateInfo.lweciphertext();
-      auto lweCiphertextGateEncryption = lweCiphertextGate.encryption();
-      assert(lweCiphertextGateEncryption.integerprecision() % 8 == 0);
-      if (lweCiphertextGate.has_integer()) {
-        auto integerEncoding = lweCiphertextGate.integer();
-        auto lweSize = lweCiphertextGateEncryption.lwedimension() + 1;
-        auto byteSize = lweCiphertextGateEncryption.integerprecision() / 8;
-        gateScalarSize = lweSize * byteSize;
-        if (integerEncoding.has_native()) {
-          // gateScalarSize does not need multiplier
-        } else if (integerEncoding.has_chunked()) {
-          nElements *= integerEncoding.chunked().size();
-        } else if (integerEncoding.has_crt()) {
-          nElements *= integerEncoding.crt().moduli_size();
-        }
-      } else if (lweCiphertextGate.has_boolean()) {
-        // gateScalarSize does not need multiplier
-      } else {
-        assert(false);
-      }
-    } else {
-      assert(false);
-    }
+    unsigned int gateScalarSize = gateInfo.rawinfo().integerprecision() / 8;
     return nElements * gateScalarSize;
   };
   // Compute the size of inputs

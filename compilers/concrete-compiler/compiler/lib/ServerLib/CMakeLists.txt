@@ -7,12 +7,12 @@ endif()
 
 add_mlir_library(
   ConcretelangServerLib
-  ServerLambda.cpp
-  DynamicModule.cpp
+  ServerLib.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/ServerLib
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Common
   DEPENDS
   mlir-headers
   LINK_LIBS
   ConcretelangRuntime
-  ConcretelangClientLib)
+  ConcretelangCommon)

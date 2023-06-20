@@ -41,7 +41,7 @@ target_link_libraries(
   PUBLIC concrete_cpu
          concrete-protocol
          concrete_cpu_noise_model
-         ConcretelangClientLib
+         ConcretelangCommon
          pthread
          m
          dl

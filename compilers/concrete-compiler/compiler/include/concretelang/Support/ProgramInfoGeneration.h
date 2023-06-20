@@ -11,15 +11,11 @@
 #include <mlir/IR/BuiltinOps.h>
 
 #include "concrete-protocol.pb.h"
-#include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Support/Encodings.h"
 #include "concretelang/Support/V0Parameters.h"
 
 namespace mlir {
 namespace concretelang {
-
-using ::concretelang::clientlib::ChunkInfo;
-using ::concretelang::clientlib::ClientParameters;
 
 llvm::Expected<concreteprotocol::ProgramInfo>
 createProgramInfoFromTFHE(mlir::ModuleOp module, llvm::StringRef functionName,

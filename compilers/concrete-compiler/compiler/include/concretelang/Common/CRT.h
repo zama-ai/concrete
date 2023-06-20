@@ -3,14 +3,13 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#ifndef CONCRETELANG_CLIENTLIB_CRT_H_
-#define CONCRETELANG_CLIENTLIB_CRT_H_
+#ifndef CONCRETELANG_COMMON_CRT_H_
+#define CONCRETELANG_COMMON_CRT_H_
 
 #include <cstdint>
 #include <vector>
 
 namespace concretelang {
-namespace clientlib {
 namespace crt {
 
 /// Compute the product of the moduli of the crt decomposition.
@@ -40,7 +39,6 @@ uint64_t encode(int64_t plaintext, uint64_t modulus, uint64_t product);
 uint64_t decode(uint64_t val, uint64_t modulus);
 
 } // namespace crt
-} // namespace clientlib
 } // namespace concretelang
 
 #endif

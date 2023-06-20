@@ -5,10 +5,10 @@
 
 #include "concretelang/Runtime/context.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Common/Keysets.h"
 #include <assert.h>
 #include <stdio.h>
 
-namespace clientlib = ::concretelang::clientlib;
 namespace mlir {
 namespace concretelang {
 
@@ -29,19 +29,21 @@ FFT::~FFT() {
   }
 }
 
-RuntimeContext::RuntimeContext(clientlib::EvaluationKeys evaluationKeys)
-    : evaluationKeys(evaluationKeys) {
+RuntimeContext::RuntimeContext(ServerKeyset serverKeyset)
+    : serverKeyset(serverKeyset) {
   {
 
     // Initialize for each bootstrap key the fourier one
-    for (auto bsk : evaluationKeys.getBootstrapKeys()) {
-      auto param = bsk.parameters();
+    for (size_t i = 0; i < serverKeyset.lweBootstrapKeys.size(); i++) {
 
-      size_t decomposition_level_count = param.level;
-      size_t decomposition_base_log = param.baseLog;
-      size_t glwe_dimension = param.glweDimension;
-      size_t polynomial_size = param.polynomialSize;
-      size_t input_lwe_dimension = param.inputLweDimension;
+      auto bsk = serverKeyset.lweBootstrapKeys[i];
+      auto info = bsk.getInfo();
+
+      size_t decomposition_level_count = info.params().levelcount();
+      size_t decomposition_base_log = info.params().baselog();
+      size_t glwe_dimension = info.params().glwedimension();
+      size_t polynomial_size = info.params().polynomialsize();
+      size_t input_lwe_dimension = info.params().inputlwedimension();
 
       // Create the FFT
       FFT fft(polynomial_size);
@@ -55,8 +57,8 @@ RuntimeContext::RuntimeContext(clientlib::EvaluationKeys evaluationKeys)
 
       // Allocate the fourier_bootstrap_key
       auto fourier_data = std::make_shared<std::vector<double>>();
-      fourier_data->resize(bsk.size());
-      auto bsk_data = bsk.buffer();
+      fourier_data->resize(bsk.getSize());
+      auto bsk_data = bsk.getRawPtr();
 
       // Convert bootstrap_key to the fourier domain
       concrete_cpu_bootstrap_key_convert_u64_to_fourier(

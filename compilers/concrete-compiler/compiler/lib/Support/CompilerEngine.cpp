@@ -20,6 +20,7 @@
 #include <llvm/Support/Error.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/SMLoc.h>
+#include <llvm/Support/FileSystem.h>
 #include <mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
@@ -33,7 +34,6 @@
 #include "concrete-protocol.pb.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Support/Utils.h"
-#include <concretelang/ClientLib/ClientParameters.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/Concrete/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
@@ -50,7 +50,6 @@
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Encodings.h>
 #include <concretelang/Support/Error.h>
-#include <concretelang/Support/Jit.h>
 #include <concretelang/Support/LLVMEmitFile.h>
 #include <concretelang/Support/Pipeline.h>
 
@@ -598,7 +597,7 @@ llvm::Expected<CompilerEngine::Library> CompilerEngine::compile(
     std::vector<std::string> inputs, std::string outputDirPath,
     std::string runtimeLibraryPath, bool generateSharedLib,
     bool generateStaticLib, bool generateClientParameters,
-    bool generateCompilationFeedback, bool generateCppHeader) {
+    bool generateCompilationFeedback) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
@@ -611,7 +610,7 @@ llvm::Expected<CompilerEngine::Library> CompilerEngine::compile(
   }
   if (auto err = outputLib->emitArtifacts(
           generateSharedLib, generateStaticLib, generateClientParameters,
-          generateCompilationFeedback, generateCppHeader)) {
+          generateCompilationFeedback)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -622,8 +621,7 @@ llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
-                        bool generateCompilationFeedback,
-                        bool generateCppHeader) {
+                        bool generateCompilationFeedback) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
@@ -636,7 +634,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
 
   if (auto err = outputLib->emitArtifacts(
           generateSharedLib, generateStaticLib, generateClientParameters,
-          generateCompilationFeedback, generateCppHeader)) {
+          generateCompilationFeedback)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -702,6 +700,10 @@ void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
   objectsPath.push_back(path);
 }
 
+const concreteprotocol::ProgramInfo &CompilerEngine::Library::getProgramInfo() const{
+    return programInfo;
+}
+
 llvm::Expected<std::string> CompilerEngine::Library::emitProgramInfoJSON() {
   auto programInfoPath = getProgramInfoPath(outputDirPath);
   std::error_code error;
@@ -735,95 +737,6 @@ CompilerEngine::Library::emitCompilationFeedbackJSON() {
   out.close();
 
   return path;
-}
-
-static std::string ccpResultType(size_t rank) {
-  if (rank == 0) {
-    return "scalar_out";
-  } else {
-    return "tensor" + std::to_string(rank) + "_out";
-  }
-}
-
-static std::string ccpArgType(size_t rank) {
-  if (rank == 0) {
-    return "scalar_in";
-  } else {
-    return "tensor" + std::to_string(rank) + "_in";
-  }
-}
-
-static std::string cppArgsType(
-    const google::protobuf::RepeatedPtrField<protocol::GateInfo> &inputs) {
-  std::string args;
-  for (auto input : inputs) {
-    if (!args.empty()) {
-      args += ", ";
-    }
-    args += ccpArgType(input.shape().dimensions_size());
-  }
-  return args;
-}
-
-llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
-  std::string libraryName = "fhecircuit";
-  auto headerName = libraryName + "-client.h";
-  llvm::SmallString<0> headerPath(outputDirPath);
-  llvm::sys::path::append(headerPath, headerName);
-
-  std::error_code error;
-  llvm::raw_fd_ostream out(headerPath, error);
-  if (error) {
-    StreamStringError("Cannot emit header: ")
-        << headerPath << ", " << error.message() << "\n";
-  }
-
-  out << "#include \"boost/outcome.h\"\n";
-  out << "#include \"concretelang/ClientLib/ClientLambda.h\"\n";
-  out << "#include \"concretelang/ClientLib/KeySetCache.h\"\n";
-  out << "#include \"concretelang/ClientLib/Types.h\"\n";
-  out << "#include \"concretelang/Common/Error.h\"\n";
-  out << "\n";
-  out << "namespace " << libraryName << " {\n";
-  out << "namespace client {\n";
-
-  for (auto circuitInfo : programInfo.circuits()) {
-    std::string args;
-    std::string result;
-    if (circuitInfo.outputs_size() > 0) {
-      args = cppArgsType(circuitInfo.inputs());
-    } else {
-      args = "void";
-    }
-    if (circuitInfo.outputs_size() > 0) {
-      size_t rank = circuitInfo.outputs(0).shape().dimensions_size();
-      result = ccpResultType(rank);
-    } else {
-      result = "void";
-    }
-    out << "\n";
-    out << "namespace " << circuitInfo.name() << " {\n";
-    out << "  using namespace concretelang::clientlib;\n";
-    out << "  using concretelang::error::StringError;\n";
-    out << "  using " << circuitInfo.name() << "_t = TypedClientLambda<"
-        << result << ", " << args << ">;\n";
-    out << "  static const std::string name = \"" << circuitInfo.name()
-        << "\";\n";
-    out << "\n";
-    out << "  static outcome::checked<" << circuitInfo.name()
-        << "_t, StringError>\n";
-    out << "  load(std::string outputLib)\n";
-    out << "  { return " << circuitInfo.name()
-        << "_t::load(name, outputLib); }\n";
-    out << "} // namespace " << circuitInfo.name() << "\n";
-  }
-  out << "\n";
-  out << "} // namespace client\n";
-  out << "} // namespace " << libraryName << "\n";
-
-  out.close();
-
-  return headerPath.str().str();
 }
 
 llvm::Expected<std::string>
@@ -961,8 +874,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
 llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
                                                    bool staticLib,
                                                    bool clientParameters,
-                                                   bool compilationFeedback,
-                                                   bool cppHeader) {
+                                                   bool compilationFeedback) {
   // Create output directory if doesn't exist
   llvm::sys::fs::create_directory(outputDirPath);
   if (sharedLib) {
@@ -982,11 +894,6 @@ llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
   }
   if (compilationFeedback) {
     if (auto err = emitCompilationFeedbackJSON().takeError()) {
-      return err;
-    }
-  }
-  if (cppHeader) {
-    if (auto err = emitCppHeader().takeError()) {
       return err;
     }
   }

@@ -6,10 +6,9 @@
 #include <cstddef>
 #include <stdio.h>
 
-#include "concretelang/ClientLib/CRT.h"
+#include "concretelang/Common/CRT.h"
 
 namespace concretelang {
-namespace clientlib {
 namespace crt {
 uint64_t productOfModuli(std::vector<int64_t> moduli) {
   uint64_t product = 1;
@@ -95,5 +94,4 @@ uint64_t decode(uint64_t val, uint64_t modulus) {
   return (uint64_t)result % modulus;
 }
 } // namespace crt
-} // namespace clientlib
 } // namespace concretelang

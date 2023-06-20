@@ -21,7 +21,6 @@
 
 #include "concrete-protocol.pb.h"
 #include "concrete/curves.h"
-#include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
@@ -33,80 +32,113 @@
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/TFHECircuitKeys.h"
 #include "concretelang/Support/Variants.h"
+#include "concretelang/Common/Values.h"
 #include "llvm/Config/abi-breaking.h"
 
 namespace mlir {
 namespace concretelang {
 
-namespace clientlib = ::concretelang::clientlib;
-using ::concretelang::clientlib::ChunkInfo;
-using ::concretelang::clientlib::CircuitGate;
-using ::concretelang::clientlib::ClientParameters;
-using ::concretelang::clientlib::Encoding;
-using ::concretelang::clientlib::EncryptionGate;
-using ::concretelang::clientlib::LweSecretKeyID;
-using ::concretelang::clientlib::Precision;
-using ::concretelang::clientlib::Variance;
-
 const auto keyFormat = concrete::BINARY;
+typedef double Variance;
 
 llvm::Expected<concreteprotocol::GateInfo>
 generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
              concrete::SecurityCurve curve) {
+  if (!encoding.has_integerciphertext() && !encoding.has_booleanciphertext() &&
+      !encoding.has_index() && !encoding.has_plaintext()) {
+    return StreamStringError("Tried to generate gate info without encoding.");
+  }
+
   auto output = concreteprotocol::GateInfo();
-  auto shape = new concreteprotocol::Shape(encoding.shape());
-  output.set_allocated_shape(shape);
   if (auto tensorType = type.dyn_cast<mlir::RankedTensorType>()) {
     type = tensorType.getElementType();
   }
+
   if (encoding.has_integerciphertext()) {
     TFHE::GLWESecretKeyNormalized normKey;
     normKey =
         type.cast<TFHE::GLWECipherTextType>().getKey().getNormalized().value();
-    Variance variance = curve.getVariance(1, normKey.dimension, 64);
+
+    auto lweGateInfo = new concreteprotocol::LweCiphertextGateInfo{};
+    auto concreteShape = encoding.release_shape();
+    if (encoding.integerciphertext().has_chunked()) {
+      concreteShape->mutable_dimensions()->Add(
+          encoding.integerciphertext().chunked().size());
+    }
+    if (encoding.integerciphertext().has_crt()) {
+      concreteShape->mutable_dimensions()->Add(
+          encoding.integerciphertext().crt().moduli_size());
+    }
+    lweGateInfo->set_allocated_concreteshape(concreteShape);
+    lweGateInfo->set_integerprecision(64);
     auto encryptionInfo = new concreteprotocol::LweCiphertextEncryptionInfo{};
     encryptionInfo->set_keyid(normKey.index);
-    encryptionInfo->set_variance(variance);
-    encryptionInfo->set_integerprecision(64);
-    auto gateInfo = new concreteprotocol::LweCiphertextGateInfo{};
-    gateInfo->set_allocated_encryption(encryptionInfo);
-    gateInfo->set_allocated_integer(
-        new concreteprotocol::IntegerCiphertextEncodingInfo(
-            encoding.integerciphertext()));
-    output.set_allocated_lweciphertext(gateInfo);
-    return output;
+    encryptionInfo->set_variance(curve.getVariance(1, normKey.dimension, 64));
+    encryptionInfo->set_lwedimension(normKey.dimension);
+    auto modulus = new concreteprotocol::Modulus();
+    modulus->set_allocated_native(new concreteprotocol::NativeModulus());
+    encryptionInfo->set_allocated_modulus(modulus);
+    lweGateInfo->set_allocated_encryption(encryptionInfo);
+    lweGateInfo->set_compression(concreteprotocol::Compression::none);
+    lweGateInfo->set_allocated_integer(encoding.release_integerciphertext());
+    auto rawInfo = new concreteprotocol::RawInfo();
+    rawInfo->set_integerprecision(64);
+    rawInfo->set_issigned(false);
+    rawInfo->set_allocated_shape(new concreteprotocol::Shape(*concreteShape));
+    output.set_allocated_rawinfo(rawInfo);
+    output.set_allocated_lweciphertext(lweGateInfo);
   } else if (encoding.has_booleanciphertext()) {
     auto glweType = type.cast<TFHE::GLWECipherTextType>();
     auto normKey = glweType.getKey().getNormalized().value();
-    Variance variance = curve.getVariance(1, normKey.dimension, 64);
+    auto lweGateInfo = new concreteprotocol::LweCiphertextGateInfo{};
+    auto concreteShape = encoding.release_shape();
+    lweGateInfo->set_allocated_concreteshape(concreteShape);
+    lweGateInfo->set_integerprecision(64);
     auto encryptionInfo = new concreteprotocol::LweCiphertextEncryptionInfo{};
     encryptionInfo->set_keyid(normKey.index);
-    encryptionInfo->set_variance(variance);
-    encryptionInfo->set_integerprecision(64);
-    auto gateInfo = new concreteprotocol::LweCiphertextGateInfo{};
-    gateInfo->set_allocated_encryption(encryptionInfo);
-    gateInfo->set_allocated_boolean(
-        new concreteprotocol::BooleanCiphertextEncodingInfo(
-            encoding.booleanciphertext()));
-    output.set_allocated_lweciphertext(gateInfo);
-    return output;
+    encryptionInfo->set_variance(curve.getVariance(1, normKey.dimension, 64));
+    encryptionInfo->set_lwedimension(normKey.dimension);
+    auto modulus = new concreteprotocol::Modulus();
+    modulus->set_allocated_native(new concreteprotocol::NativeModulus());
+    encryptionInfo->set_allocated_modulus(modulus);
+    lweGateInfo->set_allocated_encryption(encryptionInfo);
+    lweGateInfo->set_compression(concreteprotocol::Compression::none);
+    lweGateInfo->set_allocated_boolean(encoding.release_booleanciphertext());
+    auto rawInfo = new concreteprotocol::RawInfo();
+    rawInfo->set_integerprecision(64);
+    rawInfo->set_issigned(false);
+    rawInfo->set_allocated_shape(new concreteprotocol::Shape(*concreteShape));
+    output.set_allocated_rawinfo(rawInfo);
+    output.set_allocated_lweciphertext(lweGateInfo);
   } else if (encoding.has_plaintext()) {
-    auto gateInfo = new concreteprotocol::PlaintextGateInfo{};
-    gateInfo->set_issigned(type.isSignedInteger());
-    gateInfo->set_integerprecision(type.getIntOrFloatBitWidth());
-    output.set_allocated_plaintext(gateInfo);
-    return output;
+    auto plaintextGateInfo = new concreteprotocol::PlaintextGateInfo{};
+    auto shape = encoding.release_shape();
+    plaintextGateInfo->set_allocated_shape(shape);
+    plaintextGateInfo->set_integerprecision(::concretelang::values::getCorrespondingPrecision(type.getIntOrFloatBitWidth()));
+    plaintextGateInfo->set_issigned(type.isSignedInteger());
+    auto rawInfo = new concreteprotocol::RawInfo();
+    rawInfo->set_integerprecision(::concretelang::values::getCorrespondingPrecision(type.getIntOrFloatBitWidth()));
+    rawInfo->set_issigned(type.isSignedInteger());
+    rawInfo->set_allocated_shape(new concreteprotocol::Shape(*shape));
+    output.set_allocated_rawinfo(rawInfo);
+    output.set_allocated_plaintext(plaintextGateInfo);
   } else if (encoding.has_index()) {
     // TODO - The index type is dependant of the target architecture,
     // so actually we assume we target only 64 bits, we need to have
     // some the size of the word of the target system.
-    auto gateInfo = new concreteprotocol::IndexGateInfo{};
-    gateInfo->set_issigned(type.isSignedInteger());
-    gateInfo->set_integerprecision(64);
-    output.set_allocated_index(gateInfo);
-    return output;
+    auto indexGateInfo = new concreteprotocol::IndexGateInfo{};
+    auto shape = encoding.release_shape();
+    indexGateInfo->set_allocated_shape(shape);
+    indexGateInfo->set_integerprecision(64);
+    indexGateInfo->set_issigned(type.isSignedInteger());
+    auto rawInfo = new concreteprotocol::RawInfo();
+    rawInfo->set_integerprecision(64);
+    rawInfo->set_issigned(type.isSignedInteger());
+    rawInfo->set_allocated_shape(new concreteprotocol::Shape(*shape));
+    output.set_allocated_rawinfo(rawInfo);
+    output.set_allocated_index(indexGateInfo);
   }
-  return StreamStringError("Tried to generate gate info without encoding.");
+  return output;
 }
 
 template <typename V> struct HashValComparator {
@@ -141,8 +173,7 @@ extractCircuitKeys(TFHE::TFHECircuitKeys circuitKeys,
     info->set_id(ksk.getIndex());
     info->set_inputid(ksk.getInputKey().getNormalized().value().index);
     info->set_outputid(ksk.getOutputKey().getNormalized().value().index);
-    info->set_compression(
-        concreteprotocol::LweKeyswitchKeyInfo_Compression_none);
+    info->set_compression(concreteprotocol::Compression::none);
     auto params = new concreteprotocol::LweKeyswitchKeyParams{};
     params->set_levelcount(ksk.getLevels());
     params->set_baselog(ksk.getBaseLog());
@@ -163,8 +194,7 @@ extractCircuitKeys(TFHE::TFHECircuitKeys circuitKeys,
     info->set_id(bsk.getIndex());
     info->set_inputid(bsk.getInputKey().getNormalized().value().index);
     info->set_outputid(bsk.getOutputKey().getNormalized().value().index);
-    info->set_compression(
-        concreteprotocol::LweBootstrapKeyInfo_Compression_none);
+    info->set_compression(concreteprotocol::Compression::none);
     auto params = new concreteprotocol::LweBootstrapKeyParams{};
     params->set_levelcount(bsk.getLevels());
     params->set_baselog(bsk.getBaseLog());
@@ -187,8 +217,7 @@ extractCircuitKeys(TFHE::TFHECircuitKeys circuitKeys,
     info->set_id(pksk.getIndex());
     info->set_inputid(pksk.getInputKey().getNormalized().value().index);
     info->set_outputid(pksk.getOutputKey().getNormalized().value().index);
-    info->set_compression(
-        concreteprotocol::PackingKeyswitchKeyInfo_Compression_none);
+    info->set_compression(concreteprotocol::Compression::none);
     auto params = new concreteprotocol::PackingKeyswitchKeyParams{};
     params->set_levelcount(pksk.getLevels());
     params->set_baselog(pksk.getBaseLog());

@@ -23,7 +23,6 @@
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 #include "concrete-protocol.pb.h"
-#include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
