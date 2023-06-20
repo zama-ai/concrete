@@ -70,6 +70,8 @@ Additional kwarg to `compile` functions take higher precedence. So if you set th
   * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
 * **single\_precision**: bool = True
   * Use single precision for the whole circuit.
+* **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MONO
+  * Set how cryptographic parameters are selected.
 * **jit**: bool = False
   * Enable JIT compilation.
 * **loop\_parallelize**: bool = True
