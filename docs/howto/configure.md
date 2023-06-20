@@ -84,9 +84,9 @@ Additional kwarg to `compile` functions take higher precedence. So if you set th
   * Use the insecure key cache.
 * **insecure\_key\_cache\_location**: Optional\[Union\[Path, str]] = None
   * Location of insecure key cache.
-* **show_progress**: bool = False,
+* **show\_progress**: bool = False,
   * Display a progress bar during circuit execution
-* **progress_title**: str = "",
+* **progress\_title**: str = "",
   * Title of the progress bar
-* **progress_tag**: Union[bool, int] = False,
+* **progress\_tag**: Union[bool, int] = False,
   * How many nested tag elements to display with the progress bar. `True` means all tag elements and `False` disables the display. `2` will display `elmt1.elmt2`
