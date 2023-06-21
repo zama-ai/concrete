@@ -14,3 +14,21 @@ tests:
     - scalar: 0
     outputs:
     - scalar: 0
+---
+# Reported in PR https://github.com/zama-ai/concrete/pull/462
+# There was the crt dimension added to all input gate even the clear one
+description: minimized_462
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<4>>, %y: tensor<3x2xi8>) -> tensor<3x!FHE.eint<4>> {
+    return %x : tensor<3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3]
+      shape: [3]
+    - tensor: [1, 2, 3, 4, 5, 0]
+      shape: [3, 2]
+    outputs:
+    - tensor: [1,2,3]
+      shape: [3]
+encoding: crt
