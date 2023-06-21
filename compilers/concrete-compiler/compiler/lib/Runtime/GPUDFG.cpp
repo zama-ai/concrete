@@ -350,7 +350,7 @@ struct Dependence {
     delete (this);
   }
   inline void copy(int32_t loc, cudaStream_t *s) {
-    std::cout<< "COPY from " << location << " to " << loc << " ohr " << onHostReady << "\n";
+    //std::cout<< "COPY from " << location << " to " << loc << " ohr " << onHostReady << "\n";
     size_t data_size = memref_get_data_size(host_data);
     if (loc == location)
       return;
@@ -414,7 +414,8 @@ void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc, int32_t c
                                               uint64_t *out_ptr);
 static inline void schedule_kernel(Process *p, int32_t loc, int32_t chunk_id,
                                    uint64_t *out_ptr) {
-  std::cout <<"Scheduling a " << p->name << " on " << loc << " chunk " << chunk_id << "\n";
+  if (loc >= 0)
+    std::cout <<"Scheduling a " << p->name << " on " << loc << " chunk " << chunk_id << "\n";
   p->fun(p, loc, chunk_id, out_ptr);
 }
 struct Stream {
@@ -574,8 +575,11 @@ struct Stream {
     if (1||!subgraph_bootstraps) {
       // TODO: We can split up the chunk into enough pieces to run across
       // the host cores
-      size_t num_chunks = (num_samples / num_cores > 0) ? num_cores : num_samples;
-      num_chunks *=10;
+      size_t num_chunks;
+      if (subgraph_bootstraps)
+	num_chunks = (num_samples / num_cores*4 > 0) ? num_cores*4 : num_samples;
+      else
+	num_chunks = (num_samples / num_cores > 0) ? num_cores : num_samples;
       for (auto i : inputs)
 	i->dep->split_dependence(num_chunks, (i->ct_stream) ? 0 : 1,
 				 i->const_stream);
@@ -589,22 +593,35 @@ struct Stream {
 			       false, split_chunks));
 	o->dep->chunks.resize(num_chunks, nullptr);
       }
+      std::cout << "Num Chunks : " << num_chunks << "\n";
+      std::cout << "Num samples : " << num_samples << "\n";
 
       // Execute
       std::list<std::thread> workers;
-      for (size_t c = 0; c < num_chunks; ++c)
-	if (0 || (c % 2)) {
+      int32_t dev = 0;
+      for (size_t c = 0; c < num_chunks; ++c) {
+	if (!subgraph_bootstraps) {
 	  workers.push_back(std::thread([&](std::list<Process *> queue, size_t c, int32_t host_location) {
 	    for (auto p : queue) {
 	      schedule_kernel(p, host_location, c, nullptr);
 	    }
 	  }, queue, c, host_location));
 	} else {
-	  for (auto p : queue) {
-	    schedule_kernel(p, 0, c, nullptr);
+	  if (c < num_chunks/2) {
+	    workers.push_back(std::thread([&](std::list<Process *> queue, size_t c, int32_t host_location) {
+	      for (auto p : queue) {
+		schedule_kernel(p, host_location, c, nullptr);
+	      }
+	    }, queue, c, host_location));
+	  } else {
+	    dev = (dev + 1) % num_devices;
+	    for (auto p : queue) {
+	      schedule_kernel(p, dev, c, nullptr);
+	    //cudaStreamSynchronize(*(cudaStream_t *)dfg->get_gpu_stream(dev));
+	    }
 	  }
 	}
-
+      }
       for (auto &w : workers)
 	w.join();
 
@@ -924,7 +941,7 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
 
   Dependence *idep1 = p->input_streams[1]->get(host_location, chunk_id);
   MemRef2 &mtlu = idep1->host_data;
-  sdfg_gpu_debug_print_mref("MTLU", mtlu);
+  //sdfg_gpu_debug_print_mref("MTLU", mtlu);
   uint32_t num_lut_vectors = mtlu.sizes[0];
   uint64_t glwe_ct_len =
       p->poly_size.val * (p->glwe_dim.val + 1) * num_lut_vectors;
