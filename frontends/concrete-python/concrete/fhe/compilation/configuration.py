@@ -2,6 +2,7 @@
 Declaration of `Configuration` class.
 """
 
+import platform
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
@@ -202,6 +203,10 @@ class Configuration:
 
         if self.use_insecure_key_cache and self.insecure_key_cache_location is None:
             message = "Insecure key cache cannot be enabled without specifying its location"
+            raise RuntimeError(message)
+
+        if platform.system() == "Darwin" and self.dataflow_parallelize:  # pragma: no cover
+            message = "Dataflow parallelism is not available in macOS"
             raise RuntimeError(message)
 
 
