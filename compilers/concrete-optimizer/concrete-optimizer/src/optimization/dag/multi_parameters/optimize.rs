@@ -168,6 +168,7 @@ fn optimize_1_fks_and_all_compatible_ks(
         .sample_extract_lwe_dimension();
     let mut operations = operations.clone();
     let mut best_sol = None;
+    let mut cut_complexity = cut_complexity;
     let same_dim = input_glwe == output_glwe;
 
     for &ks_quantity in &ks_pareto {
@@ -238,6 +239,7 @@ fn optimize_1_fks_and_all_compatible_ks(
         if cost > cut_complexity {
             continue;
         }
+        cut_complexity = cost;
         // COULD: handle complexity tie
         let bests = Best1FksAndManyKs {
             fks: Some((fks_src, fks_quantity)),
