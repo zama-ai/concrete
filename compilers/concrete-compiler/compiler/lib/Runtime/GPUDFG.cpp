@@ -285,6 +285,51 @@ struct Dependence {
     chunk_id = split_chunks;
     location = split_location;
   }
+  void merge_dependence(GPU_DFG *dfg) {
+    assert(!chunks.empty() && "Cannot merge dependence with no chunks");
+    size_t data_size = 0;
+    size_t num_samples = 0;
+    for (auto c : chunks) {
+      data_size += memref_get_data_size(c->host_data);
+      num_samples += c->host_data.sizes[0];
+    }
+    uint64_t *data = (uint64_t *)malloc(data_size);
+    MemRef2 output = {data, data, 0, {num_samples, chunks.front()->host_data.sizes[1]}, {chunks.front()->host_data.sizes[1], 1}};
+    std::list<cudaStream_t *> custreams_used;
+    for (auto c : chunks) {
+      // Write out the piece in the final target dependence
+      size_t csize = memref_get_data_size(c->host_data);
+      if (c->onHostReady) {
+	memcpy(((char *)output.aligned) + output.offset, c->host_data.aligned, csize);
+      } else {
+	assert(c->location > host_location);
+	cudaStream_t *s = (cudaStream_t *)dfg->get_gpu_stream(c->location);
+	cuda_memcpy_async_to_cpu(
+              ((char *)output.aligned) + output.offset,
+              c->device_data, csize,
+              s, c->location);
+	custreams_used.push_back(s);
+      }
+      output.offset += csize;
+    }
+    output.offset = 0;
+    for (auto c : chunks)
+      c->free_data(dfg, true);
+    chunks.clear();
+
+    custreams_used.sort();
+    custreams_used.unique();
+    for (auto s : custreams_used)
+      cudaStreamSynchronize(*s);
+
+    location = host_location;
+    onHostReady = true;
+    assert(host_data.allocated == nullptr);
+    host_data = output;
+    assert(device_data == nullptr);
+    hostAllocated = true;
+    chunk_id = single_chunk;
+  }
   inline void free_data(GPU_DFG *dfg, bool immediate = false) {
     if (location >= 0 && device_data != nullptr) {
       cuda_drop_async(device_data,
@@ -304,6 +349,34 @@ struct Dependence {
     chunks.clear();
     delete (this);
   }
+  inline void copy(int32_t loc, cudaStream_t *s) {
+    std::cout<< "COPY from " << location << " to " << loc << " ohr " << onHostReady << "\n";
+    size_t data_size = memref_get_data_size(host_data);
+    if (loc == location)
+      return;
+    if (loc == host_location) {
+      if (onHostReady)
+	return;
+      if (host_data.allocated == nullptr) {
+	host_data.allocated = host_data.aligned = (uint64_t *)malloc(data_size);
+	hostAllocated = true;
+      }
+      cuda_memcpy_async_to_cpu(host_data.aligned, device_data,
+                               data_size, s, location);
+      cudaStreamSynchronize(*s);
+      onHostReady = true;
+    } else {
+      assert(onHostReady &&
+             "Device-to-device data transfers not supported yet.");
+      if (device_data != nullptr)
+	cuda_drop_async(device_data, s, location);
+      device_data = cuda_malloc_async(data_size, s, loc);
+      cuda_memcpy_async_to_gpu(
+          device_data, host_data.aligned + host_data.offset,
+          data_size, s, loc);
+      location = loc;
+    }
+  }
 };
 
 // Set of input/output streams required to execute a process'
@@ -322,26 +395,27 @@ struct Process {
   Param sk_index;
   Param output_size;
   Context ctx;
-  void (*fun)(Process *, int32_t, uint64_t *);
+  void (*fun)(Process *, int32_t, int32_t, uint64_t *);
   char name[80];
   bool batched_process;
 };
 
-void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc,
+void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                       uint64_t *out_ptr);
-void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc,
+void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                       uint64_t *out_ptr);
-void memref_add_lwe_ciphertexts_u64_process(Process *p, int32_t loc,
+void memref_add_lwe_ciphertexts_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                             uint64_t *out_ptr);
-void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
+void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                                      uint64_t *out_ptr);
-void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
+void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                                      uint64_t *out_ptr);
-void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc,
+void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                               uint64_t *out_ptr);
-static inline void schedule_kernel(Process *p, uint32_t loc,
+static inline void schedule_kernel(Process *p, int32_t loc, int32_t chunk_id,
                                    uint64_t *out_ptr) {
-  p->fun(p, loc, out_ptr);
+  std::cout <<"Scheduling a " << p->name << " on " << loc << " chunk " << chunk_id << "\n";
+  p->fun(p, loc, chunk_id, out_ptr);
 }
 struct Stream {
   Dependence *dep;
@@ -365,11 +439,21 @@ struct Stream {
     if (producer != nullptr)
       delete producer;
   }
-  void put(Dependence *d) {
-    // If a dependence was already present, schedule deallocation.
-    if (dep != nullptr)
-      dep->free_data(dfg);
-    dep = d;
+  void put(Dependence *d, int32_t chunk_id = single_chunk) {
+    assert(chunk_id != split_chunks);
+    // If this is a chunk of a larger dependence, then insert it in its position.
+    if (chunk_id != single_chunk) {
+      // We must always have a dependence present and its split into
+      // chunks pre-determined here.
+      assert(dep != nullptr);
+      assert(dep->chunks.size() > chunk_id && dep->chunks[chunk_id] == nullptr);
+      dep->chunks[chunk_id] = d;
+    } else {
+      // If a dependence was already present, schedule deallocation.
+      if (dep != nullptr)
+	dep->free_data(dfg);
+      dep = d;
+    }
   }
   void eager_dependence_deallocation() {
     // If there's no producer process for this stream, it is fed by
@@ -423,7 +507,7 @@ struct Stream {
     if (!is_batched_subgraph) {
       for (auto p : queue)
         schedule_kernel(p, (subgraph_bootstraps) ? dfg->gpu_idx : host_location,
-                        nullptr);
+                        single_chunk, nullptr);
       return;
     }
 
@@ -487,12 +571,53 @@ struct Stream {
     // intensity (which we approximate by whether it bootstraps), then
     // we assume (FIXME- confirm with profiling) that it is not
     // beneficial to offload to GPU.
-    if (!subgraph_bootstraps) {
+    if (1||!subgraph_bootstraps) {
       // TODO: We can split up the chunk into enough pieces to run across
       // the host cores
-      for (auto p : queue) {
-        schedule_kernel(p, host_location, nullptr);
+      size_t num_chunks = (num_samples / num_cores > 0) ? num_cores : num_samples;
+      num_chunks *=10;
+      for (auto i : inputs)
+	i->dep->split_dependence(num_chunks, (i->ct_stream) ? 0 : 1,
+				 i->const_stream);
+      for (auto iv : intermediate_values) {
+	iv->put(new Dependence(split_location, {nullptr, nullptr, 0, {0, 0}, {0, 0}}, nullptr, false,
+			       false, split_chunks));
+	iv->dep->chunks.resize(num_chunks, nullptr);
       }
+      for (auto o : outputs) {
+	o->put(new Dependence(split_location, {nullptr, nullptr, 0, {0, 0}, {0, 0}}, nullptr, false,
+			       false, split_chunks));
+	o->dep->chunks.resize(num_chunks, nullptr);
+      }
+
+      // Execute
+      std::list<std::thread> workers;
+      for (size_t c = 0; c < num_chunks; ++c)
+	if (0 || (c % 2)) {
+	  workers.push_back(std::thread([&](std::list<Process *> queue, size_t c, int32_t host_location) {
+	    for (auto p : queue) {
+	      schedule_kernel(p, host_location, c, nullptr);
+	    }
+	  }, queue, c, host_location));
+	} else {
+	  for (auto p : queue) {
+	    schedule_kernel(p, 0, c, nullptr);
+	  }
+	}
+
+      for (auto &w : workers)
+	w.join();
+
+      for (size_t g = 0; g < num_devices; ++g)
+	cudaStreamSynchronize(*(cudaStream_t *)dfg->get_gpu_stream(g));
+
+      // Build output
+      for (auto o : outputs) {
+	assert(o->batched_stream && o->ct_stream &&
+	       "Only operations with ciphertext output supported.");
+	o->dep->merge_dependence(dfg);
+      }
+
       // We will assume that only one subgraph is being processed per
       // DFG at a time, so we can safely free these here.
       dfg->free_stream_order_dependent_data();
@@ -557,7 +682,7 @@ struct Stream {
         for (auto i : inputs)
           i->put(i->saved_dependence->chunks[c]);
         for (auto p : queue) {
-          schedule_kernel(p, target_device, nullptr);
+          schedule_kernel(p, target_device, c, nullptr);
         }
         for (auto o : outputs) {
           o->saved_dependence->chunks.push_back(o->dep);
@@ -640,52 +765,17 @@ struct Stream {
     dep->hostAllocated = true;
     return dep;
   }
-  Dependence *get(int32_t location, size_t num_chunks = 1) {
+  Dependence *get(int32_t location, int32_t chunk_id = single_chunk) {
     assert(dep != nullptr && "Dependence could not be computed.");
+    assert(chunk_id != split_chunks);
+    if (chunk_id != single_chunk) {
+      Dependence *d = dep->chunks[chunk_id];
+      d->copy(location, (cudaStream_t *)dfg->get_gpu_stream(location));
+      return d;
+    } // else
     dep->used = true;
-    if (location == host_location) {
-      if (dep->onHostReady)
-        return dep;
-      size_t data_size = memref_get_data_size(dep->host_data);
-      dep->host_data.allocated = dep->host_data.aligned =
-          (uint64_t *)malloc(data_size);
-      dep->hostAllocated = true;
-      get_on_host(dep->host_data);
-      return dep;
-    } else if (location == split_location) {
-      if (dep->location == host_location && dep->onHostReady) {
-        dep->split_dependence(num_chunks, 0, false);
-        for (auto c : dep->chunks) {
-          assert(c->chunk_id >= 0);
-          c->location = c->chunk_id % num_devices;
-          size_t data_size = memref_get_data_size(c->host_data);
-          c->device_data = cuda_malloc_async(
-              data_size, (cudaStream_t *)dfg->get_gpu_stream(c->location),
-              c->location);
-          cuda_memcpy_async_to_gpu(
-              c->device_data, c->host_data.aligned + c->host_data.offset,
-              data_size, (cudaStream_t *)dfg->get_gpu_stream(c->location),
-              c->location);
-        }
-      } else {
-        assert(dep->location == split_location);
-      }
-      return dep;
-    } else {
-      // In case this dependence is needed on a single device
-      if (dep->location == location)
-        return dep;
-      assert(dep->onHostReady &&
-             "Device-to-device data transfers not supported yet.");
-      size_t data_size = memref_get_data_size(dep->host_data);
-      dep->device_data = cuda_malloc_async(
-          data_size, (cudaStream_t *)dfg->get_gpu_stream(location), location);
-      cuda_memcpy_async_to_gpu(
-          dep->device_data, dep->host_data.aligned + dep->host_data.offset,
-          data_size, (cudaStream_t *)dfg->get_gpu_stream(location), location);
-      dep->location = location;
-      return dep;
-    }
+    dep->copy(location, (cudaStream_t *)dfg->get_gpu_stream(location));
+    return dep;
   }
 };
 
@@ -698,7 +788,7 @@ void GPU_DFG::free_streams() {
 
 static inline mlir::concretelang::gpu_dfg::Process *
 make_process_1_1(void *dfg, void *sin1, void *sout,
-                 void (*fun)(Process *, int32_t, uint64_t *)) {
+                 void (*fun)(Process *, int32_t, int32_t, uint64_t *)) {
   mlir::concretelang::gpu_dfg::Process *p =
       new mlir::concretelang::gpu_dfg::Process;
   mlir::concretelang::gpu_dfg::Stream *s1 =
@@ -720,7 +810,7 @@ make_process_1_1(void *dfg, void *sin1, void *sout,
 
 static inline mlir::concretelang::gpu_dfg::Process *
 make_process_2_1(void *dfg, void *sin1, void *sin2, void *sout,
-                 void (*fun)(Process *, int32_t, uint64_t *)) {
+                 void (*fun)(Process *, int32_t, int32_t, uint64_t *)) {
   mlir::concretelang::gpu_dfg::Process *p =
       new mlir::concretelang::gpu_dfg::Process;
   mlir::concretelang::gpu_dfg::Stream *s1 =
@@ -785,7 +875,7 @@ sdfg_gpu_debug_compare_memref(MemRef2 &a, MemRef2 &b, char const *msg) {
 }
 
 // Stream emulator processes
-void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc,
+void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                       uint64_t *out_ptr) {
   assert(p->sk_index.val == 0 && "multiple ksk is not yet implemented on GPU");
   auto sched = [&](Dependence *d) {
@@ -823,17 +913,18 @@ void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc,
       return dep;
     }
   };
-  Dependence *idep = p->input_streams[0]->get(loc);
-  p->output_streams[0]->put(sched(idep));
+  Dependence *idep = p->input_streams[0]->get(loc, chunk_id);
+  p->output_streams[0]->put(sched(idep), chunk_id);
 }
 
-void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc,
+void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                       uint64_t *out_ptr) {
   assert(p->sk_index.val == 0 && "multiple bsk is not yet implemented on GPU");
   assert(p->output_size.val == p->glwe_dim.val * p->poly_size.val + 1);
 
-  Dependence *idep1 = p->input_streams[1]->get(host_location);
+  Dependence *idep1 = p->input_streams[1]->get(host_location, chunk_id);
   MemRef2 &mtlu = idep1->host_data;
+  sdfg_gpu_debug_print_mref("MTLU", mtlu);
   uint32_t num_lut_vectors = mtlu.sizes[0];
   uint64_t glwe_ct_len =
       p->poly_size.val * (p->glwe_dim.val + 1) * num_lut_vectors;
@@ -866,6 +957,7 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc,
     if (lut_indexes.size() == 1) {
       memset((void *)test_vector_idxes, lut_indexes[0], test_vector_idxes_size);
     } else {
+      std::cout << "MAPPED : " << lut_indexes.size() << "  " << num_samples << "\n";
       assert(lut_indexes.size() == num_samples);
       for (size_t i = 0; i < num_samples; ++i)
         test_vector_idxes[i] = lut_indexes[i];
@@ -946,12 +1038,12 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc,
   }
 
   cudaStream_t *cstream = (cudaStream_t *)p->dfg->get_gpu_stream(loc);
-  Dependence *idep0 = p->input_streams[0]->get(loc);
+  Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
   p->output_streams[0]->put(
-      sched(idep0, idep1, glwe_ct, lut_indexes, cstream, loc));
+      sched(idep0, idep1, glwe_ct, lut_indexes, cstream, loc), chunk_id);
 }
 
-void memref_add_lwe_ciphertexts_u64_process(Process *p, int32_t loc,
+void memref_add_lwe_ciphertexts_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                             uint64_t *out_ptr) {
   auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t *s,
                    int32_t loc) {
@@ -993,13 +1085,13 @@ void memref_add_lwe_ciphertexts_u64_process(Process *p, int32_t loc,
       return dep;
     }
   };
-  Dependence *idep0 = p->input_streams[0]->get(loc);
-  Dependence *idep1 = p->input_streams[1]->get(loc);
+  Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
+  Dependence *idep1 = p->input_streams[1]->get(loc, chunk_id);
   p->output_streams[0]->put(
-      sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc));
+      sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc), chunk_id);
 }
 
-void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
+void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                                      uint64_t *out_ptr) {
   auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t *s,
                    int32_t loc) {
@@ -1048,13 +1140,13 @@ void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
       return dep;
     }
   };
-  Dependence *idep0 = p->input_streams[0]->get(loc);
-  Dependence *idep1 = p->input_streams[1]->get(loc);
+  Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
+  Dependence *idep1 = p->input_streams[1]->get(loc, chunk_id);
   p->output_streams[0]->put(
-      sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc));
+      sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc), chunk_id);
 }
 
-void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
+void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                                      uint64_t *out_ptr) {
   auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t *s,
                    int32_t loc) {
@@ -1103,13 +1195,13 @@ void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
       return dep;
     }
   };
-  Dependence *idep0 = p->input_streams[0]->get(loc);
-  Dependence *idep1 = p->input_streams[1]->get(loc);
+  Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
+  Dependence *idep1 = p->input_streams[1]->get(loc, chunk_id);
   p->output_streams[0]->put(
-      sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc));
+      sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc), chunk_id);
 }
 
-void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc,
+void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                               uint64_t *out_ptr) {
   auto sched = [&](Dependence *d0, cudaStream_t *s, int32_t loc) {
     uint64_t num_samples = d0->host_data.sizes[0];
@@ -1143,9 +1235,9 @@ void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc,
       return dep;
     }
   };
-  Dependence *idep0 = p->input_streams[0]->get(loc);
+  Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
   p->output_streams[0]->put(
-      sched(idep0, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc));
+      sched(idep0, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc), chunk_id);
 }
 
 } // namespace
@@ -1316,6 +1408,7 @@ void stream_emulator_make_memref_batched_bootstrap_lwe_u64_process(
   ((Stream *)sin1)->batched_stream = true;
   ((Stream *)sin1)->ct_stream = true;
   ((Stream *)sin2)->const_stream = true;
+  ((Stream *)sin2)->ct_stream = true;
   stream_emulator_make_memref_bootstrap_lwe_u64_process(
       dfg, sin1, sin2, sout, input_lwe_dim, poly_size, level, base_log,
       glwe_dim, output_size, bsk_index, context);
