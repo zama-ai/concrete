@@ -143,7 +143,7 @@ class Helpers:
             loop_parallelize=True,
             dataflow_parallelize=False,
             auto_parallelize=False,
-            jit=True,
+            jit=False,
             insecure_key_cache_location=INSECURE_KEY_CACHE_LOCATION,
             global_p_error=(1 / 100_000),
             single_precision=(not USE_MULTI_PRECISION),
