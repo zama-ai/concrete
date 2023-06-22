@@ -45,6 +45,7 @@ class Server:
     """
 
     client_specs: ClientSpecs
+    is_simulated: bool
 
     _output_dir: Optional[tempfile.TemporaryDirectory]
     _support: Union[JITSupport, LibrarySupport]
@@ -62,8 +63,10 @@ class Server:
         support: Union[JITSupport, LibrarySupport],
         compilation_result: Union[JITCompilationResult, LibraryCompilationResult],
         server_lambda: Union[JITLambda, LibraryLambda],
+        is_simulated: bool,
     ):
         self.client_specs = client_specs
+        self.is_simulated = is_simulated
 
         self._output_dir = output_dir
         self._support = support
@@ -78,7 +81,7 @@ class Server:
         )
 
     @staticmethod
-    def create(mlir: str, configuration: Configuration) -> "Server":
+    def create(mlir: str, configuration: Configuration, is_simulated: bool = False) -> "Server":
         """
         Create a server using MLIR and output sign information.
 
@@ -86,11 +89,15 @@ class Server:
             mlir (str):
                 mlir to compile
 
-            configuration (Optional[Configuration], default = None):
+            configuration (Configuration):
                 configuration to use
+
+            is_simulated (bool, default = False):
+                whether to compile in simulation mode or not
         """
 
         options = CompilationOptions.new("main")
+        options.simulation(is_simulated)
 
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
@@ -142,7 +149,8 @@ class Server:
         elif parameter_selection_strategy == ParameterSelectionStrategy.MULTI:  # pragma: no cover
             options.set_optimizer_strategy(OptimizerStrategy.DAG_MULTI)
 
-        if configuration.jit:
+        if configuration.jit:  # pragma: no cover
+            # JIT to be dropped soon
             output_dir = None
 
             support = JITSupport.new()
@@ -164,7 +172,14 @@ class Server:
         client_parameters = support.load_client_parameters(compilation_result)
         client_specs = ClientSpecs(client_parameters)
 
-        result = Server(client_specs, output_dir, support, compilation_result, server_lambda)
+        result = Server(
+            client_specs,
+            output_dir,
+            support,
+            compilation_result,
+            server_lambda,
+            is_simulated,
+        )
 
         # pylint: disable=protected-access
         result._mlir = mlir
@@ -199,6 +214,9 @@ class Server:
                 with open(Path(tmp) / "circuit.mlir", "w", encoding="utf-8") as f:
                     f.write(self._mlir)
 
+                with open(Path(tmp) / "is_simulated", "w", encoding="utf-8") as f:
+                    f.write("1" if self.is_simulated else "0")
+
                 with open(Path(tmp) / "configuration.json", "w", encoding="utf-8") as f:
                     f.write(json.dumps(self._configuration.__dict__))
 
@@ -206,12 +224,16 @@ class Server:
 
             return
 
-        if self._output_dir is None:
+        if self._output_dir is None:  # pragma: no cover
+            # JIT to be dropped soon
             message = "Just-in-Time compilation cannot be saved"
             raise RuntimeError(message)
 
         with open(Path(self._output_dir.name) / "client.specs.json", "wb") as f:
             f.write(self.client_specs.serialize())
+
+        with open(Path(self._output_dir.name) / "is_simulated", "w", encoding="utf-8") as f:
+            f.write("1" if self.is_simulated else "0")
 
         shutil.make_archive(path, "zip", self._output_dir.name)
 
@@ -236,6 +258,9 @@ class Server:
 
         shutil.unpack_archive(path, str(output_dir_path), "zip")
 
+        with open(output_dir_path / "is_simulated", "r", encoding="utf-8") as f:
+            is_simulated = f.read() == "1"
+
         if (output_dir_path / "circuit.mlir").exists():
             with open(output_dir_path / "circuit.mlir", "r", encoding="utf-8") as f:
                 mlir = f.read()
@@ -243,7 +268,7 @@ class Server:
             with open(output_dir_path / "configuration.json", "r", encoding="utf-8") as f:
                 configuration = Configuration().fork(**json.load(f))
 
-            return Server.create(mlir, configuration)
+            return Server.create(mlir, configuration, is_simulated)
 
         with open(output_dir_path / "client.specs.json", "rb") as f:
             client_specs = ClientSpecs.deserialize(f.read())
@@ -256,12 +281,14 @@ class Server:
         compilation_result = support.reload("main")
         server_lambda = support.load_server_lambda(compilation_result)
 
-        return Server(client_specs, output_dir, support, compilation_result, server_lambda)
+        return Server(
+            client_specs, output_dir, support, compilation_result, server_lambda, is_simulated
+        )
 
     def run(
         self,
         *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
-        evaluation_keys: EvaluationKeys,
+        evaluation_keys: Optional[EvaluationKeys] = None,
     ) -> Union[Value, Tuple[Value, ...]]:
         """
         Evaluate.
@@ -270,13 +297,17 @@ class Server:
             *args (Optional[Union[Value, Tuple[Optional[Value], ...]]]):
                 argument(s) for evaluation
 
-            evaluation_keys (EvaluationKeys):
-                evaluation keys
+            evaluation_keys (Optional[EvaluationKeys], default = None):
+                evaluation keys required for fhe execution
 
         Returns:
             Union[Value, Tuple[Value, ...]]:
                 result(s) of evaluation
         """
+
+        if evaluation_keys is None and not self.is_simulated:
+            message = "Expected evaluation keys to be provided when not in simulation mode"
+            raise RuntimeError(message)
 
         flattened_args: List[Optional[Value]] = []
         for arg in args:
@@ -298,7 +329,17 @@ class Server:
             buffers.append(arg.inner)
 
         public_args = PublicArguments.new(self.client_specs.client_parameters, buffers)
-        public_result = self._support.server_call(self._server_lambda, public_args, evaluation_keys)
+
+        if self.is_simulated:
+            if isinstance(self._support, JITSupport):  # pragma: no cover
+                # JIT to be dropped soon
+                message = "Can't run simulation while using JIT"
+                raise RuntimeError(message)
+            public_result = self._support.simulate(self._server_lambda, public_args)
+        else:
+            public_result = self._support.server_call(
+                self._server_lambda, public_args, evaluation_keys
+            )
 
         result = tuple(Value(public_result.get_value(i)) for i in range(public_result.n_values()))
         return result if len(result) > 1 else result[0]

@@ -434,6 +434,14 @@ class Compiler:
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
+            if len(self.graph.output_nodes) > 1:
+                fmtd_graph = self.graph.format(
+                    highlighted_result=["multiple outputs are not supported"],
+                    show_bounds=False,
+                )
+                message = "Function you are trying to compile cannot be compiled\n\n" + fmtd_graph
+                raise RuntimeError(message)
+
             mlir = GraphConverter().convert(self.graph, self.configuration)
             if self.artifacts is not None:
                 self.artifacts.add_mlir_to_compile(mlir)
@@ -507,9 +515,10 @@ class Compiler:
 
             circuit = Circuit(self.graph, mlir, self.configuration)
 
-            client_parameters = circuit.client.specs.client_parameters
-            if self.artifacts is not None:
-                self.artifacts.add_client_parameters(client_parameters.serialize())
+            if hasattr(circuit, "client"):
+                client_parameters = circuit.client.specs.client_parameters
+                if self.artifacts is not None:
+                    self.artifacts.add_client_parameters(client_parameters.serialize())
 
             if show_optimizer:
                 print("-" * columns)
@@ -535,14 +544,6 @@ class Compiler:
         finally:
             self.configuration = old_configuration
             self.artifacts = old_artifacts
-
-        if self.graph and len(self.graph.output_nodes) > 1:
-            graph = self.graph.format(
-                highlighted_result=["multiple outputs are not supported"],
-                show_bounds=False,
-            )
-            message = "Function you are trying to compile cannot be compiled\n\n" + graph
-            raise RuntimeError(message)
 
         return circuit
 

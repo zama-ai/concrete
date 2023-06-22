@@ -7,6 +7,7 @@ Declaration of `Circuit` class.
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
+from concrete.compiler import SimulatedValueDecrypter, SimulatedValueExporter
 
 from ..internal.utils import assert_that
 from ..representation import Graph
@@ -14,6 +15,7 @@ from .client import Client
 from .configuration import Configuration
 from .keys import Keys
 from .server import Server
+from .utils import validate_input_args
 from .value import Value
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -31,6 +33,7 @@ class Circuit:
 
     client: Client
     server: Server
+    simulator: Server
 
     def __init__(self, graph: Graph, mlir: str, configuration: Optional[Configuration] = None):
         self.configuration = configuration if configuration is not None else Configuration()
@@ -38,21 +41,35 @@ class Circuit:
         self.graph = graph
         self.mlir = mlir
 
-        self._initialize_client_and_server()
+        self._initialize_circuit()
 
-    def _initialize_client_and_server(self):
-        self.server = Server.create(self.mlir, self.configuration)
+    def _initialize_circuit(self):
+        if self.configuration.fhe_execution:
+            self.enable_fhe_execution()
 
-        keyset_cache_directory = None
-        if self.configuration.use_insecure_key_cache:
-            assert_that(self.configuration.enable_unsafe_features)
-            assert_that(self.configuration.insecure_key_cache_location is not None)
-            keyset_cache_directory = self.configuration.insecure_key_cache_location
-
-        self.client = Client(self.server.client_specs, keyset_cache_directory)
+        if self.configuration.fhe_simulation:
+            self.enable_fhe_simulation()
 
     def __str__(self):
         return self.graph.format()
+
+    def enable_fhe_simulation(self):
+        """Enable fhe simulation mode."""
+        if not hasattr(self, "simulator"):
+            self.simulator = Server.create(self.mlir, self.configuration, is_simulated=True)
+
+    def enable_fhe_execution(self):
+        """Enable fhe execution mode."""
+        if not hasattr(self, "server"):
+            self.server = Server.create(self.mlir, self.configuration)
+
+            keyset_cache_directory = None
+            if self.configuration.use_insecure_key_cache:
+                assert_that(self.configuration.enable_unsafe_features)
+                assert_that(self.configuration.insecure_key_cache_location is not None)
+                keyset_cache_directory = self.configuration.insecure_key_cache_location
+
+            self.client = Client(self.server.client_specs, keyset_cache_directory)
 
     def simulate(self, *args: Any) -> Any:
         """
@@ -66,8 +83,31 @@ class Circuit:
             Any:
                 result of the simulation
         """
+        if not hasattr(self, "simulator"):
+            message = "Simulation isn't enabled. You can call enable_fhe_simulation() to enable it"
+            raise RuntimeError(message)
 
-        return self.graph(*args, p_error=self.p_error)
+        ordered_validated_args = validate_input_args(self.simulator.client_specs, *args)
+
+        exporter = SimulatedValueExporter.new(self.simulator.client_specs.client_parameters)
+        exported = [
+            None
+            if arg is None
+            else Value(
+                exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
+                if isinstance(arg, np.ndarray) and arg.shape != ()
+                else exporter.export_scalar(position, int(arg))
+            )
+            for position, arg in enumerate(ordered_validated_args)
+        ]
+        results = self.simulator.run(*exported)
+        if not isinstance(results, tuple):
+            results = (results,)
+        decrypter = SimulatedValueDecrypter.new(self.simulator.client_specs.client_parameters)
+        decrypted = tuple(
+            decrypter.decrypt(position, result.inner) for position, result in enumerate(results)
+        )
+        return decrypted if len(decrypted) != 1 else decrypted[0]
 
     @property
     def keys(self) -> Keys:
@@ -130,6 +170,11 @@ class Circuit:
             Union[Value, Tuple[Value, ...]]:
                 result(s) of evaluation
         """
+        if not hasattr(self, "server"):
+            message = (
+                "FHE execution isn't enabled. You can call enable_fhe_execution() to enable it"
+            )
+            raise RuntimeError(message)
 
         self.keygen(force=False)
         return self.server.run(*args, evaluation_keys=self.client.evaluation_keys)
