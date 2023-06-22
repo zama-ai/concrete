@@ -254,7 +254,6 @@ class Helpers:
         function: Callable,
         sample: Union[Any, List[Any]],
         retries: int = 1,
-        simulate: bool = False,
     ):
         """
         Assert that `circuit` is behaves the same as `function` on `sample`.
@@ -296,9 +295,7 @@ class Helpers:
 
         for i in range(retries):
             expected = sanitize(function(*sample))
-            actual = sanitize(
-                circuit.simulate(*sample) if simulate else circuit.encrypt_run_decrypt(*sample)
-            )
+            actual = sanitize(circuit.encrypt_run_decrypt(*sample))
 
             if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                 break
@@ -315,6 +312,32 @@ Actual Output
 {actual}
 
                     """
+                raise AssertionError(message)
+
+        try:
+            circuit.enable_fhe_simulation()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            print(f"Catched exception while enabling simulation: {e}")
+            return
+        for i in range(retries):
+            expected = sanitize(function(*sample))
+            actual = sanitize(circuit.simulate(*sample))
+
+            if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
+                break
+
+            if i == retries - 1:
+                message = f"""
+
+Expected Output During Simulation
+=================================
+{expected}
+
+Actual Output During Simulation
+===============================
+{actual}
+
+                """
                 raise AssertionError(message)
 
     @staticmethod

@@ -66,6 +66,8 @@ class Configuration:
     show_progress: bool
     progress_title: str
     progress_tag: Union[bool, int]
+    fhe_simulation: bool
+    fhe_execution: bool
 
     def __init__(
         self,
@@ -91,6 +93,8 @@ class Configuration:
         show_progress: bool = False,
         progress_title: str = "",
         progress_tag: Union[bool, int] = False,
+        fhe_simulation: bool = False,
+        fhe_execution: bool = True,
     ):  # pylint: disable=too-many-arguments
         self.verbose = verbose
         self.show_graph = show_graph
@@ -114,6 +118,8 @@ class Configuration:
         self.show_progress = show_progress
         self.progress_title = progress_title
         self.progress_tag = progress_tag
+        self.fhe_simulation = fhe_simulation
+        self.fhe_execution = fhe_execution
 
         self._validate()
 
@@ -146,6 +152,8 @@ class Configuration:
         show_progress: Union[Keep, bool] = KEEP,
         progress_title: Union[Keep, str] = KEEP,
         progress_tag: Union[Keep, Union[bool, int]] = KEEP,
+        fhe_simulation: Union[Keep, bool] = KEEP,
+        fhe_execution: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

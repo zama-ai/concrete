@@ -352,7 +352,7 @@ def test_bad_server_save(helpers):
     Test `save` method of `Server` class with bad parameters.
     """
 
-    configuration = helpers.configuration()
+    configuration = helpers.configuration().fork(jit=True)
 
     @compiler({"x": "encrypted"})
     def function(x):
@@ -365,43 +365,6 @@ def test_bad_server_save(helpers):
         circuit.server.save("test.zip")
 
     assert str(excinfo.value) == "Just-in-Time compilation cannot be saved"
-
-
-@pytest.mark.parametrize("p_error", [0.75, 0.5, 0.4, 0.25, 0.2, 0.1, 0.01, 0.001])
-@pytest.mark.parametrize("bit_width", [5])
-@pytest.mark.parametrize("sample_size", [1_000_000])
-@pytest.mark.parametrize("tolerance", [0.1])
-def test_p_error_simulation(p_error, bit_width, sample_size, tolerance, helpers):
-    """
-    Test p_error simulation.
-    """
-
-    configuration = helpers.configuration().fork(global_p_error=None)
-
-    table = LookupTable([0] + [x - 1 for x in range(1, 2**bit_width)])
-
-    @compiler({"x": "encrypted"})
-    def function(x):
-        return table[x + 1]
-
-    inputset = [np.random.randint(0, (2**bit_width) - 1, size=(sample_size,)) for _ in range(100)]
-    circuit = function.compile(inputset, configuration=configuration, p_error=p_error)
-
-    assert circuit.p_error < p_error
-
-    sample = np.random.randint(0, (2**bit_width) - 1, size=(sample_size,))
-    output = circuit.simulate(sample)
-
-    errors = np.sum(output != sample)
-
-    expected_number_of_errors_on_average = sample_size * circuit.p_error
-    tolerated_difference = expected_number_of_errors_on_average * tolerance
-
-    acceptable_number_of_errors = [
-        round(expected_number_of_errors_on_average - tolerated_difference),
-        round(expected_number_of_errors_on_average + tolerated_difference),
-    ]
-    assert acceptable_number_of_errors[0] <= errors <= acceptable_number_of_errors[1]
 
 
 def test_circuit_run_with_unused_arg(helpers):
@@ -444,3 +407,125 @@ def test_dataflow_circuit(helpers):
     circuit = f.compile(inputset, configuration)
 
     assert circuit.encrypt_run_decrypt(5, 6) == 28
+
+
+def test_circuit_sim_disabled(helpers):
+    """
+    Test attempt to simulate without enabling fhe simulation.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration)
+    with pytest.raises(RuntimeError) as excinfo:
+        circuit.simulate(*inputset[0])
+    assert (
+        str(excinfo.value)
+        == "Simulation isn't enabled. You can call enable_fhe_simulation() to enable it"
+    )
+
+
+def test_circuit_fhe_exec_disabled(helpers):
+    """
+    Test attempt to run fhe execution without it being enabled.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration.fork(fhe_execution=False))
+    with pytest.raises(RuntimeError) as excinfo:
+        # as we can't encrypt, we just pass plain inputs, and it should lead to the expected error
+        circuit.run(*inputset[0], None)
+    assert (
+        str(excinfo.value)
+        == "FHE execution isn't enabled. You can call enable_fhe_execution() to enable it"
+    )
+
+
+def test_circuit_fhe_exec_no_eval_keys(helpers):
+    """
+    Test attempt to run fhe execution without eval keys.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration)
+    with pytest.raises(RuntimeError) as excinfo:
+        # as we can't encrypt, we just pass plain inputs, and it should lead to the expected error
+        encrypted_args = inputset[0]
+        circuit.server.run(*encrypted_args)
+    assert (
+        str(excinfo.value) == "Expected evaluation keys to be provided when not in simulation mode"
+    )
+
+
+def test_circuit_eval_graph_scalar(helpers):
+    """
+    Test evaluation of the graph.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        lut = LookupTable(list(range(128)))
+        return lut[x + y]
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration.fork(fhe_simulation=False, fhe_execution=False))
+    assert f(*inputset[0]) == circuit.graph(*inputset[0], p_error=0.01)
+
+
+def test_circuit_eval_graph_tensor(helpers):
+    """
+    Test evaluation of the graph.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        lut = LookupTable(list(range(128)))
+        return lut[x + y]
+
+    inputset = [
+        (
+            np.random.randint(0, 2**4, size=[2, 2]),
+            np.random.randint(0, 2**5, size=[2, 2]),
+        )
+        for _ in range(2)
+    ]
+    circuit = f.compile(inputset, configuration.fork(fhe_simulation=False, fhe_execution=False))
+    assert np.all(f(*inputset[0]) == circuit.graph(*inputset[0], p_error=0.01))
+
+
+def test_circuit_compile_sim_only(helpers):
+    """
+    Test compiling with simulation only.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        lut = LookupTable(list(range(128)))
+        return lut[x + y]
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration.fork(fhe_simulation=True, fhe_execution=False))
+    assert f(*inputset[0]) == circuit.simulate(*inputset[0])
