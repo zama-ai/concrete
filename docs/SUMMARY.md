@@ -72,6 +72,5 @@
 ### Compiler backend
 
 * [Compiler backend introduction](dev/backends/README.md)
-* [Adding your own backend](dev/backends/adding_new_backend.md)
-* [Testing backends](dev/backends/testing.md)
+* [Adding a new backend](dev/backends/new_backend.md)
 
