@@ -382,6 +382,7 @@ def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure]> {
     let results = (outs FHE_EncryptedSignedIntegerType);
 
     let hasVerifier = 1;
+    let hasCanonicalizer = 1;
 }
 
 def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
@@ -407,6 +408,7 @@ def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
     let results = (outs FHE_EncryptedIntegerType);
 
     let hasVerifier = 1;
+    let hasCanonicalizer = 1;
 }
 
 def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure]> {

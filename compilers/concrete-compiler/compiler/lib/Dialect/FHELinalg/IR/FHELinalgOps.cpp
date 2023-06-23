@@ -1602,6 +1602,39 @@ void MatMulEintIntOp::getCanonicalizationPatterns(
   getMatMulCanonicalizationPatterns<MatMulEintIntOp>(patterns, context);
 }
 
+template <typename SignedConvOp>
+void getSignedConvCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                           mlir::MLIRContext *context) {
+  // Replace to_signed of zero to signed zero
+  class ZeroOpPattern : public mlir::OpRewritePattern<SignedConvOp> {
+  public:
+    ZeroOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<SignedConvOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(SignedConvOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getInput().template getDefiningOp<FHE::ZeroTensorOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroOpPattern>(context);
+}
+
+void ToSignedOp::getCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                             mlir::MLIRContext *context) {
+  getSignedConvCanonicalizationPatterns<ToSignedOp>(patterns, context);
+}
+
+void ToUnsignedOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+  getSignedConvCanonicalizationPatterns<ToUnsignedOp>(patterns, context);
+}
+
 } // namespace FHELinalg
 } // namespace concretelang
 } // namespace mlir

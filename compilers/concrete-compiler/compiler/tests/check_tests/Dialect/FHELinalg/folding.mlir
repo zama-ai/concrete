@@ -142,3 +142,21 @@ func.func @matmul_int_eint_encrypted_zero(%x: tensor<4x3xi3>) -> tensor<4x2x!FHE
   %0 = "FHELinalg.matmul_int_eint"(%x, %y): (tensor<4x3xi3>, tensor<3x2x!FHE.eint<2>>) -> tensor<4x2x!FHE.eint<2>>
   return %0 : tensor<4x2x!FHE.eint<2>>
 }
+
+// CHECK: func.func @to_signed_zero() -> tensor<4x!FHE.esint<7>> {
+// CHECK-NEXT: %[[v0:.*]] = "FHE.zero_tensor"()
+// CHECK-NEXT: return %[[v0]]
+func.func @to_signed_zero() -> tensor<4x!FHE.esint<7>> {
+  %0 = "FHE.zero_tensor"() : () -> tensor<4x!FHE.eint<7>>
+  %1 = "FHELinalg.to_signed"(%0) : (tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.esint<7>>
+  return %1 : tensor<4x!FHE.esint<7>>
+}
+
+// CHECK: func.func @to_unsigned_zero() -> tensor<4x!FHE.eint<7>> {
+// CHECK-NEXT: %[[v0:.*]] = "FHE.zero_tensor"()
+// CHECK-NEXT: return %[[v0]]
+func.func @to_unsigned_zero() -> tensor<4x!FHE.eint<7>> {
+  %0 = "FHE.zero_tensor"() : () -> tensor<4x!FHE.esint<7>>
+  %1 = "FHELinalg.to_unsigned"(%0) : (tensor<4x!FHE.esint<7>>) -> tensor<4x!FHE.eint<7>>
+  return %1 : tensor<4x!FHE.eint<7>>
+}

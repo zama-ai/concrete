@@ -1279,6 +1279,7 @@ def FHELinalg_ToSignedOp : FHELinalg_Op<"to_signed", [Pure]> {
     );
 
     let hasVerifier = 1;
+    let hasCanonicalizer = 1;
 }
 
 def FHELinalg_ToUnsignedOp : FHELinalg_Op<"to_unsigned", [Pure]> {
@@ -1309,6 +1310,7 @@ def FHELinalg_ToUnsignedOp : FHELinalg_Op<"to_unsigned", [Pure]> {
     );
 
     let hasVerifier = 1;
+    let hasCanonicalizer = 1;
 }
 
 def FHELinalg_RoundOp : FHELinalg_Op<"round", [Pure, TensorUnaryEint]> {
