@@ -46,7 +46,7 @@ def test_plain_round_bit_pattern(sample, lsbs_to_remove, expected_output):
             np.array([3.2, 4.1]),
             3,
             TypeError,
-            "Expected input elements to be integers but they are dtype[float64]",
+            f"Expected input elements to be integers but they are {type(np.array([3.2, 4.1]).dtype).__name__}",  # noqa: E501
         ),
         (
             "foo",

@@ -370,9 +370,9 @@ def test_bad_maxpool_special(helpers):
 
     helpers.check_str(
         # pylint: disable=line-too-long
-        """
+        f"""
 
-Expected input elements to be of type np.integer, np.floating, or np.bool_ but it's dtype[object_]
+Expected input elements to be of type np.integer, np.floating, or np.bool_ but it's {type(np.array([{}, None]).dtype).__name__}
 
         """.strip(),  # noqa: E501
         # pylint: enable=line-too-long
