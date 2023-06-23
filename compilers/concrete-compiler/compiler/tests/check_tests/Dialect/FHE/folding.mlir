@@ -54,3 +54,21 @@ func.func @round(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
   %1 = "FHE.round"(%arg0) : (!FHE.eint<5>) -> !FHE.eint<5>
   return %1: !FHE.eint<5>
 }
+
+// CHECK: func.func @to_signed_zero() -> !FHE.esint<7> {
+// CHECK-NEXT: %[[v0:.*]] = "FHE.zero"()
+// CHECK-NEXT: return %[[v0]]
+func.func @to_signed_zero() -> !FHE.esint<7> {
+  %0 = "FHE.zero"() : () -> !FHE.eint<7>
+  %1 = "FHE.to_signed"(%0) : (!FHE.eint<7>) -> !FHE.esint<7>
+  return %1 : !FHE.esint<7>
+}
+
+// CHECK: func.func @to_unsigned_zero() -> !FHE.eint<7> {
+// CHECK-NEXT: %[[v0:.*]] = "FHE.zero"()
+// CHECK-NEXT: return %[[v0]]
+func.func @to_unsigned_zero() -> !FHE.eint<7> {
+  %0 = "FHE.zero"() : () -> !FHE.esint<7>
+  %1 = "FHE.to_unsigned"(%0) : (!FHE.esint<7>) -> !FHE.eint<7>
+  return %1 : !FHE.eint<7>
+}
