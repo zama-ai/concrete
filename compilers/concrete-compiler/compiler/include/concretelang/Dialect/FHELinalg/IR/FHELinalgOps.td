@@ -26,7 +26,7 @@ def TensorBinaryEint : NativeOpTrait<"TensorBinaryEint">;
 def TensorUnaryEint : NativeOpTrait<"TensorUnaryEint">;
 
 
-def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
+def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [Pure, TensorBroadcastingRules, TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the addition of a tensor of encrypted integers and a tensor of clear integers.";
 
     let description = [{
@@ -81,7 +81,7 @@ def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [TensorBroadcastingRul
     let hasFolder = 1;
 }
 
-def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
+def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [Pure, TensorBroadcastingRules, TensorBinaryEint]> {
     let summary = "Returns a tensor that contains the addition of two tensor of encrypted integers.";
 
     let description = [{
@@ -133,7 +133,7 @@ def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [TensorBroadcastingRules, Ten
     ];
 }
 
-def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, TensorBinaryIntEint]> {
+def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [Pure, TensorBroadcastingRules, TensorBinaryIntEint]> {
     let summary = "Returns a tensor that contains the subtraction of a tensor of clear integers and a tensor of encrypted integers.";
 
     let description = [{
@@ -186,7 +186,7 @@ def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRul
     ];
 }
 
-def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
+def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [Pure, TensorBroadcastingRules, TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the subtraction of a tensor of clear integers from a tensor of encrypted integers.";
 
     let description = [{
@@ -242,7 +242,7 @@ def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [TensorBroadcastingRul
     let hasFolder = 1;
 }
 
-def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
+def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [Pure, TensorBroadcastingRules, TensorBinaryEint]> {
     let summary = "Returns a tensor that contains the subtraction of two tensor of encrypted integers.";
 
     let description = [{
@@ -294,7 +294,7 @@ def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [TensorBroadcastingRules, Ten
     ];
 }
 
-def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
+def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [Pure, TensorUnaryEint]> {
     let summary = "Returns a tensor that contains the negation of a tensor of encrypted integers.";
 
     let description = [{
@@ -326,7 +326,7 @@ def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
     ];
 }
 
-def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
+def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [Pure, TensorBroadcastingRules, TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the multiplication of a tensor of encrypted integers and a tensor of clear integers.";
 
     let description = [{
@@ -377,7 +377,7 @@ def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRul
     let hasCanonicalizer = 1;
 }
 
-def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
+def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [Pure, TensorBroadcastingRules, TensorBinaryEint]> {
     let summary = "Returns a tensor that contains the multiplication of two tensor of encrypted integers.";
 
     let description = [{
@@ -429,7 +429,7 @@ def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [TensorBroadcastingRules, Ten
     ];
 }
 
-def FHELinalg_ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
+def FHELinalg_ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", [Pure]> {
     let summary = "Returns a tensor that contains the result of the lookup on a table.";
 
     let description = [{
@@ -465,7 +465,7 @@ def FHELinalg_ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", []> {
+def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", [Pure]> {
     let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element.";
 
     let description = [{
@@ -512,7 +512,7 @@ def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_tab
     let hasVerifier = 1;
 }
 
-def FHELinalg_ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", []> {
+def FHELinalg_ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", [Pure]> {
     let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element, specified by a map.";
 
     let description = [{
@@ -566,7 +566,7 @@ def FHELinalg_ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_t
     let hasVerifier = 1;
 }
 
-def FHELinalg_Dot : FHELinalg_Op<"dot_eint_int"> {
+def FHELinalg_Dot : FHELinalg_Op<"dot_eint_int", [Pure]> {
     let summary = "Returns the encrypted dot product between a vector of encrypted integers and a vector of clean integers.";
 
     let description = [{
@@ -590,7 +590,7 @@ def FHELinalg_Dot : FHELinalg_Op<"dot_eint_int"> {
 }
 
 
-def FHELinalg_DotEint : FHELinalg_Op<"dot_eint_eint"> {
+def FHELinalg_DotEint : FHELinalg_Op<"dot_eint_eint", [Pure]> {
     let summary = "Returns the encrypted dot product between two vectors of encrypted integers.";
 
     let description = [{
@@ -614,7 +614,7 @@ def FHELinalg_DotEint : FHELinalg_Op<"dot_eint_eint"> {
 }
 
 
-def FHELinalg_MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
+def FHELinalg_MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [Pure, TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.";
 
     let description = [{
@@ -759,7 +759,7 @@ def FHELinalg_MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEin
     }];
 }
 
-def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
+def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [Pure, TensorBinaryIntEint]> {
     let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of clear integers and a matrix of encrypted integers.";
 
     let description = [{
@@ -905,7 +905,7 @@ def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryInt
 }
 
 
-def FHELinalg_MatMulEintEintOp : FHELinalg_Op<"matmul_eint_eint", [TensorBinaryEint]> {
+def FHELinalg_MatMulEintEintOp : FHELinalg_Op<"matmul_eint_eint", [Pure, TensorBinaryEint]> {
     let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of encrypted integers and a second matrix of encrypted integers.";
 
     let description = [{
@@ -1042,7 +1042,7 @@ def FHELinalg_MatMulEintEintOp : FHELinalg_Op<"matmul_eint_eint", [TensorBinaryE
     let hasVerifier = 1;
 }
 
-def FHELinalg_SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
+def FHELinalg_SumOp : FHELinalg_Op<"sum", [Pure, TensorUnaryEint]> {
     let summary = "Returns the sum of elements of a tensor of encrypted integers along specified axes.";
 
     let description = [{
@@ -1125,7 +1125,7 @@ def FHELinalg_SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_ConcatOp : FHELinalg_Op<"concat"> {
+def FHELinalg_ConcatOp : FHELinalg_Op<"concat", [Pure]> {
     let summary = "Concatenates a sequence of tensors along an existing axis.";
 
     let description = [{
@@ -1167,7 +1167,7 @@ def FHELinalg_ConcatOp : FHELinalg_Op<"concat"> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
+def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", [Pure]> {
   let summary = "Returns the 2D convolution of a tensor in the form NCHW with weights in the form FCHW";
   let arguments = (ins
     Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input,
@@ -1183,7 +1183,7 @@ def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
   let hasVerifier = 1;
 }
 
-def FHELinalg_Maxpool2dOp : FHELinalg_Op<"maxpool2d", []> {
+def FHELinalg_Maxpool2dOp : FHELinalg_Op<"maxpool2d", [Pure]> {
   let summary = "Returns the 2D maxpool of a tensor in the form NCHW";
   let arguments = (ins
     Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input,
@@ -1195,7 +1195,7 @@ def FHELinalg_Maxpool2dOp : FHELinalg_Op<"maxpool2d", []> {
   let hasVerifier = 1;
 }
 
-def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", []> {
+def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", [Pure]> {
     let summary = "Returns a tensor that contains the transposition of the input tensor.";
 
     let description = [{
@@ -1234,7 +1234,7 @@ def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", []> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_FromElementOp : FHELinalg_Op<"from_element", []> {
+def FHELinalg_FromElementOp : FHELinalg_Op<"from_element", [Pure]> {
     let summary = "Creates a tensor with a single element.";
 
     let description = [{
@@ -1251,7 +1251,7 @@ def FHELinalg_FromElementOp : FHELinalg_Op<"from_element", []> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_ToSignedOp : FHELinalg_Op<"to_signed", []> {
+def FHELinalg_ToSignedOp : FHELinalg_Op<"to_signed", [Pure]> {
     let summary = "Cast an unsigned integer tensor to a signed one";
 
     let description = [{
@@ -1281,7 +1281,7 @@ def FHELinalg_ToSignedOp : FHELinalg_Op<"to_signed", []> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_ToUnsignedOp : FHELinalg_Op<"to_unsigned", []> {
+def FHELinalg_ToUnsignedOp : FHELinalg_Op<"to_unsigned", [Pure]> {
     let summary = "Cast a signed integer tensor to an unsigned one";
 
     let description = [{
@@ -1311,7 +1311,7 @@ def FHELinalg_ToUnsignedOp : FHELinalg_Op<"to_unsigned", []> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_RoundOp : FHELinalg_Op<"round", [TensorUnaryEint]> {
+def FHELinalg_RoundOp : FHELinalg_Op<"round", [Pure, TensorUnaryEint]> {
     let summary = "Rounds a tensor of ciphertexts into a smaller precision.";
 
     let description = [{
