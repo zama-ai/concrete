@@ -445,7 +445,8 @@ disable=raw-checker-failed,
         too-many-statements,
         unnecessary-lambda-assignment,
         use-implicit-booleaness-not-comparison,
-        wrong-import-order
+        wrong-import-order,
+        unsubscriptable-object
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

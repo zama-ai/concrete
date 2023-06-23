@@ -99,7 +99,7 @@ def test_node_bad_constant(constant, expected_error, expected_message):
             [],
             ValueError,
             "Evaluation of generic 'unknown' node resulted in array(['abc', 'def'], dtype='<U3') "
-            "of type np.ndarray and of underlying type 'dtype[str_]' "
+            f"of type np.ndarray and of underlying type '{type(np.array(['abc', 'def']).dtype).__name__}' "  # noqa: E501
             "which is not acceptable because of the underlying type",
         ),
         pytest.param(

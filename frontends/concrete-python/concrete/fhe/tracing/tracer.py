@@ -288,7 +288,7 @@ class Tracer:
         np.reshape,
         np.right_shift,
         np.rint,
-        np.round_,
+        np.round,
         np.sign,
         np.signbit,
         np.sin,
@@ -327,7 +327,7 @@ class Tracer:
         np.reshape: {
             "newshape",
         },
-        np.round_: {
+        np.round: {
             "decimals",
         },
         np.squeeze: {
