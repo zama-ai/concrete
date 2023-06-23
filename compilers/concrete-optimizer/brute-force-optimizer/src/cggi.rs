@@ -16,17 +16,17 @@ use std::io::Write;
 
 #[derive(Debug, Clone, Copy)]
 pub struct CGGIParams {
-    base_log_ks: u64,
-    level_ks: u64,
-    base_log_pbs: u64,
-    level_pbs: u64,
-    glwe_dim: u64,
-    log_poly_size: u64,
-    small_lwe_dim: u64,
+    pub(crate) base_log_ks: u64,
+    pub(crate) level_ks: u64,
+    pub(crate) base_log_pbs: u64,
+    pub(crate) level_pbs: u64,
+    pub(crate) glwe_dim: u64,
+    pub(crate) log_poly_size: u64,
+    pub(crate) small_lwe_dim: u64,
 }
 
 impl CGGIParams {
-    fn big_lwe_dim(&self) -> u64 {
+    pub(crate) fn big_lwe_dim(&self) -> u64 {
         let poly_size = 1 << self.log_poly_size;
         self.glwe_dim * poly_size
     }
