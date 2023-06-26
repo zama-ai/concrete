@@ -282,7 +282,6 @@ class Helpers:
             only_simulation (bool, default = False):
                 whether to just check simulation but not execution
         """
-
         if not isinstance(sample, list):
             sample = [sample]
 
@@ -330,6 +329,11 @@ class Helpers:
                     raise AssertionError(message)
 
         circuit.enable_fhe_simulation()
+
+        # Skip simulation for GPU
+        if circuit.configuration.use_gpu:
+            return
+
         for i in range(retries):
             expected = sanitize(function(*deepcopy(sample)))
             actual = sanitize(circuit.simulate(*deepcopy(sample)))

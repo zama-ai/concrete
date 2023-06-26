@@ -60,6 +60,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   m.def("init_df_parallelization", &initDataflowParallelization);
 
+  pybind11::enum_<mlir::concretelang::Backend>(m, "Backend")
+      .value("CPU", mlir::concretelang::Backend::CPU)
+      .value("GPU", mlir::concretelang::Backend::GPU)
+      .export_values();
+
   pybind11::enum_<optimizer::Strategy>(m, "OptimizerStrategy")
       .value("V0", optimizer::Strategy::V0)
       .value("DAG_MONO", optimizer::Strategy::DAG_MONO)
@@ -74,7 +79,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
       .def(pybind11::init(
-          [](std::string funcname) { return CompilationOptions(funcname); }))
+          [](std::string funcname, mlir::concretelang::Backend backend) {
+            return CompilationOptions(funcname, backend);
+          }))
       .def("set_funcname",
            [](CompilationOptions &options, std::string funcname) {
              options.mainFuncName = funcname;
