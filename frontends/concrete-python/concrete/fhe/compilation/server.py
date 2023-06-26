@@ -147,7 +147,7 @@ class Server:
             output_dir = None
 
             support = JITSupport.new()
-            compilation_result = support.compile(mlir, options)
+            compilation_result = interruptable_native_call(lambda: support.compile(mlir, options))
             server_lambda = support.load_server_lambda(compilation_result)
 
         else:
@@ -159,7 +159,7 @@ class Server:
             support = LibrarySupport.new(
                 str(output_dir_path), generateCppHeader=False, generateStaticLib=False
             )
-            compilation_result = support.compile(mlir, options)
+            compilation_result = interruptable_native_call(lambda: support.compile(mlir, options))
             server_lambda = support.load_server_lambda(compilation_result)
 
         client_parameters = support.load_client_parameters(compilation_result)
