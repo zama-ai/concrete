@@ -37,13 +37,12 @@ def interruptable_native_call(f):
     Note that `f` must release the GIL to make it work.
     """
 
-    atexit.register(print_ctrl_c_message)
-
     executor = ThreadPoolExecutor(1)
     try:
         f_thread = executor.submit(f)
         return f_thread.result()
     except KeyboardInterrupt as error:  # pragma: no cover
+        atexit.register(print_ctrl_c_message)
         pid = os.getpid()
 
         def wait_and_ctrl_c():
