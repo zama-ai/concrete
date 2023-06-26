@@ -74,6 +74,17 @@ int cuda_check_valid_malloc(uint64_t size, uint32_t gpu_index) {
   return 0;
 }
 
+/// Returns
+///  -> 0 if Cooperative Groups is not supported.
+///  -> 1 otherwise
+int cuda_check_support_cooperative_groups() {
+  int cooperative_groups_supported = 0;
+  cudaDeviceGetAttribute(&cooperative_groups_supported,
+                         cudaDevAttrCooperativeLaunch, 0);
+
+  return cooperative_groups_supported > 0;
+}
+
 /// Tries to copy memory to the GPU asynchronously
 /// 0: success
 /// -1: error, invalid device pointer
