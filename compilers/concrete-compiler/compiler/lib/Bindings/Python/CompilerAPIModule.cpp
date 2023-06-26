@@ -118,6 +118,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("compile",
            [](JITSupport_Py &support, std::string mlir_program,
               CompilationOptions options) {
+             pybind11::gil_scoped_release release;
              return jit_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
@@ -168,6 +169,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("compile",
            [](LibrarySupport_Py &support, std::string mlir_program,
               mlir::concretelang::CompilationOptions options) {
+             pybind11::gil_scoped_release release;
              return library_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
@@ -211,6 +213,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](clientlib::ClientParameters clientParameters,
              clientlib::KeySetCache *cache, uint64_t seedMsb,
              uint64_t seedLsb) {
+            pybind11::gil_scoped_release release;
             auto optCache = cache == nullptr
                                 ? std::nullopt
                                 : std::optional<clientlib::KeySetCache>(*cache);
