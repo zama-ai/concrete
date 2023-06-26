@@ -7,6 +7,7 @@
 from mlir._mlir_libs._concretelang._compiler import (
     CompilationOptions as _CompilationOptions,
     OptimizerStrategy as _OptimizerStrategy,
+    Backend as _Backend,
 )
 from .wrapper import WrapperCpp
 
@@ -38,7 +39,7 @@ class CompilationOptions(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(function_name="main") -> "CompilationOptions":
+    def new(function_name="main", backend=_Backend.CPU) -> "CompilationOptions":
         """Build a CompilationOptions.
 
         Args:
@@ -54,7 +55,11 @@ class CompilationOptions(WrapperCpp):
             raise TypeError(
                 f"function_name must be of type str not {type(function_name)}"
             )
-        return CompilationOptions.wrap(_CompilationOptions(function_name))
+        if not isinstance(backend, _Backend):
+            raise TypeError(
+                f"backend must be of type Backend not {type(function_name)}"
+            )
+        return CompilationOptions.wrap(_CompilationOptions(function_name, backend))
 
     # pylint: enable=arguments-differ
 

@@ -280,7 +280,6 @@ class Helpers:
             simulate (bool, default = False):
                 whether to simulate instead of fhe execution
         """
-
         if not isinstance(sample, list):
             sample = [sample]
 
@@ -324,6 +323,10 @@ Actual Output
             circuit.enable_fhe_simulation()
         except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"Catched exception while enabling simulation: {e}")
+            return
+
+        # Skip simulation for GPU
+        if circuit.configuration.use_gpu:
             return
         for i in range(retries):
             expected = sanitize(function(*sample))

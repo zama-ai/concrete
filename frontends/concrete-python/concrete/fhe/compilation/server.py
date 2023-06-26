@@ -24,7 +24,7 @@ from concrete.compiler import (
     LibrarySupport,
     PublicArguments,
 )
-from mlir._mlir_libs._concretelang._compiler import OptimizerStrategy
+from mlir._mlir_libs._concretelang._compiler import Backend, OptimizerStrategy
 
 from ..internal.utils import assert_that
 from .configuration import (
@@ -96,14 +96,14 @@ class Server:
                 whether to compile in simulation mode or not
         """
 
-        options = CompilationOptions.new("main")
+        backend = Backend.GPU if configuration.use_gpu else Backend.CPU
+        options = CompilationOptions.new("main", backend)
+
         options.simulation(is_simulated)
 
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
-        options.set_emit_gpu_ops(configuration.use_gpu)
-        options.set_batch_tfhe_ops(False)
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member
