@@ -215,7 +215,7 @@ fn optimize_1_fks_and_all_compatible_ks(
         if complexity.complexity(&operations.cost) > cut_complexity {
             // complexity is strictly increasing by level
             // next complexity will be worse
-            return best_sol;
+            return None;
         }
         if !feasible.feasible(&operations.variance) {
             continue;
