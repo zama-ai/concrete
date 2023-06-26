@@ -25,7 +25,12 @@ from concrete.compiler import (
     set_compiler_logging,
     set_llvm_debug_flag,
 )
-from mlir._mlir_libs._concretelang._compiler import KeyType, OptimizerStrategy, PrimitiveOperation
+from mlir._mlir_libs._concretelang._compiler import (
+    Backend,
+    KeyType,
+    OptimizerStrategy,
+    PrimitiveOperation,
+)
 from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
@@ -106,7 +111,9 @@ class Server:
                 context to use for the Compiler
         """
 
-        options = CompilationOptions.new("main")
+        backend = Backend.GPU if configuration.use_gpu else Backend.CPU
+        options = CompilationOptions.new("main", backend)
+
         options.simulation(is_simulated)
 
         options.set_loop_parallelize(configuration.loop_parallelize)
@@ -114,8 +121,6 @@ class Server:
         options.set_auto_parallelize(configuration.auto_parallelize)
         options.set_compress_inputs(configuration.compress_inputs)
         options.set_composable(configuration.composable)
-        options.set_emit_gpu_ops(configuration.use_gpu)
-        options.set_batch_tfhe_ops(False)
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member
