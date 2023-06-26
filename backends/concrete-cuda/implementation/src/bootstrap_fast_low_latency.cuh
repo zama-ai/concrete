@@ -407,6 +407,11 @@ template <typename Torus, class params>
 __host__ bool verify_cuda_bootstrap_fast_low_latency_grid_size(
     int glwe_dimension, int level_count, int num_samples,
     uint32_t max_shared_memory) {
+
+  // If Cooperative Groups is not supported, no need to check anything else
+  if (!cuda_check_support_cooperative_groups())
+    return false;
+
   // Calculate the dimension of the kernel
   uint64_t full_sm =
       get_buffer_size_full_sm_bootstrap_fast_low_latency<Torus>(params::degree);

@@ -21,6 +21,8 @@ void *cuda_malloc_async(uint64_t size, cudaStream_t *stream,
 
 int cuda_check_valid_malloc(uint64_t size, uint32_t gpu_index);
 
+int cuda_check_support_cooperative_groups();
+
 int cuda_memcpy_to_cpu(void *dest, const void *src, uint64_t size,
                        uint32_t gpu_index);
 
