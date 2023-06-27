@@ -29,7 +29,8 @@ public:
   ~SignalGuard() { signal(SIGINT, this->previousHandler); }
 
 private:
-  sighandler_t previousHandler;
+  void (*previousHandler)(int);
+
   static void handler(int _signum) {
     llvm::outs() << " Aborting... \n";
     kill(getpid(), SIGKILL);
