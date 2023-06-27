@@ -2,12 +2,7 @@
 Declaration of various functions and constants related to compilation.
 """
 
-import atexit
-import os
 import re
-import signal
-import time
-from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
@@ -18,39 +13,6 @@ from ..representation import Graph, Node, Operation
 from .artifacts import DebugArtifacts
 
 # ruff: noqa: ERA001
-
-
-def print_ctrl_c_message():  # pragma: no cover
-    """
-    Print exit message for CTRL+C.
-    """
-
-    print()
-    print("The computation will be aborted in a few seconds.")
-    print("You can force an immediate abort by pressing Ctrl+C again.")
-
-
-def interruptable_native_call(f):
-    """
-    Run a native function `f` in a thread to support interrupts.
-
-    Note that `f` must release the GIL to make it work.
-    """
-
-    executor = ThreadPoolExecutor(1)
-    try:
-        f_thread = executor.submit(f)
-        return f_thread.result()
-    except KeyboardInterrupt as error:  # pragma: no cover
-        atexit.register(print_ctrl_c_message)
-        pid = os.getpid()
-
-        def wait_and_ctrl_c():
-            time.sleep(0.2)  # wait so atexit can progress to the executor
-            os.kill(pid, signal.SIGINT)
-
-        ThreadPoolExecutor(1).submit(wait_and_ctrl_c)
-        raise error
 
 
 def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):

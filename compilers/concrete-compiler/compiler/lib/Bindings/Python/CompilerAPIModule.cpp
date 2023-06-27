@@ -15,12 +15,26 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <signal.h>
 #include <stdexcept>
 #include <string>
 
 using mlir::concretelang::CompilationOptions;
 using mlir::concretelang::JITSupport;
 using mlir::concretelang::LambdaArgument;
+
+class SignalGuard {
+public:
+  SignalGuard() { previousHandler = signal(SIGINT, SignalGuard::handler); }
+  ~SignalGuard() { signal(SIGINT, this->previousHandler); }
+
+private:
+  sighandler_t previousHandler;
+  static void handler(int _signum) {
+    llvm::outs() << " Aborting... \n";
+    kill(getpid(), SIGKILL);
+  }
+};
 
 /// Populate the compiler API python module.
 void mlir::concretelang::python::populateCompilerAPISubmodule(
@@ -118,7 +132,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("compile",
            [](JITSupport_Py &support, std::string mlir_program,
               CompilationOptions options) {
-             pybind11::gil_scoped_release release;
+             SignalGuard signalGuard;
              return jit_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
@@ -142,6 +156,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](JITSupport_Py &support, concretelang::JITLambda &lambda,
               clientlib::PublicArguments &publicArguments,
               clientlib::EvaluationKeys &evaluationKeys) {
+             SignalGuard signalGuard;
              return jit_server_call(support, lambda, publicArguments,
                                     evaluationKeys);
            });
@@ -169,7 +184,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("compile",
            [](LibrarySupport_Py &support, std::string mlir_program,
               mlir::concretelang::CompilationOptions options) {
-             pybind11::gil_scoped_release release;
+             SignalGuard signalGuard;
              return library_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
@@ -193,7 +208,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](LibrarySupport_Py &support, serverlib::ServerLambda lambda,
               clientlib::PublicArguments &publicArguments,
               clientlib::EvaluationKeys &evaluationKeys) {
-             pybind11::gil_scoped_release release;
+             SignalGuard signalGuard;
              return library_server_call(support, lambda, publicArguments,
                                         evaluationKeys);
            })
@@ -213,7 +228,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](clientlib::ClientParameters clientParameters,
              clientlib::KeySetCache *cache, uint64_t seedMsb,
              uint64_t seedLsb) {
-            pybind11::gil_scoped_release release;
+            SignalGuard signalGuard;
             auto optCache = cache == nullptr
                                 ? std::nullopt
                                 : std::optional<clientlib::KeySetCache>(*cache);
@@ -306,6 +321,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("export_scalar",
            [](clientlib::ValueExporter &exporter, size_t position,
               int64_t value) {
+             SignalGuard signalGuard;
+
              outcome::checked<clientlib::ScalarOrTensorData, StringError>
                  result = exporter.exportValue(value, position);
 
@@ -319,6 +336,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("export_tensor", [](clientlib::ValueExporter &exporter,
                                size_t position, std::vector<int64_t> values,
                                std::vector<int64_t> shape) {
+        SignalGuard signalGuard;
+
         outcome::checked<clientlib::ScalarOrTensorData, StringError> result =
             exporter.exportValue(values.data(), shape, position);
 
@@ -349,6 +368,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("decrypt_scalar",
            [](clientlib::ValueDecrypter &decrypter, size_t position,
               clientlib::SharedScalarOrTensorData &value) {
+             SignalGuard signalGuard;
+
              outcome::checked<int64_t, StringError> result =
                  decrypter.decrypt<int64_t>(value.get(), position);
 
@@ -361,6 +382,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("decrypt_tensor",
            [](clientlib::ValueDecrypter &decrypter, size_t position,
               clientlib::SharedScalarOrTensorData &value) {
+             SignalGuard signalGuard;
+
              outcome::checked<std::vector<int64_t>, StringError> result =
                  decrypter.decryptTensor<int64_t>(value.get(), position);
 
