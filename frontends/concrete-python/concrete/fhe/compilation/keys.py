@@ -11,7 +11,6 @@ from typing import Optional, Union
 from concrete.compiler import ClientSupport, EvaluationKeys, KeySet, KeySetCache
 
 from .specs import ClientSpecs
-from .utils import interruptable_native_call
 
 # pylint: enable=import-error,no-name-in-module
 
@@ -65,13 +64,11 @@ class Keys:
             seed_msb = (seed >> 64) & ((2**64) - 1)
 
         if self._keyset is None or force:
-            self._keyset = interruptable_native_call(
-                lambda: ClientSupport.key_set(
-                    self.client_specs.client_parameters,
-                    self._keyset_cache,
-                    seed_msb,
-                    seed_lsb,
-                )
+            self._keyset = ClientSupport.key_set(
+                self.client_specs.client_parameters,
+                self._keyset_cache,
+                seed_msb,
+                seed_lsb,
             )
 
     def save(self, location: Union[str, Path]):
