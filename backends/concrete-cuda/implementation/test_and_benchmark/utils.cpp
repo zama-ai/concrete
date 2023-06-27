@@ -220,6 +220,44 @@ void generate_lwe_bootstrap_keys(
   free(bsk_array);
 }
 
+void generate_lwe_multi_bit_pbs_keys(
+    cudaStream_t *stream, int gpu_index, uint64_t **d_bsk_array,
+    uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array, int lwe_dimension,
+    int glwe_dimension, int polynomial_size, int grouping_factor, int pbs_level,
+    int pbs_base_log, Csprng *csprng, double variance,
+    const unsigned repetitions) {
+
+  void *v_stream = (void *)stream;
+
+  int bsk_size = lwe_dimension * pbs_level * (glwe_dimension + 1) *
+                 (glwe_dimension + 1) * polynomial_size *
+                 (1 << grouping_factor) / grouping_factor;
+  int bsk_array_size = bsk_size * repetitions;
+  uint64_t *bsk_array = (uint64_t *)malloc(bsk_array_size * sizeof(uint64_t));
+
+  *d_bsk_array = (uint64_t *)cuda_malloc_async(
+      bsk_array_size * sizeof(uint64_t), stream, gpu_index);
+  for (uint r = 0; r < repetitions; r++) {
+    int shift_in = 0;
+    int shift_out = 0;
+    int shift_bsk = 0;
+    core_crypto_par_generate_lwe_multi_bit_bootstrapping_key(
+        lwe_sk_in_array + (ptrdiff_t)(shift_in), lwe_dimension,
+        lwe_sk_out_array + (ptrdiff_t)(shift_out), glwe_dimension,
+        polynomial_size, bsk_array + (ptrdiff_t)(shift_bsk), pbs_base_log,
+        pbs_level, grouping_factor, sqrt(variance), 0, 0);
+    uint64_t *d_bsk = *d_bsk_array + (ptrdiff_t)(shift_bsk);
+    uint64_t *bsk = bsk_array + (ptrdiff_t)(shift_bsk);
+    cuda_memcpy_async_to_gpu(d_bsk, bsk, bsk_size * sizeof(uint64_t), stream,
+                             gpu_index);
+    shift_in += lwe_dimension;
+    shift_out += glwe_dimension * polynomial_size;
+    shift_bsk += bsk_size;
+  }
+  cuda_synchronize_stream(v_stream);
+  free(bsk_array);
+}
+
 // Generate repetitions keyswitch keys
 void generate_lwe_keyswitch_keys(cudaStream_t *stream, int gpu_index,
                                  uint64_t **d_ksk_array,

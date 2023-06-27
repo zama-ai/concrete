@@ -19,10 +19,10 @@ typedef struct {
   int number_of_inputs;
   int repetitions;
   int samples;
-} BootstrapTestParams;
+} ClassicalBootstrapTestParams;
 
-class BootstrapTestPrimitives_u64
-    : public ::testing::TestWithParam<BootstrapTestParams> {
+class ClassicalBootstrapTestPrimitives_u64
+    : public ::testing::TestWithParam<ClassicalBootstrapTestParams> {
 protected:
   int lwe_dimension;
   int glwe_dimension;
@@ -70,13 +70,14 @@ public:
     repetitions = (int)GetParam().repetitions;
     samples = (int)GetParam().samples;
 
-    bootstrap_setup(stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array,
-                    &d_fourier_bsk_array, &plaintexts, &d_lut_pbs_identity,
-                    &d_lut_pbs_indexes, &d_lwe_ct_in_array, &d_lwe_ct_out_array,
-                    lwe_dimension, glwe_dimension, polynomial_size,
-                    lwe_modular_variance, glwe_modular_variance, pbs_base_log,
-                    pbs_level, message_modulus, carry_modulus, &payload_modulus,
-                    &delta, number_of_inputs, repetitions, samples, gpu_index);
+    bootstrap_classical_setup(
+        stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array,
+        &d_fourier_bsk_array, &plaintexts, &d_lut_pbs_identity,
+        &d_lut_pbs_indexes, &d_lwe_ct_in_array, &d_lwe_ct_out_array,
+        lwe_dimension, glwe_dimension, polynomial_size, lwe_modular_variance,
+        glwe_modular_variance, pbs_base_log, pbs_level, message_modulus,
+        carry_modulus, &payload_modulus, &delta, number_of_inputs, repetitions,
+        samples, gpu_index);
 
     lwe_ct_out_array =
         (uint64_t *)malloc((glwe_dimension * polynomial_size + 1) *
@@ -85,14 +86,14 @@ public:
 
   void TearDown() {
     free(lwe_ct_out_array);
-    bootstrap_teardown(stream, csprng, lwe_sk_in_array, lwe_sk_out_array,
-                       d_fourier_bsk_array, plaintexts, d_lut_pbs_identity,
-                       d_lut_pbs_indexes, d_lwe_ct_in_array, d_lwe_ct_out_array,
-                       gpu_index);
+    bootstrap_classical_teardown(
+        stream, csprng, lwe_sk_in_array, lwe_sk_out_array, d_fourier_bsk_array,
+        plaintexts, d_lut_pbs_identity, d_lut_pbs_indexes, d_lwe_ct_in_array,
+        d_lwe_ct_out_array, gpu_index);
   }
 };
 
-TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
+TEST_P(ClassicalBootstrapTestPrimitives_u64, amortized_bootstrap) {
   int8_t *pbs_buffer;
   scratch_cuda_bootstrap_amortized_64(
       stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
@@ -151,7 +152,7 @@ TEST_P(BootstrapTestPrimitives_u64, amortized_bootstrap) {
   cleanup_cuda_bootstrap_amortized(stream, gpu_index, &pbs_buffer);
 }
 
-TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
+TEST_P(ClassicalBootstrapTestPrimitives_u64, low_latency_bootstrap) {
   int8_t *pbs_buffer;
   scratch_cuda_bootstrap_low_latency_64(
       stream, gpu_index, &pbs_buffer, glwe_dimension, polynomial_size,
@@ -213,94 +214,117 @@ TEST_P(BootstrapTestPrimitives_u64, low_latency_bootstrap) {
 
 // Defines for which parameters set the PBS will be tested.
 // It executes each test for all pairs on phis X qs (Cartesian product)
-::testing::internal::ParamGenerator<BootstrapTestParams> pbs_params_u64 =
-    ::testing::Values(
+::testing::internal::ParamGenerator<ClassicalBootstrapTestParams>
+    pbs_params_u64 = ::testing::Values(
         // n, k, N, lwe_variance, glwe_variance, pbs_base_log, pbs_level,
         // message_modulus, carry_modulus, number_of_inputs, repetitions,
         // samples
         // BOOLEAN_DEFAULT_PARAMETERS
-        (BootstrapTestParams){777, 3, 512, 1.3880686109937e-11,
-                              1.1919984450689246e-23, 18, 1, 2, 2, 2, 2, 40},
+        (ClassicalBootstrapTestParams){777, 3, 512, 1.3880686109937e-11,
+                                       1.1919984450689246e-23, 18, 1, 2, 2, 2,
+                                       2, 40},
         // BOOLEAN_TFHE_LIB_PARAMETERS
-        (BootstrapTestParams){830, 2, 1024, 1.994564705573226e-12,
-                              8.645717832544903e-32, 23, 1, 2, 2, 2, 2, 40},
+        (ClassicalBootstrapTestParams){830, 2, 1024, 1.994564705573226e-12,
+                                       8.645717832544903e-32, 23, 1, 2, 2, 2, 2,
+                                       40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_0
-        (BootstrapTestParams){678, 5, 256, 5.203010004723453e-10,
-                              1.3996292326131784e-19, 15, 1, 2, 1, 2, 2, 40},
+        (ClassicalBootstrapTestParams){678, 5, 256, 5.203010004723453e-10,
+                                       1.3996292326131784e-19, 15, 1, 2, 1, 2,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_1
-        (BootstrapTestParams){684, 3, 512, 4.177054989616946e-10,
-                              1.1919984450689246e-23, 18, 1, 2, 2, 2, 2, 40},
+        (ClassicalBootstrapTestParams){684, 3, 512, 4.177054989616946e-10,
+                                       1.1919984450689246e-23, 18, 1, 2, 2, 2,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_2_CARRY_0
-        (BootstrapTestParams){656, 2, 512, 1.1641198952558192e-09,
-                              1.6434266310406663e-15, 8, 2, 4, 1, 2, 2, 40},
+        (ClassicalBootstrapTestParams){656, 2, 512, 1.1641198952558192e-09,
+                                       1.6434266310406663e-15, 8, 2, 4, 1, 2, 2,
+                                       40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_2
         // SHORTINT_PARAM_MESSAGE_2_CARRY_1
         // SHORTINT_PARAM_MESSAGE_3_CARRY_0
-        (BootstrapTestParams){742, 2, 1024, 4.998277131225527e-11,
-                              8.645717832544903e-32, 23, 1, 2, 4, 2, 2, 40},
+        (ClassicalBootstrapTestParams){742, 2, 1024, 4.998277131225527e-11,
+                                       8.645717832544903e-32, 23, 1, 2, 4, 2, 2,
+                                       40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_3
         // SHORTINT_PARAM_MESSAGE_2_CARRY_2
         // SHORTINT_PARAM_MESSAGE_3_CARRY_1
         // SHORTINT_PARAM_MESSAGE_4_CARRY_0
-        (BootstrapTestParams){745, 1, 2048, 4.478453795193731e-11,
-                              8.645717832544903e-32, 23, 1, 2, 8, 2, 2, 40},
+        (ClassicalBootstrapTestParams){745, 1, 2048, 4.478453795193731e-11,
+                                       8.645717832544903e-32, 23, 1, 2, 8, 2, 2,
+                                       40},
         // SHORTINT_PARAM_MESSAGE_5_CARRY_0
         // SHORTINT_PARAM_MESSAGE_3_CARRY_2
-        (BootstrapTestParams){807, 1, 4096, 4.629015039118823e-12,
-                              4.70197740328915e-38, 22, 1, 32, 1, 2, 1, 40},
+        (ClassicalBootstrapTestParams){807, 1, 4096, 4.629015039118823e-12,
+                                       4.70197740328915e-38, 22, 1, 32, 1, 2, 1,
+                                       40},
         // SHORTINT_PARAM_MESSAGE_6_CARRY_0
-        (BootstrapTestParams){915, 1, 8192, 8.883173851180252e-14,
-                              4.70197740328915e-38, 22, 1, 64, 1, 2, 1, 5},
+        (ClassicalBootstrapTestParams){915, 1, 8192, 8.883173851180252e-14,
+                                       4.70197740328915e-38, 22, 1, 64, 1, 2, 1,
+                                       5},
         // SHORTINT_PARAM_MESSAGE_3_CARRY_3
-        (BootstrapTestParams){864, 1, 8192, 1.5843564961097632e-15,
-                              4.70197740328915e-38, 15, 2, 8, 8, 2, 1, 5},
+        (ClassicalBootstrapTestParams){864, 1, 8192, 1.5843564961097632e-15,
+                                       4.70197740328915e-38, 15, 2, 8, 8, 2, 1,
+                                       5},
         // SHORTINT_PARAM_MESSAGE_4_CARRY_3
         // SHORTINT_PARAM_MESSAGE_7_CARRY_0
-        (BootstrapTestParams){930, 1, 16384, 5.129877458078009e-14,
-                              4.70197740328915e-38, 15, 2, 128, 1, 2, 1, 5},
+        (ClassicalBootstrapTestParams){930, 1, 16384, 5.129877458078009e-14,
+                                       4.70197740328915e-38, 15, 2, 128, 1, 2,
+                                       1, 5},
 
         // BOOLEAN_DEFAULT_PARAMETERS
-        (BootstrapTestParams){777, 3, 512, 1.3880686109937e-11,
-                              1.1919984450689246e-23, 18, 1, 2, 2, 100, 2, 40},
+        (ClassicalBootstrapTestParams){777, 3, 512, 1.3880686109937e-11,
+                                       1.1919984450689246e-23, 18, 1, 2, 2, 100,
+                                       2, 40},
         // BOOLEAN_TFHE_LIB_PARAMETERS
-        (BootstrapTestParams){830, 2, 1024, 1.994564705573226e-12,
-                              8.645717832544903e-32, 23, 1, 2, 2, 100, 2, 40},
+        (ClassicalBootstrapTestParams){830, 2, 1024, 1.994564705573226e-12,
+                                       8.645717832544903e-32, 23, 1, 2, 2, 100,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_0
-        (BootstrapTestParams){678, 5, 256, 5.203010004723453e-10,
-                              1.3996292326131784e-19, 15, 1, 2, 1, 100, 2, 40},
+        (ClassicalBootstrapTestParams){678, 5, 256, 5.203010004723453e-10,
+                                       1.3996292326131784e-19, 15, 1, 2, 1, 100,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_1
-        (BootstrapTestParams){684, 3, 512, 4.177054989616946e-10,
-                              1.1919984450689246e-23, 18, 1, 2, 2, 100, 2, 40},
+        (ClassicalBootstrapTestParams){684, 3, 512, 4.177054989616946e-10,
+                                       1.1919984450689246e-23, 18, 1, 2, 2, 100,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_2_CARRY_0
-        (BootstrapTestParams){656, 2, 512, 1.1641198952558192e-09,
-                              1.6434266310406663e-15, 8, 2, 4, 1, 100, 2, 40},
+        (ClassicalBootstrapTestParams){656, 2, 512, 1.1641198952558192e-09,
+                                       1.6434266310406663e-15, 8, 2, 4, 1, 100,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_2
         // SHORTINT_PARAM_MESSAGE_2_CARRY_1
         // SHORTINT_PARAM_MESSAGE_3_CARRY_0
-        (BootstrapTestParams){742, 2, 1024, 4.998277131225527e-11,
-                              8.645717832544903e-32, 23, 1, 2, 4, 100, 2, 40},
+        (ClassicalBootstrapTestParams){742, 2, 1024, 4.998277131225527e-11,
+                                       8.645717832544903e-32, 23, 1, 2, 4, 100,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_1_CARRY_3
         // SHORTINT_PARAM_MESSAGE_2_CARRY_2
         // SHORTINT_PARAM_MESSAGE_3_CARRY_1
         // SHORTINT_PARAM_MESSAGE_4_CARRY_0
-        (BootstrapTestParams){745, 1, 2048, 4.478453795193731e-11,
-                              8.645717832544903e-32, 23, 1, 2, 8, 100, 2, 40},
+        (ClassicalBootstrapTestParams){745, 1, 2048, 4.478453795193731e-11,
+                                       8.645717832544903e-32, 23, 1, 2, 8, 100,
+                                       2, 40},
         // SHORTINT_PARAM_MESSAGE_5_CARRY_0
         // SHORTINT_PARAM_MESSAGE_3_CARRY_2
-        (BootstrapTestParams){807, 1, 4096, 4.629015039118823e-12,
-                              4.70197740328915e-38, 22, 1, 32, 1, 100, 1, 40},
+        (ClassicalBootstrapTestParams){807, 1, 4096, 4.629015039118823e-12,
+                                       4.70197740328915e-38, 22, 1, 32, 1, 100,
+                                       1, 40},
         // SHORTINT_PARAM_MESSAGE_6_CARRY_0
-        (BootstrapTestParams){915, 1, 8192, 8.883173851180252e-14,
-                              4.70197740328915e-38, 22, 1, 64, 1, 100, 1, 5},
+        (ClassicalBootstrapTestParams){915, 1, 8192, 8.883173851180252e-14,
+                                       4.70197740328915e-38, 22, 1, 64, 1, 100,
+                                       1, 5},
         // SHORTINT_PARAM_MESSAGE_3_CARRY_3
-        (BootstrapTestParams){864, 1, 8192, 1.5843564961097632e-15,
-                              4.70197740328915e-38, 15, 2, 8, 8, 100, 1, 5},
+        (ClassicalBootstrapTestParams){864, 1, 8192, 1.5843564961097632e-15,
+                                       4.70197740328915e-38, 15, 2, 8, 8, 100,
+                                       1, 5},
         // SHORTINT_PARAM_MESSAGE_4_CARRY_3
         // SHORTINT_PARAM_MESSAGE_7_CARRY_0
-        (BootstrapTestParams){930, 1, 16384, 5.129877458078009e-14,
-                              4.70197740328915e-38, 15, 2, 128, 1, 100, 1, 5});
-std::string printParamName(::testing::TestParamInfo<BootstrapTestParams> p) {
-  BootstrapTestParams params = p.param;
+        (ClassicalBootstrapTestParams){930, 1, 16384, 5.129877458078009e-14,
+                                       4.70197740328915e-38, 15, 2, 128, 1, 100,
+                                       1, 5});
+std::string
+printParamName(::testing::TestParamInfo<ClassicalBootstrapTestParams> p) {
+  ClassicalBootstrapTestParams params = p.param;
 
   return "n_" + std::to_string(params.lwe_dimension) + "_k_" +
          std::to_string(params.glwe_dimension) + "_N_" +
@@ -310,5 +334,6 @@ std::string printParamName(::testing::TestParamInfo<BootstrapTestParams> p) {
          std::to_string(params.number_of_inputs);
 }
 
-INSTANTIATE_TEST_CASE_P(BootstrapInstantiation, BootstrapTestPrimitives_u64,
-                        pbs_params_u64, printParamName);
+INSTANTIATE_TEST_CASE_P(ClassicalBootstrapInstantiation,
+                        ClassicalBootstrapTestPrimitives_u64, pbs_params_u64,
+                        printParamName);

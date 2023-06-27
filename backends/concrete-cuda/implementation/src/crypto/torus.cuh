@@ -44,7 +44,13 @@ __device__ __forceinline__ void rescale_torus_element(T element, T &output,
   output =
       round((double)element / (double(std::numeric_limits<T>::max()) + 1.0) *
             (double)log_shift);
-  ;
+}
+
+template <typename T>
+__device__ __forceinline__ T rescale_torus_element(T element,
+                                                   uint32_t log_shift) {
+  return round((double)element / (double(std::numeric_limits<T>::max()) + 1.0) *
+               (double)log_shift);
 }
 
 template <>

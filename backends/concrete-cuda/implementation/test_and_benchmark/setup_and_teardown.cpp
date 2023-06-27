@@ -2,18 +2,17 @@
 #include <random>
 #include <setup_and_teardown.h>
 
-void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
-                     uint64_t **lwe_sk_in_array, uint64_t **lwe_sk_out_array,
-                     double **d_fourier_bsk_array, uint64_t **plaintexts,
-                     uint64_t **d_lut_pbs_identity,
-                     uint64_t **d_lut_pbs_indexes, uint64_t **d_lwe_ct_in_array,
-                     uint64_t **d_lwe_ct_out_array, int lwe_dimension,
-                     int glwe_dimension, int polynomial_size,
-                     double lwe_modular_variance, double glwe_modular_variance,
-                     int pbs_base_log, int pbs_level, int message_modulus,
-                     int carry_modulus, int *payload_modulus, uint64_t *delta,
-                     int number_of_inputs, int repetitions, int samples,
-                     int gpu_index) {
+void bootstrap_classical_setup(
+    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    uint64_t **lwe_sk_out_array, double **d_fourier_bsk_array,
+    uint64_t **plaintexts, uint64_t **d_lut_pbs_identity,
+    uint64_t **d_lut_pbs_indexes, uint64_t **d_lwe_ct_in_array,
+    uint64_t **d_lwe_ct_out_array, int lwe_dimension, int glwe_dimension,
+    int polynomial_size, double lwe_modular_variance,
+    double glwe_modular_variance, int pbs_base_log, int pbs_level,
+    int message_modulus, int carry_modulus, int *payload_modulus,
+    uint64_t *delta, int number_of_inputs, int repetitions, int samples,
+    int gpu_index) {
 
   *payload_modulus = message_modulus * carry_modulus;
   // Value of the shift we multiply our messages by
@@ -97,13 +96,12 @@ void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
   free(lut_pbs_identity);
 }
 
-void bootstrap_teardown(cudaStream_t *stream, Csprng *csprng,
-                        uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array,
-                        double *d_fourier_bsk_array, uint64_t *plaintexts,
-                        uint64_t *d_lut_pbs_identity,
-                        uint64_t *d_lut_pbs_indexes,
-                        uint64_t *d_lwe_ct_in_array,
-                        uint64_t *d_lwe_ct_out_array, int gpu_index) {
+void bootstrap_classical_teardown(
+    cudaStream_t *stream, Csprng *csprng, uint64_t *lwe_sk_in_array,
+    uint64_t *lwe_sk_out_array, double *d_fourier_bsk_array,
+    uint64_t *plaintexts, uint64_t *d_lut_pbs_identity,
+    uint64_t *d_lut_pbs_indexes, uint64_t *d_lwe_ct_in_array,
+    uint64_t *d_lwe_ct_out_array, int gpu_index) {
   cuda_synchronize_stream(stream);
 
   concrete_cpu_destroy_concrete_csprng(csprng);
@@ -113,6 +111,129 @@ void bootstrap_teardown(cudaStream_t *stream, Csprng *csprng,
   free(plaintexts);
 
   cuda_drop_async(d_fourier_bsk_array, stream, gpu_index);
+  cuda_drop_async(d_lut_pbs_identity, stream, gpu_index);
+  cuda_drop_async(d_lut_pbs_indexes, stream, gpu_index);
+  cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);
+  cuda_drop_async(d_lwe_ct_out_array, stream, gpu_index);
+  cuda_synchronize_stream(stream);
+  cuda_destroy_stream(stream, gpu_index);
+}
+
+void bootstrap_multibit_setup(
+    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    uint64_t **lwe_sk_out_array, uint64_t **d_bsk_array, uint64_t **plaintexts,
+    uint64_t **d_lut_pbs_identity, uint64_t **d_lut_pbs_indexes,
+    uint64_t **d_lwe_ct_in_array, uint64_t **d_lwe_ct_out_array,
+    int8_t **pbs_buffer, int lwe_dimension, int glwe_dimension,
+    int polynomial_size, int grouping_factor, double lwe_modular_variance,
+    double glwe_modular_variance, int pbs_base_log, int pbs_level,
+    int message_modulus, int carry_modulus, int *payload_modulus,
+    uint64_t *delta, int number_of_inputs, int repetitions, int samples,
+    int gpu_index, int lwe_chunk_size) {
+  cudaSetDevice(gpu_index);
+
+  *payload_modulus = message_modulus * carry_modulus;
+  // Value of the shift we multiply our messages by
+  *delta = ((uint64_t)(1) << 63) / (uint64_t)(*payload_modulus);
+  // Create a Csprng
+  *csprng =
+      (Csprng *)aligned_alloc(CONCRETE_CSPRNG_ALIGN, CONCRETE_CSPRNG_SIZE);
+  uint8_t seed[16] = {(uint8_t)0};
+  concrete_cpu_construct_concrete_csprng(
+      *csprng, Uint128{.little_endian_bytes = {*seed}});
+
+  // Generate the keys
+  generate_lwe_secret_keys(lwe_sk_in_array, lwe_dimension, *csprng,
+                           repetitions);
+  generate_lwe_secret_keys(lwe_sk_out_array, glwe_dimension * polynomial_size,
+                           *csprng, repetitions);
+  generate_lwe_multi_bit_pbs_keys(
+      stream, gpu_index, d_bsk_array, *lwe_sk_in_array, *lwe_sk_out_array,
+      lwe_dimension, glwe_dimension, polynomial_size, grouping_factor,
+      pbs_level, pbs_base_log, *csprng, glwe_modular_variance, repetitions);
+
+  *plaintexts = generate_plaintexts(*payload_modulus, *delta, number_of_inputs,
+                                    repetitions, samples);
+
+  // Create the LUT
+  uint64_t *lut_pbs_identity = generate_identity_lut_pbs(
+      polynomial_size, glwe_dimension, message_modulus, carry_modulus,
+      [](int x) -> int { return x; });
+  uint64_t *lwe_ct_in_array =
+      (uint64_t *)malloc((lwe_dimension + 1) * number_of_inputs * repetitions *
+                         samples * sizeof(uint64_t));
+  // Create the input/output ciphertexts
+  for (int r = 0; r < repetitions; r++) {
+    uint64_t *lwe_sk_in = *lwe_sk_in_array + (ptrdiff_t)(r * lwe_dimension);
+    for (int s = 0; s < samples; s++) {
+      for (int i = 0; i < number_of_inputs; i++) {
+        uint64_t plaintext = (*plaintexts)[r * samples * number_of_inputs +
+                                           s * number_of_inputs + i];
+        uint64_t *lwe_ct_in =
+            lwe_ct_in_array + (ptrdiff_t)((r * samples * number_of_inputs +
+                                           s * number_of_inputs + i) *
+                                          (lwe_dimension + 1));
+        concrete_cpu_encrypt_lwe_ciphertext_u64(
+            lwe_sk_in, lwe_ct_in, plaintext, lwe_dimension,
+            lwe_modular_variance, *csprng, &CONCRETE_CSPRNG_VTABLE);
+      }
+    }
+  }
+
+  // Initialize and copy things in/to the device
+  *d_lut_pbs_identity = (uint64_t *)cuda_malloc_async(
+      (glwe_dimension + 1) * polynomial_size * sizeof(uint64_t), stream,
+      gpu_index);
+  cuda_memcpy_async_to_gpu(*d_lut_pbs_identity, lut_pbs_identity,
+                           polynomial_size * (glwe_dimension + 1) *
+                               sizeof(uint64_t),
+                           stream, gpu_index);
+  *d_lut_pbs_indexes = (uint64_t *)cuda_malloc_async(
+      number_of_inputs * sizeof(uint64_t), stream, gpu_index);
+  cuda_memset_async(*d_lut_pbs_indexes, 0, number_of_inputs * sizeof(uint64_t),
+                    stream, gpu_index);
+
+  // Input and output LWEs
+  *d_lwe_ct_out_array =
+      (uint64_t *)cuda_malloc_async((glwe_dimension * polynomial_size + 1) *
+                                        number_of_inputs * sizeof(uint64_t),
+                                    stream, gpu_index);
+  *d_lwe_ct_in_array = (uint64_t *)cuda_malloc_async(
+      (lwe_dimension + 1) * number_of_inputs * repetitions * samples *
+          sizeof(uint64_t),
+      stream, gpu_index);
+
+  cuda_memcpy_async_to_gpu(*d_lwe_ct_in_array, lwe_ct_in_array,
+                           repetitions * samples * number_of_inputs *
+                               (lwe_dimension + 1) * sizeof(uint64_t),
+                           stream, gpu_index);
+
+  scratch_cuda_multi_bit_pbs_64(
+      stream, gpu_index, pbs_buffer, lwe_dimension, glwe_dimension,
+      polynomial_size, pbs_level, grouping_factor, number_of_inputs,
+      cuda_get_max_shared_memory(gpu_index), true, lwe_chunk_size);
+
+  cuda_synchronize_stream(stream);
+
+  free(lwe_ct_in_array);
+  free(lut_pbs_identity);
+}
+
+void bootstrap_multibit_teardown(
+    cudaStream_t *stream, Csprng *csprng, uint64_t *lwe_sk_in_array,
+    uint64_t *lwe_sk_out_array, uint64_t *d_bsk_array, uint64_t *plaintexts,
+    uint64_t *d_lut_pbs_identity, uint64_t *d_lut_pbs_indexes,
+    uint64_t *d_lwe_ct_in_array, uint64_t *d_lwe_ct_out_array,
+    int8_t **pbs_buffer, int gpu_index) {
+  cuda_synchronize_stream(stream);
+  concrete_cpu_destroy_concrete_csprng(csprng);
+  free(csprng);
+  free(lwe_sk_in_array);
+  free(lwe_sk_out_array);
+  free(plaintexts);
+
+  cleanup_cuda_multi_bit_pbs(stream, gpu_index, pbs_buffer);
+  cuda_drop_async(d_bsk_array, stream, gpu_index);
   cuda_drop_async(d_lut_pbs_identity, stream, gpu_index);
   cuda_drop_async(d_lut_pbs_indexes, stream, gpu_index);
   cuda_drop_async(d_lwe_ct_in_array, stream, gpu_index);

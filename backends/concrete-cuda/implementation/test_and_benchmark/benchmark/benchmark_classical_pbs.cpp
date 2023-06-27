@@ -68,15 +68,15 @@ public:
       uint64_t *d_lwe_ct_out_array_per_gpu;
       int8_t *pbs_buffer_per_gpu;
 
-      bootstrap_setup(stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array,
-                      &d_fourier_bsk_array_per_gpu, &plaintexts,
-                      &d_lut_pbs_identity_per_gpu, &d_lut_pbs_indexes_per_gpu,
-                      &d_lwe_ct_in_array_per_gpu, &d_lwe_ct_out_array_per_gpu,
-                      lwe_dimension, glwe_dimension, polynomial_size,
-                      lwe_modular_variance, glwe_modular_variance, pbs_base_log,
-                      pbs_level, message_modulus, carry_modulus,
-                      &payload_modulus, &delta,
-                      input_lwe_ciphertext_count_on_gpu, 1, 1, gpu_index);
+      bootstrap_classical_setup(
+          stream, &csprng, &lwe_sk_in_array, &lwe_sk_out_array,
+          &d_fourier_bsk_array_per_gpu, &plaintexts,
+          &d_lut_pbs_identity_per_gpu, &d_lut_pbs_indexes_per_gpu,
+          &d_lwe_ct_in_array_per_gpu, &d_lwe_ct_out_array_per_gpu,
+          lwe_dimension, glwe_dimension, polynomial_size, lwe_modular_variance,
+          glwe_modular_variance, pbs_base_log, pbs_level, message_modulus,
+          carry_modulus, &payload_modulus, &delta,
+          input_lwe_ciphertext_count_on_gpu, 1, 1, gpu_index);
       size_t free, total;
       cudaMemGetInfo(&free, &total);
       uint64_t buffer_size = get_buffer_size_bootstrap_low_latency_64(
