@@ -3,13 +3,20 @@ use super::complexity_model::ComplexityModel;
 use super::operators::keyswitch_lwe::KsComplexity;
 use super::operators::{keyswitch_lwe, multi_bit_pbs, pbs};
 use crate::computing_cost::operators::multi_bit_pbs::MultiBitPbsComplexity;
-use crate::parameters::{CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters};
+use crate::computing_cost::operators::tensor_product::TensorProductGlweComplexity;
+use crate::computing_cost::operators::trace_packing::TracePackingComplexity;
+use crate::parameters::{
+    CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters, TensorProductGlweParameters,
+    TracePackingParameters,
+};
 
 #[derive(Clone)]
 pub struct CpuComplexity {
     pub ks_lwe: keyswitch_lwe::KsComplexity,
     pub pbs: pbs::PbsComplexity,
     pub multi_bit_pbs: MultiBitPbsComplexity,
+    pub trace_packing: TracePackingComplexity,
+    pub tensor_product: TensorProductGlweComplexity,
 }
 
 impl ComplexityModel for CpuComplexity {
@@ -53,6 +60,25 @@ impl ComplexityModel for CpuComplexity {
     ) -> Complexity {
         sum_size as f64 * lwe_dimension.0 as f64
     }
+
+    fn trace_packing_complexity(
+        &self,
+        params: TracePackingParameters,
+        ciphertext_modulus_log: u32,
+        index_set: &[usize],
+    ) -> Complexity {
+        self.trace_packing
+            .complexity(params, ciphertext_modulus_log, index_set)
+    }
+
+    fn tensor_product_complexity(
+        &self,
+        params: TensorProductGlweParameters,
+        ciphertext_modulus_log: u32,
+    ) -> Complexity {
+        self.tensor_product
+            .complexity(params, ciphertext_modulus_log)
+    }
 }
 
 impl Default for CpuComplexity {
@@ -61,6 +87,8 @@ impl Default for CpuComplexity {
             ks_lwe: KsComplexity,
             pbs: pbs::PbsComplexity::default(),
             multi_bit_pbs: multi_bit_pbs::MultiBitPbsComplexity::default(),
+            tensor_product: TensorProductGlweComplexity::default(),
+            trace_packing: TracePackingComplexity::default(),
         }
     }
 }

@@ -105,6 +105,39 @@ mod individual {
         pub output_lwe_dimension: LweDimension, //n_small
         pub ks_decomposition_parameter: KsDecompositionParameters,
     }
+
+    #[derive(Clone, Copy)]
+    pub struct KeyswitchGlweParameters {
+        pub input_glwe_params: GlweParameters,
+        pub output_glwe_params: GlweParameters,
+        pub ks_decomposition_parameter: KsDecompositionParameters,
+    }
+
+    impl KeyswitchGlweParameters {
+        pub fn ks_glwe_parameters(self) -> KeyswitchGlweParameters {
+            KeyswitchGlweParameters {
+                input_glwe_params: self.input_glwe_params,
+                output_glwe_params: self.output_glwe_params,
+                ks_decomposition_parameter: self.ks_decomposition_parameter,
+            }
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct TracePackingParameters {
+        pub input_lwe_dimension: u64,
+        //pub input_nb_lwes: u64,
+        pub output_glwe_params: GlweParameters,
+        pub ks_decomposition_parameter: KsDecompositionParameters,
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct TensorProductGlweParameters {
+        pub input_glwe_params: GlweParameters,
+        pub output_glwe_params: GlweParameters,
+        //use ks_decomposition_parameter otherwise you have twice the glwe input and output parameters
+        pub ks_decomposition_parameters: KsDecompositionParameters,
+    }
 }
 
 mod range {

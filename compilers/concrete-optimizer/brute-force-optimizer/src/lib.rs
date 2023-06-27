@@ -96,6 +96,7 @@ pub mod generic;
 pub mod ks_free;
 pub mod lmp;
 pub mod multi_bit_cjp;
+pub mod tensor_prod;
 
 pub struct Solution<T> {
     pub precision: u64,

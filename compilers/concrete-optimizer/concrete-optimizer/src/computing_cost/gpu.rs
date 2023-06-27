@@ -1,6 +1,9 @@
 use super::complexity::Complexity;
 use super::complexity_model::ComplexityModel;
-use crate::parameters::{CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters};
+use crate::parameters::{
+    CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters, TensorProductGlweParameters,
+    TracePackingParameters,
+};
 use crate::utils::square;
 
 #[derive(Clone, Copy)]
@@ -79,6 +82,23 @@ impl ComplexityModel for GpuComplexity {
         _ciphertext_modulus_log: u32,
         _grouping_factor: u32,
         _jit_fft: bool,
+    ) -> Complexity {
+        todo!()
+    }
+
+    fn trace_packing_complexity(
+        &self,
+        params: TracePackingParameters,
+        ciphertext_modulus_log: u32,
+        index_set: &[usize],
+    ) -> Complexity {
+        todo!()
+    }
+
+    fn tensor_product_complexity(
+        &self,
+        params: TensorProductGlweParameters,
+        ciphertext_modulus_log: u32,
     ) -> Complexity {
         todo!()
     }

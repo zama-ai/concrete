@@ -1,5 +1,8 @@
 use super::complexity::Complexity;
-use crate::parameters::{CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters};
+use crate::parameters::{
+    CmuxParameters, KeyswitchParameters, LweDimension, PbsParameters, TensorProductGlweParameters,
+    TracePackingParameters,
+};
 
 pub trait ComplexityModel: Send + Sync {
     fn pbs_complexity(&self, params: PbsParameters, ciphertext_modulus_log: u32) -> Complexity;
@@ -19,5 +22,16 @@ pub trait ComplexityModel: Send + Sync {
         ciphertext_modulus_log: u32,
         grouping_factor: u32,
         jit_fft: bool,
+    ) -> Complexity;
+    fn tensor_product_complexity(
+        &self,
+        params: TensorProductGlweParameters,
+        ciphertext_modulus_log: u32,
+    ) -> Complexity;
+    fn trace_packing_complexity(
+        &self,
+        params: TracePackingParameters,
+        ciphertext_modulus_log: u32,
+        index_set: &[usize],
     ) -> Complexity;
 }
