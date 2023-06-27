@@ -30,14 +30,17 @@ pytest:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
 	export PYTHONPATH=$(BINDINGS_DIRECTORY)
 
-	# test single precision
+	# test single precision, mono params
 	pytest tests -svv -n auto \
+		--precision=single \
+		--strategy=mono \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-	# test multi precision
+	# test multi precision, multi params
 	pytest tests -svv -n auto \
 		--precision=multi \
+		--strategy=multi \
 		--cov=concrete \
 		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
