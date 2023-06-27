@@ -157,7 +157,12 @@ jobs:
 
   compiler-cpu-build:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-cpu-api == 'true'|| needs.file-change.outputs.concrete-compiler-cpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/tags/')
+    if: |
+      needs.file-change.outputs.compiler == 'true' ||
+      needs.file-change.outputs.concrete-cpu-api == 'true' ||
+      needs.file-change.outputs.concrete-compiler-cpu-workflow == 'true' ||
+      needs.file-change.outputs.optimizer == 'true' ||
+      needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/tags/')
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
