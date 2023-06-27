@@ -18,7 +18,9 @@ pub fn norm(precision_block: u64, carry: u64) -> u64 {
 pub fn solve_all_cast_cjp(p_fail: f64, writer: impl Write) {
     let start = Instant::now();
     let TOTAL_PRECISION_CARRY = 8;
-    let mut experiments: Vec<(u64, u64)> = vec![(1u64, 1), (2, 2)];
+    let mut experiments: Vec<(u64, u64)> = vec![(2u64, 2), (3, 3)];
+    // let mut experiments: Vec<(u64, u64)> = vec![(2u64, 2), (3, 3)];
+    // let mut experiments: Vec<(u64, u64)> = vec![(1u64, 1), (2, 2)];
     // vec![(2u64, 2), (1, 1)];
 
     let mut experiments_with_2norms = {
@@ -92,8 +94,15 @@ pub fn solve_all_cast_cjp(p_fail: f64, writer: impl Write) {
         variance_bsk,
     );
     // norm2 of the small partition
-    let (_, _, norm2) = experiments_with_2norms[0];
-    let norm2 = 5_f64.sqrt();
+    let (input_p, _, norm2) = experiments_with_2norms[0];
+
+    let norm2 = match input_p {
+        2 => 5_f64.sqrt(), // 5_f64.sqrt();
+        4 => 18_f64.sqrt(),
+        6 => 66_f64.sqrt(),
+        _ => panic!(),
+    };
+
     // precision of the big partition
     let (precision, _, _) = experiments_with_2norms[1];
     // some precomputation
