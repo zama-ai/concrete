@@ -792,12 +792,12 @@ fn optimize_macro(
                 fft_precision,
             );
             if let Some(some_micro_params) = micro_opt {
-                // erase macros and all fks and ks that can't be real
+                // erase macros and all fks that can't be real
                 // set global is_lower_bound here, if any parameter is missing this is lower bound
                 // optimize_micro has already checked for best-ness
                 let mut macro_params = init_parameters.macro_params.clone();
                 macro_params[partition] = Some(macro_param_partition);
-                let is_lower_bound = macro_params.iter().any(Option::is_none);
+                let mut is_lower_bound = macro_params.iter().any(Option::is_none);
                 // copy back pbs from other partition
                 let mut all_pbs = init_parameters.micro_params.pbs.clone();
                 all_pbs[partition] = Some(some_micro_params.pbs);
@@ -808,6 +808,26 @@ fn optimize_macro(
                             some_micro_params.fks[src_partition][dst_partition];
                         assert!(used_conversion_keyswitch[src_partition][dst_partition]);
                         assert!(all_fks[src_partition][dst_partition].is_some());
+                    }
+                }
+                // As all fks cannot be reoptimized in some case, we need to check previous ones are still valid.
+                for src_partition in 0..nb_partitions {
+                    for dst_partition in 0..nb_partitions {
+                        if used_conversion_keyswitch[src_partition][dst_partition] {
+                            if let Some(prev_fks) = &all_fks[src_partition][dst_partition] {
+                                if macro_params[src_partition].is_some() && macro_params[dst_partition].is_some() {
+                                    if prev_fks.src_glwe_param != macro_params[src_partition].unwrap().glwe_params
+                                    || prev_fks.dst_glwe_param != macro_params[dst_partition].unwrap().glwe_params {
+                                        all_fks[src_partition][dst_partition] = None;
+                                        is_lower_bound = true;
+                                    }
+                                } else {
+                                    all_fks[src_partition][dst_partition] = None;
+                                }
+                            } else {
+                                is_lower_bound = true;
+                            }
+                        }
                     }
                 }
                 let micro_params = MicroParameters {
@@ -890,6 +910,7 @@ pub fn optimize(
     let mut best_p_error = f64::INFINITY;
 
     let mut fix_point = params.clone();
+    let mut best_params : Option<Parameters> = None;
     for iter in 0..=10 {
         for partition in (0..nb_partitions).rev() {
             let new_params = optimize_macro(
@@ -924,15 +945,25 @@ pub fn optimize(
                 }
                 continue;
             }
+            if params.is_lower_bound {
+                if DEBUG {
+                    eprintln!(
+                        "Lower bound solution it:{iter} : part:{partition} : {} {} lb:{}",
+                        params.p_error, params.complexity, params.is_lower_bound
+                    );
+                }
+                continue;
+            }
             if DEBUG {
                 eprintln!(
                     "Feasible solution {iter} : {partition} : {} {} {}",
                     params.p_error, params.complexity, params.is_lower_bound
                 );
             }
-            if !params.is_lower_bound {
+            if params.complexity < best_complexity {
                 best_complexity = params.complexity;
                 best_p_error = params.p_error;
+                best_params = Some(params.clone());
             }
         }
         if nb_partitions == 1 {
@@ -947,16 +978,16 @@ pub fn optimize(
             if DEBUG {
                 eprintln!("Fix point reached at {iter}");
             }
-            if !params.is_feasible {
-                eprintln!("{:?}", params.macro_params);
-                return None;
-            }
             break;
         }
         fix_point = params.clone();
     }
+    if best_params.is_none() {
+        return None;
+    }
+    let best_params = best_params.unwrap();
     sanity_check(
-        &params,
+        &best_params,
         &used_conversion_keyswitch,
         &used_tlu_keyswitch,
         ciphertext_modulus_log,
@@ -964,7 +995,7 @@ pub fn optimize(
         &feasible,
         &complexity,
     );
-    Some((dag, params))
+    Some((dag, best_params))
 }
 
 fn used_tlu_keyswitch(dag: &AnalyzedDag) -> Vec<Vec<bool>> {
@@ -1011,6 +1042,8 @@ fn sanity_check(
     feasible: &Feasible,
     complexity: &Complexity,
 ) {
+    assert!(params.is_feasible);
+    assert!(!params.is_lower_bound, "Sanity check:lower_bound: cannot return a partial solution");
     let nb_partitions = params.macro_params.len();
     let mut operations = OperationsCV {
         variance: OperationsValue::zero(nb_partitions),
