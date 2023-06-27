@@ -90,10 +90,10 @@ class Configuration:
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
-        single_precision: bool = True,
+        single_precision: bool = False,
         parameter_selection_strategy: Union[
             ParameterSelectionStrategy, str
-        ] = ParameterSelectionStrategy.MONO,
+        ] = ParameterSelectionStrategy.MULTI,
         show_progress: bool = False,
         progress_title: str = "",
         progress_tag: Union[bool, int] = False,
