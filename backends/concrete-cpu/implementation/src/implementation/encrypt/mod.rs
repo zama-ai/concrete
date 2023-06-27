@@ -103,7 +103,7 @@ pub fn noise_bytes_per_pfpksk(
 pub fn fill_with_random_uniform(buffer: &mut [u64], mut csprng: CsprngMut<'_, '_>) {
     #[cfg(target_endian = "little")]
     {
-        let len = buffer.len() * core::mem::size_of::<u64>();
+        let len = std::mem::size_of_val(buffer);
         let random_bytes = csprng
             .as_mut()
             .next_bytes(unsafe { slice::from_raw_parts_mut(buffer.as_mut_ptr() as _, len) });
