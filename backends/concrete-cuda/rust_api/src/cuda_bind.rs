@@ -61,6 +61,21 @@ extern "C" {
         polynomial_size: u32,
     );
 
+    /// Copy a multi-bit bootstrap key `src` represented with 64 bits in the standard domain from
+    /// the CPU to the GPU `gpu_index` using the stream `v_stream`. The resulting bootstrap key
+    /// `dest` on the GPU is an array of uint64_t values.
+    pub fn cuda_convert_lwe_multi_bit_bootstrap_key_64(
+        dest: *mut c_void,
+        src: *mut c_void,
+        v_stream: *const c_void,
+        gpu_index: u32,
+        input_lwe_dim: u32,
+        glwe_dim: u32,
+        level_count: u32,
+        polynomial_size: u32,
+        grouping_factor: u32,
+    );
+
     /// Copy `number_of_cts` LWE ciphertext represented with 64 bits in the standard domain from the
     /// CPU to the GPU `gpu_index` using the stream `v_stream`. All ciphertexts must be
     /// concatenated.
@@ -86,7 +101,7 @@ extern "C" {
     );
 
     /// This scratch function allocates the necessary amount of data on the GPU for
-    /// the low latency PBS on 64 bits inputs, into `pbs_buffer`. It also configures SM
+    /// the low latency PBS on 64-bit inputs, into `pbs_buffer`. It also configures SM
     /// options on the GPU in case FULLSM or PARTIALSM mode are going to be used.
     pub fn scratch_cuda_bootstrap_low_latency_64(
         v_stream: *const c_void,
@@ -190,8 +205,98 @@ extern "C" {
     );
 
     /// This cleanup function frees the data for the low latency PBS on GPU
-    /// contained in pbs_buffer for 32 or 64 bits inputs.
+    /// contained in pbs_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_bootstrap_low_latency(
+        v_stream: *const c_void,
+        gpu_index: u32,
+        pbs_buffer: *mut *mut i8,
+    );
+
+
+
+    /// This scratch function allocates the necessary amount of data on the GPU for
+    /// the multi-bit PBS on 64-bit inputs into `pbs_buffer`.
+    pub fn scratch_cuda_multi_bit_pbs_64(
+        v_stream: *const c_void,
+        gpu_index: u32,
+        pbs_buffer: *mut *mut i8,
+        lwe_dimension: u32,
+        glwe_dimension: u32,
+        polynomial_size: u32,
+        level_count: u32,
+        grouping_factor: u32,
+        input_lwe_ciphertext_count: u32,
+        max_shared_memory: u32,
+        allocate_gpu_memory: bool,
+        lwe_chunk_size: u32,
+    );
+
+    /// Perform bootstrapping on a batch of input u64 LWE ciphertexts using the multi-bit algorithm.
+    ///
+    /// - `v_stream` is a void pointer to the Cuda stream to be used in the kernel launch
+    /// - `gpu_index` is the index of the GPU to be used in the kernel launch
+    /// - `lwe_array_out`: output batch of num_samples bootstrapped ciphertexts c =
+    /// (a0,..an-1,b) where n is the LWE dimension
+    /// - `lut_vector`: should hold as many test vectors of size polynomial_size
+    /// as there are input ciphertexts, but actually holds
+    /// `num_lut_vectors` vectors to reduce memory usage
+    /// - `lut_vector_indexes`: stores the index corresponding to
+    /// which test vector to use for each sample in
+    /// `lut_vector`
+    /// - `lwe_array_in`: input batch of num_samples LWE ciphertexts, containing n
+    /// mask values + 1 body value
+    /// - `bootstrapping_key`: GGSW encryption of elements of the LWE secret key as in the
+    /// classical PBS, but this time we follow Zhou's trick and encrypt combinations of elements
+    /// of the key
+    /// - `pbs_buffer`: a preallocated buffer to store temporary results
+    /// - `lwe_dimension`: size of the Torus vector used to encrypt the input
+    /// LWE ciphertexts - referred to as n above (~ 600)
+    /// - `glwe_dimension`: size of the polynomial vector used to encrypt the LUT
+    /// GLWE ciphertexts - referred to as k above. Only the value 1 is supported for this parameter.
+    /// - `polynomial_size`: size of the test polynomial (test vector) and size of the
+    /// GLWE polynomial (~1024)
+    /// - `grouping_factor`: number of elements of the LWE secret key combined per GGSW of the
+    /// bootstrap key
+    /// - `base_log`: log base used for the gadget matrix - B = 2^base_log (~8)
+    /// - `level_count`: number of decomposition levels in the gadget matrix (~4)
+    /// - `num_samples`: number of encrypted input messages
+    /// - `num_lut_vectors`: parameter to set the actual number of test vectors to be
+    /// used
+    /// - `lwe_idx`: the index of the LWE input to consider for the GPU of index gpu_index. In
+    /// case of multi-GPU computing, it is assumed that only a part of the input LWE array is
+    /// copied to each GPU, but the whole LUT array is copied (because the case when the number
+    /// of LUTs is smaller than the number of input LWEs is not trivial to take into account in
+    /// the data repartition on the GPUs). `lwe_idx` is used to determine which LUT to consider
+    /// for a given LWE input in the LUT array `lut_vector`.
+    ///  - `max_shared_memory` maximum amount of shared memory to be used inside
+    /// device functions
+    ///
+    ///
+    pub fn cuda_multi_bit_pbs_lwe_ciphertext_vector_64(
+        v_stream: *mut c_void,
+        gpu_index: u32,
+        lwe_array_out: *mut c_void,
+        lut_vector: *const c_void,
+        lut_vector_indexes: *const c_void,
+        lwe_array_in: *const c_void,
+        bootstrapping_key: *const c_void,
+        pbs_buffer: *mut i8,
+        lwe_dimension: u32,
+        glwe_dimension: u32,
+        polynomial_size: u32,
+        grouping_factor: u32,
+        base_log: u32,
+        level: u32,
+        num_samples: u32,
+        num_lut_vectors: u32,
+        lwe_idx: u32,
+        max_shared_memory: u32,
+        lwe_chunk_size: u32,
+    );
+
+    /// This cleanup function frees the data for the multi-bit PBS on GPU
+    /// contained in pbs_buffer for 64-bit inputs.
+    pub fn cleanup_cuda_multi_bit_pbs(
         v_stream: *const c_void,
         gpu_index: u32,
         pbs_buffer: *mut *mut i8,
@@ -261,7 +366,7 @@ extern "C" {
     );
 
     /// This scratch function allocates the necessary amount of data on the GPU for
-    /// the Cmux tree on 64 bits inputs, into `cmux_tree_buffer`. It also configures SM options on
+    /// the Cmux tree on 64-bit inputs, into `cmux_tree_buffer`. It also configures SM options on
     /// the GPU in case FULLSM mode is going to be used.
     pub fn scratch_cuda_cmux_tree_64(
         v_stream: *const c_void,
@@ -317,7 +422,7 @@ extern "C" {
     );
 
     /// This cleanup function frees the data for the Cmux tree on GPU
-    /// contained in cmux_tree_buffer for 32 or 64 bits inputs.
+    /// contained in cmux_tree_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_cmux_tree(
         v_stream: *const c_void,
         gpu_index: u32,
@@ -325,7 +430,7 @@ extern "C" {
     );
 
     /// This scratch function allocates the necessary amount of data on the GPU for
-    /// the blind rotation and sample extraction on 64 bits inputs, into `br_se_buffer`.
+    /// the blind rotation and sample extraction on 64-bit inputs, into `br_se_buffer`.
     /// It also configures SM options on the GPU in case FULLSM mode is going to be used.
     pub fn scratch_cuda_blind_rotation_sample_extraction_64(
         v_stream: *const c_void,
@@ -377,7 +482,7 @@ extern "C" {
     );
 
     /// This cleanup function frees the data for the blind rotation and sample extraction on GPU
-    /// contained in br_se_buffer for 32 or 64 bits inputs.
+    /// contained in br_se_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_blind_rotation_sample_extraction(
         v_stream: *const c_void,
         gpu_index: u32,
@@ -385,7 +490,7 @@ extern "C" {
     );
 
     /// This scratch function allocates the necessary amount of data on the GPU for
-    /// the bit extraction on 64 bits inputs, into `bit_extract_buffer`.
+    /// the bit extraction on 64-bit inputs, into `bit_extract_buffer`.
     /// It also configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to be
     /// used in the PBS.
     pub fn scratch_cuda_extract_bits_64(
@@ -456,7 +561,7 @@ extern "C" {
     );
 
     /// This cleanup function frees the data for the bit extraction on GPU
-    /// contained in bit_extract_buffer for 32 or 64 bits inputs.
+    /// contained in bit_extract_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_extract_bits(
         v_stream: *const c_void,
         gpu_index: u32,
@@ -464,7 +569,7 @@ extern "C" {
     );
 
     /// This scratch function allocates the necessary amount of data on the GPU for
-    /// the circuit bootstrap on 64 bits inputs, into `circuit_bootstrap_buffer`.
+    /// the circuit bootstrap on 64-bit inputs, into `circuit_bootstrap_buffer`.
     /// It also configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to be
     /// used in the PBS.
     pub fn scratch_cuda_circuit_bootstrap_64(
@@ -537,7 +642,7 @@ extern "C" {
     );
 
     /// This cleanup function frees the data for the circuit bootstrap on GPU
-    /// contained in cbs_buffer for 32 or 64 bits inputs.
+    /// contained in cbs_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_circuit_bootstrap(
         v_stream: *const c_void,
         gpu_index: u32,
@@ -611,7 +716,7 @@ extern "C" {
     );
 
     /// This cleanup function frees the data for the circuit bootstrap and vertical packing on GPU
-    /// contained in cbs_vp_buffer for 32 or 64 bits inputs.
+    /// contained in cbs_vp_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_circuit_bootstrap_vertical_packing(
         v_stream: *const c_void,
         gpu_index: u32,
@@ -620,7 +725,7 @@ extern "C" {
 
     /// Scratch functions allocate the necessary data on the GPU.
     /// This scratch function allocates the necessary amount of data on the GPU for the wop PBS
-    /// on 64 bits inputs into `wop_pbs_buffer`.
+    /// on 64-bit inputs into `wop_pbs_buffer`.
     /// It also fills the value of delta_log and cbs_delta_log to be used in the bit extract and
     /// circuit bootstrap.
     pub fn scratch_cuda_wop_pbs_64(
@@ -702,7 +807,7 @@ extern "C" {
     );
 
         /// This cleanup function frees the data for the wop PBS on GPU contained in
-    /// wop_pbs_buffer for 32 or 64 bits inputs.
+    /// wop_pbs_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_wop_pbs(
         v_stream: *const c_void,
         gpu_index: u32,

@@ -4,6 +4,7 @@
 #include <concrete-cpu.h>
 #include <device.h>
 #include <functional>
+#include <tfhe.h>
 
 // This is the price per hour of a p3.2xlarge instance on Amazon AWS
 #define AWS_VM_COST_PER_HOUR (double)3.06
@@ -39,6 +40,13 @@ void generate_lwe_bootstrap_keys(
     uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array, int lwe_dimension,
     int glwe_dimension, int polynomial_size, int pbs_level, int pbs_base_log,
     Csprng *csprng, double variance, const unsigned repetitions);
+
+void generate_lwe_multi_bit_pbs_keys(
+    cudaStream_t *stream, int gpu_index, uint64_t **d_bsk_array,
+    uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array, int lwe_dimension,
+    int glwe_dimension, int polynomial_size, int pbs_level, int pbs_base_log,
+    int grouping_factor, Csprng *csprng, double variance,
+    const unsigned repetitions);
 
 void generate_lwe_keyswitch_keys(cudaStream_t *stream, int gpu_index,
                                  uint64_t **d_ksk_array,

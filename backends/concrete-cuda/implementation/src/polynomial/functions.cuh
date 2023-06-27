@@ -39,6 +39,16 @@ __device__ void copy_into_ith_polynomial_low_lat(T *source, T *dst, int i) {
   }
 }
 
+template <typename T, int elems_per_thread, int block_size>
+__device__ void copy_polynomial(T *source, T *dst) {
+  int tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < elems_per_thread; i++) {
+    dst[tid] = source[tid];
+    tid = tid + block_size;
+  }
+}
+
 /*
  * accumulates source polynomial into specific slice of batched polynomial
  * used only in low latency version
@@ -178,7 +188,8 @@ __device__ void round_to_closest_multiple_inplace(T *rotated_acc, int base_log,
 }
 
 template <typename Torus, class params>
-__device__ void add_to_torus(double2 *m_values, Torus *result) {
+__device__ void add_to_torus(double2 *m_values, Torus *result,
+                             bool init_torus = false) {
   Torus mx = (sizeof(Torus) == 4) ? UINT32_MAX : UINT64_MAX;
   int tid = threadIdx.x;
 #pragma unroll
@@ -202,8 +213,13 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
     Torus V2 = 0;
     typecast_double_to_torus<Torus>(frac, V2);
 
-    result[tid] += V1;
-    result[tid + params::degree / 2] += V2;
+    if (init_torus) {
+      result[tid] = V1;
+      result[tid + params::degree / 2] = V2;
+    } else {
+      result[tid] += V1;
+      result[tid + params::degree / 2] += V2;
+    }
     tid = tid + params::degree / params::opt;
   }
 }

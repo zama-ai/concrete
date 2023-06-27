@@ -3,6 +3,7 @@
 
 #include <bit_extraction.h>
 #include <bootstrap.h>
+#include <bootstrap_multibit.h>
 #include <circuit_bootstrap.h>
 #include <concrete-cpu.h>
 #include <device.h>
@@ -11,25 +12,42 @@
 #include <utils.h>
 #include <vertical_packing.h>
 
-void bootstrap_setup(cudaStream_t *stream, Csprng **csprng,
-                     uint64_t **lwe_sk_in_array, uint64_t **lwe_sk_out_array,
-                     double **d_fourier_bsk_array, uint64_t **plaintexts,
-                     uint64_t **d_lut_pbs_identity,
-                     uint64_t **d_lut_pbs_indexes, uint64_t **d_lwe_ct_in_array,
-                     uint64_t **d_lwe_ct_out_array, int lwe_dimension,
-                     int glwe_dimension, int polynomial_size,
-                     double lwe_modular_variance, double glwe_modular_variance,
-                     int pbs_base_log, int pbs_level, int message_modulus,
-                     int carry_modulus, int *payload_modulus, uint64_t *delta,
-                     int number_of_inputs, int repetitions, int samples,
-                     int gpu_index);
-void bootstrap_teardown(cudaStream_t *stream, Csprng *csprng,
-                        uint64_t *lwe_sk_in_array, uint64_t *lwe_sk_out_array,
-                        double *d_fourier_bsk_array, uint64_t *plaintexts,
-                        uint64_t *d_lut_pbs_identity,
-                        uint64_t *d_lut_pbs_indexes,
-                        uint64_t *d_lwe_ct_in_array,
-                        uint64_t *d_lwe_ct_out_array, int gpu_index);
+void bootstrap_classical_setup(
+    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    uint64_t **lwe_sk_out_array, double **d_fourier_bsk_array,
+    uint64_t **plaintexts, uint64_t **d_lut_pbs_identity,
+    uint64_t **d_lut_pbs_indexes, uint64_t **d_lwe_ct_in_array,
+    uint64_t **d_lwe_ct_out_array, int lwe_dimension, int glwe_dimension,
+    int polynomial_size, double lwe_modular_variance,
+    double glwe_modular_variance, int pbs_base_log, int pbs_level,
+    int message_modulus, int carry_modulus, int *payload_modulus,
+    uint64_t *delta, int number_of_inputs, int repetitions, int samples,
+    int gpu_index);
+void bootstrap_classical_teardown(
+    cudaStream_t *stream, Csprng *csprng, uint64_t *lwe_sk_in_array,
+    uint64_t *lwe_sk_out_array, double *d_fourier_bsk_array,
+    uint64_t *plaintexts, uint64_t *d_lut_pbs_identity,
+    uint64_t *d_lut_pbs_indexes, uint64_t *d_lwe_ct_in_array,
+    uint64_t *d_lwe_ct_out_array, int gpu_index);
+
+void bootstrap_multibit_setup(
+    cudaStream_t *stream, Csprng **csprng, uint64_t **lwe_sk_in_array,
+    uint64_t **lwe_sk_out_array, uint64_t **d_bsk_array, uint64_t **plaintexts,
+    uint64_t **d_lut_pbs_identity, uint64_t **d_lut_pbs_indexes,
+    uint64_t **d_lwe_ct_in_array, uint64_t **d_lwe_ct_out_array,
+    int8_t **pbs_buffer, int lwe_dimension, int glwe_dimension,
+    int polynomial_size, int grouping_factor, double lwe_modular_variance,
+    double glwe_modular_variance, int pbs_base_log, int pbs_level,
+    int message_modulus, int carry_modulus, int *payload_modulus,
+    uint64_t *delta, int number_of_inputs, int repetitions, int samples,
+    int gpu_index, int chunk_size = 0);
+
+void bootstrap_multibit_teardown(
+    cudaStream_t *stream, Csprng *csprng, uint64_t *lwe_sk_in_array,
+    uint64_t *lwe_sk_out_array, uint64_t *d_bsk_array, uint64_t *plaintexts,
+    uint64_t *d_lut_pbs_identity, uint64_t *d_lut_pbs_indexes,
+    uint64_t *d_lwe_ct_in_array, uint64_t *d_lwe_ct_out_array,
+    int8_t **pbs_buffer, int gpu_index);
 
 void keyswitch_setup(cudaStream_t *stream, Csprng **csprng,
                      uint64_t **lwe_sk_in_array, uint64_t **lwe_sk_out_array,
