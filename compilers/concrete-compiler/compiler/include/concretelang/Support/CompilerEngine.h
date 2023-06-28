@@ -63,6 +63,7 @@ struct CompilationOptions {
   int64_t maxBatchSize;
   bool emitSDFGOps;
   bool unrollLoopsWithSDFGConvertibleOps;
+  std::optional<std::string> filterSDFGConvertibleOps;
   bool dataflowParallelize;
   bool optimizeTFHE;
   /// use GPU during execution by generating GPU operations if possible
@@ -88,7 +89,8 @@ struct CompilationOptions {
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
         maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
-        unrollLoopsWithSDFGConvertibleOps(false), dataflowParallelize(false),
+        unrollLoopsWithSDFGConvertibleOps(false),
+        filterSDFGConvertibleOps(std::nullopt), dataflowParallelize(false),
         optimizeTFHE(true), emitGPUOps(false),
         clientParametersFuncName(std::nullopt),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),

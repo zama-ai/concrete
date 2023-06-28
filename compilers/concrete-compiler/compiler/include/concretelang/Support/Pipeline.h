@@ -85,10 +85,10 @@ mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
                                  std::function<bool(mlir::Pass *)> enablePass);
 
-mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
-                                   mlir::ModuleOp &module,
-                                   std::function<bool(mlir::Pass *)> enablePass,
-                                   bool unrollLoops);
+mlir::LogicalResult
+extractSDFGOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               std::function<bool(mlir::Pass *)> enablePass, bool unrollLoops,
+               std::optional<std::string> filterConvertibleOps);
 
 mlir::LogicalResult
 lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,

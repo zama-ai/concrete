@@ -465,7 +465,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (options.emitSDFGOps) {
     if (mlir::concretelang::pipeline::extractSDFGOps(
             mlirContext, module, enablePass,
-            options.unrollLoopsWithSDFGConvertibleOps)
+            options.unrollLoopsWithSDFGConvertibleOps,
+            options.filterSDFGConvertibleOps)
             .failed()) {
       return errorDiag("Extraction of SDFG operations from Concrete "
                        "representation failed");

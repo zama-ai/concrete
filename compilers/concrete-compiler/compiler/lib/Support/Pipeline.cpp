@@ -345,14 +345,16 @@ mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
   return pm.run(module.getOperation());
 }
 
-mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
-                                   mlir::ModuleOp &module,
-                                   std::function<bool(mlir::Pass *)> enablePass,
-                                   bool unroll) {
+mlir::LogicalResult
+extractSDFGOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               std::function<bool(mlir::Pass *)> enablePass, bool unroll,
+               std::optional<std::string> filterConvertibleOps) {
   mlir::PassManager pm(&context);
   pipelinePrinting("extract SDFG ops from Concrete", pm, context);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createExtractSDFGOpsPass(unroll), enablePass);
+  addPotentiallyNestedPass(pm,
+                           mlir::concretelang::createExtractSDFGOpsPass(
+                               unroll, filterConvertibleOps),
+                           enablePass);
   LogicalResult res = pm.run(module.getOperation());
 
   return res;
