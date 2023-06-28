@@ -6,6 +6,9 @@
 #ifndef CONCRETELANG_CLIENTLIB_TYPES_H_
 #define CONCRETELANG_CLIENTLIB_TYPES_H_
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+#include "compress_lwe/defines.h"
+#endif
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -849,6 +852,29 @@ struct SharedScalarOrTensorData {
       : inner{std::make_shared<ScalarOrTensorData>(std::move(inner))} {}
 
   ScalarOrTensorData &get() const { return *this->inner; }
+};
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+typedef std::variant<ScalarData, TensorData,
+                     std::shared_ptr<comp::CompressedCiphertext>>
+    ScalarOrTensorOrCompressedData;
+#else
+
+typedef std::variant<ScalarData, TensorData> ScalarOrTensorOrCompressedData;
+#endif
+
+struct SharedScalarOrTensorOrCompressedData {
+  std::shared_ptr<ScalarOrTensorOrCompressedData> inner;
+
+  SharedScalarOrTensorOrCompressedData(
+      std::shared_ptr<ScalarOrTensorOrCompressedData> inner)
+      : inner{inner} {}
+
+  SharedScalarOrTensorOrCompressedData(ScalarOrTensorOrCompressedData &&inner)
+      : inner{std::make_shared<ScalarOrTensorOrCompressedData>(
+            std::move(inner))} {}
+
+  ScalarOrTensorOrCompressedData &get() const { return *this->inner; }
 };
 
 } // namespace clientlib

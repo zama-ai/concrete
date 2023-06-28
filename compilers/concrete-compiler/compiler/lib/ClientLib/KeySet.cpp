@@ -4,12 +4,21 @@
 // for license information.
 
 #include "concretelang/ClientLib/KeySet.h"
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+#include "compress_lwe/defines.h"
+#include "compress_lwe/library.h"
+#endif
 #include "concretelang/ClientLib/CRT.h"
+#include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/ClientLib/EvaluationKeys.h"
+#include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/Error.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 namespace concretelang {
 namespace clientlib {
@@ -22,49 +31,109 @@ KeySet::generate(ClientParameters clientParameters, CSPRNG &&csprng) {
   return std::move(keySet);
 }
 
-outcome::checked<std::unique_ptr<KeySet>, StringError> KeySet::fromKeys(
-    ClientParameters clientParameters, std::vector<LweSecretKey> secretKeys,
-    std::vector<LweBootstrapKey> bootstrapKeys,
-    std::vector<LweKeyswitchKey> keyswitchKeys,
-    std::vector<PackingKeyswitchKey> packingKeyswitchKeys, CSPRNG &&csprng) {
+outcome::checked<std::unique_ptr<KeySet>, StringError>
+KeySet::fromKeys(ClientParameters clientParameters,
+                 std::vector<LweSecretKey> secretKeys,
+                 std::vector<LweBootstrapKey> bootstrapKeys,
+                 std::vector<LweKeyswitchKey> keyswitchKeys,
+                 std::vector<PackingKeyswitchKey> packingKeyswitchKeys,
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+                 std::optional<comp::FullKeys> fullKeys,
+#endif
+                 CSPRNG &&csprng) {
 
   auto keySet = std::make_unique<KeySet>(clientParameters, std::move(csprng));
   keySet->secretKeys = secretKeys;
   keySet->bootstrapKeys = bootstrapKeys;
   keySet->keyswitchKeys = keyswitchKeys;
   keySet->packingKeyswitchKeys = packingKeyswitchKeys;
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  keySet->fullKeys = std::move(fullKeys);
+#endif
   OUTCOME_TRYV(keySet->setupEncryptionMaterial());
   return std::move(keySet);
 }
 
 EvaluationKeys KeySet::evaluationKeys() {
-  return EvaluationKeys(keyswitchKeys, bootstrapKeys, packingKeyswitchKeys);
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+
+  std::optional<comp::CompressionKey> compressionKeys;
+
+  if (fullKeys.has_value()) {
+    compressionKeys = fullKeys->compression_key();
+  }
+#endif
+  return EvaluationKeys(keyswitchKeys, bootstrapKeys, packingKeyswitchKeys
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+                        ,
+                        compressionKeys
+#endif
+  );
 }
 
-outcome::checked<KeySet::SecretKeyGateMapping, StringError>
-KeySet::mapCircuitGateLweSecretKey(std::vector<CircuitGate> gates) {
-  SecretKeyGateMapping mapping;
+outcome::checked<KeySet::SecretKeyInputGateMapping, StringError>
+KeySet::mapCircuitInputGateLweSecretKey(std::vector<CircuitGate> gates) {
+  SecretKeyInputGateMapping mapping;
   for (auto gate : gates) {
+    std::pair<CircuitGate, std::optional<LweSecretKey>> input;
     if (gate.encryption.has_value()) {
       assert(gate.encryption->secretKeyID < this->secretKeys.size());
       auto skIt = this->secretKeys[gate.encryption->secretKeyID];
 
-      std::pair<CircuitGate, std::optional<LweSecretKey>> input = {gate, skIt};
-      mapping.push_back(input);
+      input = {gate, skIt};
     } else {
-      std::pair<CircuitGate, std::optional<LweSecretKey>> input = {
-          gate, std::nullopt};
-      mapping.push_back(input);
+      input = {gate, std::nullopt};
     }
+    mapping.push_back(input);
+  }
+  return mapping;
+}
+
+outcome::checked<KeySet::SecretKeyOutputGateMapping, StringError>
+KeySet::mapCircuitOutputGateLweSecretKey(std::vector<CircuitGate> gates) {
+  SecretKeyOutputGateMapping mapping;
+  for (auto gate : gates) {
+
+    std::tuple<CircuitGate, std::optional<LweSecretKey>
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+               ,
+               std::optional<comp::FullKeys>
+#endif
+               >
+        output;
+    if (gate.encryption.has_value()) {
+      assert(gate.encryption->secretKeyID < this->secretKeys.size());
+      auto skIt = this->secretKeys[gate.encryption->secretKeyID];
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+      comp::FullKeys fullkey;
+
+      if (gate.compression) {
+        output = {gate, skIt, std::move(fullkey)};
+      } else {
+        output = {gate, skIt, std::nullopt};
+      }
+#else
+      output = {gate, skIt};
+#endif
+    } else {
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+      output = {gate, std::nullopt, std::nullopt};
+#else
+      output = {gate, std::nullopt};
+#endif
+    }
+    mapping.push_back(output);
   }
   return mapping;
 }
 
 outcome::checked<void, StringError> KeySet::setupEncryptionMaterial() {
   OUTCOME_TRY(this->inputs,
-              mapCircuitGateLweSecretKey(_clientParameters.inputs));
+              mapCircuitInputGateLweSecretKey(_clientParameters.inputs));
   OUTCOME_TRY(this->outputs,
-              mapCircuitGateLweSecretKey(_clientParameters.outputs));
+              mapCircuitOutputGateLweSecretKey(_clientParameters.outputs));
+
   return outcome::success();
 }
 
@@ -86,6 +155,13 @@ outcome::checked<void, StringError> KeySet::generateKeysFromParams() {
   for (auto packingKeyswitchKeyParam : _clientParameters.packingKeyswitchKeys) {
     OUTCOME_TRYV(this->generatePackingKeyswitchKey(packingKeyswitchKeyParam));
   }
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+
+  // Generate compression key
+  if (_clientParameters.paiCompKeys.has_value()) {
+    OUTCOME_TRYV(this->generatePaiKeys(*_clientParameters.paiCompKeys));
+  }
+#endif
   return outcome::success();
 }
 
@@ -145,6 +221,17 @@ KeySet::generatePackingKeyswitchKey(PackingKeyswitchKeyParam param) {
   return outcome::success();
 }
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+outcome::checked<void, StringError> KeySet::generatePaiKeys(PaiKeyParam param) {
+  assert(param.secretKeyID < secretKeys.size());
+  auto sk = secretKeys[param.secretKeyID];
+
+  fullKeys = comp::generateKeys(sk.vector(), 1);
+
+  return outcome::success();
+}
+#endif
+
 outcome::checked<void, StringError>
 KeySet::allocate_lwe(size_t argPos, uint64_t **ciphertext, uint64_t &size) {
   if (argPos >= inputs.size()) {
@@ -179,7 +266,8 @@ bool KeySet::isOutputEncrypted(size_t argPos) {
 uint64_t bitWidthOfValue(uint64_t value) { return std::ceil(std::log2(value)); }
 
 outcome::checked<void, StringError>
-KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
+KeySet::encode_encrypt_lwe(size_t argPos, uint64_t *ciphertext,
+                           uint64_t input) {
   if (argPos >= inputs.size()) {
     return StringError("encrypt_lwe position of argument is too high");
   }
@@ -211,72 +299,65 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
   return outcome::success();
 }
 
-outcome::checked<void, StringError>
-KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
+outcome::checked<uint64_t, StringError>
+KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext) const {
   if (argPos >= outputs.size()) {
     return StringError("decrypt_lwe: position of argument is too high");
   }
-  auto outputSk = outputs[argPos];
-  assert(outputSk.second.has_value());
-  auto lweSecretKey = *outputSk.second;
-  auto lweSecretKeyParam = lweSecretKey.parameters();
+  const auto &outputSk = outputs[argPos];
+  assert(std::get<1>(outputSk).has_value());
+  auto &lweSecretKey = *std::get<1>(outputSk);
   auto encryption = std::get<0>(outputSk).encryption;
   if (!encryption.has_value()) {
     return StringError("decrypt_lwe: the positional argument is not encrypted");
   }
+  uint64_t decrypted = 0;
+  lweSecretKey.decrypt(ciphertext, decrypted);
+
+  return decrypted;
+}
+
+outcome::checked<void, StringError>
+KeySet::decrypt_decode_lwe(size_t argPos, uint64_t *ciphertext,
+                           uint64_t &output) const {
+
+  if (argPos >= outputs.size()) {
+    return StringError("decrypt_lwe: position of argument is too high");
+  }
+  const auto &outputSk = outputs[argPos];
+  assert(std::get<1>(outputSk).has_value());
+  auto &lweSecretKey = *std::get<1>(outputSk);
+
+  auto lweSecretKeyParam = lweSecretKey.parameters();
+  auto encryption = std::get<0>(outputSk).encryption;
 
   auto crt = encryption->encoding.crt;
 
-  if (!crt.empty()) {
+  if (crt.empty()) {
+
+    uint64_t decrypted = 0;
+    lweSecretKey.decrypt(ciphertext, decrypted);
+
+    output = decode_1padded_integer(decrypted, encryption->encoding.precision,
+                                    encryption->encoding.isSigned);
+
+  } else {
     // CRT encoded TFHE integers
 
     // Decrypt and decode remainders
     std::vector<int64_t> remainders;
+    uint i = 0;
     for (auto modulus : crt) {
       uint64_t decrypted = 0;
-      lweSecretKey.decrypt(ciphertext, decrypted);
+      lweSecretKey.decrypt(ciphertext + i * lweSecretKeyParam.lweSize(),
+                           decrypted);
 
       auto plaintext = crt::decode(decrypted, modulus);
       remainders.push_back(plaintext);
-      ciphertext = ciphertext + lweSecretKeyParam.lweSize();
+      i++;
     }
 
-    // Compute the inverse crt
-    output = crt::iCrt(crt, remainders);
-
-    // Further decode signed integers
-    if (encryption->encoding.isSigned) {
-      uint64_t maxPos = 1;
-      for (auto prime : encryption->encoding.crt) {
-        maxPos *= prime;
-      }
-      maxPos /= 2;
-      if (output >= maxPos) {
-        output -= maxPos * 2;
-      }
-    }
-  } else {
-    // Native encoded TFHE integers - 1 blocks with one padding bits
-    uint64_t plaintext = 0;
-    lweSecretKey.decrypt(ciphertext, plaintext);
-
-    // Decode unsigned integer
-    uint64_t precision = encryption->encoding.precision;
-    output = plaintext >> (64 - precision - 2);
-    auto carry = output % 2;
-    uint64_t mod = (((uint64_t)1) << (precision + 1));
-    output = ((output >> 1) + carry) % mod;
-
-    // Further decode signed integers.
-    if (encryption->encoding.isSigned) {
-      uint64_t maxPos = (((uint64_t)1) << (precision - 1));
-      if (output >= maxPos) { // The output is actually negative.
-        // Set the preceding bits to zero
-        output |= UINT64_MAX << precision;
-        // This makes sure when the value is cast to int64, it has the correct
-        // value
-      };
-    }
+    output = decode_crt(remainders, crt, encryption->encoding.isSigned);
   }
 
   return outcome::success();
@@ -298,6 +379,12 @@ const std::vector<PackingKeyswitchKey> &
 KeySet::getPackingKeyswitchKeys() const {
   return packingKeyswitchKeys;
 }
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+const std::optional<comp::FullKeys> &KeySet::getFullKey() const {
+  return fullKeys;
+}
+#endif
 
 } // namespace clientlib
 } // namespace concretelang

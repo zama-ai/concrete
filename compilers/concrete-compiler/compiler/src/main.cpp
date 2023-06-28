@@ -274,6 +274,12 @@ llvm::cl::opt<double> securityLevel(
         "Specify the security level to target for compiling the program"),
     llvm::cl::init(optimizer::DEFAULT_CONFIG.security));
 
+llvm::cl::opt<bool> outputCompression(
+    "output-compression",
+    llvm::cl::desc(
+        "Enable the paillier transciphering of output for compression"),
+    llvm::cl::init(false));
+
 llvm::cl::opt<bool> displayOptimizerChoice(
     "display-optimizer-choice",
     llvm::cl::desc("Display the information returned by the optimizer"),
@@ -407,6 +413,7 @@ cmdlineCompilationOptions() {
   options.chunkIntegers = cmdline::chunkIntegers;
   options.chunkSize = cmdline::chunkSize;
   options.chunkWidth = cmdline::chunkWidth;
+  options.outputCompression = cmdline::outputCompression;
 
   if (!cmdline::v0Constraint.empty()) {
     if (cmdline::v0Constraint.size() != 2) {

@@ -15,6 +15,7 @@
 #include <hpx/modules/collectives.hpp>
 #include <hpx/modules/serialization.hpp>
 
+#include "compress_lwe/defines.h"
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
@@ -123,8 +124,12 @@ struct RuntimeContextManager {
           KeyWrapper<LweBootstrapKey, BootstrapKeyParam>>("bsk_keystore");
       KeyWrapper<LweKeyswitchKey, KeyswitchKeyParam> kskw = kskFut.get();
       KeyWrapper<LweBootstrapKey, BootstrapKeyParam> bskw = bskFut.get();
+
+      std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
+      std::optional<comp::CompressionKey> compkey;
+
       context = new mlir::concretelang::RuntimeContext(
-          EvaluationKeys(kskw.keys, bskw.keys, {}));
+          EvaluationKeys(kskw.keys, bskw.keys, packingKeyswitchKeys, compkey));
     }
   }
 

@@ -452,7 +452,8 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       auto clientParametersOrErr =
           mlir::concretelang::createClientParametersFromTFHE(
               module, funcName, options.optimizerConfig.security,
-              options.encodings.value(), maybeCrt);
+              options.encodings.value(), maybeCrt,
+              compilerOptions.outputCompression);
 
       if (!clientParametersOrErr)
         return clientParametersOrErr.takeError();

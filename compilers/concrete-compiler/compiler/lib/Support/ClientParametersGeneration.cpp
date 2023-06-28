@@ -50,7 +50,8 @@ const auto keyFormat = concrete::BINARY;
 llvm::Expected<CircuitGate>
 generateGate(mlir::Type type, encodings::Encoding encoding,
              concrete::SecurityCurve curve,
-             std::optional<CRTDecomposition> maybeCrt) {
+             std::optional<CRTDecomposition> maybeCrt, bool compression) {
+
   auto scalarVisitor = overloaded{
       [&](encodings::EncryptedIntegerScalarEncoding enc)
           -> llvm::Expected<CircuitGate> {
@@ -94,6 +95,7 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
                 /*.sign = */ isSigned,
             },
             /*.chunkInfo = */ std::nullopt,
+            /*.compression = */ compression,
         };
       },
       [&](encodings::EncryptedChunkedIntegerScalarEncoding enc)
@@ -133,6 +135,7 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
             /*.chunkInfo = */
             std::optional<ChunkInfo>(
                 {(unsigned int)enc.chunkSize, (unsigned int)enc.chunkWidth}),
+            /*.compression = */ compression,
         };
       },
       [&](encodings::EncryptedBoolScalarEncoding enc)
@@ -162,6 +165,7 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
                 /*.sign = */ false,
             },
             /*.chunkInfo = */ std::nullopt,
+            /*.compression = */ compression,
         };
       },
       [&](encodings::PlaintextScalarEncoding enc)
@@ -176,6 +180,7 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
              /*.size = */ 0,
              /* .sign */ sign},
             /*.chunkInfo = */ std::nullopt,
+            /*.compression = */ compression,
         };
       },
       [&](encodings::IndexScalarEncoding enc) -> llvm::Expected<CircuitGate> {
@@ -192,6 +197,7 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
              /*.size = */ 0,
              /* .sign */ sign},
             /*.chunkInfo = */ std::nullopt,
+            /*.compression = */ compression,
         };
       },
       [&](auto enc) -> llvm::Expected<CircuitGate> {
@@ -205,8 +211,9 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
       },
       [&](encodings::TensorEncoding enc) -> llvm::Expected<CircuitGate> {
         auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
-        auto scalarGate = generateGate(tensor.getElementType(),
-                                       enc.scalarEncoding, curve, maybeCrt);
+        auto scalarGate =
+            generateGate(tensor.getElementType(), enc.scalarEncoding, curve,
+                         maybeCrt, compression);
         if (auto err = scalarGate.takeError()) {
           return std::move(err);
         }
@@ -251,6 +258,20 @@ void extractCircuitKeys(ClientParameters &output,
     skParam.dimension = sk.getNormalized().value().dimension;
     output.secretKeys.push_back(skParam);
   }
+
+  assert(output.outputs.size() <= 1);
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+
+  if (output.outputs.size() == 1) {
+
+    auto encryption = output.outputs[0].encryption;
+
+    if (encryption.has_value() && output.outputs[0].compression) {
+      output.paiCompKeys = {/*.secretKeyID =*/encryption->secretKeyID};
+    }
+  }
+#endif
 
   // Pushing keyswitch keys
   for (auto ksk : circuitKeys.keyswitchKeys) {
@@ -300,11 +321,10 @@ void extractCircuitKeys(ClientParameters &output,
   }
 }
 
-llvm::Expected<std::monostate>
-extractCircuitGates(ClientParameters &output, mlir::func::FuncOp funcOp,
-                    encodings::CircuitEncodings encodings,
-                    concrete::SecurityCurve curve,
-                    std::optional<CRTDecomposition> maybeCrt) {
+llvm::Expected<std::monostate> extractCircuitGates(
+    ClientParameters &output, mlir::func::FuncOp funcOp,
+    encodings::CircuitEncodings encodings, concrete::SecurityCurve curve,
+    std::optional<CRTDecomposition> maybeCrt, bool outputCompression) {
 
   // Create input and output circuit gate parameters
   auto funcType = funcOp.getFunctionType();
@@ -312,7 +332,7 @@ extractCircuitGates(ClientParameters &output, mlir::func::FuncOp funcOp,
   for (auto val : llvm::zip(funcType.getInputs(), encodings.inputEncodings)) {
     auto ty = std::get<0>(val);
     auto encoding = std::get<1>(val);
-    auto gate = generateGate(ty, encoding, curve, maybeCrt);
+    auto gate = generateGate(ty, encoding, curve, maybeCrt, outputCompression);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
@@ -321,7 +341,7 @@ extractCircuitGates(ClientParameters &output, mlir::func::FuncOp funcOp,
   for (auto val : llvm::zip(funcType.getResults(), encodings.outputEncodings)) {
     auto ty = std::get<0>(val);
     auto encoding = std::get<1>(val);
-    auto gate = generateGate(ty, encoding, curve, maybeCrt);
+    auto gate = generateGate(ty, encoding, curve, maybeCrt, outputCompression);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
@@ -331,11 +351,10 @@ extractCircuitGates(ClientParameters &output, mlir::func::FuncOp funcOp,
   return std::monostate();
 }
 
-llvm::Expected<ClientParameters>
-createClientParametersFromTFHE(mlir::ModuleOp module,
-                               llvm::StringRef functionName, int bitsOfSecurity,
-                               encodings::CircuitEncodings encodings,
-                               std::optional<CRTDecomposition> maybeCrt) {
+llvm::Expected<ClientParameters> createClientParametersFromTFHE(
+    mlir::ModuleOp module, llvm::StringRef functionName, int bitsOfSecurity,
+    encodings::CircuitEncodings encodings,
+    std::optional<CRTDecomposition> maybeCrt, bool outputCompression) {
 
   // Check that security curves exist
   const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
@@ -362,15 +381,15 @@ createClientParametersFromTFHE(mlir::ModuleOp module,
   // We extract the keys of the circuit
   auto circuitKeys = TFHE::extractCircuitKeys(module);
 
-  // We extract all the keys used in the circuit
-  extractCircuitKeys(output, circuitKeys, *curve);
-
   // We generate the gates for the inputs aud outputs
-  if (auto err =
-          extractCircuitGates(output, *funcOp, encodings, *curve, maybeCrt)
-              .takeError()) {
+  if (auto err = extractCircuitGates(output, *funcOp, encodings, *curve,
+                                     maybeCrt, outputCompression)
+                     .takeError()) {
     return std::move(err);
   }
+
+  // We extract all the keys used in the circuit
+  extractCircuitKeys(output, circuitKeys, *curve);
 
   return output;
 }

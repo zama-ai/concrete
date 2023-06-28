@@ -174,6 +174,28 @@ if(CONCRETELANG_CUDA_SUPPORT)
 endif()
 
 # --------------------------------------------------------------------------------
+# CompressLWE Configuration
+# -------------------------------------------------------------------------------
+
+include_directories(${PROJECT_SOURCE_DIR}/../../../tools/CompressLWE/include)
+
+add_compile_options(-DOUTPUT_COMPRESSION_SUPPORT)
+
+set(COMPRESS_LWE_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/compress_bin_dir)
+set(COMPRESS_LWE_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/compress_install_dir)
+
+include(ExternalProject)
+
+ExternalProject_Add(
+  compresslwe
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../tools/CompressLWE
+  CONFIGURE_COMMAND mkdir ${COMPRESS_LWE_BIN_DIR} && cd ${COMPRESS_LWE_BIN_DIR} && cmake
+                    ${PROJECT_SOURCE_DIR}/../../../tools/CompressLWE -DCMAKE_INSTALL_PREFIX=${COMPRESS_LWE_INSTALL_DIR}
+  BUILD_COMMAND cmake --build ${COMPRESS_LWE_BIN_DIR} --target compresslwe
+  INSTALL_COMMAND cmake --build ${COMPRESS_LWE_BIN_DIR} --target install
+  BUILD_BYPRODUCTS ${COMPRESS_LWE_INSTALL_DIR}/lib/libcompresslwe.a ${COMPRESS_LWE_INSTALL_DIR}/lib/libhcs.a)
+
+# --------------------------------------------------------------------------------
 # Python Configuration
 # -------------------------------------------------------------------------------
 option(CONCRETELANG_BINDINGS_PYTHON_ENABLED "Enables ConcreteLang Python bindings." ON)

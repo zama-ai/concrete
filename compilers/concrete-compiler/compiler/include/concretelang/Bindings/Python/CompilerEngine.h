@@ -6,6 +6,7 @@
 #ifndef CONCRETELANG_BINDINGS_PYTHON_COMPILER_ENGINE_H
 #define CONCRETELANG_BINDINGS_PYTHON_COMPILER_ENGINE_H
 
+#include "concretelang/ClientLib/Types.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
@@ -168,11 +169,11 @@ keySetUnserialize(const std::string &buffer);
 MLIR_CAPI_EXPORTED std::string
 keySetSerialize(concretelang::clientlib::KeySet &keySet);
 
-MLIR_CAPI_EXPORTED concretelang::clientlib::SharedScalarOrTensorData
+MLIR_CAPI_EXPORTED concretelang::clientlib::SharedScalarOrTensorOrCompressedData
 valueUnserialize(const std::string &buffer);
 
-MLIR_CAPI_EXPORTED std::string
-valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value);
+MLIR_CAPI_EXPORTED std::string valueSerialize(
+    const concretelang::clientlib::SharedScalarOrTensorOrCompressedData &value);
 
 /// Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);

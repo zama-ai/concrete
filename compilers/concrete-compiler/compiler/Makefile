@@ -94,6 +94,14 @@ else
 		CXX_COMPILER_OPTION=
 endif
 
+ifeq ($(OUTPUT_COMPRESSION_SUPPORT),)
+	ifeq ($(shell uname), Linux)
+		OUTPUT_COMPRESSION_SUPPORT?=ON
+	else
+		OUTPUT_COMPRESSION_SUPPORT=ON
+	endif
+endif
+
 # If the build type is Debug, and the lld linked is installed
 # then use it
 CUSTOM_LINKER_OPTS=
@@ -151,7 +159,8 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
-	-DCUDAToolkit_ROOT=$(CUDA_PATH)
+	-DCUDAToolkit_ROOT=$(CUDA_PATH) \
+	-DOUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT)
 	touch $@
 
 build-initialized: $(BUILD_DIR)/configured.stamp
@@ -208,7 +217,6 @@ keysetcache_populated: keysetcache.zip
 	du -sh ${KEYSETCACHEDEV}
 	rm keysetcache.zip
 
-
 ifeq ($(GTEST_PARALLEL_ENABLED),OFF)
 GTEST_PARALLEL_PY=
 GTEST_PARALLEL_CMD=
@@ -244,10 +252,10 @@ run-unit-tests: build-unit-tests
 ## python-tests
 
 run-python-tests: python-bindings concretecompiler
-	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
 
 test-compiler-file-output: concretecompiler
-	pytest -vs tests/test_compiler_file_output
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) pytest -vs tests/test_compiler_file_output
 
 
 ## rust-tests
@@ -308,6 +316,9 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
 	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
+	$(if $(filter $(OUTPUT_COMPRESSION_SUPPORT),ON),$(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=128 \
+	  --optimizer-strategy=dag-mono --output-compression --jit $(FIXTURE_CPU_DIR)/*.yaml)
 
 ### end-to-end-tests GPU
 
@@ -430,11 +441,11 @@ show-stress-tests-summary:
 	@cd tests/stress_tests/trace && grep BAD -R || echo 'No issues'
 
 stress-tests: concretecompiler
-	pytest -vs tests/stress_tests
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) pytest -vs tests/stress_tests
 
 # useful for faster cache generation, need pytest-parallel
 stress-tests-fast-cache: concretecompiler
-	pytest --workers auto -vs tests/stress_tests
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) pytest --workers auto -vs tests/stress_tests
 
 # LLVM/MLIR dependencies
 

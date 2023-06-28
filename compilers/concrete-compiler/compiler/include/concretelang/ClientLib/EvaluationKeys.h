@@ -8,7 +8,12 @@
 
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <vector>
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+#include "compress_lwe/defines.h"
+#endif
 
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Common/Error.h"
@@ -65,6 +70,7 @@ public:
   void decrypt(const uint64_t *ciphertext, uint64_t &plaintext) const;
 
   /// @brief Returns the buffer that hold the keyswitch key.
+  const std::vector<uint64_t> &vector() const { return *_buffer; }
   const uint64_t *buffer() const { return _buffer->data(); }
   size_t size() const { return _buffer->size(); }
 
@@ -153,15 +159,29 @@ private:
   std::vector<LweKeyswitchKey> keyswitchKeys;
   std::vector<LweBootstrapKey> bootstrapKeys;
   std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  std::optional<comp::CompressionKey> compressionKey;
+#endif
 
 public:
   EvaluationKeys() = delete;
 
   EvaluationKeys(const std::vector<LweKeyswitchKey> keyswitchKeys,
                  const std::vector<LweBootstrapKey> bootstrapKeys,
-                 const std::vector<PackingKeyswitchKey> packingKeyswitchKeys)
+                 const std::vector<PackingKeyswitchKey> packingKeyswitchKeys
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+                 ,
+                 const std::optional<comp::CompressionKey> compressionKey
+#endif
+                 )
       : keyswitchKeys(keyswitchKeys), bootstrapKeys(bootstrapKeys),
-        packingKeyswitchKeys(packingKeyswitchKeys) {}
+        packingKeyswitchKeys(packingKeyswitchKeys)
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+        ,
+        compressionKey(compressionKey)
+#endif
+  {
+  }
 
   const LweKeyswitchKey &getKeyswitchKey(size_t id) const {
     return this->keyswitchKeys[id];
@@ -184,6 +204,12 @@ public:
   const std::vector<PackingKeyswitchKey> getPackingKeyswitchKeys() const {
     return this->packingKeyswitchKeys;
   }
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  const std::optional<comp::CompressionKey> getCompressionKey() const {
+    return this->compressionKey;
+  }
+#endif
 };
 
 // =============================================

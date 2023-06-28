@@ -1,6 +1,7 @@
 import platform
 import pytest
 import os.path
+import os
 import shutil
 import numpy as np
 from concrete.compiler import (
@@ -347,12 +348,27 @@ def test_compile_dataflow_and_fail_run(
         pytest.param(LibrarySupport, id="Library"),
     ],
 )
+@pytest.mark.parametrize(
+    "output_compression",
+    [
+        False,
+        True,
+    ],
+)
 def test_compile_and_run_loop_parallelize(
-    mlir_input, args, expected_result, keyset_cache, EngineClass
+    mlir_input,
+    args,
+    expected_result,
+    keyset_cache,
+    EngineClass,
+    output_compression,
 ):
+    if os.environ.get("OUTPUT_COMPRESSION_SUPPORT") == "OFF" and output_compression:
+        pytest.skip("Skipping the output compression test")
     engine = EngineClass.new()
     options = CompilationOptions.new("main")
     options.set_loop_parallelize(True)
+    options.set_output_compression(output_compression)
     compile_run_assert(
         engine, mlir_input, args, expected_result, keyset_cache, options=options
     )

@@ -110,6 +110,19 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("can't set the option to a non-boolean value")
         self.cpp().set_dataflow_parallelize(dataflow_parallelize)
 
+    def set_output_compression(self, output_compression: bool):
+        """Set option for dataflow parallelization.
+
+        Args:
+            output_compression (bool): whether to turn it on or off
+
+        Raises:
+            TypeError: if the value to set is not boolean
+        """
+        if not isinstance(output_compression, bool):
+            raise TypeError("can't set the option to a non-boolean value")
+        self.cpp().set_output_compression(output_compression)
+
     def set_optimize_concrete(self, optimize: bool):
         """Set flag to enable/disable optimization of concrete intermediate representation.
 

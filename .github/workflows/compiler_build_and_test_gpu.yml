@@ -93,6 +93,7 @@ jobs:
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
             mkdir -p /tmp/concrete_compiler/gpu_tests/
+            dnf install -y gmp-devel zstd libzstd libzstd-devel
             make BINDINGS_PYTHON_ENABLED=OFF CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu
             echo "Debug: ccache statistics (after the build):"
             ccache -s

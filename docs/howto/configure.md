@@ -92,3 +92,5 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Title of the progress bar
 * **progress\_tag**: Union[bool, int] = False,
   * How many nested tag elements to display with the progress bar. `True` means all tag elements and `False` disables the display. `2` will display `elmt1.elmt2`
+* **output\_compression**: bool = True
+  * Enable the compression of outputs.

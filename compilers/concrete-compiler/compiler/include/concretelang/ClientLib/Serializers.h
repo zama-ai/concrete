@@ -8,7 +8,9 @@
 
 #include <iostream>
 #include <limits>
-
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+#include "compress_lwe/defines.h"
+#endif
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySet.h"
@@ -96,10 +98,24 @@ std::ostream &serializeScalarOrTensorData(const ScalarOrTensorData &sotd,
 outcome::checked<ScalarOrTensorData, StringError>
 unserializeScalarOrTensorData(std::istream &istream);
 
-std::ostream &serializeVectorOfScalarOrTensorData(
-    const std::vector<SharedScalarOrTensorData> &sotd, std::ostream &ostream);
-outcome::checked<std::vector<SharedScalarOrTensorData>, StringError>
+std::ostream &serializeScalarOrTensorDataOrCompressed(
+    const ScalarOrTensorOrCompressedData &sotd, std::ostream &ostream);
+
+outcome::checked<ScalarOrTensorOrCompressedData, StringError>
+unserializeScalarOrTensorDataOrCompressed(std::istream &istream);
+
+std::ostream &
+serializeVectorOfScalarOrTensorData(const std::vector<ScalarOrTensorData> &sotd,
+                                    std::ostream &ostream);
+outcome::checked<std::vector<ScalarOrTensorData>, StringError>
 unserializeVectorOfScalarOrTensorData(std::istream &istream);
+
+std::ostream &serializeVectorOfScalarOrTensorDataOrCompressed(
+    const std::vector<SharedScalarOrTensorOrCompressedData> &sotd,
+    std::ostream &ostream);
+
+outcome::checked<std::vector<SharedScalarOrTensorOrCompressedData>, StringError>
+unserializeVectorOfScalarOrTensorDataOrCompressed(std::istream &istream);
 
 std::ostream &operator<<(std::ostream &ostream, const LweSecretKey &wrappedKsk);
 LweSecretKey readLweSecretKey(std::istream &istream);
@@ -115,6 +131,12 @@ LweBootstrapKey readLweBootstrapKey(std::istream &istream);
 std::ostream &operator<<(std::ostream &ostream,
                          const PackingKeyswitchKey &wrappedKsk);
 PackingKeyswitchKey readPackingKeyswitchKey(std::istream &istream);
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+std::ostream &operator<<(std::ostream &ostream, const comp::FullKeys &key);
+
+comp::FullKeys readFullKey(std::istream &istream);
+#endif
 
 std::ostream &operator<<(std::ostream &ostream, const KeySet &keySet);
 std::unique_ptr<KeySet> readKeySet(std::istream &istream);

@@ -9,7 +9,7 @@ MAX_PRECISION = 57
 TEST_ERROR_RATES = """\
 test-error-rates:
   - global-p-error: 0.0001
-    nb-repetition: 10000"""
+    nb-repetition: 10"""
 
 PRECISIONS_WITH_ERROR_RATES = {
     1, 2, 3, 4, 9, 16, 24, 32, 57

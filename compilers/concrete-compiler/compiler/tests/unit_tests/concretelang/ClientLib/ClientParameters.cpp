@@ -51,12 +51,14 @@ TEST(Support, client_parameters_json_serde) {
               {clientlib::SMALL_KEY, 0.00, {4, {1, 2, 3, 4}, false}}},
           /*.shape = */ {32, {1, 2, 3, 4}, 1 * 2 * 3 * 4, false},
           /*.chunkInfo = */ std::nullopt,
+          /* compression = */ false,
       },
       {
           /*.encryption = */ {
               {clientlib::SMALL_KEY, 0.00, {5, {1, 2, 3, 4}, false}}},
           /*.shape = */ {8, {4, 4, 4, 4}, 4 * 4 * 4 * 4, false},
           /*.chunkInfo = */ std::nullopt,
+          /* compression = */ false,
       },
   };
   params0.outputs = {
@@ -65,6 +67,7 @@ TEST(Support, client_parameters_json_serde) {
               {clientlib::SMALL_KEY, 0.00, {5, {1, 2, 3, 4}, false}}},
           /*.shape = */ {8, {4, 4, 4, 4}, 4 * 4 * 4 * 4, false},
           /*.chunkInfo = */ std::nullopt,
+          /* compression = */ false,
       },
   };
   auto json = clientlib::toJSON(params0);

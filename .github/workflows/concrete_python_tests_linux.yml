@@ -79,6 +79,8 @@ jobs:
             set -e
             rm -rf /build/*
 
+            dnf install -y gmp-devel zstd libzstd libzstd-devel
+
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate

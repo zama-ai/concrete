@@ -88,7 +88,7 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
   }
 
   // Store the result to the PublicResult
-  std::vector<clientlib::SharedScalarOrTensorData> buffers;
+  std::vector<clientlib::ScalarOrTensorData> buffers;
   {
     size_t outputOffset = 0;
     for (auto &output : clientParameters.outputs) {
@@ -102,20 +102,15 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
                   clientlib::EncryptedScalarElementType,
                   clientlib::EncryptedScalarElementWidth);
 
-          auto sharedValue =
-              clientlib::SharedScalarOrTensorData(std::move(value));
-
-          buffers.push_back(sharedValue);
+          buffers.push_back(std::move(value));
         } else {
           // plain scalar
           clientlib::ScalarOrTensorData value =
               concretelang::clientlib::ScalarData(outputs[outputOffset++],
                                                   output.shape.sign,
                                                   output.shape.width);
-          auto sharedValue =
-              clientlib::SharedScalarOrTensorData(std::move(value));
 
-          buffers.push_back(sharedValue);
+          buffers.push_back(std::move(value));
         }
       } else {
         // buffer gate
@@ -137,15 +132,13 @@ invokeRawOnLambda(Lambda *lambda, clientlib::ClientParameters clientParameters,
         clientlib::ScalarOrTensorData value =
             clientlib::tensorDataFromMemRef(rank, elementWidth, sign, allocated,
                                             aligned, offset, sizes, strides);
-        auto sharedValue =
-            clientlib::SharedScalarOrTensorData(std::move(value));
 
-        buffers.push_back(sharedValue);
+        buffers.push_back(std::move(value));
       }
     }
   }
 
-  return clientlib::PublicResult::fromBuffers(clientParameters,
+  return clientlib::PublicResult::fromBuffers(clientParameters, evaluationKeys,
                                               std::move(buffers));
 }
 
@@ -156,8 +149,7 @@ invokeRawOnLambda(Lambda *lambda, clientlib::PublicArguments &arguments,
                   bool simulation = false) {
   // Prepare arguments with the right calling convention
   std::vector<void *> preparedArgs;
-  for (auto &sharedArg : arguments.getArguments()) {
-    clientlib::ScalarOrTensorData &arg = sharedArg.get();
+  for (auto &arg : arguments.getArguments()) {
     if (std::holds_alternative<clientlib::ScalarData>(arg)) {
       auto scalar = std::get<clientlib::ScalarData>(arg).getValueAsU64();
       preparedArgs.push_back((void *)scalar);
