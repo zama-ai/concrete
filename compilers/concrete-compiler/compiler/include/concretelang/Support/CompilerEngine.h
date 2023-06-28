@@ -114,6 +114,7 @@ struct CompilationOptions {
       batchTFHEOps = true;
       emitGPUOps = true;
       emitSDFGOps = true;
+      filterSDFGConvertibleOps = "batched";
       break;
     }
   }
