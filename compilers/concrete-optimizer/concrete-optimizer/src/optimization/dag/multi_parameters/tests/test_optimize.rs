@@ -611,4 +611,22 @@ mod tests {
         let sol = optimize(&dag, &None, 0);
         assert!(sol.is_some());
     }
+
+    #[test]
+    fn test_multi_rounded_fks_coherency() {
+        let mut dag = unparametrized::OperationDag::new();
+        let input1 = dag.add_input(16, Shape::number());
+        let reduced_8 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 8, 8);
+        let reduced_4 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 4, 8);
+        _ = dag.add_dot([reduced_8, reduced_4], [1, 1]);
+        let sol = optimize(&dag, &None, 0);
+        assert!(sol.is_some());
+        let sol = sol.unwrap();
+        for (src, dst) in cross_partition(sol.macro_params.len()) {
+            if let Some(fks) = sol.micro_params.fks[src][dst] {
+                assert!(fks.src_glwe_param == sol.macro_params[src].unwrap().glwe_params);
+                assert!(fks.dst_glwe_param == sol.macro_params[dst].unwrap().glwe_params);
+            }
+        }
+    }
 }
