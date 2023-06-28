@@ -208,6 +208,12 @@ llvm::cl::opt<bool> unrollLoopsWithSDFGConvertibleOps(
                    "fully unrolled."),
     llvm::cl::init(false));
 
+llvm::cl::opt<std::string> filterSDFGConvertibleOps(
+    "filter-sdfg-convertible-ops",
+    llvm::cl::desc("Limits conversion to SDFG operations to operations whose "
+                   "names contain the specified substring."),
+    llvm::cl::init(""));
+
 llvm::cl::opt<bool> dataflowParallelize(
     "parallelize-dataflow",
     llvm::cl::desc(
@@ -391,6 +397,10 @@ cmdlineCompilationOptions() {
   options.emitSDFGOps = cmdline::emitSDFGOps;
   options.unrollLoopsWithSDFGConvertibleOps =
       cmdline::unrollLoopsWithSDFGConvertibleOps;
+  options.filterSDFGConvertibleOps =
+      cmdline::filterSDFGConvertibleOps != ""
+          ? std::optional<std::string>(cmdline::filterSDFGConvertibleOps)
+          : std::nullopt;
   options.optimizeTFHE = cmdline::optimizeTFHE;
   options.emitGPUOps = cmdline::emitGPUOps;
   options.chunkIntegers = cmdline::chunkIntegers;
