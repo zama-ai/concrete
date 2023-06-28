@@ -139,8 +139,11 @@ void setInsertionPointAfterValueOrRestore(mlir::OpBuilder &builder,
 
 struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
   bool unroll;
+  std::optional<std::string> filterConvertibleOps;
 
-  ExtractSDFGOpsPass(bool unroll) : unroll(unroll) {}
+  ExtractSDFGOpsPass(bool unroll,
+                     std::optional<std::string> filterConvertibleOps)
+      : unroll(unroll), filterConvertibleOps(filterConvertibleOps) {}
 
   void runOnOperation() override {
     mlir::func::FuncOp func = getOperation();
@@ -159,7 +162,9 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
     unsigned streamNumber = 0;
 
     func.walk([&](SDFG::SDFGConvertibleOpInterface op) {
-      convertibleOps.push_back(op);
+      if (!filterConvertibleOps.has_value() ||
+          op->getName().getStringRef().contains(filterConvertibleOps.value()))
+        convertibleOps.push_back(op);
     });
 
     if (convertibleOps.size() == 0)
@@ -259,8 +264,9 @@ namespace mlir {
 namespace concretelang {
 
 std::unique_ptr<OperationPass<mlir::func::FuncOp>>
-createExtractSDFGOpsPass(bool unroll) {
-  return std::make_unique<ExtractSDFGOpsPass>(unroll);
+createExtractSDFGOpsPass(bool unroll,
+                         std::optional<std::string> filterConvertibleOps) {
+  return std::make_unique<ExtractSDFGOpsPass>(unroll, filterConvertibleOps);
 }
 } // namespace concretelang
 } // namespace mlir

@@ -8,11 +8,13 @@
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Pass/Pass.h"
+#include <optional>
 
 namespace mlir {
 namespace concretelang {
-std::unique_ptr<OperationPass<mlir::func::FuncOp>>
-createExtractSDFGOpsPass(bool unroll);
+std::unique_ptr<OperationPass<mlir::func::FuncOp>> createExtractSDFGOpsPass(
+    bool unroll,
+    std::optional<std::string> filterConvertibleOps = std::nullopt);
 } // namespace concretelang
 } // namespace mlir
 
