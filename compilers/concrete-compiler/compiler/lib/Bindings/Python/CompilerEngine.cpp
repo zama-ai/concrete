@@ -4,10 +4,12 @@
 // for license information.
 
 #include "llvm/ADT/SmallString.h"
+#include <memory>
 
 #include "concretelang/Bindings/Python/CompilerEngine.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/ClientLib/Serializers.h"
+#include "concretelang/ClientLib/Types.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/JITSupport.h"
@@ -266,23 +268,26 @@ keySetSerialize(concretelang::clientlib::KeySet &keySet) {
   return buffer.str();
 }
 
-MLIR_CAPI_EXPORTED concretelang::clientlib::SharedScalarOrTensorData
+MLIR_CAPI_EXPORTED concretelang::clientlib::SharedScalarOrTensorOrCompressedData
 valueUnserialize(const std::string &buffer) {
   std::stringstream istream(buffer);
 
-  auto value = concretelang::clientlib::unserializeScalarOrTensorData(istream);
+  auto value =
+      concretelang::clientlib::unserializeScalarOrTensorDataOrCompressed(
+          istream);
   if (istream.fail() || value.has_error()) {
     throw std::runtime_error("Cannot read data");
   }
 
-  return concretelang::clientlib::SharedScalarOrTensorData(
+  return concretelang::clientlib::SharedScalarOrTensorOrCompressedData(
       std::move(value.value()));
 }
 
-MLIR_CAPI_EXPORTED std::string
-valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value) {
+MLIR_CAPI_EXPORTED std::string valueSerialize(
+    const concretelang::clientlib::SharedScalarOrTensorOrCompressedData
+        &value) {
   std::ostringstream buffer(std::ios::binary);
-  serializeScalarOrTensorData(value.get(), buffer);
+  serializeScalarOrTensorDataOrCompressed(value.get(), buffer);
   return buffer.str();
 }
 

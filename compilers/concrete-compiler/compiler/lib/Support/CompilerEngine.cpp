@@ -426,7 +426,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       auto clientParametersOrErr =
           mlir::concretelang::createClientParametersFromTFHE(
               module, funcName, options.optimizerConfig.security,
-              options.encodings.value(), maybeCrt);
+              options.encodings.value(), maybeCrt,
+              compilerOptions.outputCompression);
 
       if (!clientParametersOrErr)
         return clientParametersOrErr.takeError();

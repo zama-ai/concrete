@@ -315,7 +315,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     // if set, use installation path of concrete compiler to lookup libraries and include files
     match env::var("CONCRETE_COMPILER_INSTALL_DIR") {
         Ok(install_dir) => {
-            println!("cargo:rustc-link-search={}/lib/", install_dir);
+            println!("cargo:rustc-link-search={install_dir}/lib/");
+            println!("cargo:rustc-link-search={install_dir}/../../tools/concretelang/compress_install_dir/lib/");
             include_paths.push(Path::new(&format!("{}/include/", install_dir)).to_path_buf());
         }
         Err(_e) => println!(
@@ -331,7 +332,7 @@ so your compiler/linker will have to lookup libs and include dirs on their own"
         .chain(LLVM_TARGET_SPECIFIC_STATIC_LIBS);
 
     for static_lib_name in all_static_libs {
-        println!("cargo:rustc-link-lib=static={}", static_lib_name);
+        println!("cargo:rustc-link-lib=static={static_lib_name}");
     }
     // concrete compiler runtime
     println!("cargo:rustc-link-lib=ConcretelangRuntime");
@@ -342,10 +343,20 @@ so your compiler/linker will have to lookup libs and include dirs on their own"
     // required by llvm
     println!("cargo:rustc-link-lib=ncurses");
     if let Some(name) = get_system_libcpp() {
-        println!("cargo:rustc-link-lib={}", name);
+        println!("cargo:rustc-link-lib={name}");
     }
-    // zlib
-    println!("cargo:rustc-link-lib=z");
+
+    for lib in [
+        "z", //zlib
+        "zstd",
+        "compresslwe",
+        "ipcl",
+        "omp",
+        "ssl",
+        "crypto",
+    ] {
+        println!("cargo:rustc-link-lib={lib}");
+    }
 
     println!("cargo:rerun-if-changed=api.h");
     bindgen::builder()

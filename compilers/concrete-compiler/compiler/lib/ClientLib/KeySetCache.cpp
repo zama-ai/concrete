@@ -3,6 +3,9 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+#include "CompressLWE/defines.h"
+#endif
 #include "boost/outcome.h"
 
 #include "concretelang/ClientLib/EvaluationKeys.h"
@@ -55,7 +58,7 @@ outcome::checked<Key, StringError> loadKey(llvm::SmallString<0> &path,
 
 template <class Key>
 outcome::checked<void, StringError> saveKey(llvm::SmallString<0> &path,
-                                            Key key) {
+                                            Key &key) {
 #ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
   getApproval();
 #endif
@@ -86,6 +89,9 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
   std::vector<LweBootstrapKey> bootstrapKeys;
   std::vector<LweKeyswitchKey> keyswitchKeys;
   std::vector<PackingKeyswitchKey> packingKeyswitchKeys;
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  std::optional<PaiFullKeys> paiFullKeys;
+#endif
 
   // Load secret keys
   for (auto p : llvm::enumerate(params.secretKeys)) {
@@ -124,15 +130,33 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     packingKeyswitchKeys.push_back(key);
   }
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  if (params.paiCompKeys.has_value()) {
+    // TODO - Check parameters?
+    // auto param = p.value();
+    llvm::SmallString<0> path(folderPath);
+    llvm::sys::path::append(path, "pai_comp_Key");
+    OUTCOME_TRY(auto key, loadKey(path, readPaiFullKey));
+    paiFullKeys = std::move(key);
+  }
+#endif
+
   __uint128_t seed = seed_msb;
   seed <<= 64;
   seed += seed_lsb;
 
   auto csprng = ConcreteCSPRNG(seed);
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  OUTCOME_TRY(auto keySet,
+              KeySet::fromKeys(params, secretKeys, bootstrapKeys, keyswitchKeys,
+                               packingKeyswitchKeys, std::move(paiFullKeys),
+                               std::move(csprng)));
+#else
   OUTCOME_TRY(auto keySet,
               KeySet::fromKeys(params, secretKeys, bootstrapKeys, keyswitchKeys,
                                packingKeyswitchKeys, std::move(csprng)));
+#endif
 
   return std::move(keySet);
 }
@@ -177,6 +201,15 @@ outcome::checked<void, StringError> saveKeys(KeySet &key_set,
     llvm::sys::path::append(path, "pksKey_" + std::to_string(p.index()));
     OUTCOME_TRYV(saveKey(path, p.value()));
   }
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  // Save compression keys
+  if (key_set.getPaiFullKey().has_value()) {
+    llvm::SmallString<0> path = folderIncompletePath;
+    llvm::sys::path::append(path, "pai_comp_Key");
+    OUTCOME_TRYV(saveKey(path, *key_set.getPaiFullKey()));
+  }
+#endif
 
   err = llvm::sys::fs::rename(folderIncompletePath, folderPath);
   if (err) {

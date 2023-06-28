@@ -69,6 +69,7 @@ struct CompilationOptions {
   bool simulate;
   /// use GPU during execution by generating GPU operations if possible
   bool emitGPUOps;
+  bool outputCompression;
   std::optional<std::vector<int64_t>> fhelinalgTileSizes;
 
   std::optional<std::string> clientParametersFuncName;

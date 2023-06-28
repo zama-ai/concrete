@@ -79,6 +79,15 @@ jobs:
             set -e
             rm -rf /build/*
 
+            dnf install -y openssl-devel zstd libzstd libzstd-devel
+            echo "[nasm]" > /etc/yum.repos.d/nasm.repo
+            echo "name=The Netwide Assembler" >> /etc/yum.repos.d/nasm.repo
+            echo "baseurl=http://www.nasm.us/pub/nasm/stable/linux/" >> /etc/yum.repos.d/nasm.repo
+            echo "enabled=1" >> /etc/yum.repos.d/nasm.repo
+            echo "gpgcheck=0" >> /etc/yum.repos.d/nasm.repo
+            dnf upgrade -y
+            dnf install -y nasm --nobest
+
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate

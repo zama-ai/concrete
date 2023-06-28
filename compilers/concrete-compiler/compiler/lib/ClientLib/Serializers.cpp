@@ -3,12 +3,21 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <cassert>
+#include <cstdint>
 #include <iosfwd>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stdlib.h>
 #include <variant>
+#include <vector>
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+#include "CompressLWE/defines.h"
+#include "CompressLWE/serialization.h"
+#endif
+#include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/ClientLib/Types.h"
@@ -192,6 +201,47 @@ PackingKeyswitchKey readPackingKeyswitchKey(std::istream &istream) {
   return b;
 }
 
+// PaiKeyParam ////////////////////////////
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+std::ostream &operator<<(std::ostream &ostream, const PaiKeyParam param) {
+  writeWord(ostream, param.secretKeyID);
+
+  return ostream;
+}
+
+std::istream &operator>>(std::istream &istream, PaiKeyParam &param) {
+  readWord(istream, param.secretKeyID);
+
+  return istream;
+}
+
+std::ostream &operator<<(std::ostream &ostream, const PaiFullKeys &key) {
+  ostream << *key.priv_key;
+  ostream << *key.pub_key;
+  ostream << *key.compKey;
+  return ostream;
+}
+
+PaiFullKeys readPaiFullKey(std::istream &istream) {
+  // PaiKeyParam param;
+  // istream >> param;
+
+  PaiFullKeys key;
+
+  key.priv_key = std::make_shared<PaiPrivateKey>(PaiPrivateKey());
+  key.pub_key = std::make_shared<PaiPublicKey>(PaiPublicKey());
+
+  key.compKey = std::make_shared<PaiCiphertext>(PaiCiphertext());
+
+  istream >> *key.priv_key;
+  istream >> *key.pub_key;
+  istream >> *key.compKey;
+
+  return key;
+}
+#endif
+
 // KeySet ////////////////////////////////
 
 std::unique_ptr<KeySet> readKeySet(std::istream &istream) {
@@ -221,6 +271,15 @@ std::unique_ptr<KeySet> readKeySet(std::istream &istream) {
     packingKeyswitchKeys.push_back(readPackingKeyswitchKey(istream));
   }
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  std::optional<PaiFullKeys> paiFullKeys;
+  readSize(istream, nbKey);
+  assert(nbKey <= 1);
+  if (nbKey == 1) {
+    paiFullKeys = readPaiFullKey(istream);
+  }
+#endif
+
   std::string clientParametersString;
   istream >> clientParametersString;
   auto clientParameters =
@@ -233,7 +292,11 @@ std::unique_ptr<KeySet> readKeySet(std::istream &istream) {
   auto csprng = ConcreteCSPRNG(0);
   auto keySet =
       KeySet::fromKeys(clientParameters.get(), secretKeys, bootstrapKeys,
-                       keyswitchKeys, packingKeyswitchKeys, std::move(csprng));
+                       keyswitchKeys, packingKeyswitchKeys,
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+                       std::move(paiFullKeys),
+#endif
+                       std::move(csprng));
 
   return std::move(keySet.value());
 }
@@ -262,6 +325,17 @@ std::ostream &operator<<(std::ostream &ostream, const KeySet &keySet) {
   for (auto pksk : packingKeyswitchKeys) {
     ostream << pksk;
   }
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+
+  auto paiFullKey = keySet.getPaiFullKey();
+  if (paiFullKey.has_value()) {
+    writeSize<uint64_t>(ostream, 1);
+    ostream << *paiFullKey;
+  } else {
+    writeSize<uint64_t>(ostream, 0);
+  }
+#endif
 
   auto clientParametersJson = llvm::json::Value(keySet.clientParameters());
   std::string clientParametersString;
@@ -292,7 +366,26 @@ EvaluationKeys readEvaluationKeys(std::istream &istream) {
   for (uint64_t i = 0; i < nbKey; i++) {
     packingKeyswitchKeys.push_back(readPackingKeyswitchKey(istream));
   }
-  return EvaluationKeys(keyswitchKeys, bootstrapKeys, packingKeyswitchKeys);
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  std::optional<std::shared_ptr<PaiCiphertext>> compKey;
+
+  readSize(istream, nbKey);
+  assert(nbKey <= 1);
+  if (nbKey == 1) {
+    compKey = std::make_shared<PaiCiphertext>(PaiCiphertext());
+
+    istream >> **compKey;
+  }
+#endif
+
+  return EvaluationKeys(keyswitchKeys, bootstrapKeys, packingKeyswitchKeys
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+                        ,
+                        compKey
+#endif
+  );
 }
 
 std::ostream &operator<<(std::ostream &ostream,
@@ -312,6 +405,17 @@ std::ostream &operator<<(std::ostream &ostream,
   for (auto pksk : packingKeyswitchKeys) {
     ostream << pksk;
   }
+
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  auto compKey = evaluationKeys.getCompressionKey();
+  if (compKey.has_value()) {
+    writeSize<uint64_t>(ostream, 1);
+    ostream << **compKey;
+  } else {
+    writeSize<uint64_t>(ostream, 0);
+  }
+#endif
+
   assert(ostream.good());
   return ostream;
 }
@@ -560,25 +664,111 @@ unserializeScalarOrTensorData(std::istream &istream) {
   }
 }
 
-std::ostream &serializeVectorOfScalarOrTensorData(
-    const std::vector<SharedScalarOrTensorData> &v, std::ostream &ostream) {
-  writeSize(ostream, v.size());
+std::ostream &serializeScalarOrTensorDataOrCompressed(
+    const ScalarOrTensorOrCompressedData &sotd, std::ostream &ostream) {
+
+  if (std::holds_alternative<TensorData>(sotd)) {
+    writeWord<uint8_t>(ostream, 0);
+    return serializeTensorData(std::get<TensorData>(sotd), ostream);
+  } else if (std::holds_alternative<ScalarData>(sotd)) {
+
+    writeWord<uint8_t>(ostream, 1);
+    return serializeScalarData(std::get<ScalarData>(sotd), ostream);
+  } else {
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+    assert(std::holds_alternative<std::shared_ptr<CompressedCiphertext>>(sotd));
+
+    const CompressedCiphertext &compCt =
+        *std::get<std::shared_ptr<CompressedCiphertext>>(sotd);
+
+    writeWord<uint8_t>(ostream, 2);
+    return ostream << compCt;
+#else
+    exit(1);
+#endif
+  }
+}
+
+outcome::checked<ScalarOrTensorOrCompressedData, StringError>
+unserializeScalarOrTensorDataOrCompressed(std::istream &istream) {
+  uint8_t type;
+  readWord<uint8_t>(istream, type);
+
+  if (type != 0 && type != 1 && type != 2) {
+    return StringError("Numerical value indicating whether a data element is a "
+                       "tensor must be either 0, 1 or 2, but got ")
+           << type;
+  }
+
+  if (type == 0) {
+    auto tdOrErr = unserializeTensorData(istream);
+
+    if (tdOrErr.has_error())
+      return std::move(tdOrErr.error());
+    else
+      return ScalarOrTensorOrCompressedData(std::move(tdOrErr.value()));
+  } else if (type == 1) {
+    auto tdOrErr = unserializeScalarData(istream);
+
+    if (tdOrErr.has_error())
+      return std::move(tdOrErr.error());
+    else
+      return ScalarOrTensorOrCompressedData(std::move(tdOrErr.value()));
+  } else {
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+
+    auto ct = std::make_shared<CompressedCiphertext>(100, 64);
+
+    istream >> *ct;
+
+    return ct;
+#else
+    exit(1);
+#endif
+  }
+}
+
+std::ostream &
+serializeVectorOfScalarOrTensorData(const std::vector<ScalarOrTensorData> &v,
+                                    std::ostream &ostream) {
+  writeSize<uint64_t>(ostream, v.size());
   for (auto &sotd : v) {
-    serializeScalarOrTensorData(sotd.get(), ostream);
-    if (!ostream.good()) {
-      return ostream;
-    }
+    serializeScalarOrTensorData(sotd, ostream);
+    assert(ostream.good());
   }
   return ostream;
 }
-outcome::checked<std::vector<SharedScalarOrTensorData>, StringError>
+outcome::checked<std::vector<ScalarOrTensorData>, StringError>
 unserializeVectorOfScalarOrTensorData(std::istream &istream) {
   uint64_t nbElt;
   readSize(istream, nbElt);
-  std::vector<SharedScalarOrTensorData> v;
+  std::vector<ScalarOrTensorData> v;
   for (uint64_t i = 0; i < nbElt; i++) {
     OUTCOME_TRY(auto elt, unserializeScalarOrTensorData(istream));
-    v.push_back(SharedScalarOrTensorData(std::move(elt)));
+    v.push_back(std::move(elt));
+  }
+  return v;
+}
+
+std::ostream &serializeVectorOfScalarOrTensorDataOrCompressed(
+    const std::vector<SharedScalarOrTensorOrCompressedData> &v,
+    std::ostream &ostream) {
+  writeSize<uint64_t>(ostream, v.size());
+  for (auto &sotd : v) {
+    serializeScalarOrTensorDataOrCompressed(sotd.get(), ostream);
+    assert(ostream.good());
+  }
+  return ostream;
+}
+outcome::checked<std::vector<SharedScalarOrTensorOrCompressedData>, StringError>
+unserializeVectorOfScalarOrTensorDataOrCompressed(std::istream &istream) {
+  uint64_t nbElt;
+  readSize(istream, nbElt);
+  std::vector<SharedScalarOrTensorOrCompressedData> v;
+  for (uint64_t i = 0; i < nbElt; i++) {
+    OUTCOME_TRY(auto elt, unserializeScalarOrTensorDataOrCompressed(istream));
+    v.push_back(
+        std::make_shared<ScalarOrTensorOrCompressedData>(std::move(elt)));
   }
   return v;
 }

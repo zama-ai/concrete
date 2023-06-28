@@ -5,9 +5,12 @@
 
 #include "concretelang/Bindings/Python/CompilerAPIModule.h"
 #include "concretelang/Bindings/Python/CompilerEngine.h"
+#include "concretelang/ClientLib/PublicArguments.h"
+#include "concretelang/ClientLib/Types.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
+#include <memory>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -18,10 +21,17 @@
 #include <signal.h>
 #include <stdexcept>
 #include <string>
+#include <variant>
 
 using mlir::concretelang::CompilationOptions;
 using mlir::concretelang::JITSupport;
 using mlir::concretelang::LambdaArgument;
+
+using mlir::concretelang::clientlib::ScalarData;
+using mlir::concretelang::clientlib::ScalarOrTensorData;
+using mlir::concretelang::clientlib::ScalarOrTensorOrCompressedData;
+using mlir::concretelang::clientlib::SharedScalarOrTensorOrCompressedData;
+using mlir::concretelang::clientlib::TensorData;
 
 class SignalGuard {
 public:
@@ -73,6 +83,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_dataflow_parallelize",
            [](CompilationOptions &options, bool b) {
              options.dataflowParallelize = b;
+           })
+      .def("set_output_compression",
+           [](CompilationOptions &options, bool b) {
+             options.outputCompression = b;
            })
       .def("set_optimize_concrete", [](CompilationOptions &options,
                                        bool b) { options.optimizeTFHE = b; })
@@ -313,14 +327,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("get_evaluation_keys",
            [](clientlib::KeySet &keySet) { return keySet.evaluationKeys(); });
 
-  pybind11::class_<clientlib::SharedScalarOrTensorData>(m, "Value")
+  pybind11::class_<clientlib::SharedScalarOrTensorOrCompressedData>(m, "Value")
       .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
                     return valueUnserialize(buffer);
                   })
-      .def("serialize", [](const clientlib::SharedScalarOrTensorData &value) {
-        return pybind11::bytes(valueSerialize(value));
-      });
+      .def("serialize",
+           [](const clientlib::SharedScalarOrTensorOrCompressedData &value) {
+             return pybind11::bytes(valueSerialize(value));
+           });
 
   pybind11::class_<clientlib::ValueExporter>(m, "ValueExporter")
       .def_static("create",
@@ -340,8 +355,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                throw std::runtime_error(result.error().mesg);
              }
 
-             return clientlib::SharedScalarOrTensorData(
-                 std::move(result.value()));
+             std::shared_ptr<ScalarOrTensorOrCompressedData> a;
+
+             if (std::holds_alternative<ScalarData>(result.value())) {
+               a = std::make_shared<ScalarOrTensorOrCompressedData>(
+                   std::move(std::get<ScalarData>(result.value())));
+             } else {
+               assert(std::holds_alternative<TensorData>(result.value()));
+               a = std::make_shared<ScalarOrTensorOrCompressedData>(
+                   std::move(std::get<TensorData>(result.value())));
+             }
+
+             return clientlib::SharedScalarOrTensorOrCompressedData(a);
            })
       .def("export_tensor", [](clientlib::ValueExporter &exporter,
                                size_t position, std::vector<int64_t> values,
@@ -355,7 +380,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           throw std::runtime_error(result.error().mesg);
         }
 
-        return clientlib::SharedScalarOrTensorData(std::move(result.value()));
+        std::shared_ptr<ScalarOrTensorOrCompressedData> a;
+
+        if (std::holds_alternative<ScalarData>(result.value())) {
+          a = std::make_shared<ScalarOrTensorOrCompressedData>(
+              std::move(std::get<ScalarData>(result.value())));
+        } else {
+          assert(std::holds_alternative<TensorData>(result.value()));
+          a = std::make_shared<ScalarOrTensorOrCompressedData>(
+              std::move(std::get<TensorData>(result.value())));
+        }
+
+        return clientlib::SharedScalarOrTensorOrCompressedData(a);
       });
 
   pybind11::class_<clientlib::SimulatedValueExporter>(m,
@@ -409,7 +445,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            })
       .def("decrypt_scalar",
            [](clientlib::ValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
+              clientlib::SharedScalarOrTensorOrCompressedData &value) {
              SignalGuard signalGuard;
 
              outcome::checked<int64_t, StringError> result =
@@ -423,7 +459,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            })
       .def("decrypt_tensor",
            [](clientlib::ValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
+              clientlib::SharedScalarOrTensorOrCompressedData &value) {
              SignalGuard signalGuard;
 
              outcome::checked<std::vector<int64_t>, StringError> result =
@@ -484,8 +520,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_static(
           "create",
           [](const mlir::concretelang::ClientParameters &clientParameters,
-             std::vector<clientlib::SharedScalarOrTensorData> &buffers) {
-            return clientlib::PublicArguments(clientParameters, buffers);
+             std::vector<clientlib::SharedScalarOrTensorOrCompressedData>
+                 &buffers) {
+            return std::make_unique<clientlib::PublicArguments>(
+                clientParameters, buffers);
           })
       .def_static("deserialize",
                   [](mlir::concretelang::ClientParameters &clientParameters,
@@ -511,7 +549,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            })
       .def("get_value",
            [](clientlib::PublicResult &publicResult, size_t position) {
-             outcome::checked<clientlib::SharedScalarOrTensorData, StringError>
+             outcome::checked<clientlib::SharedScalarOrTensorOrCompressedData,
+                              StringError>
                  result = publicResult.getValue(position);
 
              if (result.has_error()) {

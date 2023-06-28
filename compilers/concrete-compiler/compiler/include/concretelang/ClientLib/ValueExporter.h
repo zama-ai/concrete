@@ -163,7 +163,7 @@ protected:
                                                    size_t argPos,
                                                    uint64_t *ciphertext,
                                                    uint64_t input) override {
-    return _keySet.encrypt_lwe(argPos, ciphertext, input);
+    return _keySet.encode_encrypt_lwe(argPos, ciphertext, input);
   }
 
   outcome::checked<CircuitGate, StringError> inputGate(size_t argPos) override {

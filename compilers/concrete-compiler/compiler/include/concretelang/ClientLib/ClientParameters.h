@@ -136,6 +136,14 @@ static inline bool operator==(const PackingKeyswitchKeyParam &lhs,
          lhs.inputLweDimension == rhs.inputLweDimension;
 }
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+struct PaiKeyParam {
+  LweSecretKeyID secretKeyID;
+
+  void hash(size_t &seed);
+};
+#endif
+
 struct Encoding {
   Precision precision;
   CRTDecomposition crt;
@@ -187,6 +195,7 @@ struct CircuitGate {
   std::optional<EncryptionGate> encryption;
   CircuitGateShape shape;
   std::optional<ChunkInfo> chunkInfo;
+  bool compression;
 
   bool isEncrypted() { return encryption.has_value(); }
 
@@ -213,6 +222,9 @@ struct ClientParameters {
   std::vector<BootstrapKeyParam> bootstrapKeys;
   std::vector<KeyswitchKeyParam> keyswitchKeys;
   std::vector<PackingKeyswitchKeyParam> packingKeyswitchKeys;
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  std::optional<PaiKeyParam> paiCompKeys;
+#endif
   std::vector<CircuitGate> inputs;
   std::vector<CircuitGate> outputs;
   std::string functionName;
@@ -239,7 +251,7 @@ struct ClientParameters {
   }
 
   outcome::checked<LweSecretKeyParam, StringError>
-  lweSecretKeyParam(CircuitGate gate) {
+  lweSecretKeyParam(CircuitGate gate) const {
     if (!gate.encryption.has_value()) {
       return StringError("gate is not encrypted");
     }
@@ -260,7 +272,7 @@ struct ClientParameters {
   }
 
   /// lweBufferSize returns the size of one ciphertext of a gate.
-  int64_t lweBufferSize(CircuitGate gate) {
+  int64_t lweBufferSize(CircuitGate gate) const {
     assert(gate.encryption.has_value());
     auto nbBlocks = gate.encryption->encoding.crt.size();
     nbBlocks = nbBlocks == 0 ? 1 : nbBlocks;

@@ -93,6 +93,14 @@ jobs:
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
             mkdir -p /tmp/concrete_compiler/gpu_tests/
+            dnf install -y openssl-devel zstd libzstd libzstd-devel
+            echo "[nasm]" > /etc/yum.repos.d/nasm.repo
+            echo "name=The Netwide Assembler" >> /etc/yum.repos.d/nasm.repo
+            echo "baseurl=http://www.nasm.us/pub/nasm/stable/linux/" >> /etc/yum.repos.d/nasm.repo
+            echo "enabled=1" >> /etc/yum.repos.d/nasm.repo
+            echo "gpgcheck=0" >> /etc/yum.repos.d/nasm.repo
+            dnf upgrade -y
+            dnf install -y nasm --nobest
             make BINDINGS_PYTHON_ENABLED=OFF CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu
             echo "Debug: ccache statistics (after the build):"
             ccache -s

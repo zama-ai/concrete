@@ -35,11 +35,12 @@ TEST_P(KeySetTest, encrypt_decrypt) {
 
   // Encrypt
   uint64_t input = 0;
-  ASSERT_OUTCOME_HAS_VALUE(keySet->encrypt_lwe(0, ciphertext, input));
+  ASSERT_OUTCOME_HAS_VALUE(keySet->encode_encrypt_lwe(0, ciphertext, input));
 
   // Decrypt
-  uint64_t output;
-  ASSERT_OUTCOME_HAS_VALUE(keySet->decrypt_lwe(0, ciphertext, output));
+
+  uint64_t output = 0;
+  ASSERT_OUTCOME_HAS_VALUE(keySet->decrypt_decode_lwe(0, ciphertext, output));
 
   ASSERT_EQ(input, output) << "decrypted value differs than the encrypted one";
 }
@@ -56,7 +57,12 @@ clientlib::ClientParameters generateClientParameterOneScalarOneScalar(
   // One secret key with the given dimension
   clientlib::ClientParameters params;
   params.secretKeys.push_back({/*.dimension =*/dimension});
-  // One input and output encryption gate on the same secret key and encoded
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+
+  params.paiCompKeys = {/*.secretKeyID =*/0};
+#endif
+  // One input and output encryption gate on the same secret key and
+  // encoded
   // with the same precision
   const auto v0Curve = concrete::getSecurityCurve(128, concrete::BINARY);
 

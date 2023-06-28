@@ -64,6 +64,12 @@ parseEndToEndCommandLine(int argc, char **argv) {
           "Set the batchTFHEOps compilation options to run the tests"),
       llvm::cl::init(std::nullopt));
 
+  llvm::cl::opt<bool> outputCompression(
+      "output-compression",
+      llvm::cl::desc(
+          "Enable the paillier transciphering of output for compression"),
+      llvm::cl::init(false));
+
   // Optimizer options
   llvm::cl::opt<int> securityLevel(
       "security-level",
@@ -130,6 +136,8 @@ parseEndToEndCommandLine(int argc, char **argv) {
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
   compilationOptions.optimizerConfig.strategy = optimizerStrategy.getValue();
+  compilationOptions.optimizerConfig.security = securityLevel.getValue();
+  compilationOptions.outputCompression = outputCompression.getValue();
 
   mlir::concretelang::setupLogging(verbose.getValue());
 

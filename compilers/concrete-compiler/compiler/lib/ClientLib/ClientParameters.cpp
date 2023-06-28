@@ -45,6 +45,10 @@ void PackingKeyswitchKeyParam::hash(size_t &seed) {
         double_to_bits(variance));
 }
 
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+void PaiKeyParam::hash(size_t &seed) { hash_(seed, secretKeyID); }
+#endif
+
 std::size_t ClientParameters::hash() {
   std::size_t currentHash = 1;
   for (auto secretKeyParam : secretKeys) {
@@ -59,6 +63,11 @@ std::size_t ClientParameters::hash() {
   for (auto packingKeyswitchKeyParam : packingKeyswitchKeys) {
     packingKeyswitchKeyParam.hash(currentHash);
   }
+#ifdef OUTPUT_COMPRESSION_SUPPORT
+  if (paiCompKeys.has_value()) {
+    paiCompKeys->hash(currentHash);
+  }
+#endif
   return currentHash;
 }
 

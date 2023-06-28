@@ -14,4 +14,4 @@ tests/end_to_end_fixture/tests_cpu/end_to_end_apply_lookup_table.yaml
 tests/end_to_end_fixture/tests_cpu/end_to_end_leveled.yaml
 tests/end_to_end_fixture/tests_cpu/end_to_end_linalg_apply_lookup_table.yaml
 tests/end_to_end_fixture/tests_cpu/end_to_end_multi_precision.yaml
-
+tests/end_to_end_fixture/tests_cpu/end_to_end_linalg_enc_enc_matmul_dot.yaml
