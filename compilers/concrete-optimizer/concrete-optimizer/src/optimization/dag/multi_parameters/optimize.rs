@@ -812,25 +812,24 @@ fn optimize_macro(
                         assert!(all_fks[src_partition][dst_partition].is_some());
                     }
                 }
-                // As all fks cannot be reoptimized in some case, we need to check previous ones are still valid.
-                for src_partition in 0..nb_partitions {
-                    for dst_partition in 0..nb_partitions {
-                        if used_conversion_keyswitch[src_partition][dst_partition] {
-                            if let Some(prev_fks) = &all_fks[src_partition][dst_partition] {
-                                if macro_params[src_partition].is_some() && macro_params[dst_partition].is_some() {
-                                    if prev_fks.src_glwe_param != macro_params[src_partition].unwrap().glwe_params
-                                    || prev_fks.dst_glwe_param != macro_params[dst_partition].unwrap().glwe_params {
-                                        all_fks[src_partition][dst_partition] = None;
-                                        is_lower_bound = true;
-                                    }
-                                } else {
-                                    all_fks[src_partition][dst_partition] = None;
-                                }
-                            } else {
-                                is_lower_bound = true;
-                            }
-                        }
+                // As all fks cannot be re-optimized in some case, we need to check previous ones are still valid.
+                for (src_partition, dst_partition) in cross_partition(nb_partitions) {
+                    if !used_conversion_keyswitch[src_partition][dst_partition] {
+                        continue;
                     }
+                    let fks = &all_fks[src_partition][dst_partition];
+                    if fks.is_none() {
+                        is_lower_bound = true;
+                    }
+                    let src_glwe_param = macro_params[src_partition].map(|p| p.glwe_params);
+                    let dst_glwe_param = macro_params[dst_partition].map(|p| p.glwe_params);
+                    let src_glwe_param_stable = src_glwe_param == fks.map(|p| p.src_glwe_param);
+                    let dst_glwe_param_stable = dst_glwe_param == fks.map(|p| p.dst_glwe_param);
+                    if src_glwe_param_stable && dst_glwe_param_stable {
+                        continue;
+                    }
+                    all_fks[src_partition][dst_partition] = None;
+                    is_lower_bound = true;
                 }
                 let micro_params = MicroParameters {
                     pbs: all_pbs,
@@ -912,7 +911,7 @@ pub fn optimize(
     let mut best_p_error = f64::INFINITY;
 
     let mut fix_point = params.clone();
-    let mut best_params : Option<Parameters> = None;
+    let mut best_params: Option<Parameters> = None;
     for iter in 0..=10 {
         for partition in (0..nb_partitions).rev() {
             let new_params = optimize_macro(
@@ -1045,7 +1044,10 @@ fn sanity_check(
     complexity: &Complexity,
 ) {
     assert!(params.is_feasible);
-    assert!(!params.is_lower_bound, "Sanity check:lower_bound: cannot return a partial solution");
+    assert!(
+        !params.is_lower_bound,
+        "Sanity check:lower_bound: cannot return a partial solution"
+    );
     let nb_partitions = params.macro_params.len();
     let mut operations = OperationsCV {
         variance: OperationsValue::zero(nb_partitions),
