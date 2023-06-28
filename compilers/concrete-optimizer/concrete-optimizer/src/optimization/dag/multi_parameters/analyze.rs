@@ -872,8 +872,7 @@ pub mod tests {
         eprintln!("{}", dag.dump());
         let p_cut = PrecisionCut { p_cut };
         eprintln!("{p_cut}");
-        let p_cut = Some(p_cut);
-        let dag = super::analyze(&dag, &CONFIG, &p_cut, LOW_PRECISION_PARTITION);
-        assert!(dag.nb_partitions == p_cut.unwrap().p_cut.len() + 1);
+        let dag = super::analyze(&dag, &CONFIG, &Some(p_cut.clone()), LOW_PRECISION_PARTITION);
+        assert!(dag.nb_partitions == p_cut.p_cut.len() + 1);
     }
 }
