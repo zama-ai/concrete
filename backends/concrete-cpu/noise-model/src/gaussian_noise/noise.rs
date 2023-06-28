@@ -8,6 +8,6 @@ pub mod modulus_switching;
 pub mod multi_bit_blind_rotate;
 pub mod multi_bit_external_product_glwe;
 pub mod private_packing_keyswitch;
-pub mod public_func_packing_keyswitch;
+pub mod public_func_keyswitch;
 pub mod tensor_product;
 pub mod trace_packing;
