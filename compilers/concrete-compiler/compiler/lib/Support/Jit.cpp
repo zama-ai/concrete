@@ -96,8 +96,11 @@ JITLambda::call(clientlib::PublicArguments &args,
       return std::move(err);
     }
     std::vector<clientlib::ScalarOrTensorData> buffers;
-    return clientlib::PublicResult::fromBuffers(
-        args.clientParameters, evaluationKeys, std::move(buffers));
+
+    std::optional<clientlib::EvaluationKeys> ek;
+    *ek = evaluationKeys;
+    return clientlib::PublicResult::fromBuffers(args.clientParameters, ek,
+                                                std::move(buffers));
   }
 #endif
 
