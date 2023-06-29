@@ -137,6 +137,20 @@ void setInsertionPointAfterValueOrRestore(mlir::OpBuilder &builder,
     builder.setInsertionPointAfterValue(v);
 }
 
+// Sets the attribute "parallel" to false for any ancestor scf.for
+// operation whose attribute "parallel" is true.
+void serializeEmbeddingSCFForLoops(mlir::Operation *op) {
+  for (mlir::Operation *currOp = op; currOp; currOp = currOp->getParentOp()) {
+    if (mlir::scf::ForOp forOp = llvm::dyn_cast<mlir::scf::ForOp>(currOp)) {
+      if (forOp->hasAttrOfType<mlir::BoolAttr>("parallel") &&
+          forOp->getAttrOfType<mlir::BoolAttr>("parallel").getValue()) {
+        forOp->setAttr("parallel",
+                       mlir::BoolAttr::get(forOp->getContext(), false));
+      }
+    }
+  }
+}
+
 struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
   bool unroll;
   std::optional<std::string> filterConvertibleOps;
@@ -201,9 +215,10 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
         ilb.setInsertionPointAfter(start);
         mlir::OpBuilder::InsertPoint pos = ilb.saveInsertionPoint();
         setInsertionPointAfterValueOrRestore(ilb, v, pos);
-        mlir::Value newOutVal =
+        SDFG::Get getOp =
             ilb.create<SDFG::Get>(v.getType(), prodOutStream.getResult());
-        replacementMapping.insert({v, newOutVal});
+        serializeEmbeddingSCFForLoops(getOp);
+        replacementMapping.insert({v, getOp.getResult()});
       } else if (smk == StreamMappingKind::ON_DEVICE) {
         ilb.setInsertionPoint(start);
         prodOutStream = makeStream(ilb, SDFG::StreamKind::on_device,
@@ -225,7 +240,8 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
           ilb.setInsertionPointAfter(start);
           mlir::OpBuilder::InsertPoint pos = ilb.saveInsertionPoint();
           setInsertionPointAfterValueOrRestore(ilb, v, pos);
-          ilb.create<SDFG::Put>(consInStream.getResult(), v);
+          SDFG::Put putOp = ilb.create<SDFG::Put>(consInStream.getResult(), v);
+          serializeEmbeddingSCFForLoops(putOp);
         }
       }
     };
