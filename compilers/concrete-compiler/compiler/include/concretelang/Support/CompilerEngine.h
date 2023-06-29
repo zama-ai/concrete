@@ -61,6 +61,7 @@ struct CompilationOptions {
   bool loopParallelize;
   bool batchTFHEOps;
   int64_t maxBatchSize;
+  std::optional<std::string> filterBatchableOps;
   bool emitSDFGOps;
   bool unrollLoopsWithSDFGConvertibleOps;
   std::optional<std::string> filterSDFGConvertibleOps;
@@ -88,7 +89,8 @@ struct CompilationOptions {
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
-        maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
+        maxBatchSize(std::numeric_limits<int64_t>::max()),
+        filterBatchableOps(std::nullopt), emitSDFGOps(false),
         unrollLoopsWithSDFGConvertibleOps(false),
         filterSDFGConvertibleOps(std::nullopt), dataflowParallelize(false),
         optimizeTFHE(true), emitGPUOps(false),

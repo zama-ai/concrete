@@ -63,10 +63,10 @@ parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                 std::optional<V0FHEContext> &fheContext,
                 std::function<bool(mlir::Pass *)> enablePass);
 
-mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
-                              mlir::ModuleOp &module,
-                              std::function<bool(mlir::Pass *)> enablePass,
-                              int64_t maxBatchSize);
+mlir::LogicalResult
+batchTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+          std::function<bool(mlir::Pass *)> enablePass, int64_t maxBatchSize,
+          std::optional<std::string> filterBatchableOps = std::nullopt);
 
 mlir::LogicalResult
 normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
