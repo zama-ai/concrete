@@ -7,6 +7,7 @@
 #include <limits>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/ADT/TypeSwitch.h>
+#include <llvm/Support/Regex.h>
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
@@ -1402,9 +1403,15 @@ operandsToValueSet(llvm::ArrayRef<mlir::OpOperand *> operands) {
 class BatchingPattern : public mlir::OpRewritePattern<mlir::func::FuncOp> {
 public:
   BatchingPattern(mlir::MLIRContext *context,
-                  int64_t maxBatchSize = std::numeric_limits<int64_t>::max())
+                  int64_t maxBatchSize = std::numeric_limits<int64_t>::max(),
+                  std::optional<std::string> filterBatchableOps = std::nullopt)
       : mlir::OpRewritePattern<mlir::func::FuncOp>(context),
-        maxBatchSize(maxBatchSize) {}
+        maxBatchSize(maxBatchSize) {
+    if (filterBatchableOps.has_value())
+      filterBatchableOpsRegex = llvm::Regex(filterBatchableOps.value());
+    else
+      filterBatchableOpsRegex = std::nullopt;
+  }
 
   mlir::LogicalResult
   matchAndRewrite(mlir::func::FuncOp func,
@@ -1435,6 +1442,11 @@ public:
 
     // Find a batchable op which is embedded into a loop nest
     func.walk([&](BatchableOpInterface scalarOp) {
+      if (filterBatchableOpsRegex.has_value() &&
+          !filterBatchableOpsRegex->match(scalarOp->getName().getStringRef())) {
+        return mlir::WalkResult::skip();
+      }
+
       // Predicate checking whether an scf.for op is a valid candidate
       // to expand the loop nest upwards towards the outermost loop
       auto isCandidateLoop = [](mlir::scf::ForOp forOp) -> bool {
@@ -1789,6 +1801,7 @@ public:
 
 private:
   int64_t maxBatchSize;
+  std::optional<llvm::Regex> filterBatchableOpsRegex;
 };
 
 // Returns the set of loops whose IVs are referenced in the indexing
@@ -2396,12 +2409,15 @@ public:
 
 class BatchingPass : public BatchingBase<BatchingPass> {
 public:
-  BatchingPass(int64_t maxBatchSize) : maxBatchSize(maxBatchSize) {}
+  BatchingPass(int64_t maxBatchSize,
+               std::optional<std::string> filterBatchableOps)
+      : maxBatchSize(maxBatchSize), filterBatchableOps(filterBatchableOps) {}
   void runOnOperation() override {
     mlir::Operation *op = getOperation();
 
     mlir::RewritePatternSet patterns(op->getContext());
-    patterns.add<BatchingPattern>(op->getContext(), maxBatchSize);
+    patterns.add<BatchingPattern>(op->getContext(), maxBatchSize,
+                                  filterBatchableOps);
     patterns
         .add<CleanupPattern<mlir::tensor::ExtractOp, mlir::tensor::InsertOp>,
              CleanupPattern<mlir::tensor::ExtractSliceOp,
@@ -2415,11 +2431,13 @@ public:
 
 private:
   int64_t maxBatchSize;
+  std::optional<std::string> filterBatchableOps;
 };
 
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
-createBatchingPass(int64_t maxBatchSize) {
-  return std::make_unique<BatchingPass>(maxBatchSize);
+createBatchingPass(int64_t maxBatchSize,
+                   std::optional<std::string> filterBatchableOps) {
+  return std::make_unique<BatchingPass>(maxBatchSize, filterBatchableOps);
 }
 
 } // namespace concretelang
