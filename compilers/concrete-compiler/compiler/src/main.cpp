@@ -195,6 +195,12 @@ llvm::cl::opt<int64_t>
                                 "batch for --batch-tfhe-ops"),
                  llvm::cl::init(std::numeric_limits<int64_t>::max()));
 
+llvm::cl::opt<std::string>
+    filterBatchableOps("filter-batchable-ops",
+                       llvm::cl::desc("Limits batching to operations whose"
+                                      "names match the given regular expression."),
+                       llvm::cl::init(""));
+
 llvm::cl::opt<bool> emitSDFGOps(
     "emit-sdfg-ops",
     llvm::cl::desc(
@@ -394,6 +400,10 @@ cmdlineCompilationOptions() {
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.batchTFHEOps = cmdline::batchTFHEOps;
   options.maxBatchSize = cmdline::maxBatchSize;
+  options.filterBatchableOps =
+      cmdline::filterBatchableOps != ""
+          ? std::optional<std::string>(cmdline::filterBatchableOps)
+          : std::nullopt;
   options.emitSDFGOps = cmdline::emitSDFGOps;
   options.unrollLoopsWithSDFGConvertibleOps =
       cmdline::unrollLoopsWithSDFGConvertibleOps;
