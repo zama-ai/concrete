@@ -91,6 +91,15 @@ public:
                                      _clientParameters);
   };
 
+  outcome::checked<CircuitGate, StringError> outputGate(size_t argPos) {
+    return _clientParameters.ouput(argPos);
+  }
+
+  outcome::checked<std::vector<int64_t>, StringError> getShape(size_t pos) {
+    OUTCOME_TRY(auto gate, outputGate(pos));
+    return gate.shape.dimensions;
+  }
+
 private:
   KeySet &_keySet;
   ClientParameters _clientParameters;
@@ -118,6 +127,15 @@ public:
     return decode_one_result(
         std::get<TensorData>(value).asFlatVector<uint64_t>(),
         gate.encryption->encoding);
+  }
+
+  outcome::checked<CircuitGate, StringError> outputGate(size_t argPos) {
+    return _clientParameters.ouput(argPos);
+  }
+
+  outcome::checked<std::vector<int64_t>, StringError> getShape(size_t pos) {
+    OUTCOME_TRY(auto gate, outputGate(pos));
+    return gate.shape.dimensions;
   }
 
 private:

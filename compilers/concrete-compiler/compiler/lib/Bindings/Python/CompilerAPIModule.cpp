@@ -10,6 +10,7 @@
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
+#include <cstdint>
 #include <memory>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
@@ -22,6 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include <variant>
+#include <vector>
 
 using mlir::concretelang::CompilationOptions;
 using mlir::concretelang::JITSupport;
@@ -448,28 +450,34 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               clientlib::SharedScalarOrTensorOrCompressedData &value) {
              SignalGuard signalGuard;
 
-             outcome::checked<int64_t, StringError> result =
-                 decrypter.decrypt<int64_t>(value.get(), position);
+             outcome::checked<std::vector<uint64_t>, StringError> result =
+                 decrypter.decryptValues(value.get(), position);
 
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return result.value();
+             return (int64_t)result.value()[0];
            })
       .def("decrypt_tensor",
            [](clientlib::ValueDecrypter &decrypter, size_t position,
               clientlib::SharedScalarOrTensorOrCompressedData &value) {
              SignalGuard signalGuard;
 
-             outcome::checked<std::vector<int64_t>, StringError> result =
-                 decrypter.decryptTensor<int64_t>(value.get(), position);
+             outcome::checked<std::vector<uint64_t>, StringError> result =
+                 decrypter.decryptValues(value.get(), position);
 
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return result.value();
+             std::vector<int64_t> result2;
+
+             for (auto a : result.value()) {
+               result2.push_back(a);
+             }
+
+             return result2;
            });
 
   pybind11::class_<clientlib::SimulatedValueDecrypter>(
@@ -492,26 +500,32 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("decrypt_scalar",
            [](clientlib::SimulatedValueDecrypter &decrypter, size_t position,
               clientlib::SharedScalarOrTensorData &value) {
-             outcome::checked<int64_t, StringError> result =
-                 decrypter.decrypt<int64_t>(value.get(), position);
+             outcome::checked<std::vector<uint64_t>, StringError> result =
+                 decrypter.decryptValues(value.get(), position);
 
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return result.value();
+             return (int64_t)result.value()[0];
            })
       .def("decrypt_tensor",
            [](clientlib::SimulatedValueDecrypter &decrypter, size_t position,
               clientlib::SharedScalarOrTensorData &value) {
-             outcome::checked<std::vector<int64_t>, StringError> result =
-                 decrypter.decryptTensor<int64_t>(value.get(), position);
+             outcome::checked<std::vector<uint64_t>, StringError> result =
+                 decrypter.decryptValues(value.get(), position);
 
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return result.value();
+             std::vector<int64_t> result2;
+
+             for (auto a : result.value()) {
+               result2.push_back(a);
+             }
+
+             return result2;
            });
 
   pybind11::class_<clientlib::PublicArguments,
