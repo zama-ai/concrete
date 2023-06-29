@@ -117,6 +117,7 @@ struct CompilationOptions {
       emitGPUOps = true;
       emitSDFGOps = true;
       filterSDFGConvertibleOps = "batched";
+      filterBatchableOps = "(keysw|bootst)";
       break;
     }
   }
