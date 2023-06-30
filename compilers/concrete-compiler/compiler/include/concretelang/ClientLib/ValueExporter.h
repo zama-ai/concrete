@@ -43,7 +43,7 @@ protected:
 public:
   virtual ~ValueExporterInterface() = default;
 
-  /// @brief Export a scalar 64 bits integer to a concreteprocol::Value
+  /// @brief Export a scalar 64 bits integer to a concreteprotocol::Value
   /// @param arg An 64 bits integer
   /// @param argPos The position of the argument to export
   /// @return Either the exported value ready to be sent to the server or an
