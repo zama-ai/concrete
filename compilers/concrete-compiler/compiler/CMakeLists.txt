@@ -188,8 +188,9 @@ if(OUTPUT_COMPRESSION_SUPPORT)
   ExternalProject_Add(
     compresslwe
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../tools/CompressLWE
-    CONFIGURE_COMMAND mkdir ${COMPRESS_LWE_BIN_DIR} && cd ${COMPRESS_LWE_BIN_DIR} && cmake
-                      ${PROJECT_SOURCE_DIR}/../../../tools/CompressLWE -DCMAKE_INSTALL_PREFIX=${COMPRESS_LWE_INSTALL_DIR}
+    CONFIGURE_COMMAND
+      mkdir ${COMPRESS_LWE_BIN_DIR} && cd ${COMPRESS_LWE_BIN_DIR} && cmake
+      ${PROJECT_SOURCE_DIR}/../../../tools/CompressLWE -DCMAKE_INSTALL_PREFIX=${COMPRESS_LWE_INSTALL_DIR}
     BUILD_COMMAND cmake --build ${COMPRESS_LWE_BIN_DIR} --target compresslwe
     INSTALL_COMMAND cmake --build ${COMPRESS_LWE_BIN_DIR} --target install
     BUILD_BYPRODUCTS ${COMPRESS_LWE_INSTALL_DIR}/lib/libcompresslwe.a ${COMPRESS_LWE_INSTALL_DIR}/lib/libipcl.a)
