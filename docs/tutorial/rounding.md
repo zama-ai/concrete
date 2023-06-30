@@ -1,12 +1,10 @@
 # Rounding
 
-Table lookups have a strict constraint on the number of bits they support. This can be limiting, especially if you don't need exact precision.
+Table lookups have a strict constraint on the number of bits they support. This can be limiting, especially if you don't need exact precision. As well as this, using larger bit-widths leads to slower table lookups.
 
-On top of that, bigger bit-widths are slower to apply table lookups.
+To overcome these issues, rounded table lookups are introduced. This operation provides a way to round the least significant bits of a large integer and then apply the table lookup on the resulting (smaller) value.
 
-To overcome these, rounded table lookups are introduced. They provide a way to round the least significant bits of a large integer and then apply the table lookup on the resulting value.
-
-Imagine you have a 5-bit value, but you want to have a 3-bit table lookup. You can call `fhe.round_bit_pattern(input, lsbs_to_remove=2)` and use the value you get in the table lookup.
+Imagine you have a 5-bit value, but you want to have a 3-bit table lookup. You can call `fhe.round_bit_pattern(input, lsbs_to_remove=2)` and use the 3-bit value you receive as input to the table lookup.
 
 Let's see how rounding works in practice:
 
@@ -102,14 +100,14 @@ and displays:
 ![](../\_static/rounding/identity.png)
 
 {% hint style="info" %}
-If rounded number is one of the last `2**(lsbs_to_remove - 1)` numbers in the input range `[0, 2**original_bit_width)`, an overflow **will** happen.
+If the rounded number is one of the last `2**(lsbs_to_remove - 1)` numbers in the input range `[0, 2**original_bit_width)`, an overflow **will** happen.
 
-By default, if overflow is encountered during inputset evaluation, bit-widths will be adjusted accordingly, so it'll be slower, but accurate.
+By default, if an overflow is encountered during inputset evaluation, bit-widths will be adjusted accordingly. This results in a loss of speed, but ensures accuracy.
 
-You can turn this overflow protection off for performance using `fhe.round_bit_pattern(..., overflow_protection=False)`, but beware, you might get unexpected behavior at runtime!
+You can turn this overflow protection off (e.g., for performance) by using `fhe.round_bit_pattern(..., overflow_protection=False)`. However, this could lead to unexpected behavior at runtime.
 {% endhint %}
 
-Now, let's see how rounding can be used in FHE!
+Now, let's see how rounding can be used in FHE.
 
 ```python
 import itertools
@@ -187,11 +185,11 @@ lsbs_to_remove=5 => 2.61x speedup
 ```
 
 {% hint style="info" %}
-These can vary from system to system!
+These speed-ups can vary from system to system.
 {% endhint %}
 
 {% hint style="info" %}
-The reason why it doesn't increase every time is that rounding itself has a cost. Each bit removal is a small PBS! Hence, if a lot of bits are removed, rounding itself could take longer than the bigger TLU afterwards!
+The reason why the speed-up is not increasing with `lsbs_to_remove` is because the rounding operation itself has a cost: each bit removal is a PBS. Therefore, if a lot of bits are removed, rounding itself could take longer than the bigger TLU which is evaluated afterwards.
 {% endhint %}
 
 and displays:
@@ -199,12 +197,12 @@ and displays:
 ![](../\_static/rounding/lsbs_to_remove.png)
 
 {% hint style="info" %}
-Feel free to disable overflow protection and see what happens!
+Feel free to disable overflow protection and see what happens.
 {% endhint %}
 
 ## Auto Rounders
 
-Rounding is very useful but, in some cases, you don't know how many bits your input contains, so it's not reliable to specify `lsbs_to_remove` manually. For this reason, `AutoRounder` class is introduced.
+Rounding is very useful but, in some cases, you don't know how many bits your input contains, so it's not reliable to specify `lsbs_to_remove` manually. For this reason, the `AutoRounder` class is introduced.
 
 `AutoRounder` allows you to set how many of the most significant bits to keep, but they need to be adjusted using an inputset to determine how many of the least significant bits to remove. This can be done manually using `fhe.AutoRounder.adjust(function, inputset)`, or by setting `auto_adjust_rounders` configuration to `True` during compilation.
 
@@ -294,5 +292,5 @@ and displays:
 ![](../\_static/rounding/msbs_to_keep.png)
 
 {% hint style="warning" %}
-`AutoRounder`s should be defined outside the function that is being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called. Furthermore, each `AutoRounder` should be used with exactly one `round_bit_pattern` call!
+`AutoRounder`s should be defined outside the function that is being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called. Furthermore, each `AutoRounder` should be used with exactly one `round_bit_pattern` call.
 {% endhint %}

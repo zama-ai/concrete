@@ -4,11 +4,11 @@
 
 <figure><img src="_static/zama_home_docs.png" alt=""><figcaption></figcaption></figure>
 
-**Concrete** is an open-source framework which simplifies the use of Fully Homomorphic Encryption (FHE).
+**Concrete** is an open source framework which simplifies the use of Fully Homomorphic Encryption (FHE).
 
-FHE is a powerful cryptographic tool, allowing computation to be performed directly on encrypted data without needing to decrypt it. With FHE, you can build services that preserve privacy for all users. FHE is also offers ideal protection against data breaches as everything is done on encrypted data. Even if the server is compromised, no sensitive data is leaked.
+FHE is a powerful cryptographic tool, allowing computation to be performed directly on encrypted data without needing to decrypt it. With FHE, you can build services that preserve privacy for all users. FHE also offers ideal protection against data breaches as everything is done on encrypted data. Even if the server is compromised, no sensitive data is leaked.
 
-Since writing FHE programs are hard, Concrete framework contains a TFHE Compiler based on LLVM to make this process easier for developers.
+Since writing FHE programs is a difficult task, Concrete framework contains a TFHE Compiler based on [LLVM](https://en.wikipedia.org/wiki/LLVM) to make this process easier for developers.
 
 ## Organization of this documentation
 
@@ -29,7 +29,7 @@ This documentation is split into several sections:
 
 Concrete Numpy was the former name of the Python frontend of the Concrete Compiler. Concrete Compiler is now open source, and the package name is updated from `concrete-numpy` to `concrete-python` (as `concrete` is already booked for a non FHE-related project).
 
-Users from Concrete Numpy could safely update to Concrete with few changes explained in the [upgrading document](https://github.com/zama-ai/concrete/blob/main/UPGRADING.md).
+Users from Concrete Numpy can safely update to Concrete, with a few required changes, as explained in the [upgrading document](https://github.com/zama-ai/concrete/blob/main/UPGRADING.md).
 
 ## How is it different from the previous version of Concrete?
 

@@ -47,7 +47,7 @@ circuit = f.compile(inputset, configuration=configuration, loop_parallelize=True
 ```
 
 {% hint style="info" %}
-Additional kwarg to `compile` functions take higher precedence. So if you set the option in both `configuration` and `compile` methods, the value in the `compile` method will be used.
+Additional kwargs to `compile` functions take higher precedence. So if you set the option in both `configuration` and `compile` methods, the value in the `compile` method will be used.
 {% endhint %}
 
 ## Options

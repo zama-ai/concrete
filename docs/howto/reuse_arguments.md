@@ -24,8 +24,8 @@ for sample_x in range(3, 6):
     assert result == sample_x + sample_y
 ```
 
-Basically, if you have multiple arguments, `encrypt` method would return a `tuple`, and if you specify `None` as one of the arguments, `None` is placed at the same location in the resulting `tuple` (e.g., `circuit.encrypt(a, None, b, c, None)` would return `(encrypted_a, None, encrypted_b, encrypted_c, None)`). Each value returned by `encrypt` can be stored and reused anytime.
+If you have multiple arguments, the `encrypt` method would return a `tuple`, and if you specify `None` as one of the arguments, `None` is placed at the same location in the resulting `tuple` (e.g., `circuit.encrypt(a, None, b, c, None)` would return `(encrypted_a, None, encrypted_b, encrypted_c, None)`). Each value returned by `encrypt` can be stored and reused anytime.
 
 {% hint style="warning" %}
-Ordering of the arguments must be kept! Encrypting an `x` and using it as a `y` could result in undefined behavior.
+The ordering of the arguments must be kept consistent! Encrypting an `x` and using it as a `y` could result in undefined behavior.
 {% endhint %}

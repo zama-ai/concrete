@@ -26,7 +26,7 @@ D2 D1 D0 0 0 0 ... 0 0 0 N N N N
 D3 D2 D1 D0 0 0 0 ... 0 0 0 N N N N
 ```
 
-Furthermore, the result is a 5-bit number, so it has a different encoding as well:
+The result of such an addition is a 5-bit number, which also has a different encoding:
 
 ```
 5-bit number
@@ -34,9 +34,9 @@ Furthermore, the result is a 5-bit number, so it has a different encoding as wel
 D4 D3 D2 D1 D0 0 0 0 ... 0 0 0 N N N N
 ```
 
-Because of this encoding difference, we do a graph processing step called bit-width assignment, which takes the graph and updates bit-widths in the graph to be compatible with FHE.
+Because of these encoding differences, we perform a graph processing step called bit-width assignment, which takes the graph and updates the bit-widths to be compatible with FHE.
 
-After this graph processing pass, the graph would look like:
+After this graph processing step, the graph would look like:
 
 ```
 %0 = x                  # EncryptedScalar<uint5>
@@ -45,7 +45,7 @@ After this graph processing pass, the graph would look like:
 return %2
 ```
 
-Most operations cannot change the encoding, so they need to share bit-width between their inputs and their outputs but there is a very important operation which can change the encoding, and it's the table lookup operation.
+Most operations cannot change the encoding, which means that the input and output bit-widths need to be the same. However, there is an operation which can change the encoding: the table lookup operation.
 
 Let's say you have this graph:
 ```
@@ -57,7 +57,7 @@ Let's say you have this graph:
 return %4
 ```
 
-This is the graph for `(x**2) + y` where `x` is 2-bits and `y` is `5-bits. If the table lookup operation wasn't able to change the encoding, we'd need to make everything 6-bits but because they can, bit-widths can be assigned like so:
+This is the graph for `(x**2) + y` where `x` is 2-bits and `y` is 5-bits. If the table lookup operation wasn't able to change the encoding, we'd need to make everything 6-bits. However, since the encoding can be changed, the bit-widths can be assigned like so:
 
 ```
 %0 = x                    # EncryptedScalar<uint2>        ∈ [0, 3]
@@ -68,12 +68,10 @@ This is the graph for `(x**2) + y` where `x` is 2-bits and `y` is `5-bits. If th
 return %4
 ```
 
-In this case, we kept `x` 2-bit, but set the table lookup result and `y` to 6-bits, so the addition can be performed.
+In this case, we kept `x` as 2-bits, but set the table lookup result and `y` to be 6-bits, so that the addition can be performed.
 
-This style of bit-width assignment is called multi-precision. Unfortunately, it's disabled by default at the moment.
-
-To enable it, you can use `single_precision=False` configuration option.
+This style of bit-width assignment is called multi-precision and it is currently disabled by default. To enable it, you can use the `single_precision=False` configuration option.
 
 {% hint style="info" %}
-Multi precision will become the default at one point in the near future!
+Multi precision will become the default option in the near future.
 {% endhint %}

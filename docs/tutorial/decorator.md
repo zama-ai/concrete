@@ -16,5 +16,5 @@ assert circuit.encrypt_run_decrypt(10) == f(10)
 ```
 
 {% hint style="info" %}
-Think of this decorator as a way to add the `compile` method to the function object without changing its name elsewhere.
+This decorator is a way to add the `compile` method to the function object without changing its name elsewhere.
 {% endhint %}

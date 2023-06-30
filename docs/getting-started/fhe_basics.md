@@ -17,13 +17,13 @@ Under the hood, each time you perform an operation on an encrypted value, the no
 
 There is a way to decrease the noise of a ciphertext with the **Bootstrap operation**. The bootstrap operation takes as input a noisy ciphertext and generates a new ciphertext encrypting the same message, but with a lower noise. This allows additional operations to be performed on the encrypted message.
 
-A typical FHE program will be made up of a series of operations followed by a Bootstrap, followed by another series of operations, another Bootstrap, and so on.
+A typical FHE program will be made up of a series of operations followed by a Bootstrap, this is then repeated many times.
 
 ## Probability of Error
 
-The amount of noise in a ciphertext is not as bounded as it may appear in the illustration. As the errors are drawn randomly from a Gaussian distribution, they can be of varying size. This means that we need to be careful to ensure the noise terms do not effect the message bits. If the error terms do overflow into the message bits, this can cause an incorrect output (failure) when bootstrapping.
+The amount of noise in a ciphertext is not as bounded as it may appear in the above illustration. As the errors are drawn randomly from a Gaussian distribution, they can be of varying size. This means that we need to be careful to ensure the noise terms do not effect the message bits. If the error terms do overflow into the message bits, this can cause an incorrect output (failure) when bootstrapping.
 
-The default failure probability in Concrete is set for the whole program and is by default $$ \frac{1}{100000} $$ which means 1 execution over 100,000 may be wrong. To have a lower probability of error, you need to change the cryptographic parameters, likely resulting in worse performance. On the other side of this trade-off, allowing a higher probability of error will likely speed-up operations.
+The default failure probability in Concrete is set for the whole program and is $$ \frac{1}{100000} $$ by default. This means that 1 execution of every 100,000 may result in an incorrect output. To have a lower probability of error, you need to change the cryptographic parameters, likely resulting in worse performance. On the other side of this trade-off, allowing a higher probability of error will likely speed-up operations.
 
 ## Function evaluation
 
@@ -84,7 +84,7 @@ Allowing computation on encrypted data is particularly interesting in the client
 
 ### Development
 
-During development, you will turn your program into its FHE equivalent. Concrete automates this tasks with the compilation process but you could help by reducing the precision required, reducing the number of PBS or allowing more parallelization in your code (e.g. working on bit chunks instead of high bit-width variable).
+During development, you will turn your program into its FHE equivalent. Concrete automates this task with the compilation process but you can make this process even easier by reducing the precision required, reducing the number of PBSs or allowing more parallelization in your code (e.g. working on bit chunks instead of high bit-width variables).
 
 Once happy with the code, the development process is over and you will create the compiler artifact that will be used during deployment.
 

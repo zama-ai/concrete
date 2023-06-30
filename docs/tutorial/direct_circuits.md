@@ -1,10 +1,10 @@
 # Direct Circuits
 
 {% hint style="warning" %}
-Direct circuits are still experimental. It is very easy to shoot yourself in the foot (e.g., no overflow checks, no type coercion) while using direct circuits, so utilize them with care.
+Direct circuits are still experimental. It is very easy to make mistakes (e.g., due to no overflow checks or type coercion) while using direct circuits, so utilize them with care.
 {% endhint %}
 
-For some applications, data types of inputs, intermediate values, and outputs are known (e.g., for manipulating bytes, you would want to use uint8). Using inputsets to determine bounds in these cases are not necessary, or even error-prone. Therefore, another interface for defining such circuits is introduced:
+For some applications, the data types of inputs, intermediate values, and outputs are known (e.g., for manipulating bytes, you would want to use uint8). Using inputsets to determine bounds in these cases is not necessary, and can even be error-prone. Therefore, another interface for defining such circuits is introduced:
 
 ```python
 from concrete import fhe
@@ -18,10 +18,10 @@ assert circuit.encrypt_run_decrypt(10) == 52
 
 There are a few differences between direct circuits and traditional circuits:
 
-* Remember that the resulting dtype for each operation will be determined by its inputs. This can lead to some unexpected results if you're not careful (e.g., if you do `-x` where `x: fhe.uint8`, you'll fail to get the negative value as the result will be `fhe.uint8` as well)
-* Use fhe types in `.astype(...)` calls (e.g., `np.sqrt(x).astype(fhe.uint4)`). There is no inputset evaluation, so the bit width of the output cannot be determined.
+* Remember that the resulting dtype for each operation will be determined by its inputs. This can lead to some unexpected results if you're not careful (e.g., if you do `-x` where `x: fhe.uint8`, you won't receive a negative value as the result will be `fhe.uint8` as well)
+* There is no inputset evaluation when using fhe types in `.astype(...)` calls (e.g., `np.sqrt(x).astype(fhe.uint4)`), so the bit width of the output cannot be determined.
 * Specify the resulting data type in [univariate](extensions.md#fheunivariatefunction) extension (e.g., `fhe.univariate(function, outputs=fhe.uint4)(x)`), for the same reason as above.
-* Be careful with overflows. With inputset evaluation, you'll get bigger bit widths but no overflows. With direct definition, you must ensure there aren't any overflows!
+* Be careful with overflows. With inputset evaluation, you'll get bigger bit widths but no overflows. With direct definition, you must ensure that there aren't any overflows manually.
 
 Let's review a more complicated example to see how direct circuits behave:
 
@@ -70,7 +70,7 @@ Subgraphs:
         return %3
 ```
 
-Here is the breakdown of assigned data types:
+Here is the breakdown of the assigned data types:
 
 ```
 %0 is uint8 because it's specified in the definition
@@ -84,4 +84,4 @@ Here is the breakdown of assigned data types:
 %8 is uint8 because it's subtraction between uint8 and uint4
 ```
 
-As you can see, `%8` is subtraction of two unsigned values, and it's unsigned as well. In an overflow condition where `c > d`, it results in undefined behavior.
+As you can see, `%8` is subtraction of two unsigned values, and the result is unsigned as well. In the case that `c > d`, we have an overflow, and this results in undefined behavior.

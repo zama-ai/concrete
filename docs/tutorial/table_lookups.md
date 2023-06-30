@@ -1,15 +1,15 @@
 # Table Lookups
 
-In this tutorial, we will review the ways to perform direct table lookups in **Concrete**.
+In this tutorial, we will review how to perform direct table lookups in **Concrete**.
 
 ## Direct table lookup
 
 **Concrete** provides a `LookupTable` class to create your own tables and apply them in your circuits.
 
 {% hint style="info" %}
-`LookupTable`s can have any number of elements. Let's call them **N**. As long as the lookup variable is in range \[-**N**, **N**), Table Lookup is valid.
+`LookupTable`s can have any number of elements. Let's call the number of elements **N**. As long as the lookup variable is within the range \[-**N**, **N**), the Table Lookup is valid.
 
-If you go out of bounds of this range, you will get the following error:
+If you go outside of this range, you will receive the following error:
 
 ```
 IndexError: index 10 is out of bounds for axis 0 with size 6
@@ -40,7 +40,7 @@ assert circuit.encrypt_run_decrypt(3) == table[3] == 0
 
 ### With tensors.
 
-When you apply the table lookup to a tensor, you apply the scalar table lookup to each element of the tensor:
+When you apply a table lookup to a tensor, the scalar table lookup is applied to each element of the tensor:
 
 ```python
 from concrete import fhe
@@ -94,7 +94,7 @@ assert circuit.encrypt_run_decrypt(4) == table[-4] == 2
 
 ## Direct multi-table lookup
 
-In case you want to apply a different lookup table to each element of a tensor, you can have a `LookupTable` of `LookupTable`s:
+If you want to apply a different lookup table to each element of a tensor, you can have a `LookupTable` of `LookupTable`s:
 
 ```python
 from concrete import fhe
@@ -136,11 +136,11 @@ for i in range(3):
             assert actual_output[i][j] == expected_output[i][j] == cubed[sample[i][j]]
 ```
 
-In this example, we applied a `squared` table to the first column and a `cubed` table to the second one.
+In this example, we applied a `squared` table to the first column and a `cubed` table to the second column.
 
 ## Fused table lookup
 
-**Concrete** tries to fuse some operations into table lookups automatically, so you don't need to create the lookup tables manually:
+**Concrete** tries to fuse some operations into table lookups automatically so that lookup tables don't need to be created manually:
 
 ```python
 from concrete import fhe
