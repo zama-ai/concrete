@@ -422,12 +422,8 @@ def test_circuit_sim_disabled(helpers):
 
     inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
     circuit = f.compile(inputset, configuration)
-    with pytest.raises(RuntimeError) as excinfo:
-        circuit.simulate(*inputset[0])
-    assert (
-        str(excinfo.value)
-        == "Simulation isn't enabled. You can call enable_fhe_simulation() to enable it"
-    )
+
+    assert circuit.simulate(*inputset[0]) == f(*inputset[0])
 
 
 def test_circuit_fhe_exec_disabled(helpers):
@@ -443,13 +439,8 @@ def test_circuit_fhe_exec_disabled(helpers):
 
     inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
     circuit = f.compile(inputset, configuration.fork(fhe_execution=False))
-    with pytest.raises(RuntimeError) as excinfo:
-        # as we can't encrypt, we just pass plain inputs, and it should lead to the expected error
-        circuit.run(*inputset[0], None)
-    assert (
-        str(excinfo.value)
-        == "FHE execution isn't enabled. You can call enable_fhe_execution() to enable it"
-    )
+
+    assert circuit.encrypt_run_decrypt(*inputset[0]) == f(*inputset[0])
 
 
 def test_circuit_fhe_exec_no_eval_keys(helpers):
