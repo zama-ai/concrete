@@ -104,7 +104,7 @@ Evaluation:  50% |████████████████████�
 ```
 
 {% hint style="info" %}
-It is not a uniform progressbar. For example, it being 50% does not mean half of the execution is performed in terms of seconds, it means half of the nodes in the graph are calculated, but since different node types can take a different amount of time, it cannot be used to get an ETA.
+It is not a uniform progressbar. For example, when the progressbar shows 50%, this does not mean that half of the execution is performed in terms of seconds. Instead, it means that half of the nodes in the graph have been calculated. Since different node types can take a different amount of time, this should not be used to get an ETA.
 {% endhint %}
 
 Once the progressbar fills and execution completes, you will see the following figure:

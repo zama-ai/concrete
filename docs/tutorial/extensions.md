@@ -1,6 +1,6 @@
 # Extensions
 
-**Concrete** supports native Python and NumPy operations as much as possible, but not everything is available in Python or NumPy. So, we provide some extensions ourselves to improve your experience.
+**Concrete** supports native Python and NumPy operations as much as possible, but not everything in Python or NumPy is available. Therefore, we provide some extensions ourselves to improve your experience.
 
 ## fhe.univariate(function)
 
@@ -47,7 +47,7 @@ If any of these constraints are violated, the outcome is undefined.
 
 ## fhe.conv(...)
 
-Allows you to perform a convolution operation, with the same semantic of [onnx.Conv](https://github.com/onnx/onnx/blob/main/docs/Operators.md#conv):
+Allows you to perform a convolution operation, with the same semantic as [onnx.Conv](https://github.com/onnx/onnx/blob/main/docs/Operators.md#conv):
 
 ```python
 import numpy as np
@@ -74,12 +74,12 @@ assert np.array_equal(circuit.encrypt_run_decrypt(sample), f(sample))
 ```
 
 {% hint style="danger" %}
-Only 2D convolutions without padding and with one groups are supported for the time being.
+Only 2D convolutions without padding and with one group are currently supported.
 {% endhint %}
 
 ## fhe.maxpool(...)
 
-Allows you to perform a maxpool operation, with the same semantic of [onnx.MaxPool](https://github.com/onnx/onnx/blob/main/docs/Operators.md#maxpool):
+Allows you to perform a maxpool operation, with the same semantic as [onnx.MaxPool](https://github.com/onnx/onnx/blob/main/docs/Operators.md#maxpool):
 
 ```python
 import numpy as np
@@ -104,7 +104,7 @@ assert np.array_equal(circuit.encrypt_run_decrypt(sample), f(sample))
 ```
 
 {% hint style="danger" %}
-Only 2D maxpooling without padding up to 15-bits is supported for the time being.
+Only 2D maxpooling without padding and up to 15-bits is currently supported.
 {% endhint %}
 
 ## fhe.array(...)
@@ -127,12 +127,12 @@ assert np.array_equal(circuit.encrypt_run_decrypt(*sample), f(*sample))
 ```
 
 {% hint style="danger" %}
-Only scalars can be used to create arrays for the time being.
+Currently, only scalars can be used to create arrays.
 {% endhint %}
 
 ## fhe.zero()
 
-Allows you to create encrypted scalar zero:
+Allows you to create an encrypted scalar zero:
 
 ```python
 from concrete import fhe
@@ -152,7 +152,7 @@ for x in range(10):
 
 ## fhe.zeros(shape)
 
-Allows you to create encrypted tensor of zeros:
+Allows you to create an encrypted tensor of zeros:
 
 ```python
 from concrete import fhe
@@ -172,7 +172,7 @@ for x in range(10):
 
 ## fhe.one()
 
-Allows you to create encrypted scalar one:
+Allows you to create an encrypted scalar one:
 
 ```python
 from concrete import fhe
@@ -192,7 +192,7 @@ for x in range(10):
 
 ## fhe.ones(shape)
 
-Allows you to create encrypted tensor of ones:
+Allows you to create an encrypted tensor of ones:
 
 ```python
 from concrete import fhe

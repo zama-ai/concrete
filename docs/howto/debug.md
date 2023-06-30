@@ -1,6 +1,6 @@
 # Debug
 
-In this section, you will learn how to debug the compilation process easily and get help in case you cannot resolve your issue.
+In this section, you will learn how to debug the compilation process easily and find help in the case that you cannot resolve your issue.
 
 ## Debug artifacts
 

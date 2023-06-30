@@ -26,7 +26,7 @@ To generate the raw data from the lattice estimator, use::
 
 by default, this script will generate parameter curves for {80, 112, 128, 192} bits of security, using $$log_2(q) = 64$$.
 
-To compare the current curves with the output of the lattice estimator, use::
+To compare the current curves with the output of the lattice estimator, use:
 
     make compare-curves
 

@@ -1,6 +1,6 @@
 # Manage Keys
 
-**Concrete** generates keys for you implicitly when they are needed and if they are not generated already. This is useful for development, but it's not flexible **(or secure!)** for production. Explicit key management API is introduced to be used in such cases to easily generate and re-use keys.
+**Concrete** generates keys for you implicitly when they are needed and if they have not already been generated. This is useful for development, but it's not flexible **(or secure!)** for production. Explicit key management API is introduced to be used in such cases to easily generate and re-use keys.
 
 ## Definition
 
@@ -50,7 +50,7 @@ serialized_keys: bytes = circuit.keys.serialize()
 ```
 
 {% hint style="warning" %}
-Keys are not serialized encrypted! Please make sure you keep them in a safe environment, or encrypt them manually after serialization.
+Keys are not serialized in encrypted form! Please make sure you keep them in a safe environment, or encrypt them manually after serialization.
 {% endhint %}
 
 ## Deserialization
@@ -70,7 +70,7 @@ circuit.keys = keys
 ```
 
 {% hint style="warning" %}
-If assigned keys are generated for a different circuit, an exception would be raised.
+If assigned keys are generated for a different circuit, an exception will be raised.
 {% endhint %}
 
 ## Saving
@@ -87,7 +87,7 @@ Keys are not saved encrypted! Please make sure you store them in a safe environm
 
 ## Loading
 
-After keys are saved to disk, you can load them back anytime:
+After keys are saved to disk, you can load them back via:
 
 ```python
 circuit.keys.load("/path/to/keys")
@@ -95,7 +95,7 @@ circuit.keys.load("/path/to/keys")
 
 ## Automatic Management
 
-Lastly, if you want to generate keys in the first run and reuse the keys in consecutive runs:
+If you want to generate keys in the first run and reuse the keys in consecutive runs:
 
 ```python
 circuit.keys.load_if_exists_generate_and_save_otherwise("/path/to/keys")
