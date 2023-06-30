@@ -212,10 +212,10 @@ protected:
                                                    uint64_t *ciphertext,
                                                    uint64_t input) override {
     auto crtVec = gate.encryption->encoding.crt;
+    OUTCOME_TRY(auto skParam, _clientParameters.lweSecretKeyParam(gate));
+    auto lwe_dim = skParam.lweDimension();
     if (crtVec.empty()) {
       auto precision = gate.encryption->encoding.precision;
-      OUTCOME_TRY(auto skParam, _clientParameters.lweSecretKeyParam(gate));
-      auto lwe_dim = skParam.lweDimension();
       auto encoded_input = input << (64 - (precision + 1));
       *ciphertext =
           sim_encrypt_lwe_u64(encoded_input, lwe_dim, (void *)csprng.ptr);
@@ -223,13 +223,11 @@ protected:
       // Put each decomposition into a new ciphertext
       auto product = concretelang::clientlib::crt::productOfModuli(crtVec);
       for (auto modulus : crtVec) {
-        OUTCOME_TRY(auto skParam, _clientParameters.lweSecretKeyParam(gate));
-        auto lwe_dim = skParam.lweDimension();
         auto plaintext = crt::encode(input, modulus, product);
         *ciphertext =
             sim_encrypt_lwe_u64(plaintext, lwe_dim, (void *)csprng.ptr);
         // each ciphertext is a scalar
-        ciphertext = ciphertext + 1;
+        ciphertext += 1;
       }
     }
     return outcome::success();

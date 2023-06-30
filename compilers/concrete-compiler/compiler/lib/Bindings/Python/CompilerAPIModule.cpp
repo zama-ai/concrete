@@ -412,8 +412,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                throw std::runtime_error(result.error().mesg);
              }
 
-             return clientlib::SharedScalarOrTensorData(
-                 std::move(result.value()));
+             std::shared_ptr<ScalarOrTensorOrCompressedData> a;
+
+             if (std::holds_alternative<ScalarData>(result.value())) {
+               a = std::make_shared<ScalarOrTensorOrCompressedData>(
+                   std::move(std::get<ScalarData>(result.value())));
+             } else {
+               assert(std::holds_alternative<TensorData>(result.value()));
+               a = std::make_shared<ScalarOrTensorOrCompressedData>(
+                   std::move(std::get<TensorData>(result.value())));
+             }
+
+             return clientlib::SharedScalarOrTensorOrCompressedData(a);
            })
       .def("export_tensor", [](clientlib::SimulatedValueExporter &exporter,
                                size_t position, std::vector<int64_t> values,
@@ -425,7 +435,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           throw std::runtime_error(result.error().mesg);
         }
 
-        return clientlib::SharedScalarOrTensorData(std::move(result.value()));
+        std::shared_ptr<ScalarOrTensorOrCompressedData> a;
+
+        if (std::holds_alternative<ScalarData>(result.value())) {
+          a = std::make_shared<ScalarOrTensorOrCompressedData>(
+              std::move(std::get<ScalarData>(result.value())));
+        } else {
+          assert(std::holds_alternative<TensorData>(result.value()));
+          a = std::make_shared<ScalarOrTensorOrCompressedData>(
+              std::move(std::get<TensorData>(result.value())));
+        }
+
+        return clientlib::SharedScalarOrTensorOrCompressedData(a);
       });
 
   pybind11::class_<clientlib::ValueDecrypter>(m, "ValueDecrypter")
@@ -499,7 +520,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            })
       .def("decrypt_scalar",
            [](clientlib::SimulatedValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
+              clientlib::SharedScalarOrTensorOrCompressedData &value) {
              outcome::checked<std::vector<uint64_t>, StringError> result =
                  decrypter.decryptValues(value.get(), position);
 
@@ -511,7 +532,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            })
       .def("decrypt_tensor",
            [](clientlib::SimulatedValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
+              clientlib::SharedScalarOrTensorOrCompressedData &value) {
              outcome::checked<std::vector<uint64_t>, StringError> result =
                  decrypter.decryptValues(value.get(), position);
 

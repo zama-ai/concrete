@@ -90,6 +90,8 @@ struct PublicResult {
 
     assert(buffers_.size() == clientParameters.outputs.size());
 
+    assert(buffers_.size() == 1);
+
     assert(clientParameters.outputs.size() <= 1);
 
     if (clientParameters.outputs.size() == 1) {
@@ -113,7 +115,9 @@ struct PublicResult {
 
         LWEParams params(lwe_dim, 64);
 
-        auto &comp_key = evaluationKeys.getCompressionKey();
+        assert(evaluationKeys.has_value());
+
+        auto &comp_key = evaluationKeys->getCompressionKey();
 
         assert(comp_key.has_value());
 

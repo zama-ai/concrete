@@ -180,6 +180,8 @@ endif()
 if(OUTPUT_COMPRESSION_SUPPORT)
   include_directories(${PROJECT_SOURCE_DIR}/../../../tools)
 
+  add_compile_options(-DOUTPUT_COMPRESSION_SUPPORT)
+
   set(COMPRESS_LWE_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/compress_bin_dir)
   set(COMPRESS_LWE_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/compress_install_dir)
 

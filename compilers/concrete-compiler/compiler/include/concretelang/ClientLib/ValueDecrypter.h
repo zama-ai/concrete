@@ -115,14 +115,36 @@ public:
   outcome::checked<std::vector<uint64_t>, StringError>
   decryptValues(ScalarOrTensorOrCompressedData &value, size_t argPos) override {
     OUTCOME_TRY(auto gate, _clientParameters.ouput(argPos));
-    if (!gate.isEncrypted())
+
+    if (!gate.isEncrypted()) {
+      if (std::holds_alternative<ScalarData>(value)) {
+        std::vector<uint64_t> result;
+
+        result.push_back(std::get<ScalarData>(value).getValueAsU64());
+
+        return result;
+      }
+
+      assert(std::holds_alternative<TensorData>(value));
+
       return std::get<TensorData>(value).asFlatVector<uint64_t>();
+    }
 
     uint ct_count = 1;
 
     for (uint i = 0; i < gate.shape.dimensions.size(); i++) {
       ct_count *= gate.shape.dimensions[i];
     }
+
+    if (std::holds_alternative<ScalarData>(value)) {
+      std::vector<uint64_t> result;
+
+      result.push_back(std::get<ScalarData>(value).getValueAsU64());
+
+      return decode_one_result(result, gate.encryption->encoding);
+    }
+
+    assert(std::holds_alternative<TensorData>(value));
 
     return decode_one_result(
         std::get<TensorData>(value).asFlatVector<uint64_t>(),
