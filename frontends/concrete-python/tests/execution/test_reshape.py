@@ -124,15 +124,21 @@ def test_reshape(shape, newshape, helpers):
     def method(x):
         return x.reshape(newshape)
 
+    @fhe.compiler({"x": "encrypted"})
+    def args(x):
+        return x.reshape(*(newshape if isinstance(newshape, tuple) else (newshape,)))
+
     inputset = [np.random.randint(0, 2**5, size=shape) for i in range(100)]
 
     function_circuit = function.compile(inputset, configuration)
     method_circuit = method.compile(inputset, configuration)
+    args_circuit = args.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2**5, size=shape)
 
     helpers.check_execution(function_circuit, function, sample)
     helpers.check_execution(method_circuit, method, sample)
+    helpers.check_execution(args_circuit, args, sample)
 
 
 @pytest.mark.parametrize(
