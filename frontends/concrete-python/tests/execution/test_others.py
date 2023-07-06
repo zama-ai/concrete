@@ -708,6 +708,20 @@ def copy_modify(x):
             },
             id="copy_modify",
         ),
+        pytest.param(
+            lambda x: fhe.ones_like(x) + x,
+            {
+                "x": {"status": "encrypted", "range": [0, 4]},
+            },
+            id="fhe.ones_like(x) + x",
+        ),
+        pytest.param(
+            lambda x: fhe.zeros_like(x) + x,
+            {
+                "x": {"status": "encrypted", "range": [0, 4]},
+            },
+            id="fhe.zeros_like(x) + x",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):

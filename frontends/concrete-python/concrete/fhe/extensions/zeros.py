@@ -54,3 +54,20 @@ def zero() -> Union[np.ndarray, Tracer]:
     """
 
     return zeros(())
+
+
+def zeros_like(array: Union[np.ndarray, Tracer]) -> Union[np.ndarray, Tracer]:
+    """
+    Create an encrypted array of zeros with the same shape as another array.
+
+    Args:
+         array (Union[np.ndarray, Tracer]):
+            original array
+
+    Returns:
+        Union[np.ndarray, Tracer]:
+            Tracer that represent the operation during tracing
+            ndarray filled with zeros otherwise
+    """
+
+    return zeros(array.shape)
