@@ -29,7 +29,7 @@ protected:
                                                            size_t argPos,
                                                            uint64_t *ciphertext,
                                                            uint64_t input) = 0;
-  /// Encrypt and export a 64bits integer to a serializale value
+  /// Encrypt and export a 64bits integer to a serializable value
   virtual outcome::checked<ScalarOrTensorData, StringError>
   exportEncryptValue(uint64_t arg, CircuitGate &gate, size_t argPos) = 0;
   /// Shape of the low-level buffer
@@ -178,7 +178,7 @@ protected:
     return _clientParameters.lweBufferSize(gate);
   }
 
-  /// Encrypt and export a 64bits integer to a serializale value
+  /// Encrypt and export a 64bits integer to a serializable value
   outcome::checked<ScalarOrTensorData, StringError>
   exportEncryptValue(uint64_t arg, CircuitGate &gate, size_t argPos) override {
     std::vector<int64_t> shape = _clientParameters.bufferShape(gate);
@@ -233,7 +233,7 @@ protected:
     return outcome::success();
   }
 
-  /// Simulate encrypt and export a 64bits integer to a serializale value
+  /// Simulate encrypt and export a 64bits integer to a serializable value
   outcome::checked<ScalarOrTensorData, StringError>
   exportEncryptValue(uint64_t arg, CircuitGate &gate, size_t argPos) override {
     uint64_t encValue = 0;
