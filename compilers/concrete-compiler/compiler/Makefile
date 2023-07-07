@@ -311,9 +311,9 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
 	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
-	$(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	$(if $(filter $(OUTPUT_COMPRESSION_SUPPORT),ON),$(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=128 \
-	  --optimizer-strategy=dag-mono --output-compression --jit $(FIXTURE_CPU_DIR)/*.yaml
+	  --optimizer-strategy=dag-mono --output-compression --jit $(FIXTURE_CPU_DIR)/*.yaml)
 
 ### end-to-end-tests GPU
 
