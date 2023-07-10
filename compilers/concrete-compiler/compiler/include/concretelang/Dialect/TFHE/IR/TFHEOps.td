@@ -132,14 +132,14 @@ def TFHE_EncodePlaintextWithCrtOp : TFHE_Op<"encode_plaintext_with_crt", [Pure]>
 
 
 def TFHE_ZeroGLWEOp : TFHE_Op<"zero", [Pure]> {
-  let summary = "Returns a trivial encyption of 0";
+  let summary = "Returns a trivial encryption of 0";
 
   let arguments = (ins);
   let results = (outs TFHE_GLWECipherTextType : $out);
 }
 
 def TFHE_ZeroTensorGLWEOp : TFHE_Op<"zero_tensor", [Pure]> {
-  let summary = "Returns a tensor of trivial encyption of 0";
+  let summary = "Returns a tensor containing trivial encryptions of 0";
 
   let arguments = (ins);
   let results = (outs Type<And<[TensorOf<[TFHE_GLWECipherTextType]>.predicate, HasStaticShapePred]>>:$tensor);
@@ -184,7 +184,7 @@ def TFHE_AddGLWEIntOp : TFHE_BatchableBinaryOp<
   "ABatchedAddGLWECstIntOp",
   "ABatchedAddGLWEIntOp">
 {
-  let summary = "Returns the sum of a clear integer and a lwe ciphertext";
+  let summary = "Returns the sum of a clear integer and an lwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, AnyInteger : $b);
   let results = (outs TFHE_GLWECipherTextType);
@@ -204,7 +204,7 @@ def TFHE_ABatchedAddGLWEOp : TFHE_Op<"batched_add_glwe", [Pure]> {
 }
 
 def TFHE_AddGLWEOp : TFHE_Op<"add_glwe", [Pure, BatchableOpInterface]> {
-  let summary = "Returns the sum of 2 lwe ciphertexts";
+  let summary = "Returns the sum of two lwe ciphertexts";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, TFHE_GLWECipherTextType : $b);
   let results = (outs TFHE_GLWECipherTextType);
@@ -319,7 +319,7 @@ def TFHE_MulGLWEIntOp : TFHE_BatchableBinaryOp<
   "BatchedMulGLWECstIntOp",
   "BatchedMulGLWEIntOp">
 {
-  let summary = "Returns the product of a clear integer and a lwe ciphertext";
+  let summary = "Returns the product of a clear integer and an lwe ciphertext";
 
   let arguments = (ins TFHE_GLWECipherTextType : $a, AnyInteger : $b);
   let results = (outs TFHE_GLWECipherTextType);
@@ -385,7 +385,7 @@ def TFHE_BatchedBootstrapGLWEOp : TFHE_Op<"batched_bootstrap_glwe", [Pure]> {
 }
 
 def TFHE_BatchedMappedBootstrapGLWEOp : TFHE_Op<"batched_mapped_bootstrap_glwe", [Pure]> {
-  let summary = "Batched version of KeySwitchGLWEOp also batching the lookup table";
+  let summary = "Batched version of KeySwitchGLWEOp which also batches the lookup table";
 
   let arguments = (ins
     1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts,

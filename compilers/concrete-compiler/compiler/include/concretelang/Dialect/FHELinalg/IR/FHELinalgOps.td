@@ -31,14 +31,14 @@ def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [Pure, TensorBroadcast
 
     let description = [{
         Performs an addition following the broadcasting rules between a tensor of encrypted integers and a tensor of clear integers.
-        The width of the clear integers must be less than or equals to the width of encrypted integers.
+        The width of the clear integers must be less than or equal to the width of encrypted integers.
 
         Examples:
         ```mlir
-        // Returns the term to term addition of `%a0` with `%a1`
+        // Returns the term-by-term addition of `%a0` with `%a1`
         "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> tensor<4x!FHE.eint<4>>
 
-        // Returns the term to term addition of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        // Returns the term-by-term addition of `%a0` with `%a1`, where dimensions equal to one are stretched.
         "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<4>>, tensor<1x4x4xi5>) -> tensor<4x4x4x!FHE.eint<4>>
 
         // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of integers.
@@ -47,7 +47,7 @@ def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [Pure, TensorBroadcast
         // [4,5,6] + [2] = [6,7,8]
         // [7,8,9]   [3]   [10,11,12]
         //
-        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        // The dimension #1 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
 
         // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of integers.
@@ -56,10 +56,10 @@ def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [Pure, TensorBroadcast
         // [4,5,6] + [1,2,3] = [5,7,9]
         // [7,8,9]             [8,10,12]
         //
-        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        // The dimension #2 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
 
-        // Same behavior than the previous one, but as the dimension #2 is missing of operand #2.
+        // Same behavior as the previous one, but as the dimension #2 is missing of operand #2.
         "FHELinalg.add_eint_int(%a0, %a1)" : (tensor<3x4x!FHE.eint<4>>, tensor<3xi5>) -> tensor<4x4x4x!FHE.eint<4>>
 
         ```
@@ -86,14 +86,14 @@ def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [Pure, TensorBroadcastingRule
 
     let description = [{
         Performs an addition following the broadcasting rules between two tensors of encrypted integers.
-        The width of the encrypted integers must be equals.
+        The width of the encrypted integers must be equal.
 
         Examples:
         ```mlir
-        // Returns the term to term addition of `%a0` with `%a1`
+        // Returns the term-by-term addition of `%a0` with `%a1`
         "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x!FHE.eint<4>>, tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>>
 
-        // Returns the term to term addition of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        // Returns the term-by-term addition of `%a0` with `%a1`, where dimensions equal to one are stretched.
         "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<4>>, tensor<1x4x4x!FHE.eint<4>>) -> tensor<4x4x4x!FHE.eint<4>>
 
         // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
@@ -102,7 +102,7 @@ def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [Pure, TensorBroadcastingRule
         // [4,5,6] + [2] = [6,7,8]
         // [7,8,9]   [3]   [10,11,12]
         //
-        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        // The dimension #1 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
 
         // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
@@ -111,10 +111,10 @@ def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [Pure, TensorBroadcastingRule
         // [4,5,6] + [1,2,3] = [5,7,9]
         // [7,8,9]             [8,10,12]
         //
-        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        // The dimension #2 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
 
-        // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
+        // Same behavior as the previous one, but as the dimension #2 of operand #2 is missing.
         "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
         ```
     }];
@@ -138,14 +138,14 @@ def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [Pure, TensorBroadcast
 
     let description = [{
         Performs a subtraction following the broadcasting rules between a tensor of clear integers and a tensor of encrypted integers.
-        The width of the clear integers must be less than or equals to the width of encrypted integers.
+        The width of the clear integers must be less than or equal to the width of encrypted integers.
 
         Examples:
         ```mlir
-        // Returns the term to term subtraction of `%a0` with `%a1`
+        // Returns the term-by-term subtraction of `%a0` with `%a1`
         "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi5>, tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>>
 
-        // Returns the term to term subtraction of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        // Returns the term-by-term subtraction of `%a0` with `%a1`, where dimensions equal to one are stretched.
         "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi5>, tensor<1x4x4x!FHE.eint<4>>) -> tensor<4x4x4x!FHE.eint<4>>
 
         // Returns the subtraction of a 3x3 matrix of integers and a 3x1 matrix (a column) of encrypted integers.
@@ -154,7 +154,7 @@ def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [Pure, TensorBroadcast
         // [4,5,6] - [2] = [2,3,4]
         // [7,8,9]   [3]   [4,5,6]
         //
-        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        // The dimension #1 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
 
         // Returns the subtraction of a 3x3 matrix of integers and a 1x3 matrix (a line) of encrypted integers.
@@ -163,10 +163,10 @@ def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [Pure, TensorBroadcast
         // [4,5,6] - [1,2,3] = [3,3,3]
         // [7,8,9]             [6,6,6]
         //
-        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        // The dimension #2 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>, tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
 
-        // Same behavior than the previous one, but as the dimension #2 is missing of operand #2.
+        // Same behavior as the previous one, but as the dimension #2 is missing of operand #2.
         "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
 
         ```
@@ -191,14 +191,14 @@ def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [Pure, TensorBroadcast
 
     let description = [{
         Performs a subtraction following the broadcasting rules between a tensor of clear integers from a tensor of encrypted integers.
-        The width of the clear integers must be less than or equals to the width of encrypted integers.
+        The width of the clear integers must be less than or equal to the width of encrypted integers.
 
         Examples:
         ```mlir
-        // Returns the term to term subtraction of `%a0` with `%a1`
+        // Returns the term-by-term subtraction of `%a0` with `%a1`
         "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> tensor<4x!FHE.eint<4>>
 
-        // Returns the term to term subtraction of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        // Returns the term-by-term subtraction of `%a0` with `%a1`, where dimensions equal to one are stretched.
         "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<1x4x4x!FHE.eint<4>>, tensor<4x1x4xi5>) -> tensor<4x4x4x!FHE.eint<4>>
 
         // Returns the subtraction of a 3x3 matrix of integers and a 3x1 matrix (a column) of encrypted integers.
@@ -207,7 +207,7 @@ def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [Pure, TensorBroadcast
         // [4,5,6] - [2] = [2,3,4]
         // [7,8,9]   [3]   [4,5,6]
         //
-        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        // The dimension #1 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x1x!FHE.eint<4>>, tensor<3x3xi5>) -> tensor<3x3x!FHE.eint<4>>
 
         // Returns the subtraction of a 3x3 matrix of integers and a 1x3 matrix (a line) of encrypted integers.
@@ -216,10 +216,10 @@ def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [Pure, TensorBroadcast
         // [4,5,6] - [1,2,3] = [3,3,3]
         // [7,8,9]             [6,6,6]
         //
-        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        // The dimension #2 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<1x3x!FHE.eint<4>>, tensor<3x3xi5>) -> tensor<3x3x!FHE.eint<4>>
 
-        // Same behavior than the previous one, but as the dimension #2 is missing of operand #2.
+        // Same behavior as the previous one, but as the dimension #2 is missing of operand #2.
         "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x!FHE.eint<4>>, tensor<3x3xi5>) -> tensor<3x3x!FHE.eint<4>>
 
         ```
@@ -251,10 +251,10 @@ def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [Pure, TensorBroadcastingRule
 
         Examples:
         ```mlir
-        // Returns the term to term subtraction of `%a0` with `%a1`
+        // Returns the term-by-term subtraction of `%a0` with `%a1`
         "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<4>>, tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>>
 
-        // Returns the term to term subtraction of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        // Returns the term-by-term subtraction of `%a0` with `%a1`, where dimensions equal to one are stretched.
         "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<4>>, tensor<1x4x4x!FHE.eint<4>>) -> tensor<4x4x4x!FHE.eint<4>>
 
         // Returns the subtraction of a 3x3 matrix of integers and a 3x1 matrix (a column) of encrypted integers.
@@ -263,7 +263,7 @@ def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [Pure, TensorBroadcastingRule
         // [4,5,6] - [2] = [2,3,4]
         // [7,8,9]   [3]   [4,5,6]
         //
-        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        // The dimension #1 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
 
         // Returns the subtraction of a 3x3 matrix of integers and a 1x3 matrix (a line) of encrypted integers.
@@ -272,10 +272,10 @@ def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [Pure, TensorBroadcastingRule
         // [4,5,6] - [1,2,3] = [3,3,3]
         // [7,8,9]             [6,6,6]
         //
-        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        // The dimension #2 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
 
-        // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
+        // Same behavior as the previous one, but as the dimension #2 of operand #2 is missing.
         "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
         ```
     }];
@@ -302,7 +302,7 @@ def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [Pure, TensorUnaryEint]> {
 
         Examples:
         ```mlir
-        // Returns the term to term negation of `%a0`
+        // Returns the term-by-term negation of `%a0`
         "FHELinalg.neg_eint"(%a0) : (tensor<3x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
         //
         //        ( [1,2,3] )   [31,30,29]
@@ -331,14 +331,14 @@ def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [Pure, TensorBroadcast
 
     let description = [{
         Performs a multiplication following the broadcasting rules between a tensor of encrypted integers and a tensor of clear integers.
-        The width of the clear integers must be less than or equals to the width of encrypted integers.
+        The width of the clear integers must be less than or equal to the width of encrypted integers.
 
         Examples:
         ```mlir
-        // Returns the term to term multiplication of `%a0` with `%a1`
+        // Returns the term-by-term multiplication of `%a0` with `%a1`
         "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> tensor<4x!FHE.eint<4>>
 
-        // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        // Returns the term-by-term multiplication of `%a0` with `%a1`, where dimensions equal to one are stretched.
         "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<4>>, tensor<1x4x4xi5>) -> tensor<4x4x4x!FHE.eint<4>>
 
         // Returns the multiplication of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of integers.
@@ -347,7 +347,7 @@ def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [Pure, TensorBroadcast
         // [4,5,6] * [2] = [8,10,18]
         // [7,8,9]   [3]   [21,24,27]
         //
-        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        // The dimension #1 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
 
         // Returns the multiplication of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of integers.
@@ -356,10 +356,10 @@ def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [Pure, TensorBroadcast
         // [4,5,6] * [1,2,3] = [5,7,9]
         // [7,8,9]             [8,10,12]
         //
-        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        // The dimension #2 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
 
-        // Same behavior than the previous one, but as the dimension #2 is missing of operand #2.
+        // Same behavior as the previous one, but as the dimension #2 is missing of operand #2.
         "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>>
 
         ```
@@ -382,14 +382,14 @@ def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [Pure, TensorBroadcastingRule
 
     let description = [{
         Performs an addition following the broadcasting rules between two tensors of encrypted integers.
-        The width of the encrypted integers must be equals.
+        The width of the encrypted integers must be equal.
 
         Examples:
         ```mlir
-        // Returns the term to term multiplication of `%a0` with `%a1`
+        // Returns the term-by-term multiplication of `%a0` with `%a1`
         "FHELinalg.mul_eint"(%a0, %a1) : (tensor<4x!FHE.eint<8>>, tensor<4x!FHE.eint<8>>) -> tensor<4x!FHE.eint<8>>
 
-        // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        // Returns the term-by-term multiplication of `%a0` with `%a1`, where dimensions equal to one are stretched.
         "FHELinalg.mul_eint"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<8>>, tensor<1x4x4x!FHE.eint<8>>) -> tensor<4x4x4x!FHE.eint<8>>
 
         // Returns the multiplication of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
@@ -398,7 +398,7 @@ def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [Pure, TensorBroadcastingRule
         // [4,5,6] * [2] = [8,10,12]
         // [7,8,9]   [3]   [21,24,27]
         //
-        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        // The dimension #1 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.mul_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<8>>, tensor<3x1x!FHE.eint<8>>) -> tensor<3x3x!FHE.eint<8>>
 
         // Returns the multiplication of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
@@ -407,10 +407,10 @@ def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [Pure, TensorBroadcastingRule
         // [4,5,6] * [1,2,3] = [4,10,18]
         // [7,8,9]             [7,16,27]
         //
-        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        // The dimension #2 of operand #2 is stretched as it is equal to 1.
         "FHELinalg.mul_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<8>>, tensor<1x3x!FHE.eint<8>>) -> tensor<3x3x!FHE.eint<8>>
 
-        // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
+        // Same behavior as the previous one, but as the dimension #2 of operand #2 is missing.
         "FHELinalg.mul_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<8>>, tensor<3x!FHE.eint<8>>) -> tensor<3x3x!FHE.eint<8>>
         ```
     }];
@@ -430,18 +430,18 @@ def FHELinalg_MulEintOp : FHELinalg_Op<"mul_eint", [Pure, TensorBroadcastingRule
 }
 
 def FHELinalg_ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", [Pure]> {
-    let summary = "Returns a tensor that contains the result of the lookup on a table.";
+    let summary = "Returns a tensor that contains the result of a lookup table.";
 
     let description = [{
-        Performs for each encrypted indices a lookup on a table of clear integers.
+        For each encrypted index, performs a lookup table of clear integers.
 
         ```mlir
-        // The result of this operation, is a tensor that contains the result of the lookup on a table.
+        // The result of this operation, is a tensor that contains the result of a lookup table.
         // i.e. %res[i, ..., k] = %lut[%t[i, ..., k]]
         %res = FHELinalg.apply_lookup_table(%t, %lut): tensor<DNx...xD1x!FHE.eint<$p>>, tensor<D2^$pxi64> -> tensor<DNx...xD1x!FHE.eint<$p>>
         ```
 
-        The `%lut` argument must be a tensor with one dimension, where its dimension is equals to `2^p` where `p` is the width of the encrypted integers.
+        The `%lut` argument must be a tensor with one dimension, where its dimension is `2^p` where `p` is the width of the encrypted integers.
 
         Examples:
         ```mlir
@@ -466,10 +466,10 @@ def FHELinalg_ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", [Pure]
 }
 
 def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", [Pure]> {
-    let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element.";
+    let summary = "Returns a tensor that contains the result of a lookup table, using a different lookup table for each element.";
 
     let description = [{
-        Performs for each encrypted indice a lookup on a table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
+        Performs for each encrypted index a lookup table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
         is performed following the broadcasting rules.
 
         ```mlir
@@ -479,7 +479,7 @@ def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_tab
         ```
 
         The `%luts` argument should be a tensor with M dimension, where the first M-1 dimensions are broadcastable with the N dimensions of the encrypted tensor,
-        and where the last dimension dimension is equals to `2^p` where `p` is the width of the encrypted integers.
+        and where the last dimension dimension is equal to `2^p` where `p` is the width of the encrypted integers.
 
         Examples:
         ```mlir
@@ -513,10 +513,10 @@ def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_tab
 }
 
 def FHELinalg_ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", [Pure]> {
-    let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element, specified by a map.";
+    let summary = "Returns a tensor that contains the result of a lookup table, using a different lookup table for each element, specified by a map.";
 
     let description = [{
-        Performs for each encrypted indice a lookup on a table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
+        Performs for each encrypted index a lookup table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
         is performed following the broadcasting rules. The precise lookup is specified by a map.
 
         ```mlir
@@ -619,7 +619,7 @@ def FHELinalg_MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [Pure, TensorBin
 
     let description = [{
         Performs a matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.
-        The width of the clear integers must be less than or equals to the width of encrypted integers.
+        The width of the clear integers must be less than or equal to the width of encrypted integers.
 
         The behavior depends on the arguments in the following way:
 
@@ -764,7 +764,7 @@ def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [Pure, TensorBin
 
     let description = [{
         Performs a matrix multiplication of a matrix of clear integers and a matrix of encrypted integers.
-        The width of the clear integers must be less than or equals to the width of encrypted integers.
+        The width of the clear integers must be less than or equal to the width of encrypted integers.
 
         The behavior depends on the arguments in the following way:
 
@@ -1168,7 +1168,7 @@ def FHELinalg_ConcatOp : FHELinalg_Op<"concat", [Pure]> {
 }
 
 def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", [Pure]> {
-  let summary = "Returns the 2D convolution of a tensor in the form NCHW with weights in the form FCHW";
+  let summary = "Returns the 2D convolution of a tensor in NCHW form with weights in the form FCHW";
   let arguments = (ins
     Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input,
     Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$weight,
@@ -1184,7 +1184,7 @@ def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", [Pure]> {
 }
 
 def FHELinalg_Maxpool2dOp : FHELinalg_Op<"maxpool2d", [Pure]> {
-  let summary = "Returns the 2D maxpool of a tensor in the form NCHW";
+  let summary = "Returns the 2D maxpool of a tensor in NCHW form";
   let arguments = (ins
     Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input,
     I64ElementsAttr:$kernel_shape,

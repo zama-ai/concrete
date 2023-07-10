@@ -185,14 +185,14 @@ def Concrete_BatchedMulCleartextCstLweBufferOp : Concrete_Op<"batched_mul_cleart
 }
 
 def Concrete_NegateLweTensorOp : Concrete_Op<"negate_lwe_tensor", [Pure]> {
-    let summary = "Negates a lwe ciphertext";
+    let summary = "Negates an lwe ciphertext";
 
     let arguments = (ins Concrete_LweTensor:$ciphertext);
     let results = (outs Concrete_LweTensor:$result);
 }
 
 def Concrete_NegateLweBufferOp : Concrete_Op<"negate_lwe_buffer"> {
-    let summary = "Negates a lwe ciphertext";
+    let summary = "Negates an lwe ciphertext";
 
     let arguments = (ins
         Concrete_LweBuffer:$result,
@@ -394,7 +394,7 @@ def Concrete_BatchedMappedBootstrapLweBufferOp : Concrete_Op<"batched_mapped_boo
 }
 
 def Concrete_KeySwitchLweTensorOp : Concrete_Op<"keyswitch_lwe_tensor", [Pure]> {
-    let summary = "Keyswitches an LWE ciphertext";
+    let summary = "Performs a keyswitching operation on an LWE ciphertext";
 
     let arguments = (ins
         // LweKeySwitchKeyType:$keyswitch_key,
@@ -409,7 +409,7 @@ def Concrete_KeySwitchLweTensorOp : Concrete_Op<"keyswitch_lwe_tensor", [Pure]> 
 }
 
 def Concrete_KeySwitchLweBufferOp : Concrete_Op<"keyswitch_lwe_buffer"> {
-    let summary = "Keyswitches an LWE ciphertext";
+    let summary = "Performs a keyswitching operation on an LWE ciphertext";
 
     let arguments = (ins
         Concrete_LweBuffer:$result,

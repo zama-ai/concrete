@@ -689,7 +689,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `Concrete.keyswitch_lwe_buffer` (::mlir::concretelang::Concrete::KeySwitchLweBufferOp)
 
-Keyswitches an LWE ciphertext
+Performs a keyswitching operation on an LWE ciphertext
 
 
 #### Attributes:
@@ -711,7 +711,7 @@ Keyswitches an LWE ciphertext
 
 ### `Concrete.keyswitch_lwe_tensor` (::mlir::concretelang::Concrete::KeySwitchLweTensorOp)
 
-Keyswitches an LWE ciphertext
+Performs a keyswitching operation on an LWE ciphertext
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -781,7 +781,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `Concrete.negate_lwe_buffer` (::mlir::concretelang::Concrete::NegateLweBufferOp)
 
-Negates a lwe ciphertext
+Negates an lwe ciphertext
 
 
 #### Operands:
@@ -793,7 +793,7 @@ Negates a lwe ciphertext
 
 ### `Concrete.negate_lwe_tensor` (::mlir::concretelang::Concrete::NegateLweTensorOp)
 
-Negates a lwe ciphertext
+Negates an lwe ciphertext
 
 
 Traits: AlwaysSpeculatableImplTrait

@@ -21,7 +21,7 @@ be synchronized and its data accessed using `RT.await_future`.
 
 | Operand | Description |
 | :-----: | ----------- |
-| `input` | future with a parameterized element type
+| `input` | Future with a parameterized element type
 
 #### Results:
 
@@ -51,13 +51,13 @@ Interfaces: AllocationOpInterface, MemoryEffectOpInterface
 
 | Operand | Description |
 | :-----: | ----------- |
-| `input` | future with a parameterized element type
+| `input` | Future with a parameterized element type
 
 #### Results:
 
 | Result | Description |
 | :----: | ----------- |
-| `output` | future with a parameterized element type
+| `output` | Future with a parameterized element type
 
 ### `RT.create_async_task` (::mlir::concretelang::RT::CreateAsyncTaskOp)
 
@@ -161,7 +161,7 @@ Traits: ReturnLike, Terminator
 
 | Operand | Description |
 | :-----: | ----------- |
-| `input` | future with a parameterized element type
+| `input` | Future with a parameterized element type
 
 ### `RT.deallocate_future` (::mlir::concretelang::RT::DeallocateFutureOp)
 
@@ -189,7 +189,7 @@ Traits: ReturnLike, Terminator
 
 | Result | Description |
 | :----: | ----------- |
-| `output` | future with a parameterized element type
+| `output` | Future with a parameterized element type
 
 ### `RT.deref_work_function_argument_ptr_placeholder` (::mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp)
 
@@ -229,7 +229,7 @@ Interfaces: AllocationOpInterface, MemoryEffectOpInterface
 
 | Result | Description |
 | :----: | ----------- |
-| `output` | future with a parameterized element type
+| `output` | Future with a parameterized element type
 
 ### `RT.register_task_work_function` (::mlir::concretelang::RT::RegisterTaskWorkFunctionOp)
 
@@ -258,7 +258,7 @@ Register the task work-function with the runtime system.
 
 ### FutureType
 
-future with a parameterized element type
+Future with a parameterized element type
 
 The value of a `!RT.future` type represents the result of an asynchronous operation.
 
