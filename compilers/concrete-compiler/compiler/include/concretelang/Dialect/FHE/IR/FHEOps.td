@@ -22,8 +22,6 @@ def FHE_ZeroEintOp : FHE_Op<"zero", [Pure]> {
     let summary = "Returns a trivial encrypted integer of 0";
 
     let description = [{
-        Returns a trivial encrypted integer of 0
-
         Example:
         ```mlir
         "FHE.zero"() : () -> !FHE.eint<2>
@@ -57,7 +55,6 @@ def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure]> {
     let summary = "Adds an encrypted integer and a clear integer";
 
     let description = [{
-        Adds an encrypted integer and a clear integer.
         The clear integer must have at most one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -91,7 +88,6 @@ def FHE_AddEintOp : FHE_Op<"add_eint", [Pure]> {
     let summary = "Adds two encrypted integers";
 
     let description = [{
-        Adds two encrypted integers
         The encrypted integers and the result must have the same width and the same signedness.
 
         Example:
@@ -124,7 +120,6 @@ def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure]> {
     let summary = "Subtract an encrypted integer from a clear integer";
 
     let description = [{
-        Subtract an encrypted integer from a clear integer.
         The clear integer must have one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -157,7 +152,6 @@ def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure]> {
     let summary = "Subtract a clear integer from an encrypted integer";
 
     let description = [{
-        Subtract a clear integer from an encrypted integer.
         The clear integer must have one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -191,7 +185,6 @@ def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure]> {
     let summary = "Subtract an encrypted integer from an encrypted integer";
 
     let description = [{
-        Subtract an encrypted integer from an encrypted integer.
         The encrypted integers and the result must have the same width and the same signedness.
 
         Example:
@@ -225,7 +218,6 @@ def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure]> {
     let summary = "Negates an encrypted integer";
 
     let description = [{
-        Negates an encrypted integer.
         The result must have the same width and the same signedness as the encrypted integer.
 
         Example:
@@ -255,7 +247,6 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure]> {
     let summary = "Multiply an encrypted integer with a clear integer";
 
     let description = [{
-        Multiply an encrypted integer with a clear integer.
         The clear integer must have one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -290,8 +281,6 @@ def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
     let summary = "Multiplies two encrypted integers";
 
     let description = [{
-        Multiplies two encrypted integers.
-
         The encrypted integers and the result must have the same width and
         signedness. Also, due to the current implementation, one supplementary
         bit of width must be provided, in addition to the number of bits needed
@@ -325,14 +314,14 @@ def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
 }
 
 def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure]> {
-    let summary = "Get maximum of two encrypted integers.";
+    let summary = "Retrieve the maximum of two encrypted integers.";
 
     let description = [{
-        Get maximum of two encrypted integers using the formula, 'max(x, y) == max(x - y, 0) + y'.
-        Type of inputs and the output should be the same.
+        Retrieve the maximum of two encrypted integers using the formula, 'max(x, y) == max(x - y, 0) + y'.
+        The input and output types should be the same.
 
         If `x - y`` inside the max overflows or underflows, the behavior is undefined.
-        So to support the full range, you should increase the bit-width by 1 manually.
+        To support the full range, you should increase the bit-width by 1 manually.
 
         Example:
         ```mlir
@@ -363,7 +352,6 @@ def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure]> {
     let summary = "Cast an unsigned integer to a signed one";
 
     let description = [{
-        Cast an unsigned integer to a signed one.
         The result must have the same width as the input.
 
         The behavior is undefined on overflow/underflow.
@@ -389,7 +377,6 @@ def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
     let summary = "Cast a signed integer to an unsigned one";
 
     let description = [{
-        Cast a signed integer to an unsigned one.
         The result must have the same width as the input.
 
         The behavior is undefined on overflow/underflow.
@@ -416,8 +403,8 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure]> {
     let summary = "Applies a clear lookup table to an encrypted integer";
 
     let description = [{
-        Applies a clear lookup table to an encrypted integer, the width of the result can be different than the width of the operand.
-        The lookup table must be a tensor of size equals to `2^p` where `p` is the width of the encrypted integer.
+        The width of the result can be different than the width of the operand.
+        The lookup table must be a tensor of size `2^p` where `p` is the width of the encrypted integer.
 
         Example:
         ```mlir
@@ -474,9 +461,7 @@ def FHE_GenGateOp : FHE_Op<"gen_gate", [Pure]> {
     let summary = "Applies a truth table based on two boolean inputs";
 
     let description = [{
-        Applies a truth table based on two boolean inputs.
-
-        truth table must be a tensor of 4 boolean values.
+        Truth table must be a tensor of four boolean values.
 
         Example:
         ```mlir
@@ -501,8 +486,6 @@ def FHE_MuxOp : FHE_Op<"mux", [Pure]> {
     let summary = "Multiplexer for two encrypted boolean inputs, based on an encrypted condition";
 
     let description = [{
-        Mutex between two encrypted boolean inputs, based on an encrypted condition.
-
         Example:
         ```mlir
         "FHE.mux"(%cond, %c1, %c2): (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -518,8 +501,6 @@ def FHE_BoolAndOp : FHE_Op<"and", [Pure]> {
     let summary = "Applies an AND gate to two encrypted boolean values";
 
     let description = [{
-        Applies an AND gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.and"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -535,8 +516,6 @@ def FHE_BoolOrOp : FHE_Op<"or", [Pure]> {
     let summary = "Applies an OR gate to two encrypted boolean values";
 
     let description = [{
-        Applies an OR gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.or"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -552,8 +531,6 @@ def FHE_BoolNandOp : FHE_Op<"nand", [Pure]> {
     let summary = "Applies a NAND gate to two encrypted boolean values";
 
     let description = [{
-        Applies a NAND gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.nand"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -566,11 +543,9 @@ def FHE_BoolNandOp : FHE_Op<"nand", [Pure]> {
 
 def FHE_BoolXorOp : FHE_Op<"xor", [Pure]> {
 
-    let summary = "Applies a XOR gate to two encrypted boolean values";
+    let summary = "Applies an XOR gate to two encrypted boolean values";
 
     let description = [{
-        Applies a XOR gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.xor"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -586,8 +561,6 @@ def FHE_BoolNotOp : FHE_Op<"not", [Pure]> {
     let summary = "Applies a NOT gate to an encrypted boolean value";
 
     let description = [{
-        Applies a NOT gate to an encrypted boolean value.
-
         Example:
         ```mlir
         "FHE.not"(%a): (!FHE.ebool) -> (!FHE.ebool)
@@ -602,9 +575,7 @@ def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure]> {
     let summary = "Cast an unsigned integer to a boolean";
 
     let description = [{
-        Cast an unsigned integer to a boolean.
-
-        The input must necessarily be of width 1 or 2. 2 being the current representation
+        The input must be of width one or two. Two being the current representation
         of an encrypted boolean, leaving one bit for the carry.
 
         Examples:
@@ -628,8 +599,6 @@ def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure]> {
     let summary = "Cast a boolean to an unsigned integer";
 
     let description = [{
-        Cast a boolean to an unsigned integer.
-
         Examples:
         ```mlir
         "FHE.from_bool"(%x) : (!FHE.ebool) -> !FHE.eint<1>

@@ -106,7 +106,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.add_glwe_int` (::mlir::concretelang::TFHE::AddGLWEIntOp)
 
-Returns the sum of a clear integer and a lwe ciphertext
+Returns the sum of a clear integer and an lwe ciphertext
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -130,7 +130,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.add_glwe` (::mlir::concretelang::TFHE::AddGLWEOp)
 
-Returns the sum of 2 lwe ciphertexts
+Returns the sum of two lwe ciphertexts
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -213,7 +213,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.batched_mapped_bootstrap_glwe` (::mlir::concretelang::TFHE::BatchedMappedBootstrapGLWEOp)
 
-Batched version of KeySwitchGLWEOp also batching the lookup table
+Batched version of KeySwitchGLWEOp which also batches the lookup table
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -490,7 +490,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.mul_glwe_int` (::mlir::concretelang::TFHE::MulGLWEIntOp)
 
-Returns the product of a clear integer and a lwe ciphertext
+Returns the product of a clear integer and an lwe ciphertext
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -596,7 +596,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.zero` (::mlir::concretelang::TFHE::ZeroGLWEOp)
 
-Returns a trivial encyption of 0
+Returns a trivial encryption of 0
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -613,7 +613,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.zero_tensor` (::mlir::concretelang::TFHE::ZeroTensorGLWEOp)
 
-Returns a tensor of trivial encyption of 0
+Returns a tensor containing trivial encryptions of 0
 
 
 Traits: AlwaysSpeculatableImplTrait

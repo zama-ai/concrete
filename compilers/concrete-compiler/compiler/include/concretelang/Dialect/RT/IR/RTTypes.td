@@ -10,7 +10,7 @@ class RT_Type<string name, list<Trait> traits = []> :
 def RT_Future : RT_Type<"Future"> {
   let mnemonic = "future";
 
-  let summary = "future with a parameterized element type";
+  let summary = "Future with a parameterized element type";
 
   let description = [{
     The value of a `!RT.future` type represents the result of an asynchronous operation.

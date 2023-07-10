@@ -12,7 +12,6 @@ A dialect for representation of high level operation on fully homomorphic cipher
 
 Adds an encrypted integer and a clear integer
 
-Adds an encrypted integer and a clear integer.
 The clear integer must have at most one more bit than the encrypted integer
 and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -51,7 +50,6 @@ Effects: MemoryEffects::Effect{}
 
 Adds two encrypted integers
 
-Adds two encrypted integers
 The encrypted integers and the result must have the same width and the same signedness.
 
 Example:
@@ -90,8 +88,8 @@ Effects: MemoryEffects::Effect{}
 
 Applies a clear lookup table to an encrypted integer
 
-Applies a clear lookup table to an encrypted integer, the width of the result can be different than the width of the operand.
-The lookup table must be a tensor of size equals to `2^p` where `p` is the width of the encrypted integer.
+The width of the result can be different than the width of the operand.
+The lookup table must be a tensor of size `2^p` where `p` is the width of the encrypted integer.
 
 Example:
 ```mlir
@@ -127,8 +125,6 @@ Effects: MemoryEffects::Effect{}
 
 Applies an AND gate to two encrypted boolean values
 
-Applies an AND gate to two encrypted boolean values.
-
 Example:
 ```mlir
 "FHE.and"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -156,8 +152,6 @@ Effects: MemoryEffects::Effect{}
 ### `FHE.nand` (::mlir::concretelang::FHE::BoolNandOp)
 
 Applies a NAND gate to two encrypted boolean values
-
-Applies a NAND gate to two encrypted boolean values.
 
 Example:
 ```mlir
@@ -187,8 +181,6 @@ Effects: MemoryEffects::Effect{}
 
 Applies a NOT gate to an encrypted boolean value
 
-Applies a NOT gate to an encrypted boolean value.
-
 Example:
 ```mlir
 "FHE.not"(%a): (!FHE.ebool) -> (!FHE.ebool)
@@ -216,8 +208,6 @@ Effects: MemoryEffects::Effect{}
 
 Applies an OR gate to two encrypted boolean values
 
-Applies an OR gate to two encrypted boolean values.
-
 Example:
 ```mlir
 "FHE.or"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -244,9 +234,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHE.xor` (::mlir::concretelang::FHE::BoolXorOp)
 
-Applies a XOR gate to two encrypted boolean values
-
-Applies a XOR gate to two encrypted boolean values.
+Applies an XOR gate to two encrypted boolean values
 
 Example:
 ```mlir
@@ -275,8 +263,6 @@ Effects: MemoryEffects::Effect{}
 ### `FHE.from_bool` (::mlir::concretelang::FHE::FromBoolOp)
 
 Cast a boolean to an unsigned integer
-
-Cast a boolean to an unsigned integer.
 
 Examples:
 ```mlir
@@ -307,9 +293,7 @@ Effects: MemoryEffects::Effect{}
 
 Applies a truth table based on two boolean inputs
 
-Applies a truth table based on two boolean inputs.
-
-truth table must be a tensor of 4 boolean values.
+Truth table must be a tensor of four boolean values.
 
 Example:
 ```mlir
@@ -342,13 +326,13 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHE.max_eint` (::mlir::concretelang::FHE::MaxEintOp)
 
-Get maximum of two encrypted integers.
+Retrieve the maximum of two encrypted integers.
 
-Get maximum of two encrypted integers using the formula, 'max(x, y) == max(x - y, 0) + y'.
-Type of inputs and the output should be the same.
+Retrieve the maximum of two encrypted integers using the formula, 'max(x, y) == max(x - y, 0) + y'.
+The input and output types should be the same.
 
 If `x - y`` inside the max overflows or underflows, the behavior is undefined.
-So to support the full range, you should increase the bit-width by 1 manually.
+To support the full range, you should increase the bit-width by 1 manually.
 
 Example:
 ```mlir
@@ -385,7 +369,6 @@ Effects: MemoryEffects::Effect{}
 
 Multiply an encrypted integer with a clear integer
 
-Multiply an encrypted integer with a clear integer.
 The clear integer must have one more bit than the encrypted integer
 and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -423,8 +406,6 @@ Effects: MemoryEffects::Effect{}
 ### `FHE.mul_eint` (::mlir::concretelang::FHE::MulEintOp)
 
 Multiplies two encrypted integers
-
-Multiplies two encrypted integers.
 
 The encrypted integers and the result must have the same width and
 signedness. Also, due to the current implementation, one supplementary
@@ -468,8 +449,6 @@ Effects: MemoryEffects::Effect{}
 
 Multiplexer for two encrypted boolean inputs, based on an encrypted condition
 
-Mutex between two encrypted boolean inputs, based on an encrypted condition.
-
 Example:
 ```mlir
 "FHE.mux"(%cond, %c1, %c2): (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -499,7 +478,6 @@ Effects: MemoryEffects::Effect{}
 
 Negates an encrypted integer
 
-Negates an encrypted integer.
 The result must have the same width and the same signedness as the encrypted integer.
 
 Example:
@@ -575,7 +553,6 @@ Effects: MemoryEffects::Effect{}
 
 Subtract a clear integer from an encrypted integer
 
-Subtract a clear integer from an encrypted integer.
 The clear integer must have one more bit than the encrypted integer
 and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -614,7 +591,6 @@ Effects: MemoryEffects::Effect{}
 
 Subtract an encrypted integer from an encrypted integer
 
-Subtract an encrypted integer from an encrypted integer.
 The encrypted integers and the result must have the same width and the same signedness.
 
 Example:
@@ -653,7 +629,6 @@ Effects: MemoryEffects::Effect{}
 
 Subtract an encrypted integer from a clear integer
 
-Subtract an encrypted integer from a clear integer.
 The clear integer must have one more bit than the encrypted integer
 and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -692,9 +667,7 @@ Effects: MemoryEffects::Effect{}
 
 Cast an unsigned integer to a boolean
 
-Cast an unsigned integer to a boolean.
-
-The input must necessarily be of width 1 or 2. 2 being the current representation
+The input must be of width one or two. Two being the current representation
 of an encrypted boolean, leaving one bit for the carry.
 
 Examples:
@@ -729,7 +702,6 @@ Effects: MemoryEffects::Effect{}
 
 Cast an unsigned integer to a signed one
 
-Cast an unsigned integer to a signed one.
 The result must have the same width as the input.
 
 The behavior is undefined on overflow/underflow.
@@ -765,7 +737,6 @@ Effects: MemoryEffects::Effect{}
 
 Cast a signed integer to an unsigned one
 
-Cast a signed integer to an unsigned one.
 The result must have the same width as the input.
 
 The behavior is undefined on overflow/underflow.
@@ -798,8 +769,6 @@ Effects: MemoryEffects::Effect{}
 &laquo;unnamed&raquo; | An encrypted integer
 
 ### `FHE.zero` (::mlir::concretelang::FHE::ZeroEintOp)
-
-Returns a trivial encrypted integer of 0
 
 Returns a trivial encrypted integer of 0
 
