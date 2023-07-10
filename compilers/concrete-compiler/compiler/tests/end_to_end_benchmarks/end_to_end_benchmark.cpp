@@ -122,6 +122,9 @@ void registerEndToEndBenchmark(std::string suiteName,
       options.optimizerConfig.p_error = description.p_error.value();
     }
     options.optimizerConfig.encoding = description.encoding;
+    if (description.v0Parameter) {
+      options.v0Parameter = description.v0Parameter;
+    }
     mlir::concretelang::JITSupport support;
     auto benchName = [&](std::string name) {
       std::ostringstream s;
