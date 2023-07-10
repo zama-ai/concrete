@@ -247,10 +247,10 @@ run-unit-tests: build-unit-tests
 ## python-tests
 
 run-python-tests: python-bindings concretecompiler
-	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
 
 test-compiler-file-output: concretecompiler
-	pytest -vs tests/test_compiler_file_output
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) pytest -vs tests/test_compiler_file_output
 
 
 ## rust-tests
@@ -436,11 +436,11 @@ show-stress-tests-summary:
 	@cd tests/stress_tests/trace && grep BAD -R || echo 'No issues'
 
 stress-tests: concretecompiler
-	pytest -vs tests/stress_tests
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) pytest -vs tests/stress_tests
 
 # useful for faster cache generation, need pytest-parallel
 stress-tests-fast-cache: concretecompiler
-	pytest --workers auto -vs tests/stress_tests
+	OUTPUT_COMPRESSION_SUPPORT=$(OUTPUT_COMPRESSION_SUPPORT) pytest --workers auto -vs tests/stress_tests
 
 # LLVM/MLIR dependencies
 

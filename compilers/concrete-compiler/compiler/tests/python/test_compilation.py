@@ -1,6 +1,7 @@
 import platform
 import pytest
 import os.path
+import os
 import shutil
 import numpy as np
 from concrete.compiler import (
@@ -362,6 +363,8 @@ def test_compile_and_run_loop_parallelize(
     EngineClass,
     output_compression,
 ):
+    if os.environ.get('OUTPUT_COMPRESSION_SUPPORT') == "OFF" and output_compression:
+        pytest.skip("Skipping the output compression test")
     engine = EngineClass.new()
     options = CompilationOptions.new("main")
     options.set_loop_parallelize(True)
