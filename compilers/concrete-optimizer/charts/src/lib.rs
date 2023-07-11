@@ -30,8 +30,8 @@ pub fn draw(
     let mut min_y = f64::INFINITY;
     let mut max_y = f64::NEG_INFINITY;
 
-    for Serie { values, .. } in series.iter() {
-        for &(x, y) in values.iter() {
+    for Serie { values, .. } in series {
+        for &(x, y) in values {
             if x < min_x {
                 min_x = x;
             }
