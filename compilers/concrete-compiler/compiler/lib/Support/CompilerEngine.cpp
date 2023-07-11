@@ -509,8 +509,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   // Concrete -> Canonical dialects
-  if (mlir::concretelang::pipeline::lowerConcreteToStd(
-          mlirContext, module, enablePass, options.simulate)
+  if (mlir::concretelang::pipeline::lowerConcreteToStd(mlirContext, module,
+                                                       enablePass)
           .failed()) {
     return errorDiag("Lowering from Bufferized Concrete to canonical MLIR "
                      "dialects failed");
