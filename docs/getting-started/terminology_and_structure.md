@@ -1,5 +1,3 @@
-#TODO: this file is mainly about concrete-python, extend it with common terminology from other concrete parts
-
 # Terminology and Structure
 
 ## Terminology

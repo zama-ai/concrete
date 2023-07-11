@@ -10,6 +10,7 @@
 * [Compatibility](getting-started/compatibility.md)
 * [Exactness](getting-started/exactness.md)
 * [Performance](getting-started/performance.md)
+* [Terminology and Structure](getting-started/terminology_and_structure.md)
 
 ## Tutorials
 
@@ -27,6 +28,7 @@
 * [Direct Circuits](tutorial/direct\_circuits.md)
 
 ## Application Tutorials
+
 * [Key Value Database](application-tutorial/key\_value\_database.md)
 * [SHA-256](application-tutorial/sha256.md)
 
@@ -41,36 +43,23 @@
 
 ## Explanations
 
-* [Terminology and Structure](dev/terminology_and_structure.md)
 * [Frontend fusing](dev/fusing.md)
-
-### Compilation
-
-* [Compilation Workflow](dev/compilation/README.md)
-* [Automatic Crypto Parameters choice](dev/compilation/optimizer.md)
-* [MLIR FHE Dialects](dev/compilation/dialects.md)
-    * [FHELinalg Dialect](dev/compilation/FHELinalgDialect.md)
-    * [FHE Dialect](dev/compilation/FHEDialect.md)
-    * [TFHE Dialect](dev/compilation/TFHEDialect.md)
-    * [Concrete Dialect](dev/compilation/ConcreteDialect.md)
-    * [Tracing Dialect](dev/compilation/TracingDialect.md)
-    * [Runtime Dialect](dev/compilation/RTDialect.md)
-    * [SDFG Dialect](dev/compilation/SDFGDialect.md)
-
-### Security
-
+* [Compilation](dev/compilation/README.md)
+    * [Automatic Crypto Parameters choice](dev/compilation/optimizer.md)
+    * [MLIR FHE Dialects](dev/compilation/dialects.md)
+        * [FHELinalg Dialect](dev/compilation/FHELinalgDialect.md)
+        * [FHE Dialect](dev/compilation/FHEDialect.md)
+        * [TFHE Dialect](dev/compilation/TFHEDialect.md)
+        * [Concrete Dialect](dev/compilation/ConcreteDialect.md)
+        * [Tracing Dialect](dev/compilation/TracingDialect.md)
+        * [Runtime Dialect](dev/compilation/RTDialect.md)
+        * [SDFG Dialect](dev/compilation/SDFGDialect.md)
 * [Security curves](dev/security/security_curves.md)
 
 ## Developer
 
 * [Contribute](dev/contributing.md)
-
-### Development setup
-
 * [Project layout](dev/setup/layout.md)
-
-### Compiler backend
-
-* [Compiler backend introduction](dev/backends/README.md)
-* [Adding a new backend](dev/backends/new_backend.md)
+* [Compiler backend](dev/backends/README.md)
+    * [Adding a new backend](dev/backends/new_backend.md)
 
