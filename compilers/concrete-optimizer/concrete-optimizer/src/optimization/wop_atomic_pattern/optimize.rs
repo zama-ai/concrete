@@ -503,7 +503,7 @@ pub fn optimize_one(
     let Ok(coprimes) = crt_decomposition::default_coprimes(precision as Precision) else {
         return OptimizationState {
             best_solution: None,
-        }
+        };
     };
     let n_functions = 1;
     let mut state = optimize_raw(
@@ -546,7 +546,9 @@ pub fn optimize_to_circuit_solution(
     caches: &PersistDecompCaches,
 ) -> keys_spec::CircuitSolution {
     let Ok(coprimes) = crt_decomposition::default_coprimes(precision as Precision) else {
-        return keys_spec::CircuitSolution::no_solution("Crt decomposition is not unknown for {precision}:bits")
+        return keys_spec::CircuitSolution::no_solution(
+            "Crt decomposition is not unknown for {precision}:bits",
+        );
     };
     let n_functions = 1;
     let state = optimize_raw(
