@@ -200,6 +200,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](LibrarySupport_Py &support,
               mlir::concretelang::LibraryCompilationResult &result) {
              return library_load_compilation_feedback(support, result);
+             auto out = res.
            })
       .def(
           "load_server_lambda",

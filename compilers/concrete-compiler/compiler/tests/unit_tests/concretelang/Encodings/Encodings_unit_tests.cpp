@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <gtest/gtest.h>
 
 #include <cassert>
@@ -8,11 +9,10 @@
 #include "boost/outcome.h"
 
 #include "concrete-protocol.pb.h"
-#include "concretelang/ClientLib/ClientLambda.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Encodings.h"
-#include "concretelang/TestLib/TestTypedLambda.h"
+#include "concretelang/TestLib/TestCircuit.h"
 
 #include "tests_tools/GtestEnvironment.h"
 #include "tests_tools/assert.h"
@@ -25,13 +25,6 @@ const std::string FUNCNAME = "main";
 
 using namespace concretelang::testlib;
 namespace encodings = mlir::concretelang::encodings;
-using concretelang::clientlib::scalar_in;
-using concretelang::clientlib::scalar_out;
-using concretelang::clientlib::tensor1_in;
-using concretelang::clientlib::tensor1_out;
-using concretelang::clientlib::tensor2_in;
-using concretelang::clientlib::tensor2_out;
-using concretelang::clientlib::tensor3_out;
 
 mlir::concretelang::CompilerEngine::Library
 compile(std::string outputLib, std::string source,
@@ -78,10 +71,9 @@ template <typename Info> std::string outputLibFromThis(Info *info) {
   return OUT_DIRECTORY + "/" + std::string(info->name());
 }
 
-template <typename Lambda> Lambda load(std::string outputLib) {
-  auto l = Lambda::load(FUNCNAME, outputLib, 0, 0, getTestKeySetCachePtr());
-  assert(l.has_value());
-  return l.value();
+TestCircuit load(mlir::concretelang::CompilerEngine::Library compiled) {
+  auto keyset = getTestKeySetCachePtr()->getKeyset(compiled.getProgramInfo().keyset(), 0, 0).value();
+  return TestCircuit::create(keyset, compiled.getProgramInfo(), compiled.sharedLibraryPath, 0, 0, false).value();
 }
 
 TEST(Encodings_unit_tests, multi_key) {
@@ -98,11 +90,14 @@ func.func @main(
 }
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
-  auto compiled = compile(outputLib, source);
-  auto lambda =
-      load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
-  scalar_in a = 5;
-  scalar_in b = 5;
-  auto res = lambda.call(a, b);
-  ASSERT_EQ_OUTCOME(res, (scalar_out)a + b);
+  auto circuit = load(compile(outputLib, source));
+  uint64_t a = 5;
+  uint64_t b = 5;
+  auto res = circuit.call({
+    Tensor<uint64_t>(a),
+    Tensor<uint64_t>(b)
+  });
+  ASSERT_TRUE(res.has_value());
+  auto out = res.value()[0].getTensor<uint64_t>()->values[0];
+  ASSERT_EQ(out, a + b);
 }
