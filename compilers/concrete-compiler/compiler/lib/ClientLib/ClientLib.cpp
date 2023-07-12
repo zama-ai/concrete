@@ -110,10 +110,10 @@ namespace clientlib {
     return output;
   }
 
-  Result<std::reference_wrapper<ClientCircuit>> ClientProgram::getClientCircuit(std::string circuitName){
+  Result<ClientCircuit> ClientProgram::getClientCircuit(std::string circuitName){
     for (auto circuit: circuits) {
       if(circuit.getName() == circuitName){
-        return std::reference_wrapper<ClientCircuit>(circuit);
+        return circuit;
       }
     }
     return StringError("Tried to get unknown client circuit: `" + circuitName + "`");

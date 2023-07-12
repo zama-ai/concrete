@@ -91,10 +91,10 @@ class ServerProgram {
 public:
   /// Loads a server program from a shared lib path essentially.
   static Result<ServerProgram>
-  load(const concreteprotocol::ProgramInfo &programInfo, std::string &sharedLibPath, bool useSimulation);
+  load(const concreteprotocol::ProgramInfo &programInfo, const std::string &sharedLibPath, bool useSimulation);
 
 
-  Result<std::reference_wrapper<ServerCircuit>> getServerCircuit(const std::string &circuitName);
+  Result<ServerCircuit> getServerCircuit(const std::string &circuitName);
 
 private:
   ServerProgram() = default;

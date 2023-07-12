@@ -27,23 +27,6 @@ namespace transformers {
 /// A private type for transformers working purely on values.
 typedef std::function<Value(Value)> Transformer;
 
-Result<void> checkValueRawProps(Value &val,
-                                const concreteprotocol::GateInfo &gateInfo) {
-  if (!val.isCompatibleWithShape(gateInfo.rawinfo().shape())) {
-    return StringError("Tried to transform value with incompatible shape.");
-  }
-  if (val.getIntegerPrecision() != gateInfo.rawinfo().integerprecision()) {
-    return StringError("Tried to transform value with incompatible integer "
-                       "precision.");
-  }
-  if (val.isSigned() != gateInfo.rawinfo().issigned()) {
-    return StringError(
-        "Tried to transform value with incompatible integer signedness.");
-  }
-
-  return outcome::success();
-}
-
 Result<void> checkValueIndexProps(Value &val,
                                   const concreteprotocol::GateInfo &gateInfo) {
   if (!val.isCompatibleWithShape(gateInfo.index().shape())) {
@@ -564,7 +547,6 @@ Result<InputTransformer> TransformerFactory::getIndexInputTransformer(
         "Tried to get index input transformer from non-index gate info.");
   }
   return [=](Value val) -> Result<TransportValue> {
-    OUTCOME_TRYV(checkValueRawProps(val, gateInfo));
     OUTCOME_TRYV(checkValueIndexProps(val, gateInfo));
     auto output = val.intoRawTransportValue();
     auto indexValueInfo = new concreteprotocol::IndexValueInfo();
@@ -615,7 +597,6 @@ Result<InputTransformer> TransformerFactory::getPlaintextInputTransformer(
                        "non-plaintext gate info.");
   }
   return [=](Value val) -> Result<TransportValue> {
-    OUTCOME_TRYV(checkValueRawProps(val, gateInfo));
     OUTCOME_TRYV(checkValuePlaintextProps(val, gateInfo));
     auto output = val.intoRawTransportValue();
     auto plaintextValueInfo = new concreteprotocol::PlaintextValueInfo();
@@ -668,7 +649,7 @@ Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
                        "non-ciphertext gate info.");
   }
   auto keyid = gateInfo.lweciphertext().encryption().keyid();
-  if (keyset.lweSecretKeys.size() >= keyid) {
+  if (keyid >= keyset.lweSecretKeys.size()) {
     return StringError(
         "Tried to generate lwe ciphertext input transformer with "
         "key id unavailable");
@@ -709,7 +690,6 @@ Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
   }
 
   return [=](Value val) -> Result<TransportValue> {
-    OUTCOME_TRYV(checkValueRawProps(val, gateInfo));
     if (!useSimulation){
       OUTCOME_TRYV(checkValueLweCiphertextProps(val, gateInfo));
     }
@@ -742,7 +722,7 @@ Result<OutputTransformer> TransformerFactory::getLweCiphertextOutputTransformer(
                        "non-ciphertext gate info.");
   }
   auto keyid = gateInfo.lweciphertext().encryption().keyid();
-  if (keyset.lweSecretKeys.size() >= keyid) {
+  if (keyid >= keyset.lweSecretKeys.size()) {
     return StringError(
         "Tried to generate lwe ciphertext output transformer with "
         "key id unavailable");
@@ -836,7 +816,6 @@ Result<ReturnTransformer> TransformerFactory::getLweCiphertextReturnTransformer(
   }
 
   return [=](Value val) -> Result<TransportValue> {
-    OUTCOME_TRYV(checkValueRawProps(val, gateInfo));
     if (!useSimulation){
       OUTCOME_TRYV(checkValueLweCiphertextProps(val, gateInfo));
     }

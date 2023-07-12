@@ -700,8 +700,12 @@ void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
   objectsPath.push_back(path);
 }
 
-const concreteprotocol::ProgramInfo &CompilerEngine::Library::getProgramInfo() const{
+concreteprotocol::ProgramInfo CompilerEngine::Library::getProgramInfo() const{
     return programInfo;
+}
+
+const std::string &CompilerEngine::Library::getOutputDirPath() const{
+  return outputDirPath;
 }
 
 llvm::Expected<std::string> CompilerEngine::Library::emitProgramInfoJSON() {

@@ -315,6 +315,7 @@ DynamicModule::~DynamicModule() {
 Result<std::shared_ptr<DynamicModule>>
 DynamicModule::open(std::string outputPath) {
   std::shared_ptr<DynamicModule> module = std::make_shared<DynamicModule>();
+  auto ddd  = CompilerEngine::Library::getSharedLibraryPath(outputPath);
   module->libraryHandle =
       dlopen(CompilerEngine::Library::getSharedLibraryPath(outputPath).c_str(),
              RTLD_LAZY);
@@ -334,7 +335,10 @@ size_t getGateDescriptionSize(const concreteprotocol::GateInfo &gateInfo, bool u
   } else if (gateInfo.has_plaintext()) {
     shape = gateInfo.plaintext().shape();
   } else if (gateInfo.has_lweciphertext()) {
+    // In the case of an lwe ciphertext gate, the shape of the input is always the concrete shape
+    // plus one dimension for the lwe size (the actual size does not matter here).
     shape = gateInfo.lweciphertext().concreteshape();
+    shape.mutable_dimensions()->Add(0);
   }
   if (shape.dimensions_size() == 0) {
     return 1;
@@ -542,7 +546,7 @@ void ServerCircuit::invoke() {
 
 Result<ServerProgram>
 ServerProgram::load(const concreteprotocol::ProgramInfo &programInfo,
-                    std::string &sharedLibPath, bool useSimulation) {
+                    const std::string &sharedLibPath, bool useSimulation) {
   ServerProgram output;
   OUTCOME_TRY(auto dynamicModule, DynamicModule::open(sharedLibPath));
   auto sharedDynamicModule = std::shared_ptr<DynamicModule>(dynamicModule);
@@ -556,11 +560,11 @@ ServerProgram::load(const concreteprotocol::ProgramInfo &programInfo,
   return output;
 }
 
-Result<std::reference_wrapper<ServerCircuit>>
+Result<ServerCircuit>
 ServerProgram::getServerCircuit(const std::string &circuitName) {
   for (auto serverCircuit : serverCircuits) {
     if (serverCircuit.getName() == circuitName) {
-      return std::reference_wrapper<ServerCircuit>(serverCircuit);
+      return serverCircuit;
     }
   }
     return StringError("Tried to get unknown server circuit: `" + circuitName + "`");

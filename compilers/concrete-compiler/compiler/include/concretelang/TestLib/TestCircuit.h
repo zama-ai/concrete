@@ -17,6 +17,7 @@
 #include "concretelang/Common/Values.h"
 #include "concretelang/ServerLib/ServerLib.h"
 #include <memory>
+#include <ostream>
 
 using concretelang::clientlib::ClientCircuit;
 using concretelang::clientlib::ClientProgram;
@@ -37,14 +38,13 @@ class TestCircuit {
 public:
   static Result<TestCircuit> create(Keyset keyset,
                                     const concreteprotocol::ProgramInfo &programInfo,
-                                    std::string &sharedLibPath,
+                                    const std::string &sharedLibPath,
                                     uint64_t seedMsb, uint64_t seedLsb,
                                     bool useSimulation = false) {
     OUTCOME_TRY(auto serverProgram,
                 ServerProgram::load(programInfo, sharedLibPath, useSimulation));
-    OUTCOME_TRY(auto serverCircuitRef,
+    OUTCOME_TRY(auto serverCircuit,
                 serverProgram.getServerCircuit(programInfo.circuits(0).name()));
-    auto serverCircuit = ServerCircuit(serverCircuitRef);
     __uint128_t seed = seedMsb;
     seed <<= 64;
     seed += seedLsb;
@@ -52,9 +52,8 @@ public:
     OUTCOME_TRY(auto clientProgram,
                 ClientProgram::create(programInfo, keyset.client, csprng,
                                       useSimulation));
-    OUTCOME_TRY(auto clientCircuitRef,
+    OUTCOME_TRY(auto clientCircuit,
                 clientProgram.getClientCircuit(programInfo.circuits(0).name()));
-    auto clientCircuit = ClientCircuit(clientCircuitRef);
     auto preparedArgs =
         std::vector<TransportValue>(programInfo.circuits(0).inputs_size());
     return TestCircuit{clientCircuit, serverCircuit, preparedArgs,
@@ -76,6 +75,8 @@ public:
     if (useSimulation) {
       returns = serverCircuit.simulate(preparedArgs).value();
     } else {
+      auto ret = serverCircuit.call(keyset.server, preparedArgs).as_failure();
+      std::cout << ret.error().mesg << std::flush;
       returns = serverCircuit.call(keyset.server, preparedArgs).value();
     }
     std::vector<Value> processedOutputs(returns.size());

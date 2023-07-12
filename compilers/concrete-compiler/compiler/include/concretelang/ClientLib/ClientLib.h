@@ -65,7 +65,7 @@ public:
   static Result<ClientProgram> create(const concreteprotocol::ProgramInfo &info, const ClientKeyset &keyset, CSPRNG& csprng, bool useSimulation = false);
 
   /// Returns a reference to the named client circuit if it exists.
-  Result<std::reference_wrapper<ClientCircuit>> getClientCircuit(std::string circuitName);
+  Result<ClientCircuit> getClientCircuit(std::string circuitName);
 
 private:
   ClientProgram() = default;

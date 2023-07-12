@@ -170,7 +170,10 @@ public:
     std::string staticLibraryPath;
 
     /// Returns the program info of the library.
-    const concreteprotocol::ProgramInfo &getProgramInfo() const;
+    concreteprotocol::ProgramInfo getProgramInfo() const;
+
+    /// Returns the path to the output dir.
+    const std::string &getOutputDirPath() const;
 
     /// Returns the path of the shared library
     static std::string getSharedLibraryPath(std::string outputDirPath);

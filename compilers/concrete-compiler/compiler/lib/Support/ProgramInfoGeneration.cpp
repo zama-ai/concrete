@@ -60,7 +60,7 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
         type.cast<TFHE::GLWECipherTextType>().getKey().getNormalized().value();
 
     auto lweGateInfo = new concreteprotocol::LweCiphertextGateInfo{};
-    auto concreteShape = encoding.release_shape();
+    auto concreteShape = new concreteprotocol::Shape(encoding.shape());
     if (encoding.integerciphertext().has_chunked()) {
       concreteShape->mutable_dimensions()->Add(
           encoding.integerciphertext().chunked().size());
@@ -80,18 +80,20 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
     encryptionInfo->set_allocated_modulus(modulus);
     lweGateInfo->set_allocated_encryption(encryptionInfo);
     lweGateInfo->set_compression(concreteprotocol::Compression::none);
-    lweGateInfo->set_allocated_integer(encoding.release_integerciphertext());
+    lweGateInfo->set_allocated_integer(new concreteprotocol::IntegerCiphertextEncodingInfo(encoding.integerciphertext()));
     auto rawInfo = new concreteprotocol::RawInfo();
     rawInfo->set_integerprecision(64);
     rawInfo->set_issigned(false);
-    rawInfo->set_allocated_shape(new concreteprotocol::Shape(*concreteShape));
+    auto rawShape = new concreteprotocol::Shape(*concreteShape);
+    rawShape->mutable_dimensions()->Add(normKey.dimension+1);
+    rawInfo->set_allocated_shape(rawShape);
     output.set_allocated_rawinfo(rawInfo);
     output.set_allocated_lweciphertext(lweGateInfo);
   } else if (encoding.has_booleanciphertext()) {
     auto glweType = type.cast<TFHE::GLWECipherTextType>();
     auto normKey = glweType.getKey().getNormalized().value();
     auto lweGateInfo = new concreteprotocol::LweCiphertextGateInfo{};
-    auto concreteShape = encoding.release_shape();
+    auto concreteShape = new concreteprotocol::Shape(encoding.shape());
     lweGateInfo->set_allocated_concreteshape(concreteShape);
     lweGateInfo->set_integerprecision(64);
     auto encryptionInfo = new concreteprotocol::LweCiphertextEncryptionInfo{};
@@ -103,16 +105,18 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
     encryptionInfo->set_allocated_modulus(modulus);
     lweGateInfo->set_allocated_encryption(encryptionInfo);
     lweGateInfo->set_compression(concreteprotocol::Compression::none);
-    lweGateInfo->set_allocated_boolean(encoding.release_booleanciphertext());
+    lweGateInfo->set_allocated_boolean(new concreteprotocol::BooleanCiphertextEncodingInfo(encoding.booleanciphertext()));
     auto rawInfo = new concreteprotocol::RawInfo();
     rawInfo->set_integerprecision(64);
     rawInfo->set_issigned(false);
-    rawInfo->set_allocated_shape(new concreteprotocol::Shape(*concreteShape));
+    auto rawShape = new concreteprotocol::Shape(*concreteShape);
+    rawShape->mutable_dimensions()->Add(normKey.dimension+1);
+    rawInfo->set_allocated_shape(rawShape);
     output.set_allocated_rawinfo(rawInfo);
     output.set_allocated_lweciphertext(lweGateInfo);
   } else if (encoding.has_plaintext()) {
     auto plaintextGateInfo = new concreteprotocol::PlaintextGateInfo{};
-    auto shape = encoding.release_shape();
+    auto shape = new concreteprotocol::Shape(encoding.shape());
     plaintextGateInfo->set_allocated_shape(shape);
     plaintextGateInfo->set_integerprecision(::concretelang::values::getCorrespondingPrecision(type.getIntOrFloatBitWidth()));
     plaintextGateInfo->set_issigned(type.isSignedInteger());
@@ -127,7 +131,7 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
     // so actually we assume we target only 64 bits, we need to have
     // some the size of the word of the target system.
     auto indexGateInfo = new concreteprotocol::IndexGateInfo{};
-    auto shape = encoding.release_shape();
+    auto shape = new concreteprotocol::Shape(encoding.shape());
     indexGateInfo->set_allocated_shape(shape);
     indexGateInfo->set_integerprecision(64);
     indexGateInfo->set_issigned(type.isSignedInteger());

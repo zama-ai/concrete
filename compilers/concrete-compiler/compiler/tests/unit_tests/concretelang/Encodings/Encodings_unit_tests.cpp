@@ -72,8 +72,12 @@ template <typename Info> std::string outputLibFromThis(Info *info) {
 }
 
 TestCircuit load(mlir::concretelang::CompilerEngine::Library compiled) {
-  auto keyset = getTestKeySetCachePtr()->getKeyset(compiled.getProgramInfo().keyset(), 0, 0).value();
-  return TestCircuit::create(keyset, compiled.getProgramInfo(), compiled.sharedLibraryPath, 0, 0, false).value();
+  auto keyset = getTestKeySetCachePtr()
+                    ->getKeyset(compiled.getProgramInfo().keyset(), 0, 0)
+                    .value();
+  return TestCircuit::create(keyset, compiled.getProgramInfo(),
+                             compiled.sharedLibraryPath, 0, 0, false)
+      .value();
 }
 
 TEST(Encodings_unit_tests, multi_key) {

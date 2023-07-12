@@ -60,7 +60,7 @@ TestCircuit load(mlir::concretelang::CompilerEngine::Library compiled) {
                     ->getKeyset(compiled.getProgramInfo().keyset(), 0, 0)
                     .value();
   return TestCircuit::create(keyset, compiled.getProgramInfo(),
-                             compiled.sharedLibraryPath, 0, 0, false)
+                             compiled.getOutputDirPath(), 0, 0, false)
       .value();
 }
 
@@ -98,7 +98,8 @@ func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
 }
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
-  auto circuit = load(compile(outputLib, source));
+  auto compiled = compile(outputLib, source);
+  auto circuit = load(compiled);
   for (auto a : values_7bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());

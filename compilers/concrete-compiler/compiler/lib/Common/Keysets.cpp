@@ -84,27 +84,23 @@ concreteprotocol::ServerKeyset ServerKeyset::toProto() {
 
 
 Keyset::Keyset(const concreteprotocol::KeysetInfo &info, CSPRNG &csprng) {
-  auto lweSecretKeys = std::vector<LweSecretKey>();
   for (auto keyInfo : info.lwesecretkeys()) {
-    lweSecretKeys.push_back(LweSecretKey(keyInfo, csprng));
+    client.lweSecretKeys.push_back(LweSecretKey(keyInfo, csprng));
   }
-  auto lweBootstrapKeys = std::vector<LweBootstrapKey>();
   for (auto keyInfo : info.lwebootstrapkeys()) {
-    lweBootstrapKeys.push_back(
-        LweBootstrapKey(keyInfo, lweSecretKeys[keyInfo.inputid()],
-                        lweSecretKeys[keyInfo.outputid()], csprng));
+    server.lweBootstrapKeys.push_back(
+        LweBootstrapKey(keyInfo, client.lweSecretKeys[keyInfo.inputid()],
+                        client.lweSecretKeys[keyInfo.outputid()], csprng));
   }
-  auto lweKeyswitchKeys = std::vector<LweKeyswitchKey>();
   for (auto keyInfo : info.lwekeyswitchkeys()) {
-    lweKeyswitchKeys.push_back(
-        LweKeyswitchKey(keyInfo, lweSecretKeys[keyInfo.inputid()],
-                        lweSecretKeys[keyInfo.outputid()], csprng));
+    server.lweKeyswitchKeys.push_back(
+        LweKeyswitchKey(keyInfo, client.lweSecretKeys[keyInfo.inputid()],
+                        client.lweSecretKeys[keyInfo.outputid()], csprng));
   }
-  auto packingKeyswitchKeys = std::vector<PackingKeyswitchKey>();
   for (auto keyInfo : info.packingkeyswitchkeys()) {
-    packingKeyswitchKeys.push_back(
-        PackingKeyswitchKey(keyInfo, lweSecretKeys[keyInfo.inputid()],
-                            lweSecretKeys[keyInfo.outputid()], csprng));
+    server.packingKeyswitchKeys.push_back(
+        PackingKeyswitchKey(keyInfo, client.lweSecretKeys[keyInfo.inputid()],
+                            client.lweSecretKeys[keyInfo.outputid()], csprng));
   }
 }
 
@@ -142,7 +138,7 @@ Result<Key> loadKey(std::string path) {
 
 template <typename ProtoKey, typename Key>
 Result<void> saveKey(Key key, std::string path) {
-  int fd = open(path.c_str(), O_WRONLY);
+  int fd = creat(path.c_str(), O_WRONLY);
   if (fd == -1) {
     return StringError("Cannot open " + path);
   }
@@ -246,7 +242,7 @@ Result<void> saveKeys(Keyset &keyset, llvm::SmallString<0> &folderPath) {
   // Save LWE secret keys
   for (auto key : clientKeyset.lweSecretKeys) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "secretKey_" + key.getInfo().id());
+    llvm::sys::path::append(path, "secretKey_" + std::to_string(key.getInfo().id()));
     OUTCOME_TRYV(
         saveKey<concreteprotocol::LweSecretKey, LweSecretKey>(key, path.c_str()));
   }
