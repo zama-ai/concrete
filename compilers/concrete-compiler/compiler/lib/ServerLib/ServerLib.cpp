@@ -170,7 +170,7 @@ struct ScalarDescriptor {
     }
     // Todo : Verify if this is really necessary.
     uint64_t mask = ((uint64_t)1 << width) - 1;
-    uint64_t val = ((uint64_t)val) & mask;
+    uint64_t val = ((uint64_t) value) & mask;
     return ScalarDescriptor{sizeof(T) * 8, std::is_signed<T>(), val};
   }
 
