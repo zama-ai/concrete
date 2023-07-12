@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'release/*'
     tags:
       - 'v[0-9]+.*'
   schedule:
@@ -145,7 +146,7 @@ jobs:
       
       - name: Set some github event outputs
         id: github
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'release'))
         run: echo "push-main=true" >> "$GITHUB_OUTPUT"
 
 #################################################
