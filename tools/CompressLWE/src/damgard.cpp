@@ -1,9 +1,12 @@
-#include "defines.h"
+#include "compress_lwe/defines.h"
 #include <gmp.h> // gmp is included implicitly
+#include <gmpxx.h>
 #include <iostream>
 #include <libhcs++.hpp> // master header includes everything
 #include <vector>
 using namespace std;
+
+typedef std::vector<mpz_class> mpz_vec;
 
 int main() {
 
@@ -15,8 +18,7 @@ int main() {
 
   vector<uint64_t> sk(n, 1);
   //////////////////////////////
-  hcs::random hr;
-  ;
+  auto hr = std::make_shared<hcs::random>();
 
   // initialize data structures
   hcs::djcs::public_key pk(hr);

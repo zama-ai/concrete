@@ -8,11 +8,14 @@
 #include "defines.h"
 #include <cmath>
 
+namespace comp {
+
 // helper to sample a random uint64_t
 uint64_t sample(uint64_t log_q);
 
 // uncompressed LWE decryption function, for testing purposes
-mpz_class decryptLWE(std::vector<uint64_t> lwe_ct,
-                     std::vector<uint64_t> lwe_key, LWEParams &params);
+uint64_t decryptLWE(const uint64_t *lwe_ct, std::vector<uint64_t> lwe_key);
+
+} // namespace comp
 
 #endif // COMPRESSLWE_UTILS_H

@@ -4,18 +4,14 @@ project(damgard)
 set(CMAKE_CXX_STANDARD 17)
 include(FindPackageHandleStandardArgs)
 
-# Find HCS
-find_path(HCS_INCLUDE_DIR libhcs++.hpp)
-find_library(HCS_LIBRARY NAMES hcs)
-find_package_handle_standard_args(HCS DEFAULT_MSG HCS_INCLUDE_DIR HCS_LIBRARY)
-mark_as_advanced(HCS_INCLUDE_DIR HCS_LIBRARY)
-if(HCS_FOUND)
-    message("HCS found")
-    include_directories(${HCS_INCLUDE_DIR})
-    set(EXTRA_LIBS ${EXTRA_LIBS} ${HCS_LIBRARY})
-else()
-    message("HCS not found")
-endif()
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+add_subdirectory(libhcs)
+include_directories(libhcs/include)
+include_directories(include)
+
+set(CMAKE_BUILD_TYPE Release)
+set(EXTRA_LIBS ${EXTRA_LIBS} hcs omp)
 
 # Find GMP
 find_path(GMP_INCLUDE_DIR gmp.h)
@@ -31,23 +27,27 @@ else()
 endif()
 
 find_package(OpenMP)
-# Your source files
-set(SOURCE_FILES defines.h library.cpp library.h utils.cpp utils.h)
-add_executable(compresslwe main.cpp ${SOURCE_FILES})
-add_executable(tests tests.cpp ${SOURCE_FILES})
+
+add_library(compresslwe STATIC src/defines.cpp src/library.cpp src/utils.cpp src/serialize.cpp)
+
+add_executable(main src/main.cpp)
+add_executable(tests src/tests.cpp)
 # Link your application with the HCS library
-add_executable(damgard damgard.cpp ${SOURCE_FILES})
+add_executable(damgard src/damgard.cpp)
 target_link_libraries(damgard ${EXTRA_LIBS})
-target_link_libraries(compresslwe ${EXTRA_LIBS})
+target_link_libraries(main ${EXTRA_LIBS})
 target_link_libraries(tests ${EXTRA_LIBS})
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(compresslwe
+    target_link_libraries(main
             # OpenMP::OpenMP_CXX is an imported target with INTERFACE_**
-            $<$<CONFIG:Release>:OpenMP::OpenMP_CXX> )
+            $<$<CONFIG:Release>:OpenMP::OpenMP_CXX> compresslwe hcs)
     target_link_libraries(damgard
             # OpenMP::OpenMP_CXX is an imported target with INTERFACE_**
-            $<$<CONFIG:Release>:OpenMP::OpenMP_CXX> )
+            $<$<CONFIG:Release>:OpenMP::OpenMP_CXX> compresslwe hcs)
     target_link_libraries(tests
             # OpenMP::OpenMP_CXX is an imported target with INTERFACE_**
-            $<$<CONFIG:Release>:OpenMP::OpenMP_CXX> )
+            $<$<CONFIG:Release>:OpenMP::OpenMP_CXX> compresslwe hcs)
 endif()
+
+install(TARGETS compresslwe EXPORT compresslwe)
+install(EXPORT compresslwe DESTINATION ${CMAKE_INSTALL_PREFIX})

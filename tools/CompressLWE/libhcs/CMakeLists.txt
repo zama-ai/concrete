@@ -54,7 +54,7 @@ endif (${IsBigEndian})
 # END: Project configuration
 
 # BEGIN: Build commands
-add_library(${LIBRARY_NAME} SHARED ${srcs})
+add_library(${LIBRARY_NAME} STATIC ${srcs})
 target_link_libraries(${LIBRARY_NAME} ${GMP_LIBRARY} ${GMPXX_LIBRARY})
 # END: Build commands
 

@@ -1,39 +1,40 @@
-#ifndef LIBRARY_H
-#define LIBRARY_H
+#ifndef COMPRESSLWE_LIBRARY_H
+#define COMPRESSLWE_LIBRARY_H
 
+#include "defines.h"
 #include "utils.h"
+#include <cstdint>
+#include <vector>
 
-mpz_class compressSingle(mpz_vec &compressionKey, hcs::djcs::public_key &ahe_pk,
-                         std::vector<uint64_t> &lweCt, LWEParams &params);
+namespace comp {
+comp::mpz compressSingle(comp::CompressionKey &compressionKey,
+                         const uint64_t *lweCt, uint64_t lwe_dim);
 
-[[maybe_unused]] mpz_class compressMPZ(mpz_vec &compressionKey,
-                                       hcs::djcs::public_key &ahe_pk,
-                                       mpz_vec &lweCt, LWEParams &params);
+[[maybe_unused]] comp::mpz compressMPZ(comp::CompressionKey &compressionKey,
+                                       comp::mpz_vec &lweCt);
 
-CompressedCiphertext compressBatchedEncryptFirst(
-    mpz_vec &compressionKey, hcs::djcs::public_key &ahe_pk,
-    std::vector<std::vector<uint64_t>> &cts, LWEParams &params);
+comp::CompressedCiphertext
+compressBatchedEncryptFirst(comp::CompressionKey &compressionKey,
+                            const uint64_t *cts, uint64_t lwe_dim,
+                            uint64_t ct_count);
 
-CompressedCiphertext compressBatchedScaleFirst(
-    mpz_vec &compressionKey, hcs::djcs::public_key &ahe_pk,
-    std::vector<std::vector<uint64_t>> &cts, LWEParams &params);
+comp::CompressedCiphertext
+compressBatchedScaleFirst(comp::CompressionKey &compressionKey,
+                          const uint64_t *cts, uint64_t lwe_dim,
+                          uint64_t ct_count);
 
-CompressedCiphertext compressBatched(mpz_vec &compressionKey,
-                                     hcs::djcs::public_key &ahe_pk,
-                                     std::vector<std::vector<uint64_t>> &cts,
-                                     LWEParams &params);
+comp::CompressedCiphertext compressBatched(comp::CompressionKey &compressionKey,
+                                           const uint64_t *cts,
+                                           uint64_t lwe_dim, uint64_t ct_count);
 
-mpz_class decryptCompressedSingle(mpz_class &resultCt,
-                                  hcs::djcs::private_key &ahe_sk,
-                                  LWEParams &params);
+uint64_t decryptCompressedSingle(comp::mpz &resultCt, comp::PrivateKey &ahe_sk);
 
-mpz_vec decryptCompressedBatched(CompressedCiphertext &compressedCiphertext,
-                                 hcs::djcs::private_key &ahe_sk,
-                                 LWEParams &params, uint64_t ciphers,
-                                 bool reverse = true);
+std::vector<uint64_t>
+decryptCompressedBatched(comp::CompressedCiphertext &compressedCiphertext,
+                         comp::PrivateKey &ahe_sk, uint64_t ciphers);
 
-Keys *generateKeys(std::vector<uint64_t> &lweKey, size_t s = 3);
+comp::FullKeys generateKeys(const std::vector<uint64_t> &lweKey, size_t s = 3);
 
-void finalizeDecryption(mpz_class &res, LWEParams &params);
+} // namespace comp
 
-#endif // LIBRARY_H
+#endif // COMPRESSLWE_LIBRARY_H

@@ -1,8 +1,12 @@
-#include "library.h"
+#include "compress_lwe/library.h"
 #include <cassert>
+#include <cstdint>
 #include <iostream>
+#include <libhcs++.hpp>
+#include <vector>
 
 using namespace std;
+using namespace comp;
 
 int main() {
   // LWE parameters
@@ -28,35 +32,38 @@ int main() {
 
   // Generate a batch of lwe ciphertexts
   uint64_t num_cts = 10;
-  std::vector<std::vector<uint64_t>> lwe_cts(num_cts);
-  for (int i = 0; i < num_cts; i++) {
-    lwe_cts[i] = std::vector<uint64_t>(n + 1);
-    for (int j = 0; j < n + 1; j++) {
-      lwe_cts[i][j] = sample(log_q);
-    }
+  std::vector<uint64_t> lwe_cts(num_cts * (n + 1));
+  for (int i = 0; i < num_cts * (n + 1); i++) {
+    lwe_cts[i] = sample(log_q);
   }
 
   // 1- Cast LWE params and Generate Paillier and Compression keys
   // s is a parameter which controls how compressed the ciphertexts are
   // The higher s is, the more compression is achieved
   // However, the higher s is, the more time it takes to compress
-  LWEParams params(n, log_q, p, binaryKeys);
-  Keys *keys = generateKeys(lwe_decryption_key, s);
+
+  FullKeys keys = generateKeys(lwe_decryption_key, s);
+
+  CompressionKey key = keys.compression_key();
 
   // 2- Compress a batch of LWE ciphertexts into 1 CompressedCiphertext [which
   // is a vector of additive ciphers under the hood]
   CompressedCiphertext compressed_ct =
-      compressBatched(keys->compKey, keys->ahe_pk, lwe_cts, params);
+      compressBatched(key, lwe_cts.data(), n, num_cts);
 
   // 3- Decrypt the batch of compressed ciphertexts
-  mpz_vec decrypted = decryptCompressedBatched(compressed_ct, keys->ahe_sk,
-                                               params, num_cts, true);
+  std::vector<uint64_t> decrypted =
+      decryptCompressedBatched(compressed_ct, *keys.ahe_sk, num_cts);
 
   // Make sure decryption works correctly
   for (uint64_t i = 0; i < num_cts; i++) {
-    mpz_class lwe_decrypted =
-        decryptLWE(lwe_cts[i], lwe_decryption_key, params);
-    assert(decrypted[i] == lwe_decrypted);
+    uint64_t lwe_decrypted =
+        decryptLWE(lwe_cts.data() + (i * (n + 1)), lwe_decryption_key);
+
+    std::cout << decrypted[i] << " = " << lwe_decrypted << std::endl;
+    if (decrypted[i] != lwe_decrypted) {
+      exit(-1);
+    }
   }
   std::cout << "Batched Test Passed!" << std::endl;
 

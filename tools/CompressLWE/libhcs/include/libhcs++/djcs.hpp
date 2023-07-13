@@ -7,15 +7,19 @@
 #ifndef HCS_DJCS_HPP
 #define HCS_DJCS_HPP
 
-#include <string.h>
-#include <gmpxx.h>
 #include "../libhcs/djcs.h"
 #include "random.hpp"
+#include <algorithm>
+#include <gmpxx.h>
+#include <iostream>
+#include <memory>
+#include <string.h>
 
 /*
- * We do not manage the memory associated with an hcs::random class here, and it
- * is up to the caller to ensure that the hcs::random associated has the same
- * lifetime as the public/private key.
+ * We do not manage the memory associated with an std::shared_ptr<hcs::random>
+ * class here, and it is up to the caller to ensure that the
+ * std::shared_ptr<hcs::random> associated has the same lifetime as the
+ * public/private key.
  */
 
 namespace hcs {
@@ -24,116 +28,96 @@ namespace djcs {
 class public_key {
 
 private:
-    djcs_public_key *pk;
-    hcs::random *hr;
+  djcs_public_key *pk;
+  std::shared_ptr<hcs::random> hr;
 
 public:
-    public_key(hcs::random &hr_) {
-        pk = djcs_init_public_key();
-        hr = &hr_;
-        hr->inc_refcount();
-    }
+  public_key() = delete;
+  public_key(const public_key &) = delete;
 
-    ~public_key() {
-        djcs_free_public_key(pk);
-        hr->dec_refcount();
-    }
+  public_key(std::shared_ptr<hcs::random> hr_) {
+    pk = djcs_init_public_key();
+    hr = hr_;
+  }
 
-    djcs_public_key* as_ptr() {
-        return pk;
-    }
+  ~public_key() { djcs_free_public_key(pk); }
 
-    hcs_random* get_rand() {
-        return hr->as_ptr();
-    }
+  djcs_public_key *as_ptr() { return pk; }
 
-    /* Encryption functions acting on a key */
-    void encrypt(mpz_class &rop, mpz_class &op) {
-        djcs_encrypt(pk, hr->as_ptr(), rop.get_mpz_t(), op.get_mpz_t());
-    }
+  hcs_random *get_rand() { return hr->as_ptr(); }
 
-    void reencrypt(mpz_class &rop, mpz_class &op) {
-        djcs_reencrypt(pk, hr->as_ptr(), rop.get_mpz_t(), op.get_mpz_t());
-    }
+  /* Encryption functions acting on a key */
+  void encrypt(mpz_class &rop, mpz_class &op) {
+    djcs_encrypt(pk, hr->as_ptr(), rop.get_mpz_t(), op.get_mpz_t());
+  }
 
-    void ep_add(mpz_class &rop, mpz_class &c1, mpz_class &c2) {
-        djcs_ep_add(pk, rop.get_mpz_t(), c1.get_mpz_t(), c2.get_mpz_t());
-    }
+  void reencrypt(mpz_class &rop, mpz_class &op) {
+    djcs_reencrypt(pk, hr->as_ptr(), rop.get_mpz_t(), op.get_mpz_t());
+  }
 
-    void ee_add(mpz_class &rop, mpz_class &c1, mpz_class &c2) {
-        djcs_ee_add(pk, rop.get_mpz_t(), c1.get_mpz_t(), c2.get_mpz_t());
-    }
+  void ep_add(mpz_class &rop, mpz_class &c1, mpz_class &c2) {
+    djcs_ep_add(pk, rop.get_mpz_t(), c1.get_mpz_t(), c2.get_mpz_t());
+  }
 
-    void ep_mul(mpz_class &rop, mpz_class &c1, mpz_class &p1) {
-        djcs_ep_mul(pk, rop.get_mpz_t(), c1.get_mpz_t(), p1.get_mpz_t());
-    }
+  void ee_add(mpz_class &rop, mpz_class &c1, mpz_class &c2) {
+    djcs_ee_add(pk, rop.get_mpz_t(), c1.get_mpz_t(), c2.get_mpz_t());
+  }
 
-    void clear() {
-        djcs_clear_public_key(pk);
-    }
+  void ep_mul(mpz_class &rop, mpz_class &c1, mpz_class &p1) {
+    djcs_ep_mul(pk, rop.get_mpz_t(), c1.get_mpz_t(), p1.get_mpz_t());
+  }
 
-    std::string export_json() {
-        return std::string(djcs_export_public_key(pk));
-    }
+  void clear() { djcs_clear_public_key(pk); }
 
-    int import_json(std::string &json) {
-        return djcs_import_public_key(pk, json.c_str());
-    }
+  std::string export_json() { return std::string(djcs_export_public_key(pk)); }
+
+  int import_json(std::string &json) {
+    return djcs_import_public_key(pk, json.c_str());
+  }
 };
 
 class private_key {
 
 private:
-    djcs_private_key *vk;
-    hcs::random *hr;
+  djcs_private_key *vk;
+  std::shared_ptr<hcs::random> hr;
 
 public:
-    private_key(hcs::random &hr_) {
-        vk = djcs_init_private_key();
-        hr = &hr_;
-        hr->inc_refcount();
-    }
+  private_key() = delete;
+  private_key(const private_key &) = delete;
+  private_key(std::shared_ptr<hcs::random> &hr_) {
+    vk = djcs_init_private_key();
+    hr = hr_;
+  }
 
-    ~private_key() {
-        djcs_free_private_key(vk);
-        hr->dec_refcount();
-    }
+  ~private_key() { djcs_free_private_key(vk); }
 
-    djcs_private_key* as_ptr() {
-        return vk;
-    }
+  djcs_private_key *as_ptr() { return vk; }
 
-    hcs_random* get_rand() {
-        return hr->as_ptr();
-    }
+  hcs_random *get_rand() { return hr->as_ptr(); }
 
-    void decrypt(mpz_class &rop, mpz_class &c1) {
-        djcs_decrypt(vk, rop.get_mpz_t(), c1.get_mpz_t());
-    }
+  void decrypt(mpz_class &rop, mpz_class &c1) {
+    djcs_decrypt(vk, rop.get_mpz_t(), c1.get_mpz_t());
+  }
 
-    void clear() {
-        djcs_clear_private_key(vk);
-    }
+  void clear() { djcs_clear_private_key(vk); }
 
-    std::string export_json() {
-        return std::string(djcs_export_private_key(vk));
-    }
+  std::string export_json() { return std::string(djcs_export_private_key(vk)); }
 
-    int import_json(std::string &json) {
-        return djcs_import_private_key(vk, json.c_str());
-    }
+  int import_json(std::string &json) {
+    return djcs_import_private_key(vk, json.c_str());
+  }
 };
 
-inline void generate_key_pair(public_key &pk, private_key &vk,const unsigned long s,
-        const unsigned long bits)
-{
-    djcs_generate_key_pair(pk.as_ptr(), vk.as_ptr(), vk.get_rand(), s, bits);
+inline void generate_key_pair(public_key &pk, private_key &vk,
+                              const unsigned long s, const unsigned long bits) {
+  djcs_generate_key_pair(pk.as_ptr(), vk.as_ptr(), vk.get_rand(), s, bits);
 }
 
 inline int verify_key_pair(public_key &pk, private_key &vk) {
-    return djcs_verify_key_pair(pk.as_ptr(), vk.as_ptr());
+  return djcs_verify_key_pair(pk.as_ptr(), vk.as_ptr());
 }
 
-} // djcs namespace
-} // hcs namespace
+} // namespace djcs
+} // namespace hcs
 #endif

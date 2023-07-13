@@ -14,39 +14,19 @@ namespace hcs {
 class random {
 
 private:
-    hcs_random *hr;
-    int refcount;   // Counts the number of times this particular instance is counted
+  hcs_random *hr;
 
 public:
-    random() : refcount(0) {
-        hr = hcs_init_random();
-    }
+  random(const random &) = delete;
+  random() { hr = hcs_init_random(); }
 
-    ~random() {
-        hcs_free_random(hr);
-    }
+  ~random() { hcs_free_random(hr); }
 
-    int reseed() {
-        return hcs_reseed_random(hr);
-    }
+  int reseed() { return hcs_reseed_random(hr); }
 
-    void inc_refcount() {
-        refcount++;
-    }
-
-    bool dec_refcount() {
-        return refcount > 0 ? --refcount != 0 : false;
-    }
-
-    bool is_referenced() {
-        return refcount != 0;
-    }
-
-    hcs_random* as_ptr() {
-        return hr;
-    }
+  hcs_random *as_ptr() { return hr; }
 };
 
-} // hcs namespace
+} // namespace hcs
 
 #endif
