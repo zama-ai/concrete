@@ -21,7 +21,6 @@ namespace protocol {
 /// Helper function turning a protocol `Shape` object into a vector of dimensions.
 std::vector<size_t> protoShapeToDimensions(const concreteprotocol::Shape &shape) {
   auto output = std::vector<size_t>();
-  output.resize(shape.dimensions_size());
   for (auto dim : shape.dimensions()) {
     output.push_back(dim);
   }

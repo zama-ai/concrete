@@ -133,7 +133,7 @@ struct MemRefDescriptor {
     return Tensor<T>{values, sizes};
   }
 
-  void intoOpaquePtrs(llvm::MutableArrayRef<void *> opaquePtrs) {
+  void intoOpaquePtrs(llvm::MutableArrayRef<void *> &opaquePtrs) {
     opaquePtrs[0] = allocated;
     opaquePtrs[1] = aligned;
     opaquePtrs[2] = (void *)offset;
@@ -187,7 +187,7 @@ struct ScalarDescriptor {
     return Tensor<T>(values, sizes);
   }
 
-  void intoOpaquePtrs(llvm::MutableArrayRef<void *> opaquePtrs) {
+  void intoOpaquePtrs(llvm::MutableArrayRef<void *> &opaquePtrs) {
     opaquePtrs[0] = (void *)val;
   }
 };
@@ -257,7 +257,7 @@ struct InvocationDescriptor {
     }
   }
 
-  void intoOpaquePtrs(llvm::MutableArrayRef<void *> opaquePtrs) {
+  void intoOpaquePtrs(llvm::MutableArrayRef<void *> &opaquePtrs) {
     if (std::holds_alternative<ScalarDescriptor>(inner)) {
       std::get<ScalarDescriptor>(inner).intoOpaquePtrs(opaquePtrs);
     } else {
@@ -379,7 +379,6 @@ ServerCircuit::call(const ServerKeyset &serverKeyset,
   // We create a runtime context from the keyset, and place a pointer to it in
   // the structure.
   RuntimeContext runtimeContext = RuntimeContext(serverKeyset);
-  _runtimeContextPtr = &runtimeContext;
 
   // We load the processed arguments in the args buffer.
   for (size_t i = 0; i < argsBuffer.size(); i++) {
@@ -388,7 +387,7 @@ ServerCircuit::call(const ServerKeyset &serverKeyset,
 
   // The arguments has been pushed in the arg buffer, we are now ready to
   // invoke the circuit function.
-  invoke();
+  invoke(&runtimeContext);
 
   // We process the return values to turn them into transport values.
   std::vector<TransportValue> returns(returnsBuffer.size());
@@ -467,46 +466,52 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
   output.argsBuffer = std::vector<Value>(circuitInfo.inputs_size());
   output.returnsBuffer = std::vector<Value>(circuitInfo.outputs_size());
 
-  size_t argRawSize = 0;
+  output.argRawSize = 0;
   for (auto gateInfo : circuitInfo.inputs()) {
-    argRawSize += getGateDescriptionSize(gateInfo, useSimulation);
-  }
-  output._argRaws = std::vector<void *>(argRawSize);
-  output._argRawMaps = std::vector<llvm::MutableArrayRef<void *>>();
-  size_t currentRawIndex = 0;
-  for (auto gateInfo : circuitInfo.inputs()) {
-    size_t descriptorSize = getGateDescriptionSize(gateInfo, useSimulation);
-    auto map = llvm::MutableArrayRef<void *>(&output._argRaws[currentRawIndex],
-                                             descriptorSize);
-    output._argRawMaps.push_back(map);
-    currentRawIndex += descriptorSize;
+    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation); 
+    output.argDescriptorSizes.push_back(descriptorSize);
+    output.argRawSize += descriptorSize;
   }
 
-  size_t returnRawSize = 0;
+  output.returnRawSize = 0;
   for (auto gateInfo : circuitInfo.outputs()) {
-    returnRawSize += getGateDescriptionSize(gateInfo, useSimulation);
-  }
-  output._returnRaws = std::vector<uint64_t>(returnRawSize);
-  output._returnRawMaps = std::vector<llvm::ArrayRef<uint64_t>>();
-  currentRawIndex = 0;
-  for (auto gateInfo : circuitInfo.outputs()) {
-    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation);
-    auto map = llvm::ArrayRef<uint64_t>(&output._returnRaws[currentRawIndex],
-                                        descriptorSize);
-    output._returnRawMaps.push_back(map);
-    currentRawIndex += descriptorSize;
-  }
-
-  output._invocationRaws = std::vector<void *>(argRawSize + 2);
-  size_t i = 0;
-  for (auto &arg : output._argRaws) {
-    output._invocationRaws[i++] = &arg;
+    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation); 
+    output.returnDescriptorSizes.push_back(descriptorSize);
+    output.returnRawSize += descriptorSize;
   }
 
   return output;
 }
 
-void ServerCircuit::invoke() {
+void ServerCircuit::invoke(RuntimeContext *_runtimeContextPtr) {
+
+  auto _argRaws = std::vector<void *>(this->argRawSize);
+  auto _argRawMaps = std::vector<llvm::MutableArrayRef<void *>>();
+  size_t currentRawIndex = 0;
+  for (auto descriptorSize : this->argDescriptorSizes) {
+    auto map = llvm::MutableArrayRef<void *>(&_argRaws[currentRawIndex],
+                                             descriptorSize);
+    _argRawMaps.push_back(map);
+    currentRawIndex += descriptorSize;
+  }
+
+  auto _returnRaws = std::vector<uint64_t>(this->returnRawSize);
+  auto _returnRawMaps = std::vector<llvm::ArrayRef<uint64_t>>();
+  currentRawIndex = 0;
+  for (auto descriptorSize : this->returnDescriptorSizes) {
+    auto map = llvm::ArrayRef<uint64_t>(&_returnRaws[currentRawIndex],
+                                        descriptorSize);
+    _returnRawMaps.push_back(map);
+    currentRawIndex += descriptorSize;
+  }
+
+  auto _invocationRaws = std::vector<void *>(this->argRawSize + 2);
+  size_t i = 0;
+  for (auto &arg : _argRaws) {
+    _invocationRaws[i++] = &arg;
+  } 
+  _invocationRaws[i++] = (void *)(&_runtimeContextPtr);
+  _invocationRaws[i++] = reinterpret_cast<void *>(_returnRaws.data());
 
   // We load the argument descriptors in the _argRaws
   for (int i = 0; i < circuitInfo.inputs_size(); i++) {
@@ -516,15 +521,7 @@ void ServerCircuit::invoke() {
     // We write the descriptor in the _argRaws via the maps.
     descriptor.intoOpaquePtrs(_argRawMaps[i]);
   }
-
-  // We make sure that the invocation raws are properly set.
-  _invocationRaws[_argRaws.size() - 1] =
-      reinterpret_cast<void *>(_returnRaws.data());
-  _invocationRaws[_argRaws.size() - 2] = (void *)(&_runtimeContextPtr);
-
-  /// The _argRaws have been properly set up, and the _invocationRaws are
-  /// already correctly pointing at the expected locations of _argRaws and
-  /// _returnRaws. We can invoke the circuit function.
+ 
   func(_invocationRaws.data());
 
   // The circuit has been executed, we can load the results from the

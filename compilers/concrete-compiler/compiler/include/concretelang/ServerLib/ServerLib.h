@@ -67,7 +67,7 @@ private:
                     std::shared_ptr<DynamicModule> dynamicModule, 
                     bool useSimulation);
 
-  void invoke();
+  void invoke(RuntimeContext *_runtimeContextPtr);
 
 private:
   concreteprotocol::CircuitInfo circuitInfo;
@@ -78,12 +78,16 @@ private:
   std::vector<ReturnTransformer> returnTransformers;
   std::vector<Value> argsBuffer;
   std::vector<Value> returnsBuffer;
-  std::vector<llvm::MutableArrayRef<void *>> _argRawMaps;
-  std::vector<llvm::ArrayRef<uint64_t>> _returnRawMaps;
-  std::vector<void *> _argRaws;
-  RuntimeContext * _runtimeContextPtr;
-  std::vector<uint64_t> _returnRaws;
-  std::vector<void *> _invocationRaws;
+  std::vector<size_t> argDescriptorSizes;
+  std::vector<size_t> returnDescriptorSizes;
+  size_t argRawSize;
+  size_t returnRawSize;
+  // std::vector<llvm::MutableArrayRef<void *>> _argRawMaps;
+  // std::vector<llvm::ArrayRef<uint64_t>> _returnRawMaps;
+  // std::vector<void *> _argRaws;
+  // RuntimeContext * _runtimeContextPtr;
+  // std::vector<uint64_t> _returnRaws;
+  // std::vector<void *> _invocationRaws;
 };
 
 /// ServerProgram contains multiple
