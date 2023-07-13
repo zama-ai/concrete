@@ -10,6 +10,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Values.h"
 #include "concretelang/Common/Keysets.h"
+#include <memory>
 #include <stdlib.h>
 
 using concretelang::error::Result;
@@ -71,7 +72,7 @@ public:
   static Result<InputTransformer>
   getLweCiphertextInputTransformer(ClientKeyset keyset,
                                    concreteprotocol::GateInfo gateInfo,
-                                   CSPRNG &csprng, bool useSimulation);
+                                   std::shared_ptr<CSPRNG> csprng, bool useSimulation);
 
   static Result<OutputTransformer>
   getLweCiphertextOutputTransformer(ClientKeyset keyset,

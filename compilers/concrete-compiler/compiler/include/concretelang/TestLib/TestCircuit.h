@@ -48,7 +48,7 @@ public:
     __uint128_t seed = seedMsb;
     seed <<= 64;
     seed += seedLsb;
-    auto csprng = ConcreteCSPRNG(seed);
+    std::shared_ptr<CSPRNG> csprng = std::make_shared<ConcreteCSPRNG>(seed);
     OUTCOME_TRY(auto clientProgram,
                 ClientProgram::create(programInfo, keyset.client, csprng,
                                       useSimulation));

@@ -16,6 +16,7 @@
 #include "boost/outcome.h"
 #include "concrete-cpu.h"
 #include "concrete-protocol.pb.h"
+#include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Common/Keysets.h"
@@ -39,7 +40,7 @@ class ClientCircuit {
 public:
   static Result<ClientCircuit> create(const concreteprotocol::CircuitInfo &info,
                                       const ClientKeyset &keyset,
-                                      CSPRNG &csprng,
+                                      std::shared_ptr<CSPRNG> csprng,
                                       bool useSimulation = false);
 
   Result<TransportValue> prepareInput(Value arg, size_t pos);
@@ -62,7 +63,7 @@ private:
 class ClientProgram {
 public:
   /// Generates a fresh client program with fresh keyset on the first use.
-  static Result<ClientProgram> create(const concreteprotocol::ProgramInfo &info, const ClientKeyset &keyset, CSPRNG& csprng, bool useSimulation = false);
+  static Result<ClientProgram> create(const concreteprotocol::ProgramInfo &info, const ClientKeyset &keyset, std::shared_ptr<CSPRNG> csprng, bool useSimulation = false);
 
   /// Returns a reference to the named client circuit if it exists.
   Result<ClientCircuit> getClientCircuit(std::string circuitName);

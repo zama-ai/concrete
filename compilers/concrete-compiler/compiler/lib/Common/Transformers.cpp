@@ -12,6 +12,7 @@
 #include "concretelang/Common/Values.h"
 #include "concretelang/Runtime/simulation.h"
 #include <google/protobuf/util/message_differencer.h>
+#include <memory>
 #include <stdlib.h>
 
 using concretelang::error::Result;
@@ -412,14 +413,14 @@ Result<Transformer> getCrtModeIntegerDecodingTransformer(
 Result<Transformer>
 getEncryptionTransformer(ClientKeyset keyset,
                          concreteprotocol::LweCiphertextEncryptionInfo info,
-                         CSPRNG &csprng) {
+                         std::shared_ptr<CSPRNG> csprng) {
 
   auto key = keyset.lweSecretKeys[info.keyid()];
   auto lweDimension = info.lwedimension();
   auto lweSize = lweDimension + 1;
   auto variance = info.variance();
 
-  return [=, &csprng](Value input) {
+  return [=](Value input) {
     auto inputTensor = input.getTensor<uint64_t>().value();
     auto outputTensor = Tensor<uint64_t>(inputTensor);
     outputTensor.dimensions.push_back(lweSize);
@@ -428,8 +429,8 @@ getEncryptionTransformer(ClientKeyset keyset,
     for (size_t i = 0; i < inputTensor.values.size(); i++) {
       concrete_cpu_encrypt_lwe_ciphertext_u64(
           key.getRawPtr(), &outputTensor.values[i * lweSize],
-          inputTensor.values[i], lweDimension, variance, csprng.ptr,
-          csprng.vtable);
+          inputTensor.values[i], lweDimension, variance, (*csprng).ptr,
+          (*csprng).vtable);
     }
 
     return Value{outputTensor};
@@ -438,17 +439,17 @@ getEncryptionTransformer(ClientKeyset keyset,
 
 Result<Transformer> getEncryptionSimulationTransformer(
     concreteprotocol::LweCiphertextEncryptionInfo info,
-    CSPRNG &csprng) {
+    std::shared_ptr<CSPRNG> csprng) {
 
   auto lweDimension = info.lwedimension();
 
-  return [=, &csprng](Value input) {
+  return [=](Value input) {
     auto inputTensor = input.getTensor<uint64_t>().value();
     auto outputTensor = Tensor<uint64_t>(inputTensor);
 
     for (size_t i = 0; i < inputTensor.values.size(); i++) {
       outputTensor.values[i] = sim_encrypt_lwe_u64(
-          inputTensor.values[i], lweDimension, (void *)csprng.ptr);
+          inputTensor.values[i], lweDimension, (void *)(*csprng).ptr);
     }
 
     return Value{outputTensor};
@@ -642,7 +643,7 @@ Result<ReturnTransformer> TransformerFactory::getPlaintextReturnTransformer(
 }
 
 Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
-    ClientKeyset keyset, concreteprotocol::GateInfo gateInfo, CSPRNG &csprng,
+    ClientKeyset keyset, concreteprotocol::GateInfo gateInfo, std::shared_ptr<CSPRNG> csprng,
     bool useSimulation) {
   if (!gateInfo.has_lweciphertext()) {
     return StringError("Tried to get lwe ciphertext input transformer from "

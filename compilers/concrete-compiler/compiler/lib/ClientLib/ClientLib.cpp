@@ -36,7 +36,7 @@ namespace clientlib {
 
    Result<ClientCircuit> ClientCircuit::create(const concreteprotocol::CircuitInfo &info,
                                       const ClientKeyset &keyset,
-                                      CSPRNG &csprng,
+                                      std::shared_ptr<CSPRNG> csprng,
                                       bool useSimulation) {
     ClientCircuit output;
 
@@ -101,7 +101,7 @@ namespace clientlib {
   }
 
 
-  Result<ClientProgram> ClientProgram::create(const concreteprotocol::ProgramInfo &info, const ClientKeyset &keyset, CSPRNG& csprng, bool useSimulation){
+  Result<ClientProgram> ClientProgram::create(const concreteprotocol::ProgramInfo &info, const ClientKeyset &keyset, std::shared_ptr<CSPRNG> csprng, bool useSimulation){
     ClientProgram output;
     for (auto circuitInfo : info.circuits()) {
       OUTCOME_TRY(ClientCircuit clientCircuit, ClientCircuit::create(circuitInfo, keyset, csprng, useSimulation));
