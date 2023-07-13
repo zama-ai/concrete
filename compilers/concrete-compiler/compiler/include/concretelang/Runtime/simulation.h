@@ -57,13 +57,34 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
                                uint32_t level, uint32_t base_log,
                                uint32_t glwe_dim);
 
+/// simulate a WoP PBS
+void sim_wop_pbs_crt(
+    // Output 1D memref
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride,
+    // Input 1D memref
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
+    uint64_t in_size, uint64_t in_stride,
+    // clear text lut 2D memref
+    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
+    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
+    // CRT decomposition 1D memref
+    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
+    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
+    uint64_t crt_decomp_stride,
+    // Additional crypto parameters
+    uint32_t lwe_small_dim, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
+    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
+    uint32_t polynomial_size);
+
 void sim_encode_expand_lut_for_boostrap(
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
     uint64_t in_size, uint64_t in_stride, uint64_t *out_allocated,
     uint64_t *out_aligned, uint64_t out_offset, uint64_t out_size,
     uint64_t out_stride, uint32_t poly_size, uint32_t output_bits,
     bool is_signed);
-}
 
 void sim_encode_plaintext_with_crt(uint64_t *output_allocated,
                                    uint64_t *output_aligned,
@@ -73,5 +94,26 @@ void sim_encode_plaintext_with_crt(uint64_t *output_allocated,
                                    uint64_t *mods_aligned, uint64_t mods_offset,
                                    uint64_t mods_size, uint64_t mods_stride,
                                    uint64_t mods_product);
+
+void sim_encode_lut_for_crt_woppbs(
+    // Output encoded/expanded lut
+    uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
+    uint64_t output_lut_offset, uint64_t output_lut_size0,
+    uint64_t output_lut_size1, uint64_t output_lut_stride0,
+    uint64_t output_lut_stride1,
+    // Input lut
+    uint64_t *input_lut_allocated, uint64_t *input_lut_aligned,
+    uint64_t input_lut_offset, uint64_t input_lut_size,
+    uint64_t input_lut_stride,
+    // Crt coprimes
+    uint64_t *crt_decomposition_allocated, uint64_t *crt_decomposition_aligned,
+    uint64_t crt_decomposition_offset, uint64_t crt_decomposition_size,
+    uint64_t crt_decomposition_stride,
+    // Crt number of bits
+    uint64_t *crt_bits_allocated, uint64_t *crt_bits_aligned,
+    uint64_t crt_bits_offset, uint64_t crt_bits_size, uint64_t crt_bits_stride,
+    // Crypto parameters
+    uint32_t modulus_product, bool is_signed);
+}
 
 #endif

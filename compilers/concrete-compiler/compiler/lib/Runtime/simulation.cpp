@@ -93,6 +93,29 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
   return out + gaussian_noise(0, variance);
 }
 
+void sim_wop_pbs_crt(
+    // Output 1D memref
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride,
+    // Input 1D memref
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
+    uint64_t in_size, uint64_t in_stride,
+    // clear text lut 2D memref
+    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size0, uint64_t lut_ct_size1,
+    uint64_t lut_ct_stride0, uint64_t lut_ct_stride1,
+    // CRT decomposition 1D memref
+    uint64_t *crt_decomp_allocated, uint64_t *crt_decomp_aligned,
+    uint64_t crt_decomp_offset, uint64_t crt_decomp_size,
+    uint64_t crt_decomp_stride,
+    // Additional crypto parameters
+    uint32_t lwe_small_dim, uint32_t cbs_level_count, uint32_t cbs_base_log,
+    uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
+    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
+    uint32_t polynomial_size) {
+  // TODO
+}
+
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }
 
 void sim_encode_expand_lut_for_boostrap(
@@ -119,4 +142,35 @@ void sim_encode_plaintext_with_crt(uint64_t *output_allocated,
       output_allocated, output_aligned, output_offset, output_size,
       output_stride, input, mods_allocated, mods_aligned, mods_offset,
       mods_size, mods_stride, mods_product);
+}
+
+void sim_encode_lut_for_crt_woppbs(
+    // Output encoded/expanded lut
+    uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
+    uint64_t output_lut_offset, uint64_t output_lut_size0,
+    uint64_t output_lut_size1, uint64_t output_lut_stride0,
+    uint64_t output_lut_stride1,
+    // Input lut
+    uint64_t *input_lut_allocated, uint64_t *input_lut_aligned,
+    uint64_t input_lut_offset, uint64_t input_lut_size,
+    uint64_t input_lut_stride,
+    // Crt coprimes
+    uint64_t *crt_decomposition_allocated, uint64_t *crt_decomposition_aligned,
+    uint64_t crt_decomposition_offset, uint64_t crt_decomposition_size,
+    uint64_t crt_decomposition_stride,
+    // Crt number of bits
+    uint64_t *crt_bits_allocated, uint64_t *crt_bits_aligned,
+    uint64_t crt_bits_offset, uint64_t crt_bits_size, uint64_t crt_bits_stride,
+    // Crypto parameters
+    uint32_t modulus_product, bool is_signed) {
+  return memref_encode_lut_for_crt_woppbs(
+      output_lut_allocated, output_lut_aligned, output_lut_offset,
+      output_lut_size0, output_lut_size1, output_lut_stride0,
+      output_lut_stride1, input_lut_allocated, input_lut_aligned,
+      input_lut_offset, input_lut_size, input_lut_stride,
+      crt_decomposition_allocated, crt_decomposition_aligned,
+      crt_decomposition_offset, crt_decomposition_size,
+      crt_decomposition_stride, crt_bits_allocated, crt_bits_aligned,
+      crt_bits_offset, crt_bits_size, crt_bits_stride, modulus_product,
+      is_signed);
 }

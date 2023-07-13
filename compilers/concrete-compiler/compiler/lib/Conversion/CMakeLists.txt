@@ -18,6 +18,7 @@ add_mlir_library(
   Tools.cpp
   Utils/Dialects/SCF.cpp
   Utils/Dialects/Tensor.cpp
+  Utils/Utils.cpp
   LINK_LIBS
   PUBLIC
   MLIRIR)

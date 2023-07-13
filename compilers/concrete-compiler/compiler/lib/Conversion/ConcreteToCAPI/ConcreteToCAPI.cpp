@@ -8,6 +8,7 @@
 
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Tools.h"
+#include "concretelang/Conversion/Utils/Utils.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "mlir/Dialect/Bufferization/Transforms/BufferUtils.h"
@@ -66,38 +67,13 @@ char memref_encode_expand_lut_for_bootstrap[] =
 char memref_encode_lut_for_crt_woppbs[] = "memref_encode_lut_for_crt_woppbs";
 char memref_trace[] = "memref_trace";
 
-mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
-                                             size_t rank) {
-  std::vector<int64_t> shape(rank, mlir::ShapedType::kDynamic);
-  mlir::AffineExpr expr = rewriter.getAffineSymbolExpr(0);
-  for (size_t i = 0; i < rank; i++) {
-    expr = expr +
-           (rewriter.getAffineDimExpr(i) * rewriter.getAffineSymbolExpr(i + 1));
-  }
-  return mlir::MemRefType::get(
-      shape, rewriter.getI64Type(),
-      mlir::AffineMap::get(rank, rank + 1, expr, rewriter.getContext()));
-}
-
-// Returns `memref.cast %0 : memref<...xAxT> to memref<...x?xT>`
-mlir::Value getCastedMemRef(mlir::RewriterBase &rewriter, mlir::Value value) {
-  mlir::Type valueType = value.getType();
-
-  if (auto memrefTy = valueType.dyn_cast_or_null<mlir::MemRefType>()) {
-    return rewriter.create<mlir::memref::CastOp>(
-        value.getLoc(),
-        getDynamicMemrefWithUnknownOffset(rewriter, memrefTy.getShape().size()),
-        value);
-  } else {
-    return value;
-  }
-}
-
 mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     mlir::Operation *op, mlir::RewriterBase &rewriter, char const *funcName) {
 
-  auto memref1DType = getDynamicMemrefWithUnknownOffset(rewriter, 1);
-  auto memref2DType = getDynamicMemrefWithUnknownOffset(rewriter, 2);
+  auto memref1DType =
+      mlir::concretelang::getDynamicMemrefWithUnknownOffset(rewriter, 1);
+  auto memref2DType =
+      mlir::concretelang::getDynamicMemrefWithUnknownOffset(rewriter, 2);
   auto futureType =
       mlir::concretelang::RT::FutureType::get(rewriter.getIndexType());
   auto contextType =
@@ -282,7 +258,8 @@ struct ConcreteToCAPICallPattern : public mlir::OpRewritePattern<ConcreteOp> {
       if (!type.isa<mlir::MemRefType>()) {
         operands.push_back(operand.get());
       } else {
-        operands.push_back(getCastedMemRef(rewriter, operand.get()));
+        operands.push_back(
+            mlir::concretelang::getCastedMemRef(rewriter, operand.get()));
       }
     }
 
@@ -372,7 +349,7 @@ void wopPBSAddOperands(Concrete::WopPBSCRTLweBufferOp op,
 
   auto globalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*globalMemref).getType(), (*globalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, globalRef));
+  operands.push_back(mlir::concretelang::getCastedMemRef(rewriter, globalRef));
 
   //   lwe_small_size
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
@@ -441,7 +418,8 @@ void encodePlaintextWithCrtAddOperands(
   auto modsGlobalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*modsGlobalMemref).getType(),
       (*modsGlobalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, modsGlobalRef));
+  operands.push_back(
+      mlir::concretelang::getCastedMemRef(rewriter, modsGlobalRef));
 
   // mods_prod
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
@@ -484,7 +462,8 @@ void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
   auto crtDecompositionGlobalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*crtDecompositionGlobalMemref).getType(),
       (*crtDecompositionGlobalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, crtDecompositionGlobalRef));
+  operands.push_back(
+      mlir::concretelang::getCastedMemRef(rewriter, crtDecompositionGlobalRef));
 
   // crt_bits
   mlir::Type crtBitsType = mlir::RankedTensorType::get(
@@ -503,7 +482,8 @@ void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
   auto crtBitsGlobalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*crtBitsGlobalMemref).getType(),
       (*crtBitsGlobalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, crtBitsGlobalRef));
+  operands.push_back(
+      mlir::concretelang::getCastedMemRef(rewriter, crtBitsGlobalRef));
   // modulus_product
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.getModulusProductAttr()));
