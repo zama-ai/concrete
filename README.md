@@ -55,7 +55,7 @@ pip install concrete-python
 You can get the concrete-python docker image by pulling the latest docker image:
 
 ```shell
-docker pull zamafhe/concrete-python:v1.0.0
+docker pull zamafhe/concrete-python:v2.0.0
 ```
 
 You can find more detailed installation instructions in [installing.md](docs/getting-started/installing.md)
