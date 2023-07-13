@@ -15,8 +15,8 @@ Concrete compiler takes advantage of these concepts by defining a set of dialect
 
 In addition, the project further defines two dialects that help expose dynamic task-parallelism and static data-flow graphs in order to benefit from multi-core, multi-accelerator and distributed systems. These are:
 
-* The RT Dialect ([documentation](rt_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/RT/IR/RTOps.td)) and
-* The SDFG Dialect ([documentation](sdfg_dialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/SDFG/IR/SDFGOps.td)).
+* The RT Dialect ([documentation](RTDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/RT/IR/RTOps.td)) and
+* The SDFG Dialect ([documentation](SDFGDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/SDFG/IR/SDFGOps.td)).
 
 The figure below illustrates the relationship between the dialects and their embedding into the compilation pipeline.
 
