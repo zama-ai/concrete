@@ -244,7 +244,7 @@ func.func @main(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) ->
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto circuit = load(compile(outputLib, source));
   auto ta = Tensor<uint64_t>({1, 2, 3}, {3});
-  auto tb = Tensor<uint8_t>({5, 7, 9}, {3});
+  auto tb = Tensor<uint64_t>({5, 7, 9}, {3});
   auto res = circuit.call({ta, tb});
   auto expected = std::accumulate(ta.values.begin(), ta.values.end(), 0u) +
                   std::accumulate(tb.values.begin(), tb.values.end(), 0u);

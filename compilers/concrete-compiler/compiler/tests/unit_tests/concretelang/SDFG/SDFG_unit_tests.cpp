@@ -3,6 +3,7 @@
 #include <cassert>
 #include <chrono>
 #include <iostream>
+#include <ostream>
 #include <thread>
 
 #include "boost/outcome.h"
@@ -250,8 +251,8 @@ TEST(SDFG_unit_tests, batched_tree) {
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto circuit = load(compile(outputLib, source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
-  auto a1 = Tensor<uint64_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
-  auto a2 = Tensor<uint64_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
+  auto a1 = Tensor<uint8_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
+  auto a2 = Tensor<uint8_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
   auto expected = Tensor<uint64_t>({3, 7, 11, 15, 3, 7, 11, 15, 3}, {3, 3});
   auto res = circuit.call({t, a1, a2});
   ASSERT_TRUE(res.has_value());
@@ -276,8 +277,8 @@ TEST(SDFG_unit_tests, batched_tree_mapped_tlu) {
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto circuit = load(compile(outputLib, source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
-  auto a1 = Tensor<uint64_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
-  auto a2 = Tensor<uint64_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
+  auto a1 = Tensor<uint8_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
+  auto a2 = Tensor<uint8_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
   auto expected = Tensor<uint64_t>({  3, 8, 2 ,  0, 6, 8 ,  12, 8, 8}, {3, 3});
   auto res = circuit.call({t, a1, a2});
   ASSERT_TRUE(res.has_value());

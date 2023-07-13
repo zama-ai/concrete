@@ -69,6 +69,7 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
       concreteShape->mutable_dimensions()->Add(
           encoding.integerciphertext().crt().moduli_size());
     }
+    concreteShape->mutable_dimensions()->Add(normKey.dimension+1);
     lweGateInfo->set_allocated_concreteshape(concreteShape);
     lweGateInfo->set_integerprecision(64);
     auto encryptionInfo = new concreteprotocol::LweCiphertextEncryptionInfo{};
@@ -85,7 +86,6 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
     rawInfo->set_integerprecision(64);
     rawInfo->set_issigned(false);
     auto rawShape = new concreteprotocol::Shape(*concreteShape);
-    rawShape->mutable_dimensions()->Add(normKey.dimension+1);
     rawInfo->set_allocated_shape(rawShape);
     output.set_allocated_rawinfo(rawInfo);
     output.set_allocated_lweciphertext(lweGateInfo);
@@ -94,6 +94,7 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
     auto normKey = glweType.getKey().getNormalized().value();
     auto lweGateInfo = new concreteprotocol::LweCiphertextGateInfo{};
     auto concreteShape = new concreteprotocol::Shape(encoding.shape());
+    concreteShape->mutable_dimensions()->Add(normKey.dimension+1);
     lweGateInfo->set_allocated_concreteshape(concreteShape);
     lweGateInfo->set_integerprecision(64);
     auto encryptionInfo = new concreteprotocol::LweCiphertextEncryptionInfo{};
@@ -110,7 +111,6 @@ generateGate(mlir::Type type, concreteprotocol::EncodingInfo &encoding,
     rawInfo->set_integerprecision(64);
     rawInfo->set_issigned(false);
     auto rawShape = new concreteprotocol::Shape(*concreteShape);
-    rawShape->mutable_dimensions()->Add(normKey.dimension+1);
     rawInfo->set_allocated_shape(rawShape);
     output.set_allocated_rawinfo(rawInfo);
     output.set_allocated_lweciphertext(lweGateInfo);
@@ -181,9 +181,10 @@ extractCircuitKeys(TFHE::TFHECircuitKeys circuitKeys,
     auto params = new concreteprotocol::LweKeyswitchKeyParams{};
     params->set_levelcount(ksk.getLevels());
     params->set_baselog(ksk.getBaseLog());
-    params->set_variance(curve.getVariance(
-        1, ksk.getOutputKey().getNormalized().value().dimension, 64));
+    params->set_variance(curve.getVariance(1, ksk.getOutputKey().getNormalized().value().dimension, 64));
     params->set_integerprecision(64);
+    params->set_inputlwedimension(ksk.getInputKey().getNormalized().value().dimension);
+    params->set_outputlwedimension(ksk.getOutputKey().getNormalized().value().dimension);
     auto modulus = new concreteprotocol::Modulus{};
     modulus->set_allocated_native(new concreteprotocol::NativeModulus{});
     params->set_allocated_modulus(modulus);
@@ -204,6 +205,7 @@ extractCircuitKeys(TFHE::TFHECircuitKeys circuitKeys,
     params->set_baselog(bsk.getBaseLog());
     params->set_glwedimension(bsk.getGlweDim());
     params->set_polynomialsize(bsk.getPolySize());
+    params->set_inputlwedimension(bsk.getInputKey().getNormalized().value().dimension);
     params->set_variance(
         curve.getVariance(bsk.getGlweDim(), bsk.getPolySize(), 64));
     params->set_integerprecision(64);

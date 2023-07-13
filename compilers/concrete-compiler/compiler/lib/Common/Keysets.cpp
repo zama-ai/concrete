@@ -6,25 +6,27 @@
 #include "concretelang/Common/Keysets.h"
 #include "concrete-cpu.h"
 #include "concrete-protocol.pb.h"
+#include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keys.h"
-#include "concretelang/Common/Csprng.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
+#include <fstream>
+#include <sstream>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string>
 #include <unistd.h>
 #include <utime.h>
 
+using concretelang::csprng::ConcreteCSPRNG;
 using concretelang::error::Result;
 using concretelang::error::StringError;
 using concretelang::keys::LweBootstrapKey;
 using concretelang::keys::LweKeyswitchKey;
 using concretelang::keys::LweSecretKey;
 using concretelang::keys::PackingKeyswitchKey;
-using concretelang::csprng::ConcreteCSPRNG;
 
 namespace concretelang {
 namespace keysets {
@@ -82,7 +84,6 @@ concreteprotocol::ServerKeyset ServerKeyset::toProto() {
   return output;
 }
 
-
 Keyset::Keyset(const concreteprotocol::KeysetInfo &info, CSPRNG &csprng) {
   for (auto keyInfo : info.lwesecretkeys()) {
     client.lweSecretKeys.push_back(LweSecretKey(keyInfo, csprng));
@@ -121,35 +122,39 @@ concreteprotocol::Keyset Keyset::toProto() {
 
 template <typename ProtoKey, typename Key>
 Result<Key> loadKey(std::string path) {
-  int fd = open(path.c_str(), O_RDONLY);
-  if (fd == -1) {
-    return StringError("Cannot open " + path);
+  std::ifstream in((std::string)path, std::ofstream::binary);
+  if (in.fail()) {
+    return StringError("Cannot access for load " + (std::string)path);
   }
   ProtoKey keyProto = ProtoKey();
-  bool parsed = keyProto.ParseFromFileDescriptor(fd);
+  bool parsed = keyProto.ParseFromIstream(&in);
   if (!parsed) {
     return StringError("Failed to parse key at path(" + path + ")");
   }
-  if (close(fd) == -1) {
-    return StringError("Failed to close file descriptor.");
-  }
+  if (in.bad()) {
+    return StringError("Cannot load key at path(") << (std::string)path << ")";
+  } 
   return Key::fromProto(keyProto);
 }
 
 template <typename ProtoKey, typename Key>
 Result<void> saveKey(Key key, std::string path) {
-  int fd = creat(path.c_str(), O_WRONLY);
-  if (fd == -1) {
-    return StringError("Cannot open " + path);
+#ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
+  getApproval();
+#endif
+  std::ofstream out((std::string)path, std::ofstream::binary);
+  if (out.fail()) {
+    return StringError("Cannot access for save " + (std::string)path);
   }
   ProtoKey keyProto = key.toProto();
-  bool serialized = keyProto.SerializeToFileDescriptor(fd);
+  bool serialized = keyProto.SerializeToOstream(&out);
   if (!serialized) {
     return StringError("Failed to serialize key to path(" + path + ")");
   }
-  if (close(fd) == -1) {
-    return StringError("Failed to close file descriptor.");
+  if (out.bad()) {
+    return StringError("Cannot save key at path(") << (std::string)path << ")";
   }
+  out.close();
   return outcome::success();
 }
 
@@ -217,7 +222,7 @@ Result<Keyset> loadKeysFromFiles(const concreteprotocol::KeysetInfo &keysetInfo,
   ClientKeyset clientKeyset = ClientKeyset{secretKeys};
   ServerKeyset serverKeyset =
       ServerKeyset{bootstrapKeys, keyswitchKeys, packingKeyswitchKeys};
-  Keyset keyset = Keyset {   serverKeyset, clientKeyset };
+  Keyset keyset = Keyset{serverKeyset, clientKeyset};
 
   return keyset;
 }
@@ -242,28 +247,29 @@ Result<void> saveKeys(Keyset &keyset, llvm::SmallString<0> &folderPath) {
   // Save LWE secret keys
   for (auto key : clientKeyset.lweSecretKeys) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "secretKey_" + std::to_string(key.getInfo().id()));
-    OUTCOME_TRYV(
-        saveKey<concreteprotocol::LweSecretKey, LweSecretKey>(key, path.c_str()));
+    llvm::sys::path::append(path,
+                            "secretKey_" + std::to_string(key.getInfo().id()));
+    OUTCOME_TRYV(saveKey<concreteprotocol::LweSecretKey, LweSecretKey>(
+        key, path.c_str()));
   }
   // Save bootstrap keys
-  for (auto key: serverKeyset.lweBootstrapKeys) {
+  for (auto key : serverKeyset.lweBootstrapKeys) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "pbsKey_" + key.getInfo().id());
-    OUTCOME_TRYV(
-        saveKey<concreteprotocol::LweBootstrapKey, LweBootstrapKey>(key, path.c_str()));
+    llvm::sys::path::append(path, "pbsKey_" + std::to_string(key.getInfo().id()));
+    OUTCOME_TRYV(saveKey<concreteprotocol::LweBootstrapKey, LweBootstrapKey>(
+        key, path.c_str()));
   }
   // Save keyswitch keys
-  for (auto key: serverKeyset.lweKeyswitchKeys) {
+  for (auto key : serverKeyset.lweKeyswitchKeys) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "ksKey_" + key.getInfo().id());
-    OUTCOME_TRYV(
-        saveKey<concreteprotocol::LweKeyswitchKey, LweKeyswitchKey>(key, path.c_str()));
+    llvm::sys::path::append(path, "ksKey_" + std::to_string(key.getInfo().id()));
+    OUTCOME_TRYV(saveKey<concreteprotocol::LweKeyswitchKey, LweKeyswitchKey>(
+        key, path.c_str()));
   }
   // Save packing keyswitch keys
-  for (auto key: serverKeyset.packingKeyswitchKeys) {
+  for (auto key : serverKeyset.packingKeyswitchKeys) {
     llvm::SmallString<0> path = folderIncompletePath;
-    llvm::sys::path::append(path, "pksKey_" + key.getInfo().id());
+    llvm::sys::path::append(path, "pksKey_" + std::to_string(key.getInfo().id()));
     OUTCOME_TRYV(
         saveKey<concreteprotocol::PackingKeyswitchKey, PackingKeyswitchKey>(
             key, path.c_str()));
@@ -286,8 +292,9 @@ KeysetCache::KeysetCache(std::string backingDirectoryPath) {
   this->backingDirectoryPath = backingDirectoryPath;
 }
 
-Result<Keyset> KeysetCache::getKeyset(const concreteprotocol::KeysetInfo &keysetInfo,
-                                      uint64_t seed_msb, uint64_t seed_lsb) {
+Result<Keyset>
+KeysetCache::getKeyset(const concreteprotocol::KeysetInfo &keysetInfo,
+                       uint64_t seed_msb, uint64_t seed_lsb) {
   std::string hashString = keysetInfo.SerializeAsString() +
                            std::to_string(seed_msb) + std::to_string(seed_lsb);
   size_t hash = std::hash<std::string>{}(hashString);
@@ -327,7 +334,7 @@ Result<Keyset> KeysetCache::getKeyset(const concreteprotocol::KeysetInfo &keyset
   if (llvm::sys::fs::exists(folderPath)) {
     // Once it has been generated by another process (or was already here)
     auto keys = loadKeysFromFiles(keysetInfo, seed_msb, seed_lsb,
-                                 std::string(folderPath));
+                                  std::string(folderPath));
     if (keys.has_value()) {
       return keys;
     } else {
@@ -347,7 +354,7 @@ Result<Keyset> KeysetCache::getKeyset(const concreteprotocol::KeysetInfo &keyset
   seed += seed_lsb;
 
   auto csprng = ConcreteCSPRNG(seed);
-  Keyset keyset =  Keyset(keysetInfo, csprng);
+  Keyset keyset = Keyset(keysetInfo, csprng);
 
   OUTCOME_TRYV(saveKeys(keyset, folderPath));
 

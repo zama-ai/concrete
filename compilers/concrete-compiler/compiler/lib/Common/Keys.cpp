@@ -10,6 +10,7 @@
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Keysets.h"
 #include "concretelang/Common/Protocol.h"
+#include <memory>
 #include <stdlib.h>
 
 using concretelang::csprng::CSPRNG;
@@ -34,8 +35,11 @@ namespace keys {
 LweSecretKey::LweSecretKey(const concreteprotocol::LweSecretKeyInfo &info,
                            CSPRNG &csprng) {
   // Allocate the buffer
-  buffer = std::make_shared<std::vector<uint64_t>>();
-  buffer->resize(info.params().lwedimension());
+  buffer = std::make_shared<std::vector<uint64_t>>(info.params().lwedimension());
+  
+  // We copy the informations.
+  this->info = info;
+
 #ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
   // In insecure debug mode, the secret key is filled with zeros.
   getApproval();
@@ -52,7 +56,7 @@ LweSecretKey::LweSecretKey(const concreteprotocol::LweSecretKeyInfo &info,
 LweSecretKey
 LweSecretKey::fromProto(const concreteprotocol::LweSecretKey &proto) {
   LweSecretKey output;
-  *output.buffer = protoDataToVector<uint64_t>(proto.data());
+  output.buffer = std::make_shared<std::vector<uint64_t>>(protoDataToVector<uint64_t>(proto.data()));
   output.info = proto.info();
   auto expectedBufferSize = proto.info().params().lwedimension();
   assert(output.buffer->size() == expectedBufferSize);
@@ -89,7 +93,10 @@ LweBootstrapKey::LweBootstrapKey(
   auto bufferSize = concrete_cpu_bootstrap_key_size_u64(
       params.levelcount(), params.glwedimension(), params.polynomialsize(),
       params.inputlwedimension());
-  buffer->resize(bufferSize);
+  buffer = std::make_shared<std::vector<uint64_t>>(bufferSize);
+
+  // We copy the informations.
+  this->info = info;
 
   // Initialize the keyswitch key buffer
   concrete_cpu_init_lwe_bootstrap_key_u64(
@@ -103,7 +110,7 @@ LweBootstrapKey
 LweBootstrapKey::fromProto(const concreteprotocol::LweBootstrapKey &proto) {
   assert(proto.info().compression() == concreteprotocol::Compression::none);
   LweBootstrapKey output;
-  *output.buffer = protoDataToVector<uint64_t>(proto.data());
+  output.buffer = std::make_shared<std::vector<uint64_t>>(protoDataToVector<uint64_t>(proto.data()));
   output.info = proto.info();
   auto params = proto.info().params();
   auto expectedBufferSize = concrete_cpu_bootstrap_key_size_u64(
@@ -146,7 +153,10 @@ LweKeyswitchKey::LweKeyswitchKey(
   auto bufferSize = concrete_cpu_keyswitch_key_size_u64(
       params.levelcount(), params.baselog(), params.inputlwedimension(),
       params.outputlwedimension());
-  buffer->resize(bufferSize);
+  buffer = std::make_shared<std::vector<uint64_t>>(bufferSize);
+
+  // We copy the informations.
+  this->info = info;
 
   // Initialize the keyswitch key buffer
   concrete_cpu_init_lwe_keyswitch_key_u64(
@@ -160,7 +170,7 @@ LweKeyswitchKey
 LweKeyswitchKey::fromProto(const concreteprotocol::LweKeyswitchKey &proto) {
   assert(proto.info().compression() == concreteprotocol::Compression::none);
   LweKeyswitchKey output;
-  *output.buffer = protoDataToVector<uint64_t>(proto.data());
+  output.buffer = std::make_shared<std::vector<uint64_t>>(protoDataToVector<uint64_t>(proto.data()));
   output.info = proto.info();
   auto params = proto.info().params();
   auto expectedBufferSize = concrete_cpu_keyswitch_key_size_u64(
@@ -201,7 +211,10 @@ PackingKeyswitchKey::PackingKeyswitchKey(
                         params.glwedimension(), params.polynomialsize(),
                         params.levelcount(), params.lwedimension()) *
                     (params.glwedimension() + 1);
-  buffer->resize(bufferSize);
+  buffer = std::make_shared<std::vector<uint64_t>>(bufferSize);
+
+  // We copy the informations.
+  this->info = info;
 
   // Initialize the keyswitch key buffer
   concrete_cpu_init_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
@@ -215,7 +228,7 @@ PackingKeyswitchKey PackingKeyswitchKey::fromProto(
     const concreteprotocol::PackingKeyswitchKey &proto) {
   assert(proto.info().compression() == concreteprotocol::Compression::none);
   PackingKeyswitchKey output;
-  *output.buffer = protoDataToVector<uint64_t>(proto.data());
+  output.buffer = std::make_shared<std::vector<uint64_t>>(protoDataToVector<uint64_t>(proto.data()));
   output.info = proto.info();
   auto params = proto.info().params();
   auto expectedBufferSize = concrete_cpu_lwe_packing_keyswitch_key_size(

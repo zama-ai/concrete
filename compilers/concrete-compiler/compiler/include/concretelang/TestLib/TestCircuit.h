@@ -68,20 +68,21 @@ public:
         keyset(keyset) {}
 
   Result<std::vector<Value>> call(std::vector<Value> inputs) {
+    if (inputs.size() != preparedArgs.size()){
+      return StringError("Wrong number of arguments provided");
+    }
     for (size_t i = 0; i < preparedArgs.size(); i++) {
-      preparedArgs[i] = clientCircuit.prepareInput(inputs[i], i).value();
+      OUTCOME_TRY(preparedArgs[i], clientCircuit.prepareInput(inputs[i], i));
     }
     std::vector<TransportValue> returns;
     if (useSimulation) {
-      returns = serverCircuit.simulate(preparedArgs).value();
+      OUTCOME_TRY(returns, serverCircuit.simulate(preparedArgs));
     } else {
-      auto ret = serverCircuit.call(keyset.server, preparedArgs).as_failure();
-      std::cout << ret.error().mesg << std::flush;
-      returns = serverCircuit.call(keyset.server, preparedArgs).value();
+      OUTCOME_TRY(returns, serverCircuit.call(keyset.server, preparedArgs));
     }
     std::vector<Value> processedOutputs(returns.size());
     for (size_t i = 0; i < processedOutputs.size(); i++) {
-      processedOutputs[i] = clientCircuit.processOutput(returns[i], i).value();
+      OUTCOME_TRY(processedOutputs[i], clientCircuit.processOutput(returns[i], i));
     }
     return processedOutputs;
   }

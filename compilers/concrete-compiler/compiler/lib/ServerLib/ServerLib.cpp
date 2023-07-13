@@ -17,8 +17,8 @@
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Common/Transformers.h"
 #include "concretelang/Common/Values.h"
-#include "concretelang/ServerLib/ServerLib.h"
 #include "concretelang/Runtime/context.h"
+#include "concretelang/ServerLib/ServerLib.h"
 #include "concretelang/Support/CompilerEngine.h"
 
 using concretelang::keysets::ServerKeyset;
@@ -31,6 +31,55 @@ using mlir::concretelang::RuntimeContext;
 
 namespace concretelang {
 namespace serverlib {
+
+// Depending on the strides of the memref, iteration may not be linear in the
+// memory space (i.e. it may contain jumps). For this reason we have to compute
+// a memory index from the linear index of the iteration space. This structure
+// does just that.
+struct MultiDimIndexer {
+  std::vector<size_t> multiDimensionalIndex;
+  size_t offset;
+  const std::vector<size_t> &sizes;
+  const std::vector<size_t> &strides;
+
+  MultiDimIndexer(size_t offset, const std::vector<size_t> &sizes,
+                  const std::vector<size_t> &strides)
+      : sizes(sizes), strides(strides) {
+    size_t rank = sizes.size();
+    this->multiDimensionalIndex.resize(rank);
+    for (size_t i = 0; i < rank; i++) {
+      this->multiDimensionalIndex[i] = 0;
+    }
+    // this->sizes = sizes;
+    // this->strides = sizes;
+    this->offset = offset;
+  }
+
+  /// Increments the index.
+  void increment() {
+    size_t rank = sizes.size();
+    for (int r = rank - 1; r >= 0; r--) {
+      if (multiDimensionalIndex[r] < sizes[r] - 1) {
+        multiDimensionalIndex[r]++;
+        return;
+      }
+      multiDimensionalIndex[r] = 0;
+    }
+  }
+
+  /// Returns the current index.
+  size_t currentIndex() {
+    size_t rank = sizes.size();
+    size_t g_index = offset;
+    size_t default_stride = 1;
+    for (int r = rank - 1; r >= 0; r--) {
+      g_index += multiDimensionalIndex[r] *
+                 ((strides[r] == 0) ? default_stride : strides[r]);
+      default_stride *= sizes[r];
+    }
+    return g_index;
+  }
+};
 
 // A type representing the memref description of a tensor.
 struct MemRefDescriptor {
@@ -80,54 +129,31 @@ struct MemRefDescriptor {
     };
   }
 
+  /// Returns the number of elements of the memref.
+  size_t getLength() {
+    size_t output = 1;
+    for (size_t i = 0; i < sizes.size(); i++) {
+      output *= sizes[i];
+    }
+    return output;
+  }
+
   // Allocates a new tensor, and copy the values referenced by a memref
   // descriptor.
   template <typename T> Tensor<T> intoTensor() {
     assert(sizeof(T) * 8 == precision);
     assert(std::is_signed<T>() == isSigned);
 
-    // The number of dimensions.
-    size_t rank = sizes.size();
-
-    // Depending on the strides of the memref, iteration may not be linear in
-    // the memory space (i.e. it may contain jumps). For this reason we have to
-    // compute a memory index from the linear index of the iteration space.
-
-    // We allocate an array to store the multidimensional index.
-    std::vector<size_t> multiDimensionalIndex(rank);
-    for (size_t i = 0; i < rank; i++) {
-      multiDimensionalIndex[i] = 0;
-    }
-
-    // A closure to increment the multi-dimensional index.
-    std::function<void(void)> incrementMultiDimensionalIndex = [&]() {
-      for (int r = rank - 1; r >= 0; r--) {
-        if (multiDimensionalIndex[r] < sizes[r] - 1) {
-          multiDimensionalIndex[r]++;
-          return;
-        }
-        multiDimensionalIndex[r] = 0;
-      }
-    };
-
-    // A closure that returns the current memory index.
-    std::function<size_t(void)> memoryIndex = [=]() {
-      size_t g_index = offset;
-      size_t default_stride = 1;
-      for (int r = rank - 1; r >= 0; r--) {
-        g_index += multiDimensionalIndex[r] *
-                   ((strides[r] == 0) ? default_stride : strides[r]);
-        default_stride *= sizes[r];
-      }
-      return g_index;
-    };
+    // We create the indexer.
+    auto indexer = MultiDimIndexer(offset, sizes, strides);
 
     // We fill a vector of vales to construct the
-    std::vector<T> values(sizes.size());
+    std::vector<T> values(getLength());
     for (size_t i = 0; i < values.size(); i++) {
       T *memrefAligned = reinterpret_cast<T *>(aligned);
-      values[i] = memrefAligned[memoryIndex()];
-      incrementMultiDimensionalIndex();
+      auto index = indexer.currentIndex();
+      values[i] = memrefAligned[index];
+      indexer.increment();
     }
 
     return Tensor<T>{values, sizes};
@@ -138,10 +164,10 @@ struct MemRefDescriptor {
     opaquePtrs[1] = aligned;
     opaquePtrs[2] = (void *)offset;
     for (size_t i = 0; i < sizes.size(); i++) {
-      opaquePtrs[2 + i] = (void *)sizes[i];
+      opaquePtrs[3 + i] = (void *)sizes[i];
     }
     for (size_t i = 0; i < strides.size(); i++) {
-      opaquePtrs[2 + sizes.size() + i] = (void *)strides[i];
+      opaquePtrs[3 + sizes.size() + i] = (void *)strides[i];
     }
   }
 
@@ -166,17 +192,18 @@ struct ScalarDescriptor {
     T value = input.values[0];
     size_t width = sizeof(T) * 8;
     if (width == 64) {
-      return ScalarDescriptor{sizeof(T) * 8, std::is_signed<T>(), (uint64_t) value};
+      return ScalarDescriptor{sizeof(T) * 8, std::is_signed<T>(),
+                              (uint64_t)value};
     }
     // Todo : Verify if this is really necessary.
     uint64_t mask = ((uint64_t)1 << width) - 1;
-    uint64_t val = ((uint64_t) value) & mask;
+    uint64_t val = ((uint64_t)value) & mask;
     return ScalarDescriptor{sizeof(T) * 8, std::is_signed<T>(), val};
   }
 
   static ScalarDescriptor fromU64s(llvm::ArrayRef<uint64_t> raw,
                                    size_t precision, bool isSigned) {
-    return ScalarDescriptor { precision, isSigned, raw[0] };
+    return ScalarDescriptor{precision, isSigned, raw[0]};
   }
 
   template <typename T> Tensor<T> intoTensor() {
@@ -261,13 +288,13 @@ struct InvocationDescriptor {
     if (std::holds_alternative<ScalarDescriptor>(inner)) {
       std::get<ScalarDescriptor>(inner).intoOpaquePtrs(opaquePtrs);
     } else {
-        std::get<MemRefDescriptor>(inner).intoOpaquePtrs(opaquePtrs);
+      std::get<MemRefDescriptor>(inner).intoOpaquePtrs(opaquePtrs);
     }
   }
 
   void tryFree() {
     if (std::holds_alternative<MemRefDescriptor>(inner)) {
-        std::get<MemRefDescriptor>(inner).tryFree();
+      std::get<MemRefDescriptor>(inner).tryFree();
     }
   }
 
@@ -275,33 +302,33 @@ private:
   template <typename T>
   static InvocationDescriptor fromTensor(Tensor<T> &tensor) {
     if (tensor.isScalar()) {
-        return InvocationDescriptor { ScalarDescriptor::fromTensor(tensor) };
+      return InvocationDescriptor{ScalarDescriptor::fromTensor(tensor)};
     } else {
-        return InvocationDescriptor { MemRefDescriptor::fromTensor(tensor) };
+      return InvocationDescriptor{MemRefDescriptor::fromTensor(tensor)};
     }
   }
 
   template <typename T> Tensor<T> intoTensor() {
     if (std::holds_alternative<ScalarDescriptor>(inner)) {
-        return std::get<ScalarDescriptor>(inner).intoTensor<T>();
+      return std::get<ScalarDescriptor>(inner).intoTensor<T>();
     } else {
-        return std::get<MemRefDescriptor>(inner).intoTensor<T>();
+      return std::get<MemRefDescriptor>(inner).intoTensor<T>();
     }
   }
 
   size_t getPrecision() {
     if (std::holds_alternative<ScalarDescriptor>(inner)) {
-        return std::get<ScalarDescriptor>(inner).precision;
+      return std::get<ScalarDescriptor>(inner).precision;
     } else {
-        return std::get<MemRefDescriptor>(inner).precision;
+      return std::get<MemRefDescriptor>(inner).precision;
     }
   }
 
   bool getIsSigned() {
     if (std::holds_alternative<ScalarDescriptor>(inner)) {
-        return std::get<ScalarDescriptor>(inner).isSigned;
+      return std::get<ScalarDescriptor>(inner).isSigned;
     } else {
-        return std::get<MemRefDescriptor>(inner).isSigned;
+      return std::get<MemRefDescriptor>(inner).isSigned;
     }
   }
 };
@@ -315,7 +342,7 @@ DynamicModule::~DynamicModule() {
 Result<std::shared_ptr<DynamicModule>>
 DynamicModule::open(std::string outputPath) {
   std::shared_ptr<DynamicModule> module = std::make_shared<DynamicModule>();
-  auto ddd  = CompilerEngine::Library::getSharedLibraryPath(outputPath);
+  auto ddd = CompilerEngine::Library::getSharedLibraryPath(outputPath);
   module->libraryHandle =
       dlopen(CompilerEngine::Library::getSharedLibraryPath(outputPath).c_str(),
              RTLD_LAZY);
@@ -325,8 +352,9 @@ DynamicModule::open(std::string outputPath) {
   return module;
 }
 
-size_t getGateDescriptionSize(const concreteprotocol::GateInfo &gateInfo, bool useSimulation) {
-  if (useSimulation){
+size_t getGateDescriptionSize(const concreteprotocol::GateInfo &gateInfo,
+                              bool useSimulation) {
+  if (useSimulation) {
     return getGateDescriptionSize(gateInfo, false) - 1;
   }
   concreteprotocol::Shape shape;
@@ -335,10 +363,7 @@ size_t getGateDescriptionSize(const concreteprotocol::GateInfo &gateInfo, bool u
   } else if (gateInfo.has_plaintext()) {
     shape = gateInfo.plaintext().shape();
   } else if (gateInfo.has_lweciphertext()) {
-    // In the case of an lwe ciphertext gate, the shape of the input is always the concrete shape
-    // plus one dimension for the lwe size (the actual size does not matter here).
     shape = gateInfo.lweciphertext().concreteshape();
-    shape.mutable_dimensions()->Add(0);
   }
   if (shape.dimensions_size() == 0) {
     return 1;
@@ -404,13 +429,11 @@ ServerCircuit::simulate(std::vector<TransportValue> &args) {
   return call(emptyKeyset, args);
 }
 
-
 std::string ServerCircuit::getName() { return circuitInfo.name(); }
 
 Result<ServerCircuit> ServerCircuit::fromDynamicModule(
     const concreteprotocol::CircuitInfo &circuitInfo,
-    std::shared_ptr<DynamicModule> dynamicModule, 
-    bool useSimulation = false) {
+    std::shared_ptr<DynamicModule> dynamicModule, bool useSimulation = false) {
 
   ServerCircuit output;
   output.circuitInfo = circuitInfo;
@@ -436,7 +459,8 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
                   TransformerFactory::getPlaintextArgTransformer(gateInfo));
     } else if (gateInfo.has_lweciphertext()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getLweCiphertextArgTransformer(gateInfo, useSimulation));
+                  TransformerFactory::getLweCiphertextArgTransformer(
+                      gateInfo, useSimulation));
     } else {
       return StringError("Malformed input gate info.");
     }
@@ -454,9 +478,9 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
       OUTCOME_TRY(transformer,
                   TransformerFactory::getPlaintextReturnTransformer(gateInfo));
     } else if (gateInfo.has_lweciphertext()) {
-      OUTCOME_TRY(
-          transformer,
-          TransformerFactory::getLweCiphertextReturnTransformer(gateInfo, useSimulation));
+      OUTCOME_TRY(transformer,
+                  TransformerFactory::getLweCiphertextReturnTransformer(
+                      gateInfo, useSimulation));
     } else {
       return StringError("Malformed input gate info.");
     }
@@ -468,14 +492,14 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
 
   output.argRawSize = 0;
   for (auto gateInfo : circuitInfo.inputs()) {
-    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation); 
+    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation);
     output.argDescriptorSizes.push_back(descriptorSize);
     output.argRawSize += descriptorSize;
   }
 
   output.returnRawSize = 0;
   for (auto gateInfo : circuitInfo.outputs()) {
-    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation); 
+    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation);
     output.returnDescriptorSizes.push_back(descriptorSize);
     output.returnRawSize += descriptorSize;
   }
@@ -499,19 +523,18 @@ void ServerCircuit::invoke(RuntimeContext *_runtimeContextPtr) {
   auto _returnRawMaps = std::vector<llvm::ArrayRef<uint64_t>>();
   currentRawIndex = 0;
   for (auto descriptorSize : this->returnDescriptorSizes) {
-    auto map = llvm::ArrayRef<uint64_t>(&_returnRaws[currentRawIndex],
-                                        descriptorSize);
+    auto map =
+        llvm::ArrayRef<uint64_t>(&_returnRaws[currentRawIndex], descriptorSize);
     _returnRawMaps.push_back(map);
     currentRawIndex += descriptorSize;
   }
 
-  auto _invocationRaws = std::vector<void *>(this->argRawSize + 2);
-  size_t i = 0;
+  auto _invocationRaws = std::vector<void *>();
   for (auto &arg : _argRaws) {
-    _invocationRaws[i++] = &arg;
-  } 
-  _invocationRaws[i++] = (void *)(&_runtimeContextPtr);
-  _invocationRaws[i++] = reinterpret_cast<void *>(_returnRaws.data());
+    _invocationRaws.push_back(&arg);
+  }
+  _invocationRaws.push_back((void *)(&_runtimeContextPtr));
+  _invocationRaws.push_back(reinterpret_cast<void *>(_returnRaws.data()));
 
   // We load the argument descriptors in the _argRaws
   for (int i = 0; i < circuitInfo.inputs_size(); i++) {
@@ -521,7 +544,7 @@ void ServerCircuit::invoke(RuntimeContext *_runtimeContextPtr) {
     // We write the descriptor in the _argRaws via the maps.
     descriptor.intoOpaquePtrs(_argRawMaps[i]);
   }
- 
+
   func(_invocationRaws.data());
 
   // The circuit has been executed, we can load the results from the
@@ -549,8 +572,9 @@ ServerProgram::load(const concreteprotocol::ProgramInfo &programInfo,
   auto sharedDynamicModule = std::shared_ptr<DynamicModule>(dynamicModule);
   std::vector<ServerCircuit> serverCircuits;
   for (auto circuitInfo : programInfo.circuits()) {
-    OUTCOME_TRY(auto serverCircuit, ServerCircuit::fromDynamicModule(
-                                        circuitInfo, sharedDynamicModule, useSimulation));
+    OUTCOME_TRY(auto serverCircuit,
+                ServerCircuit::fromDynamicModule(
+                    circuitInfo, sharedDynamicModule, useSimulation));
     serverCircuits.push_back(serverCircuit);
   }
   output.serverCircuits = serverCircuits;
@@ -564,7 +588,8 @@ ServerProgram::getServerCircuit(const std::string &circuitName) {
       return serverCircuit;
     }
   }
-    return StringError("Tried to get unknown server circuit: `" + circuitName + "`");
+  return StringError("Tried to get unknown server circuit: `" + circuitName +
+                     "`");
 }
 
 } // namespace serverlib

@@ -32,7 +32,7 @@ std::vector<T> protoDataToVector(const std::string &input) {
   auto dataSize = input.size() / sizeof(T);
   auto output = std::vector<T>();
   output.resize(dataSize);
-  std::memcpy(output.data(), input.data(), dataSize);
+  std::memcpy(output.data(), input.data(), input.size());
   return output;
 }
 

@@ -76,7 +76,7 @@ TestCircuit load(mlir::concretelang::CompilerEngine::Library compiled) {
                     ->getKeyset(compiled.getProgramInfo().keyset(), 0, 0)
                     .value();
   return TestCircuit::create(keyset, compiled.getProgramInfo(),
-                             compiled.sharedLibraryPath, 0, 0, false)
+                             compiled.getOutputDirPath(), 0, 0, false)
       .value();
 }
 

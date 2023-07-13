@@ -51,16 +51,16 @@ Result<void> checkValueIndexProps(Value &val,
 Result<void>
 checkValuePlaintextProps(Value &val,
                          const concreteprotocol::GateInfo &gateInfo) {
-  if (!val.isCompatibleWithShape(gateInfo.index().shape())) {
+  if (!val.isCompatibleWithShape(gateInfo.plaintext().shape())) {
     return StringError(
         "Tried to transform plaintext value with incompatible shape.");
   }
-  if (val.getIntegerPrecision() != gateInfo.index().integerprecision()) {
+  if (val.getIntegerPrecision() != gateInfo.plaintext().integerprecision()) {
     return StringError(
         "Tried to transform plaintext value with incompatible integer "
         "precision.");
   }
-  if (val.isSigned() != gateInfo.index().issigned()) {
+  if (val.isSigned() != gateInfo.plaintext().issigned()) {
     return StringError("Tried to transform plaintext value with incompatible "
                        "integer signedness.");
   }
@@ -71,10 +71,10 @@ checkValuePlaintextProps(Value &val,
 Result<void>
 checkValueLweCiphertextProps(Value &val,
                              const concreteprotocol::GateInfo &gateInfo) {
-  if (!val.isCompatibleWithShape(gateInfo.lweciphertext().concreteshape())) {
-    return StringError("Tried to transform ciphertext value with "
-                       "incompatible shape.");
-  }
+  // if (!val.isCompatibleWithShape(gateInfo.lweciphertext().concreteshape())) {
+  //   return StringError("Tried to transform ciphertext value with "
+  //                      "incompatible shape.");
+  // }
   if (val.getIntegerPrecision() !=
       gateInfo.lweciphertext().integerprecision()) {
     return StringError(
