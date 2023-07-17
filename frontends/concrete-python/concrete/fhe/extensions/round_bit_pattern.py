@@ -128,6 +128,7 @@ def round_bit_pattern(
     x: Union[int, np.integer, List, np.ndarray, Tracer],
     lsbs_to_remove: Union[int, AutoRounder],
     overflow_protection: bool = True,
+    is_raw: bool = False,
 ) -> Union[int, np.integer, List, np.ndarray, Tracer]:
     """
     Round the bit pattern of an integer.
@@ -210,6 +211,7 @@ def round_bit_pattern(
     def evaluator(
         x: Union[int, np.integer, np.ndarray],
         lsbs_to_remove: int,
+        is_raw: bool,
     ) -> Union[int, np.integer, np.ndarray]:
         if lsbs_to_remove == 0:
             return x
@@ -217,7 +219,7 @@ def round_bit_pattern(
         unit = 1 << lsbs_to_remove
         half = 1 << lsbs_to_remove - 1
         rounded = (x + half) // unit
-        return rounded * unit
+        return rounded if is_raw else (rounded * unit)
 
     if isinstance(x, Tracer):
         computation = Node.generic(
@@ -225,7 +227,7 @@ def round_bit_pattern(
             [deepcopy(x.output)],
             deepcopy(x.output),
             evaluator,
-            kwargs={"lsbs_to_remove": lsbs_to_remove},
+            kwargs={"lsbs_to_remove": lsbs_to_remove, "is_raw": is_raw},
             attributes={"overflow_protection": overflow_protection},
         )
         return Tracer(computation, [x])
@@ -246,6 +248,6 @@ def round_bit_pattern(
         message = f"Expected input to be an int or a numpy array but it's {type(x).__name__}"
         raise TypeError(message)
 
-    return evaluator(x, lsbs_to_remove)
+    return evaluator(x, lsbs_to_remove, is_raw)
 
     # pylint: enable=protected-access,too-many-branches

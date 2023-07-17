@@ -183,8 +183,9 @@ class Converter:
 
         pipeline = [
             CheckIntegerOnly(),
+            ProcessRounding(process_successors=True),
             AssignBitWidths(single_precision=configuration.single_precision),
-            ProcessRounding(),
+            ProcessRounding(process_predecessors=True),
         ]
 
         graph = deepcopy(graph)

@@ -15,11 +15,20 @@ class ProcessRounding(GraphProcessor):
     ProcessRounding graph processor, to analyze rounding and support regular operations on it.
     """
 
+    _process_predecessors: bool
+    _process_successors: bool
+
+    def __init__(self, process_predecessors: bool = False, process_successors: bool = False):
+        self._process_predecessors = process_predecessors
+        self._process_successors = process_successors
+
     def apply(self, graph: Graph):
         rounding_nodes = graph.query_nodes(operation_filter="round_bit_pattern")
         for node in rounding_nodes:
-            self.process_predecessors(graph, node)
-            self.process_successors(graph, node)
+            if self._process_predecessors:
+                self.process_predecessors(graph, node)
+            if self._process_successors:
+                self.process_successors(graph, node)
 
     def process_predecessors(self, graph: Graph, node: Node):
         """
@@ -72,9 +81,12 @@ class ProcessRounding(GraphProcessor):
                 "identity",
                 [deepcopy(node.output)],
                 deepcopy(node.output),
-                lambda x: x,
+                lambda x: (
+                    x // (2**node.properties["kwargs"]["lsbs_to_remove"])
+                    if node.properties["kwargs"]["is_raw"]
+                    else x
+                ),
             )
-            identity.properties["original_bit_width"] = node.properties["original_bit_width"]
 
             nx_graph.add_edge(node, identity, input_idx=0)
             return identity

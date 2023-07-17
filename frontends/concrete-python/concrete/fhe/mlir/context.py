@@ -2026,6 +2026,13 @@ class Context:
         assert on.bit_width <= MAXIMUM_TLU_BIT_WIDTH
 
         table = list(table)
+        
+        if (
+            all([table[i] == i for i in range(len(table))])  # identity TLU
+            and on.bit_width == resulting_type.bit_width  # with the same bit-width
+        ):
+            return on
+        
         table += [0] * ((2**on.bit_width) - len(table))
 
         dialect = fhe if on.is_scalar else fhelinalg

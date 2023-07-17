@@ -157,6 +157,12 @@ def can_change_precision(node):
     """Detect if a node completely ties inputs/output precisions together."""
     if (
         node.properties.get("name") in ROUNDING
+        and node.properties["kwargs"]["is_raw"]
+    ):
+        return True
+    
+    if (
+        node.properties.get("name") in ROUNDING
         and node.properties["attributes"]["overflow_protection"]
     ):
         return False  # protection can change precision
