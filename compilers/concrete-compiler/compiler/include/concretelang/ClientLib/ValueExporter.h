@@ -238,9 +238,18 @@ protected:
   /// Simulate encrypt and export a 64bits integer to a serializale value
   outcome::checked<ScalarOrTensorData, StringError>
   exportEncryptValue(uint64_t arg, CircuitGate &gate, size_t argPos) override {
-    uint64_t encValue = 0;
-    OUTCOME_TRYV(encryptValue(gate, argPos, &encValue, arg));
-    return ScalarData(encValue);
+    auto crtVec = gate.encryption->encoding.crt;
+    if (crtVec.empty()) {
+      uint64_t encValue = 0;
+      OUTCOME_TRYV(encryptValue(gate, argPos, &encValue, arg));
+      return ScalarData(encValue);
+    } else {
+      TensorData td(bufferShape(gate), clientlib::EncryptedScalarElementType,
+                    clientlib::EncryptedScalarElementWidth);
+      OUTCOME_TRYV(
+          encryptValue(gate, argPos, td.getElementPointer<uint64_t>(0), arg));
+      return std::move(td);
+    }
   }
 
   outcome::checked<CircuitGate, StringError> inputGate(size_t argPos) override {
