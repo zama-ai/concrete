@@ -362,7 +362,7 @@ struct FunctionToDag {
     index[result] = resultNode;
 
     mlir::Builder builder(mulOp.getContext());
-    mlir::SmallVector<int32_t, 5> operatorIndexes = {
+    mlir::SmallVector<int32_t, 6> operatorIndexes = {
         (int32_t)addNode.index,    (int32_t)lhsTluNode.index,
         (int32_t)subNode.index,    (int32_t)rhsCorrectionNode.index,
         (int32_t)rhsTluNode.index, (int32_t)resultNode.index};

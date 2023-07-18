@@ -42,6 +42,7 @@ public:
 
     // Get the operator indexes stored in FHE.mul operator to annotated FHE
     // nodes
+    // see addTensorInnerProductEncEnc for refrence index in operatorIndexes
     auto operatorIndexes =
         op->getAttrOfType<mlir::DenseI32ArrayAttr>("TFHE.OId");
     // Note:
@@ -80,7 +81,7 @@ public:
     if (operatorIndexes != nullptr) {
       std::vector<int32_t> sumTluIndexes{operatorIndexes[1]};
       if (isSigned) {
-        sumTluIndexes = {operatorIndexes[6], operatorIndexes[1]};
+        sumTluIndexes = {operatorIndexes[0], operatorIndexes[1]};
       }
       sumTluOutput->setAttr("TFHE.OId",
                             rewriter.getDenseI32ArrayAttr(sumTluIndexes));
@@ -113,8 +114,8 @@ public:
     auto diffTluOutput = rewriter.create<FHE::ApplyLookupTableEintOp>(
         op->getLoc(), inputType, diff, diffLut);
     if (operatorIndexes != nullptr) {
-      std::vector<int32_t> diffTluIndexes{operatorIndexes[3],
-                                          operatorIndexes[4]};
+      std::vector<int32_t> diffTluIndexes{operatorIndexes[2],
+                                          operatorIndexes[3]};
       diffTluOutput->setAttr("TFHE.OId",
                              rewriter.getDenseI32ArrayAttr(diffTluIndexes));
     }
@@ -124,7 +125,7 @@ public:
                                                   sumTluOutput, diffTluOutput);
     if (operatorIndexes != nullptr)
       output->setAttr("TFHE.OId",
-                      rewriter.getI32IntegerAttr(operatorIndexes[5]));
+                      rewriter.getI32IntegerAttr(operatorIndexes[4]));
 
     rewriter.replaceOp(op, {output});
 
