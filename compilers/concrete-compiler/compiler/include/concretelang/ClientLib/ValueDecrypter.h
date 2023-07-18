@@ -54,10 +54,22 @@ public:
       return value.getScalar().getValue<T>();
 
     if (isSimulated()) {
-      // value is a scalar in simulation
-      auto ciphertext = value.getScalar().getValue<uint64_t>();
-      OUTCOME_TRY(auto decrypted, decryptValue(pos, &ciphertext));
-      return (T)decrypted;
+      OUTCOME_TRY(auto gate, outputGate(pos));
+      auto crtVec = gate.encryption->encoding.crt;
+      if (crtVec.empty()) {
+        // value is a scalar
+        auto ciphertext = value.getScalar().getValue<uint64_t>();
+        OUTCOME_TRY(auto decrypted, decryptValue(pos, &ciphertext));
+        return (T)decrypted;
+      } else {
+        // value is a tensor (crt)
+        auto &buffer = value.getTensor();
+        auto ciphertext = buffer.getOpaqueElementPointer(0);
+        OUTCOME_TRY(
+            auto decrypted,
+            decryptValue(pos, reinterpret_cast<uint64_t *>(ciphertext)));
+        return (T)decrypted;
+      }
     }
 
     auto &buffer = value.getTensor();
