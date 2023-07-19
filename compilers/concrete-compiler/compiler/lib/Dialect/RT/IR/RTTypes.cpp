@@ -10,7 +10,7 @@ namespace concretelang {
 namespace RT {
 
 void FutureType::print(mlir::AsmPrinter &p) const {
-  p << "future<";
+  p << "<";
   p.printType(getElementType());
   p << ">";
 }
@@ -31,7 +31,7 @@ mlir::Type FutureType::parse(mlir::AsmParser &parser) {
 }
 
 void PointerType::print(mlir::AsmPrinter &p) const {
-  p << "rtptr<";
+  p << "<";
   p.printType(getElementType());
   p << ">";
 }
