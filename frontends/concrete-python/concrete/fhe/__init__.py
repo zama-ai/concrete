@@ -173,5 +173,6 @@ from .tracing.typing import (
     uint63,
     uint64,
 )
+from .version import __version__
 
 # pylint: enable=import-error,no-name-in-module
