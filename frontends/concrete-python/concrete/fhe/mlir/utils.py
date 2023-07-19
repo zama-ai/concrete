@@ -12,6 +12,7 @@ from typing import Any, DefaultDict, List, Optional, Tuple, Union, cast
 import numpy as np
 from mlir.dialects import tensor
 from mlir.dialects._ods_common import get_op_results_or_values
+from mlir.ir import Location as MlirLocation
 from mlir.ir import OpResult as MlirOperation
 from mlir.ir import Type as MlirType
 from mlir.ir import Value as MlirValue
@@ -209,7 +210,7 @@ def construct_deduplicated_tables(
 class _FromElementsOp(tensor.FromElementsOp):
     """Replace missing tensor.FromElementsOp.__init__."""
 
-    def __init__(self, result: MlirType, *elements: MlirOperation):
+    def __init__(self, result: MlirType, *elements: MlirOperation, loc: MlirLocation = None):
         assert isinstance(result, MlirType)
         elements = get_op_results_or_values(list(elements))
         assert all(isinstance(element, (MlirOperation, MlirValue)) for element in elements)
@@ -220,7 +221,7 @@ class _FromElementsOp(tensor.FromElementsOp):
                 operands=elements,
                 successors=None,
                 regions=None,
-                loc=None,
+                loc=loc,
                 ip=None,
             )
         )

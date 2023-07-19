@@ -19,6 +19,7 @@ from mlir.ir import DenseI64ArrayAttr as MlirDenseI64ArrayAttr
 from mlir.ir import IndexType
 from mlir.ir import IntegerAttr as MlirIntegerAttr
 from mlir.ir import IntegerType
+from mlir.ir import Location as MlirLocation
 from mlir.ir import OpResult as MlirOperation
 from mlir.ir import RankedTensorType
 from mlir.ir import Type as MlirType
@@ -110,6 +111,14 @@ class Context:
         return result if value.is_scalar else self.tensor(result, value.shape)
 
     # utilities
+
+    def location(self) -> MlirLocation:
+        """
+        Create an MLIR location from the node that is being converted.
+        """
+
+        tag = "" if self.converting.tag == "" else f" @ {self.converting.tag}"
+        return MlirLocation.name(f"{self.converting.location}{tag}", context=self.context)
 
     def attribute(self, resulting_type: ConversionType, value: Any) -> MlirAttribute:
         """
@@ -213,10 +222,13 @@ class Context:
         cached_conversion = self.conversion_cache.get(cache_key)
 
         if cached_conversion is None:
+            # since the operations are cached
+            # if an operation is repeated in a different location,
+            # it'll have the location of the first instance of that operation
             if operation not in [tensor.ExtractOp, tensor.InsertSliceOp]:
-                result = operation(resulting_type.mlir, *args, **kwargs).result
+                result = operation(resulting_type.mlir, *args, **kwargs, loc=self.location()).result
             else:
-                result = operation(*args, **kwargs).result
+                result = operation(*args, **kwargs, loc=self.location()).result
 
             cached_conversion = Conversion(self.converting, result)
             if original_bit_width is not None:
@@ -678,7 +690,7 @@ class Context:
         if cached_conversion is None:
             cached_conversion = Conversion(
                 self.converting,
-                arith.ConstantOp(resulting_type, attribute),
+                arith.ConstantOp(resulting_type, attribute, loc=self.location()),
             )
 
             try:
