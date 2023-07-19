@@ -485,7 +485,7 @@ cmdlineCompilationOptions() {
   options.optimizerConfig.cache_on_disk = !cmdline::optimizerNoCacheOnDisk;
 
   if (!std::isnan(options.optimizerConfig.global_p_error) &&
-      options.optimizerConfig.strategy) {
+      options.optimizerConfig.strategy == optimizer::Strategy::V0) {
     return llvm::make_error<llvm::StringError>(
         "--global-error-probability is not compatible with --optimizer-v0",
         llvm::inconvertibleErrorCode());
