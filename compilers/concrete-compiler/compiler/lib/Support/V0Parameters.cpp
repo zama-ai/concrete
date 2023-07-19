@@ -287,7 +287,9 @@ llvm::Error checkPErrorSolution(Solution solution, optimizer::Config config) {
     return StreamStringError() << "Cannot find crypto parameters";
   }
 
-  if (/*descr.dag &&*/ !config.display && /*naive_user &&*/
+  bool naive_config = (std::isnan(config.global_p_error) &&
+                       config.p_error <= WARN_ABOVE_GLOBAL_ERROR_RATE);
+  if (!config.display && naive_config &&
       solution.global_p_error > WARN_ABOVE_GLOBAL_ERROR_RATE) {
     llvm::errs() << "WARNING: high error rate, more details with "
                     "--display-optimizer-choice\n";
