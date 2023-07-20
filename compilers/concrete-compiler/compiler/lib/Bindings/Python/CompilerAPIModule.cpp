@@ -8,6 +8,8 @@
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
+#include <mlir-c/Bindings/Python/Interop.h>
+#include <mlir/CAPI/IR.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -129,6 +131,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   pybind11::class_<mlir::concretelang::JITLambda,
                    std::shared_ptr<mlir::concretelang::JITLambda>>(m,
                                                                    "JITLambda");
+  pybind11::class_<mlir::concretelang::CompilationContext,
+                   std::shared_ptr<mlir::concretelang::CompilationContext>>(
+      m, "CompilationContext")
+      .def(pybind11::init([]() {
+        return mlir::concretelang::CompilationContext::createShared();
+      }))
+      .def("mlir_context",
+           [](std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
+             auto mlirCtx = cctx->getMLIRContext();
+             return pybind11::reinterpret_steal<pybind11::object>(
+                 mlirPythonContextToCapsule(wrap(mlirCtx)));
+           });
   pybind11::class_<JITSupport_Py>(m, "JITSupport")
       .def(pybind11::init([](std::string runtimeLibPath) {
         return jit_support(runtimeLibPath);
@@ -138,6 +152,16 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               CompilationOptions options) {
              SignalGuard signalGuard;
              return jit_compile(support, mlir_program.c_str(), options);
+           })
+      .def("compile",
+           [](JITSupport_Py &support, pybind11::object mlir_module,
+              CompilationOptions options,
+              std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
+             SignalGuard signalGuard;
+             return jit_compile_module(
+                 support,
+                 unwrap(mlirPythonCapsuleToModule(mlir_module.ptr())).clone(),
+                 options, cctx);
            })
       .def("load_client_parameters",
            [](JITSupport_Py &support,
@@ -190,6 +214,16 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               mlir::concretelang::CompilationOptions options) {
              SignalGuard signalGuard;
              return library_compile(support, mlir_program.c_str(), options);
+           })
+      .def("compile",
+           [](LibrarySupport_Py &support, pybind11::object mlir_module,
+              mlir::concretelang::CompilationOptions options,
+              std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
+             SignalGuard signalGuard;
+             return library_compile_module(
+                 support,
+                 unwrap(mlirPythonCapsuleToModule(mlir_module.ptr())).clone(),
+                 options, cctx);
            })
       .def("load_client_parameters",
            [](LibrarySupport_Py &support,

@@ -358,6 +358,11 @@ public:
       llvm::SourceMgr &program,
       CompilationOptions options = CompilationOptions("main")) = 0;
 
+  llvm::Expected<std::unique_ptr<CompilationResult>> virtual compile(
+      mlir::ModuleOp program,
+      std::shared_ptr<mlir::concretelang::CompilationContext> cctx,
+      CompilationOptions options = CompilationOptions("main")) = 0;
+
   llvm::Expected<std::unique_ptr<CompilationResult>>
   compile(llvm::StringRef program,
           CompilationOptions options = CompilationOptions("main")) {

@@ -52,24 +52,17 @@ public:
     auto context = CompilationContext::createShared();
     concretelang::CompilerEngine engine(context);
     engine.setCompilationOptions(options);
+    return compileWithEngine<llvm::SourceMgr &>(program, options, engine);
+  }
 
-    // Compile to a library
-    auto library = engine.compile(
-        program, outputPath, runtimeLibraryPath, generateSharedLib,
-        generateStaticLib, generateClientParameters,
-        generateCompilationFeedback, generateCppHeader);
-    if (auto err = library.takeError()) {
-      return std::move(err);
-    }
-
-    if (!options.clientParametersFuncName.has_value()) {
-      return StreamStringError("Need to have a funcname to compile library");
-    }
-
-    auto result = std::make_unique<LibraryCompilationResult>();
-    result->outputDirPath = outputPath;
-    result->funcName = *options.clientParametersFuncName;
-    return std::move(result);
+  llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
+  compile(mlir::ModuleOp program,
+          std::shared_ptr<mlir::concretelang::CompilationContext> cctx,
+          CompilationOptions options) override {
+    // Setup the compiler engine
+    concretelang::CompilerEngine engine(cctx);
+    engine.setCompilationOptions(options);
+    return compileWithEngine<mlir::ModuleOp>(program, options, engine);
   }
   using LambdaSupport::compile;
 
@@ -169,6 +162,29 @@ private:
   bool generateClientParameters;
   bool generateCompilationFeedback;
   bool generateCppHeader;
+
+  template <typename T>
+  llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
+  compileWithEngine(T program, CompilationOptions options,
+                    concretelang::CompilerEngine &engine) {
+    // Compile to a library
+    auto library = engine.compile(
+        program, outputPath, runtimeLibraryPath, generateSharedLib,
+        generateStaticLib, generateClientParameters,
+        generateCompilationFeedback, generateCppHeader);
+    if (auto err = library.takeError()) {
+      return std::move(err);
+    }
+
+    if (!options.clientParametersFuncName.has_value()) {
+      return StreamStringError("Need to have a funcname to compile library");
+    }
+
+    auto result = std::make_unique<LibraryCompilationResult>();
+    result->outputDirPath = outputPath;
+    result->funcName = *options.clientParametersFuncName;
+    return std::move(result);
+  }
 };
 
 } // namespace concretelang

@@ -245,9 +245,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   CompilationOptions &options = this->compilerOptions;
 
-  // enable/disable usage of gpu functions during bufferization
-  EMIT_GPU_OPS = options.emitGPUOps;
-
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
 
   if (options.verifyDiagnostics) {
@@ -263,6 +260,32 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   mlir::OwningOpRef<mlir::ModuleOp> mlirModuleRef =
       mlir::parseSourceFile<mlir::ModuleOp>(sm, &mlirContext);
 
+  if (options.verifyDiagnostics) {
+    if (smHandler->verify().failed())
+      return StreamStringError("Verification of diagnostics failed");
+    else
+      return std::move(res);
+  }
+
+  if (!mlirModuleRef) {
+    return errorDiag("Could not parse source");
+  }
+
+  return compile(mlirModuleRef.release(), target, lib);
+}
+
+llvm::Expected<CompilerEngine::CompilationResult>
+CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
+                        OptionalLib lib) {
+  CompilationResult res(this->compilationContext);
+
+  CompilationOptions &options = this->compilerOptions;
+
+  mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
+
+  // enable/disable usage of gpu functions during bufferization
+  EMIT_GPU_OPS = options.emitGPUOps;
+
   auto dataflowParallelize =
       options.autoParallelize || options.dataflowParallelize;
   if (options.optimizerConfig.strategy == optimizer::Strategy::DAG_MULTI &&
@@ -276,12 +299,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
           "parallelization disabled.");
   }
   auto loopParallelize = options.autoParallelize || options.loopParallelize;
-  if (options.verifyDiagnostics) {
-    if (smHandler->verify().failed())
-      return StreamStringError("Verification of diagnostics failed");
-    else
-      return std::move(res);
-  }
 
   if (loopParallelize)
     mlir::concretelang::dfr::_dfr_set_use_omp(true);
@@ -289,10 +306,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (dataflowParallelize)
     mlir::concretelang::dfr::_dfr_set_required(true);
 
-  if (!mlirModuleRef) {
-    return errorDiag("Could not parse source");
-  }
-
+  mlir::OwningOpRef<mlir::ModuleOp> mlirModuleRef(moduleOp);
   res.mlirModuleRef = std::move(mlirModuleRef);
   mlir::ModuleOp module = res.mlirModuleRef->get();
 
@@ -321,7 +335,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::transformFHEBoolean(mlirContext, module,
                                                         enablePass)
           .failed()) {
-    return errorDiag("Transforming FHE boolean ops failed");
+    return StreamStringError("Transforming FHE boolean ops failed");
   }
 
   if (options.chunkIntegers) {
@@ -329,7 +343,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
             mlirContext, module, enablePass, options.chunkSize,
             options.chunkWidth)
             .failed()) {
-      return errorDiag("Transforming FHE big integer ops failed");
+      return StreamStringError("Transforming FHE big integer ops failed");
     }
   }
 
@@ -342,13 +356,14 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     if (mlir::concretelang::pipeline::markFHELinalgForTiling(
             mlirContext, module, *options.fhelinalgTileSizes, enablePass)
             .failed())
-      return errorDiag("Marking of FHELinalg operations for tiling failed");
+      return StreamStringError(
+          "Marking of FHELinalg operations for tiling failed");
   }
 
   if (mlir::concretelang::pipeline::tileMarkedFHELinalg(mlirContext, module,
                                                         enablePass)
           .failed()) {
-    return errorDiag("Tiling of FHELinalg operations failed");
+    return StreamStringError("Tiling of FHELinalg operations failed");
   }
 
   // Dataflow parallelization
@@ -365,7 +380,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::lowerFHELinalgToFHE(
           mlirContext, module, res.fheContext, enablePass, loopParallelize)
           .failed()) {
-    return errorDiag("Lowering from FHELinalg to FHE failed");
+    return StreamStringError("Lowering from FHELinalg to FHE failed");
   }
 
   if (mlir::concretelang::pipeline::transformHighLevelFHEOps(mlirContext,
@@ -381,7 +396,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,
                                                    res.fheContext, enablePass)
           .failed()) {
-    return errorDiag("Lowering from FHE to TFHE failed");
+    return StreamStringError("Lowering from FHE to TFHE failed");
   }
 
   // Optimizing TFHE
@@ -389,7 +404,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       mlir::concretelang::pipeline::optimizeTFHE(mlirContext, module,
                                                  this->enablePass)
           .failed()) {
-    return errorDiag("Optimizing TFHE failed");
+    return StreamStringError("Optimizing TFHE failed");
   }
 
   if (target == Target::TFHE)
@@ -398,7 +413,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::parametrizeTFHE(mlirContext, module,
                                                     res.fheContext, enablePass)
           .failed()) {
-    return errorDiag("Parametrization of TFHE operations failed");
+    return StreamStringError("Parametrization of TFHE operations failed");
   }
 
   if (target == Target::PARAMETRIZED_TFHE)
@@ -408,7 +423,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::normalizeTFHEKeys(mlirContext, module,
                                                       this->enablePass)
           .failed()) {
-    return errorDiag("Normalizing TFHE keys failed");
+    return StreamStringError("Normalizing TFHE keys failed");
   }
 
   // Generate client parameters if requested
@@ -454,7 +469,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     if (mlir::concretelang::pipeline::batchTFHE(mlirContext, module, enablePass,
                                                 options.maxBatchSize)
             .failed()) {
-      return errorDiag("Batching of TFHE operations");
+      return StreamStringError("Batching of TFHE operations");
     }
   }
 
@@ -465,7 +480,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     if (mlir::concretelang::pipeline::simulateTFHE(mlirContext, module,
                                                    this->enablePass)
             .failed()) {
-      return errorDiag("Simulating TFHE failed");
+      return StreamStringError("Simulating TFHE failed");
     }
   }
 
@@ -476,7 +491,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::lowerTFHEToConcrete(mlirContext, module,
                                                         this->enablePass)
           .failed()) {
-    return errorDiag("Lowering from TFHE to Concrete failed");
+    return StreamStringError("Lowering from TFHE to Concrete failed");
   }
 
   if (target == Target::CONCRETE)
@@ -489,8 +504,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
             mlirContext, module, enablePass,
             options.unrollLoopsWithSDFGConvertibleOps)
             .failed()) {
-      return errorDiag("Extraction of SDFG operations from Concrete "
-                       "representation failed");
+      return StreamStringError("Extraction of SDFG operations from Concrete "
+                               "representation failed");
     }
   }
 
@@ -502,15 +517,17 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::lowerConcreteToStd(
           mlirContext, module, enablePass, options.simulate)
           .failed()) {
-    return errorDiag("Lowering from Bufferized Concrete to canonical MLIR "
-                     "dialects failed");
+    return StreamStringError(
+        "Lowering from Bufferized Concrete to canonical MLIR "
+        "dialects failed");
   }
 
   // SDFG -> Canonical dialects
   if (mlir::concretelang::pipeline::lowerSDFGToStd(mlirContext, module,
                                                    enablePass)
           .failed()) {
-    return errorDiag("Lowering from SDFG to canonical MLIR dialects failed");
+    return StreamStringError(
+        "Lowering from SDFG to canonical MLIR dialects failed");
   }
 
   if (target == Target::STD)
@@ -520,7 +537,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(
           mlirContext, module, enablePass, loopParallelize, options.emitGPUOps)
           .failed()) {
-    return errorDiag("Failed to lower to LLVM dialect");
+    return StreamStringError("Failed to lower to LLVM dialect");
   }
 
   if (target == Target::LLVM)
@@ -541,7 +558,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (mlir::concretelang::pipeline::optimizeLLVMModule(llvmContext,
                                                        *res.llvmModule)
           .failed()) {
-    return errorDiag("Failed to optimize LLVM IR");
+    return StreamStringError("Failed to optimize LLVM IR");
   }
 
   if (target == Target::OPTIMIZED_LLVM_IR)
@@ -608,17 +625,17 @@ llvm::Expected<CompilerEngine::Library> CompilerEngine::compile(
   return *outputLib.get();
 }
 
-llvm::Expected<CompilerEngine::Library>
-CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
-                        std::string runtimeLibraryPath, bool generateSharedLib,
-                        bool generateStaticLib, bool generateClientParameters,
-                        bool generateCompilationFeedback,
-                        bool generateCppHeader) {
+template <typename T>
+llvm::Expected<CompilerEngine::Library> compileModuleOrSource(
+    CompilerEngine *engine, T module, std::string outputDirPath,
+    std::string runtimeLibraryPath, bool generateSharedLib,
+    bool generateStaticLib, bool generateClientParameters,
+    bool generateCompilationFeedback, bool generateCppHeader) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
 
-  auto compilation = compile(sm, target, outputLib);
+  auto compilation = engine->compile(module, target, outputLib);
   if (!compilation) {
     return StreamStringError("Can't compile: ")
            << llvm::toString(compilation.takeError());
@@ -631,6 +648,30 @@ CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
            << llvm::toString(std::move(err));
   }
   return *outputLib.get();
+}
+
+llvm::Expected<CompilerEngine::Library>
+CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
+                        std::string runtimeLibraryPath, bool generateSharedLib,
+                        bool generateStaticLib, bool generateClientParameters,
+                        bool generateCompilationFeedback,
+                        bool generateCppHeader) {
+  return compileModuleOrSource<llvm::SourceMgr &>(
+      this, sm, outputDirPath, runtimeLibraryPath, generateSharedLib,
+      generateStaticLib, generateClientParameters, generateCompilationFeedback,
+      generateCppHeader);
+}
+
+llvm::Expected<CompilerEngine::Library>
+CompilerEngine::compile(mlir::ModuleOp module, std::string outputDirPath,
+                        std::string runtimeLibraryPath, bool generateSharedLib,
+                        bool generateStaticLib, bool generateClientParameters,
+                        bool generateCompilationFeedback,
+                        bool generateCppHeader) {
+  return compileModuleOrSource<mlir::ModuleOp>(
+      this, module, outputDirPath, runtimeLibraryPath, generateSharedLib,
+      generateStaticLib, generateClientParameters, generateCompilationFeedback,
+      generateCppHeader);
 }
 
 /// Returns the path of the shared library

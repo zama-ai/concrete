@@ -14,13 +14,10 @@ namespace concretelang {
 JITSupport::JITSupport(std::optional<std::string> runtimeLibPath)
     : runtimeLibPath(runtimeLibPath) {}
 
+template <typename T>
 llvm::Expected<std::unique_ptr<JitCompilationResult>>
-JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
-  // Setup the compiler engine
-  auto context = std::make_shared<CompilationContext>();
-  concretelang::CompilerEngine engine(context);
-
-  engine.setCompilationOptions(options);
+JITSupport::compileWithEngine(T program, CompilationOptions options,
+                              concretelang::CompilerEngine &engine) {
   // Compile to LLVM Dialect
   auto compilationResult =
       engine.compile(program, CompilerEngine::Target::LLVM_IR);
@@ -56,6 +53,27 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
     result->feedback = compilationResult.get().feedback.value();
   }
   return std::move(result);
+}
+
+llvm::Expected<std::unique_ptr<JitCompilationResult>>
+JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
+  // Setup the compiler engine
+  auto context = CompilationContext::createShared();
+  concretelang::CompilerEngine engine(context);
+
+  engine.setCompilationOptions(options);
+  return compileWithEngine<llvm::SourceMgr &>(program, options, engine);
+}
+
+llvm::Expected<std::unique_ptr<JitCompilationResult>> JITSupport::compile(
+    mlir::ModuleOp program,
+    std::shared_ptr<mlir::concretelang::CompilationContext> cctx,
+    CompilationOptions options) {
+  // Setup the compiler engine
+  concretelang::CompilerEngine engine(cctx);
+
+  engine.setCompilationOptions(options);
+  return compileWithEngine<mlir::ModuleOp>(program, options, engine);
 }
 
 } // namespace concretelang
