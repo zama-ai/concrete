@@ -38,6 +38,10 @@ public:
 
   llvm::Expected<std::unique_ptr<JitCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override;
+  llvm::Expected<std::unique_ptr<JitCompilationResult>>
+  compile(mlir::ModuleOp program,
+          std::shared_ptr<mlir::concretelang::CompilationContext> cctx,
+          CompilationOptions options) override;
   using LambdaSupport::compile;
 
   llvm::Expected<std::shared_ptr<concretelang::JITLambda>>
@@ -63,6 +67,11 @@ public:
   }
 
 private:
+  template <typename T>
+  llvm::Expected<std::unique_ptr<JitCompilationResult>>
+  compileWithEngine(T program, CompilationOptions options,
+                    concretelang::CompilerEngine &engine);
+
   std::optional<std::string> runtimeLibPath;
   llvm::function_ref<llvm::Error(llvm::Module *)> llvmOptPipeline;
 };

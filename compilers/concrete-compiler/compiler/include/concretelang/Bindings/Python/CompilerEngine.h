@@ -42,6 +42,12 @@ MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
 jit_compile(JITSupport_Py support, const char *module,
             mlir::concretelang::CompilationOptions options);
 
+MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
+jit_compile_module(
+    JITSupport_Py support, mlir::ModuleOp module,
+    mlir::concretelang::CompilationOptions options,
+    std::shared_ptr<mlir::concretelang::CompilationContext> cctx);
+
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 jit_load_client_parameters(JITSupport_Py support,
                            mlir::concretelang::JitCompilationResult &);
@@ -75,6 +81,12 @@ library_support(const char *outputPath, const char *runtimeLibraryPath,
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
 library_compile(LibrarySupport_Py support, const char *module,
                 mlir::concretelang::CompilationOptions options);
+
+MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
+library_compile_module(
+    LibrarySupport_Py support, mlir::ModuleOp module,
+    mlir::concretelang::CompilationOptions options,
+    std::shared_ptr<mlir::concretelang::CompilationContext> cctx);
 
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 library_load_client_parameters(LibrarySupport_Py support,

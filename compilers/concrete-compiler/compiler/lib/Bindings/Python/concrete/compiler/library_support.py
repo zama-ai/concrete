@@ -7,15 +7,17 @@ Library support provides a way to compile an MLIR program into a library that ca
 to execute the compiled code.
 """
 import os
-from typing import Optional
+from typing import Optional, Union
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
     LibrarySupport as _LibrarySupport,
 )
+from mlir.ir import Module as MlirModule
 
 # pylint: enable=no-name-in-module,import-error
 from .compilation_options import CompilationOptions
+from .compilation_context import CompilationContext
 from .library_compilation_result import LibraryCompilationResult
 from .public_arguments import PublicArguments
 from .library_lambda import LibraryLambda
@@ -127,30 +129,49 @@ class LibrarySupport(WrapperCpp):
 
     def compile(
         self,
-        mlir_program: str,
+        mlir_program: Union[str, MlirModule],
         options: CompilationOptions = CompilationOptions.new("main"),
+        compilation_context: Optional[CompilationContext] = None,
     ) -> LibraryCompilationResult:
         """Compile an MLIR program using Concrete dialects into a library.
 
         Args:
-            mlir_program (str): textual representation of the mlir program to compile
+            mlir_program (Union[str, MlirModule]): mlir program to compile (textual or in-memory)
             options (CompilationOptions): compilation options
 
         Raises:
-            TypeError: if mlir_program is not of type str
+            TypeError: if mlir_program is not of type str or MlirModule
             TypeError: if options is not of type CompilationOptions
 
         Returns:
             LibraryCompilationResult: the result of the library compilation
         """
-        if not isinstance(mlir_program, str):
+        if not isinstance(mlir_program, (str, MlirModule)):
             raise TypeError(
-                f"mlir_program must be of type str, not {type(mlir_program)}"
+                f"mlir_program must be of type str or MlirModule, not {type(mlir_program)}"
             )
         if not isinstance(options, CompilationOptions):
             raise TypeError(
                 f"options must be of type CompilationOptions, not {type(options)}"
             )
+        # get the PyCapsule of the module
+        if isinstance(mlir_program, MlirModule):
+            if compilation_context is None:
+                raise ValueError(
+                    "compilation_context must be provided when compiling a module object"
+                )
+            if not isinstance(compilation_context, CompilationContext):
+                raise TypeError(
+                    f"compilation_context must be of type CompilationContext, not "
+                    f"{type(compilation_context)}"
+                )
+            # pylint: disable=protected-access
+            return LibraryCompilationResult.wrap(
+                self.cpp().compile(
+                    mlir_program._CAPIPtr, options.cpp(), compilation_context.cpp()
+                )
+            )
+            # pylint: enable=protected-access
         return LibraryCompilationResult.wrap(
             self.cpp().compile(mlir_program, options.cpp())
         )

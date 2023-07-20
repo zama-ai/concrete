@@ -36,6 +36,16 @@ jit_compile(JITSupport_Py support, const char *module,
   return std::move(*compilationResult);
 }
 
+MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
+jit_compile_module(
+    JITSupport_Py support, mlir::ModuleOp module,
+    mlir::concretelang::CompilationOptions options,
+    std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
+  GET_OR_THROW_LLVM_EXPECTED(compilationResult,
+                             support.support.compile(module, cctx, options));
+  return std::move(*compilationResult);
+}
+
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 jit_load_client_parameters(JITSupport_Py support,
                            mlir::concretelang::JitCompilationResult &result) {
@@ -85,6 +95,16 @@ library_compile(LibrarySupport_Py support, const char *module,
                 mlir::concretelang::CompilationOptions options) {
   GET_OR_THROW_LLVM_EXPECTED(compilationResult,
                              support.support.compile(module, options));
+  return std::move(*compilationResult);
+}
+
+MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
+library_compile_module(
+    LibrarySupport_Py support, mlir::ModuleOp module,
+    mlir::concretelang::CompilationOptions options,
+    std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
+  GET_OR_THROW_LLVM_EXPECTED(compilationResult,
+                             support.support.compile(module, cctx, options));
   return std::move(*compilationResult);
 }
 

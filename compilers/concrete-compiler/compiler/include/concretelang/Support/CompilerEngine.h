@@ -282,6 +282,10 @@ public:
   compile(llvm::SourceMgr &sm, Target target,
           std::optional<std::shared_ptr<Library>> lib = {});
 
+  llvm::Expected<CompilationResult>
+  compile(mlir::ModuleOp module, Target target,
+          std::optional<std::shared_ptr<Library>> lib = {});
+
   llvm::Expected<CompilerEngine::Library>
   compile(std::vector<std::string> inputs, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
@@ -293,6 +297,13 @@ public:
   /// manager.
   llvm::Expected<CompilerEngine::Library>
   compile(llvm::SourceMgr &sm, std::string outputDirPath,
+          std::string runtimeLibraryPath = "", bool generateSharedLib = true,
+          bool generateStaticLib = true, bool generateClientParameters = true,
+          bool generateCompilationFeedback = true,
+          bool generateCppHeader = true);
+
+  llvm::Expected<CompilerEngine::Library>
+  compile(mlir::ModuleOp module, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
           bool generateCompilationFeedback = true,
