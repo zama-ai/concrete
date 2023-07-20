@@ -7,7 +7,8 @@ Declaration of `Circuit` class.
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import SimulatedValueDecrypter, SimulatedValueExporter
+from concrete.compiler import CompilationContext, SimulatedValueDecrypter, SimulatedValueExporter
+from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
 from ..representation import Graph
@@ -29,17 +30,25 @@ class Circuit:
     configuration: Configuration
 
     graph: Graph
-    mlir: str
+    mlir_module: MlirModule
+    compilation_context: CompilationContext
 
     client: Client
     server: Server
     simulator: Server
 
-    def __init__(self, graph: Graph, mlir: str, configuration: Optional[Configuration] = None):
+    def __init__(
+        self,
+        graph: Graph,
+        mlir: MlirModule,
+        compilation_context: CompilationContext,
+        configuration: Optional[Configuration] = None,
+    ):
         self.configuration = configuration if configuration is not None else Configuration()
 
         self.graph = graph
-        self.mlir = mlir
+        self.mlir_module = mlir
+        self.compilation_context = compilation_context
 
         if self.configuration.fhe_simulation:
             self.enable_fhe_simulation()
@@ -50,13 +59,27 @@ class Circuit:
     def __str__(self):
         return self.graph.format()
 
+    @property
+    def mlir(self) -> str:
+        """Textual representation of the MLIR module.
+
+        Returns:
+            str: textual representation of the MLIR module
+        """
+        return str(self.mlir_module).strip()
+
     def enable_fhe_simulation(self):
         """
         Enable FHE simulation.
         """
 
         if not hasattr(self, "simulator"):
-            self.simulator = Server.create(self.mlir, self.configuration, is_simulated=True)
+            self.simulator = Server.create(
+                self.mlir_module,
+                self.configuration,
+                is_simulated=True,
+                compilation_context=self.compilation_context,
+            )
 
     def enable_fhe_execution(self):
         """
@@ -64,7 +87,9 @@ class Circuit:
         """
 
         if not hasattr(self, "server"):
-            self.server = Server.create(self.mlir, self.configuration)
+            self.server = Server.create(
+                self.mlir_module, self.configuration, compilation_context=self.compilation_context
+            )
 
             keyset_cache_directory = None
             if self.configuration.use_insecure_key_cache:

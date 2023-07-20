@@ -34,7 +34,9 @@ class Converter:
     Converter class, to convert a computation graph to MLIR.
     """
 
-    def convert(self, graph: Graph, configuration: Configuration) -> str:
+    def convert(
+        self, graph: Graph, configuration: Configuration, mlir_context: MlirContext
+    ) -> MlirModule:
         """
         Convert a computation graph to MLIR.
 
@@ -45,14 +47,17 @@ class Converter:
             configuration (Configuration):
                 configuration to use
 
+            mlir_context (MlirContext):
+                MLIR Context to use for module generation
+
         Return:
-            str:
-                MLIR corresponding to graph
+            MlirModule:
+                In-memory MLIR module corresponding to the graph
         """
 
         graph = self.process(graph, configuration)
 
-        with MlirContext() as context, MlirLocation.unknown():
+        with mlir_context as context, MlirLocation.unknown():
             concrete.lang.register_dialects(context)  # pylint: disable=no-member
 
             module = MlirModule.create()
@@ -88,7 +93,7 @@ class Converter:
 
                     return tuple(outputs)
 
-        return str(module).strip()
+        return module
 
     @staticmethod
     def stdout_with_ansi_support() -> bool:
