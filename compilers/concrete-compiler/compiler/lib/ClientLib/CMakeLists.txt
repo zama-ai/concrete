@@ -17,7 +17,6 @@ add_mlir_library(
 
 target_include_directories(ConcretelangClientLib PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
 
-find_package(OpenMP REQUIRED)
 
 add_library(libcompresslwe.a STATIC IMPORTED)
 set_property(TARGET libcompresslwe.a PROPERTY IMPORTED_LOCATION ${COMPRESS_LWE_INSTALL_DIR}/lib/libcompresslwe.a)
@@ -40,6 +39,6 @@ else()
   message("GMP not found")
 endif()
 
-target_link_libraries(ConcretelangClientLib PUBLIC libcompresslwe.a libhcs.a OpenMP::OpenMP_CXX  gmp )#OpenSSL::Crypto)
+target_link_libraries(ConcretelangClientLib PUBLIC libcompresslwe.a libhcs.a omp gmp)
 
 
