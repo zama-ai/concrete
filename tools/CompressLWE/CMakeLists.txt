@@ -30,6 +30,8 @@ find_package(OpenMP)
 
 add_library(compresslwe STATIC src/defines.cpp src/library.cpp src/utils.cpp src/serialize.cpp)
 
+set_source_files_properties(library.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
+
 add_executable(main src/main.cpp)
 add_executable(tests src/tests.cpp)
 # Link your application with the HCS library
