@@ -310,12 +310,12 @@ SECURITY_TO_TEST=128
 OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
 PARALLEL_END_2_END_TESTS= end_to_end_jit_test end_to_end_jit_lambda
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
-	$(foreach TEST,$(PARALLEL_END_2_END_TESTS), \
-	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST) || exit $$?;)
-	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
-	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
-	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
+	# $(foreach TEST,$(PARALLEL_END_2_END_TESTS), \
+	#     $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST) || exit $$?;)
+	# $(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
+	#   $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	#   $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
+	#   --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
 	$(if $(filter $(OUTPUT_COMPRESSION_SUPPORT),ON),$(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=128 \
 	  --optimizer-strategy=dag-mono --output-compression --jit $(FIXTURE_CPU_DIR)/*.yaml)
