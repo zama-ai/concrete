@@ -519,6 +519,26 @@ static bool isStaticLoop(mlir::scf::ForOp forOp, int64_t *ilb = nullptr,
   return false;
 }
 
+// Checks whether `v` is a constant value of type index
+static bool isConstantIndexValue(mlir::Value v) {
+  return v.getDefiningOp() &&
+         llvm::isa<mlir::arith::ConstantIndexOp>(*v.getDefiningOp());
+}
+
+/// Assumes that `v` is a constant index operation and returns the
+/// constant value as an `int64_t`.
+static int64_t getConstantIndexValue(mlir::Value v) {
+  assert(isConstantIndexValue(v));
+
+  return llvm::dyn_cast<mlir::arith::ConstantIndexOp>(*v.getDefiningOp())
+      .value();
+}
+
+// Checks whether `v` is a constant value of type index and its values is `i`
+static bool isConstantIndexValue(mlir::Value v, int64_t i) {
+  return isConstantIndexValue(v) && getConstantIndexValue(v) == i;
+}
+
 llvm::SmallVector<mlir::Value>
 buildNormalizedIndexes(mlir::PatternRewriter &rewriter,
                        llvm::ArrayRef<mlir::scf::ForOp> nest) {
@@ -530,10 +550,18 @@ buildNormalizedIndexes(mlir::PatternRewriter &rewriter,
   rewriter.setInsertionPointToStart(innermost.getBody());
 
   for (mlir::scf::ForOp forOp : nest) {
-    mlir::Value idxShifted = rewriter.create<mlir::arith::SubIOp>(
-        innermost.getLoc(), forOp.getInductionVar(), forOp.getLowerBound());
-    mlir::Value idx = rewriter.create<mlir::arith::DivSIOp>(
-        innermost.getLoc(), idxShifted, forOp.getStep());
+
+    mlir::Value idxShifted =
+        isConstantIndexValue(forOp.getLowerBound(), 0)
+            ? forOp.getInductionVar()
+            : rewriter.create<mlir::arith::SubIOp>(innermost.getLoc(),
+                                                   forOp.getInductionVar(),
+                                                   forOp.getLowerBound());
+    mlir::Value idx =
+        isConstantIndexValue(forOp.getStep(), 1)
+            ? idxShifted
+            : rewriter.create<mlir::arith::DivSIOp>(
+                  innermost.getLoc(), idxShifted, forOp.getStep());
 
     res.push_back(idx);
   }
@@ -551,21 +579,6 @@ static mlir::OpFoldResult getValueAsOpFoldResult(mlir::Value v) {
   }
 
   return v;
-}
-
-// Checks whether `v` is a constant value of type index
-static bool isConstantIndexValue(mlir::Value v) {
-  return v.getDefiningOp() &&
-         llvm::isa<mlir::arith::ConstantIndexOp>(*v.getDefiningOp());
-}
-
-/// Assumes that `v` is a constant index operation and returns the
-/// constant value as an `int64_t`.
-static int64_t getConstantIndexValue(mlir::Value v) {
-  assert(isConstantIndexValue(v));
-
-  return llvm::dyn_cast<mlir::arith::ConstantIndexOp>(*v.getDefiningOp())
-      .value();
 }
 
 // /// Returns a `Value` from an `OpFoldResult`. If the `OpFoldResult` is
