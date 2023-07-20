@@ -13,6 +13,7 @@ from typing import List, Optional, Tuple, Union
 # mypy: disable-error-code=attr-defined
 import concrete.compiler
 from concrete.compiler import (
+    CompilationContext,
     CompilationFeedback,
     CompilationOptions,
     EvaluationKeys,
@@ -25,6 +26,7 @@ from concrete.compiler import (
     PublicArguments,
 )
 from mlir._mlir_libs._concretelang._compiler import OptimizerStrategy
+from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
 from .configuration import (
@@ -81,19 +83,27 @@ class Server:
         )
 
     @staticmethod
-    def create(mlir: str, configuration: Configuration, is_simulated: bool = False) -> "Server":
+    def create(
+        mlir: Union[str, MlirModule],
+        configuration: Configuration,
+        is_simulated: bool = False,
+        compilation_context: Optional[CompilationContext] = None,
+    ) -> "Server":
         """
         Create a server using MLIR and output sign information.
 
         Args:
-            mlir (str):
+            mlir (MlirModule):
                 mlir to compile
-
-            configuration (Configuration):
-                configuration to use
 
             is_simulated (bool, default = False):
                 whether to compile in simulation mode or not
+
+            configuration (Optional[Configuration]):
+                configuration to use
+
+            compilation_context (CompilationContext):
+                context to use for the Compiler
         """
 
         options = CompilationOptions.new("main")
@@ -154,7 +164,9 @@ class Server:
             output_dir = None
 
             support = JITSupport.new()
-            compilation_result = support.compile(mlir, options)
+
+            mlir_to_compile = mlir if isinstance(mlir, str) else str(mlir)
+            compilation_result = support.compile(mlir_to_compile, options)
             server_lambda = support.load_server_lambda(compilation_result)
 
         else:
@@ -166,7 +178,13 @@ class Server:
             support = LibrarySupport.new(
                 str(output_dir_path), generateCppHeader=False, generateStaticLib=False
             )
-            compilation_result = support.compile(mlir, options)
+            if isinstance(mlir, str):
+                compilation_result = support.compile(mlir, options)
+            else:  # MlirModule
+                assert (
+                    compilation_context is not None
+                ), "must provide compilation context when compiling MlirModule"
+                compilation_result = support.compile(mlir, options, compilation_context)
             server_lambda = support.load_server_lambda(compilation_result)
 
         client_parameters = support.load_client_parameters(compilation_result)
@@ -182,7 +200,7 @@ class Server:
         )
 
         # pylint: disable=protected-access
-        result._mlir = mlir
+        result._mlir = str(mlir).strip()
         result._configuration = configuration
         # pylint: enable=protected-access
 

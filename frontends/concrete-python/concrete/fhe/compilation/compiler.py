@@ -10,6 +10,7 @@ from enum import Enum, unique
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
+from concrete.compiler import CompilationContext
 
 from ..extensions import AutoRounder
 from ..mlir import GraphConverter
@@ -45,6 +46,8 @@ class Compiler:
 
     inputset: List[Any]
     graph: Optional[Graph]
+
+    compilation_context: CompilationContext
 
     _is_direct: bool
     _parameter_values: Dict[str, ValueDescription]
@@ -154,6 +157,8 @@ class Compiler:
 
         self.inputset = []
         self.graph = None
+
+        self.compilation_context = CompilationContext.new()
 
         self._is_direct = False
         self._parameter_values = {}
@@ -446,9 +451,13 @@ class Compiler:
                 message = "Function you are trying to compile cannot be compiled\n\n" + fmtd_graph
                 raise RuntimeError(message)
 
-            mlir = GraphConverter().convert(self.graph, self.configuration)
+            # in-memory MLIR module
+            mlir_context = self.compilation_context.mlir_context()
+            mlir_module = GraphConverter().convert(self.graph, self.configuration, mlir_context)
+            # textual representation of the MLIR module
+            mlir_str = str(mlir_module).strip()
             if self.artifacts is not None:
-                self.artifacts.add_mlir_to_compile(mlir)
+                self.artifacts.add_mlir_to_compile(mlir_str)
 
             show_graph = (
                 self.configuration.show_graph
@@ -475,7 +484,7 @@ class Compiler:
                 )
 
                 longest_graph_line = max(len(line) for line in graph.split("\n"))
-                longest_mlir_line = max(len(line) for line in mlir.split("\n"))
+                longest_mlir_line = max(len(line) for line in mlir_str.split("\n"))
                 longest_line = max(longest_graph_line, longest_mlir_line)
 
                 try:  # pragma: no cover
@@ -506,7 +515,7 @@ class Compiler:
 
                     print("MLIR")
                     print("-" * columns)
-                    print(mlir)
+                    print(mlir_str)
                     print("-" * columns)
 
                     print()
@@ -517,7 +526,12 @@ class Compiler:
                     print("Optimizer")
                     print("-" * columns)
 
-            circuit = Circuit(self.graph, mlir, self.configuration)
+            circuit = Circuit(
+                self.graph,
+                mlir_module,
+                self.compilation_context,
+                self.configuration,
+            )
 
             if hasattr(circuit, "client"):
                 client_parameters = circuit.client.specs.client_parameters
