@@ -629,4 +629,29 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_levelled_only() {
+        let mut dag = unparametrized::OperationDag::new();
+        let _ = dag.add_input(22, Shape::number());
+        let config = Config {
+            security_level: 128,
+            maximum_acceptable_error_probability: _4_SIGMA,
+            ciphertext_modulus_log: 64,
+            fft_precision: 53,
+            complexity_model: &CpuComplexity::default(),
+        };
+
+        let search_space = SearchSpace::default_cpu();
+        let sol = super::optimize_to_circuit_solution(
+            &dag,
+            config,
+            &search_space,
+            &SHARED_CACHES,
+            &None,
+        );
+        let sol_mono = solo_key::optimize::tests::optimize(&dag).best_solution.unwrap();
+        assert! (sol.circuit_keys.secret_keys.len() == 1);
+        assert! (sol.circuit_keys.secret_keys[0].polynomial_size == sol_mono.glwe_polynomial_size);
+    }
 }

@@ -8,6 +8,8 @@ use crate::optimization::dag::multi_parameters::analyze::{analyze, AnalyzedDag};
 use crate::optimization::dag::multi_parameters::fast_keyswitch;
 use crate::optimization::dag::multi_parameters::fast_keyswitch::FksComplexityNoise;
 use crate::optimization::dag::multi_parameters::operations_value::OperationsValue;
+use crate::optimization::dag::solo_key::analyze::lut_count_from_dag;
+use crate::optimization::dag::solo_key::optimize::optimize as optimize_mono;
 use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
 use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::{cmux, keyswitch, DecompCaches, PersistDecompCaches};
@@ -1125,6 +1127,16 @@ pub fn optimize_to_circuit_solution(
     persistent_caches: &PersistDecompCaches,
     p_cut: &Option<PrecisionCut>,
 ) -> keys_spec::CircuitSolution {
+    if lut_count_from_dag(dag) == 0 {
+        let nb_instr = dag.operators.len();
+        if let Some(sol) = optimize_mono(dag, config, search_space, persistent_caches).best_solution
+        {
+            return keys_spec::CircuitSolution::from_native_solution(sol, nb_instr);
+        }
+        return keys_spec::CircuitSolution::no_solution(
+            "No crypto-parameters for the given constraints",
+        );
+    }
     let default_partition = 0;
     let dag_and_params = optimize(
         dag,
@@ -1150,16 +1162,7 @@ pub fn optimize_to_circuit_solution(
             error_msg: String::default(),
         }
     } else {
-        keys_spec::CircuitSolution {
-            circuit_keys: keys_spec::CircuitKeys::default(),
-            instructions_keys: vec![],
-            crt_decomposition: vec![],
-            complexity: f64::INFINITY,
-            p_error: 1.0,
-            global_p_error: 1.0,
-            is_feasible: false,
-            error_msg: "No crypto-parameters for the given constraints".into(),
-        }
+        keys_spec::CircuitSolution::no_solution("No crypto-parameters for the given constraints")
     }
 }
 

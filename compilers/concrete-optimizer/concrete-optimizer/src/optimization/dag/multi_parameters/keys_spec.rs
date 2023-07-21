@@ -1,4 +1,4 @@
-use crate::optimization::wop_atomic_pattern;
+use crate::optimization::{atomic_pattern, wop_atomic_pattern};
 use crate::parameters::{BrDecompositionParameters, KsDecompositionParameters};
 
 use crate::optimization::dag::multi_parameters::optimize::{MacroParameters, REAL_FAST_KS};
@@ -213,6 +213,105 @@ impl CircuitSolution {
             global_p_error: sol.p_error,
             crt_decomposition: sol.crt_decomposition,
             is_feasible: true,
+            error_msg,
+        }
+    }
+
+    pub fn from_native_solution(sol: atomic_pattern::Solution, nb_instr: usize) -> Self {
+        let is_feasible = sol.p_error < 1.0;
+        let error_msg = if is_feasible {
+            ""
+        } else {
+            "No crypto-parameters for the given constraints"
+        }
+        .into();
+        let big_key = SecretLweKey {
+            identifier: 0,
+            polynomial_size: sol.glwe_polynomial_size,
+            glwe_dimension: sol.glwe_dimension,
+            description: "big representation".into(),
+        };
+        if sol.internal_ks_output_lwe_dimension == 0 {
+            let instruction_keys = InstructionKeys {
+                input_key: big_key.identifier,
+                tlu_keyswitch_key: NO_KEY_ID,
+                tlu_bootstrap_key: NO_KEY_ID,
+                tlu_circuit_bootstrap_key: NO_KEY_ID,
+                tlu_private_functional_packing_key: NO_KEY_ID,
+                output_key: big_key.identifier,
+                extra_conversion_keys: vec![],
+            };
+            let circuit_keys = CircuitKeys {
+                secret_keys: [big_key].into(),
+                keyswitch_keys: [].into(),
+                bootstrap_keys: [].into(),
+                conversion_keyswitch_keys: [].into(),
+                circuit_bootstrap_keys: [].into(),
+                private_functional_packing_keys: [].into(),
+            };
+            return Self {
+                circuit_keys,
+                instructions_keys: vec![instruction_keys; nb_instr],
+                crt_decomposition: vec![],
+                complexity: sol.complexity,
+                p_error: sol.p_error,
+                global_p_error: sol.global_p_error,
+                is_feasible,
+                error_msg,
+            };
+        }
+        let small_key = SecretLweKey {
+            identifier: 1,
+            polynomial_size: sol.internal_ks_output_lwe_dimension,
+            glwe_dimension: 1,
+            description: "small representation".into(),
+        };
+        let keyswitch_key = KeySwitchKey {
+            identifier: 0,
+            input_key: big_key.clone(),
+            output_key: small_key.clone(),
+            ks_decomposition_parameter: KsDecompositionParameters {
+                level: sol.ks_decomposition_level_count,
+                log2_base: sol.ks_decomposition_base_log,
+            },
+            description: "tlu keyswitch".into(),
+        };
+        let bootstrap_key = BootstrapKey {
+            identifier: 0,
+            input_key: small_key.clone(),
+            output_key: big_key.clone(),
+            br_decomposition_parameter: BrDecompositionParameters {
+                level: sol.br_decomposition_level_count,
+                log2_base: sol.br_decomposition_base_log,
+            },
+            description: "tlu bootstrap".into(),
+        };
+        let instruction_keys = InstructionKeys {
+            input_key: big_key.identifier,
+            tlu_keyswitch_key: keyswitch_key.identifier,
+            tlu_bootstrap_key: bootstrap_key.identifier,
+            tlu_circuit_bootstrap_key: NO_KEY_ID,
+            tlu_private_functional_packing_key: NO_KEY_ID,
+            output_key: big_key.identifier,
+            extra_conversion_keys: vec![],
+        };
+        let instructions_keys = vec![instruction_keys; nb_instr];
+        let circuit_keys = CircuitKeys {
+            secret_keys: [big_key, small_key].into(),
+            keyswitch_keys: [keyswitch_key].into(),
+            bootstrap_keys: [bootstrap_key].into(),
+            conversion_keyswitch_keys: [].into(),
+            circuit_bootstrap_keys: [].into(),
+            private_functional_packing_keys: [].into(),
+        };
+        Self {
+            circuit_keys,
+            instructions_keys,
+            crt_decomposition: vec![],
+            complexity: sol.complexity,
+            p_error: sol.p_error,
+            global_p_error: sol.global_p_error,
+            is_feasible,
             error_msg,
         }
     }
