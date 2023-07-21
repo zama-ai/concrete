@@ -396,6 +396,8 @@ void SimulateTFHEPass::runOnOperation() {
                   mlir::concretelang::TypeConvertingReinstantiationPattern<
                       mlir::scf::YieldOp>,
                   mlir::concretelang::TypeConvertingReinstantiationPattern<
+                      mlir::tensor::FromElementsOp>,
+                  mlir::concretelang::TypeConvertingReinstantiationPattern<
                       mlir::tensor::ExtractOp>,
                   mlir::concretelang::TypeConvertingReinstantiationPattern<
                       mlir::tensor::ExtractSliceOp, true>,
@@ -414,11 +416,12 @@ void SimulateTFHEPass::runOnOperation() {
       mlir::tensor::YieldOp, mlir::scf::YieldOp, mlir::tensor::GenerateOp,
       mlir::tensor::ExtractSliceOp, mlir::tensor::ExtractOp,
       mlir::tensor::InsertOp, mlir::tensor::InsertSliceOp,
-      mlir::tensor::ExpandShapeOp, mlir::tensor::CollapseShapeOp,
-      mlir::bufferization::AllocTensorOp>([&](mlir::Operation *op) {
-    return converter.isLegal(op->getResultTypes()) &&
-           converter.isLegal(op->getOperandTypes());
-  });
+      mlir::tensor::FromElementsOp, mlir::tensor::ExpandShapeOp,
+      mlir::tensor::CollapseShapeOp, mlir::bufferization::AllocTensorOp>(
+      [&](mlir::Operation *op) {
+        return converter.isLegal(op->getResultTypes()) &&
+               converter.isLegal(op->getOperandTypes());
+      });
   // Make sure that no ops `linalg.generic` that have illegal types
   target
       .addDynamicallyLegalOp<mlir::linalg::GenericOp, mlir::tensor::GenerateOp>(
