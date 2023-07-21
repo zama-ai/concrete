@@ -296,6 +296,8 @@ pub fn lut_count_from_dag(dag: &unparametrized::OperationDag) -> u64 {
     for (i, op) in dag.operators.iter().enumerate() {
         if let Op::Lut { .. } = op {
             count += dag.out_shapes[i].flat_size();
+        } else if let Op::Round { out_precision, .. } = op {
+            count += dag.out_shapes[i].flat_size() * (dag.out_precisions[i] - out_precision) as u64;
         }
     }
     count
