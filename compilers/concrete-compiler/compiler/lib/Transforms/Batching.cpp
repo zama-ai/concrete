@@ -281,7 +281,7 @@ static mlir::Value flattenTensor(mlir::ImplicitLocOpBuilder &builder,
   mlir::RankedTensorType type = v.getType().dyn_cast<mlir::RankedTensorType>();
   assert(type && "Value type is not a ranked tensor");
 
-  if (type.getShape().size() == 1) {
+  if (type.getShape().size() - trailingDimensions == 1) {
     return v;
   } else {
     mlir::ReassociationIndices prefixCollapseGroup;
