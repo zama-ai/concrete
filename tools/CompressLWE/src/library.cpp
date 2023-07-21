@@ -34,6 +34,19 @@ uint64_t to_uint64_t(mpz_class &res) {
   return result;
 }
 
+mpz_class from_uint64_t(uint64_t res) {
+
+  uint64_t high2 = res >> 32;
+
+  mpz_class high = (uint32_t)high2;
+
+  uint64_t low2 = res - (((uint64_t)high2) >> 32);
+
+  mpz_class low = (uint32_t)low2;
+
+  return (high << 32) + low;
+}
+
 mpz_vec get_scales(const mpz &scale, size_t s) {
   mpz_vec _scales(s);
   *((mpz_class *)_scales[0].ptr) = 1_mpz;
@@ -58,7 +71,7 @@ mpz compressSingle(comp::CompressionKey &compressionKey, const uint64_t *lweCt,
     schedule(static)
   for (uint64_t i = 0; i < lwe_dim; i++) {
     uint64_t minus = -lweCt[i];
-    mpz_class _a = mpz_class(minus);
+    mpz_class _a = from_uint64_t(minus);
     ahe_pk.ep_mul(prod[i], *to_raw(compressionKey.compKey[i]), _a);
   }
 
