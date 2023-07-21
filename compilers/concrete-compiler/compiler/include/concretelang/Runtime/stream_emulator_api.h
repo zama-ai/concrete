@@ -15,6 +15,7 @@ typedef enum stream_type {
   TS_STREAM_TYPE_X86_TO_TOPO_LSAP,
   TS_STREAM_TYPE_TOPO_TO_TOPO_LSAP,
   TS_STREAM_TYPE_TOPO_TO_X86_LSAP,
+  TS_STREAM_TYPE_TOPO_TO_BOTH,
   TS_STREAM_TYPE_X86_TO_X86_LSAP
 } stream_type;
 template <size_t N> struct MemRefDescriptor {

@@ -186,10 +186,14 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
       SDFG::MakeStream prodOutStream;
       SDFG::MakeStream consInStream;
 
+      mlir::OpBuilder::InsertPoint getPos;
       if (smk == StreamMappingKind::SPLICE ||
           smk == StreamMappingKind::TO_HOST) {
         ilb.setInsertionPoint(start);
-        prodOutStream = makeStream(ilb, SDFG::StreamKind::device_to_host,
+        prodOutStream = makeStream(ilb,
+                                   (smk == StreamMappingKind::TO_HOST)
+                                       ? SDFG::StreamKind::device_to_host
+                                       : SDFG::StreamKind::device_to_both,
                                    v.getType(), dfg, streamNumber);
         processOutMapping.insert({v, prodOutStream});
 
@@ -199,6 +203,7 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
         mlir::Value newOutVal =
             ilb.create<SDFG::Get>(v.getType(), prodOutStream.getResult());
         replacementMapping.insert({v, newOutVal});
+        getPos = ilb.saveInsertionPoint();
       } else if (smk == StreamMappingKind::ON_DEVICE) {
         ilb.setInsertionPoint(start);
         prodOutStream = makeStream(ilb, SDFG::StreamKind::on_device,
@@ -206,22 +211,19 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
         processOutMapping.insert({v, prodOutStream});
       }
 
-      if (smk == StreamMappingKind::ON_DEVICE) {
+      if (smk == StreamMappingKind::ON_DEVICE ||
+          smk == StreamMappingKind::SPLICE) {
         processInMapping.insert({v, prodOutStream});
-      } else if (smk == StreamMappingKind::SPLICE ||
-                 smk == StreamMappingKind::TO_DEVICE ||
-                 smk == StreamMappingKind::ON_DEVICE) {
+      } else if (smk == StreamMappingKind::TO_DEVICE) {
         ilb.setInsertionPoint(start);
         consInStream = makeStream(ilb, SDFG::StreamKind::host_to_device,
                                   v.getType(), dfg, streamNumber);
         processInMapping.insert({v, consInStream});
 
-        if (smk == StreamMappingKind::TO_DEVICE) {
-          ilb.setInsertionPointAfter(start);
-          mlir::OpBuilder::InsertPoint pos = ilb.saveInsertionPoint();
-          setInsertionPointAfterValueOrRestore(ilb, v, pos);
-          ilb.create<SDFG::Put>(consInStream.getResult(), v);
-        }
+        ilb.setInsertionPointAfter(start);
+        mlir::OpBuilder::InsertPoint pos = ilb.saveInsertionPoint();
+        setInsertionPointAfterValueOrRestore(ilb, v, pos);
+        ilb.create<SDFG::Put>(consInStream.getResult(), v);
       }
     };
 
