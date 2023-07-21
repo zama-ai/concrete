@@ -79,6 +79,8 @@ jobs:
           ls /opt/homebrew
           ls /opt/homebrew/include
           tree -L 3 /opt/homebrew
+          echo "find /opt/homebrew -name omp.h"
+          find /opt/homebrew -name "omp.h"
           cd tools/CompressLWE
           mkdir build
           cd build
