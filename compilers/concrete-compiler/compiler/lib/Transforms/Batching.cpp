@@ -143,6 +143,21 @@ llvm::DenseSet<T> setMinus(llvm::DenseSet<T> &a, llvm::DenseSet<T> &b) {
   return res;
 }
 
+// Returns a vector, which contains all elements of `a` that appear
+// in `f`. Order is preserved.
+template <typename T>
+llvm::SmallVector<T> filterVector(llvm::SmallVector<T> &a,
+                                  llvm::DenseSet<T> &f) {
+  llvm::SmallVector<T> res;
+
+  for (T &elt : a) {
+    if (f.contains(elt))
+      res.push_back(elt);
+  }
+
+  return res;
+}
+
 // Returns the index of the first operand of `op` that uses `v`. The
 // value `v` must be referenced by at least one operand, otherwise an
 // assertion is triggered.
@@ -1804,15 +1819,23 @@ private:
   int64_t maxBatchSize;
 };
 
-// Returns the set of loops whose IVs are referenced in the indexing
-// dimensions of `op` and which only appear in pure quasi-affine
-// expressions with a constant step wrt. to the iteration space and
-// where the step is equal to the size times the offset of the
-// dimension indexed by the expression.
+// Returns a pair containing:
+//
+//  - the set of loops whose IVs are referenced in the indexing
+//    dimensions of `op` and which only appear in pure quasi-affine
+//    expressions with a constant step wrt. to the iteration space and
+//    where the step is equal to the size times the offset of the
+//    dimension indexed by the expression.
+//
+//  - an array defining the order in which these loop IVs are
+//    referenced in the indexes
+//
 template <typename IndexedOpTy>
-llvm::DenseSet<mlir::scf::ForOp> getLoopsForCandidateIndexes(IndexedOpTy op) {
+std::pair<llvm::DenseSet<mlir::scf::ForOp>, llvm::SmallVector<mlir::scf::ForOp>>
+getLoopsForCandidateIndexes(IndexedOpTy op) {
   llvm::DenseSet<mlir::scf::ForOp> allIVs;
   llvm::DenseSet<mlir::scf::ForOp> qaIVs;
+  llvm::SmallVector<mlir::scf::ForOp> orderedQAIVs;
 
   for (auto it : llvm::enumerate(IndexedOpInfo<IndexedOpTy>::getOffsets(op))) {
     mlir::Value expr = it.value();
@@ -1830,13 +1853,19 @@ llvm::DenseSet<mlir::scf::ForOp> getLoopsForCandidateIndexes(IndexedOpTy op) {
       if (qaLoop) {
         int64_t sliceExtents = getSliceExtents(op, dimIdx);
 
-        if (sliceExtents == 1 || sliceExtents == bas.step)
+        if (sliceExtents == 1 || sliceExtents == bas.step) {
           qaIVs.insert(qaLoop);
+          orderedQAIVs.push_back(qaLoop);
+        }
       }
     }
   }
 
-  return setMinus(qaIVs, allIVs);
+  llvm::DenseSet<mlir::scf::ForOp> res = setMinus(qaIVs, allIVs);
+  llvm::SmallVector<mlir::scf::ForOp> orderedRes =
+      filterVector(orderedQAIVs, res);
+
+  return std::make_pair(std::move(res), std::move(orderedRes));
 }
 
 /// Cleanup pattern that replaces a chain of a `tensor.extract` /
@@ -1915,8 +1944,9 @@ public:
       // which the element is extracted.
       InsertOpTy currInsertOp;
 
-      llvm::DenseSet<mlir::scf::ForOp> qaLoopsExtract =
-          getLoopsForCandidateIndexes(currExtractOp);
+      std::pair<llvm::DenseSet<mlir::scf::ForOp>,
+                llvm::SmallVector<mlir::scf::ForOp>>
+          qaLoopsExtract = getLoopsForCandidateIndexes(currExtractOp);
 
       for (mlir::OpOperand &extractUser : currExtractOp->getUses()) {
         if (InsertOpTy currInsertOp =
@@ -1943,17 +1973,31 @@ public:
               !isSoleUser(currInsertOp.getDest(), currInsertOp))
             continue;
 
-          llvm::DenseSet<mlir::scf::ForOp> qaLoopsInsert =
-              getLoopsForCandidateIndexes(currInsertOp);
+          std::pair<llvm::DenseSet<mlir::scf::ForOp>,
+                    llvm::SmallVector<mlir::scf::ForOp>>
+              qaLoopsInsert = getLoopsForCandidateIndexes(currInsertOp);
 
           llvm::DenseSet<mlir::scf::ForOp> qaLoopsBoth =
-              intersectSets(qaLoopsExtract, qaLoopsInsert);
+              intersectSets(qaLoopsExtract.first, qaLoopsInsert.first);
 
           if (qaLoopsBoth.size() == 0)
             continue;
 
           if (!qaLoopsBoth.contains(currInnermostFor))
             continue;
+
+          // Indexes must appear in the same order and the same number
+          // of times, such that the extracted and inserted slices
+          // after the cleanup have the same shape and order
+          llvm::SmallVector<mlir::scf::ForOp> orderedLoopsExtract =
+              filterVector(qaLoopsExtract.second, qaLoopsBoth);
+          llvm::SmallVector<mlir::scf::ForOp> orderedLoopsInsert =
+              filterVector(qaLoopsInsert.second, qaLoopsBoth);
+
+          if (orderedLoopsExtract.size() != orderedLoopsInsert.size() ||
+              orderedLoopsExtract != orderedLoopsInsert) {
+            continue;
+          }
 
           mlir::scf::ForOp candidateOutermostFor;
           mlir::scf::ForOp candidateInnermostFor;
