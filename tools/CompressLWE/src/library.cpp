@@ -58,7 +58,7 @@ mpz compressSingle(comp::CompressionKey &compressionKey, const uint64_t *lweCt,
     schedule(static)
   for (uint64_t i = 0; i < lwe_dim; i++) {
     uint64_t minus = -lweCt[i];
-    mpz_class _a = minus;
+    mpz_class _a = mpz_class(minus);
     ahe_pk.ep_mul(prod[i], *to_raw(compressionKey.compKey[i]), _a);
   }
 
