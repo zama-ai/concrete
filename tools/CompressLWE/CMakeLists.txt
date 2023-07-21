@@ -26,11 +26,28 @@ else()
     message("GMP not found")
 endif()
 
-find_package(OpenMP)
+if(APPLE)
+  set(CMAKE_C_COMPILER clang)
+  set(CMAKE_CXX_COMPILER clang++)
+
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang\$")
+    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
+    set(OpenMP_C_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY omp)
+  endif()
+
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang\$")
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY omp)
+  endif()
+endif()
+
+find_package(OpenMP REQUIRED)
 
 add_library(compresslwe STATIC src/defines.cpp src/library.cpp src/utils.cpp src/serialize.cpp)
 
-set_source_files_properties(library.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
+# set_source_files_properties(library.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
 
 add_executable(main src/main.cpp)
 add_executable(tests src/tests.cpp)
