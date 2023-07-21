@@ -85,7 +85,7 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
-            dnf install -y gmp-devel zstd libzstd libzstd-devel
+            dnf install -y gmp-devel
             make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all build-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
