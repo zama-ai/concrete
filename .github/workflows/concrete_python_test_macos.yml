@@ -34,7 +34,7 @@ jobs:
 
       - name: Install OS Dependencies
         run: |
-          brew install ninja ccache gmp
+          brew install ninja ccache gmp libomp
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
