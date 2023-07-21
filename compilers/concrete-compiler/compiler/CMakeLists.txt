@@ -193,8 +193,7 @@ ExternalProject_Add(
                     ${PROJECT_SOURCE_DIR}/../../../tools/CompressLWE -DCMAKE_INSTALL_PREFIX=${COMPRESS_LWE_INSTALL_DIR}
   BUILD_COMMAND cmake --build ${COMPRESS_LWE_BIN_DIR} --target compresslwe
   INSTALL_COMMAND cmake --build ${COMPRESS_LWE_BIN_DIR} --target install
-  BUILD_BYPRODUCTS ${COMPRESS_LWE_INSTALL_DIR}/lib/libcompresslwe.a ${COMPRESS_LWE_INSTALL_DIR}/lib/libhcs.a
-)
+  BUILD_BYPRODUCTS ${COMPRESS_LWE_INSTALL_DIR}/lib/libcompresslwe.a ${COMPRESS_LWE_INSTALL_DIR}/lib/libhcs.a)
 
 # --------------------------------------------------------------------------------
 # Python Configuration
