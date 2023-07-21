@@ -74,6 +74,7 @@ jobs:
       - name: Build
         run: |
           set -e
+          which brew
           cd tools/CompressLWE
           mkdir build
           cd build
