@@ -337,6 +337,9 @@ struct LowerSDFGMakeStream
     case SDFG::StreamKind::device_to_host:
       t = TS_STREAM_TYPE_TOPO_TO_X86_LSAP;
       break;
+    case SDFG::StreamKind::device_to_both:
+      t = TS_STREAM_TYPE_TOPO_TO_BOTH;
+      break;
     }
     auto sType = msOp->getResultTypes()[0].dyn_cast_or_null<SDFG::StreamType>();
     assert(sType && "SDFG MakeStream operation should return a stream type");

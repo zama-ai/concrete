@@ -21,9 +21,11 @@ class SDFG_Op<string mnemonic, list<Trait> traits = []> :
 def StreamKindHostToDevice : I32EnumAttrCase<"host_to_device", 0>;
 def StreamKindOnDevice : I32EnumAttrCase<"on_device", 1>;
 def StreamKindDeviceToHost : I32EnumAttrCase<"device_to_host", 2>;
+def StreamKindDeviceToBoth : I32EnumAttrCase<"device_to_both", 3>;
 
 def StreamKind : I32EnumAttr<"StreamKind", "Stream kind",
-  [StreamKindOnDevice, StreamKindHostToDevice, StreamKindDeviceToHost]> {
+  [StreamKindOnDevice, StreamKindHostToDevice, StreamKindDeviceToHost,
+  StreamKindDeviceToBoth]> {
   let genSpecializedAttr = 0;
   let cppNamespace = "::mlir::concretelang::SDFG";
 }
@@ -73,12 +75,14 @@ def SDFG_MakeStream : SDFG_Op<"make_stream"> {
     let extraClassDeclaration = [{
       bool createsInputStream() {
         return getType() == StreamKind::host_to_device ||
-          getType() == StreamKind::on_device;
+          getType() == StreamKind::on_device ||
+          getType() == StreamKind::device_to_both;
       }
 
       bool createsOutputStream() {
         return getType() == StreamKind::device_to_host ||
-          getType() == StreamKind::on_device;
+          getType() == StreamKind::on_device ||
+          getType() == StreamKind::device_to_both;
       }
     }];
 }
