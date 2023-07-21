@@ -73,8 +73,12 @@ jobs:
       # and will at least give minimum confidence that the compiler works in PRs
       - name: Build
         run: |
-          set -e
+          # set -e
           which brew
+          brew install tree
+          ls /opt/homebrew
+          ls /opt/homebrew/include
+          tree -L 3 /opt/homebrew
           cd tools/CompressLWE
           mkdir build
           cd build
