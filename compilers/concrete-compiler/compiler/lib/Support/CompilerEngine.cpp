@@ -465,17 +465,6 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   if (target == Target::NORMALIZED_TFHE)
     return std::move(res);
 
-  if (options.batchTFHEOps) {
-    if (mlir::concretelang::pipeline::batchTFHE(mlirContext, module, enablePass,
-                                                options.maxBatchSize)
-            .failed()) {
-      return StreamStringError("Batching of TFHE operations");
-    }
-  }
-
-  if (target == Target::BATCHED_TFHE)
-    return std::move(res);
-
   if (options.simulate) {
     if (mlir::concretelang::pipeline::simulateTFHE(mlirContext, module,
                                                    this->enablePass)
@@ -485,6 +474,17 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   }
 
   if (target == Target::SIMULATED_TFHE)
+    return std::move(res);
+
+  if (options.batchTFHEOps) {
+    if (mlir::concretelang::pipeline::batchTFHE(mlirContext, module, enablePass,
+                                                options.maxBatchSize)
+            .failed()) {
+      return StreamStringError("Batching of TFHE operations");
+    }
+  }
+
+  if (target == Target::BATCHED_TFHE)
     return std::move(res);
 
   // TFHE -> Concrete
