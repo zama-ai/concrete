@@ -1,4 +1,5 @@
 #include <bootstrap.h>
+#include <bootstrap_multibit.h>
 #include <cmath>
 #include <concrete-cpu.h>
 #include <cstdint>
@@ -248,8 +249,9 @@ void generate_lwe_multi_bit_pbs_keys(
         pbs_level, grouping_factor, sqrt(variance), 0, 0);
     uint64_t *d_bsk = *d_bsk_array + (ptrdiff_t)(shift_bsk);
     uint64_t *bsk = bsk_array + (ptrdiff_t)(shift_bsk);
-    cuda_memcpy_async_to_gpu(d_bsk, bsk, bsk_size * sizeof(uint64_t), stream,
-                             gpu_index);
+    cuda_convert_lwe_multi_bit_bootstrap_key_64(
+        d_bsk, bsk, stream, gpu_index, lwe_dimension, glwe_dimension, pbs_level,
+        polynomial_size, grouping_factor);
     shift_in += lwe_dimension;
     shift_out += glwe_dimension * polynomial_size;
     shift_bsk += bsk_size;
