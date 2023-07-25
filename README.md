@@ -147,6 +147,18 @@ If you have built awesome projects using Concrete, feel free to let us know and 
   <img src="https://user-images.githubusercontent.com/5758427/231145251-9cb3f03f-3e0e-4750-afb8-2e6cf391fa43.png">
 </a>
 
+## Citing Concrete
+To cite Concrete in academic papers, please use the following entry:
+
+```text
+@Misc{Concrete,
+  title={{Concrete: TFHE Compiler that converts python programs into FHE equivalent}},
+  author={Zama},
+  year={2022},
+  note={\url{https://github.com/zama-ai/concrete}},
+}
+```
+
 ## License
 
 This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, please contact us at hello@zama.ai.

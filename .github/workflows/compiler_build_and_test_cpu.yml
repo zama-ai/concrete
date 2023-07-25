@@ -113,6 +113,7 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             pip install pytest
+            dnf install -y libzstd libzstd-devel
             sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-rust-tests run-end-to-end-dataflow-tests

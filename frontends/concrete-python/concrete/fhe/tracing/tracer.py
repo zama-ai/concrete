@@ -465,6 +465,12 @@ class Tracer:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
                 kwargs["newshape"] = args[1]
+        elif func is np.sum:
+            sanitized_args = [self.sanitize(args[0])]
+            for i, keyword in enumerate(["axis", "dtype", "out", "keepdims", "initial", "where"]):
+                position = i + 1
+                if len(args) > position:
+                    kwargs[keyword] = args[position]
         elif func is np.transpose:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
@@ -699,12 +705,17 @@ class Tracer:
 
         return Tracer._trace_numpy_operation(np.reshape, self, newshape=(self.output.size,))
 
-    def reshape(self, newshape: Tuple[Any, ...]) -> "Tracer":
+    def reshape(self, *newshape: Union[Any, Tuple[Any, ...]]) -> "Tracer":
         """
         Trace numpy.ndarray.reshape(newshape).
         """
 
-        return Tracer._trace_numpy_operation(np.reshape, self, newshape=newshape)
+        if len(newshape) == 1 and isinstance(newshape[0], tuple):
+            shape = newshape[0]
+        else:
+            shape = tuple(int(size) for size in newshape)  # type: ignore
+
+        return Tracer._trace_numpy_operation(np.reshape, self, newshape=shape)
 
     def round(self, decimals: int = 0) -> "Tracer":
         """

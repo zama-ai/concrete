@@ -9,9 +9,13 @@
 #include <cstddef>
 #include <vector>
 
-#include "concretelang/ClientLib/ClientParameters.h"
+#include "concrete-protocol.pb.h"
 #include "concretelang/Common/Error.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/JSON.h"
+#include "boost/outcome.h"
+
+namespace protocol = concreteprotocol;
 
 namespace mlir {
 namespace concretelang {
@@ -45,9 +49,8 @@ struct CompilationFeedback {
   /// @brief crt decomposition of outputs, if crt is not used, empty vectors
   std::vector<std::vector<int64_t>> crtDecompositionsOfOutputs;
 
-  /// Fill the sizes from the client parameters.
-  void
-  fillFromClientParameters(::concretelang::clientlib::ClientParameters params);
+  /// Fill the sizes from the program info.
+  void fillFromProgramInfo(protocol::ProgramInfo &params);
 
   /// Load the compilation feedback from a path
   static outcome::checked<CompilationFeedback, StringError>
@@ -55,6 +58,7 @@ struct CompilationFeedback {
 };
 
 llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &);
+
 bool fromJSON(const llvm::json::Value,
               mlir::concretelang::CompilationFeedback &, llvm::json::Path);
 

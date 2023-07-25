@@ -199,7 +199,11 @@ class Compiler:
         parameters = {
             param: ValueDescription.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
             for arg, (param, status) in zip(
-                sample if len(self.parameter_encryption_statuses) > 1 else (sample,),
+                (
+                    sample
+                    if len(self.parameter_encryption_statuses) > 1 or isinstance(sample, tuple)
+                    else (sample,)
+                ),
                 self.parameter_encryption_statuses.items(),
             )
         }

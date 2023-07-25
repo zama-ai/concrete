@@ -6,11 +6,14 @@
 #ifndef CONCRETELANG_SUPPORT_LIBRARY_SUPPORT
 #define CONCRETELANG_SUPPORT_LIBRARY_SUPPORT
 
+#include "concrete-protocol.pb.h"
+#include "concretelang/Common/Protobuf.h"
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
+#include <concretelang/Common/Protobuf.h>
 #include <concretelang/ServerLib/ServerLambda.h>
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Jit.h>
@@ -62,13 +65,13 @@ public:
       return std::move(err);
     }
 
-    if (!options.clientParametersFuncName.has_value()) {
+    if (!options.mainFuncName.has_value()) {
       return StreamStringError("Need to have a funcname to compile library");
     }
 
     auto result = std::make_unique<LibraryCompilationResult>();
     result->outputDirPath = outputPath;
-    result->funcName = *options.clientParametersFuncName;
+    result->funcName = *options.mainFuncName;
     return std::move(result);
   }
   using LambdaSupport::compile;
@@ -88,29 +91,35 @@ public:
   llvm::Expected<clientlib::ClientParameters>
   loadClientParameters(LibraryCompilationResult &result) override {
     auto path =
-        CompilerEngine::Library::getClientParametersPath(result.outputDirPath);
-    auto params = ClientParameters::load(path);
-    if (params.has_error()) {
-      return StreamStringError(params.error().mesg);
+        CompilerEngine::Library::getProgramInfoPath(result.outputDirPath);
+    auto maybeProgramInfo = ::concretelang::common::JSONFileToMessage<
+        concreteprotocol::ProgramInfo>(path);
+    if (maybeProgramInfo.has_error()) {
+      return StreamStringError(maybeProgramInfo.error().mesg);
     }
-    auto param = llvm::find_if(params.value(), [&](ClientParameters param) {
-      return param.functionName == result.funcName;
-    });
-    if (param == params.value().end()) {
-      return StreamStringError("ClientLambda: cannot find function(")
-             << result.funcName << ") in client parameters path(" << path
-             << ")";
+    concreteprotocol::ProgramInfo programInfo = maybeProgramInfo.value();
+    if (programInfo.circuits_size() == 0) {
+      return StreamStringError(
+          "ClientLambda: Provided program info contains no circuits.");
     }
-    return *param;
+    if (programInfo.circuits_size() > 1) {
+      return StreamStringError("ClientLambda: Provided program info contains "
+                               "more than one circuit.");
+    }
+    auto param = ClientParameters::fromProgramInfo(programInfo);
+    return param;
   }
 
   std::string getFuncName() {
-    auto path = CompilerEngine::Library::getClientParametersPath(outputPath);
-    auto params = ClientParameters::load(path);
-    if (params.has_error() || params.value().empty()) {
+    auto path = CompilerEngine::Library::getProgramInfoPath(outputPath);
+    auto maybeProgramInfo = ::concretelang::common::JSONFileToMessage<
+        concreteprotocol::ProgramInfo>(path);
+    if (maybeProgramInfo.has_error()) {
       return "";
     }
-    return params.value().front().functionName;
+    auto programInfo = maybeProgramInfo.value();
+    auto params = ClientParameters::fromProgramInfo(programInfo);
+    return params.functionName;
   }
 
   /// Load the the compilation result if circuit already compiled
@@ -156,8 +165,8 @@ public:
   }
 
   /// Get path to client parameters file
-  std::string getClientParametersPath() {
-    return CompilerEngine::Library::getClientParametersPath(outputPath);
+  std::string getProgramInfoPath() {
+    return CompilerEngine::Library::getProgramInfoPath(outputPath);
   }
 
 private:

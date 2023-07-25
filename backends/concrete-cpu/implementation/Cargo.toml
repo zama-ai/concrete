@@ -29,7 +29,7 @@ once_cell = { version = "1.16", optional = true }
 
 tfhe = { version = "0.2.4", features = ["boolean", "shortint", "integer"] }
 
-[target.x86_64-unknown-unix-gnu.dependencies]
+[target.x86_64-unknown-linux-gnu.dependencies]
 tfhe = { version = "0.2.4", features = ["boolean", "shortint", "integer", "x86_64-unix"] }
 
 [target.aarch64-unknown-unix-gnu.dependencies]

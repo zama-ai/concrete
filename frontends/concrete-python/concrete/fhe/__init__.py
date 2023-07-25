@@ -30,11 +30,13 @@ from .extensions import (
     maxpool,
     one,
     ones,
+    ones_like,
     round_bit_pattern,
     tag,
     univariate,
     zero,
     zeros,
+    zeros_like,
 )
 from .mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from .representation import Graph

@@ -393,3 +393,21 @@ return %0, %1
 ^^^^^^^^^^^^^ multiple outputs are not supported\
 """
     )
+
+
+def test_compiler_compile_with_single_tuple_inputset(helpers):
+    """
+    Test compiling a single argument function with an inputset made of single element tuples.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted"})
+    def f(x):
+        return x
+
+    inputset = [(3,), (4,), (5,)]
+    circuit = f.compile(inputset, configuration)
+
+    sample = 4
+    helpers.check_execution(circuit, f, sample)

@@ -249,7 +249,7 @@ test-compiler-file-output: concretecompiler
 run-rust-tests: rust-bindings
 	cd lib/Bindings/Rust && \
 		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		LD_LIBRARY_PATH=$(INSTALL_PATH)/lib \
+		LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(INSTALL_PATH)/lib \
 		cargo test --release
 
 ## end-to-end-tests

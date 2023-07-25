@@ -12,14 +12,17 @@
 #include <thread>
 #include <utility>
 #include <vector>
-
 #include <sched.h>
-
-#include <concretelang/ClientLib/Types.h>
 #include <concretelang/Runtime/stream_emulator_api.h>
 #include <concretelang/Runtime/wrappers.h>
 
-using concretelang::clientlib::MemRefDescriptor;
+template <size_t N> struct MemRefDescriptor {
+  uint64_t *allocated;
+  uint64_t *aligned;
+  size_t offset;
+  size_t sizes[N];
+  size_t strides[N];
+};
 
 namespace mlir {
 namespace concretelang {

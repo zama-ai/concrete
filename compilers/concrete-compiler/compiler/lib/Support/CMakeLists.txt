@@ -1,21 +1,18 @@
 add_mlir_library(
   ConcretelangSupport
   Pipeline.cpp
-  Jit.cpp
   CompilationFeedback.cpp
   CompilerEngine.cpp
   TFHECircuitKeys.cpp
   Encodings.cpp
-  JITSupport.cpp
-  LambdaArgument.cpp
   V0Parameters.cpp
-  ClientParametersGeneration.cpp
+  ProgramInfoGeneration.cpp
   logging.cpp
-  Jit.cpp
   LLVMEmitFile.cpp
   Utils.cpp
   DEPENDS
   mlir-headers
+  concrete-protocol
   LINK_LIBS
   PUBLIC
   FHELinalgDialect
@@ -37,6 +34,7 @@ add_mlir_library(
   LinalgExtras
   TFHEDialectTransforms
   concrete_optimizer
+  concrete-protocol
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
   ConcretelangRuntime

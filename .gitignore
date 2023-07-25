@@ -8,3 +8,6 @@
 
 # HPX library
 compilers/concrete-compiler/compiler/hpx*
+
+# Protobuf library
+compilers/concrete-compiler/compiler/protobuf*

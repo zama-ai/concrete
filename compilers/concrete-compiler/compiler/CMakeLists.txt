@@ -3,15 +3,21 @@ cmake_minimum_required(VERSION 3.17)
 project(concretecompiler LANGUAGES C CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set_property(GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()
 
 set(CMAKE_CXX_FLAGS "-fsized-deallocation")
 
 # Needed on linux with clang 15 and on MacOS because cxx emits dollars in the optimizer C++ API
 add_definitions("-Wno-dollar-in-identifier-extension")
-
+add_definitions("-Wno-c++98-compat-extra-semi")
 add_definitions("-Wall ")
 add_definitions("-Werror ")
 add_definitions("-Wfatal-errors")
@@ -67,6 +73,21 @@ set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 # Concrete Security curves Configuration
 # -------------------------------------------------------------------------------
 include_directories(${PROJECT_SOURCE_DIR}/../../../tools/parameter-curves/concrete-security-curves-cpp/include)
+
+# -------------------------------------------------------------------------------
+# Concrete Protocol
+# -------------------------------------------------------------------------------
+set(CONCRETE_PROTOCOL_SRC_DIR "${PROJECT_SOURCE_DIR}/../../../tools/concrete-protocol")
+add_subdirectory(${CONCRETE_PROTOCOL_SRC_DIR} concrete-protocol)
+get_target_property(CONCRETE_PROTOCOL_BIN_DIR concrete-protocol BINARY_DIR)
+set(CONCRETE_PROTOCOL_GEN_DIR ${CONCRETE_PROTOCOL_BIN_DIR})
+set(CONCRETE_PROTOCOL_PROTOBUF_LIBRARY "${CONCRETE_PROTOCOL_BIN_DIR}/protobuf_bin_dir/libprotobuf.a")
+set(CONCRETE_PROTOCOL_PROTOBUF_SRC "${CONCRETE_PROTOCOL_BIN_DIR}/protobuf_src_dir/src")
+include_directories(${CONCRETE_PROTOCOL_GEN_DIR})
+include_directories(${CONCRETE_PROTOCOL_PROTOBUF_SRC})
+add_dependencies(mlir-headers concrete-protocol)
+install(TARGETS concrete-protocol EXPORT concrete-protocol)
+install(EXPORT concrete-protocol DESTINATION "./")
 
 # -------------------------------------------------------------------------------
 # Concrete Optimizer
@@ -143,7 +164,7 @@ ExternalProject_Add(
   DOWNLOAD_COMMAND ""
   CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_CPU_NOISE_MODEL_STATIC_LIB}"
   BUILD_ALWAYS true
-  BUILD_COMMAND cargo +nightly build --release
+  BUILD_COMMAND cargo build --release
   BINARY_DIR "${CONCRETE_CPU_NOISE_MODEL_DIR}"
   INSTALL_COMMAND ""
   LOG_BUILD ON

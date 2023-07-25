@@ -318,8 +318,8 @@ MlirStringRef librarySupportGetSharedLibPath(LibrarySupport support) {
   return mlirStringRefCreate(buffer, path.length());
 }
 
-MlirStringRef librarySupportGetClientParametersPath(LibrarySupport support) {
-  auto path = unwrap(support)->getClientParametersPath();
+MlirStringRef librarySupportGetProgramInfoPath(LibrarySupport support) {
+  auto path = unwrap(support)->getProgramInfoPath();
   // allocate buffer and copy module string
   char *buffer = new char[path.length() + 1];
   strcpy(buffer, path.c_str());

@@ -231,7 +231,7 @@ MLIR_CAPI_EXPORTED MlirStringRef
 librarySupportGetSharedLibPath(LibrarySupport support);
 
 MLIR_CAPI_EXPORTED MlirStringRef
-librarySupportGetClientParametersPath(LibrarySupport support);
+librarySupportGetProgramInfoPath(LibrarySupport support);
 
 MLIR_CAPI_EXPORTED void librarySupportDestroy(LibrarySupport support);
 
