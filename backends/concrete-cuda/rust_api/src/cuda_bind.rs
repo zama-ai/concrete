@@ -212,8 +212,6 @@ extern "C" {
         pbs_buffer: *mut *mut i8,
     );
 
-
-
     /// This scratch function allocates the necessary amount of data on the GPU for
     /// the multi-bit PBS on 64-bit inputs into `pbs_buffer`.
     pub fn scratch_cuda_multi_bit_pbs_64(

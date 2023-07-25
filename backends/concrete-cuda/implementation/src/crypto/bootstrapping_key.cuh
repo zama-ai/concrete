@@ -2,6 +2,7 @@
 #define CNCRT_BSK_H
 
 #include "bootstrap.h"
+#include "bootstrap_multibit.h"
 #include "device.h"
 #include "polynomial/parameters.cuh"
 #include "polynomial/polynomial.cuh"
@@ -273,9 +274,10 @@ void cuda_convert_lwe_multi_bit_bootstrap_key_64(
   uint32_t total_polynomials = input_lwe_dim * (glwe_dim + 1) * (glwe_dim + 1) *
                                level_count * (1 << grouping_factor) /
                                grouping_factor;
-  cuda_convert_lwe_bootstrap_key<uint64_t, int64_t>(
-      (double2 *)dest, (int64_t *)src, v_stream, gpu_index, input_lwe_dim,
-      glwe_dim, level_count, polynomial_size, total_polynomials);
+  size_t buffer_size = total_polynomials * polynomial_size * sizeof(uint64_t);
+
+  cuda_memcpy_async_to_gpu((uint64_t *)dest, (uint64_t *)src, buffer_size,
+                           (cudaStream_t *)v_stream, gpu_index);
 }
 
 void cuda_fourier_polynomial_mul(void *_input1, void *_input2, void *_output,

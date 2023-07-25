@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+extern "C" {
 void cuda_convert_lwe_multi_bit_bootstrap_key_64(
     void *dest, void *src, void *v_stream, uint32_t gpu_index,
     uint32_t input_lwe_dim, uint32_t glwe_dim, uint32_t level_count,
@@ -25,7 +26,7 @@ void scratch_cuda_multi_bit_pbs_64(
 
 void cleanup_cuda_multi_bit_pbs(void *v_stream, uint32_t gpu_index,
                                 int8_t **pbs_buffer);
-
+}
 #ifdef __CUDACC__
 __host__ uint32_t get_lwe_chunk_size(uint32_t lwe_dimension,
                                      uint32_t level_count,
