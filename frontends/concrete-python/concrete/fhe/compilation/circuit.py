@@ -271,85 +271,74 @@ class Circuit:
         """
         Get complexity of the circuit.
         """
-
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
-
-        return self.server.complexity
+        return self._statistic("complexity")
 
     @property
     def size_of_secret_keys(self) -> int:
         """
         Get size of the secret keys of the circuit.
         """
-
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
-
-        return self.server.size_of_secret_keys
+        return self._statistic("size_of_secret_keys")
 
     @property
     def size_of_bootstrap_keys(self) -> int:
         """
         Get size of the bootstrap keys of the circuit.
         """
-
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
-
-        return self.server.size_of_bootstrap_keys
+        return self._statistic("size_of_bootstrap_keys")
 
     @property
     def size_of_keyswitch_keys(self) -> int:
         """
         Get size of the key switch keys of the circuit.
         """
-
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
-
-        return self.server.size_of_keyswitch_keys
+        return self._statistic("size_of_keyswitch_keys")
 
     @property
     def size_of_inputs(self) -> int:
         """
         Get size of the inputs of the circuit.
         """
-
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
-
-        return self.server.size_of_inputs
+        return self._statistic("size_of_inputs")
 
     @property
     def size_of_outputs(self) -> int:
         """
         Get size of the outputs of the circuit.
         """
-
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
-
-        return self.server.size_of_outputs
+        return self._statistic("size_of_outputs")
 
     @property
     def p_error(self) -> int:
         """
         Get probability of error for each simple TLU (on a scalar).
         """
-
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
-
-        return self.server.p_error
+        return self._statistic("p_error")
 
     @property
     def global_p_error(self) -> int:
         """
         Get the probability of having at least one simple TLU error during the entire execution.
         """
+        return self._statistic("global_p_error")
+
+    def _statistic(self, name: str) -> Any:
+        """
+        Get a statistic of the circuit by name.
+
+        Args:
+            name (str):
+                name of the statistic
+
+        Returns:
+            Any:
+                statistic
+        """
+
+        if hasattr(self, "simulator"):
+            return getattr(self.simulator, name)
 
         if not hasattr(self, "server"):  # pragma: no cover
             self.enable_fhe_execution()
 
-        return self.server.global_p_error
+        return getattr(self.server, name)
