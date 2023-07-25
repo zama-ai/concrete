@@ -474,6 +474,11 @@ class Compiler:
                 if self.configuration.show_optimizer is not None
                 else self.configuration.verbose
             )
+            show_statistics = (
+                self.configuration.show_statistics
+                if self.configuration.show_statistics is not None
+                else self.configuration.verbose
+            )
 
             columns = 0
             if show_graph or show_mlir or show_optimizer:
@@ -540,6 +545,17 @@ class Compiler:
 
             if show_optimizer:
                 print("-" * columns)
+                print()
+
+            if show_statistics:
+                print("\n" if not show_graph else "", end="")
+
+                print("Statistics")
+                print("-" * columns)
+                for name, value in circuit.statistics.items():
+                    print(f"{name}: {value}")
+                print("-" * columns)
+
                 print()
 
         except Exception:  # pragma: no cover

@@ -41,6 +41,7 @@
 #include <concretelang/Dialect/FHE/Transforms/Max/Max.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
+#include <concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h>
 #include <concretelang/Dialect/TFHE/Transforms/Transforms.h>
 #include <concretelang/Support/Pipeline.h>
 #include <concretelang/Support/logging.h>
@@ -318,6 +319,20 @@ normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createTFHEKeyNormalizationPass(), enablePass);
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+extractTFHEStatistics(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      std::function<bool(mlir::Pass *)> enablePass,
+                      CompilationFeedback &feedback) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("TFHEStatistics", pm, context);
+
+  addPotentiallyNestedPass(
+      pm, std::make_unique<TFHE::ExtractTFHEStatisticsPass>(feedback),
+      enablePass);
 
   return pm.run(module.getOperation());
 }

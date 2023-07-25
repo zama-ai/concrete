@@ -465,6 +465,14 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   if (target == Target::NORMALIZED_TFHE)
     return std::move(res);
 
+  if (res.feedback) {
+    if (mlir::concretelang::pipeline::extractTFHEStatistics(
+            mlirContext, module, this->enablePass, res.feedback.value())
+            .failed()) {
+      return StreamStringError("Extracting TFHE statistics failed");
+    }
+  }
+
   if (options.simulate) {
     if (mlir::concretelang::pipeline::simulateTFHE(mlirContext, module,
                                                    this->enablePass)
