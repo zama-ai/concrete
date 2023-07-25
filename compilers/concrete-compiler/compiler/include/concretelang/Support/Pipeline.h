@@ -73,6 +73,11 @@ normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
                   std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+extractTFHEStatistics(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      std::function<bool(mlir::Pass *)> enablePass,
+                      CompilationFeedback &feedback);
+
+mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 

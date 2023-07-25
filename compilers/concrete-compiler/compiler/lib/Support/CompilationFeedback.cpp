@@ -62,6 +62,13 @@ void CompilationFeedback::fillFromClientParameters(
     }
     crtDecompositionsOfOutputs.push_back(decomposition);
   }
+  // Stats
+  totalPbsCount = 0;
+  totalKsCount = 0;
+  totalClearAdditionCount = 0;
+  totalEncryptedAdditionCount = 0;
+  totalClearMultiplicationCount = 0;
+  totalEncryptedNegationCount = 0;
 }
 
 outcome::checked<CompilationFeedback, StringError>
@@ -92,6 +99,12 @@ llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &v) {
       {"totalInputsSize", v.totalInputsSize},
       {"totalOutputsSize", v.totalOutputsSize},
       {"crtDecompositionsOfOutputs", v.crtDecompositionsOfOutputs},
+      {"totalPbsCount", v.totalPbsCount},
+      {"totalKsCount", v.totalKsCount},
+      {"totalClearAdditionCount", v.totalClearAdditionCount},
+      {"totalEncryptedAdditionCount", v.totalEncryptedAdditionCount},
+      {"totalClearMultiplicationCount", v.totalClearMultiplicationCount},
+      {"totalEncryptedNegationCount", v.totalEncryptedNegationCount},
   };
   return object;
 }
@@ -106,7 +119,14 @@ bool fromJSON(const llvm::json::Value j,
          O.map("totalKeyswitchKeysSize", v.totalKeyswitchKeysSize) &&
          O.map("totalInputsSize", v.totalInputsSize) &&
          O.map("totalOutputsSize", v.totalOutputsSize) &&
-         O.map("crtDecompositionsOfOutputs", v.crtDecompositionsOfOutputs);
+         O.map("crtDecompositionsOfOutputs", v.crtDecompositionsOfOutputs) &&
+         O.map("totalPbsCount", v.totalPbsCount) &&
+         O.map("totalKsCount", v.totalKsCount) &&
+         O.map("totalClearAdditionCount", v.totalClearAdditionCount) &&
+         O.map("totalEncryptedAdditionCount", v.totalEncryptedAdditionCount) &&
+         O.map("totalClearMultiplicationCount",
+               v.totalClearMultiplicationCount) &&
+         O.map("totalEncryptedNegationCount", v.totalEncryptedNegationCount);
 }
 
 } // namespace concretelang

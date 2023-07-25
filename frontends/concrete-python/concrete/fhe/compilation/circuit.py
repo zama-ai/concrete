@@ -267,13 +267,6 @@ class Circuit:
             self.server.cleanup()
 
     @property
-    def complexity(self) -> float:
-        """
-        Get complexity of the circuit.
-        """
-        return self._statistic("complexity")
-
-    @property
     def size_of_secret_keys(self) -> int:
         """
         Get size of the secret keys of the circuit.
@@ -322,6 +315,62 @@ class Circuit:
         """
         return self._statistic("global_p_error")
 
+    @property
+    def complexity(self) -> float:
+        """
+        Get complexity of the circuit.
+        """
+        return self._statistic("complexity")
+
+    @property
+    def total_pbs_count(self) -> int:
+        """
+        Get the total number of programmable bootstraps in the circuit.
+        """
+        return self._statistic("total_pbs_count")
+
+    @property
+    def total_ks_count(self) -> int:
+        """
+        Get the total number of key switches in the circuit.
+        """
+        return self._statistic("total_ks_count")
+
+    @property
+    def total_clear_addition_count(self) -> int:
+        """
+        Get the total number of clear additions in the circuit.
+        """
+        return self._statistic("total_clear_addition_count")
+
+    @property
+    def total_encrypted_addition_count(self) -> int:
+        """
+        Get the total number of encrypted additions in the circuit.
+        """
+        return self._statistic("total_encrypted_addition_count")
+
+    @property
+    def total_clear_multiplication_count(self) -> int:
+        """
+        Get the total number of clear multiplications in the circuit.
+        """
+        return self._statistic("total_clear_multiplication_count")
+
+    @property
+    def total_encrypted_negation_count(self) -> int:
+        """
+        Get the total number of encrypted negations in the circuit.
+        """
+        return self._statistic("total_encrypted_negation_count")
+
+    @property
+    def statistics(self) -> dict:
+        """
+        Get all circuit statistics in a dict.
+        """
+        return self._statistic("statistics")
+
     def _statistic(self, name: str) -> Any:
         """
         Get a statistic of the circuit by name.
@@ -336,9 +385,9 @@ class Circuit:
         """
 
         if hasattr(self, "simulator"):
-            return getattr(self.simulator, name)
+            return getattr(self.simulator, name)  # pragma: no cover
 
-        if not hasattr(self, "server"):  # pragma: no cover
-            self.enable_fhe_execution()
+        if not hasattr(self, "server"):
+            self.enable_fhe_execution()  # pragma: no cover
 
         return getattr(self.server, name)

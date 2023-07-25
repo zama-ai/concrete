@@ -3,7 +3,7 @@
 
 """Compilation feedback."""
 
-# pylint: disable=no-name-in-module,import-error
+# pylint: disable=no-name-in-module,import-error,too-many-instance-attributes
 from mlir._mlir_libs._concretelang._compiler import (
     CompilationFeedback as _CompilationFeedback,
 )
@@ -40,6 +40,20 @@ class CompilationFeedback(WrapperCpp):
         self.total_output_size = compilation_feedback.total_output_size
         self.crt_decompositions_of_outputs = (
             compilation_feedback.crt_decompositions_of_outputs
+        )
+        self.total_pbs_count = compilation_feedback.total_pbs_count
+        self.total_ks_count = compilation_feedback.total_ks_count
+        self.total_clear_addition_count = (
+            compilation_feedback.total_clear_addition_count
+        )
+        self.total_encrypted_addition_count = (
+            compilation_feedback.total_encrypted_addition_count
+        )
+        self.total_clear_multiplication_count = (
+            compilation_feedback.total_clear_multiplication_count
+        )
+        self.total_encrypted_negation_count = (
+            compilation_feedback.total_encrypted_negation_count
         )
 
         super().__init__(compilation_feedback)

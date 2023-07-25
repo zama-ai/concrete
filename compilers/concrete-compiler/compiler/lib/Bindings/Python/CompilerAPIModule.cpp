@@ -124,7 +124,23 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                     &mlir::concretelang::CompilationFeedback::totalOutputsSize)
       .def_readonly(
           "crt_decompositions_of_outputs",
-          &mlir::concretelang::CompilationFeedback::crtDecompositionsOfOutputs);
+          &mlir::concretelang::CompilationFeedback::crtDecompositionsOfOutputs)
+      .def_readonly("total_pbs_count",
+                    &mlir::concretelang::CompilationFeedback::totalPbsCount)
+      .def_readonly("total_ks_count",
+                    &mlir::concretelang::CompilationFeedback::totalKsCount)
+      .def_readonly(
+          "total_clear_addition_count",
+          &mlir::concretelang::CompilationFeedback::totalClearAdditionCount)
+      .def_readonly(
+          "total_encrypted_addition_count",
+          &mlir::concretelang::CompilationFeedback::totalEncryptedAdditionCount)
+      .def_readonly("total_clear_multiplication_count",
+                    &mlir::concretelang::CompilationFeedback::
+                        totalClearMultiplicationCount)
+      .def_readonly("total_encrypted_negation_count",
+                    &mlir::concretelang::CompilationFeedback::
+                        totalEncryptedNegationCount);
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");

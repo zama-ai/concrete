@@ -521,3 +521,120 @@ def test_circuit_compile_sim_only(helpers):
     inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
     circuit = f.compile(inputset, configuration.fork(fhe_simulation=True, fhe_execution=False))
     assert f(*inputset[0]) == circuit.simulate(*inputset[0])
+
+
+@pytest.mark.parametrize(
+    "function,parameters,expected_statistics",
+    [
+        pytest.param(
+            lambda x: x**2,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": ()},
+            },
+            {
+                "total_pbs_count": 1,
+                "total_ks_count": 1,
+                "total_clear_addition_count": 0,
+                "total_encrypted_addition_count": 0,
+                "total_clear_multiplication_count": 0,
+                "total_encrypted_negation_count": 0,
+            },
+            id="x**2 | x.is_encrypted | x.shape == ()",
+        ),
+        pytest.param(
+            lambda x: x**2,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+            },
+            {
+                "total_pbs_count": 3,
+                "total_clear_addition_count": 0,
+                "total_encrypted_addition_count": 0,
+                "total_clear_multiplication_count": 0,
+                "total_encrypted_negation_count": 0,
+            },
+            id="x**2 | x.is_encrypted | x.shape == (3,)",
+        ),
+        pytest.param(
+            lambda x: x**2,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3, 2)},
+            },
+            {
+                "total_pbs_count": 3 * 2,
+                "total_clear_addition_count": 0,
+                "total_encrypted_addition_count": 0,
+                "total_clear_multiplication_count": 0,
+                "total_encrypted_negation_count": 0,
+            },
+            id="x**2 | x.is_encrypted | x.shape == (3, 2)",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": ()},
+                "y": {"status": "encrypted", "range": [0, 10], "shape": ()},
+            },
+            {
+                "total_pbs_count": 2,
+                "total_clear_addition_count": 1,
+                "total_encrypted_addition_count": 3,
+                "total_clear_multiplication_count": 0,
+                "total_encrypted_negation_count": 2,
+            },
+            id="x * y | x.is_encrypted | x.shape == () | y.is_encrypted | y.shape == ()",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+                "y": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+            },
+            {
+                "total_pbs_count": 3 * 2,
+                "total_clear_addition_count": 3 * 1,
+                "total_encrypted_addition_count": 3 * 3,
+                "total_clear_multiplication_count": 0,
+                "total_encrypted_negation_count": 3 * 2,
+            },
+            id="x * y | x.is_encrypted | x.shape == (3,) | y.is_encrypted | y.shape == (3,)",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3, 2)},
+                "y": {"status": "encrypted", "range": [0, 10], "shape": (3, 2)},
+            },
+            {
+                "total_pbs_count": 3 * 2 * 2,
+                "total_clear_addition_count": 3 * 2 * 1,
+                "total_encrypted_addition_count": 3 * 2 * 3,
+                "total_clear_multiplication_count": 0,
+                "total_encrypted_negation_count": 3 * 2 * 2,
+            },
+            id="x * y | x.is_encrypted | x.shape == (3, 2) | y.is_encrypted | y.shape == (3, 2)",
+        ),
+    ],
+)
+def test_statistics(function, parameters, expected_statistics, helpers):
+    """
+    Test statistics of the circuit provided by the compiler.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+    configuration = helpers.configuration()
+
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
+
+    inputset = helpers.generate_inputset(parameters)
+    circuit = compiler.compile(inputset, configuration)
+
+    for name, expected_value in expected_statistics.items():
+        assert hasattr(circuit, name)
+        assert (
+            getattr(circuit, name) == expected_value
+        ), f"""
+
+Expected {name} to be {expected_value} but it's {getattr(circuit, name)}
+
+        """.strip()

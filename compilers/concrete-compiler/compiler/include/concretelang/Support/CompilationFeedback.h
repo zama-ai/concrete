@@ -45,6 +45,24 @@ struct CompilationFeedback {
   /// @brief crt decomposition of outputs, if crt is not used, empty vectors
   std::vector<std::vector<int64_t>> crtDecompositionsOfOutputs;
 
+  /// @brief number of programmable bootstraps in the entire circuit
+  uint64_t totalPbsCount = 0;
+
+  /// @brief number of key switches in the entire circuit
+  uint64_t totalKsCount = 0;
+
+  /// @brief number of clear additions in the entire circuit
+  uint64_t totalClearAdditionCount = 0;
+
+  /// @brief number of encrypted additions in the entire circuit
+  uint64_t totalEncryptedAdditionCount = 0;
+
+  /// @brief number of clear multiplications in the entire circuit
+  uint64_t totalClearMultiplicationCount = 0;
+
+  /// @brief number of encrypted negations in the entire circuit
+  uint64_t totalEncryptedNegationCount = 0;
+
   /// Fill the sizes from the client parameters.
   void
   fillFromClientParameters(::concretelang::clientlib::ClientParameters params);

@@ -371,13 +371,6 @@ class Server:
             self._output_dir.cleanup()
 
     @property
-    def complexity(self) -> float:
-        """
-        Get complexity of the compiled program.
-        """
-        return self._compilation_feedback.complexity
-
-    @property
     def size_of_secret_keys(self) -> int:
         """
         Get size of the secret keys of the compiled program.
@@ -425,3 +418,74 @@ class Server:
         Get the probability of having at least one simple TLU error during the entire execution.
         """
         return self._compilation_feedback.global_p_error
+
+    @property
+    def complexity(self) -> float:
+        """
+        Get complexity of the compiled program.
+        """
+        return self._compilation_feedback.complexity
+
+    @property
+    def total_pbs_count(self) -> int:
+        """
+        Get the total number of programmable bootstraps in the compiled program.
+        """
+        return self._compilation_feedback.total_pbs_count
+
+    @property
+    def total_ks_count(self) -> int:
+        """
+        Get the total number of key switches in the compiled program.
+        """
+        return self._compilation_feedback.total_ks_count
+
+    @property
+    def total_clear_addition_count(self) -> int:
+        """
+        Get the total number of clear additions in the compiled program.
+        """
+        return self._compilation_feedback.total_clear_addition_count
+
+    @property
+    def total_encrypted_addition_count(self) -> int:
+        """
+        Get the total number of encrypted additions in the compiled program.
+        """
+        return self._compilation_feedback.total_encrypted_addition_count
+
+    @property
+    def total_clear_multiplication_count(self) -> int:
+        """
+        Get the total number of clear multiplications in the compiled program.
+        """
+        return self._compilation_feedback.total_clear_multiplication_count
+
+    @property
+    def total_encrypted_negation_count(self) -> int:
+        """
+        Get the total number of encrypted negations in the compiled program.
+        """
+        return self._compilation_feedback.total_encrypted_negation_count
+
+    @property
+    def statistics(self) -> dict:
+        """
+        Get all program statistics in a dict.
+        """
+        return {
+            "size_of_secret_keys": self.size_of_secret_keys,
+            "size_of_bootstrap_keys": self.size_of_bootstrap_keys,
+            "size_of_keyswitch_keys": self.size_of_keyswitch_keys,
+            "size_of_inputs": self.size_of_inputs,
+            "size_of_outputs": self.size_of_outputs,
+            "p_error": self.p_error,
+            "global_p_error": self.global_p_error,
+            "complexity": self.complexity,
+            "total_pbs_count": self.total_pbs_count,
+            "total_ks_count": self.total_ks_count,
+            "total_clear_addition_count": self.total_clear_addition_count,
+            "total_encrypted_addition_count": self.total_encrypted_addition_count,
+            "total_clear_multiplication_count": self.total_clear_multiplication_count,
+            "total_encrypted_negation_count": self.total_encrypted_negation_count,
+        }

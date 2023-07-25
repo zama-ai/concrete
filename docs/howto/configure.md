@@ -58,6 +58,8 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Print MLIR during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
 * **show\_optimizer**: Optional\[bool] = None
   * Print optimizer output during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
+* **show\_statistics**: Optional\[bool] = None
+  * Print circuit statistics during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
 * **verbose**: bool = False
   * Print details related to compilation.
 * **dump\_artifacts\_on\_unexpected\_failures**: bool = True

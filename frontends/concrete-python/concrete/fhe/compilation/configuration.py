@@ -50,6 +50,7 @@ class Configuration:
     show_graph: Optional[bool]
     show_mlir: Optional[bool]
     show_optimizer: Optional[bool]
+    show_statistics: Optional[bool]
     dump_artifacts_on_unexpected_failures: bool
     enable_unsafe_features: bool
     use_insecure_key_cache: bool
@@ -75,6 +76,7 @@ class Configuration:
         show_graph: Optional[bool] = None,
         show_mlir: Optional[bool] = None,
         show_optimizer: Optional[bool] = None,
+        show_statistics: Optional[bool] = None,
         dump_artifacts_on_unexpected_failures: bool = True,
         enable_unsafe_features: bool = False,
         use_insecure_key_cache: bool = False,
@@ -100,6 +102,7 @@ class Configuration:
         self.show_graph = show_graph
         self.show_mlir = show_mlir
         self.show_optimizer = show_optimizer
+        self.show_statistics = show_statistics
         self.dump_artifacts_on_unexpected_failures = dump_artifacts_on_unexpected_failures
         self.enable_unsafe_features = enable_unsafe_features
         self.use_insecure_key_cache = use_insecure_key_cache
@@ -136,6 +139,7 @@ class Configuration:
         show_graph: Union[Keep, Optional[bool]] = KEEP,
         show_mlir: Union[Keep, Optional[bool]] = KEEP,
         show_optimizer: Union[Keep, Optional[bool]] = KEEP,
+        show_statistics: Union[Keep, Optional[bool]] = KEEP,
         dump_artifacts_on_unexpected_failures: Union[Keep, bool] = KEEP,
         enable_unsafe_features: Union[Keep, bool] = KEEP,
         use_insecure_key_cache: Union[Keep, bool] = KEEP,

@@ -41,6 +41,7 @@ add_mlir_library(
   ${LLVM_PTHREAD_LIB}
   ConcretelangRuntime
   ConcretelangClientLib
-  ConcretelangServerLib)
+  ConcretelangServerLib
+  TFHEDialectAnalysis)
 
 target_include_directories(ConcretelangSupport PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
