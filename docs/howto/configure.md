@@ -94,3 +94,7 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Title of the progress bar
 * **progress\_tag**: Union[bool, int] = False,
   * How many nested tag elements to display with the progress bar. `True` means all tag elements and `False` disables the display. `2` will display `elmt1.elmt2`
+* **compiler_debug_mode**: bool = False,
+  * Enable/disable debug mode of the compiler. This can show a lot of information, including passes and pattern rewrites.
+* **compiler_verbose_mode**: bool = False,
+  * Enable/disable verbose mode of the compiler. This mainly show logs from the compiler, and is less verbose than the debug mode.
