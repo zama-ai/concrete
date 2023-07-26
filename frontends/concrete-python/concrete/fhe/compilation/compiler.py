@@ -485,7 +485,7 @@ class Compiler:
             )
 
             columns = 0
-            if show_graph or show_mlir or show_optimizer:
+            if show_graph or show_mlir or show_optimizer or show_statistics:
                 graph = (
                     self.graph.format()
                     if self.configuration.verbose or self.configuration.show_graph
@@ -556,8 +556,27 @@ class Compiler:
 
                 print("Statistics")
                 print("-" * columns)
-                for name, value in circuit.statistics.items():
-                    print(f"{name}: {value}")
+
+                def pretty(d, indent=0):  # pragma: no cover
+                    if indent > 0:
+                        print("{")
+
+                    for key, value in d.items():
+                        if isinstance(value, dict) and len(value) == 0:
+                            continue
+
+                        print("    " * indent + str(key) + ": ", end="")
+
+                        if isinstance(value, dict):
+                            pretty(value, indent + 1)
+                        else:
+                            print(value)
+
+                    if indent > 0:
+                        print("    " * (indent - 1) + "}")
+
+                pretty(circuit.statistics)
+
                 print("-" * columns)
 
                 print()

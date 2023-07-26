@@ -109,6 +109,35 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
         options.simulate = simulate;
       });
 
+  pybind11::enum_<mlir::concretelang::PrimitiveOperation>(m,
+                                                          "PrimitiveOperation")
+      .value("PBS", mlir::concretelang::PrimitiveOperation::PBS)
+      .value("WOP_PBS", mlir::concretelang::PrimitiveOperation::WOP_PBS)
+      .value("KEY_SWITCH", mlir::concretelang::PrimitiveOperation::KEY_SWITCH)
+      .value("CLEAR_ADDITION",
+             mlir::concretelang::PrimitiveOperation::CLEAR_ADDITION)
+      .value("ENCRYPTED_ADDITION",
+             mlir::concretelang::PrimitiveOperation::ENCRYPTED_ADDITION)
+      .value("CLEAR_MULTIPLICATION",
+             mlir::concretelang::PrimitiveOperation::CLEAR_MULTIPLICATION)
+      .value("ENCRYPTED_NEGATION",
+             mlir::concretelang::PrimitiveOperation::ENCRYPTED_NEGATION)
+      .export_values();
+
+  pybind11::enum_<mlir::concretelang::KeyType>(m, "KeyType")
+      .value("SECRET", mlir::concretelang::KeyType::SECRET)
+      .value("BOOTSTRAP", mlir::concretelang::KeyType::BOOTSTRAP)
+      .value("KEY_SWITCH", mlir::concretelang::KeyType::KEY_SWITCH)
+      .value("PACKING_KEY_SWITCH",
+             mlir::concretelang::KeyType::PACKING_KEY_SWITCH)
+      .export_values();
+
+  pybind11::class_<mlir::concretelang::Statistic>(m, "Statistic")
+      .def_readonly("operation", &mlir::concretelang::Statistic::operation)
+      .def_readonly("location", &mlir::concretelang::Statistic::location)
+      .def_readonly("keys", &mlir::concretelang::Statistic::keys)
+      .def_readonly("count", &mlir::concretelang::Statistic::count);
+
   pybind11::class_<mlir::concretelang::CompilationFeedback>(
       m, "CompilationFeedback")
       .def_readonly("complexity",
@@ -132,22 +161,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_readonly(
           "crt_decompositions_of_outputs",
           &mlir::concretelang::CompilationFeedback::crtDecompositionsOfOutputs)
-      .def_readonly("total_pbs_count",
-                    &mlir::concretelang::CompilationFeedback::totalPbsCount)
-      .def_readonly("total_ks_count",
-                    &mlir::concretelang::CompilationFeedback::totalKsCount)
-      .def_readonly(
-          "total_clear_addition_count",
-          &mlir::concretelang::CompilationFeedback::totalClearAdditionCount)
-      .def_readonly(
-          "total_encrypted_addition_count",
-          &mlir::concretelang::CompilationFeedback::totalEncryptedAdditionCount)
-      .def_readonly("total_clear_multiplication_count",
-                    &mlir::concretelang::CompilationFeedback::
-                        totalClearMultiplicationCount)
-      .def_readonly("total_encrypted_negation_count",
-                    &mlir::concretelang::CompilationFeedback::
-                        totalEncryptedNegationCount);
+      .def_readonly("statistics",
+                    &mlir::concretelang::CompilationFeedback::statistics);
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");
@@ -320,6 +335,76 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   pybind11::class_<clientlib::KeySetCache>(m, "KeySetCache")
       .def(pybind11::init<std::string &>());
 
+  pybind11::class_<::concretelang::clientlib::LweSecretKeyParam>(
+      m, "LweSecretKeyParam")
+      .def_readonly("dimension",
+                    &::concretelang::clientlib::LweSecretKeyParam::dimension);
+
+  pybind11::class_<::concretelang::clientlib::BootstrapKeyParam>(
+      m, "BootstrapKeyParam")
+      .def_readonly(
+          "input_secret_key_id",
+          &::concretelang::clientlib::BootstrapKeyParam::inputSecretKeyID)
+      .def_readonly(
+          "output_secret_key_id",
+          &::concretelang::clientlib::BootstrapKeyParam::outputSecretKeyID)
+      .def_readonly("level",
+                    &::concretelang::clientlib::BootstrapKeyParam::level)
+      .def_readonly("base_log",
+                    &::concretelang::clientlib::BootstrapKeyParam::baseLog)
+      .def_readonly(
+          "glwe_dimension",
+          &::concretelang::clientlib::BootstrapKeyParam::glweDimension)
+      .def_readonly("variance",
+                    &::concretelang::clientlib::BootstrapKeyParam::variance)
+      .def_readonly(
+          "polynomial_size",
+          &::concretelang::clientlib::BootstrapKeyParam::polynomialSize)
+      .def_readonly(
+          "input_lwe_dimension",
+          &::concretelang::clientlib::BootstrapKeyParam::inputLweDimension);
+
+  pybind11::class_<::concretelang::clientlib::KeyswitchKeyParam>(
+      m, "KeyswitchKeyParam")
+      .def_readonly(
+          "input_secret_key_id",
+          &::concretelang::clientlib::KeyswitchKeyParam::inputSecretKeyID)
+      .def_readonly(
+          "output_secret_key_id",
+          &::concretelang::clientlib::KeyswitchKeyParam::outputSecretKeyID)
+      .def_readonly("level",
+                    &::concretelang::clientlib::KeyswitchKeyParam::level)
+      .def_readonly("base_log",
+                    &::concretelang::clientlib::KeyswitchKeyParam::baseLog)
+      .def_readonly("variance",
+                    &::concretelang::clientlib::KeyswitchKeyParam::variance);
+
+  pybind11::class_<::concretelang::clientlib::PackingKeyswitchKeyParam>(
+      m, "PackingKeyswitchKeyParam")
+      .def_readonly("input_secret_key_id",
+                    &::concretelang::clientlib::PackingKeyswitchKeyParam::
+                        inputSecretKeyID)
+      .def_readonly("output_secret_key_id",
+                    &::concretelang::clientlib::PackingKeyswitchKeyParam::
+                        outputSecretKeyID)
+      .def_readonly("level",
+                    &::concretelang::clientlib::PackingKeyswitchKeyParam::level)
+      .def_readonly(
+          "base_log",
+          &::concretelang::clientlib::PackingKeyswitchKeyParam::baseLog)
+      .def_readonly(
+          "glwe_dimension",
+          &::concretelang::clientlib::PackingKeyswitchKeyParam::glweDimension)
+      .def_readonly(
+          "polynomial_size",
+          &::concretelang::clientlib::PackingKeyswitchKeyParam::polynomialSize)
+      .def_readonly("input_lwe_dimension",
+                    &::concretelang::clientlib::PackingKeyswitchKeyParam::
+                        inputLweDimension)
+      .def_readonly(
+          "variance",
+          &::concretelang::clientlib::PackingKeyswitchKeyParam::variance);
+
   pybind11::class_<mlir::concretelang::ClientParameters>(m, "ClientParameters")
       .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
@@ -353,7 +438,16 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                }
              }
              return result;
-           });
+           })
+      .def_readonly("secret_keys",
+                    &mlir::concretelang::ClientParameters::secretKeys)
+      .def_readonly("bootstrap_keys",
+                    &mlir::concretelang::ClientParameters::bootstrapKeys)
+      .def_readonly("keyswitch_keys",
+                    &mlir::concretelang::ClientParameters::keyswitchKeys)
+      .def_readonly(
+          "packing_keyswitch_keys",
+          &mlir::concretelang::ClientParameters::packingKeyswitchKeys);
 
   pybind11::class_<clientlib::KeySet>(m, "KeySet")
       .def_static("deserialize",

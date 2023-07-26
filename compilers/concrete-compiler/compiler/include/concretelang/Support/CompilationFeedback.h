@@ -18,6 +18,30 @@ namespace concretelang {
 
 using StringError = ::concretelang::error::StringError;
 
+enum class PrimitiveOperation {
+  PBS,
+  WOP_PBS,
+  KEY_SWITCH,
+  CLEAR_ADDITION,
+  ENCRYPTED_ADDITION,
+  CLEAR_MULTIPLICATION,
+  ENCRYPTED_NEGATION,
+};
+
+enum class KeyType {
+  SECRET,
+  BOOTSTRAP,
+  KEY_SWITCH,
+  PACKING_KEY_SWITCH,
+};
+
+struct Statistic {
+  std::string location;
+  PrimitiveOperation operation;
+  std::vector<std::pair<KeyType, size_t>> keys;
+  size_t count;
+};
+
 struct CompilationFeedback {
   double complexity;
 
@@ -45,23 +69,8 @@ struct CompilationFeedback {
   /// @brief crt decomposition of outputs, if crt is not used, empty vectors
   std::vector<std::vector<int64_t>> crtDecompositionsOfOutputs;
 
-  /// @brief number of programmable bootstraps in the entire circuit
-  uint64_t totalPbsCount = 0;
-
-  /// @brief number of key switches in the entire circuit
-  uint64_t totalKsCount = 0;
-
-  /// @brief number of clear additions in the entire circuit
-  uint64_t totalClearAdditionCount = 0;
-
-  /// @brief number of encrypted additions in the entire circuit
-  uint64_t totalEncryptedAdditionCount = 0;
-
-  /// @brief number of clear multiplications in the entire circuit
-  uint64_t totalClearMultiplicationCount = 0;
-
-  /// @brief number of encrypted negations in the entire circuit
-  uint64_t totalEncryptedNegationCount = 0;
+  /// @brief statistics
+  std::vector<Statistic> statistics;
 
   /// Fill the sizes from the client parameters.
   void
