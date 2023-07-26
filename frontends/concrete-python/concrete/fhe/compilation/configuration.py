@@ -68,6 +68,8 @@ class Configuration:
     progress_tag: Union[bool, int]
     fhe_simulation: bool
     fhe_execution: bool
+    compiler_debug_mode: bool
+    compiler_verbose_mode: bool
 
     def __init__(
         self,
@@ -95,8 +97,12 @@ class Configuration:
         progress_tag: Union[bool, int] = False,
         fhe_simulation: bool = False,
         fhe_execution: bool = True,
+        compiler_debug_mode: bool = False,
+        compiler_verbose_mode: bool = False,
     ):  # pylint: disable=too-many-arguments
         self.verbose = verbose
+        self.compiler_debug_mode = compiler_debug_mode
+        self.compiler_verbose_mode = compiler_verbose_mode
         self.show_graph = show_graph
         self.show_mlir = show_mlir
         self.show_optimizer = show_optimizer
@@ -154,6 +160,8 @@ class Configuration:
         progress_tag: Union[Keep, Union[bool, int]] = KEEP,
         fhe_simulation: Union[Keep, bool] = KEEP,
         fhe_execution: Union[Keep, bool] = KEEP,
+        compiler_debug_mode: Union[Keep, bool] = KEEP,
+        compiler_verbose_mode: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

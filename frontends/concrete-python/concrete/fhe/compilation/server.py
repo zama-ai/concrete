@@ -24,6 +24,8 @@ from concrete.compiler import (
     LibraryLambda,
     LibrarySupport,
     PublicArguments,
+    set_compiler_logging,
+    set_llvm_debug_flag,
 )
 from mlir._mlir_libs._concretelang._compiler import OptimizerStrategy
 from mlir.ir import Module as MlirModule
@@ -158,34 +160,41 @@ class Server:
             options.set_optimizer_strategy(OptimizerStrategy.DAG_MONO)
         elif parameter_selection_strategy == ParameterSelectionStrategy.MULTI:  # pragma: no cover
             options.set_optimizer_strategy(OptimizerStrategy.DAG_MULTI)
+        try:
+            if configuration.compiler_debug_mode:  # pragma: no cover
+                set_llvm_debug_flag(True)
+            if configuration.compiler_verbose_mode:  # pragma: no cover
+                set_compiler_logging(True)
+            if configuration.jit:  # pragma: no cover
+                # JIT to be dropped soon
+                output_dir = None
 
-        if configuration.jit:  # pragma: no cover
-            # JIT to be dropped soon
-            output_dir = None
+                support = JITSupport.new()
 
-            support = JITSupport.new()
+                mlir_to_compile = mlir if isinstance(mlir, str) else str(mlir)
+                compilation_result = support.compile(mlir_to_compile, options)
+                server_lambda = support.load_server_lambda(compilation_result)
 
-            mlir_to_compile = mlir if isinstance(mlir, str) else str(mlir)
-            compilation_result = support.compile(mlir_to_compile, options)
-            server_lambda = support.load_server_lambda(compilation_result)
+            else:
+                # pylint: disable=consider-using-with
+                output_dir = tempfile.TemporaryDirectory()
+                output_dir_path = Path(output_dir.name)
+                # pylint: enable=consider-using-with
 
-        else:
-            # pylint: disable=consider-using-with
-            output_dir = tempfile.TemporaryDirectory()
-            output_dir_path = Path(output_dir.name)
-            # pylint: enable=consider-using-with
-
-            support = LibrarySupport.new(
-                str(output_dir_path), generateCppHeader=False, generateStaticLib=False
-            )
-            if isinstance(mlir, str):
-                compilation_result = support.compile(mlir, options)
-            else:  # MlirModule
-                assert (
-                    compilation_context is not None
-                ), "must provide compilation context when compiling MlirModule"
-                compilation_result = support.compile(mlir, options, compilation_context)
-            server_lambda = support.load_server_lambda(compilation_result)
+                support = LibrarySupport.new(
+                    str(output_dir_path), generateCppHeader=False, generateStaticLib=False
+                )
+                if isinstance(mlir, str):
+                    compilation_result = support.compile(mlir, options)
+                else:  # MlirModule
+                    assert (
+                        compilation_context is not None
+                    ), "must provide compilation context when compiling MlirModule"
+                    compilation_result = support.compile(mlir, options, compilation_context)
+                server_lambda = support.load_server_lambda(compilation_result)
+        finally:
+            set_llvm_debug_flag(False)
+            set_compiler_logging(False)
 
         client_parameters = support.load_client_parameters(compilation_result)
         client_specs = ClientSpecs(client_parameters)
