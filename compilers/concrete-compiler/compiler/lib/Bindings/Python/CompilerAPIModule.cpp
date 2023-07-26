@@ -8,6 +8,8 @@
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
+#include "concretelang/Support/logging.h"
+#include <llvm/Support/Debug.h>
 #include <mlir-c/Bindings/Python/Interop.h>
 #include <mlir/CAPI/IR.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -46,6 +48,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   m.def("round_trip",
         [](std::string mlir_input) { return roundTrip(mlir_input.c_str()); });
+
+  m.def("set_llvm_debug_flag", [](bool enable) { llvm::DebugFlag = enable; });
+
+  m.def("set_compiler_logging",
+        [](bool enable) { mlir::concretelang::setupLogging(enable); });
 
   m.def("terminate_df_parallelization", &terminateDataflowParallelization);
 

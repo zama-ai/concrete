@@ -10,6 +10,10 @@ from mlir._mlir_libs._concretelang._compiler import (
     init_df_parallelization as _init_df_parallelization,
 )
 from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
+from mlir._mlir_libs._concretelang._compiler import (
+    set_llvm_debug_flag,
+    set_compiler_logging,
+)
 
 # pylint: enable=no-name-in-module,import-error
 
