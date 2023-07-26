@@ -57,6 +57,7 @@ declare_mlir_python_sources(
   concrete/compiler/library_compilation_result.py
   concrete/compiler/library_support.py
   concrete/compiler/library_lambda.py
+  concrete/compiler/parameter.py
   concrete/compiler/public_arguments.py
   concrete/compiler/public_result.py
   concrete/compiler/evaluation_keys.py

@@ -301,6 +301,7 @@ const CONCRETE_COMPILER_STATIC_LIBS: &[&str] = &[
     "SDFGDialect",
     "ExtractSDFGOps",
     "SDFGToStreamEmulator",
+    "TFHEDialectAnalysis",
 ];
 
 fn main() {

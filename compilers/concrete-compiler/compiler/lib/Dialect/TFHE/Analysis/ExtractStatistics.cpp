@@ -10,6 +10,17 @@ using namespace mlir;
 
 using TFHE::ExtractTFHEStatisticsPass;
 
+// #########
+// Utilities
+// #########
+
+template <typename Op> std::string locationOf(Op op) {
+  auto location = std::string();
+  auto locationStream = llvm::raw_string_ostream(location);
+  op.getLoc()->print(locationStream);
+  return location.substr(5, location.size() - 2 - 5); // remove loc(" and ")
+}
+
 // #######
 // scf.for
 // #######
@@ -103,7 +114,24 @@ static std::optional<StringError> on_exit(scf::ForOp &op,
 
 static std::optional<StringError> on_enter(TFHE::AddGLWEOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
-  pass.feedback.totalEncryptedAdditionCount += pass.iterations;
+  auto resultingKey = op.getType().getKey().getNormalized();
+
+  auto location = locationOf(op);
+  auto operation = PrimitiveOperation::ENCRYPTED_ADDITION;
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+  keys.push_back(key);
+
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
@@ -113,7 +141,24 @@ static std::optional<StringError> on_enter(TFHE::AddGLWEOp &op,
 
 static std::optional<StringError> on_enter(TFHE::AddGLWEIntOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
-  pass.feedback.totalClearAdditionCount += pass.iterations;
+  auto resultingKey = op.getType().getKey().getNormalized();
+
+  auto location = locationOf(op);
+  auto operation = PrimitiveOperation::CLEAR_ADDITION;
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+  keys.push_back(key);
+
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
@@ -123,7 +168,24 @@ static std::optional<StringError> on_enter(TFHE::AddGLWEIntOp &op,
 
 static std::optional<StringError> on_enter(TFHE::BootstrapGLWEOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
-  pass.feedback.totalPbsCount += pass.iterations;
+  auto bsk = op.getKey();
+
+  auto location = locationOf(op);
+  auto operation = PrimitiveOperation::PBS;
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::BOOTSTRAP, (size_t)bsk.getIndex());
+  keys.push_back(key);
+
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
@@ -133,7 +195,24 @@ static std::optional<StringError> on_enter(TFHE::BootstrapGLWEOp &op,
 
 static std::optional<StringError> on_enter(TFHE::KeySwitchGLWEOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
-  pass.feedback.totalKsCount += pass.iterations;
+  auto ksk = op.getKey();
+
+  auto location = locationOf(op);
+  auto operation = PrimitiveOperation::KEY_SWITCH;
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::KEY_SWITCH, (size_t)ksk.getIndex());
+  keys.push_back(key);
+
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
@@ -143,7 +222,24 @@ static std::optional<StringError> on_enter(TFHE::KeySwitchGLWEOp &op,
 
 static std::optional<StringError> on_enter(TFHE::MulGLWEIntOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
-  pass.feedback.totalClearMultiplicationCount += pass.iterations;
+  auto resultingKey = op.getType().getKey().getNormalized();
+
+  auto location = locationOf(op);
+  auto operation = PrimitiveOperation::CLEAR_MULTIPLICATION;
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+  keys.push_back(key);
+
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
@@ -153,7 +249,24 @@ static std::optional<StringError> on_enter(TFHE::MulGLWEIntOp &op,
 
 static std::optional<StringError> on_enter(TFHE::NegGLWEOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
-  pass.feedback.totalEncryptedNegationCount += pass.iterations;
+  auto resultingKey = op.getType().getKey().getNormalized();
+
+  auto location = locationOf(op);
+  auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+  keys.push_back(key);
+
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
@@ -163,9 +276,34 @@ static std::optional<StringError> on_enter(TFHE::NegGLWEOp &op,
 
 static std::optional<StringError> on_enter(TFHE::SubGLWEIntOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
+  auto resultingKey = op.getType().getKey().getNormalized();
+
+  auto location = locationOf(op);
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+  keys.push_back(key);
+
   // clear - encrypted = clear + neg(encrypted)
-  pass.feedback.totalEncryptedNegationCount += pass.iterations;
-  pass.feedback.totalClearAdditionCount += pass.iterations;
+
+  auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
+  operation = PrimitiveOperation::CLEAR_ADDITION;
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
@@ -175,7 +313,32 @@ static std::optional<StringError> on_enter(TFHE::SubGLWEIntOp &op,
 
 static std::optional<StringError> on_enter(TFHE::WopPBSGLWEOp &op,
                                            ExtractTFHEStatisticsPass &pass) {
-  pass.feedback.totalPbsCount += pass.iterations;
+  auto bsk = op.getBsk();
+  auto ksk = op.getKsk();
+  auto pksk = op.getPksk();
+
+  auto location = locationOf(op);
+  auto operation = PrimitiveOperation::WOP_PBS;
+  auto keys = std::vector<std::pair<KeyType, size_t>>();
+  auto count = pass.iterations;
+
+  std::pair<KeyType, size_t> key =
+      std::make_pair(KeyType::BOOTSTRAP, (size_t)bsk.getIndex());
+  keys.push_back(key);
+
+  key = std::make_pair(KeyType::KEY_SWITCH, (size_t)ksk.getIndex());
+  keys.push_back(key);
+
+  key = std::make_pair(KeyType::PACKING_KEY_SWITCH, (size_t)pksk.getIndex());
+  keys.push_back(key);
+
+  pass.feedback.statistics.push_back(Statistic{
+      location,
+      operation,
+      keys,
+      count,
+  });
+
   return std::nullopt;
 }
 
