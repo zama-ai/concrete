@@ -10,6 +10,7 @@
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Tools.h"
 #include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
+#include "concretelang/Conversion/Utils/RTOpConverter.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/ReinstantiatingOpTypeConversion.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
@@ -469,48 +470,16 @@ void SimulateTFHEPass::runOnOperation() {
                                                                  converter);
   patterns.insert<SubIntGLWEOpPattern>(&getContext());
 
-  // Conversion of RT Dialect Ops
-  patterns.add<
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::func::ReturnOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::scf::YieldOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::bufferization::AllocTensorOp, true>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::MakeReadyFutureOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::AwaitFutureOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::CreateAsyncTaskOp, true>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::WorkFunctionReturnOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                               converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::AwaitFutureOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
-      target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
+  patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+                   mlir::func::ReturnOp>,
+               mlir::concretelang::TypeConvertingReinstantiationPattern<
+                   mlir::scf::YieldOp>,
+               mlir::concretelang::TypeConvertingReinstantiationPattern<
+                   mlir::bufferization::AllocTensorOp, true>>(&getContext(),
+                                                              converter);
+
+  mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
+                                                          converter);
 
   // Make sure that functions no longer operate on ciphertexts
   target.addDynamicallyLegalOp<mlir::func::FuncOp>(

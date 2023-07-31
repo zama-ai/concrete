@@ -5,6 +5,7 @@
 
 #include <iostream>
 
+#include <concretelang/Conversion/Utils/RTOpConverter.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/IR/RTOps.h>
@@ -91,53 +92,7 @@ struct BufferizeDataflowTaskOpsPass
       return typeConverter.isLegal(op);
     });
 
-    patterns.add<
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::DataflowTaskOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::DataflowYieldOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::MakeReadyFutureOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::AwaitFutureOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::CreateAsyncTaskOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::WorkFunctionReturnOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                                 typeConverter);
-
-    // Conversion of RT Dialect Ops
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DataflowTaskOp>(target, typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DataflowYieldOp>(target, typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::MakeReadyFutureOp>(target, typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::AwaitFutureOp>(target, typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::CreateAsyncTaskOp>(target, typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target,
-                                                             typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
-        target, typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target,
-                                                             typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::WorkFunctionReturnOp>(target, typeConverter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target,
+    mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
                                                             typeConverter);
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
