@@ -2,6 +2,8 @@
 Declaration of `Compiler` class.
 """
 
+# pylint: disable=import-error,no-name-in-module
+
 import inspect
 import os
 import traceback
@@ -21,6 +23,8 @@ from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .configuration import Configuration
 from .utils import fuse
+
+# pylint: enable=import-error,no-name-in-module
 
 
 @unique
