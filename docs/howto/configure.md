@@ -94,6 +94,10 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Title of the progress bar
 * **progress\_tag**: Union[bool, int] = False,
   * How many nested tag elements to display with the progress bar. `True` means all tag elements and `False` disables the display. `2` will display `elmt1.elmt2`
+* **fhe\_simulation**: bool = False
+  * Enable FHE simulation. Can be enabled later using `circuit.enable_fhe_simulation()`.
+* **fhe\_execution**: bool = True
+  * Enable FHE execution. Can be enabled later using `circuit.enable_fhe_execution()`.
 * **compiler_debug_mode**: bool = False,
   * Enable/disable debug mode of the compiler. This can show a lot of information, including passes and pattern rewrites.
 * **compiler_verbose_mode**: bool = False,
