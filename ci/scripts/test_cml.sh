@@ -2,9 +2,7 @@
 
 # Launch ML tests with a chosen version of CP, to be sure that new deliveries will not break ML
 # tests (unless when it is known and accepted)
-#
-# Current missing:
-#       add the support of CP_VERSION="current" -- I need to ask Concrete team about that
+
 
 set -e
 
@@ -17,6 +15,7 @@ function usage() {
     echo "About CP version:"
     echo "--cp_version x.y.z                Install the chosen version of CP"
     echo "--last_nightly_cp_version         Install the last nightly of CP"
+    echo "--use-wheel /path/to/wheel        Install CP from this wheel"
     echo
     echo "About the tests to run"
     echo "--use_cml_command_line            Use exactly commandline by ML team"
@@ -51,6 +50,9 @@ PYTHON=python
 IS_VERBOSE=0
 ML_BRANCH="main"
 
+# Specify wheel's path if we want to install CP from wheel
+WHEEL=""
+
 while [ -n "$1" ]
 do
    case "$1" in
@@ -61,6 +63,12 @@ do
 
         "--last_nightly_cp_version" | "--last_cp_version" )
             CP_VERSION="last"
+            ;;
+
+        "--use-wheel" )
+            shift
+            WHEEL="${1}"
+            CP_VERSION="wheel"
             ;;
 
         "--quick_debug_of_the_script" )
@@ -156,6 +164,9 @@ echo "Installing CP version"
 if [ "$CP_VERSION" == "last" ]
 then
     poetry run python -m pip install -U --pre "concrete-python" --no-deps
+elif [ "$CP_VERSION" == "wheel" ]
+then
+    poetry run python -m pip install ${WHEEL} --no-deps
 elif [ "$CP_VERSION" == "current" ]
 then
     echo "Fix me: how to install the current CP, ie the one in the current directory"
