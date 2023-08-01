@@ -13,7 +13,7 @@ def f(x):
     return (x + 1) ** 2
 
 inputset = [np.random.randint(0, 10, size=(10,)) for _ in range(10)]
-circuit = f.compile(inputset, p_error=0.1)
+circuit = f.compile(inputset, p_error=0.1, fhe_simulation=True)
 
 sample = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
