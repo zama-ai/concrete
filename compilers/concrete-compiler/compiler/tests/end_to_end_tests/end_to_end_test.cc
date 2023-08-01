@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <regex>
 #include <type_traits>
 
 #include "concretelang/ClientLib/Serializers.h"
@@ -169,7 +170,7 @@ std::string getTestName(EndToEndDesc desc,
                         int testNum) {
   std::ostringstream os;
   os << getOptionsName(options) << "." << desc.description << "." << testNum;
-  return os.str();
+  return std::regex_replace(os.str(), std::regex("-"), "");
 }
 
 void registerEndToEnd(std::string suiteName, std::string testName,
