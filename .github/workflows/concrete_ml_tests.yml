@@ -24,7 +24,6 @@ env:
 
 jobs:
   linux-x86:
-    continue-on-error: true
     strategy:
       matrix:
         python-version: ["3.10"]
@@ -112,4 +111,5 @@ jobs:
       - name: ML Tests
         run: |
           export CONCRETE_PYTHON_WHEEL=$(pwd)/frontends/concrete-python/dist/*manylinux*.whl
+          pip install poetry==1.2.2
           ./ci/scripts/test_cml.sh --use-wheel $CONCRETE_PYTHON_WHEEL --verbose
