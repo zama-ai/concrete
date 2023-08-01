@@ -160,7 +160,7 @@ struct FunctionToDag {
         index = addLevelledOp(dag, op, encrypted_inputs);
       }
     } else if (auto dot = asDotEint(op)) {
-      index = addDotEint(dag, dot, encrypted_inputs, precision);
+      addDotEint(dag, dot, encrypted_inputs, precision);
       // The above function call sets the OIds, can return right away
       return;
     } else if (auto mul = asMul(op)) {
@@ -180,8 +180,7 @@ struct FunctionToDag {
       addMaxpool2d(dag, maxpool2d, encrypted_inputs, precision);
       return;
     } else if (auto matmulEintEint = asMatmulEintEint(op)) {
-      index =
-          addEncMatMulTensor(dag, matmulEintEint, encrypted_inputs, precision);
+      addEncMatMulTensor(dag, matmulEintEint, encrypted_inputs, precision);
       return;
     } else {
       index = addLevelledOp(dag, op, encrypted_inputs);
@@ -362,10 +361,11 @@ struct FunctionToDag {
     index[result] = resultNode;
 
     mlir::Builder builder(mulOp.getContext());
-    mlir::SmallVector<int32_t, 5> operatorIndexes = {
+    mlir::SmallVector<int32_t, 7> operatorIndexes = {
         (int32_t)addNode.index,    (int32_t)lhsTluNode.index,
         (int32_t)subNode.index,    (int32_t)rhsCorrectionNode.index,
-        (int32_t)rhsTluNode.index, (int32_t)resultNode.index};
+        (int32_t)rhsTluNode.index, (int32_t)resultNode.index,
+    };
     if (lhsCorrectionNode.has_value()) {
       // We push that at the end by convention
       operatorIndexes.push_back(lhsCorrectionNode.value().index);
@@ -492,20 +492,50 @@ struct FunctionToDag {
     const double addSubManp =
         sqrt(xSmanp.roundToDouble() + ySmanp.roundToDouble());
 
+    // tlu(v)
+    const double tluManp = 1;
+
+    // tlu(v1) - tlu(v2)
+    const double tluSubManp = sqrt(tluManp + tluManp);
+
+    // for tlus
+    const std::vector<std::uint64_t> unknownFunction;
+
+    // tlu(x + y)
     auto addNode =
         dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
                              addSubManp, slice(pairMatrixShape), comment);
+    std::optional<concrete_optimizer::dag::OperatorIndex> lhsCorrectionNode;
+    if (isSignedEint(innerProductOp.getType())) {
+      // If signed mul we need to add the addition node for correction of the
+      // signed tlu
+      addNode = dag->add_dot(
+          slice(std::vector<concrete_optimizer::dag::OperatorIndex>{addNode}),
+          concrete_optimizer::weights::vector(
+              slice(std::vector<std::int64_t>{1})));
+      lhsCorrectionNode = addNode;
+    }
+    auto lhsTluNode = dag->add_lut(addNode, slice(unknownFunction), precision);
 
+    // tlu(x - y)
     auto subNode =
         dag->add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
                              addSubManp, slice(pairMatrixShape), comment);
+    // This is a signed tlu so we need to also add the addition for correction
+    // signed tlu
+    auto rhsCorrectionNode = dag->add_dot(
+        slice(std::vector<concrete_optimizer::dag::OperatorIndex>{subNode}),
+        concrete_optimizer::weights::vector(
+            slice(std::vector<std::int64_t>{1})));
+    auto rhsTluNode =
+        dag->add_lut(rhsCorrectionNode, slice(unknownFunction), precision);
 
-    // tlu(x - y), tlu(x + y)
-    const std::vector<std::uint64_t> unknownFunction;
-
-    auto lhsTluNode = dag->add_lut(addNode, slice(unknownFunction), precision);
-
-    auto rhsTluNode = dag->add_lut(subNode, slice(unknownFunction), precision);
+    // tlu(x + y) - tlu(x - y)
+    const std::vector<concrete_optimizer::dag::OperatorIndex> subInputs = {
+        lhsTluNode, rhsTluNode};
+    auto resultNode =
+        dag->add_levelled_op(slice(subInputs), lweDimCostFactor, fixedCost,
+                             tluSubManp, slice(pairMatrixShape), comment);
 
     // 3. Sum(tlu(x + y) - tlu(x - y))
     // Create a leveled op that simulates concatenation. It takes
@@ -521,19 +551,29 @@ struct FunctionToDag {
     mlir::IntegerAttr smanp_int = op->getAttrOfType<mlir::IntegerAttr>("SMANP");
     assert(smanp_int && "Missing manp value on a crypto operation");
 
-    Inputs tluOpIndices{lhsTluNode, rhsTluNode};
+    const std::vector<concrete_optimizer::dag::OperatorIndex> sumOperands = {
+        resultNode};
 
     // TODO: use APIFloat.sqrt when it's available
     double manp = sqrt(smanp_int.getValue().roundToDouble());
     index[result] =
-        dag->add_levelled_op(slice(tluOpIndices), lwe_dim_cost_factor,
+        dag->add_levelled_op(slice(sumOperands), lwe_dim_cost_factor,
                              fixed_cost, manp, slice(resultShape), comment);
 
+    // Create the TFHE.OId attributes
+    // The first elements of the vector are nodes for the encrypted
+    // multiplication
     mlir::Builder builder(innerProductOp.getContext());
-    mlir::SmallVector<int32_t, 5> operatorIndexes = {
-        (int32_t)addNode.index, (int32_t)lhsTluNode.index,
-        (int32_t)subNode.index, (int32_t)rhsTluNode.index,
-        (int32_t)index[result].index};
+    mlir::SmallVector<int32_t, 8> operatorIndexes = {
+        (int32_t)addNode.index,    (int32_t)lhsTluNode.index,
+        (int32_t)subNode.index,    (int32_t)rhsCorrectionNode.index,
+        (int32_t)rhsTluNode.index, (int32_t)resultNode.index,
+    };
+    if (lhsCorrectionNode.has_value()) {
+      operatorIndexes.push_back(lhsCorrectionNode.value().index);
+    }
+    // The last element of the vector is the node for the addition
+    operatorIndexes.push_back((int32_t)index[result].index);
 
     if (setOptimizerID)
       innerProductOp->setAttr("TFHE.OId",
