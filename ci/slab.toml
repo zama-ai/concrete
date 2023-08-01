@@ -71,6 +71,12 @@ profile = "m6i-cpu-bench"
 matrix = [0,1,2,3,4,5,6,7,8,9,10]
 max_parallel_jobs = 2
 
+# Trigger ML tests with latest CP
+[command.ml-test]
+workflow = "concrete_ml_tests.yml"
+profile = "m6i-cpu-test"
+check_run_name = "Concrete ML Tests"
+
 #################################################
 # Concrete CUDA commands
 #################################################
