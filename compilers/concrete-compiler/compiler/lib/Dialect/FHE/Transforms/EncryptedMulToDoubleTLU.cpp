@@ -35,6 +35,8 @@ public:
     // addMul function on ConcreteOptimizer.cpp
 
     auto inputType = adaptor.getRhs().getType();
+    auto outputType = op->getResult(0).getType();
+
     auto bitWidth = inputType.cast<FHE::FheIntegerInterface>().getWidth();
     auto isSigned = inputType.cast<FHE::FheIntegerInterface>().isSigned();
     mlir::Type signedType =
@@ -76,7 +78,7 @@ public:
                               rawSumLut.size(), rewriter.getIntegerType(64)),
                           rawSumLut));
     auto sumTluOutput = rewriter.create<FHE::ApplyLookupTableEintOp>(
-        op->getLoc(), inputType, sum, sumLut);
+        op->getLoc(), outputType, sum, sumLut);
     if (operatorIndexes != nullptr) {
       std::vector<int32_t> sumTluIndexes{operatorIndexes[1]};
       if (isSigned) {
@@ -111,7 +113,7 @@ public:
                               rawDiffLut.size(), rewriter.getIntegerType(64)),
                           rawDiffLut));
     auto diffTluOutput = rewriter.create<FHE::ApplyLookupTableEintOp>(
-        op->getLoc(), inputType, diff, diffLut);
+        op->getLoc(), outputType, diff, diffLut);
     if (operatorIndexes != nullptr) {
       std::vector<int32_t> diffTluIndexes{operatorIndexes[3],
                                           operatorIndexes[4]};
@@ -120,7 +122,7 @@ public:
     }
 
     // o = se - de
-    auto output = rewriter.create<FHE::SubEintOp>(op->getLoc(), inputType,
+    auto output = rewriter.create<FHE::SubEintOp>(op->getLoc(), outputType,
                                                   sumTluOutput, diffTluOutput);
     if (operatorIndexes != nullptr)
       output->setAttr("TFHE.OId",

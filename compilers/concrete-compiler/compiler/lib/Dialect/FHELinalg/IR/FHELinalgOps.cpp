@@ -410,10 +410,6 @@ verifyDotInputsOutputsConsistency(mlir::concretelang::FHELinalg::DotEint &op,
           *op.getOperation(), lhsEltType, rhsEltType)) {
     return ::mlir::failure();
   }
-  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
-          *op.getOperation(), lhsEltType, resultType)) {
-    return ::mlir::failure();
-  }
   return ::mlir::success();
 }
 
