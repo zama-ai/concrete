@@ -526,11 +526,11 @@ def copy_modify(x):
             id="fusable_additional_2",
         ),
         pytest.param(
-            lambda x: x + x.shape[0] + x.ndim + x.size,
+            lambda x: x + x.shape[0] + x.ndim + x.size + len(x),
             {
                 "x": {"status": "encrypted", "range": [0, 15], "shape": (3, 2)},
             },
-            id="x + x.shape[0] + x.ndim + x.size",
+            id="x + x.shape[0] + x.ndim + x.size + len(x)",
         ),
         pytest.param(
             lambda x: (50 * np.sin(x.transpose())).astype(np.int64),

@@ -155,6 +155,18 @@ def test_compiler_bad_trace(helpers):
 
     assert str(excinfo.value) == "Function 'g' returned '[{} ()]', which is not supported"
 
+    # len on scalar
+    # -------------
+
+    def len_on_scalar(x):
+        return len(x)
+
+    with pytest.raises(TypeError) as excinfo:
+        compiler = Compiler(len_on_scalar, {"x": "encrypted"})
+        compiler.trace(inputset=[1, 2, 3], configuration=configuration)
+
+    assert str(excinfo.value) == "object of type 'Tracer' where 'shape == ()' has no len()"
+
 
 def test_compiler_bad_compile(helpers):
     """

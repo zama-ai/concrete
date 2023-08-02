@@ -863,6 +863,13 @@ class Tracer:
 
         return Tracer._trace_numpy_operation(np.transpose, self)
 
+    def __len__(self):
+        shape = self.shape
+        if len(shape) == 0:
+            message = "object of type 'Tracer' where 'shape == ()' has no len()"
+            raise TypeError(message)
+        return shape[0]
+
 
 class Annotation(Tracer):
     """
