@@ -480,7 +480,7 @@ def test_circuit_eval_graph_scalar(helpers):
 
     inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
     circuit = f.compile(inputset, configuration.fork(fhe_simulation=False, fhe_execution=False))
-    assert f(*inputset[0]) == circuit.graph(*inputset[0], p_error=0.01)
+    assert f(*inputset[0]) == circuit.graph(*inputset[0])
 
 
 def test_circuit_eval_graph_tensor(helpers):
@@ -503,7 +503,7 @@ def test_circuit_eval_graph_tensor(helpers):
         for _ in range(2)
     ]
     circuit = f.compile(inputset, configuration.fork(fhe_simulation=False, fhe_execution=False))
-    assert np.all(f(*inputset[0]) == circuit.graph(*inputset[0], p_error=0.01))
+    assert np.all(f(*inputset[0]) == circuit.graph(*inputset[0]))
 
 
 def test_circuit_compile_sim_only(helpers):
