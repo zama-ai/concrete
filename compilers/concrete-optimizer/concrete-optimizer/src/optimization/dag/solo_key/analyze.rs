@@ -141,7 +141,7 @@ pub struct VariancesAndBound {
 fn out_variance(
     op: &unparametrized::UnparameterizedOperator,
     out_shapes: &[Shape],
-    out_variances: &mut [SymbolicVariance],
+    out_variances: &[SymbolicVariance],
 ) -> SymbolicVariance {
     // Maintain a linear combination of input_variance and lut_out_variance
     // TODO: track each elements instead of container
@@ -191,7 +191,7 @@ fn out_variances(dag: &unparametrized::OperationDag) -> Vec<SymbolicVariance> {
     let nb_ops = dag.operators.len();
     let mut out_variances = Vec::with_capacity(nb_ops);
     for op in &dag.operators {
-        let vf = out_variance(op, &dag.out_shapes, &mut out_variances);
+        let vf = out_variance(op, &dag.out_shapes, &out_variances);
         out_variances.push(vf);
     }
     out_variances
