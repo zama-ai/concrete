@@ -100,7 +100,7 @@ class Graph:
 
             pred_results = [node_results[pred] for pred in self.ordered_preds_of(node)]
 
-            if p_error > 0.0 and node.converted_to_table_lookup:
+            if p_error > 0.0 and node.converted_to_table_lookup:  # pragma: no cover
                 variable_input_indices = [
                     idx
                     for idx, pred in enumerate(self.ordered_preds_of(node))
