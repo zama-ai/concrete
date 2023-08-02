@@ -283,8 +283,9 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
                            mlir::Location nestedLoc,
                            mlir::ValueRange blockArgs) {
-      FHEOp fheOp = nestedBuilder.create<FHEOp>(linalgOp.getLoc(), blockArgs[0],
-                                                blockArgs[1]);
+      FHEOp fheOp = nestedBuilder.create<FHEOp>(linalgOp.getLoc(),
+                                                resultTy.getElementType(),
+                                                blockArgs[0], blockArgs[1]);
       forwardOptimizerID(linalgOp, fheOp);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(linalgOp.getLoc(),
