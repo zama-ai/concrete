@@ -802,7 +802,10 @@ class Context:
 
             self.error(highlights)
 
-        assert self.is_bit_width_compatible(resulting_type, x, y)
+        if x.is_encrypted and y.is_encrypted:
+            assert self.is_bit_width_compatible(x, y)
+        else:
+            assert self.is_bit_width_compatible(resulting_type, x, y)
 
         if x.is_scalar or y.is_scalar:
             return self.mul(resulting_type, x, y)
@@ -1369,7 +1372,10 @@ class Context:
 
             self.error(highlights)
 
-        assert self.is_bit_width_compatible(resulting_type, x, y)
+        if x.is_encrypted and y.is_encrypted:
+            assert self.is_bit_width_compatible(x, y)
+        else:
+            assert self.is_bit_width_compatible(resulting_type, x, y)
 
         if resulting_type.shape == ():
             if x.is_clear:
@@ -1489,7 +1495,10 @@ class Context:
 
             self.error(highlights)
 
-        assert self.is_bit_width_compatible(resulting_type, x, y)
+        if x.is_encrypted and y.is_encrypted:
+            assert self.is_bit_width_compatible(x, y)
+        else:
+            assert self.is_bit_width_compatible(resulting_type, x, y)
 
         use_linalg = x.is_tensor or y.is_tensor
 
