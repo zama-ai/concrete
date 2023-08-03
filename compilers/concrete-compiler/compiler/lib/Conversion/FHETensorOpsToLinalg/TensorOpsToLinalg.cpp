@@ -1678,6 +1678,21 @@ mlir::LogicalResult createGroupedConv2D(
   return mlir::success();
 }
 
+bool isZeroConstant(mlir::Value value) {
+  auto cst =
+      mlir::dyn_cast_or_null<mlir::arith::ConstantOp>(value.getDefiningOp());
+  if (cst == nullptr)
+    return false;
+  auto values = cst->getAttrOfType<mlir::DenseIntElementsAttr>("value");
+  if (values == nullptr)
+    return false;
+  for (auto v : values) {
+    if (v != 0)
+      return false;
+  }
+  return true;
+}
+
 /// This rewrite pattern transforms any instance of operators
 /// `FHELinalg.conv2d` to one or multiple instances of
 /// `linalg.conv_2d_nchw_fchw`. The transformation consists of padding the input
@@ -1767,14 +1782,13 @@ struct FHELinalgConv2dToLinalgConv2d
                                                  .cast<mlir::RankedTensorType>()
                                                  .getShape(),
                                              inputElementType));
+    forwardOptimizerID(conv2dOp, initTensor.getDefiningOp());
     // Since linalg doesn't support a bias in the conv operation, we
     // initialize the output tensor to the bias values, so that conv results
     // get accumulated to it
     mlir::Value bias = conv2dOp.getBias(); /* optional of shape: Filters */
-    mlir::Value biasInitTensor;
-    if (!bias) { // no bias was used
-      biasInitTensor = initTensor;
-    } else {
+    mlir::Value biasInitTensor = initTensor;
+    if (bias && !isZeroConstant(bias)) {
       // Fill the output tensor with bias values
       auto resultRank =
           initTensor.getType().cast<mlir::RankedTensorType>().getRank();
