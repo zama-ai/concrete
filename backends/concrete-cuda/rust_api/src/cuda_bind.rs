@@ -52,8 +52,8 @@ extern "C" {
     /// GPU. The resulting bootstrap key `dest` on the GPU is an array of f64 values.
     pub fn cuda_convert_lwe_bootstrap_key_64(
         dest: *mut c_void,
-        src: *mut c_void,
-        v_stream: *const c_void,
+        src: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         input_lwe_dim: u32,
         glwe_dim: u32,
@@ -66,8 +66,8 @@ extern "C" {
     /// `dest` on the GPU is an array of uint64_t values.
     pub fn cuda_convert_lwe_multi_bit_bootstrap_key_64(
         dest: *mut c_void,
-        src: *mut c_void,
-        v_stream: *const c_void,
+        src: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         input_lwe_dim: u32,
         glwe_dim: u32,
@@ -82,7 +82,7 @@ extern "C" {
     pub fn cuda_convert_lwe_ciphertext_vector_to_gpu_64(
         dest: *mut c_void,
         src: *mut c_void,
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         number_of_cts: u32,
         lwe_dimension: u32,
@@ -94,7 +94,7 @@ extern "C" {
     pub fn cuda_convert_lwe_ciphertext_vector_to_cpu_64(
         dest: *mut c_void,
         src: *mut c_void,
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         number_of_cts: u32,
         lwe_dimension: u32,
@@ -104,7 +104,7 @@ extern "C" {
     /// the low latency PBS on 64-bit inputs, into `pbs_buffer`. It also configures SM
     /// options on the GPU in case FULLSM or PARTIALSM mode are going to be used.
     pub fn scratch_cuda_bootstrap_low_latency_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         pbs_buffer: *mut *mut i8,
         glwe_dimension: u32,
@@ -207,7 +207,7 @@ extern "C" {
     /// This cleanup function frees the data for the low latency PBS on GPU
     /// contained in pbs_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_bootstrap_low_latency(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         pbs_buffer: *mut *mut i8,
     );
@@ -215,7 +215,7 @@ extern "C" {
     /// This scratch function allocates the necessary amount of data on the GPU for
     /// the multi-bit PBS on 64-bit inputs into `pbs_buffer`.
     pub fn scratch_cuda_multi_bit_pbs_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         pbs_buffer: *mut *mut i8,
         lwe_dimension: u32,
@@ -295,7 +295,7 @@ extern "C" {
     /// This cleanup function frees the data for the multi-bit PBS on GPU
     /// contained in pbs_buffer for 64-bit inputs.
     pub fn cleanup_cuda_multi_bit_pbs(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         pbs_buffer: *mut *mut i8,
     );
@@ -318,7 +318,7 @@ extern "C" {
     /// This function calls a wrapper to a device kernel that performs the keyswitch.
     /// `num_samples` blocks of threads are launched
     pub fn cuda_keyswitch_lwe_ciphertext_vector_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -349,7 +349,7 @@ extern "C" {
     /// This function calls a wrapper to a device kernel that performs the functional packing
     /// keyswitch.
     pub fn cuda_fp_keyswitch_lwe_to_glwe_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         glwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -367,7 +367,7 @@ extern "C" {
     /// the Cmux tree on 64-bit inputs, into `cmux_tree_buffer`. It also configures SM options on
     /// the GPU in case FULLSM mode is going to be used.
     pub fn scratch_cuda_cmux_tree_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         cmux_tree_buffer: *mut *mut i8,
         glwe_dimension: u32,
@@ -404,7 +404,7 @@ extern "C" {
     /// Cmux tree. The kernel is templatized based on integer discretization and
     /// polynomial degree.
     pub fn cuda_cmux_tree_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         glwe_array_out: *mut c_void,
         ggsw_in: *const c_void,
@@ -422,7 +422,7 @@ extern "C" {
     /// This cleanup function frees the data for the Cmux tree on GPU
     /// contained in cmux_tree_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_cmux_tree(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         cmux_tree_buffer: *mut *mut i8,
     );
@@ -431,7 +431,7 @@ extern "C" {
     /// the blind rotation and sample extraction on 64-bit inputs, into `br_se_buffer`.
     /// It also configures SM options on the GPU in case FULLSM mode is going to be used.
     pub fn scratch_cuda_blind_rotation_sample_extraction_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         br_se_buffer: *mut *mut i8,
         glwe_dimension: u32,
@@ -464,7 +464,7 @@ extern "C" {
     /// blind rotation and sample extraction. The kernel is templatized based on integer
     /// discretization and polynomial degree.
     pub fn cuda_blind_rotate_and_sample_extraction_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_out: *mut c_void,
         ggsw_in: *const c_void,
@@ -482,7 +482,7 @@ extern "C" {
     /// This cleanup function frees the data for the blind rotation and sample extraction on GPU
     /// contained in br_se_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_blind_rotation_sample_extraction(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         br_se_buffer: *mut *mut i8,
     );
@@ -492,7 +492,7 @@ extern "C" {
     /// It also configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to be
     /// used in the PBS.
     pub fn scratch_cuda_extract_bits_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         bit_extract_buffer: *mut *mut i8,
         glwe_dimension: u32,
@@ -537,7 +537,7 @@ extern "C" {
     /// This function will call corresponding template of wrapper host function which
     /// will manage the calls of device functions.
     pub fn cuda_extract_bits_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         list_lwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -561,7 +561,7 @@ extern "C" {
     /// This cleanup function frees the data for the bit extraction on GPU
     /// contained in bit_extract_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_extract_bits(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         bit_extract_buffer: *mut *mut i8,
     );
@@ -571,7 +571,7 @@ extern "C" {
     /// It also configures SM options on the GPU in case FULLSM or PARTIALSM mode is going to be
     /// used in the PBS.
     pub fn scratch_cuda_circuit_bootstrap_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         cbs_buffer: *mut *mut i8,
         glwe_dimension: u32,
@@ -617,7 +617,7 @@ extern "C" {
     /// circuit bootstrap. The kernel is templatized based on integer discretization and
     /// polynomial degree.
     pub fn cuda_circuit_bootstrap_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         ggsw_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -642,7 +642,7 @@ extern "C" {
     /// This cleanup function frees the data for the circuit bootstrap on GPU
     /// contained in cbs_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_circuit_bootstrap(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         cbs_buffer: *mut *mut i8,
     );
@@ -651,7 +651,7 @@ extern "C" {
     /// circuit bootstrap and vertical packing, into `cbs_vp_buffer`.
     /// It also fills the value of delta_log to be used in the circuit bootstrap.
     pub fn scratch_cuda_circuit_bootstrap_vertical_packing_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         cbs_vp_buffer: *mut *mut i8,
         cbs_delta_log: *mut u32,
@@ -690,7 +690,7 @@ extern "C" {
     ///  - `max_shared_memory` maximum shared memory amount to be used in
     ///  the kernels.
     pub fn cuda_circuit_bootstrap_vertical_packing_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -716,7 +716,7 @@ extern "C" {
     /// This cleanup function frees the data for the circuit bootstrap and vertical packing on GPU
     /// contained in cbs_vp_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_circuit_bootstrap_vertical_packing(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         cbs_vp_buffer: *mut *mut i8,
     );
@@ -727,7 +727,7 @@ extern "C" {
     /// It also fills the value of delta_log and cbs_delta_log to be used in the bit extract and
     /// circuit bootstrap.
     pub fn scratch_cuda_wop_pbs_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         wop_pbs_buffer: *mut *mut i8,
         delta_log: *mut u32,
@@ -776,7 +776,7 @@ extern "C" {
     ///  - `max_shared_memory` maximum shared memory amount to be used in
     ///  the kernels.
     pub fn cuda_wop_pbs_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -807,7 +807,7 @@ extern "C" {
         /// This cleanup function frees the data for the wop PBS on GPU contained in
     /// wop_pbs_buffer for 32 or 64-bit inputs.
     pub fn cleanup_cuda_wop_pbs(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         wop_pbs_buffer: *mut *mut i8,
     );
@@ -831,7 +831,7 @@ extern "C" {
     /// is left unchanged. This function is a wrapper to a device function that performs the
     /// operation on the GPU.
     pub fn cuda_negate_lwe_ciphertext_vector_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -861,7 +861,7 @@ extern "C" {
     /// ciphertext vector. The two input LWE ciphertext vectors are left unchanged. This function is
     /// a wrapper to a device function that performs the operation on the GPU.
     pub fn cuda_add_lwe_ciphertext_vector_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_array_out: *mut c_void,
         lwe_array_in_1: *const c_void,
@@ -893,7 +893,7 @@ extern "C" {
     /// LWE ciphertext vector. The two input vectors are unchanged. This function is a
     /// wrapper to a device function that performs the operation on the GPU.
     pub fn cuda_add_lwe_ciphertext_vector_plaintext_vector_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
@@ -927,7 +927,7 @@ extern "C" {
     /// LWE ciphertext vector. The two input vectors are unchanged. This function is a
     /// wrapper to a device function that performs the operation on the GPU.
     pub fn cuda_mult_lwe_ciphertext_vector_cleartext_vector_64(
-        v_stream: *const c_void,
+        v_stream: *mut c_void,
         gpu_index: u32,
         lwe_array_out: *mut c_void,
         lwe_array_in: *const c_void,
