@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <bootstrap.h>
 #include <bootstrap_multibit.h>
 #include <cmath>
