@@ -70,9 +70,9 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Error probability for individual table lookups. If set, all table lookups will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
 * **global\_p\_error**: Optional\[float] = None
   * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
-* **single\_precision**: bool = True
+* **single\_precision**: bool = False
   * Use single precision for the whole circuit.
-* **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MONO
+* **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MULTI
   * Set how cryptographic parameters are selected.
 * **jit**: bool = False
   * Enable JIT compilation.
