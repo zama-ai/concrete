@@ -39,9 +39,8 @@ CP_VERSION="current"
 # Set to 1 only to debug quickly
 DO_QUICK_SCRIPT_DEBUG=0
 
-# Set to 1 to use exactly the pytest commandline of ML team. However, it's longer, since it runs
-# the full test, while the one in this script exits at first problem
-DO_USE_CML_PYTEST_COMMANDLINE=0
+# Set to 1 to stop the CI at the first test that fails
+STOP_AT_FIRST_FAIL=0
 
 # Which python to use, to create the venv
 PYTHON=python
@@ -75,8 +74,8 @@ do
             DO_QUICK_SCRIPT_DEBUG=1
             ;;
 
-        "--use_cml_command_line" )
-            DO_USE_CML_PYTEST_COMMANDLINE=1
+        "--stop_at_first_fail" )
+            STOP_AT_FIRST_FAIL=1
             ;;
 
         "--ml_branch" )
@@ -180,19 +179,17 @@ INSTALLED_CP=`pip freeze | grep "concrete-python"`
 echo
 echo "Installed Concrete-Python: ${INSTALLED_CP}"
 
-# Launch CML pytests
+# Launch CML tests with pytest (and ignore flaky ones)
+# As compared to regular `make pytest`, known flaky errors from Concrete ML are simply ignored
+# and coverage is disabled
+# The "-x" option is added so that the run stops at the first test that fails
 echo
-echo "Launching CML tests"
-
-if [ $DO_USE_CML_PYTEST_COMMANDLINE -eq 1 ]
+echo "Launching CML tests (no flaky)"
+if [ $STOP_AT_FIRST_FAIL -eq 1 ]
 then
-    echo "make pytest"
-    make pytest
+    echo "make pytest_no_flaky PYTEST_OPTIONS="-x""
+    make pytest_no_flaky PYTEST_OPTIONS="-x"
 else
-    # As compared to ML pytest:
-    #       No coverage
-    #       Stop at first error
-    echo "poetry run pytest -xsvv -n 4 --randomly-dont-reorganize --randomly-dont-reset-seed"
-    poetry run pytest -xsvv -n 4 --randomly-dont-reorganize --randomly-dont-reset-seed
-
+    echo "make pytest_no_flaky"
+    make pytest_no_flaky
 fi
