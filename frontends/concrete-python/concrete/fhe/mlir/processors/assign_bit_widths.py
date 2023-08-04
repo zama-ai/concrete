@@ -20,6 +20,8 @@ class AssignBitWidths(GraphProcessor):
     - Multi Precision, where encrypted values can have different precisions.
     """
 
+    single_precision: bool
+
     def __init__(self, single_precision: bool = False):
         self.single_precision = single_precision
 
