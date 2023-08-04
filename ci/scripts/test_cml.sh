@@ -163,17 +163,17 @@ echo "Installing CP version"
 
 if [ "$CP_VERSION" == "last" ]
 then
-    poetry run python -m pip install -U --pre "concrete-python" --no-deps
+    poetry run python -m pip install -U --pre "concrete-python"
 elif [ "$CP_VERSION" == "wheel" ]
 then
-    poetry run python -m pip install ${WHEEL} --no-deps
+    poetry run python -m pip install ${WHEEL}
 elif [ "$CP_VERSION" == "current" ]
 then
     echo "Fix me: how to install the current CP, ie the one in the current directory"
     echo "That must be some: pip -e ."
     exit 255
 else
-    poetry run python -m pip install -U --pre "concrete-python==${CP_VERSION}" --no-deps
+    poetry run python -m pip install -U --pre "concrete-python==${CP_VERSION}"
 fi
 
 INSTALLED_CP=`pip freeze | grep "concrete-python"`
