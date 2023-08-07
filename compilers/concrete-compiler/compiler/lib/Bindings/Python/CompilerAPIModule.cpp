@@ -162,7 +162,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "crt_decompositions_of_outputs",
           &mlir::concretelang::CompilationFeedback::crtDecompositionsOfOutputs)
       .def_readonly("statistics",
-                    &mlir::concretelang::CompilationFeedback::statistics);
+                    &mlir::concretelang::CompilationFeedback::statistics)
+      .def_readonly(
+          "memory_usage_per_location",
+          &mlir::concretelang::CompilationFeedback::memoryUsagePerLoc);
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");
