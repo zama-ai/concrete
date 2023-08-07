@@ -32,6 +32,7 @@
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include <concretelang/Conversion/Passes.h>
+#include <concretelang/Dialect/Concrete/Analysis/MemoryUsage.h>
 #include <concretelang/Dialect/Concrete/Transforms/Passes.h>
 #include <concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
@@ -349,6 +350,19 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
   return pm.run(module.getOperation());
 }
 
+mlir::LogicalResult
+computeMemoryUsage(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   CompilationFeedback &feedback) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("Computing Memory Usage", pm, context);
+
+  addPotentiallyNestedPass(
+      pm, std::make_unique<Concrete::MemoryUsagePass>(feedback), enablePass);
+
+  return pm.run(module.getOperation());
+}
+
 mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
                                  std::function<bool(mlir::Pass *)> enablePass) {
@@ -385,11 +399,11 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
 }
 
 mlir::LogicalResult
-lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                   std::function<bool(mlir::Pass *)> enablePass,
-                   bool simulation) {
+addRuntimeContext(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                  std::function<bool(mlir::Pass *)> enablePass,
+                  bool simulation) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("ConcreteToStd", pm, context);
+  pipelinePrinting("Adding Runtime Context", pm, context);
   if (!simulation) {
     addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
                              enablePass);
@@ -408,12 +422,12 @@ lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
   return pm.run(module.getOperation());
 }
 
-mlir::LogicalResult
-lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                      std::function<bool(mlir::Pass *)> enablePass,
-                      bool parallelizeLoops, bool gpu) {
+mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
+                               mlir::ModuleOp &module,
+                               std::function<bool(mlir::Pass *)> enablePass,
+                               bool parallelizeLoops) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("StdToLLVM", pm, context);
+  pipelinePrinting("Lowering to Std", pm, context);
 
   // Bufferize
   mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;
@@ -467,10 +481,29 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFixupBufferDeallocationPass(), enablePass);
 
+  return pm.run(module);
+}
+
+mlir::LogicalResult lowerToCAPI(mlir::MLIRContext &context,
+                                mlir::ModuleOp &module,
+                                std::function<bool(mlir::Pass *)> enablePass,
+                                bool gpu) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("Lowering to CAPI", pm, context);
+
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertConcreteToCAPIPass(gpu), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertTracingToCAPIPass(), enablePass);
+
+  return pm.run(module);
+}
+
+mlir::LogicalResult
+lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("StdToLLVM", pm, context);
 
   // Convert to MLIR LLVM Dialect
   addPotentiallyNestedPass(
