@@ -48,6 +48,7 @@ class CompilationFeedback(WrapperCpp):
             compilation_feedback.crt_decompositions_of_outputs
         )
         self.statistics = compilation_feedback.statistics
+        self.memory_usage_per_location = compilation_feedback.memory_usage_per_location
 
         super().__init__(compilation_feedback)
 
