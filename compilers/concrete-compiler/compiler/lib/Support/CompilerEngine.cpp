@@ -521,13 +521,11 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     return std::move(res);
   }
 
-  // Concrete -> Canonical dialects
-  if (mlir::concretelang::pipeline::lowerConcreteToStd(
+  // Add runtime context in Concrete
+  if (mlir::concretelang::pipeline::addRuntimeContext(
           mlirContext, module, enablePass, options.simulate)
           .failed()) {
-    return StreamStringError(
-        "Lowering from Bufferized Concrete to canonical MLIR "
-        "dialects failed");
+    return StreamStringError("Adding Runtime Context failed");
   }
 
   // SDFG -> Canonical dialects
@@ -538,12 +536,33 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
         "Lowering from SDFG to canonical MLIR dialects failed");
   }
 
+  // bufferize and related passes
+  if (mlir::concretelang::pipeline::lowerToStd(mlirContext, module, enablePass,
+                                               loopParallelize)
+          .failed()) {
+    return StreamStringError("Failed to lower to std");
+  }
+
   if (target == Target::STD)
     return std::move(res);
 
+  if (res.feedback) {
+    if (mlir::concretelang::pipeline::computeMemoryUsage(
+            mlirContext, module, this->enablePass, res.feedback.value())
+            .failed()) {
+      return StreamStringError("Computing memory usage failed");
+    }
+  }
+
+  if (mlir::concretelang::pipeline::lowerToCAPI(mlirContext, module, enablePass,
+                                                options.emitGPUOps)
+          .failed()) {
+    return StreamStringError("Failed to lower to CAPI");
+  }
+
   // MLIR canonical dialects -> LLVM Dialect
-  if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(
-          mlirContext, module, enablePass, loopParallelize, options.emitGPUOps)
+  if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(mlirContext, module,
+                                                          enablePass)
           .failed()) {
     return StreamStringError("Failed to lower to LLVM dialect");
   }

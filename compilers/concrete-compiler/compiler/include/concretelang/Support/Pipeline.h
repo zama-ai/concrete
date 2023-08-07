@@ -82,6 +82,11 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+computeMemoryUsage(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   CompilationFeedback &feedback);
+
+mlir::LogicalResult
 lowerConcreteLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            std::function<bool(mlir::Pass *)> enablePass,
                            bool parallelizeLoops);
@@ -100,9 +105,9 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
                                    bool unrollLoops);
 
 mlir::LogicalResult
-lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                   std::function<bool(mlir::Pass *)> enablePass,
-                   bool simulation);
+addRuntimeContext(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                  std::function<bool(mlir::Pass *)> enablePass,
+                  bool simulation);
 
 mlir::LogicalResult
 lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
@@ -110,8 +115,17 @@ lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                      std::function<bool(mlir::Pass *)> enablePass,
-                      bool parallelizeLoops, bool gpu);
+                      std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
+                               mlir::ModuleOp &module,
+                               std::function<bool(mlir::Pass *)> enablePass,
+                               bool parallelizeLoops);
+
+mlir::LogicalResult lowerToCAPI(mlir::MLIRContext &context,
+                                mlir::ModuleOp &module,
+                                std::function<bool(mlir::Pass *)> enablePass,
+                                bool gpu);
 
 mlir::LogicalResult optimizeLLVMModule(llvm::LLVMContext &llvmContext,
                                        llvm::Module &module);
