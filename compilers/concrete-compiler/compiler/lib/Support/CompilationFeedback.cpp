@@ -93,6 +93,12 @@ llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &v) {
       {"crtDecompositionsOfOutputs", v.crtDecompositionsOfOutputs},
   };
 
+  auto memoryUsageObject = llvm::json::Object();
+  for (auto key : v.memoryUsagePerLoc) {
+    memoryUsageObject.insert({key.first, key.second});
+  }
+  object.insert({"memoryUsagePerLoc", std::move(memoryUsageObject)});
+
   auto statisticsJson = llvm::json::Array();
   for (auto statistic : v.statistics) {
     auto statisticJson = llvm::json::Object();
@@ -175,6 +181,19 @@ bool fromJSON(const llvm::json::Value j,
   auto object = j.getAsObject();
   if (!object) {
     return false;
+  }
+
+  auto memoryUsageObject = object->getObject("memoryUsagePerLoc");
+  if (!memoryUsageObject) {
+    return false;
+  }
+  for (auto entry : *memoryUsageObject) {
+    auto loc = entry.getFirst().str();
+    auto maybeUsage = entry.getSecond().getAsInteger();
+    if (!maybeUsage.has_value()) {
+      return false;
+    }
+    v.memoryUsagePerLoc[loc] = *maybeUsage;
   }
 
   auto statistics = object->getArray("statistics");
