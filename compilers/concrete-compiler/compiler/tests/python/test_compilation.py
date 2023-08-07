@@ -439,3 +439,54 @@ func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
 
     assert isinstance(compilation_feedback, CompilationFeedback)
     assert compilation_feedback.crt_decompositions_of_outputs == [[7, 8, 9, 11, 13]]
+
+
+@pytest.mark.parametrize(
+    "mlir, expected_memory_usage_per_loc",
+    [
+        pytest.param(
+            """
+            func.func @main(%arg0: tensor<4x4x!FHE.eint<6>>, %arg1: tensor<4x2xi7>) -> tensor<4x2x!FHE.eint<6>> {
+                %0 = "FHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<4x4x!FHE.eint<6>>, tensor<4x2xi7>) -> (tensor<4x2x!FHE.eint<6>>) loc("some/random/location.py":10:2)
+                %tlu = arith.constant dense<[40, 13, 20, 62, 47, 41, 46, 30, 59, 58, 17, 4, 34, 44, 49, 5, 10, 63, 18, 21, 33, 45, 7, 14, 24, 53, 56, 3, 22, 29, 1, 39, 48, 32, 38, 28, 15, 12, 52, 35, 42, 11, 6, 43, 0, 16, 27, 9, 31, 51, 36, 37, 55, 57, 54, 2, 8, 25, 50, 23, 61, 60, 26, 19]> : tensor<64xi64> loc("some/random/location.py":10:2)
+                %result = "FHELinalg.apply_lookup_table"(%0, %tlu): (tensor<4x2x!FHE.eint<6>>, tensor<64xi64>) -> (tensor<4x2x!FHE.eint<6>>) loc("some/random/location.py":10:2)
+                return %result: tensor<4x2x!FHE.eint<6>> loc("some/random/location.py":10:2)
+            }
+            """,
+            # 4*4*4097*8 (input1) + 4*2 (input2) + 4*2*4097*8 + 4097*3*8 + 4096*8 + 869*8 (temporary buffers) + 4*2*4097*8 (output buffer) + 64*8 (constant TLU)
+            {'loc("some/random/location.py":10:2)': 1187400},
+            id="single location",
+        ),
+        pytest.param(
+            """
+            func.func @main(%arg0: tensor<4x4x!FHE.eint<6>>, %arg1: tensor<4x2xi7>) -> tensor<4x2x!FHE.eint<6>> {
+                %0 = "FHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<4x4x!FHE.eint<6>>, tensor<4x2xi7>) -> (tensor<4x2x!FHE.eint<6>>) loc("@matmul some/random/location.py":10:2)
+                %tlu = arith.constant dense<[40, 13, 20, 62, 47, 41, 46, 30, 59, 58, 17, 4, 34, 44, 49, 5, 10, 63, 18, 21, 33, 45, 7, 14, 24, 53, 56, 3, 22, 29, 1, 39, 48, 32, 38, 28, 15, 12, 52, 35, 42, 11, 6, 43, 0, 16, 27, 9, 31, 51, 36, 37, 55, 57, 54, 2, 8, 25, 50, 23, 61, 60, 26, 19]> : tensor<64xi64> loc("@lut some/random/location.py":11:2)
+                %result = "FHELinalg.apply_lookup_table"(%0, %tlu): (tensor<4x2x!FHE.eint<6>>, tensor<64xi64>) -> (tensor<4x2x!FHE.eint<6>>) loc("@lut some/random/location.py":11:2)
+                return %result: tensor<4x2x!FHE.eint<6>> loc("@return some/random/location.py":12:2)
+            }
+            """,
+            {
+                # 4*4*4097*8 (input1) + 4*2 (input2) + 4*2*4097*8 (matmul result buffer) + 4097*2*8 (temporary buffers)
+                'loc("@matmul some/random/location.py":10:2)': 852184,
+                # 4*2*4097*8 (matmul result buffer) + 4*2*4097*8 (result buffer) + 4097*8 + 4096*8 + 869*8 (temporary buffers) + 64*8 (constant TLU)
+                'loc("@lut some/random/location.py":11:2)': 597424,
+                # 4*2*4097*8 (result buffer)
+                'loc("@return some/random/location.py":12:2)': 262208,
+            },
+            id="multiple location",
+        ),
+    ],
+)
+def test_memory_usage(mlir: str, expected_memory_usage_per_loc: dict):
+    artifact_dir = "./test_memory_usage"
+    engine = LibrarySupport.new(artifact_dir)
+    compilation_result = engine.compile(mlir)
+    compilation_feedback = engine.load_compilation_feedback(compilation_result)
+    assert isinstance(compilation_feedback, CompilationFeedback)
+
+    assert (
+        expected_memory_usage_per_loc == compilation_feedback.memory_usage_per_location
+    )
+
+    shutil.rmtree(artifact_dir)

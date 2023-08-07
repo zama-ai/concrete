@@ -42,6 +42,7 @@ add_mlir_library(
   ConcretelangRuntime
   ConcretelangClientLib
   ConcretelangServerLib
-  TFHEDialectAnalysis)
+  TFHEDialectAnalysis
+  ConcreteDialectAnalysis)
 
 target_include_directories(ConcretelangSupport PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})

@@ -72,6 +72,9 @@ struct CompilationFeedback {
   /// @brief statistics
   std::vector<Statistic> statistics;
 
+  /// @brief memory usage per location
+  std::map<std::string, int64_t> memoryUsagePerLoc;
+
   /// Fill the sizes from the client parameters.
   void
   fillFromClientParameters(::concretelang::clientlib::ClientParameters params);
