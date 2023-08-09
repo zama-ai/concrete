@@ -164,7 +164,7 @@ fn estimate_complexity(
     let log2_polynomial_size = glwe_params.log2_polynomial_size;
     // Size of cmux_group, can be zero
     let cmux_group_count = if precisions_sum > log2_polynomial_size {
-        2f64.powi((precisions_sum - log2_polynomial_size - 1) as i32)
+        2f64.powi((precisions_sum - log2_polynomial_size) as i32) - 1.0
     } else {
         0.0
     };
