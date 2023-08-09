@@ -37,6 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         glwe_log_polynomial_sizes,
         glwe_dimensions,
         internal_lwe_dimensions,
+        levelled_only_lwe_dimensions: DEFAUT_DOMAINS.free_lwe,
     };
 
     let config = Config {

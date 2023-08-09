@@ -1,4 +1,5 @@
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+use concrete_security_curves::gaussian::security::minimal_variance_lwe;
 
 use super::analyze;
 use crate::dag::operator::{LevelledComplexity, Precision};
@@ -137,13 +138,11 @@ fn update_no_luts_solution(
     state: &mut OptimizationState,
     consts: &OptimizationDecompositionsConsts,
     dag: &analyze::OperationDag,
-    glwe_params: GlweParameters,
+    input_lwe_dimension: u64,
     input_noise_out: f64,
 ) {
     const CHECKED_IGNORED_NOISE: f64 = f64::MAX;
     const UNDEFINED_PARAM: u64 = 0;
-
-    let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
 
     let best_complexity = state.best_solution.map_or(f64::INFINITY, |s| s.complexity);
     let best_p_error = state.best_solution.map_or(f64::INFINITY, |s| s.p_error);
@@ -180,8 +179,8 @@ fn update_no_luts_solution(
         internal_ks_output_lwe_dimension: UNDEFINED_PARAM,
         ks_decomposition_level_count: UNDEFINED_PARAM,
         ks_decomposition_base_log: UNDEFINED_PARAM,
-        glwe_polynomial_size: glwe_params.polynomial_size(),
-        glwe_dimension: glwe_params.glwe_dimension,
+        glwe_polynomial_size: 1,
+        glwe_dimension: input_lwe_dimension,
         br_decomposition_level_count: UNDEFINED_PARAM,
         br_decomposition_base_log: UNDEFINED_PARAM,
         complexity,
@@ -208,18 +207,15 @@ fn optimize_no_luts(
     search_space: &SearchSpace,
 ) -> OptimizationState {
     let not_feasible = |input_noise_out| !dag.feasible(input_noise_out, 0.0, 0.0, 0.0);
-    for &glwe_dim in &search_space.glwe_dimensions {
-        for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
-            let glwe_params = GlweParameters {
-                log2_polynomial_size: glwe_log_poly_size,
-                glwe_dimension: glwe_dim,
-            };
-            let input_noise_out = minimal_variance(&consts.config, glwe_params);
-            if not_feasible(input_noise_out) {
-                continue;
-            }
-            update_no_luts_solution(&mut state, consts, dag, glwe_params, input_noise_out);
+    let modulus_log = consts.config.ciphertext_modulus_log;
+    let security_level = consts.config.security_level;
+    for lwe in &search_space.levelled_only_lwe_dimensions {
+        let input_noise_out = minimal_variance_lwe(lwe, modulus_log, security_level);
+        if not_feasible(input_noise_out) {
+            continue;
         }
+        update_no_luts_solution(&mut state, consts, dag, lwe, input_noise_out);
+        break;
     }
     state
 }

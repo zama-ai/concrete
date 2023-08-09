@@ -17,6 +17,7 @@ pub struct ParameterDomains {
     pub free_glwe: GlweParameterRanges,
     pub br_decomposition: BrDecompositionParameterRanges,
     pub ks_decomposition: KsDecompositionParameterRanges,
+    pub free_lwe: Range,
 }
 
 pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
@@ -38,6 +39,10 @@ pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
     ks_decomposition: KsDecompositionParameterRanges {
         log2_base: Range { start: 1, end: 65 },
         level: Range { start: 1, end: 65 },
+    },
+    free_lwe: Range {
+        start: 512,
+        end: 1 << 20,
     },
 };
 
