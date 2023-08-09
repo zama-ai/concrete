@@ -57,7 +57,8 @@ void test_dag_no_lut() {
   dag->add_dot(slice(inputs), std::move(weights));
 
   auto solution = dag->optimize_v0(default_options());
-  assert(solution.glwe_polynomial_size == 256);
+  assert(solution.glwe_polynomial_size == 1);
+  assert(solution.glwe_dimension == 555);
 }
 
 void test_dag_lut() {
