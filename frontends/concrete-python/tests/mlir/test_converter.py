@@ -846,7 +846,7 @@ module {
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x, y: np.dot(x, y),
+            lambda x, y: fhe.hint(np.dot(x, y), bit_width=7),
             {
                 "x": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
                 "y": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
@@ -935,7 +935,7 @@ module {
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x, y: np.dot(x, y),
+            lambda x, y: fhe.hint(np.dot(x, y), bit_width=7),
             {
                 "x": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
                 "y": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
