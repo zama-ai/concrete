@@ -209,3 +209,80 @@ circuit = f.compile(inputset)
 for x in range(10):
     assert np.array_equal(circuit.encrypt_run_decrypt(x), np.array([[x, x, x], [x, x, x]]) + 1)
 ```
+
+## fhe.hint(value, **kwargs)
+
+Allows you to hint properties of a value. Imagine you have this circuit:
+
+```python
+from concrete import fhe
+import numpy as np
+
+@fhe.compiler({"x": "encrypted"})
+def f(x, y, z):
+    a = x | y
+    b = y & z
+    c = a ^ b
+    return c
+
+inputset = [
+    (np.random.randint(0, 2**8), np.random.randint(0, 2**8), np.random.randint(0, 2**8))
+    for _ in range(3)
+]
+circuit = f.compile(inputset)
+
+print(circuit)
+```
+
+You'd expect all of `a`, `b`, and `c` to be 8-bits, but because inputset is very small, this code could print:
+
+```
+%0 = x                          # EncryptedScalar<uint8>        ∈ [173, 240]
+%1 = y                          # EncryptedScalar<uint8>        ∈ [52, 219]
+%2 = z                          # EncryptedScalar<uint8>        ∈ [36, 252]
+%3 = bitwise_or(%0, %1)         # EncryptedScalar<uint8>        ∈ [243, 255]
+%4 = bitwise_and(%1, %2)        # EncryptedScalar<uint7>        ∈ [0, 112] 
+                                                  ^^^^^ this can lead to bugs
+%5 = bitwise_xor(%3, %4)        # EncryptedScalar<uint8>        ∈ [131, 255]
+return %5
+```
+
+The first solution in these cases should be to use a bigger inputset, but it can still be tricky to solve with the inputset. That's where `hint` extension comes into play. Hints are a way to provide extra information to compilation process:
+
+- Bit-width hints are for constraining the minimum number of bits in the encoded the value. If you hint a value to be 8-bits, it means it should be at least `uint8` or `int8`.
+
+To fix `f` using hints, you can do:
+
+```python
+@fhe.compiler({"x": "encrypted", "y": "encrypted", "z": "encrypted"})
+def f(x, y, z):
+    # hint that inputs should be considered at least 8-bits
+    x = fhe.hint(x, bit_width=8)
+    y = fhe.hint(y, bit_width=8)
+    z = fhe.hint(z, bit_width=8)
+
+    # hint that intermediates should be considered at least 8-bits
+    a = fhe.hint(x | y, bit_width=8)
+    b = fhe.hint(y & z, bit_width=8)
+    c = fhe.hint(a ^ b, bit_width=8)
+
+    return c
+```
+
+{% hint style="warning" %}
+Hints are only applied to the value being hinted, and no other value. If you want the hint to be applied to multiple values, you need to hint all of them.
+{% endhint %}
+
+you'll always see:
+
+```
+%0 = x                          # EncryptedScalar<uint8>        ∈ [...]
+%1 = y                          # EncryptedScalar<uint8>        ∈ [...]
+%2 = z                          # EncryptedScalar<uint8>        ∈ [...]
+%3 = bitwise_or(%0, %1)         # EncryptedScalar<uint8>        ∈ [...]
+%4 = bitwise_and(%1, %2)        # EncryptedScalar<uint8>        ∈ [...] 
+%5 = bitwise_xor(%3, %4)        # EncryptedScalar<uint8>        ∈ [...]
+return %5
+```
+
+regardless of the bounds.

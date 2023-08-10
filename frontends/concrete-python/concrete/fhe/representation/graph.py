@@ -308,10 +308,13 @@ class Graph:
             if (
                 not show_assigned_bit_widths
                 and isinstance(output_value.dtype, Integer)
-                and "original_bit_width" in node.properties
+                and ("original_bit_width" in node.properties or "bit_width_hint" in node.properties)
             ):
                 output_value = deepcopy(output_value)
-                output_value.dtype.bit_width = node.properties["original_bit_width"]
+                output_value.dtype.bit_width = max(
+                    node.properties.get("original_bit_width", -1),
+                    node.properties.get("bit_width_hint", -1),
+                )
 
             # remember metadata of the node
             line_metadata.append(
