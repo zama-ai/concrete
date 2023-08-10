@@ -65,7 +65,11 @@ jobs:
 
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
-        run: echo "__version__ = \"$(date +"%Y.%m.%d")\"" >| frontends/concrete-python/version.txt
+        run: |
+          VERSION=$(date +"%Y.%m.%d")
+          echo "__version__ = \"$VERSION\"" >| frontends/concrete-python/version.txt
+          git tag nightly-$VERSION
+          git push nightly-$VERSION
 
       - name: Set release version (public)
         if: ${{ env.RELEASE_TYPE == 'public' }}
