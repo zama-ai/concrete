@@ -4,6 +4,7 @@ Provide additional features that are not present in numpy.
 
 from .array import array
 from .convolution import conv
+from .hint import hint
 from .maxpool import maxpool
 from .ones import one, ones, ones_like
 from .round_bit_pattern import AutoRounder, round_bit_pattern

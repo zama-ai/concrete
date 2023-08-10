@@ -33,13 +33,18 @@ class AssignBitWidths(GraphProcessor):
 
         nodes = graph.query_nodes(ordered=True)
         for i, node in enumerate(nodes):
+            assert isinstance(node.output.dtype, Integer)
+            required_bit_width = node.output.dtype.bit_width
+
+            bit_width_hint = node.properties.get("bit_width_hint")
+            if bit_width_hint is not None:
+                required_bit_width = max(required_bit_width, bit_width_hint)
+
             bit_width = z3.Int(f"%{i}")
             bit_widths[node] = bit_width
 
             optimizer.add(max_bit_width >= bit_width)
-
-            assert isinstance(node.output.dtype, Integer)
-            optimizer.add(bit_width >= node.output.dtype.bit_width)
+            optimizer.add(bit_width >= required_bit_width)
 
             additional_constraints.generate_for(node, bit_width)
 

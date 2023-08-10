@@ -27,6 +27,7 @@ from .extensions import (
     LookupTable,
     array,
     conv,
+    hint,
     maxpool,
     one,
     ones,
