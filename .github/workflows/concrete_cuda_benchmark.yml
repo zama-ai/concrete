@@ -58,9 +58,9 @@ jobs:
       - name: Export gcc and g++ variables
         if: ${{ !cancelled() }}
         run: |
-          echo "CC=/usr/bin/gcc-8" >> "${GITHUB_ENV}"
-          echo "CXX=/usr/bin/g++-8" >> "${GITHUB_ENV}"
-          echo "CUDAHOSTCXX=/usr/bin/g++-8" >> "${GITHUB_ENV}"
+          echo "CC=/usr/bin/gcc-9" >> "${GITHUB_ENV}"
+          echo "CXX=/usr/bin/g++-9" >> "${GITHUB_ENV}"
+          echo "CUDAHOSTCXX=/usr/bin/g++-9" >> "${GITHUB_ENV}"
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Rust install
