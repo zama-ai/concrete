@@ -32,6 +32,16 @@ extern "C" {
         gpu_index: u32,
     ) -> i32;
 
+    /// Copy `size` memory asynchronously from `src` to `dest` on the same GPU `gpu_index` using
+    /// the Cuda stream `v_stream`.
+    pub fn cuda_memcpy_async_gpu_to_gpu(
+        dest: *mut c_void,
+        src: *const c_void,
+        size: u64,
+        v_stream: *mut c_void,
+        gpu_index: u32,
+    ) -> i32;
+
     /// Get the total number of Nvidia GPUs detected on the platform
     pub fn cuda_get_number_of_gpus() -> i32;
 

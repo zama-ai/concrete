@@ -114,6 +114,45 @@ int cuda_memcpy_async_to_gpu(void *dest, void *src, uint64_t size,
   return 0;
 }
 
+/// Tries to copy memory within a GPU asynchronously
+/// 0: success
+/// -1: error, invalid device pointer
+/// -2: error, gpu index doesn't exist
+/// -3: error, zero copy size
+int cuda_memcpy_async_gpu_to_gpu(void *dest, void *src, uint64_t size,
+                             cudaStream_t *stream, uint32_t gpu_index) {
+  if (size == 0) {
+    // error code: zero copy size
+    return -3;
+  }
+
+  if (gpu_index >= cuda_get_number_of_gpus()) {
+    // error code: invalid gpu_index
+    return -2;
+  }
+  cudaPointerAttributes attr_dest;
+  cudaPointerGetAttributes(&attr_dest, dest);
+  if (attr_dest.device != gpu_index && attr_dest.type != cudaMemoryTypeDevice) {
+    // error code: invalid device pointer
+    return -1;
+  }
+  cudaPointerAttributes attr_src;
+  cudaPointerGetAttributes(&attr_src, src);
+  if (attr_src.device != gpu_index && attr_src.type != cudaMemoryTypeDevice) {
+    // error code: invalid device pointer
+    return -1;
+  }
+  if (attr_src.device != attr_dest.device) {
+    // error code: different devices
+    return -1;
+  }
+
+  cudaSetDevice(gpu_index);
+  check_cuda_error(
+      cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToDevice, *stream));
+  return 0;
+}
+
 /// Synchronizes device
 /// 0: success
 /// -2: error, gpu index doesn't exist
