@@ -72,4 +72,14 @@ uint64_t number_of_inputs_on_gpu(uint64_t gpu_index,
                                  uint64_t lwe_ciphertext_count,
                                  uint64_t number_of_gpus);
 
+
+void encrypt_integer_u64_blocks(uint64_t **ct, uint64_t *lwe_sk,
+                                uint64_t *message_blocks, int lwe_dimension,
+                                int num_blocks, Csprng *csprng,
+                                double variance);
+void decrypt_integer_u64_blocks(uint64_t *ct, uint64_t *lwe_sk,
+                                uint64_t **message_blocks, int lwe_dimension,
+                                int num_blocks, uint64_t delta,
+                                int message_modulus);
+
 #endif

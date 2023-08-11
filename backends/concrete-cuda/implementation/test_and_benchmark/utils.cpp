@@ -377,3 +377,34 @@ uint64_t number_of_inputs_on_gpu(uint64_t gpu_index,
   }
   return samples;
 }
+
+// See tfhe-rs for more explanations
+// tfhe/src/integer/encryption.rs:152
+void encrypt_integer_u64_blocks(uint64_t **ct, uint64_t *lwe_sk,
+                                uint64_t *message_blocks, int lwe_dimension,
+                                int num_blocks, Csprng *csprng,
+                                double variance) {
+
+  for (int i = 0; i < num_blocks; i++) {
+    concrete_cpu_encrypt_lwe_ciphertext_u64(
+        lwe_sk, *ct + (ptrdiff_t)(i * (lwe_dimension + 1)), message_blocks[i],
+        lwe_dimension, variance, csprng, &CONCRETE_CSPRNG_VTABLE);
+  }
+}
+
+void decrypt_integer_u64_blocks(uint64_t *ct, uint64_t *lwe_sk,
+                                uint64_t **message_blocks, int lwe_dimension,
+                                int num_blocks, uint64_t delta,
+                                int message_modulus) {
+  uint64_t rounding_bit = delta >> 1;
+  for (int i = 0; i < num_blocks; i++) {
+    uint64_t decrypted_u64 = 0;
+    concrete_cpu_decrypt_lwe_ciphertext_u64(
+        lwe_sk, ct + (ptrdiff_t)((lwe_dimension + 1) * i), lwe_dimension,
+        &decrypted_u64);
+    uint64_t rounding = (decrypted_u64 & rounding_bit) << 1;
+    uint64_t block_value =
+        ((decrypted_u64 + rounding) / delta) % message_modulus;
+    (*message_blocks)[i] = block_value;
+  }
+}
