@@ -90,8 +90,8 @@ impl Problem for TensorProductConstraint {
             v_ks_trace_packing,
             v_ks_trace_packing,
             //TODO define proper values
-            1 << 60,
-            1 << 60,
+            1 << 6,
+            1 << 4,
             20,
             20,
             param.base_log_relin,
@@ -113,6 +113,22 @@ impl Problem for TensorProductConstraint {
             64,
         );
 
+        //println!("error of trace packing key switch {}", v_ks_trace_packing);
+        //println!("error of the tensor product {}", v_tensor_ks_relin);
+        //println!("error ks {}", v_ks);
+        //println!("error ms {}", v_ms);
+        //println!(
+        //    "error of trace packing and tensor product {}",
+        //    v_tensor_ks_relin + v_ks + v_ms
+        //);
+        //println!("error {} < constraint {}", v_tensor_ks_relin + v_ks + v_ms, self.variance_constraint);
+        //if v_tensor_ks_relin + v_ks + v_ms < self.variance_constraint 
+        //{
+        //    println!("error {} < constraint {}", v_tensor_ks_relin + v_ks + v_ms, self.variance_constraint);
+        //    println!("q_square bigger than b2l {}, ",2_f64.powi(2 * 64 as i32) > 2_f64.powi((param.base_log_relin * 2 * param.level_relin) as i32));
+        //}
+    
+        2_f64.powi(2 * 64 as i32) > 2_f64.powi((param.base_log_relin * 2 * param.level_relin) as i32) &&
         v_tensor_ks_relin + v_ks + v_ms < self.variance_constraint
     }
 
@@ -349,7 +365,8 @@ impl TensorProductSearchSpace {
                             level,
                             variance_rlk,
                         );
-                        if v_relin <= current_minimal_noise_for_a_given_level {
+                        //println!("var relin {}",v_relin);
+                        if v_relin > 0.0 && v_relin <= current_minimal_noise_for_a_given_level {
                             current_minimal_noise_for_a_given_level = v_relin;
                             current_pair = (baselog, level)
                         }

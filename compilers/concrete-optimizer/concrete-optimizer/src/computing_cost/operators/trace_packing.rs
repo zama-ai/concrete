@@ -1,12 +1,12 @@
 use super::super::complexity::Complexity;
 //use super::super::fft;
-use super::keyswitch_glwe::KsGlweComplexity;
+use super::keyswitch_glwe::SimpleWithFactors;
 use crate::parameters::{KeyswitchGlweParameters, TracePackingParameters};
 
 #[derive(Default, Clone)]
 pub struct TracePackingComplexity {
     //fft: fft::AsymptoticWithFactors,
-    pub ks_glwe: KsGlweComplexity,
+    pub ks_glwe: SimpleWithFactors,
 }
 
 impl TracePackingComplexity {

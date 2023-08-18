@@ -19,10 +19,12 @@ pub fn variance_tensor_product_glwe(
     let glwe_dim = glwe_dimension as f64;
     let norm_m1 = two_norm_m1 as f64;
     let norm_m2 = two_norm_m2 as f64;
+    let var_glwe1 = modular_variance_to_variance(variance_glwe1, ciphertext_modulus_log);
+    let var_glwe2 = modular_variance_to_variance(variance_glwe2, ciphertext_modulus_log);
     let var_first = (poly_size / sq_scale)
-        * ((scale1 as f64).powi(2) * norm_m1.powi(2) * variance_glwe2
-            + (scale2 as f64).powi(2) * norm_m2.powi(2) * variance_glwe1
-            + variance_glwe1 * variance_glwe2);
+        * ((scale1 as f64).powi(2) * norm_m1.powi(2) * var_glwe2
+            + (scale2 as f64).powi(2) * norm_m2.powi(2) * var_glwe1
+            + var_glwe1 * var_glwe2);
     let q_square = 2_f64.powi(2 * ciphertext_modulus_log as i32);
     let variance_key_coefficient_binary: f64 =
         modular_variance_to_variance(1. / 4., ciphertext_modulus_log);
@@ -38,7 +40,7 @@ pub fn variance_tensor_product_glwe(
                 + glwe_dim * poly_size * square_expectation_key_coefficient_binary)
             + ((glwe_dim * poly_size) / 4.) * variance_key_coefficient_binary
             + 1. / 4. * (1. + glwe_dim * poly_size * square_expectation_key_coefficient_binary))
-        * (variance_glwe1 + variance_glwe2);
+        * (var_glwe1 + var_glwe2);
 
     let variance_keyprime_odd_coefficient_binary;
     let variance_keyprime_even_coefficient_binary;
@@ -48,12 +50,17 @@ pub fn variance_tensor_product_glwe(
         variance_keyprime_even_coefficient_binary = 1. / 2.;
         square_expectation_keyprime_coefficient_binary = 1. / 2.;
     } else {
-        variance_keyprime_odd_coefficient_binary = 3. / 8. * poly_size;
-        variance_keyprime_even_coefficient_binary = 3. / 8. * poly_size - 1. / 4.;
-        square_expectation_keyprime_coefficient_binary = (poly_size.powi(2) + 2.) / 48.;
+        variance_keyprime_odd_coefficient_binary =
+            modular_variance_to_variance(3. / 8. * poly_size, ciphertext_modulus_log);
+        variance_keyprime_even_coefficient_binary =
+            modular_variance_to_variance(3. / 8. * poly_size - 1. / 4., ciphertext_modulus_log);
+        square_expectation_keyprime_coefficient_binary =
+            modular_variance_to_variance((poly_size.powi(2) + 2.) / 48., ciphertext_modulus_log);
     }
-    let variance_keyprimeprime_coefficient_binary = 3. / 16. * poly_size;
-    let square_expectation_keyprimeprime_coefficient_binary = (poly_size.powi(2) + 2.) / 48.;
+    let variance_keyprimeprime_coefficient_binary =
+        modular_variance_to_variance(3. / 16. * poly_size, ciphertext_modulus_log);
+    let square_expectation_keyprimeprime_coefficient_binary =
+        modular_variance_to_variance((poly_size.powi(2) + 2.) / 48., ciphertext_modulus_log);
 
     let var_third = 1. / 12.
         + (glwe_dim * poly_size) / (12. * sq_scale)
@@ -89,8 +96,15 @@ pub fn variance_glwe_relin(
     let l = level as f64;
     let poly_size = polynomial_size as f64;
     let glwe_dim = glwe_dimension as f64;
-    let var_part_one = variance_input_glwe
-        + glwe_dim * l * poly_size * variance_rlk * (glwe_dim + 1.) / 2. * (b.powi(2) + 2.) / 12.;
+    let var_part_one = modular_variance_to_variance(variance_input_glwe, ciphertext_modulus_log)
+        + glwe_dim
+            * l
+            * poly_size
+            * modular_variance_to_variance(variance_rlk, ciphertext_modulus_log)
+            * (glwe_dim + 1.)
+            / 2.
+            * (b.powi(2) + 2.)
+            / 12.;
 
     let q_square = 2_f64.powi(2 * ciphertext_modulus_log as i32);
     let b2l = 2_f64.powi((log2_base * 2 * level) as i32);
@@ -103,12 +117,17 @@ pub fn variance_glwe_relin(
         variance_keyprime_even_coefficient_binary = 1. / 2.;
         square_expectation_keyprime_coefficient_binary = 1. / 2.;
     } else {
-        variance_keyprime_odd_coefficient_binary = 3. / 8. * poly_size;
-        variance_keyprime_even_coefficient_binary = 3. / 8. * poly_size - 1. / 4.;
-        square_expectation_keyprime_coefficient_binary = (poly_size.powi(2) + 2.) / 48.;
+        variance_keyprime_odd_coefficient_binary =
+            modular_variance_to_variance(3. / 8. * poly_size, ciphertext_modulus_log);
+        variance_keyprime_even_coefficient_binary =
+            modular_variance_to_variance(3. / 8. * poly_size - 1. / 4., ciphertext_modulus_log);
+        square_expectation_keyprime_coefficient_binary =
+            modular_variance_to_variance((poly_size.powi(2) + 2.) / 48., ciphertext_modulus_log);
     }
-    let variance_keyprimeprime_coefficient_binary = 3. / 16. * poly_size;
-    let square_expectation_keyprimeprime_coefficient_binary = (poly_size.powi(2) + 2.) / 48.;
+    let variance_keyprimeprime_coefficient_binary =
+        modular_variance_to_variance(3. / 16. * poly_size, ciphertext_modulus_log);
+    let square_expectation_keyprimeprime_coefficient_binary =
+        modular_variance_to_variance((poly_size.powi(2) + 2.) / 48., ciphertext_modulus_log);
     let var_part_two = (glwe_dim * poly_size) / 2.
         * ((q_square / (12. * b2l)) - 1. / 12.)
         * ((glwe_dim - 1.)
@@ -121,8 +140,15 @@ pub fn variance_glwe_relin(
             * ((glwe_dim - 1.) * variance_keyprimeprime_coefficient_binary
                 + variance_keyprime_odd_coefficient_binary
                 + variance_keyprime_even_coefficient_binary);
-
+    //println!("q {}", 2_f64.powi(ciphertext_modulus_log as i32));
+    //println!("q_square {}", q_square);
+    //println!("b {}",2_f64.powi(log2_base as i32));
+    //println!("b to 2l {}", b2l);
+    //println!("var part one {}", (q_square / (12. * b2l)));
+    //println!("var part two {}",  ((q_square / (12. * b2l)) - 1. / 12.));
+    //println!("variance of the glwe relin {}", var_part_two);
     var_part_one + var_part_two
+
 }
 
 pub fn variance_tensor_product_with_glwe_relin(

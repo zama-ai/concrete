@@ -11,14 +11,17 @@ pub fn variance_trace_packing_keyswitch(
 ) -> f64 {
     glwe_dimension as f64
         * (polynomial_size as f64).log2()
-        * variance_coefficient_glwe_keyswitch(
-            variance_input_lwe,
-            glwe_dimension,
-            polynomial_size,
+        * modular_variance_to_variance(
+            variance_coefficient_glwe_keyswitch(
+                variance_input_lwe,
+                glwe_dimension,
+                polynomial_size,
+                ciphertext_modulus_log,
+                log2_base,
+                level,
+                variance_ksk,
+            ),
             ciphertext_modulus_log,
-            log2_base,
-            level,
-            variance_ksk,
         )
 }
 
@@ -46,9 +49,22 @@ pub fn variance_coefficient_glwe_keyswitch(
     let poly_size = polynomial_size as f64;
     let glwe_dim = glwe_dimension as f64;
 
-    variance_input_lwe
-        + glwe_dim * poly_size * (q_square - b2l) / (12. * b2l)
-            * (variance_key_coefficient_binary + square_expectation_key_coefficient_binary)
-        + glwe_dim * poly_size / 4. * variance_key_coefficient_binary
-        + l * glwe_dim * poly_size * variance_ksk * (base.powi(2) + 2.) / 12.
+    //let result =
+    modular_variance_to_variance(
+        modular_variance_to_variance(variance_input_lwe, ciphertext_modulus_log)
+            + glwe_dim
+                * poly_size
+                * (q_square / (12. * b2l) - 1. / 12.)
+                * (variance_key_coefficient_binary + square_expectation_key_coefficient_binary)
+            + glwe_dim * poly_size / 4. * variance_key_coefficient_binary
+            + l * glwe_dim
+                * poly_size
+                * modular_variance_to_variance(variance_ksk, ciphertext_modulus_log)
+                * (base.powi(2) + 2.)
+                / 12.,
+        ciphertext_modulus_log,
+    )
+    //;
+    //println!("error glwe key switch {}", result);
+    //result
 }
