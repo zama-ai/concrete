@@ -17,13 +17,14 @@ from mlir.ir import OpResult as MlirOperation
 from mlir.ir import Type as MlirType
 from mlir.ir import Value as MlirValue
 
+from ..compilation.configuration import (  # pylint: disable=unused-import  # noqa: F401
+    MAXIMUM_TLU_BIT_WIDTH,
+)
 from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Node, Operation
 
 # pylint: enable=import-error
-
-MAXIMUM_TLU_BIT_WIDTH = 16
 
 
 class HashableNdarray:

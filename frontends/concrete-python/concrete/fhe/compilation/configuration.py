@@ -10,6 +10,8 @@ from typing import Optional, Union, get_type_hints
 
 from .utils import friendly_type_format
 
+MAXIMUM_TLU_BIT_WIDTH = 16
+
 DEFAULT_P_ERROR = None
 DEFAULT_GLOBAL_P_ERROR = 1 / 100_000
 
