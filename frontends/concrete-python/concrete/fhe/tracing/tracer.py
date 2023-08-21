@@ -35,7 +35,9 @@ class Tracer:
 
     @staticmethod
     def trace(
-        function: Callable, parameters: Dict[str, ValueDescription], is_direct: bool = False
+        function: Callable,
+        parameters: Dict[str, ValueDescription],
+        is_direct: bool = False,
     ) -> Graph:
         """
         Trace `function` and create the `Graph` that represents it.
