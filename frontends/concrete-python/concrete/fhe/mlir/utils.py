@@ -6,6 +6,7 @@ Declaration of various functions and constants related to MLIR conversion.
 
 from collections import defaultdict, deque
 from copy import deepcopy
+from enum import IntEnum
 from itertools import chain, product
 from typing import Any, DefaultDict, List, Optional, Tuple, Union, cast
 
@@ -226,3 +227,14 @@ class _FromElementsOp(tensor.FromElementsOp):
                 ip=None,
             )
         )
+
+
+class Comparison(IntEnum):
+    """
+    Comparison enum, to store the result comparison in 2-bits as there are three possible outcomes.
+    """
+
+    EQUAL = 0b00
+    LESS = 0b01
+    GREATER = 0b10
+    MASK = 0b11

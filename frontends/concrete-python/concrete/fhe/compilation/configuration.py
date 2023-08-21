@@ -3,11 +3,14 @@ Declaration of `Configuration` class.
 """
 
 import platform
-from copy import deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union, get_type_hints
+from typing import List, Optional, Tuple, Union, get_type_hints
 
+import numpy as np
+
+from ..dtypes import Integer
+from ..values import ValueDescription
 from .utils import friendly_type_format
 
 MAXIMUM_TLU_BIT_WIDTH = 16
@@ -43,6 +46,378 @@ class ParameterSelectionStrategy(str, Enum):
         raise ValueError(message)
 
 
+class ComparisonStrategy(str, Enum):
+    """
+    ComparisonStrategy, to specify implementation preference for comparisons.
+    """
+
+    ONE_TLU_PROMOTED = "one-tlu-promoted"
+    # ---------------------------------
+    # conditions:
+    # - (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits -> 9-bits
+    # - y :: 8-bits -> 9-bits
+    # - x.bit_width == y.bit_width
+    #
+    # execution:
+    # - tlu(x - y) :: 9-bits -> 1-bits
+
+    THREE_TLU_CASTED = "three-tlu-casted"
+    # ---------------------------------
+    # conditions:
+    # - (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - x = tlu(x) :: 3-bits -> 9-bits
+    # - y = tlu(y) :: 8-bits -> 9-bits
+    # - tlu(x - y) :: 9-bits -> 1-bits
+
+    TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED = "two-tlu-bigger-promoted-smaller-casted"
+    # -----------------------------------------------------------------------------
+    # conditions:
+    # - (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits -> 9-bits
+    #
+    # execution:
+    # - x = tlu(x) :: 3-bits -> 9-bits
+    # - tlu(x - y) :: 9-bits -> 1-bits
+
+    TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED = "two-tlu-bigger-casted-smaller-promoted"
+    # -----------------------------------------------------------------------------
+    # conditions:
+    # - (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits -> 9-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - y = tlu(y) :: 8-bits -> 9-bits
+    # - tlu(x - y) :: 9-bits -> 1-bits
+
+    THREE_TLU_BIGGER_CLIPPED_SMALLER_CASTED = "three-tlu-bigger-clipped-smaller-casted"
+    # -------------------------------------------------------------------------------
+    # conditions:
+    # - x.bit_width != y.bit_width
+    # - smaller = x if x.bit_width < y.bit_width else y
+    #   bigger = x if x.bit_width > y.bit_width else y
+    #   clipped(value) = np.clip(value, smaller.min() - 1, smaller.max() + 1)
+    #   any(
+    #       (
+    #           bit_width <= MAXIMUM_TLU_BIT_WIDTH and
+    #           bit_width <= bigger.dtype.bit_width and
+    #           bit_width > smaller.dtype.bit_width
+    #       )
+    #       for bit_width in [
+    #           (smaller - clipped(bigger)).bit_width,
+    #           (clipped(bigger) - smaller).bit_width,
+    #       ]
+    #   )
+    #
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - x = tlu(x) :: 3-bits -> 5-bits
+    # - y = tlu(y) :: 8-bits -> 5-bits
+    # - tlu(x - y) :: 5-bits -> 1-bits
+
+    TWO_TLU_BIGGER_CLIPPED_SMALLER_PROMOTED = "two-tlu-bigger-clipped-smaller-promoted"
+    # -------------------------------------------------------------------------------
+    # conditions:
+    # - x.bit_width != y.bit_width
+    # - smaller = x if x.bit_width < y.bit_width else y
+    #   bigger = x if x.bit_width > y.bit_width else y
+    #   clipped(value) = np.clip(value, smaller.min() - 1, smaller.max() + 1)
+    #   any(
+    #       (
+    #           bit_width <= MAXIMUM_TLU_BIT_WIDTH and
+    #           bit_width <= bigger.dtype.bit_width and
+    #           bit_width > smaller.dtype.bit_width
+    #       )
+    #       for bit_width in [
+    #           (smaller - clipped(bigger)).bit_width,
+    #           (clipped(bigger) - smaller).bit_width,
+    #       ]
+    #   )
+    #
+    # bit-width assignment:
+    # - x :: 3-bits -> 4-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - y = tlu(y) :: 8-bits -> 4-bits
+    # - tlu(x - y) :: 4-bits -> 1-bits
+
+    CHUNKED = "chunked"
+    # ---------------
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - at least 5 TLUs
+    # - at most 13 TLUs
+    # - it's complicated...
+
+    @classmethod
+    def parse(cls, string: str) -> "ComparisonStrategy":
+        """
+        Convert a string to a ComparisonStrategy.
+        """
+
+        if isinstance(string, cls):
+            return string
+
+        if not isinstance(string, str):
+            message = f"{string} cannot be parsed to a {cls.__name__}"
+            raise TypeError(message)
+
+        string = string.lower()
+        for value in ComparisonStrategy:
+            if string == value.value:
+                return value  # pragma: no cover
+
+        message = (
+            f"'{string}' is not a valid '{friendly_type_format(cls)}' ("
+            f"{', '.join(v.value for v in ComparisonStrategy)})"
+        )
+        raise ValueError(message)
+
+    def can_be_used(self, x: ValueDescription, y: ValueDescription) -> bool:
+        """
+        Get if the strategy can be used for the comparison.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the comparison
+
+            y (ValueDescription):
+                description of the rhs of the comparison
+
+        Returns:
+            bool:
+                whether the strategy can be used for the comparison
+        """
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        if self in {
+            ComparisonStrategy.ONE_TLU_PROMOTED,
+            ComparisonStrategy.THREE_TLU_CASTED,
+            ComparisonStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
+            ComparisonStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
+        }:
+            x_minus_y_min = x.dtype.min() - y.dtype.max()
+            x_minus_y_max = x.dtype.max() - y.dtype.min()
+
+            x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+            x_minus_y_dtype = Integer.that_can_represent(x_minus_y_range)
+
+            if x_minus_y_dtype.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                return False
+
+        if self in {
+            ComparisonStrategy.THREE_TLU_BIGGER_CLIPPED_SMALLER_CASTED,
+            ComparisonStrategy.TWO_TLU_BIGGER_CLIPPED_SMALLER_PROMOTED,
+        }:
+            if x.dtype.bit_width == y.dtype.bit_width:
+                return False
+
+            smaller = x if x.dtype.bit_width < y.dtype.bit_width else y
+            bigger = x if x.dtype.bit_width > y.dtype.bit_width else y
+
+            assert isinstance(smaller.dtype, Integer)
+            assert isinstance(bigger.dtype, Integer)
+
+            smaller_bounds = [
+                smaller.dtype.min(),
+                smaller.dtype.max(),
+            ]
+            clipped_bigger_bounds = [
+                np.clip(smaller_bounds[0] - 1, bigger.dtype.min(), bigger.dtype.max()),
+                np.clip(smaller_bounds[1] + 1, bigger.dtype.min(), bigger.dtype.max()),
+            ]
+
+            assert clipped_bigger_bounds[0] >= smaller_bounds[0] - 1
+            assert clipped_bigger_bounds[1] <= smaller_bounds[1] + 1
+
+            assert clipped_bigger_bounds[0] >= bigger.dtype.min()
+            assert clipped_bigger_bounds[1] <= bigger.dtype.max()
+
+            smaller_minus_clipped_bigger_range = [
+                smaller_bounds[0] - clipped_bigger_bounds[1],
+                smaller_bounds[1] - clipped_bigger_bounds[0],
+            ]
+            smaller_minus_clipped_bigger_dtype = Integer.that_can_represent(
+                smaller_minus_clipped_bigger_range
+            )
+
+            clipped_bigger_minus_smaller_range = [
+                clipped_bigger_bounds[0] - smaller_bounds[1],
+                clipped_bigger_bounds[1] - smaller_bounds[0],
+            ]
+            clipped_bigger_minus_smaller_dtype = Integer.that_can_represent(
+                clipped_bigger_minus_smaller_range
+            )
+
+            if all(
+                (
+                    bit_width > MAXIMUM_TLU_BIT_WIDTH
+                    or bit_width > bigger.dtype.bit_width
+                    or bit_width <= smaller.dtype.bit_width
+                )
+                for bit_width in [
+                    smaller_minus_clipped_bigger_dtype.bit_width,
+                    clipped_bigger_minus_smaller_dtype.bit_width,
+                ]
+            ):
+                return False
+
+        return True
+
+    def promotions(self, x: ValueDescription, y: ValueDescription) -> Tuple[int, int]:
+        """
+        Get bit-width promotions for the strategy.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the comparison
+
+            y (ValueDescription):
+                description of the rhs of the comparison
+
+        Returns:
+            Tuple[int, int]:
+                required minimum bit-width for x and y to use the strategy
+        """
+
+        def _promotions(
+            smaller_dtype: Integer,
+            bigger_dtype: Integer,
+            subtraction_dtype: Integer,
+        ) -> Tuple[int, int]:
+            smaller_bit_width = smaller_dtype.bit_width
+            bigger_bit_width = bigger_dtype.bit_width
+            subtraction_bit_width = subtraction_dtype.bit_width
+
+            if self == ComparisonStrategy.ONE_TLU_PROMOTED:
+                assert subtraction_bit_width <= MAXIMUM_TLU_BIT_WIDTH
+                return (
+                    subtraction_bit_width,
+                    subtraction_bit_width,
+                )
+
+            if self == ComparisonStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED:
+                assert subtraction_bit_width <= MAXIMUM_TLU_BIT_WIDTH
+                return (
+                    (
+                        smaller_bit_width
+                        if smaller_bit_width != bigger_bit_width
+                        else subtraction_bit_width
+                    ),
+                    subtraction_bit_width,
+                )
+
+            if self == ComparisonStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED:
+                assert subtraction_bit_width <= MAXIMUM_TLU_BIT_WIDTH
+                return (
+                    subtraction_bit_width,
+                    (
+                        bigger_bit_width
+                        if bigger_bit_width != smaller_bit_width
+                        else subtraction_bit_width
+                    ),
+                )
+
+            if self == ComparisonStrategy.TWO_TLU_BIGGER_CLIPPED_SMALLER_PROMOTED:
+                assert smaller_bit_width != bigger_bit_width
+
+                smaller_bounds = [
+                    smaller_dtype.min(),
+                    smaller_dtype.max(),
+                ]
+                clipped_bigger_bounds = [
+                    np.clip(smaller_bounds[0] - 1, bigger_dtype.min(), bigger_dtype.max()),
+                    np.clip(smaller_bounds[1] + 1, bigger_dtype.min(), bigger_dtype.max()),
+                ]
+
+                assert clipped_bigger_bounds[0] >= smaller_bounds[0] - 1
+                assert clipped_bigger_bounds[1] <= smaller_bounds[1] + 1
+
+                assert clipped_bigger_bounds[0] >= bigger_dtype.min()
+                assert clipped_bigger_bounds[1] <= bigger_dtype.max()
+
+                smaller_minus_clipped_bigger_range = [
+                    smaller_bounds[0] - clipped_bigger_bounds[1],
+                    smaller_bounds[1] - clipped_bigger_bounds[0],
+                ]
+                smaller_minus_clipped_bigger_dtype = Integer.that_can_represent(
+                    smaller_minus_clipped_bigger_range
+                )
+
+                clipped_bigger_minus_smaller_range = [
+                    clipped_bigger_bounds[0] - smaller_bounds[1],
+                    clipped_bigger_bounds[1] - smaller_bounds[0],
+                ]
+                clipped_bigger_minus_smaller_dtype = Integer.that_can_represent(
+                    clipped_bigger_minus_smaller_range
+                )
+
+                intermediate_bit_width = min(
+                    smaller_minus_clipped_bigger_dtype.bit_width,
+                    clipped_bigger_minus_smaller_dtype.bit_width,
+                )
+
+                assert intermediate_bit_width > smaller_bit_width
+                assert intermediate_bit_width <= bigger_bit_width
+
+                return (
+                    intermediate_bit_width,
+                    bigger_bit_width,
+                )
+
+            return (
+                smaller_bit_width,
+                bigger_bit_width,
+            )
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        x_minus_y_min = x.dtype.min() - y.dtype.max()
+        x_minus_y_max = x.dtype.max() - y.dtype.min()
+
+        x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+        x_minus_y_dtype = Integer.that_can_represent(x_minus_y_range)
+
+        if x.dtype.bit_width <= y.dtype.bit_width:
+            required_x_bit_width, required_y_bit_width = _promotions(
+                smaller_dtype=x.dtype,
+                bigger_dtype=y.dtype,
+                subtraction_dtype=x_minus_y_dtype,
+            )
+        else:
+            required_y_bit_width, required_x_bit_width = _promotions(
+                smaller_dtype=y.dtype,
+                bigger_dtype=x.dtype,
+                subtraction_dtype=x_minus_y_dtype,
+            )
+
+        return required_x_bit_width, required_y_bit_width
+
+
 class Configuration:
     """
     Configuration class, to allow the compilation process to be customized.
@@ -73,6 +448,7 @@ class Configuration:
     fhe_execution: bool
     compiler_debug_mode: bool
     compiler_verbose_mode: bool
+    comparison_strategy_preference: List[ComparisonStrategy]
 
     def __init__(
         self,
@@ -104,6 +480,9 @@ class Configuration:
         fhe_execution: bool = True,
         compiler_debug_mode: bool = False,
         compiler_verbose_mode: bool = False,
+        comparison_strategy_preference: Optional[
+            Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]
+        ] = None,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -134,6 +513,15 @@ class Configuration:
         self.progress_tag = progress_tag
         self.fhe_simulation = fhe_simulation
         self.fhe_execution = fhe_execution
+        self.comparison_strategy_preference = (
+            []
+            if comparison_strategy_preference is None
+            else (
+                [ComparisonStrategy.parse(strategy) for strategy in comparison_strategy_preference]
+                if isinstance(comparison_strategy_preference, list)
+                else [ComparisonStrategy.parse(comparison_strategy_preference)]
+            )
+        )
 
         self._validate()
 
@@ -171,32 +559,35 @@ class Configuration:
         fhe_execution: Union[Keep, bool] = KEEP,
         compiler_debug_mode: Union[Keep, bool] = KEEP,
         compiler_verbose_mode: Union[Keep, bool] = KEEP,
+        comparison_strategy_preference: Union[
+            Keep, Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]]
+        ] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
 
         See Configuration.
-
         """
+
         args = locals()
-        result = deepcopy(self)
-        for name in get_type_hints(Configuration.__init__):
-            value = args[name]
-            if isinstance(value, Configuration.Keep):
-                continue
-            setattr(result, name, value)
-
-        # pylint: disable=protected-access
-        result._validate()
-        # pylint: enable=protected-access
-
-        return result
+        return Configuration(
+            **{
+                name: getattr(self, name)
+                if isinstance(args[name], Configuration.Keep)
+                else args[name]
+                for name in get_type_hints(Configuration.__init__)
+            }
+        )
 
     def _validate(self):
         """
         Validate configuration.
         """
         for name, hint in get_type_hints(Configuration.__init__).items():
+            if name == "comparison_strategy_preference":
+                # checked in the constructor within parse method of ComparisonStrategy
+                continue
+
             original_hint = hint
             value = getattr(self, name)
             if str(hint).startswith("typing.Union") or str(hint).startswith("typing.Optional"):

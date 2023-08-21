@@ -12,6 +12,7 @@ from .compilation import (
     Circuit,
     Client,
     ClientSpecs,
+    ComparisonStrategy,
     Compiler,
     Configuration,
     DebugArtifacts,

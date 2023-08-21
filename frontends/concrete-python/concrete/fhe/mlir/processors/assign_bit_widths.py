@@ -6,6 +6,7 @@ from typing import Dict, List
 
 import z3
 
+from ...compilation.configuration import ComparisonStrategy
 from ...dtypes import Integer
 from ...representation import Graph, Node, Operation
 from . import GraphProcessor
@@ -18,12 +19,22 @@ class AssignBitWidths(GraphProcessor):
     There are two modes:
     - Single Precision, where all encrypted values have the same precision.
     - Multi Precision, where encrypted values can have different precisions.
+
+    There is preference list for comparison strategies.
+    - Strategies will be traversed in order and bit-widths
+      will be assigned according to the first available strategy.
     """
 
     single_precision: bool
+    comparison_strategy_preference: List[ComparisonStrategy]
 
-    def __init__(self, single_precision: bool = False):
+    def __init__(
+        self,
+        single_precision: bool,
+        comparison_strategy_preference: List[ComparisonStrategy],
+    ):
         self.single_precision = single_precision
+        self.comparison_strategy_preference = comparison_strategy_preference
 
     def apply(self, graph: Graph):
         optimizer = z3.Optimize()
@@ -31,7 +42,12 @@ class AssignBitWidths(GraphProcessor):
         max_bit_width: z3.Int = z3.Int("max")
         bit_widths: Dict[Node, z3.Int] = {}
 
-        additional_constraints = AdditionalConstraints(optimizer, graph, bit_widths)
+        additional_constraints = AdditionalConstraints(
+            optimizer,
+            graph,
+            bit_widths,
+            self.comparison_strategy_preference,
+        )
 
         nodes = graph.query_nodes(ordered=True)
         for i, node in enumerate(nodes):
@@ -79,15 +95,25 @@ class AdditionalConstraints:
     graph: Graph
     bit_widths: Dict[Node, z3.Int]
 
+    comparison_strategy_preference: List[ComparisonStrategy]
+
     node: Node
     bit_width: z3.Int
 
     # pylint: disable=missing-function-docstring,unused-argument
 
-    def __init__(self, optimizer: z3.Optimize, graph: Graph, bit_widths: Dict[Node, z3.Int]):
+    def __init__(
+        self,
+        optimizer: z3.Optimize,
+        graph: Graph,
+        bit_widths: Dict[Node, z3.Int],
+        comparison_strategy_preference: List[ComparisonStrategy],
+    ):
         self.optimizer = optimizer
         self.graph = graph
         self.bit_widths = bit_widths
+
+        self.comparison_strategy_preference = comparison_strategy_preference
 
     def generate_for(self, node: Node, bit_width: z3.Int):
         """
@@ -117,8 +143,11 @@ class AdditionalConstraints:
                     add_constraint(self, node, preds)
 
             elif isinstance(constraints, dict):
-                for condition, conditional_constraints in constraints.items():
-                    if condition(self, node, preds):
+                for conditions, conditional_constraints in constraints.items():
+                    if not isinstance(conditions, tuple):
+                        conditions = (conditions,)
+
+                    if all(condition(self, node, preds) for condition in conditions):
                         for add_constraint in conditional_constraints:
                             add_constraint(self, node, preds)
 
@@ -165,9 +194,29 @@ class AdditionalConstraints:
 
             self.optimizer.add(self.bit_widths[pred] >= required_bit_width)
 
-    def inputs_require_at_least_four_bits(self, node: Node, preds: List[Node]):
-        for pred in preds:
-            self.optimizer.add(self.bit_widths[pred] >= 4)
+    def comparison(self, node: Node, preds: List[Node]):
+        assert len(preds) == 2
+
+        x = preds[0]
+        y = preds[1]
+
+        strategies = self.comparison_strategy_preference
+        fallback = [
+            ComparisonStrategy.THREE_TLU_BIGGER_CLIPPED_SMALLER_CASTED,
+            ComparisonStrategy.CHUNKED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(x.output, y.output):
+                new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
+
+                if strategy == ComparisonStrategy.ONE_TLU_PROMOTED:
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
+
+                node.properties["strategy"] = strategy
+                break
 
     # ==========
     # Operations
@@ -238,9 +287,7 @@ class AdditionalConstraints:
     }
 
     equal = {
-        all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
-        },
+        comparison,
     }
 
     expand_dims = {
@@ -248,17 +295,11 @@ class AdditionalConstraints:
     }
 
     greater = {
-        all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
-            inputs_require_at_least_four_bits,
-        },
+        comparison,
     }
 
     greater_equal = {
-        all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
-            inputs_require_at_least_four_bits,
-        },
+        comparison,
     }
 
     index_static = {
@@ -272,17 +313,11 @@ class AdditionalConstraints:
     }
 
     less = {
-        all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
-            inputs_require_at_least_four_bits,
-        },
+        comparison,
     }
 
     less_equal = {
-        all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
-            inputs_require_at_least_four_bits,
-        },
+        comparison,
     }
 
     matmul = {
@@ -325,9 +360,7 @@ class AdditionalConstraints:
     }
 
     not_equal = {
-        all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
-        },
+        comparison,
     }
 
     reshape = {

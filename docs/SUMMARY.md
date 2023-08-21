@@ -19,6 +19,7 @@
 * [Formatting](tutorial/formatting.md)
 * [Tagging](tutorial/tagging.md)
 * [Extensions](tutorial/extensions.md)
+* [Comparisons](tutorial/comparisons.md)
 * [Table Lookups](tutorial/table\_lookups.md)
 * [Rounding](tutorial/rounding.md)
 * [Floating Points](tutorial/floating\_points.md)
