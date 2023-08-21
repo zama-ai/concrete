@@ -76,6 +76,7 @@ class Configuration:
 
     def __init__(
         self,
+        *,
         verbose: bool = False,
         show_graph: Optional[bool] = None,
         show_mlir: Optional[bool] = None,
@@ -103,7 +104,7 @@ class Configuration:
         fhe_execution: bool = True,
         compiler_debug_mode: bool = False,
         compiler_verbose_mode: bool = False,
-    ):  # pylint: disable=too-many-arguments
+    ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
         self.compiler_verbose_mode = compiler_verbose_mode
