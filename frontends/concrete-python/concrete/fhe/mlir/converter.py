@@ -188,7 +188,10 @@ class Converter:
 
         pipeline = [
             CheckIntegerOnly(),
-            AssignBitWidths(single_precision=configuration.single_precision),
+            AssignBitWidths(
+                single_precision=configuration.single_precision,
+                comparison_strategy_preference=configuration.comparison_strategy_preference,
+            ),
             ProcessRounding(),
         ]
 
@@ -324,7 +327,7 @@ class Converter:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
-            return ctx.equality(ctx.typeof(node), preds[0], preds[1], equals=True)
+            return ctx.equal(ctx.typeof(node), preds[0], preds[1])
 
         return self.tlu(ctx, node, preds)
 
@@ -420,7 +423,7 @@ class Converter:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
-            return ctx.equality(ctx.typeof(node), preds[0], preds[1], equals=False)
+            return ctx.not_equal(ctx.typeof(node), preds[0], preds[1])
 
         return self.tlu(ctx, node, preds)
 

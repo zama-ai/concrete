@@ -109,6 +109,24 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             ValueError,
             "'bad' is not a valid 'ParameterSelectionStrategy' (v0, mono, multi)",
         ),
+        pytest.param(
+            {"comparison_strategy_preference": 42},
+            TypeError,
+            "42 cannot be parsed to a ComparisonStrategy",
+        ),
+        pytest.param(
+            {"comparison_strategy_preference": "bad"},
+            ValueError,
+            "'bad' is not a valid 'ComparisonStrategy' ("
+            "one-tlu-promoted, "
+            "three-tlu-casted, "
+            "two-tlu-bigger-promoted-smaller-casted, "
+            "two-tlu-bigger-casted-smaller-promoted, "
+            "three-tlu-bigger-clipped-smaller-casted, "
+            "two-tlu-bigger-clipped-smaller-promoted, "
+            "chunked"
+            ")",
+        ),
     ],
 )
 def test_configuration_bad_fork(kwargs, expected_error, expected_message):

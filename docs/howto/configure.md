@@ -102,3 +102,5 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Enable/disable debug mode of the compiler. This can show a lot of information, including passes and pattern rewrites.
 * **compiler_verbose_mode**: bool = False,
   * Enable/disable verbose mode of the compiler. This mainly show logs from the compiler, and is less verbose than the debug mode.
+* **comparison_strategy_preference**: Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]] = None
+  * Specify preference for comparison strategies, can be a single strategy or an ordered list of strategies. See [Comparisons](../tutorial/comparisons.md) to learn more.

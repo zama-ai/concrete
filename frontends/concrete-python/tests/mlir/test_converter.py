@@ -552,6 +552,20 @@ Function you are trying to compile cannot be compiled
 %0 = x                        # EncryptedScalar<uint19>        ∈ [300000, 300000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
 %1 = y                        # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to a comparison operation
+%2 = not_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                        # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+%1 = y                        # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
                                                                                   (note that it's assigned 19-bits during compilation because of its relation with other operations)
 %2 = not_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
@@ -566,6 +580,20 @@ return %2
             [(300_000, 100_000)],
             RuntimeError,
             """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                            # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+%1 = y                            # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to a comparison operation
+%2 = greater_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
 
 Function you are trying to compile cannot be compiled
 
