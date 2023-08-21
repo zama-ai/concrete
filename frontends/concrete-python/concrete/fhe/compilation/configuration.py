@@ -65,7 +65,7 @@ class Configuration:
     insecure_key_cache_location: Optional[str]
     auto_adjust_rounders: bool
     single_precision: bool
-    parameter_selection_strategy: Union[ParameterSelectionStrategy, str]
+    parameter_selection_strategy: ParameterSelectionStrategy
     show_progress: bool
     progress_title: str
     progress_tag: Union[bool, int]
@@ -125,7 +125,9 @@ class Configuration:
         self.global_p_error = global_p_error
         self.auto_adjust_rounders = auto_adjust_rounders
         self.single_precision = single_precision
-        self.parameter_selection_strategy = parameter_selection_strategy
+        self.parameter_selection_strategy = ParameterSelectionStrategy.parse(
+            parameter_selection_strategy
+        )
         self.show_progress = show_progress
         self.progress_title = progress_title
         self.progress_tag = progress_tag
@@ -196,15 +198,6 @@ class Configuration:
         for name, hint in get_type_hints(Configuration.__init__).items():
             original_hint = hint
             value = getattr(self, name)
-            if name == "parameter_selection_strategy":
-                try:
-                    value = ParameterSelectionStrategy.parse(value)
-                except ValueError as exc:
-                    message = f"Unexpected value for keyword argument '{name}', {str(exc)}"
-                    # pylint: disable=raise-missing-from
-                    raise ValueError(message)  # noqa: B904
-                except TypeError:
-                    pass  # handle by the generic check
             if str(hint).startswith("typing.Union") or str(hint).startswith("typing.Optional"):
                 if isinstance(value, tuple(hint.__args__)):
                     continue

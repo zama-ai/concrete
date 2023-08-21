@@ -102,13 +102,11 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
         pytest.param(
             {"parameter_selection_strategy": 42},
             TypeError,
-            "Unexpected type for keyword argument 'parameter_selection_strategy' "
-            "(expected 'Union[ParameterSelectionStrategy, str]', got 'int')",
+            "42 cannot be parsed to a ParameterSelectionStrategy",
         ),
         pytest.param(
             {"parameter_selection_strategy": "bad"},
             ValueError,
-            "Unexpected value for keyword argument 'parameter_selection_strategy', "
             "'bad' is not a valid 'ParameterSelectionStrategy' (v0, mono, multi)",
         ),
     ],
