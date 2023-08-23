@@ -495,7 +495,9 @@ class Configuration:
         self.enable_unsafe_features = enable_unsafe_features
         self.use_insecure_key_cache = use_insecure_key_cache
         self.insecure_key_cache_location = (
-            str(insecure_key_cache_location) if insecure_key_cache_location is not None else None
+            str(insecure_key_cache_location)
+            if isinstance(insecure_key_cache_location, Path)
+            else insecure_key_cache_location
         )
         self.loop_parallelize = loop_parallelize
         self.dataflow_parallelize = dataflow_parallelize
