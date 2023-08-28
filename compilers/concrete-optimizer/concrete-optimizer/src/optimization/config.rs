@@ -14,6 +14,7 @@ pub struct NoiseBoundConfig {
 pub struct Config<'a> {
     pub security_level: u64,
     pub maximum_acceptable_error_probability: f64,
+    pub key_sharing: bool,
     pub ciphertext_modulus_log: u32,
     pub fft_precision: u32,
     pub complexity_model: &'a dyn ComplexityModel,

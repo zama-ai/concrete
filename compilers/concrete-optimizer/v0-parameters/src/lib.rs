@@ -118,6 +118,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
     let config = Config {
         security_level,
         maximum_acceptable_error_probability,
+        key_sharing: true,
         ciphertext_modulus_log: args.ciphertext_modulus_log,
         fft_precision: args.fft_precision,
         complexity_model: &CpuComplexity::default(),

@@ -41,6 +41,7 @@ mod tests {
         let config = Config {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
+            key_sharing: true,
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
@@ -637,6 +638,7 @@ mod tests {
         let config = Config {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
+            key_sharing: true,
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
@@ -653,5 +655,104 @@ mod tests {
         let sol_mono = solo_key::optimize::tests::optimize(&dag).best_solution.unwrap();
         assert! (sol.circuit_keys.secret_keys.len() == 1);
         assert! (sol.circuit_keys.secret_keys[0].polynomial_size == sol_mono.glwe_polynomial_size);
+    }
+
+    #[test]
+    fn test_big_secret_key_sharing() {
+        let mut dag = unparametrized::OperationDag::new();
+        let input1 = dag.add_input(4, Shape::number());
+        let input2 = dag.add_input(5, Shape::number());
+        let input2 = dag.add_dot([input2], [128]);
+        let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
+        let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
+        let _ = dag.add_dot([lut1, lut2], [16, 1]);
+        let config_sharing = Config {
+            security_level: 128,
+            maximum_acceptable_error_probability: _4_SIGMA,
+            key_sharing: true,
+            ciphertext_modulus_log: 64,
+            fft_precision: 53,
+            complexity_model: &CpuComplexity::default(),
+        };
+        let config_no_sharing = Config {
+            key_sharing: false,
+            ..config_sharing
+        };
+        let mut search_space = SearchSpace::default_cpu();
+        // eprintln!("{:?}", search_space);
+        search_space.glwe_dimensions = vec![1]; // forcing big key sharing
+        let sol_sharing = super::optimize_to_circuit_solution(
+            &dag,
+            config_sharing,
+            &search_space,
+            &SHARED_CACHES,
+            &None,
+        );
+        eprintln!("NO SHARING");
+        let sol_no_sharing = super::optimize_to_circuit_solution(
+            &dag,
+            config_no_sharing,
+            &search_space,
+            &SHARED_CACHES,
+            &None,
+        );
+        let keys_sharing = sol_sharing.circuit_keys;
+        let keys_no_sharing = sol_no_sharing.circuit_keys;
+        assert!(keys_sharing.secret_keys.len() == 3);
+        assert!(keys_no_sharing.secret_keys.len() == 4);
+        assert!(keys_sharing.conversion_keyswitch_keys.is_empty());
+        assert!(keys_no_sharing.conversion_keyswitch_keys.len() == 1);
+        assert!(keys_sharing.bootstrap_keys.len() == keys_no_sharing.bootstrap_keys.len());
+        assert!(keys_sharing.keyswitch_keys.len() == keys_no_sharing.keyswitch_keys.len());
+    }
+
+    #[test]
+    fn test_big_and_small_secret_key() {
+        let mut dag = unparametrized::OperationDag::new();
+        let input1 = dag.add_input(4, Shape::number());
+        let input2 = dag.add_input(5, Shape::number());
+        let input2 = dag.add_dot([input2], [128]);
+        let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
+        let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
+        let _ = dag.add_dot([lut1, lut2], [16, 1]);
+        let config_sharing = Config {
+            security_level: 128,
+            maximum_acceptable_error_probability: _4_SIGMA,
+            key_sharing: true,
+            ciphertext_modulus_log: 64,
+            fft_precision: 53,
+            complexity_model: &CpuComplexity::default(),
+        };
+        let config_no_sharing = Config {
+            key_sharing: false,
+            ..config_sharing
+        };
+        let mut search_space = SearchSpace::default_cpu();
+        search_space.glwe_dimensions = vec![1]; // forcing big key sharing
+        search_space.internal_lwe_dimensions = vec![768]; // forcing small key sharing
+        let sol_sharing = super::optimize_to_circuit_solution(
+            &dag,
+            config_sharing,
+            &search_space,
+            &SHARED_CACHES,
+            &None,
+        );
+        let sol_no_sharing = super::optimize_to_circuit_solution(
+            &dag,
+            config_no_sharing,
+            &search_space,
+            &SHARED_CACHES,
+            &None,
+        );
+        let keys_sharing = sol_sharing.circuit_keys;
+        let keys_no_sharing = sol_no_sharing.circuit_keys;
+        assert!(keys_sharing.secret_keys.len() == 2);
+        assert!(keys_no_sharing.secret_keys.len() == 4);
+        assert!(keys_sharing.conversion_keyswitch_keys.is_empty());
+        assert!(keys_no_sharing.conversion_keyswitch_keys.len() == 1);
+        // boostrap are merged due to same (level, base)
+        assert!(keys_sharing.bootstrap_keys.len() + 1 == keys_no_sharing.bootstrap_keys.len());
+        // keyswitch are still different due to another (level, base)
+        assert!(keys_sharing.keyswitch_keys.len() == keys_no_sharing.keyswitch_keys.len());
     }
 }

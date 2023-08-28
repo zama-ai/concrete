@@ -297,6 +297,12 @@ llvm::cl::opt<optimizer::Strategy> optimizerStrategy(
         "problem using the fhe computation dag with SEVERAL set of evaluation "
         "keys")));
 
+llvm::cl::opt<bool> optimizerKeySharing(
+    "optimizer-multi-parameter-key-sharing",
+    llvm::cl::desc(
+        "To enable/disable key sharing in dag-multi parameter strategy"),
+    llvm::cl::init(optimizer::DEFAULT_KEY_SHARING));
+
 llvm::cl::opt<double> fallbackLogNormWoppbs(
     "optimizer-fallback-log-norm-woppbs",
     llvm::cl::desc("Select a fallback value for multisum log norm in woppbs "
@@ -481,6 +487,7 @@ cmdlineCompilationOptions() {
   options.optimizerConfig.p_error = cmdline::pbsErrorProbability;
   options.optimizerConfig.display = cmdline::displayOptimizerChoice;
   options.optimizerConfig.strategy = cmdline::optimizerStrategy;
+  options.optimizerConfig.key_sharing = cmdline::optimizerKeySharing;
   options.optimizerConfig.encoding = cmdline::optimizerEncoding;
   options.optimizerConfig.cache_on_disk = !cmdline::optimizerNoCacheOnDisk;
 

@@ -22,6 +22,7 @@ concrete_optimizer::Options default_options() {
   return concrete_optimizer::Options{
       .security_level = SECURITY_128B,
       .maximum_acceptable_error_probability = P_ERROR,
+      .key_sharing = false,
       .default_log_norm2_woppbs = WOP_FALLBACK_LOG_NORM,
       .use_gpu_constraints = false,
       .encoding = concrete_optimizer::Encoding::Auto,

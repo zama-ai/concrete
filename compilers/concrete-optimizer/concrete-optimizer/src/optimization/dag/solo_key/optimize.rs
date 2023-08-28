@@ -476,6 +476,7 @@ pub(crate) mod tests {
         let config = Config {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
+            key_sharing: true,
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
@@ -520,6 +521,7 @@ pub(crate) mod tests {
         let config = Config {
             security_level: 128,
             maximum_acceptable_error_probability: _4_SIGMA,
+            key_sharing: true,
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
@@ -617,6 +619,7 @@ pub(crate) mod tests {
         let config = Config {
             security_level,
             maximum_acceptable_error_probability: _4_SIGMA,
+            key_sharing: true,
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),

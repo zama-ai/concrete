@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::optimization::{atomic_pattern, wop_atomic_pattern};
 use crate::parameters::{BrDecompositionParameters, KsDecompositionParameters};
 
@@ -13,7 +15,7 @@ pub type CircuitBoostrapKeyId = Id;
 pub type PrivateFunctionalPackingBoostrapKeyId = Id;
 pub const NO_KEY_ID: Id = Id::MAX;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SecretLweKey {
     /* Big and small secret keys */
     pub identifier: SecretLweKeyId,
@@ -22,7 +24,7 @@ pub struct SecretLweKey {
     pub description: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BootstrapKey {
     /* Public TLU bootstrap keys */
     pub identifier: BootstrapKeyId,
@@ -32,7 +34,7 @@ pub struct BootstrapKey {
     pub description: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeySwitchKey {
     /* Public TLU keyswitch keys */
     pub identifier: KeySwitchKeyId,
@@ -42,7 +44,7 @@ pub struct KeySwitchKey {
     pub description: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConversionKeySwitchKey {
     /* Public conversion to make compatible ciphertext with incompatible keys.
     It's currently only between two big secret keys. */
@@ -327,6 +329,13 @@ pub struct ExpandedCircuitKeys {
     pub private_functional_packing_keys: Vec<PrivateFunctionalPackingBoostrapKey>,
 }
 
+pub struct KeySharing {
+    secret_keys: HashMap<Id, SecretLweKey>,
+    bootstrap_keys: HashMap<Id, BootstrapKey>,
+    keyswitch_keys: HashMap<Id, KeySwitchKey>,
+    conversion_keyswitch_keys: HashMap<Id, Option<ConversionKeySwitchKey>>,
+}
+
 impl ExpandedCircuitKeys {
     pub fn of(params: &super::optimize::Parameters) -> Self {
         let nb_partitions = params.macro_params.len();
@@ -425,6 +434,230 @@ impl ExpandedCircuitKeys {
         }
     }
 
+    fn shared_boostrap_keys(
+        &self,
+        final_keys: &HashMap<Id, SecretLweKey>,
+        final_groups: &HashMap<Id, Vec<Id>>,
+    ) -> (Vec<BootstrapKey>, HashMap<Id, BootstrapKey>) {
+        let final_key_id = |k: &SecretLweKey| final_keys[&k.identifier].identifier;
+        let mut canon_final_bootstraps: HashMap<(Id, Id, BrDecompositionParameters), BootstrapKey> =
+            HashMap::new();
+        let mut final_bootstraps: HashMap<Id, BootstrapKey> = HashMap::new();
+        let mut bootstrap_keys = vec![];
+        for key in &self.bootstrap_keys {
+            let final_id_in = final_key_id(&key.input_key);
+            let final_id_out = final_key_id(&key.output_key);
+            let canon_key = (final_id_in, final_id_out, key.br_decomposition_parameter);
+            #[allow(clippy::option_if_let_else)]
+            let final_bootstrap =
+                if let Some(final_bootstrap) = canon_final_bootstraps.get(&canon_key) {
+                    final_bootstrap.clone()
+                } else {
+                    let mut final_bootstrap = key.clone();
+                    final_bootstrap.identifier = canon_final_bootstraps.len() as u64;
+                    final_bootstrap.input_key = final_keys[&key.input_key.identifier].clone();
+                    final_bootstrap.output_key = final_keys[&key.output_key.identifier].clone();
+                    final_bootstrap.description = format!(
+                        "pbs[#{} : partitions {:?} -> {:?}]",
+                        final_bootstrap.identifier,
+                        final_groups[&final_id_in],
+                        final_groups[&final_id_out]
+                    );
+                    _ = canon_final_bootstraps.insert(canon_key, final_bootstrap.clone());
+                    bootstrap_keys.push(final_bootstrap.clone());
+                    final_bootstrap
+                };
+            _ = final_bootstraps.insert(key.identifier, final_bootstrap.clone());
+        }
+        (bootstrap_keys, final_bootstraps)
+    }
+
+    fn shared_keyswitch_keys(
+        &self,
+        final_keys: &HashMap<Id, SecretLweKey>,
+        final_groups: &HashMap<Id, Vec<Id>>,
+    ) -> (Vec<Vec<Option<KeySwitchKey>>>, HashMap<Id, KeySwitchKey>) {
+        let final_key_id = |k: &SecretLweKey| final_keys[&k.identifier].identifier;
+        let mut canon_final_keyswitchs: HashMap<(Id, Id, KsDecompositionParameters), KeySwitchKey> =
+            HashMap::new();
+        let mut final_keyswitchs: HashMap<Id, KeySwitchKey> = HashMap::new();
+        let mut keyswitch_keys = self.keyswitch_keys.clone();
+        for (i, keys) in self.keyswitch_keys.iter().enumerate() {
+            for (j, key) in keys.iter().enumerate() {
+                if let Some(key) = key {
+                    let final_id_in = final_key_id(&key.input_key);
+                    let final_id_out = final_key_id(&key.output_key);
+                    let canon_key = (final_id_in, final_id_out, key.ks_decomposition_parameter);
+                    #[allow(clippy::option_if_let_else)]
+                    let final_keyswitch = if let Some(final_keyswitch) =
+                        canon_final_keyswitchs.get(&canon_key)
+                    {
+                        keyswitch_keys[i][j] = None;
+                        final_keyswitch.clone()
+                    } else {
+                        let mut final_keyswitch = key.clone();
+                        final_keyswitch.identifier = canon_final_keyswitchs.len() as u64;
+                        final_keyswitch.input_key = final_keys[&key.input_key.identifier].clone();
+                        final_keyswitch.output_key = final_keys[&key.output_key.identifier].clone();
+                        final_keyswitch.description = format!(
+                            "ks[#{} : partitions {:?} -> {:?}]",
+                            final_keyswitch.identifier,
+                            final_groups[&final_id_in],
+                            final_groups[&final_id_out]
+                        );
+                        _ = canon_final_keyswitchs.insert(canon_key, final_keyswitch.clone());
+                        keyswitch_keys[i][j] = Some(final_keyswitch.clone());
+                        final_keyswitch
+                    };
+                    _ = final_keyswitchs.insert(key.identifier, final_keyswitch.clone());
+                }
+            }
+        }
+        (keyswitch_keys, final_keyswitchs)
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn shared_conversion_keyswitch_keys(
+        &self,
+        final_keys: &HashMap<Id, SecretLweKey>,
+        final_groups: &HashMap<Id, Vec<Id>>,
+    ) -> (
+        Vec<Vec<Option<ConversionKeySwitchKey>>>,
+        HashMap<Id, Option<ConversionKeySwitchKey>>,
+    ) {
+        let final_key_id = |k: &SecretLweKey| final_keys[&k.identifier].identifier;
+        let mut canon_final_c_keyswitchs: HashMap<
+            (Id, Id, KsDecompositionParameters),
+            ConversionKeySwitchKey,
+        > = HashMap::new();
+        let mut final_c_keyswitchs: HashMap<Id, Option<ConversionKeySwitchKey>> = HashMap::new();
+        let mut conversion_keyswitch_keys = self.conversion_keyswitch_keys.clone();
+        for (i, keys) in self.conversion_keyswitch_keys.iter().enumerate() {
+            for (j, key) in keys.iter().enumerate() {
+                if let Some(key) = key {
+                    let final_id_in = final_key_id(&key.input_key);
+                    let final_id_out = final_key_id(&key.output_key);
+                    if final_id_in == final_id_out {
+                        conversion_keyswitch_keys[i][j] = None;
+                        _ = final_c_keyswitchs.insert(key.identifier, None);
+                        continue;
+                    }
+                    let canon_key = (final_id_in, final_id_out, key.ks_decomposition_parameter);
+                    #[allow(clippy::option_if_let_else)]
+                    let final_c_keyswitch = if let Some(final_c_keyswitch) =
+                        canon_final_c_keyswitchs.get(&canon_key)
+                    {
+                        conversion_keyswitch_keys[i][j] = None;
+                        final_c_keyswitch.clone()
+                    } else {
+                        let mut final_c_keyswitch = key.clone();
+                        final_c_keyswitch.identifier = canon_final_c_keyswitchs.len() as u64;
+                        final_c_keyswitch.input_key = final_keys[&key.input_key.identifier].clone();
+                        final_c_keyswitch.output_key =
+                            final_keys[&key.output_key.identifier].clone();
+                        final_c_keyswitch.description = format!(
+                            "fks[#{} : partitions {:?} -> {:?}]",
+                            final_c_keyswitch.identifier,
+                            final_groups[&final_id_in],
+                            final_groups[&final_id_out]
+                        );
+                        _ = canon_final_c_keyswitchs.insert(canon_key, final_c_keyswitch.clone());
+                        conversion_keyswitch_keys[i][j] = Some(final_c_keyswitch.clone());
+                        final_c_keyswitch
+                    };
+                    _ = final_c_keyswitchs.insert(key.identifier, Some(final_c_keyswitch.clone()));
+                }
+            }
+        }
+        (conversion_keyswitch_keys, final_c_keyswitchs)
+    }
+
+    #[allow(clippy::too_many_lines)]
+    pub fn shared_keys(self) -> (Self, KeySharing) {
+        // initial key to common key
+        let mut leader: HashMap<Id, &SecretLweKey> = HashMap::new();
+        let mut groups: HashMap<Id, Vec<Id>> = HashMap::new();
+        // initial key to final key (identifier change + description change)
+        let mut final_keys: HashMap<Id, SecretLweKey> = HashMap::new();
+        let mut final_groups: HashMap<Id, Vec<Id>> = HashMap::new();
+        let mut new_secret_keys = vec![vec![], vec![]];
+
+        for (case, &secret_keys) in [&self.big_secret_keys, &self.small_secret_keys]
+            .iter()
+            .enumerate()
+        {
+            for (i, key0) in secret_keys.iter().enumerate() {
+                let already_shared = leader.contains_key(&key0.identifier);
+                if already_shared {
+                    continue;
+                }
+                _ = leader.insert(key0.identifier, key0);
+                _ = groups.insert(key0.identifier, vec![key0.identifier]);
+                // Finding all similar keys, making this a group
+                for key1 in &secret_keys[i + 1..] {
+                    let same_size = key0.polynomial_size == key1.polynomial_size
+                        && key0.glwe_dimension == key1.glwe_dimension;
+                    if same_size {
+                        _ = leader.insert(key1.identifier, key0);
+                        groups
+                            .get_mut(&key0.identifier)
+                            .unwrap()
+                            .push(key1.identifier);
+                    }
+                }
+            }
+            // Create the unified key based on the groups
+            for key in secret_keys {
+                if !groups.contains_key(&key.identifier) {
+                    continue;
+                }
+                let leader_key = key;
+                let group = groups[&leader_key.identifier].clone();
+                let mut final_key = leader_key.clone();
+                final_key.identifier = (new_secret_keys[0].len() + new_secret_keys[1].len()) as u64;
+                let case_str = if case == 0 { "big" } else { "small" };
+                final_key.description = format!(
+                    "{}-secret[#{} : partitions {:?}]",
+                    case_str, final_key.identifier, group
+                );
+                _ = final_groups.insert(final_key.identifier, vec![]);
+                new_secret_keys[case].push(final_key.clone());
+                for key_id in group {
+                    _ = final_keys.insert(key_id, final_key.clone());
+                    final_groups
+                        .get_mut(&final_key.identifier)
+                        .unwrap()
+                        .push(key_id);
+                }
+            }
+        }
+        let big_secret_keys = new_secret_keys[0].clone();
+        let small_secret_keys = new_secret_keys[1].clone();
+
+        let (bootstrap_keys, final_bootstraps) =
+            self.shared_boostrap_keys(&final_keys, &final_groups);
+        let (keyswitch_keys, final_keyswitchs) =
+            self.shared_keyswitch_keys(&final_keys, &final_groups);
+        let (conversion_keyswitch_keys, final_c_keyswitchs) =
+            self.shared_conversion_keyswitch_keys(&final_keys, &final_groups);
+        (
+            Self {
+                big_secret_keys,
+                small_secret_keys,
+                keyswitch_keys,
+                bootstrap_keys,
+                conversion_keyswitch_keys,
+                ..self
+            },
+            KeySharing {
+                secret_keys: final_keys,
+                keyswitch_keys: final_keyswitchs,
+                bootstrap_keys: final_bootstraps,
+                conversion_keyswitch_keys: final_c_keyswitchs,
+            },
+        )
+    }
+
     pub fn compacted(self) -> CircuitKeys {
         CircuitKeys {
             secret_keys: [self.big_secret_keys, self.small_secret_keys].concat(),
@@ -444,5 +677,43 @@ impl ExpandedCircuitKeys {
             circuit_bootstrap_keys: self.circuit_bootstrap_keys,
             private_functional_packing_keys: self.private_functional_packing_keys,
         }
+    }
+}
+
+impl InstructionKeys {
+    fn shared_keys_1(&self, sharing: &KeySharing) -> Self {
+        let tlu_keyswitch_key = if self.tlu_keyswitch_key == NO_KEY_ID {
+            NO_KEY_ID
+        } else {
+            sharing.keyswitch_keys[&self.tlu_keyswitch_key].identifier
+        };
+        let tlu_bootstrap_key = if self.tlu_bootstrap_key == NO_KEY_ID {
+            NO_KEY_ID
+        } else {
+            sharing.bootstrap_keys[&self.tlu_bootstrap_key].identifier
+        };
+        Self {
+            input_key: sharing.secret_keys[&self.input_key].identifier,
+            tlu_bootstrap_key,
+            tlu_keyswitch_key,
+            output_key: sharing.secret_keys[&self.output_key].identifier,
+            extra_conversion_keys: self
+                .extra_conversion_keys
+                .iter()
+                .filter_map(|fks_id| {
+                    sharing.conversion_keyswitch_keys[fks_id]
+                        .as_ref()
+                        .map(|k| k.identifier)
+                })
+                .collect(),
+            ..self.clone()
+        }
+    }
+
+    pub fn shared_keys(instructions_keys: &[Self], sharing: &KeySharing) -> Vec<Self> {
+        return instructions_keys
+            .iter()
+            .map(|i| i.shared_keys_1(sharing))
+            .collect();
     }
 }
