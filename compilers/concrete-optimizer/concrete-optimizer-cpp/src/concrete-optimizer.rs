@@ -51,6 +51,7 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
     let config = Config {
         security_level: options.security_level,
         maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+        key_sharing: options.key_sharing,
         ciphertext_modulus_log: options.ciphertext_modulus_log,
         fft_precision: options.fft_precision,
         complexity_model: &CpuComplexity::default(),
@@ -492,6 +493,7 @@ impl OperationDag {
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+            key_sharing: options.key_sharing,
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
@@ -515,6 +517,7 @@ impl OperationDag {
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+            key_sharing: options.key_sharing,
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
@@ -543,6 +546,7 @@ impl OperationDag {
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+            key_sharing: options.key_sharing,
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
@@ -730,6 +734,7 @@ mod ffi {
     pub struct Options {
         pub security_level: u64,
         pub maximum_acceptable_error_probability: f64,
+        pub key_sharing: bool,
         pub default_log_norm2_woppbs: f64,
         pub use_gpu_constraints: bool,
         pub encoding: Encoding,

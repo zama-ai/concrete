@@ -43,6 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config {
         security_level,
         maximum_acceptable_error_probability: p_error,
+        key_sharing: true,
         ciphertext_modulus_log,
         fft_precision,
         complexity_model: &CpuComplexity::default(),

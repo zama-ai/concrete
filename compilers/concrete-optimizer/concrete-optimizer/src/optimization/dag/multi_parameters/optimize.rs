@@ -21,6 +21,8 @@ use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::precision_cut::PrecisionCut;
 use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
 
+use super::keys_spec::InstructionKeys;
+
 const DEBUG: bool = false;
 
 #[derive(Debug, Clone)]
@@ -114,8 +116,7 @@ fn optimize_many_independant_ks(
     debug_assert!(feasible.feasible(&operations.variance));
     debug_assert!(complexity.complexity(&operations.cost) <= cut_complexity);
     let mut operations = operations.clone();
-    let mut ks_bests = vec![];
-    ks_bests.reserve(macro_parameters.len());
+    let mut ks_bests = Vec::with_capacity(macro_parameters.len());
     for (ks_dst, macro_dst) in macro_parameters.iter().enumerate() {
         if !ks_used[ks_src][ks_dst] {
             continue;
@@ -1150,6 +1151,13 @@ pub fn optimize_to_circuit_solution(
     if let Some((dag, params)) = dag_and_params {
         let ext_keys = keys_spec::ExpandedCircuitKeys::of(&params);
         let instructions_keys = analyze::original_instrs_partition(&dag, &ext_keys);
+        let (ext_keys, instructions_keys) = if config.key_sharing {
+            let (ext_keys, key_sharing) = ext_keys.shared_keys();
+            let instructions_keys = InstructionKeys::shared_keys(&instructions_keys, &key_sharing);
+            (ext_keys, instructions_keys)
+        } else {
+            (ext_keys, instructions_keys)
+        };
         let circuit_keys = ext_keys.compacted();
         keys_spec::CircuitSolution {
             circuit_keys,

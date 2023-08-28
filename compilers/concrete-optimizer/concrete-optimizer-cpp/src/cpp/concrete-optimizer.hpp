@@ -1056,6 +1056,7 @@ struct DagSolution final {
 struct Options final {
   ::std::uint64_t security_level;
   double maximum_acceptable_error_probability;
+  bool key_sharing;
   double default_log_norm2_woppbs;
   bool use_gpu_constraints;
   ::concrete_optimizer::Encoding encoding;
