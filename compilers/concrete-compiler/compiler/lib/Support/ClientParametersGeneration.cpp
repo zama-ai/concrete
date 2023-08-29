@@ -68,6 +68,11 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
                         .getNormalized()
                         .value();
         }
+        if ((int)normKey.dimension < curve.minimalLweDimension) {
+          return llvm::make_error<llvm::StringError>(
+              "Minimal size for security is not attained",
+              llvm::inconvertibleErrorCode());
+        }
         size_t width = enc.width;
         bool isSigned = enc.isSigned;
         uint64_t size = 0;
@@ -102,6 +107,11 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
         auto glweType =
             tensorType.getElementType().cast<TFHE::GLWECipherTextType>();
         auto normKey = glweType.getKey().getNormalized().value();
+        if ((int)normKey.dimension < curve.minimalLweDimension) {
+          return llvm::make_error<llvm::StringError>(
+              "Minimal size for security is not attained",
+              llvm::inconvertibleErrorCode());
+        }
         size_t width = enc.chunkSize;
         assert(enc.width % enc.chunkWidth == 0);
         uint64_t size = enc.width / enc.chunkWidth;
@@ -139,6 +149,11 @@ generateGate(mlir::Type type, encodings::Encoding encoding,
           -> llvm::Expected<CircuitGate> {
         auto glweType = type.cast<TFHE::GLWECipherTextType>();
         auto normKey = glweType.getKey().getNormalized().value();
+        if ((int)normKey.dimension < curve.minimalLweDimension) {
+          return llvm::make_error<llvm::StringError>(
+              "Minimal size for security is not attained",
+              llvm::inconvertibleErrorCode());
+        }
         size_t width =
             mlir::concretelang::FHE::EncryptedBooleanType::getWidth();
         LweSecretKeyID secretKeyID = normKey.index;
