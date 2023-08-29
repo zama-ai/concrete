@@ -262,6 +262,7 @@ const LLVM_TARGET_SPECIFIC_STATIC_LIBS: &[&str] = &[
 const LLVM_TARGET_SPECIFIC_STATIC_LIBS: &[&str] = &["LLVMX86CodeGen", "LLVMX86Desc", "LLVMX86Info"];
 
 const CONCRETE_COMPILER_STATIC_LIBS: &[&str] = &[
+    "AnalysisUtils",
     "RTDialect",
     "RTDialectTransforms",
     "ConcretelangSupport",

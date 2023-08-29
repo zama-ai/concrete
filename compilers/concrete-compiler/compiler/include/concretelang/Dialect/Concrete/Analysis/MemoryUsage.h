@@ -7,59 +7,16 @@
 #define CONCRETELANG_DIALECT_CONCRETE_MEMORY_USAGE_H
 
 #include <mlir/IR/BuiltinOps.h>
-#include <mlir/IR/Operation.h>
 #include <mlir/Pass/Pass.h>
 
 #include <concretelang/Support/CompilationFeedback.h>
 
 namespace mlir {
 namespace concretelang {
-namespace Concrete {
 
-struct MemoryUsagePass
-    : public PassWrapper<MemoryUsagePass, OperationPass<ModuleOp>> {
+std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
+createMemoryUsagePass(CompilationFeedback &feedback);
 
-  CompilationFeedback &feedback;
-
-  MemoryUsagePass(CompilationFeedback &feedback) : feedback{feedback} {};
-
-  void runOnOperation() override {
-    WalkResult walk =
-        getOperation()->walk([&](Operation *op, const WalkStage &stage) {
-          if (stage.isBeforeAllRegions()) {
-            std::optional<StringError> error = this->enter(op);
-            if (error.has_value()) {
-              op->emitError() << error->mesg;
-              return WalkResult::interrupt();
-            }
-          }
-
-          if (stage.isAfterAllRegions()) {
-            std::optional<StringError> error = this->exit(op);
-            if (error.has_value()) {
-              op->emitError() << error->mesg;
-              return WalkResult::interrupt();
-            }
-          }
-
-          return WalkResult::advance();
-        });
-
-    if (walk.wasInterrupted()) {
-      signalPassFailure();
-    }
-  }
-
-  std::optional<StringError> enter(Operation *op);
-
-  std::optional<StringError> exit(Operation *op);
-
-  std::map<std::string, std::vector<mlir::Value>> visitedValuesPerLoc;
-
-  size_t iterations = 1;
-};
-
-} // namespace Concrete
 } // namespace concretelang
 } // namespace mlir
 
