@@ -29,6 +29,7 @@
 #include <mlir/Transforms/Passes.h>
 
 #include "concretelang/Conversion/TFHEKeyNormalization/Pass.h"
+#include "concretelang/Dialect/FHE/Transforms/DynamicTLU/DynamicTLU.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include <concretelang/Conversion/Passes.h>
@@ -188,6 +189,7 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
   addPotentiallyNestedPass(pm, createEncryptedMulToDoubleTLUPass(), enablePass);
   addPotentiallyNestedPass(pm, createFHEMaxTransformPass(), enablePass);
+  addPotentiallyNestedPass(pm, createDynamicTLUPass(), enablePass);
 
   return pm.run(module.getOperation());
 }
