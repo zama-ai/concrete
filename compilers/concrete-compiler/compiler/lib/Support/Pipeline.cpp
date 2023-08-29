@@ -332,7 +332,7 @@ extractTFHEStatistics(mlir::MLIRContext &context, mlir::ModuleOp &module,
   pipelinePrinting("TFHEStatistics", pm, context);
 
   addPotentiallyNestedPass(
-      pm, std::make_unique<TFHE::ExtractTFHEStatisticsPass>(feedback),
+      pm, mlir::concretelang::createStatisticExtractionPass(feedback),
       enablePass);
 
   return pm.run(module.getOperation());
@@ -358,7 +358,7 @@ computeMemoryUsage(mlir::MLIRContext &context, mlir::ModuleOp &module,
   pipelinePrinting("Computing Memory Usage", pm, context);
 
   addPotentiallyNestedPass(
-      pm, std::make_unique<Concrete::MemoryUsagePass>(feedback), enablePass);
+      pm, mlir::concretelang::createMemoryUsagePass(feedback), enablePass);
 
   return pm.run(module.getOperation());
 }
