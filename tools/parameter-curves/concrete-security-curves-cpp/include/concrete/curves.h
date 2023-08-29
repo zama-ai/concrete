@@ -43,7 +43,11 @@ struct SecurityCurve {
   /// @param logQ The log of q
   /// @return The secure encryption variances
   double getVariance(int glweDimension, int polynomialSize, int logQ) {
-    auto a = std::pow(2, (slope * glweDimension * polynomialSize + bias) * 2);
+    auto size = glweDimension * polynomialSize;
+    if (size < minimalLweDimension) {
+      return NAN;
+    }
+    auto a = std::pow(2, (slope * size + bias) * 2);
     auto b = std::pow(2, -2 * (logQ - 2));
     return a > b ? a : b;
   }
