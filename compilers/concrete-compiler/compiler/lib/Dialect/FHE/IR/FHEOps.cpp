@@ -7,6 +7,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Region.h"
 #include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
 
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
@@ -270,8 +271,11 @@ mlir::LogicalResult GenGateOp::verify() {
     emitErrorBadLutSize(*this, "lut", "ct", expectedSize, width);
     return mlir::failure();
   }
-  if (!lut.getElementType().isInteger(64)) {
-    this->emitOpError() << "should have the i64 constant";
+  auto elmType = lut.getElementType();
+  if (!elmType.isSignlessInteger() || elmType.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError() << "lut must have signless integer elements, with "
+                           "precision not bigger than 64.";
+    this->emitOpError() << "got : " << elmType.getIntOrFloatBitWidth();
     return mlir::failure();
   }
   return mlir::success();
