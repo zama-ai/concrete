@@ -105,6 +105,35 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, int security_level) {
              options.optimizerConfig.security = security_level;
            })
+      .def("set_v0_parameter",
+           [](CompilationOptions &options, size_t glweDimension,
+              size_t logPolynomialSize, size_t nSmall, size_t brLevel,
+              size_t brLogBase, size_t ksLevel, size_t ksLogBase) {
+             options.v0Parameter = {glweDimension, logPolynomialSize, nSmall,
+                                    brLevel,       brLogBase,         ksLevel,
+                                    ksLogBase,     std::nullopt};
+           })
+      .def("set_v0_parameter",
+           [](CompilationOptions &options, size_t glweDimension,
+              size_t logPolynomialSize, size_t nSmall, size_t brLevel,
+              size_t brLogBase, size_t ksLevel, size_t ksLogBase,
+              mlir::concretelang::CRTDecomposition crtDecomposition,
+              size_t cbsLevel, size_t cbsLogBase, size_t pksLevel,
+              size_t pksLogBase, size_t pksInputLweDimension,
+              size_t pksOutputPolynomialSize) {
+             mlir::concretelang::PackingKeySwitchParameter pksParam = {
+                 pksInputLweDimension, pksOutputPolynomialSize, pksLevel,
+                 pksLogBase};
+             mlir::concretelang::CitcuitBoostrapParameter crbParam = {
+                 cbsLevel, cbsLogBase};
+             mlir::concretelang::WopPBSParameter wopPBSParam = {pksParam,
+                                                                crbParam};
+             mlir::concretelang::LargeIntegerParameter largeIntegerParam = {
+                 crtDecomposition, wopPBSParam};
+             options.v0Parameter = {glweDimension, logPolynomialSize, nSmall,
+                                    brLevel,       brLogBase,         ksLevel,
+                                    ksLogBase,     largeIntegerParam};
+           })
       .def("simulation", [](CompilationOptions &options, bool simulate) {
         options.simulate = simulate;
       });
