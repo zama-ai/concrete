@@ -116,9 +116,15 @@ class Context:
         """
         Create an MLIR location from the node that is being converted.
         """
+        filename, lineno = self.converting.location.rsplit(":", maxsplit=1)
 
-        tag = "" if self.converting.tag == "" else f" @ {self.converting.tag}"
-        return MlirLocation.name(f"{self.converting.location}{tag}", context=self.context)
+        tag = "" if self.converting.tag == "" else f"@{self.converting.tag} | "
+        return MlirLocation.file(
+            f"{tag}{self.converting.location}",
+            line=int(lineno),
+            col=0,
+            context=self.context,
+        )
 
     def attribute(self, resulting_type: ConversionType, value: Any) -> MlirAttribute:
         """
