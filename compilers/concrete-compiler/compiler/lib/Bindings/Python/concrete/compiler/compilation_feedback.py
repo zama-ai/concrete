@@ -3,6 +3,7 @@
 
 """Compilation feedback."""
 
+import re
 from typing import Dict, Set
 
 # pylint: disable=no-name-in-module,import-error,too-many-instance-attributes
@@ -17,6 +18,10 @@ from mlir._mlir_libs._concretelang._compiler import (
 from .client_parameters import ClientParameters
 from .parameter import Parameter
 from .wrapper import WrapperCpp
+
+
+# matches (@tag, separator( | ), filename)
+REGEX_LOCATION = r"loc\(\"(@[\w\.]+)?( \| )?(.+)\""
 
 
 class CompilationFeedback(WrapperCpp):
@@ -130,8 +135,9 @@ class CompilationFeedback(WrapperCpp):
             if statistic.operation not in operations:
                 continue
 
-            file_and_maybe_tag = statistic.location.split("@")
-            tag = "" if len(file_and_maybe_tag) == 1 else file_and_maybe_tag[1].strip()
+            tag, _, _ = re.match(REGEX_LOCATION, statistic.location).groups()
+            # remove the @
+            tag = tag[1:] if tag else ""
 
             tag_components = tag.split(".")
             for i in range(1, len(tag_components) + 1):
@@ -176,8 +182,9 @@ class CompilationFeedback(WrapperCpp):
             if statistic.operation not in operations:
                 continue
 
-            file_and_maybe_tag = statistic.location.split("@")
-            tag = "" if len(file_and_maybe_tag) == 1 else file_and_maybe_tag[1].strip()
+            tag, _, _ = re.match(REGEX_LOCATION, statistic.location).groups()
+            # remove the @
+            tag = tag[1:] if tag else ""
 
             tag_components = tag.split(".")
             for i in range(1, len(tag_components) + 1):
