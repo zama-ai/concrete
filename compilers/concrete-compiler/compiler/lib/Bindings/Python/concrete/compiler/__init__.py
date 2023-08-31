@@ -17,7 +17,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 
 # pylint: enable=no-name-in-module,import-error
 
-from .compilation_options import CompilationOptions
+from .compilation_options import CompilationOptions, Encoding
 from .compilation_context import CompilationContext
 from .key_set_cache import KeySetCache
 from .client_parameters import ClientParameters
