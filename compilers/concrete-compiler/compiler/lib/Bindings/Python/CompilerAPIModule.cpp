@@ -64,6 +64,12 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .value("DAG_MULTI", optimizer::Strategy::DAG_MULTI)
       .export_values();
 
+  pybind11::enum_<concrete_optimizer::Encoding>(m, "Encoding")
+      .value("AUTO", concrete_optimizer::Encoding::Auto)
+      .value("CRT", concrete_optimizer::Encoding::Crt)
+      .value("NATIVE", concrete_optimizer::Encoding::Native)
+      .export_values();
+
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
       .def(pybind11::init(
           [](std::string funcname) { return CompilationOptions(funcname); }))
@@ -133,6 +139,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              options.v0Parameter = {glweDimension, logPolynomialSize, nSmall,
                                     brLevel,       brLogBase,         ksLevel,
                                     ksLogBase,     largeIntegerParam};
+           })
+      .def("force_encoding",
+           [](CompilationOptions &options,
+              concrete_optimizer::Encoding encoding) {
+             options.optimizerConfig.encoding = encoding;
            })
       .def("simulation", [](CompilationOptions &options, bool simulate) {
         options.simulate = simulate;

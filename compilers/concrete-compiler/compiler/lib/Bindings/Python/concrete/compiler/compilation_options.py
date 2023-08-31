@@ -9,6 +9,7 @@ from typing import List
 from mlir._mlir_libs._concretelang._compiler import (
     CompilationOptions as _CompilationOptions,
     OptimizerStrategy as _OptimizerStrategy,
+    Encoding,
 )
 from .wrapper import WrapperCpp
 
@@ -349,6 +350,18 @@ class CompilationOptions(WrapperCpp):
 
     # pylint: enable=too-many-arguments,too-many-branches
 
+    def force_encoding(self, encoding: Encoding):
+        """Force the compiler to use a specific encoding.
+
+        Args:
+            encoding (Encoding): the encoding to force the compiler to use
+
+        Raises:
+            TypeError: if encoding is not of type Encoding
+        """
+        if not isinstance(encoding, Encoding):
+            raise TypeError("encoding need to be of type Encoding")
+        self.cpp().force_encoding(encoding)
 
     def simulation(self, simulate: bool):
         """Enable or disable simulation.
