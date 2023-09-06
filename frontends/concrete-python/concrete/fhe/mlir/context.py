@@ -121,11 +121,12 @@ class Context:
         """
         Create an MLIR location from the node that is being converted.
         """
-        filename, lineno = self.converting.location.rsplit(":", maxsplit=1)
+
+        path, lineno = self.converting.location.rsplit(":", maxsplit=1)
 
         tag = "" if self.converting.tag == "" else f"@{self.converting.tag} | "
         return MlirLocation.file(
-            f"{tag}{self.converting.location}",
+            f"{tag}{path}",
             line=int(lineno),
             col=0,
             context=self.context,
