@@ -12,7 +12,7 @@
 
 #define GEN_PASS_CLASSES
 
-#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU.h.inc>
+#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU/EncryptedMulToDoubleTLU.h.inc>
 
 namespace mlir {
 namespace concretelang {

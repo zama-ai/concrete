@@ -1,7 +1,4 @@
-set(LLVM_TARGET_DEFINITIONS EncryptedMulToDoubleTLU.td)
-mlir_tablegen(EncryptedMulToDoubleTLU.h.inc -gen-pass-decls -name Transforms)
-add_public_tablegen_target(EncryptedMulToDoubleTLUPassIncGen)
-add_dependencies(mlir-headers EncryptedMulToDoubleTLUPassIncGen)
+add_subdirectory(EncryptedMulToDoubleTLU)
 add_subdirectory(BigInt)
 add_subdirectory(Boolean)
 add_subdirectory(Max)

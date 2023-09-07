@@ -38,7 +38,7 @@
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
 #include <concretelang/Dialect/FHE/Transforms/BigInt/BigInt.h>
 #include <concretelang/Dialect/FHE/Transforms/Boolean/Boolean.h>
-#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU.h>
+#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU/EncryptedMulToDoubleTLU.h>
 #include <concretelang/Dialect/FHE/Transforms/Max/Max.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
