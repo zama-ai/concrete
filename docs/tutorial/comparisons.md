@@ -221,7 +221,7 @@ result = comparison_lut[x_cast_to_uint7 - y_cast_to_uint7]
 
 #### Cons
 
-- If you are not doing anything else with the operands, or doing less costly operations compared to comparison, it will introduce up to two unnecessary table lookups and slow down execution compared to `fhe.ComparisonStrategy.THREE_TLU_CASTED`.
+- If you are not doing anything else with the operands, or doing less costly operations compared to comparison, it will introduce up to two unnecessary table lookups and slow down execution compared to `fhe.ComparisonStrategy.ONE_TLU_PROMOTED`.
 
 #### Example
 
@@ -427,7 +427,7 @@ module {
 This implementation uses the fact that the subtraction trick is not optimal in terms of the required intermediate bit width. Comparison result does not change if we `compare(3, 40)` or `compare(3, 4)`, so why not clipping the bigger operand and then doing the subtraction to use less bits!
 
 There are two major problems with this implementation as well though:
-1) it can ot be used when bit-widths are the same (for some cases even when they differ by only one bit)
+1) it can not be used when bit-widths are the same (for some cases even when they differ by only one bit)
 2) subtraction still requires the same bit-width across operands.
 
 What this means is if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint4` in some way to do the subtraction and proceed with the TLU in 7-bits. There are 2 ways to achieve this behavior.
