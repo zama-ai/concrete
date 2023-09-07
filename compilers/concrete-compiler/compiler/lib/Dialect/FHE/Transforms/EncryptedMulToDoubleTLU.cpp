@@ -5,7 +5,7 @@
 
 #include <concretelang/Dialect/FHE/Analysis/utils.h>
 #include <concretelang/Dialect/FHE/IR/FHEOps.h>
-#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU.h>
+#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU/EncryptedMulToDoubleTLU.h>
 #include <concretelang/Support/Constants.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
