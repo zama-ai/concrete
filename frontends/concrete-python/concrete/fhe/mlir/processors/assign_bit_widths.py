@@ -200,6 +200,9 @@ class AdditionalConstraints:
         x = preds[0]
         y = preds[1]
 
+        assert x.output.is_encrypted
+        assert y.output.is_encrypted
+
         strategies = self.comparison_strategy_preference
         fallback = [
             ComparisonStrategy.THREE_TLU_BIGGER_CLIPPED_SMALLER_CASTED,
@@ -287,7 +290,9 @@ class AdditionalConstraints:
     }
 
     equal = {
-        comparison,
+        all_inputs_are_encrypted: {
+            comparison,
+        },
     }
 
     expand_dims = {
@@ -295,11 +300,15 @@ class AdditionalConstraints:
     }
 
     greater = {
-        comparison,
+        all_inputs_are_encrypted: {
+            comparison,
+        },
     }
 
     greater_equal = {
-        comparison,
+        all_inputs_are_encrypted: {
+            comparison,
+        },
     }
 
     index_static = {
@@ -313,11 +322,15 @@ class AdditionalConstraints:
     }
 
     less = {
-        comparison,
+        all_inputs_are_encrypted: {
+            comparison,
+        },
     }
 
     less_equal = {
-        comparison,
+        all_inputs_are_encrypted: {
+            comparison,
+        },
     }
 
     matmul = {
@@ -360,7 +373,9 @@ class AdditionalConstraints:
     }
 
     not_equal = {
-        comparison,
+        all_inputs_are_encrypted: {
+            comparison,
+        },
     }
 
     reshape = {
