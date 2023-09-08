@@ -191,6 +191,8 @@ class Converter:
             AssignBitWidths(
                 single_precision=configuration.single_precision,
                 comparison_strategy_preference=configuration.comparison_strategy_preference,
+                bitwise_strategy_preference=configuration.bitwise_strategy_preference,
+                shifts_with_promotion=configuration.shifts_with_promotion,
             ),
             ProcessRounding(),
         ]

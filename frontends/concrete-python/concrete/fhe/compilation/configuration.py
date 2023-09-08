@@ -225,7 +225,7 @@ class ComparisonStrategy(str, Enum):
             x_minus_y_range = [x_minus_y_min, x_minus_y_max]
             x_minus_y_dtype = Integer.that_can_represent(x_minus_y_range)
 
-            if x_minus_y_dtype.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            if x_minus_y_dtype.bit_width > MAXIMUM_TLU_BIT_WIDTH:  # pragma: no cover
                 return False
 
         if self in {
@@ -418,6 +418,204 @@ class ComparisonStrategy(str, Enum):
         return required_x_bit_width, required_y_bit_width
 
 
+class BitwiseStrategy(str, Enum):
+    """
+    BitwiseStrategy, to specify implementation preference for bitwise operations.
+    """
+
+    ONE_TLU_PROMOTED = "one-tlu-promoted"
+    # ---------------------------------
+    # conditions:
+    # - (x.bit_width + y.bit_width) <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits -> 11-bits
+    # - y :: 8-bits -> 11-bits
+    # - x.bit_width == y.bit_width
+    #
+    # execution:
+    # - tlu(pack(x, y)) :: 11-bits -> 8-bits
+
+    THREE_TLU_CASTED = "three-tlu-casted"
+    # ---------------------------------
+    # conditions:
+    # - (x.bit_width + y.bit_width) <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - x = tlu(x) :: 3-bits -> 11-bits
+    # - y = tlu(y) :: 8-bits -> 11-bits
+    # - tlu(pack(x, y)) :: 11-bits -> 8-bits
+
+    TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED = "two-tlu-bigger-promoted-smaller-casted"
+    # -----------------------------------------------------------------------------
+    # conditions:
+    # - (x.bit_width + y.bit_width) <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits -> 11-bits
+    #
+    # execution:
+    # - x = tlu(x) :: 3-bits -> 11-bits
+    # - tlu(pack(x, y)) :: 11-bits -> 8-bits
+
+    TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED = "two-tlu-bigger-casted-smaller-promoted"
+    # -----------------------------------------------------------------------------
+    # conditions:
+    # - (x.bit_width + y.bit_width) <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits -> 11-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - y = tlu(y) :: 8-bits -> 11-bits
+    # - tlu(pack(x, y)) :: 11-bits -> 8-bits
+
+    CHUNKED = "chunked"
+    # ---------------
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits
+    #
+    # execution:
+    # - at least 4 TLUs
+    # - at most 9 TLUs
+    # - it's complicated...
+
+    @classmethod
+    def parse(cls, string: str) -> "BitwiseStrategy":
+        """
+        Convert a string to a BitwiseStrategy.
+        """
+
+        if isinstance(string, cls):
+            return string
+
+        if not isinstance(string, str):
+            message = f"{string} cannot be parsed to a {cls.__name__}"
+            raise TypeError(message)
+
+        string = string.lower()
+        for value in BitwiseStrategy:
+            if string == value.value:
+                return value  # pragma: no cover
+
+        message = (
+            f"'{string}' is not a valid '{friendly_type_format(cls)}' ("
+            f"{', '.join(v.value for v in BitwiseStrategy)})"
+        )
+        raise ValueError(message)
+
+    def can_be_used(self, x: ValueDescription, y: ValueDescription) -> bool:
+        """
+        Get if the strategy can be used for the bitwise operation.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the bitwise operation
+
+            y (ValueDescription):
+                description of the rhs of the bitwise operation
+
+        Returns:
+            bool:
+                whether the strategy can be used for the bitwise operation
+        """
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        if self in {
+            BitwiseStrategy.ONE_TLU_PROMOTED,
+            BitwiseStrategy.THREE_TLU_CASTED,
+            BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
+            BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
+        }:
+            if x.dtype.bit_width + y.dtype.bit_width > MAXIMUM_TLU_BIT_WIDTH:  # pragma: no cover
+                return False
+
+        return True
+
+    def promotions(self, x: ValueDescription, y: ValueDescription) -> Tuple[int, int]:
+        """
+        Get bit-width promotions for the strategy.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the bitwise operation
+
+            y (ValueDescription):
+                description of the rhs of the bitwise operation
+
+        Returns:
+            Tuple[int, int]:
+                required minimum bit-width for x and y to use the strategy
+        """
+
+        def _promotions(
+            smaller_dtype: Integer,
+            bigger_dtype: Integer,
+        ) -> Tuple[int, int]:
+            smaller_bit_width = smaller_dtype.bit_width
+            bigger_bit_width = bigger_dtype.bit_width
+            packing_bit_width = smaller_bit_width + bigger_bit_width
+
+            if self == BitwiseStrategy.ONE_TLU_PROMOTED:
+                assert packing_bit_width <= MAXIMUM_TLU_BIT_WIDTH
+                return (
+                    packing_bit_width,
+                    packing_bit_width,
+                )
+
+            if self == BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED:
+                assert packing_bit_width <= MAXIMUM_TLU_BIT_WIDTH
+                return (
+                    (
+                        smaller_bit_width
+                        if smaller_bit_width != bigger_bit_width
+                        else packing_bit_width
+                    ),
+                    packing_bit_width,
+                )
+
+            if self == BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED:
+                assert packing_bit_width <= MAXIMUM_TLU_BIT_WIDTH
+                return (
+                    packing_bit_width,
+                    (
+                        bigger_bit_width
+                        if bigger_bit_width != smaller_bit_width
+                        else packing_bit_width
+                    ),
+                )
+
+            return (
+                smaller_bit_width,
+                bigger_bit_width,
+            )
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        if x.dtype.bit_width <= y.dtype.bit_width:
+            required_x_bit_width, required_y_bit_width = _promotions(
+                smaller_dtype=x.dtype,
+                bigger_dtype=y.dtype,
+            )
+        else:
+            required_y_bit_width, required_x_bit_width = _promotions(
+                smaller_dtype=y.dtype,
+                bigger_dtype=x.dtype,
+            )
+
+        return required_x_bit_width, required_y_bit_width
+
+
 class Configuration:
     """
     Configuration class, to allow the compilation process to be customized.
@@ -449,6 +647,8 @@ class Configuration:
     compiler_debug_mode: bool
     compiler_verbose_mode: bool
     comparison_strategy_preference: List[ComparisonStrategy]
+    bitwise_strategy_preference: List[BitwiseStrategy]
+    shifts_with_promotion: bool
 
     def __init__(
         self,
@@ -483,6 +683,10 @@ class Configuration:
         comparison_strategy_preference: Optional[
             Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]
         ] = None,
+        bitwise_strategy_preference: Optional[
+            Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]
+        ] = None,
+        shifts_with_promotion: bool = True,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -524,6 +728,16 @@ class Configuration:
                 else [ComparisonStrategy.parse(comparison_strategy_preference)]
             )
         )
+        self.bitwise_strategy_preference = (
+            []
+            if bitwise_strategy_preference is None
+            else (
+                [BitwiseStrategy.parse(strategy) for strategy in bitwise_strategy_preference]
+                if isinstance(bitwise_strategy_preference, list)
+                else [BitwiseStrategy.parse(bitwise_strategy_preference)]
+            )
+        )
+        self.shifts_with_promotion = shifts_with_promotion
 
         self._validate()
 
@@ -564,6 +778,10 @@ class Configuration:
         comparison_strategy_preference: Union[
             Keep, Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]]
         ] = KEEP,
+        bitwise_strategy_preference: Union[
+            Keep, Optional[Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]]
+        ] = KEEP,
+        shifts_with_promotion: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
@@ -588,6 +806,9 @@ class Configuration:
         for name, hint in get_type_hints(Configuration.__init__).items():
             if name == "comparison_strategy_preference":
                 # checked in the constructor within parse method of ComparisonStrategy
+                continue
+            if name == "bitwise_strategy_preference":
+                # checked in the constructor within parse method of BitwiseStrategy
                 continue
 
             original_hint = hint

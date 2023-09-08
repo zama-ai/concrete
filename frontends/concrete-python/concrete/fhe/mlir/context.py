@@ -24,7 +24,7 @@ from mlir.ir import OpResult as MlirOperation
 from mlir.ir import RankedTensorType
 from mlir.ir import Type as MlirType
 
-from ..compilation.configuration import ComparisonStrategy
+from ..compilation.configuration import BitwiseStrategy, ComparisonStrategy
 from ..dtypes import Integer
 from ..representation import Graph, Node
 from ..values import ValueDescription
@@ -430,7 +430,7 @@ class Context:
         intermediate_type = self.tensor(intermediate_scalar_type, resulting_type.shape)
         x_minus_y = self.sub(intermediate_type, x, y)
 
-        if not x_minus_y.is_signed:
+        if not x_minus_y_dtype.is_signed:
             x_minus_y = self.to_unsigned(x_minus_y)
 
         return self.compare_with_subtraction(resulting_type, x_minus_y, accept)
@@ -1211,7 +1211,8 @@ class Context:
                 )
             self.error(highlights)
 
-        if x.bit_width > MAXIMUM_TLU_BIT_WIDTH or y.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+        maximum_input_bit_width = max(x.bit_width, y.bit_width)
+        if maximum_input_bit_width > MAXIMUM_TLU_BIT_WIDTH:
             highlights = {
                 self.converting: [
                     f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit bitwise operations are supported"
@@ -1224,7 +1225,7 @@ class Context:
                         f"this {operand.bit_width}-bit value "
                         f"is used as an operand to a bitwise operation"
                     ]
-                    if operand.bit_width != operand.original_bit_width:
+                    if operand.bit_width != operand.original_bit_width:  # pragma: no cover
                         highlights[operand.origin].append(  # type: ignore
                             "("
                             f"note that it's assigned {operand.bit_width}-bits "
@@ -1234,10 +1235,23 @@ class Context:
 
             self.error(highlights)
 
-        assert self.is_bit_width_compatible(resulting_type, x, y)
         assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
 
-        if x.original_bit_width + y.original_bit_width <= resulting_type.bit_width:
+        strategy_preference = self.converting.properties["strategy"]
+        if x.original_bit_width + y.original_bit_width <= maximum_input_bit_width or (
+            strategy_preference == BitwiseStrategy.THREE_TLU_CASTED
+        ):
+            intermediate_bit_width = max(
+                x.original_bit_width + y.original_bit_width,
+                maximum_input_bit_width,
+            )
+            intermediate_scalar_type = self.eint(intermediate_bit_width)
+
+            if x.bit_width != intermediate_bit_width:
+                x = self.cast(self.tensor(intermediate_scalar_type, x.shape), x)
+            if y.bit_width != intermediate_bit_width:
+                y = self.cast(self.tensor(intermediate_scalar_type, y.shape), y)
+
             shifter_type = self.typeof(
                 ValueDescription(
                     dtype=Integer(is_signed=False, bit_width=(x.bit_width + 1)),
@@ -1248,7 +1262,11 @@ class Context:
             shifter = self.constant(shifter_type, 2**y.original_bit_width)
 
             shifted_x = self.mul(x.type, x, shifter)
-            packed_x_and_y = self.add(resulting_type, shifted_x, y)
+            packed_x_and_y = self.add(
+                self.tensor(intermediate_scalar_type, resulting_type.shape),
+                shifted_x,
+                y,
+            )
 
             return self.tlu(
                 resulting_type,
@@ -1260,29 +1278,61 @@ class Context:
                 ],
             )
 
-        bit_width = resulting_type.bit_width
-        original_bit_width = max(x.original_bit_width, y.original_bit_width)
-
-        chunk_size = max(int(np.floor(bit_width / 2)), 1)
-        mask = (2**chunk_size) - 1
-
         chunks = []
-        for offset in range(0, original_bit_width, chunk_size):
-            x_lut = [((x >> offset) & mask) << chunk_size for x in range(2**bit_width)]
-            y_lut = [(y >> offset) & mask for y in range(2**bit_width)]
+        for start, end in self.best_chunk_ranges(x, 0, y, 0):
+            size = end - start
+            mask = (2**size) - 1
 
-            x_chunk = self.tlu(x.type, x, x_lut)
-            y_chunk = self.tlu(y.type, y, y_lut)
+            intermediate_bit_width = size * 2
+            intermediate_scalar_type = self.eint(intermediate_bit_width)
 
-            packed_x_and_y_chunks = self.add(resulting_type, x_chunk, y_chunk)
+            x_chunk_lut = [((x >> start) & mask) << size for x in range(2**x.original_bit_width)]
+            y_chunk_lut = [(y >> start) & mask for y in range(2**y.original_bit_width)]
+
+            x_chunk_is_constant = all(x == x_chunk_lut[0] for x in x_chunk_lut)
+            y_chunk_is_constant = all(y == y_chunk_lut[0] for y in y_chunk_lut)
+
+            if x_chunk_is_constant and y_chunk_is_constant:  # pragma: no cover
+                chunks.append(
+                    self.constant(
+                        self.i(resulting_type.bit_width + 1),
+                        operation(x_chunk_lut[0] >> size, y_chunk_lut[0]) << start,
+                    )
+                )
+                continue
+
+            elif x_chunk_is_constant:
+                chunks.append(
+                    self.tlu(
+                        self.tensor(self.eint(resulting_type.bit_width), shape=y.shape),
+                        y,
+                        [operation(x_chunk_lut[0] >> size, y) << start for y in y_chunk_lut],
+                    ),
+                )
+                continue
+
+            elif y_chunk_is_constant:
+                chunks.append(
+                    self.tlu(
+                        self.tensor(self.eint(resulting_type.bit_width), shape=x.shape),
+                        x,
+                        [operation(x >> size, y_chunk_lut[0]) << start for x in x_chunk_lut],
+                    ),
+                )
+                continue
+
+            x_chunk = self.tlu(self.tensor(intermediate_scalar_type, x.shape), x, x_chunk_lut)
+            y_chunk = self.tlu(self.tensor(intermediate_scalar_type, y.shape), y, y_chunk_lut)
+
+            packed_x_and_y_chunks = self.add(
+                self.tensor(intermediate_scalar_type, resulting_type.shape),
+                x_chunk,
+                y_chunk,
+            )
             result_chunk = self.tlu(
                 resulting_type,
                 packed_x_and_y_chunks,
-                [
-                    operation(x, y) << offset
-                    for x in range(2**chunk_size)
-                    for y in range(2**chunk_size)
-                ],
+                [operation(x, y) << start for x in range(2**size) for y in range(2**size)],
             )
 
             chunks.append(result_chunk)
@@ -1898,7 +1948,11 @@ class Context:
         dialect = fhelinalg if use_linalg else fhe
         operation = dialect.MulEintIntOp if y.is_clear else dialect.MulEintOp
 
-        if (x.is_signed or y.is_signed) and resulting_type.is_unsigned:
+        if (
+            (x.is_signed or y.is_signed)
+            and resulting_type.is_unsigned
+            and (x.is_encrypted and y.is_encrypted)
+        ):
             x = self.to_signed(x)
             y = self.to_signed(y)
 
@@ -2179,37 +2233,8 @@ class Context:
         orientation: str,
         original_resulting_bit_width: int,
     ) -> Conversion:
-        if x.bit_width > MAXIMUM_TLU_BIT_WIDTH or 2**b.original_bit_width > MAXIMUM_TLU_BIT_WIDTH:
-            highlights: Dict[Node, Union[str, List[str]]] = {
-                self.converting: [
-                    f"but only up to {round(np.log2(MAXIMUM_TLU_BIT_WIDTH))}-bit shift operations "
-                    f"on up to {MAXIMUM_TLU_BIT_WIDTH}-bit operands are supported"
-                ],
-            }
-
-            if x.bit_width > MAXIMUM_TLU_BIT_WIDTH:
-                highlights[x.origin] = [
-                    f"this {x.bit_width}-bit value " f"is used as the operand of a shift operation"
-                ]
-                if x.bit_width != x.original_bit_width:
-                    assert isinstance(highlights[x.origin], list)
-                    highlights[x.origin].append(  # type: ignore
-                        "("
-                        f"note that it's assigned {x.bit_width}-bits "
-                        f"during compilation because of its relation with other operations"
-                        ")"
-                    )
-
-            if 2**b.original_bit_width > MAXIMUM_TLU_BIT_WIDTH:
-                highlights[b.origin] = [
-                    f"this {b.original_bit_width}-bit value "
-                    f"is used as the shift amount of a shift operation"
-                ]
-
-            self.error(highlights)
-
         if x.is_signed or b.is_signed:
-            highlights = {
+            highlights: Dict[Node, Union[str, List[str]]] = {
                 self.converting: "but only unsigned-unsigned bitwise shifts are supported",
             }
             if x.is_signed:
@@ -2220,15 +2245,69 @@ class Context:
                 )
             self.error(highlights)
 
-        assert self.is_bit_width_compatible(resulting_type, x, b)
+        maximum_input_bit_width = max(x.original_bit_width, b.original_bit_width)
+        if (
+            maximum_input_bit_width > MAXIMUM_TLU_BIT_WIDTH
+            or original_resulting_bit_width > MAXIMUM_TLU_BIT_WIDTH
+        ):
+            highlights = {
+                self.converting: [
+                    f"this shift operation resulted in {resulting_type.bit_width}-bits "
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit shift operations are supported"
+                ],
+            }
+            if resulting_type.bit_width != original_resulting_bit_width:  # pragma: no cover
+                assert isinstance(highlights[self.converting], list)
+                highlights[self.converting].append(  # type: ignore
+                    "("
+                    f"note that it's assigned {resulting_type.bit_width}-bits "
+                    f"during compilation because of its relation with other operations"
+                    ")"
+                )
+
+            highlights[x.origin] = [
+                f"this {x.bit_width}-bit value is used as the operand of a shift operation"
+            ]
+            if x.bit_width != x.original_bit_width:  # pragma: no cover
+                assert isinstance(highlights[x.origin], list)
+                highlights[x.origin].append(  # type: ignore
+                    "("
+                    f"note that it's assigned {x.bit_width}-bits "
+                    f"during compilation because of its relation with other operations"
+                    ")"
+                )
+
+            highlights[b.origin] = [
+                f"this {b.bit_width}-bit value is used as the shift amount of a shift operation"
+            ]
+            if b.bit_width != b.original_bit_width:  # pragma: no cover
+                assert isinstance(highlights[b.origin], list)
+                highlights[b.origin].append(  # type: ignore
+                    "("
+                    f"note that it's assigned {b.bit_width}-bits "
+                    f"during compilation because of its relation with other operations"
+                    ")"
+                )
+
+            self.error(highlights)
+
         assert resulting_type.is_encrypted and x.is_encrypted and b.is_encrypted
 
-        bit_width = resulting_type.bit_width
+        strategy_preference = self.converting.properties["strategy"]
+        if x.original_bit_width + b.original_bit_width <= maximum_input_bit_width or (
+            strategy_preference == BitwiseStrategy.THREE_TLU_CASTED
+        ):
+            intermediate_bit_width = max(
+                x.original_bit_width + b.original_bit_width,
+                maximum_input_bit_width,
+            )
+            intermediate_scalar_type = self.eint(intermediate_bit_width)
 
-        if x.shape != resulting_type.shape:
-            x = self.add(resulting_type, x, self.zeros(resulting_type))
+            if x.bit_width != intermediate_bit_width:
+                x = self.cast(self.tensor(intermediate_scalar_type, x.shape), x)
+            if b.bit_width != intermediate_bit_width:
+                b = self.cast(self.tensor(intermediate_scalar_type, b.shape), b)
 
-        if x.original_bit_width + b.original_bit_width <= bit_width:
             shift_multiplier_type = self.typeof(
                 ValueDescription(
                     dtype=Integer(is_signed=False, bit_width=(x.bit_width + 1)),
@@ -2238,8 +2317,16 @@ class Context:
             )
             shift_multiplier = self.constant(shift_multiplier_type, 2**b.original_bit_width)
 
-            shifted_x = self.mul(resulting_type, x, shift_multiplier)
-            packed_x_and_b = self.add(resulting_type, shifted_x, b)
+            shifted_x = self.mul(
+                self.tensor(intermediate_scalar_type, x.shape),
+                x,
+                shift_multiplier,
+            )
+            packed_x_and_b = self.add(
+                self.tensor(intermediate_scalar_type, resulting_type.shape),
+                shifted_x,
+                b,
+            )
 
             return self.tlu(
                 resulting_type,
@@ -2271,40 +2358,42 @@ class Context:
         # The same trick can be used for right shift but with:
         # y = x - (b & 0b1000 > 0) * (x - (x >> 8))
 
-        original_bit_width = original_resulting_bit_width
-        chunk_size = min(original_bit_width, bit_width - 1)
-
         for i in reversed(range(b.original_bit_width)):
             to_check = 2**i
 
-            should_shift = self.tlu(
-                b.type,
-                b,
-                [int((b & to_check) > 0) for b in range(2**bit_width)],
+            shifter = (
+                [(x << to_check) - x for x in range(2**x.original_bit_width)]
+                if orientation == "left"
+                else [x - (x >> to_check) for x in range(2**x.original_bit_width)]
             )
-            shifted_x = self.tlu(
-                resulting_type,
-                x,
-                (
-                    [(x << to_check) - x for x in range(2**bit_width)]
-                    if orientation == "left"
-                    else [x - (x >> to_check) for x in range(2**bit_width)]
-                ),
+            shifter_dtype = Integer.that_can_represent(shifter)
+
+            assert not shifter_dtype.is_signed
+            chunk_size = int(np.ceil(shifter_dtype.bit_width / 2))
+            packing_scalar_type = self.eint(chunk_size + 1)
+
+            should_shift = self.tlu(
+                self.tensor(packing_scalar_type, b.shape),
+                b,
+                [int((b & to_check) > 0) for b in range(2**b.original_bit_width)],
             )
 
             chunks = []
-            for offset in range(0, original_bit_width, chunk_size):
-                bits_to_process = min(chunk_size, original_bit_width - offset)
-                right_shift_by = original_bit_width - offset - bits_to_process
+            for offset in range(0, original_resulting_bit_width, chunk_size):
+                bits_to_process = min(chunk_size, original_resulting_bit_width - offset)
+                right_shift_by = original_resulting_bit_width - offset - bits_to_process
                 mask = (2**bits_to_process) - 1
 
                 chunk_x = self.tlu(
-                    resulting_type,
-                    shifted_x,
-                    [(((x >> right_shift_by) & mask) << 1) for x in range(2**bit_width)],
+                    self.tensor(packing_scalar_type, x.shape),
+                    x,
+                    [
+                        (((shifter[x] >> right_shift_by) & mask) << 1)
+                        for x in range(2**x.original_bit_width)
+                    ],
                 )
                 packed_chunk_x_and_should_shift = self.add(
-                    resulting_type,
+                    self.tensor(packing_scalar_type, resulting_type.shape),
                     chunk_x,
                     should_shift,
                 )
@@ -2324,11 +2413,16 @@ class Context:
             for chunk in chunks[1:]:
                 difference = self.add(resulting_type, difference, chunk)
 
+            if x.bit_width != resulting_type.bit_width:
+                x.set_original_bit_width(original_resulting_bit_width)
+                x = self.cast(self.tensor(self.eint(resulting_type.bit_width), x.shape), x)
+
             x = (
                 self.add(resulting_type, difference, x)
                 if orientation == "left"
                 else self.sub(resulting_type, x, difference)
             )
+            x.set_original_bit_width(original_resulting_bit_width)
 
         return x
 
@@ -2442,6 +2536,15 @@ class Context:
         assert on.bit_width <= MAXIMUM_TLU_BIT_WIDTH
 
         table = list(table)
+
+        if all(value == table[0] for value in table[1:]):
+            value = table[0]
+            result = self.zeros(resulting_type)
+            if value != 0:
+                constant = self.constant(self.i(resulting_type.bit_width + 1), value)
+                result = self.add(resulting_type, result, constant)
+            return result
+
         table += [0] * ((2**on.bit_width) - len(table))
 
         dialect = fhe if on.is_scalar else fhelinalg
