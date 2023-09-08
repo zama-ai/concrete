@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import z3
 
-from ...compilation.configuration import ComparisonStrategy
+from ...compilation.configuration import BitwiseStrategy, ComparisonStrategy
 from ...dtypes import Integer
 from ...representation import Graph, Node, Operation
 from . import GraphProcessor
@@ -27,14 +27,20 @@ class AssignBitWidths(GraphProcessor):
 
     single_precision: bool
     comparison_strategy_preference: List[ComparisonStrategy]
+    bitwise_strategy_preference: List[BitwiseStrategy]
+    shifts_with_promotion: bool
 
     def __init__(
         self,
         single_precision: bool,
         comparison_strategy_preference: List[ComparisonStrategy],
+        bitwise_strategy_preference: List[BitwiseStrategy],
+        shifts_with_promotion: bool,
     ):
         self.single_precision = single_precision
         self.comparison_strategy_preference = comparison_strategy_preference
+        self.bitwise_strategy_preference = bitwise_strategy_preference
+        self.shifts_with_promotion = shifts_with_promotion
 
     def apply(self, graph: Graph):
         optimizer = z3.Optimize()
@@ -47,6 +53,8 @@ class AssignBitWidths(GraphProcessor):
             graph,
             bit_widths,
             self.comparison_strategy_preference,
+            self.bitwise_strategy_preference,
+            self.shifts_with_promotion,
         )
 
         nodes = graph.query_nodes(ordered=True)
@@ -96,6 +104,8 @@ class AdditionalConstraints:
     bit_widths: Dict[Node, z3.Int]
 
     comparison_strategy_preference: List[ComparisonStrategy]
+    bitwise_strategy_preference: List[BitwiseStrategy]
+    shifts_with_promotion: bool
 
     node: Node
     bit_width: z3.Int
@@ -108,12 +118,16 @@ class AdditionalConstraints:
         graph: Graph,
         bit_widths: Dict[Node, z3.Int],
         comparison_strategy_preference: List[ComparisonStrategy],
+        bitwise_strategy_preference: List[BitwiseStrategy],
+        shifts_with_promotion: bool,
     ):
         self.optimizer = optimizer
         self.graph = graph
         self.bit_widths = bit_widths
 
         self.comparison_strategy_preference = comparison_strategy_preference
+        self.bitwise_strategy_preference = bitwise_strategy_preference
+        self.shifts_with_promotion = shifts_with_promotion
 
     def generate_for(self, node: Node, bit_width: z3.Int):
         """
@@ -221,6 +235,39 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
+    def bitwise(self, node: Node, preds: List[Node]):
+        assert len(preds) == 2
+
+        x = preds[0]
+        y = preds[1]
+
+        assert x.output.is_encrypted
+        assert y.output.is_encrypted
+
+        strategies = self.bitwise_strategy_preference
+        fallback = [
+            BitwiseStrategy.CHUNKED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(x.output, y.output):
+                new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
+
+                if strategy == BitwiseStrategy.ONE_TLU_PROMOTED:
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
+
+                node.properties["strategy"] = strategy
+                break
+
+        if (
+            node.properties.get("name", None) in {"left_shift", "right_shift"}
+            and node.properties["strategy"] == BitwiseStrategy.CHUNKED
+            and self.shifts_with_promotion
+        ):
+            self.optimizer.add(self.bit_widths[x] == self.bit_widths[node])
+
     # ==========
     # Operations
     # ==========
@@ -239,19 +286,19 @@ class AdditionalConstraints:
 
     bitwise_and = {
         all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
+            bitwise,
         },
     }
 
     bitwise_or = {
         all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
+            bitwise,
         },
     }
 
     bitwise_xor = {
         all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
+            bitwise,
         },
     }
 
@@ -317,7 +364,7 @@ class AdditionalConstraints:
 
     left_shift = {
         all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
+            bitwise,
         },
     }
 
@@ -384,7 +431,7 @@ class AdditionalConstraints:
 
     right_shift = {
         all_inputs_are_encrypted: {
-            inputs_and_output_share_precision,
+            bitwise,
         },
     }
 

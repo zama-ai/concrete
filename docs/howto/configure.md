@@ -104,3 +104,7 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Enable/disable verbose mode of the compiler. This mainly show logs from the compiler, and is less verbose than the debug mode.
 * **comparison_strategy_preference**: Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]] = None
   * Specify preference for comparison strategies, can be a single strategy or an ordered list of strategies. See [Comparisons](../tutorial/comparisons.md) to learn more.
+* **bitwise_strategy_preference**: Optional[Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]] = None
+  * Specify preference for bitwise strategies, can be a single strategy or an ordered list of strategies. See [Bitwise](../tutorial/bitwise.md) to learn more.
+* **shifts_with_promotion**: bool = True,
+  * Enable promotions in encrypted shifts instead of casting in runtime. See [Bitwise#Shifts](../tutorial/bitwise.md#Shifts) to learn more.

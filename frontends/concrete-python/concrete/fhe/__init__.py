@@ -9,6 +9,7 @@ from concrete.compiler import EvaluationKeys, Parameter, PublicArguments, Public
 from .compilation import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
+    BitwiseStrategy,
     Circuit,
     Client,
     ClientSpecs,
