@@ -527,8 +527,10 @@ lowerLLVMDialectToLLVMIR(mlir::MLIRContext &context,
 
 mlir::LogicalResult optimizeLLVMModule(llvm::LLVMContext &llvmContext,
                                        llvm::Module &module) {
+  // -O3 is done LLVMEmitFile.cpp
+  auto optLevel = llvm::CodeGenOpt::None;
   std::function<llvm::Error(llvm::Module *)> optPipeline =
-      mlir::makeOptimizingTransformer(3, 0, nullptr);
+      mlir::makeOptimizingTransformer(optLevel, 0, nullptr);
 
   if (optPipeline(&module))
     return mlir::failure();
