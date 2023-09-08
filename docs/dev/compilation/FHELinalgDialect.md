@@ -48,7 +48,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEintInt, TensorBroadcastingRules
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -104,7 +104,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEint, TensorBroadcastingRules
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: BinaryEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -123,7 +123,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHELinalg.apply_lookup_table` (::mlir::concretelang::FHELinalg::ApplyLookupTableEintOp)
 
-Returns a tensor that contains the result of a lookup table.
+Returns a tensor that contains the result of the lookup on a table.
 
 For each encrypted index, performs a lookup table of clear integers.
 
@@ -148,7 +148,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -167,7 +167,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHELinalg.apply_mapped_lookup_table` (::mlir::concretelang::FHELinalg::ApplyMappedLookupTableEintOp)
 
-Returns a tensor that contains the result of a lookup table, using a different lookup table for each element, specified by a map.
+Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element, specified by a map.
 
 Performs for each encrypted index a lookup table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
 is performed following the broadcasting rules. The precise lookup is specified by a map.
@@ -209,7 +209,7 @@ Others examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -229,7 +229,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHELinalg.apply_multi_lookup_table` (::mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp)
 
-Returns a tensor that contains the result of a lookup table, using a different lookup table for each element.
+Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element.
 
 Performs for each encrypted index a lookup table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
 is performed following the broadcasting rules.
@@ -265,7 +265,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -337,12 +337,12 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHELinalg.conv2d` (::mlir::concretelang::FHELinalg::Conv2dOp)
 
-Returns the 2D convolution of a tensor in NCHW form with weights in the form FCHW
+Returns the 2D convolution of a tensor in the form NCHW with weights in the form FCHW
 
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -384,7 +384,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -735,7 +735,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEintInt
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -881,7 +881,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryIntEint
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryIntEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -900,14 +900,10 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHELinalg.maxpool2d` (::mlir::concretelang::FHELinalg::Maxpool2dOp)
 
-Returns the 2D maxpool of a tensor in NCHW form
+Returns the 2D maxpool of a tensor in the form NCHW
 
 
-Traits: AlwaysSpeculatableImplTrait
-
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
-
-Effects: MemoryEffects::Effect{}
+Interfaces: UnaryEint
 
 #### Attributes:
 
@@ -969,7 +965,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEintInt, TensorBroadcastingRules
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1025,7 +1021,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEint, TensorBroadcastingRules
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: BinaryEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1062,7 +1058,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorUnaryEint
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
@@ -1101,7 +1097,7 @@ Rounds a tensor of ciphertexts into a smaller precision.
 
 Traits: AlwaysSpeculatableImplTrait, TensorUnaryEint
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
@@ -1157,7 +1153,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEintInt, TensorBroadcastingRules
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1213,7 +1209,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEint, TensorBroadcastingRules
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: BinaryEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1270,7 +1266,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryIntEint, TensorBroadcastingRules
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryIntEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1398,7 +1394,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
@@ -1434,7 +1430,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
@@ -1483,7 +1479,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
