@@ -265,7 +265,7 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
     mlir::RankedTensorType rhsTy = ((mlir::Type)linalgOp.getRhs().getType())
                                        .cast<mlir::RankedTensorType>();
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+    mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(
         linalgOp.getLoc(), resultTy, mlir::ValueRange{});
 
     // Create the affine #maps_0
@@ -424,8 +424,8 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
       nestedBuilder.create<linalg::YieldOp>(loc, lookup.getResult());
     };
 
-    auto output = rewriter.create<bufferization::AllocTensorOp>(
-        loc, resultTy, mlir::ValueRange{});
+    auto output =
+        rewriter.create<FHE::ZeroTensorOp>(loc, resultTy, mlir::ValueRange{});
 
     // Create the `linalg.g eneric` op
     Types resTys{resultTy};
@@ -508,7 +508,7 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
     mlir::RankedTensorType lutsTy = getRankedTensorType(luts);
     auto lutElmtTy = lutsTy.getElementType();
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+    mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(
         fheLinalgLutOp.getLoc(), resultTy, mlir::ValueRange{});
 
     auto lutsShape = lutsTy.getShape();
@@ -655,7 +655,7 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
         ((mlir::Type)lutOp.getT().getType()).cast<mlir::RankedTensorType>();
 
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+    mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(
         lutOp.getLoc(), resultTy, mlir::ValueRange{});
 
     // Create the affine #maps_0
@@ -756,7 +756,7 @@ struct FHELinalgNegEintToLinalgGeneric
             .cast<mlir::RankedTensorType>();
 
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+    mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(
         negEintOp.getLoc(), resultTy, mlir::ValueRange{});
 
     // Create the affine #maps_0
@@ -1985,8 +1985,8 @@ struct FHELinalgToSignedToLinalgGeneric
     mlir::RankedTensorType resultTy =
         op->getResult(0).getType().cast<mlir::RankedTensorType>();
 
-    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
-        op.getLoc(), resultTy, mlir::ValueRange{});
+    mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(op.getLoc(), resultTy,
+                                                          mlir::ValueRange{});
 
     llvm::SmallVector<mlir::AffineMap, 2> maps{
         mlir::AffineMap::getMultiDimIdentityMap(inputTy.getShape().size(),
@@ -2074,8 +2074,8 @@ struct FHELinalgToUnsignedToLinalgGeneric
     mlir::RankedTensorType resultTy =
         op->getResult(0).getType().cast<mlir::RankedTensorType>();
 
-    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
-        op.getLoc(), resultTy, mlir::ValueRange{});
+    mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(op.getLoc(), resultTy,
+                                                          mlir::ValueRange{});
 
     llvm::SmallVector<mlir::AffineMap, 2> maps{
         mlir::AffineMap::getMultiDimIdentityMap(inputTy.getShape().size(),
@@ -2161,8 +2161,8 @@ struct FHELinalgRoundToLinalgGeneric
     auto inputTy = op.getInput().getType().cast<mlir::RankedTensorType>();
     auto outputTy = op.getOutput().getType().cast<mlir::RankedTensorType>();
 
-    auto buffer = rewriter.create<bufferization::AllocTensorOp>(
-        loc, outputTy, mlir::ValueRange{});
+    auto buffer =
+        rewriter.create<FHE::ZeroTensorOp>(loc, outputTy, mlir::ValueRange{});
 
     auto maps = llvm::SmallVector<mlir::AffineMap, 2>{
         mlir::AffineMap::getMultiDimIdentityMap(inputTy.getShape().size(),
@@ -2221,8 +2221,6 @@ void FHETensorOpsToLinalg::runOnOperation() {
   target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addIllegalOp<mlir::concretelang::FHELinalg::Dot>();
   target.addIllegalDialect<mlir::concretelang::FHELinalg::FHELinalgDialect>();
-
-  target.addLegalOp<bufferization::AllocTensorOp>();
 
   mlir::RewritePatternSet patterns(&getContext());
 
