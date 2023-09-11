@@ -24,7 +24,7 @@ namespace mlir {
 namespace concretelang {
 
 template <typename IndexedOpTy> struct IndexedOpInfo {
-  static mlir::OperandRange getOffsets(IndexedOpTy op);
+  static mlir::SmallVector<mlir::OpFoldResult> getOffsets(IndexedOpTy op);
   static mlir::Value getTensor(IndexedOpTy op);
   static int64_t getSize(IndexedOpTy op, int64_t dim);
   static int64_t getStride(IndexedOpTy op, int64_t dim);
@@ -32,7 +32,8 @@ template <typename IndexedOpTy> struct IndexedOpInfo {
 };
 
 template <> struct IndexedOpInfo<mlir::tensor::ExtractOp> {
-  static mlir::OperandRange getOffsets(mlir::tensor::ExtractOp op) {
+  static mlir::SmallVector<mlir::OpFoldResult>
+  getOffsets(mlir::tensor::ExtractOp op) {
     return op.getIndices();
   }
 
@@ -49,7 +50,8 @@ template <> struct IndexedOpInfo<mlir::tensor::ExtractOp> {
 };
 
 template <> struct IndexedOpInfo<mlir::tensor::InsertOp> {
-  static mlir::OperandRange getOffsets(mlir::tensor::InsertOp op) {
+  static mlir::SmallVector<mlir::OpFoldResult>
+  getOffsets(mlir::tensor::InsertOp op) {
     return op.getIndices();
   }
 
@@ -65,8 +67,9 @@ template <> struct IndexedOpInfo<mlir::tensor::InsertOp> {
 };
 
 template <> struct IndexedOpInfo<mlir::tensor::ExtractSliceOp> {
-  static mlir::OperandRange getOffsets(mlir::tensor::ExtractSliceOp op) {
-    return op.getOffsets();
+  static mlir::SmallVector<mlir::OpFoldResult>
+  getOffsets(mlir::tensor::ExtractSliceOp op) {
+    return op.getMixedOffsets();
   }
   static mlir::Value getTensor(mlir::tensor::ExtractSliceOp op) {
     return op.getSource();
@@ -91,8 +94,9 @@ template <> struct IndexedOpInfo<mlir::tensor::ExtractSliceOp> {
 };
 
 template <> struct IndexedOpInfo<mlir::tensor::InsertSliceOp> {
-  static mlir::OperandRange getOffsets(mlir::tensor::InsertSliceOp op) {
-    return op.getOffsets();
+  static mlir::SmallVector<mlir::OpFoldResult>
+  getOffsets(mlir::tensor::InsertSliceOp op) {
+    return op.getMixedOffsets();
   }
   static mlir::Value getTensor(mlir::tensor::InsertSliceOp op) {
     return op.getDest();
@@ -596,26 +600,21 @@ static mlir::OpFoldResult getValueAsOpFoldResult(mlir::Value v) {
   return v;
 }
 
-// /// Returns a `Value` from an `OpFoldResult`. If the `OpFoldResult` is
-// /// a already a value, the value is returned as is. Otherwise a
-// /// constant op is created using `builder`.
-// static int64_t getOpFoldResultAsInteger(mlir::OpFoldResult v) {
-//   return v.get<mlir::Attribute>().cast<mlir::IntegerAttr>().getInt();
-// }
+// Checks whether the `OpFoldResult` `v` is a `mlir::Value` generated
+// by a `ConstantOp`. If so, an `OpFoldResult` with an attribute corresponding
+// to the value of the constant is returned. Otherwise, `v` is returned
+// unchanged.
+static mlir::OpFoldResult opFoldConstantValueToAttribute(mlir::OpFoldResult v) {
+  if (mlir::Value dynV = v.dyn_cast<mlir::Value>()) {
+    if (isConstantIndexValue(dynV)) {
+      return mlir::IntegerAttr::get(
+          IndexType::get(dynV.getContext()),
+          llvm::APInt(64, getConstantIndexValue(dynV)));
+    }
+  }
 
-// /// Returns a `Value` from an `OpFoldResult`. If the `OpFoldResult` is
-// /// a already a value, the value is returned as is. Otherwise a
-// /// constant op is created using `builder`.
-// static mlir::Value getOpFoldResultAsValue(mlir::ImplicitLocOpBuilder
-// &builder,
-//                                           mlir::OpFoldResult v) {
-//   if (v.is<mlir::Value>()) {
-//     return v.dyn_cast<mlir::Value>();
-//   } else {
-//     return builder.create<mlir::arith::ConstantIndexOp>(
-//         v.get<mlir::Attribute>().cast<mlir::IntegerAttr>().getInt());
-//   }
-// }
+  return v;
+}
 
 /// Performs an arithmetic operation on `a` and `b`, where both values
 /// can be any combination of `IntegerAttr` and `Value`.
@@ -889,6 +888,21 @@ getBoundsOfQuasiAffineIVExpression(mlir::Value expr, mlir::scf::ForOp forOp) {
   return std::nullopt;
 }
 
+static std::optional<BoundsAndStep>
+getBoundsOfQuasiAffineIVExpression(mlir::OpFoldResult expr,
+                                   mlir::scf::ForOp forOp) {
+  if (mlir::Value dynExpr = expr.dyn_cast<mlir::Value>())
+    return getBoundsOfQuasiAffineIVExpression(dynExpr, forOp);
+
+  mlir::IntegerAttr exprAttr =
+      expr.dyn_cast<mlir::Attribute>().dyn_cast_or_null<mlir::IntegerAttr>();
+
+  assert(exprAttr && "Expected OpFoldResult to contain either a Value or an "
+                     "integer attribute");
+
+  return BoundsAndStep{exprAttr.getInt(), exprAttr.getInt(), 0};
+}
+
 static int64_t getStaticTripCount(int64_t lb, int64_t ub, int64_t step) {
   assert(ub > lb && "Upper bound must be greater than lower bound");
   assert(step > 0 && "Step must be positive");
@@ -1007,6 +1021,14 @@ static bool isQuasiAffineIVExpression(mlir::Value expr,
   return false;
 }
 
+static bool isQuasiAffineIVExpression(mlir::OpFoldResult expr,
+                                      mlir::scf::ForOp *owningForOp = nullptr) {
+  if (mlir::Value dynExpr = expr.dyn_cast<mlir::Value>())
+    return isQuasiAffineIVExpression(dynExpr, owningForOp);
+
+  return true;
+}
+
 /// Checks if `expr` is a quasi affine expression on a single
 /// induction variable, for which the increment of the induction
 /// variable with the step of the associated for loop results in a
@@ -1017,7 +1039,7 @@ static bool isQuasiAffineIVExpression(mlir::Value expr,
 /// for `(i+5)/7` for a step size that is a multiple of `7`, but false
 /// for any other step size.
 static bool
-isQuasiAffineIVExpressionWithConstantStep(mlir::Value expr,
+isQuasiAffineIVExpressionWithConstantStep(mlir::OpFoldResult expr,
                                           mlir::scf::ForOp *forOp = nullptr,
                                           BoundsAndStep *basOut = nullptr) {
   mlir::scf::ForOp tmpForOp;
@@ -1108,7 +1130,7 @@ mlir::Value hoistIndexedOp(
 
   for (auto it :
        llvm::enumerate(IndexedOpInfo<IndexedOpTy>::getOffsets(indexedOp))) {
-    mlir::Value idxExpr = it.value();
+    mlir::OpFoldResult idxExpr = it.value();
     size_t dimIdx = it.index();
 
     mlir::scf::ForOp forOp;
@@ -1135,8 +1157,10 @@ mlir::Value hoistIndexedOp(
       strides.push_back(rewriter.getIndexAttr(hoistedStride));
 
       ivIndexedDims.push_back(true);
-    } else if (isAffine || outermostFor.isDefinedOutsideOfLoop(idxExpr)) {
-      offsets.push_back(getValueAsOpFoldResult(idxExpr));
+    } else if (isAffine || idxExpr.is<mlir::Attribute>() ||
+               outermostFor.isDefinedOutsideOfLoop(
+                   idxExpr.dyn_cast<mlir::Value>())) {
+      offsets.push_back(opFoldConstantValueToAttribute(idxExpr));
       sizes.push_back(rewriter.getIndexAttr(size));
       strides.push_back(rewriter.getIndexAttr(stride));
       ivIndexedDims.push_back(false);
@@ -1838,13 +1862,15 @@ getLoopsForCandidateIndexes(IndexedOpTy op) {
   llvm::SmallVector<mlir::scf::ForOp> orderedQAIVs;
 
   for (auto it : llvm::enumerate(IndexedOpInfo<IndexedOpTy>::getOffsets(op))) {
-    mlir::Value expr = it.value();
+    mlir::OpFoldResult expr = it.value();
     size_t dimIdx = it.index();
 
-    walkUseDefChain(expr, [&](mlir::Value v) {
-      if (auto loop = valueIsRegionIterArg(v))
-        allIVs.insert(*loop);
-    });
+    if (mlir::Value dynExpr = expr.dyn_cast<mlir::Value>()) {
+      walkUseDefChain(dynExpr, [&](mlir::Value v) {
+        if (auto loop = valueIsRegionIterArg(v))
+          allIVs.insert(*loop);
+      });
+    }
 
     mlir::scf::ForOp qaLoop;
     BoundsAndStep bas;
