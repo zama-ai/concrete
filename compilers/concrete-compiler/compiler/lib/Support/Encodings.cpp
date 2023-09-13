@@ -47,6 +47,15 @@ encodingFromType(mlir::Type ty,
           std::get<ScalarEncoding>(maybeEncoding.value());
       return TensorEncoding{scalarEncoding};
     }
+  } else if (auto memref = ty.dyn_cast<mlir::MemRefType>()) {
+    std::optional<Encoding> maybeEncoding =
+        encodingFromType(memref.getElementType(), maybeChunkInfo);
+    if (maybeEncoding.has_value() &&
+        std::holds_alternative<ScalarEncoding>(maybeEncoding.value())) {
+      ScalarEncoding scalarEncoding =
+          std::get<ScalarEncoding>(maybeEncoding.value());
+      return TensorEncoding{scalarEncoding};
+    }
   }
   return std::nullopt;
 }
