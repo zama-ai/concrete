@@ -738,8 +738,19 @@ class Tracer:
 
     def __getitem__(
         self,
-        index: Union[int, np.integer, slice, Tuple[Union[int, np.integer, slice], ...]],
+        index: Union[
+            int, np.integer, slice, "Tracer", Tuple[Union[int, np.integer, slice, "Tracer"], ...]
+        ],
     ) -> "Tracer":
+        if isinstance(index, Tracer) and index.output.is_encrypted and self.output.is_clear:
+            computation = Node.generic(
+                "dynamic_tlu",
+                [deepcopy(index.output), deepcopy(self.output)],
+                deepcopy(index.output),
+                lambda on, table: table[on],
+            )
+            return Tracer(computation, [index, self])
+
         if not isinstance(index, tuple):
             index = (index,)
 
@@ -770,7 +781,7 @@ class Tracer:
                 raise ValueError(message)
 
         output_value = deepcopy(self.output)
-        output_value.shape = np.zeros(output_value.shape)[index].shape
+        output_value.shape = np.zeros(output_value.shape)[index].shape  # type: ignore
 
         computation = Node.generic(
             "index_static",

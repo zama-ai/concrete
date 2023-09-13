@@ -386,6 +386,7 @@ class Node:
             "conv2d",
             "conv3d",
             "dot",
+            "dynamic_tlu",
             "expand_dims",
             "index_static",
             "matmul",

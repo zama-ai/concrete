@@ -1608,6 +1608,41 @@ class Context:
 
         return self.operation(operation, resulting_type, x.result, y.result)
 
+    def dynamic_tlu(
+        self,
+        resulting_type: ConversionType,
+        on: Conversion,
+        table: Conversion,
+    ) -> Conversion:
+        assert table.is_clear and on.is_encrypted
+
+        if table.shape != (2**on.bit_width,):
+            highlights: Dict[Node, Union[str, List[str]]] = {
+                table.origin: [
+                    f"table has the shape {table.shape}",
+                ],
+                on.origin: [
+                    f"table lookup input is {on.bit_width}-bits",
+                ],
+                self.converting: [
+                    "so table cannot be looked up with this input",
+                    f"table shape should have been {(2**on.bit_width,)}",
+                ],
+            }
+            if on.bit_width != on.original_bit_width:  # pragma: no cover
+                highlights[on.origin].append(  # type: ignore
+                    "("
+                    f"note that it's assigned {on.bit_width}-bits "
+                    f"during compilation because of its relation with other operations"
+                    ")"
+                )
+            self.error(highlights)
+
+        dialect = fhe if on.is_scalar else fhelinalg
+        operation = dialect.ApplyLookupTableEintOp
+
+        return self.operation(operation, resulting_type, on.result, table.result)
+
     def encrypt(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
         assert self.is_bit_width_compatible(resulting_type, x)
         assert resulting_type.is_encrypted and x.is_clear
