@@ -325,6 +325,10 @@ class Converter:
         assert len(preds) == 2
         return ctx.dot(ctx.typeof(node), preds[0], preds[1])
 
+    def dynamic_tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 2
+        return ctx.dynamic_tlu(ctx.typeof(node), preds[0], preds[1])
+
     def equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 

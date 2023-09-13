@@ -843,6 +843,47 @@ return %2
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y: y[x],
+            {"x": "encrypted", "y": "clear"},
+            [
+                (
+                    1,
+                    [1, 2, 3, 4],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                          # EncryptedScalar<uint1>                ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookup input is 1-bits
+%1 = y                          # ClearTensor<uint3, shape=(4,)>        ∈ [1, 4]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table has the shape (4,)
+%2 = dynamic_tlu(%0, %1)        # EncryptedScalar<uint2>                ∈ [2, 2]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ so table cannot be looked up with this input
+                                                                                 table shape should have been (2,)
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                          # EncryptedScalar<uint1>                ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookup input is 3-bits
+                                                                                 (note that it's assigned 3-bits during compilation because of its relation with other operations)
+%1 = y                          # ClearTensor<uint3, shape=(4,)>        ∈ [1, 4]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table has the shape (4,)
+%2 = dynamic_tlu(%0, %1)        # EncryptedScalar<uint2>                ∈ [2, 2]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ so table cannot be looked up with this input
+                                                                                 table shape should have been (8,)
+return %2
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(
