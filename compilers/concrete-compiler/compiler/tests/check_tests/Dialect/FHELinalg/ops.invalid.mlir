@@ -164,16 +164,16 @@ func.func @main(%a0: tensor<2x3x4x!FHE.eint<2>>, %a1: tensor<2x3x4x!FHE.eint<3>>
 // FHELinalg.apply_lookup_table
 /////////////////////////////////////////////////
 
-func.func @apply_lookup_table(%arg0: tensor<2x3x4x!FHE.eint<2>>, %arg1: tensor<4xi32>) -> tensor<2x3x4x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.apply_lookup_table' op should have as operand #2 a tensor<2^pxi64>, where p is the width of the encrypted integer of the operand #1,expect tensor <4xi64>}}
-  %1 = "FHELinalg.apply_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!FHE.eint<2>>, tensor<4xi32>) -> (tensor<2x3x4x!FHE.eint<2>>)
+func.func @apply_lookup_table(%arg0: tensor<2x3x4x!FHE.eint<2>>, %arg1: tensor<4xi65>) -> tensor<2x3x4x!FHE.eint<2>> {
+  // expected-error @+1 {{'FHELinalg.apply_lookup_table' op should have as operand #2 a tensor<2^pxi{8,16,32,64}>, where p is the width of the encrypted integer of the operand #1,expect tensor <4xi{8,16,32,64}>}}
+  %1 = "FHELinalg.apply_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!FHE.eint<2>>, tensor<4xi65>) -> (tensor<2x3x4x!FHE.eint<2>>)
   return %1: tensor<2x3x4x!FHE.eint<2>>
 }
 
 // -----
 
 func.func @apply_lookup_table(%arg0: tensor<2x3x4x!FHE.eint<2>>, %arg1: tensor<12xi64>) -> tensor<2x3x4x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.apply_lookup_table' op should have as operand #2 a tensor<2^pxi64>, where p is the width of the encrypted integer of the operand #1,expect tensor <4xi64>}}
+  // expected-error @+1 {{'FHELinalg.apply_lookup_table' op should have as operand #2 a tensor<2^pxi{8,16,32,64}>, where p is the width of the encrypted integer of the operand #1,expect tensor <4xi{8,16,32,64}>}}
   %1 = "FHELinalg.apply_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!FHE.eint<2>>, tensor<12xi64>) -> (tensor<2x3x4x!FHE.eint<2>>)
   return %1: tensor<2x3x4x!FHE.eint<2>>
 }
@@ -193,8 +193,16 @@ func.func @apply_lookup_table(%arg0: tensor<3x4x!FHE.eint<2>>, %arg1: tensor<4xi
 /////////////////////////////////////////////////
 
 func.func @apply_multi_lookup_table(%arg0: tensor<2x3x4x!FHE.eint<2>>, %arg1: tensor<2x6xi64>) -> tensor<2x3x4x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.apply_multi_lookup_table' op should have as operand #2 a tensor<DMx...xD1X2^pxi64>, where p is the width of the encrypted integer of the operand #1,expect tensor <DMx...xD1X4xi64>}}
+  // expected-error @+1 {{'FHELinalg.apply_multi_lookup_table' op should have as operand #2 a tensor<DMx...xD1X2^pxi{8,16,32,64}>, where p is the width of the encrypted integer of the operand #1,expect tensor <DMx...xD1X4xi{8,16,32,64}>}}
   %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!FHE.eint<2>>, tensor<2x6xi64>) -> (tensor<2x3x4x!FHE.eint<2>>)
+  return %1: tensor<2x3x4x!FHE.eint<2>>
+}
+
+// -----
+
+func.func @apply_multi_lookup_table_bad_prec(%arg0: tensor<2x3x4x!FHE.eint<2>>, %arg1: tensor<2x4xi65>) -> tensor<2x3x4x!FHE.eint<2>> {
+  // expected-error @+1 {{'FHELinalg.apply_multi_lookup_table' op should have as operand #2 a tensor<DMx...xD1X2^pxi{8,16,32,64}>, where p is the width of the encrypted integer of the operand #1,expect tensor <DMx...xD1X4xi{8,16,32,64}>}}
+  %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!FHE.eint<2>>, tensor<2x4xi65>) -> (tensor<2x3x4x!FHE.eint<2>>)
   return %1: tensor<2x3x4x!FHE.eint<2>>
 }
 
@@ -236,6 +244,18 @@ func.func @apply_mapped_lookup_table_bad_map_elmt_type(
   // expected-error @+1 {{'FHELinalg.apply_mapped_lookup_table' op : 't' (operand #1) rank (=3) differs from 'lut_map.getName()' (operand #3) rank (=2)}}
   %1 = "FHELinalg.apply_mapped_lookup_table"(%input, %luts, %map): (tensor<2x3x4x!FHE.eint<7>>, tensor<128xi64>, tensor<2x3xindex>) -> tensor<2x3x4x!FHE.eint<7>>
   return %1: tensor<2x3x4x!FHE.eint<7>>
+}
+
+// -----
+
+func.func @apply_mapped_lookup_table_bad_lut_prec(
+  %input: tensor<2x3x4x!FHE.eint<7>>,
+  %luts: tensor<128xi65>,
+  %map: tensor<2x3x4xindex>
+) -> tensor<2x3x4x!FHE.eint<7>> {
+  // expected-error @+1 {{'FHELinalg.apply_mapped_lookup_table' op should have as operand #2 a tensor<DMx...xD1X2^pxi{8,16,32,64}>, where p is the width of the encrypted integer of the operand #1,expect tensor <DMx...xD1X128xi{8,16,32,64}>}}
+  %0 = "FHELinalg.apply_mapped_lookup_table"(%input, %luts, %map): (tensor<2x3x4x!FHE.eint<7>>, tensor<128xi65>, tensor<2x3x4xindex>) -> (tensor<2x3x4x!FHE.eint<7>>)
+  return %0: tensor<2x3x4x!FHE.eint<7>>
 }
 
 // -----
