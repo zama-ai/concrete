@@ -26,7 +26,9 @@ licenses:
 # Testing
 # =======
 
-pytest:
+pytest: pytest-single pytest-multi
+
+pytest-single:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
 	export PYTHONPATH=$(BINDINGS_DIRECTORY)
 
@@ -36,6 +38,10 @@ pytest:
 		--strategy=mono \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
+
+pytest-multi:
+	export LD_PRELOAD=$(RUNTIME_LIBRARY)
+	export PYTHONPATH=$(BINDINGS_DIRECTORY)
 
 	# test multi precision, multi params
 	pytest tests -svv -n auto \

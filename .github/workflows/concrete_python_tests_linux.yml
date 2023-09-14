@@ -110,6 +110,10 @@ jobs:
 
             export COMPILER_BUILD_DIRECTORY=/build
             export KEY_CACHE_DIRECTORY=/tmp/KeySetCache
-            make pytest
+            
+            make pytest-single
+            rm -rf /tmp/KeySetCache
+            
+            make pytest-multi
             
             chmod -R ugo+rwx /tmp/KeySetCache
