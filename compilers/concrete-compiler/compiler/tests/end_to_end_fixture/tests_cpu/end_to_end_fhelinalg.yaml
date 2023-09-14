@@ -1034,8 +1034,8 @@ program: |
     // [3,0,1] lut [1,3,5,7] = [7,1,3]
     // [2,3,0]                 [5,7,1]
     func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
-      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
-      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!FHE.eint<3>>
+      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi8>
+      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi8>) -> tensor<3x3x!FHE.eint<3>>
       return %res : tensor<3x3x!FHE.eint<3>>
     }
 tests:
@@ -1050,8 +1050,8 @@ tests:
 description: apply_lookup_table_batched
 program: |
     func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
-      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
-      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!FHE.eint<3>>
+      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi8>
+      %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi8>) -> tensor<3x3x!FHE.eint<3>>
       return %res : tensor<3x3x!FHE.eint<3>>
     }
 tests:
@@ -1066,8 +1066,8 @@ tests:
 description: apply_multi_lookup_table
 program: |
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a 3x3 matrix of tables of size 4=2² of clear integers.
-    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
-      %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
+    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x3x4xi8>) -> tensor<3x3x!FHE.eint<2>> {
+      %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x3x4xi8>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
     }
 tests:
@@ -1084,8 +1084,8 @@ tests:
 description: apply_multi_lookup_table_with_boradcast
 program: |
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a vector of 3 tables of size 4=2² of clear integers.
-    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
-      %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
+    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x4xi8>) -> tensor<3x3x!FHE.eint<2>> {
+      %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x4xi8>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
     }
 tests:
@@ -1103,9 +1103,9 @@ tests:
 description: apply_mapped_lookup_table_sequential
 program: |
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
-    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi8>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
-        (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
+        (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi8>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
     }
 tests:
@@ -1124,9 +1124,9 @@ tests:
 description: apply_mapped_lookup_table_same_lut
 program: |
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
-    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi8>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
-        (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
+        (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi8>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
     }
 tests:

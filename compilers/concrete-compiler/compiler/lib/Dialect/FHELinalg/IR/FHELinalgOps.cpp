@@ -283,11 +283,13 @@ mlir::LogicalResult ApplyLookupTableEintOp::verify() {
   // Check the shape of lut argument
   auto tEltwidth = tEltTy.getWidth();
   mlir::SmallVector<int64_t, 1> expectedShape{1 << tEltwidth};
-  if (!lutTy.hasStaticShape(expectedShape) || !lutEltTy.isInteger(64)) {
-    this->emitOpError()
-        << "should have as operand #2 a tensor<2^pxi64>, where p is the width "
-           "of the encrypted integer of the operand #1,"
-        << "expect tensor <" << expectedShape[0] << "xi64>";
+  if (!lutTy.hasStaticShape(expectedShape) || !lutEltTy.isSignlessInteger() ||
+      lutEltTy.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError() << "should have as operand #2 a "
+                           "tensor<2^pxi{8,16,32,64}>, where p is the width "
+                           "of the encrypted integer of the operand #1,"
+                        << "expect tensor <" << expectedShape[0]
+                        << "xi{8,16,32,64}>";
     return mlir::failure();
   }
   if (!resultTy.hasStaticShape(tTy.getShape())) {
@@ -308,12 +310,14 @@ mlir::LogicalResult ApplyMultiLookupTableEintOp::verify() {
   // Check the shape of luts argument
   auto lut_size = lutTy.getShape()[lutTy.getShape().size() - 1];
   auto expected_lut_size = 1 << tEltTy.getWidth();
-  if (lut_size != expected_lut_size || !lutEltTy.isInteger(64)) {
-    this->emitOpError() << "should have as operand #2 a "
-                           "tensor<DMx...xD1X2^pxi64>, where p is the width "
-                           "of the encrypted integer of the operand #1,"
-                        << "expect tensor <DMx...xD1X" << expected_lut_size
-                        << "xi64>";
+  if (lut_size != expected_lut_size || !lutEltTy.isSignlessInteger() ||
+      lutEltTy.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError()
+        << "should have as operand #2 a "
+           "tensor<DMx...xD1X2^pxi{8,16,32,64}>, where p is the width "
+           "of the encrypted integer of the operand #1,"
+        << "expect tensor <DMx...xD1X" << expected_lut_size
+        << "xi{8,16,32,64}>";
     return mlir::failure();
   }
   if (!resultTy.hasStaticShape(tTy.getShape())) {
@@ -380,9 +384,14 @@ mlir::LogicalResult verifyLutsSize(ApplyMappedLookupTableEintOp &op,
 
 mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
   auto t = this->getT();
+  auto tTy = this->getT().getType().cast<mlir::RankedTensorType>();
+  auto tEltTy =
+      tTy.getElementType().cast<mlir::concretelang::FHE::FheIntegerInterface>();
   auto luts = this->getLuts();
   auto map = this->getMap();
   auto result = this->getResult();
+  auto lutTy = this->getLuts().getType().cast<mlir::RankedTensorType>();
+  auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
 
   auto t_shape = getTensorType(t).getShape();
   if (!getTensorType(result).hasStaticShape(t_shape)) {
@@ -394,6 +403,17 @@ mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
   if (!getTensorType(map).getElementType().isIndex()) {
     this->emitOpError()
         << ": `map` (operand #3) should contains elements of type `index`";
+    return mlir::failure();
+  }
+
+  auto expected_lut_size = 1 << tEltTy.getWidth();
+  if (!lutEltTy.isSignlessInteger() || lutEltTy.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError()
+        << "should have as operand #2 a "
+           "tensor<DMx...xD1X2^pxi{8,16,32,64}>, where p is the width "
+           "of the encrypted integer of the operand #1,"
+        << "expect tensor <DMx...xD1X" << expected_lut_size
+        << "xi{8,16,32,64}>";
     return mlir::failure();
   }
 
