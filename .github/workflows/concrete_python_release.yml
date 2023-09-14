@@ -153,7 +153,8 @@ jobs:
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
           
-          pytest -svv -n auto tests
+          pytest -svv -n auto tests --key-cache /tmp/KeySetCache
+          rm -rf /tmp/KeySetCache
           
           deactivate
 
@@ -289,7 +290,8 @@ jobs:
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
 
-          pytest tests -svv -n auto -m "not dataflow"
+          pytest tests -svv -n auto -m "not dataflow" --key-cache /tmp/KeySetCache
+          rm -rf /tmp/KeySetCache
 
           rm -rf $TEST_TMP_DIR
 
