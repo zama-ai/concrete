@@ -574,6 +574,10 @@ fn vector(weights: &[i64]) -> Box<Weights> {
     Box::new(Weights(operator::Weights::vector(weights)))
 }
 
+fn number(weight: i64) -> Box<Weights> {
+    Box::new(Weights(operator::Weights::number(weight)))
+}
+
 impl From<OperatorIndex> for ffi::OperatorIndex {
     fn from(oi: OperatorIndex) -> Self {
         Self { index: oi.i }
@@ -670,6 +674,9 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::weights"]
         fn vector(weights: &[i64]) -> Box<Weights>;
+
+        #[namespace = "concrete_optimizer::weights"]
+        fn number(weight: i64) -> Box<Weights>;
 
         fn optimize_multi(self: &OperationDag, _options: Options) -> CircuitSolution;
 

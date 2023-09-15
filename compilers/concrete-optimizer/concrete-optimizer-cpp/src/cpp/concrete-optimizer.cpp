@@ -1292,6 +1292,8 @@ extern "C" {
 namespace weights {
 extern "C" {
 ::concrete_optimizer::Weights *concrete_optimizer$weights$cxxbridge1$vector(::rust::Slice<::std::int64_t const> weights) noexcept;
+
+::concrete_optimizer::Weights *concrete_optimizer$weights$cxxbridge1$number(::std::int64_t weight) noexcept;
 } // extern "C"
 } // namespace weights
 
@@ -1390,6 +1392,10 @@ namespace dag {
 namespace weights {
 ::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<::std::int64_t const> weights) noexcept {
   return ::rust::Box<::concrete_optimizer::Weights>::from_raw(concrete_optimizer$weights$cxxbridge1$vector(weights));
+}
+
+::rust::Box<::concrete_optimizer::Weights> number(::std::int64_t weight) noexcept {
+  return ::rust::Box<::concrete_optimizer::Weights>::from_raw(concrete_optimizer$weights$cxxbridge1$number(weight));
 }
 } // namespace weights
 

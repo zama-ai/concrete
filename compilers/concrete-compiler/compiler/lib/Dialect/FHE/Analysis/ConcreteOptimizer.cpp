@@ -203,9 +203,8 @@ struct FunctionToDag {
     if (inputType.isSigned()) {
       // std::vector<std::int64_t> weights_vector{1};
       auto addIndex = dag->add_dot(slice(encrypted_inputs),
-                                   concrete_optimizer::weights::vector(
-                                       slice(std::vector<std::int64_t>{1})));
-      encrypted_inputs[0] = addIndex;
+                                   concrete_optimizer::weights::number(1));
+      encrypted_input = addIndex;
       operatorIndexes.push_back(addIndex.index);
     }
     auto lutIndex =
