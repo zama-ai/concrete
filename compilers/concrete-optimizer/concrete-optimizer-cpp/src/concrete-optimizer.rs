@@ -284,6 +284,11 @@ impl From<CircuitSolution> for ffi::CircuitSolution {
 }
 
 impl ffi::CircuitSolution {
+    fn short_dump(&self) -> String {
+        let mut new = self.clone();
+        new.instructions_keys = vec![];
+        new.dump()
+    }
     fn dump(&self) -> String {
         format!("{self:#?}")
     }
@@ -665,6 +670,9 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::dag"]
         fn dump(self: &CircuitSolution) -> String;
+
+        #[namespace = "concrete_optimizer::dag"]
+        fn short_dump(self: &CircuitSolution) -> String;
 
         type Weights;
 
