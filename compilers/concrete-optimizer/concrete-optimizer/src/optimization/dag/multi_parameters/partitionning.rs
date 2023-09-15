@@ -164,7 +164,14 @@ fn resolve_by_levelled_block(
                 }
             }
             1 => get_singleton_value(&constraints.forced),
-            _ => default_partition, // conflicts solved to default
+            _ => {
+                let forced = constraints.forced;
+                if forced.contains(&default_partition) {
+                    default_partition
+                } else {
+                    *forced.iter().min().unwrap()
+                }
+            }
         };
         // TODO1: Could choose based on the number of fast keyswitch added (case > 1)
         // TODO2: A conversion of an entry point could be deffered to the conflict until a conversion is needed
