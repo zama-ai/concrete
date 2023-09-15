@@ -1232,6 +1232,8 @@ namespace dag {
 
 namespace weights {
 ::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<::std::int64_t const> weights) noexcept;
+
+::rust::Box<::concrete_optimizer::Weights> number(::std::int64_t weight) noexcept;
 } // namespace weights
 
 ::std::uint64_t NO_KEY_ID() noexcept;
