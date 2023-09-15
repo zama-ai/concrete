@@ -163,7 +163,7 @@ fn out_variance(
             let input_shape = first(inputs, out_shapes);
             let kind = dot_kind(inputs.len() as u64, input_shape, weights);
             match kind {
-                DK::Simple | DK::Tensor | DK::Broadcast => {
+                DK::Simple | DK::Tensor | DK::Broadcast { .. } => {
                     let first_input = inputs[0];
                     let mut out_variance = SymbolicVariance::ZERO;
                     for (j, &weight) in weights.values.iter().enumerate() {
@@ -269,7 +269,7 @@ fn op_levelled_complexity(
             let input_shape = first(inputs, out_shapes);
             let kind = dot_kind(inputs.len() as u64, input_shape, weights);
             match kind {
-                DK::Simple | DK::Tensor | DK::Broadcast | DK::CompatibleTensor => {
+                DK::Simple | DK::Tensor | DK::Broadcast { .. } | DK::CompatibleTensor => {
                     LevelledComplexity::ADDITION * (inputs.len() as u64) * input_shape.flat_size()
                 }
                 DK::Unsupported { .. } => panic!("Unsupported"),
@@ -883,10 +883,10 @@ pub mod tests {
         let shape = Shape {
             dimensions_size: vec![2, 2],
         };
-        let input1 = graph.add_input(1, shape);
+        let input1 = graph.add_input(1, &shape);
         let weights = &Weights::number(2);
         _ = graph.add_dot([input1], weights);
-        assert!(*graph.out_shapes.last().unwrap() == Shape::vector(2));
+        assert!(*graph.out_shapes.last().unwrap() == shape);
         let analysis = analyze(&graph);
         assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
     }
@@ -902,7 +902,7 @@ pub mod tests {
         let lut2 = graph.add_lut(input2, FunctionTable::UNKWOWN, 1);
         let weights = &Weights::vector([2, 3]);
         _ = graph.add_dot([input1, lut2], weights);
-        assert!(*graph.out_shapes.last().unwrap() == Shape::vector(2));
+        assert!(*graph.out_shapes.last().unwrap() == shape);
         let analysis = analyze(&graph);
         assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
         assert_f64_eq(analysis.out_variances.last().unwrap().lut_coeff, 9.0);
