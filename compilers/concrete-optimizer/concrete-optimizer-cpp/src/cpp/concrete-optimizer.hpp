@@ -1211,6 +1211,7 @@ struct CircuitSolution final {
   ::rust::String error_msg;
 
   ::rust::String dump() const noexcept;
+  ::rust::String short_dump() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution

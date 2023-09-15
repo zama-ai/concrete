@@ -140,7 +140,7 @@ template <typename Solution> void displaySolution(const Solution &solution);
 
 template <> void displaySolution(const optimizer::CircuitSolution &solution) {
   llvm::errs() << "-- Circuit Solution\n";
-  llvm::errs() << solution.dump().c_str();
+  llvm::errs() << solution.short_dump().c_str();
 }
 
 template <> void displaySolution(const optimizer::DagSolution &sol) {

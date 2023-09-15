@@ -1230,6 +1230,7 @@ struct CircuitSolution final {
   ::rust::String error_msg;
 
   ::rust::String dump() const noexcept;
+  ::rust::String short_dump() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
@@ -1281,6 +1282,8 @@ void concrete_optimizer$cxxbridge1$OperationDag$dump(::concrete_optimizer::Opera
 namespace dag {
 extern "C" {
 void concrete_optimizer$dag$cxxbridge1$CircuitSolution$dump(::concrete_optimizer::dag::CircuitSolution const &self, ::rust::String *return$) noexcept;
+
+void concrete_optimizer$dag$cxxbridge1$CircuitSolution$short_dump(::concrete_optimizer::dag::CircuitSolution const &self, ::rust::String *return$) noexcept;
 } // extern "C"
 } // namespace dag
 
@@ -1377,6 +1380,12 @@ namespace dag {
 ::rust::String CircuitSolution::dump() const noexcept {
   ::rust::MaybeUninit<::rust::String> return$;
   concrete_optimizer$dag$cxxbridge1$CircuitSolution$dump(*this, &return$.value);
+  return ::std::move(return$.value);
+}
+
+::rust::String CircuitSolution::short_dump() const noexcept {
+  ::rust::MaybeUninit<::rust::String> return$;
+  concrete_optimizer$dag$cxxbridge1$CircuitSolution$short_dump(*this, &return$.value);
   return ::std::move(return$.value);
 }
 } // namespace dag
