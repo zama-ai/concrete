@@ -7,7 +7,7 @@ use crate::optimization::dag::solo_key::optimize_generic::{max_precision, Encodi
 use crate::optimization::decomposition::PersistDecompCaches;
 use crate::optimization::wop_atomic_pattern::optimize::optimize_to_circuit_solution as crt_optimize_no_dag;
 
-use super::precision_cut::PrecisionCut;
+use super::partition_cut::PartitionCut;
 
 fn best_complexity_solution(native: CircuitSolution, crt: CircuitSolution) -> CircuitSolution {
     match (&native.is_feasible, &crt.is_feasible) {
@@ -60,7 +60,7 @@ pub fn optimize(
     encoding: Encoding,
     default_log_norm2_woppbs: f64,
     caches: &PersistDecompCaches,
-    p_cut: &Option<PrecisionCut>,
+    p_cut: &Option<PartitionCut>,
 ) -> CircuitSolution {
     let native = || native_optimize(dag, config, search_space, caches, p_cut);
     let crt = || crt_optimize(dag, config, search_space, default_log_norm2_woppbs, caches);

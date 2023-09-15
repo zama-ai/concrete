@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use crate::dag::operator::{Operator, OperatorIndex};
 use crate::dag::unparametrized;
 
+use super::partition_cut::PartitionCut;
 use super::partitions::{InstructionPartition, PartitionIndex, Partitions, Transition};
-use super::precision_cut::PrecisionCut;
 use super::union_find::UnionFind;
 type Op = Operator;
 
@@ -87,13 +87,13 @@ struct BlockConstraints {
 fn levelled_blocks_constraints(
     dag: &unparametrized::OperationDag,
     blocks: &Blocks,
-    p_cut: &PrecisionCut,
+    p_cut: &PartitionCut,
 ) -> Vec<BlockConstraints> {
     let mut constraints_by_block = vec![BlockConstraints::default(); blocks.blocks.len()];
     for (block_i, ops_i) in blocks.blocks.iter().enumerate() {
         for &op_i in ops_i {
             let op = &dag.operators[op_i];
-            if let Some(partition) = p_cut.partition(dag, op) {
+            if let Some(partition) = p_cut.partition(dag, OperatorIndex { i: op_i }) {
                 _ = constraints_by_block[block_i].forced.insert(partition);
                 if let Some(input) = op_tlu_inputs(op) {
                     let input_group = blocks.block_of[input.i];
@@ -138,7 +138,7 @@ fn only_1_partition(dag: &unparametrized::OperationDag) -> Partitions {
 
 fn resolve_by_levelled_block(
     dag: &unparametrized::OperationDag,
-    p_cut: &PrecisionCut,
+    p_cut: &PartitionCut,
     default_partition: PartitionIndex,
     composable: bool,
 ) -> Partitions {
@@ -187,7 +187,8 @@ fn resolve_by_levelled_block(
         let group_partition = block_partition_of(op_i);
         match op {
             Op::Lut { input, .. } => {
-                let instruction_partition = p_cut.partition(dag, op).unwrap();
+                let instruction_partition =
+                    p_cut.partition(dag, OperatorIndex { i: op_i }).unwrap();
                 instrs_p[op_i].instruction_partition = instruction_partition;
                 let input_partition = instrs_p[input.i].instruction_partition;
                 instrs_p[op_i].inputs_transition = if input_partition == instruction_partition {
@@ -241,7 +242,7 @@ fn resolve_by_levelled_block(
 
 pub fn partitionning_with_preferred(
     dag: &unparametrized::OperationDag,
-    p_cut: &PrecisionCut,
+    p_cut: &PartitionCut,
     default_partition: PartitionIndex,
     composable: bool,
 ) -> Partitions {
@@ -263,22 +264,27 @@ pub mod tests {
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::dag::unparametrized;
 
-    fn default_p_cut() -> PrecisionCut {
-        PrecisionCut { p_cut: vec![2] }
+    fn default_p_cut() -> PartitionCut {
+        PartitionCut::from_precisions(&[2, 128])
     }
 
     fn partitionning_no_p_cut(dag: &unparametrized::OperationDag, composable: bool) -> Partitions {
-        let p_cut = PrecisionCut { p_cut: vec![] };
+        let p_cut = PartitionCut::empty();
         partitionning_with_preferred(dag, &p_cut, LOW_PRECISION_PARTITION, composable)
     }
 
     fn partitionning(dag: &unparametrized::OperationDag, composable: bool) -> Partitions {
-        partitionning_with_preferred(dag, &default_p_cut(), LOW_PRECISION_PARTITION, composable)
+        partitionning_with_preferred(
+            dag,
+            &PartitionCut::for_each_precision(dag),
+            LOW_PRECISION_PARTITION,
+            composable,
+        )
     }
 
     fn partitionning_with_preferred(
         dag: &unparametrized::OperationDag,
-        p_cut: &PrecisionCut,
+        p_cut: &PartitionCut,
         default_partition: usize,
         composable: bool,
     ) -> Partitions {

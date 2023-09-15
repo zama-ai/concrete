@@ -47,7 +47,7 @@ fn default_config() -> Config<'static> {
 
 fn optimize(
     dag: &unparametrized::OperationDag,
-    p_cut: &Option<PrecisionCut>,
+    p_cut: &Option<PartitionCut>,
     default_partition: usize,
 ) -> Option<Parameters> {
     let config = default_config();
@@ -64,7 +64,7 @@ fn optimize(
 }
 
 fn optimize_single(dag: &unparametrized::OperationDag) -> Option<Parameters> {
-    optimize(dag, &Some(PrecisionCut { p_cut: vec![] }), LOW_PARTITION)
+    optimize(dag, &Some(PartitionCut::empty()), LOW_PARTITION)
 }
 
 fn equiv_single(dag: &unparametrized::OperationDag) -> Option<bool> {
@@ -125,16 +125,12 @@ fn equiv_2_single(
     dag_1: &unparametrized::OperationDag,
     dag_2: &unparametrized::OperationDag,
 ) -> Option<bool> {
-    let precision_max = dag_multi.out_precisions.iter().copied().max().unwrap();
-    let p_cut = Some(PrecisionCut {
-        p_cut: vec![precision_max - 1],
-    });
     eprintln!("{dag_multi}");
     let sol_single_1 = solo_key::optimize::tests::optimize(dag_1);
     let sol_single_2 = solo_key::optimize::tests::optimize(dag_2);
-    let sol_multi = optimize(dag_multi, &p_cut, LOW_PARTITION);
-    let sol_multi_1 = optimize(dag_1, &p_cut, LOW_PARTITION);
-    let sol_multi_2 = optimize(dag_2, &p_cut, LOW_PARTITION);
+    let sol_multi = optimize(dag_multi, &None, LOW_PARTITION);
+    let sol_multi_1 = optimize(dag_1, &None, LOW_PARTITION);
+    let sol_multi_2 = optimize(dag_2, &None, LOW_PARTITION);
     let feasible_1 = sol_single_1.best_solution.is_some();
     let feasible_2 = sol_single_2.best_solution.is_some();
     let feasible_multi = sol_multi.is_some();
@@ -224,9 +220,7 @@ fn optimize_multi_independant_2_partitions_finally_added() {
 
     for precision1 in 1..11 {
         for precision2 in (precision1 + 1)..11 {
-            let p_cut = Some(PrecisionCut {
-                p_cut: vec![precision1],
-            });
+            let p_cut = Some(PartitionCut::from_precisions(&[precision1, precision2]));
             let dag_multi = dag_lut_sum_of_2_partitions_2_layer(precision1, precision2, false);
             let sol_1 = single_precision_sol[precision1 as usize].clone();
             let sol_2 = single_precision_sol[precision2 as usize].clone();
@@ -291,9 +285,7 @@ fn optimize_multi_independant_2_partitions_finally_added_and_luted() {
         .collect();
     for precision1 in 1..11 {
         for precision2 in (precision1 + 1)..11 {
-            let p_cut = Some(PrecisionCut {
-                p_cut: vec![precision1],
-            });
+            let p_cut = Some(PartitionCut::from_precisions(&[precision1, precision2]));
             let dag_multi = dag_lut_sum_of_2_partitions_2_layer(precision1, precision2, true);
             let sol_1 = single_precision_sol[precision1 as usize].clone();
             let sol_2 = single_precision_sol[precision2 as usize].clone();
@@ -343,7 +335,7 @@ fn optimize_multi_independant_2_partitions_finally_added_and_luted() {
 }
 
 fn optimize_rounded(dag: &unparametrized::OperationDag) -> Option<Parameters> {
-    let p_cut = Some(PrecisionCut { p_cut: vec![1] });
+    let p_cut = Some(PartitionCut::from_precisions(&[1, 128]));
     let default_partition = 0;
     optimize(dag, &p_cut, default_partition)
 }
@@ -488,7 +480,7 @@ fn test_partition_chain(decreasing: bool) {
         *input_precisions.last().unwrap(),
     );
     _ = dag.add_lut(lut_input, FunctionTable::UNKWOWN, min_precision);
-    let mut p_cut = PrecisionCut { p_cut: vec![] };
+    let mut p_cut = PartitionCut::empty();
     let sol = optimize(&dag, &Some(p_cut.clone()), 0).unwrap();
     assert!(sol.macro_params.len() == 1);
     let mut complexity = sol.complexity;
@@ -497,9 +489,8 @@ fn test_partition_chain(decreasing: bool) {
             // There is nothing to cut above max_precision
             continue;
         }
-        p_cut.p_cut.push(out_precision);
-        p_cut.p_cut.sort_unstable();
-        eprintln!("PCUT {p_cut}");
+        p_cut.p_cut.push((out_precision, f64::MAX));
+        p_cut.p_cut.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let sol = optimize(&dag, &Some(p_cut.clone()), 0).unwrap();
         let nb_partitions = sol.macro_params.len();
         assert!(
@@ -659,7 +650,15 @@ fn test_big_secret_key_sharing() {
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
-    let config_sharing = default_config();
+    let config_sharing = Config {
+        security_level: 128,
+        maximum_acceptable_error_probability: _4_SIGMA,
+        key_sharing: true,
+        ciphertext_modulus_log: 64,
+        fft_precision: 53,
+        complexity_model: &CpuComplexity::default(),
+        composable: false,
+    };
     let config_no_sharing = Config {
         key_sharing: false,
         ..config_sharing
@@ -701,7 +700,15 @@ fn test_big_and_small_secret_key() {
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
-    let config_sharing = default_config();
+    let config_sharing = Config {
+        security_level: 128,
+        maximum_acceptable_error_probability: _4_SIGMA,
+        key_sharing: true,
+        ciphertext_modulus_log: 64,
+        fft_precision: 53,
+        complexity_model: &CpuComplexity::default(),
+        composable: false,
+    };
     let config_no_sharing = Config {
         key_sharing: false,
         ..config_sharing
@@ -790,4 +797,41 @@ fn test_composition_1_partition_not_composable() {
     );
     assert!(normal_sol.is_ok());
     assert!(composed_sol.is_err());
+}
+
+#[test]
+fn test_maximal_multi() {
+    let config = default_config();
+    let search_space = SearchSpace::default_cpu();
+    let mut dag = unparametrized::OperationDag::new();
+    let input = dag.add_input(8, Shape::number());
+    let lut1 = dag.add_lut(input, FunctionTable::UNKWOWN, 8u8);
+    let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 8u8);
+    _ = dag.add_dot([lut2], [1 << 16]);
+
+    let sol = optimize(&dag, &None, 0).unwrap();
+    assert!(sol.macro_params.len() == 1);
+
+    let p_cut = PartitionCut::maximal_partitionning(&dag);
+    let sol = optimize(&dag, &Some(p_cut.clone()), 0).unwrap();
+    assert!(sol.macro_params.len() == 2);
+
+    eprintln!("{:?}", sol.micro_params.pbs);
+
+    let sol_ref =
+        super::optimize_to_circuit_solution(&dag, config, &search_space, &SHARED_CACHES, &None);
+    assert!(sol_ref.circuit_keys.secret_keys.len() == 2);
+
+    let sol = super::optimize_to_circuit_solution(
+        &dag,
+        config,
+        &search_space,
+        &SHARED_CACHES,
+        &Some(p_cut),
+    );
+    assert!(sol.circuit_keys.secret_keys.len() == 3);
+    let expected_speedup = (2 * 5859) as f64 / (1721 + 5859) as f64; // from ./optimizer i.e. v0
+    eprintln!("{} vs {}", sol.complexity, sol_ref.complexity);
+    // note: we have a 5% relative margin since dag complexity is slightly better than v0
+    assert!(sol.complexity < 1.05 * (sol_ref.complexity / expected_speedup));
 }

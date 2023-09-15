@@ -28,7 +28,8 @@ concrete_optimizer::Options options_from_config(optimizer::Config config) {
   concrete_optimizer::Options options = {
       /* .security_level = */ config.security,
       /* .maximum_acceptable_error_probability = */ config.p_error,
-      /* . key_sharing */ config.key_sharing,
+      /* .key_sharing = */ config.key_sharing,
+      /* .multi_param_strategy = */ config.multi_param_strategy,
       /* .default_log_norm2_woppbs = */ config.fallback_log_norm_woppbs,
       /* .use_gpu_constraints = */ config.use_gpu_constraints,
       /* .encoding = */ config.encoding,
