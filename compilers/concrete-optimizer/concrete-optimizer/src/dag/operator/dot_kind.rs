@@ -11,7 +11,7 @@ pub enum DotKind {
     // inputs = [[x, y, z], [x, y, z]], weights = [[a,b,c]], = [same, same]
     // inputs = [[x, y, z], [u, v, w]], weights = [a, b], [x*a + u*b, y*a + v*b, z*c + w*c]
     // inputs = [[x, y, z]], weights = [a], [x*a, y*a, z*a]
-    Broadcast,
+    Broadcast { shape: Shape },
     Unsupported,
 }
 
@@ -25,13 +25,19 @@ pub fn dot_kind<W>(nb_inputs: u64, input_shape: &Shape, weights: &ClearTensor<W>
     } else if inputs_shape == weights.shape {
         DotKind::CompatibleTensor
     } else if nb_inputs == 1 && input_shape.erase_first_dim() == weights.shape {
-        DotKind::Broadcast
+        DotKind::Broadcast {
+            shape: Shape::vector(input_shape.first_dim_size()),
+        }
     } else if weights.shape.is_vector() && weights.shape.flat_size() == nb_inputs {
         // Same as simple but with tensor inputs
-        DotKind::Broadcast
+        DotKind::Broadcast {
+            shape: input_shape.clone(),
+        }
     } else if weights.shape.is_number() && nb_inputs == 1 {
         // Any input multiply by one number
-        DotKind::Broadcast
+        DotKind::Broadcast {
+            shape: input_shape.clone(),
+        }
     } else {
         DotKind::Unsupported
     }
@@ -65,7 +71,22 @@ mod tests {
         };
         assert_eq!(
             dot_kind(1, &s2x2, &Weights::vector([1, 2])),
-            DotKind::Broadcast
+            DotKind::Broadcast {
+                shape: Shape::vector(2)
+            }
+        );
+    }
+
+    #[test]
+    fn test_broadcast_scalar_mul() {
+        let s2x2 = Shape {
+            dimensions_size: vec![2, 2],
+        };
+        assert_eq!(
+            dot_kind(1, &s2x2, &Weights::number(1)),
+            DotKind::Broadcast {
+                shape: s2x2.clone()
+            }
         );
     }
 

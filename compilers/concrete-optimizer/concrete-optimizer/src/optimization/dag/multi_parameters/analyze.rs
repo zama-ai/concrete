@@ -192,7 +192,7 @@ fn out_variance(
             let input_shape = first(inputs, out_shapes);
             let kind = dot_kind(inputs.len() as u64, input_shape, weights);
             match kind {
-                DK::Simple | DK::Tensor | DK::Broadcast => {
+                DK::Simple | DK::Tensor | DK::Broadcast { .. } => {
                     let inputs_variance = (0..weights.values.len()).map(|j| {
                         let input = if inputs.len() > 1 {
                             inputs[j]
