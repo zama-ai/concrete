@@ -594,6 +594,7 @@ fn fks_to_optimize(
 // In case fast ks are not used
 pub const REAL_FAST_KS: bool = false;
 
+#[allow(clippy::cognitive_complexity)]
 #[allow(clippy::too_many_lines)]
 fn optimize_macro(
     security_level: u64,
@@ -639,6 +640,7 @@ fn optimize_macro(
             .iter()
             .map(|b| (*a, *b))
     });
+    let mut lb_message = None;
     for (glwe_dimension, log2_polynomial_size) in glwe_params_domain {
         let glwe_params = GlweParameters {
             log2_polynomial_size,
@@ -739,6 +741,7 @@ fn optimize_macro(
             let cmux_pareto = caches.cmux.pareto_quantities(glwe_params);
 
             if non_feasible {
+                lb_message = Some("Non feasible");
                 // here we optimize for feasibility only
                 // if nothing is feasible, it will give improves feasability for later iterations
                 let mut macro_params = init_parameters.macro_params.clone();
@@ -800,9 +803,13 @@ fn optimize_macro(
                 // erase macros and all fks that can't be real
                 // set global is_lower_bound here, if any parameter is missing this is lower bound
                 // optimize_micro has already checked for best-ness
+                lb_message = None;
                 let mut macro_params = init_parameters.macro_params.clone();
                 macro_params[partition] = Some(macro_param_partition);
                 let mut is_lower_bound = macro_params.iter().any(Option::is_none);
+                if is_lower_bound {
+                    lb_message = Some("is_lower_bound due to missing macro parameter");
+                }
                 // copy back pbs from other partition
                 let mut all_pbs = init_parameters.micro_params.pbs.clone();
                 all_pbs[partition] = Some(some_micro_params.pbs);
@@ -821,7 +828,8 @@ fn optimize_macro(
                         continue;
                     }
                     let fks = &all_fks[src_partition][dst_partition];
-                    if fks.is_none() {
+                    if !is_lower_bound && fks.is_none() {
+                        lb_message = Some("is_lower_bound due to missing fast keyswitch parameter");
                         is_lower_bound = true;
                     }
                     let src_glwe_param = macro_params[src_partition].map(|p| p.glwe_params);
@@ -830,6 +838,9 @@ fn optimize_macro(
                     let dst_glwe_param_stable = dst_glwe_param == fks.map(|p| p.dst_glwe_param);
                     if src_glwe_param_stable && dst_glwe_param_stable {
                         continue;
+                    }
+                    if !is_lower_bound {
+                        lb_message = Some("is_lower_bound due to changing others fks macro param");
                     }
                     all_fks[src_partition][dst_partition] = None;
                     is_lower_bound = true;
@@ -856,6 +867,9 @@ fn optimize_macro(
                 assert!(best_parameters.is_feasible);
             }
         }
+    }
+    if DEBUG && lb_message.is_some() {
+        eprintln!("{}", lb_message.unwrap());
     }
     best_parameters
 }
