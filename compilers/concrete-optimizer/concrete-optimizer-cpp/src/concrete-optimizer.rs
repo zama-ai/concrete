@@ -253,6 +253,7 @@ fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &OperationDag) -> ff
             log2_base: sol.br_decomposition_base_log,
         },
         description: "tlu bootstrap".into(),
+        unitary_cost: 0.0,
     };
     let circuit_bootstrap_keys = if sol.use_wop_pbs {
         vec![ffi::CircuitBoostrapKey {
@@ -408,6 +409,7 @@ impl From<keys_spec::BootstrapKey> for ffi::BootstrapKey {
             input_key: v.input_key.into(),
             output_key: v.output_key.into(),
             br_decomposition_parameter: v.br_decomposition_parameter.into(),
+            unitary_cost: v.unitary_cost,
             description: v.description,
         }
     }
@@ -875,6 +877,7 @@ mod ffi {
         pub input_key: SecretLweKey,
         pub output_key: SecretLweKey,
         pub br_decomposition_parameter: BrDecompositionParameters,
+        pub unitary_cost: f64,
         pub description: String,
     }
 
