@@ -1,16 +1,14 @@
-use std::collections::HashSet;
-
 use crate::dag::operator::{
     dot_kind, DotKind, LevelledComplexity, Operator, OperatorIndex, Precision, Shape,
 };
 use crate::dag::rewrite::round::expand_round_and_index_map;
 use crate::dag::unparametrized;
 use crate::optimization::config::NoiseBoundConfig;
+use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitionning::partitionning_with_preferred;
 use crate::optimization::dag::multi_parameters::partitions::{
     InstructionPartition, PartitionIndex, Transition,
 };
-use crate::optimization::dag::multi_parameters::precision_cut::PrecisionCut;
 use crate::optimization::dag::multi_parameters::symbolic_variance::SymbolicVariance;
 use crate::optimization::dag::solo_key::analyze::{
     extra_final_values_to_check, first, safe_noise_bound,
@@ -46,13 +44,13 @@ pub struct AnalyzedDag {
     pub operations_count_per_instrs: Vec<OperationsCount>,
     pub operations_count: OperationsCount,
     pub instruction_rewrite_index: Vec<Vec<OperatorIndex>>,
-    pub p_cut: PrecisionCut,
+    pub p_cut: PartitionCut,
 }
 
 pub fn analyze(
     dag: &unparametrized::OperationDag,
     noise_config: &NoiseBoundConfig,
-    p_cut: &Option<PrecisionCut>,
+    p_cut: &Option<PartitionCut>,
     default_partition: PartitionIndex,
     composable: bool,
 ) -> Result<AnalyzedDag> {
@@ -63,7 +61,7 @@ pub fn analyze(
     #[allow(clippy::option_if_let_else)]
     let p_cut = match p_cut {
         Some(p_cut) => p_cut.clone(),
-        None => maximal_p_cut(&dag),
+        None => PartitionCut::for_each_precision(&dag),
     };
     let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition, composable);
     let instrs_partition = partitions.instrs_partition;
@@ -430,19 +428,6 @@ fn sum_operations_count(all_counts: &[OperationsCount]) -> OperationsCount {
     OperationsCount { counts: sum_counts }
 }
 
-fn maximal_p_cut(dag: &unparametrized::OperationDag) -> PrecisionCut {
-    let mut lut_in_precisions: HashSet<_> = HashSet::default();
-    for op in &dag.operators {
-        if let Op::Lut { input, .. } = op {
-            _ = lut_in_precisions.insert(dag.out_precisions[input.i]);
-        }
-    }
-    let mut p_cut: Vec<_> = lut_in_precisions.iter().copied().collect();
-    p_cut.sort_unstable();
-    _ = p_cut.pop();
-    PrecisionCut { p_cut }
-}
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -461,7 +446,7 @@ pub mod tests {
         dag: &unparametrized::OperationDag,
         default_partition: PartitionIndex,
     ) -> AnalyzedDag {
-        let p_cut = PrecisionCut { p_cut: vec![2] };
+        let p_cut = PartitionCut::for_each_precision(dag);
         super::analyze(dag, &CONFIG, &Some(p_cut), default_partition, false).unwrap()
     }
 
@@ -533,7 +518,7 @@ pub mod tests {
     fn test_composition_with_input_fails() {
         let mut dag = unparametrized::OperationDag::new();
         let _ = dag.add_input(1, Shape::number());
-        let p_cut = PrecisionCut { p_cut: vec![2] };
+        let p_cut = PartitionCut::for_each_precision(&dag);
         let res = super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true);
         assert!(res.is_err());
         assert!(res.unwrap_err() == NotComposable);
@@ -544,7 +529,7 @@ pub mod tests {
         let mut dag = unparametrized::OperationDag::new();
         let input1 = dag.add_input(1, Shape::number());
         let _ = dag.add_lut(input1, FunctionTable::UNKWOWN, 2);
-        let p_cut = PrecisionCut { p_cut: vec![2] };
+        let p_cut = PartitionCut::for_each_precision(&dag);
         let dag =
             super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true).unwrap();
         assert!(dag.nb_partitions == 1);
@@ -989,17 +974,12 @@ pub mod tests {
         let mut dag = unparametrized::OperationDag::new();
         let max_precision = 10;
         let mut lut_input = dag.add_input(max_precision, Shape::number());
-        let mut p_cut = vec![];
         for out_precision in (1..=max_precision).rev() {
             lut_input = dag.add_lut(lut_input, FunctionTable::UNKWOWN, out_precision);
         }
         _ = dag.add_lut(lut_input, FunctionTable::UNKWOWN, 1);
-        for out_precision in 1..max_precision {
-            p_cut.push(out_precision);
-        }
-        eprintln!("{}", dag.dump());
-        let p_cut = PrecisionCut { p_cut };
-        eprintln!("{p_cut}");
+        let precisions: Vec<_> = (1..=max_precision).collect();
+        let p_cut = PartitionCut::from_precisions(&precisions);
         let dag = super::analyze(
             &dag,
             &CONFIG,

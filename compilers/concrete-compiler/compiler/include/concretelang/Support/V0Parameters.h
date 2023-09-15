@@ -97,6 +97,8 @@ enum Strategy {
 std::string const StrategyLabel[] = {"V0", "dag-mono", "dag-multi"};
 
 constexpr Strategy DEFAULT_STRATEGY = Strategy::DAG_MONO;
+constexpr concrete_optimizer::MultiParamStrategy DEFAULT_MULTI_PARAM_STRATEGY =
+    concrete_optimizer::MultiParamStrategy::ByPrecision;
 constexpr bool DEFAULT_KEY_SHARING = true;
 
 struct Config {
@@ -105,6 +107,7 @@ struct Config {
   bool display;
   Strategy strategy;
   bool key_sharing;
+  concrete_optimizer::MultiParamStrategy multi_param_strategy;
   std::uint64_t security;
   double fallback_log_norm_woppbs;
   bool use_gpu_constraints;
@@ -121,6 +124,7 @@ constexpr Config DEFAULT_CONFIG = {
     DEFAULT_DISPLAY,
     DEFAULT_STRATEGY,
     DEFAULT_KEY_SHARING,
+    DEFAULT_MULTI_PARAM_STRATEGY,
     DEFAULT_SECURITY,
     DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
     DEFAULT_USE_GPU_CONSTRAINTS,

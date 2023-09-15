@@ -944,6 +944,7 @@ namespace concrete_optimizer {
   struct OperationDag;
   struct Weights;
   enum class Encoding : ::std::uint8_t;
+  enum class MultiParamStrategy : ::std::uint8_t;
   struct Options;
   namespace dag {
     struct OperatorIndex;
@@ -1070,12 +1071,21 @@ struct DagSolution final {
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$DagSolution
 } // namespace dag
 
+#ifndef CXXBRIDGE1_ENUM_concrete_optimizer$MultiParamStrategy
+#define CXXBRIDGE1_ENUM_concrete_optimizer$MultiParamStrategy
+enum class MultiParamStrategy : ::std::uint8_t {
+  ByPrecision = 0,
+  ByPrecisionAndNorm2 = 1,
+};
+#endif // CXXBRIDGE1_ENUM_concrete_optimizer$MultiParamStrategy
+
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Options
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$Options
 struct Options final {
   ::std::uint64_t security_level;
   double maximum_acceptable_error_probability;
   bool key_sharing;
+  ::concrete_optimizer::MultiParamStrategy multi_param_strategy;
   double default_log_norm2_woppbs;
   bool use_gpu_constraints;
   ::concrete_optimizer::Encoding encoding;

@@ -18,8 +18,8 @@ use crate::parameters::GlweParameters;
 
 use crate::optimization::dag::multi_parameters::complexity::Complexity;
 use crate::optimization::dag::multi_parameters::feasible::Feasible;
+use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
-use crate::optimization::dag::multi_parameters::precision_cut::PrecisionCut;
 use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
 use crate::optimization::Err::{NoParametersFound, NotComposable};
 
@@ -904,7 +904,7 @@ pub fn optimize(
     config: Config,
     search_space: &SearchSpace,
     persistent_caches: &PersistDecompCaches,
-    p_cut: &Option<PrecisionCut>,
+    p_cut: &Option<PartitionCut>,
     default_partition: PartitionIndex,
 ) -> optimization::Result<(AnalyzedDag, Parameters)> {
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
@@ -1160,7 +1160,7 @@ pub fn optimize_to_circuit_solution(
     config: Config,
     search_space: &SearchSpace,
     persistent_caches: &PersistDecompCaches,
-    p_cut: &Option<PrecisionCut>,
+    p_cut: &Option<PartitionCut>,
 ) -> keys_spec::CircuitSolution {
     if lut_count_from_dag(dag) == 0 {
         // If there are no lut in the dag the noise is never refresh so the dag cannot be composable

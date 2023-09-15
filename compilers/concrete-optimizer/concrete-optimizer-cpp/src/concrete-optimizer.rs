@@ -6,8 +6,9 @@ use concrete_optimizer::dag::operator::{
 };
 use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
-use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::{self, CircuitSolution};
-use concrete_optimizer::optimization::dag::multi_parameters::precision_cut::PrecisionCut;
+use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
+use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::CircuitSolution;
+use concrete_optimizer::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
@@ -576,7 +577,7 @@ impl OperationDag {
                     encoding,
                     options.default_log_norm2_woppbs,
                     &caches_from(options),
-                    &Some(PrecisionCut { p_cut: vec![] }),
+                    &Some(PartitionCut::empty()),
                 );
             let circuit_sol: ffi::CircuitSolution = circuit_sol.into();
             (&circuit_sol).into()
@@ -612,6 +613,13 @@ impl OperationDag {
         let search_space = SearchSpace::default(processing_unit);
 
         let encoding = options.encoding.into();
+        #[allow(clippy::wildcard_in_or_patterns)]
+        let p_cut = match options.multi_param_strategy {
+            ffi::MultiParamStrategy::ByPrecisionAndNorm2 => {
+                PartitionCut::maximal_partitionning(&self.0)
+            }
+            ffi::MultiParamStrategy::ByPrecision | _ => PartitionCut::for_each_precision(&self.0),
+        };
         let circuit_sol =
             concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
                 &self.0,
@@ -620,7 +628,7 @@ impl OperationDag {
                 encoding,
                 options.default_log_norm2_woppbs,
                 &caches_from(options),
-                &None,
+                &Some(p_cut),
             );
         circuit_sol.into()
     }
@@ -801,12 +809,20 @@ mod ffi {
         pub crt_decomposition: Vec<u64>,
     }
 
+    #[derive(Debug, Clone, Copy)]
+    #[namespace = "concrete_optimizer"]
+    pub enum MultiParamStrategy {
+        ByPrecision,
+        ByPrecisionAndNorm2,
+    }
+
     #[namespace = "concrete_optimizer"]
     #[derive(Debug, Clone, Copy)]
     pub struct Options {
         pub security_level: u64,
         pub maximum_acceptable_error_probability: f64,
         pub key_sharing: bool,
+        pub multi_param_strategy: MultiParamStrategy,
         pub default_log_norm2_woppbs: f64,
         pub use_gpu_constraints: bool,
         pub encoding: Encoding,

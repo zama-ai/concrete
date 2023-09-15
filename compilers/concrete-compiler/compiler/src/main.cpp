@@ -298,6 +298,21 @@ llvm::cl::opt<double> fallbackLogNormWoppbs(
                    "when the precise value can't be computed."),
     llvm::cl::init(optimizer::DEFAULT_CONFIG.fallback_log_norm_woppbs));
 
+llvm::cl::opt<concrete_optimizer::MultiParamStrategy>
+    optimizerMultiParamStrategy(
+        "optimizer-multi-parameter-strategy",
+        llvm::cl::desc(
+            "Select the concrete optimizer multi parameter strategy"),
+        llvm::cl::init(optimizer::DEFAULT_MULTI_PARAM_STRATEGY),
+        llvm::cl::values(clEnumValN(
+            concrete_optimizer::MultiParamStrategy::ByPrecision, "by-precision",
+            "One partition set for each possible input TLU precision")),
+        llvm::cl::values(clEnumValN(
+            concrete_optimizer::MultiParamStrategy::ByPrecisionAndNorm2,
+            "by-precision-and-norm2",
+            "One partition set for each possible input TLU precision and "
+            "output norm2")));
+
 llvm::cl::opt<concrete_optimizer::Encoding> optimizerEncoding(
     "force-encoding", llvm::cl::desc("Choose cyphertext encoding."),
     llvm::cl::init(optimizer::DEFAULT_CONFIG.encoding),
@@ -484,6 +499,8 @@ cmdlineCompilationOptions() {
   options.optimizerConfig.display = cmdline::displayOptimizerChoice;
   options.optimizerConfig.strategy = cmdline::optimizerStrategy;
   options.optimizerConfig.key_sharing = cmdline::optimizerKeySharing;
+  options.optimizerConfig.multi_param_strategy =
+      cmdline::optimizerMultiParamStrategy;
   options.optimizerConfig.encoding = cmdline::optimizerEncoding;
   options.optimizerConfig.cache_on_disk = !cmdline::optimizerNoCacheOnDisk;
   options.optimizerConfig.composable = cmdline::optimizerAllowComposition;

@@ -196,7 +196,7 @@ fn out_variance(
     }
 }
 
-fn out_variances(dag: &unparametrized::OperationDag) -> Vec<SymbolicVariance> {
+pub fn out_variances(dag: &unparametrized::OperationDag) -> Vec<SymbolicVariance> {
     let nb_ops = dag.operators.len();
     let mut out_variances = Vec::with_capacity(nb_ops);
     for op in &dag.operators {
