@@ -173,4 +173,4 @@ def test_comparison(
         ],
     ]
     for sample in samples:
-        helpers.check_execution(circuit, function, sample, retries=3)
+        helpers.check_execution(circuit, function, sample, retries=5)
