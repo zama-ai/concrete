@@ -58,7 +58,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
   return %35: !FHE.eint<7>
 }
 )XXX",
-             "main", false, true, false);
+             "main", false, true, false, false, 1e-40);
 
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     llvm::Expected<uint64_t> res_1 = lambda(1_u64, 2_u64, 3_u64, 4_u64);
