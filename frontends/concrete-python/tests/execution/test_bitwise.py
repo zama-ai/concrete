@@ -99,7 +99,7 @@ def test_bitwise(
     print()
 
     parameter_encryption_statuses = {"x": "encrypted", "y": "encrypted"}
-    configuration = helpers.configuration()
+    configuration = helpers.configuration().fork(use_insecure_key_cache=False)
 
     if strategy is not None:
         configuration = configuration.fork(bitwise_strategy_preference=[strategy])
