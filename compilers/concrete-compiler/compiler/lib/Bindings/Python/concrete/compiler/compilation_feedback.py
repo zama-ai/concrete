@@ -21,7 +21,22 @@ from .wrapper import WrapperCpp
 
 
 # matches (@tag, separator( | ), filename)
-REGEX_LOCATION = r"loc\(\"(@[\w\.]+)?( \| )?(.+)\""
+REGEX_LOCATION = re.compile(r"loc\(\"(@[\w\.]+)?( \| )?(.+)\"")
+
+
+def tag_from_location(location):
+    """
+    Extract tag of the operation from its location.
+    """
+
+    match = REGEX_LOCATION.match(location)
+    if match is not None:
+        tag, _, _ = match.groups()
+        # remove the @
+        tag = tag[1:] if tag else ""
+    else:
+        tag = ""
+    return tag
 
 
 class CompilationFeedback(WrapperCpp):
@@ -135,9 +150,7 @@ class CompilationFeedback(WrapperCpp):
             if statistic.operation not in operations:
                 continue
 
-            tag, _, _ = re.match(REGEX_LOCATION, statistic.location).groups()
-            # remove the @
-            tag = tag[1:] if tag else ""
+            tag = tag_from_location(statistic.location)
 
             tag_components = tag.split(".")
             for i in range(1, len(tag_components) + 1):
@@ -182,9 +195,7 @@ class CompilationFeedback(WrapperCpp):
             if statistic.operation not in operations:
                 continue
 
-            tag, _, _ = re.match(REGEX_LOCATION, statistic.location).groups()
-            # remove the @
-            tag = tag[1:] if tag else ""
+            tag = tag_from_location(statistic.location)
 
             tag_components = tag.split(".")
             for i in range(1, len(tag_components) + 1):
