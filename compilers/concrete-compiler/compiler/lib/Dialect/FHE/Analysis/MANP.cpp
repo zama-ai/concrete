@@ -27,6 +27,7 @@
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LogicalResult.h>
+#include <numeric>
 
 #define GEN_PASS_CLASSES
 #include <concretelang/Dialect/FHE/Analysis/MANP.h.inc>
@@ -737,21 +738,49 @@ public:
       // Set minimal MANP for encrypted function arguments
       propagateIfChanged(lattice, lattice->join(MANPLatticeValue{
                                       std::optional{llvm::APInt(1, 1)}}));
+    }
+    // In case of block arguments used in the block of a linalg.genric
+    // operation: map the MANP values of the operands into the block arguments
+    else if (lattice->getPoint().isa<mlir::BlockArgument>() ||
+             mlir::concretelang::fhe::utils::isEncryptedValue(
+                 lattice->getPoint())) {
+      mlir::Block *block =
+          lattice->getPoint().cast<mlir::BlockArgument>().getOwner();
+
+      if (block && block->getParentOp() &&
+          llvm::isa<mlir::linalg::GenericOp>(block->getParentOp())) {
+        auto genericOp =
+            mlir::dyn_cast<mlir::linalg::GenericOp>(block->getParentOp());
+        // Get the MANP from the corresponding input/output
+        auto argIndex =
+            lattice->getPoint().cast<mlir::BlockArgument>().getArgNumber();
+        auto operandRange = genericOp.getInputs();
+        if (argIndex >= operandRange.size()) {
+          argIndex -= operandRange.size();
+          operandRange = genericOp.getOutputs();
+        }
+        auto v = operandRange[argIndex];
+        auto manp = this->getLatticeElement(v)->getValue().getMANP().value_or(
+            llvm::APInt(1, 1));
+        propagateIfChanged(lattice, lattice->join(MANPLatticeValue{manp}));
+      }
     } else {
       // Everything else is initialized with an unset value
       propagateIfChanged(lattice, lattice->join(MANPLatticeValue{}));
     }
   }
 
-  void visitOperation(Operation *op, ArrayRef<const MANPLattice *> operands,
-                      ArrayRef<MANPLattice *> results) override {
-    MANPLattice *latticeRes = results[0];
-
+  std::optional<llvm::APInt>
+  norm2SqEquivFromOp(Operation *op, ArrayRef<const MANPLattice *> operands) {
     std::optional<llvm::APInt> norm2SqEquiv;
-
     if (auto cstNoiseOp =
             llvm::dyn_cast<mlir::concretelang::FHE::ConstantNoise>(op)) {
-      norm2SqEquiv = llvm::APInt{1, 1, false};
+      if (llvm::isa<mlir::concretelang::FHE::ZeroEintOp,
+                    mlir::concretelang::FHE::ZeroTensorOp>(op)) {
+        norm2SqEquiv = llvm::APInt{1, 0, false};
+      } else {
+        norm2SqEquiv = llvm::APInt{1, 1, false};
+      }
     } else if (llvm::isa<mlir::concretelang::FHE::ToBoolOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::FromBoolOp>(op)) {
       norm2SqEquiv = getNoOpSqMANP(operands);
@@ -876,8 +905,11 @@ public:
         norm2SqEquiv = {};
       }
     }
-
-    else if (llvm::isa<mlir::arith::ConstantOp>(op)) {
+    // Linalg Generic
+    else if (auto linalgGenericOp =
+                 llvm::dyn_cast<mlir::linalg::GenericOp>(op)) {
+      norm2SqEquiv = emulateLinalgGenric(linalgGenericOp, operands);
+    } else if (llvm::isa<mlir::arith::ConstantOp>(op)) {
       norm2SqEquiv = {};
     } else if (llvm::isa<mlir::concretelang::FHE::FHEDialect>(
                    *op->getDialect())) {
@@ -886,6 +918,14 @@ public:
     } else {
       norm2SqEquiv = {};
     }
+    return norm2SqEquiv;
+  }
+
+  void visitOperation(Operation *op, ArrayRef<const MANPLattice *> operands,
+                      ArrayRef<MANPLattice *> results) override {
+    MANPLattice *latticeRes = results[0];
+
+    std::optional<llvm::APInt> norm2SqEquiv = norm2SqEquivFromOp(op, operands);
 
     if (norm2SqEquiv.has_value()) {
       latticeRes->join(MANPLatticeValue{norm2SqEquiv});
@@ -913,6 +953,194 @@ public:
     } else {
       latticeRes->join(MANPLatticeValue{});
     }
+  }
+
+  /// Compute the flat index of a tensor given its shape, the current loop
+  /// indices, and the map between loop and tensor indices
+  size_t indexFromLoopRange(mlir::SmallVector<int64_t> loopIndices,
+                            mlir::AffineMap map,
+                            mlir::ArrayRef<int64_t> shape) {
+    llvm::SmallVector<mlir::Attribute> tensorIndices;
+    llvm::SmallVector<Attribute> constantIndices;
+    for (auto i : loopIndices) {
+      constantIndices.push_back(
+          IntegerAttr::get(IntegerType::get(map.getContext(), 64), i));
+    }
+    assert(map.constantFold(constantIndices, tensorIndices).succeeded());
+    assert(tensorIndices.size() == shape.size());
+
+    int64_t multiplier = 1;
+    size_t index = 0;
+    for (int64_t i = shape.size() - 1; i >= 0; i--) {
+      index += tensorIndices[i].cast<IntegerAttr>().getInt() * multiplier;
+      multiplier *= shape[i];
+    }
+    return index;
+  }
+
+  // Compute the MANP value of a linalg.generic operation by emulating its
+  // execution
+  std::optional<llvm::APInt>
+  emulateLinalgGenric(mlir::linalg::GenericOp genericOp,
+                      llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+    assert(genericOp.getOutputs().size() == 1 &&
+           "MANP doesn't support linalg.genric with more than one output");
+
+    // We want to use a different mechanism to store MANP values than the
+    // Analysis. We don't want to write anything to the lattice values
+    // controlled by the analysis, but we will use them to read values that we
+    // don't yet have in the emulation
+    mlir::DenseMap<mlir::Value, MANPLatticeValue> valueToManp;
+    auto fetchOrFallbackToAnalysis =
+        [&](mlir::Value value) -> MANPLatticeValue * {
+      auto elem = valueToManp.find(value);
+      if (elem != valueToManp.end()) {
+        return &elem->second;
+      }
+      auto manp = getLatticeElement(value)->getValue();
+      valueToManp[value] = manp;
+      return &valueToManp[value];
+    };
+    auto loopRange =
+        mlir::concretelang::fhe::utils::getLinalgGenericLoopRange(genericOp);
+    auto iterCount = std::accumulate(loopRange.begin(), loopRange.end(), 1,
+                                     std::multiplies<int64_t>());
+    llvm::SmallVector<int64_t> strides;
+    auto stride = iterCount;
+    for (size_t i = 0; i < loopRange.size(); i++) {
+      stride /= loopRange[i];
+      strides.push_back(stride);
+    }
+
+    // clone the genricOp to replace block arguments with constant values when
+    // needed. The clone op must be destroyed at the end of the function
+    auto genericOpClone = genericOp.clone();
+
+    // init block arguments' MANP: map block arguments with op operands
+    for (auto arg : genericOpClone.getBlock()->getArguments()) {
+      auto argIndex = arg.getArgNumber();
+      auto operandRange = genericOpClone.getInputs();
+      if (argIndex >= operandRange.size()) {
+        argIndex -= operandRange.size();
+        operandRange = genericOpClone.getOutputs();
+      }
+      valueToManp[arg] = getLatticeElement(operandRange[argIndex])->getValue();
+    }
+
+    // keep track of the MANP of different elements in the output tensor
+    // (initialized to the initial output MANP value)
+    auto outputArg = genericOpClone.getBlock()->getArguments().back();
+    auto outputType =
+        genericOpClone.getOutputs().front().getType().cast<RankedTensorType>();
+    auto outputSize = std::accumulate(outputType.getShape().begin(),
+                                      outputType.getShape().end(), 1,
+                                      std::multiplies<int64_t>());
+    std::vector<llvm::APInt> outputMANPs(
+        outputSize, fetchOrFallbackToAnalysis(outputArg)->getMANP().value());
+
+    // indices at a specific iteration
+    llvm::SmallVector<int64_t> indices(loopRange.size(), 0);
+    for (auto i = 0; i < iterCount; i++) {
+      for (size_t iterPos = 0; iterPos < indices.size(); iterPos++) {
+        indices[iterPos] = (i / strides[iterPos]) % loopRange[iterPos];
+      }
+
+      // if a linalg genric input is constant, replace the uses of its
+      // respective block argument with a constant value. This avoids the
+      // computation of the MANP to use conservative values.
+      // we also have to replace them back for the next iteration to be able to
+      // update them again with new values
+      mlir::DenseMap<mlir::BlockArgument, arith::ConstantOp> toReplaceBack;
+      for (auto arg : genericOpClone.getBlock()->getArguments()) {
+        auto argIndex = arg.getArgNumber();
+        auto inputs = genericOpClone.getInputs();
+        // don't consider outputs
+        if (argIndex >= inputs.size())
+          continue;
+        auto input = inputs[argIndex];
+        auto definingOp = input.getDefiningOp();
+        if (definingOp && mlir::isa<mlir::arith::ConstantOp>(definingOp)) {
+          // fetch constant value
+          auto constantOp = mlir::dyn_cast<mlir::arith::ConstantOp>(definingOp);
+          mlir::DenseIntElementsAttr denseAttr =
+              constantOp.getValueAttr().dyn_cast<mlir::DenseIntElementsAttr>();
+          auto constantTensor = denseAttr.getValues<APInt>();
+          auto constantIndex = indexFromLoopRange(
+              indices, genericOpClone.getIndexingMapsArray()[argIndex],
+              denseAttr.getType().getShape());
+          APInt constantValue = constantTensor[constantIndex];
+          // create new constant op with constant value
+          auto opBuilder = mlir::OpBuilder(genericOpClone.getContext());
+          auto opState = mlir::OperationState(
+              mlir::UnknownLoc::get(genericOpClone.getContext()),
+              arith::ConstantOp::getOperationName());
+          arith::ConstantOp::build(
+              opBuilder, opState,
+              mlir::IntegerAttr::get(denseAttr.getType().getElementType(),
+                                     constantValue));
+          auto newConstantOp =
+              arith::ConstantOp(mlir::Operation::create(opState));
+          genericOpClone.getBlock()->push_front(newConstantOp);
+          // replace uses of the block argument with the constant value
+          arg.replaceAllUsesWith(newConstantOp.getResult());
+          toReplaceBack[arg] = newConstantOp;
+        }
+      }
+
+      // we want to replace the MANP of the block argument corresponding to the
+      // output with the MANP value corresponding to the currently accessed
+      // tensor element
+      size_t outputIndex = indexFromLoopRange(
+          indices,
+          genericOpClone.getIndexingMapsArray()[outputArg.getArgNumber()],
+          outputType.getShape());
+      valueToManp[outputArg] = MANPLatticeValue(outputMANPs[outputIndex]);
+      genericOpClone.getBody()->walk([&](mlir::Operation *op) {
+        // we update the appropriate element's MANP value using the index of the
+        // currently accessed output element
+        if (auto yieldOp = mlir::dyn_cast<mlir::linalg::YieldOp>(op)) {
+          auto manp = fetchOrFallbackToAnalysis(yieldOp->getOperand(0));
+          outputMANPs[outputIndex] = manp->getMANP().value();
+          return;
+        }
+        // compute using the op and operand manp values
+        mlir::SmallVector<const MANPLattice *> latticeOperands;
+        for (auto operand : op->getOperands()) {
+          auto lattice = new MANPLattice(operand);
+          lattice->join(*fetchOrFallbackToAnalysis(operand));
+          latticeOperands.push_back(lattice);
+        }
+        std::optional<llvm::APInt> norm2SqEquiv =
+            norm2SqEquivFromOp(op, latticeOperands);
+        // update the MANP of the result value
+        if (op->getNumResults() > 0) {
+          valueToManp[op->getResult(0).cast<mlir::Value>()] =
+              MANPLatticeValue(norm2SqEquiv);
+        }
+        // free space of lattice elements
+        for (auto toFree : latticeOperands) {
+          delete toFree;
+        }
+      });
+
+      // replace back the uses of block arguments which were replaced by
+      // constant values
+      for (auto replacement : toReplaceBack) {
+        auto blockArg = replacement.first;
+        auto constantOp = replacement.second;
+        auto constantValue = constantOp.getResult();
+        constantValue.replaceAllUsesWith(blockArg);
+        constantOp->remove();
+        constantOp->destroy();
+      }
+    }
+    genericOpClone->destroy();
+    // final result MANP is the max of output
+    llvm::APInt result = outputMANPs[0];
+    for (auto manp : outputMANPs) {
+      result = APIntUMax(result, manp);
+    }
+    return result;
   }
 
 private:

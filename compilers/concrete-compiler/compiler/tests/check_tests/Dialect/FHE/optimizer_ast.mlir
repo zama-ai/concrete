@@ -1,4 +1,4 @@
-// RUN: concretecompiler --verbose --split-input-file --action=dump-fhe  %s 2>&1| FileCheck %s
+// RUN: concretecompiler --verbose --passes canonicalize --passes MANP --passes ConcreteOptimizer --split-input-file --action=dump-fhe-no-linalg  %s 2>&1| FileCheck %s
 
 func.func @main(%arg0: tensor<5x!FHE.eint<5>>) -> !FHE.eint<5> {
   %weights = arith.constant dense<[-1, -1, -1, -1, -1]> : tensor<5xi6>

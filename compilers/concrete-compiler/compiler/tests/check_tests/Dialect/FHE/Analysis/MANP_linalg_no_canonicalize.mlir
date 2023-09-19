@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes MANP --passes ConcreteOptimizer --action=dump-fhe --split-input-file %s 2>&1 | FileCheck %s
+// RUN: concretecompiler --passes fhe-tensor-ops-to-linalg --passes MANP --passes ConcreteOptimizer --action=dump-fhe-no-linalg --split-input-file %s 2>&1 | FileCheck %s
 
 func.func @sum() -> !FHE.eint<7> {
   %0 = "FHE.zero_tensor"() : () -> tensor<5x3x4x2x!FHE.eint<7>>

@@ -366,19 +366,12 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     return StreamStringError("Tiling of FHELinalg operations failed");
   }
 
-  // Dataflow parallelization
-  if (dataflowParallelize &&
-      mlir::concretelang::pipeline::autopar(mlirContext, module, enablePass)
-          .failed()) {
-    return StreamStringError("Dataflow parallelization failed");
-  }
-
   if (target == Target::FHE)
     return std::move(res);
 
   // FHELinalg -> FHE
-  if (mlir::concretelang::pipeline::lowerFHELinalgToFHE(
-          mlirContext, module, res.fheContext, enablePass, loopParallelize)
+  if (mlir::concretelang::pipeline::lowerFHELinalgToFHE(mlirContext, module,
+                                                        enablePass)
           .failed()) {
     return StreamStringError("Lowering from FHELinalg to FHE failed");
   }
@@ -389,8 +382,28 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     return StreamStringError("Rewriting of high level fhe ops failed");
   }
 
+  // TODO: bring determineFHEParameters call here after the FHELinalg -> FHE
+  // lowering
+  // require to first support linalg.genric in the Optimizer Dag creation
+  // FHE High level pass to determine FHE parameters
+  // if (auto err = this->determineFHEParameters(res))
+  //   return std::move(err);
+
   if (target == Target::FHE_NO_LINALG)
     return std::move(res);
+
+  // Dataflow parallelization
+  if (dataflowParallelize &&
+      mlir::concretelang::pipeline::autopar(mlirContext, module, enablePass)
+          .failed()) {
+    return StreamStringError("Dataflow parallelization failed");
+  }
+
+  if (mlir::concretelang::pipeline::lowerLinalgGenericToLoops(
+          mlirContext, module, enablePass, loopParallelize)
+          .failed()) {
+    return StreamStringError("Lowering from Linalg Generic to Loops failed");
+  }
 
   // FHE -> TFHE
   if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,

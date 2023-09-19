@@ -40,9 +40,12 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::optional<V0FHEContext> &fheContext,
-                    std::function<bool(mlir::Pass *)> enablePass,
-                    bool parallelize);
+                    std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+lowerLinalgGenericToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                          std::function<bool(mlir::Pass *)> enablePass,
+                          bool parallelizeLoops);
 
 mlir::LogicalResult
 transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,
