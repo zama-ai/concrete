@@ -6,6 +6,7 @@ use crate::utils::f64::f64_dot;
 use super::operations_value::OperationsValue;
 use super::partitions::PartitionIndex;
 
+#[derive(Clone)]
 pub struct Feasible {
     // TODO: move kappa here
     pub constraints: Vec<VarianceConstraint>,
@@ -199,5 +200,45 @@ impl Feasible {
             .map(VarianceConstraint::clone)
             .collect();
         Self::of(&partition_constraints, self.kappa, self.global_p_error)
+    }
+
+    pub fn compressed(self) -> Self {
+        let mut detect_used: Vec<bool> = vec![false; self.constraints[0].variance.coeffs.len()];
+        for constraint in &self.constraints {
+            for (i, &coeff) in constraint.variance.coeffs.iter().enumerate() {
+                if coeff > 0.0 {
+                    detect_used[i] = true;
+                }
+            }
+        }
+        let compress = |c: &VarianceConstraint| VarianceConstraint {
+            variance: c.variance.compress(&detect_used),
+            ..(*c)
+        };
+        let constraints = self.constraints.iter().map(compress).collect();
+        let undominated_constraints = self.undominated_constraints.iter().map(compress).collect();
+        Self {
+            constraints,
+            undominated_constraints,
+            ..self
+        }
+    }
+
+    pub fn zero_variance(&self) -> OperationsValue {
+        if self.undominated_constraints[0]
+            .variance
+            .coeffs
+            .index
+            .is_compressed()
+        {
+            OperationsValue::zero_compressed(&self.undominated_constraints[0].variance.coeffs.index)
+        } else {
+            OperationsValue::zero(
+                self.undominated_constraints[0]
+                    .variance
+                    .coeffs
+                    .nb_partitions(),
+            )
+        }
     }
 }

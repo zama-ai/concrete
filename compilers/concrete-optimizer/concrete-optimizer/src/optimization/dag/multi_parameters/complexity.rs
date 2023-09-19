@@ -24,7 +24,7 @@ impl fmt::Display for OperationsCount {
         let mut add_plus = "";
         let counts = &self.counts;
         let nb_partitions = counts.nb_partitions();
-        let index = counts.index;
+        let index = &counts.index;
         for src_partition in 0..nb_partitions {
             for dst_partition in 0..nb_partitions {
                 let coeff = counts.values[index.keyswitch_to_small(src_partition, dst_partition)];
@@ -109,5 +109,25 @@ impl Complexity {
         let actual_complexity = self.complexity(costs) - fks_coeff * actual_fks_cost;
 
         (complexity_cut - actual_complexity) / fks_coeff
+    }
+
+    pub fn compressed(self) -> Self {
+        let mut detect_used: Vec<bool> = vec![false; self.counts.len()];
+        for (i, &count) in self.counts.iter().enumerate() {
+            if count > 0.0 {
+                detect_used[i] = true;
+            }
+        }
+        Self {
+            counts: self.counts.compress(&detect_used),
+        }
+    }
+
+    pub fn zero_cost(&self) -> OperationsValue {
+        if self.counts.index.is_compressed() {
+            OperationsValue::zero_compressed(&self.counts.index)
+        } else {
+            OperationsValue::zero(self.counts.nb_partitions())
+        }
     }
 }
