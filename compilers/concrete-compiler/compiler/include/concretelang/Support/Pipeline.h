@@ -25,10 +25,6 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass);
-
-mlir::LogicalResult
 markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
                        llvm::ArrayRef<int64_t> tileSizes,
                        std::function<bool(mlir::Pass *)> enablePass);
@@ -38,13 +34,17 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass);
+lowerFHELinalgToLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                       std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-lowerLinalgGenericToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                          std::function<bool(mlir::Pass *)> enablePass,
-                          bool parallelizeLoops);
+tileMarkedLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+lowerLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   bool parallelizeLoops);
 
 mlir::LogicalResult
 transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,

@@ -159,11 +159,11 @@ mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass) {
+tileMarkedLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("TileMarkedFHELinalg", pm, context);
-  addPotentiallyNestedPass(pm, mlir::concretelang::createFHELinalgTilingPass(),
+  pipelinePrinting("TileMarkedLinalg", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createLinalgTilingPass(),
                            enablePass);
 
   addPotentiallyNestedPass(
@@ -199,24 +199,24 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass) {
+lowerFHELinalgToLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                       std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("FHELinalgToFHE", pm, context);
+  pipelinePrinting("FHELinalgToLinalg", pm, context);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertFHETensorOpsToLinalg(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createLinalgGeneralizationPass(),
                            enablePass);
-
   return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
-lowerLinalgGenericToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                          std::function<bool(mlir::Pass *)> enablePass,
-                          bool parallelizeLoops) {
+lowerLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   bool parallelizeLoops) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("LinalgGenericToLoops", pm, context);
+  pipelinePrinting("LinalgToLoops", pm, context);
+
   addPotentiallyNestedPass(
       pm,
       mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
@@ -447,6 +447,10 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
                                bool parallelizeLoops) {
   mlir::PassManager pm(&context);
   pipelinePrinting("Lowering to Std", pm, context);
+
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createTensorEmptyToBufferizationAllocPass(),
+      enablePass);
 
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createSCFForallToSCFForPass(), enablePass);

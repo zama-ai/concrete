@@ -9,4 +9,5 @@ add_mlir_library(
   LINK_LIBS
   PUBLIC
   MLIRIR
-  FHELinalgDialect)
+  FHELinalgDialect
+  MLIRLinalgTransforms)

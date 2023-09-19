@@ -994,13 +994,13 @@ struct FHELinalgMatmulToLinalgGeneric
     };
 
     auto resultTypes = llvm::SmallVector<mlir::Type, 1>{outType};
-    mlir::Value result =
-        rewriter
-            .create<linalg::GenericOp>(location, resultTypes, ins, outs, maps,
-                                       iteratorTypes, regionBuilder)
-            .getResult(0);
+    mlir::linalg::GenericOp genericOp = rewriter.create<linalg::GenericOp>(
+        location, resultTypes, ins, outs, maps, iteratorTypes, regionBuilder);
 
-    rewriter.replaceOp(matmulOp, {result});
+    if (matmulOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", matmulOp->getAttr("tile-sizes"));
+
+    rewriter.replaceOp(matmulOp, genericOp.getResults());
     return mlir::success();
   };
 
