@@ -34,4 +34,11 @@ def SCFForallToSCFFor : Pass<"scf-forall-to-scf-for", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::scf::SCFDialect"];
 }
 
+def TensorEmptyToBufferizationAlloc : Pass<"tensor-empty-to-bufferization-alloc", "mlir::ModuleOp"> {
+  let summary = "Replaces all occurrences of tensor.empty with bufferization.alloc_tensor";
+  let description = [{ Replaces all occurrences of tensor.empty with bufferization.alloc_tensor }];
+  let constructor = "mlir::concretelang::createTensorEmptyToBufferizationAllocPass()";
+  let dependentDialects = ["mlir::tensor::TensorDialect", "mlir::bufferization::BufferizationDialect"];
+}
+
 #endif

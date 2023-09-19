@@ -6,9 +6,11 @@
 #ifndef CONCRETELANG_TRANSFORMS_PASS_H
 #define CONCRETELANG_TRANSFORMS_PASS_H
 
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
+#include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/Pass/Pass.h>
 
 #define GEN_PASS_CLASSES
@@ -23,6 +25,9 @@ std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>> createForLoopToParallel();
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
 createBatchingPass(int64_t maxBatchSize = std::numeric_limits<int64_t>::max());
 std::unique_ptr<OperationPass<ModuleOp>> createSCFForallToSCFForPass();
+std::unique_ptr<OperationPass<ModuleOp>>
+createTensorEmptyToBufferizationAllocPass();
+
 } // namespace concretelang
 } // namespace mlir
 

@@ -4,6 +4,7 @@ add_mlir_library(
   CollapseParallelLoops.cpp
   ForLoopToParallel.cpp
   SCFForallToSCFFor.cpp
+  TensorEmptyToBufferizationAlloc.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Transforms
   DEPENDS
