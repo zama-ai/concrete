@@ -380,6 +380,12 @@ void TFHEKeyNormalizationPass::runOnOperation() {
     patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
                                               conversion::TypeConverter>>(
         &getContext(), typeConverter);
+    patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForallOp,
+                                              conversion::TypeConverter>>(
+        &getContext(), typeConverter);
+    patterns.add<RegionOpTypeConverterPattern<mlir::scf::InParallelOp,
+                                              conversion::TypeConverter>>(
+        &getContext(), typeConverter);
     patterns.add<RegionOpTypeConverterPattern<mlir::func::ReturnOp,
                                               conversion::TypeConverter>>(
         &getContext(), typeConverter);
