@@ -181,7 +181,7 @@ impl PartitionCut {
                 _ = lut_partition.insert((input_precision, OrderedFloat(*output_norm2)));
             }
         }
-        let mut p_cut : Vec<_> = lut_partition.iter().copied().collect();
+        let mut p_cut: Vec<_> = lut_partition.iter().copied().collect();
         p_cut.sort_by(|a, b| a.partial_cmp(b).unwrap());
         _ = p_cut.pop();
         let p_cut = p_cut.iter().map(|(p, n)| (*p, n.into_inner())).collect();
@@ -191,6 +191,18 @@ impl PartitionCut {
         }
     }
 
+    pub fn delete_unused_cut(&self, used: &HashSet<PartitionIndex>) -> Self {
+        let mut p_cut = vec![];
+        for (i, &cut) in self.p_cut.iter().enumerate() {
+            if used.contains(&i) {
+                p_cut.push(cut);
+            }
+        }
+        Self {
+            p_cut,
+            rnorm2: self.rnorm2.clone(),
+        }
+    }
 }
 
 impl std::fmt::Display for PartitionCut {

@@ -150,6 +150,14 @@ fn resolve_by_levelled_block(
         .copied()
         .collect();
     let nb_partitions = present_partitions.len().max(1); // no tlu = no constraints
+    if p_cut.p_cut.len() + 1 != nb_partitions {
+        return resolve_by_levelled_block(
+            dag,
+            &p_cut.delete_unused_cut(&present_partitions),
+            default_partition,
+            composable,
+        );
+    }
     if nb_partitions == 1 {
         return only_1_partition(dag);
     }
