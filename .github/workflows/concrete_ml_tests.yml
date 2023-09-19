@@ -111,5 +111,7 @@ jobs:
       - name: ML Tests
         run: |
           export CONCRETE_PYTHON_WHEEL=$(pwd)/frontends/concrete-python/dist/*manylinux*.whl
+          apt update
+          apt install git git-lfs -y
           pip install poetry==1.2.2
           ./ci/scripts/test_cml.sh --use-wheel $CONCRETE_PYTHON_WHEEL --verbose
