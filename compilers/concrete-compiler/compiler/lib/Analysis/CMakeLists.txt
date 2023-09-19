@@ -1,5 +1,6 @@
 add_mlir_library(
   AnalysisUtils
+  StaticLoops.cpp
   Utils.cpp
   DEPENDS
   mlir-headers
