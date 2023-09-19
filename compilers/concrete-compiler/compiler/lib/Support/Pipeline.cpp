@@ -196,15 +196,23 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::optional<V0FHEContext> &fheContext,
-                    std::function<bool(mlir::Pass *)> enablePass,
-                    bool parallelizeLoops) {
+                    std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("FHELinalgToFHE", pm, context);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertFHETensorOpsToLinalg(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createLinalgGeneralizationPass(),
                            enablePass);
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+lowerLinalgGenericToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                          std::function<bool(mlir::Pass *)> enablePass,
+                          bool parallelizeLoops) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("LinalgGenericToLoops", pm, context);
   addPotentiallyNestedPass(
       pm,
       mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
