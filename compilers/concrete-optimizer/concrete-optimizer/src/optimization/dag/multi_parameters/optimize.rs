@@ -82,14 +82,18 @@ fn optimize_1_ks(
     cut_complexity: f64,
 ) -> Option<KsComplexityNoise> {
     // find the first feasible (and less complex)
+    let ks_max_variance = feasible.ks_max_feasible_variance(&operations.variance, ks_src, ks_dst);
+    let ks_max_cost = complexity.ks_max_cost(cut_complexity, &operations.cost, ks_src, ks_dst);
     for &ks_quantity in ks_pareto {
         // variance is decreasing, complexity is increasing
-        *operations.variance.ks(ks_src, ks_dst) = ks_quantity.noise(ks_input_lwe_dim);
-        *operations.cost.ks(ks_src, ks_dst) = ks_quantity.complexity(ks_input_lwe_dim);
-        if complexity.complexity(&operations.cost) > cut_complexity {
+        let ks_cost = ks_quantity.complexity(ks_input_lwe_dim);
+        let ks_variance = ks_quantity.noise(ks_input_lwe_dim);
+        if ks_cost > ks_max_cost {
             return None;
         }
-        if feasible.feasible(&operations.variance) {
+        if ks_variance <= ks_max_variance {
+            *operations.variance.ks(ks_src, ks_dst) = ks_variance;
+            *operations.cost.ks(ks_src, ks_dst) = ks_cost;
             return Some(ks_quantity);
         }
     }
@@ -174,6 +178,10 @@ fn optimize_1_fks_and_all_compatible_ks(
     let mut cut_complexity = cut_complexity;
     let same_dim = input_glwe == output_glwe;
 
+    let fks_max_variance =
+        feasible.fks_max_feasible_variance(&operations.variance, fks_src, fks_dst);
+    let mut fks_max_cost =
+        complexity.fks_max_cost(cut_complexity, &operations.cost, fks_src, fks_dst);
     for &ks_quantity in &ks_pareto {
         // OPT: add a pareto cache for fks
         let fks_quantity = if same_dim {
@@ -212,17 +220,20 @@ fn optimize_1_fks_and_all_compatible_ks(
                 dst_glwe_param: output_glwe,
             }
         };
-        *operations.cost.fks(fks_src, fks_dst) = fks_quantity.complexity;
-        *operations.variance.fks(fks_src, fks_dst) = fks_quantity.noise;
 
-        if complexity.complexity(&operations.cost) > cut_complexity {
+        if fks_quantity.complexity > fks_max_cost {
             // complexity is strictly increasing by level
             // next complexity will be worse
             return best_sol;
         }
-        if !feasible.feasible(&operations.variance) {
+
+        if fks_quantity.noise > fks_max_variance {
             continue;
         }
+
+        *operations.cost.fks(fks_src, fks_dst) = fks_quantity.complexity;
+        *operations.variance.fks(fks_src, fks_dst) = fks_quantity.noise;
+
         let sol = optimize_many_independant_ks(
             macro_parameters,
             ks_src,
@@ -243,6 +254,7 @@ fn optimize_1_fks_and_all_compatible_ks(
             continue;
         }
         cut_complexity = cost;
+        fks_max_cost = complexity.fks_max_cost(cut_complexity, &operations.cost, fks_src, fks_dst);
         // COULD: handle complexity tie
         let bests = Best1FksAndManyKs {
             fks: Some((fks_src, fks_quantity)),
@@ -334,20 +346,26 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     let mut best_sol_complexity = cut_complexity;
     let mut best_sol_p_error = best_p_error;
     let mut best_sol_global_p_error = 1.0;
+
+    let pbs_max_feasible_variance =
+        feasible.pbs_max_feasible_variance(&operations.variance, partition);
     for &cmux_quantity in cmux_pareto {
         // increasing complexity, decreasing variance
+
+        // Lower bounds cuts
         let pbs_cost = cmux_quantity.complexity_br(internal_dim);
         *operations.cost.pbs(partition) = pbs_cost;
-        // Lower bounds cuts
         let lower_cost = complexity.complexity(&operations.cost);
         if lower_cost > best_sol_complexity {
             continue;
         }
+
         let pbs_variance = cmux_quantity.noise_br(internal_dim);
-        *operations.variance.pbs(partition) = pbs_variance;
-        if !feasible.feasible(&operations.variance) {
+        if pbs_variance > pbs_max_feasible_variance {
             continue;
         }
+
+        *operations.variance.pbs(partition) = pbs_variance;
         let sol = optimize_dst_exclusive_fks_subset_and_all_ks(
             macro_parameters,
             fks_paretos,
