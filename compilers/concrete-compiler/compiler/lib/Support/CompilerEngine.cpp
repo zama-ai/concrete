@@ -13,7 +13,14 @@
 #include <err.h>
 #include <fstream>
 #include <iostream>
+#include <llvm/Support/Debug.h>
 #include <memory>
+#include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
+#include <mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Linalg/Transforms/TilingInterfaceImpl.h>
+#include <mlir/Dialect/SCF/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
 #include <optional>
 #include <stdio.h>
 #include <string>
@@ -106,6 +113,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
     tensor::registerBufferizableOpInterfaceExternalModels(registry);
     linalg::registerBufferizableOpInterfaceExternalModels(registry);
     RT::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::linalg::registerTilingInterfaceExternalModels(registry);
     this->mlirContext = new mlir::MLIRContext();
     this->mlirContext->appendDialectRegistry(registry);
     this->mlirContext->loadAllAvailableDialects();
@@ -409,20 +417,23 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
           "Marking of FHELinalg operations for tiling failed");
   }
 
-  if (mlir::concretelang::pipeline::tileMarkedFHELinalg(mlirContext, module,
-                                                        enablePass)
-          .failed()) {
-    return StreamStringError("Tiling of FHELinalg operations failed");
-  }
-
   if (target == Target::FHE)
     return std::move(res);
 
   // FHELinalg -> FHE
-  if (mlir::concretelang::pipeline::lowerFHELinalgToFHE(mlirContext, module,
-                                                        enablePass)
+  if (mlir::concretelang::pipeline::lowerFHELinalgToLinalg(mlirContext, module,
+                                                           enablePass)
           .failed()) {
-    return StreamStringError("Lowering from FHELinalg to FHE failed");
+    return StreamStringError("Lowering from FHELinalg to Linalg failed");
+  }
+
+  if (target == Target::FHE_LINALG_GENERIC)
+    return std::move(res);
+
+  if (mlir::concretelang::pipeline::tileMarkedLinalg(mlirContext, module,
+                                                     enablePass)
+          .failed()) {
+    return StreamStringError("Tiling of Linalg operations failed");
   }
 
   if (mlir::concretelang::pipeline::transformHighLevelFHEOps(mlirContext,
@@ -448,7 +459,7 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     return StreamStringError("Dataflow parallelization failed");
   }
 
-  if (mlir::concretelang::pipeline::lowerLinalgGenericToLoops(
+  if (mlir::concretelang::pipeline::lowerLinalgToLoops(
           mlirContext, module, enablePass, loopParallelize)
           .failed()) {
     return StreamStringError("Lowering from Linalg Generic to Loops failed");

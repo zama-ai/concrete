@@ -11,12 +11,12 @@ def FHELinalgTilingMarker : Pass<"fhe-linalg-tiling-marker"> {
   let dependentDialects = [ "mlir::concretelang::FHELinalg::FHELinalgDialect" ];
 }
 
-def FHELinalgTiling : Pass<"fhe-linalg-tiling"> {
-  let summary = "Performs tiling of FHELinalg operations based on the "
+def LinalgTiling : Pass<"fhe-linalg-tiling"> {
+  let summary = "Performs tiling of Linalg operations based on the "
                 "tile-size attribute";
-  let constructor = "mlir::concretelang::createFHELinalgTilingPass()";
+  let constructor = "mlir::concretelang::createLinalgTilingPass()";
   let options = [];
-  let dependentDialects = [ "mlir::concretelang::FHELinalg::FHELinalgDialect" ];
+  let dependentDialects = [ "mlir::linalg::LinalgDialect" ];
 }
 
 #endif
