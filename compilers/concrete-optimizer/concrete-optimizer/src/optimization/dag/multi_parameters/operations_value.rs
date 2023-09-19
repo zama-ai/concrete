@@ -42,18 +42,23 @@ impl Indexing {
     }
 
     pub fn input(self, partition: usize) -> usize {
+        assert!(partition < self.nb_partitions);
         partition * self.nb_coeff_per_partition() + VALUE_INDEX_FRESH
     }
 
     pub fn pbs(self, partition: usize) -> usize {
+        assert!(partition < self.nb_partitions);
         partition * self.nb_coeff_per_partition() + VALUE_INDEX_PBS
     }
 
     pub fn modulus_switching(self, partition: usize) -> usize {
+        assert!(partition < self.nb_partitions);
         partition * self.nb_coeff_per_partition() + VALUE_INDEX_MODULUS
     }
 
     pub fn keyswitch_to_small(self, src_partition: usize, dst_partition: usize) -> usize {
+        assert!(src_partition < self.nb_partitions);
+        assert!(dst_partition < self.nb_partitions);
         // Skip other partition
         dst_partition * self.nb_coeff_per_partition()
         // Skip non keyswitchs
@@ -63,6 +68,8 @@ impl Indexing {
     }
 
     pub fn keyswitch_to_big(self, src_partition: usize, dst_partition: usize) -> usize {
+        assert!(src_partition < self.nb_partitions);
+        assert!(dst_partition < self.nb_partitions);
         // Skip other partition
         dst_partition * self.nb_coeff_per_partition()
         // Skip non keyswitchs

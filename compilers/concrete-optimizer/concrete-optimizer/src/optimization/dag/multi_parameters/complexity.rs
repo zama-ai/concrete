@@ -74,4 +74,40 @@ impl Complexity {
     pub fn complexity(&self, costs: &OperationsValue) -> f64 {
         f64_dot(&self.counts, costs)
     }
+
+    pub fn ks_max_cost(
+        &self,
+        complexity_cut: f64,
+        costs: &OperationsValue,
+        src_partition: usize,
+        dst_partition: usize,
+    ) -> f64 {
+        let ks_index = costs.index.keyswitch_to_small(src_partition, dst_partition);
+        let actual_ks_cost = costs.values[ks_index];
+        let ks_coeff = self.counts[self
+            .counts
+            .index
+            .keyswitch_to_small(src_partition, dst_partition)];
+        let actual_complexity = self.complexity(costs) - ks_coeff * actual_ks_cost;
+
+        (complexity_cut - actual_complexity) / ks_coeff
+    }
+
+    pub fn fks_max_cost(
+        &self,
+        complexity_cut: f64,
+        costs: &OperationsValue,
+        src_partition: usize,
+        dst_partition: usize,
+    ) -> f64 {
+        let fks_index = costs.index.keyswitch_to_big(src_partition, dst_partition);
+        let actual_fks_cost = costs.values[fks_index];
+        let fks_coeff = self.counts[self
+            .counts
+            .index
+            .keyswitch_to_big(src_partition, dst_partition)];
+        let actual_complexity = self.complexity(costs) - fks_coeff * actual_fks_cost;
+
+        (complexity_cut - actual_complexity) / fks_coeff
+    }
 }
