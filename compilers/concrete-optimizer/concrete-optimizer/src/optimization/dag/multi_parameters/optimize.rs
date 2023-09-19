@@ -646,8 +646,8 @@ fn optimize_macro(
 
     let fks_to_optimize = fks_to_optimize(nb_partitions, used_conversion_keyswitch, partition);
     let operations = OperationsCV {
-        variance: OperationsValue::zero(nb_partitions),
-        cost: OperationsValue::zero(nb_partitions),
+        variance: feasible.zero_variance(),
+        cost: complexity.zero_cost(),
     };
     let partition_feasible = feasible.filter_constraints(partition);
 
@@ -907,8 +907,8 @@ pub fn optimize(
 
     let mut caches = persistent_caches.caches();
 
-    let feasible = Feasible::of(&dag.variance_constraints, kappa, None);
-    let complexity = Complexity::of(&dag.operations_count);
+    let feasible = Feasible::of(&dag.variance_constraints, kappa, None).compressed();
+    let complexity = Complexity::of(&dag.operations_count).compressed();
     let used_tlu_keyswitch = used_tlu_keyswitch(&dag);
     let used_conversion_keyswitch = used_conversion_keyswitch(&dag);
 
@@ -1071,8 +1071,8 @@ fn sanity_check(
     );
     let nb_partitions = params.macro_params.len();
     let mut operations = OperationsCV {
-        variance: OperationsValue::zero(nb_partitions),
-        cost: OperationsValue::zero(nb_partitions),
+        variance: feasible.zero_variance(),
+        cost: complexity.zero_cost(),
     };
     let micro_params = &params.micro_params;
     for partition in 0..nb_partitions {
