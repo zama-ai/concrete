@@ -136,7 +136,12 @@ echo "Getting CML repository"
 
 if [ $DO_QUICK_SCRIPT_DEBUG -eq 0 ]
 then
+    git lfs install --skip-smudge
     git clone https://github.com/zama-ai/concrete-ml.git --branch ${ML_BRANCH}
+
+    cd concrete-ml
+    git lfs pull --include "tests/data" --exclude  ""
+    cd ..
 else
     echo "    -- skipped during debug"
 fi
