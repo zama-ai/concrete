@@ -23,6 +23,26 @@ TypeConvertingReinstantiationPattern<scf::ForOp, false>::matchAndRewrite(
     scf::ForOp oldOp, mlir::OpConversionPattern<scf::ForOp>::OpAdaptor adaptor,
     mlir::ConversionPatternRewriter &rewriter) const;
 
+//
+// Specializations for ForallOp
+//
+template <>
+mlir::LogicalResult
+TypeConvertingReinstantiationPattern<scf::ForallOp, false>::matchAndRewrite(
+    scf::ForallOp oldOp,
+    mlir::OpConversionPattern<scf::ForallOp>::OpAdaptor adaptor,
+    mlir::ConversionPatternRewriter &rewriter) const;
+
+//
+// Specializations for InParallelOp
+//
+template <>
+mlir::LogicalResult
+TypeConvertingReinstantiationPattern<scf::InParallelOp, false>::matchAndRewrite(
+    scf::InParallelOp oldOp,
+    mlir::OpConversionPattern<scf::InParallelOp>::OpAdaptor adaptor,
+    mlir::ConversionPatternRewriter &rewriter) const;
+
 } // namespace concretelang
 } // namespace mlir
 
