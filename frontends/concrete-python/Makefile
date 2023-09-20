@@ -1,6 +1,7 @@
 PYTHON=python
 PIP=$(PYTHON) -m pip
 
+COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
 BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
 RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 
