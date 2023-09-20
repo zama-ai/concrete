@@ -13,6 +13,7 @@ from .configuration import (
     ComparisonStrategy,
     Configuration,
     MinMaxStrategy,
+    MultiParameterStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
 )

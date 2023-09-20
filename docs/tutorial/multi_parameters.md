@@ -9,3 +9,5 @@ When multi parameters are enabled, a different set of parameters are selected fo
 - Larger memory usage during execution.
 
 To disable it, you can use `parameter_selection_strategy=fhe.ParameterSelectionStrategy.MONO` configuration option.
+
+When enabled, you can select the level of circuit partitionning, with **multi\_parameter\_strategy** in [configuration](../howto/configure.md#options).

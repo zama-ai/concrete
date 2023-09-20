@@ -114,6 +114,16 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             "'bad' is not a valid 'ParameterSelectionStrategy' (v0, mono, multi)",
         ),
         pytest.param(
+            {"multi_parameter_strategy": 42},
+            TypeError,
+            "42 cannot be parsed to a MultiParameterStrategy",
+        ),
+        pytest.param(
+            {"multi_parameter_strategy": "bad"},
+            ValueError,
+            "'bad' is not a valid 'MultiParameterStrategy' (precision, precision_and_norm2)",
+        ),
+        pytest.param(
             {"comparison_strategy_preference": 42},
             TypeError,
             "42 cannot be parsed to a ComparisonStrategy",
