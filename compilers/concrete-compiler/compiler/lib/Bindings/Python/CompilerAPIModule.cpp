@@ -71,6 +71,13 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .value("DAG_MULTI", optimizer::Strategy::DAG_MULTI)
       .export_values();
 
+  pybind11::enum_<concrete_optimizer::MultiParamStrategy>(
+      m, "OptimizerMultiParameterStrategy")
+      .value("PRECISION", concrete_optimizer::MultiParamStrategy::ByPrecision)
+      .value("PRECISION_AND_NORM2",
+             concrete_optimizer::MultiParamStrategy::ByPrecisionAndNorm2)
+      .export_values();
+
   pybind11::enum_<concrete_optimizer::Encoding>(m, "Encoding")
       .value("AUTO", concrete_optimizer::Encoding::Auto)
       .value("CRT", concrete_optimizer::Encoding::Crt)
@@ -115,6 +122,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_optimizer_strategy",
            [](CompilationOptions &options, optimizer::Strategy strategy) {
              options.optimizerConfig.strategy = strategy;
+           })
+      .def("set_optimizer_multi_parameter_strategy",
+           [](CompilationOptions &options,
+              concrete_optimizer::MultiParamStrategy strategy) {
+             options.optimizerConfig.multi_param_strategy = strategy;
            })
       .def("set_global_p_error",
            [](CompilationOptions &options, double global_p_error) {

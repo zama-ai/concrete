@@ -74,6 +74,10 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Use single precision for the whole circuit.
 * **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MULTI
   * Set how cryptographic parameters are selected.
+* **multi\_parameter\_strategy**: fhe.MultiParameterStrategy = fhe.MultiParameterStrategy.PRECISION
+  * Set the level of circuit partionning when using `fhe.ParameterSelectionStrategy.MULTI`.
+  * `PRECISION`: all TLU with same input precision have their own parameters.
+  * `PRECISION_AND_NORM2`: all TLU with same input precision and output [norm2](../../compilers/concrete-optimizer/v0-parameters/README.md) have their own parameters.
 * **loop\_parallelize**: bool = True
   * Enable loop parallelization in the compiler.
 * **dataflow\_parallelize**: bool = False

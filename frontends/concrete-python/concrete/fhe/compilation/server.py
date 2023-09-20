@@ -28,6 +28,7 @@ from concrete.compiler import (
 from mlir._mlir_libs._concretelang._compiler import (
     Backend,
     KeyType,
+    OptimizerMultiParameterStrategy,
     OptimizerStrategy,
     PrimitiveOperation,
 )
@@ -38,6 +39,7 @@ from .configuration import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
     Configuration,
+    MultiParameterStrategy,
     ParameterSelectionStrategy,
 )
 from .specs import ClientSpecs
@@ -167,6 +169,13 @@ class Server:
             options.set_optimizer_strategy(OptimizerStrategy.DAG_MONO)
         elif parameter_selection_strategy == ParameterSelectionStrategy.MULTI:  # pragma: no cover
             options.set_optimizer_strategy(OptimizerStrategy.DAG_MULTI)
+
+        multi_parameter_strategy = configuration.multi_parameter_strategy
+        converter = {
+            MultiParameterStrategy.PRECISION: OptimizerMultiParameterStrategy.PRECISION,
+            MultiParameterStrategy.PRECISION_AND_NORM2: OptimizerMultiParameterStrategy.PRECISION_AND_NORM2,  # noqa: E501
+        }
+        options.set_optimizer_multi_parameter_strategy(converter[multi_parameter_strategy])
         try:
             if configuration.compiler_debug_mode:  # pragma: no cover
                 set_llvm_debug_flag(True)

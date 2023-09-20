@@ -20,6 +20,7 @@ from .compilation import (
     EncryptionStatus,
     Keys,
     MinMaxStrategy,
+    MultiParameterStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
     Server,

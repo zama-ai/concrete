@@ -46,6 +46,32 @@ class ParameterSelectionStrategy(str, Enum):
         raise ValueError(message)
 
 
+class MultiParameterStrategy(str, Enum):
+    """
+    MultiParamStrategy, to set optimization strategy for multi-parameter.
+    """
+
+    PRECISION = "precision"
+    PRECISION_AND_NORM2 = "precision_and_norm2"
+
+    @classmethod
+    def parse(cls, string: str) -> "MultiParameterStrategy":
+        """Convert a string to a MultiParamStrategy."""
+        if isinstance(string, cls):
+            return string
+        if not isinstance(string, str):
+            message = f"{string} cannot be parsed to a {cls.__name__}"
+            raise TypeError(message)
+        for value in MultiParameterStrategy:
+            if string.lower().replace("-", "_") == value.value:
+                return value
+        message = (
+            f"'{string}' is not a valid '{friendly_type_format(cls)}' ("
+            f"{', '.join(v.value for v in MultiParameterStrategy)})"
+        )
+        raise ValueError(message)
+
+
 class ComparisonStrategy(str, Enum):
     """
     ComparisonStrategy, to specify implementation preference for comparisons.
@@ -887,6 +913,7 @@ class Configuration:
     auto_adjust_truncators: bool
     single_precision: bool
     parameter_selection_strategy: ParameterSelectionStrategy
+    multi_parameter_strategy: MultiParameterStrategy
     show_progress: bool
     progress_title: str
     progress_tag: Union[bool, int]
@@ -929,6 +956,9 @@ class Configuration:
         parameter_selection_strategy: Union[
             ParameterSelectionStrategy, str
         ] = ParameterSelectionStrategy.MULTI,
+        multi_parameter_strategy: Union[
+            MultiParameterStrategy, str
+        ] = MultiParameterStrategy.PRECISION,
         show_progress: bool = False,
         progress_title: str = "",
         progress_tag: Union[bool, int] = False,
@@ -982,6 +1012,7 @@ class Configuration:
         self.parameter_selection_strategy = ParameterSelectionStrategy.parse(
             parameter_selection_strategy
         )
+        self.multi_parameter_strategy = MultiParameterStrategy.parse(multi_parameter_strategy)
         self.show_progress = show_progress
         self.progress_title = progress_title
         self.progress_tag = progress_tag
@@ -1063,6 +1094,7 @@ class Configuration:
         auto_adjust_truncators: Union[Keep, bool] = KEEP,
         single_precision: Union[Keep, bool] = KEEP,
         parameter_selection_strategy: Union[Keep, Union[ParameterSelectionStrategy, str]] = KEEP,
+        multi_parameter_strategy: Union[Keep, Union[MultiParameterStrategy, str]] = KEEP,
         show_progress: Union[Keep, bool] = KEEP,
         progress_title: Union[Keep, str] = KEEP,
         progress_tag: Union[Keep, Union[bool, int]] = KEEP,

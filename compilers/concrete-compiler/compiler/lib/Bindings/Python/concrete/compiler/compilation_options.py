@@ -9,6 +9,7 @@ from typing import List
 from mlir._mlir_libs._concretelang._compiler import (
     CompilationOptions as _CompilationOptions,
     OptimizerStrategy as _OptimizerStrategy,
+    OptimizerMultiParameterStrategy as _OptimizerMultiParameterStrategy,
     Encoding,
     Backend as _Backend,
 )
@@ -208,11 +209,26 @@ class CompilationOptions(WrapperCpp):
             strategy (OptimizerStrategy): Use the specified optmizer strategy.
 
         Raises:
-            TypeError: if the value is not a bool
+            TypeError: if the value is not an OptimizerStrategy
         """
         if not isinstance(strategy, _OptimizerStrategy):
             raise TypeError("enable should be a bool")
         self.cpp().set_optimizer_strategy(strategy)
+
+    def set_optimizer_multi_parameter_strategy(
+        self, strategy: _OptimizerMultiParameterStrategy
+    ):
+        """Set the strategy of the optimizer for multi-parameter.
+
+        Args:
+            strategy (OptimizerMultiParameterStrategy): Use the specified optmizer multi-parameter strategy.
+
+        Raises:
+            TypeError: if the value is not a OptimizerMultiParameterStrategy
+        """
+        if not isinstance(strategy, _OptimizerMultiParameterStrategy):
+            raise TypeError("enable should be a bool")
+        self.cpp().set_optimizer_multi_parameter_strategy(strategy)
 
     def set_global_p_error(self, global_p_error: float):
         """Set global error probability for the full circuit.
