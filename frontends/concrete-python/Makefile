@@ -15,7 +15,7 @@ RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 
 venv:
 	$(PYTHON) -m venv .venv
-	source .venv/bin/activate
+	. .venv/bin/activate
 
 	$(PIP) install -r requirements.dev.txt
 	$(PIP) install -r requirements.txt
