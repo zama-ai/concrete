@@ -1,3 +1,4 @@
+#include <concretelang/Analysis/StaticLoops.h>
 #include <concretelang/Analysis/Utils.h>
 #include <concretelang/Dialect/Concrete/Analysis/MemoryUsage.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
@@ -147,9 +148,10 @@ struct MemoryUsagePass
 
   static std::optional<StringError> on_enter(scf::ForOp &op,
                                              MemoryUsagePass &pass) {
-    auto numberOfIterations = calculateNumberOfIterations(op);
-    if (!numberOfIterations) {
-      return numberOfIterations.error();
+    std::optional<int64_t> numberOfIterations = tryGetStaticTripCount(op);
+
+    if (!numberOfIterations.has_value()) {
+      return StringError("only static loops can be analyzed");
     }
 
     assert(numberOfIterations.value() > 0);
@@ -159,9 +161,10 @@ struct MemoryUsagePass
 
   static std::optional<StringError> on_exit(scf::ForOp &op,
                                             MemoryUsagePass &pass) {
-    auto numberOfIterations = calculateNumberOfIterations(op);
-    if (!numberOfIterations) {
-      return numberOfIterations.error();
+    std::optional<int64_t> numberOfIterations = tryGetStaticTripCount(op);
+
+    if (!numberOfIterations.has_value()) {
+      return StringError("only static loops can be analyzed");
     }
 
     assert(numberOfIterations.value() > 0);

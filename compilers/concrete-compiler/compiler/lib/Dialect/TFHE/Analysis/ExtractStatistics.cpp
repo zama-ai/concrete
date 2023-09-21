@@ -1,4 +1,5 @@
 #include "concretelang/Support/CompilationFeedback.h"
+#include <concretelang/Analysis/StaticLoops.h>
 #include <concretelang/Analysis/Utils.h>
 #include <concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h>
 
@@ -100,9 +101,10 @@ struct ExtractTFHEStatisticsPass
 
   static std::optional<StringError> on_enter(scf::ForOp &op,
                                              ExtractTFHEStatisticsPass &pass) {
-    auto numberOfIterations = calculateNumberOfIterations(op);
-    if (!numberOfIterations) {
-      return numberOfIterations.error();
+    std::optional<int64_t> numberOfIterations = tryGetStaticTripCount(op);
+
+    if (!numberOfIterations.has_value()) {
+      return StringError("only static loops can be analyzed");
     }
 
     assert(numberOfIterations.value() > 0);
@@ -112,9 +114,10 @@ struct ExtractTFHEStatisticsPass
 
   static std::optional<StringError> on_exit(scf::ForOp &op,
                                             ExtractTFHEStatisticsPass &pass) {
-    auto numberOfIterations = calculateNumberOfIterations(op);
-    if (!numberOfIterations) {
-      return numberOfIterations.error();
+    std::optional<int64_t> numberOfIterations = tryGetStaticTripCount(op);
+
+    if (!numberOfIterations.has_value()) {
+      return StringError("only static loops can be analyzed");
     }
 
     assert(numberOfIterations.value() > 0);

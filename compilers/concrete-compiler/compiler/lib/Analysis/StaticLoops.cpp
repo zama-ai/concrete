@@ -7,6 +7,7 @@
 #include <mlir/Dialect/Arith/IR/Arith.h>
 
 #include <concretelang/Analysis/StaticLoops.h>
+#include <optional>
 
 namespace mlir {
 namespace concretelang {
@@ -391,6 +392,18 @@ int64_t getStaticTripCount(mlir::scf::ForOp forOp) {
   bool isStatic = isStaticLoop(forOp, &lb, &ub, &step);
 
   assert(isStatic && "Loop must be static");
+
+  return getStaticTripCount(lb, ub, step);
+}
+
+// Returns the trip count of `forOp` if it is a static loop
+std::optional<int64_t> tryGetStaticTripCount(mlir::scf::ForOp forOp) {
+  int64_t lb;
+  int64_t ub;
+  int64_t step;
+
+  if (!isStaticLoop(forOp, &lb, &ub, &step))
+    return std::nullopt;
 
   return getStaticTripCount(lb, ub, step);
 }
