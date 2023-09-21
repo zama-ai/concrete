@@ -180,7 +180,7 @@ def test_bad_static_indexing(helpers):
 
     compiler = fhe.Compiler(lambda x: x[1.5], {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
+    inputset = [[5, 2, 4]]
     with pytest.raises(ValueError) as excinfo:
         compiler.compile(inputset, configuration)
 
@@ -193,7 +193,7 @@ def test_bad_static_indexing(helpers):
 
     compiler = fhe.Compiler(lambda x: x[slice(1.5, 2.5, None)], {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
+    inputset = [[5, 2, 4]]
     with pytest.raises(ValueError) as excinfo:
         compiler.compile(inputset, configuration)
 
@@ -206,7 +206,7 @@ def test_bad_static_indexing(helpers):
 
     compiler = fhe.Compiler(lambda x: x[0, 1.5], {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
+    inputset = [[5, 2, 4]]
     with pytest.raises(ValueError) as excinfo:
         compiler.compile(inputset, configuration)
 
