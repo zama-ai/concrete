@@ -51,6 +51,7 @@ getBoundsOfQuasiAffineIVExpression(mlir::OpFoldResult expr,
 int64_t getStaticTripCount(int64_t lb, int64_t ub, int64_t step);
 int64_t getStaticTripCount(const LoopsBoundsAndStep &bas);
 int64_t getStaticTripCount(mlir::scf::ForOp forOp);
+std::optional<int64_t> tryGetStaticTripCount(mlir::scf::ForOp forOp);
 int64_t getNestedStaticTripCount(llvm::ArrayRef<mlir::scf::ForOp> nest);
 bool isStaticLoop(mlir::scf::ForOp forOp, int64_t *ilb = nullptr,
                   int64_t *iub = nullptr, int64_t *istep = nullptr);
