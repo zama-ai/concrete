@@ -17,13 +17,6 @@ namespace concretelang {
 /// Get the string representation of a location
 std::string locationString(mlir::Location loc);
 
-/// Compute the number of iterations based on loop info
-int64_t calculateNumberOfIterations(int64_t start, int64_t stop, int64_t step);
-
-/// Compute the number of iterations of an scf for loop
-outcome::checked<int64_t, ::concretelang::error::StringError>
-calculateNumberOfIterations(scf::ForOp &op);
-
 } // namespace concretelang
 } // namespace mlir
 
