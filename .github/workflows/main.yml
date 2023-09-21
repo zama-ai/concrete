@@ -7,6 +7,7 @@ on:
     branches:
       - 'main'
       - 'release/*'
+      - 'force-nightly'
     tags:
       - 'v[0-9]+.*'
   schedule:
@@ -265,7 +266,7 @@ jobs:
 #################################################
 # Release jobs #################################
   concrete-python-nightly-release:
-    if: ${{ github.event_name == 'schedule' }}
+    if: ${{ github.event_name == 'schedule' || github.ref == 'refs/heads/force-nightly' }}
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
