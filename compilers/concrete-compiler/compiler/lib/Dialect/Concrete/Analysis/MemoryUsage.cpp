@@ -10,6 +10,7 @@
 #include <mlir/IR/Operation.h>
 #include <mlir/Interfaces/ViewLikeInterface.h>
 #include <numeric>
+#include <optional>
 
 using namespace mlir::concretelang;
 using namespace mlir;
@@ -64,8 +65,21 @@ namespace mlir {
 namespace concretelang {
 namespace Concrete {
 
+namespace {
+// Adds the values of `a` and `b` if they are both defined,
+// otherwise returns `std::nullopt`
+std::optional<int64_t> addOrNullopt(std::optional<int64_t> a,
+                                    std::optional<int64_t> b) {
+  if (a.has_value() && b.has_value())
+    return a.value() + b.value();
+  else
+    return std::nullopt;
+}
+} // namespace
+
 struct MemoryUsagePass
-    : public PassWrapper<MemoryUsagePass, OperationPass<ModuleOp>> {
+    : public PassWrapper<MemoryUsagePass, OperationPass<ModuleOp>>,
+      public TripCountTracker {
 
   CompilationFeedback &feedback;
 
@@ -133,27 +147,22 @@ struct MemoryUsagePass
 
   static std::optional<StringError> on_enter(scf::ForOp &op,
                                              MemoryUsagePass &pass) {
-    std::optional<int64_t> numberOfIterations = tryGetStaticTripCount(op);
+    std::optional<int64_t> tripCount = tryGetStaticTripCount(op);
 
-    if (!numberOfIterations.has_value()) {
-      return StringError("only static loops can be analyzed");
+    if (!tripCount.has_value()) {
+      emitWarning(op.getLoc(), "Cannot determine static trip count");
     }
 
-    assert(numberOfIterations.value() > 0);
-    pass.iterations *= (uint64_t)numberOfIterations.value();
+    pass.pushTripCount(op, tripCount);
+
     return std::nullopt;
   }
 
   static std::optional<StringError> on_exit(scf::ForOp &op,
                                             MemoryUsagePass &pass) {
-    std::optional<int64_t> numberOfIterations = tryGetStaticTripCount(op);
+    std::optional<int64_t> tripCount = tryGetStaticTripCount(op);
+    pass.popTripCount(op, tripCount);
 
-    if (!numberOfIterations.has_value()) {
-      return StringError("only static loops can be analyzed");
-    }
-
-    assert(numberOfIterations.value() > 0);
-    pass.iterations /= (uint64_t)numberOfIterations.value();
     return std::nullopt;
   }
 
@@ -164,18 +173,28 @@ struct MemoryUsagePass
     if (!maybeBufferSize) {
       return maybeBufferSize.error();
     }
+
+    std::optional<int64_t> memoryUsage = maybeBufferSize.value();
+
     // if the allocated buffer is being deallocated then count it as one.
     // Otherwise (and there must be a problem) multiply it by the number of
     // iterations
-    int64_t numberOfAlloc =
-        isBufferDeallocated(op.getResult()) ? 1 : pass.iterations;
+    if (!isBufferDeallocated(op.getResult())) {
+      if (pass.getTripCount().has_value())
+        memoryUsage = memoryUsage.value() * pass.getTripCount().value();
+      else
+        memoryUsage = std::nullopt;
+    }
 
     auto location = locationString(op.getLoc());
-    // pass.iterations number of allocation of size: shape_1 * ... * shape_n *
-    // element_size
-    auto memoryUsage = numberOfAlloc * maybeBufferSize.value();
 
-    pass.feedback.memoryUsagePerLoc[location] += memoryUsage;
+    if (pass.feedback.memoryUsagePerLoc.find(location) !=
+        pass.feedback.memoryUsagePerLoc.end()) {
+      pass.feedback.memoryUsagePerLoc[location] =
+          addOrNullopt(pass.feedback.memoryUsagePerLoc[location], memoryUsage);
+    } else {
+      pass.feedback.memoryUsagePerLoc[location] = memoryUsage;
+    }
 
     return std::nullopt;
   }
@@ -221,7 +240,13 @@ struct MemoryUsagePass
         }
         auto bufferSize = maybeBufferSize.value();
 
-        pass.feedback.memoryUsagePerLoc[location] += bufferSize;
+        if (pass.feedback.memoryUsagePerLoc.find(location) !=
+            pass.feedback.memoryUsagePerLoc.end()) {
+          pass.feedback.memoryUsagePerLoc[location] = addOrNullopt(
+              pass.feedback.memoryUsagePerLoc[location], bufferSize);
+        } else {
+          pass.feedback.memoryUsagePerLoc[location] = bufferSize;
+        }
       }
     }
 
@@ -229,8 +254,6 @@ struct MemoryUsagePass
   }
 
   std::map<std::string, std::vector<mlir::Value>> visitedValuesPerLoc;
-
-  size_t iterations = 1;
 };
 
 } // namespace Concrete

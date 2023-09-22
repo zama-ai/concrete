@@ -194,7 +194,7 @@ llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &v) {
       keysJson.push_back(std::move(keyJson));
     }
     statisticJson.insert({"keys", std::move(keysJson)});
-    statisticJson.insert({"count", (int64_t)statistic.count});
+    statisticJson.insert({"count", statistic.count});
 
     statisticsJson.push_back(std::move(statisticJson));
   }
