@@ -136,12 +136,13 @@ ProgramCompilationFeedback::load(std::string jsonPath) {
   return expectedCompFeedback.get();
 }
 
-llvm::json::Object
-memoryUsageToJson(const std::map<std::string, int64_t> &memoryUsagePerLoc) {
+llvm::json::Object memoryUsageToJson(
+    const std::map<std::string, std::optional<int64_t>> &memoryUsagePerLoc) {
   auto object = llvm::json::Object();
   for (auto key : memoryUsagePerLoc) {
     object.insert({key.first, key.second});
   }
+
   return object;
 }
 
