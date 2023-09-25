@@ -165,8 +165,10 @@ dependencies = [
  "aligned-vec",
  "bytemuck",
  "cbindgen",
+ "concrete-cpu-noise-model",
  "concrete-csprng",
  "concrete-fft",
+ "concrete-security-curves",
  "criterion",
  "dyn-stack",
  "libc",
@@ -175,6 +177,14 @@ dependencies = [
  "pulp",
  "rayon",
  "readonly",
+]
+
+[[package]]
+name = "concrete-cpu-noise-model"
+version = "0.1.0"
+dependencies = [
+ "cbindgen",
+ "concrete-security-curves",
 ]
 
 [[package]]
@@ -197,6 +207,10 @@ dependencies = [
  "dyn-stack",
  "num-complex",
 ]
+
+[[package]]
+name = "concrete-security-curves"
+version = "0.1.0"
 
 [[package]]
 name = "cpufeatures"

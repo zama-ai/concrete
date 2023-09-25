@@ -316,7 +316,7 @@ void simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(co
                                                                               uint64_t security_level);
 
 void simulation_extract_bit_lwe_ciphertext_u64(uint64_t *lwe_list_out,
-                                               const uint64_t *lwe_in,
+                                               uint64_t lwe_in,
                                                size_t delta_log,
                                                size_t number_of_bits_to_extract,
                                                uint64_t log_poly_size,

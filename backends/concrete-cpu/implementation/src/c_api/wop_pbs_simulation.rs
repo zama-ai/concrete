@@ -25,7 +25,7 @@ pub unsafe extern "C" fn simulation_extract_bit_lwe_ciphertext_u64(
 
         extract_bits(
             slice::from_raw_parts_mut(lwe_list_out, number_of_bits_to_extract),
-            *lwe_in,
+            lwe_in,
             delta_log,
             number_of_bits_to_extract,
             log_poly_size,
