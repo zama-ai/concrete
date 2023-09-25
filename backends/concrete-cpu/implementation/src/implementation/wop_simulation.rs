@@ -461,7 +461,7 @@ pub fn blind_rotate(
         cb_level,
         ciphertext_modulus_log,
         53,
-        ggsw_variance,
+        variance_bsk,
     );
 
     let (vertical_packing_variance, _) =
