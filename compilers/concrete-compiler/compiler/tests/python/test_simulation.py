@@ -170,6 +170,22 @@ end_to_end_fixture = [
         ).reshape((4, 4)),
         id="matul_chain_with_crt",
     ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.eint<14>, %arg1: tensor<16384xi64>) -> !FHE.eint<14> {
+                %cst = arith.constant 15 : i15
+                %v = "FHE.add_eint_int"(%arg0, %cst): (!FHE.eint<14>, i15) -> (!FHE.eint<14>)
+                %1 = "FHE.apply_lookup_table"(%v, %arg1): (!FHE.eint<14>, tensor<16384xi64>) -> (!FHE.eint<14>)
+                return %1: !FHE.eint<14>
+            }
+        """,
+        (
+            81,
+            np.array(range(16384), dtype=np.uint64),
+        ),
+        96,
+        id="add_lut_crt",
+    ),
 ]
 
 end_to_end_parallel_fixture = [
