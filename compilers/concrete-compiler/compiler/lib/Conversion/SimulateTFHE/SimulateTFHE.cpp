@@ -205,6 +205,16 @@ struct EncodeLutForCrtWopPBSOpPattern
             encodeOp.getResult().getType().cast<mlir::RankedTensorType>(),
             mlir::ValueRange{});
 
+    auto dynamicResultType =
+        toDynamicTensorType(encodeOp.getResult().getType());
+    auto dynamicLutType =
+        toDynamicTensorType(encodeOp.getInputLookupTable().getType());
+
+    mlir::Value castedOutputBuffer = rewriter.create<mlir::tensor::CastOp>(
+        encodeOp.getLoc(), dynamicResultType, outputBuffer);
+    mlir::Value castedLUT = rewriter.create<mlir::tensor::CastOp>(
+        encodeOp.getLoc(), dynamicLutType, adaptor.getInputLookupTable());
+
     auto crtDecompValue = mlir::concretelang::globalMemrefFromArrayAttr(
         rewriter, encodeOp.getLoc(), encodeOp.getCrtDecompositionAttr());
     auto crtBitsValue = mlir::concretelang::globalMemrefFromArrayAttr(
@@ -213,10 +223,9 @@ struct EncodeLutForCrtWopPBSOpPattern
     if (insertForwardDeclaration(
             encodeOp, rewriter, funcName,
             rewriter.getFunctionType(
-                {encodeOp.getResult().getType(),
-                 encodeOp.getInputLookupTable().getType(),
-                 crtDecompValue.getType(), crtBitsValue.getType(),
-                 rewriter.getIntegerType(32), rewriter.getIntegerType(1)},
+                {dynamicResultType, dynamicLutType, crtDecompValue.getType(),
+                 crtBitsValue.getType(), rewriter.getIntegerType(32),
+                 rewriter.getIntegerType(1)},
                 {}))
             .failed()) {
       return mlir::failure();
@@ -224,9 +233,8 @@ struct EncodeLutForCrtWopPBSOpPattern
 
     rewriter.create<mlir::func::CallOp>(
         encodeOp.getLoc(), funcName, mlir::TypeRange{},
-        mlir::ValueRange({outputBuffer, adaptor.getInputLookupTable(),
-                          crtDecompValue, crtBitsValue, modulusProductCst,
-                          isSignedCst}));
+        mlir::ValueRange({castedOutputBuffer, castedLUT, crtDecompValue,
+                          crtBitsValue, modulusProductCst, isSignedCst}));
 
     rewriter.replaceOp(encodeOp, outputBuffer);
 
@@ -259,13 +267,18 @@ struct EncodePlaintextWithCrtOpPattern
             epOp.getResult().getType().cast<mlir::RankedTensorType>(),
             mlir::ValueRange{});
 
+    auto dynamicResultType = toDynamicTensorType(epOp.getResult().getType());
+
+    mlir::Value castedOutputBuffer = rewriter.create<mlir::tensor::CastOp>(
+        epOp.getLoc(), dynamicResultType, outputBuffer);
+
     auto ModsValue = mlir::concretelang::globalMemrefFromArrayAttr(
         rewriter, epOp.getLoc(), epOp.getModsAttr());
 
     if (insertForwardDeclaration(
             epOp, rewriter, funcName,
             rewriter.getFunctionType(
-                {epOp.getResult().getType(), epOp.getInput().getType(),
+                {dynamicResultType, epOp.getInput().getType(),
                  ModsValue.getType(), rewriter.getI64Type()},
                 {}))
             .failed()) {
@@ -274,8 +287,8 @@ struct EncodePlaintextWithCrtOpPattern
 
     rewriter.create<mlir::func::CallOp>(
         epOp.getLoc(), funcName, mlir::TypeRange{},
-        mlir::ValueRange(
-            {outputBuffer, adaptor.getInput(), ModsValue, modsProductCst}));
+        mlir::ValueRange({castedOutputBuffer, adaptor.getInput(), ModsValue,
+                          modsProductCst}));
 
     rewriter.replaceOp(epOp, outputBuffer);
 
@@ -311,6 +324,22 @@ struct WopPBSGLWEOpPattern
                 .cast<mlir::RankedTensorType>(),
             mlir::ValueRange{});
 
+    auto dynamicResultType = toDynamicTensorType(this->getTypeConverter()
+                                                     ->convertType(resultType)
+                                                     .cast<mlir::TensorType>());
+    auto dynamicInputType = toDynamicTensorType(this->getTypeConverter()
+                                                    ->convertType(inputType)
+                                                    .cast<mlir::TensorType>());
+    auto dynamicLutType =
+        toDynamicTensorType(wopPbs.getLookupTable().getType());
+
+    mlir::Value castedOutputBuffer = rewriter.create<mlir::tensor::CastOp>(
+        wopPbs.getLoc(), dynamicResultType, outputBuffer);
+    mlir::Value castedCiphertexts = rewriter.create<mlir::tensor::CastOp>(
+        wopPbs.getLoc(), dynamicInputType, adaptor.getCiphertexts());
+    mlir::Value castedLut = rewriter.create<mlir::tensor::CastOp>(
+        wopPbs.getLoc(), dynamicLutType, adaptor.getLookupTable());
+
     auto lweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
         wopPbs.getLoc(), adaptor.getPksk().getInputLweDim(), 32);
     auto cbsLevelCountCst = rewriter.create<mlir::arith::ConstantIntOp>(
@@ -325,12 +354,10 @@ struct WopPBSGLWEOpPattern
         wopPbs.getLoc(), adaptor.getBsk().getLevels(), 32);
     auto bskBaseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
         wopPbs.getLoc(), adaptor.getBsk().getBaseLog(), 32);
-    auto fpkskLevelCountCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        wopPbs.getLoc(), adaptor.getPksk().getLevels(), 32);
-    auto fpkskBaseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        wopPbs.getLoc(), adaptor.getPksk().getBaseLog(), 32);
     auto polySizeCst = rewriter.create<mlir::arith::ConstantIntOp>(
         wopPbs.getLoc(), adaptor.getPksk().getOutputPolySize(), 32);
+    auto glweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        wopPbs.getLoc(), adaptor.getBsk().getGlweDim(), 32);
 
     auto crtDecompValue = mlir::concretelang::globalMemrefFromArrayAttr(
         rewriter, wopPbs.getLoc(), wopPbs.getCrtDecompositionAttr());
@@ -338,10 +365,8 @@ struct WopPBSGLWEOpPattern
     if (insertForwardDeclaration(
             wopPbs, rewriter, funcName,
             rewriter.getFunctionType(
-                {this->getTypeConverter()->convertType(resultType),
-                 this->getTypeConverter()->convertType(inputType),
-                 wopPbs.getLookupTable().getType(), crtDecompValue.getType(),
-                 rewriter.getIntegerType(32), rewriter.getIntegerType(32),
+                {dynamicResultType, dynamicInputType, dynamicLutType,
+                 crtDecompValue.getType(), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
@@ -353,11 +378,11 @@ struct WopPBSGLWEOpPattern
 
     rewriter.create<mlir::func::CallOp>(
         wopPbs.getLoc(), funcName, mlir::TypeRange{},
-        mlir::ValueRange({outputBuffer, adaptor.getCiphertexts(),
-                          adaptor.getLookupTable(), crtDecompValue, lweDimCst,
-                          cbsLevelCountCst, cbsBaseLogCst, kskLevelCountCst,
-                          kskBaseLogCst, bskLevelCountCst, bskBaseLogCst,
-                          fpkskLevelCountCst, fpkskBaseLogCst, polySizeCst}));
+        mlir::ValueRange({castedOutputBuffer, castedCiphertexts, castedLut,
+                          crtDecompValue, lweDimCst, cbsLevelCountCst,
+                          cbsBaseLogCst, kskLevelCountCst, kskBaseLogCst,
+                          bskLevelCountCst, bskBaseLogCst, polySizeCst,
+                          glweDimCst}));
 
     rewriter.replaceOp(wopPbs, outputBuffer);
 
@@ -542,7 +567,8 @@ void SimulateTFHEPass::runOnOperation() {
 
   target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addLegalOp<mlir::func::CallOp, mlir::memref::GetGlobalOp,
-                    mlir::bufferization::AllocTensorOp, mlir::tensor::CastOp>();
+                    mlir::memref::CastOp, mlir::bufferization::AllocTensorOp,
+                    mlir::tensor::CastOp>();
   // Make sure that no ops from `TFHE` remain after the lowering
   target.addIllegalDialect<TFHE::TFHEDialect>();
 

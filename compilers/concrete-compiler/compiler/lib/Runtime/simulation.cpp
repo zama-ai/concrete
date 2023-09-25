@@ -111,9 +111,69 @@ void sim_wop_pbs_crt(
     // Additional crypto parameters
     uint32_t lwe_small_dim, uint32_t cbs_level_count, uint32_t cbs_base_log,
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
-    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size) {
-  // TODO
+    uint32_t bsk_base_log, uint32_t polynomial_size, uint32_t glwe_dim) {
+
+  // Check number of blocks
+  assert(out_size == in_size && out_size == crt_decomp_size);
+
+  uint64_t log_poly_size =
+      static_cast<uint64_t>(ceil(log2(static_cast<double>(polynomial_size))));
+
+  // Compute the numbers of bits to extract for each block and the total one.
+  uint64_t total_number_of_bits_per_block = 0;
+  auto number_of_bits_per_block = new uint64_t[crt_decomp_size]();
+  for (uint64_t i = 0; i < crt_decomp_size; i++) {
+    uint64_t modulus = crt_decomp_aligned[i + crt_decomp_offset];
+    uint64_t nb_bit_to_extract =
+        static_cast<uint64_t>(ceil(log2(static_cast<double>(modulus))));
+    number_of_bits_per_block[i] = nb_bit_to_extract;
+
+    total_number_of_bits_per_block += nb_bit_to_extract;
+  }
+
+  // Create the buffer of ciphertexts for storing the total number of bits to
+  // extract.
+  // The extracted bit should be in the following order:
+  //
+  // [msb(m%crt[n-1])..lsb(m%crt[n-1])...msb(m%crt[0])..lsb(m%crt[0])] where n
+  // is the size of the crt decomposition
+  auto extract_bits_output_buffer =
+      new uint64_t[total_number_of_bits_per_block]{0};
+
+  // Extraction of each bit for each block
+  for (int64_t i = crt_decomp_size - 1, extract_bits_output_offset = 0; i >= 0;
+       extract_bits_output_offset += number_of_bits_per_block[i--]) {
+    auto nb_bits_to_extract = number_of_bits_per_block[i];
+
+    size_t delta_log = 64 - nb_bits_to_extract;
+
+    auto in_block = in_aligned[in_offset + i];
+
+    // trick ( ct - delta/2 + delta/2^4  )
+    uint64_t sub = (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 1)) -
+                   (uint64_t(1) << (uint64_t(64) - nb_bits_to_extract - 5));
+    in_block -= sub;
+
+    simulation_extract_bit_lwe_ciphertext_u64(
+        &extract_bits_output_buffer[extract_bits_output_offset], in_block,
+        delta_log, nb_bits_to_extract, log_poly_size, glwe_dim, lwe_small_dim,
+        ksk_base_log, ksk_level_count, bsk_base_log, bsk_level_count, 64, 128);
+  }
+
+  size_t ct_in_count = total_number_of_bits_per_block;
+  size_t lut_size = 1 << ct_in_count;
+  size_t ct_out_count = out_size;
+  size_t lut_count = ct_out_count;
+
+  assert(lut_ct_size0 == lut_count);
+  assert(lut_ct_size1 == lut_size);
+
+  // Vertical packing
+  simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
+      extract_bits_output_buffer, out_aligned + out_offset, ct_in_count,
+      ct_out_count, lut_size, lut_count, lut_ct_aligned + lut_ct_offset,
+      glwe_dim, log_poly_size, lwe_small_dim, cbs_level_count, cbs_base_log, 64,
+      128);
 }
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }

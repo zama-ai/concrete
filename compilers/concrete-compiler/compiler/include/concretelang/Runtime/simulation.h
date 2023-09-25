@@ -76,8 +76,7 @@ void sim_wop_pbs_crt(
     // Additional crypto parameters
     uint32_t lwe_small_dim, uint32_t cbs_level_count, uint32_t cbs_base_log,
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
-    uint32_t bsk_base_log, uint32_t fpksk_level_count, uint32_t fpksk_base_log,
-    uint32_t polynomial_size);
+    uint32_t bsk_base_log, uint32_t polynomial_size, uint32_t glwe_dim);
 
 void sim_encode_expand_lut_for_boostrap(
     uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset,
