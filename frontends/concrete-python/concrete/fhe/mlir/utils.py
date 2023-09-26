@@ -132,11 +132,14 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
     np.seterr(divide="ignore")
 
     inputs: List[Any] = [pred() if pred.operation == Operation.Constant else None for pred in preds]
-    table: List[Optional[Union[np.bool_, np.integer, np.floating, np.ndarray]]] = []
+    table: List[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
     for value in values:
         try:
             inputs[variable_input_index] = np.ones(variable_input_shape, dtype=np.int64) * value
-            table.append(node(*inputs))
+            evaluation = node(*inputs)
+            table.append(
+                evaluation if evaluation.min() != evaluation.max() else int(evaluation.min())
+            )
         except Exception:  # pylint: disable=broad-except
             # here we try our best to fill the table
             # if it fails, we append None and let flooding algoritm replace None values below
@@ -152,7 +155,7 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
 def construct_deduplicated_tables(
     node: Node,
     preds: List[Node],
-) -> Tuple[Tuple[np.ndarray, List[Tuple[int, ...]]], ...]:
+) -> Tuple[Tuple[np.ndarray, Optional[List[Tuple[int, ...]]]], ...]:
     """
     Construct lookup tables for each cell of the input for an Operation.Generic node.
 
@@ -187,8 +190,22 @@ def construct_deduplicated_tables(
                 [ [5, 8, 6, 7][input[2, 0]] , [3, 1, 2, 4][input[2, 1]] ]
     """
 
+    raw_table = construct_table(node, preds)
+    if all(isinstance(value, int) for value in raw_table):
+        return ((np.array(raw_table), None),)
+
     node_complete_table = np.concatenate(
-        tuple(np.expand_dims(array, -1) for array in construct_table(node, preds)),
+        tuple(
+            np.expand_dims(
+                (
+                    array
+                    if isinstance(array, np.ndarray)
+                    else np.broadcast_to(array, node.output.shape)
+                ),
+                -1,
+            )
+            for array in raw_table
+        ),
         axis=-1,
     )
 

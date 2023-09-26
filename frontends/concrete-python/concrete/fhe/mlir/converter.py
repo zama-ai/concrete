@@ -541,6 +541,7 @@ class Converter:
 
         if len(tables) == 1:
             table = tables[0][0]
+            assert tables[0][1] is None
 
             # The reduction on 63b is to avoid problems like doing a TLU of
             # the form T[j] = 2<<j, for j which is supposed to be 7b as per
@@ -563,6 +564,8 @@ class Converter:
             for i, (table, indices) in enumerate(tables):
                 assert len(table) == individual_table_size
                 lut_values[i, :] = table
+
+                assert indices is not None
                 for index in indices:
                     map_values[index] = i
 
