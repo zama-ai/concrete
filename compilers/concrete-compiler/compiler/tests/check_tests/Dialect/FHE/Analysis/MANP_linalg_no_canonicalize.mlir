@@ -1,8 +1,6 @@
-// RUN: concretecompiler --passes fhe-tensor-ops-to-linalg --passes MANP --passes ConcreteOptimizer --action=dump-fhe-no-linalg --split-input-file %s 2>&1 | FileCheck %s
+// RUN: concretecompiler --passes MANP --passes ConcreteOptimizer --action=dump-fhe-no-linalg --split-input-file %s 2>&1 | FileCheck %s
 
-func.func @sum() -> !FHE.eint<7> {
-  %0 = "FHE.zero_tensor"() : () -> tensor<5x3x4x2x!FHE.eint<7>>
-
+func.func @sum(%0: tensor<5x3x4x2x!FHE.eint<7>>, %35: tensor<2x0x3x!FHE.eint<7>>) -> !FHE.eint<7> {
   // CHECK: MANP = 11 : ui{{[0-9]+}}
   %1 = "FHELinalg.sum"(%0) : (tensor<5x3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
 
@@ -101,8 +99,6 @@ func.func @sum() -> !FHE.eint<7> {
 
   // ===============================
 
-  %35 = "FHE.zero_tensor"() : () -> tensor<2x0x3x!FHE.eint<7>>
-
   // CHECK: MANP = 1 : ui{{[0-9]+}}
   %36 = "FHELinalg.sum"(%35) : (tensor<2x0x3x!FHE.eint<7>>) -> !FHE.eint<7>
 
@@ -156,18 +152,15 @@ func.func @sum() -> !FHE.eint<7> {
 
 // -----
 
-func.func @concat() -> tensor<3x!FHE.eint<7>> {
-  %0 = "FHE.zero_tensor"() : () -> tensor<4x!FHE.eint<7>>
+func.func @concat(%arg0: tensor<4x!FHE.eint<7>>, %arg1:tensor<5x!FHE.eint<7>>, %arg2:tensor<10x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   // CHECK: MANP = 2 : ui{{[0-9]+}}
-  %1 = "FHELinalg.sum"(%0) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+  %1 = "FHELinalg.sum"(%arg0) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
 
-  %2 = "FHE.zero_tensor"() : () -> tensor<5x!FHE.eint<7>>
   // CHECK: MANP = 3 : ui{{[0-9]+}}
-  %3 = "FHELinalg.sum"(%2) { keep_dims = true } : (tensor<5x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+  %3 = "FHELinalg.sum"(%arg1) { keep_dims = true } : (tensor<5x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
 
-  %4 = "FHE.zero_tensor"() : () -> tensor<10x!FHE.eint<7>>
   // CHECK: MANP = 4 : ui{{[0-9]+}}
-  %5 = "FHELinalg.sum"(%4) { keep_dims = true } : (tensor<10x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+  %5 = "FHELinalg.sum"(%arg2) { keep_dims = true } : (tensor<10x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
 
   // CHECK: MANP = 3 : ui{{[0-9]+}}
   %6 = "FHELinalg.concat"(%1, %3) : (tensor<1x!FHE.eint<7>>, tensor<1x!FHE.eint<7>>) ->  tensor<2x!FHE.eint<7>>
