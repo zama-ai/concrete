@@ -28,6 +28,7 @@
 * [Multi Parameters](tutorial/multi\_parameters.md)
 * [Simulation](tutorial/simulation.md)
 * [Direct Circuits](tutorial/direct\_circuits.md)
+* [Statistics](tutorial/statistics.md)
 
 ## Application Tutorials
 
