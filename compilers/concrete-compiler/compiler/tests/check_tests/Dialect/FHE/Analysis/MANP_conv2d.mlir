@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes canonicalize --passes linalg-generalize-named-ops --passes fhe-tensor-ops-to-linalg --passes MANP --passes ConcreteOptimizer --action=dump-fhe-no-linalg --split-input-file %s 2>&1 | FileCheck %s
+// RUN: concretecompiler --passes canonicalize --passes linalg-generalize-named-ops --passes MANP --passes ConcreteOptimizer --action=dump-fhe-no-linalg --split-input-file %s 2>&1 | FileCheck %s
 
 func.func @conv2d_const_weight_const_bias(%input: tensor<1x1x4x4x!FHE.eint<6>>) -> tensor<1x1x2x2x!FHE.eint<6>> {
   %weight = arith.constant dense<[[[[1, 2], [2, 1]]]]> : tensor<1x1x2x2xi7>
