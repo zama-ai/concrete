@@ -29,6 +29,7 @@
 * [Simulation](tutorial/simulation.md)
 * [Direct Circuits](tutorial/direct\_circuits.md)
 * [Statistics](tutorial/statistics.md)
+* [Common Workarounds](tutorial/workarounds.md)
 
 ## Application Tutorials
 
