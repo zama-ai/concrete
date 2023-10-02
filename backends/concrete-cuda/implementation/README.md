@@ -6,7 +6,7 @@ Concrete-cuda holds the code for GPU acceleration of Zama's variant of TFHE.
 It is one of the backends of the Concrete Compiler.
 It implements CUDA/C++ functions to perform homomorphic operations on LWE ciphertexts.
 
-It provides functions to allocate memory on the GPU, to copy data back 
+It provides functions to allocate memory on the GPU, to copy data back
 and forth between the CPU and the GPU, to create and destroy Cuda streams, etc.:
 - `cuda_create_stream`, `cuda_destroy_stream`
 - `cuda_malloc`, `cuda_check_valid_malloc`
@@ -22,8 +22,8 @@ The cryptographic operations it provides are:
 
 ## Dependencies
 
-**Disclaimer**: Compilation on Windows/Mac is not supported yet. Only Nvidia GPUs are supported. 
-
+**Disclaimer**: Compilation on Windows/Mac is not supported yet. Only Nvidia GPUs are supported.
+<!-- markdown-link-check-disable-next-line -->
 - nvidia driver - for example, if you're running Ubuntu 20.04 check this [page](https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-20-04-focal-fossa-linux) for installation
 - [nvcc](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) >= 10.0
 - [gcc](https://gcc.gnu.org/) >= 8.0 - check this [page](https://gist.github.com/ax3l/9489132) for more details about nvcc/gcc compatible versions
@@ -31,7 +31,7 @@ The cryptographic operations it provides are:
 
 ## Build
 
-The Cuda project held in `concrete-cuda` can be compiled independently from Concrete in the 
+The Cuda project held in `concrete-cuda` can be compiled independently from Concrete in the
 following way:
 ```
 git clone git@github.com:zama-ai/concrete
