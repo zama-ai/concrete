@@ -7,7 +7,7 @@ After doing a compilation, we endup with a couple of artifacts, including crypto
 `bindgen` is used to generate Rust FFI bindings to the CAPI
 [The Rust bindings](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/lib/Bindings/Rust) are built on top of the CAPI in order to provide a safer, and more Rusty API. Although you can use `bindgen` (as we did to build the Rust bindings) to generate the Rust FFI from the CAPI and use it as is, we will here show how to use the Rust API that is built on top of that, as it's easier to use.
 
-![](../\_static/calling\_from\_other\_lang\_rust\_bindings.jpg)
+![](../_static/calling_from_other_lang_rust_bindings.jpg)
 
 
 ### Demo

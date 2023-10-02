@@ -23,7 +23,8 @@ This documentation is split into several sections:
 
 * Support forum: [https://community.zama.ai](https://community.zama.ai) (we answer in less than 24 hours).
 * Live discussion on the FHE.org discord server: [https://discord.fhe.org](https://discord.fhe.org) (inside the #**concrete** channel).
-* Do you have a question about Zama? Write us on [Twitter](https://twitter.com/zama\_fhe) or send us an email at: **hello@zama.ai**
+<!-- markdown-link-check-disable-next-line -->
+* Do you have a question about Zama? Write us on [Twitter](https://twitter.com/zama_fhe) or send us an email at: **hello@zama.ai**
 
 ## How is Concrete different from Concrete Numpy?
 

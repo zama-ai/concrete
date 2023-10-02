@@ -2,7 +2,7 @@
 
 In the associated [Python file](https://github.com/zama-ai/concrete/blob/main/frontends/concrete-python/examples/game_of_life/game_of_life.py), you can run the Game of Life, written in Concrete Python.
 
-![ Game of Life](../_static/game_of_life.gif)
+![ Game of Life](../_static/game-of-life.gif)
 
 ### Installation
 
