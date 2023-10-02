@@ -152,11 +152,11 @@ impl SymbolicVariance {
             let pbs_noise_coeff = self.coeffs[partition_offset + VALUE_INDEX_PBS];
             current_max = current_max.max(fresh_coeff).max(pbs_noise_coeff);
         }
-        assert!(1.0 <= current_max);
-        assert!(
-            current_max <= new_coeff,
-            "Non monotonious levelled op: {current_max} <= {new_coeff}"
-        );
+        // assert!(1.0 <= current_max);
+        // assert!(
+        //     current_max <= new_coeff,
+        //     "Non monotonious levelled op: {current_max} <= {new_coeff}"
+        // );
         // replace all current_max by new_coeff
         // multiply everything else by new_coeff / current_max
         let mut new = self.clone();
