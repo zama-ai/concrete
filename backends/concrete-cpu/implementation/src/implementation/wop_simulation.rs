@@ -50,18 +50,7 @@ fn integer_round(lwe: u64, log_poly_size: u64, ciphertext_modulus_log: usize) ->
 }
 
 fn bool_round(lwe: u64, ciphertext_modulus_log: usize) -> u64 {
-    let input = lwe;
-    let non_rep_bit_count: usize = ciphertext_modulus_log;
-    // We generate a mask which captures the non representable bits
-    let non_rep_mask = 1_u64 << (non_rep_bit_count - 1);
-    // We retrieve the non representable bits
-    let non_rep_bits = input & non_rep_mask;
-    // We extract the msb of the  non representable bits to perform the rounding
-    let non_rep_msb = non_rep_bits >> (non_rep_bit_count - 1);
-    // We remove the non-representable bits and perform the rounding
-    let mut res = input >> non_rep_bit_count;
-    res = (res + non_rep_msb) << non_rep_bit_count;
-    res >> non_rep_bit_count
+    integer_round(lwe, 0, ciphertext_modulus_log)
 }
 
 /// Function to extract `number_of_bits_to_extract` from an [`LweCiphertext`] starting at the bit
