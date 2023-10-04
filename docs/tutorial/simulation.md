@@ -13,7 +13,7 @@ def f(x):
     return (x + 1) ** 2
 
 inputset = [np.random.randint(0, 10, size=(10,)) for _ in range(10)]
-circuit = f.compile(inputset, p_error=0.1, fhe_simulation=True)
+circuit = f.compile(inputset, p_error=0.1)
 
 sample = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
@@ -32,5 +32,9 @@ After the simulation runs, it prints the following:
 ```
 
 {% hint style="warning" %}
-There are some operations which are not supported in simulation yet. They will result in compilation failures. You can revert to simulation using graph execution using `circuit.graph(...)` instead of `circuit.simulate(...)`, which won't simulate FHE, but it will evaluate the computation graph, which is like simulating the operations without any errors due to FHE.  
+Currently, simulation is better than directly calling from Python, but it's not exactly the same as FHE execution. This is because it is implemented in Python.&#x20;
+
+Imagine you have an identity table lookup. In the FHE code, this may be omitted by the Compiler. In the Python simulation, it would still be present as the optimizations used in the Compiler are not considered. This will result in a bigger error in simulation.&#x20;
+
+Some operations are made up of multiple table lookups, and operations of this type cannot be simulated unless their implementation is ported to Python. In the future, simulation functionality will be provided by the Compiler, so all of these issues will be addressed.
 {% endhint %}

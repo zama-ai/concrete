@@ -19,8 +19,6 @@
 * [Formatting](tutorial/formatting.md)
 * [Tagging](tutorial/tagging.md)
 * [Extensions](tutorial/extensions.md)
-* [Comparisons](tutorial/comparisons.md)
-* [Bitwise Operations](tutorial/bitwise.md)
 * [Table Lookups](tutorial/table\_lookups.md)
 * [Rounding](tutorial/rounding.md)
 * [Floating Points](tutorial/floating\_points.md)
@@ -28,13 +26,11 @@
 * [Multi Parameters](tutorial/multi\_parameters.md)
 * [Simulation](tutorial/simulation.md)
 * [Direct Circuits](tutorial/direct\_circuits.md)
-* [Statistics](tutorial/statistics.md)
 
 ## Application Tutorials
 
 * [Key Value Database](application-tutorial/key\_value\_database.md)
 * [SHA-256](application-tutorial/sha256.md)
-* [Game of Life](application-tutorial/game_of_life.md)
 
 ## How To
 
