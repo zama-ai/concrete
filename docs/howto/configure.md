@@ -58,6 +58,8 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Print MLIR during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
 * **show\_optimizer**: Optional\[bool] = None
   * Print optimizer output during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
+* **show\_statistics**: Optional\[bool] = None
+  * Print circuit statistics during compilation. `True` means always print, `False` means never print, `None` means print depending on verbose configuration below.
 * **verbose**: bool = False
   * Print details related to compilation.
 * **dump\_artifacts\_on\_unexpected\_failures**: bool = True
@@ -68,9 +70,9 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Error probability for individual table lookups. If set, all table lookups will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
 * **global\_p\_error**: Optional\[float] = None
   * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
-* **single\_precision**: bool = True
+* **single\_precision**: bool = False
   * Use single precision for the whole circuit.
-* **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MONO
+* **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MULTI
   * Set how cryptographic parameters are selected.
 * **jit**: bool = False
   * Enable JIT compilation.
@@ -92,3 +94,17 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Title of the progress bar
 * **progress\_tag**: Union[bool, int] = False,
   * How many nested tag elements to display with the progress bar. `True` means all tag elements and `False` disables the display. `2` will display `elmt1.elmt2`
+* **fhe\_simulation**: bool = False
+  * Enable FHE simulation. Can be enabled later using `circuit.enable_fhe_simulation()`.
+* **fhe\_execution**: bool = True
+  * Enable FHE execution. Can be enabled later using `circuit.enable_fhe_execution()`.
+* **compiler_debug_mode**: bool = False,
+  * Enable/disable debug mode of the compiler. This can show a lot of information, including passes and pattern rewrites.
+* **compiler_verbose_mode**: bool = False,
+  * Enable/disable verbose mode of the compiler. This mainly show logs from the compiler, and is less verbose than the debug mode.
+* **comparison_strategy_preference**: Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]] = None
+  * Specify preference for comparison strategies, can be a single strategy or an ordered list of strategies. See [Comparisons](../tutorial/comparisons.md) to learn more.
+* **bitwise_strategy_preference**: Optional[Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]] = None
+  * Specify preference for bitwise strategies, can be a single strategy or an ordered list of strategies. See [Bitwise](../tutorial/bitwise.md) to learn more.
+* **shifts_with_promotion**: bool = True,
+  * Enable promotions in encrypted shifts instead of casting in runtime. See [Bitwise#Shifts](../tutorial/bitwise.md#Shifts) to learn more.

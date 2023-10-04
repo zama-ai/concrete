@@ -70,8 +70,4 @@ return %4
 
 In this case, we kept `x` as 2-bits, but set the table lookup result and `y` to be 6-bits, so that the addition can be performed.
 
-This style of bit-width assignment is called multi-precision and it is currently disabled by default. To enable it, you can use the `single_precision=False` configuration option.
-
-{% hint style="info" %}
-Multi precision will become the default option in the near future.
-{% endhint %}
+This style of bit-width assignment is called multi-precision, and it is enabled by default. To disable it and use a single precision across the circuit, you can use the `single_precision=True` configuration option.
