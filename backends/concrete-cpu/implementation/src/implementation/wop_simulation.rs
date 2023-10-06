@@ -10,6 +10,7 @@ use crate::implementation::{from_torus, zip_eq};
 use concrete_cpu_noise_model::gaussian_noise::noise::blind_rotate::variance_blind_rotate;
 use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch::variance_keyswitch;
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+use concrete_cpu_noise_model::gaussian_noise::noise::private_packing_keyswitch::estimate_packing_private_keyswitch;
 use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
 use concrete_csprng::seeders::Seed;
 use concrete_security_curves::gaussian::security::{minimal_variance_glwe, minimal_variance_lwe};
@@ -410,8 +411,13 @@ fn log2(a: usize) -> usize {
 pub fn blind_rotate(
     log_poly_size: u64,
     glwe_dimension: u64,
+    lwe_dimension: u64,
+    fpks_log_base: u64,
+    fpks_level: u64,
     cb_log_base: u64,
     cb_level: u64,
+    pbs_log_base: u64,
+    pbs_level: u64,
     lookup_table: &mut [u64],
     ggsw_list: &[u64],
     ciphertext_modulus_log: u32,
@@ -441,6 +447,29 @@ pub fn blind_rotate(
         security_level,
     );
 
+    let blind_rotate_variance = variance_blind_rotate(
+        lwe_dimension,
+        glwe_dimension,
+        polynomial_size,
+        pbs_log_base,
+        pbs_level,
+        ciphertext_modulus_log,
+        53,
+        variance_bsk,
+    );
+
+    let ppks_variance = estimate_packing_private_keyswitch(
+        0.,
+        variance_bsk,
+        fpks_log_base,
+        fpks_level,
+        glwe_dimension,
+        polynomial_size,
+        ciphertext_modulus_log,
+    );
+
+    let ggsw_variance = blind_rotate_variance + ppks_variance;
+
     let vertical_packing_variance = variance_blind_rotate(
         ggsw_list.len() as u64,
         glwe_dimension,
@@ -449,7 +478,7 @@ pub fn blind_rotate(
         cb_level,
         ciphertext_modulus_log,
         53,
-        variance_bsk,
+        ggsw_variance,
     );
 
     let (vertical_packing_variance, _) =
@@ -470,8 +499,13 @@ pub fn vertical_packing(
     ggsw_list: &[u64],
     log_poly_size: u64,
     glwe_dimension: u64,
+    lwe_dimension: u64,
+    fpks_log_base: u64,
+    fpks_level: u64,
     cb_log_base: u64,
     cb_level: u64,
+    pbs_log_base: u64,
+    pbs_level: u64,
     ciphertext_modulus_log: u32,
     security_level: u64,
     sw_csprng: &mut SoftwareRandomGenerator,
@@ -534,8 +568,13 @@ pub fn vertical_packing(
     blind_rotate(
         log_poly_size,
         glwe_dimension,
+        lwe_dimension,
+        fpks_log_base,
+        fpks_level,
         cb_log_base,
         cb_level,
+        pbs_log_base,
+        pbs_level,
         &mut cmux_tree_lut_res,
         br_ggsw,
         ciphertext_modulus_log,
@@ -558,8 +597,12 @@ pub fn circuit_bootstrap_boolean_vertical_packing(
     glwe_dimension: u64,
     log_poly_size: u64,
     lwe_dimension: u64,
+    pbs_level: u64,
+    pbs_log_base: u64,
     cb_level: u64,
     cb_log_base: u64,
+    pp_level: u64,
+    pp_log_base: u64,
     ciphertext_modulus_log: u32,
     security_level: u64,
 ) {
@@ -584,8 +627,13 @@ pub fn circuit_bootstrap_boolean_vertical_packing(
             &ggsw_list,
             log_poly_size,
             glwe_dimension,
+            lwe_dimension,
+            pp_log_base,
+            pp_level,
             cb_log_base,
             cb_level,
+            pbs_log_base,
+            pbs_level,
             ciphertext_modulus_log,
             security_level,
             sw_csprng,
