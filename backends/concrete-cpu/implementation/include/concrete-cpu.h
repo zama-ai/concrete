@@ -310,8 +310,12 @@ void simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(co
                                                                               uint64_t glwe_dimension,
                                                                               uint64_t log_poly_size,
                                                                               uint64_t lwe_dimension,
+                                                                              uint64_t pbs_level,
+                                                                              uint64_t pbs_log_base,
                                                                               uint64_t cb_level,
                                                                               uint64_t cb_log_base,
+                                                                              uint64_t pp_level,
+                                                                              uint64_t pp_log_base,
                                                                               uint32_t ciphertext_modulus_log,
                                                                               uint64_t security_level);
 
