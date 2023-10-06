@@ -23,7 +23,7 @@ pub struct CJPParams {
     level_pbs: u64,
     glwe_dim: u64,
     log_poly_size: u64,
-    log_small_lwe_dim: u64,
+    small_lwe_dim: u64,
 }
 
 impl CJPParams {
@@ -46,8 +46,7 @@ impl Problem for CJPConstraint {
     fn verify(&self, param: Self::Param) -> bool {
         let poly_size = 1 << param.log_poly_size;
 
-        let variance_ksk =
-            minimal_variance_lwe(1 << param.log_small_lwe_dim, 64, self.security_level);
+        let variance_ksk = minimal_variance_lwe(param.small_lwe_dim, 64, self.security_level);
 
         let v_ks = variance_keyswitch(
             param.big_lwe_dim(),
@@ -60,7 +59,7 @@ impl Problem for CJPConstraint {
         let variance_bsk =
             minimal_variance_glwe(param.glwe_dim, poly_size, 64, self.security_level);
         let v_pbs = variance_blind_rotate(
-            1 << param.log_small_lwe_dim,
+            param.small_lwe_dim,
             param.glwe_dim,
             poly_size,
             param.base_log_pbs,
@@ -69,22 +68,22 @@ impl Problem for CJPConstraint {
             variance_bsk,
         );
         let v_ms = estimate_modulus_switching_noise_with_binary_key(
-            1 << param.log_small_lwe_dim,
+            param.small_lwe_dim,
             param.log_poly_size,
             64,
         );
 
         // CGGI
-        let v_enc = (1 << param.log_small_lwe_dim + 1) as f64 * variance_ksk;
-        let first_constraint = v_enc < v_pbs;
-        let second_constraint =
-            (v_pbs + v_ks) * (self.norm2 * self.norm2) as f64 + v_ms < self.variance_constraint;
-
-        // CJP
-        // let v_enc = (1 << param.log_small_lwe_dim + 1) as f64 * variance_bsk;
+        // let v_enc = (param.small_lwe_dim + 1) as f64 * variance_ksk;
         // let first_constraint = v_enc < v_pbs;
         // let second_constraint =
-        //     (v_pbs) * (self.norm2 * self.norm2) as f64 + v_ks + v_ms < self.variance_constraint;
+        //     (v_pbs + v_ks) * (self.norm2 * self.norm2) as f64 + v_ms < self.variance_constraint;
+
+        // CJP
+        let v_enc = (param.small_lwe_dim + 1) as f64 * variance_bsk;
+        let first_constraint = v_enc < v_pbs;
+        let second_constraint =
+            (v_pbs) * (self.norm2 * self.norm2) as f64 + v_ks + v_ms < self.variance_constraint;
 
         first_constraint && second_constraint
     }
@@ -98,7 +97,7 @@ impl Problem for CJPConstraint {
                     level: param.level_ks,
                     log2_base: param.base_log_ks,
                 },
-                internal_lwe_dimension: LweDimension(1 << param.log_small_lwe_dim),
+                internal_lwe_dimension: LweDimension(param.small_lwe_dim),
                 br_decomposition_parameter: BrDecompositionParameters {
                     level: param.level_pbs,
                     log2_base: param.base_log_pbs,
@@ -140,7 +139,7 @@ struct CJPSearchSpace {
     range_level_pbs: MyRange,
     range_glwe_dim: MyRange,
     range_log_poly_size: MyRange,
-    range_log_small_lwe_dim: MyRange,
+    range_small_lwe_dim: MyRange,
 }
 
 impl CJPSearchSpace {
@@ -149,9 +148,9 @@ impl CJPSearchSpace {
         let mut ks_decomp = vec![];
         for log_N in self.range_log_poly_size.to_std_range() {
             for k in self.range_glwe_dim.to_std_range() {
-                for log_n in self.range_log_small_lwe_dim.to_std_range() {
+                for n in self.range_small_lwe_dim.to_std_range() {
                     let mut current_minimal_noise = f64::INFINITY;
-                    let n = 1 << log_n;
+                    // let n = 1 << log_n;
                     for level in self.range_level_ks.to_std_range() {
                         let mut current_minimal_noise_for_a_given_level = current_minimal_noise;
                         let mut current_pair = (0, 0);
@@ -182,8 +181,8 @@ impl CJPSearchSpace {
         let mut pbs_decomp = vec![];
         for log_N in self.range_log_poly_size.to_std_range() {
             for k in self.range_glwe_dim.to_std_range() {
-                for log_n in self.range_log_small_lwe_dim.to_std_range() {
-                    let n = 1 << log_n;
+                for n in self.range_small_lwe_dim.to_std_range() {
+                    // let n = 1 << log_n;
                     let mut current_minimal_noise = f64::INFINITY;
                     for level in self.range_level_ks.to_std_range() {
                         let mut current_minimal_noise_for_a_given_level = current_minimal_noise;
@@ -227,7 +226,7 @@ impl CJPSearchSpace {
             range_base_log_level_pbs: ExplicitRange(pbs_decomp.clone()),
             range_glwe_dim: self.range_glwe_dim,
             range_log_poly_size: self.range_log_poly_size,
-            range_log_small_lwe_dim: self.range_log_small_lwe_dim,
+            range_small_lwe_dim: self.range_small_lwe_dim,
         }
     }
 }
@@ -238,7 +237,7 @@ struct CJPSearchSpaceTighten {
     range_base_log_level_pbs: ExplicitRange,
     range_glwe_dim: MyRange,
     range_log_poly_size: MyRange,
-    range_log_small_lwe_dim: MyRange,
+    range_small_lwe_dim: MyRange,
 }
 
 impl CJPSearchSpaceTighten {
@@ -253,7 +252,7 @@ impl CJPSearchSpaceTighten {
             level_pbs: 0,
             glwe_dim: 0,
             log_poly_size: 0,
-            log_small_lwe_dim: 0,
+            small_lwe_dim: 0,
         })
     }
 
@@ -271,15 +270,15 @@ impl CJPSearchSpaceTighten {
                                     .to_std_range_poly_size(precision + minimal_ms_value)
                                     .into_iter()
                                     .flat_map(move |log_poly_size| {
-                                        self.range_log_small_lwe_dim.to_std_range().into_iter().map(
-                                            move |log_small_lwe_dim| CJPParams {
+                                        self.range_small_lwe_dim.to_std_range().into_iter().map(
+                                            move |small_lwe_dim| CJPParams {
                                                 base_log_ks,
                                                 level_ks,
                                                 base_log_pbs,
                                                 level_pbs,
                                                 glwe_dim,
                                                 log_poly_size,
-                                                log_small_lwe_dim,
+                                                small_lwe_dim,
                                             },
                                         )
                                     })
@@ -325,9 +324,9 @@ pub fn solve_all_cjp_pke(p_fail: f64, mut writer: impl Write) {
         range_level_ks: MyRange(1, 40),
         range_base_log_pbs: MyRange(1, 40),
         range_level_pbs: MyRange(1, 53),
-        range_glwe_dim: MyRange(1, 7),
+        range_glwe_dim: MyRange(1, 2),
         range_log_poly_size: MyRange(8, 19),
-        range_log_small_lwe_dim: MyRange(8, 19),
+        range_small_lwe_dim: MyRange(500, 1500),
     };
     let minimal_ms_value = minimal_added_noise_by_modulus_switching(
         (1 << a.range_log_poly_size.0) * a.range_glwe_dim.0,
@@ -371,8 +370,7 @@ pub fn write_to_file(
     for (precision, carry, interm) in res.iter() {
         match interm {
             Some((solution, cost)) => {
-                let lwe_stddev =
-                    minimal_variance_lwe(1 << solution.log_small_lwe_dim, 64, 128).log2() * 0.5;
+                let lwe_stddev = minimal_variance_lwe(solution.small_lwe_dim, 64, 128).log2() * 0.5;
                 let glwe_stddev =
                     minimal_variance_glwe(solution.glwe_dim, 1 << solution.log_poly_size, 64, 128)
                         .log2()
@@ -385,7 +383,7 @@ pub fn write_to_file(
                     carry,
                     solution.glwe_dim,
                     solution.log_poly_size,
-                    solution.log_small_lwe_dim,
+                    solution.small_lwe_dim,
                     solution.level_pbs,
                     solution.base_log_pbs,
                     solution.level_ks,
