@@ -4,10 +4,10 @@ In this section, you will learn how to debug the compilation process easily and 
 
 ## Compiler debug and verbose modes
 
-There are two [configuration](../howto/configure.md) options that you can use to understand what's happening under the hood during compilation process.
+There are two [configuration](../howto/configure.md) options that you can use to understand what is happening under the hood during compilation process.
 
-- **compiler_verbose_mode** will print the passes applied by the compiler and let you see the transformations done by the compiler. Also, in case of crashes, it could narrow down the crash location. 
-- **compiler_debug_mode** is a lot more detailed version of the verbose mode. Even better for crashes.
+- **compiler_verbose_mode** will print the passes applied by the compiler and let you see the transformations completed by the compiler. Also, in the case of a crash, it could be used to narrow down the crash location.
+- **compiler_debug_mode** is a more detailed version of the verbose mode. This should be even more useful in the case of a crash.
 
 {% hint style="warning" %}
 These flags might not work as expected in Jupyter notebooks as they output to stderr directly from C++.
@@ -26,7 +26,7 @@ def f(x):
     return np.sin(x)
 ```
 
-This function fails to compile because **Concrete** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. If you go to the `.artifacts` directory under the working directory, you'll see the following files:
+This function fails to compile because **Concrete** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. If you go to the `.artifacts` directory under the working directory, you will see the following files:
 
 #### environment.txt
 
@@ -53,7 +53,7 @@ zipp==3.15.0
 
 #### function.txt
 
-This file contains information about the function you tried to compile.
+This file contains information about the function for which compilation was attempted.
 
 ```
 def f(x):
@@ -62,7 +62,7 @@ def f(x):
 
 #### parameters.txt
 
-This file contains information about the encryption status of the parameters of the function you tried to compile.
+This file contains information about the encryption status of the parameters of the function for which compilation was attempted.
 
 ```
 x :: encrypted
@@ -70,7 +70,7 @@ x :: encrypted
 
 #### 1.initial.graph.txt
 
-This file contains the textual representation of the initial computation graph right after tracing.
+This file contains the textual representation of the initial computation graph immediately after tracing.
 
 ```
 %0 = x              # EncryptedScalar<uint3>
@@ -80,7 +80,7 @@ return %1
 
 #### 2.final.graph.txt
 
-This file contains the textual representation of the final computation graph right before MLIR conversion.
+This file contains the textual representation of the final computation graph immediately before MLIR conversion.
 
 ```
 %0 = x              # EncryptedScalar<uint3>
@@ -90,7 +90,7 @@ return %1
 
 #### traceback.txt
 
-This file contains information about the error you received.
+This file contains information about the error that was received.
 
 ```
 Traceback (most recent call last):
@@ -115,7 +115,7 @@ return %1
 
 ### Manual exports.
 
-Manual exports are mostly used for visualization. They can be very useful for demonstrations. Here is how to perform one:
+Manual exports are mostly used for visualization. They can be very useful for demonstrations. Such an export can be performed in the following way:
 
 ```python
 from concrete import fhe
@@ -137,7 +137,7 @@ If you go to the `/tmp/custom/export/path` directory, you'll see the following f
 
 #### 1.initial.graph.txt
 
-This file contains the textual representation of the initial computation graph right after tracing.
+This file contains the textual representation of the initial computation graph immediately after tracing.
 
 ```
 %0 = x                             # EncryptedScalar<uint1>
@@ -179,7 +179,7 @@ Subgraphs:
 
 #### 3.final.graph.txt
 
-This file contains the textual representation of the final computation graph right before MLIR conversion.
+This file contains the textual representation of the final computation graph immediately before MLIR conversion.
 
 ```
 %0 = x                       # EncryptedScalar<uint3>        ∈ [0, 7]
@@ -204,7 +204,8 @@ Subgraphs:
 
 #### mlir.txt
 
-This file contains information about the MLIR of the function you compiled using the inputset you provided.
+This file contains information about the MLIR of the function compiled using the provided inputset.
+
 
 ```
 module {
@@ -300,12 +301,12 @@ You can seek help with your issue by asking a question directly in the [communit
 
 ## Submitting an issue
 
-If you cannot find a solution in the community forum, or you found a bug in the library, you could create an issue in our GitHub repository.
+If you cannot find a solution in the community forum, or if you have found a bug in the library, you could create an issue in our GitHub repository.
 
 In case of a bug, try to:
 
 * minimize randomness;
-* minimize your function as much as possible while keeping the bug - this will help to fix the bug faster;
+* minimize your function as much as possible while retaining the bug - this will help to fix the bug faster;
 * include your inputset in the issue;
 * include reproduction steps in the issue;
 * include debug artifacts in the issue.
