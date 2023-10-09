@@ -337,7 +337,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHELinalg.conv2d` (::mlir::concretelang::FHELinalg::Conv2dOp)
 
-Returns the 2D convolution of a tensor in the form NCHW with weights in the form FCHW
+Returns the 2D convolution of a tensor in NCHW form with weights in FCHW form
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -900,7 +900,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `FHELinalg.maxpool2d` (::mlir::concretelang::FHELinalg::Maxpool2dOp)
 
-Returns the 2D maxpool of a tensor in the form NCHW
+Returns the 2D maxpool of a tensor in NCHW form
 
 
 Interfaces: UnaryEint

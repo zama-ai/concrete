@@ -35,11 +35,11 @@ for chunk_comparison in chunk_comparisons[1:]:
 
 ### Notes
 
-- Signed comparisons are a bit more complex to explain, but they are supported!
-- Optimal chunk size is selected automatically to reduce the number of table lookups.
+- Signed comparisons are more complex to explain, but they are supported!
+- The optimal chunk size is selected automatically to reduce the number of table lookups.
 - Chunked comparisons result in at least 5 and at most 13 table lookups.
 - It is used if no other implementation can be used.
-- `==` and `!=` is using a different chunk comparison and reduction strategy with less table lookups.
+- `==` and `!=` are using a different chunk comparison and reduction strategy which use less table lookups.
 
 ### Pros
 
@@ -118,13 +118,13 @@ module {
 
 ## Subtraction Trick
 
-This implementation uses the fact that `x [<,<=,==,!=,>=,>] y` is equal to `x - y [<,<=,==,!=,>=,>] 0`, which is just a subtraction and a table lookup!
+This implementation uses the fact that `x [<,<=,==,!=,>=,>] y` is equal to `x - y [<,<=,==,!=,>=,>] 0`, which consists of a subtraction and a table lookup!
 
-There are two major problems with this implementation though:
+There are two major problems with this implementation:
 1) subtraction before the TLU requires up to 2 additional bits to avoid overflows (it is 1 in most cases).
 2) subtraction requires the same bit-width across operands.
 
-What this means is if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint7` in some way to do the subtraction and proceed with the TLU in 7-bits. There are 4 ways to achieve this behavior.
+This means that if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint7`. After which, we can perform the subtraction and proceed with the TLU in 7-bits. There are 4 ways to achieve this behavior.
 
 ### Requirements
 
@@ -134,7 +134,7 @@ What this means is if we are comparing `uint3` and `uint6`, we need to convert b
 
 ### 1. fhe.ComparisonStrategy.ONE_TLU_PROMOTED
 
-This strategy makes sure that during bit-width assignment, both operands are assigned the same bit-width, and that bit-width contains at least the amount of bits required to store `x - y`. The idea is:
+This strategy makes sure that during bit-width assignment, both operands are assigned the same bit-width. Moreover, the selected bit-width contains at least the number of bits required to store `x - y`. The idea is:
 
 ```python
 comparison_lut = fhe.LookupTable([...])
@@ -147,7 +147,7 @@ result = comparison_lut[x_promoted_to_uint7 - y_promoted_to_uint7]
 
 #### Cons
 
-- It will increase the bit-width of both operands and lock them to each other across the whole circuit, which can result in significant slowdowns if the operands are used in other costly operations.
+- It will increase the bit-width of both operands and lock them to each other across the whole circuit. This can result in significant slowdowns if the operands are used in other costly operations.
 
 #### Example
 
@@ -196,7 +196,7 @@ module {
 
 ### 2. fhe.ComparisonStrategy.THREE_TLU_CASTED
 
-This strategy will not put any constraint in bit-widths during bit-width assignment, instead operands are cast to a bit-width that can store `x - y` during runtime using table lookups. The idea is:
+This strategy will not put any constraint on bit-widths during bit-width assignment.Instead, operands are cast to a bit-width that can store `x - y` during runtime using table lookups. The idea is:
 
 ```python
 uint3_to_uint7_lut = fhe.LookupTable([...])
@@ -211,13 +211,13 @@ result = comparison_lut[x_cast_to_uint7 - y_cast_to_uint7]
 
 #### Notes
 
-- It can result in a single table lookup as well, if x and y are assigned (because of other operations) the same bit-width, and that bit-width can store `x - y`.
-- Or in two table lookups if only one of the operands is assigned a bit-width bigger than or equal to the bit width that can store `x - y`.
+- It can result in a single table lookup, if x and y are assigned (because of other operations) the same bit-width, and that bit-width can store `x - y`.
+- Alternatively, this can be achieved in two table lookups if only one of the operands is assigned a bit-width bigger than, or equal to, the bit width that can store `x - y`.
 
 #### Pros
 
-- It will not put any constraints on bit-widths of the operands, which is amazing if they are used in other costly operations.
-- It will result in at most 3 table lookups, which is still good.
+- It will not put any constraints on the bit-widths of the operands, which is useful if they are used in other costly operations.
+- It will result in at most 3 table lookups.
 
 #### Cons
 
@@ -274,7 +274,7 @@ module {
 
 ### 3. fhe.ComparisonStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED 
 
-This strategy is like the middle ground between the two strategies described above. With this strategy, only the bigger operand will be constrained to have at least the required bit-width to store `x - y`, and the smaller operand will be cast to that bit-width during runtime. The idea is:
+This strategy can be seen as a middle ground between the two strategies described above. With this strategy, only the bigger operand will be constrained to have at least the required bit-width to store `x - y`, and the smaller operand will be cast to that bit-width during runtime. The idea is:
 
 ```python
 uint3_to_uint7_lut = fhe.LookupTable([...])
@@ -290,12 +290,12 @@ result = comparison_lut[x_cast_to_uint7 - y_promoted_to_uint7]
 
 #### Pros
 
-- It will only put constraint on the bigger operand, which is great if the smaller operand is used in other costly operations.
-- It will result in at most 2 table lookups, which is great.
+- It will only put constraint on the bigger operand, which is useful if the smaller operand is used in other costly operations.
+- It will result in at most 2 table lookups.
 
 #### Cons
 
-- It will increase the bit-width of the bigger operand which can result in significant slowdowns if the bigger operand is used in other costly operations.
+- It will increase the bit-width of the bigger operand, which can result in significant slowdowns if the bigger operand is used in other costly operations.
 - If you are not doing anything else with the smaller operand, or doing less costly operations compared to comparison, it could introduce an unnecessary table lookup and slow down execution compared to `fhe.ComparisonStrategy.THREE_TLU_CASTED`.
 
 #### Example
@@ -349,7 +349,7 @@ module {
 
 ### 4. fhe.ComparisonStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED
 
-This strategy is like the exact opposite of the strategy above. With this, only the smaller operand will be constrained to have at least the required bit-width, and the bigger operand will be cast during runtime. The idea is:
+This strategy can be seen as the exact opposite of the above strategy. Here, only the smaller operand will be constrained to have at least the required bit-width, and the bigger operand will be cast during runtime. The idea is:
 
 ```python
 uint6_to_uint7_lut = fhe.LookupTable([...])
@@ -424,13 +424,13 @@ module {
 
 ## Clipping Trick
 
-This implementation uses the fact that the subtraction trick is not optimal in terms of the required intermediate bit width. Comparison result does not change if we `compare(3, 40)` or `compare(3, 4)`, so why not clipping the bigger operand and then doing the subtraction to use less bits!
+This implementation uses the fact that the subtraction trick is not optimal in terms of the required intermediate bit width. The comparison result does not change if we `compare(3, 40)` or `compare(3, 4)`, so we can clip the bigger operand and then compute the subtraction to use less bits.
 
-There are two major problems with this implementation as well though:
-1) it can not be used when bit-widths are the same (for some cases even when they differ by only one bit)
+There are two major problems with this implementation:
+1) it can not be used when the bit-widths are the same (for some cases even when they differ by only one bit)
 2) subtraction still requires the same bit-width across operands.
 
-What this means is if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint4` in some way to do the subtraction and proceed with the TLU in 7-bits. There are 2 ways to achieve this behavior.
+What this means is if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint4. After this, we can perform the subtraction and proceed with the TLU in 7-bits. There are 2 ways to achieve this behavior.
 
 ### Requirements
 
@@ -456,7 +456,7 @@ What this means is if we are comparing `uint3` and `uint6`, we need to convert b
 
 ### 1. fhe.ComparisonStrategy.THREE_TLU_BIGGER_CLIPPED_SMALLER_CASTED
 
-This strategy will not put any constraint in bit-widths during bit-width assignment, instead the smaller operand is cast to a bit-width that can store `clipped(bigger) - smaller` or `smaller - clipped(bigger)` during runtime using table lookups. The idea is:
+This strategy will not put any constraint on bit-widths during bit-width assignment. Instead, the smaller operand is cast to a bit-width that can store `clipped(bigger) - smaller` or `smaller - clipped(bigger)` during runtime using table lookups. The idea is:
 
 ```python
 uint3_to_uint4_lut = fhe.LookupTable([...])
@@ -474,14 +474,14 @@ result = another_comparison_lut[y_clipped - x_cast_to_uint4]
 
 #### Notes
 
-- This is a fallback implementation, so if there is a difference of 1-bit (or in some cases 2-bits) and subtraction trick cannot be used optimally, this implementation will be used instead of `fhe.ComparisonStrategy.CHUNKED`.
+- This is a fallback implementation, so if there is a difference of 1-bit (or in some cases 2-bits) and the subtraction trick cannot be used optimally, this implementation will be used instead of `fhe.ComparisonStrategy.CHUNKED`.
 - It can result in two table lookups if the smaller operand is assigned a bit-width bigger than or equal to the bit width that can store `clipped(bigger) - smaller` or `smaller - clipped(bigger)`.
 
 #### Pros
 
-- It will not put any constraints on bit-widths of the operands, which is amazing if they are used in other costly operations.
-- It will result in at most 3 table lookups, which is still good.
-- And those table lookups will be on smaller bit-widths, which is great.
+- It will not put any constraints on the bit-widths of the operands, which is useful if they are used in other costly operations.
+- It will result in at most 3 table lookups.
+- These table lookups will be on smaller bit-widths.
 
 #### Cons
 
@@ -556,12 +556,12 @@ result = another_comparison_lut[y_clipped - x_promoted_to_uint4]
 
 #### Pros
 
-- It will only put constraint on the smaller operand, which is great if the bigger operand is used in other costly operations.
-- It will result in exactly 2 table lookups, which is great.
+- It will only put a constraint on the smaller operand, which is useful if the bigger operand is used in other costly operations.
+- It will result in exactly 2 table lookups.
 
 #### Cons
 
-- It will increase the bit-width of the bigger operand which can result in significant slowdowns if the bigger operand is used in other costly operations.
+- It will increase the bit-width of the bigger operand, which can result in significant slowdowns if the bigger operand is used in other costly operations.
 
 #### Example
 
@@ -629,5 +629,5 @@ Concrete will choose the best strategy available after bit-width assignment, reg
 {% endhint %}
 
 {% hint style="info" %}
-Different strategies are good for different circuits. If you want the best runtime for your use case, you can compile your circuit with all different comparison strategy preferences, and pick the one with the lowest complexity.
+Different strategies are useful for different circuits. If you want the best runtime for your use case, you can compile your circuit with all different comparison strategy preferences, and pick the one with the lowest complexity.
 {% endhint %}
