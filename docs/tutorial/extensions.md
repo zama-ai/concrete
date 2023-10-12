@@ -45,6 +45,52 @@ The wrapped function:
 If any of these constraints are violated, the outcome is undefined.
 {% endhint %}
 
+## fhe.multivariate(function)
+
+Allows you to wrap any multivariate function into a table lookup:
+
+```python
+import numpy as np
+from concrete import fhe
+
+def value_if_condition_else_zero(value, condition):
+    return value if condition else np.zeros_like(value, dtype=np.int64)
+
+def function(x, y):
+    return fhe.multivariate(value_if_condition_else_zero)(x, y)
+
+inputset = [
+    (
+        np.random.randint(-2**4, 2**4, size=(2, 2)),
+        np.random.randint(0, 2**1, size=()),
+    )
+    for _ in range(100)
+]
+
+compiler = fhe.Compiler(function, {"x": "encrypted", "y": "encrypted"})
+circuit = compiler.compile(inputset)
+
+sample = [np.array([[-2, 4], [0, 1]]), 0]
+assert np.array_equal(circuit.encrypt_run_decrypt(*sample), function(*sample))
+
+sample = [np.array([[3, -1], [2, 4]]), 1]
+assert np.array_equal(circuit.encrypt_run_decrypt(*sample), function(*sample))
+```
+
+{% hint style="danger" %}
+The wrapped function:
+- shouldn't have any side effects (e.g., no modification of global state)
+- should be deterministic (e.g., no random numbers)
+- should have input shapes which are broadcastable to the output shape (i.e., `input.shape` should be broadcastable to `output.shape` for all inputs)
+- each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]` of all inputs)
+
+If any of these constraints are violated, the outcome is undefined.
+{% endhint %}
+
+{% hint style="warning" %}
+Multivariate functions cannot be called with [rounded](./rounding.md) inputs.
+{% endhint %}
+
 ## fhe.conv(...)
 
 Allows you to perform a convolution operation, with the same semantic as [onnx.Conv](https://github.com/onnx/onnx/blob/main/docs/Operators.md#conv):

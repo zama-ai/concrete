@@ -616,6 +616,115 @@ class BitwiseStrategy(str, Enum):
         return required_x_bit_width, required_y_bit_width
 
 
+class MultivariateStrategy(str, Enum):
+    """
+    MultivariateStrategy, to specify implementation preference for multivariate operations.
+    """
+
+    PROMOTED = "promoted"
+    # ---------------------------------
+    # conditions:
+    # - (x.bit_width + y.bit_width + ...) <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits -> 13-bits
+    # - y :: 8-bits -> 13-bits
+    # - z :: 2-bits -> 13-bits
+    # - x.bit_width == y.bit_width == z.bit_width
+    #
+    # execution:
+    # - tlu(pack(x, y, z)) :: 13-bits -> 8-bits
+
+    CASTED = "casted"
+    # ---------------------------------
+    # conditions:
+    # - (x.bit_width + y.bit_width + ...) <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 3-bits
+    # - y :: 8-bits
+    # - z :: 2-bits
+    #
+    # execution:
+    # - x = tlu(x) :: 3-bits -> 13-bits
+    # - y = tlu(y) :: 8-bits -> 13-bits
+    # - z = tlu(z) :: 2-bits -> 13-bits
+    # - tlu(pack(x, y, z)) :: 13-bits -> 8-bits
+
+    @classmethod
+    def parse(cls, string: str) -> "MultivariateStrategy":
+        """
+        Convert a string to a MultivariateStrategy.
+        """
+
+        if isinstance(string, cls):
+            return string
+
+        if not isinstance(string, str):
+            message = f"{string} cannot be parsed to a {cls.__name__}"
+            raise TypeError(message)
+
+        string = string.lower()
+        for value in MultivariateStrategy:
+            if string == value.value:
+                return value  # pragma: no cover
+
+        message = (
+            f"'{string}' is not a valid '{friendly_type_format(cls)}' ("
+            f"{', '.join(v.value for v in MultivariateStrategy)})"
+        )
+        raise ValueError(message)
+
+    def can_be_used(self, *args: ValueDescription) -> bool:
+        """
+        Get if the strategy can be used for the multivariate operation.
+
+        Args:
+            args (Tuple[ValueDescription]):
+                description of the arguments of the multivariate operation
+
+        Returns:
+            bool:
+                whether the strategy can be used for the multivariate operation
+        """
+
+        sum_of_bit_widths = 0
+        for arg in args:
+            assert isinstance(arg.dtype, Integer)
+            sum_of_bit_widths += arg.dtype.bit_width
+
+        return sum_of_bit_widths <= MAXIMUM_TLU_BIT_WIDTH
+
+    def promotions(self, *args: ValueDescription) -> Tuple[int, ...]:
+        """
+        Get bit-width promotions for the strategy.
+
+        Args:
+            args (Tuple[ValueDescription]):
+                description of the arguments of the multivariate operation
+
+        Returns:
+            Tuple[int, int]:
+                required minimum bit-width for the arguments to use the strategy
+        """
+
+        sum_of_bit_widths = 0
+        for arg in args:
+            assert isinstance(arg.dtype, Integer)
+            sum_of_bit_widths += arg.dtype.bit_width
+
+        result = []
+        for arg in args:
+            assert isinstance(arg.dtype, Integer)
+            required_bit_width = arg.dtype.bit_width
+
+            if self == MultivariateStrategy.PROMOTED:
+                required_bit_width = sum_of_bit_widths
+            result.append(required_bit_width)
+
+        return tuple(result)
+
+
 class Configuration:
     """
     Configuration class, to allow the compilation process to be customized.
@@ -649,6 +758,7 @@ class Configuration:
     comparison_strategy_preference: List[ComparisonStrategy]
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
+    multivariate_strategy_preference: List[MultivariateStrategy]
 
     def __init__(
         self,
@@ -687,6 +797,9 @@ class Configuration:
             Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]
         ] = None,
         shifts_with_promotion: bool = True,
+        multivariate_strategy_preference: Optional[
+            Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]
+        ] = None,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -738,6 +851,18 @@ class Configuration:
             )
         )
         self.shifts_with_promotion = shifts_with_promotion
+        self.multivariate_strategy_preference = (
+            []
+            if multivariate_strategy_preference is None
+            else (
+                [
+                    MultivariateStrategy.parse(strategy)
+                    for strategy in multivariate_strategy_preference
+                ]
+                if isinstance(multivariate_strategy_preference, list)
+                else [MultivariateStrategy.parse(multivariate_strategy_preference)]
+            )
+        )
 
         self._validate()
 
@@ -782,6 +907,9 @@ class Configuration:
             Keep, Optional[Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]]
         ] = KEEP,
         shifts_with_promotion: Union[Keep, bool] = KEEP,
+        multivariate_strategy_preference: Union[
+            Keep, Optional[Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]]
+        ] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
@@ -809,6 +937,9 @@ class Configuration:
                 continue
             if name == "bitwise_strategy_preference":
                 # checked in the constructor within parse method of BitwiseStrategy
+                continue
+            if name == "multivariate_strategy_preference":
+                # checked in the constructor within parse method of MultivariateStrategy
                 continue
 
             original_hint = hint

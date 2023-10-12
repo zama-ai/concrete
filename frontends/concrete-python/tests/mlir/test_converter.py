@@ -884,6 +884,34 @@ return %2
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y, z: fhe.multivariate(lambda x, y, z: x + y // z)(x, y, z),
+            {"x": "encrypted", "y": "encrypted", "z": "encrypted"},
+            [
+                (
+                    100_000,
+                    200_000,
+                    10,
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                           # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is one of the inputs
+%1 = y                           # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is one of the inputs
+%2 = z                           # EncryptedScalar<uint4>         ∈ [10, 10]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 4-bit value is one of the inputs
+%3 = <lambda>(%0, %1, %2)        # EncryptedScalar<uint17>        ∈ [120000, 120000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ which means the inputs would be packed to 39-bits for the table lookup
+                                                                                     but only up to 16-bit table lookups are supported
+return %3
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(

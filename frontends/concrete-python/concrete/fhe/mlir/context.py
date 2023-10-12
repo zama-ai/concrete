@@ -1015,6 +1015,88 @@ class Context:
 
         return result
 
+    def pack_multivariate_inputs(self, xs: List[Conversion]) -> Conversion:
+        """
+        Packs inputs of multivariate table lookups.
+
+        Args:
+            xs (List[Conversion]):
+                operands
+
+        Returns:
+            Conversion:
+                packed operands
+        """
+
+        assert all(x.is_encrypted for x in xs)
+
+        required_bit_width = sum(x.original_bit_width for x in xs)
+        maximum_bit_width = max(x.bit_width for x in xs)
+        bit_width_to_pack = max(required_bit_width, maximum_bit_width)
+
+        shifted_xs = []
+        next_shift_amount = 0
+
+        for x in xs:
+            needs_cast = x.bit_width != bit_width_to_pack
+            needs_sanitize = x.is_signed
+            needs_shift = next_shift_amount > 0
+
+            shift_amount = next_shift_amount
+            next_shift_amount += x.original_bit_width
+
+            if not (needs_cast or needs_sanitize or needs_shift):
+                shifted_xs.append(x)
+                continue
+
+            if not needs_cast:
+                if needs_sanitize:
+                    sanitizer = self.constant(
+                        self.i(bit_width_to_pack + 1),
+                        2 ** (x.original_bit_width - 1),
+                    )
+                    x = self.to_unsigned(self.add(x.type, x, sanitizer))
+
+                if needs_shift:
+                    shifter = self.constant(
+                        self.i(bit_width_to_pack + 1),
+                        2**shift_amount,
+                    )
+                    x = self.mul(x.type, x, shifter)
+
+                shifted_xs.append(x)
+                continue
+
+            dtype = Integer(bit_width=x.bit_width, is_signed=x.is_signed)
+
+            shift_table = list(range(dtype.max() + 1))
+            if x.is_signed:
+                shift_table += list(range(dtype.min(), 0))
+
+            if needs_sanitize:
+                shift_table = [value + 2 ** (x.original_bit_width - 1) for value in shift_table]
+
+            if needs_shift:
+                shift_table = [value * (2**shift_amount) for value in shift_table]
+
+            shifted_xs.append(
+                self.tlu(
+                    self.tensor(self.eint(bit_width_to_pack), shape=x.shape),
+                    x,
+                    shift_table,
+                )
+            )
+
+        assert next_shift_amount <= MAXIMUM_TLU_BIT_WIDTH
+
+        return self.tree_add(
+            self.tensor(
+                self.eint(bit_width_to_pack),
+                shape=(sum(np.zeros(x.shape) for x in xs)).shape,  # type: ignore
+            ),
+            shifted_xs,
+        )
+
     # operations
 
     # each operation is checked for compatibility
@@ -2059,6 +2141,29 @@ class Context:
             mapping.result,
         )
 
+    def multivariate_tlu(
+        self,
+        resulting_type: ConversionType,
+        xs: List[Conversion],
+        table: Sequence[int],
+    ) -> Conversion:
+        assert resulting_type.is_encrypted
+
+        packing = self.pack_multivariate_inputs(xs)
+        return self.tlu(resulting_type, packing, table)
+
+    def multivariate_multi_tlu(
+        self,
+        resulting_type: ConversionType,
+        xs: List[Conversion],
+        tables: Any,
+        mapping: Any,
+    ):
+        assert resulting_type.is_encrypted
+
+        packing = self.pack_multivariate_inputs(xs)
+        return self.multi_tlu(resulting_type, packing, tables, mapping)
+
     def neg(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
         if x.is_clear:
             highlights = {
@@ -2647,11 +2752,19 @@ class Context:
         )
 
     def tree_add(self, resulting_type: ConversionType, xs: List[Conversion]) -> Conversion:
+        resulting_element_type = (self.eint if resulting_type.is_unsigned else self.esint)(
+            resulting_type.bit_width
+        )
         while len(xs) > 1:
             a = xs.pop()
             b = xs.pop()
 
-            result = self.add(resulting_type, a, b)
+            intermediate_type = self.tensor(
+                resulting_element_type,
+                shape=(np.zeros(a.shape) + np.zeros(b.shape)).shape,
+            )
+
+            result = self.add(intermediate_type, a, b)
             xs.insert(0, result)
 
         return xs[0]

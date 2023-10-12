@@ -143,6 +143,16 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             "chunked"
             ")",
         ),
+        pytest.param(
+            {"multivariate_strategy_preference": 42},
+            TypeError,
+            "42 cannot be parsed to a MultivariateStrategy",
+        ),
+        pytest.param(
+            {"multivariate_strategy_preference": "bad"},
+            ValueError,
+            "'bad' is not a valid 'MultivariateStrategy' (promoted, casted)",
+        ),
     ],
 )
 def test_configuration_bad_fork(kwargs, expected_error, expected_message):

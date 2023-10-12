@@ -6,7 +6,7 @@ Declaration of `Converter` class.
 
 import sys
 from copy import deepcopy
-from typing import List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import concrete.lang
 import concrete.lang.dialects.tracing
@@ -193,6 +193,7 @@ class Converter:
                 comparison_strategy_preference=configuration.comparison_strategy_preference,
                 bitwise_strategy_preference=configuration.bitwise_strategy_preference,
                 shifts_with_promotion=configuration.shifts_with_promotion,
+                multivariate_strategy_preference=configuration.multivariate_strategy_preference,
             ),
             ProcessRounding(),
         ]
@@ -501,39 +502,61 @@ class Converter:
     def tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert node.converted_to_table_lookup
 
-        variable_input_index = -1
+        is_multivariate = (
+            node.operation == Operation.Generic
+            and node.properties["attributes"].get("is_multivariate") is True
+        )
 
         pred_nodes = ctx.graph.ordered_preds_of(node)
-        for i, pred_node in enumerate(pred_nodes):
+
+        variable_input_indices = []
+        for pred_index, pred_node in enumerate(pred_nodes):
             if pred_node.operation != Operation.Constant:
-                if variable_input_index == -1:
-                    variable_input_index = i
-                else:
-                    assert False, "unreachable"  # pragma: no cover
+                variable_input_indices.append(pred_index)
 
-        assert variable_input_index != -1
+        if is_multivariate:
+            sum_of_bit_widths = sum(pred.original_bit_width for pred in preds)
+            if sum_of_bit_widths > MAXIMUM_TLU_BIT_WIDTH:
+                highlights: Dict[Node, Union[str, List[str]]] = {
+                    pred.origin: f"this {pred.original_bit_width}-bit value is one of the inputs"
+                    for pred in preds
+                }
+                highlights[node] = [
+                    (
+                        f"which means the inputs would be packed to {sum_of_bit_widths}-bits "
+                        f"for the table lookup"
+                    ),
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit table lookups are supported",
+                ]
+                ctx.error(highlights)
 
-        variable_input = preds[variable_input_index]
-        if variable_input.bit_width > MAXIMUM_TLU_BIT_WIDTH:
-            variable_input_messages = [
-                f"this {variable_input.bit_width}-bit value "
-                f"is used as an input to a table lookup"
-            ]
-            if variable_input.bit_width != variable_input.original_bit_width:
-                variable_input_messages.append(
-                    "("
-                    f"note that it's assigned {variable_input.bit_width}-bits "
-                    f"during compilation because of its relation with other operations"
-                    ")"
-                )
+        else:
+            assert len(variable_input_indices) == 1
 
-            highlights = {
-                variable_input.origin: variable_input_messages,
-                node: f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit table lookups are supported",
-            }
-            ctx.error(highlights)  # type: ignore
+            variable_input_index = variable_input_indices[0]
+            variable_input = preds[variable_input_index]
+
+            if variable_input.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                variable_input_messages = [
+                    f"this {variable_input.bit_width}-bit value "
+                    f"is used as an input to a table lookup"
+                ]
+                if variable_input.bit_width != variable_input.original_bit_width:
+                    variable_input_messages.append(
+                        "("
+                        f"note that it's assigned {variable_input.bit_width}-bits "
+                        f"during compilation because of its relation with other operations"
+                        ")"
+                    )
+
+                highlights = {
+                    variable_input.origin: variable_input_messages,
+                    node: f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit table lookups are supported",
+                }
+                ctx.error(highlights)
 
         tables = construct_deduplicated_tables(node, pred_nodes)
+
         assert len(tables) > 0
 
         lut_shape: Tuple[int, ...] = ()
@@ -568,6 +591,23 @@ class Converter:
                 assert indices is not None
                 for index in indices:
                     map_values[index] = i
+
+        if is_multivariate:
+            if len(tables) == 1:
+                return ctx.multivariate_tlu(ctx.typeof(node), preds, table=lut_values.tolist())
+
+            assert map_values is not None
+            return ctx.multivariate_multi_tlu(
+                ctx.typeof(node),
+                xs=preds,
+                tables=lut_values.tolist(),
+                mapping=map_values.tolist(),
+            )
+
+        assert len(variable_input_indices) == 1
+
+        variable_input_index = variable_input_indices[0]
+        variable_input = preds[variable_input_index]
 
         if len(tables) == 1:
             return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist())

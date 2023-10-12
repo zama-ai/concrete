@@ -76,6 +76,68 @@ def flood_replace_none_values(table: list):
     assert_that(all(value is not None for value in table))
 
 
+def construct_table_multivariate(node: Node, preds: List[Node]) -> List[Any]:
+    """
+    Construct the lookup table for a multivariate node.
+
+    Args:
+        node (Node):
+            Multivariate node to construct the table for
+
+        preds (List[Node]):
+            ordered predecessors to `node`
+
+    Returns:
+        List[Any]:
+            lookup table corresponding to `node` and its input value
+    """
+
+    assert all(
+        description.is_encrypted and isinstance(description.dtype, Integer)
+        for description in node.inputs
+    )
+
+    packing_bit_width = sum(pred.properties["original_bit_width"] for pred in preds)
+    packed_values = range(0, 2**packing_bit_width)
+
+    np.seterr(divide="ignore")
+
+    table: List[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
+    for packed_value in packed_values:
+        inputs = []
+
+        shift = 0
+        for description, pred in zip(node.inputs, preds):
+            assert isinstance(description.dtype, Integer)
+
+            bit_width = pred.properties["original_bit_width"]
+            is_signed = description.dtype.is_signed
+
+            value = (packed_value >> shift) & ((2**bit_width) - 1)
+            shift += bit_width
+
+            if is_signed:
+                value -= 2 ** (bit_width - 1)
+
+            inputs.append(np.ones(description.shape, dtype=np.int64) * value)
+
+        try:
+            evaluation = node(*inputs)
+            table.append(
+                evaluation if evaluation.min() != evaluation.max() else int(evaluation.min())
+            )
+        except Exception:  # pylint: disable=broad-except  # pragma: no cover
+            # here we try our best to fill the table
+            # if it fails, we append None and let flooding algorithm replace None values below
+            table.append(None)
+
+    np.seterr(divide="warn")
+
+    flood_replace_none_values(table)
+
+    return table
+
+
 def construct_table(node: Node, preds: List[Node]) -> List[Any]:
     """
     Construct the lookup table for an Operation.Generic node.
@@ -91,6 +153,9 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
         List[Any]:
             lookup table corresponding to `node` and its input value
     """
+
+    if node.operation == Operation.Generic and node.properties["attributes"].get("is_multivariate"):
+        return construct_table_multivariate(node, preds)
 
     variable_input_index = -1
     for index, pred in enumerate(preds):
@@ -138,7 +203,11 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
             inputs[variable_input_index] = np.ones(variable_input_shape, dtype=np.int64) * value
             evaluation = node(*inputs)
             table.append(
-                evaluation if evaluation.min() != evaluation.max() else int(evaluation.min())
+                # if evaluation consist a single value, we can use
+                # the value instead of the full tensor to save memory
+                evaluation
+                if evaluation.min() != evaluation.max()
+                else int(evaluation.min())
             )
         except Exception:  # pylint: disable=broad-except
             # here we try our best to fill the table

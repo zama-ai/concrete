@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import z3
 
-from ...compilation.configuration import BitwiseStrategy, ComparisonStrategy
+from ...compilation.configuration import BitwiseStrategy, ComparisonStrategy, MultivariateStrategy
 from ...dtypes import Integer
 from ...representation import Graph, Node, Operation
 from . import GraphProcessor
@@ -29,6 +29,7 @@ class AssignBitWidths(GraphProcessor):
     comparison_strategy_preference: List[ComparisonStrategy]
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
+    multivariate_strategy_preference: List[MultivariateStrategy]
 
     def __init__(
         self,
@@ -36,11 +37,13 @@ class AssignBitWidths(GraphProcessor):
         comparison_strategy_preference: List[ComparisonStrategy],
         bitwise_strategy_preference: List[BitwiseStrategy],
         shifts_with_promotion: bool,
+        multivariate_strategy_preference: List[MultivariateStrategy],
     ):
         self.single_precision = single_precision
         self.comparison_strategy_preference = comparison_strategy_preference
         self.bitwise_strategy_preference = bitwise_strategy_preference
         self.shifts_with_promotion = shifts_with_promotion
+        self.multivariate_strategy_preference = multivariate_strategy_preference
 
     def apply(self, graph: Graph):
         solver = z3.Solver()
@@ -55,6 +58,7 @@ class AssignBitWidths(GraphProcessor):
             self.comparison_strategy_preference,
             self.bitwise_strategy_preference,
             self.shifts_with_promotion,
+            self.multivariate_strategy_preference,
         )
 
         nodes = graph.query_nodes(ordered=True)
@@ -104,6 +108,7 @@ class AdditionalConstraints:
     comparison_strategy_preference: List[ComparisonStrategy]
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
+    multivariate_strategy_preference: List[MultivariateStrategy]
 
     node: Node
     bit_width: z3.Int
@@ -118,6 +123,7 @@ class AdditionalConstraints:
         comparison_strategy_preference: List[ComparisonStrategy],
         bitwise_strategy_preference: List[BitwiseStrategy],
         shifts_with_promotion: bool,
+        multivariate_strategy_preference: List[MultivariateStrategy],
     ):
         self.solver = solver
         self.graph = graph
@@ -126,6 +132,7 @@ class AdditionalConstraints:
         self.comparison_strategy_preference = comparison_strategy_preference
         self.bitwise_strategy_preference = bitwise_strategy_preference
         self.shifts_with_promotion = shifts_with_promotion
+        self.multivariate_strategy_preference = multivariate_strategy_preference
 
     def generate_for(self, node: Node, bit_width: z3.Int):
         """
@@ -146,11 +153,19 @@ class AdditionalConstraints:
             else ("constant" if node.operation == Operation.Constant else "input")
         )
 
+        if node.operation == Operation.Generic and node.properties["attributes"].get(
+            "is_multivariate"
+        ):
+            operation_name = "multivariate"
+
         if hasattr(self, operation_name):
             constraints = getattr(self, operation_name)
             preds = self.graph.ordered_preds_of(node)
 
-            if isinstance(constraints, set):
+            if callable(constraints):
+                constraints(node, preds)
+
+            elif isinstance(constraints, set):
                 for add_constraint in constraints:
                     add_constraint(self, node, preds)
 
@@ -166,7 +181,7 @@ class AdditionalConstraints:
             else:  # pragma: no cover
                 message = (
                     f"Expected a set or a dict "
-                    f"for additional constraints of '{operation_name}' operation"
+                    f"for additional constraints of '{operation_name}' operation "
                     f"but got {type(constraints).__name__} instead"
                 )
                 raise ValueError(message)
@@ -265,6 +280,30 @@ class AdditionalConstraints:
             and self.shifts_with_promotion
         ):
             self.solver.add(self.bit_widths[x] == self.bit_widths[node])
+
+    def multivariate(self, node: Node, preds: List[Node]):
+        assert all(
+            pred.output.is_encrypted and pred.properties.get("name") != "round_bit_pattern"
+            for pred in preds
+        )
+
+        strategies = self.multivariate_strategy_preference
+        fallback = [
+            MultivariateStrategy.CASTED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(*(pred.output for pred in preds)):
+                promotions = strategy.promotions(*(pred.output for pred in preds))
+                for pred, promotion in zip(preds, promotions):
+                    self.solver.add(self.bit_widths[pred] >= promotion)
+
+                if strategy == MultivariateStrategy.PROMOTED:
+                    for i in range(len(preds) - 1):
+                        self.solver.add(self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]])
+
+                node.properties["strategy"] = strategy
+                break
 
     # ==========
     # Operations

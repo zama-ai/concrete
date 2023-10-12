@@ -12,6 +12,7 @@ from .configuration import (
     BitwiseStrategy,
     ComparisonStrategy,
     Configuration,
+    MultivariateStrategy,
     ParameterSelectionStrategy,
 )
 from .keys import Keys
