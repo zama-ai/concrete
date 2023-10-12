@@ -202,6 +202,27 @@ return %2
         str(circuit5),
     )
 
+    # ======================================================================
+
+    @fhe.circuit({"x": "encrypted", "y": "encrypted"}, helpers.configuration())
+    def circuit6(x: fhe.uint3, y: fhe.uint1):
+        def keep(value, flag):
+            return value if flag else 0
+
+        return fhe.multivariate(keep, outputs=fhe.uint3)(x, y)
+
+    helpers.check_str(
+        """
+
+%0 = x                   # EncryptedScalar<uint3>
+%1 = y                   # EncryptedScalar<uint1>
+%2 = keep(%0, %1)        # EncryptedScalar<uint3>
+return %2
+
+        """.strip(),
+        str(circuit6),
+    )
+
 
 def test_bad_circuit(helpers):
     """

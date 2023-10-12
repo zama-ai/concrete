@@ -135,12 +135,16 @@ def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
         all_nodes, start_nodes, terminal_node = subgraph_to_fuse
         processed_terminal_nodes.add(terminal_node)
 
-        fused_node, node_before_subgraph = convert_subgraph_to_subgraph_node(
+        conversion_result = convert_subgraph_to_subgraph_node(
             graph,
             all_nodes,
             start_nodes,
             terminal_node,
         )
+        if conversion_result is None:
+            continue
+
+        fused_node, node_before_subgraph = conversion_result
         nx_graph.add_node(fused_node)
 
         if terminal_node in graph.output_nodes.values():
@@ -604,7 +608,7 @@ def convert_subgraph_to_subgraph_node(
     all_nodes: Dict[Node, None],
     start_nodes: Dict[Node, None],
     terminal_node: Node,
-) -> Tuple[Node, Node]:
+) -> Optional[Tuple[Node, Node]]:
     """
     Convert a subgraph to Operation.Generic node.
 
@@ -626,12 +630,17 @@ def convert_subgraph_to_subgraph_node(
             if subgraph is not fusable
 
     Returns:
-        Tuple[Node, Node]:
+        Optional[Tuple[Node, Node]]:
             None if the subgraph cannot be fused,
             subgraph node and its predecessor otherwise
     """
 
     nx_graph = graph.graph
+
+    if terminal_node.operation == Operation.Generic and terminal_node.properties["attributes"].get(
+        "is_multivariate"
+    ):
+        return None
 
     variable_input_nodes = [node for node in start_nodes if node.operation != Operation.Constant]
     if len(variable_input_nodes) != 1:
@@ -651,7 +660,7 @@ def convert_subgraph_to_subgraph_node(
         )
 
     variable_input_node = variable_input_nodes[0]
-    check_subgraph_fusability(graph, all_nodes, variable_input_node)
+    check_subgraph_fusibility(graph, all_nodes, variable_input_node)
 
     nx_subgraph = nx.MultiDiGraph(nx_graph)
     nodes_to_remove = [node for node in nx_subgraph.nodes() if node not in all_nodes]
@@ -702,7 +711,7 @@ def convert_subgraph_to_subgraph_node(
     return subgraph_node, variable_input_node
 
 
-def check_subgraph_fusability(
+def check_subgraph_fusibility(
     graph: Graph,
     all_nodes: Dict[Node, None],
     variable_input_node: Node,
