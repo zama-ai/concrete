@@ -978,6 +978,32 @@ module {
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y: fhe.hint(np.sum((x - y) == 0), can_store=len(x)) == len(x),
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (10,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (10,)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<10x!FHE.eint<4>>, %arg1: tensor<10x!FHE.eint<4>>) -> !FHE.eint<1> {
+    %0 = "FHELinalg.to_signed"(%arg0) : (tensor<10x!FHE.eint<4>>) -> tensor<10x!FHE.esint<4>>
+    %1 = "FHELinalg.to_signed"(%arg1) : (tensor<10x!FHE.eint<4>>) -> tensor<10x!FHE.esint<4>>
+    %2 = "FHELinalg.sub_eint"(%0, %1) : (tensor<10x!FHE.esint<4>>, tensor<10x!FHE.esint<4>>) -> tensor<10x!FHE.esint<4>>
+    %c0_i2 = arith.constant 0 : i2
+    %cst = arith.constant dense<[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]> : tensor<16xi64>
+    %3 = "FHELinalg.apply_lookup_table"(%2, %cst) : (tensor<10x!FHE.esint<4>>, tensor<16xi64>) -> tensor<10x!FHE.eint<4>>
+    %4 = "FHELinalg.sum"(%3) {axes = [], keep_dims = false} : (tensor<10x!FHE.eint<4>>) -> !FHE.eint<4>
+    %c10_i5 = arith.constant 10 : i5
+    %cst_0 = arith.constant dense<[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]> : tensor<16xi64>
+    %5 = "FHE.apply_lookup_table"(%4, %cst_0) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<1>
+    return %5 : !FHE.eint<1>
+  }
+}
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_convert_multi_precision(function, parameters, expected_mlir, helpers):

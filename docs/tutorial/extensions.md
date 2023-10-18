@@ -286,3 +286,21 @@ return %5
 ```
 
 regardless of the bounds.
+
+Alternatively, you can use it to make sure a value can store certain integers:
+
+```python
+@fhe.compiler({"x": "encrypted", "y": "encrypted"})
+def is_vectors_same(x, y):
+    assert x.ndim != 1
+    assert y.ndim != 1
+    
+    assert len(x) == len(y)
+    n = len(x)
+    
+    number_of_same_elements = np.sum(x == y)
+    fhe.hint(number_of_same_elements, can_store=n)  # hint that number of same elements can go up to n
+    is_same = number_of_same_elements == n
+
+    return is_same
+```

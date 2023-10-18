@@ -4,10 +4,16 @@ Declaration of hinting extensions, to provide more information to Concrete.
 
 from typing import Any, Optional, Union
 
+from ..dtypes import Integer
 from ..tracing import Tracer
 
 
-def hint(x: Union[Tracer, Any], *, bit_width: Optional[int] = None) -> Union[Tracer, Any]:
+def hint(
+    x: Union[Tracer, Any],
+    *,
+    bit_width: Optional[int] = None,
+    can_store: Optional[Any] = None,
+) -> Union[Tracer, Any]:
     """
     Hint the compilation process about properties of a value.
 
@@ -24,6 +30,9 @@ def hint(x: Union[Tracer, Any], *, bit_width: Optional[int] = None) -> Union[Tra
         bit_width (Optional[int], default = None):
             hint about bit width
 
+        can_store (Optional[Any], default = None):
+            hint that the value needs to be able to store the given value
+
     Returns:
         Union[Tracer, Any]:
             hinted value
@@ -32,7 +41,15 @@ def hint(x: Union[Tracer, Any], *, bit_width: Optional[int] = None) -> Union[Tra
     if not isinstance(x, Tracer):  # pragma: no cover
         return x
 
+    bit_width_hint = 0
+
     if bit_width is not None:
-        x.computation.properties["bit_width_hint"] = bit_width
+        bit_width_hint = max(bit_width_hint, bit_width)
+
+    if can_store is not None:
+        bit_width_hint = max(bit_width_hint, Integer.that_can_represent(can_store).bit_width)
+
+    if bit_width_hint > 0:
+        x.computation.properties["bit_width_hint"] = bit_width_hint
 
     return x
