@@ -43,7 +43,9 @@ keep_if_no_match_lut = fhe.LookupTable([i for i in range(16)] + [0 for _ in rang
 
 
 def _replace_impl(key, value, candidate_key, candidate_value):
-    match = np.sum((candidate_key - key) == 0) == NUMBER_OF_KEY_CHUNKS
+    number_of_matching_chunks = np.sum((candidate_key - key) == 0)
+    fhe.hint(number_of_matching_chunks, can_store=NUMBER_OF_KEY_CHUNKS)
+    match = number_of_matching_chunks == NUMBER_OF_KEY_CHUNKS
 
     packed_match_and_value = (2**CHUNK_SIZE) * match + value
     value_if_match_else_zeros = keep_if_match_lut[packed_match_and_value]
@@ -55,7 +57,9 @@ def _replace_impl(key, value, candidate_key, candidate_value):
 
 
 def _query_impl(key, candidate_key, candidate_value):
-    match = np.sum((candidate_key - key) == 0) == NUMBER_OF_KEY_CHUNKS
+    number_of_matching_chunks = np.sum((candidate_key - key) == 0)
+    fhe.hint(number_of_matching_chunks, can_store=NUMBER_OF_KEY_CHUNKS)
+    match = number_of_matching_chunks == NUMBER_OF_KEY_CHUNKS
 
     packed_match_and_candidate_value = (2**CHUNK_SIZE) * match + candidate_value
     candidate_value_if_match_else_zeros = keep_if_match_lut[packed_match_and_candidate_value]
@@ -182,9 +186,10 @@ class KeyValueDatabase:
 
         encoded_key = encode_key(key)
 
-        accumulation = np.zeros(1 + NUMBER_OF_VALUE_CHUNKS, dtype=np.uint64)
+        accumulation = np.zeros(1 + NUMBER_OF_VALUE_CHUNKS, dtype=np.int64)
         for entry in self._state:
-            accumulation += self._query_circuit.encrypt_run_decrypt(encoded_key, *entry)
+            contribution = self._query_circuit.encrypt_run_decrypt(encoded_key, *entry)
+            accumulation += contribution
 
         match_count = accumulation[0]
         if match_count > 1:
