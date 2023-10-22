@@ -2,13 +2,18 @@
 Tests of `Converter` class.
 """
 
+# pylint: disable=import-error,no-name-in-module
+
 import numpy as np
 import pytest
+from concrete.compiler import CompilationContext
 
 from concrete import fhe
 from concrete.fhe.mlir import GraphConverter
 
 from ..conftest import USE_MULTI_PRECISION
+
+# pylint: enable=import-error,no-name-in-module
 
 
 def assign(x, y):
@@ -978,6 +983,24 @@ module {
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: x // 2,
+            {
+                "x": {"range": [0, 2**6 - 1], "status": "encrypted", "shape": (102, 70, 104)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<102x70x104x!FHE.eint<6>>) -> tensor<102x70x104x!FHE.eint<5>> {
+    %c2_i3 = arith.constant 2 : i3
+    %cst = arith.constant dense<[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31]> : tensor<64xi64>
+    %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<102x70x104x!FHE.eint<6>>, tensor<64xi64>) -> tensor<102x70x104x!FHE.eint<5>>
+    return %0 : tensor<102x70x104x!FHE.eint<5>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_convert_multi_precision(function, parameters, expected_mlir, helpers):
@@ -991,9 +1014,13 @@ def test_converter_convert_multi_precision(function, parameters, expected_mlir, 
     compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
-    circuit = compiler.compile(inputset, configuration)
+    graph = compiler.trace(inputset, configuration)
 
-    helpers.check_str(expected_mlir.strip(), circuit.mlir.strip())
+    compilation_context = CompilationContext.new()
+    mlir_context = compilation_context.mlir_context()
+
+    mlir = GraphConverter().convert(graph, configuration, mlir_context)
+    helpers.check_str(expected_mlir.strip(), str(mlir).strip())
 
 
 @pytest.mark.parametrize(
@@ -1080,9 +1107,13 @@ def test_converter_convert_single_precision(function, parameters, expected_mlir,
     compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
-    circuit = compiler.compile(inputset, configuration)
+    graph = compiler.trace(inputset, configuration)
 
-    helpers.check_str(expected_mlir.strip(), circuit.mlir.strip())
+    compilation_context = CompilationContext.new()
+    mlir_context = compilation_context.mlir_context()
+
+    mlir = GraphConverter().convert(graph, configuration, mlir_context)
+    helpers.check_str(expected_mlir.strip(), str(mlir).strip())
 
 
 @pytest.mark.parametrize(
