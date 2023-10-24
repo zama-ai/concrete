@@ -113,7 +113,8 @@ void sim_wop_pbs_crt(
     // Additional crypto parameters
     uint32_t lwe_small_dim, uint32_t cbs_level_count, uint32_t cbs_base_log,
     uint32_t ksk_level_count, uint32_t ksk_base_log, uint32_t bsk_level_count,
-    uint32_t bsk_base_log, uint32_t polynomial_size, uint32_t glwe_dim) {
+    uint32_t bsk_base_log, uint32_t polynomial_size, uint32_t pksk_base_log,
+    uint32_t pksk_level_count, uint32_t glwe_dim) {
 
   // Check number of blocks
   assert(out_size == in_size && out_size == crt_decomp_size);
@@ -174,8 +175,8 @@ void sim_wop_pbs_crt(
   simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
       extract_bits_output_buffer, out_aligned + out_offset, ct_in_count,
       ct_out_count, lut_size, lut_count, lut_ct_aligned + lut_ct_offset,
-      glwe_dim, log_poly_size, lwe_small_dim, cbs_level_count, cbs_base_log, 64,
-      128);
+      glwe_dim, log_poly_size, lwe_small_dim, bsk_level_count, bsk_base_log,
+      cbs_level_count, cbs_base_log, pksk_level_count, pksk_base_log, 64, 128);
 }
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }
