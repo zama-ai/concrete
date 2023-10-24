@@ -354,6 +354,10 @@ struct WopPBSGLWEOpPattern
         wopPbs.getLoc(), adaptor.getBsk().getLevels(), 32);
     auto bskBaseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
         wopPbs.getLoc(), adaptor.getBsk().getBaseLog(), 32);
+    auto fpkskLevelCountCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        wopPbs.getLoc(), adaptor.getPksk().getLevels(), 32);
+    auto fpkskBaseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        wopPbs.getLoc(), adaptor.getPksk().getBaseLog(), 32);
     auto polySizeCst = rewriter.create<mlir::arith::ConstantIntOp>(
         wopPbs.getLoc(), adaptor.getPksk().getOutputPolySize(), 32);
     auto glweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
@@ -370,6 +374,7 @@ struct WopPBSGLWEOpPattern
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
+                 rewriter.getIntegerType(32), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32)},
                 {}))
             .failed()) {
@@ -382,7 +387,7 @@ struct WopPBSGLWEOpPattern
                           crtDecompValue, lweDimCst, cbsLevelCountCst,
                           cbsBaseLogCst, kskLevelCountCst, kskBaseLogCst,
                           bskLevelCountCst, bskBaseLogCst, polySizeCst,
-                          glweDimCst}));
+                          fpkskLevelCountCst, fpkskBaseLogCst, glweDimCst}));
 
     rewriter.replaceOp(wopPbs, outputBuffer);
 
