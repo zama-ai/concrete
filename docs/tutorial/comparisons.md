@@ -124,7 +124,7 @@ There are two major problems with this implementation:
 1) subtraction before the TLU requires up to 2 additional bits to avoid overflows (it is 1 in most cases).
 2) subtraction requires the same bit-width across operands.
 
-This means that if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint7`. After which, we can perform the subtraction and proceed with the TLU in 7-bits. There are 4 ways to achieve this behavior.
+This means that if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint7` in some way. After which, we can perform the subtraction and proceed with the TLU in 7-bits. There are 4 ways to achieve this behavior.
 
 ### Requirements
 
@@ -212,7 +212,7 @@ result = comparison_lut[x_cast_to_uint7 - y_cast_to_uint7]
 #### Notes
 
 - It can result in a single table lookup, if x and y are assigned (because of other operations) the same bit-width, and that bit-width can store `x - y`.
-- Alternatively, this can be achieved in two table lookups if only one of the operands is assigned a bit-width bigger than, or equal to, the bit width that can store `x - y`.
+- Alternatively, two table lookups can be used if only one of the operands is assigned a bit-width bigger than, or equal to, the bit width that can store `x - y`.
 
 #### Pros
 
@@ -430,7 +430,7 @@ There are two major problems with this implementation:
 1) it can not be used when the bit-widths are the same (for some cases even when they differ by only one bit)
 2) subtraction still requires the same bit-width across operands.
 
-What this means is if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint4. After this, we can perform the subtraction and proceed with the TLU in 7-bits. There are 2 ways to achieve this behavior.
+What this means is if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint4 in some way. After this, we can perform the subtraction and proceed with the TLU in 7-bits. There are 2 ways to achieve this behavior.
 
 ### Requirements
 

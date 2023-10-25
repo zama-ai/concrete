@@ -1,6 +1,6 @@
 # Bitwise Operations
 
-Bitwise operations are not native operations in Concrete, so they need to be implemented using existing native operations (i.e., additions, clear multiplications, negations, and table lookups). Concrete offers two different implementation options for performing bitwise operations.
+Bitwise operations are not native operations in Concrete, so they need to be implemented using existing native operations (i.e., additions, clear multiplications, negations, and table lookups). Concrete offers a single option, implemented in two different ways, for performing bitwise operations.
 
 ## Chunked
 
@@ -118,7 +118,7 @@ There are two major problems with this implementation:
 1) packing requires the same bit-width across operands.
 2) packing requires the bit-width of at least `x.bit_width + y.bit_width` and that bit-width cannot exceed maximum TLU bit-width, which is `16` at the moment.
 
-This means that if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint9`. After this we are able to do the packing and can proceed with the TLU in 9-bits. There are 4 ways to achieve this.
+This means that if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint9` in some way. After this we are able to do the packing and can proceed with the TLU in 9-bits. There are 4 ways to achieve this.
 
 ### Requirements
 
@@ -207,7 +207,7 @@ result = bitwise_lut[pack(x_cast_to_uint9, y_cast_to_uint9)]
 #### Notes
 
 - It can result in a single table lookup if x and y are assigned (because of other operations) the same bit-width, and if that bit-width can store `pack(x, y)`.
-- Alternatively, two table lookups will be used if only one of the operands is assigned a bit-width bigger than or equal to the bit width that can store `pack(x, y)`.
+- Alternatively, two table lookups can be used if only one of the operands is assigned a bit-width bigger than or equal to the bit width that can store `pack(x, y)`.
 
 #### Pros
 

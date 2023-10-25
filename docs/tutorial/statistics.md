@@ -6,9 +6,9 @@ Concrete analyzes all compiled circuits and calculates some statistics. These st
 - **encrypted addition:** x + y where both x and y are encrypted
 - **clear multiplication:** x * y where x is encrypted and y is clear
 - **encrypted negation:** -x where x is encrypted
-- **key switch:** a building block for table lookups
-- **packing key switch:** a building block for table lookups
-- **programmable bootstrapping:** a building block for table lookups
+- **key switch:** one of the building blocks for table lookups
+- **packing key switch:** one of the building blocks for table lookups
+- **programmable bootstrapping:** one of the building blocks for table lookups
 
 You can print all statistics using the `show_statistics` configuration option:
 
