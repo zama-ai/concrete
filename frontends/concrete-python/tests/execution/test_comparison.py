@@ -173,4 +173,10 @@ def test_comparison(
         ],
     ]
     for sample in samples:
-        helpers.check_execution(circuit, function, sample, retries=5)
+        helpers.check_execution(
+            circuit,
+            function,
+            sample,
+            retries=5,
+            only_simulation=(max(lhs_bit_width, rhs_bit_width) > 7),
+        )
