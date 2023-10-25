@@ -254,9 +254,10 @@ class Helpers:
         function: Callable,
         sample: Union[Any, List[Any]],
         retries: int = 1,
+        only_simulation: bool = False,
     ):
         """
-        Assert that `circuit` is behaves the same as `function` on `sample`.
+        Assert that `circuit` behaves the same as `function` on `sample`.
 
         Args:
             circuit (fhe.Circuit):
@@ -271,8 +272,8 @@ class Helpers:
             retries (int, default = 1):
                 number of times to retry (for probabilistic execution)
 
-            simulate (bool, default = False):
-                whether to simulate instead of fhe execution
+            only_simulation (bool, default = False):
+                whether to just check simulation but not execution
         """
 
         if not isinstance(sample, list):
@@ -293,32 +294,29 @@ class Helpers:
 
             return tuple(result)
 
-        for i in range(retries):
-            expected = sanitize(function(*sample))
-            actual = sanitize(circuit.encrypt_run_decrypt(*sample))
+        if not only_simulation:
+            for i in range(retries):
+                expected = sanitize(function(*sample))
+                actual = sanitize(circuit.encrypt_run_decrypt(*sample))
 
-            if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
-                break
+                if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
+                    break
 
-            if i == retries - 1:
-                message = f"""
+                if i == retries - 1:
+                    message = f"""
 
-Expected Output
-===============
-{expected}
+    Expected Output
+    ===============
+    {expected}
 
-Actual Output
-=============
-{actual}
+    Actual Output
+    =============
+    {actual}
 
-                    """
-                raise AssertionError(message)
+                        """
+                    raise AssertionError(message)
 
-        try:
-            circuit.enable_fhe_simulation()
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            print(f"Catched exception while enabling simulation: {e}")
-            return
+        circuit.enable_fhe_simulation()
         for i in range(retries):
             expected = sanitize(function(*sample))
             actual = sanitize(circuit.simulate(*sample))
