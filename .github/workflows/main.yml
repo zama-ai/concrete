@@ -144,12 +144,6 @@ jobs:
         with:
           files: backends/concrete-cuda/implementation/include/
 
-      - name: Get changed Markdown files
-        id: docs-markdown
-        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
-        with:
-          files: '*.md'
-
       - name: Set some github event outputs
         id: github
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'release'))
@@ -266,14 +260,6 @@ jobs:
     needs: file-change
     if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main || contains(github.ref, 'refs/tags/')
     uses: ./.github/workflows/concrete_python_test_macos.yml
-    secrets: inherit
-
-#################################################
-# Concrete Markdown Docs jobs ##########################
-  markdown-link-check:
-    needs: file-change
-    if: needs.file-change.outputs.docs-markdown == 'true' || needs.file-change.outputs.push-main || contains(github.ref, 'refs/tags/')
-    uses: ./.github/workflows/markdown_link_check.yml
     secrets: inherit
 
 #################################################
