@@ -7,9 +7,9 @@
 #include <iostream>
 
 #include <llvm/Support/CommandLine.h>
-#include <llvm/Support/JSON.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/ToolOutputFile.h>
+#include <memory>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -21,9 +21,11 @@
 #include <optional>
 #include <sstream>
 
-#include "concretelang/ClientLib/KeySet.h"
-#include "concretelang/ClientLib/KeySetCache.h"
+#include "capnp/compat/json.h"
+#include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Common/Keysets.h"
+#include "concretelang/Common/Protocol.h"
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
@@ -37,14 +39,13 @@
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Encodings.h"
 #include "concretelang/Support/Error.h"
-#include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/LLVMEmitFile.h"
 #include "concretelang/Support/Pipeline.h"
 #include "concretelang/Support/V0Parameters.h"
 #include "concretelang/Support/logging.h"
 #include "mlir/IR/BuiltinOps.h"
 
-namespace clientlib = concretelang::clientlib;
+using concretelang::keysets::Keyset;
 namespace encodings = mlir::concretelang::encodings;
 namespace optimizer = mlir::concretelang::optimizer;
 
@@ -63,7 +64,6 @@ enum Action {
   DUMP_LLVM_DIALECT,
   DUMP_LLVM_IR,
   DUMP_OPTIMIZED_LLVM_IR,
-  JIT_INVOKE,
   COMPILE,
 };
 
@@ -164,9 +164,6 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(clEnumValN(Action::DUMP_OPTIMIZED_LLVM_IR,
                                 "dump-optimized-llvm-ir",
                                 "Lower to LLVM-IR, optimize and dump result")),
-    llvm::cl::values(clEnumValN(Action::JIT_INVOKE, "jit-invoke",
-                                "Lower and JIT-compile input module and invoke "
-                                "function specified with --funcname")),
     llvm::cl::values(clEnumValN(Action::COMPILE, "compile",
                                 "Lower to LLVM-IR, compile to a file")));
 
@@ -229,12 +226,6 @@ llvm::cl::opt<std::string>
              llvm::cl::desc("Name of the function to compile, default 'main'"),
              llvm::cl::init<std::string>(""));
 
-llvm::cl::list<uint64_t>
-    jitArgs("jit-args",
-            llvm::cl::desc("Value of arguments to pass to the main func"),
-            llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore,
-            llvm::cl::MiscFlags::CommaSeparated);
-
 llvm::cl::opt<bool>
     chunkIntegers("chunk-integers",
                   llvm::cl::desc("Whether to decompose integer into chunks or "
@@ -252,10 +243,6 @@ llvm::cl::opt<unsigned int> chunkWidth(
     llvm::cl::desc(
         "Chunk width while decomposing big integers into chunks, default is 2"),
     llvm::cl::init<unsigned int>(2));
-
-llvm::cl::opt<std::string> jitKeySetCachePath(
-    "jit-keyset-cache-path",
-    llvm::cl::desc("Path to cache KeySet content (unsecure)"));
 
 llvm::cl::opt<double> pbsErrorProbability(
     "pbs-error-probability",
@@ -425,7 +412,7 @@ cmdlineCompilationOptions() {
   }
 
   if (!cmdline::funcName.empty()) {
-    options.clientParametersFuncName = cmdline::funcName;
+    options.mainFuncName = cmdline::funcName;
   }
 
   // Convert tile sizes to `Optional`
@@ -500,16 +487,13 @@ cmdlineCompilationOptions() {
 
   if (!cmdline::circuitEncodings.empty()) {
     auto jsonString = cmdline::circuitEncodings.getValue();
-    auto maybeEncodings =
-        llvm::json::parse<encodings::CircuitEncodings>(jsonString);
-    if (auto err = maybeEncodings.takeError()) {
+    auto encodings = Message<concreteprotocol::CircuitEncodingInfo>();
+    if (encodings.readJsonFromString(jsonString).has_failure()) {
       return llvm::make_error<llvm::StringError>(
-          "Failed to parse the --circuit-encodings option.",
+          "Failed to parse the --circuit-encodings option",
           llvm::inconvertibleErrorCode());
     }
-    options.encodings = maybeEncodings.get();
-  } else {
-    options.encodings = std::nullopt;
+    options.encodings = encodings;
   }
 
   return options;
@@ -519,10 +503,6 @@ cmdlineCompilationOptions() {
 ///
 /// The parameter `action` specifies how the buffer should be processed
 /// and thus defines the output.
-///
-/// If the specified action involves JIT compilation, `funcName`
-/// designates the function to JIT compile. This function is invoked
-/// using the parameters given in `jitArgs`.
 ///
 /// The parameter `parametrizeTFHE` defines, whether the
 /// parametrization pass for TFHE is executed. If the `action` does
@@ -544,120 +524,94 @@ cmdlineCompilationOptions() {
 mlir::LogicalResult processInputBuffer(
     std::unique_ptr<llvm::MemoryBuffer> buffer, std::string sourceFileName,
     mlir::concretelang::CompilationOptions &options, enum Action action,
-    llvm::ArrayRef<uint64_t> jitArgs,
-    llvm::Optional<clientlib::KeySetCache> keySetCache, llvm::raw_ostream &os,
+    llvm::raw_ostream &os,
     std::shared_ptr<mlir::concretelang::CompilerEngine::Library> outputLib) {
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
 
-  std::string funcName = options.clientParametersFuncName.value_or("");
-  if (action == Action::JIT_INVOKE) {
-    auto lambdaOrErr =
-        mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::
-            create(buffer->getBuffer(), options, keySetCache,
-                   mlir::concretelang::JITSupport());
-    if (!lambdaOrErr) {
-      mlir::concretelang::log_error()
-          << "Failed to get JIT-lambda " << funcName << " "
-          << llvm::toString(lambdaOrErr.takeError());
-      return mlir::failure();
-    }
-    llvm::Expected<uint64_t> resOrErr = (*lambdaOrErr)(jitArgs);
-    if (!resOrErr) {
-      mlir::concretelang::log_error()
-          << "Failed to JIT-invoke " << funcName << " with arguments "
-          << jitArgs << ": " << llvm::toString(resOrErr.takeError());
-      return mlir::failure();
-    }
+  std::string funcName = options.mainFuncName.value_or("");
 
-    os << *resOrErr << "\n";
-  } else {
-    mlir::concretelang::CompilerEngine ce{ccx};
-    ce.setCompilationOptions(options);
+  mlir::concretelang::CompilerEngine ce{ccx};
+  ce.setCompilationOptions(std::move(options));
 
-    if (cmdline::passes.size() != 0) {
-      ce.setEnablePass([](mlir::Pass *pass) {
-        return std::any_of(
-            cmdline::passes.begin(), cmdline::passes.end(),
-            [&](const std::string &p) { return pass->getArgument() == p; });
-      });
-    }
-    enum mlir::concretelang::CompilerEngine::Target target;
+  if (cmdline::passes.size() != 0) {
+    ce.setEnablePass([](mlir::Pass *pass) {
+      return std::any_of(
+          cmdline::passes.begin(), cmdline::passes.end(),
+          [&](const std::string &p) { return pass->getArgument() == p; });
+    });
+  }
+  enum mlir::concretelang::CompilerEngine::Target target;
 
-    switch (action) {
-    case Action::ROUND_TRIP:
-      target = mlir::concretelang::CompilerEngine::Target::ROUND_TRIP;
-      break;
-    case Action::DUMP_FHE:
-      target = mlir::concretelang::CompilerEngine::Target::FHE;
-      break;
-    case Action::DUMP_FHE_NO_LINALG:
-      target = mlir::concretelang::CompilerEngine::Target::FHE_NO_LINALG;
-      break;
-    case Action::DUMP_TFHE:
-      target = mlir::concretelang::CompilerEngine::Target::TFHE;
-      break;
-    case Action::DUMP_NORMALIZED_TFHE:
-      target = mlir::concretelang::CompilerEngine::Target::NORMALIZED_TFHE;
-      break;
-    case Action::DUMP_PARAMETRIZED_TFHE:
-      target = mlir::concretelang::CompilerEngine::Target::PARAMETRIZED_TFHE;
-      break;
-    case Action::DUMP_BATCHED_TFHE:
-      target = mlir::concretelang::CompilerEngine::Target::BATCHED_TFHE;
-      break;
-    case Action::DUMP_SIMULATED_TFHE:
-      target = mlir::concretelang::CompilerEngine::Target::SIMULATED_TFHE;
-      break;
-    case Action::DUMP_CONCRETE:
-      target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
-      break;
-    case Action::DUMP_SDFG:
-      target = mlir::concretelang::CompilerEngine::Target::SDFG;
-      break;
-    case Action::DUMP_STD:
-      target = mlir::concretelang::CompilerEngine::Target::STD;
-      break;
-    case Action::DUMP_LLVM_DIALECT:
-      target = mlir::concretelang::CompilerEngine::Target::LLVM;
-      break;
-    case Action::DUMP_LLVM_IR:
-      target = mlir::concretelang::CompilerEngine::Target::LLVM_IR;
-      break;
-    case Action::DUMP_OPTIMIZED_LLVM_IR:
-      target = mlir::concretelang::CompilerEngine::Target::OPTIMIZED_LLVM_IR;
-      break;
-    case Action::COMPILE:
-      target = mlir::concretelang::CompilerEngine::Target::LIBRARY;
-      break;
-    case JIT_INVOKE:
-      // Case just here to satisfy the compiler; already handled above
-      abort();
-      break;
-    }
-    auto retOrErr = ce.compile(std::move(buffer), target, outputLib);
+  switch (action) {
+  case Action::ROUND_TRIP:
+    target = mlir::concretelang::CompilerEngine::Target::ROUND_TRIP;
+    break;
+  case Action::DUMP_FHE:
+    target = mlir::concretelang::CompilerEngine::Target::FHE;
+    break;
+  case Action::DUMP_FHE_NO_LINALG:
+    target = mlir::concretelang::CompilerEngine::Target::FHE_NO_LINALG;
+    break;
+  case Action::DUMP_TFHE:
+    target = mlir::concretelang::CompilerEngine::Target::TFHE;
+    break;
+  case Action::DUMP_NORMALIZED_TFHE:
+    target = mlir::concretelang::CompilerEngine::Target::NORMALIZED_TFHE;
+    break;
+  case Action::DUMP_PARAMETRIZED_TFHE:
+    target = mlir::concretelang::CompilerEngine::Target::PARAMETRIZED_TFHE;
+    break;
+  case Action::DUMP_BATCHED_TFHE:
+    target = mlir::concretelang::CompilerEngine::Target::BATCHED_TFHE;
+    break;
+  case Action::DUMP_SIMULATED_TFHE:
+    target = mlir::concretelang::CompilerEngine::Target::SIMULATED_TFHE;
+    break;
+  case Action::DUMP_CONCRETE:
+    target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
+    break;
+  case Action::DUMP_SDFG:
+    target = mlir::concretelang::CompilerEngine::Target::SDFG;
+    break;
+  case Action::DUMP_STD:
+    target = mlir::concretelang::CompilerEngine::Target::STD;
+    break;
+  case Action::DUMP_LLVM_DIALECT:
+    target = mlir::concretelang::CompilerEngine::Target::LLVM;
+    break;
+  case Action::DUMP_LLVM_IR:
+    target = mlir::concretelang::CompilerEngine::Target::LLVM_IR;
+    break;
+  case Action::DUMP_OPTIMIZED_LLVM_IR:
+    target = mlir::concretelang::CompilerEngine::Target::OPTIMIZED_LLVM_IR;
+    break;
+  case Action::COMPILE:
+    target = mlir::concretelang::CompilerEngine::Target::LIBRARY;
+    break;
+  }
+  auto retOrErr = ce.compile(std::move(buffer), target, outputLib);
 
-    if (!retOrErr) {
-      mlir::concretelang::log_error()
-          << llvm::toString(retOrErr.takeError()) << "\n";
+  if (!retOrErr) {
+    mlir::concretelang::log_error()
+        << llvm::toString(retOrErr.takeError()) << "\n";
 
-      return mlir::failure();
-    }
+    return mlir::failure();
+  }
 
-    if (retOrErr->llvmModule) {
-      // At least usefull for intermediate binary object files naming
-      retOrErr->llvmModule->setSourceFileName(sourceFileName);
-      retOrErr->llvmModule->setModuleIdentifier(sourceFileName);
-    }
+  if (retOrErr->llvmModule) {
+    // At least usefull for intermediate binary object files naming
+    retOrErr->llvmModule->setSourceFileName(sourceFileName);
+    retOrErr->llvmModule->setModuleIdentifier(sourceFileName);
+  }
 
-    if (options.verifyDiagnostics) {
-      return mlir::success();
-    } else if (action == Action::DUMP_LLVM_IR ||
-               action == Action::DUMP_OPTIMIZED_LLVM_IR) {
-      retOrErr->llvmModule->print(os, nullptr);
-    } else if (action != Action::COMPILE) {
-      retOrErr->mlirModuleRef->get().print(os);
-    }
+  if (options.verifyDiagnostics) {
+    return mlir::success();
+  } else if (action == Action::DUMP_LLVM_IR ||
+             action == Action::DUMP_OPTIMIZED_LLVM_IR) {
+    retOrErr->llvmModule->print(os, nullptr);
+  } else if (action != Action::COMPILE) {
+    retOrErr->mlirModuleRef->get().print(os);
   }
 
   return mlir::success();
@@ -695,11 +649,6 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
     return mlir::failure();
   }
 
-  llvm::Optional<clientlib::KeySetCache> jitKeySetCache;
-  if (!cmdline::jitKeySetCachePath.empty()) {
-    jitKeySetCache = clientlib::KeySetCache(cmdline::jitKeySetCachePath);
-  }
-
   // In case of compilation to library, the real output is the library.
   std::string outputPath =
       (cmdline::action == Action::COMPILE) ? cmdline::STDOUT : cmdline::output;
@@ -730,9 +679,9 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
     // source file.
     auto process = [&](std::unique_ptr<llvm::MemoryBuffer> inputBuffer,
                        llvm::raw_ostream &os) {
-      return processInputBuffer(
-          std::move(inputBuffer), fileName, *compilerOptions, cmdline::action,
-          cmdline::jitArgs, jitKeySetCache, os, outputLib);
+      return processInputBuffer(std::move(inputBuffer), fileName,
+                                *compilerOptions, cmdline::action, os,
+                                outputLib);
     };
     auto &os = output->os();
     auto res = mlir::failure();
@@ -751,8 +700,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   if (cmdline::action == Action::COMPILE) {
     auto err = outputLib->emitArtifacts(
         /*sharedLib=*/true, /*staticLib=*/true,
-        /*clientParameters=*/true, /*compilationFeedback=*/true,
-        /*cppHeader=*/true);
+        /*clientParameters=*/true, /*compilationFeedback=*/true);
     if (err) {
       return mlir::failure();
     }

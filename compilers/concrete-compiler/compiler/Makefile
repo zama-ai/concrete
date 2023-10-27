@@ -110,7 +110,7 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
-all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc rust-bindings
+all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
 
 # HPX #####################################################
 
@@ -173,14 +173,6 @@ concretecompiler: build-initialized
 python-bindings: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangMLIRPythonModules
 	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
-
-rust-bindings: install
-	cd lib/Bindings/Rust && \
-		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		cargo build --release
-
-CAPI:
-	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG CONCRETELANGCAPISupport
 
 clientlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangClientLib
@@ -249,14 +241,6 @@ run-python-tests: python-bindings concretecompiler
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output
 
-
-## rust-tests
-run-rust-tests: rust-bindings
-	cd lib/Bindings/Rust && \
-		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		LD_LIBRARY_PATH=$(INSTALL_PATH)/lib \
-		cargo test --release
-
 ## end-to-end-tests
 
 build-end-to-end-jit-chunked-int: build-initialized
@@ -307,7 +291,7 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
-	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
+	  --optimizer-strategy=$(optimizer_strategy) $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
 
 ### end-to-end-tests GPU
 
@@ -327,7 +311,7 @@ generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_looku
 
 run-end-to-end-tests-gpu: build-end-to-end-test generate-gpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	--backend=gpu --library /tmp/concrete_compiler/gpu_tests/ \
+	--backend=gpu \
 	$(FIXTURE_GPU_DIR)/*.yaml
 
 ## end-to-end-dataflow-tests
@@ -529,7 +513,7 @@ darwin-python-package:
 python-package: python-bindings $(OS)-python-package
 	@echo The python package is: $(BUILD_DIR)/wheels/*.whl
 
-install: concretecompiler CAPI install-deps
+install: concretecompiler install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))
 	$(info Installing under $(INSTALL_PATH))
 	mkdir -p $(INSTALL_PATH)/include

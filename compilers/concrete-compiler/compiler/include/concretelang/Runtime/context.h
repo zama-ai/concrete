@@ -6,16 +6,16 @@
 #ifndef CONCRETELANG_RUNTIME_CONTEXT_H
 #define CONCRETELANG_RUNTIME_CONTEXT_H
 
+#include "concrete-cpu.h"
+#include "concretelang/Common/Error.h"
+#include "concretelang/Common/Keysets.h"
 #include <assert.h>
 #include <map>
 #include <mutex>
 #include <pthread.h>
 #include <vector>
 
-#include "concretelang/ClientLib/EvaluationKeys.h"
-#include "concretelang/Common/Error.h"
-
-#include "concrete-cpu.h"
+using ::concretelang::keysets::ServerKeyset;
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
 #include "bootstrap.h"
@@ -40,7 +40,7 @@ typedef struct FFT {
 typedef struct RuntimeContext {
 
   RuntimeContext() = delete;
-  RuntimeContext(::concretelang::clientlib::EvaluationKeys evaluationKeys);
+  RuntimeContext(ServerKeyset serverKeyset);
   ~RuntimeContext() {
 #ifdef CONCRETELANG_CUDA_SUPPORT
     for (int i = 0; i < num_devices; ++i) {
@@ -53,7 +53,7 @@ typedef struct RuntimeContext {
   };
 
   const uint64_t *keyswitch_key_buffer(size_t keyId) {
-    return evaluationKeys.getKeyswitchKey(keyId).buffer();
+    return serverKeyset.lweKeyswitchKeys[keyId].getRawPtr();
   }
 
   const double *fourier_bootstrap_key_buffer(size_t keyId) {
@@ -61,17 +61,15 @@ typedef struct RuntimeContext {
   }
 
   const uint64_t *fp_keyswitch_key_buffer(size_t keyId) {
-    return evaluationKeys.getPackingKeyswitchKey(keyId).buffer();
+    return serverKeyset.packingKeyswitchKeys[keyId].getRawPtr();
   }
 
   const struct Fft *fft(size_t keyId) { return ffts[keyId].fft; }
 
-  const ::concretelang::clientlib::EvaluationKeys getKeys() const {
-    return evaluationKeys;
-  }
+  const ServerKeyset getKeys() const { return serverKeyset; }
 
 private:
-  ::concretelang::clientlib::EvaluationKeys evaluationKeys;
+  ServerKeyset serverKeyset;
   std::vector<std::shared_ptr<std::vector<double>>> fourier_bootstrap_keys;
   std::vector<FFT> ffts;
 
@@ -89,15 +87,15 @@ public:
       return bsk_gpu[gpu_idx];
     }
 
-    auto bsk = evaluationKeys.getBootstrapKey(0);
+    auto bsk = serverKeyset.lweBootstrapKeys[0];
 
-    size_t bsk_buffer_len = bsk.size();
+    size_t bsk_buffer_len = bsk.buffer->size();
     size_t bsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
 
     void *bsk_gpu_tmp =
         cuda_malloc_async(bsk_gpu_buffer_size, (cudaStream_t *)stream, gpu_idx);
     cuda_convert_lwe_bootstrap_key_64(
-        bsk_gpu_tmp, const_cast<uint64_t *>(bsk.buffer()),
+        bsk_gpu_tmp, const_cast<uint64_t *>(bsk.buffer->data()),
         (cudaStream_t *)stream, gpu_idx, input_lwe_dim, glwe_dim, level,
         poly_size);
     // Synchronization here is not optional as it works with mutex to
@@ -118,14 +116,15 @@ public:
     if (ksk_gpu[gpu_idx] != nullptr) {
       return ksk_gpu[gpu_idx];
     }
-    auto ksk = evaluationKeys.getKeyswitchKey(0);
+    auto ksk = serverKeyset.lweKeyswitchKeys[0];
 
-    size_t ksk_buffer_size = sizeof(uint64_t) * ksk.size();
+    size_t ksk_buffer_size = sizeof(uint64_t) * ksk.buffer->size();
 
     void *ksk_gpu_tmp =
         cuda_malloc_async(ksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
 
-    cuda_memcpy_async_to_gpu(ksk_gpu_tmp, const_cast<uint64_t *>(ksk.buffer()),
+    cuda_memcpy_async_to_gpu(ksk_gpu_tmp,
+                             const_cast<uint64_t *>(ksk.buffer->data()),
                              ksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
     // Synchronization here is not optional as it works with mutex to
     // prevent other GPU streams from reading partially copied keys.

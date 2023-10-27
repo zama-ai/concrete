@@ -109,8 +109,7 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
 
 mlir::LogicalResult
 addRuntimeContext(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                  std::function<bool(mlir::Pass *)> enablePass,
-                  bool simulation);
+                  std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,

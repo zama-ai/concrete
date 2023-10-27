@@ -1,5 +1,6 @@
 # Build dirs
 build*/
+.cache/
 
 *.mlir.script
 *.lit_test_times.txt

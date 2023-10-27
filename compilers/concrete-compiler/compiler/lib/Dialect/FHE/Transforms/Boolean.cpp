@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>

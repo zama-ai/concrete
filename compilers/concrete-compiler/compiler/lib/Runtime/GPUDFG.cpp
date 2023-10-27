@@ -16,7 +16,6 @@
 #include <utility>
 #include <vector>
 
-#include <concretelang/ClientLib/Types.h>
 #include <concretelang/Runtime/stream_emulator_api.h>
 #include <concretelang/Runtime/wrappers.h>
 
@@ -26,13 +25,22 @@
 #include "keyswitch.h"
 #include "linear_algebra.h"
 
-using MemRef2 = concretelang::clientlib::MemRefDescriptor<2>;
 using RuntimeContext = mlir::concretelang::RuntimeContext;
 
 namespace mlir {
 namespace concretelang {
 namespace gpu_dfg {
 namespace {
+
+template <size_t N> struct MemRefDescriptor {
+  uint64_t *allocated;
+  uint64_t *aligned;
+  size_t offset;
+  size_t sizes[N];
+  size_t strides[N];
+};
+
+typedef MemRefDescriptor<2> MemRef2;
 
 // When not using all accelerators on the machine, we distribute work
 // by assigning the default accelerator for each SDFG to next

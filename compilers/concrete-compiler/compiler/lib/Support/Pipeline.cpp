@@ -410,14 +410,11 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
 
 mlir::LogicalResult
 addRuntimeContext(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                  std::function<bool(mlir::Pass *)> enablePass,
-                  bool simulation) {
+                  std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("Adding Runtime Context", pm, context);
-  if (!simulation) {
-    addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
-                             enablePass);
-  }
+  addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
+                           enablePass);
   return pm.run(module.getOperation());
 }
 

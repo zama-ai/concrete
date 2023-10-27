@@ -4,10 +4,13 @@
 // for license information.
 
 #include "concretelang/Bindings/Python/CompilerAPIModule.h"
+#include "concrete-protocol.capnp.h"
 #include "concretelang/Bindings/Python/CompilerEngine.h"
+#include "concretelang/ClientLib/ClientLib.h"
+#include "concretelang/Common/Compat.h"
+#include "concretelang/Common/Csprng.h"
+#include "concretelang/Common/Keysets.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
-#include "concretelang/Support/JITSupport.h"
-#include "concretelang/Support/Jit.h"
 #include "concretelang/Support/logging.h"
 #include <llvm/Support/Debug.h>
 #include <mlir-c/Bindings/Python/Interop.h>
@@ -24,7 +27,6 @@
 #include <string>
 
 using mlir::concretelang::CompilationOptions;
-using mlir::concretelang::JITSupport;
 using mlir::concretelang::LambdaArgument;
 
 class SignalGuard {
@@ -75,7 +77,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](std::string funcname) { return CompilationOptions(funcname); }))
       .def("set_funcname",
            [](CompilationOptions &options, std::string funcname) {
-             options.clientParametersFuncName = funcname;
+             options.mainFuncName = funcname;
            })
       .def("set_verify_diagnostics",
            [](CompilationOptions &options, bool b) {
@@ -207,11 +209,6 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "memory_usage_per_location",
           &mlir::concretelang::CompilationFeedback::memoryUsagePerLoc);
 
-  pybind11::class_<mlir::concretelang::JitCompilationResult>(
-      m, "JITCompilationResult");
-  pybind11::class_<mlir::concretelang::JITLambda,
-                   std::shared_ptr<mlir::concretelang::JITLambda>>(m,
-                                                                   "JITLambda");
   pybind11::class_<mlir::concretelang::CompilationContext,
                    std::shared_ptr<mlir::concretelang::CompilationContext>>(
       m, "CompilationContext")
@@ -224,51 +221,6 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return pybind11::reinterpret_steal<pybind11::object>(
                  mlirPythonContextToCapsule(wrap(mlirCtx)));
            });
-  pybind11::class_<JITSupport_Py>(m, "JITSupport")
-      .def(pybind11::init([](std::string runtimeLibPath) {
-        return jit_support(runtimeLibPath);
-      }))
-      .def("compile",
-           [](JITSupport_Py &support, std::string mlir_program,
-              CompilationOptions options) {
-             SignalGuard signalGuard;
-             return jit_compile(support, mlir_program.c_str(), options);
-           })
-      .def("compile",
-           [](JITSupport_Py &support, pybind11::object mlir_module,
-              CompilationOptions options,
-              std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
-             SignalGuard signalGuard;
-             return jit_compile_module(
-                 support,
-                 unwrap(mlirPythonCapsuleToModule(mlir_module.ptr())).clone(),
-                 options, cctx);
-           })
-      .def("load_client_parameters",
-           [](JITSupport_Py &support,
-              mlir::concretelang::JitCompilationResult &result) {
-             return jit_load_client_parameters(support, result);
-           })
-      .def("load_compilation_feedback",
-           [](JITSupport_Py &support,
-              mlir::concretelang::JitCompilationResult &result) {
-             return jit_load_compilation_feedback(support, result);
-           })
-      .def(
-          "load_server_lambda",
-          [](JITSupport_Py &support,
-             mlir::concretelang::JitCompilationResult &result) {
-            return jit_load_server_lambda(support, result);
-          },
-          pybind11::return_value_policy::reference)
-      .def("server_call",
-           [](JITSupport_Py &support, concretelang::JITLambda &lambda,
-              clientlib::PublicArguments &publicArguments,
-              clientlib::EvaluationKeys &evaluationKeys) {
-             SignalGuard signalGuard;
-             return jit_server_call(support, lambda, publicArguments,
-                                    evaluationKeys);
-           });
 
   pybind11::class_<mlir::concretelang::LibraryCompilationResult>(
       m, "LibraryCompilationResult")
@@ -278,7 +230,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             funcname,
         };
       }));
-  pybind11::class_<concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
+  pybind11::class_<::concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
   pybind11::class_<LibrarySupport_Py>(m, "LibrarySupport")
       .def(pybind11::init(
           [](std::string outputPath, std::string runtimeLibraryPath,
@@ -319,21 +271,24 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def(
           "load_server_lambda",
           [](LibrarySupport_Py &support,
-             mlir::concretelang::LibraryCompilationResult &result) {
-            return library_load_server_lambda(support, result);
+             mlir::concretelang::LibraryCompilationResult &result,
+             bool useSimulation) {
+            return library_load_server_lambda(support, result, useSimulation);
           },
           pybind11::return_value_policy::reference)
       .def("server_call",
-           [](LibrarySupport_Py &support, serverlib::ServerLambda lambda,
-              clientlib::PublicArguments &publicArguments,
-              clientlib::EvaluationKeys &evaluationKeys) {
+           [](LibrarySupport_Py &support,
+              ::concretelang::serverlib::ServerLambda lambda,
+              ::concretelang::clientlib::PublicArguments &publicArguments,
+              ::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
              SignalGuard signalGuard;
              return library_server_call(support, lambda, publicArguments,
                                         evaluationKeys);
            })
       .def("simulate",
-           [](LibrarySupport_Py &support, serverlib::ServerLambda lambda,
-              clientlib::PublicArguments &publicArguments) {
+           [](LibrarySupport_Py &support,
+              ::concretelang::serverlib::ServerLambda lambda,
+              ::concretelang::clientlib::PublicArguments &publicArguments) {
              pybind11::gil_scoped_release release;
              return library_simulate(support, lambda, publicArguments);
            })
@@ -341,8 +296,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](LibrarySupport_Py &support) {
              return library_get_shared_lib_path(support);
            })
-      .def("get_client_parameters_path", [](LibrarySupport_Py &support) {
-        return library_get_client_parameters_path(support);
+      .def("get_program_info_path", [](LibrarySupport_Py &support) {
+        return library_get_program_info_path(support);
       });
 
   class ClientSupport {};
@@ -350,120 +305,165 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def(pybind11::init())
       .def_static(
           "key_set",
-          [](clientlib::ClientParameters clientParameters,
-             clientlib::KeySetCache *cache, uint64_t seedMsb,
+          [](::concretelang::clientlib::ClientParameters clientParameters,
+             ::concretelang::clientlib::KeySetCache *cache, uint64_t seedMsb,
              uint64_t seedLsb) {
             SignalGuard signalGuard;
-            auto optCache = cache == nullptr
-                                ? std::nullopt
-                                : std::optional<clientlib::KeySetCache>(*cache);
+            auto optCache =
+                cache == nullptr
+                    ? std::nullopt
+                    : std::optional<::concretelang::clientlib::KeySetCache>(
+                          *cache);
             return key_set(clientParameters, optCache, seedMsb, seedLsb);
           },
           pybind11::arg().none(false), pybind11::arg().none(true),
           pybind11::arg("seedMsb") = 0, pybind11::arg("seedLsb") = 0)
-      .def_static("encrypt_arguments",
-                  [](clientlib::ClientParameters clientParameters,
-                     clientlib::KeySet &keySet,
-                     std::vector<lambdaArgument> args) {
-                    std::vector<mlir::concretelang::LambdaArgument *> argsRef;
-                    for (auto i = 0u; i < args.size(); i++) {
-                      argsRef.push_back(args[i].ptr.get());
-                    }
-                    return encrypt_arguments(clientParameters, keySet, argsRef);
-                  })
-      .def_static("decrypt_result", [](clientlib::KeySet &keySet,
-                                       clientlib::PublicResult &publicResult) {
-        return decrypt_result(keySet, publicResult);
-      });
-  pybind11::class_<clientlib::KeySetCache>(m, "KeySetCache")
+      .def_static(
+          "encrypt_arguments",
+          [](::concretelang::clientlib::ClientParameters clientParameters,
+             ::concretelang::clientlib::KeySet &keySet,
+             std::vector<lambdaArgument> args) {
+            std::vector<mlir::concretelang::LambdaArgument *> argsRef;
+            for (auto i = 0u; i < args.size(); i++) {
+              argsRef.push_back(args[i].ptr.get());
+            }
+            return encrypt_arguments(clientParameters, keySet, argsRef);
+          })
+      .def_static(
+          "decrypt_result",
+          [](::concretelang::clientlib::ClientParameters clientParameters,
+             ::concretelang::clientlib::KeySet &keySet,
+             ::concretelang::clientlib::PublicResult &publicResult) {
+            return decrypt_result(clientParameters, keySet, publicResult);
+          });
+  pybind11::class_<::concretelang::clientlib::KeySetCache>(m, "KeySetCache")
       .def(pybind11::init<std::string &>());
 
   pybind11::class_<::concretelang::clientlib::LweSecretKeyParam>(
       m, "LweSecretKeyParam")
-      .def_readonly("dimension",
-                    &::concretelang::clientlib::LweSecretKeyParam::dimension);
+      .def("dimension", [](::concretelang::clientlib::LweSecretKeyParam &key) {
+        return key.info.asReader().getParams().getLweDimension();
+      });
 
   pybind11::class_<::concretelang::clientlib::BootstrapKeyParam>(
       m, "BootstrapKeyParam")
-      .def_readonly(
-          "input_secret_key_id",
-          &::concretelang::clientlib::BootstrapKeyParam::inputSecretKeyID)
-      .def_readonly(
-          "output_secret_key_id",
-          &::concretelang::clientlib::BootstrapKeyParam::outputSecretKeyID)
-      .def_readonly("level",
-                    &::concretelang::clientlib::BootstrapKeyParam::level)
-      .def_readonly("base_log",
-                    &::concretelang::clientlib::BootstrapKeyParam::baseLog)
-      .def_readonly(
-          "glwe_dimension",
-          &::concretelang::clientlib::BootstrapKeyParam::glweDimension)
-      .def_readonly("variance",
-                    &::concretelang::clientlib::BootstrapKeyParam::variance)
-      .def_readonly(
-          "polynomial_size",
-          &::concretelang::clientlib::BootstrapKeyParam::polynomialSize)
-      .def_readonly(
-          "input_lwe_dimension",
-          &::concretelang::clientlib::BootstrapKeyParam::inputLweDimension);
+      .def("input_secret_key_id",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getInputId();
+           })
+      .def("output_secret_key_id",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getOutputId();
+           })
+      .def("level",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getParams().getLevelCount();
+           })
+      .def("base_log",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getParams().getBaseLog();
+           })
+      .def("glwe_dimension",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getParams().getGlweDimension();
+           })
+      .def("variance",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getParams().getVariance();
+           })
+      .def("polynomial_size",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getParams().getPolynomialSize();
+           })
+      .def("input_lwe_dimension",
+           [](::concretelang::clientlib::BootstrapKeyParam &key) {
+             return key.info.asReader().getParams().getInputLweDimension();
+           });
 
   pybind11::class_<::concretelang::clientlib::KeyswitchKeyParam>(
       m, "KeyswitchKeyParam")
-      .def_readonly(
-          "input_secret_key_id",
-          &::concretelang::clientlib::KeyswitchKeyParam::inputSecretKeyID)
-      .def_readonly(
-          "output_secret_key_id",
-          &::concretelang::clientlib::KeyswitchKeyParam::outputSecretKeyID)
-      .def_readonly("level",
-                    &::concretelang::clientlib::KeyswitchKeyParam::level)
-      .def_readonly("base_log",
-                    &::concretelang::clientlib::KeyswitchKeyParam::baseLog)
-      .def_readonly("variance",
-                    &::concretelang::clientlib::KeyswitchKeyParam::variance);
+      .def("input_secret_key_id",
+           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
+             return key.info.asReader().getInputId();
+           })
+      .def("output_secret_key_id",
+           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
+             return key.info.asReader().getOutputId();
+           })
+      .def("level",
+           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getLevelCount();
+           })
+      .def("base_log",
+           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getBaseLog();
+           })
+      .def("variance", [](::concretelang::clientlib::KeyswitchKeyParam &key) {
+        return key.info.asReader().getParams().getVariance();
+      });
 
   pybind11::class_<::concretelang::clientlib::PackingKeyswitchKeyParam>(
       m, "PackingKeyswitchKeyParam")
-      .def_readonly("input_secret_key_id",
-                    &::concretelang::clientlib::PackingKeyswitchKeyParam::
-                        inputSecretKeyID)
-      .def_readonly("output_secret_key_id",
-                    &::concretelang::clientlib::PackingKeyswitchKeyParam::
-                        outputSecretKeyID)
-      .def_readonly("level",
-                    &::concretelang::clientlib::PackingKeyswitchKeyParam::level)
-      .def_readonly(
-          "base_log",
-          &::concretelang::clientlib::PackingKeyswitchKeyParam::baseLog)
-      .def_readonly(
-          "glwe_dimension",
-          &::concretelang::clientlib::PackingKeyswitchKeyParam::glweDimension)
-      .def_readonly(
-          "polynomial_size",
-          &::concretelang::clientlib::PackingKeyswitchKeyParam::polynomialSize)
-      .def_readonly("input_lwe_dimension",
-                    &::concretelang::clientlib::PackingKeyswitchKeyParam::
-                        inputLweDimension)
-      .def_readonly(
-          "variance",
-          &::concretelang::clientlib::PackingKeyswitchKeyParam::variance);
+      .def("input_secret_key_id",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getInputId();
+           })
+      .def("output_secret_key_id",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getOutputId();
+           })
+      .def("level",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getLevelCount();
+           })
+      .def("base_log",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getBaseLog();
+           })
+      .def("glwe_dimension",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getGlweDimension();
+           })
+      .def("polynomial_size",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getPolynomialSize();
+           })
+      .def("input_lwe_dimension",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getInputLweDimension();
+           })
+      .def("variance",
+           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
+             return key.info.asReader().getParams().getVariance();
+           });
 
-  pybind11::class_<mlir::concretelang::ClientParameters>(m, "ClientParameters")
+  pybind11::class_<::concretelang::clientlib::ClientParameters>(
+      m, "ClientParameters")
       .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
                     return clientParametersUnserialize(buffer);
                   })
       .def("serialize",
-           [](mlir::concretelang::ClientParameters &clientParameters) {
+           [](::concretelang::clientlib::ClientParameters &clientParameters) {
              return pybind11::bytes(
                  clientParametersSerialize(clientParameters));
            })
       .def("output_signs",
-           [](mlir::concretelang::ClientParameters &clientParameters) {
+           [](::concretelang::clientlib::ClientParameters &clientParameters) {
              std::vector<bool> result;
-             for (auto output : clientParameters.outputs) {
-               if (output.encryption.has_value()) {
-                 result.push_back(output.encryption.value().encoding.isSigned);
+             for (auto output : clientParameters.programInfo.asReader()
+                                    .getCircuits()[0]
+                                    .getOutputs()) {
+               if (output.getTypeInfo().hasLweCiphertext() &&
+                   output.getTypeInfo()
+                       .getLweCiphertext()
+                       .getEncoding()
+                       .hasInteger()) {
+                 result.push_back(output.getTypeInfo()
+                                      .getLweCiphertext()
+                                      .getEncoding()
+                                      .getInteger()
+                                      .getIsSigned());
                } else {
                  result.push_back(true);
                }
@@ -471,11 +471,21 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return result;
            })
       .def("input_signs",
-           [](mlir::concretelang::ClientParameters &clientParameters) {
+           [](::concretelang::clientlib::ClientParameters &clientParameters) {
              std::vector<bool> result;
-             for (auto input : clientParameters.inputs) {
-               if (input.encryption.has_value()) {
-                 result.push_back(input.encryption.value().encoding.isSigned);
+             for (auto input : clientParameters.programInfo.asReader()
+                                   .getCircuits()[0]
+                                   .getInputs()) {
+               if (input.getTypeInfo().hasLweCiphertext() &&
+                   input.getTypeInfo()
+                       .getLweCiphertext()
+                       .getEncoding()
+                       .hasInteger()) {
+                 result.push_back(input.getTypeInfo()
+                                      .getLweCiphertext()
+                                      .getEncoding()
+                                      .getInteger()
+                                      .getIsSigned());
                } else {
                  result.push_back(true);
                }
@@ -483,246 +493,249 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return result;
            })
       .def_readonly("secret_keys",
-                    &mlir::concretelang::ClientParameters::secretKeys)
+                    &::concretelang::clientlib::ClientParameters::secretKeys)
       .def_readonly("bootstrap_keys",
-                    &mlir::concretelang::ClientParameters::bootstrapKeys)
+                    &::concretelang::clientlib::ClientParameters::bootstrapKeys)
       .def_readonly("keyswitch_keys",
-                    &mlir::concretelang::ClientParameters::keyswitchKeys)
+                    &::concretelang::clientlib::ClientParameters::keyswitchKeys)
       .def_readonly(
           "packing_keyswitch_keys",
-          &mlir::concretelang::ClientParameters::packingKeyswitchKeys);
+          &::concretelang::clientlib::ClientParameters::packingKeyswitchKeys);
 
-  pybind11::class_<clientlib::KeySet>(m, "KeySet")
+  pybind11::class_<::concretelang::clientlib::KeySet>(m, "KeySet")
       .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
-                    std::unique_ptr<KeySet> result = keySetUnserialize(buffer);
+                    std::unique_ptr<::concretelang::clientlib::KeySet> result =
+                        keySetUnserialize(buffer);
                     return result;
                   })
       .def("serialize",
-           [](clientlib::KeySet &keySet) {
+           [](::concretelang::clientlib::KeySet &keySet) {
              return pybind11::bytes(keySetSerialize(keySet));
            })
       .def("client_parameters",
-           [](clientlib::KeySet &keySet) { return keySet.clientParameters(); })
+           [](::concretelang::clientlib::KeySet &keySet) {
+             return ::concretelang::clientlib::ClientParameters{
+                 keySet.programInfo, {}, {}, {}, {}};
+           })
       .def("get_evaluation_keys",
-           [](clientlib::KeySet &keySet) { return keySet.evaluationKeys(); });
+           [](::concretelang::clientlib::KeySet &keySet) {
+             return ::concretelang::clientlib::EvaluationKeys{
+                 keySet.keyset.server};
+           });
 
-  pybind11::class_<clientlib::SharedScalarOrTensorData>(m, "Value")
+  pybind11::class_<::concretelang::clientlib::SharedScalarOrTensorData>(m,
+                                                                        "Value")
       .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
                     return valueUnserialize(buffer);
                   })
-      .def("serialize", [](const clientlib::SharedScalarOrTensorData &value) {
-        return pybind11::bytes(valueSerialize(value));
-      });
+      .def(
+          "serialize",
+          [](const ::concretelang::clientlib::SharedScalarOrTensorData &value) {
+            return pybind11::bytes(valueSerialize(value));
+          });
 
-  pybind11::class_<clientlib::ValueExporter>(m, "ValueExporter")
-      .def_static("create",
-                  [](clientlib::KeySet &keySet,
-                     mlir::concretelang::ClientParameters &clientParameters) {
-                    return clientlib::ValueExporter(keySet, clientParameters);
-                  })
+  pybind11::class_<::concretelang::clientlib::ValueExporter>(m, "ValueExporter")
+      .def_static(
+          "create",
+          [](::concretelang::clientlib::KeySet &keySet,
+             ::concretelang::clientlib::ClientParameters &clientParameters) {
+            return createValueExporter(keySet, clientParameters);
+          })
       .def("export_scalar",
-           [](clientlib::ValueExporter &exporter, size_t position,
-              int64_t value) {
+           [](::concretelang::clientlib::ValueExporter &exporter,
+              size_t position, int64_t value) {
              SignalGuard signalGuard;
 
-             outcome::checked<clientlib::ScalarOrTensorData, StringError>
-                 result = exporter.exportValue(value, position);
+             auto info = exporter.circuit.getCircuitInfo()
+                             .asReader()
+                             .getInputs()[position];
+             auto typeTransformer = getPythonTypeTransformer(info);
+             auto result = exporter.circuit.prepareInput(
+                 typeTransformer({Tensor<int64_t>(value)}), position);
 
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return clientlib::SharedScalarOrTensorData(
-                 std::move(result.value()));
+             return ::concretelang::clientlib::SharedScalarOrTensorData{
+                 result.value()};
            })
-      .def("export_tensor", [](clientlib::ValueExporter &exporter,
+      .def("export_tensor", [](::concretelang::clientlib::ValueExporter
+                                   &exporter,
                                size_t position, std::vector<int64_t> values,
                                std::vector<int64_t> shape) {
         SignalGuard signalGuard;
-
-        outcome::checked<clientlib::ScalarOrTensorData, StringError> result =
-            exporter.exportValue(values.data(), shape, position);
+        std::vector<size_t> dimensions(shape.begin(), shape.end());
+        auto info =
+            exporter.circuit.getCircuitInfo().asReader().getInputs()[position];
+        auto typeTransformer = getPythonTypeTransformer(info);
+        auto result = exporter.circuit.prepareInput(
+            typeTransformer({Tensor<int64_t>(values, dimensions)}), position);
 
         if (result.has_error()) {
           throw std::runtime_error(result.error().mesg);
         }
 
-        return clientlib::SharedScalarOrTensorData(std::move(result.value()));
+        return ::concretelang::clientlib::SharedScalarOrTensorData{
+            result.value()};
       });
 
-  pybind11::class_<clientlib::SimulatedValueExporter>(m,
-                                                      "SimulatedValueExporter")
-      .def_static("create",
-                  [](mlir::concretelang::ClientParameters &clientParameters) {
-                    return clientlib::SimulatedValueExporter(clientParameters);
-                  })
+  pybind11::class_<::concretelang::clientlib::SimulatedValueExporter>(
+      m, "SimulatedValueExporter")
+      .def_static(
+          "create",
+          [](::concretelang::clientlib::ClientParameters &clientParameters) {
+            return createSimulatedValueExporter(clientParameters);
+          })
       .def("export_scalar",
-           [](clientlib::SimulatedValueExporter &exporter, size_t position,
-              int64_t value) {
-             outcome::checked<clientlib::ScalarOrTensorData, StringError>
-                 result = exporter.exportValue(value, position);
+           [](::concretelang::clientlib::SimulatedValueExporter &exporter,
+              size_t position, int64_t value) {
+             SignalGuard signalGuard;
+             auto info = exporter.circuit.getCircuitInfo()
+                             .asReader()
+                             .getInputs()[position];
+             auto typeTransformer = getPythonTypeTransformer(info);
+             auto result = exporter.circuit.prepareInput(
+                 typeTransformer({Tensor<int64_t>(value)}), position);
 
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return clientlib::SharedScalarOrTensorData(
-                 std::move(result.value()));
+             return ::concretelang::clientlib::SharedScalarOrTensorData{
+                 result.value()};
            })
-      .def("export_tensor", [](clientlib::SimulatedValueExporter &exporter,
+      .def("export_tensor", [](::concretelang::clientlib::SimulatedValueExporter
+                                   &exporter,
                                size_t position, std::vector<int64_t> values,
                                std::vector<int64_t> shape) {
-        outcome::checked<clientlib::ScalarOrTensorData, StringError> result =
-            exporter.exportValue(values.data(), shape, position);
+        SignalGuard signalGuard;
+        std::vector<size_t> dimensions(shape.begin(), shape.end());
+        auto info =
+            exporter.circuit.getCircuitInfo().asReader().getInputs()[position];
+        auto typeTransformer = getPythonTypeTransformer(info);
+        auto result = exporter.circuit.prepareInput(
+            typeTransformer({Tensor<int64_t>(values, dimensions)}), position);
 
         if (result.has_error()) {
           throw std::runtime_error(result.error().mesg);
         }
 
-        return clientlib::SharedScalarOrTensorData(std::move(result.value()));
+        return ::concretelang::clientlib::SharedScalarOrTensorData{
+            result.value()};
       });
 
-  pybind11::class_<clientlib::ValueDecrypter>(m, "ValueDecrypter")
-      .def_static("create",
-                  [](clientlib::KeySet &keySet,
-                     mlir::concretelang::ClientParameters &clientParameters) {
-                    return clientlib::ValueDecrypter(keySet, clientParameters);
-                  })
-      .def("get_shape",
-           [](clientlib::ValueDecrypter &decrypter, size_t position) {
-             outcome::checked<std::vector<int64_t>, StringError> result =
-                 decrypter.getShape(position);
-
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
-
-             return result.value();
-           })
-      .def("decrypt_scalar",
-           [](clientlib::ValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
+  pybind11::class_<::concretelang::clientlib::ValueDecrypter>(m,
+                                                              "ValueDecrypter")
+      .def_static(
+          "create",
+          [](::concretelang::clientlib::KeySet &keySet,
+             ::concretelang::clientlib::ClientParameters &clientParameters) {
+            return createValueDecrypter(keySet, clientParameters);
+          })
+      .def("decrypt",
+           [](::concretelang::clientlib::ValueDecrypter &decrypter,
+              size_t position,
+              ::concretelang::clientlib::SharedScalarOrTensorData &value) {
              SignalGuard signalGuard;
 
-             outcome::checked<int64_t, StringError> result =
-                 decrypter.decrypt<int64_t>(value.get(), position);
-
+             auto result =
+                 decrypter.circuit.processOutput(value.value, position);
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return result.value();
-           })
-      .def("decrypt_tensor",
-           [](clientlib::ValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
-             SignalGuard signalGuard;
-
-             outcome::checked<std::vector<int64_t>, StringError> result =
-                 decrypter.decryptTensor<int64_t>(value.get(), position);
-
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
-
-             return result.value();
+             return lambdaArgument{
+                 std::make_shared<mlir::concretelang::LambdaArgument>(
+                     mlir::concretelang::LambdaArgument{result.value()})};
            });
 
-  pybind11::class_<clientlib::SimulatedValueDecrypter>(
+  pybind11::class_<::concretelang::clientlib::SimulatedValueDecrypter>(
       m, "SimulatedValueDecrypter")
-      .def_static("create",
-                  [](mlir::concretelang::ClientParameters &clientParameters) {
-                    return clientlib::SimulatedValueDecrypter(clientParameters);
-                  })
-      .def("get_shape",
-           [](clientlib::SimulatedValueDecrypter &decrypter, size_t position) {
-             outcome::checked<std::vector<int64_t>, StringError> result =
-                 decrypter.getShape(position);
+      .def_static(
+          "create",
+          [](::concretelang::clientlib::ClientParameters &clientParameters) {
+            return createSimulatedValueDecrypter(clientParameters);
+          })
+      .def("decrypt",
+           [](::concretelang::clientlib::SimulatedValueDecrypter &decrypter,
+              size_t position,
+              ::concretelang::clientlib::SharedScalarOrTensorData &value) {
+             SignalGuard signalGuard;
 
+             auto result =
+                 decrypter.circuit.processOutput(value.value, position);
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
 
-             return result.value();
-           })
-      .def("decrypt_scalar",
-           [](clientlib::SimulatedValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
-             outcome::checked<int64_t, StringError> result =
-                 decrypter.decrypt<int64_t>(value.get(), position);
-
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
-
-             return result.value();
-           })
-      .def("decrypt_tensor",
-           [](clientlib::SimulatedValueDecrypter &decrypter, size_t position,
-              clientlib::SharedScalarOrTensorData &value) {
-             outcome::checked<std::vector<int64_t>, StringError> result =
-                 decrypter.decryptTensor<int64_t>(value.get(), position);
-
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
-
-             return result.value();
+             return lambdaArgument{
+                 std::make_shared<mlir::concretelang::LambdaArgument>(
+                     mlir::concretelang::LambdaArgument{result.value()})};
            });
 
-  pybind11::class_<clientlib::PublicArguments,
-                   std::unique_ptr<clientlib::PublicArguments>>(
+  pybind11::class_<::concretelang::clientlib::PublicArguments,
+                   std::unique_ptr<::concretelang::clientlib::PublicArguments>>(
       m, "PublicArguments")
       .def_static(
           "create",
-          [](const mlir::concretelang::ClientParameters &clientParameters,
-             std::vector<clientlib::SharedScalarOrTensorData> &buffers) {
-            return clientlib::PublicArguments(clientParameters, buffers);
+          [](const ::concretelang::clientlib::ClientParameters
+                 &clientParameters,
+             std::vector<::concretelang::clientlib::SharedScalarOrTensorData>
+                 &buffers) {
+            std::vector<TransportValue> vals;
+            for (auto buf : buffers) {
+              vals.push_back(buf.value);
+            }
+            return ::concretelang::clientlib::PublicArguments{vals};
           })
-      .def_static("deserialize",
-                  [](mlir::concretelang::ClientParameters &clientParameters,
-                     const pybind11::bytes &buffer) {
-                    return publicArgumentsUnserialize(clientParameters, buffer);
-                  })
-      .def("serialize", [](clientlib::PublicArguments &publicArgument) {
-        return pybind11::bytes(publicArgumentsSerialize(publicArgument));
-      });
-  pybind11::class_<clientlib::PublicResult>(m, "PublicResult")
-      .def_static("deserialize",
-                  [](mlir::concretelang::ClientParameters &clientParameters,
-                     const pybind11::bytes &buffer) {
-                    return publicResultUnserialize(clientParameters, buffer);
-                  })
+      .def_static(
+          "deserialize",
+          [](::concretelang::clientlib::ClientParameters &clientParameters,
+             const pybind11::bytes &buffer) {
+            return publicArgumentsUnserialize(clientParameters, buffer);
+          })
       .def("serialize",
-           [](clientlib::PublicResult &publicResult) {
+           [](::concretelang::clientlib::PublicArguments &publicArgument) {
+             return pybind11::bytes(publicArgumentsSerialize(publicArgument));
+           });
+  pybind11::class_<::concretelang::clientlib::PublicResult>(m, "PublicResult")
+      .def_static(
+          "deserialize",
+          [](::concretelang::clientlib::ClientParameters &clientParameters,
+             const pybind11::bytes &buffer) {
+            return publicResultUnserialize(clientParameters, buffer);
+          })
+      .def("serialize",
+           [](::concretelang::clientlib::PublicResult &publicResult) {
              return pybind11::bytes(publicResultSerialize(publicResult));
            })
       .def("n_values",
-           [](const clientlib::PublicResult &publicResult) {
-             return publicResult.buffers.size();
+           [](const ::concretelang::clientlib::PublicResult &publicResult) {
+             return publicResult.values.size();
            })
       .def("get_value",
-           [](clientlib::PublicResult &publicResult, size_t position) {
-             outcome::checked<clientlib::SharedScalarOrTensorData, StringError>
-                 result = publicResult.getValue(position);
-
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
+           [](::concretelang::clientlib::PublicResult &publicResult,
+              size_t position) {
+             if (position >= publicResult.values.size()) {
+               throw std::runtime_error("Failed to get public result value.");
              }
-
-             return result.value();
+             return ::concretelang::clientlib::SharedScalarOrTensorData{
+                 publicResult.values[position]};
            });
 
-  pybind11::class_<clientlib::EvaluationKeys>(m, "EvaluationKeys")
+  pybind11::class_<::concretelang::clientlib::EvaluationKeys>(m,
+                                                              "EvaluationKeys")
       .def_static("deserialize",
                   [](const pybind11::bytes &buffer) {
                     return evaluationKeysUnserialize(buffer);
                   })
-      .def("serialize", [](clientlib::EvaluationKeys &evaluationKeys) {
-        return pybind11::bytes(evaluationKeysSerialize(evaluationKeys));
-      });
+      .def("serialize",
+           [](::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+             return pybind11::bytes(evaluationKeysSerialize(evaluationKeys));
+           });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
       .def_static("from_tensor_u8",

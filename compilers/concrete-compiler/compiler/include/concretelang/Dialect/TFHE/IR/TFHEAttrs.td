@@ -59,14 +59,14 @@ def TFHE_PackingKeyswitchKeyAttr: TFHE_Attr<"GLWEPackingKeyswitchKey", "pksk"> {
         "mlir::concretelang::TFHE::GLWESecretKey":$inputKey,
         "mlir::concretelang::TFHE::GLWESecretKey":$outputKey,
         "int" : $outputPolySize,
-        "int" : $inputLweDim,
+        "int" : $innerLweDim,
         "int" : $glweDim,
         "int" : $levels,
         "int" : $baseLog,
         DefaultValuedParameter<"int", "-1">: $index
 );
 
-let assemblyFormat = " (`[` $index^ `]` )? `<` $inputKey `,` $outputKey`,` $outputPolySize`,` $inputLweDim `,` $glweDim `,` $levels `,` $baseLog `>`";
+let assemblyFormat = " (`[` $index^ `]` )? `<` $inputKey `,` $outputKey`,` $outputPolySize`,` $innerLweDim `,` $glweDim `,` $levels `,` $baseLog `>`";
 
 }
 

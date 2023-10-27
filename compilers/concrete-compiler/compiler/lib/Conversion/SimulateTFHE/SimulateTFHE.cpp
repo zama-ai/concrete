@@ -341,7 +341,7 @@ struct WopPBSGLWEOpPattern
         wopPbs.getLoc(), dynamicLutType, adaptor.getLookupTable());
 
     auto lweDimCst = rewriter.create<mlir::arith::ConstantIntOp>(
-        wopPbs.getLoc(), adaptor.getPksk().getInputLweDim(), 32);
+        wopPbs.getLoc(), adaptor.getPksk().getInnerLweDim(), 32);
     auto cbsLevelCountCst = rewriter.create<mlir::arith::ConstantIntOp>(
         wopPbs.getLoc(), adaptor.getCbsLevels(), 32);
     auto cbsBaseLogCst = rewriter.create<mlir::arith::ConstantIntOp>(

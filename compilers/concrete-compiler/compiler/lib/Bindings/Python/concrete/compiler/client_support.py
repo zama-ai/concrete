@@ -44,8 +44,8 @@ class ClientSupport(WrapperCpp):
             )
         super().__init__(client_support)
 
-    @staticmethod
     # pylint: disable=arguments-differ
+    @staticmethod
     def new() -> "ClientSupport":
         """Build a ClientSupport.
 
@@ -176,7 +176,9 @@ class ClientSupport(WrapperCpp):
                 f"public_result must be of type PublicResult, not {type(public_result)}"
             )
         lambda_arg = LambdaArgument.wrap(
-            _ClientSupport.decrypt_result(keyset.cpp(), public_result.cpp())
+            _ClientSupport.decrypt_result(
+                client_parameters.cpp(), keyset.cpp(), public_result.cpp()
+            )
         )
 
         output_signs = client_parameters.output_signs()
@@ -216,7 +218,6 @@ class ClientSupport(WrapperCpp):
         """
 
         # pylint: disable=too-many-return-statements,too-many-branches
-
         if not isinstance(value, ACCEPTED_TYPES):
             raise TypeError(
                 "value of lambda argument must be either int, numpy.array or numpy.(u)int{8,16,32,64}"

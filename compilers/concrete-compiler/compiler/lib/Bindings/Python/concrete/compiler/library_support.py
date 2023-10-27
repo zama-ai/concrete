@@ -124,6 +124,8 @@ class LibrarySupport(WrapperCpp):
                 generateCppHeader,
             )
         )
+        if not os.path.isdir(output_path):
+            os.makedirs(output_path)
         library_support.output_dir_path = output_path
         return library_support
 
@@ -236,7 +238,9 @@ class LibrarySupport(WrapperCpp):
         )
 
     def load_server_lambda(
-        self, library_compilation_result: LibraryCompilationResult
+        self,
+        library_compilation_result: LibraryCompilationResult,
+        simulation: bool = False,
     ) -> LibraryLambda:
         """Load the server lambda from the library compilation result.
 
@@ -255,7 +259,7 @@ class LibrarySupport(WrapperCpp):
                 f"{type(library_compilation_result)}"
             )
         return LibraryLambda.wrap(
-            self.cpp().load_server_lambda(library_compilation_result.cpp())
+            self.cpp().load_server_lambda(library_compilation_result.cpp(), simulation)
         )
 
     def server_call(
@@ -340,10 +344,10 @@ class LibrarySupport(WrapperCpp):
         """
         return self.cpp().get_shared_lib_path()
 
-    def get_client_parameters_path(self) -> str:
-        """Get the path where the client parameters file is expected to be.
+    def get_program_info_path(self) -> str:
+        """Get the path where the program info file is expected to be.
 
         Returns:
-            str: path to the client parameters file
+            str: path to the program info file
         """
-        return self.cpp().get_client_parameters_path()
+        return self.cpp().get_program_info_path()

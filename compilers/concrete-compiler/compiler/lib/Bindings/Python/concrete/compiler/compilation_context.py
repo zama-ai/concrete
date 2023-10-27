@@ -39,8 +39,8 @@ class CompilationContext(WrapperCpp):
             )
         super().__init__(compilation_context)
 
-    @staticmethod
     # pylint: disable=arguments-differ
+    @staticmethod
     def new() -> "CompilationContext":
         """Build a CompilationContext.
 

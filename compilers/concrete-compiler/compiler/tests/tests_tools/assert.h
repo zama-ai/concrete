@@ -138,4 +138,13 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
     }                                                                          \
   }
 
+#define ASSERT_OUTCOME_HAS_FAILURE(val)                                        \
+  {                                                                            \
+    auto tmp = val;                                                            \
+    if (tmp.has_value()) {                                                     \
+      std::string msg = "Outcome value when failure expected";                 \
+      GTEST_FATAL_FAILURE_(msg.c_str());                                       \
+    }                                                                          \
+  }
+
 #endif

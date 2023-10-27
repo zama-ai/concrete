@@ -52,7 +52,7 @@ func.func @main(%arg0: tensor<4x!FHE.eint<5>>, %arg1: tensor<4xi6>) -> !FHE.eint
 
             """,
             (
-                np.array([1, 2, 3, 4], dtype=np.uint8),
+                np.array([1, 2, 3, 4], dtype=np.uint64),
                 np.array([4, 3, 2, 1], dtype=np.uint8),
             ),
             20,
@@ -69,8 +69,8 @@ func.func @main(%a0: tensor<4x!FHE.eint<5>>, %a1: tensor<4x!FHE.eint<5>>) -> ten
 
             """,
             (
-                np.array([1, 2, 3, 4], dtype=np.uint8),
-                np.array([7, 0, 1, 5], dtype=np.uint8),
+                np.array([1, 2, 3, 4], dtype=np.uint64),
+                np.array([7, 0, 1, 5], dtype=np.uint64),
             ),
             np.array([8, 2, 4, 9]),
             id="enc_enc_ndarray_args",

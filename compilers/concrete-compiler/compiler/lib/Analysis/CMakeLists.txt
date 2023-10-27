@@ -1,3 +1,5 @@
+add_compile_options(-fsized-deallocation)
+
 add_mlir_library(
   AnalysisUtils
   Utils.cpp
