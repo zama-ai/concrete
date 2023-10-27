@@ -33,7 +33,7 @@ for lhs_bit_width in range(1, 5):
             ]
         ]
 
-for _ in range(5):
+for _ in range(8):
     cases.append(
         [
             # operation
@@ -61,7 +61,7 @@ for _ in range(5):
         ]
     )
 
-for _ in range(5):
+for _ in range(8):
     cases.append(
         [
             # operation
