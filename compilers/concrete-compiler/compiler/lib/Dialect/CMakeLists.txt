@@ -1,3 +1,5 @@
+add_compile_options(-fexceptions -fsized-deallocation)
+
 add_subdirectory(FHELinalg)
 add_subdirectory(FHE)
 add_subdirectory(TFHE)

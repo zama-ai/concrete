@@ -67,7 +67,7 @@ public:
     return TFHE::GLWEPackingKeyswitchKeyAttr::get(
         pksk.getContext(), convertSecretKey(pksk.getInputKey()),
         convertSecretKey(pksk.getOutputKey()), pksk.getOutputPolySize(),
-        pksk.getInputLweDim(), pksk.getGlweDim(), pksk.getLevels(),
+        pksk.getInnerLweDim(), pksk.getGlweDim(), pksk.getLevels(),
         pksk.getBaseLog(),
         circuitKeys.getPackingKeyswitchKeyIndex(pksk).value());
   }

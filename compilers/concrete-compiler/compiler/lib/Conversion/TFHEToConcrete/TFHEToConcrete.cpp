@@ -164,7 +164,7 @@ struct WopPBSGLWEOpPattern
     auto ksLevels = adaptor.getKsk().getLevels();
     auto pksBaseLog = adaptor.getPksk().getBaseLog();
     auto pksLevels = adaptor.getPksk().getLevels();
-    auto pksInputLweDim = adaptor.getPksk().getInputLweDim();
+    auto pksInnerLweDim = adaptor.getPksk().getInnerLweDim();
     auto pksOutputPolySize = adaptor.getPksk().getOutputPolySize();
     auto crtDecomposition = adaptor.getCrtDecompositionAttr();
     auto resultType = op.getType();
@@ -175,7 +175,7 @@ struct WopPBSGLWEOpPattern
     rewriter.replaceOpWithNewOp<Concrete::WopPBSCRTLweTensorOp>(
         op, this->getTypeConverter()->convertType(resultType),
         adaptor.getCiphertexts(), adaptor.getLookupTable(), bsLevels, bsBaseLog,
-        ksLevels, ksBaseLog, pksInputLweDim, pksOutputPolySize, pksLevels,
+        ksLevels, ksBaseLog, pksInnerLweDim, pksOutputPolySize, pksLevels,
         pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition, kskIndex, bskIndex,
         pkskIndex);
 

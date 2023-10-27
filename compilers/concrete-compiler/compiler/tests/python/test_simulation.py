@@ -37,7 +37,7 @@ def run_simulated(engine, args_and_shape, compilation_result):
             values.append(sim_value_exporter.export_tensor(pos, arg, shape))
         pos += 1
     public_arguments = PublicArguments.new(client_parameters, values)
-    server_lambda = engine.load_server_lambda(compilation_result)
+    server_lambda = engine.load_server_lambda(compilation_result, True)
     public_result = engine.simulate(server_lambda, public_arguments)
     sim_value_decrypter = SimulatedValueDecrypter.new(client_parameters)
     result = sim_value_decrypter.decrypt(0, public_result.get_value(0))

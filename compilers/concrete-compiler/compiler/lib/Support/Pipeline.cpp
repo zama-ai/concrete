@@ -3,52 +3,52 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include <llvm/Support/TargetSelect.h>
+#include "llvm/Support/TargetSelect.h"
 
-#include <llvm/Support/Error.h>
-#include <mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h>
-#include <mlir/Conversion/Passes.h>
-#include <mlir/Dialect/Bufferization/Transforms/Passes.h>
-#include <mlir/Dialect/Func/Transforms/Passes.h>
-#include <mlir/Transforms/Passes.h>
+#include "mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h"
+#include "mlir/Conversion/Passes.h"
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
+#include "mlir/Dialect/Func/Transforms/Passes.h"
+#include "mlir/Transforms/Passes.h"
+#include "llvm/Support/Error.h"
 
-#include <mlir/Dialect/Affine/Passes.h>
-#include <mlir/Dialect/Arith/Transforms/Passes.h>
-#include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
-#include <mlir/Dialect/Bufferization/Transforms/Passes.h>
-#include <mlir/Dialect/Linalg/Passes.h>
-#include <mlir/Dialect/SCF/Transforms/Passes.h>
-#include <mlir/Dialect/Tensor/Transforms/Passes.h>
-#include <mlir/ExecutionEngine/OptUtils.h>
-#include <mlir/Pass/PassManager.h>
-#include <mlir/Pass/PassOptions.h>
-#include <mlir/Support/LogicalResult.h>
-#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Export.h>
-#include <mlir/Transforms/Passes.h>
+#include "mlir/Dialect/Affine/Passes.h"
+#include "mlir/Dialect/Arith/Transforms/Passes.h"
+#include "mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h"
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
+#include "mlir/Dialect/Linalg/Passes.h"
+#include "mlir/Dialect/SCF/Transforms/Passes.h"
+#include "mlir/Dialect/Tensor/Transforms/Passes.h"
+#include "mlir/ExecutionEngine/OptUtils.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Pass/PassOptions.h"
+#include "mlir/Support/LogicalResult.h"
+#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Export.h"
+#include "mlir/Transforms/Passes.h"
 
+#include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/TFHEKeyNormalization/Pass.h"
+#include "concretelang/Dialect/Concrete/Analysis/MemoryUsage.h"
+#include "concretelang/Dialect/Concrete/Transforms/Passes.h"
+#include "concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h"
+#include "concretelang/Dialect/FHE/Analysis/MANP.h"
+#include "concretelang/Dialect/FHE/Transforms/BigInt/BigInt.h"
+#include "concretelang/Dialect/FHE/Transforms/Boolean/Boolean.h"
 #include "concretelang/Dialect/FHE/Transforms/DynamicTLU/DynamicTLU.h"
+#include "concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU/EncryptedMulToDoubleTLU.h"
+#include "concretelang/Dialect/FHE/Transforms/Max/Max.h"
+#include "concretelang/Dialect/FHELinalg/Transforms/Tiling.h"
+#include "concretelang/Dialect/RT/Analysis/Autopar.h"
+#include "concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h"
+#include "concretelang/Dialect/TFHE/Transforms/Transforms.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
-#include <concretelang/Conversion/Passes.h>
-#include <concretelang/Dialect/Concrete/Analysis/MemoryUsage.h>
-#include <concretelang/Dialect/Concrete/Transforms/Passes.h>
-#include <concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h>
-#include <concretelang/Dialect/FHE/Analysis/MANP.h>
-#include <concretelang/Dialect/FHE/Transforms/BigInt/BigInt.h>
-#include <concretelang/Dialect/FHE/Transforms/Boolean/Boolean.h>
-#include <concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU/EncryptedMulToDoubleTLU.h>
-#include <concretelang/Dialect/FHE/Transforms/Max/Max.h>
-#include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
-#include <concretelang/Dialect/RT/Analysis/Autopar.h>
-#include <concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h>
-#include <concretelang/Dialect/TFHE/Transforms/Transforms.h>
-#include <concretelang/Support/Pipeline.h>
-#include <concretelang/Support/logging.h>
-#include <concretelang/Support/math.h>
-#include <concretelang/Transforms/Passes.h>
+#include "concretelang/Support/Pipeline.h"
+#include "concretelang/Support/logging.h"
+#include "concretelang/Support/math.h"
+#include "concretelang/Transforms/Passes.h"
 
 namespace mlir {
 namespace concretelang {
@@ -410,14 +410,11 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
 
 mlir::LogicalResult
 addRuntimeContext(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                  std::function<bool(mlir::Pass *)> enablePass,
-                  bool simulation) {
+                  std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("Adding Runtime Context", pm, context);
-  if (!simulation) {
-    addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
-                             enablePass);
-  }
+  addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
+                           enablePass);
   return pm.run(module.getOperation());
 }
 

@@ -15,19 +15,22 @@
 #include <hpx/modules/collectives.hpp>
 #include <hpx/modules/serialization.hpp>
 
-#include "concretelang/ClientLib/EvaluationKeys.h"
-#include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/context.h"
 
-#include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Common/Keys.h"
+#include "concretelang/Common/Keysets.h"
+
+using concretelang::keys::LweBootstrapKey;
+using concretelang::keys::LweKeyswitchKey;
+using concretelang::keys::LweSecretKey;
+using concretelang::keys::PackingKeyswitchKey;
+using concretelang::keysets::ServerKeyset;
 
 namespace mlir {
 namespace concretelang {
 namespace dfr {
-
-using namespace ::concretelang::clientlib;
 
 struct RuntimeContextManager;
 namespace {
@@ -35,7 +38,7 @@ static void *dl_handle;
 static RuntimeContextManager *_dfr_node_level_runtime_context_manager;
 } // namespace
 
-template <typename LweKeyType, typename KeyParamType> struct KeyWrapper {
+template <typename LweKeyType> struct KeyWrapper {
   std::vector<LweKeyType> keys;
 
   KeyWrapper() {}
@@ -51,38 +54,44 @@ template <typename LweKeyType, typename KeyParamType> struct KeyWrapper {
   void save(Archive &ar, const unsigned int version) const {
     ar << (size_t)keys.size();
     for (auto k : keys) {
-      auto params = k.parameters();
-      size_t param_size = sizeof(KeyParamType);
-      ar << hpx::serialization::make_array((char *)&params, param_size);
-      ar << (size_t)k.size();
-      ar << hpx::serialization::make_array(k.buffer(), k.size());
+      auto info = k.getInfo();
+      auto maybe_info_string = info.writeBinaryToString();
+      assert(maybe_info_string.has_value());
+      auto info_string = maybe_info_string.value();
+      ar << hpx::serialization::make_array(info_string.c_str(),
+                                           info_string.size());
+      ar << (size_t)k.getBuffer().size();
+      ar << hpx::serialization::make_array(k.getBuffer().data(),
+                                           k.getBuffer().size());
     }
   }
   template <class Archive> void load(Archive &ar, const unsigned int version) {
     size_t num_keys;
     ar >> num_keys;
     for (uint i = 0; i < num_keys; ++i) {
-      KeyParamType params;
-      size_t param_size = sizeof(params);
-      ar >> hpx::serialization::make_array((char *)&params, param_size);
+      std::string info_string;
+      ar >> info_string;
+      typename LweKeyType::InfoType info;
+      assert(info.readBinaryFromString(info_string).has_value());
       size_t key_size;
       ar >> key_size;
       auto buffer = std::make_shared<std::vector<uint64_t>>();
       buffer->resize(key_size);
       ar >> hpx::serialization::make_array(buffer->data(), key_size);
-      keys.push_back(LweKeyType(buffer, params));
+      keys.push_back(LweKeyType(buffer, info));
     }
   }
   HPX_SERIALIZATION_SPLIT_MEMBER()
 };
 
-template <typename LweKeyType, typename KeyParamType>
-bool operator==(const KeyWrapper<LweKeyType, KeyParamType> &lhs,
-                const KeyWrapper<LweKeyType, KeyParamType> &rhs) {
+template <typename LweKeyType>
+bool operator==(const KeyWrapper<LweKeyType> &lhs,
+
+                const KeyWrapper<LweKeyType> &rhs) {
   if (lhs.keys.size() != rhs.keys.size())
     return false;
   for (size_t i = 0; i < lhs.keys.size(); ++i)
-    if (lhs.keys[i].buffer() != rhs.keys[i].buffer())
+    if (lhs.keys[i].getBuffer() != rhs.keys[i].getBuffer())
       return false;
   return true;
 }
@@ -110,21 +119,21 @@ struct RuntimeContextManager {
     if (_dfr_is_root_node()) {
       RuntimeContext *context = (RuntimeContext *)ctx;
 
-      KeyWrapper<LweKeyswitchKey, KeyswitchKeyParam> kskw(
-          context->getKeys().getKeyswitchKeys());
-      KeyWrapper<LweBootstrapKey, BootstrapKeyParam> bskw(
-          context->getKeys().getBootstrapKeys());
+      KeyWrapper<LweKeyswitchKey> kskw(context->getKeys().lweKeyswitchKeys);
+      KeyWrapper<LweBootstrapKey> bskw(context->getKeys().lweBootstrapKeys);
       hpx::collectives::broadcast_to("ksk_keystore", kskw);
       hpx::collectives::broadcast_to("bsk_keystore", bskw);
     } else {
-      auto kskFut = hpx::collectives::broadcast_from<
-          KeyWrapper<LweKeyswitchKey, KeyswitchKeyParam>>("ksk_keystore");
-      auto bskFut = hpx::collectives::broadcast_from<
-          KeyWrapper<LweBootstrapKey, BootstrapKeyParam>>("bsk_keystore");
-      KeyWrapper<LweKeyswitchKey, KeyswitchKeyParam> kskw = kskFut.get();
-      KeyWrapper<LweBootstrapKey, BootstrapKeyParam> bskw = bskFut.get();
+      auto kskFut =
+          hpx::collectives::broadcast_from<KeyWrapper<LweKeyswitchKey>>(
+              "ksk_keystore");
+      auto bskFut =
+          hpx::collectives::broadcast_from<KeyWrapper<LweBootstrapKey>>(
+              "bsk_keystore");
+      KeyWrapper<LweKeyswitchKey> kskw = kskFut.get();
+      KeyWrapper<LweBootstrapKey> bskw = bskFut.get();
       context = new mlir::concretelang::RuntimeContext(
-          EvaluationKeys(kskw.keys, bskw.keys, {}));
+          ServerKeyset{bskw.keys, kskw.keys, {}});
     }
   }
 

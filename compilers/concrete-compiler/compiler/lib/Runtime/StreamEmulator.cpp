@@ -3,23 +3,18 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "concretelang/Runtime/stream_emulator_api.h"
+#include "concretelang/Runtime/wrappers.h"
 #include <cstdarg>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <numeric>
 #include <queue>
+#include <sched.h>
 #include <thread>
 #include <utility>
 #include <vector>
-
-#include <sched.h>
-
-#include <concretelang/ClientLib/Types.h>
-#include <concretelang/Runtime/stream_emulator_api.h>
-#include <concretelang/Runtime/wrappers.h>
-
-using concretelang::clientlib::MemRefDescriptor;
 
 namespace mlir {
 namespace concretelang {

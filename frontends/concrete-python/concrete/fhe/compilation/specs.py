@@ -22,7 +22,7 @@ class ClientSpecs:
     def __init__(self, client_parameters: ClientParameters):
         self.client_parameters = client_parameters
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: Any):  # pragma: no cover
         if self.client_parameters.serialize() != other.client_parameters.serialize():
             return False
 

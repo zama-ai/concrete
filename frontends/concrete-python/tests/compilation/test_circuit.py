@@ -191,7 +191,7 @@ def test_client_server_api(helpers):
         return x + 42
 
     inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration.fork())
 
     # for coverage
     circuit.keygen()
@@ -254,7 +254,7 @@ def test_client_server_api_crt(helpers):
         return x**2
 
     inputset = [np.random.randint(0, 200, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration.fork())
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir_path = Path(tmp_dir)
@@ -305,7 +305,7 @@ def test_client_server_api_via_mlir(helpers):
         return x + 42
 
     inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration.fork())
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir_path = Path(tmp_dir)
@@ -346,26 +346,6 @@ def test_client_server_api_via_mlir(helpers):
             assert np.array_equal(output, [45, 50, 43])
 
         server.cleanup()
-
-
-def test_bad_server_save(helpers):
-    """
-    Test `save` method of `Server` class with bad parameters.
-    """
-
-    configuration = helpers.configuration().fork(jit=True)
-
-    @fhe.compiler({"x": "encrypted"})
-    def function(x):
-        return x + 42
-
-    inputset = range(10)
-    circuit = function.compile(inputset, configuration)
-
-    with pytest.raises(RuntimeError) as excinfo:
-        circuit.server.save("test.zip")
-
-    assert str(excinfo.value) == "Just-in-Time compilation cannot be saved"
 
 
 def test_circuit_run_with_unused_arg(helpers):

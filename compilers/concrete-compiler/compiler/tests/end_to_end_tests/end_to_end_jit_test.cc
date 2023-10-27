@@ -1,41 +1,55 @@
 
+#include <cstddef>
 #include <cstdint>
 #include <gtest/gtest.h>
 #include <type_traits>
 
+#include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
+using concretelang::testlib::deleteFolder;
 
 TEST(CompileAndRunClear, add_u64) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%arg0: i64, %arg1: i64) -> i64 {
   %1 = arith.addi %arg0, %arg1 : i64
   return %1: i64
 }
 )XXX",
              "main", true);
-
-  ASSERT_EXPECTED_VALUE(lambda(1_u64, 2_u64), (uint64_t)3);
-  ASSERT_EXPECTED_VALUE(lambda(4_u64, 5_u64), (uint64_t)9);
-  ASSERT_EXPECTED_VALUE(lambda(1_u64, 1_u64), (uint64_t)2);
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
+  ASSERT_EQ(lambda({Tensor<uint64_t>(1), Tensor<uint64_t>(2)}), (uint64_t)3);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(4), Tensor<uint64_t>(5)}), (uint64_t)9);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(1), Tensor<uint64_t>(1)}), (uint64_t)2);
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, extract_5) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%t: tensor<10x!FHE.eint<5>>, %i: index) -> !FHE.eint<5>{
   %c = tensor.extract %t[%i] : tensor<10x!FHE.eint<5>>
   return %c : !FHE.eint<5>
 }
 )XXX");
-
-  static uint8_t t_arg[] = {32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
-
-  for (size_t i = 0; i < ARRAY_SIZE(t_arg); i++)
-    ASSERT_EXPECTED_VALUE(lambda(t_arg, ARRAY_SIZE(t_arg), i), t_arg[i]);
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
+  Tensor<uint64_t> t_arg({32, 0, 10, 25, 14, 25, 18, 28, 14, 7}, {10});
+  for (size_t i = 0; i < 10; i++)
+    ASSERT_EQ(lambda({t_arg, Tensor<uint64_t>(i)}), t_arg[i]);
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, extract_twice_and_add_5) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
 !FHE.eint<5>{
   %ti = tensor.extract %t[%i] : tensor<10x!FHE.eint<5>>
@@ -44,64 +58,85 @@ func.func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
   !FHE.eint<5> return %c : !FHE.eint<5>
 }
 )XXX");
-
-  static uint8_t t_arg[] = {3, 0, 7, 12, 14, 6, 5, 4, 1, 2};
-
-  for (size_t i = 0; i < ARRAY_SIZE(t_arg); i++)
-    for (size_t j = 0; j < ARRAY_SIZE(t_arg); j++)
-      ASSERT_EXPECTED_VALUE(lambda(t_arg, ARRAY_SIZE(t_arg), i, j),
-                            t_arg[i] + t_arg[j]);
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
+  Tensor<uint64_t> t_arg({3, 0, 7, 12, 14, 6, 5, 4, 1, 2}, {10});
+  for (size_t i = 0; i < 10; i++)
+    for (size_t j = 0; j < 10; j++)
+      ASSERT_EQ(lambda({t_arg, Tensor<uint64_t>(i), Tensor<uint64_t>(j)}),
+                t_arg[i] + t_arg[j]);
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, dim_5) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%t: tensor<10x!FHE.eint<5>>) -> index{
   %c0 = arith.constant 0 : index
   %c = tensor.dim %t, %c0 : tensor<10x!FHE.eint<5>>
   return %c : index
 }
 )XXX");
-
-  static uint8_t t_arg[] = {32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
-  ASSERT_EXPECTED_VALUE(lambda(t_arg, ARRAY_SIZE(t_arg)), ARRAY_SIZE(t_arg));
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
+  Tensor<uint64_t> t_arg({32, 0, 10, 25, 14, 25, 18, 28, 14, 7}, {10});
+  ASSERT_EQ(lambda({
+                t_arg,
+            }),
+            10_u64);
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, from_elements_5) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
   %t = tensor.from_elements %0 : tensor<1x!FHE.eint<5>>
   return %t: tensor<1x!FHE.eint<5>>
 }
 )XXX");
-
-  llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>(10_u64);
-
-  ASSERT_EXPECTED_SUCCESS(res);
-  ASSERT_EQ(res->size(), (size_t)1);
-  ASSERT_EQ(res->at(0), 10_u64);
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value();
+  };
+  Tensor<uint64_t> res = lambda({Tensor<uint64_t>(10)});
+  ASSERT_EQ(res.values.size(), (size_t)1);
+  ASSERT_EQ(res.values[0], 10_u64);
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, from_elements_multiple_values) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%0: !FHE.eint<5>, %1: !FHE.eint<5>, %2: !FHE.eint<5>) -> tensor<3x!FHE.eint<5>> {
   %t = tensor.from_elements %0, %1, %2 : tensor<3x!FHE.eint<5>>
   return %t: tensor<3x!FHE.eint<5>>
 }
 )XXX");
-
-  llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>(1_u64, 2_u64, 3_u64);
-
-  ASSERT_EXPECTED_SUCCESS(res);
-  ASSERT_EQ(res->size(), (size_t)3);
-  ASSERT_EQ(res->at(0), 1_u64);
-  ASSERT_EQ(res->at(1), 2_u64);
-  ASSERT_EQ(res->at(2), 3_u64);
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value();
+  };
+  Tensor<uint64_t> res =
+      lambda({Tensor<uint64_t>(1), Tensor<uint64_t>(2), Tensor<uint64_t>(3)});
+  ASSERT_EQ(res.values.size(), (size_t)3);
+  ASSERT_EQ(res.values[0], 1_u64);
+  ASSERT_EQ(res.values[1], 2_u64);
+  ASSERT_EQ(res.values[2], 3_u64);
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, from_elements_many_values) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%0: !FHE.eint<5>,
            %1: !FHE.eint<5>,
            %2: !FHE.eint<5>,
@@ -171,121 +206,107 @@ func.func @main(%0: !FHE.eint<5>,
   return %t: tensor<64x!FHE.eint<5>>
 }
 )XXX");
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value();
+  };
+  Tensor<uint64_t> res = lambda({
+      Tensor<uint64_t>(0),  Tensor<uint64_t>(1),  Tensor<uint64_t>(2),
+      Tensor<uint64_t>(3),  Tensor<uint64_t>(4),  Tensor<uint64_t>(5),
+      Tensor<uint64_t>(6),  Tensor<uint64_t>(7),  Tensor<uint64_t>(8),
+      Tensor<uint64_t>(9),  Tensor<uint64_t>(10), Tensor<uint64_t>(11),
+      Tensor<uint64_t>(12), Tensor<uint64_t>(13), Tensor<uint64_t>(14),
+      Tensor<uint64_t>(15), Tensor<uint64_t>(16), Tensor<uint64_t>(17),
+      Tensor<uint64_t>(18), Tensor<uint64_t>(19), Tensor<uint64_t>(20),
+      Tensor<uint64_t>(21), Tensor<uint64_t>(22), Tensor<uint64_t>(23),
+      Tensor<uint64_t>(24), Tensor<uint64_t>(25), Tensor<uint64_t>(26),
+      Tensor<uint64_t>(27), Tensor<uint64_t>(28), Tensor<uint64_t>(29),
+      Tensor<uint64_t>(30), Tensor<uint64_t>(31), Tensor<uint64_t>(32),
+      Tensor<uint64_t>(33), Tensor<uint64_t>(34), Tensor<uint64_t>(35),
+      Tensor<uint64_t>(36), Tensor<uint64_t>(37), Tensor<uint64_t>(38),
+      Tensor<uint64_t>(39), Tensor<uint64_t>(40), Tensor<uint64_t>(41),
+      Tensor<uint64_t>(42), Tensor<uint64_t>(43), Tensor<uint64_t>(44),
+      Tensor<uint64_t>(45), Tensor<uint64_t>(46), Tensor<uint64_t>(47),
+      Tensor<uint64_t>(48), Tensor<uint64_t>(49), Tensor<uint64_t>(50),
+      Tensor<uint64_t>(51), Tensor<uint64_t>(52), Tensor<uint64_t>(53),
+      Tensor<uint64_t>(54), Tensor<uint64_t>(55), Tensor<uint64_t>(56),
+      Tensor<uint64_t>(57), Tensor<uint64_t>(58), Tensor<uint64_t>(59),
+      Tensor<uint64_t>(60), Tensor<uint64_t>(61), Tensor<uint64_t>(62),
+      Tensor<uint64_t>(63),
+  });
 
-  llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>(
-          0_u64, 1_u64, 2_u64, 3_u64, 4_u64, 5_u64, 6_u64, 7_u64, 8_u64, 9_u64,
-          10_u64, 11_u64, 12_u64, 13_u64, 14_u64, 15_u64, 16_u64, 17_u64,
-          18_u64, 19_u64, 20_u64, 21_u64, 22_u64, 23_u64, 24_u64, 25_u64,
-          26_u64, 27_u64, 28_u64, 29_u64, 30_u64, 31_u64, 32_u64, 33_u64,
-          34_u64, 35_u64, 36_u64, 37_u64, 38_u64, 39_u64, 40_u64, 41_u64,
-          42_u64, 43_u64, 44_u64, 45_u64, 46_u64, 47_u64, 48_u64, 49_u64,
-          50_u64, 51_u64, 52_u64, 53_u64, 54_u64, 55_u64, 56_u64, 57_u64,
-          58_u64, 59_u64, 60_u64, 61_u64, 62_u64, 63_u64);
-
-  ASSERT_EXPECTED_SUCCESS(res);
-  ASSERT_EQ(res->size(), (size_t)64);
-  ASSERT_EQ(res->at(0), 0_u64);
-  ASSERT_EQ(res->at(1), 1_u64);
-  ASSERT_EQ(res->at(2), 2_u64);
-  ASSERT_EQ(res->at(3), 3_u64);
-  ASSERT_EQ(res->at(4), 4_u64);
-  ASSERT_EQ(res->at(5), 5_u64);
-  ASSERT_EQ(res->at(6), 6_u64);
-  ASSERT_EQ(res->at(7), 7_u64);
-  ASSERT_EQ(res->at(8), 8_u64);
-  ASSERT_EQ(res->at(9), 9_u64);
-  ASSERT_EQ(res->at(10), 10_u64);
-  ASSERT_EQ(res->at(11), 11_u64);
-  ASSERT_EQ(res->at(12), 12_u64);
-  ASSERT_EQ(res->at(13), 13_u64);
-  ASSERT_EQ(res->at(14), 14_u64);
-  ASSERT_EQ(res->at(15), 15_u64);
-  ASSERT_EQ(res->at(16), 16_u64);
-  ASSERT_EQ(res->at(17), 17_u64);
-  ASSERT_EQ(res->at(18), 18_u64);
-  ASSERT_EQ(res->at(19), 19_u64);
-  ASSERT_EQ(res->at(20), 20_u64);
-  ASSERT_EQ(res->at(21), 21_u64);
-  ASSERT_EQ(res->at(22), 22_u64);
-  ASSERT_EQ(res->at(23), 23_u64);
-  ASSERT_EQ(res->at(24), 24_u64);
-  ASSERT_EQ(res->at(25), 25_u64);
-  ASSERT_EQ(res->at(26), 26_u64);
-  ASSERT_EQ(res->at(27), 27_u64);
-  ASSERT_EQ(res->at(28), 28_u64);
-  ASSERT_EQ(res->at(29), 29_u64);
-  ASSERT_EQ(res->at(30), 30_u64);
-  ASSERT_EQ(res->at(31), 31_u64);
-  ASSERT_EQ(res->at(32), 32_u64);
-  ASSERT_EQ(res->at(33), 33_u64);
-  ASSERT_EQ(res->at(34), 34_u64);
-  ASSERT_EQ(res->at(35), 35_u64);
-  ASSERT_EQ(res->at(36), 36_u64);
-  ASSERT_EQ(res->at(37), 37_u64);
-  ASSERT_EQ(res->at(38), 38_u64);
-  ASSERT_EQ(res->at(39), 39_u64);
-  ASSERT_EQ(res->at(40), 40_u64);
-  ASSERT_EQ(res->at(41), 41_u64);
-  ASSERT_EQ(res->at(42), 42_u64);
-  ASSERT_EQ(res->at(43), 43_u64);
-  ASSERT_EQ(res->at(44), 44_u64);
-  ASSERT_EQ(res->at(45), 45_u64);
-  ASSERT_EQ(res->at(46), 46_u64);
-  ASSERT_EQ(res->at(47), 47_u64);
-  ASSERT_EQ(res->at(48), 48_u64);
-  ASSERT_EQ(res->at(49), 49_u64);
-  ASSERT_EQ(res->at(50), 50_u64);
-  ASSERT_EQ(res->at(51), 51_u64);
-  ASSERT_EQ(res->at(52), 52_u64);
-  ASSERT_EQ(res->at(53), 53_u64);
-  ASSERT_EQ(res->at(54), 54_u64);
-  ASSERT_EQ(res->at(55), 55_u64);
-  ASSERT_EQ(res->at(56), 56_u64);
-  ASSERT_EQ(res->at(57), 57_u64);
-  ASSERT_EQ(res->at(58), 58_u64);
-  ASSERT_EQ(res->at(59), 59_u64);
-  ASSERT_EQ(res->at(60), 60_u64);
-  ASSERT_EQ(res->at(61), 61_u64);
-  ASSERT_EQ(res->at(62), 62_u64);
-  ASSERT_EQ(res->at(63), 63_u64);
-}
-
-// Same as `CompileAndRunTensorEncrypted::from_elements_5 but with
-// `LambdaArgument` instances as arguments and as a result type
-TEST(CompileAndRunTensorEncrypted, from_elements_5_lambda_argument_res) {
-  checkedJit(lambda, R"XXX(
-func.func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
-  %t = tensor.from_elements %0 : tensor<1x!FHE.eint<5>>
-  return %t: tensor<1x!FHE.eint<5>>
-}
-)XXX");
-
-  mlir::concretelang::IntLambdaArgument<> arg(10);
-
-  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
-          {&arg});
-
-  ASSERT_EXPECTED_SUCCESS(res);
-  ASSERT_TRUE((*res)
-                  ->isa<mlir::concretelang::TensorLambdaArgument<
-                      mlir::concretelang::IntLambdaArgument<>>>());
-
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<>> &resp =
-      (*res)
-          ->cast<mlir::concretelang::TensorLambdaArgument<
-              mlir::concretelang::IntLambdaArgument<>>>();
-
-  ASSERT_EQ(resp.getDimensions().size(), (size_t)1);
-  ASSERT_EQ(resp.getDimensions().at(0), 1);
-  ASSERT_EXPECTED_VALUE(resp.getNumElements(), 1);
-  ASSERT_EQ(resp.getValue()[0], 10_u64);
+  ASSERT_EQ(res.values.size(), (size_t)64);
+  ASSERT_EQ(res.values[0], 0_u64);
+  ASSERT_EQ(res.values[1], 1_u64);
+  ASSERT_EQ(res.values[2], 2_u64);
+  ASSERT_EQ(res.values[3], 3_u64);
+  ASSERT_EQ(res.values[4], 4_u64);
+  ASSERT_EQ(res.values[5], 5_u64);
+  ASSERT_EQ(res.values[6], 6_u64);
+  ASSERT_EQ(res.values[7], 7_u64);
+  ASSERT_EQ(res.values[8], 8_u64);
+  ASSERT_EQ(res.values[9], 9_u64);
+  ASSERT_EQ(res.values[10], 10_u64);
+  ASSERT_EQ(res.values[11], 11_u64);
+  ASSERT_EQ(res.values[12], 12_u64);
+  ASSERT_EQ(res.values[13], 13_u64);
+  ASSERT_EQ(res.values[14], 14_u64);
+  ASSERT_EQ(res.values[15], 15_u64);
+  ASSERT_EQ(res.values[16], 16_u64);
+  ASSERT_EQ(res.values[17], 17_u64);
+  ASSERT_EQ(res.values[18], 18_u64);
+  ASSERT_EQ(res.values[19], 19_u64);
+  ASSERT_EQ(res.values[20], 20_u64);
+  ASSERT_EQ(res.values[21], 21_u64);
+  ASSERT_EQ(res.values[22], 22_u64);
+  ASSERT_EQ(res.values[23], 23_u64);
+  ASSERT_EQ(res.values[24], 24_u64);
+  ASSERT_EQ(res.values[25], 25_u64);
+  ASSERT_EQ(res.values[26], 26_u64);
+  ASSERT_EQ(res.values[27], 27_u64);
+  ASSERT_EQ(res.values[28], 28_u64);
+  ASSERT_EQ(res.values[29], 29_u64);
+  ASSERT_EQ(res.values[30], 30_u64);
+  ASSERT_EQ(res.values[31], 31_u64);
+  ASSERT_EQ(res.values[32], 32_u64);
+  ASSERT_EQ(res.values[33], 33_u64);
+  ASSERT_EQ(res.values[34], 34_u64);
+  ASSERT_EQ(res.values[35], 35_u64);
+  ASSERT_EQ(res.values[36], 36_u64);
+  ASSERT_EQ(res.values[37], 37_u64);
+  ASSERT_EQ(res.values[38], 38_u64);
+  ASSERT_EQ(res.values[39], 39_u64);
+  ASSERT_EQ(res.values[40], 40_u64);
+  ASSERT_EQ(res.values[41], 41_u64);
+  ASSERT_EQ(res.values[42], 42_u64);
+  ASSERT_EQ(res.values[43], 43_u64);
+  ASSERT_EQ(res.values[44], 44_u64);
+  ASSERT_EQ(res.values[45], 45_u64);
+  ASSERT_EQ(res.values[46], 46_u64);
+  ASSERT_EQ(res.values[47], 47_u64);
+  ASSERT_EQ(res.values[48], 48_u64);
+  ASSERT_EQ(res.values[49], 49_u64);
+  ASSERT_EQ(res.values[50], 50_u64);
+  ASSERT_EQ(res.values[51], 51_u64);
+  ASSERT_EQ(res.values[52], 52_u64);
+  ASSERT_EQ(res.values[53], 53_u64);
+  ASSERT_EQ(res.values[54], 54_u64);
+  ASSERT_EQ(res.values[55], 55_u64);
+  ASSERT_EQ(res.values[56], 56_u64);
+  ASSERT_EQ(res.values[57], 57_u64);
+  ASSERT_EQ(res.values[58], 58_u64);
+  ASSERT_EQ(res.values[59], 59_u64);
+  ASSERT_EQ(res.values[60], 60_u64);
+  ASSERT_EQ(res.values[61], 61_u64);
+  ASSERT_EQ(res.values[62], 62_u64);
+  ASSERT_EQ(res.values[63], 63_u64);
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, in_out_tensor_with_op_5) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%in: tensor<2x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
   %c_0 = arith.constant 0 : index
   %c_1 = arith.constant 1 : index
@@ -299,24 +320,26 @@ func.func @main(%in: tensor<2x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
   return %out: tensor<3x!FHE.eint<5>>
 }
 )XXX");
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value();
+  };
 
-  static uint8_t in[] = {2, 16};
-
-  llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>(in, ARRAY_SIZE(in));
-
-  ASSERT_EXPECTED_SUCCESS(res);
-
-  ASSERT_EQ(res->size(), (size_t)3);
-  ASSERT_EQ(res->at(0), (uint64_t)(in[0] + in[0]));
-  ASSERT_EQ(res->at(1), (uint64_t)(in[0] + in[1]));
-  ASSERT_EQ(res->at(2), (uint64_t)(in[1] + in[1]));
+  Tensor<uint64_t> in({2, 16}, {2});
+  Tensor<uint64_t> res = lambda({in});
+  ASSERT_EQ(res.values.size(), (size_t)3);
+  ASSERT_EQ(res.values[0], (uint64_t)(in[0] + in[0]));
+  ASSERT_EQ(res.values[1], (uint64_t)(in[0] + in[1]));
+  ASSERT_EQ(res.values[2], (uint64_t)(in[1] + in[1]));
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 // Test is failing since with the bufferization and the parallel options.
 // DISABLED as is a bit artificial test, let's investigate later.
 TEST(CompileAndRunTensorEncrypted, DISABLED_linalg_generic) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 #map0 = affine_map<(d0) -> (d0)>
 #map1 = affine_map<(d0) -> (0)>
 func.func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
@@ -336,12 +359,17 @@ func.func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
 }
 )XXX",
              "main", true);
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
 
-  static uint8_t arg0[] = {2, 8};
-  static uint8_t arg1[] = {6, 8};
+  Tensor<uint64_t> arg0({2, 8}, {2});
+  Tensor<uint8_t> arg1({6, 8}, {2});
+  Tensor<uint64_t> acc(0);
 
-  llvm::Expected<uint64_t> res =
-      lambda(arg0, ARRAY_SIZE(arg0), arg1, ARRAY_SIZE(arg1), 0_u64);
-
-  ASSERT_EXPECTED_VALUE(res, 76);
+  ASSERT_EQ(lambda({arg0, arg1, acc}), 76_u64);
+  deleteFolder(testCircuit.getArtifactFolder());
 }

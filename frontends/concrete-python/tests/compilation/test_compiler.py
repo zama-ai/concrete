@@ -2,11 +2,13 @@
 Tests of `Compiler` class.
 """
 
+import json
+
 import numpy as np
 import pytest
 
 from concrete import fhe
-from concrete.fhe.compilation import Compiler
+from concrete.fhe.compilation import ClientSpecs, Compiler
 
 
 def test_compiler_bad_init():
@@ -423,3 +425,29 @@ def test_compiler_compile_with_single_tuple_inputset(helpers):
 
     sample = 4
     helpers.check_execution(circuit, f, sample)
+
+
+def test_compiler_tampered_client_parameters(helpers):
+    """
+    Test running a function with tampered client parameters.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted"})
+    def f(x):
+        return x
+
+    inputset = [(3,), (4,), (5,)]
+    circuit = f.compile(inputset, configuration)
+    sample = 4
+
+    client_parameters_json = json.loads(circuit.client.specs.serialize())
+    client_parameters_json["circuits"][0]["inputs"][0]["typeInfo"] = {}
+
+    tampered_bytes = bytes(json.dumps(client_parameters_json), "UTF-8")
+    circuit.client.specs = ClientSpecs.deserialize(tampered_bytes)
+
+    with pytest.raises(ValueError) as excinfo:
+        helpers.check_execution(circuit, f, sample)
+    assert str(excinfo.value) == "Expected a valid type in dict_keys([])"

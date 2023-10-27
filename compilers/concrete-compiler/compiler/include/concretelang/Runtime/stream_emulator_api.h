@@ -17,6 +17,13 @@ typedef enum stream_type {
   TS_STREAM_TYPE_TOPO_TO_X86_LSAP,
   TS_STREAM_TYPE_X86_TO_X86_LSAP
 } stream_type;
+template <size_t N> struct MemRefDescriptor {
+  uint64_t *allocated;
+  uint64_t *aligned;
+  size_t offset;
+  size_t sizes[N];
+  size_t strides[N];
+};
 
 extern "C" {
 void *stream_emulator_init();

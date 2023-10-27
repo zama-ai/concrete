@@ -22,7 +22,7 @@ const double TEST_ERROR_RATE = 1.0 - 0.999936657516;
 /// @brief  Parse the command line and return a tuple contains the compilation
 /// options, the library path if the --library options has been specified and
 /// the parsed description files
-std::tuple<mlir::concretelang::CompilationOptions, std::string,
+std::tuple<mlir::concretelang::CompilationOptions,
            std::vector<EndToEndDescFile>>
 parseEndToEndCommandLine(int argc, char **argv) {
   namespace optimizer = mlir::concretelang::optimizer;
@@ -96,18 +96,6 @@ parseEndToEndCommandLine(int argc, char **argv) {
           "evaluation "
           "keys")));
 
-  // JIT or Library support
-  llvm::cl::opt<bool> jit(
-      "jit",
-      llvm::cl::desc("Use JIT support to run the tests (default, overwritten "
-                     "if --library is set"),
-      llvm::cl::init(true));
-  llvm::cl::opt<std::string> library(
-      "library",
-      llvm::cl::desc("Use library support to run the tests and specify the "
-                     "prefix for compilation artifacts"),
-      llvm::cl::init<std::string>(""));
-
   // Verbose compiler
   llvm::cl::opt<bool> verbose("verbose",
                               llvm::cl::desc("Set the compiler verbosity"),
@@ -140,13 +128,8 @@ parseEndToEndCommandLine(int argc, char **argv) {
     f.descriptions = loadEndToEndDesc(descFile);
     parsedDescriptionFiles.push_back(f);
   }
-  auto libpath = library.getValue();
-  if (libpath.empty() && !jit.getValue()) {
-    llvm::errs()
-        << "You must specify the library path or use jit to run the test";
-    exit(1);
-  }
-  return std::make_tuple(compilationOptions, libpath, parsedDescriptionFiles);
+
+  return std::make_tuple(compilationOptions, parsedDescriptionFiles);
 }
 
 std::string getOptionsName(mlir::concretelang::CompilationOptions options) {

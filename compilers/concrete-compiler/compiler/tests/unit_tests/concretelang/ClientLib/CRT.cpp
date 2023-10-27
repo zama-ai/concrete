@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "concretelang/ClientLib/CRT.h"
+#include "concretelang/Common/CRT.h"
 #include "tests_tools/assert.h"
 namespace {
-namespace crt = concretelang::clientlib::crt;
+namespace crt = concretelang::crt;
 typedef std::vector<int64_t> CRTModuli;
 
 // Define a fixture for instantiate test with client parameters

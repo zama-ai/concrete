@@ -153,6 +153,7 @@ disable=print-statement,
         xreadlines-attribute,
         deprecated-sys-function,
         exception-escape,
+        duplicate-code,
         comprehension-escape
 
 # Enable the message, report, category or checker with the given id(s). You can

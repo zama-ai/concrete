@@ -1,14 +1,6 @@
 # Calling from other languages
 
-After doing a compilation, we endup with a couple of artifacts, including crypto parameters and a binary file containing the executable circuit. In order to be able to encrypt and run the circuit properly, we need to know how to interpret these artifacts, and there are a couple of utility functions to load them. These utility functions can be accessed through a variety of languages, including Python, Cpp, and Rust. [The Rust bindings](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/lib/Bindings/Rust) (built on top of the [CAPI](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang-c)) can be a good example for someone who wants to build bindings for another language.
-
-## Calling from Rust
-
-`bindgen` is used to generate Rust FFI bindings to the CAPI
-[The Rust bindings](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/lib/Bindings/Rust) are built on top of the CAPI in order to provide a safer, and more Rusty API. Although you can use `bindgen` (as we did to build the Rust bindings) to generate the Rust FFI from the CAPI and use it as is, we will here show how to use the Rust API that is built on top of that, as it's easier to use.
-
-![](../_static/calling_from_other_lang_rust_bindings.jpg)
-
+After doing a compilation, we endup with a couple of artifacts, including crypto parameters and a binary file containing the executable circuit. In order to be able to encrypt and run the circuit properly, we need to know how to interpret these artifacts, and there are a couple of utility functions to load them. These utility functions can be accessed through a variety of languages, including Python and C++.
 
 ### Demo
 
@@ -26,67 +18,61 @@ func.func @main(%arg0: tensor<4x4x!FHE.eint<6>>, %arg1: tensor<4x2xi7>) -> tenso
 You can use the `concretecompiler` binary to compile this MLIR program. Same can be done with `concrete-python`, as we only need the compilation artifacts at the end.
 
 ```bash
-$ concretecompiler --action=compile -o rust-demo example.mlir
+$ concretecompiler --action=compile -o python-demo example.mlir
 ```
 
-You should be able to see artifacts listed in the `rust-demo` directory
+You should be able to see artifacts listed in the `python-demo` directory
 
 ```bash
-$ ls rust-demo/
+$ ls python-demo/
 client_parameters.concrete.params.json  compilation_feedback.json  fhecircuit-client.h  sharedlib.so  staticlib.a
 ```
 
-Now we want to use the Rust bindings in order to call the compiled circuit.
+Now we want to use the Python bindings in order to call the compiled circuit.
 
-```rust
-use concrete_compiler::compiler::{KeySet, LambdaArgument, LibrarySupport};
+```python
+from concrete.compiler import (ClientSupport, LambdaArgument, LibrarySupport)
 ```
 
-The main `struct` to manage compilation artifacts is `LibrarySypport`. You will have to create one with the path you used during compilation, then load the result of the compilation
+The main `struct` to manage compilation artifacts is `LibrarySupport`. You will have to create one with the path you used during compilation, then load the result of the compilation
 
-```rust
-let lib_support = LibrarySupport::new(
-        "/path/to/your/rust-demo/",
-        None,
-    )
-    .unwrap();
-let compilation_result = lib_support.load_compilation_result().unwrap();
+```python
+lib_support = LibrarySupport.new("/path/to/your/python-demo/")
+compilation_result = lib_support.reload()
 ```
 
 Using the compilation result, you can load the server lambda (the entrypoint to the executable compiled circuit) as well as the client parameters (containing crypto parameters)
 
-```rust
-let server_lambda = lib_support.load_server_lambda(&compilation_result).unwrap();
-let client_params = lib_support.load_client_parameters(&compilation_result).unwrap();
+```python
+server_lambda = lib_support.load_server_lambda(compilation_result)
+client_params = lib_support.load_client_parameters(compilation_result)
 ```
 
 The client parameters will serve the client to generate keys and encrypt arguments for the circuit
 
-```rust
-let key_set = KeySet::new(&client_params, None, None, None).unwrap();
-let args = [
-        LambdaArgument::from_tensor_u8(&[1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4], &[4, 4])
-            .unwrap(),
-        LambdaArgument::from_tensor_u8(&[1, 2, 1, 2, 1, 2, 1, 2], &[4, 2]).unwrap(),
-    ];
-let encrypted_args = key_set.encrypt_args(&args).unwrap();
+```python
+client_support = ClientSupport.new()
+key_set = client_support.key_set(client_params)
+args = [
+	LambdaArgument.from_tensor_u8([1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4], [4, 4]),
+	LambdaArgument.from_tensor_u8([1, 2, 1, 2, 1, 2, 1, 2], [4, 2])
+]
+encrypted_args = client_support.encrypt_arguments(client_params, key_set, args)
 ```
 
 Only evaluation keys are required for the execution of the circuit. You can execute the circuit on the encrypted arguments via `server_lambda_call`
 
-```rust
-let eval_keys = key_set.evaluation_keys().unwrap();
-let encrypted_result = lib_support
-        .server_lambda_call(&server_lambda, &encrypted_args, &eval_keys)
-        .unwrap()
+```python
+eval_keys = key_set.get_evaluation_keys()
+encrypted_result = lib_support.server_call(server_lambda, encrypted_args, eval_keys)
 ```
 
 At this point you have the encrypted result and can decrypt it using the keyset which holds the secret key
 
-```rust
-let result_arg = key_set.decrypt_result(&encrypted_result).unwrap();
-println!("result tensor dims: {:?}", result_arg.dims().unwrap());
-println!("result tensor data: {:?}", result_arg.data().unwrap());
+```python
+result_arg = client_support.decrypt_result(client_params, key_set, encrypted_result)
+print("result tensor dims: {}".format(result_arg.n_values()))
+print("result tensor data: {}".format(result_arg.get_values()))
 ```
 
-There is also a couple of tests in [compiler.rs](https://github.com/zama-ai/concrete/blob/main/compilers/concrete-compiler/compiler/lib/Bindings/Rust/src/compiler.rs) that can show how to both compile and run a circuit between a client and server using serialization.
+There is also a couple of tests in [test_compilation.py](https://github.com/zama-ai/concrete/blob/main/compilers/concrete-compiler/compiler/tests/python/test_compilation.py) that can show how to both compile and run a circuit between a client and server using serialization.

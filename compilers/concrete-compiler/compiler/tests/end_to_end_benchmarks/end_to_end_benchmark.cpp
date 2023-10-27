@@ -1,12 +1,17 @@
 #include "../end_to_end_tests/end_to_end_test.h"
+#include "concretelang/Common/Compat.h"
+#include "concretelang/TestLib/TestCircuit.h"
 
 #include <benchmark/benchmark.h>
+#include <filesystem>
 
 #define BENCHMARK_HAS_CXX11
 #include "llvm/Support/Path.h"
 
 #include "tests_tools/StackSize.h"
 #include "tests_tools/keySetCache.h"
+
+using namespace concretelang::testlib;
 
 #define check(expr)                                                            \
   if (auto E = expr.takeError()) {                                             \
@@ -15,90 +20,112 @@
   }
 
 /// Benchmark time of the compilation
-template <typename LambdaSupport>
 static void BM_Compile(benchmark::State &state, EndToEndDesc description,
-                       LambdaSupport support,
+                       mlir::concretelang::CompilerEngine engine,
                        mlir::concretelang::CompilationOptions options) {
+  engine.setCompilationOptions(options);
+  std::vector<std::string> sources = {description.program};
+  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
   for (auto _ : state) {
-    if (support.compile(description.program, options)) {
+    if (engine.compile(sources, artifactFolder)) {
     };
   }
 }
 
 /// Benchmark time of the key generation
-template <typename LambdaSupport>
 static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
-                      LambdaSupport support,
+                      mlir::concretelang::CompilerEngine engine,
                       mlir::concretelang::CompilationOptions options) {
-  auto compilationResult = support.compile(description.program, options);
-  check(compilationResult);
-
-  auto clientParameters = support.loadClientParameters(**compilationResult);
-  check(clientParameters);
+  engine.setCompilationOptions(options);
+  std::vector<std::string> sources = {description.program};
+  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
+  auto result = engine.compile(sources, artifactFolder);
+  assert(result);
 
   for (auto _ : state) {
-    check(support.keySet(*clientParameters, std::nullopt));
+    assert(getTestKeySetCachePtr()->getKeyset(
+        result->getProgramInfo().asReader().getKeyset(), 0, 0));
   }
 }
 
 /// Benchmark time of the encryption
-template <typename LambdaSupport>
 static void BM_ExportArguments(benchmark::State &state,
-                               EndToEndDesc description, LambdaSupport support,
+                               EndToEndDesc description,
+                               mlir::concretelang::CompilerEngine engine,
                                mlir::concretelang::CompilationOptions options) {
-  auto compilationResult = support.compile(description.program, options);
-  check(compilationResult);
+  engine.setCompilationOptions(options);
+  std::vector<std::string> sources = {description.program};
 
-  auto clientParameters = support.loadClientParameters(**compilationResult);
-  check(clientParameters);
+  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
+  auto compiled = engine.compile(sources, artifactFolder);
+  assert(compiled);
+  auto programInfo = compiled->getProgramInfo();
+  auto keyset = getTestKeySetCachePtr()
+                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
+                    .value();
+  auto csprng = std::make_shared<ConcreteCSPRNG>(0);
 
-  auto keySet = support.keySet(*clientParameters, getTestKeySetCache());
-  check(keySet);
+  auto circuit = ClientCircuit::create(programInfo.asReader().getCircuits()[0],
+                                       keyset.client, csprng, false)
+                     .value();
 
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
-  std::vector<const mlir::concretelang::LambdaArgument *> inputArguments;
+  auto inputArguments = std::vector<TransportValue>();
   inputArguments.reserve(test.inputs.size());
-  for (auto input : test.inputs) {
-    inputArguments.push_back(&input.getValue());
-  }
 
   for (auto _ : state) {
-    check(support.exportArguments(*clientParameters, **keySet, inputArguments));
+    for (size_t i = 0; i < test.inputs.size(); i++) {
+      auto input = circuit.prepareInput(test.inputs[i].getValue(), i).value();
+      inputArguments.push_back(input);
+    }
   }
 }
 
 /// Benchmark time of the program evaluation
-template <typename LambdaSupport>
 static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
-                        LambdaSupport support,
+                        mlir::concretelang::CompilerEngine engine,
                         mlir::concretelang::CompilationOptions options) {
-  auto compilationResult = support.compile(description.program, options);
-  check(compilationResult);
-  auto clientParameters = support.loadClientParameters(**compilationResult);
-  check(clientParameters);
-  auto keySet = support.keySet(*clientParameters, getTestKeySetCache());
-  check(keySet);
+  engine.setCompilationOptions(options);
+  std::vector<std::string> sources = {description.program};
+
+  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
+  auto compiled = engine.compile(sources, artifactFolder);
+  assert(compiled);
+  auto programInfo = compiled->getProgramInfo();
+  auto keyset = getTestKeySetCachePtr()
+                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
+                    .value();
+  auto csprng = std::make_shared<ConcreteCSPRNG>(0);
+  auto clientCircuit =
+      ClientCircuit::create(programInfo.asReader().getCircuits()[0],
+                            keyset.client, csprng, false)
+          .value();
+
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
-  std::vector<const mlir::concretelang::LambdaArgument *> inputArguments;
+  auto inputArguments = std::vector<TransportValue>();
   inputArguments.reserve(test.inputs.size());
-  for (auto input : test.inputs) {
-    inputArguments.push_back(&input.getValue());
-  }
-  auto publicArguments =
-      support.exportArguments(*clientParameters, **keySet, inputArguments);
-  check(publicArguments);
 
-  auto serverLambda = support.loadServerLambda(**compilationResult);
-  check(serverLambda);
-  auto evaluationKeys = (*keySet)->evaluationKeys();
+  for (size_t i = 0; i < test.inputs.size(); i++) {
+    auto input =
+        clientCircuit.prepareInput(test.inputs[i].getValue(), i).value();
+    inputArguments.push_back(input);
+  }
+
+  auto serverProgram = ServerProgram::load(
+      programInfo, compiled->getSharedLibraryPath(compiled->getOutputDirPath()),
+      false);
+  auto serverCircuit =
+      serverProgram.value()
+          .getServerCircuit(programInfo.asReader().getCircuits()[0].getName())
+          .value();
 
   // Warmup
-  assert(support.serverCall(*serverLambda, **publicArguments, evaluationKeys));
+  assert(serverCircuit.call(keyset.server, inputArguments));
 
   for (auto _ : state) {
-    check(support.serverCall(*serverLambda, **publicArguments, evaluationKeys));
+    assert(serverCircuit.call(keyset.server, inputArguments));
   }
 }
 
@@ -116,13 +143,14 @@ void registerEndToEndBenchmark(std::string suiteName,
                                size_t stackSizeRequirement = 0) {
   auto optionsName = getOptionsName(options);
   for (auto description : descriptions) {
-    options.clientParametersFuncName = "main";
+    options.mainFuncName = "main";
     if (description.p_error) {
       assert(std::isnan(options.optimizerConfig.global_p_error));
       options.optimizerConfig.p_error = description.p_error.value();
     }
     options.optimizerConfig.encoding = description.encoding;
-    mlir::concretelang::JITSupport support;
+    auto context = mlir::concretelang::CompilationContext::createShared();
+    mlir::concretelang::CompilerEngine engine(context);
     auto benchName = [&](std::string name) {
       std::ostringstream s;
       s << suiteName << "/" << name << "/" << optionsName << "/"
@@ -134,25 +162,25 @@ void registerEndToEndBenchmark(std::string suiteName,
       case Action::COMPILE:
         benchmark::RegisterBenchmark(
             benchName("compile").c_str(), [=](::benchmark::State &st) {
-              BM_Compile(st, description, support, options);
+              BM_Compile(st, description, engine, options);
             });
         break;
       case Action::KEYGEN:
         benchmark::RegisterBenchmark(
             benchName("keygen").c_str(), [=](::benchmark::State &st) {
-              BM_KeyGen(st, description, support, options);
+              BM_KeyGen(st, description, engine, options);
             });
         break;
       case Action::ENCRYPT:
         benchmark::RegisterBenchmark(
             benchName("encrypt").c_str(), [=](::benchmark::State &st) {
-              BM_ExportArguments(st, description, support, options);
+              BM_ExportArguments(st, description, engine, options);
             });
         break;
       case Action::EVALUATE:
         benchmark::RegisterBenchmark(
             benchName("evaluate").c_str(), [=](::benchmark::State &st) {
-              BM_Evaluate(st, description, support, options);
+              BM_Evaluate(st, description, engine, options);
             });
         break;
       }
@@ -181,8 +209,7 @@ int main(int argc, char **argv) {
   auto options = parseEndToEndCommandLine(argc, argv);
 
   auto compilationOptions = std::get<0>(options);
-  auto libpath = std::get<1>(options);
-  auto descriptionFiles = std::get<2>(options);
+  auto descriptionFiles = std::get<1>(options);
 
   std::vector<enum Action> actions = clActions;
   if (actions.empty()) {

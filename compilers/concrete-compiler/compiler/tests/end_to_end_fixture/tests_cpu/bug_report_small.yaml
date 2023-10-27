@@ -28,6 +28,7 @@ tests:
       shape: [3]
     - tensor: [1, 2, 3, 4, 5, 0]
       shape: [3, 2]
+      width: 8
     outputs:
     - tensor: [1,2,3]
       shape: [3]

@@ -48,5 +48,3 @@ _build/
 
 # macOS
 .DS_Store
-
-compiler/lib/Bindings/Rust/target/

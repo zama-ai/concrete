@@ -9,9 +9,15 @@
 #include <cstddef>
 #include <vector>
 
-#include "concretelang/ClientLib/ClientParameters.h"
+#include "boost/outcome.h"
+#include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Common/Protocol.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/JSON.h"
+
+namespace protocol = concreteprotocol;
+using concretelang::protocol::Message;
 
 namespace mlir {
 namespace concretelang {
@@ -75,9 +81,8 @@ struct CompilationFeedback {
   /// @brief memory usage per location
   std::map<std::string, int64_t> memoryUsagePerLoc;
 
-  /// Fill the sizes from the client parameters.
-  void
-  fillFromClientParameters(::concretelang::clientlib::ClientParameters params);
+  /// Fill the sizes from the program info.
+  void fillFromProgramInfo(const Message<protocol::ProgramInfo> &params);
 
   /// Load the compilation feedback from a path
   static outcome::checked<CompilationFeedback, StringError>
@@ -85,6 +90,7 @@ struct CompilationFeedback {
 };
 
 llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &);
+
 bool fromJSON(const llvm::json::Value,
               mlir::concretelang::CompilationFeedback &, llvm::json::Path);
 

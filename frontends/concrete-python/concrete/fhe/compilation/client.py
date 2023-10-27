@@ -94,9 +94,7 @@ class Client:
         """
         Set the keys for the client.
         """
-        if new_keys.client_specs != self.specs:
-            message = "Unable to set keys as they are generated for a different circuit"
-            raise ValueError(message)
+        # TODO: implement verification for compatibility with keyset.
 
         self._keys = new_keys
 
