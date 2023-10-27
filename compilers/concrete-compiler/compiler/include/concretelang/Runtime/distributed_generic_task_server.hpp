@@ -29,7 +29,6 @@
 
 #include <mlir/ExecutionEngine/CRunnerUtils.h>
 
-#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/context.h"
 #include "concretelang/Runtime/dfr_debug_interface.h"

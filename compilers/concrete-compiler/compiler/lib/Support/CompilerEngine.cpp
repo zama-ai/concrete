@@ -3,52 +3,55 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h"
+#include "mlir/Dialect/SCF/Transforms/BufferizableOpInterfaceImpl.h"
+#include "mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h"
+#include "llvm/Support/Debug.h"
 #include <err.h>
 #include <fstream>
 #include <iostream>
-#include <llvm/Support/Debug.h>
-#include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
-#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
-#include <mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h>
-#include <mlir/Dialect/SCF/Transforms/BufferizableOpInterfaceImpl.h>
-#include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
+#include <memory>
+#include <optional>
 #include <stdio.h>
 #include <string>
 
-#include <llvm/Support/Error.h>
-#include <llvm/Support/Path.h>
-#include <llvm/Support/SMLoc.h>
-#include <mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
-#include <mlir/Dialect/Linalg/IR/Linalg.h>
-#include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/Dialect/OpenMP/OpenMPDialect.h>
-#include <mlir/Dialect/SCF/IR/SCF.h>
-#include <mlir/ExecutionEngine/OptUtils.h>
-#include <mlir/Parser/Parser.h>
+#include "mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/ExecutionEngine/OptUtils.h"
+#include "mlir/Parser/Parser.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
+#include "llvm/Support/SMLoc.h"
 
+#include "concrete-protocol.capnp.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
-#include <concretelang/ClientLib/ClientParameters.h>
-#include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
-#include <concretelang/Dialect/Concrete/Transforms/BufferizableOpInterfaceImpl.h>
-#include <concretelang/Dialect/FHE/IR/FHEDialect.h>
-#include <concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h>
-#include <concretelang/Dialect/RT/IR/RTDialect.h>
-#include <concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h>
-#include <concretelang/Dialect/SDFG/IR/SDFGDialect.h>
-#include <concretelang/Dialect/SDFG/Transforms/BufferizableOpInterfaceImpl.h>
-#include <concretelang/Dialect/SDFG/Transforms/SDFGConvertibleOpInterfaceImpl.h>
-#include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
-#include <concretelang/Dialect/Tracing/IR/TracingDialect.h>
-#include <concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h>
-#include <concretelang/Runtime/DFRuntime.hpp>
-#include <concretelang/Support/CompilerEngine.h>
-#include <concretelang/Support/Encodings.h>
-#include <concretelang/Support/Error.h>
-#include <concretelang/Support/Jit.h>
-#include <concretelang/Support/LLVMEmitFile.h>
-#include <concretelang/Support/Pipeline.h>
+#include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
+#include "concretelang/Dialect/Concrete/Transforms/BufferizableOpInterfaceImpl.h"
+#include "concretelang/Dialect/FHE/IR/FHEDialect.h"
+#include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h"
+#include "concretelang/Dialect/RT/IR/RTDialect.h"
+#include "concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h"
+#include "concretelang/Dialect/SDFG/IR/SDFGDialect.h"
+#include "concretelang/Dialect/SDFG/Transforms/BufferizableOpInterfaceImpl.h"
+#include "concretelang/Dialect/SDFG/Transforms/SDFGConvertibleOpInterfaceImpl.h"
+#include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
+#include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
+#include "concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h"
+#include "concretelang/Runtime/DFRuntime.hpp"
+#include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/Encodings.h"
+#include "concretelang/Support/Error.h"
+#include "concretelang/Support/LLVMEmitFile.h"
+#include "concretelang/Support/Pipeline.h"
+#include "concretelang/Support/Utils.h"
 
 namespace mlir {
 namespace concretelang {
@@ -125,8 +128,8 @@ void CompilerEngine::setFHEConstraints(
   this->overrideMaxMANP = c.norm2;
 }
 
-void CompilerEngine::setGenerateClientParameters(bool v) {
-  this->generateClientParameters = v;
+void CompilerEngine::setGenerateProgramInfo(bool v) {
+  this->generateProgramInfo = v;
 }
 
 void CompilerEngine::setMaxEintPrecision(size_t v) {
@@ -161,8 +164,8 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
   if (descriptions->empty()) { // The pass has not been run
     return std::nullopt;
   }
-  if (this->compilerOptions.clientParametersFuncName.has_value()) {
-    auto name = this->compilerOptions.clientParametersFuncName.value();
+  if (this->compilerOptions.mainFuncName.has_value()) {
+    auto name = this->compilerOptions.mainFuncName.value();
     auto description = descriptions->find(name);
     if (description == descriptions->end()) {
       std::string names;
@@ -315,21 +318,15 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
 
   // Retrieves the encoding informations before any transformation is performed
   // on the `FHE` dialect.
-  if ((this->generateClientParameters || target == Target::LIBRARY) &&
-      !options.encodings.has_value()) {
-    auto funcName = options.clientParametersFuncName.value_or("main");
-    auto maybeChunkInfo =
-        options.chunkIntegers
-            ? std::optional(concretelang::clientlib::ChunkInfo{
-                  options.chunkSize, options.chunkWidth})
-            : std::nullopt;
+  if ((this->generateProgramInfo || target == Target::LIBRARY) &&
+      !options.encodings) {
+    auto funcName = options.mainFuncName.value_or("main");
     auto encodingInfosOrErr =
-        mlir::concretelang::encodings::getCircuitEncodings(funcName, module,
-                                                           maybeChunkInfo);
+        mlir::concretelang::encodings::getCircuitEncodings(funcName, module);
     if (!encodingInfosOrErr) {
       return encodingInfosOrErr.takeError();
     }
-    options.encodings = encodingInfosOrErr.get();
+    options.encodings = std::move(*encodingInfosOrErr);
   }
 
   if (mlir::concretelang::pipeline::transformFHEBoolean(mlirContext, module,
@@ -350,6 +347,23 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   // FHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);
+
+  // Now that FHE Parameters were computed, we can set the encoding mode of
+  // integer ciphered inputs.
+  if ((this->generateProgramInfo || target == Target::LIBRARY)) {
+    std::optional<
+        Message<concreteprotocol::IntegerCiphertextEncodingInfo::ChunkedMode>>
+        maybeChunkInfo(std::nullopt);
+    if (options.chunkIntegers) {
+      auto chunkedMode = Message<
+          concreteprotocol::IntegerCiphertextEncodingInfo::ChunkedMode>();
+      chunkedMode.asBuilder().setSize(options.chunkSize);
+      chunkedMode.asBuilder().setWidth(options.chunkWidth);
+      maybeChunkInfo = chunkedMode;
+    }
+    mlir::concretelang::encodings::setCircuitEncodingModes(
+        *options.encodings, maybeChunkInfo, res.fheContext);
+  }
 
   // FHELinalg tiling
   if (options.fhelinalgTileSizes) {
@@ -440,8 +454,8 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   }
 
   // Generate client parameters if requested
-  if (this->generateClientParameters) {
-    if (!options.clientParametersFuncName.has_value()) {
+  if (this->generateProgramInfo) {
+    if (!options.mainFuncName.has_value()) {
       return StreamStringError(
           "Generation of client parameters requested, but no function name "
           "specified");
@@ -449,29 +463,34 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     if (!res.fheContext.has_value()) {
       return StreamStringError(
           "Cannot generate client parameters, the fhe context is empty for " +
-          options.clientParametersFuncName.value());
+          options.mainFuncName.value());
     }
   }
-  // Generate client parameters if requested
-  if (this->generateClientParameters || target == Target::LIBRARY) {
-    auto funcName = options.clientParametersFuncName.value_or("main");
+  // Generate program info if requested
+  if (this->generateProgramInfo || target == Target::LIBRARY) {
+    auto funcName = options.mainFuncName.value_or("main");
     if (!res.fheContext.has_value()) {
       // Some tests involve call a to non encrypted functions
-      ClientParameters emptyParams;
-      emptyParams.functionName = funcName;
-      res.clientParameters = emptyParams;
+      auto programInfo = Message<concreteprotocol::ProgramInfo>();
+      programInfo.asBuilder().initCircuits(1);
+      programInfo.asBuilder().getCircuits()[0].setName(std::string(funcName));
+      res.programInfo = programInfo;
     } else {
-      auto maybeCrt = getCrtDecompositionFromSolution(res.fheContext->solution);
-      auto clientParametersOrErr =
-          mlir::concretelang::createClientParametersFromTFHE(
+      auto programInfoOrErr =
+          mlir::concretelang::createProgramInfoFromTfheDialect(
               module, funcName, options.optimizerConfig.security,
-              options.encodings.value(), maybeCrt);
+              options.encodings.value());
 
-      if (!clientParametersOrErr)
-        return clientParametersOrErr.takeError();
+      if (!programInfoOrErr)
+        return programInfoOrErr.takeError();
 
-      res.clientParameters = clientParametersOrErr.get();
-      res.feedback->fillFromClientParameters(*res.clientParameters);
+      res.programInfo = std::move(*programInfoOrErr);
+      // If more than one circuit, feedback can not be generated for now ..
+      if (res.programInfo->asReader().getCircuits().size() != 1) {
+        return StreamStringError(
+            "Cannot generate feedback for program with more than one circuit.");
+      }
+      res.feedback->fillFromProgramInfo(*res.programInfo);
     }
   }
 
@@ -535,8 +554,8 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   }
 
   // Add runtime context in Concrete
-  if (mlir::concretelang::pipeline::addRuntimeContext(
-          mlirContext, module, enablePass, options.simulate)
+  if (mlir::concretelang::pipeline::addRuntimeContext(mlirContext, module,
+                                                      enablePass)
           .failed()) {
     return StreamStringError("Adding Runtime Context failed");
   }
@@ -609,7 +628,7 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       return StreamStringError(
           "Internal Error: Please provide a library parameter");
     }
-    auto objPath = lib.value()->addCompilation(res);
+    auto objPath = lib.value()->setCompilationResult(res);
     if (!objPath) {
       return StreamStringError(llvm::toString(objPath.takeError()));
     }
@@ -641,11 +660,12 @@ CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
   return this->compile(sm, target, lib);
 }
 
-llvm::Expected<CompilerEngine::Library> CompilerEngine::compile(
-    std::vector<std::string> inputs, std::string outputDirPath,
-    std::string runtimeLibraryPath, bool generateSharedLib,
-    bool generateStaticLib, bool generateClientParameters,
-    bool generateCompilationFeedback, bool generateCppHeader) {
+llvm::Expected<CompilerEngine::Library>
+CompilerEngine::compile(std::vector<std::string> inputs,
+                        std::string outputDirPath,
+                        std::string runtimeLibraryPath, bool generateSharedLib,
+                        bool generateStaticLib, bool generateClientParameters,
+                        bool generateCompilationFeedback) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
@@ -656,9 +676,9 @@ llvm::Expected<CompilerEngine::Library> CompilerEngine::compile(
              << llvm::toString(compilation.takeError());
     }
   }
-  if (auto err = outputLib->emitArtifacts(
-          generateSharedLib, generateStaticLib, generateClientParameters,
-          generateCompilationFeedback, generateCppHeader)) {
+  if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,
+                                          generateClientParameters,
+                                          generateCompilationFeedback)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -666,11 +686,12 @@ llvm::Expected<CompilerEngine::Library> CompilerEngine::compile(
 }
 
 template <typename T>
-llvm::Expected<CompilerEngine::Library> compileModuleOrSource(
-    CompilerEngine *engine, T module, std::string outputDirPath,
-    std::string runtimeLibraryPath, bool generateSharedLib,
-    bool generateStaticLib, bool generateClientParameters,
-    bool generateCompilationFeedback, bool generateCppHeader) {
+llvm::Expected<CompilerEngine::Library>
+compileModuleOrSource(CompilerEngine *engine, T module,
+                      std::string outputDirPath, std::string runtimeLibraryPath,
+                      bool generateSharedLib, bool generateStaticLib,
+                      bool generateClientParameters,
+                      bool generateCompilationFeedback) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
@@ -681,9 +702,9 @@ llvm::Expected<CompilerEngine::Library> compileModuleOrSource(
            << llvm::toString(compilation.takeError());
   }
 
-  if (auto err = outputLib->emitArtifacts(
-          generateSharedLib, generateStaticLib, generateClientParameters,
-          generateCompilationFeedback, generateCppHeader)) {
+  if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,
+                                          generateClientParameters,
+                                          generateCompilationFeedback)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -694,24 +715,20 @@ llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
-                        bool generateCompilationFeedback,
-                        bool generateCppHeader) {
+                        bool generateCompilationFeedback) {
   return compileModuleOrSource<llvm::SourceMgr &>(
       this, sm, outputDirPath, runtimeLibraryPath, generateSharedLib,
-      generateStaticLib, generateClientParameters, generateCompilationFeedback,
-      generateCppHeader);
+      generateStaticLib, generateClientParameters, generateCompilationFeedback);
 }
 
 llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(mlir::ModuleOp module, std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
-                        bool generateCompilationFeedback,
-                        bool generateCppHeader) {
+                        bool generateCompilationFeedback) {
   return compileModuleOrSource<mlir::ModuleOp>(
       this, module, outputDirPath, runtimeLibraryPath, generateSharedLib,
-      generateStaticLib, generateClientParameters, generateCompilationFeedback,
-      generateCppHeader);
+      generateStaticLib, generateClientParameters, generateCompilationFeedback);
 }
 
 /// Returns the path of the shared library
@@ -732,12 +749,10 @@ CompilerEngine::Library::getStaticLibraryPath(std::string outputDirPath) {
 
 /// Returns the path of the client parameter
 std::string
-CompilerEngine::Library::getClientParametersPath(std::string outputDirPath) {
-  llvm::SmallString<0> clientParametersPath(outputDirPath);
-  llvm::sys::path::append(
-      clientParametersPath,
-      ClientParameters::getClientParametersPath("client_parameters"));
-  return clientParametersPath.str().str();
+CompilerEngine::Library::getProgramInfoPath(std::string outputDirPath) {
+  llvm::SmallString<0> programInfoPath(outputDirPath);
+  llvm::sys::path::append(programInfoPath, "program_info.concrete.params.json");
+  return programInfoPath.str().str();
 }
 
 /// Returns the path of the compiler feedback
@@ -752,10 +767,8 @@ const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
 const std::string CompilerEngine::Library::LINKER = "ld";
 #ifdef __APPLE__
 // We need to tell the linker that some symbols will be missing during
-// linking, this symbols should be available during runtime however. This is
-// the case when JIT compiling, the JIT should either link to the runtime
-// library that has the missing symbols, or it would have been loaded even
-// prior to that. Starting from Mac 11 (Big Sur), it appears we need to add -L
+// linking, this symbols should be available during runtime however.
+// Starting from Mac 11 (Big Sur), it appears we need to add -L
 // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem for
 // the sharedlib to link properly.
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT =
@@ -775,30 +788,34 @@ void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
   objectsPath.push_back(path);
 }
 
-llvm::Expected<std::string>
-CompilerEngine::Library::emitClientParametersJSON() {
-  auto clientParamsPath = getClientParametersPath(outputDirPath);
-  llvm::json::Value value(clientParametersList);
-  std::error_code error;
-  llvm::raw_fd_ostream out(clientParamsPath, error);
+Message<concreteprotocol::ProgramInfo>
+CompilerEngine::Library::getProgramInfo() const {
+  return programInfo;
+}
 
-  if (error) {
-    return StreamStringError("cannot emit client parameters, error: ")
-           << error.message();
+const std::string &CompilerEngine::Library::getOutputDirPath() const {
+  return outputDirPath;
+}
+
+llvm::Expected<std::string> CompilerEngine::Library::emitProgramInfoJSON() {
+  auto programInfoPath = getProgramInfoPath(outputDirPath);
+  std::error_code error;
+  llvm::raw_fd_ostream out(programInfoPath, error);
+  auto maybeJson = programInfo.writeJsonToString();
+  if (maybeJson.has_failure()) {
+    return StreamStringError(maybeJson.as_failure().error().mesg);
   }
-  out << llvm::formatv("{0:2}", value);
+  auto json = maybeJson.value();
+  out << json;
   out.close();
 
-  return clientParamsPath;
+  return programInfoPath;
 }
 
 llvm::Expected<std::string>
 CompilerEngine::Library::emitCompilationFeedbackJSON() {
   auto path = getCompilationFeedbackPath(outputDirPath);
-  if (compilationFeedbackList.size() != 1) {
-    return StreamStringError("multiple compilation feedback not supported");
-  }
-  llvm::json::Value value(compilationFeedbackList[0]);
+  llvm::json::Value value(compilationFeedback);
   std::error_code error;
   llvm::raw_fd_ostream out(path, error);
 
@@ -812,100 +829,12 @@ CompilerEngine::Library::emitCompilationFeedbackJSON() {
   return path;
 }
 
-static std::string ccpResultType(size_t rank) {
-  if (rank == 0) {
-    return "scalar_out";
-  } else {
-    return "tensor" + std::to_string(rank) + "_out";
-  }
-}
-
-static std::string ccpArgType(size_t rank) {
-  if (rank == 0) {
-    return "scalar_in";
-  } else {
-    return "tensor" + std::to_string(rank) + "_in";
-  }
-}
-
-static std::string cppArgsType(std::vector<CircuitGate> inputs) {
-  std::string args;
-  for (auto input : inputs) {
-    if (!args.empty()) {
-      args += ", ";
-    }
-    args += ccpArgType(input.shape.dimensions.size());
-  }
-  return args;
-}
-
-llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
-  std::string libraryName = "fhecircuit";
-  auto headerName = libraryName + "-client.h";
-  llvm::SmallString<0> headerPath(outputDirPath);
-  llvm::sys::path::append(headerPath, headerName);
-
-  std::error_code error;
-  llvm::raw_fd_ostream out(headerPath, error);
-  if (error) {
-    StreamStringError("Cannot emit header: ")
-        << headerPath << ", " << error.message() << "\n";
-  }
-
-  out << "#include \"boost/outcome.h\"\n";
-  out << "#include \"concretelang/ClientLib/ClientLambda.h\"\n";
-  out << "#include \"concretelang/ClientLib/KeySetCache.h\"\n";
-  out << "#include \"concretelang/ClientLib/Types.h\"\n";
-  out << "#include \"concretelang/Common/Error.h\"\n";
-  out << "\n";
-  out << "namespace " << libraryName << " {\n";
-  out << "namespace client {\n";
-
-  for (auto params : clientParametersList) {
-    std::string args;
-    std::string result;
-    if (params.outputs.size() > 0) {
-      args = cppArgsType(params.inputs);
-    } else {
-      args = "void";
-    }
-    if (params.outputs.size() > 0) {
-      size_t rank = params.outputs[0].shape.dimensions.size();
-      result = ccpResultType(rank);
-    } else {
-      result = "void";
-    }
-    out << "\n";
-    out << "namespace " << params.functionName << " {\n";
-    out << "  using namespace concretelang::clientlib;\n";
-    out << "  using concretelang::error::StringError;\n";
-    out << "  using " << params.functionName << "_t = TypedClientLambda<"
-        << result << ", " << args << ">;\n";
-    out << "  static const std::string name = \"" << params.functionName
-        << "\";\n";
-    out << "\n";
-    out << "  static outcome::checked<" << params.functionName
-        << "_t, StringError>\n";
-    out << "  load(std::string outputLib)\n";
-    out << "  { return " << params.functionName
-        << "_t::load(name, outputLib); }\n";
-    out << "} // namespace " << params.functionName << "\n";
-  }
-  out << "\n";
-  out << "} // namespace client\n";
-  out << "} // namespace " << libraryName << "\n";
-
-  out.close();
-
-  return headerPath.str().str();
-}
-
 llvm::Expected<std::string>
-CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
+CompilerEngine::Library::setCompilationResult(CompilationResult &compilation) {
   llvm::Module *module = compilation.llvmModule.get();
   auto sourceName = module->getSourceFileName();
   if (sourceName == "" || sourceName == "LLVMDialectModule") {
-    sourceName = this->outputDirPath + ".module-" +
+    sourceName = this->outputDirPath + "/program.module-" +
                  std::to_string(objectsPath.size()) + ".mlir";
   }
   auto objectPath = sourceName + OBJECT_EXT;
@@ -914,11 +843,11 @@ CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
   }
 
   addExtraObjectFilePath(objectPath);
-  if (compilation.clientParameters.has_value()) {
-    clientParametersList.push_back(compilation.clientParameters.value());
+  if (compilation.programInfo) {
+    programInfo = *compilation.programInfo;
   }
   if (compilation.feedback.has_value()) {
-    compilationFeedbackList.push_back(compilation.feedback.value());
+    compilationFeedback = compilation.feedback.value();
   }
   return objectPath;
 }
@@ -1035,8 +964,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
 llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
                                                    bool staticLib,
                                                    bool clientParameters,
-                                                   bool compilationFeedback,
-                                                   bool cppHeader) {
+                                                   bool compilationFeedback) {
   // Create output directory if doesn't exist
   llvm::sys::fs::create_directory(outputDirPath);
   if (sharedLib) {
@@ -1050,17 +978,12 @@ llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
     }
   }
   if (clientParameters) {
-    if (auto err = emitClientParametersJSON().takeError()) {
+    if (auto err = emitProgramInfoJSON().takeError()) {
       return err;
     }
   }
   if (compilationFeedback) {
     if (auto err = emitCompilationFeedbackJSON().takeError()) {
-      return err;
-    }
-  }
-  if (cppHeader) {
-    if (auto err = emitCppHeader().takeError()) {
       return err;
     }
   }

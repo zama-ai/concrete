@@ -699,7 +699,7 @@ Syntax:
   mlir::concretelang::TFHE::GLWESecretKey,   # inputKey
   mlir::concretelang::TFHE::GLWESecretKey,   # outputKey
   int,   # outputPolySize
-  int,   # inputLweDim
+  int,   # innerLweDim
   int,   # glweDim
   int,   # levels
   int,   # baseLog
@@ -715,7 +715,7 @@ Syntax:
 | inputKey | `mlir::concretelang::TFHE::GLWESecretKey` |  |
 | outputKey | `mlir::concretelang::TFHE::GLWESecretKey` |  |
 | outputPolySize | `int` |  |
-| inputLweDim | `int` |  |
+| innerLweDim | `int` |  |
 | glweDim | `int` |  |
 | levels | `int` |  |
 | baseLog | `int` |  |

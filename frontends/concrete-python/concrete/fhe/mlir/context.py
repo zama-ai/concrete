@@ -552,7 +552,7 @@ class Context:
         )
 
         comparison_order = (x, y)
-        if subtraction_order != comparison_order:
+        if subtraction_order != comparison_order:  # pragma: no cover
             new_accept = set()
             if Comparison.EQUAL in accept:
                 new_accept.add(Comparison.EQUAL)

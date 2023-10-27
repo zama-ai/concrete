@@ -30,10 +30,6 @@ jobs:
           # compiler requirements to lint
           pip install numpy
           make python-lint
-      - name: Format with rustfmt (Rust)
-        run: |
-          cd compilers/concrete-compiler/compiler
-          make check-rust-format
 
   CheckLicense:
     runs-on: ubuntu-20.04

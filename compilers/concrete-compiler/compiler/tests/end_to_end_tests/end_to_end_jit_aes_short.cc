@@ -4,8 +4,10 @@
 #include <tuple>
 #include <type_traits>
 
+#include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
+using concretelang::testlib::deleteFolder;
 
 std::vector<uint64_t> distributed_results;
 
@@ -2692,7 +2694,7 @@ module  {
 )XXX",
              "main", false, true, false);
 
-  std::vector<uint8_t> input0 = {
+  std::vector<uint64_t> input0 = {
       2,  7,  1,  1,  2,  10, 13, 10, 10, 15, 1,  8,  0,  12, 4,  3,  10, 15,
       15, 1,  8,  5,  2,  11, 2,  10, 3,  3,  2,  6,  7,  0,  15, 12, 9,  15,
       7,  9,  11, 4,  5,  3,  8,  7,  7,  5,  15, 7,  3,  8,  4,  7,  4,  1,
@@ -2704,7 +2706,7 @@ module  {
       10, 7,  6,  15, 1,  15, 13, 2,  2,  13, 2,  4,  5,  5,  0,  6,  13, 1,
       15, 10, 12, 14, 2,  8,  14, 3,  0,  12, 11, 6,  0,  10};
 
-  std::vector<uint8_t> input1 = {
+  std::vector<uint64_t> input1 = {
       11, 14, 5,  6,  8,  14, 2,  6,  11, 7,  5,  8,  9,  15, 15, 12, 0,  10,
       14, 7,  8,  4,  12, 1,  3,  3,  9,  9,  10, 12, 6,  5,  2,  2,  5,  2,
       10, 6,  9,  3,  9,  5,  0,  10, 3,  9,  6,  15, 13, 0,  7,  13, 7,  6,
@@ -2716,31 +2718,27 @@ module  {
       12, 7,  6,  3,  9,  10, 12, 1,  8,  1,  9,  1,  7,  12, 0,  14, 0,  4,
       9,  8,  9,  14, 5,  9,  1,  15, 12, 8,  6,  3,  12, 6};
 
-  std::vector<uint8_t> input2 = {107, 193, 190, 226, 46,  64,  159, 150,
-                                 233, 61,  126, 17,  115, 147, 23,  42};
+  std::vector<uint64_t> input2 = {107, 193, 190, 226, 46,  64,  159, 150,
+                                  233, 61,  126, 17,  115, 147, 23,  42};
 
-  std::vector<uint8_t> expected_output = {132, 234, 152, 233, 122, 94,
-                                          207, 48,  137, 236, 28,  103,
-                                          96,  110, 104, 184};
+  std::vector<uint64_t> expected_output = {132, 234, 152, 233, 122, 94,
+                                           207, 48,  137, 236, 28,  103,
+                                           96,  110, 104, 184};
 
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg0(input0);
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg1(input1);
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg2(input2);
+  auto arg0 = Tensor<uint64_t>(input0, {input0.size()});
+  auto arg1 = Tensor<uint64_t>(input1, {input1.size()});
+  auto arg2 = Tensor<uint64_t>(input2, {input2.size()});
 
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-    llvm::Expected<std::vector<uint64_t>> res =
-        lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1, &arg2});
-    ASSERT_EXPECTED_SUCCESS(res);
+    auto maybeResult = lambda.call({arg0, arg1, arg2});
+    ASSERT_OUTCOME_HAS_VALUE(maybeResult);
+    auto result = maybeResult.value()[0].template getTensor<uint64_t>().value();
     // distributed_results = *res;
-    ASSERT_EQ(res->size(), expected_output.size());
+    ASSERT_EQ(result.values.size(), expected_output.size());
     for (size_t i = 0; i < expected_output.size(); i++)
-      EXPECT_EQ(expected_output[i], (*res)[i]) << "result differ at pos " << i;
+      EXPECT_EQ(expected_output[i], result.values[i])
+          << "result differ at pos " << i;
   } else
-    ASSERT_EXPECTED_FAILURE(lambda.operator()<std::vector<uint64_t>>());
+    ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
+  deleteFolder(lambda.getArtifactFolder());
 }

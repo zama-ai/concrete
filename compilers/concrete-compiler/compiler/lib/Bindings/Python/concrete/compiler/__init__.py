@@ -25,13 +25,10 @@ from .compilation_feedback import CompilationFeedback
 from .key_set import KeySet
 from .public_result import PublicResult
 from .public_arguments import PublicArguments
-from .jit_compilation_result import JITCompilationResult
-from .jit_lambda import JITLambda
 from .lambda_argument import LambdaArgument
 from .library_compilation_result import LibraryCompilationResult
 from .library_lambda import LibraryLambda
 from .client_support import ClientSupport
-from .jit_support import JITSupport
 from .library_support import LibrarySupport
 from .evaluation_keys import EvaluationKeys
 from .value import Value

@@ -6,60 +6,103 @@
 #include <cassert>
 #include <fstream>
 
-#include "llvm/Support/JSON.h"
-
 #include "concretelang/Support/CompilationFeedback.h"
+
+using concretelang::protocol::Message;
 
 namespace mlir {
 namespace concretelang {
 
-void CompilationFeedback::fillFromClientParameters(
-    ::concretelang::clientlib::ClientParameters params) {
+void CompilationFeedback::fillFromProgramInfo(
+    const Message<concreteprotocol::ProgramInfo> &programInfo) {
+  auto params = programInfo.asReader();
+
   // Compute the size of secret keys
   totalSecretKeysSize = 0;
-  for (auto sk : params.secretKeys) {
-    totalSecretKeysSize += sk.byteSize();
+  for (auto skInfo : params.getKeyset().getLweSecretKeys()) {
+    assert(skInfo.getParams().getIntegerPrecision() % 8 == 0);
+    auto byteSize = skInfo.getParams().getIntegerPrecision() / 8;
+    totalSecretKeysSize += skInfo.getParams().getLweDimension() * byteSize;
   }
   // Compute the boostrap keys size
   totalBootstrapKeysSize = 0;
-  for (auto bskParam : params.bootstrapKeys) {
-    assert(bskParam.inputSecretKeyID < params.secretKeys.size());
-    auto inputKey = params.secretKeys[bskParam.inputSecretKeyID];
-
-    assert(bskParam.outputSecretKeyID < params.secretKeys.size());
-    auto outputKey = params.secretKeys[bskParam.outputSecretKeyID];
-
-    totalBootstrapKeysSize +=
-        bskParam.byteSize(inputKey.lweSize(), outputKey.lweSize());
+  for (auto bskInfo : params.getKeyset().getLweBootstrapKeys()) {
+    assert(bskInfo.getInputId() <
+           (uint32_t)params.getKeyset().getLweSecretKeys().size());
+    auto inputKeyInfo =
+        params.getKeyset().getLweSecretKeys()[bskInfo.getInputId()];
+    assert(bskInfo.getOutputId() <
+           (uint32_t)params.getKeyset().getLweSecretKeys().size());
+    auto outputKeyInfo =
+        params.getKeyset().getLweSecretKeys()[bskInfo.getOutputId()];
+    assert(bskInfo.getParams().getIntegerPrecision() % 8 == 0);
+    auto byteSize = bskInfo.getParams().getIntegerPrecision() % 8;
+    auto inputLweSize = inputKeyInfo.getParams().getLweDimension() + 1;
+    auto outputLweSize = outputKeyInfo.getParams().getLweDimension() + 1;
+    auto level = bskInfo.getParams().getLevelCount();
+    auto glweDimension = bskInfo.getParams().getGlweDimension();
+    totalBootstrapKeysSize += inputLweSize * level * (glweDimension + 1) *
+                              (glweDimension + 1) * outputLweSize * byteSize;
   }
   // Compute the keyswitch keys size
   totalKeyswitchKeysSize = 0;
-  for (auto kskParam : params.keyswitchKeys) {
-    assert(kskParam.inputSecretKeyID < params.secretKeys.size());
-    auto inputKey = params.secretKeys[kskParam.inputSecretKeyID];
-    assert(kskParam.outputSecretKeyID < params.secretKeys.size());
-    auto outputKey = params.secretKeys[kskParam.outputSecretKeyID];
-    totalKeyswitchKeysSize +=
-        kskParam.byteSize(inputKey.lweSize(), outputKey.lweSize());
+  for (auto kskInfo : params.getKeyset().getLweKeyswitchKeys()) {
+    assert(kskInfo.getInputId() <
+           (uint32_t)params.getKeyset().getLweSecretKeys().size());
+    auto inputKeyInfo =
+        params.getKeyset().getLweSecretKeys()[kskInfo.getInputId()];
+    assert(kskInfo.getOutputId() <
+           (uint32_t)params.getKeyset().getLweSecretKeys().size());
+    auto outputKeyInfo =
+        params.getKeyset().getLweSecretKeys()[kskInfo.getOutputId()];
+    assert(kskInfo.getParams().getIntegerPrecision() % 8 == 0);
+    auto byteSize = kskInfo.getParams().getIntegerPrecision() % 8;
+    auto inputLweSize = inputKeyInfo.getParams().getLweDimension() + 1;
+    auto outputLweSize = outputKeyInfo.getParams().getLweDimension() + 1;
+    auto level = kskInfo.getParams().getLevelCount();
+    totalKeyswitchKeysSize += level * inputLweSize * outputLweSize * byteSize;
   }
+  auto circuitInfo = params.getCircuits()[0];
+  auto computeGateSize =
+      [&](const Message<concreteprotocol::GateInfo> &gateInfo) {
+        unsigned int nElements = 1;
+        // TODO: CHANGE THAT ITS WRONG
+        for (auto dimension :
+             gateInfo.asReader().getRawInfo().getShape().getDimensions()) {
+          nElements *= dimension;
+        }
+        unsigned int gateScalarSize =
+            gateInfo.asReader().getRawInfo().getIntegerPrecision() / 8;
+        return nElements * gateScalarSize;
+      };
   // Compute the size of inputs
   totalInputsSize = 0;
-  for (auto gate : params.inputs) {
-    totalInputsSize += gate.byteSize(params.secretKeys);
+  for (auto gateInfo : circuitInfo.getInputs()) {
+    totalInputsSize += computeGateSize(gateInfo);
   }
   // Compute the size of outputs
   totalOutputsSize = 0;
-  for (auto gate : params.outputs) {
-    totalOutputsSize += gate.byteSize(params.secretKeys);
+  for (auto gateInfo : circuitInfo.getOutputs()) {
+    totalOutputsSize += computeGateSize(gateInfo);
   }
   // Extract CRT decomposition
   crtDecompositionsOfOutputs = {};
-  for (auto gate : params.outputs) {
-    std::vector<int64_t> decomposition;
-    if (gate.encryption.has_value()) {
-      decomposition = gate.encryption->encoding.crt;
+  for (auto gate : circuitInfo.getOutputs()) {
+    if (gate.getTypeInfo().hasLweCiphertext() &&
+        gate.getTypeInfo().getLweCiphertext().getEncoding().hasInteger()) {
+      auto integerEncoding =
+          gate.getTypeInfo().getLweCiphertext().getEncoding().getInteger();
+      if (integerEncoding.getMode().hasCrt()) {
+        auto moduli = integerEncoding.getMode().getCrt().getModuli();
+        std::vector<int64_t> moduliVector(moduli.size());
+        for (size_t i = 0; i < moduli.size(); i++) {
+          moduliVector[i] = moduli[i];
+        }
+        crtDecompositionsOfOutputs.push_back(moduliVector);
+      } else {
+        crtDecompositionsOfOutputs.push_back(std::vector<int64_t>{});
+      }
     }
-    crtDecompositionsOfOutputs.push_back(decomposition);
   }
 }
 

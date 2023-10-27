@@ -14,5 +14,7 @@ p-error: 6.3342483999973e-05
 tests:
   - inputs:
     - scalar: 0
+      signed: true
     outputs:
     - scalar: 0
+      signed: true

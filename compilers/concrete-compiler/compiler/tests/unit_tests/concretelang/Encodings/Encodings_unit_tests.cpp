@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <gtest/gtest.h>
 
 #include <cassert>
@@ -7,71 +8,55 @@
 
 #include "boost/outcome.h"
 
-#include "concretelang/ClientLib/ClientLambda.h"
+#include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Encodings.h"
-#include "concretelang/TestLib/TestTypedLambda.h"
+#include "concretelang/TestLib/TestCircuit.h"
 
 #include "tests_tools/GtestEnvironment.h"
 #include "tests_tools/assert.h"
-#include "tests_tools/keySetCache.h"
 
 testing::Environment *const dfr_env =
     testing::AddGlobalTestEnvironment(new DFREnvironment);
 
-const std::string FUNCNAME = "main";
-
 using namespace concretelang::testlib;
 namespace encodings = mlir::concretelang::encodings;
-using concretelang::clientlib::scalar_in;
-using concretelang::clientlib::scalar_out;
-using concretelang::clientlib::tensor1_in;
-using concretelang::clientlib::tensor1_out;
-using concretelang::clientlib::tensor2_in;
-using concretelang::clientlib::tensor2_out;
-using concretelang::clientlib::tensor3_out;
 
 mlir::concretelang::CompilerEngine::Library
-compile(std::string outputLib, std::string source,
+compile(std::string artifactFolder, std::string source,
         std::string funcname = FUNCNAME) {
   std::vector<std::string> sources = {source};
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
   mlir::concretelang::CompilerEngine ce{ccx};
   mlir::concretelang::CompilationOptions options(funcname);
-  options.encodings = encodings::CircuitEncodings{
-      {
-          encodings::EncryptedIntegerScalarEncoding{3, false},
-          encodings::EncryptedIntegerScalarEncoding{3, false},
-      },
-      {
-          encodings::EncryptedIntegerScalarEncoding{3, false},
-      }};
+
+  options.encodings = Message<concreteprotocol::CircuitEncodingInfo>();
+  auto inputs = options.encodings->asBuilder().initInputs(2);
+  auto outputs = options.encodings->asBuilder().initOutputs(1);
+
+  auto encodingInfo = Message<concreteprotocol::EncodingInfo>().asBuilder();
+  encodingInfo.initShape();
+  auto integer = encodingInfo.getEncoding().initIntegerCiphertext();
+  integer.getMode().initNative();
+  integer.setWidth(3);
+  integer.setIsSigned(false);
+
+  inputs.setWithCaveats(0, encodingInfo);
+  inputs.setWithCaveats(1, encodingInfo);
+  outputs.setWithCaveats(0, encodingInfo);
+
+  options.encodings->asBuilder().setName("main");
   options.v0Parameter = {2, 10, 693, 4, 9, 7, 2, std::nullopt};
   ce.setCompilationOptions(options);
-  auto result = ce.compile(sources, outputLib);
+  auto result = ce.compile(sources, artifactFolder);
   if (!result) {
     llvm::errs() << result.takeError();
     assert(false);
   }
   assert(result);
   return result.get();
-}
-
-static const std::string CURRENT_FILE = __FILE__;
-static const std::string THIS_TEST_DIRECTORY =
-    CURRENT_FILE.substr(0, CURRENT_FILE.find_last_of("/\\"));
-static const std::string OUT_DIRECTORY = "/tmp";
-
-template <typename Info> std::string outputLibFromThis(Info *info) {
-  return OUT_DIRECTORY + "/" + std::string(info->name());
-}
-
-template <typename Lambda> Lambda load(std::string outputLib) {
-  auto l = Lambda::load(FUNCNAME, outputLib, 0, 0, getTestKeySetCachePtr());
-  assert(l.has_value());
-  return l.value();
 }
 
 TEST(Encodings_unit_tests, multi_key) {
@@ -87,12 +72,13 @@ func.func @main(
   
 }
 )";
-  std::string outputLib = outputLibFromThis(this->test_info_);
-  auto compiled = compile(outputLib, source);
-  auto lambda =
-      load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
-  scalar_in a = 5;
-  scalar_in b = 5;
-  auto res = lambda.call(a, b);
-  ASSERT_EQ_OUTCOME(res, (scalar_out)a + b);
+  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
+  auto circuit = load(compile(artifactFolder, source));
+  uint64_t a = 5;
+  uint64_t b = 5;
+  auto res = circuit.call({Tensor<uint64_t>(a), Tensor<uint64_t>(b)});
+  ASSERT_TRUE(res.has_value());
+  auto out = res.value()[0].getTensor<uint64_t>()->values[0];
+  ASSERT_EQ(out, a + b);
+  deleteFolder(artifactFolder);
 }

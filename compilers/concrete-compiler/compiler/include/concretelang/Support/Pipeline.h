@@ -6,12 +6,11 @@
 #ifndef CONCRETELANG_SUPPORT_PIPELINE_H_
 #define CONCRETELANG_SUPPORT_PIPELINE_H_
 
-#include <llvm/IR/Module.h>
-#include <mlir/Dialect/LLVMIR/LLVMTypes.h>
-#include <mlir/Support/LogicalResult.h>
-#include <mlir/Transforms/Passes.h>
-
-#include <concretelang/Support/V0Parameters.h>
+#include "concretelang/Support/V0Parameters.h"
+#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Support/LogicalResult.h"
+#include "mlir/Transforms/Passes.h"
+#include "llvm/IR/Module.h"
 
 namespace mlir {
 namespace concretelang {
@@ -109,8 +108,7 @@ mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
 
 mlir::LogicalResult
 addRuntimeContext(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                  std::function<bool(mlir::Pass *)> enablePass,
-                  bool simulation);
+                  std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
