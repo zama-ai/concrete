@@ -33,7 +33,7 @@ fn test3(csprng: *cpu.Csprng, polynomial_size: usize) !void {
     cpu.concrete_cpu_init_secret_key_u64(big_sk.ptr, big_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
 
     var raw_fft = c.aligned_alloc(cpu.CONCRETE_FFT_ALIGN, cpu.CONCRETE_FFT_SIZE);
-    const fft = @ptrCast(*cpu.Fft, raw_fft);
+    const fft: *cpu.Fft = @ptrCast(raw_fft);
 
     cpu.concrete_cpu_construct_concrete_fft(fft, polynomial_size);
 
@@ -85,7 +85,7 @@ fn test3(csprng: *cpu.Csprng, polynomial_size: usize) !void {
     // Decryption of extracted bits for sanity check
     while (i < number_of_input_bits) {
         const bit: u64 =
-            (val >> @intCast(u6, number_of_input_bits - i - 1)) % 2;
+            (val >> @intCast(number_of_input_bits - i - 1)) % 2;
 
         cpu.concrete_cpu_encrypt_lwe_ciphertext_u64(small_sk.ptr, extract_bits_output_buffer[(small_dim + 1) * i ..].ptr, bit << 63, small_dim, variance, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
 
@@ -134,7 +134,7 @@ fn test3(csprng: *cpu.Csprng, polynomial_size: usize) !void {
             fft,
         ) == 0);
 
-        const stack = @ptrCast([*]u8, c.aligned_alloc(stack_align, stack_size) orelse unreachable)[0..stack_size];
+        const stack = @as([*]u8, @ptrCast(c.aligned_alloc(stack_align, stack_size) orelse unreachable))[0..stack_size];
         defer c.free(stack.ptr);
 
         cpu.concrete_cpu_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(
@@ -182,7 +182,7 @@ fn test3(csprng: *cpu.Csprng, polynomial_size: usize) !void {
 test "vertical_packing" {
     var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
     defer c.free(raw_csprng);
-    const csprng = @ptrCast(*cpu.Csprng, raw_csprng);
+    const csprng: *cpu.Csprng = @ptrCast(raw_csprng);
     cpu.concrete_cpu_construct_concrete_csprng(
         csprng,
         cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },

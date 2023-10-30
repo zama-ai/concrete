@@ -31,7 +31,7 @@ fn test_encrypt_decrypt(csprng: *cpu.Csprng, pt: u64, dim: u64) !u64 {
 test "encryption" {
     var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
     defer c.free(raw_csprng);
-    const csprng = @ptrCast(*cpu.Csprng, raw_csprng);
+    const csprng: *cpu.Csprng = @ptrCast(raw_csprng);
     cpu.concrete_cpu_construct_concrete_csprng(
         csprng,
         cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },
@@ -42,7 +42,7 @@ test "encryption" {
 
     const result = try test_encrypt_decrypt(csprng, pt, 1024);
 
-    const diff = @intToFloat(f64, @bitCast(i64, result -% pt)) / std.math.pow(f64, 2.0, 64);
+    const diff = @as(f64, @floatFromInt(@as(i64, @bitCast(result -% pt)))) / std.math.pow(f64, 2.0, 64);
 
     try std.testing.expect(@fabs(diff) < 0.001);
 }

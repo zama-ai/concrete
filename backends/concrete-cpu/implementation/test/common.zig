@@ -54,7 +54,7 @@ pub fn new_bsk(
             ) == 0,
         );
 
-        const stack = @ptrCast([*]u8, c.aligned_alloc(stack_align, stack_size) orelse unreachable)[0..stack_size];
+        const stack = @as([*]u8, @ptrCast(c.aligned_alloc(stack_align, stack_size) orelse unreachable))[0..stack_size];
         defer c.free(stack.ptr);
 
         cpu.concrete_cpu_bootstrap_key_convert_u64_to_fourier(
@@ -83,15 +83,15 @@ pub fn closest_representable(input: u64, level_count: u64, base_log: u64) u64 {
     const non_rep_bit_count: u64 = 64 - (level_count * base_log);
     // We generate a mask which captures the non representable bits
     const one: u64 = 1;
-    const non_rep_mask = one << @intCast(u6, non_rep_bit_count - 1);
+    const non_rep_mask = one << @intCast(non_rep_bit_count - 1);
     // We retrieve the non representable bits
     const non_rep_bits = input & non_rep_mask;
     // We extract the msb of the  non representable bits to perform the rounding
-    const non_rep_msb = non_rep_bits >> @intCast(u6, non_rep_bit_count - 1);
+    const non_rep_msb = non_rep_bits >> @intCast(non_rep_bit_count - 1);
     // We remove the non-representable bits and perform the rounding
-    var res = input >> @intCast(u6, non_rep_bit_count);
+    var res = input >> @intCast(non_rep_bit_count);
     res += non_rep_msb;
-    return res << @intCast(u6, non_rep_bit_count);
+    return res << @intCast(non_rep_bit_count);
 }
 
 pub fn highest_bits(encoded: u64) ![]u8 {
@@ -101,7 +101,7 @@ pub fn highest_bits(encoded: u64) ![]u8 {
 
     const one: u64 = 1;
 
-    const high_bits = (encoded +% (one << @intCast(u6, 64 - precision))) >> @intCast(u6, 64 - precision);
+    const high_bits = (encoded +% (one << @intCast(64 - precision))) >> @intCast(64 - precision);
 
     return std.fmt.bufPrint(buffer, "0.{b:0>11}", .{high_bits});
 }
