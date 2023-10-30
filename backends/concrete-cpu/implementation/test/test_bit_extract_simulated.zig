@@ -45,22 +45,24 @@ fn test3() !void {
     defer allocator.free(out_cts);
 
     cpu.simulation_extract_bit_lwe_ciphertext_u64(
-                out_cts.ptr,
-                message,
-                delta_log,
-                number_of_bits_to_extract,
-                log_poly_size,
-                glwe_dim,
-                small_dim,
-                base_log_ksk, level_ksk,
-                base_log_bsk, level_bsk,
-                ciphertext_modulus_log,
-                security_level,
+        out_cts.ptr,
+        message,
+        delta_log,
+        number_of_bits_to_extract,
+        log_poly_size,
+        glwe_dim,
+        small_dim,
+        base_log_ksk,
+        level_ksk,
+        base_log_bsk,
+        level_bsk,
+        ciphertext_modulus_log,
+        security_level,
     );
 
     var i: u64 = 0;
     while (i < number_of_bits_to_extract) {
-        const expected = (val >> @intCast(u6, number_of_bits_of_message - 1 - i)) & 1;
+        const expected = (val >> @intCast(number_of_bits_of_message - 1 - i)) & 1;
         var decrypted: u64 = out_cts[i];
         // cpu.concrete_cpu_decrypt_lwe_ciphertext_u64(small_sk.ptr, out_cts[(small_dim + 1) * i ..].ptr, lwe_dimension, &decrypted);
 
@@ -77,5 +79,5 @@ fn test3() !void {
 }
 
 test "bit_extract_simu" {
-    try  test3();
+    try test3();
 }
