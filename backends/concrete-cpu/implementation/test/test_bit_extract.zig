@@ -25,7 +25,7 @@ fn test3(csprng: *cpu.Csprng) !void {
 
     const number_of_bits_of_message = 5;
     var raw_fft = c.aligned_alloc(cpu.CONCRETE_FFT_ALIGN, cpu.CONCRETE_FFT_SIZE);
-    const fft = @ptrCast(*cpu.Fft, raw_fft);
+    const fft: *cpu.Fft = @ptrCast(raw_fft);
 
     cpu.concrete_cpu_construct_concrete_fft(fft, polynomial_size);
 
@@ -109,7 +109,7 @@ fn test3(csprng: *cpu.Csprng) !void {
         fft,
     ) == 0);
 
-    const stack = @ptrCast([*]u8, c.aligned_alloc(stack_align, stack_size) orelse unreachable)[0..stack_size];
+    const stack = @as([*]u8, @ptrCast(c.aligned_alloc(stack_align, stack_size) orelse unreachable))[0..stack_size];
     defer c.free(stack.ptr);
 
     cpu.concrete_cpu_extract_bit_lwe_ciphertext_u64(
@@ -138,7 +138,7 @@ fn test3(csprng: *cpu.Csprng) !void {
 
     var i: u64 = 0;
     while (i < number_of_bits_to_extract) {
-        const expected = (val >> @intCast(u6, number_of_bits_of_message - 1 - i)) & 1;
+        const expected = (val >> @intCast(number_of_bits_of_message - 1 - i)) & 1;
         var decrypted: u64 = 0;
         cpu.concrete_cpu_decrypt_lwe_ciphertext_u64(small_sk.ptr, out_cts[(small_dim + 1) * i ..].ptr, small_dim, &decrypted);
 
@@ -153,7 +153,7 @@ fn test3(csprng: *cpu.Csprng) !void {
 test "bit_extract" {
     var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
     defer c.free(raw_csprng);
-    const csprng = @ptrCast(*cpu.Csprng, raw_csprng);
+    const csprng: *cpu.Csprng = @ptrCast(raw_csprng);
     cpu.concrete_cpu_construct_concrete_csprng(
         csprng,
         cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },

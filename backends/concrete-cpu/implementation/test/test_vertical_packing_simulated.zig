@@ -13,7 +13,6 @@ const cpu = @cImport({
 });
 
 fn test3() !void {
-
     const stdout = std.io.getStdOut().writer();
     // -ln2:   k,  N,    n, br_l,br_b, ks_l,ks_b, cb_l,cb_b, pp_l,pp_b,  cost, p_error
     // - 5 :   2, 10,  762,    5,  8,     8,  2,     3,  7,     3, 13,  10058, 6.3e-5
@@ -33,7 +32,6 @@ fn test3() !void {
     const val: u64 = 610; // 10011 00010
     // 98 ; // 00011 00010
 
-
     const one: u64 = 1;
 
     const extract_bits_output_buffer = try allocator.alloc(u64, number_of_input_bits);
@@ -43,7 +41,7 @@ fn test3() !void {
     // Decryption of extracted bits for sanity check
     while (i < number_of_input_bits) {
         const bit: u64 =
-            (val >> @intCast(u6, number_of_input_bits - i - 1)) % 2;
+            (val >> @intCast(number_of_input_bits - i - 1)) % 2;
 
         // cpu.concrete_cpu_encrypt_lwe_ciphertext_u64(small_sk.ptr, extract_bits_output_buffer[(small_dim + 1) * i ..].ptr, bit << 63, small_dim, variance, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
         extract_bits_output_buffer[i] = bit << 63;
@@ -73,7 +71,6 @@ fn test3() !void {
         i += 1;
     }
 
-
     // i = 0;
     // try stdout.print("\n\n",     .{});
     // while (i < luts_length/4) {
@@ -92,8 +89,8 @@ fn test3() !void {
             number_of_input_bits,
             number_of_luts_and_output_cts,
             // luts_length,
-                        1 << number_of_input_bits,
-                        number_of_luts_and_output_cts,
+            1 << number_of_input_bits,
+            number_of_luts_and_output_cts,
             luts.ptr, //PolynomialList<&[u64]>,
             glwe_dim,
             log_poly_size,
