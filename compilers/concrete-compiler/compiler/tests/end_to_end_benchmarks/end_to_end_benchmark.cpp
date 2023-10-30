@@ -57,8 +57,9 @@ static void BM_ExportArguments(benchmark::State &state,
   std::vector<std::string> sources = {description.program};
 
   auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto compiled = engine.compile(sources, artifactFolder).get();
-  auto programInfo = compiled.getProgramInfo();
+  auto compiled = engine.compile(sources, artifactFolder);
+  assert(compiled);
+  auto programInfo = compiled->getProgramInfo();
   auto keyset = getTestKeySetCachePtr()
                     ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
                     .value();
@@ -89,8 +90,9 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   std::vector<std::string> sources = {description.program};
 
   auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto compiled = engine.compile(sources, artifactFolder).get();
-  auto programInfo = compiled.getProgramInfo();
+  auto compiled = engine.compile(sources, artifactFolder);
+  assert(compiled);
+  auto programInfo = compiled->getProgramInfo();
   auto keyset = getTestKeySetCachePtr()
                     ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
                     .value();
@@ -112,7 +114,7 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   }
 
   auto serverProgram = ServerProgram::load(
-      programInfo, compiled.getSharedLibraryPath(compiled.getOutputDirPath()),
+      programInfo, compiled->getSharedLibraryPath(compiled->getOutputDirPath()),
       false);
   auto serverCircuit =
       serverProgram.value()
