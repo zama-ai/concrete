@@ -118,6 +118,8 @@ jobs:
           # we fix it by using a single one (from torch)
           # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
           
+          find .testenv/lib/python3.10/site-packages -name 'lib*.dylib'
+
           ls .testenv/lib/python3.10/site-packages/torch/lib/libiomp5.dylib \
           && rm .testenv/lib/python3.10/site-packages/torch/lib/libiomp5.dylib \
           && ln -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib .testenv/lib/python3.10/site-packages/torch/lib/libiomp5.dylib
