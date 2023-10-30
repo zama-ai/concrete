@@ -52,6 +52,8 @@ pub struct Range {
     pub end: u64,
 }
 
+#[allow(unknown_lints)]
+#[allow(clippy::into_iter_without_iter)]
 impl IntoIterator for &Range {
     type Item = u64;
 
