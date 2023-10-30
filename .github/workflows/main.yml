@@ -41,7 +41,7 @@ jobs:
       push-main: ${{ steps.github.outputs.push-main }}
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}

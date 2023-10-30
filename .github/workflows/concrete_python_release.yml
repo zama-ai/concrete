@@ -58,7 +58,7 @@ jobs:
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
@@ -178,7 +178,7 @@ jobs:
           ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}

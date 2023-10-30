@@ -29,7 +29,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
