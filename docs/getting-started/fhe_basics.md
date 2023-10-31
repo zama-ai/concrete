@@ -21,7 +21,7 @@ A typical FHE program will be made up of a series of operations followed by a Bo
 
 ## Probability of Error
 
-The amount of noise in a ciphertext is not as bounded as it may appear in the above illustration. As the errors are drawn randomly from a Gaussian distribution, they can be of varying size. This means that we need to be careful to ensure the noise terms do not effect the message bits. If the error terms do overflow into the message bits, this can cause an incorrect output (failure) when bootstrapping.
+The amount of noise in a ciphertext is not as bounded as it may appear in the above illustration. As the errors are drawn randomly from a Gaussian distribution, they can be of varying size. This means that we need to be careful to ensure the noise terms do not affect the message bits. If the error terms do overflow into the message bits, this can cause an incorrect output (failure) when bootstrapping.
 
 The default failure probability in Concrete is set for the whole program and is $$ \frac{1}{100000} $$ by default. This means that 1 execution of every 100,000 may result in an incorrect output. To have a lower probability of error, you need to change the cryptographic parameters, likely resulting in worse performance. On the other side of this trade-off, allowing a higher probability of error will likely speed-up operations.
 
