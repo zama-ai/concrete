@@ -118,15 +118,7 @@ jobs:
           # we fix it by using a single one (from torch)
           # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
           
-          find .testenv/lib/python3.10/site-packages -name 'lib*.dylib'
-
-          ls .testenv/lib/python3.10/site-packages/torch/lib/libiomp5.dylib \
-          && rm .testenv/lib/python3.10/site-packages/torch/lib/libiomp5.dylib \
-          && ln -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib .testenv/lib/python3.10/site-packages/torch/lib/libiomp5.dylib
-          
-          ls .testenv/lib/python3.10/site-packages/functorch/.dylibs/libiomp5.dylib \
-          && rm .testenv/lib/python3.10/site-packages/functorch/.dylibs/libiomp5.dylib \
-          && ln -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib .testenv/lib/python3.10/site-packages/functorch/.dylibs/libiomp5.dylib
+          find .testenv/lib/python3.10/site-packages -name 'libomp5*.dylib' | xargs -n 1  ln -f -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib
 
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
           pytest tests -svv -n auto --key-cache "/tmp/KeySetCache" -m "not dataflow"
