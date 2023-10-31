@@ -17,9 +17,6 @@ from concrete.compiler import (
     CompilationFeedback,
     CompilationOptions,
     EvaluationKeys,
-    JITCompilationResult,
-    JITLambda,
-    JITSupport,
     LibraryCompilationResult,
     LibraryLambda,
     LibrarySupport,
@@ -53,10 +50,10 @@ class Server:
     is_simulated: bool
 
     _output_dir: Optional[tempfile.TemporaryDirectory]
-    _support: Union[JITSupport, LibrarySupport]
-    _compilation_result: Union[JITCompilationResult, LibraryCompilationResult]
+    _support: LibrarySupport
+    _compilation_result: LibraryCompilationResult
     _compilation_feedback: CompilationFeedback
-    _server_lambda: Union[JITLambda, LibraryLambda]
+    _server_lambda: LibraryLambda
 
     _mlir: Optional[str]
     _configuration: Optional[Configuration]
@@ -65,9 +62,9 @@ class Server:
         self,
         client_specs: ClientSpecs,
         output_dir: Optional[tempfile.TemporaryDirectory],
-        support: Union[JITSupport, LibrarySupport],
-        compilation_result: Union[JITCompilationResult, LibraryCompilationResult],
-        server_lambda: Union[JITLambda, LibraryLambda],
+        support: LibrarySupport,
+        compilation_result: LibraryCompilationResult,
+        server_lambda: LibraryLambda,
         is_simulated: bool,
     ):
         self.client_specs = client_specs
@@ -359,10 +356,6 @@ class Server:
         public_args = PublicArguments.new(self.client_specs.client_parameters, buffers)
 
         if self.is_simulated:
-            if isinstance(self._support, JITSupport):  # pragma: no cover
-                # JIT to be dropped soon
-                message = "Can't run simulation while using JIT"
-                raise RuntimeError(message)
             public_result = self._support.simulate(self._server_lambda, public_args)
         else:
             public_result = self._support.server_call(
