@@ -16,6 +16,7 @@ pub enum Transition {
 // One instruction partition is computed for each instruction.
 // It represents its partition and relations with other partitions.
 #[derive(Clone, Debug, Default)]
+#[allow(clippy::pedantic)]
 pub struct InstructionPartition {
     // The partition assigned to the instruction
     pub instruction_partition: PartitionIndex,

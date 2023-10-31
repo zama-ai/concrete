@@ -64,6 +64,10 @@ impl IntoIterator for &Range {
 
 impl Range {
     pub fn as_vec(self) -> Vec<u64> {
-        self.into_iter().collect()
+        self.iter().collect()
+    }
+
+    fn iter(&self) -> std::ops::Range<u64> {
+        <&Self as IntoIterator>::into_iter(self)
     }
 }
