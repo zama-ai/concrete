@@ -163,33 +163,22 @@ class Server:
                 set_llvm_debug_flag(True)
             if configuration.compiler_verbose_mode:  # pragma: no cover
                 set_compiler_logging(True)
-            if configuration.jit:  # pragma: no cover
-                # JIT to be dropped soon
-                output_dir = None
+            # pylint: disable=consider-using-with
+            output_dir = tempfile.TemporaryDirectory()
+            output_dir_path = Path(output_dir.name)
+            # pylint: enable=consider-using-with
 
-                support = JITSupport.new()
-
-                mlir_to_compile = mlir if isinstance(mlir, str) else str(mlir)
-                compilation_result = support.compile(mlir_to_compile, options)
-                server_lambda = support.load_server_lambda(compilation_result)
-
-            else:
-                # pylint: disable=consider-using-with
-                output_dir = tempfile.TemporaryDirectory()
-                output_dir_path = Path(output_dir.name)
-                # pylint: enable=consider-using-with
-
-                support = LibrarySupport.new(
-                    str(output_dir_path), generateCppHeader=False, generateStaticLib=False
-                )
-                if isinstance(mlir, str):
-                    compilation_result = support.compile(mlir, options)
-                else:  # MlirModule
-                    assert (
-                        compilation_context is not None
-                    ), "must provide compilation context when compiling MlirModule"
-                    compilation_result = support.compile(mlir, options, compilation_context)
-                server_lambda = support.load_server_lambda(compilation_result)
+            support = LibrarySupport.new(
+                str(output_dir_path), generateCppHeader=False, generateStaticLib=False
+            )
+            if isinstance(mlir, str):
+                compilation_result = support.compile(mlir, options)
+            else:  # MlirModule
+                assert (
+                    compilation_context is not None
+                ), "must provide compilation context when compiling MlirModule"
+                compilation_result = support.compile(mlir, options, compilation_context)
+            server_lambda = support.load_server_lambda(compilation_result)
         finally:
             set_llvm_debug_flag(False)
             set_compiler_logging(False)
@@ -248,11 +237,6 @@ class Server:
                 shutil.make_archive(path, "zip", tmp)
 
             return
-
-        if self._output_dir is None:  # pragma: no cover
-            # JIT to be dropped soon
-            message = "Just-in-Time compilation cannot be saved"
-            raise RuntimeError(message)
 
         with open(Path(self._output_dir.name) / "client.specs.json", "wb") as f:
             f.write(self.client_specs.serialize())

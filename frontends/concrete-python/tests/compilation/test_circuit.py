@@ -191,7 +191,7 @@ def test_client_server_api(helpers):
         return x + 42
 
     inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration)
 
     # for coverage
     circuit.keygen()
@@ -254,7 +254,7 @@ def test_client_server_api_crt(helpers):
         return x**2
 
     inputset = [np.random.randint(0, 200, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration))
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir_path = Path(tmp_dir)
@@ -305,7 +305,7 @@ def test_client_server_api_via_mlir(helpers):
         return x + 42
 
     inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir_path = Path(tmp_dir)
@@ -353,7 +353,7 @@ def test_bad_server_save(helpers):
     Test `save` method of `Server` class with bad parameters.
     """
 
-    configuration = helpers.configuration().fork(jit=True)
+    configuration = helpers.configuration()
 
     @fhe.compiler({"x": "encrypted"})
     def function(x):
