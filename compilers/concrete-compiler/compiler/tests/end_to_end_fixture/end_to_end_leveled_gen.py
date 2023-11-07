@@ -1,5 +1,6 @@
 import argparse
 import random
+import platform
 
 MIN_PRECISON = 1
 from end_to_end_linalg_leveled_gen import P_ERROR
@@ -330,7 +331,10 @@ def main(args):
             may_check_error_rate()
             print("---")
         # mul_eint
-        if p <= 15:
+        # Disable precision on MacOS, since the instance used for by the CI
+        # does not provide enough RAM for a precision higher than 8 bits
+        if (platform.system() == "Darwin" and p <= 8) or \
+           (platform.system() != "Darwin" and p <= 15):
             def gen_random_encodable():
                 while True:
                     a = random.randint(1, max_value)
@@ -990,7 +994,8 @@ def main(args):
 
         print("---")
         # mul_eint
-        if 2 <= p <= 15:
+        if (platform.system() == "Darwin" and 2 <= p <= 8) or \
+           (platform.system() != "Darwin" and 2 <= p <= 15):
             def gen_random_encodable(p):
                 while True:
                     a = random.randint(min_value, max_value)
