@@ -34,4 +34,11 @@ def SCFForallToSCFFor : Pass<"scf-forall-to-scf-for", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::scf::SCFDialect"];
 }
 
+def LinalgFillToLinalgGeneric : Pass<"linalg-fill-to-linalg-generic", "mlir::ModuleOp"> {
+  let summary = "Replaces all occurrences of linalg.fill with tensor.generate";
+  let description = [{ Replaces all occurrences of linalg.fill with tensor.generate }];
+  let constructor = "mlir::concretelang::createLinalgFillToLinalgGenericPass()";
+  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+}
+
 #endif
