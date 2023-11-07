@@ -8,6 +8,7 @@
 
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
@@ -27,6 +28,7 @@ createBatchingPass(int64_t maxBatchSize = std::numeric_limits<int64_t>::max());
 std::unique_ptr<OperationPass<ModuleOp>> createSCFForallToSCFForPass();
 std::unique_ptr<OperationPass<ModuleOp>>
 createTensorEmptyToBufferizationAllocPass();
+std::unique_ptr<OperationPass<ModuleOp>> createLinalgFillToLinalgGenericPass();
 
 } // namespace concretelang
 } // namespace mlir

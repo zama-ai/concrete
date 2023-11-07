@@ -41,4 +41,11 @@ def TensorEmptyToBufferizationAlloc : Pass<"tensor-empty-to-bufferization-alloc"
   let dependentDialects = ["mlir::tensor::TensorDialect", "mlir::bufferization::BufferizationDialect"];
 }
 
+def LinalgFillToLinalgGeneric : Pass<"linalg-fill-to-linalg-generic", "mlir::ModuleOp"> {
+  let summary = "Replaces all occurrences of linalg.fill with tensor.generate";
+  let description = [{ Replaces all occurrences of linalg.fill with tensor.generate }];
+  let constructor = "mlir::concretelang::createLinalgFillToLinalgGenericPass()";
+  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+}
+
 #endif

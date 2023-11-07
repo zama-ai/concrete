@@ -166,6 +166,10 @@ tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(pm, mlir::concretelang::createFHELinalgTilingPass(),
                            enablePass);
 
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createLinalgFillToLinalgGenericPass(),
+      enablePass);
+
   return pm.run(module.getOperation());
 }
 
