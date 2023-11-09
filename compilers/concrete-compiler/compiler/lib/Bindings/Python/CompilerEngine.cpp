@@ -165,7 +165,7 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
       std::move(publicArgs));
 }
 
-MLIR_CAPI_EXPORTED lambdaArgument
+MLIR_CAPI_EXPORTED std::vector<lambdaArgument>
 decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
                concretelang::clientlib::KeySet &keySet,
                concretelang::clientlib::PublicResult &publicResult) {
@@ -176,23 +176,24 @@ decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  if (publicResult.values.size() != 1) {
-    throw std::runtime_error("Tried to decrypt with wrong arity.");
-  }
   auto circuit = maybeProgram.value()
                      .getClientCircuit(clientParameters.programInfo.asReader()
                                            .getCircuits()[0]
                                            .getName())
                      .value();
-  auto maybeProcessed = circuit.processOutput(publicResult.values[0], 0);
-  if (maybeProcessed.has_failure()) {
-    throw std::runtime_error(maybeProcessed.as_failure().error().mesg);
-  }
+  std::vector<lambdaArgument> results;
+  for (auto e : llvm::enumerate(publicResult.values)) {
+    auto maybeProcessed = circuit.processOutput(e.value(), e.index());
+    if (maybeProcessed.has_failure()) {
+      throw std::runtime_error(maybeProcessed.as_failure().error().mesg);
+    }
 
-  mlir::concretelang::LambdaArgument out{maybeProcessed.value()};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
+    mlir::concretelang::LambdaArgument out{maybeProcessed.value()};
+    lambdaArgument tensor_arg{
+        std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+    results.push_back(tensor_arg);
+  }
+  return results;
 }
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
