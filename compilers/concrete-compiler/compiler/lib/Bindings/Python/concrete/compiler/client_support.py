@@ -175,30 +175,34 @@ class ClientSupport(WrapperCpp):
             raise TypeError(
                 f"public_result must be of type PublicResult, not {type(public_result)}"
             )
-        lambda_arg = LambdaArgument.wrap(
-            _ClientSupport.decrypt_result(
-                client_parameters.cpp(), keyset.cpp(), public_result.cpp()
-            )
+        results = _ClientSupport.decrypt_result(
+            client_parameters.cpp(), keyset.cpp(), public_result.cpp()
         )
 
-        output_signs = client_parameters.output_signs()
-        assert len(output_signs) == 1
+        def process_result(result):
+            lambda_arg = LambdaArgument.wrap(result)
+            is_signed = lambda_arg.is_signed()
+            if lambda_arg.is_scalar():
+                return (
+                    lambda_arg.get_signed_scalar()
+                    if is_signed
+                    else lambda_arg.get_scalar()
+                )
 
-        is_signed = lambda_arg.is_signed()
-        if lambda_arg.is_scalar():
-            return (
-                lambda_arg.get_signed_scalar() if is_signed else lambda_arg.get_scalar()
-            )
+            if lambda_arg.is_tensor():
+                return np.array(
+                    lambda_arg.get_signed_tensor_data()
+                    if is_signed
+                    else lambda_arg.get_tensor_data(),
+                    dtype=(np.int64 if is_signed else np.uint64),
+                ).reshape(lambda_arg.get_tensor_shape())
 
-        if lambda_arg.is_tensor():
-            return np.array(
-                lambda_arg.get_signed_tensor_data()
-                if is_signed
-                else lambda_arg.get_tensor_data(),
-                dtype=(np.int64 if is_signed else np.uint64),
-            ).reshape(lambda_arg.get_tensor_shape())
+            raise RuntimeError("unknown return type")
 
-        raise RuntimeError("unknown return type")
+        processed_results = tuple(map(process_result, results))
+        if len(processed_results) == 1:
+            return processed_results[0]
+        return processed_results
 
     @staticmethod
     def _create_lambda_argument(

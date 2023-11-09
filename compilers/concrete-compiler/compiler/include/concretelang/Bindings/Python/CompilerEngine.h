@@ -92,7 +92,7 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
                   concretelang::clientlib::KeySet &keySet,
                   llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args);
 
-MLIR_CAPI_EXPORTED lambdaArgument
+MLIR_CAPI_EXPORTED std::vector<lambdaArgument>
 decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
                concretelang::clientlib::KeySet &keySet,
                concretelang::clientlib::PublicResult &publicResult);
