@@ -447,14 +447,6 @@ class Compiler:
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
-            if len(self.graph.output_nodes) > 1:
-                fmtd_graph = self.graph.format(
-                    highlighted_result=["multiple outputs are not supported"],
-                    show_bounds=False,
-                )
-                message = "Function you are trying to compile cannot be compiled\n\n" + fmtd_graph
-                raise RuntimeError(message)
-
             # in-memory MLIR module
             mlir_context = self.compilation_context.mlir_context()
             mlir_module = GraphConverter().convert(self.graph, self.configuration, mlir_context)
