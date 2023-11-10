@@ -647,3 +647,37 @@ def test_statistics(function, parameters, expected_statistics, helpers):
 Expected {name} to be {expected_value} but it's {getattr(circuit, name)}
 
         """.strip()
+
+
+def test_setting_keys(helpers):
+    """
+    Test setting circuit.keys explicitly.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**3), np.random.randint(0, 2**5)) for _ in range(100)]
+    circuit = f.compile(inputset, configuration.fork(use_insecure_key_cache=False))
+
+    circuit.keygen(force=True, seed=100)
+    keys1 = circuit.keys.serialize()
+
+    circuit.keygen(force=True, seed=200)
+    keys2 = circuit.keys.serialize()
+
+    assert keys1 != keys2
+
+    sample = circuit.encrypt(3, 5)
+    output = circuit.run(*sample)
+
+    circuit.keys = fhe.Keys.deserialize(keys1)
+    result = circuit.decrypt(output)
+    assert result != 8
+
+    circuit.keys = fhe.Keys.deserialize(keys2)
+    result = circuit.decrypt(output)
+    assert result == 8
