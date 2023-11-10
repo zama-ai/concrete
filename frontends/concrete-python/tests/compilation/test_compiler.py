@@ -347,68 +347,6 @@ return %3
     )
 
 
-def test_direct_circuit_multi_output(helpers):
-    """
-    Test `run` method of `Circuit` class with bad parameters.
-    """
-
-    configuration = helpers.configuration()
-    with pytest.raises(RuntimeError) as excinfo:
-
-        @fhe.circuit({"x": "encrypted", "y": "encrypted"}, configuration)
-        def f(x: fhe.uint4, y: fhe.uint4):
-            return x, y
-
-    assert (
-        str(excinfo.value)
-        == """\
-Function you are trying to compile cannot be compiled
-
-%0 = x        # EncryptedScalar<uint4>
-%1 = y        # EncryptedScalar<uint4>
-return %0, %1
-^^^^^^^^^^^^^ multiple outputs are not supported\
-"""
-    )
-
-
-def test_circuit_multi_output(helpers):
-    """
-    Test `run` method of `Circuit` class with bad parameters.
-    """
-
-    configuration = helpers.configuration()
-
-    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
-    def f(x, y):
-        return x, y
-
-    inputset = [(0, 0), (15, 15)]
-    graph = f.trace(inputset)
-    assert (
-        graph.format()
-        == """\
-%0 = x        # EncryptedScalar<uint4>        ∈ [0, 15]
-%1 = y        # EncryptedScalar<uint4>        ∈ [0, 15]
-return %0, %1\
-"""
-    )
-
-    with pytest.raises(RuntimeError) as excinfo:
-        f.compile(inputset, configuration)
-    assert (
-        str(excinfo.value)
-        == """\
-Function you are trying to compile cannot be compiled
-
-%0 = x        # EncryptedScalar<uint4>
-%1 = y        # EncryptedScalar<uint4>
-return %0, %1
-^^^^^^^^^^^^^ multiple outputs are not supported\
-"""
-    )
-
-
 def test_compiler_compile_with_single_tuple_inputset(helpers):
     """
     Test compiling a single argument function with an inputset made of single element tuples.
