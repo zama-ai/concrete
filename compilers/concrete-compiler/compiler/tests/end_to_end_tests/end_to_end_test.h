@@ -23,7 +23,7 @@ const double TEST_ERROR_RATE = 1.0 - 0.999936657516;
 /// options, the library path if the --library options has been specified and
 /// the parsed description files
 std::tuple<mlir::concretelang::CompilationOptions,
-           std::vector<EndToEndDescFile>>
+           std::vector<EndToEndDescFile>, int>
 parseEndToEndCommandLine(int argc, char **argv) {
   namespace optimizer = mlir::concretelang::optimizer;
   // TODO - Well reset other llvm command line options registered but assert on
@@ -101,6 +101,11 @@ parseEndToEndCommandLine(int argc, char **argv) {
                               llvm::cl::desc("Set the compiler verbosity"),
                               llvm::cl::init(false));
 
+  // e2e test options
+  llvm::cl::opt<int> retryFailingTests("retry-failing-tests",
+                                       llvm::cl::desc("Retry test which fails"),
+                                       llvm::cl::init(0));
+
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
   // Build compilation options
@@ -129,7 +134,8 @@ parseEndToEndCommandLine(int argc, char **argv) {
     parsedDescriptionFiles.push_back(f);
   }
 
-  return std::make_tuple(compilationOptions, parsedDescriptionFiles);
+  return std::make_tuple(compilationOptions, parsedDescriptionFiles,
+                         retryFailingTests.getValue());
 }
 
 std::string getOptionsName(mlir::concretelang::CompilationOptions options) {
