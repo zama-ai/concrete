@@ -6,7 +6,12 @@ from typing import Dict, List
 
 import z3
 
-from ...compilation.configuration import BitwiseStrategy, ComparisonStrategy, MultivariateStrategy
+from ...compilation.configuration import (
+    BitwiseStrategy,
+    ComparisonStrategy,
+    MinMaxStrategy,
+    MultivariateStrategy,
+)
 from ...dtypes import Integer
 from ...representation import Graph, Node, Operation
 from . import GraphProcessor
@@ -30,6 +35,7 @@ class AssignBitWidths(GraphProcessor):
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
     multivariate_strategy_preference: List[MultivariateStrategy]
+    min_max_strategy_preference: List[MinMaxStrategy]
 
     def __init__(
         self,
@@ -38,12 +44,14 @@ class AssignBitWidths(GraphProcessor):
         bitwise_strategy_preference: List[BitwiseStrategy],
         shifts_with_promotion: bool,
         multivariate_strategy_preference: List[MultivariateStrategy],
+        min_max_strategy_preference: List[MinMaxStrategy],
     ):
         self.single_precision = single_precision
         self.comparison_strategy_preference = comparison_strategy_preference
         self.bitwise_strategy_preference = bitwise_strategy_preference
         self.shifts_with_promotion = shifts_with_promotion
         self.multivariate_strategy_preference = multivariate_strategy_preference
+        self.min_max_strategy_preference = min_max_strategy_preference
 
     def apply(self, graph: Graph):
         solver = z3.Solver()
@@ -59,6 +67,7 @@ class AssignBitWidths(GraphProcessor):
             self.bitwise_strategy_preference,
             self.shifts_with_promotion,
             self.multivariate_strategy_preference,
+            self.min_max_strategy_preference,
         )
 
         nodes = graph.query_nodes(ordered=True)
@@ -109,6 +118,7 @@ class AdditionalConstraints:
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
     multivariate_strategy_preference: List[MultivariateStrategy]
+    min_max_strategy_preference: List[MinMaxStrategy]
 
     node: Node
     bit_width: z3.Int
@@ -124,6 +134,7 @@ class AdditionalConstraints:
         bitwise_strategy_preference: List[BitwiseStrategy],
         shifts_with_promotion: bool,
         multivariate_strategy_preference: List[MultivariateStrategy],
+        min_max_strategy_preference: List[MinMaxStrategy],
     ):
         self.solver = solver
         self.graph = graph
@@ -133,6 +144,7 @@ class AdditionalConstraints:
         self.bitwise_strategy_preference = bitwise_strategy_preference
         self.shifts_with_promotion = shifts_with_promotion
         self.multivariate_strategy_preference = multivariate_strategy_preference
+        self.min_max_strategy_preference = min_max_strategy_preference
 
     def generate_for(self, node: Node, bit_width: z3.Int):
         """
@@ -305,6 +317,47 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
+    def min_max(self, node: Node, preds: List[Node]):
+        assert len(preds) == 2
+
+        x = preds[0]
+        y = preds[1]
+
+        assert x.output.is_encrypted
+        assert y.output.is_encrypted
+
+        assert isinstance(x.output.dtype, Integer)
+        assert isinstance(y.output.dtype, Integer)
+        assert isinstance(node.output.dtype, Integer)
+
+        x_bit_width = x.output.dtype.bit_width
+        y_bit_width = y.output.dtype.bit_width
+        result_bit_width = node.output.dtype.bit_width
+
+        if y_bit_width != result_bit_width:
+            x_can_be_added_directly = result_bit_width == x_bit_width
+            x_has_smaller_bit_width = x_bit_width < y_bit_width
+            if x_can_be_added_directly or x_has_smaller_bit_width:
+                x, y = y, x
+
+        strategies = self.min_max_strategy_preference
+        fallback = [
+            MinMaxStrategy.CHUNKED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(x.output, y.output):
+                new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
+                self.solver.add(self.bit_widths[x] >= new_x_bit_width)
+                self.solver.add(self.bit_widths[y] >= new_y_bit_width)
+
+                if strategy == MinMaxStrategy.ONE_TLU_PROMOTED:
+                    self.solver.add(self.bit_widths[x] == self.bit_widths[y])
+                    self.solver.add(self.bit_widths[y] == self.bit_widths[node])
+
+                node.properties["strategy"] = strategy
+                break
+
     # ==========
     # Operations
     # ==========
@@ -427,6 +480,12 @@ class AdditionalConstraints:
         },
     }
 
+    maximum = {
+        all_inputs_are_encrypted: {
+            min_max,
+        },
+    }
+
     maxpool1d = {
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
@@ -440,6 +499,12 @@ class AdditionalConstraints:
     maxpool3d = {
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
+    }
+
+    minimum = {
+        all_inputs_are_encrypted: {
+            min_max,
+        },
     }
 
     multiply = {

@@ -153,6 +153,16 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             ValueError,
             "'bad' is not a valid 'MultivariateStrategy' (promoted, casted)",
         ),
+        pytest.param(
+            {"min_max_strategy_preference": 42},
+            TypeError,
+            "42 cannot be parsed to a MinMaxStrategy",
+        ),
+        pytest.param(
+            {"min_max_strategy_preference": "bad"},
+            ValueError,
+            "'bad' is not a valid 'MinMaxStrategy' (one-tlu-promoted, three-tlu-casted, chunked)",
+        ),
     ],
 )
 def test_configuration_bad_fork(kwargs, expected_error, expected_message):

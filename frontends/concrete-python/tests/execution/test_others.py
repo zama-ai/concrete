@@ -722,6 +722,20 @@ def copy_modify(x):
             },
             id="fhe.zeros_like(x) + x",
         ),
+        pytest.param(
+            lambda x: np.minimum(x, 0),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10]},
+            },
+            id="np.minimum(x, 0)",
+        ),
+        pytest.param(
+            lambda x: np.maximum(x, 0),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10]},
+            },
+            id="np.maximum(x, 0)",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):

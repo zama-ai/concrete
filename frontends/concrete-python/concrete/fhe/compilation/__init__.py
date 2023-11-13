@@ -12,6 +12,7 @@ from .configuration import (
     BitwiseStrategy,
     ComparisonStrategy,
     Configuration,
+    MinMaxStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
 )
