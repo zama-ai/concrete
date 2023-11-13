@@ -9,7 +9,7 @@ import numpy as np
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 # ruff: noqa:E402
-# pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position,no-member
 import argparse
 
 # ruff: noqa:E402
