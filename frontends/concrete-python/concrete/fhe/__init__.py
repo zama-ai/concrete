@@ -19,6 +19,7 @@ from .compilation import (
     DebugArtifacts,
     EncryptionStatus,
     Keys,
+    MinMaxStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
     Server,

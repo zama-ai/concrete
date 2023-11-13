@@ -370,6 +370,8 @@ class Node:
                 "left_shift",
                 "less",
                 "less_equal",
+                "maximum",
+                "minimum",
                 "not_equal",
                 "right_shift",
             ]

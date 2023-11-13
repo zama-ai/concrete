@@ -24,7 +24,7 @@ from mlir.ir import OpResult as MlirOperation
 from mlir.ir import RankedTensorType
 from mlir.ir import Type as MlirType
 
-from ..compilation.configuration import BitwiseStrategy, ComparisonStrategy
+from ..compilation.configuration import BitwiseStrategy, ComparisonStrategy, MinMaxStrategy
 from ..dtypes import Integer
 from ..representation import Graph, Node
 from ..values import ValueDescription
@@ -1097,6 +1097,307 @@ class Context:
             shifted_xs,
         )
 
+    def minimum_maximum_with_trick(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        y: Conversion,
+        x_minus_y_dtype: Integer,
+        intermediate_table: List[int],
+    ) -> Conversion:
+        """
+        Calculate minimum or maximum between two encrypted values using minimum or maximum trick.
+
+        Idea:
+            min(x, y) <==> min(x - y, 0) + y
+            max(x, y) <==> max(x - y, 0) + y
+
+        Additional Args:
+            x_minus_y_dtype (Integer):
+                minimal dtype that can be used to store x - y without overflows
+        """
+
+        maximum_input_bit_width = max(x.bit_width, y.bit_width)
+
+        intermediate_bit_width = max(x_minus_y_dtype.bit_width, maximum_input_bit_width)
+        intermediate_scalar_type = self.esint(intermediate_bit_width)
+
+        final_addition_rhs = y
+
+        if x.bit_width != intermediate_bit_width:
+            x = self.cast(self.tensor(intermediate_scalar_type, x.shape), x)
+        if y.bit_width != intermediate_bit_width:
+            y = self.cast(self.tensor(intermediate_scalar_type, y.shape), y)
+
+        assert x.bit_width == y.bit_width
+
+        x = self.to_signed(x)
+        y = self.to_signed(y)
+
+        intermediate_type = self.tensor(intermediate_scalar_type, resulting_type.shape)
+        x_minus_y = self.sub(intermediate_type, x, y)
+
+        if not x_minus_y_dtype.is_signed:
+            x_minus_y = self.to_unsigned(x_minus_y)
+
+        final_addition_lhs = self.tlu(
+            resulting_type,
+            x_minus_y,
+            intermediate_table,
+        )
+
+        if final_addition_rhs.bit_width != resulting_type.bit_width:
+            final_addition_rhs_type = (self.eint if final_addition_rhs.is_unsigned else self.esint)(
+                resulting_type.bit_width
+            )
+            final_addition_rhs = self.cast(
+                self.tensor(final_addition_rhs_type, shape=final_addition_rhs.shape),
+                final_addition_rhs,
+            )
+
+        return self.add(resulting_type, final_addition_lhs, final_addition_rhs)
+
+    def minimum_maximum_with_chunks(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        y: Conversion,
+        operation: str,
+    ) -> Conversion:
+        """
+        Calculate minimum or maximum between two encrypted values using chunks.
+        """
+
+        # make sure the operation is supported
+        assert operation in ["min", "max"]
+
+        # compare x and y
+        comparison_type = self.tensor(self.eint(1), resulting_type.shape)
+        if operation == "min":
+            select_x = self.less(comparison_type, x, y)
+        else:
+            select_x = self.greater(comparison_type, x, y)
+
+        # remember original bit widths of x and y
+        x_original_bit_width = x.original_bit_width
+        y_original_bit_width = y.original_bit_width
+
+        # remember original signednesses of x and y
+        x_is_signed = x.is_signed
+        y_is_signed = y.is_signed
+
+        # sanitize x
+        if x_is_signed:
+            signed_offset = 2 ** (x_original_bit_width - 1)
+            sanitizer = self.constant(self.i(x.bit_width + 1), signed_offset)
+            x = self.to_unsigned(self.add(x.type, x, sanitizer))
+
+        # sanitize y
+        if y_is_signed:
+            signed_offset = 2 ** (y_original_bit_width - 1)
+            sanitizer = self.constant(self.i(y.bit_width + 1), signed_offset)
+            y = self.to_unsigned(self.add(y.type, y, sanitizer))
+
+        # multiply sanitized `x` with `select_x`
+        if x.bit_width > x_original_bit_width:
+            shifted_x = self.mul(x.type, x, self.constant(self.i(x.bit_width + 1), 2))
+            packing = self.add(
+                self.tensor(self.eint(x.bit_width), select_x.shape),
+                shifted_x,
+                self.cast(self.tensor(self.eint(x.bit_width), select_x.shape), select_x),
+            )
+
+            table = []
+            for i in range(2**x.bit_width):
+                if i % 2 == 0:
+                    table.append(0)
+                    continue
+
+                i = i >> 1
+                if x_is_signed:
+                    i -= 2 ** (x_original_bit_width - 1)
+
+                table.append(i)
+
+            x_contribution = self.tlu(
+                resulting_type,
+                packing,
+                table,
+            )
+        else:
+            mid_point = x_original_bit_width // 2
+            chunk_ranges = [
+                (0, mid_point),
+                (mid_point, x_original_bit_width),
+            ]
+
+            x_contribution_chunks = []
+            for chunk_start, chunk_end in chunk_ranges:
+                chunk_size = chunk_end - chunk_start
+                if chunk_size == 0:
+                    continue
+
+                shift_to_clear_lsbs = chunk_start
+                mask_to_clear_msbs = (2**chunk_size) - 1
+
+                x_chunk_lut = [
+                    ((x >> shift_to_clear_lsbs) & mask_to_clear_msbs) << 1
+                    for x in range(2**x.bit_width)
+                ]
+
+                packing_element_type = self.eint(chunk_size + 1)
+                x_chunk = self.tlu(self.tensor(packing_element_type, shape=x.shape), x, x_chunk_lut)
+
+                packing = self.add(
+                    self.tensor(packing_element_type, shape=select_x.shape),
+                    x_chunk,
+                    self.cast(self.tensor(packing_element_type, select_x.shape), select_x),
+                )
+
+                x_contribution_chunk = self.tlu(
+                    resulting_type,
+                    packing,
+                    [
+                        (packing >> 1) << chunk_start if packing % 2 == 1 else 0
+                        for packing in range(2**packing_element_type.bit_width)
+                    ],
+                )
+                x_contribution_chunks.append(x_contribution_chunk)
+
+            x_contribution = (
+                x_contribution_chunks[0]
+                if len(x_contribution_chunks) == 1
+                else self.add(
+                    resulting_type,
+                    x_contribution_chunks[0],
+                    x_contribution_chunks[1],
+                )
+            )
+
+            # - x_contribution is either
+            #   - 0
+            #   - x (if x was unsigned)
+            #   - sanitized x (if x was signed)
+
+            # remove sanitization of x if it's signed and selected
+            if x_is_signed:
+                signed_offset = 2 ** (x_original_bit_width - 1)
+                sanitizer_or_zero = self.mul(
+                    resulting_type,
+                    self.cast(resulting_type, select_x),
+                    self.constant(self.i(resulting_type.bit_width + 1), signed_offset),
+                )
+                x_contribution = self.sub(
+                    resulting_type,
+                    self.to_signed(x_contribution),
+                    sanitizer_or_zero,
+                )
+
+        # multiply sanitized `y` with `1 - select_y`
+        if y.bit_width > y_original_bit_width:
+            shifted_y = self.mul(y.type, y, self.constant(self.i(y.bit_width + 1), 2))
+            packing = self.add(
+                self.tensor(self.eint(y.bit_width), select_x.shape),
+                shifted_y,
+                self.cast(self.tensor(self.eint(y.bit_width), select_x.shape), select_x),
+            )
+
+            table = []
+            for i in range(2**y.bit_width):
+                if i % 2 == 1:
+                    table.append(0)
+                    continue
+
+                i = i >> 1
+                if y_is_signed:
+                    i -= 2 ** (y_original_bit_width - 1)
+
+                table.append(i)
+
+            y_contribution = self.tlu(
+                resulting_type,
+                packing,
+                table,
+            )
+        else:
+            mid_point = y_original_bit_width // 2
+            chunk_ranges = [
+                (0, mid_point),
+                (mid_point, y_original_bit_width),
+            ]
+
+            y_contribution_chunks = []
+            for chunk_start, chunk_end in chunk_ranges:
+                chunk_size = chunk_end - chunk_start
+                if chunk_size == 0:
+                    continue
+
+                shift_to_clear_lsbs = chunk_start
+                mask_to_clear_msbs = (2**chunk_size) - 1
+
+                y_chunk_lut = [
+                    ((y >> shift_to_clear_lsbs) & mask_to_clear_msbs) << 1
+                    for y in range(2**y.bit_width)
+                ]
+
+                packing_element_type = self.eint(chunk_size + 1)
+                y_chunk = self.tlu(self.tensor(packing_element_type, shape=y.shape), y, y_chunk_lut)
+
+                packing = self.add(
+                    self.tensor(packing_element_type, shape=select_x.shape),
+                    y_chunk,
+                    self.cast(self.tensor(packing_element_type, select_x.shape), select_x),
+                )
+
+                y_contribution_chunk = self.tlu(
+                    resulting_type,
+                    packing,
+                    [
+                        (packing >> 1) << chunk_start if packing % 2 == 0 else 0
+                        for packing in range(2**packing_element_type.bit_width)
+                    ],
+                )
+                y_contribution_chunks.append(y_contribution_chunk)
+
+            y_contribution = (
+                y_contribution_chunks[0]
+                if len(y_contribution_chunks) == 1
+                else self.add(
+                    resulting_type,
+                    y_contribution_chunks[0],
+                    y_contribution_chunks[1],
+                )
+            )
+
+            # - y_contribution is either
+            #   - 0
+            #   - y (if y was unsigned)
+            #   - sanitized y (if y was signed)
+
+            # remove sanitization of y if it's signed and selected
+            if y_is_signed:
+                signed_offset = 2 ** (y_original_bit_width - 1)
+                sanitizer_or_zero = self.mul(
+                    resulting_type,
+                    self.cast(
+                        resulting_type,
+                        self.sub(
+                            self.tensor(self.eint(1), select_x.shape),
+                            self.constant(self.i(2), 1),
+                            select_x,
+                        ),
+                    ),
+                    self.constant(self.i(resulting_type.bit_width + 1), signed_offset),
+                )
+                y_contribution = self.sub(
+                    resulting_type,
+                    self.to_signed(y_contribution),
+                    sanitizer_or_zero,
+                )
+
+        # add contributions of x and y to compute the result
+        return self.add(resulting_type, x_contribution, y_contribution)
+
     # operations
 
     # each operation is checked for compatibility
@@ -1965,6 +2266,79 @@ class Context:
 
         return self.operation(operation, resulting_type, x.result, y.result)
 
+    def maximum(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        y: Conversion,
+    ) -> Conversion:
+        maximum_input_bit_width = max(x.bit_width, y.bit_width)
+        if maximum_input_bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            highlights = {
+                self.converting: [
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit maximum operation is supported"
+                ],
+            }
+            for operand in [x, y]:
+                if operand.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                    highlights[operand.origin] = [
+                        f"this {operand.bit_width}-bit value "
+                        f"is used as an operand to a maximum operation"
+                    ]
+                    if operand.bit_width != operand.original_bit_width:  # pragma: no cover
+                        highlights[operand.origin].append(
+                            "("
+                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"during compilation because of its relation with other operations"
+                            ")"
+                        )
+            self.error(highlights)
+
+        if y.bit_width != resulting_type.bit_width:
+            x_can_be_added_directly = resulting_type.bit_width == x.bit_width
+            x_has_smaller_bit_width = x.bit_width < y.bit_width
+            if x_can_be_added_directly or x_has_smaller_bit_width:
+                x, y = y, x
+
+        assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
+
+        x_dtype = Integer(is_signed=x.is_signed, bit_width=x.original_bit_width)
+        y_dtype = Integer(is_signed=y.is_signed, bit_width=y.original_bit_width)
+
+        x_minus_y_min = x_dtype.min() - y_dtype.max()
+        x_minus_y_max = x_dtype.max() - y_dtype.min()
+
+        x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+        x_minus_y_dtype = Integer.that_can_represent(x_minus_y_range)
+
+        maximum_trick_table = []
+        if x_minus_y_dtype.is_signed:
+            maximum_trick_table += [i for i in range(2 ** (x_minus_y_dtype.bit_width - 1))]
+            maximum_trick_table += [0] * 2 ** (x_minus_y_dtype.bit_width - 1)
+        else:
+            maximum_trick_table += [i for i in range(2**x_minus_y_dtype.bit_width)]
+
+        if x_minus_y_dtype.bit_width <= maximum_input_bit_width:
+            return self.minimum_maximum_with_trick(
+                resulting_type,
+                x,
+                y,
+                x_minus_y_dtype,
+                maximum_trick_table,
+            )
+
+        strategy_preference = self.converting.properties["strategy"]
+        if strategy_preference == MinMaxStrategy.THREE_TLU_CASTED:
+            return self.minimum_maximum_with_trick(
+                resulting_type,
+                x,
+                y,
+                x_minus_y_dtype,
+                maximum_trick_table,
+            )
+
+        return self.minimum_maximum_with_chunks(resulting_type, x, y, operation="max")
+
     def maxpool2d(
         self,
         resulting_type: ConversionType,
@@ -2013,6 +2387,80 @@ class Context:
         )
 
         return self.to_signedness(result, of=resulting_type)
+
+    def minimum(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        y: Conversion,
+    ) -> Conversion:
+        maximum_input_bit_width = max(x.bit_width, y.bit_width)
+        if maximum_input_bit_width > MAXIMUM_TLU_BIT_WIDTH:
+            highlights = {
+                self.converting: [
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit minimum operation is supported"
+                ],
+            }
+            for operand in [x, y]:
+                if operand.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                    highlights[operand.origin] = [
+                        f"this {operand.bit_width}-bit value "
+                        f"is used as an operand to a minimum operation"
+                    ]
+                    if operand.bit_width != operand.original_bit_width:  # pragma: no cover
+                        highlights[operand.origin].append(
+                            "("
+                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"during compilation because of its relation with other operations"
+                            ")"
+                        )
+            self.error(highlights)
+
+        if y.bit_width != resulting_type.bit_width:
+            x_can_be_added_directly = resulting_type.bit_width == x.bit_width
+            x_has_smaller_bit_width = x.bit_width < y.bit_width
+            if x_can_be_added_directly or x_has_smaller_bit_width:
+                x, y = y, x
+
+        assert resulting_type.is_encrypted and x.is_encrypted and y.is_encrypted
+
+        x_dtype = Integer(is_signed=x.is_signed, bit_width=x.original_bit_width)
+        y_dtype = Integer(is_signed=y.is_signed, bit_width=y.original_bit_width)
+
+        x_minus_y_min = x_dtype.min() - y_dtype.max()
+        x_minus_y_max = x_dtype.max() - y_dtype.min()
+
+        x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+        x_minus_y_dtype = Integer.that_can_represent(x_minus_y_range)
+
+        minimum_trick_table = []
+        if x_minus_y_dtype.is_signed:
+            minimum_trick_table += [0] * 2 ** (x_minus_y_dtype.bit_width - 1)
+            for value in range(-(2 ** (x_minus_y_dtype.bit_width - 1)), 0):
+                minimum_trick_table.append(value)
+        else:
+            minimum_trick_table += [0] * 2**x_minus_y_dtype.bit_width
+
+        if x_minus_y_dtype.bit_width <= maximum_input_bit_width:
+            return self.minimum_maximum_with_trick(
+                resulting_type,
+                x,
+                y,
+                x_minus_y_dtype,
+                minimum_trick_table,
+            )
+
+        strategy_preference = self.converting.properties["strategy"]
+        if strategy_preference == MinMaxStrategy.THREE_TLU_CASTED:
+            return self.minimum_maximum_with_trick(
+                resulting_type,
+                x,
+                y,
+                x_minus_y_dtype,
+                minimum_trick_table,
+            )
+
+        return self.minimum_maximum_with_chunks(resulting_type, x, y, operation="min")
 
     def mul(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         if x.is_clear and y.is_clear:
