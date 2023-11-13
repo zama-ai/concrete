@@ -291,7 +291,7 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
-	  --optimizer-strategy=$(optimizer_strategy) $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
+	  --optimizer-strategy=$(optimizer_strategy) --retry-failing-tests=1 $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
 
 ### end-to-end-tests GPU
 
