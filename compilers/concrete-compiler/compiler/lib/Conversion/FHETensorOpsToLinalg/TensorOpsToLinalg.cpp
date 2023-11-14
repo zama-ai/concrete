@@ -45,6 +45,21 @@ inline void forwardOptimizerID(mlir::Operation *source,
   destination->setAttr("TFHE.OId", optimizerIdAttr);
 }
 
+inline void forwardLastOptimizerID(mlir::Operation *source,
+                                   mlir::Operation *destination) {
+  auto optimizerIdAttr =
+      source->getAttrOfType<mlir::DenseI32ArrayAttr>("TFHE.OId");
+  if (optimizerIdAttr == nullptr) {
+    mlir::concretelang::log_verbose() << "No TFHE.OId\n";
+    return;
+  }
+
+  mlir::Builder builder(source);
+
+  destination->setAttr("TFHE.OId", builder.getI32IntegerAttr(
+                                       optimizerIdAttr.asArrayRef().back()));
+}
+
 template <typename DotOp, typename FHEMulOp>
 struct DotToLinalgGeneric : public ::mlir::OpRewritePattern<DotOp> {
   DotToLinalgGeneric(
@@ -267,6 +282,7 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
     //  linalg.init_tensor for initial value
     mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(
         linalgOp.getLoc(), resultTy, mlir::ValueRange{});
+    forwardOptimizerID(linalgOp, init.getDefiningOp());
 
     // Create the affine #maps_0
     llvm::SmallVector<mlir::AffineMap, 3> maps{
@@ -511,6 +527,8 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
     mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(
         fheLinalgLutOp.getLoc(), resultTy, mlir::ValueRange{});
 
+    forwardLastOptimizerID(fheLinalgLutOp, init.getDefiningOp());
+
     auto lutsShape = lutsTy.getShape();
     auto lut_size = lutsShape[lutsShape.size() - 1];
     auto indexOfInput = getBroadcastedAffineMap(resultTy, tensorTy, rewriter);
@@ -657,6 +675,8 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
     //  linalg.init_tensor for initial value
     mlir::Value init = rewriter.create<FHE::ZeroTensorOp>(
         lutOp.getLoc(), resultTy, mlir::ValueRange{});
+
+    forwardLastOptimizerID(lutOp, init.getDefiningOp());
 
     // Create the affine #maps_0
     llvm::SmallVector<mlir::AffineMap, 2> maps{

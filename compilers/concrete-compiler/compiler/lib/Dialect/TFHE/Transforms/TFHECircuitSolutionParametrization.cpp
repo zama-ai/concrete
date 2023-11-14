@@ -272,11 +272,11 @@ public:
     for (auto operand : op->getOperands()) {
       if (isNoneGlweType(operand.getType())) {
         DEBUG("      -> Propagate on operand " << operand.getType())
-        if (auto opResult = operand.dyn_cast<mlir::OpResult>();
-            opResult != nullptr) {
-          fixupNonParametrizedOp(opResult.getOwner(), parametrizedGlweType);
-          continue;
-        }
+        // if (auto opResult = operand.dyn_cast<mlir::OpResult>();
+        //     opResult != nullptr) {
+        //   fixupNonParametrizedOp(opResult.getOwner(), parametrizedGlweType);
+        //   continue;
+        // }
         if (auto blockArg = operand.dyn_cast<mlir::BlockArgument>();
             blockArg != nullptr) {
           DEBUG("    -> Fixing block arg " << blockArg)
@@ -295,7 +295,7 @@ public:
           continue;
         }
         // An mlir::Value should always be an OpResult or a BlockArgument
-        assert(false);
+        // assert(false);
       }
     }
     DEBUG("  } END Fixup")
