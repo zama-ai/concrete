@@ -83,6 +83,15 @@ pub fn has_round(dag: &unparametrized::OperationDag) -> bool {
     false
 }
 
+pub fn has_unsafe_cast(dag: &unparametrized::OperationDag) -> bool {
+    for op in &dag.operators {
+        if matches!(op, Op::UnsafeCast { .. }) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn assert_no_round(dag: &unparametrized::OperationDag) {
     assert!(!has_round(dag));
 }

@@ -1,0 +1,65 @@
+description: bits_extract_8
+program: |
+  func.func @main(%input: !FHE.eint<8>) -> !FHE.eint<8> {
+
+  %input_lsb_8 = "FHE.lsb"(%input) : (!FHE.eint<8>) -> !FHE.eint<8>
+  %bit_0 = "FHE.reinterpret_precision"(%input_lsb_8) : (!FHE.eint<8>) -> !FHE.eint<8>
+  %input_clear_up_to_0 = "FHE.sub_eint"(%input, %input_lsb_8) : (!FHE.eint<8>, !FHE.eint<8>) -> !FHE.eint<8>
+  %truncated_1 = "FHE.reinterpret_precision"(%input_clear_up_to_0) : (!FHE.eint<8>) -> !FHE.eint<7>
+
+  %truncated_1_lsb_7 = "FHE.lsb"(%truncated_1) : (!FHE.eint<7>) -> !FHE.eint<7>
+  %bit_1 = "FHE.reinterpret_precision"(%truncated_1_lsb_7) : (!FHE.eint<7>) -> !FHE.eint<8>
+  %input_clear_up_to_1 = "FHE.sub_eint"(%truncated_1, %truncated_1_lsb_7) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
+  %truncated_2 = "FHE.reinterpret_precision"(%input_clear_up_to_1) : (!FHE.eint<7>) -> !FHE.eint<6>
+
+  %truncated_2_lsb_6 = "FHE.lsb"(%truncated_2) : (!FHE.eint<6>) -> !FHE.eint<6>
+  %bit_2 = "FHE.reinterpret_precision"(%truncated_2_lsb_6) : (!FHE.eint<6>) -> !FHE.eint<8>
+  %input_clear_up_to_2 = "FHE.sub_eint"(%truncated_2, %truncated_2_lsb_6) : (!FHE.eint<6>, !FHE.eint<6>) -> !FHE.eint<6>
+  %truncated_3 = "FHE.reinterpret_precision"(%input_clear_up_to_2) : (!FHE.eint<6>) -> !FHE.eint<5>
+
+  %truncated_3_lsb_5 = "FHE.lsb"(%truncated_3) : (!FHE.eint<5>) -> !FHE.eint<5>
+  %bit_3 = "FHE.reinterpret_precision"(%truncated_3_lsb_5) : (!FHE.eint<5>) -> !FHE.eint<8>
+  %input_clear_up_to_3 = "FHE.sub_eint"(%truncated_3, %truncated_3_lsb_5) : (!FHE.eint<5>, !FHE.eint<5>) -> !FHE.eint<5>
+  %truncated_4 = "FHE.reinterpret_precision"(%input_clear_up_to_3) : (!FHE.eint<5>) -> !FHE.eint<4>
+
+  %truncated_4_lsb_4 = "FHE.lsb"(%truncated_4) : (!FHE.eint<4>) -> !FHE.eint<4>
+  %bit_4 = "FHE.reinterpret_precision"(%truncated_4_lsb_4) : (!FHE.eint<4>) -> !FHE.eint<8>
+  %input_clear_up_to_4 = "FHE.sub_eint"(%truncated_4, %truncated_4_lsb_4) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
+  %truncated_5 = "FHE.reinterpret_precision"(%input_clear_up_to_4) : (!FHE.eint<4>) -> !FHE.eint<3>
+
+  %truncated_5_lsb_3 = "FHE.lsb"(%truncated_5) : (!FHE.eint<3>) -> !FHE.eint<3>
+  %bit_5 = "FHE.reinterpret_precision"(%truncated_5_lsb_3) : (!FHE.eint<3>) -> !FHE.eint<8>
+  %input_clear_up_to_5 = "FHE.sub_eint"(%truncated_5, %truncated_5_lsb_3) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
+  %truncated_6 = "FHE.reinterpret_precision"(%input_clear_up_to_5) : (!FHE.eint<3>) -> !FHE.eint<2>
+
+  %truncated_6_lsb_2 = "FHE.lsb"(%truncated_6) : (!FHE.eint<2>) -> !FHE.eint<2>
+  %bit_6 = "FHE.reinterpret_precision"(%truncated_6_lsb_2) : (!FHE.eint<2>) -> !FHE.eint<8>
+  %input_clear_up_to_6 = "FHE.sub_eint"(%truncated_6, %truncated_6_lsb_2) : (!FHE.eint<2>, !FHE.eint<2>) -> !FHE.eint<2>
+  %truncated_7 = "FHE.reinterpret_precision"(%input_clear_up_to_6) : (!FHE.eint<2>) -> !FHE.eint<1>
+
+  // the last lsb can be spare
+  %truncated_7_lsb_1 = "FHE.lsb"(%truncated_7) : (!FHE.eint<1>) -> !FHE.eint<1>
+  %bit_7 = "FHE.reinterpret_precision"(%truncated_7_lsb_1) : (!FHE.eint<1>) -> !FHE.eint<8>
+  %all_bits = tensor.from_elements %bit_0, %bit_1, %bit_2, %bit_3, %bit_4, %bit_5, %bit_6, %bit_7 : tensor<8x!FHE.eint<8>>
+  %sum_all_bits = "FHELinalg.sum"(%all_bits) : (tensor<8x!FHE.eint<8>>) -> !FHE.eint<8>
+  return %sum_all_bits : !FHE.eint<8>
+
+  }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 1
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 3
+      outputs:
+        - scalar: 3
+    - inputs:
+        - scalar: 127
+      outputs:
+        - scalar: 127

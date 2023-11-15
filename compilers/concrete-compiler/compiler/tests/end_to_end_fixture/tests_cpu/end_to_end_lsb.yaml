@@ -1,0 +1,148 @@
+description: lsb_8_to_1
+program: |
+    func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<1> {
+      %1 = "FHE.lsb"(%arg0) : (!FHE.eint<8>) -> !FHE.eint<1>
+      return %1: !FHE.eint<1>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 1
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 2
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 3
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 4
+      outputs:
+        - scalar: 0
+---
+description: lsb_8_to_8
+program: |
+    func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<8> {
+      %1 = "FHE.lsb"(%arg0) : (!FHE.eint<8>) -> !FHE.eint<8>
+      return %1: !FHE.eint<8>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 1
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 2
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 3
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 4
+      outputs:
+        - scalar: 0
+---
+description: lsb_8_to_16
+program: |
+    func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<16> {
+      %1 = "FHE.lsb"(%arg0) : (!FHE.eint<8>) -> !FHE.eint<16>
+      return %1: !FHE.eint<16>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 1
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 2
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 3
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 4
+      outputs:
+        - scalar: 0
+---
+description: lsb_signed_8_to_16
+program: |
+    func.func @main(%arg0: !FHE.esint<8>) -> !FHE.eint<16> {
+      %1 = "FHE.lsb"(%arg0) : (!FHE.esint<8>) -> !FHE.eint<16>
+      return %1: !FHE.eint<16>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+          signed: true
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 1
+          signed: true
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: -1
+          signed: true
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: -2
+          signed: true
+      outputs:
+        - scalar: 0
+---
+description: lsb_signed_8_to_signed_16
+program: |
+    func.func @main(%arg0: !FHE.esint<8>) -> !FHE.esint<16> {
+      %1 = "FHE.lsb"(%arg0) : (!FHE.esint<8>) -> !FHE.esint<16>
+      return %1: !FHE.esint<16>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: 1
+          signed: true
+      outputs:
+        - scalar: 1
+          signed: true
+    - inputs:
+        - scalar: -1
+          signed: true
+      outputs:
+        - scalar: 1
+          signed: true
+    - inputs:
+        - scalar: -2
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true

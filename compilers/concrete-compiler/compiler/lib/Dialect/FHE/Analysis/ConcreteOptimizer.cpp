@@ -150,6 +150,15 @@ struct FunctionToDag {
       return;
     } else if (isRound(op)) {
       index = addRound(dag, val, encrypted_inputs, precision);
+    } else if (isReinterpretPrecision(op)) {
+      addReinterpretPrecision(dag, val, encrypted_inputs, precision);
+      return;
+    } else if (auto lsb = asLsb(op)) {
+      addLsb(dag, lsb, encrypted_inputs);
+      return;
+    } else if (auto lsb = asLsbTensor(op)) {
+      addLsb(dag, lsb, encrypted_inputs);
+      return;
     } else if (auto dot = asDot(op)) {
       auto weightsOpt = dotWeights(dot);
       if (weightsOpt) {
@@ -229,6 +238,15 @@ struct FunctionToDag {
   }
 
   concrete_optimizer::dag::OperatorIndex
+  addReinterpretPrecision(optimizer::Dag &dag, mlir::Value &val,
+                          Inputs &encrypted_inputs, int new_precision) {
+    assert(encrypted_inputs.size() == 1);
+    auto encrypted_input = encrypted_inputs[0];
+    index[val] = dag->add_unsafe_cast_op(encrypted_input, new_precision);
+    return index[val];
+  }
+
+  concrete_optimizer::dag::OperatorIndex
   addDot(optimizer::Dag &dag, mlir::Value &val, Inputs &encrypted_inputs,
          std::vector<std::int64_t> &weights_vector) {
     assert(encrypted_inputs.size() == 1);
@@ -275,6 +293,42 @@ struct FunctionToDag {
       type = tensor.getElementType();
     }
     return type.cast<FHE::FheIntegerInterface>().isSigned();
+  }
+
+  template <typename LsbOp>
+  void addLsb(optimizer::Dag &dag, LsbOp &lsbOp, Inputs &encrypted_inputs) {
+    assert(encrypted_inputs.size() == 1);
+    auto input = lsbOp.getInput();
+    auto result = lsbOp.getResult();
+    auto input_precision = fhe::utils::getEintPrecision(input);
+    auto output_precision = fhe::utils::getEintPrecision(result);
+    auto lsb_shiffted_as_1bit_wop =
+        dag->add_dot(slice(encrypted_inputs),
+                     concrete_optimizer::weights::number(1 << input_precision));
+    std::vector<std::uint64_t> unknownFunction;
+    auto overflow_bit_precision = 0;
+    auto lsb_as_0_bits = dag->add_unsafe_cast_op(
+        lsb_shiffted_as_1bit_wop, overflow_bit_precision); // id for rotation
+    auto lsb_result =
+        dag->add_lut(lsb_as_0_bits, slice(unknownFunction), output_precision);
+    auto lsb_result_corrected = idPlaceholder(dag, lsb_result);
+    index[result] = lsb_result_corrected;
+
+    if (!setOptimizerID) {
+      return;
+    }
+
+    mlir::SmallVector<int32_t, 3> operatorIndexes = {
+        // see `extractBitWithClearedLowerBits` in
+        // lib/Conversion/FHEToTFHEScalar/FHEToTFHEScalar.cpp
+        (int32_t)lsb_shiffted_as_1bit_wop.index, // for shift
+        (int32_t)lsb_as_0_bits.index,            // for rotation
+        (int32_t)lsb_result.index,               // for ks
+        (int32_t)lsb_result.index,               // for bootstrap
+        (int32_t)lsb_result_corrected.index,     // for correction
+    };
+    mlir::Builder builder(lsbOp.getContext());
+    lsbOp->setAttr("TFHE.OId", builder.getDenseI32ArrayAttr(operatorIndexes));
   }
 
   template <typename MulOp>
@@ -717,6 +771,13 @@ struct FunctionToDag {
                            builder.getDenseI32ArrayAttr(operatorIndexes));
   }
 
+  concrete_optimizer::dag::OperatorIndex
+  idPlaceholder(optimizer::Dag &dag,
+                concrete_optimizer::dag::OperatorIndex input) {
+    std::vector inputs = {input};
+    return dag->add_dot(slice(inputs), concrete_optimizer::weights::number(1));
+  }
+
   Inputs encryptedInputs(mlir::Operation &op) {
     Inputs inputs;
     for (auto operand : op.getOperands()) {
@@ -773,6 +834,12 @@ struct FunctionToDag {
            llvm::isa<mlir::concretelang::FHELinalg::RoundOp>(op);
   }
 
+  bool isReinterpretPrecision(mlir::Operation &op) {
+    return llvm::isa<mlir::concretelang::FHE::ReinterpretPrecisionEintOp>(op) ||
+           llvm::isa<mlir::concretelang::FHELinalg::ReinterpretPrecisionEintOp>(
+               op);
+  }
+
   mlir::concretelang::FHELinalg::Dot asDot(mlir::Operation &op) {
     return llvm::dyn_cast<mlir::concretelang::FHELinalg::Dot>(op);
   }
@@ -800,6 +867,14 @@ struct FunctionToDag {
   mlir::concretelang::FHELinalg::MatMulEintEintOp
   asMatmulEintEint(mlir::Operation &op) {
     return llvm::dyn_cast<mlir::concretelang::FHELinalg::MatMulEintEintOp>(op);
+  }
+
+  mlir::concretelang::FHE::LsbEintOp asLsb(mlir::Operation &op) {
+    return llvm::dyn_cast<mlir::concretelang::FHE::LsbEintOp>(op);
+  }
+
+  mlir::concretelang::FHELinalg::LsbEintOp asLsbTensor(mlir::Operation &op) {
+    return llvm::dyn_cast<mlir::concretelang::FHELinalg::LsbEintOp>(op);
   }
 
   bool isReturn(mlir::Operation &op) {

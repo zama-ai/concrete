@@ -1,0 +1,14 @@
+description: unsigned_reducing_8_to_4
+program: |
+    func.func @main(%arg0: tensor<4x!FHE.eint<8>>) -> tensor<4x!FHE.eint<4>> {
+      %1 = "FHELinalg.reinterpret_precision"(%arg0) : (tensor<4x!FHE.eint<8>>) -> tensor<4x!FHE.eint<4>>
+      return %1: tensor<4x!FHE.eint<4>>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - tensor: [0, 1, 16, 255]
+          shape: [4]
+      outputs:
+        - tensor: [0, 0, 1, 16]
+          shape: [4]

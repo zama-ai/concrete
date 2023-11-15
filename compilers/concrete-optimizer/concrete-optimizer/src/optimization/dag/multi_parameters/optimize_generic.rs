@@ -32,8 +32,10 @@ fn crt_optimize(
     default_log_norm2_woppbs: f64,
     caches: &PersistDecompCaches,
 ) -> CircuitSolution {
-    if analyze::has_round(dag) {
-        return CircuitSolution::no_solution("Crt does not support round operator");
+    if analyze::has_round(dag) || analyze::has_unsafe_cast(dag) {
+        return CircuitSolution::no_solution(
+            "Crt does not support round/reinterpret_precision operator",
+        );
     } // TODO: dag to params
     let max_precision = max_precision(dag);
     let nb_luts = analyze::lut_count_from_dag(dag);
