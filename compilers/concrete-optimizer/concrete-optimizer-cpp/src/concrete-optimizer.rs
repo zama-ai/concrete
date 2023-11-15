@@ -492,6 +492,14 @@ impl OperationDag {
         self.0.add_round_op(input.into(), rounded_precision).into()
     }
 
+    fn add_unsafe_cast_op(
+        &mut self,
+        input: ffi::OperatorIndex,
+        new_precision: Precision,
+    ) -> ffi::OperatorIndex {
+        self.0.add_unsafe_cast(input.into(), new_precision).into()
+    }
+
     fn optimize_v0(&self, options: ffi::Options) -> ffi::Solution {
         let processing_unit = processing_unit(options);
 
@@ -661,6 +669,12 @@ mod ffi {
         ) -> OperatorIndex;
 
         fn add_round_op(
+            self: &mut OperationDag,
+            input: OperatorIndex,
+            rounded_precision: u8,
+        ) -> OperatorIndex;
+
+        fn add_unsafe_cast_op(
             self: &mut OperationDag,
             input: OperatorIndex,
             rounded_precision: u8,
