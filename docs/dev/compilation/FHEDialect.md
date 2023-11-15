@@ -324,6 +324,56 @@ Effects: MemoryEffects::Effect{}
 | :----: | ----------- |
 &laquo;unnamed&raquo; | An encrypted boolean
 
+### `FHE.lsb` (::mlir::concretelang::FHE::LsbEintOp)
+
+Extract the lowest significant bit at a given precision.
+
+  This operation extract the lsb of a ciphertext in a specific precision.
+
+  Extracting the lsb with the smallest precision:
+  ```mlir
+   // Checking if even or odd
+   %even = "FHE.lsb"(%a): (!FHE.eint<4>) -> (!FHE.eint<1>)
+
+  Usually when you extract the lsb bit, you also need to extract the next one.
+  In that case you first need to clear the first lsb of the input to be able to reduce its precision and extract the next one.
+  To be able to clear the lsb just extracted, you can get it in the original precision.
+
+  Example:
+  ```mlir
+   // Extracting the first lsb with original precision
+   %lsb_0 = "FHE.lsb"(%input): (!FHE.eint<4>) -> (!FHE.eint<4>)
+   // Clearing the first lsb from original input
+   %input_lsb0_cleared = "FHE.sub_eint"(%input, %lsb_0) : (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+   // Reducing the precision of the input
+   %input_3b = "FHE.reinterpret_precision(%input) : (!FHE.eint<4>) -> !FHE.eint<3>
+   // Now, we can do it again with the second lsb
+   %lsb_1 = "FHE.lsb"(%input_3b): (!FHE.eint<3>) -> (!FHE.eint<3>)
+   ...
+   // later if you need %b_lsb at same position as in the input
+   %lsb_1_at_input_position = "FHE.reinterpret_precision(%b_lsb)" : (!FHE.eint<3>) -> !FHE.eint<4>
+   // that way you can recombine the extracted bits
+   %input_mod_4 = "FHE.add_eint"(%lsb_0, %lsb_1_at_input_position) : (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+```
+
+Traits: AlwaysSpeculatableImplTrait
+
+Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
+
+Effects: MemoryEffects::Effect{}
+
+#### Operands:
+
+| Operand | Description |
+| :-----: | ----------- |
+| `input` | 
+
+#### Results:
+
+| Result | Description |
+| :----: | ----------- |
+&laquo;unnamed&raquo; | 
+
 ### `FHE.max_eint` (::mlir::concretelang::FHE::MaxEintOp)
 
 Retrieve the maximum of two encrypted integers.
@@ -502,6 +552,46 @@ Effects: MemoryEffects::Effect{}
 | Operand | Description |
 | :-----: | ----------- |
 | `a` | 
+
+#### Results:
+
+| Result | Description |
+| :----: | ----------- |
+&laquo;unnamed&raquo; | 
+
+### `FHE.reinterpret_precision` (::mlir::concretelang::FHE::ReinterpretPrecisionEintOp)
+
+Reinterpret the ciphertext with a different precision.
+
+  Changing the precision of a ciphertext.
+  It change both the precision, the value and in certain case the correctness of the cyphertext.
+
+  Changing to
+    - a bigger precision is always safe.
+      This is equivalent to a shift left for the value
+    - a smaller precision is only safe if you clear the lowest bits that are discarded.
+      If not, you can assume small errors on the next TLU.
+      This is equivalent to a shift right for the value
+
+  Example:
+  ```mlir
+   // assuming %a is stored as 4bits but can be stored with only 2bits
+   // we can reduce its storage precision
+   %shifted_a = "FHE.mul_eint_int"(%a, %c_4): (!FHE.eint<4>) -> (!FHE.eint<4>)
+   %a_small_precision = "FHE.reinterpret_precision"(%shifted_a, %lsb) : (!FHE.eint<4>) -> (!FHE.eint<2>)
+```
+
+Traits: AlwaysSpeculatableImplTrait
+
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
+
+Effects: MemoryEffects::Effect{}
+
+#### Operands:
+
+| Operand | Description |
+| :-----: | ----------- |
+| `input` | 
 
 #### Results:
 

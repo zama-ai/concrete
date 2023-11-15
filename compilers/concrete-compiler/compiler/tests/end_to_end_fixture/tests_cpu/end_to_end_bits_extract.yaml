@@ -1,0 +1,100 @@
+description: advanced_bits_extract_8_count_1_clear_3
+program: |
+   func.func @main(%input: !FHE.eint<4>) -> !FHE.eint<4> {
+    // BIT_TO_CLEAR = 3
+    
+    %r0_packed_0 = tensor.from_elements %input : tensor<1x!FHE.eint<4>>
+    %w_dot_r0_packed_0 = arith.constant dense<[8]> : tensor<1xi5>
+    %dot_r0_packed_0 = "FHELinalg.dot_eint_int"(%r0_packed_0, %w_dot_r0_packed_0) : (tensor<1x!FHE.eint<4>>, tensor<1xi5>) -> !FHE.eint<4>
+    %r0_packed_bit_0 = "FHE.reinterpret_precision"(%dot_r0_packed_0) : (!FHE.eint<4>) -> !FHE.eint<1>
+    %r0_bit_at_0_low = "FHE.lsb"(%r0_packed_bit_0) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_packed_1 = tensor.from_elements %input, %r0_bit_at_0_low : tensor<2x!FHE.eint<4>>
+    %w_dot_r0_packed_1 = arith.constant dense<[4, -4]> : tensor<2xi5>
+    %dot_r0_packed_1 = "FHELinalg.dot_eint_int"(%r0_packed_1, %w_dot_r0_packed_1) : (tensor<2x!FHE.eint<4>>, tensor<2xi5>) -> !FHE.eint<4>
+    %r0_packed_bit_1 = "FHE.reinterpret_precision"(%dot_r0_packed_1) : (!FHE.eint<4>) -> !FHE.eint<1>
+    %r0_bit_at_1_low = "FHE.lsb"(%r0_packed_bit_1) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_packed_2 = tensor.from_elements %input, %r0_bit_at_0_low, %r0_bit_at_1_low : tensor<3x!FHE.eint<4>>
+    %w_dot_r0_packed_2 = arith.constant dense<[2, -2, -4]> : tensor<3xi5>
+    %dot_r0_packed_2 = "FHELinalg.dot_eint_int"(%r0_packed_2, %w_dot_r0_packed_2) : (tensor<3x!FHE.eint<4>>, tensor<3xi5>) -> !FHE.eint<4>
+    %r0_packed_bit_2 = "FHE.reinterpret_precision"(%dot_r0_packed_2) : (!FHE.eint<4>) -> !FHE.eint<1>
+    %r0_bit_at_2_low = "FHE.lsb"(%r0_packed_bit_2) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_packed_3 = tensor.from_elements %input, %r0_bit_at_0_low, %r0_bit_at_1_low, %r0_bit_at_2_low : tensor<4x!FHE.eint<4>>
+    %w_dot_r0_packed_3 = arith.constant dense<[1, -1, -2, -4]> : tensor<4xi5>
+    %dot_r0_packed_3 = "FHELinalg.dot_eint_int"(%r0_packed_3, %w_dot_r0_packed_3) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> !FHE.eint<4>
+    %r0_packed_bit_3 = "FHE.reinterpret_precision"(%dot_r0_packed_3) : (!FHE.eint<4>) -> !FHE.eint<1>
+    %r0_bit_at_3_low = "FHE.lsb"(%r0_packed_bit_3) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_all_bits = tensor.from_elements %r0_bit_at_0_low, %r0_bit_at_1_low, %r0_bit_at_2_low, %r0_bit_at_3_low : tensor<4x!FHE.eint<4>>
+    %r0_sum = "FHELinalg.sum"(%r0_all_bits) : (tensor<4x!FHE.eint<4>>) -> !FHE.eint<4>
+    return %r0_sum : !FHE.eint<4>
+    
+      }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 1
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 2
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 3
+      outputs:
+        - scalar: 2
+    - inputs:
+        - scalar: 4
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 5
+      outputs:
+        - scalar: 2
+    - inputs:
+        - scalar: 6
+      outputs:
+        - scalar: 2
+    - inputs:
+        - scalar: 7
+      outputs:
+        - scalar: 3
+    - inputs:
+        - scalar: 8
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 9
+      outputs:
+        - scalar: 2
+    - inputs:
+        - scalar: 10
+      outputs:
+        - scalar: 2
+    - inputs:
+        - scalar: 11
+      outputs:
+        - scalar: 3
+    - inputs:
+        - scalar: 12
+      outputs:
+        - scalar: 2
+    - inputs:
+        - scalar: 13
+      outputs:
+        - scalar: 3
+    - inputs:
+        - scalar: 14
+      outputs:
+        - scalar: 3
+    - inputs:
+        - scalar: 15
+      outputs:
+        - scalar: 4

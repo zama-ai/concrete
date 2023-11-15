@@ -1,0 +1,29 @@
+description: lsb_8_to_1_vector
+program: |
+    func.func @main(%arg0: tensor<5x!FHE.eint<8>>) -> tensor<5x!FHE.eint<1>> {
+      %1 = "FHELinalg.lsb"(%arg0) : (tensor<5x!FHE.eint<8>>) -> tensor<5x!FHE.eint<1>>
+      return %1: tensor<5x!FHE.eint<1>>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - tensor: [0, 1, 2, 3, 4]
+          shape: [5]
+      outputs:
+        - tensor: [0, 1, 0, 1, 0]
+          shape: [5]
+---
+description: lsb_8_to_1_matrix
+program: |
+    func.func @main(%arg0: tensor<5x2x!FHE.eint<8>>) -> tensor<5x2x!FHE.eint<1>> {
+      %1 = "FHELinalg.lsb"(%arg0) : (tensor<5x2x!FHE.eint<8>>) -> tensor<5x2x!FHE.eint<1>>
+      return %1: tensor<5x2x!FHE.eint<1>>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - tensor: [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]
+          shape: [5, 2]
+      outputs:
+        - tensor: [0, 1, 0, 1, 0, 0, 1, 0, 1, 0]
+          shape: [5, 2]

@@ -317,7 +317,7 @@ def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [Pure, TensorUnaryEint, Unary
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$tensor
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input
     );
 
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>);
@@ -1349,5 +1349,68 @@ def FHELinalg_RoundOp : FHELinalg_Op<"round", [Pure, TensorUnaryEint, UnaryEint,
     let hasVerifier = 1;
     let hasFolder = 1;
 }
+
+def FHELinalg_LsbEintOp: FHELinalg_Op<"lsb", [Pure, TensorUnaryEint, UnaryEint, ConstantNoise]> {
+
+    let summary = "Extract the lowest significant bit at a given precision.";
+
+    let description = [{
+      This operation extract the lsb of a ciphertext tensor in a specific precision.
+
+      Extracting only 1 bit:
+      ```mlir
+       // ok
+       %lsb = "FHE.lsb"(%a): (tensor<1x!FHE.eint<4>)) -> (tensor<1x!FHE.eint<1>>)
+
+      If you need to clear the lsb of the original ciphertext, you should extract to the same precision as the ciphertext.
+      If you need to extract several bits, you can extract sequentially using explicit bitwidth change and bit clearing.
+
+      Example:
+      ```mlir
+       // ok
+       %a_lsb = "FHELinalg.lsb"(%a): (tensor<1x!FHE.eint<4>)) -> (tensor<1x!FHE.eint<4>))
+       %a_lsb_cleared = "FHELinalg.sub_eint"(%a, %lsb) : (tensor<1x!FHE.eint<4>), tensor<1x!FHE.eint<4>)) -> (tensor<1x!FHE.eint<4>))
+       %b = %a : tensor<1x!FHE.eint<3>>
+       // now you can extract the next lsb from %b
+       %b_lsb = "FHELinalg.lsb"(%b): (tensor<1x!FHE.eint<3>>) -> (tensor<1x!FHE.eint<3>>)
+       // later if you need %b_lsb at the original position
+       %b_lsb_as_in_a = %b_lsb : tensor<1x!FHE.eint<3>>
+    ```
+    }];
+
+    let arguments = (ins Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input);
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$output);
+    let hasVerifier = 1;
+}
+
+def FHELinalg_ReinterpretPrecisionEintOp: FHELinalg_Op<"reinterpret_precision", [Pure, TensorUnaryEint, UnaryEint]> {
+
+    let summary = "Reinterpret the ciphertext tensor with a different precision.";
+
+    let description = [{
+      It's a reinterpret cast changing only the precision.
+      On CRT represention, it does nothing.
+      On Native representation, it moves the message/noise frontier, effectively changing the precision.
+      Changing to
+        - a bigger precision is safe, as the crypto-parameters are chosen such that only zeros will comes from the noise part.
+          This is equivalent to a shift left for the value
+        - a smaller precision is only safe if you clear the message lowests bits first.
+          If not, you can assume small errors with high probability and frequent bigger errors, which can be contained to smalls errors using margins.
+          This is equivalent to a shift right for the value
+
+      Example:
+      ```mlir
+       // assuming a is encoded as 4bits but can be stored in 2bits
+       // we can obtain a to a smaller 2 bits precision
+       %shifted_a = "FHELinalg.mul_eint_intlsb"(%a, %c_4): (tensor<1x!FHE.eint<4>>) -> (tensor<1x!FHE.eint<2>>)
+       %a_small_precision = "FHELinalg.reinterpret_precision"(%shifted_a, %lsb) : (tensor<1x!FHE.eint<4>>) -> (tensor<1x!FHE.eint<2>>)
+    ```
+    }];
+
+    let arguments = (ins Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input);
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$output);
+    let hasVerifier = 1;
+}
+
 
 #endif
