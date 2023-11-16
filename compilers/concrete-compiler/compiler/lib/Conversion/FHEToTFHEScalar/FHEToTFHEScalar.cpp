@@ -627,119 +627,13 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
     mlir::Value previousOutput = carryPropagatedVal;
     TFHE::GLWECipherTextType truncationInputTy = inputTy;
     for (uint64_t i = 0; i < bitwidthDelta; ++i) {
-      //---------------------------------------------------------- BIT ISOLATION
-      // To extract the bit to truncate, we use a PBS that look up on the
-      // padding bit. We first begin by isolating the bit in question on the
-      // padding bit. This is performed with a homomorphic multiplication (left
-      // shift basically) of the proper amount. For example:
-      //
-      //     previousOutput            = |0110|01| .... |
-      //                                        ^
-      //     shiftCst                  = |        100000|
-      //     previousOutput * shiftCst = |1| ....       |
-
-      uint64_t rawShiftCst = ((uint64_t)1) << (inputBitwidth - i);
-      mlir::Value shiftCst = rewriter.create<mlir::arith::ConstantOp>(
-          op->getLoc(), rewriter.getI64IntegerAttr(rawShiftCst));
-      auto shiftedInput = rewriter.create<TFHE::MulGLWEIntOp>(
-          op.getLoc(), truncationInputTy, previousOutput, shiftCst);
-      forwardOptimizerID(op, shiftedInput);
-
-      //-------------------------------------------------------- LUT PREPARATION
-      // To perform the right shift (kind of), we use a PBS that acts on the
-      // padding bit. We expect is the following function to be applied (for the
-      // first round of our example):
-      //
-      //     f(|0| .... |) = |0000|00| .... |
-      //     f(|1| .... |) = |0000|01| .... |
-      //
-      // That being said, a PBS on the padding bit can only encode a symmetric
-      // function (that is f(1) = -f(0)), by encoding f(0) in the whole table.
-      // To implement our semantic, we then rely on a trick. We encode the
-      // following function in the bootstrap:
-      //
-      //     f(|0| .... |) = |1111|11|1 .... |
-      //     f(|1| .... |) = |0000|00|1 .... |
-      //
-      // And add a correction constant:
-      //
-      //     corrCst                 = |0000|00|1 .... |
-      //     f(|0| .... |) + corrCst = |0000|00| .... |
-      //     f(|1| .... |) + corrCst = |0000|01| .... |
-      //
-      // Hence the following constant lut.
-
-      llvm::SmallVector<int64_t> rawLut(loweringParameters.polynomialSize,
-                                        ((uint64_t)0 - 1)
-                                            << (64 - (inputBitwidth + 2 - i)));
-      mlir::Value lut = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), mlir::DenseIntElementsAttr::get(
-                           mlir::RankedTensorType::get(
-                               rawLut.size(), rewriter.getIntegerType(64)),
-                           rawLut));
-
-      //-------------------------------------------------- CIPHERTEXT ALIGNEMENT
-      // In practice, TFHE ciphertexts are normally distributed around a value.
-      // That means that if the lookup is performed _as is_, we have almost .5
-      // probability to return the wrong value. Imagine a ciphertext centered
-      // around (|0| .... |):
-      //
-      //  |   0000001...  |   1111111...  |              Virtual lookup table
-      //                   _
-      //                  / \
-      //  _______________/   \_________________________  Ciphertext distribution
-      //
-      //              |0| ... |                          Ciphertexts mean
-      //
-      // If the error of the ciphertext is negative, this means that the lookup
-      // will wrap, and fall on the wrong mega-case...
-      //
-      // This is usually taken care of on the lookup table side, but we can also
-      // slightly shift the ciphertext to center its distribution with the
-      // center of the mega-case. That is, end up with a situation like this:
-
-      //
-      //  |   1111111...  |   0000001...  |              Virtual lookup table
-      //          _
-      //         / \
-      //  ______/   \_________________________           Ciphertext distribution
-      //
-      //      |0| ... |                                  Ciphertexts mean
-      //
-      // This is performed by adding |0|1 .... | to the ciphertext.
-
-      uint64_t rawRotationCst = (((uint64_t)1) << 62);
-      mlir::Value rotationCst = rewriter.create<mlir::arith::ConstantOp>(
-          op->getLoc(), rewriter.getI64IntegerAttr(rawRotationCst));
-      auto shiftedRotatedInput = rewriter.create<TFHE::AddGLWEIntOp>(
-          op.getLoc(), truncationInputTy, shiftedInput, rotationCst);
-      forwardOptimizerID(op, shiftedRotatedInput);
-
-      //-------------------------------------------------------------------- PBS
-      // The lookup is performed ...
-
-      auto keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
-          op.getLoc(), truncationInputTy, shiftedRotatedInput,
-          TFHE::GLWEKeyswitchKeyAttr::get(op->getContext(),
-                                          TFHE::GLWESecretKey(),
-                                          TFHE::GLWESecretKey(), -1, -1, -1));
-      forwardOptimizerID(op, keyswitched);
-      auto bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
-          op.getLoc(), truncationInputTy, keyswitched, lut,
-          TFHE::GLWEBootstrapKeyAttr::get(
-              op->getContext(), TFHE::GLWESecretKey(), TFHE::GLWESecretKey(),
-              -1, -1, -1, -1, -1));
-      forwardOptimizerID(op, bootstrapped);
-
-      //------------------------------------------------------------- CORRECTION
-      // The correction is performed to achieve our right shift semantic.
-
-      uint64_t rawCorrCst = ((uint64_t)1) << (64 - (inputBitwidth + 2 - i));
-      mlir::Value corrCst = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), rewriter.getI64IntegerAttr(rawCorrCst));
-      auto extractedBit = rewriter.create<TFHE::AddGLWEIntOp>(
-          op.getLoc(), truncationInputTy, bootstrapped, corrCst);
-      forwardOptimizerID(op, extractedBit);
+      auto extractionOps = extractBitWithClearedLowerBits(
+          op, inputType, inputBitwidth, inputBitwidth - i, i,
+          loweringParameters.polynomialSize, previousOutput, rewriter);
+      for (auto new_op : extractionOps) {
+        forwardOptimizerID(op, new_op.getDefiningOp());
+      }
+      auto extractedBit = extractionOps.back();
 
       //------------------------------------------------------------- TRUNCATION
       // Finally, the extracted bit is subtracted from the input.
