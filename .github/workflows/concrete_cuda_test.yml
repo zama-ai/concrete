@@ -49,13 +49,8 @@ jobs:
       fail-fast: false
       # explicit include-based build matrix, of known valid options
       matrix:
-        include:
-          - os: ubuntu-20.04
-            cuda: "11.8"
-            cuda_arch: "70"
-            gcc: 8
     env:
-      CUDA_PATH: /usr/local/cuda-${{ matrix.cuda }}
+      CUDA_PATH: /usr/local/cuda
 
     steps:
     - uses: actions/checkout@v2
@@ -65,14 +60,14 @@ jobs:
         echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
         echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
         echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-        echo "CUDACXX=/usr/local/cuda-${{ matrix.cuda }}/bin/nvcc" >> "${GITHUB_ENV}"
+        echo "CUDACXX=/usr/local/cuda/bin/nvcc" >> "${GITHUB_ENV}"
     # Specify the correct host compilers
     - name: Export gcc and g++ variables
       if: ${{ !cancelled() }}
       run: |
-        echo "CC=/usr/bin/gcc-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
-        echo "CXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
-        echo "CUDAHOSTCXX=/usr/bin/g++-${{ matrix.gcc }}" >> "${GITHUB_ENV}"
+        echo "CC=/usr/bin/gcc" >> "${GITHUB_ENV}"
+        echo "CXX=/usr/bin/g++" >> "${GITHUB_ENV}"
+        echo "CUDAHOSTCXX=/usr/bin/g++" >> "${GITHUB_ENV}"
         echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
     - name: Rust install
@@ -89,7 +84,7 @@ jobs:
         cmake ..
         make -j8
 
-    - name: Test concrete-cuda with Cuda 11.8
+    - name: Test concrete-cuda
       if: ${{ !cancelled() }}
       run: |
         cd backends/concrete-cuda/implementation/build

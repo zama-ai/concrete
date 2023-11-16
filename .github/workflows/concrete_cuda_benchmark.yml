@@ -24,7 +24,7 @@ env:
   CARGO_TERM_COLOR: always
   BENCHMARK_DIR: backends/concrete-cuda/implementation/build/test_and_benchmark/benchmark
   RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
-  CUDA_PATH: /usr/local/cuda-11.8
+  CUDA_PATH: /usr/local/cuda
   GCC_VERSION: 8
 
 jobs:
@@ -53,14 +53,14 @@ jobs:
           echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
           echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
           echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-          echo "CUDACXX=/usr/local/cuda-11.8/bin/nvcc" >> "${GITHUB_ENV}"
+          echo "CUDACXX=/usr/local/cuda/bin/nvcc" >> "${GITHUB_ENV}"
       # Specify the correct host compilers
       - name: Export gcc and g++ variables
         if: ${{ !cancelled() }}
         run: |
-          echo "CC=/usr/bin/gcc-8" >> "${GITHUB_ENV}"
-          echo "CXX=/usr/bin/g++-8" >> "${GITHUB_ENV}"
-          echo "CUDAHOSTCXX=/usr/bin/g++-8" >> "${GITHUB_ENV}"
+          echo "CC=/usr/bin/gcc" >> "${GITHUB_ENV}"
+          echo "CXX=/usr/bin/g++" >> "${GITHUB_ENV}"
+          echo "CUDAHOSTCXX=/usr/bin/g++" >> "${GITHUB_ENV}"
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Rust install

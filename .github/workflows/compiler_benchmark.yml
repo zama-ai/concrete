@@ -27,8 +27,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RESULTS_FILENAME: parsed_benchmark_results_${{ github.sha }}.json
-  CUDA_PATH: /usr/local/cuda-11.8
-  GCC_VERSION: 8
+  CUDA_PATH: /usr/local/cuda
 
 jobs:
   run-benchmarks:
@@ -78,9 +77,9 @@ jobs:
           echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
           echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
           echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-          echo "CC=/usr/bin/gcc-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
-          echo "CXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
-          echo "CUDAHOSTCXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
+          echo "CC=/usr/bin/gcc" >> "${GITHUB_ENV}"
+          echo "CXX=/usr/bin/g++" >> "${GITHUB_ENV}"
+          echo "CUDAHOSTCXX=/usr/bin/g++" >> "${GITHUB_ENV}"
           echo "CUDACXX=$CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
 
       - name: Install rust
