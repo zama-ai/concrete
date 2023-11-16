@@ -110,6 +110,13 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
+# Force linking of libomp with libstdc++ in debug builds, as these
+# rely on code from libstdc++ implementing assertions
+LIBOMP_LINK_TO_LIBSTDCXX_OPT=
+ifeq ($(BUILD_TYPE),Debug)
+	LIBOMP_LINK_TO_LIBSTDCXX_OPT=-DLIBOMP_USE_STDCPPLIB=ON
+endif
+
 all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
 
 # HPX #####################################################
@@ -151,7 +158,8 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
-	-DCUDAToolkit_ROOT=$(CUDA_PATH)
+	-DCUDAToolkit_ROOT=$(CUDA_PATH) \
+	$(LIBOMP_LINK_TO_LIBSTDCXX_OPT)
 	touch $@
 
 build-initialized: $(BUILD_DIR)/configured.stamp
