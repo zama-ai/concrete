@@ -443,6 +443,7 @@ def main():
             fhe_simulation=fhe_simulation,
             global_p_error=None,  # 2**log2_global_p_error,
             p_error=2**log2_p_error,
+            bitwise_strategy_preference=fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
         )
 
         if args.stop_after_compilation:
