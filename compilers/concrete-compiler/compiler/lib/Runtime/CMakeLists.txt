@@ -1,3 +1,5 @@
+add_compile_options(-fsized-deallocation)
+
 if(CONCRETELANG_CUDA_SUPPORT)
   add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp GPUDFG.cpp)
   target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
@@ -5,7 +7,7 @@ else()
   add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp)
 endif()
 
-add_dependencies(ConcretelangRuntime concrete_cpu concrete_cpu_noise_model)
+add_dependencies(ConcretelangRuntime concrete_cpu concrete_cpu_noise_model concrete-protocol)
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PRIVATE HPX::hpx HPX::iostreams_component)
@@ -39,8 +41,9 @@ target_include_directories(
 target_link_libraries(
   ConcretelangRuntime
   PUBLIC concrete_cpu
+         concrete-protocol
          concrete_cpu_noise_model
-         ConcretelangClientLib
+         ConcretelangCommon
          pthread
          m
          dl

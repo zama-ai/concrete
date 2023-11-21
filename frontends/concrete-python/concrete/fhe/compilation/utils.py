@@ -34,7 +34,7 @@ def validate_input_args(
     Returns:
         List[Optional[Union[int, np.ndarray]]]: ordered validated args
     """
-    client_parameters_json = json.loads(client_specs.client_parameters.serialize())
+    client_parameters_json = json.loads(client_specs.client_parameters.serialize())["circuits"][0]
     assert "inputs" in client_parameters_json
     input_specs = client_parameters_json["inputs"]
     if len(args) != len(input_specs):
@@ -54,10 +54,22 @@ def validate_input_args(
             isinstance(arg, np.ndarray) and np.issubdtype(arg.dtype, np.integer)
         )
 
-        width = spec["shape"]["width"]
-        is_signed = spec["shape"]["sign"]
-        shape = tuple(spec["shape"]["dimensions"])
-        is_encrypted = spec["encryption"] is not None
+        if "lweCiphertext" in spec["typeInfo"].keys():
+            type_info = spec["typeInfo"]["lweCiphertext"]
+            is_encrypted = True
+            shape = tuple(type_info["abstractShape"]["dimensions"])
+            assert "integer" in type_info["encoding"].keys()
+            width = type_info["encoding"]["integer"]["width"]
+            is_signed = type_info["encoding"]["integer"]["isSigned"]
+        elif "plaintext" in spec["typeInfo"].keys():
+            type_info = spec["typeInfo"]["plaintext"]
+            is_encrypted = False
+            width = type_info["integerPrecision"]
+            is_signed = type_info["isSigned"]
+            shape = tuple(type_info["shape"]["dimensions"])
+        else:
+            message = f"Expected a valid type in {spec['typeInfo'].keys()}"
+            raise ValueError(message)
 
         expected_dtype = SignedInteger(width) if is_signed else UnsignedInteger(width)
         expected_value = ValueDescription(expected_dtype, shape, is_encrypted)

@@ -16,7 +16,7 @@
 #include <string.h>
 #include <vector>
 
-#include "concretelang/ClientLib/CRT.h"
+#include "concretelang/Common/CRT.h"
 #include "concretelang/Runtime/wrappers.h"
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
@@ -818,7 +818,7 @@ void memref_batched_mapped_bootstrap_lwe_u64(
 }
 
 uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product) {
-  return concretelang::clientlib::crt::encode(plaintext, modulus, product);
+  return concretelang::crt::encode(plaintext, modulus, product);
 }
 
 void memref_wop_pbs_crt_buffer(

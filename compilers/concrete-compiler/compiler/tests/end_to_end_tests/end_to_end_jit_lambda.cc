@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
+#include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
+#include "tests_tools/assert.h"
+using concretelang::testlib::deleteFolder;
 
 TEST(Lambda_check_param, int_to_void_missing_param) {
   checkedJit(lambda, R"XXX(
@@ -9,7 +12,8 @@ TEST(Lambda_check_param, int_to_void_missing_param) {
       return
     }
     )XXX");
-  ASSERT_EXPECTED_FAILURE(lambda());
+  ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, DISABLED_int_to_void_good) {
@@ -19,7 +23,8 @@ TEST(Lambda_check_param, DISABLED_int_to_void_good) {
       return
     }
     )XXX");
-  ASSERT_EXPECTED_SUCCESS(lambda(1_u64));
+  ASSERT_OUTCOME_HAS_VALUE(lambda.call({Tensor<uint64_t>(1)}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, int_to_void_superfluous_param) {
@@ -28,7 +33,9 @@ TEST(Lambda_check_param, int_to_void_superfluous_param) {
       return
     }
     )XXX");
-  ASSERT_EXPECTED_FAILURE(lambda(1_u64, 1_u64));
+  ASSERT_OUTCOME_HAS_FAILURE(
+      lambda.call({Tensor<uint64_t>(1), Tensor<uint64_t>(1)}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, scalar_parameters_number) {
@@ -40,11 +47,16 @@ TEST(Lambda_check_param, scalar_parameters_number) {
     return %arg0: !FHE.eint<1>
   }
   )XXX");
-  ASSERT_EXPECTED_FAILURE(lambda());
-  ASSERT_EXPECTED_FAILURE(lambda(1_u64));
-  ASSERT_EXPECTED_FAILURE(lambda(1_u64, 2_u64));
-  ASSERT_EXPECTED_SUCCESS(lambda(1_u64, 2_u64, 3_u64));
-  ASSERT_EXPECTED_FAILURE(lambda(1_u64, 2_u64, 3_u64, 4_u64));
+  ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
+  ASSERT_OUTCOME_HAS_FAILURE(lambda.call({Tensor<uint64_t>(1)}));
+  ASSERT_OUTCOME_HAS_FAILURE(
+      lambda.call({Tensor<uint64_t>(1), Tensor<uint64_t>(2)}));
+  ASSERT_OUTCOME_HAS_VALUE(lambda.call(
+      {Tensor<uint64_t>(1), Tensor<uint64_t>(2), Tensor<uint64_t>(3)}));
+  ASSERT_OUTCOME_HAS_FAILURE(
+      lambda.call({Tensor<uint64_t>(1), Tensor<uint64_t>(2),
+                   Tensor<uint64_t>(3), Tensor<uint64_t>(4)}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, scalar_tensor_to_scalar_missing_param) {
@@ -55,7 +67,8 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar_missing_param) {
       return %arg0: !FHE.eint<1>
     }
   )XXX");
-  ASSERT_EXPECTED_FAILURE(lambda(1_u64));
+  ASSERT_OUTCOME_HAS_FAILURE(lambda.call({Tensor<uint64_t>(1)}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, scalar_tensor_to_scalar) {
@@ -66,8 +79,9 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar) {
       return %arg0: !FHE.eint<1>
     }
   )XXX");
-  uint8_t arg[2] = {1, 2};
-  ASSERT_EXPECTED_SUCCESS(lambda(1_u64, arg, ARRAY_SIZE(arg)));
+  ASSERT_OUTCOME_HAS_VALUE(
+      lambda.call({Tensor<uint64_t>(1), Tensor<uint64_t>({1, 2}, {2})}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, scalar_tensor_to_scalar_superfluous_param) {
@@ -78,9 +92,10 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar_superfluous_param) {
       return %arg0: !FHE.eint<1>
     }
   )XXX");
-  uint8_t arg[2] = {1, 2};
-  ASSERT_EXPECTED_FAILURE(
-      lambda(1_u64, arg, ARRAY_SIZE(arg), arg, ARRAY_SIZE(arg)));
+  ASSERT_OUTCOME_HAS_FAILURE(
+      lambda.call({Tensor<uint64_t>(1), Tensor<uint64_t>({1, 2}, {2}),
+                   Tensor<uint64_t>({1, 2}, {2})}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, scalar_tensor_to_tensor_good_number_param) {
@@ -91,9 +106,9 @@ TEST(Lambda_check_param, scalar_tensor_to_tensor_good_number_param) {
       return %arg1: tensor<2x!FHE.eint<1>>
     }
     )XXX");
-  uint8_t arg[2] = {1, 2};
-  ASSERT_EXPECTED_SUCCESS(
-      lambda.operator()<std::vector<uint8_t>>(1_u64, arg, ARRAY_SIZE(arg)));
+  ASSERT_OUTCOME_HAS_VALUE(
+      lambda.call({Tensor<uint64_t>(1), Tensor<uint64_t>({1, 2}, {2})}));
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Lambda_check_param, DISABLED_check_parameters_scalar_too_big) {
@@ -104,6 +119,6 @@ TEST(Lambda_check_param, DISABLED_check_parameters_scalar_too_big) {
     return %arg0: !FHE.eint<1>
   }
   )XXX");
-  uint16_t arg = 3;
-  ASSERT_EXPECTED_FAILURE(lambda(arg));
+  ASSERT_OUTCOME_HAS_FAILURE(lambda.call({Tensor<uint64_t>(3)}));
+  deleteFolder(lambda.getArtifactFolder());
 }

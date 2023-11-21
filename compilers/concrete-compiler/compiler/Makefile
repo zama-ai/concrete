@@ -110,7 +110,14 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
-all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc rust-bindings
+# Force linking of libomp with libstdc++ in debug builds, as these
+# rely on code from libstdc++ implementing assertions
+LIBOMP_LINK_TO_LIBSTDCXX_OPT=
+ifeq ($(BUILD_TYPE),Debug)
+	LIBOMP_LINK_TO_LIBSTDCXX_OPT=-DLIBOMP_USE_STDCPPLIB=ON
+endif
+
+all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
 
 # HPX #####################################################
 
@@ -151,7 +158,8 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
-	-DCUDAToolkit_ROOT=$(CUDA_PATH)
+	-DCUDAToolkit_ROOT=$(CUDA_PATH) \
+	$(LIBOMP_LINK_TO_LIBSTDCXX_OPT)
 	touch $@
 
 build-initialized: $(BUILD_DIR)/configured.stamp
@@ -173,14 +181,6 @@ concretecompiler: build-initialized
 python-bindings: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangMLIRPythonModules
 	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
-
-rust-bindings: install
-	cd lib/Bindings/Rust && \
-		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		cargo build --release
-
-CAPI:
-	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG CONCRETELANGCAPISupport
 
 clientlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangClientLib
@@ -249,14 +249,6 @@ run-python-tests: python-bindings concretecompiler
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output
 
-
-## rust-tests
-run-rust-tests: rust-bindings
-	cd lib/Bindings/Rust && \
-		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		LD_LIBRARY_PATH=$(INSTALL_PATH)/lib \
-		cargo test --release
-
 ## end-to-end-tests
 
 build-end-to-end-jit-chunked-int: build-initialized
@@ -307,7 +299,7 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
-	  --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
+	  --optimizer-strategy=$(optimizer_strategy) --retry-failing-tests=1 $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
 
 ### end-to-end-tests GPU
 
@@ -327,7 +319,7 @@ generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_looku
 
 run-end-to-end-tests-gpu: build-end-to-end-test generate-gpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	--backend=gpu --library /tmp/concrete_compiler/gpu_tests/ \
+	--backend=gpu \
 	$(FIXTURE_GPU_DIR)/*.yaml
 
 ## end-to-end-dataflow-tests
@@ -477,12 +469,6 @@ python-format:
 python-lint:
 	pylint --rcfile=../pylintrc lib/Bindings/Python/concrete/compiler
 
-check-rust-format:
-	cd lib/Bindings/Rust && cargo fmt  --check
-
-rust-format:
-	cd lib/Bindings/Rust && cargo fmt
-
 # libraries we want to have in the installation that aren't already a deps of other targets
 install-deps:
 	cmake --build $(BUILD_DIR) --target MLIRCAPIRegisterEverything
@@ -529,7 +515,7 @@ darwin-python-package:
 python-package: python-bindings $(OS)-python-package
 	@echo The python package is: $(BUILD_DIR)/wheels/*.whl
 
-install: concretecompiler CAPI install-deps
+install: concretecompiler install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))
 	$(info Installing under $(INSTALL_PATH))
 	mkdir -p $(INSTALL_PATH)/include

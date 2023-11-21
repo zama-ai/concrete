@@ -2,7 +2,7 @@
 
 # pylint: disable=no-name-in-module,import-error
 
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 from mlir._mlir_libs._concretelang._compiler import (
@@ -65,47 +65,16 @@ class SimulatedValueDecrypter(WrapperCpp):
                 decrypted value
         """
 
-        shape = tuple(self.cpp().get_shape(position))
+        lambda_arg = self.cpp().decrypt(position, value.cpp())
+        is_signed = lambda_arg.is_signed()
+        if lambda_arg.is_scalar():
+            return (
+                lambda_arg.get_signed_scalar() if is_signed else lambda_arg.get_scalar()
+            )
 
-        if len(shape) == 0:
-            return self.decrypt_scalar(position, value)
-
-        return np.array(self.decrypt_tensor(position, value), dtype=np.int64).reshape(
-            shape
+        shape = lambda_arg.get_tensor_shape()
+        return (
+            np.array(lambda_arg.get_signed_tensor_data()).reshape(shape)
+            if is_signed
+            else np.array(lambda_arg.get_tensor_data()).reshape(shape)
         )
-
-    def decrypt_scalar(self, position: int, value: Value) -> int:
-        """
-        Decrypt scalar.
-
-        Args:
-            position (int):
-                position of the argument within the circuit
-
-            value (Value):
-                scalar value to decrypt
-
-        Returns:
-            int:
-                decrypted scalar
-        """
-
-        return self.cpp().decrypt_scalar(position, value.cpp())
-
-    def decrypt_tensor(self, position: int, value: Value) -> List[int]:
-        """
-        Decrypt tensor.
-
-        Args:
-            position (int):
-                position of the argument within the circuit
-
-            value (Value):
-                tensor value to decrypt
-
-        Returns:
-            List[int]:
-                decrypted tensor
-        """
-
-        return self.cpp().decrypt_tensor(position, value.cpp())

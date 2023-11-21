@@ -29,6 +29,7 @@ def generate(args):
                 max_value = (2 ** p) - 1
                 random_lut = np.random.randint(max_value+1, size=2**p)
                 itype = get_lut_integer_type(p)
+                iprec = itype.replace("i", "")
                 # identity_apply_lookup_table
                 print(f"description: apply_lookup_table_{p}bits_{n_ct}ct_{n_lut}layer")
                 print("program: |")
@@ -49,6 +50,7 @@ def generate(args):
                 print(f"      shape: [{n_ct}]")
                 print(f"    - tensor: [{','.join(map(str, random_lut))}]")
                 print(f"      shape: [{2**p}]")
+                print(f"      width: {iprec}")
                 outputs = random_input
                 for i in range(0, n_lut):
                     outputs = [random_lut[v] for v in outputs]

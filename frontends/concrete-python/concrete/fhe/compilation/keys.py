@@ -23,7 +23,7 @@ class Keys:
     Be careful when serializing/saving keys!
     """
 
-    client_specs: ClientSpecs
+    client_specs: Optional[ClientSpecs]
     cache_directory: Optional[Union[str, Path]]
 
     _keyset_cache: Optional[KeySetCache]
@@ -31,7 +31,7 @@ class Keys:
 
     def __init__(
         self,
-        client_specs: ClientSpecs,
+        client_specs: Optional[ClientSpecs],
         cache_directory: Optional[Union[str, Path]] = None,
     ):
         self.client_specs = client_specs
@@ -64,6 +64,9 @@ class Keys:
             seed_msb = (seed >> 64) & ((2**64) - 1)
 
         if self._keyset is None or force:
+            if self.client_specs is None:  # pragma: no cover
+                message = "Tried to generate Keys without client specs."
+                raise ValueError(message)
             self._keyset = ClientSupport.key_set(
                 self.client_specs.client_parameters,
                 self._keyset_cache,
@@ -109,7 +112,7 @@ class Keys:
 
         keys = Keys.deserialize(bytes(location.read_bytes()))
 
-        self.client_specs = keys.client_specs
+        self.client_specs = None
         self.cache_directory = None
 
         # pylint: disable=protected-access
@@ -175,10 +178,9 @@ class Keys:
         """
 
         keyset = KeySet.deserialize(serialized_keys)
-        client_specs = ClientSpecs(keyset.client_parameters())
 
         # pylint: disable=protected-access
-        result = Keys(client_specs)
+        result = Keys(None)
         result._keyset = keyset
         # pylint: enable=protected-access
 

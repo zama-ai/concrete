@@ -1,4 +1,5 @@
 add_custom_target(ConcreteCompilerUnitTests)
+add_compile_options(-fexceptions)
 
 function(add_concretecompiler_unittest test_name)
   add_unittest(ConcreteCompilerUnitTests ${test_name} ${ARGN})

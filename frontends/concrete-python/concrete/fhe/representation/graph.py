@@ -372,7 +372,7 @@ class Graph:
         for node in self.ordered_outputs():
             returns.append(f"%{id_map[node]}")
         lines.append(f"return {', '.join(returns)}")
-        if highlighted_result:
+        if highlighted_result:  # pragma: no cover
             highlighted_lines[len(lines) - 1] = highlighted_result
 
         # strip whitespaces

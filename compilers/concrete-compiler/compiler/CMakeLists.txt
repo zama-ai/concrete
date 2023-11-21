@@ -3,13 +3,14 @@ cmake_minimum_required(VERSION 3.17)
 project(concretecompiler LANGUAGES C CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set_property(GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Needed on linux with clang 15 and on MacOS because cxx emits dollars in the optimizer C++ API
 add_definitions("-Wno-dollar-in-identifier-extension")
-
+add_definitions("-Wno-c++98-compat-extra-semi")
 add_definitions("-Wall ")
 add_definitions("-Werror ")
 add_definitions("-Wfatal-errors")
@@ -65,6 +66,19 @@ set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 # Concrete Security curves Configuration
 # -------------------------------------------------------------------------------
 include_directories(${PROJECT_SOURCE_DIR}/../../../tools/parameter-curves/concrete-security-curves-cpp/include)
+
+# -------------------------------------------------------------------------------
+# Concrete Protocol
+# -------------------------------------------------------------------------------
+set(CONCRETE_PROTOCOL_DIR "${PROJECT_SOURCE_DIR}/../../../tools/concrete-protocol")
+add_subdirectory(${CONCRETE_PROTOCOL_DIR} concrete-protocol)
+get_target_property(CONCRETE_PROTOCOL_GEN_DIR concrete-protocol BINARY_DIR)
+set(CONCRETE_PROTOCOL_CAPNP_SRC "${CONCRETE_PROTOCOL_GEN_DIR}/capnp_src_dir/c++/src")
+include_directories(${CONCRETE_PROTOCOL_GEN_DIR})
+include_directories(${CONCRETE_PROTOCOL_CAPNP_SRC})
+add_dependencies(mlir-headers concrete-protocol)
+install(TARGETS concrete-protocol EXPORT concrete-protocol)
+install(EXPORT concrete-protocol DESTINATION "./")
 
 # -------------------------------------------------------------------------------
 # Concrete Optimizer

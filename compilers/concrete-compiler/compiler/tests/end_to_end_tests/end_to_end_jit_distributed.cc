@@ -4,8 +4,10 @@
 #include <tuple>
 #include <type_traits>
 
+#include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
+using concretelang::testlib::deleteFolder;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Auto-parallelize independent FHE ops /////////////////////////////////////
@@ -80,30 +82,28 @@ func.func @main(%arg0: tensor<200x4x!FHE.eint<4>>) -> tensor<200x8x!FHE.eint<4>>
 )XXX",
              "main", false, true, true);
 
-  const size_t numDim = 2;
   const size_t dim0 = 200;
   const size_t dim1 = 4;
   const size_t dim2 = 8;
-  const int64_t dims[numDim]{dim0, dim1};
-  const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
-  std::vector<uint8_t> input;
-  input.reserve(dim0 * dim1);
-
-  for (size_t i = 0; i < dim0 * dim1; ++i)
-    input.push_back(i % 17 % 4);
-
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg(input, shape2D);
+  const std::vector<size_t> inputShape({dim0, dim1});
+  const std::vector<size_t> outputShape({dim0, dim2});
+  std::vector<uint64_t> values;
+  values.reserve(dim0 * dim1);
+  for (size_t i = 0; i < dim0 * dim1; ++i) {
+    values.push_back(i % 17 % 4);
+  }
+  auto input = Tensor<uint64_t>(values, inputShape);
 
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-    llvm::Expected<std::vector<uint64_t>> res =
-        lambda.operator()<std::vector<uint64_t>>({&arg});
-    ASSERT_EXPECTED_SUCCESS(res);
-    ASSERT_EQ(res->size(), dim0 * dim2);
-    distributed_results = *res;
-  } else
-    ASSERT_EXPECTED_FAILURE(lambda.operator()<std::vector<uint64_t>>());
+    auto maybeResult = lambda.call({input});
+    ASSERT_OUTCOME_HAS_VALUE(maybeResult);
+    auto result = maybeResult.value()[0].template getTensor<uint64_t>().value();
+    ASSERT_EQ(result.dimensions, outputShape);
+    distributed_results = result.values;
+  } else {
+    ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
+  }
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Distributed, nn_med_sequential) {
@@ -121,29 +121,27 @@ TEST(Distributed, nn_med_sequential) {
 )XXX",
                "main", false, false, false);
 
-    const size_t numDim = 2;
     const size_t dim0 = 200;
     const size_t dim1 = 4;
     const size_t dim2 = 8;
-    const int64_t dims[numDim]{dim0, dim1};
-    const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
-    std::vector<uint8_t> input;
-    input.reserve(dim0 * dim1);
+    const std::vector<size_t> inputShape({dim0, dim1});
+    const std::vector<size_t> outputShape({dim0, dim2});
+    std::vector<uint64_t> values;
+    values.reserve(dim0 * dim1);
+    for (size_t i = 0; i < dim0 * dim1; ++i) {
+      values.push_back(i % 17 % 4);
+    }
+    auto input = Tensor<uint64_t>(values, inputShape);
 
-    for (size_t i = 0; i < dim0 * dim1; ++i)
-      input.push_back(i % 17 % 4);
-
-    mlir::concretelang::TensorLambdaArgument<
-        mlir::concretelang::IntLambdaArgument<uint8_t>>
-        arg(input, shape2D);
-
-    llvm::Expected<std::vector<uint64_t>> res =
-        lambda.operator()<std::vector<uint64_t>>({&arg});
-
-    ASSERT_EXPECTED_SUCCESS(res);
-    ASSERT_EQ(res->size(), dim0 * dim2);
-    for (size_t i = 0; i < dim0 * dim2; i++)
-      EXPECT_EQ(distributed_results[i], (*res)[i])
-          << "result differ at pos " << i;
+    if (mlir::concretelang::dfr::_dfr_is_root_node()) {
+      auto maybeResult = lambda.call({input});
+      ASSERT_OUTCOME_HAS_VALUE(maybeResult);
+      auto result =
+          maybeResult.value()[0].template getTensor<uint64_t>().value();
+      for (size_t i = 0; i < dim0 * dim2; i++)
+        EXPECT_EQ(distributed_results[i], result.values[i])
+            << "result differ at pos " << i;
+    }
+    deleteFolder(lambda.getArtifactFolder());
   }
 }

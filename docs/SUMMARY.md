@@ -20,6 +20,7 @@
 * [Tagging](tutorial/tagging.md)
 * [Extensions](tutorial/extensions.md)
 * [Comparisons](tutorial/comparisons.md)
+* [Min/Max Operations](tutorial/minmax.md)
 * [Bitwise Operations](tutorial/bitwise.md)
 * [Table Lookups](tutorial/table\_lookups.md)
 * [Rounding](tutorial/rounding.md)

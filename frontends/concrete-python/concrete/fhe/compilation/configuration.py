@@ -725,6 +725,141 @@ class MultivariateStrategy(str, Enum):
         return tuple(result)
 
 
+class MinMaxStrategy(str, Enum):
+    """
+    MinMaxStrategy, to specify implementation preference for minimum and maximum operations.
+    """
+
+    ONE_TLU_PROMOTED = "one-tlu-promoted"
+    # -----------------------------------------------------------------------------
+    # conditions:
+    # - (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 8-bits -> 9-bits
+    # - y :: 3-bits -> 9-bits
+    #
+    # execution:
+    # - tlu(x - y) + y :: (9-bits -> 9-bits) + 9-bits
+
+    THREE_TLU_CASTED = "three-tlu-casted"
+    # -----------------------------------------------------------------------------
+    # conditions:
+    # - (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 8-bits
+    # - y :: 3-bits
+    #
+    # execution:
+    # - x = tlu(x) :: 8-bits -> 9-bits
+    # - y = tlu(y) :: 3-bits -> 9-bits
+    # - (
+    # -   tlu(x - y) + y :: (9-bits -> 3-bits) + 3-bits
+    # -   or
+    # -   tlu(x - y) + tlu(y) :: (9-bits -> 8-bits) + (3-bits -> 8-bits)
+    # - )
+
+    CHUNKED = "chunked"
+    # ---------------
+    # bit-width assignment:
+    # - x :: 8-bits
+    # - y :: 3-bits
+    #
+    # execution:
+    # - at least 9 TLUs
+    # - at most 21 TLUs
+    # - it's complicated...
+
+    @classmethod
+    def parse(cls, string: str) -> "MinMaxStrategy":
+        """
+        Convert a string to a MinMaxStrategy.
+        """
+
+        if isinstance(string, cls):
+            return string
+
+        if not isinstance(string, str):
+            message = f"{string} cannot be parsed to a {cls.__name__}"
+            raise TypeError(message)
+
+        string = string.lower()
+        for value in MinMaxStrategy:
+            if string == value.value:
+                return value  # pragma: no cover
+
+        message = (
+            f"'{string}' is not a valid '{friendly_type_format(cls)}' ("
+            f"{', '.join(v.value for v in MinMaxStrategy)})"
+        )
+        raise ValueError(message)
+
+    def can_be_used(self, x: ValueDescription, y: ValueDescription) -> bool:
+        """
+        Get if the strategy can be used for the operation.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the operation
+
+            y (ValueDescription):
+                description of the rhs of the operation
+
+        Returns:
+            bool:
+                whether the strategy can be used for the operation
+        """
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        if self in {
+            MinMaxStrategy.ONE_TLU_PROMOTED,
+            MinMaxStrategy.THREE_TLU_CASTED,
+        }:
+            x_minus_y_min = x.dtype.min() - y.dtype.max()
+            x_minus_y_max = x.dtype.max() - y.dtype.min()
+
+            x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+            x_minus_y_dtype = Integer.that_can_represent(x_minus_y_range)
+
+            if x_minus_y_dtype.bit_width > MAXIMUM_TLU_BIT_WIDTH:  # pragma: no cover
+                return False
+
+        return True
+
+    def promotions(self, x: ValueDescription, y: ValueDescription) -> Tuple[int, int]:
+        """
+        Get bit-width promotions for the strategy.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the operation
+
+            y (ValueDescription):
+                description of the rhs of the operation
+
+        Returns:
+            Tuple[int, int]:
+                required minimum bit-width for x and y to use the strategy
+        """
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        if self == MinMaxStrategy.ONE_TLU_PROMOTED:
+            x_minus_y_min = x.dtype.min() - y.dtype.max()
+            x_minus_y_max = x.dtype.max() - y.dtype.min()
+
+            x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+            x_minus_y_dtype = Integer.that_can_represent(x_minus_y_range)
+
+            return x_minus_y_dtype.bit_width, x_minus_y_dtype.bit_width
+
+        return x.dtype.bit_width, y.dtype.bit_width
+
+
 class Configuration:
     """
     Configuration class, to allow the compilation process to be customized.
@@ -741,7 +876,6 @@ class Configuration:
     loop_parallelize: bool
     dataflow_parallelize: bool
     auto_parallelize: bool
-    jit: bool
     p_error: Optional[float]
     global_p_error: Optional[float]
     insecure_key_cache_location: Optional[str]
@@ -759,6 +893,7 @@ class Configuration:
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
     multivariate_strategy_preference: List[MultivariateStrategy]
+    min_max_strategy_preference: List[MinMaxStrategy]
 
     def __init__(
         self,
@@ -775,7 +910,6 @@ class Configuration:
         loop_parallelize: bool = True,
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
-        jit: bool = False,
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
@@ -800,6 +934,9 @@ class Configuration:
         multivariate_strategy_preference: Optional[
             Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]
         ] = None,
+        min_max_strategy_preference: Optional[
+            Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]
+        ] = None,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -819,7 +956,6 @@ class Configuration:
         self.loop_parallelize = loop_parallelize
         self.dataflow_parallelize = dataflow_parallelize
         self.auto_parallelize = auto_parallelize
-        self.jit = jit
         self.p_error = p_error
         self.global_p_error = global_p_error
         self.auto_adjust_rounders = auto_adjust_rounders
@@ -863,6 +999,15 @@ class Configuration:
                 else [MultivariateStrategy.parse(multivariate_strategy_preference)]
             )
         )
+        self.min_max_strategy_preference = (
+            []
+            if min_max_strategy_preference is None
+            else (
+                [MinMaxStrategy.parse(strategy) for strategy in min_max_strategy_preference]
+                if isinstance(min_max_strategy_preference, list)
+                else [MinMaxStrategy.parse(min_max_strategy_preference)]
+            )
+        )
 
         self._validate()
 
@@ -887,7 +1032,6 @@ class Configuration:
         loop_parallelize: Union[Keep, bool] = KEEP,
         dataflow_parallelize: Union[Keep, bool] = KEEP,
         auto_parallelize: Union[Keep, bool] = KEEP,
-        jit: Union[Keep, bool] = KEEP,
         p_error: Union[Keep, Optional[float]] = KEEP,
         global_p_error: Union[Keep, Optional[float]] = KEEP,
         auto_adjust_rounders: Union[Keep, bool] = KEEP,
@@ -909,6 +1053,9 @@ class Configuration:
         shifts_with_promotion: Union[Keep, bool] = KEEP,
         multivariate_strategy_preference: Union[
             Keep, Optional[Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]]
+        ] = KEEP,
+        min_max_strategy_preference: Union[
+            Keep, Optional[Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]]
         ] = KEEP,
     ) -> "Configuration":
         """
@@ -932,14 +1079,13 @@ class Configuration:
         Validate configuration.
         """
         for name, hint in get_type_hints(Configuration.__init__).items():
-            if name == "comparison_strategy_preference":
-                # checked in the constructor within parse method of ComparisonStrategy
-                continue
-            if name == "bitwise_strategy_preference":
-                # checked in the constructor within parse method of BitwiseStrategy
-                continue
-            if name == "multivariate_strategy_preference":
-                # checked in the constructor within parse method of MultivariateStrategy
+            already_checked_by_parse_methods = [
+                "comparison_strategy_preference",
+                "bitwise_strategy_preference",
+                "multivariate_strategy_preference",
+                "min_max_strategy_preference",
+            ]
+            if name in already_checked_by_parse_methods:
                 continue
 
             original_hint = hint

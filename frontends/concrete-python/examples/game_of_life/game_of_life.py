@@ -9,6 +9,7 @@ import numpy as np
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 # ruff: noqa:E402
+# pylint: disable=wrong-import-position,no-member
 import argparse
 
 # ruff: noqa:E402
@@ -207,6 +208,7 @@ def update_grid(grid, method="method_3b"):
 # Graphic functions
 # The graphical functions of this code were inspired by those of
 # https://github.com/matheusgomes28/pygame-life/blob/main/pygame_life.py
+# pylint: disable=unused-argument
 def manage_graphics_and_refresh(
     grid,
     count,
@@ -441,6 +443,7 @@ def main():
             fhe_simulation=fhe_simulation,
             global_p_error=None,  # 2**log2_global_p_error,
             p_error=2**log2_p_error,
+            bitwise_strategy_preference=fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
         )
 
         if args.stop_after_compilation:

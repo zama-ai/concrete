@@ -8,7 +8,14 @@ add_compile_options(-fexceptions)
 # ######################################################################################################################
 set(LLVM_OPTIONAL_SOURCES CompilerAPIModule.cpp ConcretelangModule.cpp FHEModule.cpp)
 
-add_mlir_public_c_api_library(CONCRETELANGPySupport CompilerEngine.cpp LINK_LIBS PUBLIC MLIRCAPIIR ConcretelangSupport)
+add_mlir_public_c_api_library(
+  CONCRETELANGPySupport
+  CompilerEngine.cpp
+  LINK_LIBS
+  PUBLIC
+  MLIRCAPIIR
+  ConcretelangSupport
+  ConcretelangCommon)
 
 # ######################################################################################################################
 # Decalare native Python extension
@@ -28,9 +35,6 @@ declare_mlir_python_extension(
   CompilerAPIModule.cpp
   EMBED_CAPI_LINK_LIBS
   MLIRCAPIRegisterEverything
-  CONCRETELANGCAPIFHE
-  CONCRETELANGCAPIFHELINALG
-  CONCRETELANGCAPITRACING
   CONCRETELANGPySupport)
 
 # ######################################################################################################################
@@ -48,9 +52,6 @@ declare_mlir_python_sources(
   concrete/compiler/compilation_context.py
   concrete/compiler/compilation_feedback.py
   concrete/compiler/compilation_options.py
-  concrete/compiler/jit_compilation_result.py
-  concrete/compiler/jit_support.py
-  concrete/compiler/jit_lambda.py
   concrete/compiler/key_set_cache.py
   concrete/compiler/key_set.py
   concrete/compiler/lambda_argument.py

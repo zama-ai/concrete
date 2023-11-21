@@ -1,16 +1,19 @@
 #ifndef END_TO_END_JIT_TEST_H
 #define END_TO_END_JIT_TEST_H
 
-#include <gtest/gtest.h>
-
 #include "../tests_tools/keySetCache.h"
-
+#include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/Support/JITSupport.h"
-
+#include "concretelang/TestLib/TestCircuit.h"
+#include "cstdlib"
 #include "end_to_end_test.h"
 #include "globals.h"
 #include "tests_tools/assert.h"
+#include <gtest/gtest.h>
+
+using concretelang::error::Result;
+using concretelang::error::StringError;
+using concretelang::testlib::TestCircuit;
 
 llvm::StringRef DEFAULT_func = "main";
 bool DEFAULT_useDefaultFHEConstraints = false;
@@ -25,9 +28,7 @@ unsigned int DEFAULT_chunkWidth = 2;
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
-inline llvm::Expected<
-    mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>>
-internalCheckedJit(
+inline Result<TestCircuit> internalCheckedJit(
     llvm::StringRef src, llvm::StringRef func = DEFAULT_func,
     bool useDefaultFHEConstraints = DEFAULT_useDefaultFHEConstraints,
     bool dataflowParallelize = DEFAULT_dataflowParallelize,
@@ -38,6 +39,9 @@ internalCheckedJit(
     unsigned int chunkSize = DEFAULT_chunkSize,
     unsigned int chunkWidth = DEFAULT_chunkWidth) {
 
+  std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
+      mlir::concretelang::CompilationContext::createShared();
+  mlir::concretelang::CompilerEngine ce{ccx};
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
   options.optimizerConfig.global_p_error = global_p_error;
@@ -49,8 +53,6 @@ internalCheckedJit(
     options.optimizerConfig.strategy =
         mlir::concretelang::optimizer::Strategy::V0;
   }
-
-  // Allow loop parallelism in all cases
   options.loopParallelize = loopParallelize;
 #ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
 #ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
@@ -62,11 +64,24 @@ internalCheckedJit(
 #endif
   options.batchTFHEOps = batchTFHEOps;
 
-  auto lambdaOrErr =
-      mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::create(
-          src, options, getTestKeySetCache(), mlir::concretelang::JITSupport());
+  ce.setCompilationOptions(options);
+  std::vector<std::string> sources = {src.str()};
+  auto artifactFolder = concretelang::testlib::createTempFolderIn(
+      concretelang::testlib::getSystemTempFolderPath());
+  auto result = ce.compile(sources, artifactFolder);
+  if (!result) {
+    llvm::errs() << result.takeError();
+    return StringError("Failed to compile sources....");
+  }
+  auto compiled = result.get();
 
-  return lambdaOrErr;
+  auto keyset =
+      getTestKeySetCachePtr()
+          ->getKeyset(compiled.getProgramInfo().asReader().getKeyset(), 0, 0)
+          .value();
+  return TestCircuit::create(
+      keyset, compiled.getProgramInfo().asReader(),
+      compiled.getSharedLibraryPath(compiled.getOutputDirPath()), 0, 0, false);
 }
 
 // Wrapper around `internalCheckedJit` that causes
@@ -74,7 +89,7 @@ internalCheckedJit(
 // caller instead of `internalCheckedJit`.
 #define checkedJit(VARNAME, ...)                                               \
   auto VARNAMEOrErr = internalCheckedJit(__VA_ARGS__);                         \
-  ASSERT_EXPECTED_SUCCESS(VARNAMEOrErr);                                       \
-  auto VARNAME = std::move(*VARNAMEOrErr);
+  ASSERT_OUTCOME_HAS_VALUE(VARNAMEOrErr);                                      \
+  auto VARNAME = std::move(VARNAMEOrErr.value());
 
 #endif

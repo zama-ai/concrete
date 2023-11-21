@@ -18,6 +18,8 @@ pub enum Transition {
 #[derive(Clone, Debug, Default)]
 pub struct InstructionPartition {
     // The partition assigned to the instruction
+    #[allow(unknown_lints)]
+    #[allow(clippy::struct_field_names)]
     pub instruction_partition: PartitionIndex,
     // How the input are made compatible with the instruction partition
     pub inputs_transition: Vec<Option<Transition>>,

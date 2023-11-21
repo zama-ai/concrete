@@ -1,3 +1,5 @@
+add_compile_options(-fexceptions)
+
 add_subdirectory(FHEToTFHEScalar)
 add_subdirectory(FHEToTFHECrt)
 add_subdirectory(TFHEGlobalParametrization)

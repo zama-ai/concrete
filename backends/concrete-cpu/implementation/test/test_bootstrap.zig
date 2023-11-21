@@ -36,7 +36,7 @@ const KeySet = struct {
         key_variance: f64,
     ) !KeySet {
         var raw_fft = c.aligned_alloc(cpu.CONCRETE_FFT_ALIGN, cpu.CONCRETE_FFT_SIZE);
-        const fft = @ptrCast(*cpu.Fft, raw_fft);
+        const fft: *cpu.Fft = @ptrCast(raw_fft);
 
         cpu.concrete_cpu_construct_concrete_fft(fft, polynomial_size);
 
@@ -72,7 +72,7 @@ const KeySet = struct {
                 fft,
             ) == 0,
         );
-        const stack = @ptrCast([*]u8, c.aligned_alloc(stack_align, stack_size))[0..stack_size];
+        const stack = @as([*]u8, @ptrCast(c.aligned_alloc(stack_align, stack_size)))[0..stack_size];
 
         return KeySet{
             .in_dim = in_dim,
@@ -196,9 +196,9 @@ fn encrypt_bootstrap_decrypt(
     const raw_lut = try expand_lut(lut, glwe_dim, polynomial_size);
     defer allocator.free(raw_lut);
 
-    const pt = (@intToFloat(f64, lut_index) + 0.5) / (2.0 * @intToFloat(f64, precision)) * std.math.pow(f64, 2.0, 64);
+    const pt = (@as(f64, @floatFromInt(lut_index)) + 0.5) / (2.0 * @as(f64, @floatFromInt(precision))) * std.math.pow(f64, 2.0, 64);
 
-    const image = try key_set.bootstrap(@floatToInt(u64, pt), encryption_variance, raw_lut, csprng);
+    const image = try key_set.bootstrap(@as(u64, @intFromFloat(pt)), encryption_variance, raw_lut, csprng);
 
     return image;
 }
@@ -206,7 +206,7 @@ fn encrypt_bootstrap_decrypt(
 test "bootstrap" {
     var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
     defer c.free(raw_csprng);
-    const csprng = @ptrCast(*cpu.Csprng, raw_csprng);
+    const csprng: *cpu.Csprng = @ptrCast(raw_csprng);
     cpu.concrete_cpu_construct_concrete_csprng(
         csprng,
         cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },
@@ -237,7 +237,7 @@ test "bootstrap" {
 
     const expected_image = if (lut_index < precision) lut[lut_index] else -%lut[(lut_index - precision)];
 
-    const diff = @intToFloat(f64, @bitCast(i64, image -% expected_image)) / std.math.pow(f64, 2.0, 64);
+    const diff = @as(f64, @floatFromInt(@as(i64, @bitCast(image -% expected_image)))) / std.math.pow(f64, 2.0, 64);
 
     try std.testing.expect(@fabs(diff) < 0.001);
 }

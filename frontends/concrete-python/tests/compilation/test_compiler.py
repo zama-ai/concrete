@@ -2,11 +2,13 @@
 Tests of `Compiler` class.
 """
 
+import json
+
 import numpy as np
 import pytest
 
 from concrete import fhe
-from concrete.fhe.compilation import Compiler
+from concrete.fhe.compilation import ClientSpecs, Compiler
 
 
 def test_compiler_bad_init():
@@ -345,68 +347,6 @@ return %3
     )
 
 
-def test_direct_circuit_multi_output(helpers):
-    """
-    Test `run` method of `Circuit` class with bad parameters.
-    """
-
-    configuration = helpers.configuration()
-    with pytest.raises(RuntimeError) as excinfo:
-
-        @fhe.circuit({"x": "encrypted", "y": "encrypted"}, configuration)
-        def f(x: fhe.uint4, y: fhe.uint4):
-            return x, y
-
-    assert (
-        str(excinfo.value)
-        == """\
-Function you are trying to compile cannot be compiled
-
-%0 = x        # EncryptedScalar<uint4>
-%1 = y        # EncryptedScalar<uint4>
-return %0, %1
-^^^^^^^^^^^^^ multiple outputs are not supported\
-"""
-    )
-
-
-def test_circuit_multi_output(helpers):
-    """
-    Test `run` method of `Circuit` class with bad parameters.
-    """
-
-    configuration = helpers.configuration()
-
-    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
-    def f(x, y):
-        return x, y
-
-    inputset = [(0, 0), (15, 15)]
-    graph = f.trace(inputset)
-    assert (
-        graph.format()
-        == """\
-%0 = x        # EncryptedScalar<uint4>        ∈ [0, 15]
-%1 = y        # EncryptedScalar<uint4>        ∈ [0, 15]
-return %0, %1\
-"""
-    )
-
-    with pytest.raises(RuntimeError) as excinfo:
-        f.compile(inputset, configuration)
-    assert (
-        str(excinfo.value)
-        == """\
-Function you are trying to compile cannot be compiled
-
-%0 = x        # EncryptedScalar<uint4>
-%1 = y        # EncryptedScalar<uint4>
-return %0, %1
-^^^^^^^^^^^^^ multiple outputs are not supported\
-"""
-    )
-
-
 def test_compiler_compile_with_single_tuple_inputset(helpers):
     """
     Test compiling a single argument function with an inputset made of single element tuples.
@@ -423,3 +363,29 @@ def test_compiler_compile_with_single_tuple_inputset(helpers):
 
     sample = 4
     helpers.check_execution(circuit, f, sample)
+
+
+def test_compiler_tampered_client_parameters(helpers):
+    """
+    Test running a function with tampered client parameters.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted"})
+    def f(x):
+        return x
+
+    inputset = [(3,), (4,), (5,)]
+    circuit = f.compile(inputset, configuration)
+    sample = 4
+
+    client_parameters_json = json.loads(circuit.client.specs.serialize())
+    client_parameters_json["circuits"][0]["inputs"][0]["typeInfo"] = {}
+
+    tampered_bytes = bytes(json.dumps(client_parameters_json), "UTF-8")
+    circuit.client.specs = ClientSpecs.deserialize(tampered_bytes)
+
+    with pytest.raises(ValueError) as excinfo:
+        helpers.check_execution(circuit, f, sample)
+    assert str(excinfo.value) == "Expected a valid type in dict_keys([])"

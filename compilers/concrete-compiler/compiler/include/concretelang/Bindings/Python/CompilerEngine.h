@@ -6,10 +6,8 @@
 #ifndef CONCRETELANG_BINDINGS_PYTHON_COMPILER_ENGINE_H
 #define CONCRETELANG_BINDINGS_PYTHON_COMPILER_ENGINE_H
 
+#include "concretelang/Common/Compat.h"
 #include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/Support/JITSupport.h"
-#include "concretelang/Support/Jit.h"
-#include "concretelang/Support/LibrarySupport.h"
 #include "mlir-c/IR.h"
 
 /// MLIR_CAPI_EXPORTED is used here throughout the API, because of the way the
@@ -29,42 +27,6 @@ struct executionArguments {
 };
 typedef struct executionArguments executionArguments;
 
-// JIT Support bindings ///////////////////////////////////////////////////////
-
-struct JITSupport_Py {
-  mlir::concretelang::JITSupport support;
-};
-typedef struct JITSupport_Py JITSupport_Py;
-
-MLIR_CAPI_EXPORTED JITSupport_Py jit_support(std::string runtimeLibPath);
-
-MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
-jit_compile(JITSupport_Py support, const char *module,
-            mlir::concretelang::CompilationOptions options);
-
-MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
-jit_compile_module(
-    JITSupport_Py support, mlir::ModuleOp module,
-    mlir::concretelang::CompilationOptions options,
-    std::shared_ptr<mlir::concretelang::CompilationContext> cctx);
-
-MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
-jit_load_client_parameters(JITSupport_Py support,
-                           mlir::concretelang::JitCompilationResult &);
-
-MLIR_CAPI_EXPORTED mlir::concretelang::CompilationFeedback
-jit_load_compilation_feedback(JITSupport_Py support,
-                              mlir::concretelang::JitCompilationResult &);
-
-MLIR_CAPI_EXPORTED std::shared_ptr<mlir::concretelang::JITLambda>
-jit_load_server_lambda(JITSupport_Py support,
-                       mlir::concretelang::JitCompilationResult &);
-
-MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
-jit_server_call(JITSupport_Py support, mlir::concretelang::JITLambda &lambda,
-                concretelang::clientlib::PublicArguments &args,
-                concretelang::clientlib::EvaluationKeys &evaluationKeys);
-
 // Library Support bindings ///////////////////////////////////////////////////
 
 struct LibrarySupport_Py {
@@ -79,16 +41,16 @@ library_support(const char *outputPath, const char *runtimeLibraryPath,
                 bool generateCppHeader);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
-library_compile(LibrarySupport_Py support, const char *module,
-                mlir::concretelang::CompilationOptions options);
-
-MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
 library_compile_module(
     LibrarySupport_Py support, mlir::ModuleOp module,
     mlir::concretelang::CompilationOptions options,
     std::shared_ptr<mlir::concretelang::CompilationContext> cctx);
 
-MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
+MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
+library_compile(LibrarySupport_Py support, const char *module,
+                mlir::concretelang::CompilationOptions options);
+
+MLIR_CAPI_EXPORTED concretelang::clientlib::ClientParameters
 library_load_client_parameters(LibrarySupport_Py support,
                                mlir::concretelang::LibraryCompilationResult &);
 
@@ -98,7 +60,8 @@ library_load_compilation_feedback(
 
 MLIR_CAPI_EXPORTED concretelang::serverlib::ServerLambda
 library_load_server_lambda(LibrarySupport_Py support,
-                           mlir::concretelang::LibraryCompilationResult &);
+                           mlir::concretelang::LibraryCompilationResult &,
+                           bool useSimulation);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
 library_server_call(LibrarySupport_Py support,
@@ -115,7 +78,7 @@ MLIR_CAPI_EXPORTED std::string
 library_get_shared_lib_path(LibrarySupport_Py support);
 
 MLIR_CAPI_EXPORTED std::string
-library_get_client_parameters_path(LibrarySupport_Py support);
+library_get_program_info_path(LibrarySupport_Py support);
 
 // Client Support bindings ///////////////////////////////////////////////////
 
@@ -129,29 +92,31 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
                   concretelang::clientlib::KeySet &keySet,
                   llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args);
 
-MLIR_CAPI_EXPORTED lambdaArgument
-decrypt_result(concretelang::clientlib::KeySet &keySet,
+MLIR_CAPI_EXPORTED std::vector<lambdaArgument>
+decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
+               concretelang::clientlib::KeySet &keySet,
                concretelang::clientlib::PublicResult &publicResult);
 
 // Serialization ////////////////////////////////////////////////////////////
 
-MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
+MLIR_CAPI_EXPORTED concretelang::clientlib::ClientParameters
 clientParametersUnserialize(const std::string &json);
 
 MLIR_CAPI_EXPORTED std::string
-clientParametersSerialize(mlir::concretelang::ClientParameters &params);
+clientParametersSerialize(concretelang::clientlib::ClientParameters &params);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
 publicArgumentsUnserialize(
-    mlir::concretelang::ClientParameters &clientParameters,
+    concretelang::clientlib::ClientParameters &clientParameters,
     const std::string &buffer);
 
 MLIR_CAPI_EXPORTED std::string publicArgumentsSerialize(
     concretelang::clientlib::PublicArguments &publicArguments);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
-publicResultUnserialize(mlir::concretelang::ClientParameters &clientParameters,
-                        const std::string &buffer);
+publicResultUnserialize(
+    concretelang::clientlib::ClientParameters &clientParameters,
+    const std::string &buffer);
 
 MLIR_CAPI_EXPORTED std::string
 publicResultSerialize(concretelang::clientlib::PublicResult &publicResult);
@@ -173,6 +138,22 @@ valueUnserialize(const std::string &buffer);
 
 MLIR_CAPI_EXPORTED std::string
 valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value);
+
+MLIR_CAPI_EXPORTED concretelang::clientlib::ValueExporter createValueExporter(
+    concretelang::clientlib::KeySet &keySet,
+    concretelang::clientlib::ClientParameters &clientParameters);
+
+MLIR_CAPI_EXPORTED concretelang::clientlib::SimulatedValueExporter
+createSimulatedValueExporter(
+    concretelang::clientlib::ClientParameters &clientParameters);
+
+MLIR_CAPI_EXPORTED concretelang::clientlib::ValueDecrypter createValueDecrypter(
+    concretelang::clientlib::KeySet &keySet,
+    concretelang::clientlib::ClientParameters &clientParameters);
+
+MLIR_CAPI_EXPORTED concretelang::clientlib::SimulatedValueDecrypter
+createSimulatedValueDecrypter(
+    concretelang::clientlib::ClientParameters &clientParameters);
 
 /// Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);

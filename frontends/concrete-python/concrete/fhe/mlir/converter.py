@@ -194,6 +194,7 @@ class Converter:
                 bitwise_strategy_preference=configuration.bitwise_strategy_preference,
                 shifts_with_promotion=configuration.shifts_with_promotion,
                 multivariate_strategy_preference=configuration.multivariate_strategy_preference,
+                min_max_strategy_preference=configuration.min_max_strategy_preference,
             ),
             ProcessRounding(),
         ]
@@ -400,6 +401,14 @@ class Converter:
         assert len(preds) == 2
         return ctx.matmul(ctx.typeof(node), preds[0], preds[1])
 
+    def maximum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 2
+
+        if all(pred.is_encrypted for pred in preds):
+            return ctx.maximum(ctx.typeof(node), preds[0], preds[1])
+
+        return self.tlu(ctx, node, preds)
+
     def maxpool1d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         ctx.error({node: "1-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
@@ -417,6 +426,14 @@ class Converter:
     def maxpool3d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         ctx.error({node: "3-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
+
+    def minimum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 2
+
+        if all(pred.is_encrypted for pred in preds):
+            return ctx.minimum(ctx.typeof(node), preds[0], preds[1])
+
+        return self.tlu(ctx, node, preds)
 
     def multiply(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
