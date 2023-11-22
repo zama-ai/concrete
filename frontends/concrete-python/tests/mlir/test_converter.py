@@ -990,6 +990,23 @@ return %2
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: fhe.truncate_bit_pattern(x, lsbs_to_remove=2),
+            {"x": "clear"},
+            [10, 20, 30],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                                                 # ClearScalar<uint5>        ∈ [10, 30]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ operand is clear
+%1 = truncate_bit_pattern(%0, lsbs_to_remove=2)        # ClearScalar<uint5>        ∈ [8, 28]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear truncate bit pattern is not supported
+return %1
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(

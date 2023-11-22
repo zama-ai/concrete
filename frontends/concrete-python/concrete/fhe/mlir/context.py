@@ -3218,6 +3218,45 @@ class Context:
 
         return xs[0]
 
+    def truncate_bit_pattern(self, x: Conversion, lsbs_to_remove: int) -> Conversion:
+        if x.is_clear:
+            highlights = {
+                x.origin: "operand is clear",
+                self.converting: "but clear truncate bit pattern is not supported",
+            }
+            self.error(highlights)
+
+        assert x.bit_width > lsbs_to_remove
+
+        resulting_bit_width = x.bit_width
+        for i in range(lsbs_to_remove):
+            lsb = self.lsb(x.type, x)
+            cleared = self.sub(x.type, x, lsb)
+
+            new_bit_width = (x.bit_width - 1) if i != (lsbs_to_remove - 1) else resulting_bit_width
+            x = self.reinterpret(cleared, bit_width=new_bit_width)
+
+        return x
+
+    def lsb(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
+        assert resulting_type.shape == x.shape
+        assert resulting_type.is_signed == x.is_signed
+        assert resulting_type.is_encrypted and x.is_encrypted
+
+        operation = fhe.LsbEintOp if x.is_scalar else fhelinalg.LsbEintOp
+        return self.operation(operation, resulting_type, x.result)
+
+    def reinterpret(self, x: Conversion, *, bit_width: int) -> Conversion:
+        assert x.is_encrypted
+
+        resulting_element_type = (self.eint if x.is_unsigned else self.esint)(bit_width)
+        resulting_type = self.tensor(resulting_element_type, shape=x.shape)
+
+        operation = (
+            fhe.ReinterpretPrecisionEintOp if x.is_scalar else fhelinalg.ReinterpretPrecisionEintOp
+        )
+        return self.operation(operation, resulting_type, x.result)
+
     def zeros(self, resulting_type: ConversionType) -> Conversion:
         assert resulting_type.is_encrypted
 

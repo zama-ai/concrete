@@ -23,6 +23,7 @@
 * [Min/Max Operations](tutorial/minmax.md)
 * [Bitwise Operations](tutorial/bitwise.md)
 * [Table Lookups](tutorial/table\_lookups.md)
+* [Truncating](tutorial/truncating.md)
 * [Rounding](tutorial/rounding.md)
 * [Floating Points](tutorial/floating\_points.md)
 * [Multi Precision](tutorial/multi\_precision.md)

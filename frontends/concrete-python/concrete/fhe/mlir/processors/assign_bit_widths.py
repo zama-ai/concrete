@@ -562,3 +562,7 @@ class AdditionalConstraints:
     transpose = {
         inputs_and_output_share_precision,
     }
+
+    truncate_bit_pattern = {
+        inputs_and_output_share_precision,
+    }

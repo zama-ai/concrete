@@ -618,6 +618,20 @@ class Converter:
         variable_input_index = variable_input_indices[0]
         variable_input = preds[variable_input_index]
 
+        if variable_input.origin.properties.get("name") == "truncate_bit_pattern":
+            original_bit_width = variable_input.origin.properties["original_bit_width"]
+            lsbs_to_remove = variable_input.origin.properties["kwargs"]["lsbs_to_remove"]
+            truncated_bit_width = original_bit_width - lsbs_to_remove
+
+            if variable_input.bit_width > original_bit_width:
+                bit_width_difference = variable_input.bit_width - original_bit_width
+                shifter = ctx.constant(
+                    ctx.i(variable_input.bit_width + 1), 2**bit_width_difference
+                )
+                variable_input = ctx.mul(variable_input.type, variable_input, shifter)
+
+            variable_input = ctx.reinterpret(variable_input, bit_width=truncated_bit_width)
+
         if len(tables) == 1:
             return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist())
 
@@ -636,6 +650,10 @@ class Converter:
             preds[0],
             axes=node.properties["kwargs"].get("axes", []),
         )
+
+    def truncate_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        return ctx.truncate_bit_pattern(preds[0], node.properties["kwargs"]["lsbs_to_remove"])
 
     def zeros(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 0

@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 from concrete.compiler import CompilationContext
 
-from ..extensions import AutoRounder
+from ..extensions import AutoRounder, AutoTruncator
 from ..mlir import GraphConverter
 from ..representation import Graph
 from ..tracing import Tracer
@@ -278,6 +278,9 @@ class Compiler:
 
         if self.configuration.auto_adjust_rounders:
             AutoRounder.adjust(self.function, self.inputset)
+
+        if self.configuration.auto_adjust_truncators:
+            AutoTruncator.adjust(self.function, self.inputset)
 
         if self.graph is None:
             try:

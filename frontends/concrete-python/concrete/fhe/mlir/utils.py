@@ -162,7 +162,9 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
         if pred.operation != Operation.Constant:
             variable_input_index = index
             break
+
     assert_that(variable_input_index != -1)
+    variable_input = preds[variable_input_index]
 
     variable_input_dtype = node.inputs[variable_input_index].dtype
     variable_input_shape = node.inputs[variable_input_index].shape
@@ -170,7 +172,6 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
     assert_that(isinstance(variable_input_dtype, Integer))
     variable_input_dtype = deepcopy(cast(Integer, variable_input_dtype))
 
-    variable_input = preds[variable_input_index]
     if (
         variable_input.operation == Operation.Generic
         and variable_input.properties["name"] == "round_bit_pattern"
@@ -186,6 +187,20 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
             variable_input_dtype.bit_width += 1
 
         step = (2**variable_input_dtype.bit_width) // expected_number_of_elements
+
+    elif (
+        variable_input.operation == Operation.Generic
+        and variable_input.properties["name"] == "truncate_bit_pattern"
+    ):
+        original_bit_width = variable_input.properties["original_bit_width"]
+        lsbs_to_remove = variable_input.properties["kwargs"]["lsbs_to_remove"]
+
+        resulting_bit_width = original_bit_width - lsbs_to_remove
+        expected_number_of_elements = 2**resulting_bit_width
+
+        variable_input_dtype.bit_width = original_bit_width
+        step = (2**original_bit_width) // expected_number_of_elements
+
     else:
         step = 1
 
