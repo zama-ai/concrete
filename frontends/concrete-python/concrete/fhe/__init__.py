@@ -28,6 +28,7 @@ from .compilation import (
 from .compilation.decorators import circuit, compiler
 from .extensions import (
     AutoRounder,
+    AutoTruncator,
     LookupTable,
     array,
     conv,
@@ -39,6 +40,7 @@ from .extensions import (
     ones_like,
     round_bit_pattern,
     tag,
+    truncate_bit_pattern,
     univariate,
     zero,
     zeros,

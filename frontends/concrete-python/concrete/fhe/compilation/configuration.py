@@ -880,6 +880,7 @@ class Configuration:
     global_p_error: Optional[float]
     insecure_key_cache_location: Optional[str]
     auto_adjust_rounders: bool
+    auto_adjust_truncators: bool
     single_precision: bool
     parameter_selection_strategy: ParameterSelectionStrategy
     show_progress: bool
@@ -913,6 +914,7 @@ class Configuration:
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
+        auto_adjust_truncators: bool = False,
         single_precision: bool = False,
         parameter_selection_strategy: Union[
             ParameterSelectionStrategy, str
@@ -959,6 +961,7 @@ class Configuration:
         self.p_error = p_error
         self.global_p_error = global_p_error
         self.auto_adjust_rounders = auto_adjust_rounders
+        self.auto_adjust_truncators = auto_adjust_truncators
         self.single_precision = single_precision
         self.parameter_selection_strategy = ParameterSelectionStrategy.parse(
             parameter_selection_strategy
@@ -1035,6 +1038,7 @@ class Configuration:
         p_error: Union[Keep, Optional[float]] = KEEP,
         global_p_error: Union[Keep, Optional[float]] = KEEP,
         auto_adjust_rounders: Union[Keep, bool] = KEEP,
+        auto_adjust_truncators: Union[Keep, bool] = KEEP,
         single_precision: Union[Keep, bool] = KEEP,
         parameter_selection_strategy: Union[Keep, Union[ParameterSelectionStrategy, str]] = KEEP,
         show_progress: Union[Keep, bool] = KEEP,
