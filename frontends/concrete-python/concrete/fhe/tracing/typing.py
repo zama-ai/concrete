@@ -2,6 +2,7 @@
 Declaration of type annotation.
 """
 
+from copy import deepcopy
 from typing import Any
 
 from ..dtypes import Float, SignedInteger, UnsignedInteger
@@ -1219,4 +1220,4 @@ class tensor(TensorAnnotation):  # type: ignore
         if not all(isinstance(x, int) for x in shape):
             raise ValueError("Tensor annotation shape elements must be 'int'")
 
-        return ValueDescription(dtype=annotation.dtype, shape=shape, is_encrypted=False)
+        return ValueDescription(dtype=deepcopy(annotation.dtype), shape=shape, is_encrypted=False)
