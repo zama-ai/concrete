@@ -1251,12 +1251,12 @@ def test_converter_process_multi_precision(function, parameters, expected_graph,
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    processed_graph = GraphConverter().process(graph, configuration)
-    for node in processed_graph.query_nodes():
+    GraphConverter().process(graph, configuration)
+    for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
 
-    helpers.check_str(expected_graph, processed_graph.format())
+    helpers.check_str(expected_graph, graph.format())
 
 
 @pytest.mark.parametrize(
@@ -1293,9 +1293,9 @@ def test_converter_process_single_precision(function, parameters, expected_graph
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    processed_graph = GraphConverter().process(graph, configuration)
-    for node in processed_graph.query_nodes():
+    GraphConverter().process(graph, configuration)
+    for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
 
-    helpers.check_str(expected_graph, processed_graph.format())
+    helpers.check_str(expected_graph, graph.format())

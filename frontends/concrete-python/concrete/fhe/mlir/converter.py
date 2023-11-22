@@ -5,7 +5,6 @@ Declaration of `Converter` class.
 # pylint: disable=import-error,no-name-in-module
 
 import sys
-from copy import deepcopy
 from typing import Dict, List, Tuple, Union
 
 import concrete.lang
@@ -55,7 +54,7 @@ class Converter:
                 In-memory MLIR module corresponding to the graph
         """
 
-        graph = self.process(graph, configuration)
+        self.process(graph, configuration)
 
         with mlir_context as context, MlirLocation.unknown():
             concrete.lang.register_dialects(context)  # pylint: disable=no-member
@@ -170,20 +169,16 @@ class Converter:
             return
         concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)  # pylint: disable=no-member
 
-    def process(self, graph: Graph, configuration: Configuration) -> Graph:
+    def process(self, graph: Graph, configuration: Configuration):
         """
         Process a computation graph for MLIR conversion.
 
         Args:
             graph (Graph):
-                graph to convert
+                graph to process
 
             configuration (Configuration):
                 configuration to use
-
-        Return:
-            str:
-                MLIR corresponding to graph
         """
 
         pipeline = [
@@ -199,11 +194,8 @@ class Converter:
             ProcessRounding(),
         ]
 
-        graph = deepcopy(graph)
         for processor in pipeline:
             processor.apply(graph)
-
-        return graph
 
     def node(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         """

@@ -3,6 +3,7 @@ Declaration of `circuit` and `compiler` decorators.
 """
 
 import inspect
+from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple, Union
 
 from ..representation import Graph
@@ -63,7 +64,7 @@ def circuit(
             parameter_values[name] = (
                 annotation
                 if is_value
-                else ValueDescription(annotation.dtype, shape=(), is_encrypted=False)
+                else ValueDescription(deepcopy(annotation.dtype), shape=(), is_encrypted=False)
             )
 
             status = EncryptionStatus(parameters[name].lower())
