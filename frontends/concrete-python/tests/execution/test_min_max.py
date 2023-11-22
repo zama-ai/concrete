@@ -14,7 +14,10 @@ from concrete.fhe.values import ValueDescription
 cases = [
     [
         # operation
-        ("minimum_optimized_x", lambda x, y: (np.minimum(x, y), x + 1)),
+        (
+            "minimum_optimized_x",
+            lambda x, y: np.minimum(fhe.hint(x, bit_width=5), y),  # type: ignore
+        ),
         # bit widths
         4,
         4,
@@ -29,7 +32,10 @@ cases = [
     ],
     [
         # operation
-        ("minimum_optimized_x", lambda x, y: (np.minimum(x, y), x - 1)),
+        (
+            "minimum_optimized_x",
+            lambda x, y: np.minimum(fhe.hint(x, bit_width=5), y),  # type: ignore
+        ),
         # bit widths
         4,
         4,
@@ -44,7 +50,10 @@ cases = [
     ],
     [
         # operation
-        ("maximum_optimized_y", lambda x, y: (np.maximum(x, y), y + 1)),
+        (
+            "maximum_optimized_y",
+            lambda x, y: np.maximum(x, fhe.hint(y, bit_width=4)),  # type: ignore
+        ),
         # bit widths
         4,
         3,
@@ -59,7 +68,10 @@ cases = [
     ],
     [
         # operation
-        ("maximum_optimized_y", lambda x, y: (np.maximum(x, y), y - 1)),
+        (
+            "maximum_optimized_y",
+            lambda x, y: np.maximum(x, fhe.hint(y, bit_width=4)),  # type: ignore
+        ),
         # bit widths
         4,
         3,
