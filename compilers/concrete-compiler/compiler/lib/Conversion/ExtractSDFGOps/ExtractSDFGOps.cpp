@@ -82,6 +82,16 @@ void unrollLoopsWithSDFGConvertibleOps(mlir::func::FuncOp func) {
   }
 }
 
+void restrictParallelLoopsWithSDFGConvertibleOps(mlir::func::FuncOp func,
+                                                 mlir::IRRewriter &rewriter) {
+  func.walk([&](SDFG::SDFGConvertibleOpInterface convertible) {
+    for (mlir::Operation *parent = convertible->getParentOp(); parent;
+         parent = parent->getParentOp())
+      if (mlir::scf::ForOp forOp = llvm::dyn_cast<mlir::scf::ForOp>(parent))
+        forOp->setAttr("parallel", rewriter.getBoolAttr(false));
+  });
+}
+
 StreamMappingKind determineStreamMappingKind(mlir::Value v) {
   // Determine stream type for operands:
   //
@@ -144,11 +154,12 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
 
   void runOnOperation() override {
     mlir::func::FuncOp func = getOperation();
+    mlir::IRRewriter rewriter(func.getContext());
 
     if (unroll)
       unrollLoopsWithSDFGConvertibleOps(func);
-
-    mlir::IRRewriter rewriter(func.getContext());
+    else
+      restrictParallelLoopsWithSDFGConvertibleOps(func, rewriter);
 
     mlir::DenseMap<mlir::Value, SDFG::MakeStream> processOutMapping;
     mlir::DenseMap<mlir::Value, SDFG::MakeStream> processInMapping;
