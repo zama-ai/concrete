@@ -98,7 +98,7 @@ class Graph:
                 node_results[node] = node(args[self.input_indices[node]])
                 continue
 
-            pred_results = [node_results[pred] for pred in self.ordered_preds_of(node)]
+            pred_results = [deepcopy(node_results[pred]) for pred in self.ordered_preds_of(node)]
 
             if p_error > 0.0 and node.converted_to_table_lookup:  # pragma: no cover
                 variable_input_indices = [

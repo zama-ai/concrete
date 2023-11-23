@@ -209,7 +209,7 @@ return %1
 
 Function you are trying to compile cannot be compiled
 
-%0 = x                   # ClearTensor<uint2, shape=(3,)>        ∈ [0, 3]
+%0 = x                   # ClearTensor<uint2, shape=(3,)>        ∈ [1, 3]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ tensor is clear
 %1 = y                   # EncryptedScalar<uint1>                ∈ [0, 0]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assigned value is encrypted
