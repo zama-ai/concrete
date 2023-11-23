@@ -54,13 +54,13 @@ class AssignBitWidths(GraphProcessor):
         self.min_max_strategy_preference = min_max_strategy_preference
 
     def apply(self, graph: Graph):
-        solver = z3.Solver()
+        optimizer = z3.Optimize()
 
         max_bit_width: z3.Int = z3.Int("max")
         bit_widths: Dict[Node, z3.Int] = {}
 
         additional_constraints = AdditionalConstraints(
-            solver,
+            optimizer,
             graph,
             bit_widths,
             self.comparison_strategy_preference,
@@ -82,17 +82,19 @@ class AssignBitWidths(GraphProcessor):
             bit_width = z3.Int(f"%{i}")
             bit_widths[node] = bit_width
 
-            solver.add(max_bit_width >= bit_width)
-            solver.add(bit_width >= required_bit_width)
+            optimizer.add(max_bit_width >= bit_width)
+            optimizer.add(bit_width >= required_bit_width)
 
             additional_constraints.generate_for(node, bit_width)
 
         if self.single_precision:
             for bit_width in bit_widths.values():
-                solver.add(bit_width == max_bit_width)
+                optimizer.add(bit_width == max_bit_width)
 
-        assert solver.check() == z3.sat
-        model = solver.model()
+        optimizer.minimize(sum(bit_width for bit_width in bit_widths.values()))
+
+        assert optimizer.check() == z3.sat
+        model = optimizer.model()
 
         for node, bit_width in bit_widths.items():
             assert isinstance(node.output.dtype, Integer)
@@ -110,7 +112,7 @@ class AdditionalConstraints:
     AdditionalConstraints class to customize bit-width assignment step easily.
     """
 
-    solver: z3.Solver
+    optimizer: z3.Optimize
     graph: Graph
     bit_widths: Dict[Node, z3.Int]
 
@@ -127,7 +129,7 @@ class AdditionalConstraints:
 
     def __init__(
         self,
-        solver: z3.Solver,
+        optimizer: z3.Optimize,
         graph: Graph,
         bit_widths: Dict[Node, z3.Int],
         comparison_strategy_preference: List[ComparisonStrategy],
@@ -136,7 +138,7 @@ class AdditionalConstraints:
         multivariate_strategy_preference: List[MultivariateStrategy],
         min_max_strategy_preference: List[MinMaxStrategy],
     ):
-        self.solver = solver
+        self.optimizer = optimizer
         self.graph = graph
         self.bit_widths = bit_widths
 
@@ -217,12 +219,12 @@ class AdditionalConstraints:
 
     def inputs_share_precision(self, node: Node, preds: List[Node]):
         for i in range(len(preds) - 1):
-            self.solver.add(self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]])
+            self.optimizer.add(self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]])
 
     def inputs_and_output_share_precision(self, node: Node, preds: List[Node]):
         self.inputs_share_precision(node, preds)
         if len(preds) != 0:
-            self.solver.add(self.bit_widths[preds[-1]] == self.bit_widths[node])
+            self.optimizer.add(self.bit_widths[preds[-1]] == self.bit_widths[node])
 
     def inputs_require_one_more_bit(self, node: Node, preds: List[Node]):
         for pred in preds:
@@ -231,7 +233,7 @@ class AdditionalConstraints:
             actual_bit_width = pred.output.dtype.bit_width
             required_bit_width = actual_bit_width + 1
 
-            self.solver.add(self.bit_widths[pred] >= required_bit_width)
+            self.optimizer.add(self.bit_widths[pred] >= required_bit_width)
 
     def comparison(self, node: Node, preds: List[Node]):
         assert len(preds) == 2
@@ -251,11 +253,11 @@ class AdditionalConstraints:
         for strategy in strategies + fallback:
             if strategy.can_be_used(x.output, y.output):
                 new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
-                self.solver.add(self.bit_widths[x] >= new_x_bit_width)
-                self.solver.add(self.bit_widths[y] >= new_y_bit_width)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
 
                 if strategy == ComparisonStrategy.ONE_TLU_PROMOTED:
-                    self.solver.add(self.bit_widths[x] == self.bit_widths[y])
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
 
                 node.properties["strategy"] = strategy
                 break
@@ -277,11 +279,11 @@ class AdditionalConstraints:
         for strategy in strategies + fallback:
             if strategy.can_be_used(x.output, y.output):
                 new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
-                self.solver.add(self.bit_widths[x] >= new_x_bit_width)
-                self.solver.add(self.bit_widths[y] >= new_y_bit_width)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
 
                 if strategy == BitwiseStrategy.ONE_TLU_PROMOTED:
-                    self.solver.add(self.bit_widths[x] == self.bit_widths[y])
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
 
                 node.properties["strategy"] = strategy
                 break
@@ -291,7 +293,7 @@ class AdditionalConstraints:
             and node.properties["strategy"] == BitwiseStrategy.CHUNKED
             and self.shifts_with_promotion
         ):
-            self.solver.add(self.bit_widths[x] == self.bit_widths[node])
+            self.optimizer.add(self.bit_widths[x] == self.bit_widths[node])
 
     def multivariate(self, node: Node, preds: List[Node]):
         assert all(
@@ -308,11 +310,13 @@ class AdditionalConstraints:
             if strategy.can_be_used(*(pred.output for pred in preds)):
                 promotions = strategy.promotions(*(pred.output for pred in preds))
                 for pred, promotion in zip(preds, promotions):
-                    self.solver.add(self.bit_widths[pred] >= promotion)
+                    self.optimizer.add(self.bit_widths[pred] >= promotion)
 
                 if strategy == MultivariateStrategy.PROMOTED:
                     for i in range(len(preds) - 1):
-                        self.solver.add(self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]])
+                        self.optimizer.add(
+                            self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]]
+                        )
 
                 node.properties["strategy"] = strategy
                 break
@@ -348,12 +352,12 @@ class AdditionalConstraints:
         for strategy in strategies + fallback:
             if strategy.can_be_used(x.output, y.output):
                 new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
-                self.solver.add(self.bit_widths[x] >= new_x_bit_width)
-                self.solver.add(self.bit_widths[y] >= new_y_bit_width)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
 
                 if strategy == MinMaxStrategy.ONE_TLU_PROMOTED:
-                    self.solver.add(self.bit_widths[x] == self.bit_widths[y])
-                    self.solver.add(self.bit_widths[y] == self.bit_widths[node])
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
+                    self.optimizer.add(self.bit_widths[y] == self.bit_widths[node])
 
                 node.properties["strategy"] = strategy
                 break
