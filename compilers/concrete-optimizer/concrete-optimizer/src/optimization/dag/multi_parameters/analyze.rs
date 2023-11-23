@@ -61,10 +61,15 @@ pub fn analyze(
         Some(p_cut) => p_cut.clone(),
         None => maximal_p_cut(&dag),
     };
-    let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition);
+    // Partitionning in/out
+    let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition, noise_config.composable_input_output);
     let instrs_partition = partitions.instrs_partition;
     let nb_partitions = partitions.nb_partitions;
+    // [operator][partition] output operator variance
+    // max[partition]
     let out_variances = out_variances(&dag, nb_partitions, &instrs_partition);
+    // reinject
+    // verification
     let variance_constraints =
         collect_all_variance_constraints(&dag, noise_config, &instrs_partition, &out_variances);
     let undominated_variance_constraints =
@@ -179,6 +184,7 @@ fn out_variance(
     };
     let max_variance = |acc: SymbolicVariance, input: SymbolicVariance| acc.max(&input);
     let variance = match op {
+        // Add max out variance
         Op::Input { .. } => SymbolicVariance::input(nb_partitions, partition),
         Op::Lut { .. } => SymbolicVariance::after_pbs(nb_partitions, partition),
         Op::LevelledOp { inputs, manp, .. } => {

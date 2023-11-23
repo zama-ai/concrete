@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, vec};
 
 use crate::dag::operator::tensor::{ClearTensor, Shape};
 

@@ -912,6 +912,8 @@ pub fn optimize(
         security_level,
         maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
         ciphertext_modulus_log,
+        // TODO
+        composable_input_output: false,
     };
 
     let dag = analyze(dag, &noise_config, p_cut, default_partition);

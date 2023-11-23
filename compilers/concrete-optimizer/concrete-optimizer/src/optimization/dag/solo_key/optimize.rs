@@ -272,6 +272,8 @@ pub fn optimize(
         security_level,
         maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
         ciphertext_modulus_log,
+        // TODO
+        composable_input_output: false,
     };
     let &min_precision = dag.out_precisions.iter().min().unwrap();
 
@@ -602,6 +604,7 @@ pub(crate) mod tests {
                     security_level,
                     maximum_acceptable_error_probability: _4_SIGMA,
                     ciphertext_modulus_log: 64,
+                    composable_input_output: false,
                 },
             );
             let constraint = dag2.constraint();

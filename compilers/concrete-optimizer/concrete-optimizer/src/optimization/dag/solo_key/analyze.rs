@@ -647,6 +647,7 @@ pub mod tests {
         security_level: 128,
         ciphertext_modulus_log: 64,
         maximum_acceptable_error_probability: _4_SIGMA,
+        composable_input_output: false,
     };
 
     fn analyze(dag: &unparametrized::OperationDag) -> super::OperationDag {
