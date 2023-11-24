@@ -261,6 +261,43 @@ Value Value::toSigned() const {
   }
 }
 
+template <typename T>
+std::string printTypeWithScalarTensor(std::string type, Tensor<T> tensor) {
+  std::stringstream str;
+  if (tensor.isScalar()) {
+    str << type << "(" << tensor.values[0] << ")";
+  } else {
+    str << type << "[](";
+    for (auto v : tensor.values) {
+      str << v << ",";
+    }
+    str << ")";
+  }
+  return str.str();
+}
+
+std::string Value::toString() const {
+  if (auto tensor = getTensor<int8_t>(); tensor) {
+    return printTypeWithScalarTensor("int8_t", *tensor);
+  } else if (auto tensor = getTensor<int16_t>(); tensor) {
+    return printTypeWithScalarTensor("int16_t", *tensor);
+  } else if (auto tensor = getTensor<int32_t>(); tensor) {
+    return printTypeWithScalarTensor("int32_t", *tensor);
+  } else if (auto tensor = getTensor<int64_t>(); tensor) {
+    return printTypeWithScalarTensor("int64_t", *tensor);
+  } else if (auto tensor = getTensor<uint8_t>(); tensor) {
+    return printTypeWithScalarTensor("uint8_t", *tensor);
+  } else if (auto tensor = getTensor<uint16_t>(); tensor) {
+    return printTypeWithScalarTensor("uint16_t", *tensor);
+  } else if (auto tensor = getTensor<uint32_t>(); tensor) {
+    return printTypeWithScalarTensor("uint32_t", *tensor);
+  } else if (auto tensor = getTensor<uint64_t>(); tensor) {
+    return printTypeWithScalarTensor("uint64_t", *tensor);
+  } else {
+    assert(false);
+  }
+}
+
 size_t getCorrespondingPrecision(size_t originalPrecision) {
   if (originalPrecision <= 8) {
     return 8;
