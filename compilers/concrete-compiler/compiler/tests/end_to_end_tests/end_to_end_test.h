@@ -95,6 +95,12 @@ parseEndToEndCommandLine(int argc, char **argv) {
           "problem using the fhe computation dag with SEVERAL set of "
           "evaluation "
           "keys")));
+  llvm::cl::opt<bool> keySharing(
+      "optimizer-key-sharing",
+      llvm::cl::desc(
+          "Set the optimizerConfig.key_sharing compilation options to "
+          "run the tests"),
+      llvm::cl::init(true));
 
   // Verbose compiler
   llvm::cl::opt<bool> verbose("verbose",
@@ -123,7 +129,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
   compilationOptions.optimizerConfig.strategy = optimizerStrategy.getValue();
-
+  compilationOptions.optimizerConfig.key_sharing = keySharing.getValue();
   mlir::concretelang::setupLogging(verbose.getValue());
 
   std::vector<EndToEndDescFile> parsedDescriptionFiles;
