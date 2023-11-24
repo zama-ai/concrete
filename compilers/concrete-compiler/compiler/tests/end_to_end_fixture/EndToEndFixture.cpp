@@ -66,9 +66,11 @@ uint64_t TestErrorRate::too_high_error_count_threshold() {
 }
 
 llvm::Error checkResult(ValueDescription &desc, Value &res) {
+
   if (!(desc.getValue() == res)) {
     // Todo -> Make a more informative error.
-    return StreamStringError("Different results ...");
+    return StreamStringError("expect ")
+           << desc.getValue().toString() << ", got " << res.toString();
   } else {
     return llvm::Error::success();
   }

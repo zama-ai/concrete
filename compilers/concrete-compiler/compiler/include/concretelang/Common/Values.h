@@ -207,6 +207,8 @@ struct Value {
   Value toUnsigned() const;
 
   Value toSigned() const;
+
+  std::string toString() const;
 };
 
 size_t getCorrespondingPrecision(size_t originalPrecision);
