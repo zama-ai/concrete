@@ -147,8 +147,6 @@ public:
     return serverCircuit;
   }
 
-  void setKeySet(Keyset keyset) { this->keyset = keyset; }
-
 private:
   std::string getArtifactDirectory() { return artifactDirectory; }
 

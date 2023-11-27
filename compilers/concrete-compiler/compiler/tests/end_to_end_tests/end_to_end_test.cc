@@ -74,6 +74,7 @@ public:
           llvm::consumeError(std::move(maybeErr));
           break;
         }
+        ASSERT_LLVM_ERROR(std::move(maybeErr));
       }
 
       // If OK we return
