@@ -1110,6 +1110,27 @@ module {
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y: fhe.hint(assign(x**2, y), bit_width=6),
+            {
+                "x": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": ()},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<2>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
+    %c2_i3 = arith.constant 2 : i3
+    %cst = arith.constant dense<[0, 1, 4, 9]> : tensor<4xi64>
+    %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<2x!FHE.eint<2>>, tensor<4xi64>) -> tensor<2x!FHE.eint<6>>
+    %from_elements = tensor.from_elements %arg1 : tensor<1x!FHE.eint<6>>
+    %inserted_slice = tensor.insert_slice %from_elements into %0[0] [1] [1] : tensor<1x!FHE.eint<6>> into tensor<2x!FHE.eint<6>>
+    return %inserted_slice : tensor<2x!FHE.eint<6>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_convert_multi_precision(function, parameters, expected_mlir, helpers):
@@ -1194,6 +1215,27 @@ module {
   func.func @main(%arg0: tensor<3x2x!FHE.eint<7>>, %arg1: tensor<2x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
     %0 = "FHELinalg.matmul_eint_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<7>>, tensor<2x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>>
     return %0 : tensor<3x4x!FHE.eint<7>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: fhe.hint(assign(x**2, y), bit_width=6),
+            {
+                "x": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": ()},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<6>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
+    %c2_i7 = arith.constant 2 : i7
+    %cst = arith.constant dense<[0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576, 625, 676, 729, 784, 841, 900, 961, 1024, 1089, 1156, 1225, 1296, 1369, 1444, 1521, 1600, 1681, 1764, 1849, 1936, 2025, 2116, 2209, 2304, 2401, 2500, 2601, 2704, 2809, 2916, 3025, 3136, 3249, 3364, 3481, 3600, 3721, 3844, 3969]> : tensor<64xi64>
+    %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<2x!FHE.eint<6>>, tensor<64xi64>) -> tensor<2x!FHE.eint<6>>
+    %from_elements = tensor.from_elements %arg1 : tensor<1x!FHE.eint<6>>
+    %inserted_slice = tensor.insert_slice %from_elements into %0[0] [1] [1] : tensor<1x!FHE.eint<6>> into tensor<2x!FHE.eint<6>>
+    return %inserted_slice : tensor<2x!FHE.eint<6>>
   }
 }
 
