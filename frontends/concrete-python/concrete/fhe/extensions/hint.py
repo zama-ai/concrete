@@ -50,6 +50,7 @@ def hint(
         bit_width_hint = max(bit_width_hint, Integer.that_can_represent(can_store).bit_width)
 
     if bit_width_hint > 0:
-        x.computation.properties["bit_width_hint"] = bit_width_hint
+        node_to_hint = x if x.last_version is None else x.last_version
+        node_to_hint.computation.properties["bit_width_hint"] = bit_width_hint
 
     return x
