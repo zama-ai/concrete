@@ -91,8 +91,6 @@ public:
 
   std::string getArtifactFolder() { return artifactFolder; }
 
-  void setKeySet(Keyset keyset) { this->keyset = keyset; }
-
 private:
   TestCircuit(ClientCircuit clientCircuit, ServerCircuit serverCircuit,
               bool useSimulation, std::string artifactFolder, Keyset keyset)

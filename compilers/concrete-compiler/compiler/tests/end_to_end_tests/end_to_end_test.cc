@@ -88,21 +88,24 @@ public:
       /* Check result */
       for (size_t i = 0; i < desc.outputs.size(); i++) {
         auto maybeErr = checkResult(desc.outputs[i], result[i]);
-        if (!maybeErr)
-          return;
-        if (tests_rep < retryFailingTests) {
+        if (maybeErr && tests_rep < retryFailingTests) {
           llvm::errs() << "/!\\ WARNING RETRY TEST: " << maybeErr << "\n";
           llvm::consumeError(std::move(maybeErr));
           llvm::errs() << "Regenerating keyset\n";
-          __uint128_t seed = tests_rep + 1;
-          auto csprng = ConcreteCSPRNG(seed);
-          Keyset keyset =
-              Keyset(library->getProgramInfo().asReader().getKeyset(), csprng);
-          testCircuit->setKeySet(keyset);
+          ConcreteCSPRNG csprng(tests_rep + 1);
+          const Message<concreteprotocol::KeysetInfo> keySetInfo =
+              library->getProgramInfo().asReader().getKeyset();
+          Keyset keyset(library->getProgramInfo().asReader().getKeyset(),
+                        csprng);
+          testCircuit =
+              TestCircuit::create(
+                  keyset, library->getProgramInfo().asReader(),
+                  library->getSharedLibraryPath(library->getOutputDirPath()), 0,
+                  0, false)
+                  .value();
           break;
-        } else {
-          ASSERT_LLVM_ERROR(std::move(maybeErr));
         }
+        ASSERT_LLVM_ERROR(std::move(maybeErr));
       }
     }
   }
