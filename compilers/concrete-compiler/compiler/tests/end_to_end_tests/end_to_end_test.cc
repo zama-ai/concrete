@@ -93,8 +93,6 @@ public:
           llvm::consumeError(std::move(maybeErr));
           llvm::errs() << "Regenerating keyset\n";
           ConcreteCSPRNG csprng(tests_rep + 1);
-          const Message<concreteprotocol::KeysetInfo> keySetInfo =
-              library->getProgramInfo().asReader().getKeyset();
           Keyset keyset(library->getProgramInfo().asReader().getKeyset(),
                         csprng);
           testCircuit =

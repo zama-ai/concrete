@@ -9,7 +9,7 @@ tests:
       - scalar: 0
       - scalar: 0
     outputs:
-      - scalar: 0
+      - scalar: 2
 
   - inputs:
       - scalar: 0

@@ -1,0 +1,23 @@
+# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY
+# /!\ THIS FILE HAS BEEN GENERATED
+description: apply_lookup_table_1bits
+program: |
+  func.func @main(%arg0: !FHE.eint<1>) -> !FHE.eint<1> {
+    %tlu = arith.constant dense<[0,1]> : tensor<2xi64>
+    %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<1>, tensor<2xi64>) -> (!FHE.eint<1>)
+    return %1: !FHE.eint<1>
+  }
+p-error: 6.3342483999973e-05
+tests:
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 8
+  - inputs:
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    outputs:
+    - scalar: 1
