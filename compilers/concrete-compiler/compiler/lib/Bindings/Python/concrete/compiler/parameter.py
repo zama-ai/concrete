@@ -60,33 +60,33 @@ class Parameter:
         elif isinstance(param, BootstrapKeyParam):
             result = (
                 f"BootstrapKeyParam("
-                f"polynomial_size={param.polynomial_size}, "
-                f"glwe_dimension={param.glwe_dimension}, "
-                f"input_lwe_dimension={param.input_lwe_dimension}, "
-                f"level={param.level}, "
-                f"base_log={param.base_log}, "
-                f"variance={param.variance}"
+                f"polynomial_size={param.polynomial_size()}, "
+                f"glwe_dimension={param.glwe_dimension()}, "
+                f"input_lwe_dimension={param.input_lwe_dimension()}, "
+                f"level={param.level()}, "
+                f"base_log={param.base_log()}, "
+                f"variance={param.variance()}"
                 f")"
             )
 
         elif isinstance(param, KeyswitchKeyParam):
             result = (
                 f"KeyswitchKeyParam("
-                f"level={param.level}, "
-                f"base_log={param.base_log}, "
-                f"variance={param.variance}"
+                f"level={param.level()}, "
+                f"base_log={param.base_log()}, "
+                f"variance={param.variance()}"
                 f")"
             )
 
         elif isinstance(param, PackingKeyswitchKeyParam):
             result = (
                 f"PackingKeyswitchKeyParam("
-                f"polynomial_size={param.polynomial_size}, "
-                f"glwe_dimension={param.glwe_dimension}, "
-                f"input_lwe_dimension={param.input_lwe_dimension}"
-                f"level={param.level}, "
-                f"base_log={param.base_log}, "
-                f"variance={param.variance}"
+                f"polynomial_size={param.polynomial_size()}, "
+                f"glwe_dimension={param.glwe_dimension()}, "
+                f"input_lwe_dimension={param.input_lwe_dimension()}"
+                f"level={param.level()}, "
+                f"base_log={param.base_log()}, "
+                f"variance={param.variance()}"
                 f")"
             )
 
