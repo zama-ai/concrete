@@ -1,0 +1,85 @@
+description: simple_relu_3bits
+program: |
+  func.func @main(%signed_input: !FHE.esint<3>) -> !FHE.esint<3> {
+
+    %input = "FHE.to_unsigned"(%signed_input) : (!FHE.esint<3>) -> !FHE.eint<3>
+
+    // bits extraction
+    %bit_0 = "FHE.lsb"(%input) : (!FHE.eint<3>) -> !FHE.eint<3>
+    %input_clear_up_to_0 = "FHE.sub_eint"(%input, %bit_0) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
+    %truncated_0 = "FHE.reinterpret_precision"(%input_clear_up_to_0) : (!FHE.eint<3>) -> !FHE.eint<2>
+
+    %bit_1 = "FHE.lsb"(%truncated_0) : (!FHE.eint<2>) -> !FHE.eint<2>
+    %sign_bit_2b = "FHE.sub_eint"(%truncated_0, %bit_1) : (!FHE.eint<2>, !FHE.eint<2>) -> !FHE.eint<2>
+
+    // packing bits and sign bits to apply logical gates
+    %bit_0_2b_outshifted = "FHE.reinterpret_precision"(%bit_0) : (!FHE.eint<3>) -> !FHE.eint<2>
+    %bit_1_2b_outshifted = "FHE.reinterpret_precision"(%bit_1) : (!FHE.eint<2>) -> !FHE.eint<2>
+    %bits_2b_outshifted = tensor.from_elements %bit_0_2b_outshifted, %bit_1_2b_outshifted : tensor<2x!FHE.eint<2>>
+    %weights = arith.constant dense<[2, 1]> : tensor<2xi3>
+    %bits_2b = "FHELinalg.mul_eint_int"(%bits_2b_outshifted, %weights) : (tensor<2x!FHE.eint<2>>, tensor<2xi3>) -> tensor<2x!FHE.eint<2>>
+    %sign_bit_2b_tensor = tensor.from_elements %sign_bit_2b, %sign_bit_2b : tensor<2x!FHE.eint<2>>
+    %sign_and_bits_packed = "FHELinalg.add_eint"(%sign_bit_2b_tensor, %bits_2b) : (tensor<2x!FHE.eint<2>>, tensor<2x!FHE.eint<2>>) -> tensor<2x!FHE.eint<2>>
+
+    // applying 'not(sign) and bit' gates
+    %tlu_and = arith.constant dense<[0, 1, 0, 0]> : tensor<4xi64>
+    %filtered_bits = "FHELinalg.apply_lookup_table"(%sign_and_bits_packed, %tlu_and) : (tensor<2x!FHE.eint<2>>, tensor<4xi64>) -> tensor<2x!FHE.eint<3>>
+
+    // putting all filtered bits in place
+    %filtered_bits_mixed = arith.constant dense<[1, 2]> : tensor<2xi4>
+    %filtered_bits_shifted_added = "FHELinalg.dot_eint_int"(%filtered_bits, %filtered_bits_mixed) : (tensor<2x!FHE.eint<3>>, tensor<2xi4>) -> !FHE.eint<3>
+    %result = "FHE.to_signed"(%filtered_bits_shifted_added) : (!FHE.eint<3>) -> !FHE.esint<3>
+
+    return %result : !FHE.esint<3>
+
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: 1
+          signed: true
+      outputs:
+        - scalar: 1
+          signed: true
+    - inputs:
+        - scalar: 2
+          signed: true
+      outputs:
+        - scalar: 2
+          signed: true
+    - inputs:
+        - scalar: 3
+          signed: true
+      outputs:
+        - scalar: 3
+          signed: true
+    - inputs:
+        - scalar: -1
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: -2
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: -3
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: -4
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
