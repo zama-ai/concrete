@@ -1,23 +1,17 @@
-[profile.m6i-cpu-bench]
-region = "eu-west-3"
-image_id = "ami-0a24aaee029d1295c" # Based on Ubuntu 22.4
-instance_type = "m6i.metal"
-subnet_id = "subnet-a886b4c1"
-security_group= ["sg-0bf1c1d79c97bc88f", ]
+[profile.m7i-cpu-bench]
+region = "eu-west-1"
+image_id = "ami-022a4cfbf85a78faf" # Based on Ubuntu 22.4
+instance_type = "m7i.metal-48xl"
 
-[profile.m6i-cpu-test]
-region = "eu-west-3"
-image_id = "ami-0a24aaee029d1295c"
-instance_type = "m6i.16xlarge"
-subnet_id = "subnet-a886b4c1"
-security_group= ["sg-0bf1c1d79c97bc88f", ]
+[profile.m7i-cpu-test]
+region = "eu-west-1"
+image_id = "ami-022a4cfbf85a78faf"
+instance_type = "m7i.16xlarge"
 
-[profile.m6i-metal]
-region = "eu-west-3"
-image_id = "ami-0a24aaee029d1295c"
-instance_type = "m6i.metal"
-subnet_id = "subnet-a886b4c1"
-security_group= ["sg-0bf1c1d79c97bc88f", ]
+[profile.m7i-metal]
+region = "eu-west-1"
+image_id = "ami-022a4cfbf85a78faf"
+instance_type = "m7i.metal-24xl"
 
 [profile.gpu-bench]
 region = "us-east-1"
@@ -40,7 +34,7 @@ security_group= ["sg-0f8b52622a2669491", ]
 
 [command.compiler-cpu-build]
 workflow = "compiler_build_and_test_cpu.yml"
-profile = "m6i-cpu-test"
+profile = "m7i-cpu-test"
 check_run_name = "Compiler Build and Test (CPU)"
 
 [command.compiler-gpu-build]
@@ -50,7 +44,7 @@ check_run_name = "Compiler Build and Test (GPU)"
 
 [command.compiler-cpu-benchmark]
 workflow = "compiler_benchmark.yml"
-profile = "m6i-cpu-bench"
+profile = "m7i-cpu-bench"
 check_run_name = "Compiler Performances Benchmarks (CPU)"
 
 [command.compiler-gpu-benchmark]
@@ -61,20 +55,20 @@ check_run_name = "Compiler Performances Benchmarks (GPU)"
 # Trigger Docker images build
 [command.compiler-publish-docker-images]
 workflow = "compiler_publish_docker_images.yml"
-profile = "m6i-cpu-test"
+profile = "m7i-cpu-test"
 check_run_name = "Compiler - Docker images build & publish"
 
 # Trigger ML benchmarks by running each use cases subset in parallel.
 [command.ml-bench]
 workflow = "ml_benchmark_subset.yml"
-profile = "m6i-cpu-bench"
+profile = "m7i-cpu-bench"
 matrix = [0,1,2,3,4,5,6,7,8,9,10]
 max_parallel_jobs = 2
 
 # Trigger ML tests with latest CP
 [command.ml-test]
 workflow = "concrete_ml_tests.yml"
-profile = "m6i-cpu-test"
+profile = "m7i-cpu-test"
 check_run_name = "Concrete ML Tests"
 
 #################################################
@@ -97,7 +91,7 @@ check_run_name = "Concrete Cuda Performances Benchmarks"
 
 [command.concrete-python-tests-linux]
 workflow = "concrete_python_tests_linux.yml"
-profile = "m6i-cpu-test"
+profile = "m7i-cpu-test"
 check_run_name = "Concrete Python Tests (Linux)"
 
 #################################################
@@ -106,5 +100,5 @@ check_run_name = "Concrete Python Tests (Linux)"
 
 [command.concrete-python-release]
 workflow = "concrete_python_release.yml"
-profile = "m6i-cpu-test"
+profile = "m7i-cpu-test"
 check_run_name = "Concrete Python Release"
