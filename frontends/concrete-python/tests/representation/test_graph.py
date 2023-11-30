@@ -98,134 +98,122 @@ Actual Output
 
 
 @pytest.mark.parametrize(
-    "function,inputset,tag_filter,operation_filter,expected_result",
+    "function,inputset,kwargs,expected_result",
     [
         pytest.param(
             lambda x: x + 1,
             range(5),
-            None,
-            None,
+            {},
             3,
         ),
         pytest.param(
             lambda x: x + 42,
             range(10),
-            None,
-            None,
+            {},
             6,
         ),
         pytest.param(
             lambda x: x + 42,
             range(50),
-            None,
-            None,
-            7,
-        ),
-        pytest.param(
-            lambda x: x + 1.2,
-            [1.5, 4.2],
-            None,
-            None,
-            -1,
-        ),
-        pytest.param(
-            f,
-            range(10),
-            None,
-            None,
+            {},
             7,
         ),
         pytest.param(
             f,
             range(10),
-            "",
-            None,
+            {},
+            7,
+        ),
+        pytest.param(
+            f,
+            range(10),
+            {"tag_filter": ""},
             6,
         ),
         pytest.param(
             f,
             range(10),
-            "abc",
-            None,
+            {"tag_filter": "abc"},
             5,
         ),
         pytest.param(
             f,
             range(10),
-            ["abc", "def"],
-            None,
+            {"tag_filter": ["abc", "def"]},
             7,
         ),
         pytest.param(
             f,
             range(10),
-            re.compile(".*b.*"),
-            None,
+            {"tag_filter": re.compile(".*b.*")},
             6,
         ),
         pytest.param(
             f,
             range(10),
-            None,
-            "input",
+            {"operation_filter": "input"},
             4,
         ),
         pytest.param(
             f,
             range(10),
-            None,
-            "constant",
+            {"operation_filter": "constant"},
             7,
         ),
         pytest.param(
             f,
             range(10),
-            None,
-            "subgraph",
+            {"operation_filter": "subgraph"},
             3,
         ),
         pytest.param(
             f,
             range(10),
-            None,
-            "add",
+            {"operation_filter": "add"},
             6,
         ),
         pytest.param(
             f,
             range(10),
-            None,
-            ["subgraph", "add"],
+            {"operation_filter": ["subgraph", "add"]},
             6,
         ),
         pytest.param(
             f,
             range(10),
-            None,
-            re.compile("sub.*"),
+            {"operation_filter": re.compile("sub.*")},
             7,
         ),
         pytest.param(
             f,
             range(10),
-            "abc.foo",
-            "add",
+            {"tag_filter": "abc.foo", "operation_filter": "add"},
             6,
         ),
         pytest.param(
             f,
             range(10),
-            "abc",
-            "floor_divide",
+            {"tag_filter": "abc", "operation_filter": "floor_divide"},
             -1,
+        ),
+        pytest.param(
+            lambda x: (x**2) * 30,
+            range(10),
+            {"operation_filter": "power"},
+            7,
+        ),
+        pytest.param(
+            lambda x: (x**2) * 30,
+            range(10),
+            {"operation_filter": "power", "assigned_bit_width": True},
+            12,
         ),
     ],
 )
 def test_graph_maximum_integer_bit_width(
     function,
     inputset,
-    tag_filter,
-    operation_filter,
+    kwargs,
     expected_result,
     helpers,
 ):
@@ -236,9 +224,9 @@ def test_graph_maximum_integer_bit_width(
     configuration = helpers.configuration()
 
     compiler = fhe.Compiler(function, {"x": "encrypted"})
-    graph = compiler.trace(inputset, configuration)
+    circuit = compiler.compile(inputset, configuration)
 
-    assert graph.maximum_integer_bit_width(tag_filter, operation_filter) == expected_result
+    assert circuit.graph.maximum_integer_bit_width(**kwargs) == expected_result
 
 
 @pytest.mark.parametrize(

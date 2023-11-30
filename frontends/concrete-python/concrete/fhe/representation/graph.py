@@ -658,6 +658,7 @@ class Graph:
         operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
         is_encrypted_filter: Optional[bool] = None,
         custom_filter: Optional[Callable[[Node], bool]] = None,
+        assigned_bit_width: bool = False,
     ) -> int:
         """
         Get maximum integer bit-width within the graph.
@@ -671,11 +672,14 @@ class Graph:
             operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
                 filter for operations
 
-            is_encrypted_filter (Optional[bool], default = None)
+            is_encrypted_filter (Optional[bool], default = None):
                 filter for encryption status
 
             custom_filter (Optional[Callable[[Node], bool]], default = None):
                 flexible filter
+
+            assigned_bit_width (Optional[bool], default = None):
+                whether to query on assigned bit-widths
 
         Returns:
             int:
@@ -685,7 +689,16 @@ class Graph:
 
         query = self.query_nodes(tag_filter, operation_filter, is_encrypted_filter, custom_filter)
         filtered_bit_widths = (
-            node.output.dtype.bit_width for node in query if isinstance(node.output.dtype, Integer)
+            (
+                node.output.dtype.bit_width
+                if assigned_bit_width
+                else max(
+                    node.properties.get("original_bit_width", node.output.dtype.bit_width),
+                    node.properties.get("bit_width_hint", -1),
+                )
+            )
+            for node in query
+            if isinstance(node.output.dtype, Integer)
         )
         return max(filtered_bit_widths, default=-1)
 
