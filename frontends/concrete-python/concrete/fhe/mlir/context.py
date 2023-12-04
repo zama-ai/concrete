@@ -1559,6 +1559,7 @@ class Context:
             np.broadcast_to(np.zeros(y.shape), required_y_shape)
             y = self.broadcast_to(y, required_y_shape)
 
+        x = self.to_signedness(x, of=resulting_type)
         y = self.to_signedness(y, of=resulting_type)
 
         return self.operation(
