@@ -1,11 +1,17 @@
 """
 Declaration of `AssignBitWidths` graph processor.
 """
-from __future__ import annotations
 
-import typing
-from collections.abc import Iterable
+from typing import Dict, List
 
+import z3
+
+from ...compilation.configuration import (
+    BitwiseStrategy,
+    ComparisonStrategy,
+    MinMaxStrategy,
+    MultivariateStrategy,
+)
 from ...dtypes import Integer
 from ...representation import Graph, Node, Operation
 from . import GraphProcessor
@@ -13,241 +19,546 @@ from . import GraphProcessor
 
 class AssignBitWidths(GraphProcessor):
     """
-    Assign a precision to all nodes inputs/output.
+    AssignBitWidths graph processor, to assign proper bit-widths to be compatible with FHE.
 
-    The precisions are compatible graph constraints and MLIR.
     There are two modes:
-        - single precision: where all encrypted values have the same precision.
-        - multi precision: where encrypted values can have different precisions.
+    - Single Precision, where all encrypted values have the same precision.
+    - Multi Precision, where encrypted values can have different precisions.
+
+    There is preference list for comparison strategies.
+    - Strategies will be traversed in order and bit-widths
+      will be assigned according to the first available strategy.
     """
 
-    def __init__(self, single_precision=False):
+    single_precision: bool
+    comparison_strategy_preference: List[ComparisonStrategy]
+    bitwise_strategy_preference: List[BitwiseStrategy]
+    shifts_with_promotion: bool
+    multivariate_strategy_preference: List[MultivariateStrategy]
+    min_max_strategy_preference: List[MinMaxStrategy]
+
+    def __init__(
+        self,
+        single_precision: bool,
+        comparison_strategy_preference: List[ComparisonStrategy],
+        bitwise_strategy_preference: List[BitwiseStrategy],
+        shifts_with_promotion: bool,
+        multivariate_strategy_preference: List[MultivariateStrategy],
+        min_max_strategy_preference: List[MinMaxStrategy],
+    ):
         self.single_precision = single_precision
+        self.comparison_strategy_preference = comparison_strategy_preference
+        self.bitwise_strategy_preference = bitwise_strategy_preference
+        self.shifts_with_promotion = shifts_with_promotion
+        self.multivariate_strategy_preference = multivariate_strategy_preference
+        self.min_max_strategy_preference = min_max_strategy_preference
 
     def apply(self, graph: Graph):
-        nodes = graph.query_nodes()
-        for node in nodes:
+        optimizer = z3.Optimize()
+
+        max_bit_width: z3.Int = z3.Int("max")
+        bit_widths: Dict[Node, z3.Int] = {}
+
+        additional_constraints = AdditionalConstraints(
+            optimizer,
+            graph,
+            bit_widths,
+            self.comparison_strategy_preference,
+            self.bitwise_strategy_preference,
+            self.shifts_with_promotion,
+            self.multivariate_strategy_preference,
+            self.min_max_strategy_preference,
+        )
+
+        nodes = graph.query_nodes(ordered=True)
+        for i, node in enumerate(nodes):
             assert isinstance(node.output.dtype, Integer)
-            node.properties["original_bit_width"] = node.output.dtype.bit_width
+            required_bit_width = node.output.dtype.bit_width
+
+            bit_width_hint = node.properties.get("bit_width_hint")
+            if bit_width_hint is not None:
+                required_bit_width = max(required_bit_width, bit_width_hint)
+
+            bit_width = z3.Int(f"%{i}")
+            bit_widths[node] = bit_width
+
+            optimizer.add(max_bit_width >= bit_width)
+            optimizer.add(bit_width >= required_bit_width)
+
+            additional_constraints.generate_for(node, bit_width)
 
         if self.single_precision:
-            assign_single_precision(nodes)
-        else:
-            assign_multi_precision(graph, nodes)
+            for bit_width in bit_widths.values():
+                optimizer.add(bit_width == max_bit_width)
+
+        optimizer.minimize(sum(bit_width for bit_width in bit_widths.values()))
+
+        assert optimizer.check() == z3.sat
+        model = optimizer.model()
+
+        for node, bit_width in bit_widths.items():
+            assert isinstance(node.output.dtype, Integer)
+            new_bit_width = model[bit_width].as_long()
+
+            if node.output.is_clear:
+                new_bit_width += 1
+
+            node.properties["original_bit_width"] = node.output.dtype.bit_width
+            node.output.dtype.bit_width = new_bit_width
 
 
-def assign_single_precision(nodes: list[Node]):
-    """Assign one single encryption precision to all nodes."""
-    p = required_encrypted_bitwidth(nodes)
-    for node in nodes:
-        assign_precisions_1_node(node, p, p)
-
-
-def assign_precisions_1_node(node: Node, output_p: int, inputs_p: int):
-    """Assign input/output precision to a single node.
-
-    Precision are adjusted to match different use, e.g. encrypted and constant case.
+class AdditionalConstraints:
     """
-    assert isinstance(node.output.dtype, Integer)
-    if node.output.is_encrypted:
-        node.output.dtype.bit_width = output_p
-    else:
-        node.output.dtype.bit_width = output_p + 1
-
-    for value in node.inputs:
-        assert isinstance(value.dtype, Integer)
-        if value.is_encrypted:
-            value.dtype.bit_width = inputs_p
-        else:
-            value.dtype.bit_width = inputs_p + 1
-
-
-CHUNKED_COMPARISON = {"greater", "greater_equal", "less", "less_equal"}
-CHUNKED_COMPARISON_MIN_BITWIDTH = 4
-MAX_POOLS = {"maxpool1d", "maxpool2d", "maxpool3d"}
-MULTIPLY = {"multiply"}
-ROUNDING = {"round_bit_pattern"}
-
-
-def max_encrypted_bitwidth_node(node: Node):
-    """Give the minimal precision to implement the node.
-
-    This applies to both input and output precisions.
+    AdditionalConstraints class to customize bit-width assignment step easily.
     """
-    assert isinstance(node.output.dtype, Integer)
-    if node.output.is_encrypted or node.operation == Operation.Constant:
-        normal_p = node.output.dtype.bit_width
-    else:
-        normal_p = -1
-    name = node.properties.get("name")
 
-    if name in CHUNKED_COMPARISON:
-        return max(normal_p, CHUNKED_COMPARISON_MIN_BITWIDTH)
+    optimizer: z3.Optimize
+    graph: Graph
+    bit_widths: Dict[Node, z3.Int]
 
-    if name in MAX_POOLS:
-        return normal_p + 1
+    comparison_strategy_preference: List[ComparisonStrategy]
+    bitwise_strategy_preference: List[BitwiseStrategy]
+    shifts_with_promotion: bool
+    multivariate_strategy_preference: List[MultivariateStrategy]
+    min_max_strategy_preference: List[MinMaxStrategy]
 
-    if name in MULTIPLY and all(value.is_encrypted for value in node.inputs):
-        return normal_p + 1
+    node: Node
+    bit_width: z3.Int
 
-    return normal_p
+    # pylint: disable=missing-function-docstring,unused-argument
 
-
-def required_encrypted_bitwidth(nodes: Iterable[Node]) -> int:
-    """Give the minimal precision to implement all the nodes."""
-    bitwidths = map(max_encrypted_bitwidth_node, nodes)
-    return max(bitwidths, default=-1)
-
-
-def required_inputs_encrypted_bitwidth(graph, node, nodes_output_p: list[tuple[Node, int]]) -> int:
-    """Give the minimal precision to supports the inputs."""
-    preds = graph.ordered_preds_of(node)
-    get_prec = lambda node: nodes_output_p[node.properties[NODE_ID]][1]
-    # by definition all inputs have the same block precision
-    # see uniform_precision_per_blocks
-    return get_prec(node) if len(preds) == 0 else get_prec(preds[0])
-
-
-def assign_multi_precision(graph, nodes):
-    """Assign a specific encryption precision to each nodes."""
-    add_nodes_id(nodes)
-    nodes_output_p = uniform_precision_per_blocks(graph, nodes)
-    for node, _ in nodes_output_p:
-        node.properties["original_bit_width"] = node.output.dtype.bit_width
-    nodes_inputs_p = [
-        required_inputs_encrypted_bitwidth(graph, node, nodes_output_p)
-        if can_change_precision(node)
-        else output_p
-        for node, output_p in nodes_output_p
-    ]
-    for (node, output_p), inputs_p in zip(nodes_output_p, nodes_inputs_p):
-        assign_precisions_1_node(node, output_p, inputs_p)
-    clear_nodes_id(nodes)
-
-
-TLU_WITHOUT_PRECISION_CHANGE = CHUNKED_COMPARISON | MAX_POOLS | MULTIPLY
-
-
-def can_change_precision(node):
-    """Detect if a node completely ties inputs/output precisions together."""
-    if (
-        node.properties.get("name") in ROUNDING
-        and node.properties["attributes"]["overflow_protection"]
+    def __init__(
+        self,
+        optimizer: z3.Optimize,
+        graph: Graph,
+        bit_widths: Dict[Node, z3.Int],
+        comparison_strategy_preference: List[ComparisonStrategy],
+        bitwise_strategy_preference: List[BitwiseStrategy],
+        shifts_with_promotion: bool,
+        multivariate_strategy_preference: List[MultivariateStrategy],
+        min_max_strategy_preference: List[MinMaxStrategy],
     ):
-        return False  # protection can change precision
+        self.optimizer = optimizer
+        self.graph = graph
+        self.bit_widths = bit_widths
 
-    return (
-        node.converted_to_table_lookup
-        and node.properties.get("name") not in TLU_WITHOUT_PRECISION_CHANGE
-    )
+        self.comparison_strategy_preference = comparison_strategy_preference
+        self.bitwise_strategy_preference = bitwise_strategy_preference
+        self.shifts_with_promotion = shifts_with_promotion
+        self.multivariate_strategy_preference = multivariate_strategy_preference
+        self.min_max_strategy_preference = min_max_strategy_preference
 
+    def generate_for(self, node: Node, bit_width: z3.Int):
+        """
+        Generate additional constraints for a node.
 
-def convert_union_to_blocks(node_union: UnionFind) -> Iterable[list[int]]:
-    """Convert a `UnionFind` to blocks.
+        Args:
+            node (Node):
+                node to generate constraints for
 
-    The result is an iterable of blocks.A block being a list of node id.
-    """
-    blocks = {}
-    for node_id in range(node_union.size):
-        node_canon = node_union.find_canonical(node_id)
-        if node_canon == node_id:
-            assert node_canon not in blocks
-            blocks[node_canon] = [node_id]
-        else:
-            blocks[node_canon].append(node_id)
-    return blocks.values()
+            bit_width (z3.Int):
+                symbolic bit-width which will be assigned to node once constraints are solved
+        """
 
+        assert node.operation in {Operation.Generic, Operation.Constant, Operation.Input}
+        operation_name = (
+            node.properties["name"]
+            if node.operation == Operation.Generic
+            else ("constant" if node.operation == Operation.Constant else "input")
+        )
 
-NODE_ID = "node_id"
+        if node.operation == Operation.Generic and node.properties["attributes"].get(
+            "is_multivariate"
+        ):
+            operation_name = "multivariate"
 
+        if hasattr(self, operation_name):
+            constraints = getattr(self, operation_name)
+            preds = self.graph.ordered_preds_of(node)
 
-def add_nodes_id(nodes):
-    """Temporarily add a NODE_ID property to all nodes."""
-    for node_id, node in enumerate(nodes):
-        assert NODE_ID not in node.properties
-        node.properties[NODE_ID] = node_id
+            if callable(constraints):
+                constraints(node, preds)
 
+            elif isinstance(constraints, set):
+                for add_constraint in constraints:
+                    add_constraint(self, node, preds)
 
-def clear_nodes_id(nodes):
-    """Remove the NODE_ID property from all nodes."""
-    for node in nodes:
-        del node.properties[NODE_ID]
+            elif isinstance(constraints, dict):
+                for conditions, conditional_constraints in constraints.items():
+                    if not isinstance(conditions, tuple):
+                        conditions = (conditions,)
 
+                    if all(condition(self, node, preds) for condition in conditions):
+                        for add_constraint in conditional_constraints:
+                            add_constraint(self, node, preds)
 
-def uniform_precision_per_blocks(graph: Graph, nodes: list[Node]) -> list[tuple[Node, int]]:
-    """Find the required precision of blocks and associate it corresponding nodes."""
-    size = len(nodes)
-    node_union = UnionFind(size)
-    for node_id, node in enumerate(nodes):
-        preds = graph.ordered_preds_of(node)
-        if not preds:
-            continue
-        # we always unify all inputs
-        first_input_id = preds[0].properties[NODE_ID]
-        for pred in preds[1:]:
-            pred_id = pred.properties[NODE_ID]
-            node_union.union(first_input_id, pred_id)
-        # we unify with outputs only if no precision change can occur
-        if not can_change_precision(node):
-            node_union.union(first_input_id, node_id)
+            else:  # pragma: no cover
+                message = (
+                    f"Expected a set or a dict "
+                    f"for additional constraints of '{operation_name}' operation "
+                    f"but got {type(constraints).__name__} instead"
+                )
+                raise ValueError(message)
 
-    blocks = convert_union_to_blocks(node_union)
-    result: list[None | tuple[Node, int]]
-    result = [None] * len(nodes)
-    for nodes_id in blocks:
-        output_p = required_encrypted_bitwidth(nodes[node_id] for node_id in nodes_id)
-        for node_id in nodes_id:
-            result[node_id] = (nodes[node_id], output_p)
-    assert None not in result
-    return typing.cast("list[tuple[Node, int]]", result)
+    # ==========
+    # Conditions
+    # ==========
 
+    def all_inputs_are_encrypted(self, node: Node, preds: List[Node]) -> bool:
+        return all(pred.output.is_encrypted for pred in preds)
 
-class UnionFind:
-    """
-    Utility class joins the nodes in equivalent precision classes.
+    def some_inputs_are_clear(self, node: Node, preds: List[Node]) -> bool:
+        return any(pred.output.is_clear for pred in preds)
 
-    Nodes are just integers id.
-    """
+    def has_overflow_protection(self, node: Node, preds: List[Node]) -> bool:
+        return node.properties["attributes"]["overflow_protection"] is True
 
-    parent: list[int]
+    # ===========
+    # Constraints
+    # ===========
 
-    def __init__(self, size: int):
-        """Create a union find suitable for `size` nodes."""
-        self.parent = list(range(size))
+    def inputs_share_precision(self, node: Node, preds: List[Node]):
+        for i in range(len(preds) - 1):
+            self.optimizer.add(self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]])
 
-    @property
-    def size(self):
-        """Size in number of nodes."""
-        return len(self.parent)
+    def inputs_and_output_share_precision(self, node: Node, preds: List[Node]):
+        self.inputs_share_precision(node, preds)
+        if len(preds) != 0:
+            self.optimizer.add(self.bit_widths[preds[-1]] == self.bit_widths[node])
 
-    def find_canonical(self, a: int) -> int:
-        """Find the current canonical node for a given input node."""
-        parent = self.parent[a]
-        if a == parent:
-            return a
-        canonical = self.find_canonical(parent)
-        self.parent[a] = canonical
-        return canonical
+    def inputs_require_one_more_bit(self, node: Node, preds: List[Node]):
+        for pred in preds:
+            assert isinstance(pred.output.dtype, Integer)
 
-    def union(self, a: int, b: int):
-        """Union both nodes."""
-        self.united_common_ancestor(a, b)
+            actual_bit_width = pred.output.dtype.bit_width
+            required_bit_width = actual_bit_width + 1
 
-    def united_common_ancestor(self, a: int, b: int) -> int:
-        """Deduce the common ancestor of both nodes after unification."""
-        parent_a = self.parent[a]
-        parent_b = self.parent[b]
+            self.optimizer.add(self.bit_widths[pred] >= required_bit_width)
 
-        if parent_a == parent_b:
-            return parent_a
+    def comparison(self, node: Node, preds: List[Node]):
+        assert len(preds) == 2
 
-        if a == parent_a and parent_b < parent_a:
-            common_ancestor = parent_b
-        elif b == parent_b and parent_a < parent_b:
-            common_ancestor = parent_a
-        else:
-            common_ancestor = self.united_common_ancestor(parent_a, parent_b)
+        x = preds[0]
+        y = preds[1]
 
-        self.parent[a] = common_ancestor
-        self.parent[b] = common_ancestor
-        return common_ancestor
+        assert x.output.is_encrypted
+        assert y.output.is_encrypted
+
+        strategies = self.comparison_strategy_preference
+        fallback = [
+            ComparisonStrategy.THREE_TLU_BIGGER_CLIPPED_SMALLER_CASTED,
+            ComparisonStrategy.CHUNKED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(x.output, y.output):
+                new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
+
+                if strategy == ComparisonStrategy.ONE_TLU_PROMOTED:
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
+
+                node.properties["strategy"] = strategy
+                break
+
+    def bitwise(self, node: Node, preds: List[Node]):
+        assert len(preds) == 2
+
+        x = preds[0]
+        y = preds[1]
+
+        assert x.output.is_encrypted
+        assert y.output.is_encrypted
+
+        strategies = self.bitwise_strategy_preference
+        fallback = [
+            BitwiseStrategy.CHUNKED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(x.output, y.output):
+                new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
+
+                if strategy == BitwiseStrategy.ONE_TLU_PROMOTED:
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
+
+                node.properties["strategy"] = strategy
+                break
+
+        if (
+            node.properties.get("name", None) in {"left_shift", "right_shift"}
+            and node.properties["strategy"] == BitwiseStrategy.CHUNKED
+            and self.shifts_with_promotion
+        ):
+            self.optimizer.add(self.bit_widths[x] == self.bit_widths[node])
+
+    def multivariate(self, node: Node, preds: List[Node]):
+        assert all(
+            pred.output.is_encrypted and pred.properties.get("name") != "round_bit_pattern"
+            for pred in preds
+        )
+
+        strategies = self.multivariate_strategy_preference
+        fallback = [
+            MultivariateStrategy.CASTED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(*(pred.output for pred in preds)):
+                promotions = strategy.promotions(*(pred.output for pred in preds))
+                for pred, promotion in zip(preds, promotions):
+                    self.optimizer.add(self.bit_widths[pred] >= promotion)
+
+                if strategy == MultivariateStrategy.PROMOTED:
+                    for i in range(len(preds) - 1):
+                        self.optimizer.add(
+                            self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]]
+                        )
+
+                node.properties["strategy"] = strategy
+                break
+
+    def min_max(self, node: Node, preds: List[Node]):
+        assert len(preds) == 2
+
+        x = preds[0]
+        y = preds[1]
+
+        assert x.output.is_encrypted
+        assert y.output.is_encrypted
+
+        assert isinstance(x.output.dtype, Integer)
+        assert isinstance(y.output.dtype, Integer)
+        assert isinstance(node.output.dtype, Integer)
+
+        x_bit_width = x.output.dtype.bit_width
+        y_bit_width = y.output.dtype.bit_width
+        result_bit_width = node.output.dtype.bit_width
+
+        if y_bit_width != result_bit_width:
+            x_can_be_added_directly = result_bit_width == x_bit_width
+            x_has_smaller_bit_width = x_bit_width < y_bit_width
+            if x_can_be_added_directly or x_has_smaller_bit_width:
+                x, y = y, x
+
+        strategies = self.min_max_strategy_preference
+        fallback = [
+            MinMaxStrategy.CHUNKED,
+        ]
+
+        for strategy in strategies + fallback:
+            if strategy.can_be_used(x.output, y.output):
+                new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
+                self.optimizer.add(self.bit_widths[x] >= new_x_bit_width)
+                self.optimizer.add(self.bit_widths[y] >= new_y_bit_width)
+
+                if strategy == MinMaxStrategy.ONE_TLU_PROMOTED:
+                    self.optimizer.add(self.bit_widths[x] == self.bit_widths[y])
+                    self.optimizer.add(self.bit_widths[y] == self.bit_widths[node])
+
+                node.properties["strategy"] = strategy
+                break
+
+    # ==========
+    # Operations
+    # ==========
+
+    add = {
+        inputs_and_output_share_precision,
+    }
+
+    array = {
+        inputs_and_output_share_precision,
+    }
+
+    assign_static = {
+        inputs_and_output_share_precision,
+    }
+
+    bitwise_and = {
+        all_inputs_are_encrypted: {
+            bitwise,
+        },
+    }
+
+    bitwise_or = {
+        all_inputs_are_encrypted: {
+            bitwise,
+        },
+    }
+
+    bitwise_xor = {
+        all_inputs_are_encrypted: {
+            bitwise,
+        },
+    }
+
+    broadcast_to = {
+        inputs_and_output_share_precision,
+    }
+
+    concatenate = {
+        inputs_and_output_share_precision,
+    }
+
+    conv1d = {
+        inputs_and_output_share_precision,
+    }
+
+    conv2d = {
+        inputs_and_output_share_precision,
+    }
+
+    conv3d = {
+        inputs_and_output_share_precision,
+    }
+
+    copy = {
+        inputs_and_output_share_precision,
+    }
+
+    dot = {
+        all_inputs_are_encrypted: {
+            inputs_share_precision,
+            inputs_require_one_more_bit,
+        },
+        some_inputs_are_clear: {
+            inputs_and_output_share_precision,
+        },
+    }
+
+    equal = {
+        all_inputs_are_encrypted: {
+            comparison,
+        },
+    }
+
+    expand_dims = {
+        inputs_and_output_share_precision,
+    }
+
+    greater = {
+        all_inputs_are_encrypted: {
+            comparison,
+        },
+    }
+
+    greater_equal = {
+        all_inputs_are_encrypted: {
+            comparison,
+        },
+    }
+
+    index_static = {
+        inputs_and_output_share_precision,
+    }
+
+    left_shift = {
+        all_inputs_are_encrypted: {
+            bitwise,
+        },
+    }
+
+    less = {
+        all_inputs_are_encrypted: {
+            comparison,
+        },
+    }
+
+    less_equal = {
+        all_inputs_are_encrypted: {
+            comparison,
+        },
+    }
+
+    matmul = {
+        all_inputs_are_encrypted: {
+            inputs_share_precision,
+            inputs_require_one_more_bit,
+        },
+        some_inputs_are_clear: {
+            inputs_and_output_share_precision,
+        },
+    }
+
+    maximum = {
+        all_inputs_are_encrypted: {
+            min_max,
+        },
+    }
+
+    maxpool1d = {
+        inputs_and_output_share_precision,
+        inputs_require_one_more_bit,
+    }
+
+    maxpool2d = {
+        inputs_and_output_share_precision,
+        inputs_require_one_more_bit,
+    }
+
+    maxpool3d = {
+        inputs_and_output_share_precision,
+        inputs_require_one_more_bit,
+    }
+
+    minimum = {
+        all_inputs_are_encrypted: {
+            min_max,
+        },
+    }
+
+    multiply = {
+        all_inputs_are_encrypted: {
+            inputs_share_precision,
+            inputs_require_one_more_bit,
+        },
+        some_inputs_are_clear: {
+            inputs_and_output_share_precision,
+        },
+    }
+
+    negative = {
+        inputs_and_output_share_precision,
+    }
+
+    not_equal = {
+        all_inputs_are_encrypted: {
+            comparison,
+        },
+    }
+
+    reshape = {
+        inputs_and_output_share_precision,
+    }
+
+    right_shift = {
+        all_inputs_are_encrypted: {
+            bitwise,
+        },
+    }
+
+    round_bit_pattern = {
+        has_overflow_protection: {
+            inputs_and_output_share_precision,
+        },
+    }
+
+    subtract = {
+        inputs_and_output_share_precision,
+    }
+
+    sum = {
+        inputs_and_output_share_precision,
+    }
+
+    squeeze = {
+        inputs_and_output_share_precision,
+    }
+
+    transpose = {
+        inputs_and_output_share_precision,
+    }

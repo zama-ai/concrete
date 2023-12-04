@@ -1,67 +1,74 @@
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <regex>
 #include <type_traits>
 
-#include "concretelang/ClientLib/Serializers.h"
+#include "concretelang/Common/Values.h"
 #include "concretelang/Support/CompilationFeedback.h"
-#include "concretelang/Support/JITSupport.h"
-#include "concretelang/Support/LibrarySupport.h"
+#include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_fixture/EndToEndFixture.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
+#include "tests_tools/assert.h"
 #include "tests_tools/keySetCache.h"
 
+using concretelang::testlib::createTempFolderIn;
+using concretelang::testlib::deleteFolder;
+using concretelang::testlib::getSystemTempFolderPath;
+using concretelang::testlib::TestCircuit;
+using concretelang::values::Value;
+
 /// @brief EndToEndTest is a template that allows testing for one program for a
-/// TestDescription using a LambdaSupport.
-template <typename LambdaSupport> class EndToEndTest : public ::testing::Test {
+/// TestDescription.
+class EndToEndTest : public ::testing::Test {
 public:
   explicit EndToEndTest(std::string program, TestDescription desc,
                         std::optional<TestErrorRate> errorRate,
-                        LambdaSupport support,
-                        mlir::concretelang::CompilationOptions options)
-      : program(program), desc(desc), errorRate(errorRate), support(support),
-        options(options) {
+                        mlir::concretelang::CompilationOptions options,
+                        int retryFailingTests)
+      : program(program), desc(desc), errorRate(errorRate),
+        testCircuit(std::nullopt), options(options),
+        retryFailingTests(retryFailingTests) {
     if (errorRate.has_value()) {
       options.optimizerConfig.global_p_error = errorRate->global_p_error;
       options.optimizerConfig.p_error = errorRate->global_p_error;
     }
+    artifactFolder = createTempFolderIn(getSystemTempFolderPath());
   };
 
   void SetUp() override {
     /* Compile the program */
-    auto expectCompilationResult = support.compile(program, options);
+    std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
+        mlir::concretelang::CompilationContext::createShared();
+    mlir::concretelang::CompilerEngine ce{ccx};
+    ce.setCompilationOptions(options);
+    auto expectCompilationResult = ce.compile({program}, artifactFolder);
     ASSERT_EXPECTED_SUCCESS(expectCompilationResult);
+    library = expectCompilationResult.get();
 
-    /* Load the client parameters */
-    auto expectClientParameters =
-        support.loadClientParameters(**expectCompilationResult);
-    ASSERT_EXPECTED_SUCCESS(expectClientParameters);
-    clientParameters = *expectClientParameters;
+    /* Retrieve the keyset */
+    auto keyset =
+        getTestKeySetCachePtr()
+            ->getKeyset(library->getProgramInfo().asReader().getKeyset(), 0, 0)
+            .value();
 
-    /* Build the keyset */
-    auto expectKeySet = support.keySet(clientParameters, getTestKeySetCache());
-    ASSERT_EXPECTED_SUCCESS(expectKeySet);
-    keySet = std::move(*expectKeySet);
-
-    /* Load the server lambda */
-    auto expectServerLambda =
-        support.loadServerLambda(**expectCompilationResult);
-    ASSERT_EXPECTED_SUCCESS(expectServerLambda);
-    serverLambda = *expectServerLambda;
+    /* Create the test circuit */
+    testCircuit =
+        TestCircuit::create(
+            keyset, library->getProgramInfo().asReader(),
+            library->getSharedLibraryPath(library->getOutputDirPath()), 0, 0,
+            false)
+            .value();
 
     /* Create the public argument */
-    std::vector<const mlir::concretelang::LambdaArgument *> inputArguments;
-    inputArguments.reserve(desc.inputs.size());
-
+    args = std::vector<Value>();
     for (auto &input : desc.inputs) {
-      inputArguments.push_back(&input.getValue());
+      args.push_back(input.getValue());
     }
-    auto expectPublicArguments =
-        support.exportArguments(clientParameters, *keySet, inputArguments);
-    ASSERT_EXPECTED_SUCCESS(expectPublicArguments);
-    publicArguments = std::move(*expectPublicArguments);
   }
+
+  void TearDown() override { deleteFolder(artifactFolder); }
 
   void TestBody() override {
     if (!errorRate.has_value()) {
@@ -72,50 +79,46 @@ public:
   }
 
   void testOnce() {
-    auto evaluationKeys = keySet->evaluationKeys();
+    for (auto tests_rep = 0; tests_rep <= retryFailingTests; tests_rep++) {
+      // We execute the circuit.
+      auto maybeRes = (*testCircuit).call(args);
+      ASSERT_OUTCOME_HAS_VALUE(maybeRes);
+      auto result = maybeRes.value();
 
-    /* Serialize and unserialize evaluation keys */
-    std::stringstream stream;
-    stream << evaluationKeys;
-    stream.seekg(0, std::ios::beg);
-    evaluationKeys = concretelang::clientlib::readEvaluationKeys(stream);
-
-    /* Call the server lambda */
-    auto publicResult =
-        support.serverCall(serverLambda, *publicArguments, evaluationKeys);
-    ASSERT_EXPECTED_SUCCESS(publicResult);
-
-    /* Decrypt the public result */
-    auto result = mlir::concretelang::typedResult<
-        std::unique_ptr<mlir::concretelang::LambdaArgument>>(*keySet,
-                                                             **publicResult);
-    ASSERT_EXPECTED_SUCCESS(result);
-
-    /* Check result */
-    // For now we support just one result
-    assert(desc.outputs.size() == 1);
-    ASSERT_LLVM_ERROR(checkResult(desc.outputs[0], **result));
+      /* Check result */
+      for (size_t i = 0; i < desc.outputs.size(); i++) {
+        auto maybeErr = checkResult(desc.outputs[i], result[i]);
+        if (!maybeErr)
+          return;
+        if (tests_rep < retryFailingTests) {
+          llvm::errs() << "/!\\ WARNING RETRY TEST: " << maybeErr << "\n";
+          llvm::consumeError(std::move(maybeErr));
+          llvm::errs() << "Regenerating keyset\n";
+          __uint128_t seed = tests_rep + 1;
+          auto csprng = ConcreteCSPRNG(seed);
+          Keyset keyset =
+              Keyset(library->getProgramInfo().asReader().getKeyset(), csprng);
+          testCircuit->setKeySet(keyset);
+          break;
+        } else {
+          ASSERT_LLVM_ERROR(std::move(maybeErr));
+        }
+      }
+    }
   }
 
   void testErrorRate() {
-    auto evaluationKeys = keySet->evaluationKeys();
     auto nbError = 0;
     for (size_t i = 0; i < errorRate->nb_repetition; i++) {
-      /* Call the server lambda */
-      auto publicResult =
-          support.serverCall(serverLambda, *publicArguments, evaluationKeys);
-      ASSERT_EXPECTED_SUCCESS(publicResult);
-
-      /* Decrypt the public result */
-      auto result = mlir::concretelang::typedResult<
-          std::unique_ptr<mlir::concretelang::LambdaArgument>>(*keySet,
-                                                               **publicResult);
-      ASSERT_EXPECTED_SUCCESS(result);
+      // We execute the circuit.
+      auto maybeRes = (*testCircuit).call(args);
+      ASSERT_OUTCOME_HAS_VALUE(maybeRes);
+      auto result = maybeRes.value();
 
       /* Check result */
       // For now we support just one result
       assert(desc.outputs.size() == 1);
-      auto err = checkResult(desc.outputs[0], **result);
+      auto err = checkResult(desc.outputs[0], result[0]);
       if (err) {
         nbError++;
         DISCARD_LLVM_ERROR(err);
@@ -130,16 +133,14 @@ public:
 
 private:
   std::string program;
+  std::string artifactFolder;
   TestDescription desc;
   std::optional<TestErrorRate> errorRate;
-  LambdaSupport support;
+  std::optional<mlir::concretelang::CompilerEngine::Library> library;
+  std::optional<TestCircuit> testCircuit;
   mlir::concretelang::CompilationOptions options;
-
-  // Initialized by the SetUp
-  typename LambdaSupport::lambda serverLambda;
-  mlir::concretelang::ClientParameters clientParameters;
-  std::unique_ptr<concretelang::clientlib::KeySet> keySet;
-  std::unique_ptr<concretelang::clientlib::PublicArguments> publicArguments;
+  int retryFailingTests;
+  std::vector<Value> args;
 };
 
 std::string getTestName(EndToEndDesc desc,
@@ -147,39 +148,29 @@ std::string getTestName(EndToEndDesc desc,
                         int testNum) {
   std::ostringstream os;
   os << getOptionsName(options) << "." << desc.description << "." << testNum;
-  return os.str();
+  return std::regex_replace(os.str(), std::regex("-"), "");
 }
 
 void registerEndToEnd(std::string suiteName, std::string testName,
-                      std::string valueName, std::string libpath,
-                      std::string program, TestDescription test,
+                      std::string valueName, std::string program,
+                      TestDescription test,
                       std::optional<TestErrorRate> errorRate,
-                      mlir::concretelang::CompilationOptions options) {
+                      mlir::concretelang::CompilationOptions options,
+                      int retryFailingTests) {
   // TODO: Get file and line from yaml
   auto file = __FILE__;
   auto line = __LINE__;
-  if (libpath.empty()) {
-    ::testing::RegisterTest(
-        suiteName.c_str(), testName.c_str(), nullptr, valueName.c_str(), file,
-        line, [=]() -> EndToEndTest<mlir::concretelang::JITSupport> * {
-          return new EndToEndTest<mlir::concretelang::JITSupport>(
-              program, test, errorRate, mlir::concretelang::JITSupport(),
-              options);
-        });
-  } else {
-    ::testing::RegisterTest(
-        suiteName.c_str(), testName.c_str(), nullptr, valueName.c_str(), file,
-        line, [=]() -> EndToEndTest<mlir::concretelang::LibrarySupport> * {
-          return new EndToEndTest<mlir::concretelang::LibrarySupport>(
-              program, test, errorRate,
-              mlir::concretelang::LibrarySupport(libpath), options);
-        });
-  }
+  ::testing::RegisterTest(suiteName.c_str(), testName.c_str(), nullptr,
+                          valueName.c_str(), file, line,
+                          [=]() -> EndToEndTest * {
+                            return new EndToEndTest(program, test, errorRate,
+                                                    options, retryFailingTests);
+                          });
 }
 
-void registerEndToEnd(std::string suiteName, std::string libpath,
-                      EndToEndDesc desc,
-                      mlir::concretelang::CompilationOptions options) {
+void registerEndToEnd(std::string suiteName, EndToEndDesc desc,
+                      mlir::concretelang::CompilationOptions options,
+                      int retryFailingTests) {
   if (desc.v0Constraint.has_value()) {
     options.v0FHEConstraints = desc.v0Constraint;
   }
@@ -193,16 +184,14 @@ void registerEndToEnd(std::string suiteName, std::string libpath,
     auto valueName = std::to_string(i);
     auto testName = getTestName(desc, options, i);
     if (desc.test_error_rates.empty()) {
-      registerEndToEnd(suiteName, testName, valueName,
-                       libpath.empty() ? libpath : libpath + desc.description,
-                       desc.program, test, std::nullopt, options);
+      registerEndToEnd(suiteName, testName, valueName, desc.program, test,
+                       std::nullopt, options, retryFailingTests);
     } else {
       auto j = 0;
       for (auto rate : desc.test_error_rates) {
         auto rateName = testName + "_rate" + std::to_string(j);
-        registerEndToEnd(suiteName, rateName, valueName,
-                         libpath.empty() ? libpath : libpath + desc.description,
-                         desc.program, test, rate, options);
+        registerEndToEnd(suiteName, rateName, valueName, desc.program, test,
+                         rate, options, retryFailingTests);
         j++;
       }
     }
@@ -214,11 +203,12 @@ void registerEndToEnd(std::string suiteName, std::string libpath,
 /// @param suiteName The name of the suite.
 /// @param descriptions A vector of description of tests to register .
 /// @param options The compilation options.
-void registerEndToEndSuite(std::string suiteName, std::string libpath,
+void registerEndToEndSuite(std::string suiteName,
                            std::vector<EndToEndDesc> descriptions,
-                           mlir::concretelang::CompilationOptions options) {
+                           mlir::concretelang::CompilationOptions options,
+                           int retryFailingTests) {
   for (auto desc : descriptions) {
-    registerEndToEnd(suiteName, libpath, desc, options);
+    registerEndToEnd(suiteName, desc, options, retryFailingTests);
   }
 }
 
@@ -234,18 +224,13 @@ int main(int argc, char **argv) {
   auto options = parseEndToEndCommandLine(argc, argv);
 
   auto compilationOptions = std::get<0>(options);
-  auto libpath = std::get<1>(options);
-  auto descriptionFiles = std::get<2>(options);
+  auto descriptionFiles = std::get<1>(options);
+  auto retryFailingTests = std::get<2>(options);
 
   for (auto descFile : descriptionFiles) {
-    auto suiteName = path::stem(descFile.path).str();
-    if (libpath.empty()) {
-      suiteName = suiteName + ".jit";
-    } else {
-      suiteName = suiteName + ".library";
-    }
-    registerEndToEndSuite(suiteName, libpath, descFile.descriptions,
-                          compilationOptions);
+    auto suiteName = path::stem(descFile.path).str() + ".library";
+    registerEndToEndSuite(suiteName, descFile.descriptions, compilationOptions,
+                          retryFailingTests);
   }
   return RUN_ALL_TESTS();
 }

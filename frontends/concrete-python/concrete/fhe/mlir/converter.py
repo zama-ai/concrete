@@ -4,19 +4,18 @@ Declaration of `Converter` class.
 
 # pylint: disable=import-error,no-name-in-module
 
-from copy import deepcopy
-from typing import List, Tuple
+import sys
+from typing import Dict, List, Tuple, Union
 
 import concrete.lang
+import concrete.lang.dialects.tracing
 import networkx as nx
 import numpy as np
 from mlir.dialects import func
-from mlir.ir import BlockArgument as MlirBlockArgument
 from mlir.ir import Context as MlirContext
 from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import Location as MlirLocation
 from mlir.ir import Module as MlirModule
-from mlir.ir import OpResult as MlirOperation
 
 from concrete.fhe.compilation.configuration import Configuration
 
@@ -34,7 +33,9 @@ class Converter:
     Converter class, to convert a computation graph to MLIR.
     """
 
-    def convert(self, graph: Graph, configuration: Configuration) -> str:
+    def convert(
+        self, graph: Graph, configuration: Configuration, mlir_context: MlirContext
+    ) -> MlirModule:
         """
         Convert a computation graph to MLIR.
 
@@ -45,14 +46,17 @@ class Converter:
             configuration (Configuration):
                 configuration to use
 
+            mlir_context (MlirContext):
+                MLIR Context to use for module generation
+
         Return:
-            str:
-                MLIR corresponding to graph
+            MlirModule:
+                In-memory MLIR module corresponding to the graph
         """
 
-        graph = self.process(graph, configuration)
+        self.process(graph, configuration)
 
-        with MlirContext() as context, MlirLocation.unknown():
+        with mlir_context as context, MlirLocation.unknown():
             concrete.lang.register_dialects(context)  # pylint: disable=no-member
 
             module = MlirModule.create()
@@ -69,12 +73,17 @@ class Converter:
                             conversion.set_original_bit_width(node.properties["original_bit_width"])
                         ctx.conversions[node] = conversion
 
-                    for node in nx.lexicographical_topological_sort(graph.graph):
-                        if node.operation == Operation.Input:
-                            continue
+                    ordered_nodes = [
+                        node
+                        for node in nx.lexicographical_topological_sort(graph.graph)
+                        if node.operation != Operation.Input
+                    ]
 
+                    for progress_index, node in enumerate(ordered_nodes):
+                        self.trace_progress(configuration, progress_index, ordered_nodes)
                         preds = [ctx.conversions[pred] for pred in graph.ordered_preds_of(node)]
                         self.node(ctx, node, preds)
+                    self.trace_progress(configuration, len(ordered_nodes), ordered_nodes)
 
                     outputs = []
                     for node in graph.ordered_outputs():
@@ -83,60 +92,110 @@ class Converter:
 
                     return tuple(outputs)
 
-        def extract_mlir_name(result: MlirOperation) -> str:
-            return (
-                f"%arg{result.arg_number}"
-                if isinstance(result, MlirBlockArgument)
-                else str(result).replace("Value(", "").split("=", maxsplit=1)[0].strip()
-            )
+        return module
 
-        direct_replacements = {}
-        for placeholder, elements in ctx.from_elements_operations.items():
-            element_names = [extract_mlir_name(element) for element in elements]
-            actual_value = f"tensor.from_elements {', '.join(element_names)} : {placeholder.type}"
-            direct_replacements[extract_mlir_name(placeholder)] = actual_value
+    @staticmethod
+    def stdout_with_ansi_support() -> bool:
+        """Detect if ansi characters can be used (e.g. not the case in notebooks)."""
+        return sys.stdout.isatty()  # pragma: no cover
 
-        module_lines_after_direct_replacements_are_applied = []
-        for line in str(module).split("\n"):
-            mlir_name = line.split("=")[0].strip()
-            if mlir_name not in direct_replacements:
-                module_lines_after_direct_replacements_are_applied.append(line)
-                continue
+    @staticmethod
+    def simplify_tag(configuration: Configuration, tag: str) -> str:
+        """Keep only `n` higher tag parts."""
+        if configuration.progress_tag is True or not tag:
+            return tag
+        last_dot_pos = 0
+        for _ in range(configuration.progress_tag):
+            last_dot_pos = tag.find(".", last_dot_pos + 1)
+            if last_dot_pos == -1:
+                return tag
+        return tag[:last_dot_pos]
 
-            new_value = direct_replacements[mlir_name]
-            new_line = f"    {mlir_name} = {new_value}"
+    @classmethod
+    def trace_progress(cls, configuration: Configuration, progress_index: int, nodes: List[Node]):
+        """
+        Add a trace_message for progress.
 
-            module_lines_after_direct_replacements_are_applied.append(new_line)
+        Args:
+            configuration:
+                configuration for title, tags options
 
-        return "\n".join(module_lines_after_direct_replacements_are_applied).strip()
+            progress_index:
+                index of the next node to process
 
-    def process(self, graph: Graph, configuration: Configuration) -> Graph:
+            nodes:
+                all nodes
+        """
+        if not nodes or not configuration.show_progress:
+            return
+
+        total = len(nodes)
+        title = configuration.progress_title
+        max_nb_steps = 50
+
+        assert 0 <= progress_index <= total
+
+        nb_ops_to_percent = lambda current: int(100 * current / total)
+        percent = nb_ops_to_percent(progress_index)
+        prev_percent = nb_ops_to_percent(progress_index - 1)
+        steps_done = percent // 2
+        prev_steps_done = prev_percent // 2
+
+        step = "█"
+        if not cls.stdout_with_ansi_support():
+            if progress_index == 0:
+                msg = f"{' ' * len(title)}{'_' * max_nb_steps}\n{title}"
+            else:
+                if steps_done == prev_steps_done:
+                    return
+                msg = step
+                if percent == 100:
+                    msg += " 100%\n"
+
+        elif progress_index == 0 or percent != prev_percent:
+            if configuration.progress_tag and progress_index != total:
+                tag = nodes[progress_index].tag
+                tag = cls.simplify_tag(configuration, tag)
+                if tag:
+                    tag = f" ({tag})"
+            else:
+                tag = ""
+            cleared_line = "\033[512D\033[2K"
+            full_bar = f"|{step * steps_done}{'.' * (max_nb_steps - steps_done)}|"
+            msg = f"{cleared_line}{title}{percent:>3}% {full_bar} {percent:>3}%{tag}"
+            if percent == 100:
+                msg += "\n"
+        else:
+            return
+        concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)  # pylint: disable=no-member
+
+    def process(self, graph: Graph, configuration: Configuration):
         """
         Process a computation graph for MLIR conversion.
 
         Args:
             graph (Graph):
-                graph to convert
+                graph to process
 
             configuration (Configuration):
                 configuration to use
-
-        Return:
-            str:
-                MLIR corresponding to graph
         """
 
         pipeline = [
             CheckIntegerOnly(),
-            AssignBitWidths(single_precision=configuration.single_precision),
+            AssignBitWidths(
+                single_precision=configuration.single_precision,
+                comparison_strategy_preference=configuration.comparison_strategy_preference,
+                bitwise_strategy_preference=configuration.bitwise_strategy_preference,
+                shifts_with_promotion=configuration.shifts_with_promotion,
+                multivariate_strategy_preference=configuration.multivariate_strategy_preference,
+                min_max_strategy_preference=configuration.min_max_strategy_preference,
+            ),
             ProcessRounding(),
         ]
 
-        graph = deepcopy(graph)
         for processor in pipeline:
             processor.apply(graph)
-
-        return graph
 
     def node(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         """
@@ -252,15 +311,23 @@ class Converter:
         ctx.error({node: "3-dimensional convolutions are not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
+    def copy(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        return preds[0]
+
     def dot(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.dot(ctx.typeof(node), preds[0], preds[1])
+
+    def dynamic_tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 2
+        return ctx.dynamic_tlu(ctx.typeof(node), preds[0], preds[1])
 
     def equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
-            return ctx.equality(ctx.typeof(node), preds[0], preds[1], equals=True)
+            return ctx.equal(ctx.typeof(node), preds[0], preds[1])
 
         return self.tlu(ctx, node, preds)
 
@@ -326,6 +393,14 @@ class Converter:
         assert len(preds) == 2
         return ctx.matmul(ctx.typeof(node), preds[0], preds[1])
 
+    def maximum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 2
+
+        if all(pred.is_encrypted for pred in preds):
+            return ctx.maximum(ctx.typeof(node), preds[0], preds[1])
+
+        return self.tlu(ctx, node, preds)
+
     def maxpool1d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         ctx.error({node: "1-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
@@ -344,6 +419,14 @@ class Converter:
         ctx.error({node: "3-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
+    def minimum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 2
+
+        if all(pred.is_encrypted for pred in preds):
+            return ctx.minimum(ctx.typeof(node), preds[0], preds[1])
+
+        return self.tlu(ctx, node, preds)
+
     def multiply(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.mul(ctx.typeof(node), preds[0], preds[1])
@@ -356,7 +439,7 @@ class Converter:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
-            return ctx.equality(ctx.typeof(node), preds[0], preds[1], equals=False)
+            return ctx.not_equal(ctx.typeof(node), preds[0], preds[1])
 
         return self.tlu(ctx, node, preds)
 
@@ -428,39 +511,61 @@ class Converter:
     def tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert node.converted_to_table_lookup
 
-        variable_input_index = -1
+        is_multivariate = (
+            node.operation == Operation.Generic
+            and node.properties["attributes"].get("is_multivariate") is True
+        )
 
         pred_nodes = ctx.graph.ordered_preds_of(node)
-        for i, pred_node in enumerate(pred_nodes):
+
+        variable_input_indices = []
+        for pred_index, pred_node in enumerate(pred_nodes):
             if pred_node.operation != Operation.Constant:
-                if variable_input_index == -1:
-                    variable_input_index = i
-                else:
-                    assert False, "unreachable"  # pragma: no cover
+                variable_input_indices.append(pred_index)
 
-        assert variable_input_index != -1
+        if is_multivariate:
+            sum_of_bit_widths = sum(pred.original_bit_width for pred in preds)
+            if sum_of_bit_widths > MAXIMUM_TLU_BIT_WIDTH:
+                highlights: Dict[Node, Union[str, List[str]]] = {
+                    pred.origin: f"this {pred.original_bit_width}-bit value is one of the inputs"
+                    for pred in preds
+                }
+                highlights[node] = [
+                    (
+                        f"which means the inputs would be packed to {sum_of_bit_widths}-bits "
+                        f"for the table lookup"
+                    ),
+                    f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit table lookups are supported",
+                ]
+                ctx.error(highlights)
 
-        variable_input = preds[variable_input_index]
-        if variable_input.bit_width > MAXIMUM_TLU_BIT_WIDTH:
-            variable_input_messages = [
-                f"this {variable_input.bit_width}-bit value "
-                f"is used as an input to a table lookup"
-            ]
-            if variable_input.bit_width != variable_input.original_bit_width:
-                variable_input_messages.append(
-                    "("
-                    f"note that it's assigned {variable_input.bit_width}-bits "
-                    f"during compilation because of its relation with other operations"
-                    ")"
-                )
+        else:
+            assert len(variable_input_indices) == 1
 
-            highlights = {
-                variable_input.origin: variable_input_messages,
-                node: f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit table lookups are supported",
-            }
-            ctx.error(highlights)  # type: ignore
+            variable_input_index = variable_input_indices[0]
+            variable_input = preds[variable_input_index]
+
+            if variable_input.bit_width > MAXIMUM_TLU_BIT_WIDTH:
+                variable_input_messages = [
+                    f"this {variable_input.bit_width}-bit value "
+                    f"is used as an input to a table lookup"
+                ]
+                if variable_input.bit_width != variable_input.original_bit_width:
+                    variable_input_messages.append(
+                        "("
+                        f"note that it's assigned {variable_input.bit_width}-bits "
+                        f"during compilation because of its relation with other operations"
+                        ")"
+                    )
+
+                highlights = {
+                    variable_input.origin: variable_input_messages,
+                    node: f"but only up to {MAXIMUM_TLU_BIT_WIDTH}-bit table lookups are supported",
+                }
+                ctx.error(highlights)
 
         tables = construct_deduplicated_tables(node, pred_nodes)
+
         assert len(tables) > 0
 
         lut_shape: Tuple[int, ...] = ()
@@ -468,6 +573,7 @@ class Converter:
 
         if len(tables) == 1:
             table = tables[0][0]
+            assert tables[0][1] is None
 
             # The reduction on 63b is to avoid problems like doing a TLU of
             # the form T[j] = 2<<j, for j which is supposed to be 7b as per
@@ -490,8 +596,27 @@ class Converter:
             for i, (table, indices) in enumerate(tables):
                 assert len(table) == individual_table_size
                 lut_values[i, :] = table
+
+                assert indices is not None
                 for index in indices:
                     map_values[index] = i
+
+        if is_multivariate:
+            if len(tables) == 1:
+                return ctx.multivariate_tlu(ctx.typeof(node), preds, table=lut_values.tolist())
+
+            assert map_values is not None
+            return ctx.multivariate_multi_tlu(
+                ctx.typeof(node),
+                xs=preds,
+                tables=lut_values.tolist(),
+                mapping=map_values.tolist(),
+            )
+
+        assert len(variable_input_indices) == 1
+
+        variable_input_index = variable_input_indices[0]
+        variable_input = preds[variable_input_index]
 
         if len(tables) == 1:
             return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist())

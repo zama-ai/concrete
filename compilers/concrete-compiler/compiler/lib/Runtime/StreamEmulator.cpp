@@ -3,23 +3,18 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "concretelang/Runtime/stream_emulator_api.h"
+#include "concretelang/Runtime/wrappers.h"
 #include <cstdarg>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <numeric>
 #include <queue>
+#include <sched.h>
 #include <thread>
 #include <utility>
 #include <vector>
-
-#include <sched.h>
-
-#include <concretelang/ClientLib/Types.h>
-#include <concretelang/Runtime/stream_emulator_api.h>
-#include <concretelang/Runtime/wrappers.h>
-
-using concretelang::clientlib::MemRefDescriptor;
 
 namespace mlir {
 namespace concretelang {
@@ -364,6 +359,24 @@ void stream_emulator_get_memref(void *stream, uint64_t *out_allocated,
                        mref.strides[0], out_allocated, out_aligned, out_offset,
                        out_size, out_stride);
   free(mref.allocated);
+}
+
+void *stream_emulator_make_memref_batch_stream(const char *name,
+                                               stream_type stype) {
+  assert(0 && "Batched operations not implemented in the StreamEmulator.");
+}
+void stream_emulator_put_memref_batch(void *stream, uint64_t *allocated,
+                                      uint64_t *aligned, uint64_t offset,
+                                      uint64_t size0, uint64_t size1,
+                                      uint64_t stride0, uint64_t stride1) {
+  assert(0 && "Batched operations not implemented in the StreamEmulator.");
+}
+void stream_emulator_get_memref_batch(void *stream, uint64_t *out_allocated,
+                                      uint64_t *out_aligned,
+                                      uint64_t out_offset, uint64_t out_size0,
+                                      uint64_t out_size1, uint64_t out_stride0,
+                                      uint64_t out_stride1) {
+  assert(0 && "Batched operations not implemented in the StreamEmulator.");
 }
 
 void *stream_emulator_init() {

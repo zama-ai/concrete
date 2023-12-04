@@ -1,6 +1,7 @@
 PYTHON=python
 PIP=$(PYTHON) -m pip
 
+COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
 BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
 RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 
@@ -14,7 +15,7 @@ RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 
 venv:
 	$(PYTHON) -m venv .venv
-	source .venv/bin/activate
+	. .venv/bin/activate
 
 	$(PIP) install -r requirements.dev.txt
 	$(PIP) install -r requirements.txt
@@ -26,18 +27,27 @@ licenses:
 # Testing
 # =======
 
-pytest:
+pytest: pytest-single pytest-multi
+
+pytest-single:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
 	export PYTHONPATH=$(BINDINGS_DIRECTORY)
 
-	# test single precision
+	# test single precision, mono params
 	pytest tests -svv -n auto \
+		--precision=single \
+		--strategy=mono \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-	# test multi precision
+pytest-multi:
+	export LD_PRELOAD=$(RUNTIME_LIBRARY)
+	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+
+	# test multi precision, multi params
 	pytest tests -svv -n auto \
 		--precision=multi \
+		--strategy=multi \
 		--cov=concrete \
 		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \

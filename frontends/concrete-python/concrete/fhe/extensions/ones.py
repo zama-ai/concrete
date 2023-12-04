@@ -8,7 +8,7 @@ import numpy as np
 
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 
 def ones(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
@@ -35,7 +35,7 @@ def ones(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
         computation = Node.generic(
             "ones",
             [],
-            Value.of(numpy_ones, is_encrypted=True),
+            ValueDescription.of(numpy_ones, is_encrypted=True),
             lambda: np.ones(shape, dtype=np.int64),
         )
         return Tracer(computation, [])
@@ -54,3 +54,20 @@ def one() -> Union[np.ndarray, Tracer]:
     """
 
     return ones(())
+
+
+def ones_like(array: Union[np.ndarray, Tracer]) -> Union[np.ndarray, Tracer]:
+    """
+    Create an encrypted array of ones with the same shape as another array.
+
+    Args:
+         array (Union[np.ndarray, Tracer]):
+            original array
+
+    Returns:
+        Union[np.ndarray, Tracer]:
+            Tracer that represent the operation during tracing
+            ndarray filled with ones otherwise
+    """
+
+    return ones(array.shape)

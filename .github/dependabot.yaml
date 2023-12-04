@@ -13,6 +13,8 @@ updates:
       # Check for updates to GitHub Actions every sunday
       interval: "weekly"
       day: "sunday"
+    commit-message:
+      prefix: "chore(ci)"
 
   - package-ecosystem: "docker"
     directory: "/docker"
@@ -21,3 +23,5 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+    commit-message:
+      prefix: "chore(ci)"

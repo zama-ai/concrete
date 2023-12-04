@@ -11,6 +11,16 @@ The source of the project is located in the `compiler` directory.
 cd compiler
 ```
 
+### Prerequisite: Install build tools
+
+If you intend to build the Compiler from source, you should make sure to have `build-essentials` (or equivalent if not on Ubuntu), [CMake](https://cmake.org/), and [Ninja](https://ninja-build.org/) installed. Optionally, you can also install [Ccache](https://ccache.dev/) to speedup compilations after small changes.
+
+### Prerequisite: Install Rust
+
+The Compiler depends on some Rust libraries, including the optimizer and the concrete-cpu backend. You can install it from [rustup](https://rustup.rs/).
+
+**Note:** some crates use Rust nightly currently, and it might be required to install both stable and nightly distributions.
+
 ### Prerequisite: Building HPX and enable dataflow parallelism (optional)
 
 In order to implement the dataflow parallelism and the distribution of the computation we use the [HPX Standard Library](https://hpx-docs.stellar-group.org/). You can else use your own HPX installation by set the `HPX_INSTALL_DIR` environment variable or you can install HPX on the default path of our build system thanks the following command:
@@ -41,6 +51,8 @@ pip install -r ./llvm-project/mlir/python/requirements.txt
 # From compiler dir
 pip install -r ../llvm-project/mlir/python/requirements.txt
 ```
+
+You should also have the python development package installed.
 
 ### Prerequisite: nightly rust toolchain
 
@@ -83,6 +95,12 @@ Run the compiler
 ```sh
 ./build-Release/bin/concretecompiler
 ```
+
+#### Debug build and custom linker
+
+To build a debug version of the project, you can set `BUILD_TYPE=Debug` in the `Makefile`. In `Debug` 
+the build system will detect if the `lld` linker is installed on the system and use it. `lld` is much faster
+than the default `ld` linker. Release builds with `lld` can also be enabled by modifying the `Makefile`. 
 
 ### Installation from source
 
@@ -131,7 +149,7 @@ You can create a tarball containing libs, bins, and include files for the tools 
 ### Build the Python Package
 
 Currently supported platforms:
-- Linux x86_64 for python 3.7, 3.8, 3.9, and 3.10
+- Linux x86_64 for python 3.8, 3.9, 3.10, and 3.11
 
 pybind11 is required to build the python package, you can install it in your current environment with:
 

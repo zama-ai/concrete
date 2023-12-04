@@ -2,6 +2,8 @@
 Declaration of `Compiler` class.
 """
 
+# pylint: disable=import-error,no-name-in-module
+
 import inspect
 import os
 import traceback
@@ -10,16 +12,19 @@ from enum import Enum, unique
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
+from concrete.compiler import CompilationContext
 
 from ..extensions import AutoRounder
 from ..mlir import GraphConverter
 from ..representation import Graph
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .configuration import Configuration
 from .utils import fuse
+
+# pylint: enable=import-error,no-name-in-module
 
 
 @unique
@@ -46,13 +51,15 @@ class Compiler:
     inputset: List[Any]
     graph: Optional[Graph]
 
+    compilation_context: CompilationContext
+
     _is_direct: bool
-    _parameter_values: Dict[str, Value]
+    _parameter_values: Dict[str, ValueDescription]
 
     @staticmethod
     def assemble(
         function: Callable,
-        parameter_values: Dict[str, Value],
+        parameter_values: Dict[str, ValueDescription],
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         **kwargs,
@@ -64,7 +71,7 @@ class Compiler:
             function (Callable):
                 function to convert to a circuit
 
-            parameter_values (Dict[str, Value]):
+            parameter_values (Dict[str, ValueDescription]):
                 parameter values of the function
 
             configuration(Optional[Configuration], default = None):
@@ -155,6 +162,8 @@ class Compiler:
         self.inputset = []
         self.graph = None
 
+        self.compilation_context = CompilationContext.new()
+
         self._is_direct = False
         self._parameter_values = {}
 
@@ -197,9 +206,13 @@ class Compiler:
                 self.artifacts.add_parameter_encryption_status(param, encryption_status)
 
         parameters = {
-            param: Value.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
+            param: ValueDescription.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
             for arg, (param, status) in zip(
-                sample if len(self.parameter_encryption_statuses) > 1 else (sample,),
+                (
+                    sample
+                    if len(self.parameter_encryption_statuses) > 1 or isinstance(sample, tuple)
+                    else (sample,)
+                ),
                 self.parameter_encryption_statuses.items(),
             )
         }
@@ -434,9 +447,13 @@ class Compiler:
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
-            mlir = GraphConverter().convert(self.graph, self.configuration)
+            # in-memory MLIR module
+            mlir_context = self.compilation_context.mlir_context()
+            mlir_module = GraphConverter().convert(self.graph, self.configuration, mlir_context)
+            # textual representation of the MLIR module
+            mlir_str = str(mlir_module).strip()
             if self.artifacts is not None:
-                self.artifacts.add_mlir_to_compile(mlir)
+                self.artifacts.add_mlir_to_compile(mlir_str)
 
             show_graph = (
                 self.configuration.show_graph
@@ -453,9 +470,14 @@ class Compiler:
                 if self.configuration.show_optimizer is not None
                 else self.configuration.verbose
             )
+            show_statistics = (
+                self.configuration.show_statistics
+                if self.configuration.show_statistics is not None
+                else self.configuration.verbose
+            )
 
             columns = 0
-            if show_graph or show_mlir or show_optimizer:
+            if show_graph or show_mlir or show_optimizer or show_statistics:
                 graph = (
                     self.graph.format()
                     if self.configuration.verbose or self.configuration.show_graph
@@ -463,7 +485,7 @@ class Compiler:
                 )
 
                 longest_graph_line = max(len(line) for line in graph.split("\n"))
-                longest_mlir_line = max(len(line) for line in mlir.split("\n"))
+                longest_mlir_line = max(len(line) for line in mlir_str.split("\n"))
                 longest_line = max(longest_graph_line, longest_mlir_line)
 
                 try:  # pragma: no cover
@@ -494,7 +516,7 @@ class Compiler:
 
                     print("MLIR")
                     print("-" * columns)
-                    print(mlir)
+                    print(mlir_str)
                     print("-" * columns)
 
                     print()
@@ -505,14 +527,50 @@ class Compiler:
                     print("Optimizer")
                     print("-" * columns)
 
-            circuit = Circuit(self.graph, mlir, self.configuration)
+            circuit = Circuit(
+                self.graph,
+                mlir_module,
+                self.compilation_context,
+                self.configuration,
+            )
 
-            client_parameters = circuit.client.specs.client_parameters
-            if self.artifacts is not None:
-                self.artifacts.add_client_parameters(client_parameters.serialize())
+            if hasattr(circuit, "client"):
+                client_parameters = circuit.client.specs.client_parameters
+                if self.artifacts is not None:
+                    self.artifacts.add_client_parameters(client_parameters.serialize())
 
             if show_optimizer:
                 print("-" * columns)
+                print()
+
+            if show_statistics:
+                print("\n" if not show_graph else "", end="")
+
+                print("Statistics")
+                print("-" * columns)
+
+                def pretty(d, indent=0):  # pragma: no cover
+                    if indent > 0:
+                        print("{")
+
+                    for key, value in d.items():
+                        if isinstance(value, dict) and len(value) == 0:
+                            continue
+
+                        print("    " * indent + str(key) + ": ", end="")
+
+                        if isinstance(value, dict):
+                            pretty(value, indent + 1)
+                        else:
+                            print(value)
+
+                    if indent > 0:
+                        print("    " * (indent - 1) + "}")
+
+                pretty(circuit.statistics)
+
+                print("-" * columns)
+
                 print()
 
         except Exception:  # pragma: no cover
@@ -535,14 +593,6 @@ class Compiler:
         finally:
             self.configuration = old_configuration
             self.artifacts = old_artifacts
-
-        if self.graph and len(self.graph.output_nodes) > 1:
-            graph = self.graph.format(
-                highlighted_result=["multiple outputs are not supported"],
-                show_bounds=False,
-            )
-            message = "Function you are trying to compile cannot be compiled\n\n" + graph
-            raise RuntimeError(message)
 
         return circuit
 

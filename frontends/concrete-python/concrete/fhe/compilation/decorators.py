@@ -3,11 +3,12 @@ Declaration of `circuit` and `compiler` decorators.
 """
 
 import inspect
+from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple, Union
 
 from ..representation import Graph
 from ..tracing.typing import ScalarAnnotation
-from ..values import Value
+from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .compiler import Compiler, EncryptionStatus
@@ -40,14 +41,14 @@ def circuit(
     def decoration(function: Callable):
         signature = inspect.signature(function)
 
-        parameter_values: Dict[str, Value] = {}
+        parameter_values: Dict[str, ValueDescription] = {}
         for name, details in signature.parameters.items():
             if name not in parameters:
                 continue
 
             annotation = details.annotation
 
-            is_value = isinstance(annotation, Value)
+            is_value = isinstance(annotation, ValueDescription)
             is_scalar_annotation = isinstance(annotation, type) and issubclass(
                 annotation, ScalarAnnotation
             )
@@ -61,7 +62,9 @@ def circuit(
                 raise ValueError(message)
 
             parameter_values[name] = (
-                annotation if is_value else Value(annotation.dtype, shape=(), is_encrypted=False)
+                annotation
+                if is_value
+                else ValueDescription(deepcopy(annotation.dtype), shape=(), is_encrypted=False)
             )
 
             status = EncryptionStatus(parameters[name].lower())

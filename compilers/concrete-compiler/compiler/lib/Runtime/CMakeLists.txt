@@ -1,10 +1,13 @@
+add_compile_options(-fsized-deallocation)
+
 if(CONCRETELANG_CUDA_SUPPORT)
-  add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp GPUDFG.cpp)
+  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp GPUDFG.cpp)
+  target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 else()
-  add_library(ConcretelangRuntime SHARED context.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp)
+  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp StreamEmulator.cpp)
 endif()
 
-add_dependencies(ConcretelangRuntime concrete_cpu)
+add_dependencies(ConcretelangRuntime concrete_cpu concrete_cpu_noise_model concrete-protocol)
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PRIVATE HPX::hpx HPX::iostreams_component)
@@ -31,11 +34,16 @@ if(APPLE)
   target_link_libraries(ConcretelangRuntime LINK_PUBLIC ${SECURITY_FRAMEWORK})
 endif()
 
-target_include_directories(ConcretelangRuntime PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
+target_include_directories(
+  ConcretelangRuntime
+  PUBLIC ${CONCRETE_CPU_INCLUDE_DIR}
+  PUBLIC ${CONCRETE_CPU_NOISE_MODEL_INCLUDE_DIR})
 target_link_libraries(
   ConcretelangRuntime
   PUBLIC concrete_cpu
-         ConcretelangClientLib
+         concrete-protocol
+         concrete_cpu_noise_model
+         ConcretelangCommon
          pthread
          m
          dl

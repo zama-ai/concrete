@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'release/*'
     tags:
       - 'v[0-9]+.*'
   schedule:
@@ -51,18 +52,20 @@ jobs:
         with:
           files: compilers/concrete-compiler
 
-      - name: Get changed files in the concrete-optimizer directory
+      - name: Get changed files for concrete-optimizer
         id: optimizer
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
-          files: compilers/concrete-optimizer
+          files: |
+            compilers/concrete-optimizer
+            .github/workflows/optimizer.yml
 
       - name: Get changed files in the concrete-cpu directory
         id: concrete-cpu
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: backends/concrete-cpu/implementation
-      
+
       - name: Get changed files in the concrete-cuda directory
         id: concrete-cuda
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
@@ -128,22 +131,22 @@ jobs:
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: ./.github/workflows/optimizer.yml
-      
+
       - name: Get changed files in the concrete-cpu directory
         id: concrete-cpu-api
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: backends/concrete-cpu/implementation/include/
-      
+
       - name: Get changed files in the concrete-cuda directory
         id: concrete-cuda-api
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: backends/concrete-cuda/implementation/include/
-      
+
       - name: Set some github event outputs
         id: github
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'release'))
         run: echo "push-main=true" >> "$GITHUB_OUTPUT"
 
 #################################################
@@ -203,7 +206,11 @@ jobs:
 # Optimizer jobs ################################
   optimizer:
     needs: file-change
-    if: needs.file-change.outputs.optimizer == 'true' || needs.file-change.outputs.concrete-optimizer-workflow == 'true' || needs.file-change.outputs.push-main
+    if: |
+      needs.file-change.outputs.parameters-curves == 'true' ||
+      needs.file-change.outputs.concrete-cpu == 'true' ||
+      needs.file-change.outputs.optimizer == 'true'||
+      needs.file-change.outputs.push-main
     uses: ./.github/workflows/optimizer.yml
     secrets: inherit
 

@@ -1,0 +1,35 @@
+description: bug_865_due_to_side_effect_in_woppbs
+program: |
+  func.func @main(%arg0: !FHE.eint<16>, %arg1: !FHE.eint<16>) -> !FHE.eint<16> {
+    %cst = arith.constant dense<0> : tensor<65536xi64>
+    %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<16>, tensor<65536xi64>) -> !FHE.eint<16>
+    %1 = "FHE.add_eint"(%0, %arg0) : (!FHE.eint<16>, !FHE.eint<16>) -> !FHE.eint<16>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.eint<16>, tensor<65536xi64>) -> !FHE.eint<16>
+    return %2 : !FHE.eint<16>
+  }
+encoding: crt
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+---
+# Reported in PR https://github.com/zama-ai/concrete/pull/462
+# There was the crt dimension added to all input gate even the clear one
+description: minimized_462
+program: |
+  func.func @main(%x: tensor<3x!FHE.eint<4>>, %y: tensor<3x2xi8>) -> tensor<3x!FHE.eint<4>> {
+    return %x : tensor<3x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3]
+      shape: [3]
+    - tensor: [1, 2, 3, 4, 5, 0]
+      shape: [3, 2]
+      width: 8
+    outputs:
+    - tensor: [1,2,3]
+      shape: [3]
+encoding: crt

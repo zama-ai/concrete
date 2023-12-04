@@ -2,7 +2,7 @@
 
 #include "EndToEndFixture.h"
 #include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/Support/Jit.h"
+#include "concretelang/Support/Error.h"
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
 
@@ -65,115 +65,14 @@ uint64_t TestErrorRate::too_high_error_count_threshold() {
                                         this->global_p_error, p_mass);
 }
 
-template <typename T>
-llvm::Error
-checkResult(const mlir::concretelang::IntLambdaArgument<T> &expected,
-            const mlir::concretelang::IntLambdaArgument<T> &res) {
-  if (expected != res) {
-    return StreamStringError("unexpected result value: got ")
-           << res.getValue() << " expected " << expected.getValue();
-  }
-
-  return llvm::Error::success();
-}
-
-template <typename T>
-llvm::Error checkResult(const mlir::concretelang::TensorLambdaArgument<
-                            mlir::concretelang::IntLambdaArgument<T>> &expected,
-                        const mlir::concretelang::TensorLambdaArgument<
-                            mlir::concretelang::IntLambdaArgument<T>> &res) {
-  auto &expectedShape = expected.getDimensions();
-  auto &resShape = res.getDimensions();
-
-  if (expectedShape.size() != resShape.size()) {
-    return StreamStringError("size of shape differs, got ")
-           << resShape.size() << " expected " << expectedShape.size();
-  }
-
-  for (size_t i = 0; i < expectedShape.size(); i++) {
-    if (resShape[i] != expectedShape[i]) {
-      return StreamStringError("shape differs at pos ")
-             << i << ", got " << resShape[i] << " expected "
-             << expectedShape[i];
-    }
-  }
-
-  auto resValues = res.getValue();
-  auto expectedValues = expected.getValue();
-
-  auto resNumElts = res.getNumElements();
-
-  if (!resNumElts)
-    return resNumElts.takeError();
-
-  auto expectedNumElts = res.getNumElements();
-
-  if (!expectedNumElts)
-    return expectedNumElts.takeError();
-
-  StreamStringError err("result value differ");
-  for (size_t i = 0; i < *expectedNumElts; i++) {
-    if ((uint64_t)resValues[i] != (uint64_t)expectedValues[i]) {
-      return StreamStringError("result value differ at pos(")
-             << i << "), got " << resValues[i] << " expected "
-             << expectedValues[i];
-    }
-  }
-  return llvm::Error::success();
-}
-
-template <typename... Ts> struct TryCheckScalarResult;
-
-template <> struct TryCheckScalarResult<> {
-  static llvm::Error
-  tryCheck(const mlir::concretelang::LambdaArgument &expected,
-           const mlir::concretelang::LambdaArgument &res) {
-    return StreamStringError("Unknown result type");
+llvm::Error checkResult(ValueDescription &desc, Value &res) {
+  if (!(desc.getValue() == res)) {
+    // Todo -> Make a more informative error.
+    return StreamStringError("Different results ...");
+  } else {
+    return llvm::Error::success();
   }
 };
-
-template <typename T, typename... Ts> struct TryCheckScalarResult<T, Ts...> {
-  static llvm::Error
-  tryCheck(const mlir::concretelang::LambdaArgument &expected,
-           const mlir::concretelang::LambdaArgument &res) {
-    if (auto expectedTyped =
-            expected.dyn_cast<mlir::concretelang::IntLambdaArgument<T>>()) {
-      auto resTyped = res.dyn_cast<mlir::concretelang::IntLambdaArgument<T>>();
-
-      if (!resTyped) {
-        return StreamStringError("Expected result of type ")
-               << mlir::concretelang::getLambdaArgumentTypeAsString(expected)
-               << ", but got "
-               << mlir::concretelang::getLambdaArgumentTypeAsString(res);
-      }
-
-      return std::move(checkResult(*expectedTyped, *resTyped));
-    } else if (auto expectedTyped =
-                   expected.dyn_cast<mlir::concretelang::TensorLambdaArgument<
-                       mlir::concretelang::IntLambdaArgument<T>>>()) {
-      auto resTyped = res.dyn_cast<mlir::concretelang::TensorLambdaArgument<
-          mlir::concretelang::IntLambdaArgument<T>>>();
-
-      if (!resTyped) {
-        return StreamStringError("Expected result of type ")
-               << mlir::concretelang::getLambdaArgumentTypeAsString(expected)
-               << ", but got "
-               << mlir::concretelang::getLambdaArgumentTypeAsString(res);
-      }
-
-      return std::move(checkResult(*expectedTyped, *resTyped));
-    } else {
-      return std::move(TryCheckScalarResult<Ts...>::tryCheck(expected, res));
-    }
-  }
-};
-
-llvm::Error checkResult(ValueDescription &desc,
-                        mlir::concretelang::LambdaArgument &res) {
-  return TryCheckScalarResult<uint8_t, int8_t, uint16_t, int16_t, uint32_t,
-                              int32_t, uint64_t,
-                              int64_t>::tryCheck(desc.getValue(), res);
-}
 
 template <typename T> struct ReadScalar {
   static void read(llvm::yaml::IO &io, ValueDescription &desc) {
@@ -210,13 +109,13 @@ static void readScalar(llvm::yaml::IO &io, ValueDescription &desc,
 
 template <typename T> struct ReadTensor {
   static void read(llvm::yaml::IO &io, ValueDescription &desc) {
-    std::vector<T> v;
-    std::vector<int64_t> shape;
+    std::vector<T> values;
+    std::vector<int64_t> dimensions;
 
-    io.mapRequired("shape", shape);
-    io.mapRequired("tensor", v);
+    io.mapRequired("shape", dimensions);
+    io.mapRequired("tensor", values);
 
-    desc.setValue(std::move(v), shape);
+    desc.setValue(values, dimensions);
   }
 };
 

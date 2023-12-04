@@ -7,7 +7,7 @@ import pytest
 
 from concrete.fhe.dtypes import UnsignedInteger
 from concrete.fhe.representation import Node
-from concrete.fhe.values import ClearScalar, EncryptedScalar, EncryptedTensor, Value
+from concrete.fhe.values import ClearScalar, EncryptedScalar, EncryptedTensor, ValueDescription
 
 
 @pytest.mark.parametrize(
@@ -44,8 +44,8 @@ def test_node_bad_constant(constant, expected_error, expected_message):
         pytest.param(
             Node.generic(
                 name="add",
-                inputs=[Value.of(4), Value.of(10, is_encrypted=True)],
-                output=Value.of(14),
+                inputs=[ValueDescription.of(4), ValueDescription.of(10, is_encrypted=True)],
+                output=ValueDescription.of(14),
                 operation=lambda x, y: x + y,
             ),
             ["abc"],
@@ -56,8 +56,8 @@ def test_node_bad_constant(constant, expected_error, expected_message):
         pytest.param(
             Node.generic(
                 name="add",
-                inputs=[Value.of(4), Value.of(10, is_encrypted=True)],
-                output=Value.of(14),
+                inputs=[ValueDescription.of(4), ValueDescription.of(10, is_encrypted=True)],
+                output=ValueDescription.of(14),
                 operation=lambda x, y: x + y,
             ),
             ["abc", "def"],
@@ -68,8 +68,8 @@ def test_node_bad_constant(constant, expected_error, expected_message):
         pytest.param(
             Node.generic(
                 name="add",
-                inputs=[Value.of([3, 4]), Value.of(10, is_encrypted=True)],
-                output=Value.of([13, 14]),
+                inputs=[ValueDescription.of([3, 4]), ValueDescription.of(10, is_encrypted=True)],
+                output=ValueDescription.of([13, 14]),
                 operation=lambda x, y: x + y,
             ),
             [[1, 2, 3, 4], 10],
@@ -81,7 +81,7 @@ def test_node_bad_constant(constant, expected_error, expected_message):
             Node.generic(
                 name="unknown",
                 inputs=[],
-                output=Value.of(10),
+                output=ValueDescription.of(10),
                 operation=lambda: "abc",
             ),
             [],
@@ -93,20 +93,20 @@ def test_node_bad_constant(constant, expected_error, expected_message):
             Node.generic(
                 name="unknown",
                 inputs=[],
-                output=Value.of(10),
+                output=ValueDescription.of(10),
                 operation=lambda: np.array(["abc", "def"]),
             ),
             [],
             ValueError,
             "Evaluation of generic 'unknown' node resulted in array(['abc', 'def'], dtype='<U3') "
-            "of type np.ndarray and of underlying type 'dtype[str_]' "
+            f"of type np.ndarray and of underlying type '{type(np.array(['abc', 'def']).dtype).__name__}' "  # noqa: E501
             "which is not acceptable because of the underlying type",
         ),
         pytest.param(
             Node.generic(
                 name="unknown",
                 inputs=[],
-                output=Value.of(10),
+                output=ValueDescription.of(10),
                 operation=lambda: [1, (), 3],
             ),
             [],
@@ -118,7 +118,7 @@ def test_node_bad_constant(constant, expected_error, expected_message):
             Node.generic(
                 name="unknown",
                 inputs=[],
-                output=Value.of(10),
+                output=ValueDescription.of(10),
                 operation=lambda: [1, 2, 3],
             ),
             [],

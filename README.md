@@ -25,11 +25,11 @@ is now, exclusively, Zama TFHE Compiler. Read full announcement [here](https://w
 
 FHE is a powerful cryptographic tool, which allows computation to be performed directly on encrypted data without needing to decrypt it first. With FHE, you can build services that preserve privacy for all users. FHE is also great against data breaches as everything is done on encrypted data. Even if the server is compromised, in the end no sensitive data is leaked.
 
-Since writing FHE program is hard, Concrete, based on LLVM, make this process easier for developers.
+Since writing FHE programs can be difficult, Concrete, based on LLVM, make this process easier for developers.
 
 ## Main features
 
-- Ability to compile Python functions (that may use NumPy within) to their FHE equivalents, to operate on encrypted data
+- Ability to compile Python functions (that may include NumPy) to their FHE equivalents, to operate on encrypted data
 - Support for [large collection of operators](https://docs.zama.ai/concrete/getting-started/compatibility)
 - Partial support for floating points
 - Support for table lookups on integers
@@ -52,10 +52,10 @@ The preferred way to install Concrete is through PyPI:
 pip install concrete-python
 ```
 
-You can get the concrete-python docker image by  pulling the latest docker image:
+You can get the concrete-python docker image by pulling the latest docker image:
 
 ```shell
-docker pull zamafhe/concrete-python:v1.0.0
+docker pull zamafhe/concrete-python:v2.0.0
 ```
 
 You can find more detailed installation instructions in [installing.md](docs/getting-started/installing.md)
@@ -126,7 +126,7 @@ Various tutorials are proposed in the documentation to help you start writing ho
 - Partial support of [Floating Points](https://docs.zama.ai/concrete/tutorials/floating_points)
 - How to perform [Table Lookup](https://docs.zama.ai/concrete/tutorials/table_lookups)
 
-More generally, if you have built awesome projects using Concrete, feel free to let us know and we'll link to it!
+If you have built awesome projects using Concrete, feel free to let us know and we'll link to it.
 
 
 ## Project layout
@@ -146,6 +146,18 @@ More generally, if you have built awesome projects using Concrete, feel free to 
 <a target="_blank" href="https://community.zama.ai">
   <img src="https://user-images.githubusercontent.com/5758427/231145251-9cb3f03f-3e0e-4750-afb8-2e6cf391fa43.png">
 </a>
+
+## Citing Concrete
+To cite Concrete in academic papers, please use the following entry:
+
+```text
+@Misc{Concrete,
+  title={{Concrete: TFHE Compiler that converts python programs into FHE equivalent}},
+  author={Zama},
+  year={2022},
+  note={\url{https://github.com/zama-ai/concrete}},
+}
+```
 
 ## License
 

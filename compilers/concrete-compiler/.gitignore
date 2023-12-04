@@ -48,6 +48,3 @@ _build/
 
 # macOS
 .DS_Store
-
-compiler/lib/Bindings/Rust/target/
-compiler/lib/Bindings/Rust/Cargo.lock

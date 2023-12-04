@@ -1,0 +1,71 @@
+description: unsigned_reducing_8_to_4
+program: |
+    func.func @main(%arg0: !FHE.eint<8>) -> !FHE.eint<4> {
+      %1 = "FHE.reinterpret_precision"(%arg0) : (!FHE.eint<8>) -> !FHE.eint<4>
+      return %1: !FHE.eint<4>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 1
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 16
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 255
+      outputs:
+        - scalar: 16
+
+---
+description: unsigned_reducing_3_to_1
+program: |
+    func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<2> {
+      %1 = "FHE.reinterpret_precision"(%arg0) : (!FHE.eint<3>) -> !FHE.eint<2>
+      return %1: !FHE.eint<2>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 2
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: 6
+      outputs:
+        - scalar: 3
+---
+description: signed_reducing_3_to_1
+program: |
+    func.func @main(%arg0: !FHE.esint<3>) -> !FHE.eint<2> {
+      %1 = "FHE.reinterpret_precision"(%arg0) : (!FHE.esint<3>) -> !FHE.eint<2>
+      return %1: !FHE.eint<2>
+    }
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+          signed: true
+      outputs:
+        - scalar: 0
+    - inputs:
+        - scalar: 2
+          signed: true
+      outputs:
+        - scalar: 1
+    - inputs:
+        - scalar: -2
+          signed: true
+      outputs:
+        # 0b1110 -> 0b111
+        - scalar: 7

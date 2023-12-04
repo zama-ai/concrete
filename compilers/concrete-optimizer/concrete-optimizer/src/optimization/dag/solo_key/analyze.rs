@@ -83,6 +83,15 @@ pub fn has_round(dag: &unparametrized::OperationDag) -> bool {
     false
 }
 
+pub fn has_unsafe_cast(dag: &unparametrized::OperationDag) -> bool {
+    for op in &dag.operators {
+        if matches!(op, Op::UnsafeCast { .. }) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn assert_no_round(dag: &unparametrized::OperationDag) {
     assert!(!has_round(dag));
 }
@@ -141,7 +150,7 @@ pub struct VariancesAndBound {
 fn out_variance(
     op: &unparametrized::UnparameterizedOperator,
     out_shapes: &[Shape],
-    out_variances: &mut [SymbolicVariance],
+    out_variances: &[SymbolicVariance],
 ) -> SymbolicVariance {
     // Maintain a linear combination of input_variance and lut_out_variance
     // TODO: track each elements instead of container
@@ -163,7 +172,7 @@ fn out_variance(
             let input_shape = first(inputs, out_shapes);
             let kind = dot_kind(inputs.len() as u64, input_shape, weights);
             match kind {
-                DK::Simple | DK::Tensor | DK::Broadcast => {
+                DK::Simple | DK::Tensor | DK::Broadcast { .. } => {
                     let first_input = inputs[0];
                     let mut out_variance = SymbolicVariance::ZERO;
                     for (j, &weight) in weights.values.iter().enumerate() {
@@ -191,7 +200,7 @@ fn out_variances(dag: &unparametrized::OperationDag) -> Vec<SymbolicVariance> {
     let nb_ops = dag.operators.len();
     let mut out_variances = Vec::with_capacity(nb_ops);
     for op in &dag.operators {
-        let vf = out_variance(op, &dag.out_shapes, &mut out_variances);
+        let vf = out_variance(op, &dag.out_shapes, &out_variances);
         out_variances.push(vf);
     }
     out_variances
@@ -269,7 +278,7 @@ fn op_levelled_complexity(
             let input_shape = first(inputs, out_shapes);
             let kind = dot_kind(inputs.len() as u64, input_shape, weights);
             match kind {
-                DK::Simple | DK::Tensor | DK::Broadcast | DK::CompatibleTensor => {
+                DK::Simple | DK::Tensor | DK::Broadcast { .. } | DK::CompatibleTensor => {
                     LevelledComplexity::ADDITION * (inputs.len() as u64) * input_shape.flat_size()
                 }
                 DK::Unsupported { .. } => panic!("Unsupported"),
@@ -296,6 +305,8 @@ pub fn lut_count_from_dag(dag: &unparametrized::OperationDag) -> u64 {
     for (i, op) in dag.operators.iter().enumerate() {
         if let Op::Lut { .. } = op {
             count += dag.out_shapes[i].flat_size();
+        } else if let Op::Round { out_precision, .. } = op {
+            count += dag.out_shapes[i].flat_size() * (dag.out_precisions[i] - out_precision) as u64;
         }
     }
     count
@@ -881,10 +892,10 @@ pub mod tests {
         let shape = Shape {
             dimensions_size: vec![2, 2],
         };
-        let input1 = graph.add_input(1, shape);
+        let input1 = graph.add_input(1, &shape);
         let weights = &Weights::number(2);
         _ = graph.add_dot([input1], weights);
-        assert!(*graph.out_shapes.last().unwrap() == Shape::vector(2));
+        assert!(*graph.out_shapes.last().unwrap() == shape);
         let analysis = analyze(&graph);
         assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
     }
@@ -900,7 +911,7 @@ pub mod tests {
         let lut2 = graph.add_lut(input2, FunctionTable::UNKWOWN, 1);
         let weights = &Weights::vector([2, 3]);
         _ = graph.add_dot([input1, lut2], weights);
-        assert!(*graph.out_shapes.last().unwrap() == Shape::vector(2));
+        assert!(*graph.out_shapes.last().unwrap() == shape);
         let analysis = analyze(&graph);
         assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
         assert_f64_eq(analysis.out_variances.last().unwrap().lut_coeff, 9.0);

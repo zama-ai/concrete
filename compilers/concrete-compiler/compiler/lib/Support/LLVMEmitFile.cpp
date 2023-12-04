@@ -148,6 +148,7 @@ llvm::Error emitObject(llvm::Module &module, string objectPath) {
   // https://llvm.org/docs/NewPassManager.html#status-of-the-new-and-legacy-pass-managers
   llvm::legacy::PassManager pm;
   auto FileType = llvm::CGFT_ObjectFile;
+  targetMachine->setOptLevel(llvm::CodeGenOpt::Level::Aggressive);
   if (targetMachine->addPassesToEmitFile(pm, objectFile->os(), nullptr,
                                          FileType, false)) {
     return StreamStringError("TheTargetMachine can't emit object file");

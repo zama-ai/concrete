@@ -8,6 +8,7 @@ add_mlir_dialect_library(
   mlir-headers
   LINK_LIBS
   PUBLIC
-  MLIRIR)
+  MLIRIR
+  FHEInterfaces)
 
 target_link_libraries(FHEDialect PUBLIC MLIRIR)

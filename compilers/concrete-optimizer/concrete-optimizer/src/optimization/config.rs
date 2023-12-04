@@ -1,7 +1,7 @@
 use crate::computing_cost::complexity_model::ComplexityModel;
 use crate::config;
 use crate::config::GpuPbsType;
-use crate::global_parameters::DEFAUT_DOMAINS;
+use crate::global_parameters::{Range, DEFAUT_DOMAINS};
 
 #[derive(Clone, Copy, Debug)]
 pub struct NoiseBoundConfig {
@@ -14,7 +14,9 @@ pub struct NoiseBoundConfig {
 pub struct Config<'a> {
     pub security_level: u64,
     pub maximum_acceptable_error_probability: f64,
+    pub key_sharing: bool,
     pub ciphertext_modulus_log: u32,
+    pub fft_precision: u32,
     pub complexity_model: &'a dyn ComplexityModel,
 }
 
@@ -23,6 +25,7 @@ pub struct SearchSpace {
     pub glwe_log_polynomial_sizes: Vec<u64>,
     pub glwe_dimensions: Vec<u64>,
     pub internal_lwe_dimensions: Vec<u64>,
+    pub levelled_only_lwe_dimensions: Range,
 }
 
 impl SearchSpace {
@@ -33,11 +36,12 @@ impl SearchSpace {
             .as_vec();
         let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
         let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-
+        let levelled_only_lwe_dimensions = DEFAUT_DOMAINS.free_lwe;
         Self {
             glwe_log_polynomial_sizes,
             glwe_dimensions,
             internal_lwe_dimensions,
+            levelled_only_lwe_dimensions,
         }
     }
 
@@ -48,11 +52,12 @@ impl SearchSpace {
         let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
 
         let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-
+        let levelled_only_lwe_dimensions = DEFAUT_DOMAINS.free_lwe;
         Self {
             glwe_log_polynomial_sizes,
             glwe_dimensions,
             internal_lwe_dimensions,
+            levelled_only_lwe_dimensions,
         }
     }
 
@@ -63,11 +68,12 @@ impl SearchSpace {
         let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
 
         let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-
+        let levelled_only_lwe_dimensions = DEFAUT_DOMAINS.free_lwe;
         Self {
             glwe_log_polynomial_sizes,
             glwe_dimensions,
             internal_lwe_dimensions,
+            levelled_only_lwe_dimensions,
         }
     }
     pub fn default(processing_unit: config::ProcessingUnit) -> Self {

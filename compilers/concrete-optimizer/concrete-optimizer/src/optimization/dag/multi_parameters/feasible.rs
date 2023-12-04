@@ -6,6 +6,7 @@ use crate::utils::f64::f64_dot;
 use super::operations_value::OperationsValue;
 use super::partitions::PartitionIndex;
 
+#[derive(Clone)]
 pub struct Feasible {
     // TODO: move kappa here
     pub constraints: Vec<VarianceConstraint>,
@@ -23,6 +24,87 @@ impl Feasible {
             undominated_constraints,
             global_p_error,
         }
+    }
+
+    pub fn pbs_max_feasible_variance(
+        &self,
+        operations_variance: &OperationsValue,
+        partition: usize,
+    ) -> f64 {
+        let pbs_index = operations_variance.index.pbs(partition);
+        let actual_pbs_variance = operations_variance.values[pbs_index];
+
+        let mut smallest_pbs_max_variance = std::f64::MAX;
+
+        for constraint in &self.undominated_constraints {
+            let pbs_coeff = constraint.variance.coeff_pbs(partition);
+            if pbs_coeff == 0.0 {
+                continue;
+            }
+            let actual_variance = f64_dot(operations_variance, &constraint.variance.coeffs)
+                - pbs_coeff * actual_pbs_variance;
+            let pbs_max_variance = (constraint.safe_variance_bound - actual_variance) / pbs_coeff;
+            smallest_pbs_max_variance = smallest_pbs_max_variance.min(pbs_max_variance);
+        }
+        smallest_pbs_max_variance
+    }
+
+    pub fn ks_max_feasible_variance(
+        &self,
+        operations_variance: &OperationsValue,
+        src_partition: usize,
+        dst_partition: usize,
+    ) -> f64 {
+        let ks_index = operations_variance
+            .index
+            .keyswitch_to_small(src_partition, dst_partition);
+        let actual_ks_variance = operations_variance.values[ks_index];
+
+        let mut smallest_ks_max_variance = std::f64::MAX;
+
+        for constraint in &self.undominated_constraints {
+            let ks_coeff = constraint
+                .variance
+                .coeff_keyswitch_to_small(src_partition, dst_partition);
+            if ks_coeff == 0.0 {
+                continue;
+            }
+            let actual_variance = f64_dot(operations_variance, &constraint.variance.coeffs)
+                - ks_coeff * actual_ks_variance;
+            let ks_max_variance = (constraint.safe_variance_bound - actual_variance) / ks_coeff;
+            smallest_ks_max_variance = smallest_ks_max_variance.min(ks_max_variance);
+        }
+
+        smallest_ks_max_variance
+    }
+
+    pub fn fks_max_feasible_variance(
+        &self,
+        operations_variance: &OperationsValue,
+        src_partition: usize,
+        dst_partition: usize,
+    ) -> f64 {
+        let fks_index = operations_variance
+            .index
+            .keyswitch_to_big(src_partition, dst_partition);
+        let actual_fks_variance = operations_variance.values[fks_index];
+
+        let mut smallest_fks_max_variance = std::f64::MAX;
+
+        for constraint in &self.undominated_constraints {
+            let fks_coeff = constraint
+                .variance
+                .coeff_partition_keyswitch_to_big(src_partition, dst_partition);
+            if fks_coeff == 0.0 {
+                continue;
+            }
+            let actual_variance = f64_dot(operations_variance, &constraint.variance.coeffs)
+                - fks_coeff * actual_fks_variance;
+            let fks_max_variance = (constraint.safe_variance_bound - actual_variance) / fks_coeff;
+            smallest_fks_max_variance = smallest_fks_max_variance.min(fks_max_variance);
+        }
+
+        smallest_fks_max_variance
     }
 
     pub fn feasible(&self, operations_variance: &OperationsValue) -> bool {
@@ -118,5 +200,45 @@ impl Feasible {
             .map(VarianceConstraint::clone)
             .collect();
         Self::of(&partition_constraints, self.kappa, self.global_p_error)
+    }
+
+    pub fn compressed(self) -> Self {
+        let mut detect_used: Vec<bool> = vec![false; self.constraints[0].variance.coeffs.len()];
+        for constraint in &self.constraints {
+            for (i, &coeff) in constraint.variance.coeffs.iter().enumerate() {
+                if coeff > 0.0 {
+                    detect_used[i] = true;
+                }
+            }
+        }
+        let compress = |c: &VarianceConstraint| VarianceConstraint {
+            variance: c.variance.compress(&detect_used),
+            ..(*c)
+        };
+        let constraints = self.constraints.iter().map(compress).collect();
+        let undominated_constraints = self.undominated_constraints.iter().map(compress).collect();
+        Self {
+            constraints,
+            undominated_constraints,
+            ..self
+        }
+    }
+
+    pub fn zero_variance(&self) -> OperationsValue {
+        if self.undominated_constraints[0]
+            .variance
+            .coeffs
+            .index
+            .is_compressed()
+        {
+            OperationsValue::zero_compressed(&self.undominated_constraints[0].variance.coeffs.index)
+        } else {
+            OperationsValue::zero(
+                self.undominated_constraints[0]
+                    .variance
+                    .coeffs
+                    .nb_partitions(),
+            )
+        }
     }
 }

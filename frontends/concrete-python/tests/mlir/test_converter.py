@@ -8,6 +8,8 @@ import pytest
 from concrete import fhe
 from concrete.fhe.mlir import GraphConverter
 
+from ..conftest import USE_MULTI_PRECISION
+
 
 def assign(x, y):
     """
@@ -207,7 +209,7 @@ return %1
 
 Function you are trying to compile cannot be compiled
 
-%0 = x                   # ClearTensor<uint2, shape=(3,)>        ∈ [0, 3]
+%0 = x                   # ClearTensor<uint2, shape=(3,)>        ∈ [1, 3]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ tensor is clear
 %1 = y                   # EncryptedScalar<uint1>                ∈ [0, 0]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assigned value is encrypted
@@ -360,30 +362,6 @@ return %3
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x, y: np.dot(x, y),
-            {"x": "encrypted", "y": "encrypted"},
-            [
-                (
-                    np.ones(shape=(3,), dtype=np.int64),
-                    np.ones(shape=(3,), dtype=np.int64),
-                )
-            ],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be compiled
-
-%0 = x                  # EncryptedTensor<uint1, shape=(3,)>        ∈ [1, 1]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ lhs is encrypted
-%1 = y                  # EncryptedTensor<uint1, shape=(3,)>        ∈ [1, 1]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rhs is encrypted
-%2 = dot(%0, %1)        # EncryptedScalar<uint2>                    ∈ [3, 3]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but encrypted-encrypted dot products are not supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
             lambda x, y: x @ y,
             {"x": "clear", "y": "clear"},
             [([[1, 2], [3, 4]], [[4, 3], [2, 1]])],
@@ -398,25 +376,6 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rhs is clear
 %2 = matmul(%0, %1)        # ClearTensor<uint5, shape=(2, 2)>        ∈ [5, 20]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear-clear matrix multiplications are not supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
-            lambda x, y: x @ y,
-            {"x": "encrypted", "y": "encrypted"},
-            [([[1, 2], [3, 4]], [[4, 3], [2, 1]])],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be compiled
-
-%0 = x                     # EncryptedTensor<uint3, shape=(2, 2)>        ∈ [1, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ lhs is encrypted
-%1 = y                     # EncryptedTensor<uint3, shape=(2, 2)>        ∈ [1, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rhs is encrypted
-%2 = matmul(%0, %1)        # EncryptedTensor<uint5, shape=(2, 2)>        ∈ [5, 20]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but encrypted-encrypted matrix multiplications are not supported
 return %2
 
             """,  # noqa: E501
@@ -571,6 +530,20 @@ return %2
 Function you are trying to compile cannot be compiled
 
 %0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to a bitwise operation
+%1 = y                         # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a bitwise operation
+%2 = bitwise_or(%0, %1)        # EncryptedScalar<uint19>        ∈ [366560, 366560]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit bitwise operations are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a bitwise operation
                                                                                    (note that it's assigned 19-bits during compilation because of its relation with other operations)
 %1 = y                         # EncryptedScalar<uint19>        ∈ [300000, 300000]
@@ -593,6 +566,20 @@ Function you are trying to compile cannot be compiled
 %0 = x                        # EncryptedScalar<uint19>        ∈ [300000, 300000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
 %1 = y                        # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to a comparison operation
+%2 = not_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                        # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+%1 = y                        # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
                                                                                   (note that it's assigned 19-bits during compilation because of its relation with other operations)
 %2 = not_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
@@ -607,6 +594,20 @@ return %2
             [(300_000, 100_000)],
             RuntimeError,
             """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                            # EncryptedScalar<uint19>        ∈ [300000, 300000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
+%1 = y                            # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to a comparison operation
+%2 = greater_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
 
 Function you are trying to compile cannot be compiled
 
@@ -636,7 +637,23 @@ Function you are trying to compile cannot be compiled
 %1 = y                         # EncryptedScalar<uint5>         ∈ [20, 20]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 5-bit value is used as the shift amount of a shift operation
 %2 = left_shift(%0, %1)        # EncryptedScalar<uint37>        ∈ [104857600000, 104857600000]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 4-bit shift operations on up to 16-bit operands are supported
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this shift operation resulted in 37-bits but only up to 16-bit shift operations are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 37-bit value is used as the operand of a shift operation
+                                                                                   (note that it's assigned 37-bits during compilation because of its relation with other operations)
+%1 = y                         # EncryptedScalar<uint5>         ∈ [20, 20]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 37-bit value is used as the shift amount of a shift operation
+                                                                           (note that it's assigned 37-bits during compilation because of its relation with other operations)
+%2 = left_shift(%0, %1)        # EncryptedScalar<uint37>        ∈ [104857600000, 104857600000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this shift operation resulted in 37-bits but only up to 16-bit shift operations are supported
 return %2
 
             """,  # noqa: E501
@@ -651,13 +668,324 @@ return %2
 Function you are trying to compile cannot be compiled
 
 %0 = x                       # EncryptedScalar<uint17>        ∈ [100000, 100000]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 22-bit value is used as an operand to an encrypted multiplication
-                                                                                 (note that it's assigned 22-bits during compilation because of its relation with other operations)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to an encrypted multiplication
+                                                                                 (note that it's assigned 18-bits during compilation because of its relation with other operations)
 %1 = y                       # EncryptedScalar<uint5>         ∈ [20, 20]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 22-bit value is used as an operand to an encrypted multiplication
-                                                                         (note that it's assigned 22-bits during compilation because of its relation with other operations)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to an encrypted multiplication
+                                                                         (note that it's assigned 18-bits during compilation because of its relation with other operations)
 %2 = multiply(%0, %1)        # EncryptedScalar<uint21>        ∈ [2000000, 2000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted multiplications are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                       # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 21-bit value is used as an operand to an encrypted multiplication
+                                                                                 (note that it's assigned 21-bits during compilation because of its relation with other operations)
+%1 = y                       # EncryptedScalar<uint5>         ∈ [20, 20]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 21-bit value is used as an operand to an encrypted multiplication
+                                                                         (note that it's assigned 21-bits during compilation because of its relation with other operations)
+%2 = multiply(%0, %1)        # EncryptedScalar<uint21>        ∈ [2000000, 2000000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted multiplications are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: np.dot(x, y),
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    [100_000, 200_000],
+                    [200_000, 100_000],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted dot products
+                                                                                        (note that it's assigned 19-bits during compilation because of its relation with other operations)
+%1 = y                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted dot products
+                                                                                        (note that it's assigned 19-bits during compilation because of its relation with other operations)
+%2 = dot(%0, %1)        # EncryptedScalar<uint36>                    ∈ [40000000000, 40000000000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted dot products
+                                                                                        (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%1 = y                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted dot products
+                                                                                        (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%2 = dot(%0, %1)        # EncryptedScalar<uint36>                    ∈ [40000000000, 40000000000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x @ y,
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    [
+                        [100_000, 200_000],
+                        [200_000, 100_000],
+                    ],
+                    [
+                        [100_000, 200_000],
+                        [200_000, 100_000],
+                    ],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                             (note that it's assigned 19-bits during compilation because of its relation with other operations)
+%1 = y                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                             (note that it's assigned 19-bits during compilation because of its relation with other operations)
+%2 = matmul(%0, %1)        # EncryptedTensor<uint36, shape=(2, 2)>        ∈ [40000000000, 50000000000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                             (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%1 = y                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                             (note that it's assigned 36-bits during compilation because of its relation with other operations)
+%2 = matmul(%0, %1)        # EncryptedTensor<uint36, shape=(2, 2)>        ∈ [40000000000, 50000000000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: np.dot(x, y),
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    [50_000, 0],
+                    [1, 10_000],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                  # EncryptedTensor<uint16, shape=(2,)>        ∈ [0, 50000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted dot products
+                                                                                  (note that it's assigned 17-bits during compilation because of its relation with other operations)
+%1 = y                  # EncryptedTensor<uint14, shape=(2,)>        ∈ [1, 10000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted dot products
+                                                                                  (note that it's assigned 17-bits during compilation because of its relation with other operations)
+%2 = dot(%0, %1)        # EncryptedScalar<uint16>                    ∈ [50000, 50000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x @ y,
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    [
+                        [50_000, 3],
+                        [3, 10_000],
+                    ],
+                    [
+                        [1, 0],
+                        [0, 1],
+                    ],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                     # EncryptedTensor<uint16, shape=(2, 2)>        ∈ [3, 50000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                       (note that it's assigned 17-bits during compilation because of its relation with other operations)
+%1 = y                     # EncryptedTensor<uint1, shape=(2, 2)>         ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted matrix multiplication
+                                                                                   (note that it's assigned 17-bits during compilation because of its relation with other operations)
+%2 = matmul(%0, %1)        # EncryptedTensor<uint16, shape=(2, 2)>        ∈ [3, 50000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: y[x],
+            {"x": "encrypted", "y": "clear"},
+            [
+                (
+                    1,
+                    [1, 2, 3, 4],
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                          # EncryptedScalar<uint1>                ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookup input is 1-bits
+%1 = y                          # ClearTensor<uint3, shape=(4,)>        ∈ [1, 4]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table has the shape (4,)
+%2 = dynamic_tlu(%0, %1)        # EncryptedScalar<uint2>                ∈ [2, 2]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ so table cannot be looked up with this input
+                                                                                 table shape should have been (2,)
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                          # EncryptedScalar<uint1>                ∈ [1, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookup input is 3-bits
+                                                                                 (note that it's assigned 3-bits during compilation because of its relation with other operations)
+%1 = y                          # ClearTensor<uint3, shape=(4,)>        ∈ [1, 4]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table has the shape (4,)
+%2 = dynamic_tlu(%0, %1)        # EncryptedScalar<uint2>                ∈ [2, 2]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ so table cannot be looked up with this input
+                                                                                 table shape should have been (8,)
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y, z: fhe.multivariate(lambda x, y, z: x + y // z)(x, y, z),
+            {"x": "encrypted", "y": "encrypted", "z": "encrypted"},
+            [
+                (
+                    100_000,
+                    200_000,
+                    10,
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                           # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is one of the inputs
+%1 = y                           # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is one of the inputs
+%2 = z                           # EncryptedScalar<uint4>         ∈ [10, 10]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 4-bit value is one of the inputs
+%3 = <lambda>(%0, %1, %2)        # EncryptedScalar<uint17>        ∈ [120000, 120000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ which means the inputs would be packed to 39-bits for the table lookup
+                                                                                     but only up to 16-bit table lookups are supported
+return %3
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: np.minimum(x, y),
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    200_000,
+                    100_000,
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                      # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a minimum operation
+%1 = y                      # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to a minimum operation
+%2 = minimum(%0, %1)        # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit minimum operation is supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                      # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a minimum operation
+%1 = y                      # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a minimum operation
+                                                                                (note that it's assigned 18-bits during compilation because of its relation with other operations)
+%2 = minimum(%0, %1)        # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit minimum operation is supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: np.maximum(x, y),
+            {"x": "encrypted", "y": "encrypted"},
+            [
+                (
+                    200_000,
+                    100_000,
+                )
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                      # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a maximum operation
+%1 = y                      # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to a maximum operation
+%2 = maximum(%0, %1)        # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit maximum operation is supported
+return %2
+
+            """  # noqa: E501
+            if USE_MULTI_PRECISION
+            else """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                      # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a maximum operation
+%1 = y                      # EncryptedScalar<uint17>        ∈ [100000, 100000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a maximum operation
+                                                                                (note that it's assigned 18-bits during compilation because of its relation with other operations)
+%2 = maximum(%0, %1)        # EncryptedScalar<uint18>        ∈ [200000, 200000]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit maximum operation is supported
 return %2
 
             """,  # noqa: E501
@@ -686,6 +1014,252 @@ def test_converter_bad_convert(
 
 
 @pytest.mark.parametrize(
+    "function,parameters,expected_mlir",
+    [
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 7], "status": "encrypted"},
+                "y": {"range": [0, 7], "status": "encrypted"},
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<6> {
+    %0 = "FHE.mul_eint"(%arg0, %arg1) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<6>
+    return %0 : !FHE.eint<6>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>, %arg1: tensor<3x2x!FHE.eint<4>>) -> tensor<3x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.mul_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<4>>, tensor<3x2x!FHE.eint<4>>) -> tensor<3x2x!FHE.eint<6>>
+    return %0 : tensor<3x2x!FHE.eint<6>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: fhe.hint(np.dot(x, y), bit_width=7),
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<4>>, %arg1: tensor<2x!FHE.eint<4>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.dot_eint_eint"(%arg0, %arg1) : (tensor<2x!FHE.eint<4>>, tensor<2x!FHE.eint<4>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x @ y,
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (2, 4)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>, %arg1: tensor<2x4x!FHE.eint<4>>) -> tensor<3x4x!FHE.eint<7>> {
+    %0 = "FHELinalg.matmul_eint_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<4>>, tensor<2x4x!FHE.eint<4>>) -> tensor<3x4x!FHE.eint<7>>
+    return %0 : tensor<3x4x!FHE.eint<7>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: fhe.hint(np.sum((x - y) == 0), can_store=len(x)) == len(x),
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (10,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (10,)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<10x!FHE.eint<4>>, %arg1: tensor<10x!FHE.eint<4>>) -> !FHE.eint<1> {
+    %0 = "FHELinalg.to_signed"(%arg0) : (tensor<10x!FHE.eint<4>>) -> tensor<10x!FHE.esint<4>>
+    %1 = "FHELinalg.to_signed"(%arg1) : (tensor<10x!FHE.eint<4>>) -> tensor<10x!FHE.esint<4>>
+    %2 = "FHELinalg.sub_eint"(%0, %1) : (tensor<10x!FHE.esint<4>>, tensor<10x!FHE.esint<4>>) -> tensor<10x!FHE.esint<4>>
+    %c0_i2 = arith.constant 0 : i2
+    %cst = arith.constant dense<[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]> : tensor<16xi64>
+    %3 = "FHELinalg.apply_lookup_table"(%2, %cst) : (tensor<10x!FHE.esint<4>>, tensor<16xi64>) -> tensor<10x!FHE.eint<4>>
+    %4 = "FHELinalg.sum"(%3) {axes = [], keep_dims = false} : (tensor<10x!FHE.eint<4>>) -> !FHE.eint<4>
+    %c10_i5 = arith.constant 10 : i5
+    %cst_0 = arith.constant dense<[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]> : tensor<16xi64>
+    %5 = "FHE.apply_lookup_table"(%4, %cst_0) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<1>
+    return %5 : !FHE.eint<1>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: fhe.hint(assign(x**2, y), bit_width=6),
+            {
+                "x": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": ()},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<2>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
+    %c2_i3 = arith.constant 2 : i3
+    %cst = arith.constant dense<[0, 1, 4, 9]> : tensor<4xi64>
+    %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<2x!FHE.eint<2>>, tensor<4xi64>) -> tensor<2x!FHE.eint<6>>
+    %from_elements = tensor.from_elements %arg1 : tensor<1x!FHE.eint<6>>
+    %inserted_slice = tensor.insert_slice %from_elements into %0[0] [1] [1] : tensor<1x!FHE.eint<6>> into tensor<2x!FHE.eint<6>>
+    return %inserted_slice : tensor<2x!FHE.eint<6>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+    ],
+)
+def test_converter_convert_multi_precision(function, parameters, expected_mlir, helpers):
+    """
+    Test `convert` method of `Converter` with multi precision.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+    configuration = helpers.configuration().fork(single_precision=False)
+
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
+
+    inputset = helpers.generate_inputset(parameters)
+    circuit = compiler.compile(inputset, configuration)
+
+    helpers.check_str(expected_mlir.strip(), circuit.mlir.strip())
+
+
+@pytest.mark.parametrize(
+    "function,parameters,expected_mlir",
+    [
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 7], "status": "encrypted"},
+                "y": {"range": [0, 7], "status": "encrypted"},
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<6>) -> !FHE.eint<6> {
+    %0 = "FHE.mul_eint"(%arg0, %arg1) : (!FHE.eint<6>, !FHE.eint<6>) -> !FHE.eint<6>
+    return %0 : !FHE.eint<6>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<3x2x!FHE.eint<6>>, %arg1: tensor<3x2x!FHE.eint<6>>) -> tensor<3x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.mul_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<6>>, tensor<3x2x!FHE.eint<6>>) -> tensor<3x2x!FHE.eint<6>>
+    return %0 : tensor<3x2x!FHE.eint<6>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: fhe.hint(np.dot(x, y), bit_width=7),
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2x!FHE.eint<7>>) -> !FHE.eint<7> {
+    %0 = "FHELinalg.dot_eint_eint"(%arg0, %arg1) : (tensor<2x!FHE.eint<7>>, tensor<2x!FHE.eint<7>>) -> !FHE.eint<7>
+    return %0 : !FHE.eint<7>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x @ y,
+            {
+                "x": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": (2, 4)},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<3x2x!FHE.eint<7>>, %arg1: tensor<2x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
+    %0 = "FHELinalg.matmul_eint_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<7>>, tensor<2x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>>
+    return %0 : tensor<3x4x!FHE.eint<7>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: fhe.hint(assign(x**2, y), bit_width=6),
+            {
+                "x": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 7], "status": "encrypted", "shape": ()},
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<6>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
+    %c2_i7 = arith.constant 2 : i7
+    %cst = arith.constant dense<[0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576, 625, 676, 729, 784, 841, 900, 961, 1024, 1089, 1156, 1225, 1296, 1369, 1444, 1521, 1600, 1681, 1764, 1849, 1936, 2025, 2116, 2209, 2304, 2401, 2500, 2601, 2704, 2809, 2916, 3025, 3136, 3249, 3364, 3481, 3600, 3721, 3844, 3969]> : tensor<64xi64>
+    %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<2x!FHE.eint<6>>, tensor<64xi64>) -> tensor<2x!FHE.eint<6>>
+    %from_elements = tensor.from_elements %arg1 : tensor<1x!FHE.eint<6>>
+    %inserted_slice = tensor.insert_slice %from_elements into %0[0] [1] [1] : tensor<1x!FHE.eint<6>> into tensor<2x!FHE.eint<6>>
+    return %inserted_slice : tensor<2x!FHE.eint<6>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+    ],
+)
+def test_converter_convert_single_precision(function, parameters, expected_mlir, helpers):
+    """
+    Test `convert` method of `Converter` with multi precision.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+    configuration = helpers.configuration().fork(single_precision=True)
+
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
+
+    inputset = helpers.generate_inputset(parameters)
+    circuit = compiler.compile(inputset, configuration)
+
+    helpers.check_str(expected_mlir.strip(), circuit.mlir.strip())
+
+
+@pytest.mark.parametrize(
     "function,parameters,expected_graph",
     [
         pytest.param(
@@ -696,7 +1270,7 @@ def test_converter_bad_convert(
             """
 
 %0 = x                    # EncryptedScalar<uint4>        ∈ [0, 10]
-%1 = 2                    # ClearScalar<uint5>            ∈ [2, 2]
+%1 = 2                    # ClearScalar<uint3>            ∈ [2, 2]
 %2 = power(%0, %1)        # EncryptedScalar<uint8>        ∈ [0, 100]
 %3 = 100                  # ClearScalar<uint9>            ∈ [100, 100]
 %4 = add(%2, %3)          # EncryptedScalar<uint8>        ∈ [100, 200]
@@ -719,12 +1293,12 @@ def test_converter_process_multi_precision(function, parameters, expected_graph,
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    processed_graph = GraphConverter().process(graph, configuration)
-    for node in processed_graph.query_nodes():
+    GraphConverter().process(graph, configuration)
+    for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
 
-    helpers.check_str(expected_graph, processed_graph.format())
+    helpers.check_str(expected_graph, graph.format())
 
 
 @pytest.mark.parametrize(
@@ -761,9 +1335,9 @@ def test_converter_process_single_precision(function, parameters, expected_graph
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    processed_graph = GraphConverter().process(graph, configuration)
-    for node in processed_graph.query_nodes():
+    GraphConverter().process(graph, configuration)
+    for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
 
-    helpers.check_str(expected_graph, processed_graph.format())
+    helpers.check_str(expected_graph, graph.format())

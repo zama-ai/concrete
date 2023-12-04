@@ -1,0 +1,213 @@
+description: relu_16bits
+program: |
+    func.func @main(%input_signed: !FHE.esint<16>) -> !FHE.esint<16> {
+    // BIT_TO_CLEAR = 3
+    // PACKING_SIZE= 4
+    %input = "FHE.to_unsigned"(%input_signed) : (!FHE.esint<16>) -> !FHE.eint<16>
+    
+    // round 0
+    %r0_clearing_source_0 = tensor.from_elements %input : tensor<1x!FHE.eint<16>>
+    %r0_clearing_source_0_mixed = arith.constant dense<[32768]> : tensor<1xi17>
+    %r0_bit_0_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_0, %r0_clearing_source_0_mixed) : (tensor<1x!FHE.eint<16>>, tensor<1xi17>) -> !FHE.eint<16>
+    %r0_bit_0_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_0_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_0 = "FHE.lsb"(%r0_bit_0_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_0_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_0) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_1 = tensor.from_elements %input, %r0_bit_0_4_4b_as_16b : tensor<2x!FHE.eint<16>>
+    %r0_clearing_source_1_mixed = arith.constant dense<[16384, -4]> : tensor<2xi17>
+    %r0_bit_1_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_1, %r0_clearing_source_1_mixed) : (tensor<2x!FHE.eint<16>>, tensor<2xi17>) -> !FHE.eint<16>
+    %r0_bit_1_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_1_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_1 = "FHE.lsb"(%r0_bit_1_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_1_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_1) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_2 = tensor.from_elements %input, %r0_bit_0_4_4b_as_16b, %r0_bit_1_4_4b_as_16b : tensor<3x!FHE.eint<16>>
+    %r0_clearing_source_2_mixed = arith.constant dense<[8192, -2, -4]> : tensor<3xi17>
+    %r0_bit_2_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_2, %r0_clearing_source_2_mixed) : (tensor<3x!FHE.eint<16>>, tensor<3xi17>) -> !FHE.eint<16>
+    %r0_bit_2_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_2_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_2 = "FHE.lsb"(%r0_bit_2_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_2_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_2) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_3 = tensor.from_elements %input, %r0_bit_0_4_4b_as_16b, %r0_bit_1_4_4b_as_16b, %r0_bit_2_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_3_mixed = arith.constant dense<[4096, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_3_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_3, %r0_clearing_source_3_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_3_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_3_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_3 = "FHE.lsb"(%r0_bit_3_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_3_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_3) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_4 = tensor.from_elements %input, %r0_bit_1_4_4b_as_16b, %r0_bit_2_4_4b_as_16b, %r0_bit_3_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_4_mixed = arith.constant dense<[2048, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_4_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_4, %r0_clearing_source_4_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_4_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_4_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_4 = "FHE.lsb"(%r0_bit_4_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_4_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_4) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_5 = tensor.from_elements %input, %r0_bit_2_4_4b_as_16b, %r0_bit_3_4_4b_as_16b, %r0_bit_4_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_5_mixed = arith.constant dense<[1024, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_5_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_5, %r0_clearing_source_5_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_5_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_5_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_5 = "FHE.lsb"(%r0_bit_5_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_5_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_5) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_6 = tensor.from_elements %input, %r0_bit_3_4_4b_as_16b, %r0_bit_4_4_4b_as_16b, %r0_bit_5_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_6_mixed = arith.constant dense<[512, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_6_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_6, %r0_clearing_source_6_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_6_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_6_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_6 = "FHE.lsb"(%r0_bit_6_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_6_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_6) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_7 = tensor.from_elements %input, %r0_bit_4_4_4b_as_16b, %r0_bit_5_4_4b_as_16b, %r0_bit_6_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_7_mixed = arith.constant dense<[256, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_7_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_7, %r0_clearing_source_7_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_7_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_7_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_7 = "FHE.lsb"(%r0_bit_7_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_7_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_7) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_8 = tensor.from_elements %input, %r0_bit_5_4_4b_as_16b, %r0_bit_6_4_4b_as_16b, %r0_bit_7_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_8_mixed = arith.constant dense<[128, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_8_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_8, %r0_clearing_source_8_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_8_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_8_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_8 = "FHE.lsb"(%r0_bit_8_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_8_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_8) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_9 = tensor.from_elements %input, %r0_bit_6_4_4b_as_16b, %r0_bit_7_4_4b_as_16b, %r0_bit_8_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_9_mixed = arith.constant dense<[64, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_9_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_9, %r0_clearing_source_9_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_9_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_9_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_9 = "FHE.lsb"(%r0_bit_9_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_9_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_9) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_10 = tensor.from_elements %input, %r0_bit_7_4_4b_as_16b, %r0_bit_8_4_4b_as_16b, %r0_bit_9_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_10_mixed = arith.constant dense<[32, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_10_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_10, %r0_clearing_source_10_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_10_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_10_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_10 = "FHE.lsb"(%r0_bit_10_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_10_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_10) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_11 = tensor.from_elements %input, %r0_bit_8_4_4b_as_16b, %r0_bit_9_4_4b_as_16b, %r0_bit_10_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_11_mixed = arith.constant dense<[16, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_11_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_11, %r0_clearing_source_11_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_11_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_11_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_11 = "FHE.lsb"(%r0_bit_11_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_11_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_11) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_12 = tensor.from_elements %input, %r0_bit_9_4_4b_as_16b, %r0_bit_10_4_4b_as_16b, %r0_bit_11_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_12_mixed = arith.constant dense<[8, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_12_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_12, %r0_clearing_source_12_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_12_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_12_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_12 = "FHE.lsb"(%r0_bit_12_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_12_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_12) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_13 = tensor.from_elements %input, %r0_bit_10_4_4b_as_16b, %r0_bit_11_4_4b_as_16b, %r0_bit_12_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_13_mixed = arith.constant dense<[4, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_13_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_13, %r0_clearing_source_13_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_13_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_13_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_13 = "FHE.lsb"(%r0_bit_13_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_13_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_13) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_14 = tensor.from_elements %input, %r0_bit_11_4_4b_as_16b, %r0_bit_12_4_4b_as_16b, %r0_bit_13_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_14_mixed = arith.constant dense<[2, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_14_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_14, %r0_clearing_source_14_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_14_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_14_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    %r0_bit_14 = "FHE.lsb"(%r0_bit_14_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<4>
+    
+    %r0_bit_14_4_4b_as_16b = "FHE.reinterpret_precision"(%r0_bit_14) : (!FHE.eint<4>) -> !FHE.eint<16>
+    %r0_clearing_source_15 = tensor.from_elements %input, %r0_bit_12_4_4b_as_16b, %r0_bit_13_4_4b_as_16b, %r0_bit_14_4_4b_as_16b : tensor<4x!FHE.eint<16>>
+    %r0_clearing_source_15_mixed = arith.constant dense<[1, -1, -2, -4]> : tensor<4xi17>
+    %r0_bit_15_and_dirty_oveflow_16b = "FHELinalg.dot_eint_int"(%r0_clearing_source_15, %r0_clearing_source_15_mixed) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> !FHE.eint<16>
+    %r0_bit_15_and_dirty_oveflow_1b = "FHE.reinterpret_precision"(%r0_bit_15_and_dirty_oveflow_16b) : (!FHE.eint<16>) -> !FHE.eint<1>
+    // No need for 4 bits, this reduce the factor applied to it later from 8 to 1
+    %r0_sign_bit = "FHE.lsb"(%r0_bit_15_and_dirty_oveflow_1b) : (!FHE.eint<1>) -> !FHE.eint<1>
+    
+    // packing 5 times, sign and 3 bits per pack of size 4
+    %r0_sign_bit_first_in_16b = "FHE.reinterpret_precision"(%r0_sign_bit) : (!FHE.eint<1>) -> !FHE.eint<4>
+    %r0_pack_tensor_0 = tensor.from_elements %r0_sign_bit_first_in_16b, %r0_bit_0, %r0_bit_1, %r0_bit_2 : tensor<4x!FHE.eint<4>>
+    %r0_pack_tensor_0_mixed = arith.constant dense<[1, 1, 2, 4]> : tensor<4xi5>
+    %r0_pack_0 = "FHELinalg.dot_eint_int"(%r0_pack_tensor_0, %r0_pack_tensor_0_mixed) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> !FHE.eint<4>
+    %r0_pack_tensor_1 = tensor.from_elements %r0_sign_bit_first_in_16b, %r0_bit_3, %r0_bit_4, %r0_bit_5 : tensor<4x!FHE.eint<4>>
+    %r0_pack_tensor_1_mixed = arith.constant dense<[1, 1, 2, 4]> : tensor<4xi5>
+    %r0_pack_1 = "FHELinalg.dot_eint_int"(%r0_pack_tensor_1, %r0_pack_tensor_1_mixed) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> !FHE.eint<4>
+    %r0_pack_tensor_2 = tensor.from_elements %r0_sign_bit_first_in_16b, %r0_bit_6, %r0_bit_7, %r0_bit_8 : tensor<4x!FHE.eint<4>>
+    %r0_pack_tensor_2_mixed = arith.constant dense<[1, 1, 2, 4]> : tensor<4xi5>
+    %r0_pack_2 = "FHELinalg.dot_eint_int"(%r0_pack_tensor_2, %r0_pack_tensor_2_mixed) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> !FHE.eint<4>
+    %r0_pack_tensor_3 = tensor.from_elements %r0_sign_bit_first_in_16b, %r0_bit_9, %r0_bit_10, %r0_bit_11 : tensor<4x!FHE.eint<4>>
+    %r0_pack_tensor_3_mixed = arith.constant dense<[1, 1, 2, 4]> : tensor<4xi5>
+    %r0_pack_3 = "FHELinalg.dot_eint_int"(%r0_pack_tensor_3, %r0_pack_tensor_3_mixed) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> !FHE.eint<4>
+    %r0_pack_tensor_4 = tensor.from_elements %r0_sign_bit_first_in_16b, %r0_bit_12, %r0_bit_13, %r0_bit_14 : tensor<4x!FHE.eint<4>>
+    %r0_pack_tensor_4_mixed = arith.constant dense<[1, 1, 2, 4]> : tensor<4xi5>
+    %r0_pack_4 = "FHELinalg.dot_eint_int"(%r0_pack_tensor_4, %r0_pack_tensor_4_mixed) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> !FHE.eint<4>
+    %r0_pack_tensor_extended = tensor.from_elements %r0_pack_0, %r0_pack_1, %r0_pack_2, %r0_pack_3, %r0_pack_4 : tensor<5x!FHE.eint<4>>
+    %r0_pack_tensor = "FHELinalg.reinterpret_precision"(%r0_pack_tensor_extended) : (tensor<5x!FHE.eint<4>>) -> tensor<5x!FHE.eint<4>>
+    
+    // applying relu on all chunks 
+    %tlu_relu = arith.constant dense<[[0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0], [0, 8, 16, 24, 32, 40, 48, 56, 0, 0, 0, 0, 0, 0, 0, 0], [0, 64, 128, 192, 256, 320, 384, 448, 0, 0, 0, 0, 0, 0, 0, 0], [0, 512, 1024, 1536, 2048, 2560, 3072, 3584, 0, 0, 0, 0, 0, 0, 0, 0], [0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 0, 0, 0, 0, 0, 0, 0, 0]]> : tensor<5x16xi64>
+    %r0_relu_chunks = "FHELinalg.apply_multi_lookup_table"(%r0_pack_tensor, %tlu_relu) : (tensor<5x!FHE.eint<4>>, tensor<5x16xi64>) -> tensor<5x!FHE.eint<16>>
+    
+    // putting all filtered bits in place
+    %r0_result = "FHELinalg.sum"(%r0_relu_chunks) : (tensor<5x!FHE.eint<16>>) -> !FHE.eint<16>
+    %result = "FHE.to_signed"(%r0_result) : (!FHE.eint<16>) -> !FHE.esint<16>
+    return %result : !FHE.esint<16>
+    
+    }
+
+p-error: 6.3342483999973e-05
+tests:
+    - inputs:
+        - scalar: 0
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: 1
+          signed: true
+      outputs:
+        - scalar: 1
+          signed: true
+    - inputs:
+        - scalar: 2
+          signed: true
+      outputs:
+        - scalar: 2
+          signed: true
+    - inputs:
+        - scalar: 3
+          signed: true
+      outputs:
+        - scalar: 3
+          signed: true
+    - inputs:
+        - scalar: -1
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: -2
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: -3
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: -4
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true
+    - inputs:
+        - scalar: 32767
+          signed: true
+      outputs:
+        - scalar: 32767
+          signed: true
+    - inputs:
+        - scalar: -32767
+          signed: true
+      outputs:
+        - scalar: 0
+          signed: true

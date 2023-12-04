@@ -8,7 +8,7 @@ import numpy as np
 
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 
 def zeros(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
@@ -35,7 +35,7 @@ def zeros(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
         computation = Node.generic(
             "zeros",
             [],
-            Value.of(numpy_zeros, is_encrypted=True),
+            ValueDescription.of(numpy_zeros, is_encrypted=True),
             lambda: np.zeros(shape, dtype=np.int64),
         )
         return Tracer(computation, [])
@@ -54,3 +54,20 @@ def zero() -> Union[np.ndarray, Tracer]:
     """
 
     return zeros(())
+
+
+def zeros_like(array: Union[np.ndarray, Tracer]) -> Union[np.ndarray, Tracer]:
+    """
+    Create an encrypted array of zeros with the same shape as another array.
+
+    Args:
+         array (Union[np.ndarray, Tracer]):
+            original array
+
+    Returns:
+        Union[np.ndarray, Tracer]:
+            Tracer that represent the operation during tracing
+            ndarray filled with zeros otherwise
+    """
+
+    return zeros(array.shape)

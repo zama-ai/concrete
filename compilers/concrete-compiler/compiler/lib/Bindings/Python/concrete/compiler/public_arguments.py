@@ -3,6 +3,8 @@
 
 """PublicArguments."""
 
+from typing import List
+
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
     PublicArguments as _PublicArguments,
@@ -10,6 +12,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 
 # pylint: enable=no-name-in-module,import-error
 from .client_parameters import ClientParameters
+from .value import Value
 from .wrapper import WrapperCpp
 
 
@@ -34,6 +37,21 @@ class PublicArguments(WrapperCpp):
                 f"public_arguments must be of type _PublicArguments, not {type(public_arguments)}"
             )
         super().__init__(public_arguments)
+
+    @staticmethod
+    # pylint: disable=arguments-differ
+    def new(
+        client_parameters: ClientParameters, values: List[Value]
+    ) -> "PublicArguments":
+        """
+        Create public arguments from individual values.
+        """
+        return PublicArguments(
+            _PublicArguments.create(
+                client_parameters.cpp(),
+                [value.cpp() for value in values],
+            )
+        )
 
     def serialize(self) -> bytes:
         """Serialize the PublicArguments.

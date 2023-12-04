@@ -1,7 +1,15 @@
 LLVM_PROJECT_DIR=../llvm-project
+DOCS_DIR=../../../docs
 
 BUILD_TYPE?=Release
-BUILD_DIR?=./build
+
+# Build dir is `build` for Release builds and `build_BUILD_TYPE` for
+# other build types (e.g. Debug, ReleaseWithDebugInfo, etc.)
+ifneq ($(BUILD_TYPE),Release)
+	BUILD_DIR?=build_$(BUILD_TYPE)
+else
+	BUILD_DIR?=build
+endif
 Python3_EXECUTABLE?=$(shell which python3)
 BINDINGS_PYTHON_ENABLED=ON
 DATAFLOW_EXECUTION_ENABLED=OFF
@@ -56,7 +64,7 @@ endif
 ARCHITECTURE=undefined
 ifeq ($(shell uname -m), arm64)
 	ARCHITECTURE=aarch64
-else 
+else
 	ARCHITECTURE=amd64
 endif
 
@@ -86,6 +94,15 @@ else
 		CXX_COMPILER_OPTION=
 endif
 
+# If the build type is Debug, and the lld linked is installed
+# then use it
+CUSTOM_LINKER_OPTS=
+ifneq ($(shell which lld),)
+ifeq ($(BUILD_TYPE),Debug)
+	CUSTOM_LINKER_OPTS=-DLLVM_USE_LINKER=lld
+endif
+endif
+
 # don't run parallel python tests if compiler doesn't support it
 ifeq ($(DATAFLOW_EXECUTION_ENABLED),ON)
 		PYTHON_TESTS_MARKER=""
@@ -93,7 +110,14 @@ else
 		PYTHON_TESTS_MARKER="not parallel"
 endif
 
-all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc rust-bindings
+# Force linking of libomp with libstdc++ in debug builds, as these
+# rely on code from libstdc++ implementing assertions
+LIBOMP_LINK_TO_LIBSTDCXX_OPT=
+ifeq ($(BUILD_TYPE),Debug)
+	LIBOMP_LINK_TO_LIBSTDCXX_OPT=-DLIBOMP_USE_STDCPPLIB=ON
+endif
+
+all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
 
 # HPX #####################################################
 
@@ -107,7 +131,7 @@ install-hpx-from-source: $(HPX_LOCAL_DIR)
 		$(CXX_COMPILER_OPTION) $(CC_COMPILER_OPTION) ..
 	cd $(HPX_LOCAL_DIR)/build && make -j2
 
-$(HPX_TARBALL): 
+$(HPX_TARBALL):
 	curl -L $(HPX_URL) -o $(HPX_TARBALL)
 
 $(HPX_LOCAL_DIR): $(HPX_TARBALL)
@@ -119,6 +143,7 @@ $(BUILD_DIR)/configured.stamp:
 	$(CMAKE_CCACHE_OPTIONS) \
 	$(CC_COMPILER_OPTION) \
 	$(CXX_COMPILER_OPTION) \
+	$(CUSTOM_LINKER_OPTS) \
 	-DLLVM_ENABLE_PROJECTS="mlir;clang;openmp" \
 	-DLLVM_BUILD_EXAMPLES=OFF \
 	-DLLVM_TARGETS_TO_BUILD="host" \
@@ -133,13 +158,22 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
 	-DCONCRETELANG_CUDA_SUPPORT=${CUDA_SUPPORT} \
-	-DCUDAToolkit_ROOT=$(CUDA_PATH)
+	-DCUDAToolkit_ROOT=$(CUDA_PATH) \
+	$(LIBOMP_LINK_TO_LIBSTDCXX_OPT)
 	touch $@
 
 build-initialized: $(BUILD_DIR)/configured.stamp
 
+reconfigure:
+	rm $(BUILD_DIR)/configured.stamp
+	rm $(BUILD_DIR)/CMakeCache.txt
+
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
+
+update-dialect-doc: doc
+	cp $(BUILD_DIR)/tools/concretelang/docs/concretelang/*Dialect.md $(DOCS_DIR)/dev/compilation/ && \
+	sed -i -e 's/\[TOC\]//' $(DOCS_DIR)/dev/compilation/*Dialect.md
 
 concretecompiler: build-initialized
 	cmake --build $(BUILD_DIR) --target concretecompiler
@@ -147,14 +181,6 @@ concretecompiler: build-initialized
 python-bindings: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangMLIRPythonModules
 	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
-
-rust-bindings: install
-	cd lib/Bindings/Rust && \
-		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		cargo build --release
-
-CAPI:
-	cmake --build $(BUILD_DIR) --target CONCRETELANGCAPIFHE CONCRETELANGCAPIFHELINALG CONCRETELANGCAPISupport
 
 clientlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangClientLib
@@ -223,14 +249,6 @@ run-python-tests: python-bindings concretecompiler
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output
 
-
-## rust-tests
-run-rust-tests: rust-bindings
-	cd lib/Bindings/Rust && \
-		CONCRETE_COMPILER_INSTALL_DIR=$(INSTALL_PATH) \
-		LD_LIBRARY_PATH=$(INSTALL_PATH)/lib \
-		cargo test --release
-
 ## end-to-end-tests
 
 build-end-to-end-jit-chunked-int: build-initialized
@@ -263,19 +281,25 @@ $(FIXTURE_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py FORCE
 $(FIXTURE_CPU_DIR)/bug_report.yaml:
 	unzip -o $(FIXTURE_CPU_DIR)/bug_report.zip -d $(FIXTURE_CPU_DIR)
 
-generate-cpu-tests: $(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml $(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(FIXTURE_CPU_DIR)/bug_report.yaml $(FIXTURE_CPU_DIR)/end_to_end_round.yaml $(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml
+generate-cpu-tests: \
+	$(FIXTURE_CPU_DIR)/end_to_end_leveled.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_apply_lookup_table.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml \
+	$(FIXTURE_CPU_DIR)/bug_report.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_round.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml \
+	$(FIXTURE_CPU_DIR)/end_to_end_linalg_enc_enc_matmul_dot.yaml
 
 SECURITY_TO_TEST=128
 OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
-PARALLEL_END_2_END_TESTS= end_to_end_jit_test \
-	end_to_end_jit_lambda \
-	end_to_end_jit_lambda
+PARALLEL_END_2_END_TESTS= end_to_end_jit_test end_to_end_jit_lambda
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
 	$(foreach TEST,$(PARALLEL_END_2_END_TESTS), \
-	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST);)
+	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST) || exit $$?;)
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) --optimizer-strategy=$(optimizer_strategy) --jit $(FIXTURE_CPU_DIR)/*.yaml;))
+	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
+	  --optimizer-strategy=$(optimizer_strategy) --retry-failing-tests=1 $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
 
 ### end-to-end-tests GPU
 
@@ -295,7 +319,7 @@ generate-gpu-tests: $(FIXTURE_GPU_DIR) $(FIXTURE_GPU_DIR)/end_to_end_apply_looku
 
 run-end-to-end-tests-gpu: build-end-to-end-test generate-gpu-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	--backend=gpu --library /tmp/concrete_compiler/gpu_tests/ \
+	--backend=gpu \
 	$(FIXTURE_GPU_DIR)/*.yaml
 
 ## end-to-end-dataflow-tests
@@ -330,7 +354,14 @@ $(BENCHMARK_CPU_DIR)/end_to_end_round.yaml: tests/end_to_end_fixture/end_to_end_
 $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 	$(Python3_EXECUTABLE) $< > $@
 
-generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml $(BENCHMARK_CPU_DIR)/end_to_end_round.yaml
+
+BENCHS_CPU = \
+	$(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml \
+	$(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml \
+	$(BENCHMARK_CPU_DIR)/end_to_end_round.yaml \
+	$(BENCHMARK_CPU_DIR)/end_to_end_linalg_leveled.yaml
+
+generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHS_CPU)
 
 SECURITY_TO_BENCH=128
 OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
@@ -338,7 +369,7 @@ run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST),$(foreach security,$(SECURITY_TO_BENCH),$(BUILD_DIR)/bin/end_to_end_benchmark \
 		--backend=cpu --security-level=$(security) --optimizer-strategy=$(optimizer_strategy)\
 		--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
-		$(BENCHMARK_CPU_DIR)/*.yaml;))
+		$(BENCHMARK_CPU_DIR)/*.yaml || exit $$?;))
 
 FIXTURE_APPLICATION_DIR=tests/end_to_end_fixture/application/
 
@@ -438,12 +469,6 @@ python-format:
 python-lint:
 	pylint --rcfile=../pylintrc lib/Bindings/Python/concrete/compiler
 
-check-rust-format:
-	cd lib/Bindings/Rust && cargo fmt  --check
-
-rust-format:
-	cd lib/Bindings/Rust && cargo fmt 
-
 # libraries we want to have in the installation that aren't already a deps of other targets
 install-deps:
 	cmake --build $(BUILD_DIR) --target MLIRCAPIRegisterEverything
@@ -490,7 +515,7 @@ darwin-python-package:
 python-package: python-bindings $(OS)-python-package
 	@echo The python package is: $(BUILD_DIR)/wheels/*.whl
 
-install: concretecompiler CAPI install-deps
+install: concretecompiler install-deps
 	$(info Install prefix set to $(INSTALL_PREFIX))
 	$(info Installing under $(INSTALL_PATH))
 	mkdir -p $(INSTALL_PATH)/include
@@ -542,4 +567,5 @@ FORCE:
 	opt \
 	mlir-opt \
 	mlir-cpu-runner \
-	mlir-translate
+	mlir-translate \
+	reconfigure

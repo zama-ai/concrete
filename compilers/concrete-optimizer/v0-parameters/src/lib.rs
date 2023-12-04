@@ -86,6 +86,12 @@ pub struct Args {
 
     #[clap(long, default_value_t = true)]
     pub cache_on_disk: bool,
+
+    #[clap(long, default_value_t = 64)]
+    pub ciphertext_modulus_log: u32,
+
+    #[clap(long, default_value_t = 53)]
+    pub fft_precision: u32,
 }
 
 pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
@@ -99,6 +105,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
         glwe_log_polynomial_sizes: (args.min_log_poly_size..=args.max_log_poly_size).collect(),
         glwe_dimensions: (args.min_glwe_dim..=args.max_glwe_dim).collect(),
         internal_lwe_dimensions: (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect(),
+        levelled_only_lwe_dimensions: DEFAUT_DOMAINS.free_lwe,
     };
 
     let precisions = args.min_precision..=args.max_precision;
@@ -111,11 +118,20 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
     let config = Config {
         security_level,
         maximum_acceptable_error_probability,
-        ciphertext_modulus_log: 64,
+        key_sharing: true,
+        ciphertext_modulus_log: args.ciphertext_modulus_log,
+        fft_precision: args.fft_precision,
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(security_level, processing_unit, None, cache_on_disk);
+    let cache = decomposition::cache(
+        security_level,
+        processing_unit,
+        None,
+        cache_on_disk,
+        args.ciphertext_modulus_log,
+        args.fft_precision,
+    );
 
     precisions_iter
         .map(|precision| {
@@ -277,6 +293,8 @@ mod tests {
                 wop_pbs: false,
                 simulate_dag,
                 cache_on_disk: true,
+                ciphertext_modulus_log: 64,
+                fft_precision: 53,
             };
 
             let mut actual_output = Vec::<u8>::new();
@@ -319,6 +337,8 @@ mod tests {
                 wop_pbs: true,
                 simulate_dag: false,
                 cache_on_disk: true,
+                ciphertext_modulus_log: 64,
+                fft_precision: 53,
             };
 
             let mut actual_output = Vec::<u8>::new();

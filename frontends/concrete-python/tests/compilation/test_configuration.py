@@ -2,6 +2,8 @@
 Tests of `Configuration` class.
 """
 
+import sys
+
 import pytest
 
 from concrete.fhe.compilation import Configuration
@@ -42,16 +44,21 @@ def test_configuration_fork():
     Test `fork` method of `Configuration` class.
     """
 
-    config1 = Configuration(enable_unsafe_features=True, loop_parallelize=False)
-    config2 = config1.fork(enable_unsafe_features=False, loop_parallelize=True)
+    config1 = Configuration(enable_unsafe_features=True, loop_parallelize=False, p_error=0.1)
+    config2 = config1.fork(enable_unsafe_features=False, loop_parallelize=True, p_error=None)
 
     assert config1 is not config2
 
     assert config1.enable_unsafe_features is True
     assert config1.loop_parallelize is False
+    assert config1.p_error == 0.1
 
     assert config2.enable_unsafe_features is False
     assert config2.loop_parallelize is True
+    assert config2.p_error is None
+
+
+FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
 
 
 @pytest.mark.parametrize(
@@ -60,7 +67,7 @@ def test_configuration_fork():
         pytest.param(
             {"foo": False},
             TypeError,
-            "Unexpected keyword argument 'foo'",
+            f"{FORK_NAME}() got an unexpected keyword argument 'foo'",
         ),
         pytest.param(
             {"dump_artifacts_on_unexpected_failures": "yes"},
@@ -72,7 +79,7 @@ def test_configuration_fork():
             {"insecure_key_cache_location": 3},
             TypeError,
             "Unexpected type for keyword argument 'insecure_key_cache_location' "
-            "(expected 'Optional[str]', got 'int')",
+            "(expected 'Union[str, Path, NoneType]', got 'int')",
         ),
         pytest.param(
             {"p_error": "yes"},
@@ -95,8 +102,66 @@ def test_configuration_fork():
         pytest.param(
             {"parameter_selection_strategy": 42},
             TypeError,
-            "Unexpected type for keyword argument 'parameter_selection_strategy' "
-            "(expected 'Union[ParameterSelectionStrategy, str]', got 'int')",
+            "42 cannot be parsed to a ParameterSelectionStrategy",
+        ),
+        pytest.param(
+            {"parameter_selection_strategy": "bad"},
+            ValueError,
+            "'bad' is not a valid 'ParameterSelectionStrategy' (v0, mono, multi)",
+        ),
+        pytest.param(
+            {"comparison_strategy_preference": 42},
+            TypeError,
+            "42 cannot be parsed to a ComparisonStrategy",
+        ),
+        pytest.param(
+            {"comparison_strategy_preference": "bad"},
+            ValueError,
+            "'bad' is not a valid 'ComparisonStrategy' ("
+            "one-tlu-promoted, "
+            "three-tlu-casted, "
+            "two-tlu-bigger-promoted-smaller-casted, "
+            "two-tlu-bigger-casted-smaller-promoted, "
+            "three-tlu-bigger-clipped-smaller-casted, "
+            "two-tlu-bigger-clipped-smaller-promoted, "
+            "chunked"
+            ")",
+        ),
+        pytest.param(
+            {"bitwise_strategy_preference": 42},
+            TypeError,
+            "42 cannot be parsed to a BitwiseStrategy",
+        ),
+        pytest.param(
+            {"bitwise_strategy_preference": "bad"},
+            ValueError,
+            "'bad' is not a valid 'BitwiseStrategy' ("
+            "one-tlu-promoted, "
+            "three-tlu-casted, "
+            "two-tlu-bigger-promoted-smaller-casted, "
+            "two-tlu-bigger-casted-smaller-promoted, "
+            "chunked"
+            ")",
+        ),
+        pytest.param(
+            {"multivariate_strategy_preference": 42},
+            TypeError,
+            "42 cannot be parsed to a MultivariateStrategy",
+        ),
+        pytest.param(
+            {"multivariate_strategy_preference": "bad"},
+            ValueError,
+            "'bad' is not a valid 'MultivariateStrategy' (promoted, casted)",
+        ),
+        pytest.param(
+            {"min_max_strategy_preference": 42},
+            TypeError,
+            "42 cannot be parsed to a MinMaxStrategy",
+        ),
+        pytest.param(
+            {"min_max_strategy_preference": "bad"},
+            ValueError,
+            "'bad' is not a valid 'MinMaxStrategy' (one-tlu-promoted, three-tlu-casted, chunked)",
         ),
     ],
 )

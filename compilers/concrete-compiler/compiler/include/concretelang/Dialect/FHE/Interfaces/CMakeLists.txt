@@ -1,0 +1,7 @@
+set(LLVM_TARGET_DEFINITIONS FHEInterfaces.td)
+mlir_tablegen(FHETypesInterfaces.h.inc -gen-type-interface-decls)
+mlir_tablegen(FHETypesInterfaces.cpp.inc -gen-type-interface-defs)
+mlir_tablegen(FHEOpsInterfaces.h.inc -gen-op-interface-decls)
+mlir_tablegen(FHEOpsInterfaces.cpp.inc -gen-op-interface-defs)
+add_public_tablegen_target(MLIRFHEInterfacesIncGen)
+add_dependencies(mlir-generic-headers MLIRFHEInterfacesIncGen)

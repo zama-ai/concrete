@@ -5,15 +5,17 @@
 #include <tuple>
 #include <type_traits>
 
+#include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
+using concretelang::testlib::deleteFolder;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Auto-parallelize independent FHE ops /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(ParallelizeAndRunFHE, add_eint_tree) {
-  checkedJit(lambda, R"XXX(
+  checkedJit(testCircuit, R"XXX(
 func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %arg3: !FHE.eint<7>) -> !FHE.eint<7> {
   %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
   %2 = "FHE.add_eint"(%arg0, %arg2): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
@@ -58,27 +60,35 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
   return %35: !FHE.eint<7>
 }
 )XXX",
-             "main", false, true, false);
+             "main", false, true, false, false, 1e-40);
+
+  auto lambda = [&](std::vector<concretelang::values::Value> args) {
+    return testCircuit.call(args)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
 
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-    llvm::Expected<uint64_t> res_1 = lambda(1_u64, 2_u64, 3_u64, 4_u64);
-    llvm::Expected<uint64_t> res_2 = lambda(4_u64, 5_u64, 6_u64, 7_u64);
-    llvm::Expected<uint64_t> res_3 = lambda(1_u64, 1_u64, 1_u64, 1_u64);
-    llvm::Expected<uint64_t> res_4 = lambda(5_u64, 7_u64, 11_u64, 13_u64);
-    ASSERT_EXPECTED_SUCCESS(res_1);
-    ASSERT_EXPECTED_SUCCESS(res_2);
-    ASSERT_EXPECTED_SUCCESS(res_3);
-    ASSERT_EXPECTED_SUCCESS(res_4);
-    ASSERT_EXPECTED_VALUE(res_1, 150);
-    ASSERT_EXPECTED_VALUE(res_2, 74);
-    ASSERT_EXPECTED_VALUE(res_3, 60);
-    ASSERT_EXPECTED_VALUE(res_4, 28);
+    ASSERT_EQ(lambda({Tensor<uint64_t>(1), Tensor<uint64_t>(2),
+                      Tensor<uint64_t>(3), Tensor<uint64_t>(4)}),
+              (uint64_t)150);
+    ASSERT_EQ(lambda({Tensor<uint64_t>(4), Tensor<uint64_t>(5),
+                      Tensor<uint64_t>(6), Tensor<uint64_t>(7)}),
+              (uint64_t)74);
+    ASSERT_EQ(lambda({Tensor<uint64_t>(1), Tensor<uint64_t>(1),
+                      Tensor<uint64_t>(1), Tensor<uint64_t>(1)}),
+              (uint64_t)60);
+    ASSERT_EQ(lambda({Tensor<uint64_t>(5), Tensor<uint64_t>(7),
+                      Tensor<uint64_t>(11), Tensor<uint64_t>(13)}),
+              (uint64_t)28);
   } else {
-    ASSERT_EXPECTED_FAILURE(lambda());
-    ASSERT_EXPECTED_FAILURE(lambda());
-    ASSERT_EXPECTED_FAILURE(lambda());
-    ASSERT_EXPECTED_FAILURE(lambda());
+    ASSERT_OUTCOME_HAS_FAILURE(testCircuit.call({}));
+    ASSERT_OUTCOME_HAS_FAILURE(testCircuit.call({}));
+    ASSERT_OUTCOME_HAS_FAILURE(testCircuit.call({}));
+    ASSERT_OUTCOME_HAS_FAILURE(testCircuit.call({}));
   }
+  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 std::vector<uint64_t> parallel_results;
@@ -97,31 +107,28 @@ TEST(ParallelizeAndRunFHE, nn_small_parallel) {
 )XXX",
              "main", false, true, true);
 
-  const size_t numDim = 2;
   const size_t dim0 = 4;
   const size_t dim1 = 5;
   const size_t dim2 = 7;
-  const int64_t dims[numDim]{dim0, dim1};
-  const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
-  std::vector<uint8_t> input;
-  input.reserve(dim0 * dim1);
-
-  for (size_t i = 0; i < dim0 * dim1; ++i)
-    input.push_back(i % 17 % 4);
-
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg(input, shape2D);
+  const std::vector<size_t> inputShape({dim0, dim1});
+  const std::vector<size_t> outputShape({dim0, dim2});
+  std::vector<uint64_t> values;
+  values.reserve(dim0 * dim1);
+  for (size_t i = 0; i < dim0 * dim1; ++i) {
+    values.push_back(i % 17 % 4);
+  }
+  auto input = Tensor<uint64_t>(values, inputShape);
 
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-    llvm::Expected<std::vector<uint64_t>> res =
-        lambda.operator()<std::vector<uint64_t>>({&arg});
-    ASSERT_EXPECTED_SUCCESS(res);
-    ASSERT_EQ(res->size(), dim0 * dim2);
-    parallel_results = *res;
+    auto maybeResult = lambda.call({input});
+    ASSERT_OUTCOME_HAS_VALUE(maybeResult);
+    auto result = maybeResult.value()[0].template getTensor<uint64_t>().value();
+    ASSERT_EQ(result.dimensions, outputShape);
+    parallel_results = result.values;
   } else {
-    ASSERT_EXPECTED_FAILURE(lambda.operator()<std::vector<uint64_t>>());
+    ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
   }
+  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(ParallelizeAndRunFHE, nn_small_sequential) {
@@ -139,30 +146,27 @@ TEST(ParallelizeAndRunFHE, nn_small_sequential) {
 )XXX",
                "main", false, false, false);
 
-    const size_t numDim = 2;
     const size_t dim0 = 4;
     const size_t dim1 = 5;
     const size_t dim2 = 7;
-    const int64_t dims[numDim]{dim0, dim1};
-    const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
-    std::vector<uint8_t> input;
-    input.reserve(dim0 * dim1);
+    const std::vector<size_t> inputShape({dim0, dim1});
+    const std::vector<size_t> outputShape({dim0, dim2});
+    std::vector<uint64_t> values;
+    values.reserve(dim0 * dim1);
+    for (size_t i = 0; i < dim0 * dim1; ++i) {
+      values.push_back(i % 17 % 4);
+    }
+    auto input = Tensor<uint64_t>(values, inputShape);
 
-    for (size_t i = 0; i < dim0 * dim1; ++i)
-      input.push_back(i % 17 % 4);
-
-    mlir::concretelang::TensorLambdaArgument<
-        mlir::concretelang::IntLambdaArgument<uint8_t>>
-        arg(input, shape2D);
-
-    // This is sequential: only execute on root node.
     if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-      llvm::Expected<std::vector<uint64_t>> res =
-          lambda.operator()<std::vector<uint64_t>>({&arg});
-      ASSERT_EXPECTED_SUCCESS(res);
+      auto maybeResult = lambda.call({input});
+      ASSERT_OUTCOME_HAS_VALUE(maybeResult);
+      auto result =
+          maybeResult.value()[0].template getTensor<uint64_t>().value();
       for (size_t i = 0; i < dim0 * dim2; i++)
-        EXPECT_EQ(parallel_results[i], (*res)[i])
+        EXPECT_EQ(parallel_results[i], result.values[i])
             << "result differ at pos " << i;
     }
+    deleteFolder(lambda.getArtifactFolder());
   }
 }

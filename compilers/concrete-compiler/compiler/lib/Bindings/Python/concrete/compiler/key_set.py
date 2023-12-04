@@ -15,7 +15,6 @@ from mlir._mlir_libs._concretelang._compiler import (
 # pylint: enable=no-name-in-module,import-error
 from .wrapper import WrapperCpp
 from .evaluation_keys import EvaluationKeys
-from .client_parameters import ClientParameters
 
 
 class KeySet(WrapperCpp):
@@ -63,10 +62,6 @@ class KeySet(WrapperCpp):
                 f"serialized_key_set must be of type bytes, not {type(serialized_key_set)}"
             )
         return KeySet.wrap(_KeySet.deserialize(serialized_key_set))
-
-    def client_parameters(self) -> ClientParameters:
-        """Get client parameters of keyset."""
-        return self.cpp().client_parameters()
 
     def get_evaluation_keys(self) -> EvaluationKeys:
         """

@@ -5,6 +5,7 @@ Configuration of `pytest`.
 import json
 import os
 import random
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -143,9 +144,8 @@ class Helpers:
             loop_parallelize=True,
             dataflow_parallelize=False,
             auto_parallelize=False,
-            jit=True,
             insecure_key_cache_location=INSECURE_KEY_CACHE_LOCATION,
-            global_p_error=(1 / 100_000),
+            global_p_error=(1 / 10_000),
             single_precision=(not USE_MULTI_PRECISION),
             parameter_selection_strategy=OPTIMIZATION_STRATEGY,
         )
@@ -254,10 +254,10 @@ class Helpers:
         function: Callable,
         sample: Union[Any, List[Any]],
         retries: int = 1,
-        simulate: bool = False,
+        only_simulation: bool = False,
     ):
         """
-        Assert that `circuit` is behaves the same as `function` on `sample`.
+        Assert that `circuit` behaves the same as `function` on `sample`.
 
         Args:
             circuit (fhe.Circuit):
@@ -272,8 +272,8 @@ class Helpers:
             retries (int, default = 1):
                 number of times to retry (for probabilistic execution)
 
-            simulate (bool, default = False):
-                whether to simulate instead of fhe execution
+            only_simulation (bool, default = False):
+                whether to just check simulation but not execution
         """
 
         if not isinstance(sample, list):
@@ -294,11 +294,32 @@ class Helpers:
 
             return tuple(result)
 
+        if not only_simulation:
+            for i in range(retries):
+                expected = sanitize(function(*deepcopy(sample)))
+                actual = sanitize(circuit.encrypt_run_decrypt(*deepcopy(sample)))
+
+                if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
+                    break
+
+                if i == retries - 1:
+                    message = f"""
+
+    Expected Output
+    ===============
+    {expected}
+
+    Actual Output
+    =============
+    {actual}
+
+                        """
+                    raise AssertionError(message)
+
+        circuit.enable_fhe_simulation()
         for i in range(retries):
-            expected = sanitize(function(*sample))
-            actual = sanitize(
-                circuit.simulate(*sample) if simulate else circuit.encrypt_run_decrypt(*sample)
-            )
+            expected = sanitize(function(*deepcopy(sample)))
+            actual = sanitize(circuit.simulate(*deepcopy(sample)))
 
             if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                 break
@@ -306,15 +327,15 @@ class Helpers:
             if i == retries - 1:
                 message = f"""
 
-Expected Output
-===============
+Expected Output During Simulation
+=================================
 {expected}
 
-Actual Output
-=============
+Actual Output During Simulation
+===============================
 {actual}
 
-                    """
+                """
                 raise AssertionError(message)
 
     @staticmethod

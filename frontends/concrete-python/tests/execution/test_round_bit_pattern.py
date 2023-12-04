@@ -46,7 +46,7 @@ def test_plain_round_bit_pattern(sample, lsbs_to_remove, expected_output):
             np.array([3.2, 4.1]),
             3,
             TypeError,
-            "Expected input elements to be integers but they are dtype[float64]",
+            f"Expected input elements to be integers but they are {type(np.array([3.2, 4.1]).dtype).__name__}",  # noqa: E501
         ),
         (
             "foo",
@@ -263,7 +263,7 @@ def test_round_bit_pattern_no_overflow_protection(helpers, pytestconfig):
 module {
   func.func @main(%arg0: !FHE.esint<7>) -> !FHE.eint<11> {
     %0 = "FHE.round"(%arg0) : (!FHE.esint<7>) -> !FHE.esint<5>
-    %c2_i8 = arith.constant 2 : i8
+    %c2_i3 = arith.constant 2 : i3
     %cst = arith.constant dense<[0, 16, 64, 144, 256, 400, 576, 784, 1024, 1296, 1600, 1936, 2304, 2704, 3136, 3600, 4096, 3600, 3136, 2704, 2304, 1936, 1600, 1296, 1024, 784, 576, 400, 256, 144, 64, 16]> : tensor<32xi64>
     %1 = "FHE.apply_lookup_table"(%0, %cst) : (!FHE.esint<5>, tensor<32xi64>) -> !FHE.eint<11>
     return %1 : !FHE.eint<11>
@@ -520,3 +520,75 @@ def test_auto_rounding_construct_in_function():
         "AutoRounders cannot be constructed during adjustment, "
         "please construct AutoRounders outside the function and reference it"
     )
+
+
+def test_overflowing_round_bit_pattern_with_lsbs_to_remove_of_one(helpers):
+    """
+    Test round bit pattern where overflow is detected when only one bit is to be removed.
+    """
+
+    # pylint: disable=invalid-name
+
+    def subgraph(v0):
+        v1 = v0.astype(np.float32)
+        v2 = 0
+        v3 = np.add(v1, v2)
+        v4 = np.array([[3, -4, -9, -12, 5]])
+        v5 = np.subtract(v3, v4)
+        v6 = 0.8477082011119198
+        v7 = np.multiply(v6, v5)
+        v8 = [-0.16787443, -0.4266992, 0.33739513, 0.15412766, -0.39808342]
+        v9 = np.add(v7, v8)
+        v10 = 0.16666666666666666
+        v11 = np.multiply(v10, v9)
+        v12 = 0.5
+        v13 = np.add(v11, v12)
+        v14 = 1
+        v15 = np.minimum(v14, v13)
+        v16 = 0
+        v17 = np.maximum(v16, v15)
+        v18 = np.multiply(v9, v17)
+        v19 = 7.667494564113974
+        v20 = np.divide(v18, v19)
+        v21 = -8
+        v22 = np.add(v20, v21)
+        v23 = np.rint(v22)
+        v24 = -8
+        v25 = 7
+        v26 = np.clip(v23, v24, v25)
+        v27 = v26.astype(np.int64)
+        return v27
+
+    def function(v0):
+        v1 = np.array(
+            [
+                [2, -5, 1, 6, -4],
+                [2, 7, 6, -3, 5],
+                [0, -3, 4, -2, -5],
+                [-5, 5, -4, 7, 3],
+                [-2, 0, 2, 4, -4],
+            ]
+        )
+        v2 = np.matmul(v0, v1)
+        v3 = fhe.round_bit_pattern(v2, lsbs_to_remove=1)
+        v4 = subgraph(v3)
+        v5 = np.array(
+            [
+                [2, -3, 5, 2, -5],
+                [-6, -1, -2, 7, 4],
+                [-6, 6, -6, 3, 3],
+                [-7, -1, -5, 1, 1],
+                [-3, -1, 5, -1, -5],
+            ]
+        )
+        v6 = np.matmul(v4, v5)
+        return v6
+
+    # pylint: enable=invalid-name
+
+    sample = np.array([[-7, 5, -8, -8, -8]])
+
+    compiler = fhe.Compiler(function, {"v0": "encrypted"})
+    circuit = compiler.compile(inputset=[sample], configuration=helpers.configuration())
+
+    helpers.check_execution(circuit, function, sample, retries=5)

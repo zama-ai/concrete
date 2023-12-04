@@ -116,7 +116,7 @@ def test_keys_serialize_deserialize(helpers):
     client1.keys.generate()
 
     sample = client1.encrypt(5)
-    evaluation = server.run(sample, client1.evaluation_keys)
+    evaluation = server.run(sample, evaluation_keys=client1.evaluation_keys)
 
     client2 = fhe.Client(server.client_specs)
     client2.keys = fhe.Keys.deserialize(client1.keys.serialize())
@@ -164,29 +164,3 @@ def test_keys_generate_manual_seed(helpers):
     same_circuit.keygen(seed=42)
 
     assert same_circuit.decrypt(evaluation) == 25
-
-
-def test_assign_keys_with_different_parameters(helpers):
-    """
-    Test assigning incompatible keys to a circuit.
-    """
-
-    @fhe.compiler({"x": "encrypted"})
-    def f(x):
-        return x + 42
-
-    @fhe.compiler({"x": "encrypted"})
-    def g(x):
-        return x**2
-
-    f_circuit = f.compile(inputset=range(99), configuration=helpers.configuration())
-    g_circuit = g.compile(inputset=range(10), configuration=helpers.configuration())
-
-    f_circuit.keygen()
-    g_circuit.keygen()
-
-    with pytest.raises(ValueError) as excinfo:
-        f_circuit.keys = g_circuit.keys
-
-    expected_message = "Unable to set keys as they are generated for a different circuit"
-    helpers.check_str(expected_message, str(excinfo.value))

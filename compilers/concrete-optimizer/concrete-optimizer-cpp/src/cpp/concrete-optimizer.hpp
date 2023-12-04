@@ -384,7 +384,7 @@ typename Slice<T>::iterator::difference_type
 Slice<T>::iterator::operator-(const iterator &other) const noexcept {
   auto diff = std::distance(static_cast<char *>(other.pos),
                             static_cast<char *>(this->pos));
-  return diff / this->stride;
+  return diff / static_cast<typename Slice<T>::iterator::difference_type>(this->stride);
 }
 
 template <typename T>
@@ -953,6 +953,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
   ::concrete_optimizer::v0::Solution optimize_v0(::concrete_optimizer::Options options) const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
@@ -1056,10 +1057,13 @@ struct DagSolution final {
 struct Options final {
   ::std::uint64_t security_level;
   double maximum_acceptable_error_probability;
+  bool key_sharing;
   double default_log_norm2_woppbs;
   bool use_gpu_constraints;
   ::concrete_optimizer::Encoding encoding;
   bool cache_on_disk;
+  ::std::uint32_t ciphertext_modulus_log;
+  ::std::uint32_t fft_precision;
 
   using IsRelocatable = ::std::true_type;
 };
@@ -1208,6 +1212,7 @@ struct CircuitSolution final {
   ::rust::String error_msg;
 
   ::rust::String dump() const noexcept;
+  ::rust::String short_dump() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
@@ -1229,6 +1234,8 @@ namespace dag {
 
 namespace weights {
 ::rust::Box<::concrete_optimizer::Weights> vector(::rust::Slice<::std::int64_t const> weights) noexcept;
+
+::rust::Box<::concrete_optimizer::Weights> number(::std::int64_t weight) noexcept;
 } // namespace weights
 
 ::std::uint64_t NO_KEY_ID() noexcept;

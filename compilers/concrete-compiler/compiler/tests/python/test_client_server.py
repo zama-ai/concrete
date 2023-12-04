@@ -52,7 +52,7 @@ func.func @main(%arg0: tensor<4x!FHE.eint<5>>, %arg1: tensor<4xi6>) -> !FHE.eint
 
             """,
             (
-                np.array([1, 2, 3, 4], dtype=np.uint8),
+                np.array([1, 2, 3, 4], dtype=np.uint64),
                 np.array([4, 3, 2, 1], dtype=np.uint8),
             ),
             20,
@@ -69,11 +69,33 @@ func.func @main(%a0: tensor<4x!FHE.eint<5>>, %a1: tensor<4x!FHE.eint<5>>) -> ten
 
             """,
             (
-                np.array([1, 2, 3, 4], dtype=np.uint8),
-                np.array([7, 0, 1, 5], dtype=np.uint8),
+                np.array([1, 2, 3, 4], dtype=np.uint64),
+                np.array([7, 0, 1, 5], dtype=np.uint64),
             ),
             np.array([8, 2, 4, 9]),
             id="enc_enc_ndarray_args",
+        ),
+        pytest.param(
+            """
+  func.func @main(%arg0: !FHE.eint<3>, %arg1: !FHE.eint<4>, %arg2: !FHE.eint<5>, %arg3: !FHE.eint<6>) -> (!FHE.eint<3>, !FHE.eint<4>, !FHE.eint<5>, !FHE.eint<6>) {
+    %lut0 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7]> : tensor<8xi64>
+    %bs0 = "FHE.apply_lookup_table"(%arg0, %lut0): (!FHE.eint<3>, tensor<8xi64>) -> (!FHE.eint<3>)
+
+    %lut1 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]> : tensor<16xi64>
+    %bs1 = "FHE.apply_lookup_table"(%arg1, %lut1): (!FHE.eint<4>, tensor<16xi64>) -> (!FHE.eint<4>)
+
+    %lut3 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]> : tensor<32xi64>
+    %bs3 = "FHE.apply_lookup_table"(%arg2, %lut3): (!FHE.eint<5>, tensor<32xi64>) -> (!FHE.eint<5>)
+
+    %lut4 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]> : tensor<64xi64>
+    %bs4 = "FHE.apply_lookup_table"(%arg3, %lut4): (!FHE.eint<6>, tensor<64xi64>) -> (!FHE.eint<6>)
+
+    return %bs0, %bs1, %bs3, %bs4 : !FHE.eint<3>, !FHE.eint<4>, !FHE.eint<5>, !FHE.eint<6>
+  }
+            """,
+            (7, 15, 31, 63),
+            (7, 15, 31, 63),
+            id="apply_lookup_table_multi_ouput",
         ),
     ],
 )
@@ -81,7 +103,7 @@ def test_client_server_end_to_end(mlir, args, expected_result, keyset_cache):
     with tempfile.TemporaryDirectory() as tmpdirname:
         support = LibrarySupport.new(str(tmpdirname))
         compilation_result = support.compile(mlir)
-        server_lambda = support.load_server_lambda(compilation_result)
+        server_lambda = support.load_server_lambda(compilation_result, False)
 
         client_parameters = support.load_client_parameters(compilation_result)
         keyset = ClientSupport.key_set(client_parameters, keyset_cache)

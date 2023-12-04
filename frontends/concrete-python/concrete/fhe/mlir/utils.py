@@ -2,18 +2,30 @@
 Declaration of various functions and constants related to MLIR conversion.
 """
 
+# pylint: disable=import-error
+
 from collections import defaultdict, deque
 from copy import deepcopy
+from enum import IntEnum
 from itertools import chain, product
 from typing import Any, DefaultDict, List, Optional, Tuple, Union, cast
 
 import numpy as np
+from mlir.dialects import tensor
+from mlir.dialects._ods_common import get_op_results_or_values
+from mlir.ir import Location as MlirLocation
+from mlir.ir import OpResult as MlirOperation
+from mlir.ir import Type as MlirType
+from mlir.ir import Value as MlirValue
 
+from ..compilation.configuration import (  # pylint: disable=unused-import  # noqa: F401
+    MAXIMUM_TLU_BIT_WIDTH,
+)
 from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Node, Operation
 
-MAXIMUM_TLU_BIT_WIDTH = 16
+# pylint: enable=import-error
 
 
 class HashableNdarray:
@@ -64,6 +76,68 @@ def flood_replace_none_values(table: list):
     assert_that(all(value is not None for value in table))
 
 
+def construct_table_multivariate(node: Node, preds: List[Node]) -> List[Any]:
+    """
+    Construct the lookup table for a multivariate node.
+
+    Args:
+        node (Node):
+            Multivariate node to construct the table for
+
+        preds (List[Node]):
+            ordered predecessors to `node`
+
+    Returns:
+        List[Any]:
+            lookup table corresponding to `node` and its input value
+    """
+
+    assert all(
+        description.is_encrypted and isinstance(description.dtype, Integer)
+        for description in node.inputs
+    )
+
+    packing_bit_width = sum(pred.properties["original_bit_width"] for pred in preds)
+    packed_values = range(0, 2**packing_bit_width)
+
+    np.seterr(divide="ignore")
+
+    table: List[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
+    for packed_value in packed_values:
+        inputs = []
+
+        shift = 0
+        for description, pred in zip(node.inputs, preds):
+            assert isinstance(description.dtype, Integer)
+
+            bit_width = pred.properties["original_bit_width"]
+            is_signed = description.dtype.is_signed
+
+            value = (packed_value >> shift) & ((2**bit_width) - 1)
+            shift += bit_width
+
+            if is_signed:
+                value -= 2 ** (bit_width - 1)
+
+            inputs.append(np.ones(description.shape, dtype=np.int64) * value)
+
+        try:
+            evaluation = node(*inputs)
+            table.append(
+                evaluation if evaluation.min() != evaluation.max() else int(evaluation.min())
+            )
+        except Exception:  # pylint: disable=broad-except  # pragma: no cover
+            # here we try our best to fill the table
+            # if it fails, we append None and let flooding algorithm replace None values below
+            table.append(None)
+
+    np.seterr(divide="warn")
+
+    flood_replace_none_values(table)
+
+    return table
+
+
 def construct_table(node: Node, preds: List[Node]) -> List[Any]:
     """
     Construct the lookup table for an Operation.Generic node.
@@ -79,6 +153,9 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
         List[Any]:
             lookup table corresponding to `node` and its input value
     """
+
+    if node.operation == Operation.Generic and node.properties["attributes"].get("is_multivariate"):
+        return construct_table_multivariate(node, preds)
 
     variable_input_index = -1
     for index, pred in enumerate(preds):
@@ -120,11 +197,18 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
     np.seterr(divide="ignore")
 
     inputs: List[Any] = [pred() if pred.operation == Operation.Constant else None for pred in preds]
-    table: List[Optional[Union[np.bool_, np.integer, np.floating, np.ndarray]]] = []
+    table: List[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
     for value in values:
         try:
             inputs[variable_input_index] = np.ones(variable_input_shape, dtype=np.int64) * value
-            table.append(node(*inputs))
+            evaluation = node(*inputs)
+            table.append(
+                # if evaluation consist a single value, we can use
+                # the value instead of the full tensor to save memory
+                evaluation
+                if evaluation.min() != evaluation.max()
+                else int(evaluation.min())
+            )
         except Exception:  # pylint: disable=broad-except
             # here we try our best to fill the table
             # if it fails, we append None and let flooding algoritm replace None values below
@@ -140,7 +224,7 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
 def construct_deduplicated_tables(
     node: Node,
     preds: List[Node],
-) -> Tuple[Tuple[np.ndarray, List[Tuple[int, ...]]], ...]:
+) -> Tuple[Tuple[np.ndarray, Optional[List[Tuple[int, ...]]]], ...]:
     """
     Construct lookup tables for each cell of the input for an Operation.Generic node.
 
@@ -175,8 +259,22 @@ def construct_deduplicated_tables(
                 [ [5, 8, 6, 7][input[2, 0]] , [3, 1, 2, 4][input[2, 1]] ]
     """
 
+    raw_table = construct_table(node, preds)
+    if all(isinstance(value, int) for value in raw_table):
+        return ((np.array(raw_table), None),)
+
     node_complete_table = np.concatenate(
-        tuple(np.expand_dims(array, -1) for array in construct_table(node, preds)),
+        tuple(
+            np.expand_dims(
+                (
+                    array
+                    if isinstance(array, np.ndarray)
+                    else np.broadcast_to(array, node.output.shape)
+                ),
+                -1,
+            )
+            for array in raw_table
+        ),
         axis=-1,
     )
 
@@ -195,3 +293,34 @@ def construct_deduplicated_tables(
     return tuple(
         (hashable_array.array, indices) for hashable_array, indices in tables_to_cell_idx.items()
     )
+
+
+class _FromElementsOp(tensor.FromElementsOp):
+    """Replace missing tensor.FromElementsOp.__init__."""
+
+    def __init__(self, result: MlirType, *elements: MlirOperation, loc: MlirLocation = None):
+        assert isinstance(result, MlirType)
+        elements = get_op_results_or_values(list(elements))
+        assert all(isinstance(element, (MlirOperation, MlirValue)) for element in elements)
+        super(tensor.FromElementsOp, self).__init__(
+            self.build_generic(
+                attributes={},
+                results=[result],
+                operands=elements,
+                successors=None,
+                regions=None,
+                loc=loc,
+                ip=None,
+            )
+        )
+
+
+class Comparison(IntEnum):
+    """
+    Comparison enum, to store the result comparison in 2-bits as there are three possible outcomes.
+    """
+
+    EQUAL = 0b00
+    LESS = 0b01
+    GREATER = 0b10
+    MASK = 0b11

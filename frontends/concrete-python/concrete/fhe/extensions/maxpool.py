@@ -11,7 +11,7 @@ import torch
 from ..internal.utils import assert_that
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 # pylint: disable=too-many-branches,too-many-statements
 
@@ -284,7 +284,7 @@ def _trace_or_evaluate(
         return _evaluate(x, kernel_shape, strides, pads, dilations, ceil_mode == 1)
 
     result = _evaluate(np.zeros(x.shape), kernel_shape, strides, pads, dilations, ceil_mode == 1)
-    resulting_value = Value.of(result)
+    resulting_value = ValueDescription.of(result)
 
     resulting_value.is_encrypted = x.output.is_encrypted
     resulting_value.dtype = x.output.dtype

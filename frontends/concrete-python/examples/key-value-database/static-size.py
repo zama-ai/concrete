@@ -83,7 +83,10 @@ def _replace_impl(state, key, value):
     keys = state[:, KEY]
     values = state[:, VALUE]
 
-    equal_rows = np.sum((keys - key) == 0, axis=1) == NUMBER_OF_KEY_CHUNKS
+    number_of_matching_chunks = np.sum((keys - key) == 0, axis=1)
+    fhe.hint(number_of_matching_chunks, can_store=NUMBER_OF_KEY_CHUNKS)
+
+    equal_rows = number_of_matching_chunks == NUMBER_OF_KEY_CHUNKS
     selection = (flags * 2 + equal_rows == 3).reshape((-1, 1))
 
     packed_selection_and_value = selection * (2**CHUNK_SIZE) + value
@@ -103,7 +106,10 @@ def _query_impl(state, key):
     keys = state[:, KEY]
     values = state[:, VALUE]
 
-    selection = (np.sum((keys - key) == 0, axis=1) == NUMBER_OF_KEY_CHUNKS).reshape((-1, 1))
+    number_of_matching_chunks = np.sum((keys - key) == 0, axis=1)
+    fhe.hint(number_of_matching_chunks, can_store=NUMBER_OF_KEY_CHUNKS)
+
+    selection = (number_of_matching_chunks == NUMBER_OF_KEY_CHUNKS).reshape((-1, 1))
     found = np.sum(selection)
 
     packed_selection_and_values = selection * (2**CHUNK_SIZE) + values

@@ -260,7 +260,7 @@ impl OperationDag {
                     DotKind::Simple | DotKind::Tensor | DotKind::CompatibleTensor => {
                         Shape::number()
                     }
-                    DotKind::Broadcast { .. } => Shape::vector(input_shape.first_dim_size()),
+                    DotKind::Broadcast { shape } => shape,
                     DotKind::Unsupported { .. } => {
                         let weights_shape = &weights.shape;
                         println!();

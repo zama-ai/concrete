@@ -18,6 +18,7 @@
 #include "concretelang/Conversion/Tools.h"
 #include "concretelang/Conversion/Utils/Dialects/SCF.h"
 #include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
+#include "concretelang/Conversion/Utils/RTOpConverter.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
@@ -36,6 +37,13 @@ namespace FHE = mlir::concretelang::FHE;
 namespace TFHE = mlir::concretelang::TFHE;
 namespace Tracing = mlir::concretelang::Tracing;
 
+const int CIPHERTEXT_MODULUS = 64;
+const int PADDING_LEFT = 1;
+
+int lsb_position(int bitWidth) {
+  return CIPHERTEXT_MODULUS - 1 - PADDING_LEFT - bitWidth + 1;
+}
+
 namespace fhe_to_tfhe_scalar_conversion {
 
 inline void forwardOptimizerID(mlir::Operation *source,
@@ -46,6 +54,25 @@ inline void forwardOptimizerID(mlir::Operation *source,
     return;
   }
   destination->setAttr("TFHE.OId", optimizerIdAttr);
+}
+
+inline void
+forwardLinearlyOptimizerIDS(mlir::Operation &source,
+                            std::vector<mlir::Value> &destinations) {
+  // linear dispatch optimizer ids
+  auto optimizerIds = source.getAttrOfType<mlir::DenseI32ArrayAttr>("TFHE.OId");
+  if (optimizerIds != nullptr) {
+    assert((size_t)optimizerIds.size() == destinations.size());
+    mlir::Builder builder(source.getContext());
+    for (auto i = 0u; i < destinations.size(); i++) {
+      auto id = builder.getI32IntegerAttr(optimizerIds[i]);
+      auto destOp = destinations[i].getDefiningOp();
+      destOp->setAttr("TFHE.OId", id);
+    }
+  } else {
+    assert(source.getAttrOfType<mlir::IntegerAttr>("TFHE.OId") == nullptr);
+    mlir::concretelang::log_verbose() << "No TFHE.OId\n";
+  }
 }
 
 namespace typing {
@@ -294,41 +321,6 @@ struct MulEintIntOpPattern : public ScalarOpPattern<FHE::MulEintIntOp> {
   }
 };
 
-/// Rewriter for the `FHE::to_signed` operation.
-struct ToSignedOpPattern : public ScalarOpPattern<FHE::ToSignedOp> {
-  ToSignedOpPattern(mlir::TypeConverter &converter, mlir::MLIRContext *context,
-                    mlir::PatternBenefit benefit = 1)
-      : ScalarOpPattern<FHE::ToSignedOp>(converter, context, benefit) {}
-
-  mlir::LogicalResult
-  matchAndRewrite(FHE::ToSignedOp op, FHE::ToSignedOp::Adaptor adaptor,
-                  mlir::ConversionPatternRewriter &rewriter) const override {
-
-    typing::TypeConverter converter;
-    rewriter.replaceOp(op, {adaptor.getInput()});
-
-    return mlir::success();
-  }
-};
-
-/// Rewriter for the `FHE::to_unsigned` operation.
-struct ToUnsignedOpPattern : public ScalarOpPattern<FHE::ToUnsignedOp> {
-  ToUnsignedOpPattern(mlir::TypeConverter &converter,
-                      mlir::MLIRContext *context,
-                      mlir::PatternBenefit benefit = 1)
-      : ScalarOpPattern<FHE::ToUnsignedOp>(converter, context, benefit) {}
-
-  mlir::LogicalResult
-  matchAndRewrite(FHE::ToUnsignedOp op, FHE::ToUnsignedOp::Adaptor adaptor,
-                  mlir::ConversionPatternRewriter &rewriter) const override {
-
-    typing::TypeConverter converter;
-    rewriter.replaceOp(op, {adaptor.getInput()});
-
-    return mlir::success();
-  }
-};
-
 /// Rewriter for the `FHE::apply_lookup_table` operation.
 struct ApplyLookupTableEintOpPattern
     : public ScalarOpPattern<FHE::ApplyLookupTableEintOp> {
@@ -425,6 +417,135 @@ private:
   mlir::concretelang::ScalarLoweringParameters loweringParameters;
 };
 
+template <typename Op>
+std::vector<mlir::Value> extractBitWithClearedLowerBits(
+    Op op, mlir::Type inputType, uint64_t inputBitwidth,
+    uint64_t outputBitwidth, uint64_t bitPosition, uint64_t polynomialSize,
+    mlir::Value ainput, mlir::ConversionPatternRewriter &rewriter) {
+
+  typing::TypeConverter converter;
+  auto cInputTy =
+      converter.convertType(inputType).cast<TFHE::GLWECipherTextType>();
+  auto loc = op.getLoc();
+
+  //---------------------------------------------------------- BIT ISOLATION
+  // To extract the bit, we use a PBS that look up on the padding bit.
+  // We first begin by isolating the bit in question on the
+  // padding bit. This is performed with a homomorphic multiplication (left
+  // shift basically) of the proper amount. For example:
+  //
+  //     previousOutput            = |0110|01| .... |
+  //                                        ^
+  //     shiftCst                  = |        100000|
+  //     previousOutput * shiftCst = |1| ....       |
+
+  uint64_t rawShiftCst = ((uint64_t)1) << (inputBitwidth - bitPosition);
+  mlir::Value shiftCst = rewriter.create<mlir::arith::ConstantOp>(
+      loc, rewriter.getI64IntegerAttr(rawShiftCst));
+  auto shiftedInput =
+      rewriter.create<TFHE::MulGLWEIntOp>(loc, cInputTy, ainput, shiftCst);
+
+  //-------------------------------------------------------- LUT PREPARATION
+  // To perform the right shift (kind of), we use a PBS that acts on the
+  // padding bit. We expect is the following function to be applied (for the
+  // first round of our example):
+  //
+  //     f(|0| .... |) = |0000|00| .... |
+  //     f(|1| .... |) = |0000|01| .... |
+  //
+  // That being said, a PBS on the padding bit can only encode a symmetric
+  // function (that is f(1) = -f(0)), by encoding f(0) in the whole table.
+  // To implement our semantic, we then rely on a trick. We encode the
+  // following function in the bootstrap:
+  //
+  //     f(|0| .... |) = |1111|11|1 .... |
+  //     f(|1| .... |) = |0000|00|1 .... |
+  //
+  // And add a correction constant:
+  //
+  //     corrCst                 = |0000|00|1 .... |
+  //     f(|0| .... |) + corrCst = |0000|00| .... |
+  //     f(|1| .... |) + corrCst = |0000|01| .... |
+  //
+  // Hence the following constant lut.
+
+  auto firstBitSet = lsb_position(outputBitwidth) - 1;
+  auto f_0 = ((uint64_t)0 - 1) << firstBitSet;
+  llvm::SmallVector<int64_t> rawLut(polynomialSize, f_0);
+  mlir::Value lut = rewriter.create<mlir::arith::ConstantOp>(
+      loc, mlir::DenseIntElementsAttr::get(
+               mlir::RankedTensorType::get(rawLut.size(),
+                                           rewriter.getIntegerType(64)),
+               rawLut));
+
+  //-------------------------------------------------- CIPHERTEXT ALIGNEMENT
+  // In practice, TFHE ciphertexts are normally distributed around a value.
+  // That means that if the lookup is performed _as is_, we have almost .5
+  // probability to return the wrong value. Imagine a ciphertext centered
+  // around (|0| .... |):
+  //
+  //  |   0000001...  |   1111111...  |              Virtual lookup table
+  //                   _
+  //                  / \
+  //  _______________/   \_________________________  Ciphertext distribution
+  //
+  //              |0| ... |                          Ciphertexts mean
+  //
+  // If the error of the ciphertext is negative, this means that the lookup
+  // will wrap, and fall on the wrong mega-case...
+  //
+  // This is usually taken care of on the lookup table side, but we can also
+  // slightly shift the ciphertext to center its distribution with the
+  // center of the mega-case. That is, end up with a situation like this:
+
+  //
+  //  |   1111111...  |   0000001...  |              Virtual lookup table
+  //          _
+  //         / \
+  //  ______/   \_________________________           Ciphertext distribution
+  //
+  //      |0| ... |                                  Ciphertexts mean
+  //
+  // This is performed by adding |0|1 .... | to the ciphertext.
+
+  uint64_t rawRotationCst = ((uint64_t)1)
+                            << (CIPHERTEXT_MODULUS - PADDING_LEFT - 1);
+  mlir::Value rotationCst = rewriter.create<mlir::arith::ConstantOp>(
+      loc, rewriter.getI64IntegerAttr(rawRotationCst));
+  auto shiftedRotatedInput = rewriter.create<TFHE::AddGLWEIntOp>(
+      loc, cInputTy, shiftedInput, rotationCst);
+
+  //-------------------------------------------------------------------- PBS
+  // The lookup is performed ...
+
+  auto context = op.getContext();
+  auto secretKey = TFHE::GLWESecretKey();
+  auto ksk = TFHE::GLWEKeyswitchKeyAttr::get(context, secretKey, secretKey, -1,
+                                             -1, -1);
+  auto bsk = TFHE::GLWEBootstrapKeyAttr::get(context, secretKey, secretKey, -1,
+                                             -1, -1, -1, -1);
+
+  auto keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
+      loc, cInputTy, shiftedRotatedInput, ksk);
+
+  auto bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
+      loc, cInputTy, keyswitched, lut, bsk);
+
+  //------------------------------------------------------------- CORRECTION
+  // The correction is performed to achieve our right shift semantic.
+
+  uint64_t rawCorrCst = ((uint64_t)1) << firstBitSet;
+  mlir::Value corrCst = rewriter.create<mlir::arith::ConstantOp>(
+      loc, rewriter.getI64IntegerAttr(rawCorrCst));
+  auto extractedBit =
+      rewriter.create<TFHE::AddGLWEIntOp>(loc, cInputTy, bootstrapped, corrCst);
+
+  // Nothing need to be converted on type side, side the new dialect has no
+  // precision.
+  return {shiftedInput, shiftedRotatedInput, keyswitched, bootstrapped,
+          extractedBit};
+}
+
 struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
   RoundEintOpPattern(
       mlir::TypeConverter &converter, mlir::MLIRContext *context,
@@ -506,119 +627,13 @@ struct RoundEintOpPattern : public ScalarOpPattern<FHE::RoundEintOp> {
     mlir::Value previousOutput = carryPropagatedVal;
     TFHE::GLWECipherTextType truncationInputTy = inputTy;
     for (uint64_t i = 0; i < bitwidthDelta; ++i) {
-      //---------------------------------------------------------- BIT ISOLATION
-      // To extract the bit to truncate, we use a PBS that look up on the
-      // padding bit. We first begin by isolating the bit in question on the
-      // padding bit. This is performed with a homomorphic multiplication (left
-      // shift basically) of the proper amount. For example:
-      //
-      //     previousOutput            = |0110|01| .... |
-      //                                        ^
-      //     shiftCst                  = |        100000|
-      //     previousOutput * shiftCst = |1| ....       |
-
-      uint64_t rawShiftCst = ((uint64_t)1) << (inputBitwidth - i);
-      mlir::Value shiftCst = rewriter.create<mlir::arith::ConstantOp>(
-          op->getLoc(), rewriter.getI64IntegerAttr(rawShiftCst));
-      auto shiftedInput = rewriter.create<TFHE::MulGLWEIntOp>(
-          op.getLoc(), truncationInputTy, previousOutput, shiftCst);
-      forwardOptimizerID(op, shiftedInput);
-
-      //-------------------------------------------------------- LUT PREPARATION
-      // To perform the right shift (kind of), we use a PBS that acts on the
-      // padding bit. We expect is the following function to be applied (for the
-      // first round of our example):
-      //
-      //     f(|0| .... |) = |0000|00| .... |
-      //     f(|1| .... |) = |0000|01| .... |
-      //
-      // That being said, a PBS on the padding bit can only encode a symmetric
-      // function (that is f(1) = -f(0)), by encoding f(0) in the whole table.
-      // To implement our semantic, we then rely on a trick. We encode the
-      // following function in the bootstrap:
-      //
-      //     f(|0| .... |) = |1111|11|1 .... |
-      //     f(|1| .... |) = |0000|00|1 .... |
-      //
-      // And add a correction constant:
-      //
-      //     corrCst                 = |0000|00|1 .... |
-      //     f(|0| .... |) + corrCst = |0000|00| .... |
-      //     f(|1| .... |) + corrCst = |0000|01| .... |
-      //
-      // Hence the following constant lut.
-
-      llvm::SmallVector<int64_t> rawLut(loweringParameters.polynomialSize,
-                                        ((uint64_t)0 - 1)
-                                            << (64 - (inputBitwidth + 2 - i)));
-      mlir::Value lut = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), mlir::DenseIntElementsAttr::get(
-                           mlir::RankedTensorType::get(
-                               rawLut.size(), rewriter.getIntegerType(64)),
-                           rawLut));
-
-      //-------------------------------------------------- CIPHERTEXT ALIGNEMENT
-      // In practice, TFHE ciphertexts are normally distributed around a value.
-      // That means that if the lookup is performed _as is_, we have almost .5
-      // probability to return the wrong value. Imagine a ciphertext centered
-      // around (|0| .... |):
-      //
-      //  |   0000001...  |   1111111...  |              Virtual lookup table
-      //                   _
-      //                  / \
-      //  _______________/   \_________________________  Ciphertext distribution
-      //
-      //              |0| ... |                          Ciphertexts mean
-      //
-      // If the error of the ciphertext is negative, this means that the lookup
-      // will wrap, and fall on the wrong mega-case...
-      //
-      // This is usually taken care of on the lookup table side, but we can also
-      // slightly shift the ciphertext to center its distribution with the
-      // center of the mega-case. That is, end up with a situation like this:
-
-      //
-      //  |   1111111...  |   0000001...  |              Virtual lookup table
-      //          _
-      //         / \
-      //  ______/   \_________________________           Ciphertext distribution
-      //
-      //      |0| ... |                                  Ciphertexts mean
-      //
-      // This is performed by adding |0|1 .... | to the ciphertext.
-
-      uint64_t rawRotationCst = (((uint64_t)1) << 62);
-      mlir::Value rotationCst = rewriter.create<mlir::arith::ConstantOp>(
-          op->getLoc(), rewriter.getI64IntegerAttr(rawRotationCst));
-      auto shiftedRotatedInput = rewriter.create<TFHE::AddGLWEIntOp>(
-          op.getLoc(), truncationInputTy, shiftedInput, rotationCst);
-      forwardOptimizerID(op, shiftedRotatedInput);
-
-      //-------------------------------------------------------------------- PBS
-      // The lookup is performed ...
-
-      auto keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
-          op.getLoc(), truncationInputTy, shiftedRotatedInput,
-          TFHE::GLWEKeyswitchKeyAttr::get(op->getContext(),
-                                          TFHE::GLWESecretKey(),
-                                          TFHE::GLWESecretKey(), -1, -1, -1));
-      forwardOptimizerID(op, keyswitched);
-      auto bootstrapped = rewriter.create<TFHE::BootstrapGLWEOp>(
-          op.getLoc(), truncationInputTy, keyswitched, lut,
-          TFHE::GLWEBootstrapKeyAttr::get(
-              op->getContext(), TFHE::GLWESecretKey(), TFHE::GLWESecretKey(),
-              -1, -1, -1, -1, -1));
-      forwardOptimizerID(op, bootstrapped);
-
-      //------------------------------------------------------------- CORRECTION
-      // The correction is performed to achieve our right shift semantic.
-
-      uint64_t rawCorrCst = ((uint64_t)1) << (64 - (inputBitwidth + 2 - i));
-      mlir::Value corrCst = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), rewriter.getI64IntegerAttr(rawCorrCst));
-      auto extractedBit = rewriter.create<TFHE::AddGLWEIntOp>(
-          op.getLoc(), truncationInputTy, bootstrapped, corrCst);
-      forwardOptimizerID(op, extractedBit);
+      auto extractionOps = extractBitWithClearedLowerBits(
+          op, inputType, inputBitwidth, inputBitwidth - i, i,
+          loweringParameters.polynomialSize, previousOutput, rewriter);
+      for (auto new_op : extractionOps) {
+        forwardOptimizerID(op, new_op.getDefiningOp());
+      }
+      auto extractedBit = extractionOps.back();
 
       //------------------------------------------------------------- TRUNCATION
       // Finally, the extracted bit is subtracted from the input.
@@ -643,6 +658,56 @@ private:
   mlir::concretelang::ScalarLoweringParameters loweringParameters;
 };
 
+struct LsbEintOpPattern : public ScalarOpPattern<FHE::LsbEintOp> {
+  LsbEintOpPattern(mlir::TypeConverter &converter, mlir::MLIRContext *context,
+                   mlir::concretelang::ScalarLoweringParameters loweringParams,
+                   mlir::PatternBenefit benefit = 1)
+      : ScalarOpPattern<FHE::LsbEintOp>(converter, context, benefit),
+        loweringParameters(loweringParams) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(FHE::LsbEintOp op, FHE::LsbEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    mlir::Value ainput = adaptor.getInput();
+    mlir::Value input = op.getInput();
+    mlir::Value output = op.getResult();
+    auto inputType = input.getType().cast<FHE::FheIntegerInterface>();
+    auto outputType = output.getType().cast<FHE::FheIntegerInterface>();
+    uint64_t inputBitwidth = inputType.getWidth();
+    uint64_t outputBitwidth = outputType.getWidth();
+
+    auto ops = extractBitWithClearedLowerBits(
+        op, inputType, inputBitwidth, outputBitwidth, 0,
+        loweringParameters.polynomialSize, ainput, rewriter);
+
+    forwardLinearlyOptimizerIDS(*op, ops);
+    rewriter.replaceOp(op, ops.back());
+
+    return mlir::success();
+  }
+
+private:
+  mlir::concretelang::ScalarLoweringParameters loweringParameters;
+};
+
+/// A pattern rewriter for Noop-like operators.
+template <typename T, typename TAdaptor>
+struct NoopScalarOpPattern : public ScalarOpPattern<T> {
+
+  NoopScalarOpPattern(mlir::TypeConverter &converter,
+                      mlir::MLIRContext *context,
+                      mlir::PatternBenefit benefit = 1)
+      : ScalarOpPattern<T>(converter, context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(T op, TAdaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    rewriter.replaceOp(op, op.getInput());
+    return mlir::success();
+  }
+};
+
 /// Rewriter for the `FHE::to_bool` operation.
 struct ToBoolOpPattern : public mlir::OpRewritePattern<FHE::ToBoolOp> {
   ToBoolOpPattern(mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
@@ -651,10 +716,11 @@ struct ToBoolOpPattern : public mlir::OpRewritePattern<FHE::ToBoolOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::ToBoolOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto width = op.getInput()
-                     .getType()
-                     .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
-                     .getWidth();
+    auto width =
+        op.getInput()
+            .getType()
+            .dyn_cast<mlir::concretelang::FHE::EncryptedUnsignedIntegerType>()
+            .getWidth();
     if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
       rewriter.replaceOp(op, op.getInput());
       return mlir::success();
@@ -674,10 +740,11 @@ struct FromBoolOpPattern : public mlir::OpRewritePattern<FHE::FromBoolOp> {
   mlir::LogicalResult
   matchAndRewrite(FHE::FromBoolOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto width = op.getResult()
-                     .getType()
-                     .dyn_cast<mlir::concretelang::FHE::EncryptedIntegerType>()
-                     .getWidth();
+    auto width =
+        op.getResult()
+            .getType()
+            .dyn_cast<mlir::concretelang::FHE::EncryptedUnsignedIntegerType>()
+            .getWidth();
     if (width == mlir::concretelang::FHE::EncryptedBooleanType::getWidth()) {
       rewriter.replaceOp(op, op.getInput());
       return mlir::success();
@@ -725,23 +792,6 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
               op, converter);
         });
     target.addLegalOp<mlir::func::CallOp>();
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::AwaitFutureOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
-        target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
 
     //---------------------------------------------------------- Adding patterns
     mlir::RewritePatternSet patterns(&getContext());
@@ -774,14 +824,23 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
                  //    |_ `FHE::mul_eint_int`
                  lowering::MulEintIntOpPattern,
                  //    |_ `FHE::to_signed`
-                 lowering::ToSignedOpPattern,
+                 lowering::NoopScalarOpPattern<FHE::ToSignedOp,
+                                               FHE::ToSignedOp::Adaptor>,
                  //    |_ `FHE::to_unsigned`
-                 lowering::ToUnsignedOpPattern>(converter, &getContext());
+                 lowering::NoopScalarOpPattern<FHE::ToUnsignedOp,
+                                               FHE::ToUnsignedOp::Adaptor>,
+                 //    |_ `FHE::reinterpret_precision`
+                 lowering::NoopScalarOpPattern<
+                     FHE::ReinterpretPrecisionEintOp,
+                     FHE::ReinterpretPrecisionEintOp::Adaptor>>(converter,
+                                                                &getContext());
     //    |_ `FHE::apply_lookup_table`
     patterns.add<lowering::ApplyLookupTableEintOpPattern,
                  //    |_ `FHE::round`
-                 lowering::RoundEintOpPattern>(converter, &getContext(),
-                                               loweringParameters);
+                 lowering::RoundEintOpPattern,
+                 //    |_ `FHE::lsb`
+                 lowering::LsbEintOpPattern>(converter, &getContext(),
+                                             loweringParameters);
 
     // Patterns for boolean conversion ops
     patterns.add<lowering::FromBoolOpPattern, lowering::ToBoolOpPattern>(
@@ -826,27 +885,11 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::bufferization::AllocTensorOp>(target, converter);
 
-    // Patterns for the `RT` dialect operations.
-    patterns.add<
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::scf::YieldOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::MakeReadyFutureOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::AwaitFutureOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::CreateAsyncTaskOp, true>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::WorkFunctionReturnOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                                 converter);
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::scf::YieldOp>>(&getContext(), converter);
+
+    mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
+                                                            converter);
 
     //--------------------------------------------------------- Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

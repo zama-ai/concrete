@@ -14,16 +14,15 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 
 include "concretelang/Dialect/FHE/IR/FHEDialect.td"
 include "concretelang/Dialect/FHE/IR/FHETypes.td"
+include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.td"
 
 class FHE_Op<string mnemonic, list<Trait> traits = []> :
     Op<FHE_Dialect, mnemonic, traits>;
 
-def FHE_ZeroEintOp : FHE_Op<"zero", [Pure]> {
+def FHE_ZeroEintOp : FHE_Op<"zero", [Pure, ConstantNoise]> {
     let summary = "Returns a trivial encrypted integer of 0";
 
     let description = [{
-        Returns a trivial encrypted integer of 0
-
         Example:
         ```mlir
         "FHE.zero"() : () -> !FHE.eint<2>
@@ -35,7 +34,7 @@ def FHE_ZeroEintOp : FHE_Op<"zero", [Pure]> {
     let results = (outs FHE_AnyEncryptedInteger:$out);
 }
 
-def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure]> {
+def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure, ConstantNoise]> {
     let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
 
     let description = [{
@@ -53,11 +52,10 @@ def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure]> {
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure]> {
+def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure, BinaryEintInt, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Adds an encrypted integer and a clear integer";
 
     let description = [{
-        Adds an encrypted integer and a clear integer.
         The clear integer must have at most one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -87,11 +85,10 @@ def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure]> {
     let hasFolder = 1;
 }
 
-def FHE_AddEintOp : FHE_Op<"add_eint", [Pure]> {
+def FHE_AddEintOp : FHE_Op<"add_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
     let summary = "Adds two encrypted integers";
 
     let description = [{
-        Adds two encrypted integers
         The encrypted integers and the result must have the same width and the same signedness.
 
         Example:
@@ -120,11 +117,10 @@ def FHE_AddEintOp : FHE_Op<"add_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure]> {
+def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure, BinaryIntEint]> {
     let summary = "Subtract an encrypted integer from a clear integer";
 
     let description = [{
-        Subtract an encrypted integer from a clear integer.
         The clear integer must have one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -153,11 +149,10 @@ def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure]> {
+def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure, BinaryEintInt, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Subtract a clear integer from an encrypted integer";
 
     let description = [{
-        Subtract a clear integer from an encrypted integer.
         The clear integer must have one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -187,11 +182,10 @@ def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure]> {
     let hasFolder = 1;
 }
 
-def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure]> {
+def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
     let summary = "Subtract an encrypted integer from an encrypted integer";
 
     let description = [{
-        Subtract an encrypted integer from an encrypted integer.
         The encrypted integers and the result must have the same width and the same signedness.
 
         Example:
@@ -220,12 +214,11 @@ def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure]> {
+def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
 
     let summary = "Negates an encrypted integer";
 
     let description = [{
-        Negates an encrypted integer.
         The result must have the same width and the same signedness as the encrypted integer.
 
         Example:
@@ -251,11 +244,10 @@ def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure]> {
+def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure, BinaryEintInt, DeclareOpInterfaceMethods<Binary, ["sqMANP"]>]> {
     let summary = "Multiply an encrypted integer with a clear integer";
 
     let description = [{
-        Multiply an encrypted integer with a clear integer.
         The clear integer must have one more bit than the encrypted integer
         and the result must have the same width and the same signedness as the encrypted integer.
 
@@ -283,14 +275,13 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [Pure]> {
 
     let hasVerifier = 1;
     let hasFolder = 1;
+    let hasCanonicalizer = 1;
 }
 
-def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
+def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
     let summary = "Multiplies two encrypted integers";
 
     let description = [{
-        Multiplies two encrypted integers.
-
         The encrypted integers and the result must have the same width and
         signedness. Also, due to the current implementation, one supplementary
         bit of width must be provided, in addition to the number of bits needed
@@ -323,15 +314,15 @@ def FHE_MulEintOp : FHE_Op<"mul_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure]> {
-    let summary = "Get maximum of two encrypted integers.";
+def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure, BinaryEint, DeclareOpInterfaceMethods<BinaryEint>]> {
+    let summary = "Retrieve the maximum of two encrypted integers.";
 
     let description = [{
-        Get maximum of two encrypted integers using the formula, 'max(x, y) == max(x - y, 0) + y'.
-        Type of inputs and the output should be the same.
+        Retrieve the maximum of two encrypted integers using the formula, 'max(x, y) == max(x - y, 0) + y'.
+        The input and output types should be the same.
 
         If `x - y`` inside the max overflows or underflows, the behavior is undefined.
-        So to support the full range, you should increase the bit-width by 1 manually.
+        To support the full range, you should increase the bit-width by 1 manually.
 
         Example:
         ```mlir
@@ -358,11 +349,10 @@ def FHE_MaxEintOp : FHE_Op<"max_eint", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure]> {
+def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
     let summary = "Cast an unsigned integer to a signed one";
 
     let description = [{
-        Cast an unsigned integer to a signed one.
         The result must have the same width as the input.
 
         The behavior is undefined on overflow/underflow.
@@ -377,17 +367,17 @@ def FHE_ToSignedOp : FHE_Op<"to_signed", [Pure]> {
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$input);
+    let arguments = (ins FHE_EncryptedUnsignedIntegerType:$input);
     let results = (outs FHE_EncryptedSignedIntegerType);
 
     let hasVerifier = 1;
+    let hasCanonicalizer = 1;
 }
 
-def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
+def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
     let summary = "Cast a signed integer to an unsigned one";
 
     let description = [{
-        Cast a signed integer to an unsigned one.
         The result must have the same width as the input.
 
         The behavior is undefined on overflow/underflow.
@@ -403,18 +393,19 @@ def FHE_ToUnsignedOp : FHE_Op<"to_unsigned", [Pure]> {
     }];
 
     let arguments = (ins FHE_EncryptedSignedIntegerType:$input);
-    let results = (outs FHE_EncryptedIntegerType);
+    let results = (outs FHE_EncryptedUnsignedIntegerType);
 
     let hasVerifier = 1;
+    let hasCanonicalizer = 1;
 }
 
-def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure]> {
+def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure, ConstantNoise]> {
 
     let summary = "Applies a clear lookup table to an encrypted integer";
 
     let description = [{
-        Applies a clear lookup table to an encrypted integer, the width of the result can be different than the width of the operand.
-        The lookup table must be a tensor of size equals to `2^p` where `p` is the width of the encrypted integer.
+        The width of the result can be different than the width of the operand.
+        The lookup table must be a tensor of size `2^p` where `p` is the width of the encrypted integer.
 
         Example:
         ```mlir
@@ -434,7 +425,7 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHE_RoundEintOp: FHE_Op<"round", [Pure]> {
+def FHE_RoundEintOp: FHE_Op<"round", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint, ["sqMANP"]>]> {
 
     let summary = "Rounds a ciphertext to a smaller precision.";
 
@@ -464,6 +455,72 @@ def FHE_RoundEintOp: FHE_Op<"round", [Pure]> {
     let hasFolder = 1;
 }
 
+def FHE_LsbEintOp: FHE_Op<"lsb", [Pure, UnaryEint, ConstantNoise]> {
+
+    let summary = "Extract the lowest significant bit at a given precision.";
+
+    let description = [{
+      This operation extract the lsb of a ciphertext in a specific precision.
+
+      Extracting the lsb with the smallest precision:
+      ```mlir
+       // Checking if even or odd
+       %even = "FHE.lsb"(%a): (!FHE.eint<4>) -> (!FHE.eint<1>)
+
+      Usually when you extract the lsb bit, you also need to extract the next one.
+      In that case you first need to clear the first lsb of the input to be able to reduce its precision and extract the next one.
+      To be able to clear the lsb just extracted, you can get it in the original precision.
+
+      Example:
+      ```mlir
+       // Extracting the first lsb with original precision
+       %lsb_0 = "FHE.lsb"(%input): (!FHE.eint<4>) -> (!FHE.eint<4>)
+       // Clearing the first lsb from original input
+       %input_lsb0_cleared = "FHE.sub_eint"(%input, %lsb_0) : (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+       // Reducing the precision of the input
+       %input_3b = "FHE.reinterpret_precision(%input) : (!FHE.eint<4>) -> !FHE.eint<3>
+       // Now, we can do it again with the second lsb
+       %lsb_1 = "FHE.lsb"(%input_3b): (!FHE.eint<3>) -> (!FHE.eint<3>)
+       ...
+       // later if you need %b_lsb at same position as in the input
+       %lsb_1_at_input_position = "FHE.reinterpret_precision(%b_lsb)" : (!FHE.eint<3>) -> !FHE.eint<4>
+       // that way you can recombine the extracted bits
+       %input_mod_4 = "FHE.add_eint"(%lsb_0, %lsb_1_at_input_position) : (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+    ```
+    }];
+
+    let arguments = (ins FHE_AnyEncryptedInteger:$input);
+    let results = (outs FHE_AnyEncryptedInteger);
+}
+
+def FHE_ReinterpretPrecisionEintOp: FHE_Op<"reinterpret_precision", [Pure, UnaryEint]> {
+
+    let summary = "Reinterpret the ciphertext with a different precision.";
+
+    let description = [{
+      Changing the precision of a ciphertext.
+      It change both the precision, the value and in certain case the correctness of the cyphertext.
+
+      Changing to
+        - a bigger precision is always safe.
+          This is equivalent to a shift left for the value
+        - a smaller precision is only safe if you clear the lowest bits that are discarded.
+          If not, you can assume small errors on the next TLU.
+          This is equivalent to a shift right for the value
+
+      Example:
+      ```mlir
+       // assuming %a is stored as 4bits but can be stored with only 2bits
+       // we can reduce its storage precision
+       %shifted_a = "FHE.mul_eint_int"(%a, %c_4): (!FHE.eint<4>) -> (!FHE.eint<4>)
+       %a_small_precision = "FHE.reinterpret_precision"(%shifted_a, %lsb) : (!FHE.eint<4>) -> (!FHE.eint<2>)
+    ```
+    }];
+
+    let arguments = (ins FHE_AnyEncryptedInteger:$input);
+    let results = (outs FHE_AnyEncryptedInteger);
+}
+
 // FHE Boolean Operations
 
 def FHE_GenGateOp : FHE_Op<"gen_gate", [Pure]> {
@@ -471,9 +528,7 @@ def FHE_GenGateOp : FHE_Op<"gen_gate", [Pure]> {
     let summary = "Applies a truth table based on two boolean inputs";
 
     let description = [{
-        Applies a truth table based on two boolean inputs.
-
-        truth table must be a tensor of 4 boolean values.
+        Truth table must be a tensor of four boolean values.
 
         Example:
         ```mlir
@@ -498,8 +553,6 @@ def FHE_MuxOp : FHE_Op<"mux", [Pure]> {
     let summary = "Multiplexer for two encrypted boolean inputs, based on an encrypted condition";
 
     let description = [{
-        Mutex between two encrypted boolean inputs, based on an encrypted condition.
-
         Example:
         ```mlir
         "FHE.mux"(%cond, %c1, %c2): (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -515,8 +568,6 @@ def FHE_BoolAndOp : FHE_Op<"and", [Pure]> {
     let summary = "Applies an AND gate to two encrypted boolean values";
 
     let description = [{
-        Applies an AND gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.and"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -532,8 +583,6 @@ def FHE_BoolOrOp : FHE_Op<"or", [Pure]> {
     let summary = "Applies an OR gate to two encrypted boolean values";
 
     let description = [{
-        Applies an OR gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.or"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -549,8 +598,6 @@ def FHE_BoolNandOp : FHE_Op<"nand", [Pure]> {
     let summary = "Applies a NAND gate to two encrypted boolean values";
 
     let description = [{
-        Applies a NAND gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.nand"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -563,11 +610,9 @@ def FHE_BoolNandOp : FHE_Op<"nand", [Pure]> {
 
 def FHE_BoolXorOp : FHE_Op<"xor", [Pure]> {
 
-    let summary = "Applies a XOR gate to two encrypted boolean values";
+    let summary = "Applies an XOR gate to two encrypted boolean values";
 
     let description = [{
-        Applies a XOR gate to two encrypted boolean values.
-
         Example:
         ```mlir
         "FHE.xor"(%a, %b): (!FHE.ebool, !FHE.ebool) -> (!FHE.ebool)
@@ -578,13 +623,11 @@ def FHE_BoolXorOp : FHE_Op<"xor", [Pure]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_BoolNotOp : FHE_Op<"not", [Pure]> {
+def FHE_BoolNotOp : FHE_Op<"not", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
 
     let summary = "Applies a NOT gate to an encrypted boolean value";
 
     let description = [{
-        Applies a NOT gate to an encrypted boolean value.
-
         Example:
         ```mlir
         "FHE.not"(%a): (!FHE.ebool) -> (!FHE.ebool)
@@ -595,13 +638,11 @@ def FHE_BoolNotOp : FHE_Op<"not", [Pure]> {
     let results = (outs FHE_EncryptedBooleanType);
 }
 
-def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure]> {
+def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure, UnaryEint]> {
     let summary = "Cast an unsigned integer to a boolean";
 
     let description = [{
-        Cast an unsigned integer to a boolean.
-
-        The input must necessarily be of width 1 or 2. 2 being the current representation
+        The input must be of width one or two. Two being the current representation
         of an encrypted boolean, leaving one bit for the carry.
 
         Examples:
@@ -615,18 +656,16 @@ def FHE_ToBoolOp : FHE_Op<"to_bool", [Pure]> {
         ```
     }];
 
-    let arguments = (ins FHE_EncryptedIntegerType:$input);
+    let arguments = (ins FHE_EncryptedUnsignedIntegerType:$input);
     let results = (outs FHE_EncryptedBooleanType);
 
     let hasVerifier = 1;
 }
 
-def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure]> {
+def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure, UnaryEint]> {
     let summary = "Cast a boolean to an unsigned integer";
 
     let description = [{
-        Cast a boolean to an unsigned integer.
-
         Examples:
         ```mlir
         "FHE.from_bool"(%x) : (!FHE.ebool) -> !FHE.eint<1>
@@ -636,7 +675,7 @@ def FHE_FromBoolOp : FHE_Op<"from_bool", [Pure]> {
     }];
 
     let arguments = (ins FHE_EncryptedBooleanType:$input);
-    let results = (outs FHE_EncryptedIntegerType);
+    let results = (outs FHE_EncryptedUnsignedIntegerType);
 }
 
 

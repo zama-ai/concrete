@@ -9,14 +9,44 @@
 #include <cstddef>
 #include <vector>
 
-#include "concretelang/ClientLib/ClientParameters.h"
+#include "boost/outcome.h"
+#include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Common/Protocol.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/JSON.h"
+
+namespace protocol = concreteprotocol;
+using concretelang::protocol::Message;
 
 namespace mlir {
 namespace concretelang {
 
 using StringError = ::concretelang::error::StringError;
+
+enum class PrimitiveOperation {
+  PBS,
+  WOP_PBS,
+  KEY_SWITCH,
+  CLEAR_ADDITION,
+  ENCRYPTED_ADDITION,
+  CLEAR_MULTIPLICATION,
+  ENCRYPTED_NEGATION,
+};
+
+enum class KeyType {
+  SECRET,
+  BOOTSTRAP,
+  KEY_SWITCH,
+  PACKING_KEY_SWITCH,
+};
+
+struct Statistic {
+  std::string location;
+  PrimitiveOperation operation;
+  std::vector<std::pair<KeyType, size_t>> keys;
+  size_t count;
+};
 
 struct CompilationFeedback {
   double complexity;
@@ -45,9 +75,14 @@ struct CompilationFeedback {
   /// @brief crt decomposition of outputs, if crt is not used, empty vectors
   std::vector<std::vector<int64_t>> crtDecompositionsOfOutputs;
 
-  /// Fill the sizes from the client parameters.
-  void
-  fillFromClientParameters(::concretelang::clientlib::ClientParameters params);
+  /// @brief statistics
+  std::vector<Statistic> statistics;
+
+  /// @brief memory usage per location
+  std::map<std::string, int64_t> memoryUsagePerLoc;
+
+  /// Fill the sizes from the program info.
+  void fillFromProgramInfo(const Message<protocol::ProgramInfo> &params);
 
   /// Load the compilation feedback from a path
   static outcome::checked<CompilationFeedback, StringError>
@@ -55,6 +90,7 @@ struct CompilationFeedback {
 };
 
 llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &);
+
 bool fromJSON(const llvm::json::Value,
               mlir::concretelang::CompilationFeedback &, llvm::json::Path);
 

@@ -71,7 +71,6 @@ pub fn extract_bits(
     stack: DynStack<'_>,
 ) {
     let ciphertext_n_bits = u64::BITS as usize;
-    let number_of_bits_to_extract = number_of_bits_to_extract;
 
     debug_assert!(
         ciphertext_n_bits >= number_of_bits_to_extract + delta_log,

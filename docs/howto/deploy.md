@@ -1,10 +1,10 @@
 # Deploy
 
-After developing your circuit, you may want to deploy it. However, sharing the details of your circuit with every client might not be desirable. You might want to perform the computation in dedicated servers, as well. In this case, you can use the `Client` and `Server` features of **Concrete**.
+After developing your circuit, you may want to deploy it. However, sharing the details of your circuit with every client might not be desirable. As well as this, you might want to perform the computation on dedicated servers. In this case, you can use the `Client` and `Server` features of **Concrete**.
 
 ## Development of the circuit
 
-You can develop your circuit like we've discussed in the previous chapters. Here is a simple example:
+You can develop your circuit using the techniques discussed in previous chapters. Here is a simple example:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -70,7 +70,7 @@ client.keys.generate()
 
 This method generates encryption/decryption keys and evaluation keys.
 
-The server requires evaluation keys linked to the encryption keys that you just generated. You can serialize your evaluation keys as shown:
+The server needs access to the evaluation keys that were just generated. You can serialize your evaluation keys as shown:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -80,19 +80,20 @@ serialized_evaluation_keys: bytes = client.evaluation_keys.serialize()
 After serialization, send the evaluation keys to the server.
 
 {% hint style="info" %}
-Serialized evaluation keys are very big in size, so you may want to cache them on the server instead of sending them with each request.
+Serialized evaluation keys are very large, so you may want to cache them on the server instead of sending them with each request.
 {% endhint %}
 
 ## Encrypting inputs (on the client)
 
-Now encrypt your inputs and request the server to perform the computation. You can do it like so:
+The next step is to encrypt your inputs and request the server to perform some computation. This can be done in the following way:
 
 <!--pytest-codeblocks:skip-->
 ```python
-serialized_args: bytes = client.encrypt(7).serialize()
+arg: fhe.Value = client.encrypt(7)
+serialized_arg: bytes = arg.serialize()
 ```
 
-Then, send serialized args to the server.
+Then, send the serialized arguments to the server.
 
 ## Performing computation (on the server)
 
@@ -101,32 +102,32 @@ Once you have serialized evaluation keys and serialized arguments, you can deser
 <!--pytest-codeblocks:skip-->
 ```python
 deserialized_evaluation_keys = fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
-deserialized_args  = server.client_specs.deserialize_public_args(serialized_args)
+deserialized_arg = fhe.Value.deserialize(serialized_arg)
 ```
 
 You can perform the computation, as well:
 
 <!--pytest-codeblocks:skip-->
 ```python
-public_result = server.run(deserialized_args, deserialized_evaluation_keys)
-serialized_public_result: bytes = public_result.serialize()
+result: fhe.Value = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
+serialized_result: bytes = result.serialize()
 ```
 
-Then, send the serialized public result back to the client, so they can decrypt it and get the result of the computation.
+Then, send the serialized result back to the client. After this, the client can decrypt to receive the result of the computation.
 
 ## Decrypting the result (on the client)
 
-Once you have received the public result of the computation from the server, you can deserialize it:
+Once you have received the serialized result of the computation from the server, you can deserialize it:
 
 <!--pytest-codeblocks:skip-->
 ```python
-deserialized_public_result = client.specs.deserialize_public_result(serialized_public_result)
+deserialized_result = fhe.Value.deserialize(serialized_result)
 ```
 
 Then, decrypt the result:
 
 <!--pytest-codeblocks:skip-->
 ```python
-result = client.decrypt(deserialized_public_result)
-assert result == 49
+decrypted_result = client.decrypt(deserialized_result)
+assert decrypted_result == 49
 ```

@@ -40,6 +40,8 @@ fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
         processing_unit,
         Some(ProcessingUnit::Cpu.complexity_model()),
         options.cache_on_disk,
+        options.ciphertext_modulus_log,
+        options.fft_precision,
     )
 }
 
@@ -49,7 +51,9 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
     let config = Config {
         security_level: options.security_level,
         maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
-        ciphertext_modulus_log: 64,
+        key_sharing: options.key_sharing,
+        ciphertext_modulus_log: options.ciphertext_modulus_log,
+        fft_precision: options.fft_precision,
         complexity_model: &CpuComplexity::default(),
     };
 
@@ -280,6 +284,11 @@ impl From<CircuitSolution> for ffi::CircuitSolution {
 }
 
 impl ffi::CircuitSolution {
+    fn short_dump(&self) -> String {
+        let mut new = self.clone();
+        new.instructions_keys = vec![];
+        new.dump()
+    }
     fn dump(&self) -> String {
         format!("{self:#?}")
     }
@@ -483,13 +492,23 @@ impl OperationDag {
         self.0.add_round_op(input.into(), rounded_precision).into()
     }
 
+    fn add_unsafe_cast_op(
+        &mut self,
+        input: ffi::OperatorIndex,
+        new_precision: Precision,
+    ) -> ffi::OperatorIndex {
+        self.0.add_unsafe_cast(input.into(), new_precision).into()
+    }
+
     fn optimize_v0(&self, options: ffi::Options) -> ffi::Solution {
         let processing_unit = processing_unit(options);
 
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
-            ciphertext_modulus_log: 64,
+            key_sharing: options.key_sharing,
+            ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
 
@@ -511,7 +530,9 @@ impl OperationDag {
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
-            ciphertext_modulus_log: 64,
+            key_sharing: options.key_sharing,
+            ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
 
@@ -538,7 +559,9 @@ impl OperationDag {
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
-            ciphertext_modulus_log: 64,
+            key_sharing: options.key_sharing,
+            ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
         let search_space = SearchSpace::default(processing_unit);
@@ -562,6 +585,10 @@ pub struct Weights(operator::Weights);
 
 fn vector(weights: &[i64]) -> Box<Weights> {
     Box::new(Weights(operator::Weights::vector(weights)))
+}
+
+fn number(weight: i64) -> Box<Weights> {
+    Box::new(Weights(operator::Weights::number(weight)))
 }
 
 impl From<OperatorIndex> for ffi::OperatorIndex {
@@ -647,6 +674,12 @@ mod ffi {
             rounded_precision: u8,
         ) -> OperatorIndex;
 
+        fn add_unsafe_cast_op(
+            self: &mut OperationDag,
+            input: OperatorIndex,
+            rounded_precision: u8,
+        ) -> OperatorIndex;
+
         fn optimize_v0(self: &OperationDag, options: Options) -> Solution;
 
         fn optimize(self: &OperationDag, options: Options) -> DagSolution;
@@ -656,10 +689,16 @@ mod ffi {
         #[namespace = "concrete_optimizer::dag"]
         fn dump(self: &CircuitSolution) -> String;
 
+        #[namespace = "concrete_optimizer::dag"]
+        fn short_dump(self: &CircuitSolution) -> String;
+
         type Weights;
 
         #[namespace = "concrete_optimizer::weights"]
         fn vector(weights: &[i64]) -> Box<Weights>;
+
+        #[namespace = "concrete_optimizer::weights"]
+        fn number(weight: i64) -> Box<Weights>;
 
         fn optimize_multi(self: &OperationDag, _options: Options) -> CircuitSolution;
 
@@ -724,10 +763,13 @@ mod ffi {
     pub struct Options {
         pub security_level: u64,
         pub maximum_acceptable_error_probability: f64,
+        pub key_sharing: bool,
         pub default_log_norm2_woppbs: f64,
         pub use_gpu_constraints: bool,
         pub encoding: Encoding,
         pub cache_on_disk: bool,
+        pub ciphertext_modulus_log: u32,
+        pub fft_precision: u32,
     }
 
     #[namespace = "concrete_optimizer::dag"]

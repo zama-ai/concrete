@@ -3,10 +3,13 @@
 
 """CompilationOptions."""
 
+from typing import List
+
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
     CompilationOptions as _CompilationOptions,
     OptimizerStrategy as _OptimizerStrategy,
+    Encoding,
 )
 from .wrapper import WrapperCpp
 
@@ -211,3 +214,164 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(security_level, int):
             raise TypeError("can't set security_level to a non-int value")
         self.cpp().set_security_level(security_level)
+
+    def set_v0_parameter(
+        self,
+        glwe_dim: int,
+        log_poly_size: int,
+        n_small: int,
+        br_level: int,
+        br_log_base: int,
+        ks_level: int,
+        ks_log_base: int,
+    ):
+        """Set the basic V0 parameters.
+
+        Args:
+            glwe_dim (int): GLWE dimension
+            log_poly_size (int): log of polynomial size
+            n_small (int): n
+            br_level (int): bootstrap level
+            br_log_base (int): bootstrap base log
+            ks_level (int): keyswitch level
+            ks_log_base (int): keyswitch base log
+
+        Raises:
+            TypeError: if parameters are not of type int
+        """
+        if not isinstance(glwe_dim, int):
+            raise TypeError("glwe_dim need to be an integer")
+        if not isinstance(log_poly_size, int):
+            raise TypeError("log_poly_size need to be an integer")
+        if not isinstance(n_small, int):
+            raise TypeError("n_small need to be an integer")
+        if not isinstance(br_level, int):
+            raise TypeError("br_level need to be an integer")
+        if not isinstance(br_log_base, int):
+            raise TypeError("br_log_base need to be an integer")
+        if not isinstance(ks_level, int):
+            raise TypeError("ks_level need to be an integer")
+        if not isinstance(ks_log_base, int):
+            raise TypeError("ks_log_base need to be an integer")
+        self.cpp().set_v0_parameter(
+            glwe_dim,
+            log_poly_size,
+            n_small,
+            br_level,
+            br_log_base,
+            ks_level,
+            ks_log_base,
+        )
+
+    # pylint: disable=too-many-arguments,too-many-branches
+
+    def set_all_v0_parameter(
+        self,
+        glwe_dim: int,
+        log_poly_size: int,
+        n_small: int,
+        br_level: int,
+        br_log_base: int,
+        ks_level: int,
+        ks_log_base: int,
+        crt_decomp: List[int],
+        cbs_level: int,
+        cbs_log_base: int,
+        pks_level: int,
+        pks_log_base: int,
+        pks_input_lwe_dim: int,
+        pks_output_poly_size: int,
+    ):
+        """Set all the V0 parameters.
+
+        Args:
+            glwe_dim (int): GLWE dimension
+            log_poly_size (int): log of polynomial size
+            n_small (int): n
+            br_level (int): bootstrap level
+            br_log_base (int): bootstrap base log
+            ks_level (int): keyswitch level
+            ks_log_base (int): keyswitch base log
+            crt_decomp (List[int]): CRT decomposition vector
+            cbs_level (int): circuit bootstrap level
+            cbs_log_base (int): circuit bootstrap base log
+            pks_level (int): packing keyswitch level
+            pks_log_base (int): packing keyswitch base log
+            pks_input_lwe_dim (int): packing keyswitch input LWE dimension
+            pks_output_poly_size (int): packing keyswitch output polynomial size
+
+        Raises:
+            TypeError: if parameters are not of type int
+        """
+        if not isinstance(glwe_dim, int):
+            raise TypeError("glwe_dim need to be an integer")
+        if not isinstance(log_poly_size, int):
+            raise TypeError("log_poly_size need to be an integer")
+        if not isinstance(n_small, int):
+            raise TypeError("n_small need to be an integer")
+        if not isinstance(br_level, int):
+            raise TypeError("br_level need to be an integer")
+        if not isinstance(br_log_base, int):
+            raise TypeError("br_log_base need to be an integer")
+        if not isinstance(ks_level, int):
+            raise TypeError("ks_level need to be an integer")
+        if not isinstance(ks_log_base, int):
+            raise TypeError("ks_log_base need to be an integer")
+        if not isinstance(crt_decomp, list):
+            raise TypeError("crt_decomp need to be a list of integers")
+        if not isinstance(cbs_level, int):
+            raise TypeError("cbs_level need to be an integer")
+        if not isinstance(cbs_log_base, int):
+            raise TypeError("cbs_log_base need to be an integer")
+        if not isinstance(pks_level, int):
+            raise TypeError("pks_level need to be an integer")
+        if not isinstance(pks_log_base, int):
+            raise TypeError("pks_log_base need to be an integer")
+        if not isinstance(pks_input_lwe_dim, int):
+            raise TypeError("pks_input_lwe_dim need to be an integer")
+        if not isinstance(pks_output_poly_size, int):
+            raise TypeError("pks_output_poly_size need to be an integer")
+        self.cpp().set_v0_parameter(
+            glwe_dim,
+            log_poly_size,
+            n_small,
+            br_level,
+            br_log_base,
+            ks_level,
+            ks_log_base,
+            crt_decomp,
+            cbs_level,
+            cbs_log_base,
+            pks_level,
+            pks_log_base,
+            pks_input_lwe_dim,
+            pks_output_poly_size,
+        )
+
+    # pylint: enable=too-many-arguments,too-many-branches
+
+    def force_encoding(self, encoding: Encoding):
+        """Force the compiler to use a specific encoding.
+
+        Args:
+            encoding (Encoding): the encoding to force the compiler to use
+
+        Raises:
+            TypeError: if encoding is not of type Encoding
+        """
+        if not isinstance(encoding, Encoding):
+            raise TypeError("encoding need to be of type Encoding")
+        self.cpp().force_encoding(encoding)
+
+    def simulation(self, simulate: bool):
+        """Enable or disable simulation.
+
+        Args:
+            simulate (bool): flag to enable or disable simulation
+
+        Raises:
+            TypeError: if the value to set is not bool
+        """
+        if not isinstance(simulate, bool):
+            raise TypeError("need to pass a boolean value")
+        self.cpp().simulation(simulate)

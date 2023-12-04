@@ -4,7 +4,7 @@ Declaration of `round_bit_pattern` function, to provide an interface for rounded
 
 import threading
 from copy import deepcopy
-from typing import Any, Callable, Iterable, List, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from ..dtypes import Integer
 from ..mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from ..representation import Node
 from ..tracing import Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 local = threading.local()
 
@@ -103,7 +103,7 @@ class AutoRounder:
                         rounder.input_min = min(rounder.input_min, adjuster.input_min)
                         rounder.input_max = max(rounder.input_max, adjuster.input_max)
 
-                        input_value = Value.of([rounder.input_min, rounder.input_max])
+                        input_value = ValueDescription.of([rounder.input_min, rounder.input_max])
                         assert isinstance(input_value.dtype, Integer)
                         rounder.input_bit_width = input_value.dtype.bit_width
 
@@ -122,6 +122,36 @@ class AutoRounder:
             local._is_adjusting = False
 
         # pylint: enable=protected-access,too-many-branches
+
+    def dump_dict(self) -> Dict:
+        """
+        Dump properties of the rounder to a dict.
+        """
+
+        return {
+            "target_msbs": self.target_msbs,
+            "is_adjusted": self.is_adjusted,
+            "input_min": self.input_min,
+            "input_max": self.input_max,
+            "input_bit_width": self.input_bit_width,
+            "lsbs_to_remove": self.lsbs_to_remove,
+        }
+
+    @classmethod
+    def load_dict(cls, properties: Dict) -> "AutoRounder":
+        """
+        Load previously dumped rounder.
+        """
+
+        result = AutoRounder(target_msbs=properties["target_msbs"])
+
+        result.is_adjusted = properties["is_adjusted"]
+        result.input_min = properties["input_min"]
+        result.input_max = properties["input_max"]
+        result.lsbs_to_remove = properties["lsbs_to_remove"]
+        result.input_bit_width = properties["input_bit_width"]
+
+        return result
 
 
 def round_bit_pattern(

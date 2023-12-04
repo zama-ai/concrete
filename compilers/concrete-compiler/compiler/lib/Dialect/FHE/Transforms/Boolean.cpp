@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
@@ -29,7 +30,7 @@ public:
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHE::GenGateOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto eint2 = mlir::concretelang::FHE::EncryptedIntegerType::get(
+    auto eint2 = mlir::concretelang::FHE::EncryptedUnsignedIntegerType::get(
         rewriter.getContext(), 2);
     auto left = rewriter
                     .create<mlir::concretelang::FHE::FromBoolOp>(
@@ -104,7 +105,7 @@ public:
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHE::MuxOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto eint2 = mlir::concretelang::FHE::EncryptedIntegerType::get(
+    auto eint2 = mlir::concretelang::FHE::EncryptedUnsignedIntegerType::get(
         rewriter.getContext(), 2);
     auto boolType = mlir::concretelang::FHE::EncryptedBooleanType::get(
         rewriter.getContext());

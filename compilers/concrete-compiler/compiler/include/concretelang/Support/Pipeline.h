@@ -6,12 +6,11 @@
 #ifndef CONCRETELANG_SUPPORT_PIPELINE_H_
 #define CONCRETELANG_SUPPORT_PIPELINE_H_
 
-#include <llvm/IR/Module.h>
-#include <mlir/Dialect/LLVMIR/LLVMTypes.h>
-#include <mlir/Support/LogicalResult.h>
-#include <mlir/Transforms/Passes.h>
-
-#include <concretelang/Support/V0Parameters.h>
+#include "concretelang/Support/V0Parameters.h"
+#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Support/LogicalResult.h"
+#include "mlir/Transforms/Passes.h"
+#include "llvm/IR/Module.h"
 
 namespace mlir {
 namespace concretelang {
@@ -40,9 +39,12 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::optional<V0FHEContext> &fheContext,
-                    std::function<bool(mlir::Pass *)> enablePass,
-                    bool parallelize);
+                    std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+lowerLinalgGenericToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                          std::function<bool(mlir::Pass *)> enablePass,
+                          bool parallelizeLoops);
 
 mlir::LogicalResult
 transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,
@@ -65,15 +67,26 @@ parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
                               mlir::ModuleOp &module,
-                              std::function<bool(mlir::Pass *)> enablePass);
+                              std::function<bool(mlir::Pass *)> enablePass,
+                              int64_t maxBatchSize);
 
 mlir::LogicalResult
 normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
                   std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+extractTFHEStatistics(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      std::function<bool(mlir::Pass *)> enablePass,
+                      CompilationFeedback &feedback);
+
+mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+computeMemoryUsage(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   CompilationFeedback &feedback);
 
 mlir::LogicalResult
 lowerConcreteLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
@@ -84,14 +97,18 @@ mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
                                  std::function<bool(mlir::Pass *)> enablePass);
 
+mlir::LogicalResult simulateTFHE(mlir::MLIRContext &context,
+                                 mlir::ModuleOp &module,
+                                 std::function<bool(mlir::Pass *)> enablePass);
+
 mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
                                    mlir::ModuleOp &module,
                                    std::function<bool(mlir::Pass *)> enablePass,
                                    bool unrollLoops);
 
 mlir::LogicalResult
-lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                   std::function<bool(mlir::Pass *)> enablePass);
+addRuntimeContext(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                  std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
@@ -99,8 +116,17 @@ lowerSDFGToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                      std::function<bool(mlir::Pass *)> enablePass,
-                      bool parallelizeLoops, bool gpu);
+                      std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
+                               mlir::ModuleOp &module,
+                               std::function<bool(mlir::Pass *)> enablePass,
+                               bool parallelizeLoops);
+
+mlir::LogicalResult lowerToCAPI(mlir::MLIRContext &context,
+                                mlir::ModuleOp &module,
+                                std::function<bool(mlir::Pass *)> enablePass,
+                                bool gpu);
 
 mlir::LogicalResult optimizeLLVMModule(llvm::LLVMContext &llvmContext,
                                        llvm::Module &module);

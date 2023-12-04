@@ -3,15 +3,17 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang-c/Dialect/FHE.h"
-#include "concretelang-c/Dialect/FHELinalg.h"
 #include "concretelang/Bindings/Python/CompilerAPIModule.h"
 #include "concretelang/Bindings/Python/DialectModules.h"
+#include "concretelang/Dialect/FHE/IR/FHEDialect.h"
+#include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h"
+#include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
 #include "concretelang/Support/Constants.h"
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/IR.h"
 #include "mlir-c/RegisterEverything.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
+#include "mlir/CAPI/Registration.h"
 #include "mlir/IR/DialectRegistry.h"
 
 #include "llvm-c/ErrorHandling.h"
@@ -19,6 +21,19 @@
 
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
+
+using namespace mlir::concretelang::FHE;
+using namespace mlir::concretelang::FHELinalg;
+using namespace mlir::concretelang::Tracing;
+
+MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(FHE, fhe);
+MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(FHE, fhe, FHEDialect)
+
+MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(FHELinalg, fhelinalg);
+MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(FHELinalg, fhelinalg, FHELinalgDialect)
+
+MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(TRACING, tracing);
+MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(Tracing, tracing, TracingDialect)
 
 PYBIND11_MODULE(_concretelang, m) {
   m.doc() = "Concretelang Python Native Extension";
@@ -42,6 +57,9 @@ PYBIND11_MODULE(_concretelang, m) {
 
         const MlirDialectHandle fhelinalg = mlirGetDialectHandle__fhelinalg__();
         mlirDialectHandleRegisterDialect(fhelinalg, context);
+
+        const MlirDialectHandle tracing = mlirGetDialectHandle__tracing__();
+        mlirDialectHandleRegisterDialect(tracing, context);
 
         mlirContextLoadAllAvailableDialects(context);
       },

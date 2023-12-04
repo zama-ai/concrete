@@ -36,7 +36,7 @@ def test_accepted_ints(value):
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
     assert arg.is_scalar(), "should have been a scalar"
-    assert arg.get_scalar() == value
+    assert arg.get_signed_scalar() == value
 
 
 # TODO: #495
@@ -60,8 +60,8 @@ def test_accepted_ndarray(dtype, maxvalue):
     assert np.all(np.equal(arg.get_tensor_shape(), value.shape))
     assert np.all(
         np.equal(
-            value,
-            np.array(arg.get_tensor_data()).reshape(arg.get_tensor_shape()),
+            value.astype(np.int64),
+            np.array(arg.get_signed_tensor_data()).reshape(arg.get_tensor_shape()),
         )
     )
 
@@ -73,4 +73,4 @@ def test_accepted_array_as_scalar():
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
     assert arg.is_scalar(), "should have been a scalar"
-    assert arg.get_scalar() == value
+    assert arg.get_signed_scalar() == value

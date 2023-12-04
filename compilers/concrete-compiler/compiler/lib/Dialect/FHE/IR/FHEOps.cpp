@@ -3,8 +3,11 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Region.h"
 #include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
 
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
@@ -179,13 +182,8 @@ mlir::LogicalResult MulEintIntOp::verify() {
 mlir::LogicalResult MulEintOp::verify() {
   auto a = this->getRhs().getType().dyn_cast<FheIntegerInterface>();
   auto b = this->getLhs().getType().dyn_cast<FheIntegerInterface>();
-  auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputsConsistency(*this->getOperation(), a, b)) {
-    return ::mlir::failure();
-  }
-  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
-                                                       out)) {
     return ::mlir::failure();
   }
 
@@ -211,7 +209,7 @@ mlir::LogicalResult MaxEintOp::verify() {
 }
 
 mlir::LogicalResult ToSignedOp::verify() {
-  auto input = this->getInput().getType().cast<EncryptedIntegerType>();
+  auto input = this->getInput().getType().cast<EncryptedUnsignedIntegerType>();
   auto output = this->getResult().getType().cast<EncryptedSignedIntegerType>();
 
   if (input.getWidth() != output.getWidth()) {
@@ -225,7 +223,8 @@ mlir::LogicalResult ToSignedOp::verify() {
 
 mlir::LogicalResult ToUnsignedOp::verify() {
   auto input = this->getInput().getType().cast<EncryptedSignedIntegerType>();
-  auto output = this->getResult().getType().cast<EncryptedIntegerType>();
+  auto output =
+      this->getResult().getType().cast<EncryptedUnsignedIntegerType>();
 
   if (input.getWidth() != output.getWidth()) {
     this->emitOpError(
@@ -237,7 +236,7 @@ mlir::LogicalResult ToUnsignedOp::verify() {
 }
 
 mlir::LogicalResult ToBoolOp::verify() {
-  auto input = this->getInput().getType().cast<EncryptedIntegerType>();
+  auto input = this->getInput().getType().cast<EncryptedUnsignedIntegerType>();
 
   if (input.getWidth() != 1 && input.getWidth() != 2) {
     this->emitOpError("should have 1 or 2 as the width of encrypted input to "
@@ -273,8 +272,11 @@ mlir::LogicalResult GenGateOp::verify() {
     emitErrorBadLutSize(*this, "lut", "ct", expectedSize, width);
     return mlir::failure();
   }
-  if (!lut.getElementType().isInteger(64)) {
-    this->emitOpError() << "should have the i64 constant";
+  auto elmType = lut.getElementType();
+  if (!elmType.isSignlessInteger() || elmType.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError() << "lut must have signless integer elements, with "
+                           "precision not bigger than 64.";
+    this->emitOpError() << "got : " << elmType.getIntOrFloatBitWidth();
     return mlir::failure();
   }
   return mlir::success();
@@ -343,6 +345,86 @@ OpFoldResult MulEintIntOp::fold(FoldAdaptor operands) {
     }
   }
   return nullptr;
+}
+
+void MulEintIntOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+
+  // Replace multiplication by clear zero cst to a trivial encrypted zero tensor
+  class ZeroCstOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroCstOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getB().getDefiningOp<arith::ConstantOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      auto val = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
+      if (val.getInt() != 0) {
+        return mlir::failure();
+      }
+      rewriter.replaceOpWithNewOp<FHE::ZeroEintOp>(op,
+                                                   op.getResult().getType());
+      return mlir::success();
+    }
+  };
+
+  // Replace multiplication by encrypted zero cst to a trivial encrypted zero
+  // tensor
+  class ZeroEncOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroEncOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getA().getDefiningOp<FHE::ZeroEintOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceAllUsesWith(op, cstOp);
+      rewriter.eraseOp(op);
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroCstOpPattern>(context);
+  patterns.add<ZeroEncOpPattern>(context);
+}
+
+template <typename SignedConvOp>
+void getSignedConvCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                           mlir::MLIRContext *context) {
+  // Replace to_signed of zero to signed zero
+  class ZeroOpPattern : public mlir::OpRewritePattern<SignedConvOp> {
+  public:
+    ZeroOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<SignedConvOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(SignedConvOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getInput().template getDefiningOp<FHE::ZeroEintOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceOpWithNewOp<FHE::ZeroEintOp>(op,
+                                                   op.getResult().getType());
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroOpPattern>(context);
+}
+
+void ToSignedOp::getCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                             mlir::MLIRContext *context) {
+  getSignedConvCanonicalizationPatterns<ToSignedOp>(patterns, context);
+}
+
+void ToUnsignedOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+  getSignedConvCanonicalizationPatterns<ToUnsignedOp>(patterns, context);
 }
 
 } // namespace FHE

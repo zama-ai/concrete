@@ -10,7 +10,7 @@ import numpy as np
 from ..dtypes import BaseDataType, Float
 from ..representation import Node
 from ..tracing import ScalarAnnotation, Tracer
-from ..values import Value
+from ..values import ValueDescription
 
 
 def univariate(
@@ -55,7 +55,7 @@ def univariate(
             sample = dtype(1) if x.output.is_scalar else np.ones(x.output.shape, dtype=dtype)
             evaluation = function(sample)
 
-            output_value = Value.of(evaluation, is_encrypted=x.output.is_encrypted)
+            output_value = ValueDescription.of(evaluation, is_encrypted=x.output.is_encrypted)
             if output_value.shape != x.output.shape:
                 message = f"Function {function.__name__} cannot be used with fhe.univariate"
                 raise ValueError(message)

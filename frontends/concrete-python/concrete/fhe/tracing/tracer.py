@@ -14,7 +14,7 @@ from ..dtypes import BaseDataType, Float, Integer
 from ..internal.utils import assert_that
 from ..representation import Graph, Node, Operation
 from ..representation.utils import format_indexing_element
-from ..values import Value
+from ..values import ValueDescription
 
 
 class Tracer:
@@ -24,7 +24,7 @@ class Tracer:
 
     computation: Node
     input_tracers: List["Tracer"]
-    output: Value
+    output: ValueDescription
 
     # property to keep track of assignments
     last_version: Optional["Tracer"] = None
@@ -34,7 +34,11 @@ class Tracer:
     _is_direct: bool = False
 
     @staticmethod
-    def trace(function: Callable, parameters: Dict[str, Value], is_direct: bool = False) -> Graph:
+    def trace(
+        function: Callable,
+        parameters: Dict[str, ValueDescription],
+        is_direct: bool = False,
+    ) -> Graph:
         """
         Trace `function` and create the `Graph` that represents it.
 
@@ -42,7 +46,7 @@ class Tracer:
             function (Callable):
                 function to trace
 
-            parameters (Dict[str, Value]):
+            parameters (Dict[str, ValueDescription]):
                 parameters of function to trace
                 e.g. parameter x is an EncryptedScalar holding a 7-bit UnsignedInteger
 
@@ -175,6 +179,9 @@ class Tracer:
     def __hash__(self) -> int:
         return id(self)
 
+    def __str__(self) -> str:
+        return f"Tracer<output={self.output}>"
+
     def __bool__(self) -> bool:
         # pylint: disable=invalid-bool-returned
 
@@ -224,6 +231,7 @@ class Tracer:
         np.ceil,
         np.clip,
         np.concatenate,
+        np.copy,
         np.copysign,
         np.cos,
         np.cosh,
@@ -285,7 +293,7 @@ class Tracer:
         np.reshape,
         np.right_shift,
         np.rint,
-        np.round_,
+        np.round,
         np.sign,
         np.signbit,
         np.sin,
@@ -324,7 +332,7 @@ class Tracer:
         np.reshape: {
             "newshape",
         },
-        np.round_: {
+        np.round: {
             "decimals",
         },
         np.squeeze: {
@@ -414,7 +422,7 @@ class Tracer:
         for arg in args:
             extract_tracers(arg, tracers)
 
-        output_value = Value.of(evaluation)
+        output_value = ValueDescription.of(evaluation)
         output_value.is_encrypted = any(tracer.output.is_encrypted for tracer in tracers)
 
         if Tracer._is_direct and isinstance(output_value.dtype, Integer):
@@ -462,6 +470,12 @@ class Tracer:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
                 kwargs["newshape"] = args[1]
+        elif func is np.sum:
+            sanitized_args = [self.sanitize(args[0])]
+            for i, keyword in enumerate(["axis", "dtype", "out", "keepdims", "initial", "where"]):
+                position = i + 1
+                if len(args) > position:
+                    kwargs[keyword] = args[position]
         elif func is np.transpose:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
@@ -646,7 +660,7 @@ class Tracer:
             )
 
         output_value = deepcopy(self.output)
-        output_value.dtype = Value.of(dtype(0)).dtype  # type: ignore
+        output_value.dtype = ValueDescription.of(dtype(0)).dtype  # type: ignore
 
         if np.issubdtype(dtype, np.integer):
 
@@ -696,12 +710,17 @@ class Tracer:
 
         return Tracer._trace_numpy_operation(np.reshape, self, newshape=(self.output.size,))
 
-    def reshape(self, newshape: Tuple[Any, ...]) -> "Tracer":
+    def reshape(self, *newshape: Union[Any, Tuple[Any, ...]]) -> "Tracer":
         """
         Trace numpy.ndarray.reshape(newshape).
         """
 
-        return Tracer._trace_numpy_operation(np.reshape, self, newshape=newshape)
+        if len(newshape) == 1 and isinstance(newshape[0], tuple):
+            shape = newshape[0]
+        else:
+            shape = tuple(int(size) for size in newshape)  # type: ignore
+
+        return Tracer._trace_numpy_operation(np.reshape, self, newshape=shape)
 
     def round(self, decimals: int = 0) -> "Tracer":
         """
@@ -722,11 +741,28 @@ class Tracer:
 
     def __getitem__(
         self,
-        index: Union[int, np.integer, slice, Tuple[Union[int, np.integer, slice], ...]],
+        index: Union[
+            int, np.integer, slice, "Tracer", Tuple[Union[int, np.integer, slice, "Tracer"], ...]
+        ],
     ) -> "Tracer":
+        if (
+            isinstance(index, Tracer)
+            and index.output.is_encrypted
+            and self.output.is_clear
+            and not self.output.is_scalar
+        ):
+            computation = Node.generic(
+                "dynamic_tlu",
+                [deepcopy(index.output), deepcopy(self.output)],
+                deepcopy(index.output),
+                lambda on, table: table[on],
+            )
+            return Tracer(computation, [index, self])
+
         if not isinstance(index, tuple):
             index = (index,)
 
+        reject = False
         for indexing_element in index:
             valid = isinstance(indexing_element, (int, np.integer, slice))
 
@@ -748,13 +784,23 @@ class Tracer:
                     valid = False
 
             if not valid:
-                message = (
-                    f"Indexing with '{format_indexing_element(indexing_element)}' is not supported"
-                )
-                raise ValueError(message)
+                reject = True
+                break
+
+        if reject:
+            indexing_elements = [
+                format_indexing_element(indexing_element) for indexing_element in index
+            ]
+            formatted_index = (
+                indexing_elements[0]
+                if len(indexing_elements) == 1
+                else ", ".join(str(element) for element in indexing_elements)
+            )
+            message = f"{self} cannot be indexed with {formatted_index}"
+            raise ValueError(message)
 
         output_value = deepcopy(self.output)
-        output_value.shape = np.zeros(output_value.shape)[index].shape
+        output_value.shape = np.zeros(output_value.shape)[index].shape  # type: ignore
 
         computation = Node.generic(
             "index_static",
@@ -848,6 +894,13 @@ class Tracer:
         """
 
         return Tracer._trace_numpy_operation(np.transpose, self)
+
+    def __len__(self):
+        shape = self.shape
+        if len(shape) == 0:
+            message = "object of type 'Tracer' where 'shape == ()' has no len()"
+            raise TypeError(message)
+        return shape[0]
 
 
 class Annotation(Tracer):

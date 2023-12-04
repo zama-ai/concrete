@@ -1,14 +1,14 @@
 # Exactness
 
-One of the most common operations in **Concrete** is `Table Lookups` (TLUs). TLUs are performed with an FHE operation called `Programmable Bootstrapping` (PBS). PBS's have a certain probability of error, which, when triggered, result in inaccurate results.
+One of the most common operations in Concrete is `Table Lookups` (TLUs). TLUs are performed with an FHE operation called `Programmable Bootstrapping` (PBS). PBS's have a certain probability of error, which, when triggered, result in inaccurate results.
 
 Let's say you have the table:
 
 ```python
-[0, 1, 4, 9, 16, 25, 36, 49, 64]
+lut = [0, 1, 4, 9, 16, 25, 36, 49, 64]
 ```
 
-And you perform a Table Lookup using `4`. The result you should get is `16`, but because of the possibility of error, you can get any other value in the table.
+And you perform a Table Lookup using `4`. The result you should get is `lut[4] = 16`, but because of the possibility of error, you could get any other value in the table.
 
 The probability of this error can be configured through the `p_error` and `global_p_error` configuration options. The difference between these two options is that, `p_error` is for individual TLUs but `global_p_error` is for the whole circuit.
 

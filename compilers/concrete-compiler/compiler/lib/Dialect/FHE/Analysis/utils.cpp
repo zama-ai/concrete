@@ -5,6 +5,7 @@
 
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include <concretelang/Dialect/FHE/Analysis/utils.h>
+#include <mlir/Dialect/Linalg/IR/Linalg.h>
 
 namespace mlir {
 namespace concretelang {
@@ -50,6 +51,22 @@ unsigned int getEintPrecision(mlir::Value value) {
          "integers");
 
   return 0;
+}
+
+llvm::SmallVector<int64_t>
+getLinalgGenericLoopRange(mlir::linalg::GenericOp op) {
+  uint64_t loopRangeDim = op.getLoopsToShapesMap().getNumDims();
+  llvm::SmallVector<int64_t> loopRange;
+  for (uint64_t i = 0; i < loopRangeDim; i++) {
+    mlir::Value mappedValue;
+    unsigned int pos;
+    assert(
+        op.mapIterationSpaceDimToOperandDim(i, mappedValue, pos).succeeded() &&
+        "couldn't compute loop range");
+    loopRange.push_back(
+        mappedValue.getType().cast<mlir::RankedTensorType>().getShape()[pos]);
+  }
+  return loopRange;
 }
 
 } // namespace utils

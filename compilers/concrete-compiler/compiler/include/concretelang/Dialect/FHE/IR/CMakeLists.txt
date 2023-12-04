@@ -1,7 +1,3 @@
-set(LLVM_TARGET_DEFINITIONS FHEInterfaces.td)
-mlir_tablegen(FHETypesInterfaces.h.inc -gen-type-interface-decls)
-mlir_tablegen(FHETypesInterfaces.cpp.inc -gen-type-interface-defs)
-
 set(LLVM_TARGET_DEFINITIONS FHEOps.td)
 mlir_tablegen(FHEOps.h.inc -gen-op-decls)
 mlir_tablegen(FHEOps.cpp.inc -gen-op-defs)

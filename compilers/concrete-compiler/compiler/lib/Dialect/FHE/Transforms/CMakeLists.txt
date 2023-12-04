@@ -4,6 +4,7 @@ add_mlir_library(
   Boolean.cpp
   Max.cpp
   EncryptedMulToDoubleTLU.cpp
+  DynamicTLU.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/FHE
   DEPENDS

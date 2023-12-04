@@ -1,7 +1,7 @@
 #ifndef TEST_TOOLS_KEYSETCACHE_H
 #define TEST_TOOLS_KEYSETCACHE_H
 
-#include "concretelang/ClientLib/KeySetCache.h"
+#include "concretelang/Common/Keysets.h"
 #include "llvm/Support/Path.h"
 
 #ifdef CONCRETELANG_TEST_KEYCACHE_PATH
@@ -10,7 +10,7 @@
 #define CACHE_PATH "KeySetCache"
 #endif
 
-static inline std::optional<concretelang::clientlib::KeySetCache>
+static inline std::optional<concretelang::keysets::KeysetCache>
 getTestKeySetCache() {
 
   llvm::SmallString<0> cachePath;
@@ -21,13 +21,12 @@ getTestKeySetCache() {
 
   std::cout << "Using KeySetCache dir: " << cachePathStr << "\n";
 
-  return std::optional<concretelang::clientlib::KeySetCache>(
-      concretelang::clientlib::KeySetCache(cachePathStr));
+  return concretelang::keysets::KeysetCache(cachePathStr);
 }
 
-static inline std::shared_ptr<concretelang::clientlib::KeySetCache>
+static inline std::shared_ptr<concretelang::keysets::KeysetCache>
 getTestKeySetCachePtr() {
-  return std::make_shared<concretelang::clientlib::KeySetCache>(
+  return std::make_shared<concretelang::keysets::KeysetCache>(
       getTestKeySetCache().value());
 }
 #endif

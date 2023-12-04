@@ -8,6 +8,7 @@
 
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Tools.h"
+#include "concretelang/Conversion/Utils/Utils.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "mlir/Dialect/Bufferization/Transforms/BufferUtils.h"
@@ -27,8 +28,22 @@ char memref_mul_cleartext_lwe_ciphertext_u64[] =
 char memref_negate_lwe_ciphertext_u64[] = "memref_negate_lwe_ciphertext_u64";
 char memref_keyswitch_lwe_u64[] = "memref_keyswitch_lwe_u64";
 char memref_bootstrap_lwe_u64[] = "memref_bootstrap_lwe_u64";
+char memref_batched_add_lwe_ciphertexts_u64[] =
+    "memref_batched_add_lwe_ciphertexts_u64";
+char memref_batched_add_plaintext_lwe_ciphertext_u64[] =
+    "memref_batched_add_plaintext_lwe_ciphertext_u64";
+char memref_batched_add_plaintext_cst_lwe_ciphertext_u64[] =
+    "memref_batched_add_plaintext_cst_lwe_ciphertext_u64";
+char memref_batched_mul_cleartext_lwe_ciphertext_u64[] =
+    "memref_batched_mul_cleartext_lwe_ciphertext_u64";
+char memref_batched_mul_cleartext_cst_lwe_ciphertext_u64[] =
+    "memref_batched_mul_cleartext_cst_lwe_ciphertext_u64";
+char memref_batched_negate_lwe_ciphertext_u64[] =
+    "memref_batched_negate_lwe_ciphertext_u64";
 char memref_batched_keyswitch_lwe_u64[] = "memref_batched_keyswitch_lwe_u64";
 char memref_batched_bootstrap_lwe_u64[] = "memref_batched_bootstrap_lwe_u64";
+char memref_batched_mapped_bootstrap_lwe_u64[] =
+    "memref_batched_mapped_bootstrap_lwe_u64";
 
 char memref_keyswitch_async_lwe_u64[] = "memref_keyswitch_async_lwe_u64";
 char memref_bootstrap_async_lwe_u64[] = "memref_bootstrap_async_lwe_u64";
@@ -39,6 +54,8 @@ char memref_batched_keyswitch_lwe_cuda_u64[] =
     "memref_batched_keyswitch_lwe_cuda_u64";
 char memref_batched_bootstrap_lwe_cuda_u64[] =
     "memref_batched_bootstrap_lwe_cuda_u64";
+char memref_batched_mapped_bootstrap_lwe_cuda_u64[] =
+    "memref_batched_mapped_bootstrap_lwe_cuda_u64";
 char memref_expand_lut_in_trivial_glwe_ct_u64[] =
     "memref_expand_lut_in_trivial_glwe_ct_u64";
 
@@ -50,38 +67,13 @@ char memref_encode_expand_lut_for_bootstrap[] =
 char memref_encode_lut_for_crt_woppbs[] = "memref_encode_lut_for_crt_woppbs";
 char memref_trace[] = "memref_trace";
 
-mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
-                                             size_t rank) {
-  std::vector<int64_t> shape(rank, mlir::ShapedType::kDynamic);
-  mlir::AffineExpr expr = rewriter.getAffineSymbolExpr(0);
-  for (size_t i = 0; i < rank; i++) {
-    expr = expr +
-           (rewriter.getAffineDimExpr(i) * rewriter.getAffineSymbolExpr(i + 1));
-  }
-  return mlir::MemRefType::get(
-      shape, rewriter.getI64Type(),
-      mlir::AffineMap::get(rank, rank + 1, expr, rewriter.getContext()));
-}
-
-// Returns `memref.cast %0 : memref<...xAxT> to memref<...x?xT>`
-mlir::Value getCastedMemRef(mlir::RewriterBase &rewriter, mlir::Value value) {
-  mlir::Type valueType = value.getType();
-
-  if (auto memrefTy = valueType.dyn_cast_or_null<mlir::MemRefType>()) {
-    return rewriter.create<mlir::memref::CastOp>(
-        value.getLoc(),
-        getDynamicMemrefWithUnknownOffset(rewriter, memrefTy.getShape().size()),
-        value);
-  } else {
-    return value;
-  }
-}
-
 mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     mlir::Operation *op, mlir::RewriterBase &rewriter, char const *funcName) {
 
-  auto memref1DType = getDynamicMemrefWithUnknownOffset(rewriter, 1);
-  auto memref2DType = getDynamicMemrefWithUnknownOffset(rewriter, 2);
+  auto memref1DType =
+      mlir::concretelang::getDynamicMemrefWithUnknownOffset(rewriter, 1);
+  auto memref2DType =
+      mlir::concretelang::getDynamicMemrefWithUnknownOffset(rewriter, 2);
   auto futureType =
       mlir::concretelang::RT::FutureType::get(rewriter.getIndexType());
   auto contextType =
@@ -129,6 +121,26 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                         memref1DType, i32Type, i32Type, i32Type,
                                         i32Type, i32Type, i32Type, contextType},
                                        {futureType});
+  } else if (funcName == memref_batched_add_lwe_ciphertexts_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(), {memref2DType, memref2DType, memref2DType}, {});
+  } else if (funcName == memref_batched_add_plaintext_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(), {memref2DType, memref2DType, memref1DType}, {});
+  } else if (funcName == memref_batched_add_plaintext_cst_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref2DType, memref2DType, rewriter.getI64Type()}, {});
+  } else if (funcName == memref_batched_mul_cleartext_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(), {memref2DType, memref2DType, memref1DType}, {});
+  } else if (funcName == memref_batched_mul_cleartext_cst_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {memref2DType, memref2DType, rewriter.getI64Type()}, {});
+  } else if (funcName == memref_batched_negate_lwe_ciphertext_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref2DType, memref2DType}, {});
   } else if (funcName == memref_batched_keyswitch_lwe_u64 ||
              funcName == memref_batched_keyswitch_lwe_cuda_u64) {
     funcType =
@@ -141,6 +153,13 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {memref2DType, memref2DType,
                                         memref1DType, i32Type, i32Type, i32Type,
+                                        i32Type, i32Type, i32Type, contextType},
+                                       {});
+  } else if (funcName == memref_batched_mapped_bootstrap_lwe_u64 ||
+             funcName == memref_batched_mapped_bootstrap_lwe_cuda_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref2DType, memref2DType,
+                                        memref2DType, i32Type, i32Type, i32Type,
                                         i32Type, i32Type, i32Type, contextType},
                                        {});
   } else if (funcName == memref_await_future) {
@@ -239,7 +258,8 @@ struct ConcreteToCAPICallPattern : public mlir::OpRewritePattern<ConcreteOp> {
       if (!type.isa<mlir::MemRefType>()) {
         operands.push_back(operand.get());
       } else {
-        operands.push_back(getCastedMemRef(rewriter, operand.get()));
+        operands.push_back(
+            mlir::concretelang::getCastedMemRef(rewriter, operand.get()));
       }
     }
 
@@ -329,7 +349,7 @@ void wopPBSAddOperands(Concrete::WopPBSCRTLweBufferOp op,
 
   auto globalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*globalMemref).getType(), (*globalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, globalRef));
+  operands.push_back(mlir::concretelang::getCastedMemRef(rewriter, globalRef));
 
   //   lwe_small_size
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
@@ -398,7 +418,8 @@ void encodePlaintextWithCrtAddOperands(
   auto modsGlobalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*modsGlobalMemref).getType(),
       (*modsGlobalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, modsGlobalRef));
+  operands.push_back(
+      mlir::concretelang::getCastedMemRef(rewriter, modsGlobalRef));
 
   // mods_prod
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
@@ -441,7 +462,8 @@ void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
   auto crtDecompositionGlobalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*crtDecompositionGlobalMemref).getType(),
       (*crtDecompositionGlobalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, crtDecompositionGlobalRef));
+  operands.push_back(
+      mlir::concretelang::getCastedMemRef(rewriter, crtDecompositionGlobalRef));
 
   // crt_bits
   mlir::Type crtBitsType = mlir::RankedTensorType::get(
@@ -460,7 +482,8 @@ void encodeLutForWopPBSAddOperands(Concrete::EncodeLutForCrtWopPBSBufferOp op,
   auto crtBitsGlobalRef = rewriter.create<memref::GetGlobalOp>(
       op.getLoc(), (*crtBitsGlobalMemref).getType(),
       (*crtBitsGlobalMemref).getName());
-  operands.push_back(getCastedMemRef(rewriter, crtBitsGlobalRef));
+  operands.push_back(
+      mlir::concretelang::getCastedMemRef(rewriter, crtBitsGlobalRef));
   // modulus_product
   operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
       op.getLoc(), op.getModulusProductAttr()));
@@ -515,6 +538,26 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
         .add<ConcreteToCAPICallPattern<Concrete::EncodeLutForCrtWopPBSBufferOp,
                                        memref_encode_lut_for_crt_woppbs>>(
             &getContext(), encodeLutForWopPBSAddOperands);
+    patterns
+        .add<ConcreteToCAPICallPattern<Concrete::BatchedAddLweBufferOp,
+                                       memref_batched_add_lwe_ciphertexts_u64>>(
+            &getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedAddPlaintextLweBufferOp,
+        memref_batched_add_plaintext_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedAddPlaintextCstLweBufferOp,
+        memref_batched_add_plaintext_cst_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedMulCleartextLweBufferOp,
+        memref_batched_mul_cleartext_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<ConcreteToCAPICallPattern<
+        Concrete::BatchedMulCleartextCstLweBufferOp,
+        memref_batched_mul_cleartext_cst_lwe_ciphertext_u64>>(&getContext());
+    patterns.add<
+        ConcreteToCAPICallPattern<Concrete::BatchedNegateLweBufferOp,
+                                  memref_batched_negate_lwe_ciphertext_u64>>(
+        &getContext());
     if (gpu) {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_cuda_u64>>(
@@ -532,6 +575,11 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
                                     memref_batched_bootstrap_lwe_cuda_u64>>(
           &getContext(),
           bootstrapAddOperands<Concrete::BatchedBootstrapLweBufferOp>);
+      patterns.add<ConcreteToCAPICallPattern<
+          Concrete::BatchedMappedBootstrapLweBufferOp,
+          memref_batched_mapped_bootstrap_lwe_cuda_u64>>(
+          &getContext(),
+          bootstrapAddOperands<Concrete::BatchedMappedBootstrapLweBufferOp>);
     } else {
       patterns.add<ConcreteToCAPICallPattern<Concrete::KeySwitchLweBufferOp,
                                              memref_keyswitch_lwe_u64>>(
@@ -549,6 +597,11 @@ struct ConcreteToCAPIPass : public ConcreteToCAPIBase<ConcreteToCAPIPass> {
                                          memref_batched_bootstrap_lwe_u64>>(
               &getContext(),
               bootstrapAddOperands<Concrete::BatchedBootstrapLweBufferOp>);
+      patterns.add<
+          ConcreteToCAPICallPattern<Concrete::BatchedMappedBootstrapLweBufferOp,
+                                    memref_batched_mapped_bootstrap_lwe_u64>>(
+          &getContext(),
+          bootstrapAddOperands<Concrete::BatchedMappedBootstrapLweBufferOp>);
     }
 
     patterns.add<ConcreteToCAPICallPattern<Concrete::WopPBSCRTLweBufferOp,

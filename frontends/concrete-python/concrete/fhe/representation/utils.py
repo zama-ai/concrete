@@ -81,7 +81,7 @@ def format_constant(constant: Any, maximum_length: int = 45, keep_newlines: bool
     return result
 
 
-def format_indexing_element(indexing_element: Union[int, np.integer, slice]):
+def format_indexing_element(indexing_element: Union[int, np.integer, slice, Any]):
     """
     Format an indexing element.
 

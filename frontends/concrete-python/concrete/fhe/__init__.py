@@ -4,21 +4,26 @@ Concrete.
 
 # pylint: disable=import-error,no-name-in-module
 
-from concrete.compiler import EvaluationKeys, PublicArguments, PublicResult
+from concrete.compiler import EvaluationKeys, Parameter, PublicArguments, PublicResult
 
 from .compilation import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
+    BitwiseStrategy,
     Circuit,
     Client,
     ClientSpecs,
+    ComparisonStrategy,
     Compiler,
     Configuration,
     DebugArtifacts,
     EncryptionStatus,
     Keys,
+    MinMaxStrategy,
+    MultivariateStrategy,
     ParameterSelectionStrategy,
     Server,
+    Value,
 )
 from .compilation.decorators import circuit, compiler
 from .extensions import (
@@ -26,14 +31,18 @@ from .extensions import (
     LookupTable,
     array,
     conv,
+    hint,
     maxpool,
+    multivariate,
     one,
     ones,
+    ones_like,
     round_bit_pattern,
     tag,
     univariate,
     zero,
     zeros,
+    zeros_like,
 )
 from .mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from .representation import Graph
@@ -170,5 +179,6 @@ from .tracing.typing import (
     uint63,
     uint64,
 )
+from .version import __version__
 
 # pylint: enable=import-error,no-name-in-module

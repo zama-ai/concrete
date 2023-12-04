@@ -431,8 +431,7 @@ disable=raw-checker-failed,
         useless-suppression,
         deprecated-pragma,
         use-symbolic-message-instead,
-
-		duplicate-code,
+        duplicate-code,
         fixme,
         superfluous-parens,
         too-few-public-methods,
@@ -445,7 +444,10 @@ disable=raw-checker-failed,
         too-many-statements,
         unnecessary-lambda-assignment,
         use-implicit-booleaness-not-comparison,
-        wrong-import-order
+        wrong-import-order,
+        unsubscriptable-object,
+        no-else-continue,
+        unnecessary-comprehension
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

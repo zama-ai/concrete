@@ -30,20 +30,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let precisions = 1..=16;
     let log_norm2 = 10;
 
+    let ciphertext_modulus_log = 64;
+    let fft_precision = 53;
+
     let search_space = SearchSpace {
         glwe_log_polynomial_sizes,
         glwe_dimensions,
         internal_lwe_dimensions,
+        levelled_only_lwe_dimensions: DEFAUT_DOMAINS.free_lwe,
     };
 
     let config = Config {
         security_level,
         maximum_acceptable_error_probability: p_error,
-        ciphertext_modulus_log: 64,
+        key_sharing: true,
+        ciphertext_modulus_log,
+        fft_precision,
         complexity_model: &CpuComplexity::default(),
     };
 
-    let cache = decomposition::cache(security_level, processing_unit, None, true);
+    let cache = decomposition::cache(
+        security_level,
+        processing_unit,
+        None,
+        true,
+        ciphertext_modulus_log,
+        53,
+    );
 
     let solutions: Vec<_> = precisions
         .clone()

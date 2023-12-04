@@ -9,6 +9,7 @@
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
 #include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
+#include "concretelang/Conversion/Utils/RTOpConverter.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
@@ -369,48 +370,18 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
     mlir::concretelang::populateWithTensorTypeConverterPatterns(
         patterns, target, converter);
 
-    // Conversion of RT Dialect Ops
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::Tracing::TraceCiphertextOp>(target, converter);
+
     patterns.add<
         mlir::concretelang::GenericTypeConverterPattern<
             mlir::concretelang::Tracing::TraceCiphertextOp>,
         mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
-        mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::MakeReadyFutureOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::AwaitFutureOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::CreateAsyncTaskOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::WorkFunctionReturnOp>,
-        mlir::concretelang::GenericTypeConverterPattern<
-            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                                 converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::Tracing::TraceCiphertextOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::AwaitFutureOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
-        target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
+        mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>>(
+        &getContext(), converter);
+
+    mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
+                                                            converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

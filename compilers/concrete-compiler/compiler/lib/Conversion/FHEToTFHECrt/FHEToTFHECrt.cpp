@@ -18,6 +18,7 @@
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/Dialects/SCF.h"
 #include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
+#include "concretelang/Conversion/Utils/RTOpConverter.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
@@ -914,6 +915,29 @@ struct InsertSliceOpPattern : public CrtOpPattern<mlir::tensor::InsertSliceOp> {
   };
 };
 
+/// Zero op result can be a tensor after CRT encoding, and thus need to be
+/// rewritten as a ZeroTensor op
+struct ZeroOpPattern : public CrtOpPattern<FHE::ZeroEintOp> {
+  ZeroOpPattern(mlir::MLIRContext *context,
+                mlir::concretelang::CrtLoweringParameters params,
+                mlir::PatternBenefit benefit = 1)
+      : CrtOpPattern<FHE::ZeroEintOp>(context, params, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(FHE::ZeroEintOp op, FHE::ZeroEintOp::Adaptor adaptor,
+                  ::mlir::ConversionPatternRewriter &rewriter) const override {
+
+    mlir::TypeConverter *converter = this->getTypeConverter();
+    auto glweOrTensorType = converter->convertType(op.getResult().getType());
+    if (mlir::dyn_cast<mlir::TensorType>(glweOrTensorType)) {
+      rewriter.replaceOpWithNewOp<TFHE::ZeroTensorGLWEOp>(op, glweOrTensorType);
+    } else {
+      rewriter.replaceOpWithNewOp<TFHE::ZeroGLWEOp>(op, glweOrTensorType);
+    }
+    return mlir::success();
+  };
+};
+
 } // namespace lowering
 
 struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
@@ -972,23 +996,6 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
         mlir::tensor::CollapseShapeOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
         target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::AwaitFutureOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
-        target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
-    mlir::concretelang::addDynamicallyLegalTypeOp<
-        mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
 
     //---------------------------------------------------------- Adding patterns
     mlir::RewritePatternSet patterns(&getContext());
@@ -999,10 +1006,8 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
                                                    converter);
 
     // Patterns for the `FHE` dialect operations
+    patterns.add<lowering::ZeroOpPattern>(&getContext(), loweringParameters);
     patterns.add<
-        //    |_ `FHE::zero_eint`
-        mlir::concretelang::GenericOneToOneOpConversionPattern<
-            FHE::ZeroEintOp, TFHE::ZeroGLWEOp>,
         //    |_ `FHE::zero_tensor`
         mlir::concretelang::GenericOneToOneOpConversionPattern<
             FHE::ZeroTensorOp, TFHE::ZeroTensorGLWEOp>>(&getContext(),
@@ -1068,29 +1073,11 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
     patterns.add<lowering::TensorFromElementsOpPattern>(patterns.getContext(),
                                                         loweringParameters);
 
-    // Patterns for the `RT` dialect operations.
-    patterns.add<
-        // mlir::concretelang::TypeConvertingReinstantiationPattern<
-        //     mlir::func::ReturnOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::scf::YieldOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::MakeReadyFutureOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::AwaitFutureOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::CreateAsyncTaskOp, true>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::WorkFunctionReturnOp>,
-        mlir::concretelang::TypeConvertingReinstantiationPattern<
-            mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                                 converter);
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::scf::YieldOp>>(&getContext(), converter);
+
+    mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
+                                                            converter);
 
     //--------------------------------------------------------- Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

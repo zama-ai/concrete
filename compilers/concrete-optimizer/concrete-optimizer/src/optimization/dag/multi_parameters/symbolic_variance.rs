@@ -1,8 +1,6 @@
 use std::fmt;
 
-use crate::optimization::dag::multi_parameters::operations_value::{
-    OperationsValue, VALUE_INDEX_FRESH, VALUE_INDEX_PBS,
-};
+use crate::optimization::dag::multi_parameters::operations_value::OperationsValue;
 
 /**
  * A variance that is represented as a linear combination of base variances.
@@ -147,16 +145,15 @@ impl SymbolicVariance {
         // this is the maximum value of fresh base noise and pbs base noise
         let mut current_max: f64 = 0.0;
         for partition in 0..self.nb_partitions() {
-            let partition_offset = partition * self.coeffs.index.nb_coeff_per_partition();
-            let fresh_coeff = self.coeffs[partition_offset + VALUE_INDEX_FRESH];
-            let pbs_noise_coeff = self.coeffs[partition_offset + VALUE_INDEX_PBS];
+            let fresh_coeff = self.coeff_input(partition);
+            let pbs_noise_coeff = self.coeff_pbs(partition);
             current_max = current_max.max(fresh_coeff).max(pbs_noise_coeff);
         }
-        assert!(1.0 <= current_max);
-        assert!(
-            current_max <= new_coeff,
-            "Non monotonious levelled op: {current_max} <= {new_coeff}"
-        );
+        // assert!(1.0 <= current_max);
+        // assert!(
+        //     current_max <= new_coeff,
+        //     "Non monotonious levelled op: {current_max} <= {new_coeff}"
+        // );
         // replace all current_max by new_coeff
         // multiply everything else by new_coeff / current_max
         let mut new = self.clone();
@@ -176,6 +173,13 @@ impl SymbolicVariance {
             *coeff = coeff.max(other.coeffs[i]);
         }
         Self { coeffs, ..*self }
+    }
+
+    pub fn compress(&self, detect_used: &[bool]) -> Self {
+        Self {
+            coeffs: self.coeffs.compress(detect_used),
+            ..(*self)
+        }
     }
 }
 

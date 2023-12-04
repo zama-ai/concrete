@@ -28,10 +28,13 @@ concrete_optimizer::Options options_from_config(optimizer::Config config) {
   concrete_optimizer::Options options = {
       /* .security_level = */ config.security,
       /* .maximum_acceptable_error_probability = */ config.p_error,
+      /* . key_sharing */ config.key_sharing,
       /* .default_log_norm2_woppbs = */ config.fallback_log_norm_woppbs,
       /* .use_gpu_constraints = */ config.use_gpu_constraints,
       /* .encoding = */ config.encoding,
       /* .cache_on_disk = */ config.cache_on_disk,
+      /* .ciphertext_modulus_log = */ config.ciphertext_modulus_log,
+      /* .fft_precision = */ config.fft_precision,
   };
   return options;
 }
@@ -137,7 +140,7 @@ template <typename Solution> void displaySolution(const Solution &solution);
 
 template <> void displaySolution(const optimizer::CircuitSolution &solution) {
   llvm::errs() << "-- Circuit Solution\n";
-  llvm::errs() << solution.dump().c_str();
+  llvm::errs() << solution.short_dump().c_str();
 }
 
 template <> void displaySolution(const optimizer::DagSolution &sol) {
@@ -285,7 +288,9 @@ llvm::Error checkPErrorSolution(Solution solution, optimizer::Config config) {
     return StreamStringError() << "Cannot find crypto parameters";
   }
 
-  if (/*descr.dag &&*/ !config.display && /*naive_user &&*/
+  bool naive_config = (std::isnan(config.global_p_error) &&
+                       config.p_error <= WARN_ABOVE_GLOBAL_ERROR_RATE);
+  if (!config.display && naive_config &&
       solution.global_p_error > WARN_ABOVE_GLOBAL_ERROR_RATE) {
     llvm::errs() << "WARNING: high error rate, more details with "
                     "--display-optimizer-choice\n";

@@ -98,9 +98,9 @@ class Graph:
                 node_results[node] = node(args[self.input_indices[node]])
                 continue
 
-            pred_results = [node_results[pred] for pred in self.ordered_preds_of(node)]
+            pred_results = [deepcopy(node_results[pred]) for pred in self.ordered_preds_of(node)]
 
-            if p_error > 0.0 and node.converted_to_table_lookup:
+            if p_error > 0.0 and node.converted_to_table_lookup:  # pragma: no cover
                 variable_input_indices = [
                     idx
                     for idx, pred in enumerate(self.ordered_preds_of(node))
@@ -208,6 +208,9 @@ class Graph:
             highlighted_nodes (Optional[Dict[Node, List[str]]], default = None):
                 nodes to be highlighted and their corresponding messages
 
+            highlighted_result (Optional[List[str]], default = None):
+                messages corresponding to highlighted return line
+
             show_types (bool, default = True):
                 whether to show types of nodes
 
@@ -305,10 +308,13 @@ class Graph:
             if (
                 not show_assigned_bit_widths
                 and isinstance(output_value.dtype, Integer)
-                and "original_bit_width" in node.properties
+                and ("original_bit_width" in node.properties or "bit_width_hint" in node.properties)
             ):
                 output_value = deepcopy(output_value)
-                output_value.dtype.bit_width = node.properties["original_bit_width"]
+                output_value.dtype.bit_width = max(
+                    node.properties.get("original_bit_width", -1),
+                    node.properties.get("bit_width_hint", -1),
+                )
 
             # remember metadata of the node
             line_metadata.append(
@@ -366,7 +372,7 @@ class Graph:
         for node in self.ordered_outputs():
             returns.append(f"%{id_map[node]}")
         lines.append(f"return {', '.join(returns)}")
-        if highlighted_result:
+        if highlighted_result:  # pragma: no cover
             highlighted_lines[len(lines) - 1] = highlighted_result
 
         # strip whitespaces
@@ -473,7 +479,7 @@ class Graph:
 
     def update_with_bounds(self, bounds: Dict[Node, Dict[str, Union[np.integer, np.floating]]]):
         """
-        Update `Value`s within the `Graph` according to measured bounds.
+        Update `ValueDescription`s within the `Graph` according to measured bounds.
 
         Args:
             bounds (Dict[Node, Dict[str, Union[np.integer, np.floating]]]):
@@ -652,6 +658,7 @@ class Graph:
         operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
         is_encrypted_filter: Optional[bool] = None,
         custom_filter: Optional[Callable[[Node], bool]] = None,
+        assigned_bit_width: bool = False,
     ) -> int:
         """
         Get maximum integer bit-width within the graph.
@@ -665,11 +672,14 @@ class Graph:
             operation_filter (Optional[Union[str, List[str], re.Pattern]], default = None):
                 filter for operations
 
-            is_encrypted_filter (Optional[bool], default = None)
+            is_encrypted_filter (Optional[bool], default = None):
                 filter for encryption status
 
             custom_filter (Optional[Callable[[Node], bool]], default = None):
                 flexible filter
+
+            assigned_bit_width (Optional[bool], default = None):
+                whether to query on assigned bit-widths
 
         Returns:
             int:
@@ -679,7 +689,16 @@ class Graph:
 
         query = self.query_nodes(tag_filter, operation_filter, is_encrypted_filter, custom_filter)
         filtered_bit_widths = (
-            node.output.dtype.bit_width for node in query if isinstance(node.output.dtype, Integer)
+            (
+                node.output.dtype.bit_width
+                if assigned_bit_width
+                else max(
+                    node.properties.get("original_bit_width", node.output.dtype.bit_width),
+                    node.properties.get("bit_width_hint", -1),
+                )
+            )
+            for node in query
+            if isinstance(node.output.dtype, Integer)
         )
         return max(filtered_bit_widths, default=-1)
 

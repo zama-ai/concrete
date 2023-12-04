@@ -2,177 +2,168 @@
 Tests of execution of shift operations.
 """
 
+import random
+
+import numpy as np
 import pytest
 
 from concrete import fhe
+from concrete.fhe.dtypes import Integer
+from concrete.fhe.values import ValueDescription
+
+cases = []
+for lhs_bit_width in range(1, 5):
+    for rhs_bit_width in range(1, 3):
+        cases += [
+            [
+                # operation
+                operation,
+                # bit widths
+                lhs_bit_width,
+                rhs_bit_width,
+                # shapes
+                (),
+                (),
+                # strategy
+                None,
+            ]
+            for operation in [
+                ("<<", lambda x, y: x << y),
+                (">>", lambda x, y: x >> y),
+            ]
+        ]
+
+for _ in range(8):
+    cases.append(
+        [
+            # operation
+            random.choice(
+                [
+                    ("<<", lambda x, y: x << y),
+                ]
+            ),
+            # bit widths
+            random.choice([5, 6]),
+            random.choice([1, 2]),
+            # shapes
+            random.choice([(), (2,), (3, 2)]),
+            random.choice([(), (2,), (3, 2)]),
+            # strategy
+            random.choice(
+                [
+                    fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
+                    fhe.BitwiseStrategy.THREE_TLU_CASTED,
+                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
+                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
+                    fhe.BitwiseStrategy.CHUNKED,
+                ]
+            ),
+        ]
+    )
+
+for _ in range(8):
+    cases.append(
+        [
+            # operation
+            random.choice(
+                [
+                    (">>", lambda x, y: x >> y),
+                ]
+            ),
+            # bit widths
+            random.choice([5, 6]),
+            random.choice([1, 2]),
+            # shapes
+            random.choice([(), (2,), (3, 2)]),
+            random.choice([(), (2,), (3, 2)]),
+            # strategy
+            random.choice(
+                [
+                    fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
+                    fhe.BitwiseStrategy.THREE_TLU_CASTED,
+                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
+                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
+                    fhe.BitwiseStrategy.CHUNKED,
+                ]
+            ),
+        ]
+    )
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.mark.parametrize(
-    "function",
-    [
-        pytest.param(
-            lambda x, y: x << y,
-            id="x << y",
-        ),
-    ],
+    "operation,lhs_bit_width,rhs_bit_width,lhs_shape,rhs_shape,strategy",
+    cases,
 )
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {
-            "x": {"range": [0, 1], "status": "encrypted"},
-            "y": {"range": [0, 7], "status": "encrypted"},
-        },
-        {
-            "x": {"range": [0, 3], "status": "encrypted"},
-            "y": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
-        },
-        {
-            "x": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
-            "y": {"range": [0, 3], "status": "encrypted"},
-        },
-        {
-            "x": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
-            "y": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
-        },
-    ],
-)
-def test_left_shift(function, parameters, helpers):
+def test_shift(
+    operation,
+    lhs_bit_width,
+    rhs_bit_width,
+    lhs_shape,
+    rhs_shape,
+    strategy,
+    helpers,
+):
     """
-    Test left shift between encrypted integers.
+    Test shift operations between encrypted integers.
     """
 
-    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    configuration = helpers.configuration()
+    name, function = operation
+
+    lhs_dtype = Integer(is_signed=False, bit_width=lhs_bit_width)
+    rhs_dtype = Integer(is_signed=False, bit_width=rhs_bit_width)
+
+    lhs_description = ValueDescription(lhs_dtype, shape=lhs_shape, is_encrypted=True)
+    rhs_description = ValueDescription(rhs_dtype, shape=rhs_shape, is_encrypted=True)
+
+    print()
+    print()
+    print(
+        f"[{lhs_description}] ({name}) [{rhs_description}]"
+        + (f" {{{strategy}}}" if strategy is not None else "")
+    )
+    print()
+    print()
+
+    parameter_encryption_statuses = {"x": "encrypted", "y": "encrypted"}
+    configuration = helpers.configuration().fork(use_insecure_key_cache=False)
+
+    if strategy is not None:
+        configuration = configuration.fork(bitwise_strategy_preference=[strategy])
 
     compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
-    inputset = helpers.generate_inputset(parameters)
+    inputset = [
+        (
+            np.random.randint(lhs_dtype.min(), lhs_dtype.max() + 1, size=lhs_shape),
+            np.random.randint(rhs_dtype.min(), rhs_dtype.max() + 1, size=rhs_shape),
+        )
+        for _ in range(100)
+    ]
     circuit = compiler.compile(inputset, configuration)
 
-    sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample, retries=3)
-
-
-@pytest.mark.parametrize(
-    "function",
-    [
-        pytest.param(
-            lambda x, y: x >> y,
-            id="x >> y",
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {
-            "x": {"range": [0, 1 << 7], "status": "encrypted"},
-            "y": {"range": [0, 7], "status": "encrypted"},
-        },
-        {
-            "x": {"range": [0, 1 << 4], "status": "encrypted"},
-            "y": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
-        },
-        {
-            "x": {"range": [0, 1 << 4], "status": "encrypted", "shape": (2,)},
-            "y": {"range": [0, 3], "status": "encrypted"},
-        },
-        {
-            "x": {"range": [0, 1 << 4], "status": "encrypted", "shape": (2,)},
-            "y": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
-        },
-    ],
-)
-def test_right_shift(function, parameters, helpers):
-    """
-    Test right shift between encrypted integers.
-    """
-
-    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    configuration = helpers.configuration()
-
-    compiler = fhe.Compiler(function, parameter_encryption_statuses)
-
-    inputset = helpers.generate_inputset(parameters)
-    circuit = compiler.compile(inputset, configuration)
-
-    sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample, retries=3)
-
-
-@pytest.mark.parametrize(
-    "function",
-    [
-        pytest.param(
-            lambda x, y: x << y,
-            id="x << y",
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {
-            "x": {"range": [0, 1], "status": "encrypted"},
-            "y": {"range": [0, 7], "status": "encrypted"},
-        },
-    ],
-)
-def test_left_shift_coverage(function, parameters, helpers):
-    """
-    Test left shift between encrypted integers all cases.
-    """
-
-    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    configuration = helpers.configuration()
-
-    compiler = fhe.Compiler(function, parameter_encryption_statuses)
-
-    inputset = helpers.generate_inputset(parameters)
-    circuit = compiler.compile(inputset, configuration)
-
-    for i in range(2):
-        for j in range(8):
-            helpers.check_execution(circuit, function, [i, j], retries=3)
-
-
-@pytest.mark.parametrize(
-    "function",
-    [
-        pytest.param(
-            lambda x, y: x >> y,
-            id="x >> y",
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {
-            "x": {"range": [0, 1 << 7], "status": "encrypted"},
-            "y": {"range": [0, 7], "status": "encrypted"},
-        },
-    ],
-)
-def test_right_shift_coverage(function, parameters, helpers):
-    """
-    Test right shift between encrypted integers all cases.
-    """
-
-    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    configuration = helpers.configuration()
-
-    compiler = fhe.Compiler(function, parameter_encryption_statuses)
-
-    inputset = helpers.generate_inputset(parameters)
-    circuit = compiler.compile(inputset, configuration)
-
-    helpers.check_execution(circuit, function, [0b11, 0], retries=3)
-    helpers.check_execution(circuit, function, [0b11, 1], retries=3)
-    helpers.check_execution(circuit, function, [0b110, 2], retries=3)
-    helpers.check_execution(circuit, function, [0b1100, 3], retries=3)
-    helpers.check_execution(circuit, function, [0b11000, 4], retries=3)
-    helpers.check_execution(circuit, function, [0b110000, 5], retries=3)
-    helpers.check_execution(circuit, function, [0b110000, 6], retries=3)
-    helpers.check_execution(circuit, function, [0b1100000, 7], retries=3)
+    samples = [
+        [
+            np.zeros(lhs_shape, dtype=np.int64),
+            np.zeros(rhs_shape, dtype=np.int64),
+        ],
+        [
+            np.ones(lhs_shape, dtype=np.int64) * lhs_dtype.min(),
+            np.ones(rhs_shape, dtype=np.int64) * rhs_dtype.min(),
+        ],
+        [
+            np.ones(lhs_shape, dtype=np.int64) * lhs_dtype.max(),
+            np.ones(rhs_shape, dtype=np.int64) * rhs_dtype.min(),
+        ],
+        [
+            np.ones(lhs_shape, dtype=np.int64) * lhs_dtype.max(),
+            np.ones(rhs_shape, dtype=np.int64) * rhs_dtype.max(),
+        ],
+        [
+            np.random.randint(lhs_dtype.min(), lhs_dtype.max() + 1, size=lhs_shape),
+            np.random.randint(rhs_dtype.min(), rhs_dtype.max() + 1, size=rhs_shape),
+        ],
+    ]
+    for sample in samples:
+        helpers.check_execution(circuit, function, sample, retries=5)

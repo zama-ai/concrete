@@ -2,16 +2,106 @@
 Declaration of various functions and constants related to compilation.
 """
 
+import json
+import re
 from copy import deepcopy
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
+import numpy as np
 
-from ..dtypes import Float, Integer
+from ..dtypes import Float, Integer, SignedInteger, UnsignedInteger
 from ..representation import Graph, Node, Operation
+from ..values import ValueDescription
 from .artifacts import DebugArtifacts
+from .specs import ClientSpecs
 
 # ruff: noqa: ERA001
+
+
+def validate_input_args(
+    client_specs: ClientSpecs,
+    *args: Optional[Union[int, np.ndarray, List]],
+) -> List[Optional[Union[int, np.ndarray]]]:
+    """Validate input arguments.
+
+    Args:
+        client_specs (ClientSpecs):
+            client specification
+        *args (Optional[Union[int, np.ndarray, List]]):
+            argument(s) for evaluation
+
+    Returns:
+        List[Optional[Union[int, np.ndarray]]]: ordered validated args
+    """
+    client_parameters_json = json.loads(client_specs.client_parameters.serialize())["circuits"][0]
+    assert "inputs" in client_parameters_json
+    input_specs = client_parameters_json["inputs"]
+    if len(args) != len(input_specs):
+        message = f"Expected {len(input_specs)} inputs but got {len(args)}"
+        raise ValueError(message)
+
+    sanitized_args: Dict[int, Optional[Union[int, np.ndarray]]] = {}
+    for index, (arg, spec) in enumerate(zip(args, input_specs)):
+        if arg is None:
+            sanitized_args[index] = None
+            continue
+
+        if isinstance(arg, list):
+            arg = np.array(arg)
+
+        is_valid = isinstance(arg, (int, np.integer)) or (
+            isinstance(arg, np.ndarray) and np.issubdtype(arg.dtype, np.integer)
+        )
+
+        if "lweCiphertext" in spec["typeInfo"].keys():
+            type_info = spec["typeInfo"]["lweCiphertext"]
+            is_encrypted = True
+            shape = tuple(type_info["abstractShape"]["dimensions"])
+            assert "integer" in type_info["encoding"].keys()
+            width = type_info["encoding"]["integer"]["width"]
+            is_signed = type_info["encoding"]["integer"]["isSigned"]
+        elif "plaintext" in spec["typeInfo"].keys():
+            type_info = spec["typeInfo"]["plaintext"]
+            is_encrypted = False
+            width = type_info["integerPrecision"]
+            is_signed = type_info["isSigned"]
+            shape = tuple(type_info["shape"]["dimensions"])
+        else:
+            message = f"Expected a valid type in {spec['typeInfo'].keys()}"
+            raise ValueError(message)
+
+        expected_dtype = SignedInteger(width) if is_signed else UnsignedInteger(width)
+        expected_value = ValueDescription(expected_dtype, shape, is_encrypted)
+        if is_valid:
+            expected_min = expected_dtype.min()
+            expected_max = expected_dtype.max()
+
+            if not is_encrypted:
+                # clear integers are signless
+                # (e.g., 8-bit clear integer can be in range -128, 255)
+                expected_min = -(expected_max // 2) - 1
+
+            actual_min = arg if isinstance(arg, int) else arg.min()
+            actual_max = arg if isinstance(arg, int) else arg.max()
+            actual_shape = () if isinstance(arg, int) else arg.shape
+
+            is_valid = (
+                actual_min >= expected_min
+                and actual_max <= expected_max
+                and actual_shape == expected_value.shape
+            )
+
+            if is_valid:
+                sanitized_args[index] = arg
+
+        if not is_valid:
+            actual_value = ValueDescription.of(arg, is_encrypted=is_encrypted)
+            message = f"Expected argument {index} to be {expected_value} but it's {actual_value}"
+            raise ValueError(message)
+
+    ordered_sanitized_args = [sanitized_args[i] for i in range(len(sanitized_args))]
+    return ordered_sanitized_args
 
 
 def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
@@ -57,12 +147,16 @@ def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
         all_nodes, start_nodes, terminal_node = subgraph_to_fuse
         processed_terminal_nodes.add(terminal_node)
 
-        fused_node, node_before_subgraph = convert_subgraph_to_subgraph_node(
+        conversion_result = convert_subgraph_to_subgraph_node(
             graph,
             all_nodes,
             start_nodes,
             terminal_node,
         )
+        if conversion_result is None:
+            continue
+
+        fused_node, node_before_subgraph = conversion_result
         nx_graph.add_node(fused_node)
 
         if terminal_node in graph.output_nodes.values():
@@ -526,7 +620,7 @@ def convert_subgraph_to_subgraph_node(
     all_nodes: Dict[Node, None],
     start_nodes: Dict[Node, None],
     terminal_node: Node,
-) -> Tuple[Node, Node]:
+) -> Optional[Tuple[Node, Node]]:
     """
     Convert a subgraph to Operation.Generic node.
 
@@ -548,12 +642,17 @@ def convert_subgraph_to_subgraph_node(
             if subgraph is not fusable
 
     Returns:
-        Tuple[Node, Node]:
+        Optional[Tuple[Node, Node]]:
             None if the subgraph cannot be fused,
             subgraph node and its predecessor otherwise
     """
 
     nx_graph = graph.graph
+
+    if terminal_node.operation == Operation.Generic and terminal_node.properties["attributes"].get(
+        "is_multivariate"
+    ):
+        return None
 
     variable_input_nodes = [node for node in start_nodes if node.operation != Operation.Constant]
     if len(variable_input_nodes) != 1:
@@ -573,7 +672,7 @@ def convert_subgraph_to_subgraph_node(
         )
 
     variable_input_node = variable_input_nodes[0]
-    check_subgraph_fusability(graph, all_nodes, variable_input_node)
+    check_subgraph_fusibility(graph, all_nodes, variable_input_node)
 
     nx_subgraph = nx.MultiDiGraph(nx_graph)
     nodes_to_remove = [node for node in nx_subgraph.nodes() if node not in all_nodes]
@@ -624,7 +723,7 @@ def convert_subgraph_to_subgraph_node(
     return subgraph_node, variable_input_node
 
 
-def check_subgraph_fusability(
+def check_subgraph_fusibility(
     graph: Graph,
     all_nodes: Dict[Node, None],
     variable_input_node: Node,
@@ -683,3 +782,21 @@ def check_subgraph_fusability(
             )
 
     return True
+
+
+def friendly_type_format(type_: type) -> str:
+    """Convert a type to a string. Remove package name and class/type keywords."""
+    result = str(type_)
+    result = re.sub(r"<\w+ '(\w+)'>", r"\1", result)
+    result = re.sub(r"(\w+\.)+", "", result)
+    if result.startswith("Union"):
+        # py3.8: Optional are Union
+        try:
+            arg0, arg1 = type_.__args__  # type: ignore
+        except (AttributeError, ValueError):
+            pass
+        else:
+            if arg1 == None.__class__:
+                return f"Optional[{friendly_type_format(arg0)}]"  # pragma: no cover
+
+    return result

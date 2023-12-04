@@ -20,6 +20,16 @@ char mul_eint_int[] = "mul_eint_int";
 char neg_eint[] = "neg_eint";
 char keyswitch[] = "keyswitch";
 char bootstrap[] = "bootstrap";
+
+char batched_add_eint[] = "batched_add_eint";
+char batched_add_eint_int[] = "batched_add_eint_int";
+char batched_add_eint_int_cst[] = "batched_add_eint_int_cst";
+char batched_mul_eint_int[] = "batched_mul_eint_int";
+char batched_mul_eint_int_cst[] = "batched_mul_eint_int_cst";
+char batched_neg_eint[] = "batched_neg_eint";
+char batched_keyswitch[] = "batched_keyswitch";
+char batched_bootstrap[] = "batched_bootstrap";
+char batched_mapped_bootstrap[] = "batched_mapped_bootstrap";
 } // namespace
 
 template <typename Op, char const *processName, bool copyAttributes = false>
@@ -87,6 +97,43 @@ void registerSDFGConvertibleOpInterfaceExternalModels(
         ReplaceWithProcessSDFGConversionInterface<
             mlir::concretelang::Concrete::BootstrapLweTensorOp, bootstrap,
             true>>(*ctx);
+
+    mlir::concretelang::Concrete::BatchedAddLweTensorOp::attachInterface<
+        ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedAddLweTensorOp,
+            batched_add_eint>>(*ctx);
+    mlir::concretelang::Concrete::BatchedAddPlaintextLweTensorOp::
+        attachInterface<ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedAddPlaintextLweTensorOp,
+            batched_add_eint_int>>(*ctx);
+    mlir::concretelang::Concrete::BatchedAddPlaintextCstLweTensorOp::
+        attachInterface<ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedAddPlaintextCstLweTensorOp,
+            batched_add_eint_int_cst>>(*ctx);
+    mlir::concretelang::Concrete::BatchedMulCleartextLweTensorOp::
+        attachInterface<ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedMulCleartextLweTensorOp,
+            batched_mul_eint_int>>(*ctx);
+    mlir::concretelang::Concrete::BatchedMulCleartextCstLweTensorOp::
+        attachInterface<ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedMulCleartextCstLweTensorOp,
+            batched_mul_eint_int_cst>>(*ctx);
+    mlir::concretelang::Concrete::BatchedNegateLweTensorOp::attachInterface<
+        ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedNegateLweTensorOp,
+            batched_neg_eint>>(*ctx);
+    mlir::concretelang::Concrete::BatchedKeySwitchLweTensorOp::attachInterface<
+        ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedKeySwitchLweTensorOp,
+            batched_keyswitch, true>>(*ctx);
+    mlir::concretelang::Concrete::BatchedBootstrapLweTensorOp::attachInterface<
+        ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedBootstrapLweTensorOp,
+            batched_bootstrap, true>>(*ctx);
+    mlir::concretelang::Concrete::BatchedMappedBootstrapLweTensorOp::
+        attachInterface<ReplaceWithProcessSDFGConversionInterface<
+            mlir::concretelang::Concrete::BatchedMappedBootstrapLweTensorOp,
+            batched_mapped_bootstrap, true>>(*ctx);
   });
 }
 } // namespace SDFG

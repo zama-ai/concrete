@@ -3,10 +3,10 @@ Declaration of `ClearScalar` and `EncryptedScalar` wrappers.
 """
 
 from ..dtypes import BaseDataType
-from .value import Value
+from .value_description import ValueDescription
 
 
-def clear_scalar_builder(dtype: BaseDataType) -> Value:
+def clear_scalar_builder(dtype: BaseDataType) -> ValueDescription:
     """
     Build a clear scalar value.
 
@@ -15,17 +15,17 @@ def clear_scalar_builder(dtype: BaseDataType) -> Value:
             dtype of the value
 
     Returns:
-        Value:
-            clear scalar value with given dtype
+        ValueDescription:
+            clear scalar value description with given dtype
     """
 
-    return Value(dtype=dtype, shape=(), is_encrypted=False)
+    return ValueDescription(dtype=dtype, shape=(), is_encrypted=False)
 
 
 ClearScalar = clear_scalar_builder
 
 
-def encrypted_scalar_builder(dtype: BaseDataType) -> Value:
+def encrypted_scalar_builder(dtype: BaseDataType) -> ValueDescription:
     """
     Build an encrypted scalar value.
 
@@ -34,11 +34,11 @@ def encrypted_scalar_builder(dtype: BaseDataType) -> Value:
             dtype of the value
 
     Returns:
-        Value:
-            encrypted scalar value with given dtype
+        ValueDescription:
+            encrypted scalar value description with given dtype
     """
 
-    return Value(dtype=dtype, shape=(), is_encrypted=True)
+    return ValueDescription(dtype=dtype, shape=(), is_encrypted=True)
 
 
 EncryptedScalar = encrypted_scalar_builder

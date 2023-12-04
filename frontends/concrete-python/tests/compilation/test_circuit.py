@@ -8,7 +8,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from concrete.fhe import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, compiler
+from concrete import fhe
+from concrete.fhe import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, Value
 
 
 def test_circuit_str(helpers):
@@ -18,7 +19,7 @@ def test_circuit_str(helpers):
 
     configuration = helpers.configuration()
 
-    @compiler({"x": "encrypted", "y": "encrypted"})
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):
         return x + y
 
@@ -38,7 +39,7 @@ def test_circuit_feedback(helpers):
     p_error = 0.1
     global_p_error = 0.05
 
-    @compiler({"x": "encrypted", "y": "encrypted"})
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):
         return np.sqrt(((x + y) ** 2) + 10).astype(np.int64)
 
@@ -65,7 +66,7 @@ def test_circuit_bad_run(helpers):
 
     configuration = helpers.configuration()
 
-    @compiler({"x": "encrypted", "y": "encrypted"})
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):
         return x + y
 
@@ -128,6 +129,55 @@ def test_circuit_bad_run(helpers):
         "Expected argument 1 to be EncryptedScalar<uint6> but it's EncryptedScalar<uint7>"
     )
 
+    # with None
+    # ---------
+
+    with pytest.raises(ValueError) as excinfo:
+        circuit.encrypt_run_decrypt(None, 10)
+
+    assert str(excinfo.value) == "Expected argument 0 to be an fhe.Value but it's None"
+
+    # with non Value
+    # --------------
+
+    with pytest.raises(ValueError) as excinfo:
+        _, b = circuit.encrypt(None, 10)
+        circuit.run({"yes": "no"}, b)
+
+    assert str(excinfo.value) == "Expected argument 0 to be an fhe.Value but it's dict"
+
+
+def test_circuit_separate_args(helpers):
+    """
+    Test running circuit with separately encrypted args.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def function(x, y):
+        return x + y
+
+    inputset = [
+        (
+            np.random.randint(0, 10, size=()),
+            np.random.randint(0, 10, size=(3,)),
+        )
+        for _ in range(10)
+    ]
+    circuit = function.compile(inputset, configuration)
+
+    x = 4
+    y = [1, 2, 3]
+
+    x_encrypted, _ = circuit.encrypt(x, None)
+    _, y_encrypted = circuit.encrypt(None, y)
+
+    x_plus_y_encrypted = circuit.run(x_encrypted, y_encrypted)
+    x_plus_y = circuit.decrypt(x_plus_y_encrypted)
+
+    assert np.array_equal(x_plus_y, x + np.array(y))
+
 
 def test_client_server_api(helpers):
     """
@@ -136,12 +186,12 @@ def test_client_server_api(helpers):
 
     configuration = helpers.configuration()
 
-    @compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
     inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration.fork())
 
     # for coverage
     circuit.keygen()
@@ -168,18 +218,18 @@ def test_client_server_api(helpers):
         ]
 
         for client in clients:
-            args = client.encrypt([3, 8, 1])
+            arg = client.encrypt([3, 8, 1])
 
-            serialized_args = client.specs.serialize_public_args(args)
+            serialized_arg = arg.serialize()
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            deserialized_args = server.client_specs.deserialize_public_args(serialized_args)
+            deserialized_arg = Value.deserialize(serialized_arg)
             deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
-            result = server.run(deserialized_args, deserialized_evaluation_keys)
-            serialized_result = server.client_specs.serialize_public_result(result)
+            result = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
+            serialized_result = result.serialize()
 
-            deserialized_result = client.specs.deserialize_public_result(serialized_result)
+            deserialized_result = Value.deserialize(serialized_result)
             output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [45, 50, 43])
@@ -199,12 +249,12 @@ def test_client_server_api_crt(helpers):
 
     configuration = helpers.configuration()
 
-    @compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return x**2
 
     inputset = [np.random.randint(0, 200, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration.fork())
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir_path = Path(tmp_dir)
@@ -226,18 +276,18 @@ def test_client_server_api_crt(helpers):
         ]
 
         for client in clients:
-            args = client.encrypt([100, 150, 10])
+            arg = client.encrypt([100, 150, 10])
 
-            serialized_args = client.specs.serialize_public_args(args)
+            serialized_arg = arg.serialize()
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            deserialized_args = server.client_specs.deserialize_public_args(serialized_args)
+            deserialized_arg = Value.deserialize(serialized_arg)
             deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
-            result = server.run(deserialized_args, deserialized_evaluation_keys)
-            serialized_result = server.client_specs.serialize_public_result(result)
+            result = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
+            serialized_result = result.serialize()
 
-            deserialized_result = client.specs.deserialize_public_result(serialized_result)
+            deserialized_result = Value.deserialize(serialized_result)
             output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [100**2, 150**2, 10**2])
@@ -250,12 +300,12 @@ def test_client_server_api_via_mlir(helpers):
 
     configuration = helpers.configuration()
 
-    @compiler({"x": "encrypted"})
+    @fhe.compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
     inputset = [np.random.randint(0, 10, size=(3,)) for _ in range(10)]
-    circuit = function.compile(inputset, configuration.fork(jit=False))
+    circuit = function.compile(inputset, configuration.fork())
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir_path = Path(tmp_dir)
@@ -279,80 +329,23 @@ def test_client_server_api_via_mlir(helpers):
         ]
 
         for client in clients:
-            args = client.encrypt([3, 8, 1])
+            arg = client.encrypt([3, 8, 1])
 
-            serialized_args = client.specs.serialize_public_args(args)
+            serialized_arg = arg.serialize()
             serialized_evaluation_keys = client.evaluation_keys.serialize()
 
-            deserialized_args = server.client_specs.deserialize_public_args(serialized_args)
+            deserialized_arg = Value.deserialize(serialized_arg)
             deserialized_evaluation_keys = EvaluationKeys.deserialize(serialized_evaluation_keys)
 
-            result = server.run(deserialized_args, deserialized_evaluation_keys)
-            serialized_result = server.client_specs.serialize_public_result(result)
+            result = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys)
+            serialized_result = result.serialize()
 
-            deserialized_result = client.specs.deserialize_public_result(serialized_result)
+            deserialized_result = Value.deserialize(serialized_result)
             output = client.decrypt(deserialized_result)
 
             assert np.array_equal(output, [45, 50, 43])
 
         server.cleanup()
-
-
-def test_bad_server_save(helpers):
-    """
-    Test `save` method of `Server` class with bad parameters.
-    """
-
-    configuration = helpers.configuration()
-
-    @compiler({"x": "encrypted"})
-    def function(x):
-        return x + 42
-
-    inputset = range(10)
-    circuit = function.compile(inputset, configuration)
-
-    with pytest.raises(RuntimeError) as excinfo:
-        circuit.server.save("test.zip")
-
-    assert str(excinfo.value) == "Just-in-Time compilation cannot be saved"
-
-
-@pytest.mark.parametrize("p_error", [0.75, 0.5, 0.4, 0.25, 0.2, 0.1, 0.01, 0.001])
-@pytest.mark.parametrize("bit_width", [5])
-@pytest.mark.parametrize("sample_size", [1_000_000])
-@pytest.mark.parametrize("tolerance", [0.1])
-def test_p_error_simulation(p_error, bit_width, sample_size, tolerance, helpers):
-    """
-    Test p_error simulation.
-    """
-
-    configuration = helpers.configuration().fork(global_p_error=None)
-
-    table = LookupTable([0] + [x - 1 for x in range(1, 2**bit_width)])
-
-    @compiler({"x": "encrypted"})
-    def function(x):
-        return table[x + 1]
-
-    inputset = [np.random.randint(0, (2**bit_width) - 1, size=(sample_size,)) for _ in range(100)]
-    circuit = function.compile(inputset, configuration=configuration, p_error=p_error)
-
-    assert circuit.p_error < p_error
-
-    sample = np.random.randint(0, (2**bit_width) - 1, size=(sample_size,))
-    output = circuit.simulate(sample)
-
-    errors = np.sum(output != sample)
-
-    expected_number_of_errors_on_average = sample_size * circuit.p_error
-    tolerated_difference = expected_number_of_errors_on_average * tolerance
-
-    acceptable_number_of_errors = [
-        round(expected_number_of_errors_on_average - tolerated_difference),
-        round(expected_number_of_errors_on_average + tolerated_difference),
-    ]
-    assert acceptable_number_of_errors[0] <= errors <= acceptable_number_of_errors[1]
 
 
 def test_circuit_run_with_unused_arg(helpers):
@@ -362,7 +355,7 @@ def test_circuit_run_with_unused_arg(helpers):
 
     configuration = helpers.configuration()
 
-    @compiler({"x": "encrypted", "y": "encrypted"})
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):  # pylint: disable=unused-argument
         return x + 10
 
@@ -387,7 +380,7 @@ def test_dataflow_circuit(helpers):
 
     configuration = helpers.configuration().fork(dataflow_parallelize=True)
 
-    @compiler({"x": "encrypted", "y": "encrypted"})
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):
         return (x**2) + (y // 2)
 
@@ -395,3 +388,296 @@ def test_dataflow_circuit(helpers):
     circuit = f.compile(inputset, configuration)
 
     assert circuit.encrypt_run_decrypt(5, 6) == 28
+
+
+def test_circuit_sim_disabled(helpers):
+    """
+    Test attempt to simulate without enabling fhe simulation.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration)
+
+    assert circuit.simulate(*inputset[0]) == f(*inputset[0])
+
+
+def test_circuit_fhe_exec_disabled(helpers):
+    """
+    Test attempt to run fhe execution without it being enabled.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration.fork(fhe_execution=False))
+
+    assert circuit.encrypt_run_decrypt(*inputset[0]) == f(*inputset[0])
+
+
+def test_circuit_fhe_exec_no_eval_keys(helpers):
+    """
+    Test attempt to run fhe execution without eval keys.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration)
+    with pytest.raises(RuntimeError) as excinfo:
+        # as we can't encrypt, we just pass plain inputs, and it should lead to the expected error
+        encrypted_args = inputset[0]
+        circuit.server.run(*encrypted_args)
+    assert (
+        str(excinfo.value) == "Expected evaluation keys to be provided when not in simulation mode"
+    )
+
+
+def test_circuit_eval_graph_scalar(helpers):
+    """
+    Test evaluation of the graph.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        lut = LookupTable(list(range(128)))
+        return lut[x + y]
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration.fork(fhe_simulation=False, fhe_execution=False))
+    assert f(*inputset[0]) == circuit.graph(*inputset[0])
+
+
+def test_circuit_eval_graph_tensor(helpers):
+    """
+    Test evaluation of the graph.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        lut = LookupTable(list(range(128)))
+        return lut[x + y]
+
+    inputset = [
+        (
+            np.random.randint(0, 2**4, size=[2, 2]),
+            np.random.randint(0, 2**5, size=[2, 2]),
+        )
+        for _ in range(2)
+    ]
+    circuit = f.compile(inputset, configuration.fork(fhe_simulation=False, fhe_execution=False))
+    assert np.all(f(*inputset[0]) == circuit.graph(*inputset[0]))
+
+
+def test_circuit_compile_sim_only(helpers):
+    """
+    Test compiling with simulation only.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        lut = LookupTable(list(range(128)))
+        return lut[x + y]
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(2)]
+    circuit = f.compile(inputset, configuration.fork(fhe_simulation=True, fhe_execution=False))
+    assert f(*inputset[0]) == circuit.simulate(*inputset[0])
+
+
+def tagged_function(x, y, z):
+    """
+    A tagged function to test statistics.
+    """
+    with fhe.tag("a"):
+        x = fhe.univariate(lambda v: v)(x)
+        with fhe.tag("b"):
+            y = fhe.univariate(lambda v: v)(y)
+            with fhe.tag("c"):
+                z = fhe.univariate(lambda v: v)(z)
+
+    return x + y + z
+
+
+@pytest.mark.parametrize(
+    "function,parameters,expected_statistics",
+    [
+        pytest.param(
+            lambda x: x**2,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": ()},
+            },
+            {
+                "programmable_bootstrap_count": 1,
+                "clear_addition_count": 0,
+                "encrypted_addition_count": 0,
+                "clear_multiplication_count": 0,
+                "encrypted_negation_count": 0,
+            },
+            id="x**2 | x.is_encrypted | x.shape == ()",
+        ),
+        pytest.param(
+            lambda x: x**2,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+            },
+            {
+                "programmable_bootstrap_count": 3,
+                "clear_addition_count": 0,
+                "encrypted_addition_count": 0,
+                "clear_multiplication_count": 0,
+                "encrypted_negation_count": 0,
+            },
+            id="x**2 | x.is_encrypted | x.shape == (3,)",
+        ),
+        pytest.param(
+            lambda x: x**2,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3, 2)},
+            },
+            {
+                "programmable_bootstrap_count": 3 * 2,
+                "clear_addition_count": 0,
+                "encrypted_addition_count": 0,
+                "clear_multiplication_count": 0,
+                "encrypted_negation_count": 0,
+            },
+            id="x**2 | x.is_encrypted | x.shape == (3, 2)",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": ()},
+                "y": {"status": "encrypted", "range": [0, 10], "shape": ()},
+            },
+            {
+                "programmable_bootstrap_count": 2,
+                "clear_addition_count": 1,
+                "encrypted_addition_count": 3,
+                "clear_multiplication_count": 0,
+                "encrypted_negation_count": 2,
+            },
+            id="x * y | x.is_encrypted | x.shape == () | y.is_encrypted | y.shape == ()",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+                "y": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+            },
+            {
+                "programmable_bootstrap_count": 3 * 2,
+                "clear_addition_count": 3 * 1,
+                "encrypted_addition_count": 3 * 3,
+                "clear_multiplication_count": 0,
+                "encrypted_negation_count": 3 * 2,
+            },
+            id="x * y | x.is_encrypted | x.shape == (3,) | y.is_encrypted | y.shape == (3,)",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3, 2)},
+                "y": {"status": "encrypted", "range": [0, 10], "shape": (3, 2)},
+            },
+            {
+                "programmable_bootstrap_count": 3 * 2 * 2,
+                "clear_addition_count": 3 * 2 * 1,
+                "encrypted_addition_count": 3 * 2 * 3,
+                "clear_multiplication_count": 0,
+                "encrypted_negation_count": 3 * 2 * 2,
+            },
+            id="x * y | x.is_encrypted | x.shape == (3, 2) | y.is_encrypted | y.shape == (3, 2)",
+        ),
+        pytest.param(
+            tagged_function,
+            {
+                "x": {"status": "encrypted", "range": [0, 2**3 - 1], "shape": ()},
+                "y": {"status": "encrypted", "range": [0, 2**4 - 1], "shape": ()},
+                "z": {"status": "encrypted", "range": [0, 2**5 - 1], "shape": ()},
+            },
+            {
+                "programmable_bootstrap_count_per_tag": {
+                    "a": 3,
+                    "a.b": 2,
+                    "a.b.c": 1,
+                },
+            },
+            id="tagged_function",
+        ),
+    ],
+)
+def test_statistics(function, parameters, expected_statistics, helpers):
+    """
+    Test statistics of the circuit provided by the compiler.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+    configuration = helpers.configuration()
+
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
+
+    inputset = helpers.generate_inputset(parameters)
+    circuit = compiler.compile(inputset, configuration)
+
+    for name, expected_value in expected_statistics.items():
+        assert hasattr(circuit, name)
+        assert (
+            getattr(circuit, name) == expected_value
+        ), f"""
+
+Expected {name} to be {expected_value} but it's {getattr(circuit, name)}
+
+        """.strip()
+
+
+def test_setting_keys(helpers):
+    """
+    Test setting circuit.keys explicitly.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**3), np.random.randint(0, 2**5)) for _ in range(100)]
+    circuit = f.compile(inputset, configuration.fork(use_insecure_key_cache=False))
+
+    circuit.keygen(force=True, seed=100)
+    keys1 = circuit.keys.serialize()
+
+    circuit.keygen(force=True, seed=200)
+    keys2 = circuit.keys.serialize()
+
+    assert keys1 != keys2
+
+    sample = circuit.encrypt(3, 5)
+    output = circuit.run(*sample)
+
+    circuit.keys = fhe.Keys.deserialize(keys1)
+    result = circuit.decrypt(output)
+    assert result != 8
+
+    circuit.keys = fhe.Keys.deserialize(keys2)
+    result = circuit.decrypt(output)
+    assert result == 8

@@ -1,21 +1,20 @@
+add_compile_options(-fexceptions -fsized-deallocation)
+
 add_mlir_library(
   ConcretelangSupport
   Pipeline.cpp
-  Jit.cpp
   CompilationFeedback.cpp
   CompilerEngine.cpp
   TFHECircuitKeys.cpp
   Encodings.cpp
-  JITSupport.cpp
-  LambdaArgument.cpp
   V0Parameters.cpp
-  ClientParametersGeneration.cpp
+  ProgramInfoGeneration.cpp
   logging.cpp
-  Jit.cpp
   LLVMEmitFile.cpp
   Utils.cpp
   DEPENDS
   mlir-headers
+  concrete-protocol
   LINK_LIBS
   PUBLIC
   FHELinalgDialect
@@ -24,6 +23,7 @@ add_mlir_library(
   FHEDialectTransforms
   FHEToTFHECrt
   FHEToTFHEScalar
+  SimulateTFHE
   ExtractSDFGOps
   MLIRLowerableDialectsToLLVM
   FHEDialectAnalysis
@@ -40,6 +40,8 @@ add_mlir_library(
   ${LLVM_PTHREAD_LIB}
   ConcretelangRuntime
   ConcretelangClientLib
-  ConcretelangServerLib)
+  ConcretelangServerLib
+  TFHEDialectAnalysis
+  ConcreteDialectAnalysis)
 
 target_include_directories(ConcretelangSupport PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})

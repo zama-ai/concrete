@@ -14,8 +14,8 @@ TypeConvertingReinstantiationPattern<scf::ForOp, false>::matchAndRewrite(
     scf::ForOp oldOp, mlir::OpConversionPattern<scf::ForOp>::OpAdaptor adaptor,
     mlir::ConversionPatternRewriter &rewriter) const {
   // Create new for loop with empty body, but converted iter args
-  scf::ForOp newForOp = rewriter.replaceOpWithNewOp<scf::ForOp>(
-      oldOp, adaptor.getLowerBound(), adaptor.getUpperBound(),
+  scf::ForOp newForOp = rewriter.create<scf::ForOp>(
+      oldOp.getLoc(), adaptor.getLowerBound(), adaptor.getUpperBound(),
       adaptor.getStep(), adaptor.getInitArgs(),
       [&](OpBuilder &builder, Location loc, Value iv, ValueRange args) {});
 
@@ -34,6 +34,8 @@ TypeConvertingReinstantiationPattern<scf::ForOp, false>::matchAndRewrite(
     replaceAllUsesInRegionWith(std::get<0>(argsPair), std::get<1>(argsPair),
                                newForOp.getRegion());
   }
+
+  rewriter.replaceOp(oldOp, newForOp.getResults());
 
   return mlir::success();
 }

@@ -89,6 +89,30 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
+      - name: Build compiler Dialects docs and check diff
+        uses: addnab/docker-run-action@v3
+        id: build-compiler-docs
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/wheels:/wheels
+            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
+            -e SSH_AUTH_SOCK=/ssh.socket
+            ${{ env.DOCKER_GPU_OPTION }}
+          shell: bash
+          run: |
+            set -e
+            cd /concrete/compilers/concrete-compiler/compiler
+            make BUILD_DIR=/build doc
+            cd /build/tools/concretelang/docs/concretelang/
+            sed -i -e 's/\[TOC\]//' *Dialect.md
+            for i in `ls *Dialect.md`; do diff $i /concrete/docs/dev/compilation/$i; done;
+
       - name: Enable complete tests on push to main
         if: github.ref == 'refs/heads/main'
         run: echo "MINIMAL_TESTS=OFF" >> $GITHUB_ENV
@@ -113,6 +137,7 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             pip install pytest
+            dnf install -y libzstd libzstd-devel
             sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
@@ -124,72 +149,3 @@ jobs:
       #     name: concrete-compiler.whl
       #     path: build/wheels/concrete_compiler-*-manylinux_{{ env.GLIB_VER }}_x86_64.whl
       #     retention-days: 14
-
-      # - name: Build the documentation
-      #   id: build-doc
-      #   if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
-      #   uses: addnab/docker-run-action@v3
-      #   with:
-      #     registry: ghcr.io
-      #     image: ${{ env.DOCKER_IMAGE_TEST }}
-      #     username: ${{ secrets.GHCR_LOGIN }}
-      #     password: ${{ secrets.GHCR_PASSWORD }}
-      #     options: >-
-      #       -v ${{ env.LLVM_PROJECT_DIR }}:/llvm-project
-      #       -v ${{ env.COMPILER_PROJECT_DIR }}:/compiler
-      #       -v ${{ env.COMPILER_PROJECT_DIR }}/docs:/docs
-      #     shell: bash
-      #     run: |
-      #       cd /concrete/compilers/concrete-compiler/compiler
-      #       set -e
-      #       rm -rf /build
-      #       make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build concretecompiler python-bindings doc
-      #       cd /docs
-      #       pip install -r requirements.txt
-      #       pip install -r ../llvm-project/mlir/python/requirements.txt
-      #       dnf install -y doxygen
-      #       sed "s/sphinx-apidoc/python -m sphinx.ext.apidoc/g" -i Makefile
-      #       sed "s/sphinx-build/python -m sphinx.cmd.build/g" -i Makefile
-      #       make COMPILER_BUILD_DIR=/build/ doc
-
-      # - name: Archive docs artifacts
-      #   if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: compiler-html-docs
-      #     path: /concrete/compilers/concrete-compiler/compiler/docs/_build/html
-
-  PublishDoc:
-    runs-on: ubuntu-20.04
-    needs: BuildAndTest
-    if: ${{ startsWith(github.ref_name, 'v') || github.ref_name == 'main' }}
-    steps:
-      - name: Download Documentation
-        id: download
-        uses: actions/download-artifact@v3
-        with:
-          name: compiler-html-docs
-
-      - name: Publish Documentation to S3
-        id: publish
-        if: ${{ steps.download.outcome == 'success' && !cancelled() }}
-        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
-        with:
-          args: --acl public-read
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_PREPROD_REPO_DOCUMENTATION_BUCKET_NAME }}
-          AWS_IAM_ID: ${{ secrets.AWS_IAM_ID }}
-          AWS_IAM_KEY: ${{ secrets.AWS_IAM_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          SOURCE_DIR: '.'
-          DEST_DIR: 'concrete-compiler/${{ github.ref_name }}'
-
-      - name: Invalidate CloudFront Cache
-        if: ${{ steps.publish.outcome == 'success' }}
-        uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
-        env:
-          SOURCE_PATH: '/concrete-compiler/*'
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_IAM_ID: ${{ secrets.AWS_IAM_ID }}
-          AWS_IAM_KEY: ${{ secrets.AWS_IAM_KEY }}
-          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}

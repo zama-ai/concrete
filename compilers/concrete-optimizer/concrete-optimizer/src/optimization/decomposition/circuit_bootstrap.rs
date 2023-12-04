@@ -31,9 +31,9 @@ impl CbComplexityNoise {
 pub fn pareto_quantities(
     complexity_model: &dyn ComplexityModel,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
     glwe_params: GlweParameters,
 ) -> Vec<CbComplexityNoise> {
-    assert!(ciphertext_modulus_log == 64);
     let cmux_param = |level, log2_base| {
         let br_decomposition_parameter = BrDecompositionParameters { level, log2_base };
         CmuxParameters {
@@ -41,7 +41,7 @@ pub fn pareto_quantities(
             output_glwe_params: glwe_params,
         }
     };
-    let mut quantities = Vec::with_capacity(64);
+    let mut quantities = Vec::with_capacity(ciphertext_modulus_log as usize);
     let max_level = ciphertext_modulus_log as u64;
     for level in 1..=max_level {
         // detect increasing noise
@@ -67,6 +67,7 @@ pub fn pareto_quantities(
                     log2_base,
                     level,
                     ciphertext_modulus_log,
+                    fft_precision,
                     variance_bsk,
                 )
             };
@@ -110,16 +111,18 @@ pub fn cache(
     security_level: u64,
     processing_unit: config::ProcessingUnit,
     complexity_model: Arc<dyn ComplexityModel>,
+    ciphertext_modulus_log: u32,
+    fft_precision: u32,
 ) -> PersistDecompCache {
     let cache_dir: String = default_cache_dir();
-    let ciphertext_modulus_log = 64;
     let hardware = processing_unit.br_to_string();
     let path =
-        format!("{cache_dir}/cb-decomp-{hardware}-{ciphertext_modulus_log}-{security_level}");
+        format!("{cache_dir}/cb-decomp-{hardware}-{ciphertext_modulus_log}-{fft_precision}-{security_level}");
     let function = move |glwe_params| {
         let pareto = pareto_quantities(
             complexity_model.as_ref(),
             ciphertext_modulus_log,
+            fft_precision,
             glwe_params,
         );
 

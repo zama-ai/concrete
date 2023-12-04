@@ -3,6 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "llvm/Support/Debug.h"
+
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
@@ -18,6 +20,10 @@ namespace concretelang {
 namespace {
 
 #define DEBUG(MSG)                                                             \
+  if (llvm::DebugFlag)                                                         \
+    llvm::errs() << MSG << "\n";
+
+#define VERBOSE(MSG)                                                           \
   if (mlir::concretelang::isVerbose()) {                                       \
     llvm::errs() << MSG << "\n";                                               \
   }
@@ -39,7 +45,6 @@ public:
     op->walk([&](mlir::func::FuncOp func) {
       DEBUG("apply solution: \n" << solution.dump().c_str());
       DEBUG("process func: " << func);
-      auto context = op->getContext();
       // Process function arguments, change type of arguments according of the
       // optimizer identifier stored in the "TFHE.OId" attribute.
       for (size_t i = 0; i < func.getNumArguments(); i++) {
@@ -54,176 +59,24 @@ public:
       }
       // Process operations, apply the instructions keys according of the
       // optimizer identifier stored in the "TFHE.OId"
-      DEBUG("### Apply instruction keys");
-      func.walk([&](mlir::Operation *op) {
-        auto attrOptimizerID = op->getAttrOfType<IntegerAttr>("TFHE.OId");
-        // Skip operation is no optimizer identifier
-        if (attrOptimizerID == nullptr) {
-          DEBUG("skip operation: " << op->getName())
-          return;
-        }
-        DEBUG("process operation: " << *op);
-        auto optimizerID = attrOptimizerID.getInt();
-        // Change the output type of the operation
-        for (auto result : op->getResults()) {
-          result.setType(
-              getParametrizedType(result.getType(), attrOptimizerID));
-        }
-        // Set the keyswitch_key attribute
-        // TODO: Change ambiguous attribute name
-        auto attrKeyswitchKey =
-            op->getAttrOfType<TFHE::GLWEKeyswitchKeyAttr>("key");
-        if (attrKeyswitchKey == nullptr) {
-          DEBUG("no keyswitch key");
-        } else {
-          op->setAttr("key", getKeyswitchKeyAttr(context, optimizerID));
-        }
-        // Set boostrap_key attribute
-        // TODO: Change ambiguous attribute name
-        auto attrBootstrapKey =
-            op->getAttrOfType<TFHE::GLWEBootstrapKeyAttr>("key");
-        if (attrBootstrapKey == nullptr) {
-          DEBUG("no bootstrap key");
-        } else {
-          op->setAttr("key", getBootstrapKeyAttr(context, optimizerID));
-        }
-      });
+      VERBOSE("\n### BEFORE Apply instruction keys " << func);
+      applyInstructionKeys(func);
       // The keyswitch operator is an internal node of the optimizer tlu node,
       // so it don't follow the same rule than the other operator on the type of
       // outputs
-      DEBUG("### Fixup output of keyswitch")
-      func.walk([&](TFHE::KeySwitchGLWEOp op) {
-        DEBUG("process op: " << op)
-        auto attrKeyswitchKey =
-            op->getAttrOfType<TFHE::GLWEKeyswitchKeyAttr>("key");
-        assert(attrKeyswitchKey != nullptr);
-        auto outputKey = attrKeyswitchKey.getOutputKey();
-        outputKey = GLWESecretKeyAsLWE(outputKey);
-        op.getResult().setType(
-            TFHE::GLWECipherTextType::get(context, outputKey));
-        DEBUG("fixed op: " << op)
-      });
-      // Fixup input of the boostrap operator
-      DEBUG("### Fixup input tlu of bootstrap")
-      func.walk([&](TFHE::BootstrapGLWEOp op) {
-        DEBUG("process op: " << op)
-        auto attrBootstrapKey =
-            op->getAttrOfType<TFHE::GLWEBootstrapKeyAttr>("key");
-        assert(attrBootstrapKey != nullptr);
-        auto polySize = attrBootstrapKey.getPolySize();
-        auto lutDefiningOp = op.getLookupTable().getDefiningOp();
-        // Dirty fixup of the lookup table as we known the operators that can
-        // define it
-        // TODO: Do something more robust, using the GLWE type?
-        mlir::Builder builder(op->getContext());
-        assert(lutDefiningOp != nullptr);
-        if (auto encodeOp = mlir::dyn_cast<TFHE::EncodeExpandLutForBootstrapOp>(
-                lutDefiningOp);
-            encodeOp != nullptr) {
-          encodeOp.setPolySize(polySize);
-        } else if (auto constantOp =
-                       mlir::dyn_cast<arith::ConstantOp>(lutDefiningOp)) {
-          // Rounded PBS case
-          auto denseAttr =
-              constantOp.getValueAttr().dyn_cast<mlir::DenseIntElementsAttr>();
-          auto val = denseAttr.getValues<int64_t>()[0];
-          std::vector<int64_t> lut(polySize, val);
-          constantOp.setValueAttr(mlir::DenseIntElementsAttr::get(
-              mlir::RankedTensorType::get(lut.size(),
-                                          builder.getIntegerType(64)),
-              lut));
-        }
-        op.getLookupTable().setType(mlir::RankedTensorType::get(
-            mlir::ArrayRef<int64_t>(polySize), builder.getI64Type()));
-        // Also fixup the bootstrap key as the TFHENormalization rely on
-        // GLWESecretKey structure and not on identifier
-        // TODO: FIXME
-        auto outputKey = attrBootstrapKey.getOutputKey().getParameterized();
-        auto newOutputKey = TFHE::GLWESecretKey::newParameterized(
-            outputKey->polySize * outputKey->dimension, 1,
-            outputKey->identifier);
-        auto newAttrBootstrapKey = TFHE::GLWEBootstrapKeyAttr::get(
-            context, attrBootstrapKey.getInputKey(), newOutputKey,
-            attrBootstrapKey.getPolySize(), attrBootstrapKey.getGlweDim(),
-            attrBootstrapKey.getLevels(), attrBootstrapKey.getBaseLog(), -1);
-        op.setKeyAttr(newAttrBootstrapKey);
-      });
-      // Fixup incompatible operators with extra conversion keys
-      DEBUG("### Fixup with extra conversion keys")
-      func.walk([&](mlir::Operation *op) {
-        // Skip bootstrap/keyswitch
-        if (mlir::isa<TFHE::BootstrapGLWEOp>(op) ||
-            mlir::isa<TFHE::KeySwitchGLWEOp>(op)) {
-          return;
-        }
-        auto attrOptimizerID = op->getAttrOfType<IntegerAttr>("TFHE.OId");
-        // Skip operation with no optimizer identifier
-        if (attrOptimizerID == nullptr) {
-          return;
-        }
-        DEBUG("  -> process op: " << *op)
-        // TFHE operators have only one ciphertext result
-        assert(op->getNumResults() == 1);
-        auto resType =
-            op->getResult(0).getType().dyn_cast<TFHE::GLWECipherTextType>();
-        // For each ciphertext operands apply the extra keyswitch if found
-        for (const auto &p : llvm::enumerate(op->getOperands())) {
-          if (resType == nullptr) {
-            // We don't expect tensor operands to exist at this point of the
-            // pipeline for now, but if we happen to have some, this assert will
-            // break, and things will need to be changed to allow tensor ops to
-            // be parameterized.
-            // TODO: Actually this case could happens with tensor manipulation
-            // operators, so for now we just skip it and that should be fixed
-            // and tested. As the operand will not be fixed the validation of
-            // operators should not validate the operators.
-            continue;
-          }
-          auto operand = p.value();
-          auto operandIdx = p.index();
-          DEBUG("    -> processing operand " << operand);
-          auto operandType =
-              operand.getType().dyn_cast<TFHE::GLWECipherTextType>();
-          if (operandType == nullptr) {
-            DEBUG("      -> skip operand, no glwe");
-            continue;
-          }
-          if (operandType.getKey() == resType.getKey()) {
-            DEBUG("      -> skip operand, unnecessary conversion");
-            continue;
-          }
-          // Lookup for the extra conversion key
-          auto definingOp = operand.getDefiningOp();
-          if (definingOp == nullptr) {
-            DEBUG("      -> skip operand, no defining operator");
-            continue;
-          }
-          auto definingOpOptimizerIDAttr =
-              definingOp->getAttrOfType<mlir::IntegerAttr>("TFHE.OId");
-          if (definingOpOptimizerIDAttr == nullptr) {
-            DEBUG("      -> cannot find optimizer id of the defining op");
-            continue;
-          }
-          DEBUG("      -> get extra conversion key")
-          auto extraConvKey = getExtraConversionKeyAttr(
-              context, definingOpOptimizerIDAttr.getInt(), operandType);
-          if (extraConvKey == nullptr) {
-            DEBUG("      -> extra conversion key, not found")
-            assert(false);
-          }
-          mlir::IRRewriter rewriter(context);
-          rewriter.setInsertionPoint(op);
-          auto newKSK = rewriter.create<TFHE::KeySwitchGLWEOp>(
-              definingOp->getLoc(), resType, operand, extraConvKey);
-          DEBUG("create extra conversion keyswitch: " << newKSK);
-          op->setOperand(operandIdx, newKSK);
-        }
-      });
+      VERBOSE("\n### BEFORE Fixup keyswitch \n" << func);
+      fixupKeyswitchOuputs(func);
       // Propagate types on non parametrized operators
+      VERBOSE("\n### BEFORE Fixup non parametrized ops \n" << func);
       fixupNonParametrizedOps(func);
+      // Fixup incompatible operators with extra conversion keys
+      VERBOSE("\n### BEFORE Fixup with extra conversion keys \n" << func);
+      fixupIncompatibleLeveledOpWithExtraConversionKeys(func);
       // Fixup the function signature
+      VERBOSE("\n### BEFORE Fixup function signature \n" << func);
       fixupFunctionSignature(func);
       // Remove optimizer identifiers
+      VERBOSE("\n### BEFORE Remove optimizer identifiers \n" << func);
       removeOptimizerIdentifiers(func);
     });
   }
@@ -284,6 +137,119 @@ public:
     return glwe != nullptr && glwe.getKey().isNone();
   }
 
+  void applyInstructionKeys(mlir::func::FuncOp func) {
+    auto context = func.getContext();
+    func.walk([&](mlir::Operation *op) {
+      auto attrOptimizerID = op->getAttrOfType<IntegerAttr>("TFHE.OId");
+      // Skip operation is no optimizer identifier
+      if (attrOptimizerID == nullptr) {
+        DEBUG("skip operation: " << op->getName())
+        return;
+      }
+      DEBUG("process operation: " << *op);
+      auto optimizerID = attrOptimizerID.getInt();
+      // Change the output type of the operation
+      for (auto result : op->getResults()) {
+        result.setType(getParametrizedType(result.getType(), attrOptimizerID));
+      }
+      // Set the keyswitch_key attribute
+      // TODO: Change ambiguous attribute name
+      auto attrKeyswitchKey =
+          op->getAttrOfType<TFHE::GLWEKeyswitchKeyAttr>("key");
+      if (attrKeyswitchKey == nullptr) {
+        DEBUG("no keyswitch key");
+      } else {
+        op->setAttr("key", getKeyswitchKeyAttr(context, optimizerID));
+      }
+      // Set boostrap_key attribute
+      // TODO: Change ambiguous attribute name
+      auto attrBootstrapKey =
+          op->getAttrOfType<TFHE::GLWEBootstrapKeyAttr>("key");
+      if (attrBootstrapKey == nullptr) {
+        DEBUG("no bootstrap key");
+      } else {
+        op->setAttr("key", getBootstrapKeyAttr(context, optimizerID));
+        // FIXME: For now we know that if there are an extra conversion key
+        // this result will only be used in another partition. This is a
+        // STRONG assumptions of how the optimization work, this is done like
+        // that to avoid a bug in type propagation, but the extra conversion
+        // key should be added at the use and not here.
+        auto instKeys = getInstructionKey(optimizerID);
+        if (instKeys.extra_conversion_keys.size() != 0) {
+          assert(instKeys.extra_conversion_keys.size() == 1);
+          auto convKSK =
+              solution.circuit_keys
+                  .conversion_keyswitch_keys[instKeys.extra_conversion_keys[0]];
+          auto convKSKAttr = getExtraConversionKeyAttr(context, convKSK);
+          mlir::IRRewriter rewriter(context);
+          rewriter.setInsertionPointAfter(op);
+          auto outputKey = toLWESecretKey(convKSK.output_key);
+          auto resType = TFHE::GLWECipherTextType::get(context, outputKey);
+          auto extraKSK = rewriter.create<TFHE::KeySwitchGLWEOp>(
+              op->getLoc(), resType, op->getResult(0), convKSKAttr);
+          rewriter.replaceAllUsesExcept(op->getResult(0), extraKSK, extraKSK);
+        }
+      }
+    });
+  }
+
+  void fixupKeyswitchOuputs(mlir::func::FuncOp func) {
+    auto context = func.getContext();
+    func.walk([&](TFHE::KeySwitchGLWEOp op) {
+      DEBUG("process op: " << op)
+      auto attrKeyswitchKey =
+          op->getAttrOfType<TFHE::GLWEKeyswitchKeyAttr>("key");
+      assert(attrKeyswitchKey != nullptr);
+      auto outputKey = attrKeyswitchKey.getOutputKey();
+      outputKey = GLWESecretKeyAsLWE(outputKey);
+      op.getResult().setType(TFHE::GLWECipherTextType::get(context, outputKey));
+      DEBUG("fixed op: " << op)
+    });
+    // Fixup input of the boostrap operator
+    DEBUG("### Fixup input tlu of bootstrap")
+    func.walk([&](TFHE::BootstrapGLWEOp op) {
+      DEBUG("process op: " << op)
+      auto attrBootstrapKey =
+          op->getAttrOfType<TFHE::GLWEBootstrapKeyAttr>("key");
+      assert(attrBootstrapKey != nullptr);
+      auto polySize = attrBootstrapKey.getPolySize();
+      auto lutDefiningOp = op.getLookupTable().getDefiningOp();
+      // Dirty fixup of the lookup table as we known the operators that can
+      // define it
+      // TODO: Do something more robust, using the GLWE type?
+      mlir::Builder builder(op->getContext());
+      assert(lutDefiningOp != nullptr);
+      if (auto encodeOp = mlir::dyn_cast<TFHE::EncodeExpandLutForBootstrapOp>(
+              lutDefiningOp);
+          encodeOp != nullptr) {
+        encodeOp.setPolySize(polySize);
+      } else if (auto constantOp =
+                     mlir::dyn_cast<arith::ConstantOp>(lutDefiningOp)) {
+        // Rounded PBS case
+        auto denseAttr =
+            constantOp.getValueAttr().dyn_cast<mlir::DenseIntElementsAttr>();
+        auto val = denseAttr.getValues<int64_t>()[0];
+        std::vector<int64_t> lut(polySize, val);
+        constantOp.setValueAttr(mlir::DenseIntElementsAttr::get(
+            mlir::RankedTensorType::get(lut.size(), builder.getIntegerType(64)),
+            lut));
+      }
+      op.getLookupTable().setType(mlir::RankedTensorType::get(
+          mlir::ArrayRef<int64_t>(polySize), builder.getI64Type()));
+      // Also fixup the bootstrap key as the TFHENormalization rely on
+      // GLWESecretKey structure and not on identifier
+      // TODO: FIXME
+      auto outputKey = attrBootstrapKey.getOutputKey().getParameterized();
+      auto newOutputKey = TFHE::GLWESecretKey::newParameterized(
+          outputKey->polySize * outputKey->dimension, 1, outputKey->identifier);
+      auto newAttrBootstrapKey = TFHE::GLWEBootstrapKeyAttr::get(
+          context, attrBootstrapKey.getInputKey(), newOutputKey,
+          attrBootstrapKey.getPolySize(), attrBootstrapKey.getGlweDim(),
+          attrBootstrapKey.getLevels(), attrBootstrapKey.getBaseLog(), -1);
+      op.setKeyAttr(newAttrBootstrapKey);
+    });
+  }
+
   static void
   fixupNonParametrizedOp(mlir::Operation *op,
                          TFHE::GLWECipherTextType parametrizedGlweType) {
@@ -338,8 +304,70 @@ public:
     }
   }
 
+  void
+  fixupIncompatibleLeveledOpWithExtraConversionKeys(mlir::func::FuncOp func) {
+    auto context = func.getContext();
+    func.walk([&](mlir::Operation *op) {
+      // Skip bootstrap/keyswitch
+      if (mlir::isa<TFHE::BootstrapGLWEOp>(op) ||
+          mlir::isa<TFHE::KeySwitchGLWEOp>(op)) {
+        return;
+      }
+      auto attrOptimizerID = op->getAttrOfType<IntegerAttr>("TFHE.OId");
+      // Skip operation with no optimizer identifier
+      if (attrOptimizerID == nullptr) {
+        return;
+      }
+      DEBUG("  -> process op: " << *op)
+      // TFHE operators have only one ciphertext result
+      assert(op->getNumResults() == 1);
+      auto resType =
+          op->getResult(0).getType().dyn_cast<TFHE::GLWECipherTextType>();
+      // For each ciphertext operands apply the extra keyswitch if found
+      for (const auto &p : llvm::enumerate(op->getOperands())) {
+        if (resType == nullptr) {
+          // We don't expect tensor operands to exist at this point of the
+          // pipeline for now, but if we happen to have some, this assert will
+          // break, and things will need to be changed to allow tensor ops to
+          // be parameterized.
+          // TODO: Actually this case could happens with tensor manipulation
+          // operators, so for now we just skip it and that should be fixed
+          // and tested. As the operand will not be fixed the validation of
+          // operators should not validate the operators.
+          continue;
+        }
+        auto operand = p.value();
+        auto operandIdx = p.index();
+        DEBUG("    -> processing operand " << operand);
+        auto operandType =
+            operand.getType().dyn_cast<TFHE::GLWECipherTextType>();
+        if (operandType == nullptr) {
+          DEBUG("      -> skip operand, no glwe");
+          continue;
+        }
+        if (operandType.getKey() == resType.getKey()) {
+          DEBUG("      -> skip operand, unnecessary conversion");
+          continue;
+        }
+        // Lookup for the extra conversion key
+        DEBUG("      -> get extra conversion key")
+        auto extraConvKey = getExtraConversionKeyAttr(
+            context, operandType.getKey(), resType.getKey());
+        if (extraConvKey == nullptr) {
+          DEBUG("      -> extra conversion key, not found")
+          assert(false);
+        }
+        mlir::IRRewriter rewriter(context);
+        rewriter.setInsertionPoint(op);
+        auto newKSK = rewriter.create<TFHE::KeySwitchGLWEOp>(
+            op->getLoc(), resType, operand, extraConvKey);
+        DEBUG("create extra conversion keyswitch: " << newKSK);
+        op->setOperand(operandIdx, newKSK);
+      }
+    });
+  }
+
   static void fixupNonParametrizedOps(mlir::func::FuncOp func) {
-    DEBUG("### Fixup non parametrized ops of function " << func.getSymName())
     // Lookup all operators that uses function arguments
     for (const auto arg : func.getArguments()) {
       auto parametrizedGlweType =
@@ -453,26 +481,35 @@ public:
   }
 
   const TFHE::GLWEKeyswitchKeyAttr
-  getExtraConversionKeyAttr(mlir::MLIRContext *context, size_t optimizerID,
-                            TFHE::GLWECipherTextType operandType) {
-    DEBUG("get extra conversion key for " << operandType);
-    auto instructionKey = getInstructionKey(optimizerID);
-    for (const auto &convKSKID : instructionKey.extra_conversion_keys) {
-      DEBUG("try extra conversion keyswitch #" << convKSKID)
-      auto convKSK = solution.circuit_keys.conversion_keyswitch_keys[convKSKID];
-      auto key = operandType.getKey();
-      assert(key.isParameterized());
-      if (operandType.getKey().getParameterized().value().identifier ==
-          convKSK.input_key.identifier) {
-        return TFHE::GLWEKeyswitchKeyAttr::get(
-            context, toLWESecretKey(convKSK.input_key),
-            toLWESecretKey(convKSK.output_key),
-            convKSK.ks_decomposition_parameter.level,
-            convKSK.ks_decomposition_parameter.log2_base, -1);
-      }
-    }
-    DEBUG("!!! extra conversion key not found");
-    return nullptr;
+  getExtraConversionKeyAttr(mlir::MLIRContext *context,
+                            TFHE::GLWESecretKey inputKey,
+                            TFHE::GLWESecretKey ouputKey) {
+    auto convKSK = std::find_if(
+        solution.circuit_keys.conversion_keyswitch_keys.begin(),
+        solution.circuit_keys.conversion_keyswitch_keys.end(),
+        [&](concrete_optimizer::dag::ConversionKeySwitchKey &arg) {
+          assert(ouputKey.isParameterized() && inputKey.isParameterized());
+          return arg.input_key.identifier ==
+                     inputKey.getParameterized()->identifier &&
+                 arg.output_key.identifier ==
+                     ouputKey.getParameterized()->identifier;
+        });
+    assert(convKSK != solution.circuit_keys.conversion_keyswitch_keys.end());
+    return TFHE::GLWEKeyswitchKeyAttr::get(
+        context, toLWESecretKey(convKSK->input_key),
+        toLWESecretKey(convKSK->output_key),
+        convKSK->ks_decomposition_parameter.level,
+        convKSK->ks_decomposition_parameter.log2_base, -1);
+  }
+
+  const TFHE::GLWEKeyswitchKeyAttr getExtraConversionKeyAttr(
+      mlir::MLIRContext *context,
+      concrete_optimizer::dag::ConversionKeySwitchKey convKSK) {
+    return TFHE::GLWEKeyswitchKeyAttr::get(
+        context, toLWESecretKey(convKSK.input_key),
+        toLWESecretKey(convKSK.output_key),
+        convKSK.ks_decomposition_parameter.level,
+        convKSK.ks_decomposition_parameter.log2_base, -1);
   }
 
   const TFHE::GLWEBootstrapKeyAttr

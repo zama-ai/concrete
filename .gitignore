@@ -5,3 +5,9 @@
 
 # Jetbrains tools
 .idea/
+
+# HPX library
+compilers/concrete-compiler/compiler/hpx*
+
+# For tests within ML
+tmp_directory_for_cml_tests

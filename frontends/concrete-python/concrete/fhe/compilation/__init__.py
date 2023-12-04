@@ -9,9 +9,14 @@ from .compiler import Compiler, EncryptionStatus
 from .configuration import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
+    BitwiseStrategy,
+    ComparisonStrategy,
     Configuration,
+    MinMaxStrategy,
+    MultivariateStrategy,
     ParameterSelectionStrategy,
 )
 from .keys import Keys
 from .server import Server
 from .specs import ClientSpecs
+from .value import Value

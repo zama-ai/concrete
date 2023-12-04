@@ -8,6 +8,7 @@ pub extern "C" fn concrete_cpu_variance_blind_rotate(
     log2_base: u64,
     level: u64,
     ciphertext_modulus_log: u32,
+    fft_precision: u32,
     variance_bsk: f64,
 ) -> f64 {
     variance_blind_rotate(
@@ -17,6 +18,7 @@ pub extern "C" fn concrete_cpu_variance_blind_rotate(
         log2_base,
         level,
         ciphertext_modulus_log,
+        fft_precision,
         variance_bsk,
     )
 }

@@ -3,6 +3,9 @@
 #include "device.h"
 #include "utils/timer.cuh"
 
+// Return A if C == 0 and B if C == 1
+#define SEL(A, B, C) ((-(C) & ((A) ^ (B))) ^ (A))
+
 /*
  *  function compresses decomposed buffer into half size complex buffer for fft
  */
@@ -33,6 +36,16 @@ __device__ void copy_into_ith_polynomial_low_lat(T *source, T *dst, int i) {
 
   if (threadIdx.x == 0) {
     dst[params::degree / 2 + begin] = source[params::degree / 2];
+  }
+}
+
+template <typename T, int elems_per_thread, int block_size>
+__device__ void copy_polynomial(T *source, T *dst) {
+  int tid = threadIdx.x;
+#pragma unroll
+  for (int i = 0; i < elems_per_thread; i++) {
+    dst[tid] = source[tid];
+    tid = tid + block_size;
   }
 }
 
@@ -83,18 +96,22 @@ __device__ void divide_by_monomial_negacyclic_inplace(T *accumulator, T *input,
       tid = threadIdx.x;
       for (int i = 0; i < elems_per_thread; i++) {
         if (j < degree) {
-          if (tid < degree - j) {
-            accumulator_slice[tid] = input_slice[tid + j];
-          } else {
-            accumulator_slice[tid] = -input_slice[tid - degree + j];
-          }
+          // if (tid < degree - j)
+          //  accumulator_slice[tid] = input_slice[tid + j];
+          // else
+          //  accumulator_slice[tid] = -input_slice[tid - degree + j];
+          int x = tid + j - SEL(degree, 0, tid < degree - j);
+          accumulator_slice[tid] =
+              SEL(-1, 1, tid < degree - j) * input_slice[x];
         } else {
-          uint32_t jj = j - degree;
-          if (tid < degree - jj) {
-            accumulator_slice[tid] = -input_slice[tid + jj];
-          } else {
-            accumulator_slice[tid] = input_slice[tid - degree + jj];
-          }
+          int32_t jj = j - degree;
+          // if (tid < degree - jj)
+          //  accumulator_slice[tid] = -input_slice[tid + jj];
+          // else
+          //  accumulator_slice[tid] = input_slice[tid - degree + jj];
+          int x = tid + jj - SEL(degree, 0, tid < degree - jj);
+          accumulator_slice[tid] =
+              SEL(1, -1, tid < degree - jj) * input_slice[x];
         }
         tid += block_size;
       }
@@ -120,19 +137,22 @@ __device__ void multiply_by_monomial_negacyclic_and_sub_polynomial(
     int tid = threadIdx.x;
     for (int i = 0; i < elems_per_thread; i++) {
       if (j < degree) {
-        if (tid < j) {
-          result_acc_slice[tid] = -acc_slice[tid - j + degree] - acc_slice[tid];
-        } else {
-          result_acc_slice[tid] = acc_slice[tid - j] - acc_slice[tid];
-        }
+        // if (tid < j)
+        //  result_acc_slice[tid] = -acc_slice[tid - j + degree]-acc_slice[tid];
+        // else
+        //  result_acc_slice[tid] = acc_slice[tid - j] - acc_slice[tid];
+        int x = tid - j + SEL(0, degree, tid < j);
+        result_acc_slice[tid] =
+            SEL(1, -1, tid < j) * acc_slice[x] - acc_slice[tid];
       } else {
-        uint32_t jj = j - degree;
-        if (tid < jj) {
-          result_acc_slice[tid] = acc_slice[tid - jj + degree] - acc_slice[tid];
-
-        } else {
-          result_acc_slice[tid] = -acc_slice[tid - jj] - acc_slice[tid];
-        }
+        int32_t jj = j - degree;
+        // if (tid < jj)
+        //  result_acc_slice[tid] = acc_slice[tid - jj + degree]-acc_slice[tid];
+        // else
+        //  result_acc_slice[tid] = -acc_slice[tid - jj] - acc_slice[tid];
+        int x = tid - jj + SEL(0, degree, tid < jj);
+        result_acc_slice[tid] =
+            SEL(-1, 1, tid < jj) * acc_slice[x] - acc_slice[tid];
       }
       tid += block_size;
     }
@@ -168,7 +188,8 @@ __device__ void round_to_closest_multiple_inplace(T *rotated_acc, int base_log,
 }
 
 template <typename Torus, class params>
-__device__ void add_to_torus(double2 *m_values, Torus *result) {
+__device__ void add_to_torus(double2 *m_values, Torus *result,
+                             bool init_torus = false) {
   Torus mx = (sizeof(Torus) == 4) ? UINT32_MAX : UINT64_MAX;
   int tid = threadIdx.x;
 #pragma unroll
@@ -192,8 +213,13 @@ __device__ void add_to_torus(double2 *m_values, Torus *result) {
     Torus V2 = 0;
     typecast_double_to_torus<Torus>(frac, V2);
 
-    result[tid] += V1;
-    result[tid + params::degree / 2] += V2;
+    if (init_torus) {
+      result[tid] = V1;
+      result[tid + params::degree / 2] = V2;
+    } else {
+      result[tid] += V1;
+      result[tid + params::degree / 2] += V2;
+    }
     tid = tid + params::degree / params::opt;
   }
 }
@@ -249,18 +275,12 @@ __device__ void sample_extract_mask(Torus *lwe_array_out, Torus *accumulator,
     tid = threadIdx.x;
     result[params::opt];
     for (int i = 0; i < params::opt; i++) {
-      if (1 < params::degree) {
-        if (tid < 1)
-          result[i] = -accumulator_slice[tid - 1 + params::degree];
-        else
-          result[i] = accumulator_slice[tid - 1];
-      } else {
-        uint32_t jj = 1 - (uint32_t)params::degree;
-        if (tid < jj)
-          result[i] = accumulator_slice[tid - jj + params::degree];
-        else
-          result[i] = -accumulator_slice[tid - jj];
-      }
+      // if (tid < 1)
+      //  result[i] = -accumulator_slice[tid - 1 + params::degree];
+      // else
+      //  result[i] = accumulator_slice[tid - 1];
+      int x = tid - 1 + SEL(0, params::degree, tid < 1);
+      result[i] = SEL(1, -1, tid < 1) * accumulator_slice[x];
       tid += params::degree / params::opt;
     }
     synchronize_threads_in_block();

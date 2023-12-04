@@ -180,19 +180,36 @@ def test_bad_static_indexing(helpers):
 
     compiler = fhe.Compiler(lambda x: x[1.5], {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
+    inputset = [[5, 2, 4]]
     with pytest.raises(ValueError) as excinfo:
         compiler.compile(inputset, configuration)
 
-    assert str(excinfo.value) == "Indexing with '1.5' is not supported"
+    assert str(excinfo.value) == (
+        "Tracer<output=EncryptedTensor<uint3, shape=(3,)>> cannot be indexed with 1.5"
+    )
 
     # with bad slice
     # --------------
 
     compiler = fhe.Compiler(lambda x: x[slice(1.5, 2.5, None)], {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
+    inputset = [[5, 2, 4]]
     with pytest.raises(ValueError) as excinfo:
         compiler.compile(inputset, configuration)
 
-    assert str(excinfo.value) == "Indexing with '1.5:2.5' is not supported"
+    assert str(excinfo.value) == (
+        "Tracer<output=EncryptedTensor<uint3, shape=(3,)>> cannot be indexed with 1.5:2.5"
+    )
+
+    # with multiple values
+    # --------------------
+
+    compiler = fhe.Compiler(lambda x: x[0, 1.5], {"x": "encrypted"})
+
+    inputset = [[5, 2, 4]]
+    with pytest.raises(ValueError) as excinfo:
+        compiler.compile(inputset, configuration)
+
+    assert str(excinfo.value) == (
+        "Tracer<output=EncryptedTensor<uint3, shape=(3,)>> cannot be indexed with 0, 1.5"
+    )

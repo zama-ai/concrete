@@ -10,7 +10,9 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/Dialects/SCF.h"
 #include "concretelang/Conversion/Utils/FuncConstOpConversion.h"
+#include "concretelang/Conversion/Utils/RTOpConverter.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/ReinstantiatingOpTypeConversion.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
@@ -162,7 +164,7 @@ struct WopPBSGLWEOpPattern
     auto ksLevels = adaptor.getKsk().getLevels();
     auto pksBaseLog = adaptor.getPksk().getBaseLog();
     auto pksLevels = adaptor.getPksk().getLevels();
-    auto pksInputLweDim = adaptor.getPksk().getInputLweDim();
+    auto pksInnerLweDim = adaptor.getPksk().getInnerLweDim();
     auto pksOutputPolySize = adaptor.getPksk().getOutputPolySize();
     auto crtDecomposition = adaptor.getCrtDecompositionAttr();
     auto resultType = op.getType();
@@ -173,7 +175,7 @@ struct WopPBSGLWEOpPattern
     rewriter.replaceOpWithNewOp<Concrete::WopPBSCRTLweTensorOp>(
         op, this->getTypeConverter()->convertType(resultType),
         adaptor.getCiphertexts(), adaptor.getLookupTable(), bsLevels, bsBaseLog,
-        ksLevels, ksBaseLog, pksInputLweDim, pksOutputPolySize, pksLevels,
+        ksLevels, ksBaseLog, pksInnerLweDim, pksOutputPolySize, pksLevels,
         pksBaseLog, cbsLevels, cbsBaseLog, crtDecomposition, kskIndex, bskIndex,
         pkskIndex);
 
@@ -211,6 +213,43 @@ struct BatchedBootstrapGLWEOpPattern
 
     rewriter.replaceOpWithNewOp<Concrete::BatchedBootstrapLweTensorOp>(
         bbsOp, this->getTypeConverter()->convertType(bbsOp.getType()),
+        adaptor.getCiphertexts(), adaptor.getLookupTable(), inputLweDimension,
+        polySize, levels, baseLog, glweDimension, bskIndex);
+
+    return mlir::success();
+  }
+};
+
+struct BatchedMappedBootstrapGLWEOpPattern
+    : public mlir::OpConversionPattern<TFHE::BatchedMappedBootstrapGLWEOp> {
+
+  BatchedMappedBootstrapGLWEOpPattern(mlir::MLIRContext *context,
+                                      mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<TFHE::BatchedMappedBootstrapGLWEOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::BatchedMappedBootstrapGLWEOp bmbsOp,
+                  TFHE::BatchedMappedBootstrapGLWEOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    TFHE::GLWECipherTextType inputElementType =
+        bmbsOp.getCiphertexts()
+            .getType()
+            .cast<mlir::RankedTensorType>()
+            .getElementType()
+            .cast<TFHE::GLWECipherTextType>();
+
+    auto polySize = adaptor.getKey().getPolySize();
+    auto glweDimension = adaptor.getKey().getGlweDim();
+    auto levels = adaptor.getKey().getLevels();
+    auto baseLog = adaptor.getKey().getBaseLog();
+    auto inputLweDimension =
+        inputElementType.getKey().getNormalized().value().dimension;
+    auto bskIndex = bmbsOp.getKeyAttr().getIndex();
+
+    rewriter.replaceOpWithNewOp<Concrete::BatchedMappedBootstrapLweTensorOp>(
+        bmbsOp, this->getTypeConverter()->convertType(bmbsOp.getType()),
         adaptor.getCiphertexts(), adaptor.getLookupTable(), inputLweDimension,
         polySize, levels, baseLog, glweDimension, bskIndex);
 
@@ -320,16 +359,15 @@ struct TracePlaintextOpPattern
 };
 
 template <typename ZeroOp>
-struct ZeroOpPattern : public mlir::OpRewritePattern<ZeroOp> {
-  ZeroOpPattern(mlir::MLIRContext *context)
-      : mlir::OpRewritePattern<ZeroOp>(
-            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+struct ZeroOpPattern : public mlir::OpConversionPattern<ZeroOp> {
+  ZeroOpPattern(mlir::MLIRContext *context, mlir::TypeConverter &converter)
+      : mlir::OpConversionPattern<ZeroOp>(
+            converter, context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(ZeroOp zeroOp,
-                  mlir::PatternRewriter &rewriter) const override {
-    TFHEToConcreteTypeConverter converter;
-    auto newResultTy = converter.convertType(zeroOp.getType());
+  matchAndRewrite(ZeroOp zeroOp, typename ZeroOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    auto newResultTy = this->getTypeConverter()->convertType(zeroOp.getType());
 
     auto generateBody = [&](mlir::OpBuilder &nestedBuilder,
                             mlir::Location nestedLoc,
@@ -451,54 +489,43 @@ struct ExtractOpPattern
   };
 };
 
-/// Pattern that rewrites the InsertSlice operation, taking into account the
-/// additional LWE dimension introduced during type conversion
-struct InsertSliceOpPattern
-    : public mlir::OpConversionPattern<mlir::tensor::InsertSliceOp> {
+/// Pattern that rewrites the InsertSlice-like operation, taking into
+/// account the additional LWE dimension introduced during type
+/// conversion
+template <typename OpTy>
+struct InsertSliceOpPattern : public mlir::OpConversionPattern<OpTy> {
   InsertSliceOpPattern(mlir::MLIRContext *context,
                        mlir::TypeConverter &typeConverter)
-      : ::mlir::OpConversionPattern<mlir::tensor::InsertSliceOp>(
+      : ::mlir::OpConversionPattern<OpTy>(
             typeConverter, context,
             mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(mlir::tensor::InsertSliceOp insertSliceOp,
-                  mlir::tensor::InsertSliceOp::Adaptor adaptor,
+  matchAndRewrite(OpTy insertSliceOp, typename OpTy::Adaptor adaptor,
                   ::mlir::ConversionPatternRewriter &rewriter) const override {
-    // is not a tensor of GLWEs that need to be extended with the LWE dimension
-    if (this->getTypeConverter()->isLegal(insertSliceOp.getType())) {
-      return mlir::failure();
-    }
+    mlir::RankedTensorType newDestTy = ((mlir::Type)adaptor.getDest().getType())
+                                           .cast<mlir::RankedTensorType>();
 
-    auto newResultTy = this->getTypeConverter()
-                           ->convertType(insertSliceOp.getResult().getType())
-                           .cast<mlir::RankedTensorType>();
+    // add 0 to offsets
+    mlir::SmallVector<mlir::OpFoldResult> offsets = getMixedValues(
+        adaptor.getStaticOffsets(), adaptor.getOffsets(), rewriter);
+    offsets.push_back(rewriter.getI64IntegerAttr(0));
 
-    // add 0 to static offsets
-    mlir::SmallVector<int64_t> staticOffsets;
-    staticOffsets.append(adaptor.getStaticOffsets().begin(),
-                         adaptor.getStaticOffsets().end());
-    staticOffsets.push_back(0);
-
-    // add lweDimension+1 to static_sizes
-    mlir::SmallVector<int64_t> staticSizes;
-    staticSizes.append(adaptor.getStaticSizes().begin(),
-                       adaptor.getStaticSizes().end());
-    staticSizes.push_back(newResultTy.getDimSize(newResultTy.getRank() - 1));
+    // add lweDimension+1 to sizes
+    mlir::SmallVector<mlir::OpFoldResult> sizes =
+        getMixedValues(adaptor.getStaticSizes(), adaptor.getSizes(), rewriter);
+    sizes.push_back(rewriter.getI64IntegerAttr(
+        newDestTy.getDimSize(newDestTy.getRank() - 1)));
 
     // add 1 to the strides
-    mlir::SmallVector<int64_t> staticStrides;
-    staticStrides.append(adaptor.getStaticStrides().begin(),
-                         adaptor.getStaticStrides().end());
-    staticStrides.push_back(1);
+    mlir::SmallVector<mlir::OpFoldResult> strides = getMixedValues(
+        adaptor.getStaticStrides(), adaptor.getStrides(), rewriter);
+    strides.push_back(rewriter.getI64IntegerAttr(1));
 
     // replace tensor.insert_slice with the new one
-    rewriter.replaceOpWithNewOp<mlir::tensor::InsertSliceOp>(
-        insertSliceOp, newResultTy, adaptor.getSource(), adaptor.getDest(),
-        adaptor.getOffsets(), adaptor.getSizes(), adaptor.getStrides(),
-        rewriter.getDenseI64ArrayAttr(staticOffsets),
-        rewriter.getDenseI64ArrayAttr(staticSizes),
-        rewriter.getDenseI64ArrayAttr(staticStrides));
+    rewriter.replaceOpWithNewOp<OpTy>(insertSliceOp, adaptor.getSource(),
+                                      adaptor.getDest(), offsets, sizes,
+                                      strides);
 
     return ::mlir::success();
   };
@@ -795,20 +822,42 @@ void TFHEToConcretePass::runOnOperation() {
           mlir::concretelang::Concrete::EncodeLutForCrtWopPBSTensorOp, true>,
       mlir::concretelang::GenericOneToOneOpConversionPattern<
           mlir::concretelang::TFHE::EncodePlaintextWithCrtOp,
-          mlir::concretelang::Concrete::EncodePlaintextWithCrtTensorOp, true>>(
-      &getContext(), converter);
+          mlir::concretelang::Concrete::EncodePlaintextWithCrtTensorOp, true>,
+
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::ABatchedAddGLWEIntOp,
+          mlir::concretelang::Concrete::BatchedAddPlaintextLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::ABatchedAddGLWEIntCstOp,
+          mlir::concretelang::Concrete::BatchedAddPlaintextCstLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::ABatchedAddGLWEOp,
+          mlir::concretelang::Concrete::BatchedAddLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::BatchedMulGLWEIntOp,
+          mlir::concretelang::Concrete::BatchedMulCleartextLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::BatchedMulGLWEIntCstOp,
+          mlir::concretelang::Concrete::BatchedMulCleartextCstLweTensorOp>,
+      mlir::concretelang::GenericOneToOneOpConversionPattern<
+          mlir::concretelang::TFHE::BatchedNegGLWEOp,
+          mlir::concretelang::Concrete::BatchedNegateLweTensorOp>
+
+      >(&getContext(), converter);
   // pattern of remaining TFHE ops
+
   patterns.insert<ZeroOpPattern<mlir::concretelang::TFHE::ZeroGLWEOp>,
-                  ZeroOpPattern<mlir::concretelang::TFHE::ZeroTensorGLWEOp>>(
-      &getContext());
-  patterns.insert<SubIntGLWEOpPattern, BootstrapGLWEOpPattern,
-                  BatchedBootstrapGLWEOpPattern, KeySwitchGLWEOpPattern,
+                  ZeroOpPattern<mlir::concretelang::TFHE::ZeroTensorGLWEOp>,
+                  SubIntGLWEOpPattern, BootstrapGLWEOpPattern,
+                  BatchedBootstrapGLWEOpPattern,
+                  BatchedMappedBootstrapGLWEOpPattern, KeySwitchGLWEOpPattern,
                   BatchedKeySwitchGLWEOpPattern, WopPBSGLWEOpPattern>(
       &getContext(), converter);
 
   // Add patterns to rewrite tensor operators that works on tensors of TFHE GLWE
   // types
-  patterns.insert<ExtractSliceOpPattern, ExtractOpPattern, InsertSliceOpPattern,
+  patterns.insert<ExtractSliceOpPattern, ExtractOpPattern,
+                  InsertSliceOpPattern<mlir::tensor::InsertSliceOp>,
                   InsertOpPattern, FromElementsOpPattern>(&getContext(),
                                                           converter);
   // Add patterns to rewrite some of tensor ops that were introduced by the
@@ -833,13 +882,11 @@ void TFHEToConcretePass::runOnOperation() {
       });
 
   // rewrite scf for loops if working on illegal types
-  patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
-                                            TFHEToConcreteTypeConverter>>(
-      &getContext(), converter);
-  target.addDynamicallyLegalOp<mlir::scf::ForOp>([&](mlir::scf::ForOp forOp) {
-    return converter.isLegal(forOp.getInitArgs().getTypes()) &&
-           converter.isLegal(forOp.getResults().getTypes());
-  });
+  patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+      mlir::scf::ForOp>>(&getContext(), converter);
+
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::scf::ForOp>(target,
+                                                                  converter);
 
   mlir::concretelang::addDynamicallyLegalTypeOp<mlir::func::ReturnOp>(
       target, converter);
@@ -860,48 +907,16 @@ void TFHEToConcretePass::runOnOperation() {
             64);
       });
 
-  // Conversion of RT Dialect Ops
-  patterns.add<
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::func::ReturnOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::scf::YieldOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::bufferization::AllocTensorOp, true>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::MakeReadyFutureOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::AwaitFutureOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::CreateAsyncTaskOp, true>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::WorkFunctionReturnOp>,
-      mlir::concretelang::TypeConvertingReinstantiationPattern<
-          mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(&getContext(),
-                                                               converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::MakeReadyFutureOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::AwaitFutureOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::CreateAsyncTaskOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
-      target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::WorkFunctionReturnOp>(target, converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::RegisterTaskWorkFunctionOp>(target, converter);
+  patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+                   mlir::func::ReturnOp>,
+               mlir::concretelang::TypeConvertingReinstantiationPattern<
+                   mlir::scf::YieldOp>,
+               mlir::concretelang::TypeConvertingReinstantiationPattern<
+                   mlir::bufferization::AllocTensorOp, true>>(&getContext(),
+                                                              converter);
+
+  mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
+                                                          converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {

@@ -13,7 +13,7 @@ include "mlir/IR/OpBase.td"
 
 def TFHE_Dialect : Dialect {
   let name = "TFHE";
-  let summary = "High Level Fully Homorphic Encryption dialect";
+  let summary = "High Level Fully Homomorphic Encryption dialect";
   let description = [{
     A dialect for representation of high level operation on fully homomorphic ciphertext.
   }];

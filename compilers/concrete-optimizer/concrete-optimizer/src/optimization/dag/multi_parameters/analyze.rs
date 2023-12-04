@@ -163,7 +163,7 @@ pub fn original_instrs_partition(
 fn out_variance(
     op: &unparametrized::UnparameterizedOperator,
     out_shapes: &[Shape],
-    out_variances: &mut Vec<Vec<SymbolicVariance>>,
+    out_variances: &Vec<Vec<SymbolicVariance>>,
     nb_partitions: usize,
     instr_partition: &InstructionPartition,
 ) -> Vec<SymbolicVariance> {
@@ -192,7 +192,7 @@ fn out_variance(
             let input_shape = first(inputs, out_shapes);
             let kind = dot_kind(inputs.len() as u64, input_shape, weights);
             match kind {
-                DK::Simple | DK::Tensor | DK::Broadcast => {
+                DK::Simple | DK::Tensor | DK::Broadcast { .. } => {
                     let inputs_variance = (0..weights.values.len()).map(|j| {
                         let input = if inputs.len() > 1 {
                             inputs[j]
@@ -241,7 +241,7 @@ fn out_variances(
         let vf = out_variance(
             op,
             &dag.out_shapes,
-            &mut out_variances,
+            &out_variances,
             nb_partitions,
             instr_partition,
         );
@@ -872,8 +872,7 @@ pub mod tests {
         eprintln!("{}", dag.dump());
         let p_cut = PrecisionCut { p_cut };
         eprintln!("{p_cut}");
-        let p_cut = Some(p_cut);
-        let dag = super::analyze(&dag, &CONFIG, &p_cut, LOW_PRECISION_PARTITION);
-        assert!(dag.nb_partitions == p_cut.unwrap().p_cut.len() + 1);
+        let dag = super::analyze(&dag, &CONFIG, &Some(p_cut.clone()), LOW_PRECISION_PARTITION);
+        assert!(dag.nb_partitions == p_cut.p_cut.len() + 1);
     }
 }

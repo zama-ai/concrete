@@ -283,11 +283,13 @@ mlir::LogicalResult ApplyLookupTableEintOp::verify() {
   // Check the shape of lut argument
   auto tEltwidth = tEltTy.getWidth();
   mlir::SmallVector<int64_t, 1> expectedShape{1 << tEltwidth};
-  if (!lutTy.hasStaticShape(expectedShape) || !lutEltTy.isInteger(64)) {
-    this->emitOpError()
-        << "should have as operand #2 a tensor<2^pxi64>, where p is the width "
-           "of the encrypted integer of the operand #1,"
-        << "expect tensor <" << expectedShape[0] << "xi64>";
+  if (!lutTy.hasStaticShape(expectedShape) || !lutEltTy.isSignlessInteger() ||
+      lutEltTy.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError() << "should have as operand #2 a "
+                           "tensor<2^pxi{8,16,32,64}>, where p is the width "
+                           "of the encrypted integer of the operand #1,"
+                        << "expect tensor <" << expectedShape[0]
+                        << "xi{8,16,32,64}>";
     return mlir::failure();
   }
   if (!resultTy.hasStaticShape(tTy.getShape())) {
@@ -308,12 +310,14 @@ mlir::LogicalResult ApplyMultiLookupTableEintOp::verify() {
   // Check the shape of luts argument
   auto lut_size = lutTy.getShape()[lutTy.getShape().size() - 1];
   auto expected_lut_size = 1 << tEltTy.getWidth();
-  if (lut_size != expected_lut_size || !lutEltTy.isInteger(64)) {
-    this->emitOpError() << "should have as operand #2 a "
-                           "tensor<DMx...xD1X2^pxi64>, where p is the width "
-                           "of the encrypted integer of the operand #1,"
-                        << "expect tensor <DMx...xD1X" << expected_lut_size
-                        << "xi64>";
+  if (lut_size != expected_lut_size || !lutEltTy.isSignlessInteger() ||
+      lutEltTy.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError()
+        << "should have as operand #2 a "
+           "tensor<DMx...xD1X2^pxi{8,16,32,64}>, where p is the width "
+           "of the encrypted integer of the operand #1,"
+        << "expect tensor <DMx...xD1X" << expected_lut_size
+        << "xi{8,16,32,64}>";
     return mlir::failure();
   }
   if (!resultTy.hasStaticShape(tTy.getShape())) {
@@ -380,9 +384,14 @@ mlir::LogicalResult verifyLutsSize(ApplyMappedLookupTableEintOp &op,
 
 mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
   auto t = this->getT();
+  auto tTy = this->getT().getType().cast<mlir::RankedTensorType>();
+  auto tEltTy =
+      tTy.getElementType().cast<mlir::concretelang::FHE::FheIntegerInterface>();
   auto luts = this->getLuts();
   auto map = this->getMap();
   auto result = this->getResult();
+  auto lutTy = this->getLuts().getType().cast<mlir::RankedTensorType>();
+  auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
 
   auto t_shape = getTensorType(t).getShape();
   if (!getTensorType(result).hasStaticShape(t_shape)) {
@@ -397,37 +406,82 @@ mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
     return mlir::failure();
   }
 
+  auto expected_lut_size = 1 << tEltTy.getWidth();
+  if (!lutEltTy.isSignlessInteger() || lutEltTy.getIntOrFloatBitWidth() > 64) {
+    this->emitOpError()
+        << "should have as operand #2 a "
+           "tensor<DMx...xD1X2^pxi{8,16,32,64}>, where p is the width "
+           "of the encrypted integer of the operand #1,"
+        << "expect tensor <DMx...xD1X" << expected_lut_size
+        << "xi{8,16,32,64}>";
+    return mlir::failure();
+  }
+
   return mlir::success(verifyMapHasRightShape(*this, t, map).succeeded() &&
                        verifyLutsSize(*this, t, luts).succeeded());
 }
 
-::mlir::LogicalResult Dot::verify() {
-  if (::mlir::failed(mlir::verifyCompatibleShape(this->getLhs().getType(),
-                                                 this->getRhs().getType()))) {
-    return this->emitOpError("arguments have incompatible shapes");
-  }
-  auto lhsEltType = this->getLhs()
-                        .getType()
-                        .cast<mlir::TensorType>()
-                        .getElementType()
-                        .dyn_cast<FHE::FheIntegerInterface>();
-  auto rhsEltType = this->getRhs()
-                        .getType()
-                        .cast<mlir::TensorType>()
-                        .getElementType()
-                        .cast<mlir::IntegerType>();
-  auto resultType =
-      this->getResult().getType().dyn_cast<FHE::FheIntegerInterface>();
-  if (!mlir::concretelang::FHE::
-          verifyEncryptedIntegerAndIntegerInputsConsistency(
-              *this->getOperation(), lhsEltType, rhsEltType)) {
-    return ::mlir::failure();
-  }
-  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
-          *this->getOperation(), lhsEltType, resultType)) {
+mlir::LogicalResult
+verifyDotInputsOutputsConsistency(mlir::concretelang::FHELinalg::DotEint &op,
+                                  FHE::FheIntegerInterface &lhsEltType,
+                                  FHE::FheIntegerInterface &rhsEltType,
+                                  FHE::FheIntegerInterface &resultType) {
+  if (!mlir::concretelang::FHE::verifyEncryptedIntegerInputsConsistency(
+          *op.getOperation(), lhsEltType, rhsEltType)) {
     return ::mlir::failure();
   }
   return ::mlir::success();
+}
+
+mlir::LogicalResult
+verifyDotInputsOutputsConsistency(mlir::concretelang::FHELinalg::Dot &op,
+                                  FHE::FheIntegerInterface &lhsEltType,
+                                  mlir::IntegerType &rhsEltType,
+                                  FHE::FheIntegerInterface &resultType) {
+  if (!mlir::concretelang::FHE::
+          verifyEncryptedIntegerAndIntegerInputsConsistency(
+              *op.getOperation(), lhsEltType, rhsEltType)) {
+    return ::mlir::failure();
+  }
+  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
+          *op.getOperation(), lhsEltType, resultType)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+// Verify a dot product operation:
+// - check that the shapes are compatible
+// - check that the widths of the inputs and result is the same
+template <typename DotOp, typename RHSElementType>
+mlir::LogicalResult verifyDot(DotOp &op) {
+  if (::mlir::failed(mlir::verifyCompatibleShape(op.getLhs().getType(),
+                                                 op.getRhs().getType()))) {
+    return op.emitOpError("arguments have incompatible shapes");
+  }
+  auto lhsEltType = ((mlir::Type)op.getLhs().getType())
+                        .cast<mlir::TensorType>()
+                        .getElementType()
+                        .dyn_cast<FHE::FheIntegerInterface>();
+  auto rhsEltType = ((mlir::Type)op.getRhs().getType())
+                        .cast<mlir::TensorType>()
+                        .getElementType()
+                        .cast<RHSElementType>();
+  auto resultType = ((mlir::Type)op.getResult().getType())
+                        .dyn_cast<FHE::FheIntegerInterface>();
+
+  return verifyDotInputsOutputsConsistency(op, lhsEltType, rhsEltType,
+                                           resultType);
+}
+
+::mlir::LogicalResult Dot::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyDot<
+      mlir::concretelang::FHELinalg::Dot, mlir::IntegerType>(*this);
+}
+
+::mlir::LogicalResult DotEint::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyDot<
+      mlir::concretelang::FHELinalg::DotEint, FHE::FheIntegerInterface>(*this);
 }
 
 llvm::SmallVector<int64_t, 3>
@@ -782,6 +836,11 @@ mlir::LogicalResult MatMulEintIntOp::verify() {
 mlir::LogicalResult MatMulIntEintOp::verify() {
   return ::mlir::concretelang::FHELinalg::verifyMatmul<
       mlir::concretelang::FHELinalg::MatMulIntEintOp>(*this);
+}
+
+mlir::LogicalResult MatMulEintEintOp::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyMatmul<
+      mlir::concretelang::FHELinalg::MatMulEintEintOp>(*this);
 }
 
 mlir::SmallVector<int64_t, 4>
@@ -1311,7 +1370,7 @@ mlir::LogicalResult ToSignedOp::verify() {
   }
 
   auto inputElementType =
-      inputType.getElementType().cast<FHE::EncryptedIntegerType>();
+      inputType.getElementType().cast<FHE::EncryptedUnsignedIntegerType>();
   auto outputElementType =
       outputType.getElementType().cast<FHE::EncryptedSignedIntegerType>();
 
@@ -1342,7 +1401,7 @@ mlir::LogicalResult ToUnsignedOp::verify() {
   auto inputElementType =
       inputType.getElementType().cast<FHE::EncryptedSignedIntegerType>();
   auto outputElementType =
-      outputType.getElementType().cast<FHE::EncryptedIntegerType>();
+      outputType.getElementType().cast<FHE::EncryptedUnsignedIntegerType>();
 
   if (inputElementType.getWidth() != outputElementType.getWidth()) {
     this->emitOpError()
@@ -1388,6 +1447,42 @@ mlir::LogicalResult RoundOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult LsbEintOp::verify() {
+  auto inputType =
+      this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+  auto inputShape = inputType.getShape();
+  auto outputShape = outputType.getShape();
+
+  if (inputShape != outputShape) {
+    this->emitOpError()
+        << "input and output tensors should have the same shape";
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
+mlir::LogicalResult ReinterpretPrecisionEintOp::verify() {
+  auto inputType =
+      this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+  auto inputShape = inputType.getShape();
+  auto outputShape = outputType.getShape();
+
+  if (inputShape != outputShape) {
+    this->emitOpError()
+        << "input and output tensors should have the same shape";
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 /// Avoid addition with constant tensor of 0s
 OpFoldResult AddEintIntOp::fold(FoldAdaptor operands) {
   auto toAdd = operands.getRhs().dyn_cast_or_null<mlir::DenseIntElementsAttr>();
@@ -1427,8 +1522,58 @@ OpFoldResult MulEintIntOp::fold(FoldAdaptor operands) {
   return getOperand(0);
 }
 
+void MulEintIntOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+
+  // Replace multiplication by clear zero cst to a trivial encrypted zero tensor
+  class ZeroCstOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroCstOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getRhs().getDefiningOp<arith::ConstantOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      auto vals = cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value");
+      for (auto it = vals.begin(); it != vals.end(); it++) {
+        if (*it != 0) {
+          return mlir::failure();
+        }
+      }
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+
+  // Replace multiplication by encrypted zero cst to a trivial encrypted zero
+  // tensor
+  class ZeroEncOpPattern : public mlir::OpRewritePattern<MulEintIntOp> {
+  public:
+    ZeroEncOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MulEintIntOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MulEintIntOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getLhs().getDefiningOp<FHE::ZeroTensorOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceAllUsesWith(op, cstOp);
+      rewriter.eraseOp(op);
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroCstOpPattern>(context);
+  patterns.add<ZeroEncOpPattern>(context);
+}
+
 /// Avoid multiplication with constant tensor of 1s
 OpFoldResult RoundOp::fold(FoldAdaptor operands) {
+
   auto input = this->getInput();
   auto inputType =
       this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
@@ -1444,6 +1589,102 @@ OpFoldResult RoundOp::fold(FoldAdaptor operands) {
     return input;
   }
   return nullptr;
+}
+
+template <typename MatMulOp>
+void getMatMulCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                       mlir::MLIRContext *context) {
+
+  // Replace multiplication by clear zero cst to a trivial encrypted zero tensor
+  class ZeroCstOpPattern : public mlir::OpRewritePattern<MatMulOp> {
+  public:
+    ZeroCstOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MatMulOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MatMulOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp =
+          op.getClearMatrix().template getDefiningOp<arith::ConstantOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      auto vals =
+          cstOp->template getAttrOfType<mlir::DenseIntElementsAttr>("value");
+      for (auto it = vals.begin(); it != vals.end(); it++) {
+        if (*it != 0) {
+          return mlir::failure();
+        }
+      }
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+
+  // Replace multiplication by encrypted zero cst to a trivial encrypted zero
+  // tensor
+  class ZeroEncOpPattern : public mlir::OpRewritePattern<MatMulOp> {
+  public:
+    ZeroEncOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<MatMulOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(MatMulOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp =
+          op.getEncryptedMatrix().template getDefiningOp<FHE::ZeroTensorOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroCstOpPattern>(context);
+  patterns.add<ZeroEncOpPattern>(context);
+}
+
+void MatMulIntEintOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+  getMatMulCanonicalizationPatterns<MatMulIntEintOp>(patterns, context);
+}
+
+void MatMulEintIntOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+  getMatMulCanonicalizationPatterns<MatMulEintIntOp>(patterns, context);
+}
+
+template <typename SignedConvOp>
+void getSignedConvCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                           mlir::MLIRContext *context) {
+  // Replace to_signed of zero to signed zero
+  class ZeroOpPattern : public mlir::OpRewritePattern<SignedConvOp> {
+  public:
+    ZeroOpPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<SignedConvOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(SignedConvOp op,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto cstOp = op.getInput().template getDefiningOp<FHE::ZeroTensorOp>();
+      if (cstOp == nullptr)
+        return mlir::failure();
+      rewriter.replaceOpWithNewOp<FHE::ZeroTensorOp>(op,
+                                                     op.getResult().getType());
+      return mlir::success();
+    }
+  };
+  patterns.add<ZeroOpPattern>(context);
+}
+
+void ToSignedOp::getCanonicalizationPatterns(mlir::RewritePatternSet &patterns,
+                                             mlir::MLIRContext *context) {
+  getSignedConvCanonicalizationPatterns<ToSignedOp>(patterns, context);
+}
+
+void ToUnsignedOp::getCanonicalizationPatterns(
+    mlir::RewritePatternSet &patterns, mlir::MLIRContext *context) {
+  getSignedConvCanonicalizationPatterns<ToUnsignedOp>(patterns, context);
 }
 
 } // namespace FHELinalg

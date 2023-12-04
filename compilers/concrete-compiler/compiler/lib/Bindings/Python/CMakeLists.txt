@@ -8,7 +8,14 @@ add_compile_options(-fexceptions)
 # ######################################################################################################################
 set(LLVM_OPTIONAL_SOURCES CompilerAPIModule.cpp ConcretelangModule.cpp FHEModule.cpp)
 
-add_mlir_public_c_api_library(CONCRETELANGPySupport CompilerEngine.cpp LINK_LIBS PUBLIC MLIRCAPIIR ConcretelangSupport)
+add_mlir_public_c_api_library(
+  CONCRETELANGPySupport
+  CompilerEngine.cpp
+  LINK_LIBS
+  PUBLIC
+  MLIRCAPIIR
+  ConcretelangSupport
+  ConcretelangCommon)
 
 # ######################################################################################################################
 # Decalare native Python extension
@@ -28,8 +35,6 @@ declare_mlir_python_extension(
   CompilerAPIModule.cpp
   EMBED_CAPI_LINK_LIBS
   MLIRCAPIRegisterEverything
-  CONCRETELANGCAPIFHE
-  CONCRETELANGCAPIFHELINALG
   CONCRETELANGPySupport)
 
 # ######################################################################################################################
@@ -44,21 +49,25 @@ declare_mlir_python_sources(
   concrete/compiler/__init__.py
   concrete/compiler/client_parameters.py
   concrete/compiler/client_support.py
+  concrete/compiler/compilation_context.py
   concrete/compiler/compilation_feedback.py
   concrete/compiler/compilation_options.py
-  concrete/compiler/jit_compilation_result.py
-  concrete/compiler/jit_support.py
-  concrete/compiler/jit_lambda.py
   concrete/compiler/key_set_cache.py
   concrete/compiler/key_set.py
   concrete/compiler/lambda_argument.py
   concrete/compiler/library_compilation_result.py
   concrete/compiler/library_support.py
   concrete/compiler/library_lambda.py
+  concrete/compiler/parameter.py
   concrete/compiler/public_arguments.py
   concrete/compiler/public_result.py
   concrete/compiler/evaluation_keys.py
+  concrete/compiler/simulated_value_decrypter.py
+  concrete/compiler/simulated_value_exporter.py
   concrete/compiler/utils.py
+  concrete/compiler/value.py
+  concrete/compiler/value_decrypter.py
+  concrete/compiler/value_exporter.py
   concrete/compiler/wrapper.py
   concrete/__init__.py
   concrete/lang/__init__.py
@@ -96,6 +105,19 @@ declare_mlir_dialect_python_bindings(
   concrete/lang/dialects/fhelinalg.py
   DIALECT_NAME
   FHELinalg)
+
+declare_mlir_dialect_python_bindings(
+  ADD_TO_PARENT
+  ConcretelangBindingsPythonSources.Dialects
+  ROOT_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  CONCRETELANGBindingsPythonTracingOps
+  TD_FILE
+  concrete/lang/dialects/TracingOps.td
+  SOURCES
+  concrete/lang/dialects/tracing.py
+  DIALECT_NAME
+  Tracing)
 
 # ######################################################################################################################
 # Build composite binaries

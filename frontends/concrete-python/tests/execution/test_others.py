@@ -202,6 +202,16 @@ def deterministic_unary_function(x):
     return np.vectorize(per_element)(x)
 
 
+def copy_modify(x):
+    """
+    A function that used `np.copy` and then modifies the copied object.
+    """
+
+    y = np.copy(x)
+    y[1] = np.sum(x)
+    return np.concatenate((x, y))
+
+
 @pytest.mark.parametrize(
     "function,parameters",
     [
@@ -516,11 +526,11 @@ def deterministic_unary_function(x):
             id="fusable_additional_2",
         ),
         pytest.param(
-            lambda x: x + x.shape[0] + x.ndim + x.size,
+            lambda x: x + x.shape[0] + x.ndim + x.size + len(x),
             {
                 "x": {"status": "encrypted", "range": [0, 15], "shape": (3, 2)},
             },
-            id="x + x.shape[0] + x.ndim + x.size",
+            id="x + x.shape[0] + x.ndim + x.size + len(x)",
         ),
         pytest.param(
             lambda x: (50 * np.sin(x.transpose())).astype(np.int64),
@@ -690,6 +700,41 @@ def deterministic_unary_function(x):
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
             id="fhe.LookupTable([10, 5])[x > 5]",
+        ),
+        pytest.param(
+            copy_modify,
+            {
+                "x": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
+            },
+            id="copy_modify",
+        ),
+        pytest.param(
+            lambda x: fhe.ones_like(x) + x,
+            {
+                "x": {"status": "encrypted", "range": [0, 4]},
+            },
+            id="fhe.ones_like(x) + x",
+        ),
+        pytest.param(
+            lambda x: fhe.zeros_like(x) + x,
+            {
+                "x": {"status": "encrypted", "range": [0, 4]},
+            },
+            id="fhe.zeros_like(x) + x",
+        ),
+        pytest.param(
+            lambda x: np.minimum(x, 0),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10]},
+            },
+            id="np.minimum(x, 0)",
+        ),
+        pytest.param(
+            lambda x: np.maximum(x, 0),
+            {
+                "x": {"status": "encrypted", "range": [-10, 10]},
+            },
+            id="np.maximum(x, 0)",
         ),
     ],
 )

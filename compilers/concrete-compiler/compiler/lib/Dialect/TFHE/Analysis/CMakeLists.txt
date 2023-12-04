@@ -1,0 +1,13 @@
+add_mlir_library(
+  TFHEDialectAnalysis
+  ExtractStatistics.cpp
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/TFHE
+  DEPENDS
+  TFHEDialect
+  mlir-headers
+  LINK_LIBS
+  PUBLIC
+  MLIRIR
+  TFHEDialect
+  AnalysisUtils)

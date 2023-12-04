@@ -38,6 +38,33 @@ char stream_emulator_make_memref_keyswitch_lwe_u64_process[] =
 char stream_emulator_make_memref_bootstrap_lwe_u64_process[] =
     "stream_emulator_make_memref_bootstrap_lwe_u64_process";
 
+char stream_emulator_make_memref_batched_add_lwe_ciphertexts_u64_process[] =
+    "stream_emulator_make_memref_batched_add_lwe_ciphertexts_u64_process";
+char
+    stream_emulator_make_memref_batched_add_plaintext_lwe_ciphertext_u64_process
+        [] = "stream_emulator_make_memref_batched_add_plaintext_lwe_ciphertext_"
+             "u64_process";
+char
+    stream_emulator_make_memref_batched_add_plaintext_cst_lwe_ciphertext_u64_process
+        [] = "stream_emulator_make_memref_batched_add_plaintext_cst_lwe_"
+             "ciphertext_u64_process";
+char
+    stream_emulator_make_memref_batched_mul_cleartext_lwe_ciphertext_u64_process
+        [] = "stream_emulator_make_memref_batched_mul_cleartext_lwe_ciphertext_"
+             "u64_process";
+char
+    stream_emulator_make_memref_batched_mul_cleartext_cst_lwe_ciphertext_u64_process
+        [] = "stream_emulator_make_memref_batched_mul_cleartext_cst_lwe_"
+             "ciphertext_u64_process";
+char stream_emulator_make_memref_batched_negate_lwe_ciphertext_u64_process[] =
+    "stream_emulator_make_memref_batched_negate_lwe_ciphertext_u64_process";
+char stream_emulator_make_memref_batched_keyswitch_lwe_u64_process[] =
+    "stream_emulator_make_memref_batched_keyswitch_lwe_u64_process";
+char stream_emulator_make_memref_batched_bootstrap_lwe_u64_process[] =
+    "stream_emulator_make_memref_batched_bootstrap_lwe_u64_process";
+char stream_emulator_make_memref_batched_mapped_bootstrap_lwe_u64_process[] =
+    "stream_emulator_make_memref_batched_mapped_bootstrap_lwe_u64_process";
+
 char stream_emulator_make_memref_stream[] =
     "stream_emulator_make_memref_stream";
 char stream_emulator_put_memref[] = "stream_emulator_put_memref";
@@ -45,6 +72,10 @@ char stream_emulator_make_uint64_stream[] =
     "stream_emulator_make_uint64_stream";
 char stream_emulator_put_uint64[] = "stream_emulator_put_uint64";
 char stream_emulator_get_uint64[] = "stream_emulator_get_uint64";
+
+char stream_emulator_make_memref_batch_stream[] =
+    "stream_emulator_make_memref_batch_stream";
+char stream_emulator_put_memref_batch[] = "stream_emulator_put_memref_batch";
 
 mlir::Type getDynamicTensor(mlir::OpBuilder &rewriter, size_t rank) {
   std::vector<int64_t> shape(rank, mlir::ShapedType::kDynamic);
@@ -164,7 +195,7 @@ struct LowerSDFGMakeProcess
   ::mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::SDFG::MakeProcess mpOp,
                   ::mlir::PatternRewriter &rewriter) const override {
-    const char *funcName;
+    const char *funcName = nullptr;
     mlir::SmallVector<mlir::Value> operands(mpOp->getOperands());
     switch (mpOp.getType()) {
     case SDFG::ProcessKind::add_eint:
@@ -181,8 +212,12 @@ struct LowerSDFGMakeProcess
     case SDFG::ProcessKind::neg_eint:
       funcName = stream_emulator_make_memref_negate_lwe_ciphertext_u64_process;
       break;
+    case SDFG::ProcessKind::batched_keyswitch:
+      funcName = stream_emulator_make_memref_batched_keyswitch_lwe_u64_process;
+      [[fallthrough]];
     case SDFG::ProcessKind::keyswitch:
-      funcName = stream_emulator_make_memref_keyswitch_lwe_u64_process;
+      if (funcName == nullptr)
+        funcName = stream_emulator_make_memref_keyswitch_lwe_u64_process;
       // level
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(), mpOp->getAttrOfType<mlir::IntegerAttr>("level")));
@@ -206,8 +241,17 @@ struct LowerSDFGMakeProcess
       // context
       operands.push_back(getContextArgument(mpOp));
       break;
+    case SDFG::ProcessKind::batched_bootstrap:
+      funcName = stream_emulator_make_memref_batched_bootstrap_lwe_u64_process;
+      [[fallthrough]];
+    case SDFG::ProcessKind::batched_mapped_bootstrap:
+      if (funcName == nullptr)
+        funcName =
+            stream_emulator_make_memref_batched_mapped_bootstrap_lwe_u64_process;
+      [[fallthrough]];
     case SDFG::ProcessKind::bootstrap:
-      funcName = stream_emulator_make_memref_bootstrap_lwe_u64_process;
+      if (funcName == nullptr)
+        funcName = stream_emulator_make_memref_bootstrap_lwe_u64_process;
       // input_lwe_dim
       operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
           mpOp.getLoc(),
@@ -234,6 +278,30 @@ struct LowerSDFGMakeProcess
           mpOp.getLoc(), mpOp->getAttrOfType<mlir::IntegerAttr>("bskIndex")));
       // context
       operands.push_back(getContextArgument(mpOp));
+      break;
+    case SDFG::ProcessKind::batched_add_eint:
+      funcName =
+          stream_emulator_make_memref_batched_add_lwe_ciphertexts_u64_process;
+      break;
+    case SDFG::ProcessKind::batched_add_eint_int:
+      funcName =
+          stream_emulator_make_memref_batched_add_plaintext_lwe_ciphertext_u64_process;
+      break;
+    case SDFG::ProcessKind::batched_add_eint_int_cst:
+      funcName =
+          stream_emulator_make_memref_batched_add_plaintext_cst_lwe_ciphertext_u64_process;
+      break;
+    case SDFG::ProcessKind::batched_mul_eint_int:
+      funcName =
+          stream_emulator_make_memref_batched_mul_cleartext_lwe_ciphertext_u64_process;
+      break;
+    case SDFG::ProcessKind::batched_mul_eint_int_cst:
+      funcName =
+          stream_emulator_make_memref_batched_mul_cleartext_cst_lwe_ciphertext_u64_process;
+      break;
+    case SDFG::ProcessKind::batched_neg_eint:
+      funcName =
+          stream_emulator_make_memref_batched_negate_lwe_ciphertext_u64_process;
       break;
     }
     if (insertGenericForwardDeclaration(mpOp, rewriter, funcName,
@@ -274,7 +342,13 @@ struct LowerSDFGMakeStream
     assert(sType && "SDFG MakeStream operation should return a stream type");
 
     if (sType.getElementType().isa<mlir::RankedTensorType>()) {
-      funcName = stream_emulator_make_memref_stream;
+      if (sType.getElementType().dyn_cast<mlir::TensorType>().getRank() == 1)
+        funcName = stream_emulator_make_memref_stream;
+      else if (sType.getElementType().dyn_cast<mlir::TensorType>().getRank() ==
+               2)
+        funcName = stream_emulator_make_memref_batch_stream;
+      else
+        return ::mlir::failure();
     } else {
       assert(sType.getElementType().isa<mlir::IntegerType>() &&
              "SDFG streams only support memrefs and integers.");
@@ -314,7 +388,13 @@ struct LowerSDFGPut
     assert(sType &&
            "SDFG Put operation must take a stream type as first parameter.");
     if (sType.getElementType().isa<mlir::RankedTensorType>()) {
-      funcName = stream_emulator_put_memref;
+      if (sType.getElementType().dyn_cast<mlir::TensorType>().getRank() == 1)
+        funcName = stream_emulator_put_memref;
+      else if (sType.getElementType().dyn_cast<mlir::TensorType>().getRank() ==
+               2)
+        funcName = stream_emulator_put_memref_batch;
+      else
+        return ::mlir::failure();
     } else {
       assert(sType.getElementType().isa<mlir::IntegerType>() &&
              "SDFG streams only support memrefs and integers.");

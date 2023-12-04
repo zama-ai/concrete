@@ -1,0 +1,20 @@
+description: big_matmul
+program: |
+  func.func @main(%arg0: !FHE.esint<22>) -> !FHE.esint<22> {
+    %cst = arith.constant dense<0> : tensor<19x3072xi23>
+    %from_elements = tensor.from_elements %arg0 : tensor<1x!FHE.esint<22>>
+    %0 = "FHELinalg.add_eint_int"(%from_elements, %cst) : (tensor<1x!FHE.esint<22>>, tensor<19x3072xi23>) -> tensor<19x3072x!FHE.esint<22>>
+    %cst_0 = arith.constant dense<5> : tensor<3072x768xi23>
+    %1 = "FHELinalg.matmul_eint_int"(%0, %cst_0) : (tensor<19x3072x!FHE.esint<22>>, tensor<3072x768xi23>) -> tensor<19x768x!FHE.esint<22>>
+    %c0 = arith.constant 0 : index
+    %extracted = tensor.extract %1[%c0, %c0] : tensor<19x768x!FHE.esint<22>>
+    return %extracted : !FHE.esint<22>
+  }
+p-error: 6.3342483999973e-05
+tests:
+  - inputs:
+    - scalar: 0
+      signed: true
+    outputs:
+    - scalar: 0
+      signed: true

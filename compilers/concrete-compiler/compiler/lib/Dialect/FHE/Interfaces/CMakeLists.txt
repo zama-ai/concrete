@@ -1,0 +1,11 @@
+add_mlir_dialect_library(
+  FHEInterfaces
+  FHEInterfaces.cpp
+  FHEInterfacesInstances.cpp
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/FHE
+  DEPENDS
+  mlir-headers
+  LINK_LIBS
+  PUBLIC
+  MLIRIR)

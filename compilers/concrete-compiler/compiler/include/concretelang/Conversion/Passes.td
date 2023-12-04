@@ -47,6 +47,14 @@ def TFHEToConcrete : Pass<"tfhe-to-concrete", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::TFHE::TFHEDialect"];
 }
 
+def SimulateTFHE : Pass<"simulate-tfhe", "mlir::ModuleOp"> {
+  let summary = "Simulate TFHE operations";
+  let description = [{ Simulate TFHE operations by making CAPI calls to a simulation backend }];
+  let constructor = "mlir::concretelang::createSimulateTFHEPass()";
+  let options = [];
+  let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::TFHE::TFHEDialect"];
+}
+
 def LinalgGenericOpWithTensorsToLoops : Pass<"linalg-generic-op-with-tensors-to-loops", "mlir::ModuleOp"> {
   let summary = "Converts linalg.generic ops with tensor inputs / outputs to a loop nest";
   let description = [{ Converts linalg.generic ops with tensor inputs / outputs to a loop nest }];

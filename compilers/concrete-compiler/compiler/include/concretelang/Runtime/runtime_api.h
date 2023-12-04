@@ -23,7 +23,6 @@ void *_dfr_await_future(void *);
     _dfr_make_ready_future allocates the future, not the underlying storage.
     _dfr_create_async_task allocates both future and storage for outputs.  */
 void _dfr_deallocate_future(void *);
-void _dfr_deallocate_future_data(void *);
 
 /*  Initialisation & termination.  */
 void _dfr_start(int64_t, void *);

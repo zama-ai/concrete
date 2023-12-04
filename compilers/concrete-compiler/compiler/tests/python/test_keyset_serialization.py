@@ -30,7 +30,7 @@ module {
         support = LibrarySupport.new(str(tmpdirname))
         compilation_result = support.compile(mlir)
 
-        server_lambda = support.load_server_lambda(compilation_result)
+        server_lambda = support.load_server_lambda(compilation_result, False)
         client_parameters = support.load_client_parameters(compilation_result)
 
         keyset = ClientSupport.key_set(client_parameters)

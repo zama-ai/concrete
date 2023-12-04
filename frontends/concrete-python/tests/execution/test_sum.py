@@ -18,6 +18,18 @@ from concrete import fhe
             },
         ),
         pytest.param(
+            lambda x: np.sum(x, 0),
+            {
+                "x": {"shape": (3, 2), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
+        pytest.param(
+            lambda x: np.sum(x, 1),
+            {
+                "x": {"shape": (3, 2), "range": [0, 10], "status": "encrypted"},
+            },
+        ),
+        pytest.param(
             lambda x: np.sum(x, axis=None),  # type: ignore
             {
                 "x": {"shape": (3, 2), "range": [0, 10], "status": "encrypted"},

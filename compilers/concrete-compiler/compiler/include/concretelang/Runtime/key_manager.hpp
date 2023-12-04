@@ -8,17 +8,25 @@
 
 #include <memory>
 #include <mutex>
+#include <stdlib.h>
 #include <utility>
 
 #include <hpx/include/runtime.hpp>
 #include <hpx/modules/collectives.hpp>
 #include <hpx/modules/serialization.hpp>
 
-#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/context.h"
 
 #include "concretelang/Common/Error.h"
+#include "concretelang/Common/Keys.h"
+#include "concretelang/Common/Keysets.h"
+
+using concretelang::keys::LweBootstrapKey;
+using concretelang::keys::LweKeyswitchKey;
+using concretelang::keys::LweSecretKey;
+using concretelang::keys::PackingKeyswitchKey;
+using concretelang::keysets::ServerKeyset;
 
 namespace mlir {
 namespace concretelang {
@@ -42,72 +50,51 @@ template <typename LweKeyType> struct KeyWrapper {
   }
   KeyWrapper(std::vector<LweKeyType> keyvec) : keys(keyvec) {}
   friend class hpx::serialization::access;
-  // template <class Archive>
-  // void save(Archive &ar, const unsigned int version) const;
   template <class Archive>
-  void serialize(Archive &ar, const unsigned int version) const {}
-  // template <class Archive> void load(Archive &ar, const unsigned int
-  // version); HPX_SERIALIZATION_SPLIT_MEMBER()
+  void save(Archive &ar, const unsigned int version) const {
+    ar << (size_t)keys.size();
+    for (auto k : keys) {
+      auto info = k.getInfo();
+      auto maybe_info_string = info.writeBinaryToString();
+      assert(maybe_info_string.has_value());
+      auto info_string = maybe_info_string.value();
+      ar << hpx::serialization::make_array(info_string.c_str(),
+                                           info_string.size());
+      ar << (size_t)k.getBuffer().size();
+      ar << hpx::serialization::make_array(k.getBuffer().data(),
+                                           k.getBuffer().size());
+    }
+  }
+  template <class Archive> void load(Archive &ar, const unsigned int version) {
+    size_t num_keys;
+    ar >> num_keys;
+    for (uint i = 0; i < num_keys; ++i) {
+      std::string info_string;
+      ar >> info_string;
+      typename LweKeyType::InfoType info;
+      assert(info.readBinaryFromString(info_string).has_value());
+      size_t key_size;
+      ar >> key_size;
+      auto buffer = std::make_shared<std::vector<uint64_t>>();
+      buffer->resize(key_size);
+      ar >> hpx::serialization::make_array(buffer->data(), key_size);
+      keys.push_back(LweKeyType(buffer, info));
+    }
+  }
+  HPX_SERIALIZATION_SPLIT_MEMBER()
 };
 
 template <typename LweKeyType>
 bool operator==(const KeyWrapper<LweKeyType> &lhs,
+
                 const KeyWrapper<LweKeyType> &rhs) {
   if (lhs.keys.size() != rhs.keys.size())
     return false;
   for (size_t i = 0; i < lhs.keys.size(); ++i)
-    if (lhs.keys[i].buffer() != rhs.keys[i].buffer())
+    if (lhs.keys[i].getBuffer() != rhs.keys[i].getBuffer())
       return false;
   return true;
 }
-
-// template <>
-// template <class Archive>
-// void KeyWrapper<LweBootstrapKey>::save(Archive &ar,
-//                                          const unsigned int version) const {
-//   ar << buffer.length;
-//   ar << hpx::serialization::make_array(buffer.pointer, buffer.length);
-// }
-// template <>
-// template <class Archive>
-// void KeyWrapper<LweBootstrapKey>::load(Archive &ar,
-//                                          const unsigned int version) {
-//   DefaultSerializationEngine *engine;
-
-//   // No Freeing as it doesn't allocate anything.
-//   CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-//   ar >> buffer.length;
-//   buffer.pointer = new uint8_t[buffer.length];
-//   ar >> hpx::serialization::make_array(buffer.pointer, buffer.length);
-//   CAPI_ASSERT_ERROR(
-//       default_serialization_engine_deserialize_lwe_bootstrap_key_u64(
-//           engine, {buffer.pointer, buffer.length}, &key));
-// }
-
-// template <>
-// template <class Archive>
-// void KeyWrapper<LweKeyswitchKey>::save(Archive &ar,
-//                                          const unsigned int version) const {
-//   ar << buffer.length;
-//   ar << hpx::serialization::make_array(buffer.pointer, buffer.length);
-// }
-// template <>
-// template <class Archive>
-// void KeyWrapper<LweKeyswitchKey>::load(Archive &ar,
-//                                          const unsigned int version) {
-//   DefaultSerializationEngine *engine;
-
-//   // No Freeing as it doesn't allocate anything.
-//   CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
-
-//   ar >> buffer.length;
-//   buffer.pointer = new uint8_t[buffer.length];
-//   ar >> hpx::serialization::make_array(buffer.pointer, buffer.length);
-//   CAPI_ASSERT_ERROR(
-//       default_serialization_engine_deserialize_lwe_keyswitch_key_u64(
-//           engine, {buffer.pointer, buffer.length}, &key));
-// }
 
 /************************/
 /* Context management.  */
@@ -132,35 +119,21 @@ struct RuntimeContextManager {
     if (_dfr_is_root_node()) {
       RuntimeContext *context = (RuntimeContext *)ctx;
 
-      KeyWrapper<::concretelang::clientlib::LweKeyswitchKey> kskw(
-          context->getKeys().getKeyswitchKeys());
-      KeyWrapper<::concretelang::clientlib::LweBootstrapKey> bskw(
-          context->getKeys().getBootstrapKeys());
-      KeyWrapper<::concretelang::clientlib::PackingKeyswitchKey> pkskw(
-          context->getKeys().getPackingKeyswitchKeys());
+      KeyWrapper<LweKeyswitchKey> kskw(context->getKeys().lweKeyswitchKeys);
+      KeyWrapper<LweBootstrapKey> bskw(context->getKeys().lweBootstrapKeys);
       hpx::collectives::broadcast_to("ksk_keystore", kskw);
       hpx::collectives::broadcast_to("bsk_keystore", bskw);
-      hpx::collectives::broadcast_to("pksk_keystore", pkskw);
     } else {
-      auto kskFut = hpx::collectives::broadcast_from<
-          KeyWrapper<::concretelang::clientlib::LweKeyswitchKey>>(
-          "ksk_keystore");
-      auto bskFut = hpx::collectives::broadcast_from<
-          KeyWrapper<::concretelang::clientlib::LweBootstrapKey>>(
-          "bsk_keystore");
-      auto pkskFut = hpx::collectives::broadcast_from<
-          KeyWrapper<::concretelang::clientlib::PackingKeyswitchKey>>(
-          "pksk_keystore");
-
-      KeyWrapper<::concretelang::clientlib::LweKeyswitchKey> kskw =
-          kskFut.get();
-      KeyWrapper<::concretelang::clientlib::LweBootstrapKey> bskw =
-          bskFut.get();
-      KeyWrapper<::concretelang::clientlib::PackingKeyswitchKey> pkskw =
-          pkskFut.get();
+      auto kskFut =
+          hpx::collectives::broadcast_from<KeyWrapper<LweKeyswitchKey>>(
+              "ksk_keystore");
+      auto bskFut =
+          hpx::collectives::broadcast_from<KeyWrapper<LweBootstrapKey>>(
+              "bsk_keystore");
+      KeyWrapper<LweKeyswitchKey> kskw = kskFut.get();
+      KeyWrapper<LweBootstrapKey> bskw = bskFut.get();
       context = new mlir::concretelang::RuntimeContext(
-          ::concretelang::clientlib::EvaluationKeys(kskw.keys, bskw.keys,
-                                                    pkskw.keys));
+          ServerKeyset{bskw.keys, kskw.keys, {}});
     }
   }
 

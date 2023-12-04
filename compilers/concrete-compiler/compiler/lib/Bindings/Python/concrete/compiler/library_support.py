@@ -7,15 +7,17 @@ Library support provides a way to compile an MLIR program into a library that ca
 to execute the compiled code.
 """
 import os
-from typing import Optional
+from typing import Optional, Union
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
     LibrarySupport as _LibrarySupport,
 )
+from mlir.ir import Module as MlirModule
 
 # pylint: enable=no-name-in-module,import-error
 from .compilation_options import CompilationOptions
+from .compilation_context import CompilationContext
 from .library_compilation_result import LibraryCompilationResult
 from .public_arguments import PublicArguments
 from .library_lambda import LibraryLambda
@@ -122,35 +124,56 @@ class LibrarySupport(WrapperCpp):
                 generateCppHeader,
             )
         )
+        if not os.path.isdir(output_path):
+            os.makedirs(output_path)
         library_support.output_dir_path = output_path
         return library_support
 
     def compile(
         self,
-        mlir_program: str,
+        mlir_program: Union[str, MlirModule],
         options: CompilationOptions = CompilationOptions.new("main"),
+        compilation_context: Optional[CompilationContext] = None,
     ) -> LibraryCompilationResult:
         """Compile an MLIR program using Concrete dialects into a library.
 
         Args:
-            mlir_program (str): textual representation of the mlir program to compile
+            mlir_program (Union[str, MlirModule]): mlir program to compile (textual or in-memory)
             options (CompilationOptions): compilation options
 
         Raises:
-            TypeError: if mlir_program is not of type str
+            TypeError: if mlir_program is not of type str or MlirModule
             TypeError: if options is not of type CompilationOptions
 
         Returns:
             LibraryCompilationResult: the result of the library compilation
         """
-        if not isinstance(mlir_program, str):
+        if not isinstance(mlir_program, (str, MlirModule)):
             raise TypeError(
-                f"mlir_program must be of type str, not {type(mlir_program)}"
+                f"mlir_program must be of type str or MlirModule, not {type(mlir_program)}"
             )
         if not isinstance(options, CompilationOptions):
             raise TypeError(
                 f"options must be of type CompilationOptions, not {type(options)}"
             )
+        # get the PyCapsule of the module
+        if isinstance(mlir_program, MlirModule):
+            if compilation_context is None:
+                raise ValueError(
+                    "compilation_context must be provided when compiling a module object"
+                )
+            if not isinstance(compilation_context, CompilationContext):
+                raise TypeError(
+                    f"compilation_context must be of type CompilationContext, not "
+                    f"{type(compilation_context)}"
+                )
+            # pylint: disable=protected-access
+            return LibraryCompilationResult.wrap(
+                self.cpp().compile(
+                    mlir_program._CAPIPtr, options.cpp(), compilation_context.cpp()
+                )
+            )
+            # pylint: enable=protected-access
         return LibraryCompilationResult.wrap(
             self.cpp().compile(mlir_program, options.cpp())
         )
@@ -195,27 +218,29 @@ class LibrarySupport(WrapperCpp):
     def load_compilation_feedback(
         self, compilation_result: LibraryCompilationResult
     ) -> CompilationFeedback:
-        """Load the compilation feedback from the JIT compilation result.
+        """Load the compilation feedback from the compilation result.
 
         Args:
-            compilation_result (JITCompilationResult): result of the JIT compilation
+            compilation_result (LibraryCompilationResult): result of the compilation
 
         Raises:
-            TypeError: if compilation_result is not of type JITCompilationResult
+            TypeError: if compilation_result is not of type LibraryCompilationResult
 
         Returns:
             CompilationFeedback: the compilation feedback for the compiled program
         """
         if not isinstance(compilation_result, LibraryCompilationResult):
             raise TypeError(
-                f"compilation_result must be of type JITCompilationResult, not {type(compilation_result)}"
+                f"compilation_result must be of type LibraryCompilationResult, not {type(compilation_result)}"
             )
         return CompilationFeedback.wrap(
             self.cpp().load_compilation_feedback(compilation_result.cpp())
         )
 
     def load_server_lambda(
-        self, library_compilation_result: LibraryCompilationResult
+        self,
+        library_compilation_result: LibraryCompilationResult,
+        simulation: bool,
     ) -> LibraryLambda:
         """Load the server lambda from the library compilation result.
 
@@ -234,7 +259,7 @@ class LibrarySupport(WrapperCpp):
                 f"{type(library_compilation_result)}"
             )
         return LibraryLambda.wrap(
-            self.cpp().load_server_lambda(library_compilation_result.cpp())
+            self.cpp().load_server_lambda(library_compilation_result.cpp(), simulation)
         )
 
     def server_call(
@@ -278,6 +303,39 @@ class LibrarySupport(WrapperCpp):
             )
         )
 
+    def simulate(
+        self,
+        library_lambda: LibraryLambda,
+        public_arguments: PublicArguments,
+    ) -> PublicResult:
+        """Call the library with public_arguments in simulation mode.
+
+        Args:
+            library_lambda (LibraryLambda): reference to the compiled library
+            public_arguments (PublicArguments): arguments to use for execution
+
+        Raises:
+            TypeError: if library_lambda is not of type LibraryLambda
+            TypeError: if public_arguments is not of type PublicArguments
+
+        Returns:
+            PublicResult: result of the execution
+        """
+        if not isinstance(library_lambda, LibraryLambda):
+            raise TypeError(
+                f"library_lambda must be of type LibraryLambda, not {type(library_lambda)}"
+            )
+        if not isinstance(public_arguments, PublicArguments):
+            raise TypeError(
+                f"public_arguments must be of type PublicArguments, not {type(public_arguments)}"
+            )
+        return PublicResult.wrap(
+            self.cpp().simulate(
+                library_lambda.cpp(),
+                public_arguments.cpp(),
+            )
+        )
+
     def get_shared_lib_path(self) -> str:
         """Get the path where the shared library is expected to be.
 
@@ -286,10 +344,10 @@ class LibrarySupport(WrapperCpp):
         """
         return self.cpp().get_shared_lib_path()
 
-    def get_client_parameters_path(self) -> str:
-        """Get the path where the client parameters file is expected to be.
+    def get_program_info_path(self) -> str:
+        """Get the path where the program info file is expected to be.
 
         Returns:
-            str: path to the client parameters file
+            str: path to the program info file
         """
-        return self.cpp().get_client_parameters_path()
+        return self.cpp().get_program_info_path()

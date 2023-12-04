@@ -12,26 +12,26 @@ def BatchableOpInterface : OpInterface<"BatchableOpInterface"> {
 
   let methods = [
     InterfaceMethod<[{
-        Return the scalar operand that can be batched in a tensor to
-        be passed to the corresponding batched operation.
+        Return the number of batching schemes for the operation.
       }],
-      /*retTy=*/"::mlir::OpOperand&",
-      /*methodName=*/"getBatchableOperand",
+      /*retTy=*/"unsigned",
+      /*methodName=*/"getNumBatchingVariants",
       /*args=*/(ins),
       /*methodBody=*/"",
       /*defaultImplementation=*/[{
-        llvm_unreachable("getBatchableOperand not implemented");
+        return 1;
       }]
     >,
     InterfaceMethod<[{
-        Return all operands that cannot be batched.
+        Return the scalar operands that can be batched in a tensor to
+        be passed to the corresponding batched operation.
       }],
-      /*retTy=*/"::mlir::OperandRange",
-      /*methodName=*/"getNonBatchableOperands",
-      /*args=*/(ins),
+      /*retTy=*/"::llvm::MutableArrayRef<::mlir::OpOperand>",
+      /*methodName=*/"getBatchableOperands",
+      /*args=*/(ins "unsigned":$variant),
       /*methodBody=*/"",
       /*defaultImplementation=*/[{
-        llvm_unreachable("getNonBatchableOperands not implemented");
+        llvm_unreachable("getBatchableOperands not implemented");
       }]
     >,
     InterfaceMethod<[{
@@ -39,8 +39,9 @@ def BatchableOpInterface : OpInterface<"BatchableOpInterface"> {
       }],
       /*retTy=*/"::mlir::Value",
       /*methodName=*/"createBatchedOperation",
-      /*args=*/(ins "::mlir::ImplicitLocOpBuilder&":$builder,
-                    "::mlir::Value":$batchedOperands,
+      /*args=*/(ins "unsigned":$variant,
+                    "::mlir::ImplicitLocOpBuilder&":$builder,
+                    "::mlir::ValueRange":$batchedOperands,
                     "::mlir::ValueRange":$hoistedNonBatchableOperands),
       /*methodBody=*/"",
       /*defaultImplementation=*/[{

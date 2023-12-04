@@ -17,6 +17,7 @@ pub struct ParameterDomains {
     pub free_glwe: GlweParameterRanges,
     pub br_decomposition: BrDecompositionParameterRanges,
     pub ks_decomposition: KsDecompositionParameterRanges,
+    pub free_lwe: Range,
 }
 
 pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
@@ -39,6 +40,10 @@ pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
         log2_base: Range { start: 1, end: 65 },
         level: Range { start: 1, end: 65 },
     },
+    free_lwe: Range {
+        start: 512,
+        end: 1 << 20,
+    },
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -47,6 +52,8 @@ pub struct Range {
     pub end: u64,
 }
 
+#[allow(unknown_lints)]
+#[allow(clippy::into_iter_without_iter)]
 impl IntoIterator for &Range {
     type Item = u64;
 
