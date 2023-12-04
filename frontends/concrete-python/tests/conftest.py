@@ -5,6 +5,7 @@ Configuration of `pytest`.
 import json
 import os
 import random
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -295,8 +296,8 @@ class Helpers:
 
         if not only_simulation:
             for i in range(retries):
-                expected = sanitize(function(*sample))
-                actual = sanitize(circuit.encrypt_run_decrypt(*sample))
+                expected = sanitize(function(*deepcopy(sample)))
+                actual = sanitize(circuit.encrypt_run_decrypt(*deepcopy(sample)))
 
                 if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                     break
@@ -317,8 +318,8 @@ class Helpers:
 
         circuit.enable_fhe_simulation()
         for i in range(retries):
-            expected = sanitize(function(*sample))
-            actual = sanitize(circuit.simulate(*sample))
+            expected = sanitize(function(*deepcopy(sample)))
+            actual = sanitize(circuit.simulate(*deepcopy(sample)))
 
             if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                 break

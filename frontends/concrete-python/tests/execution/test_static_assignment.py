@@ -443,6 +443,21 @@ def assignment_case_28():
     return shape, assign
 
 
+def assignment_case_29():
+    """
+    Assignment test case.
+    """
+
+    shape = (5,)
+    value = -20
+
+    def assign(x):
+        x[0] = value
+        return x
+
+    return shape, assign
+
+
 @pytest.mark.parametrize(
     "shape,function",
     [
@@ -475,6 +490,7 @@ def assignment_case_28():
         pytest.param(*assignment_case_26()),
         pytest.param(*assignment_case_27()),
         pytest.param(*assignment_case_28()),
+        pytest.param(*assignment_case_29()),
     ],
 )
 def test_static_assignment(shape, function, helpers):
