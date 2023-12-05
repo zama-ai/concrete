@@ -167,7 +167,6 @@ int main(int argc, char **argv) {
   // parse end to end test compiler options
   auto options = parseEndToEndCommandLine(argc, argv);
 
-  auto compilationOptions = std::get<0>(options);
   auto descriptionFiles = std::get<1>(options);
 
   std::vector<enum Action> actions = clActions;
@@ -180,7 +179,7 @@ int main(int argc, char **argv) {
   for (auto descFile : descriptionFiles) {
     auto suiteName = llvm::sys::path::stem(descFile.path).str();
     registerEndToEndBenchmark(suiteName, descFile.descriptions,
-                              compilationOptions, actions,
+                              std::get<0>(options).compilationOptions, actions,
                               stackSizeRequirement);
   }
   ::benchmark::RunSpecifiedBenchmarks();

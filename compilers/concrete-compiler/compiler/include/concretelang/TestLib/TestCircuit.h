@@ -75,6 +75,10 @@ public:
   Result<void> generateKeyset(__uint128_t secretSeed = 0,
                               __uint128_t encryptionSeed = 0,
                               bool tryCache = true) {
+    if (isSimulation()) {
+      keyset = Keyset{};
+      return outcome::success();
+    }
     OUTCOME_TRY(auto lib, getLibrary());
     if (tryCache) {
       OUTCOME_TRY(keyset, getTestKeySetCachePtr()->getKeyset(

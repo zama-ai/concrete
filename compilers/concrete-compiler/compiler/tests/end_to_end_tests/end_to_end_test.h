@@ -19,11 +19,15 @@ const double TEST_ERROR_RATE = 1.0 - 0.999936657516;
 // array
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
+typedef struct EndToEndTestOptions {
+  mlir::concretelang::CompilationOptions compilationOptions;
+  int numberOfRetry;
+} EndToEndTestOptions;
+
 /// @brief  Parse the command line and return a tuple contains the compilation
 /// options, the library path if the --library options has been specified and
 /// the parsed description files
-std::tuple<mlir::concretelang::CompilationOptions,
-           std::vector<EndToEndDescFile>, int>
+std::pair<EndToEndTestOptions, std::vector<EndToEndDescFile>>
 parseEndToEndCommandLine(int argc, char **argv) {
   namespace optimizer = mlir::concretelang::optimizer;
   // TODO - Well reset other llvm command line options registered but assert on
@@ -63,6 +67,9 @@ parseEndToEndCommandLine(int argc, char **argv) {
       llvm::cl::desc(
           "Set the batchTFHEOps compilation options to run the tests"),
       llvm::cl::init(std::nullopt));
+  llvm::cl::opt<bool> simulate(
+      "simulate", llvm::cl::desc("Simulate the FHE execution"),
+      llvm::cl::init(false));
 
   // Optimizer options
   llvm::cl::opt<int> securityLevel(
@@ -126,6 +133,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
     compilationOptions.emitGPUOps = emitGPUOps.getValue().value();
   if (batchTFHEOps.has_value())
     compilationOptions.batchTFHEOps = batchTFHEOps.getValue().value();
+  compilationOptions.simulate = simulate.getValue();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
   compilationOptions.optimizerConfig.strategy = optimizerStrategy.getValue();
@@ -139,29 +147,36 @@ parseEndToEndCommandLine(int argc, char **argv) {
     f.descriptions = loadEndToEndDesc(descFile);
     parsedDescriptionFiles.push_back(f);
   }
-
-  return std::make_tuple(compilationOptions, parsedDescriptionFiles,
-                         retryFailingTests.getValue());
+  return std::make_pair(
+      EndToEndTestOptions{
+          compilationOptions,
+          retryFailingTests.getValue(),
+      },
+      parsedDescriptionFiles);
 }
 
-std::string getOptionsName(mlir::concretelang::CompilationOptions options) {
+std::string getOptionsName(mlir::concretelang::CompilationOptions compilation) {
   namespace optimizer = mlir::concretelang::optimizer;
   std::ostringstream os;
-  if (options.loopParallelize)
+  if (compilation.simulate)
+    os << "_simulate";
+  if (compilation.loopParallelize)
     os << "_loop";
-  if (options.dataflowParallelize)
+  if (compilation.dataflowParallelize)
     os << "_dataflow";
-  if (options.emitGPUOps)
+  if (compilation.emitGPUOps)
     os << "_gpu";
   auto ostr = os.str();
   if (ostr.size() == 0) {
     os << "_default";
   }
-  if (options.optimizerConfig.security != optimizer::DEFAULT_CONFIG.security) {
-    os << "_security" << options.optimizerConfig.security;
+  if (compilation.optimizerConfig.security !=
+      optimizer::DEFAULT_CONFIG.security) {
+    os << "_security" << compilation.optimizerConfig.security;
   }
-  if (options.optimizerConfig.strategy != optimizer::DEFAULT_CONFIG.strategy) {
-    os << "_" << options.optimizerConfig.strategy;
+  if (compilation.optimizerConfig.strategy !=
+      optimizer::DEFAULT_CONFIG.strategy) {
+    os << "_" << compilation.optimizerConfig.strategy;
   }
   return os.str().substr(1);
 }

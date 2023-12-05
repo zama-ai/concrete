@@ -23,19 +23,19 @@ class EndToEndTest : public ::testing::Test {
 public:
   explicit EndToEndTest(std::string program, TestDescription desc,
                         std::optional<TestErrorRate> errorRate,
-                        mlir::concretelang::CompilationOptions options,
-                        int retryFailingTests)
+                        EndToEndTestOptions options)
       : program(program), desc(desc), errorRate(errorRate),
-        testCircuit(std::nullopt), options(options),
-        retryFailingTests(retryFailingTests) {
+        testCircuit(std::nullopt), options(options) {
     if (errorRate.has_value()) {
-      options.optimizerConfig.global_p_error = errorRate->global_p_error;
-      options.optimizerConfig.p_error = errorRate->global_p_error;
+      options.compilationOptions.optimizerConfig.global_p_error =
+          errorRate->global_p_error;
+      options.compilationOptions.optimizerConfig.p_error =
+          errorRate->global_p_error;
     }
   };
 
   void SetUp() override {
-    TestCircuit tc(options);
+    TestCircuit tc(options.compilationOptions);
     ASSERT_OUTCOME_HAS_VALUE(tc.compile({program}));
     ASSERT_OUTCOME_HAS_VALUE(tc.generateKeyset());
     testCircuit.emplace(std::move(tc));
@@ -56,9 +56,7 @@ public:
   }
 
   void testOnce() {
-
-    // We try for a a number of times
-    for (auto tests_rep = 0; tests_rep <= retryFailingTests; tests_rep++) {
+    for (auto tests_rep = 0; tests_rep <= options.numberOfRetry; tests_rep++) {
       // We execute the circuit.
       auto maybeRes = testCircuit->call(args);
       ASSERT_OUTCOME_HAS_VALUE(maybeRes);
@@ -125,16 +123,15 @@ private:
   std::optional<TestErrorRate> errorRate;
   std::optional<mlir::concretelang::CompilerEngine::Library> library;
   std::optional<TestCircuit> testCircuit;
-  mlir::concretelang::CompilationOptions options;
-  int retryFailingTests;
+  EndToEndTestOptions options;
   std::vector<Value> args;
 };
 
-std::string getTestName(EndToEndDesc desc,
-                        mlir::concretelang::CompilationOptions options,
+std::string getTestName(EndToEndDesc desc, EndToEndTestOptions options,
                         int testNum) {
   std::ostringstream os;
-  os << getOptionsName(options) << "." << desc.description << "." << testNum;
+  os << getOptionsName(options.compilationOptions) << "." << desc.description
+     << "." << testNum;
   return std::regex_replace(os.str(), std::regex("-"), "");
 }
 
@@ -142,29 +139,26 @@ void registerEndToEnd(std::string suiteName, std::string testName,
                       std::string valueName, std::string program,
                       TestDescription test,
                       std::optional<TestErrorRate> errorRate,
-                      mlir::concretelang::CompilationOptions options,
-                      int retryFailingTests) {
+                      EndToEndTestOptions options) {
   // TODO: Get file and line from yaml
   auto file = __FILE__;
   auto line = __LINE__;
-  ::testing::RegisterTest(suiteName.c_str(), testName.c_str(), nullptr,
-                          valueName.c_str(), file, line,
-                          [=]() -> EndToEndTest * {
-                            return new EndToEndTest(program, test, errorRate,
-                                                    options, retryFailingTests);
-                          });
+  ::testing::RegisterTest(
+      suiteName.c_str(), testName.c_str(), nullptr, valueName.c_str(), file,
+      line, [=]() -> EndToEndTest * {
+        return new EndToEndTest(program, test, errorRate, options);
+      });
 }
 
 void registerEndToEnd(std::string suiteName, EndToEndDesc desc,
-                      mlir::concretelang::CompilationOptions options,
-                      int retryFailingTests) {
+                      EndToEndTestOptions options) {
   if (desc.v0Constraint.has_value()) {
-    options.v0FHEConstraints = desc.v0Constraint;
+    options.compilationOptions.v0FHEConstraints = desc.v0Constraint;
   }
-  options.optimizerConfig.encoding = desc.encoding;
+  options.compilationOptions.optimizerConfig.encoding = desc.encoding;
   if (desc.p_error.has_value()) {
-    options.optimizerConfig.p_error = *desc.p_error;
-    options.optimizerConfig.global_p_error = NAN;
+    options.compilationOptions.optimizerConfig.p_error = *desc.p_error;
+    options.compilationOptions.optimizerConfig.global_p_error = NAN;
   }
   auto i = 0;
   for (auto test : desc.tests) {
@@ -172,13 +166,13 @@ void registerEndToEnd(std::string suiteName, EndToEndDesc desc,
     auto testName = getTestName(desc, options, i);
     if (desc.test_error_rates.empty()) {
       registerEndToEnd(suiteName, testName, valueName, desc.program, test,
-                       std::nullopt, options, retryFailingTests);
+                       std::nullopt, options);
     } else {
       auto j = 0;
       for (auto rate : desc.test_error_rates) {
         auto rateName = testName + "_rate" + std::to_string(j);
         registerEndToEnd(suiteName, rateName, valueName, desc.program, test,
-                         rate, options, retryFailingTests);
+                         rate, options);
         j++;
       }
     }
@@ -192,10 +186,9 @@ void registerEndToEnd(std::string suiteName, EndToEndDesc desc,
 /// @param options The compilation options.
 void registerEndToEndSuite(std::string suiteName,
                            std::vector<EndToEndDesc> descriptions,
-                           mlir::concretelang::CompilationOptions options,
-                           int retryFailingTests) {
+                           EndToEndTestOptions options) {
   for (auto desc : descriptions) {
-    registerEndToEnd(suiteName, desc, options, retryFailingTests);
+    registerEndToEnd(suiteName, desc, options);
   }
 }
 
@@ -208,16 +201,14 @@ int main(int argc, char **argv) {
 
   // parse end to end test compiler options
 
-  auto options = parseEndToEndCommandLine(argc, argv);
+  auto cmdLine = parseEndToEndCommandLine(argc, argv);
 
-  auto compilationOptions = std::get<0>(options);
-  auto descriptionFiles = std::get<1>(options);
-  auto retryFailingTests = std::get<2>(options);
+  auto options = std::get<0>(cmdLine);
+  auto descriptionFiles = std::get<1>(cmdLine);
 
   for (auto descFile : descriptionFiles) {
     auto suiteName = path::stem(descFile.path).str() + ".library";
-    registerEndToEndSuite(suiteName, descFile.descriptions, compilationOptions,
-                          retryFailingTests);
+    registerEndToEndSuite(suiteName, descFile.descriptions, options);
   }
   return RUN_ALL_TESTS();
 }
