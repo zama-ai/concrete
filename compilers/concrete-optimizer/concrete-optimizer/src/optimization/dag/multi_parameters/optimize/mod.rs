@@ -3,6 +3,7 @@ use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate
 
 use crate::dag::unparametrized;
 use crate::noise_estimator::error;
+use crate::optimization;
 use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
 use crate::optimization::dag::multi_parameters::analyze::{analyze, AnalyzedDag};
 use crate::optimization::dag::multi_parameters::fast_keyswitch;
@@ -20,6 +21,7 @@ use crate::optimization::dag::multi_parameters::feasible::Feasible;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::precision_cut::PrecisionCut;
 use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
+use crate::optimization::Err::{NoParametersFound, NotComposable};
 
 use super::keys_spec::InstructionKeys;
 
@@ -896,7 +898,7 @@ fn cross_partition(nb_partitions: usize) -> impl Iterator<Item = (usize, usize)>
     (0..nb_partitions).flat_map(move |a: usize| (0..nb_partitions).map(move |b: usize| (a, b)))
 }
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::missing_errors_doc)]
 pub fn optimize(
     dag: &unparametrized::OperationDag,
     config: Config,
@@ -904,18 +906,18 @@ pub fn optimize(
     persistent_caches: &PersistDecompCaches,
     p_cut: &Option<PrecisionCut>,
     default_partition: PartitionIndex,
-) -> Option<(AnalyzedDag, Parameters)> {
+) -> optimization::Result<(AnalyzedDag, Parameters)> {
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
     let fft_precision = config.fft_precision;
     let security_level = config.security_level;
+    let composable = config.composable;
     let noise_config = NoiseBoundConfig {
         security_level,
         maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
         ciphertext_modulus_log,
     };
 
-    let dag = analyze(dag, &noise_config, p_cut, default_partition);
-
+    let dag = analyze(dag, &noise_config, p_cut, default_partition, composable)?;
     let kappa =
         error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
@@ -971,7 +973,7 @@ pub fn optimize(
             params = new_params;
             if !params.is_feasible {
                 if nb_partitions == 1 {
-                    return None;
+                    return Err(NoParametersFound);
                 }
                 if DEBUG {
                     eprintln!(
@@ -1019,7 +1021,7 @@ pub fn optimize(
         fix_point = params.clone();
     }
     if best_params.is_none() {
-        return None;
+        return Err(NoParametersFound);
     }
     let best_params = best_params.unwrap();
     sanity_check(
@@ -1031,7 +1033,7 @@ pub fn optimize(
         &feasible,
         &complexity,
     );
-    Some((dag, best_params))
+    Ok((dag, best_params))
 }
 
 fn used_tlu_keyswitch(dag: &AnalyzedDag) -> Vec<Vec<bool>> {
@@ -1180,31 +1182,33 @@ pub fn optimize_to_circuit_solution(
         default_partition,
     );
     #[allow(clippy::option_if_let_else)]
-    if let Some((dag, params)) = dag_and_params {
-        let ext_keys = keys_spec::ExpandedCircuitKeys::of(&params);
-        let instructions_keys = analyze::original_instrs_partition(&dag, &ext_keys);
-        let (ext_keys, instructions_keys) = if config.key_sharing {
-            let (ext_keys, key_sharing) = ext_keys.shared_keys();
-            let instructions_keys = InstructionKeys::shared_keys(&instructions_keys, &key_sharing);
-            (ext_keys, instructions_keys)
-        } else {
-            (ext_keys, instructions_keys)
-        };
-        let circuit_keys = ext_keys.compacted();
-        keys_spec::CircuitSolution {
-            circuit_keys,
-            instructions_keys,
-            crt_decomposition: vec![],
-            complexity: params.complexity,
-            p_error: params.p_error,
-            global_p_error: params.global_p_error,
-            is_feasible: true,
-            error_msg: String::default(),
+    match dag_and_params {
+        Err(e) => keys_spec::CircuitSolution::no_solution(e.to_string()),
+        Ok((dag, params)) => {
+            let ext_keys = keys_spec::ExpandedCircuitKeys::of(&params);
+            let instructions_keys = analyze::original_instrs_partition(&dag, &ext_keys);
+            let (ext_keys, instructions_keys) = if config.key_sharing {
+                let (ext_keys, key_sharing) = ext_keys.shared_keys();
+                let instructions_keys =
+                    InstructionKeys::shared_keys(&instructions_keys, &key_sharing);
+                (ext_keys, instructions_keys)
+            } else {
+                (ext_keys, instructions_keys)
+            };
+            let circuit_keys = ext_keys.compacted();
+            keys_spec::CircuitSolution {
+                circuit_keys,
+                instructions_keys,
+                crt_decomposition: vec![],
+                complexity: params.complexity,
+                p_error: params.p_error,
+                global_p_error: params.global_p_error,
+                is_feasible: true,
+                error_msg: String::default(),
+            }
         }
-    } else {
-        keys_spec::CircuitSolution::no_solution("No crypto-parameters for the given constraints")
     }
 }
 
 #[cfg(test)]
-include!("tests/test_optimize.rs");
+mod tests;

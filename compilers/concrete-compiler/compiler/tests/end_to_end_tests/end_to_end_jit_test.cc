@@ -363,3 +363,33 @@ func.func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
 
   ASSERT_EQ(lambda({arg0, arg1, acc}), 76_u64);
 }
+
+TEST(CompileAndRunComposed, compose_add_eint) {
+  checkedJit(testCircuit, R"XXX(
+func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+  %cst_1 = arith.constant 1 : i4
+  %cst_2 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7]> : tensor<8xi64>
+  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  %2 = "FHE.apply_lookup_table"(%1, %cst_2): (!FHE.eint<3>, tensor<8xi64>) -> (!FHE.eint<3>)
+  return %2: !FHE.eint<3>
+}
+)XXX",
+             "main", false, DEFAULT_dataflowParallelize,
+             DEFAULT_loopParallelize, DEFAULT_batchTFHEOps,
+             DEFAULT_global_p_error, DEFAULT_chunkedIntegers, DEFAULT_chunkSize,
+             DEFAULT_chunkWidth, true);
+  auto lambda = [&](std::vector<concretelang::values::Value> args, size_t n) {
+    return testCircuit.compose_n_times(args, n)
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 1), (uint64_t)1);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 2), (uint64_t)2);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 3), (uint64_t)3);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 4), (uint64_t)4);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 5), (uint64_t)5);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 6), (uint64_t)6);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 7), (uint64_t)7);
+  ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 8), (uint64_t)0);
+}

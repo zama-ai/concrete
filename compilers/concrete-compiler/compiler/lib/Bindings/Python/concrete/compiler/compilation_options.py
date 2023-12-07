@@ -61,6 +61,19 @@ class CompilationOptions(WrapperCpp):
 
     # pylint: enable=arguments-differ
 
+    def set_composable(self, composable: bool):
+        """Set option for composition.
+
+        Args:
+            composable (bool): whether to turn it on or off
+
+        Raises:
+            TypeError: if the value to set is not boolean
+        """
+        if not isinstance(composable, bool):
+            raise TypeError("can't set the option to a non-boolean value")
+        self.cpp().set_composable(composable)
+
     def set_auto_parallelize(self, auto_parallelize: bool):
         """Set option for auto parallelization.
 

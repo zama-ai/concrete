@@ -899,6 +899,7 @@ class Configuration:
     shifts_with_promotion: bool
     multivariate_strategy_preference: List[MultivariateStrategy]
     min_max_strategy_preference: List[MinMaxStrategy]
+    composable: bool
 
     def __init__(
         self,
@@ -947,6 +948,7 @@ class Configuration:
         min_max_strategy_preference: Optional[
             Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]
         ] = None,
+        composable: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1023,6 +1025,7 @@ class Configuration:
                 else [MinMaxStrategy.parse(min_max_strategy_preference)]
             )
         )
+        self.composable = composable
 
         self._validate()
 
@@ -1077,6 +1080,7 @@ class Configuration:
         min_max_strategy_preference: Union[
             Keep, Optional[Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]]
         ] = KEEP,
+        composable: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
@@ -1134,6 +1138,13 @@ class Configuration:
 
         if platform.system() == "Darwin" and self.dataflow_parallelize:  # pragma: no cover
             message = "Dataflow parallelism is not available in macOS"
+            raise RuntimeError(message)
+
+        if (
+            self.composable
+            and self.parameter_selection_strategy != ParameterSelectionStrategy.MULTI
+        ):  # pragma: no cover
+            message = "Composition can only be used with MULTI parameter selection strategy"
             raise RuntimeError(message)
 
 

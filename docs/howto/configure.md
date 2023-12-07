@@ -74,8 +74,6 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Use single precision for the whole circuit.
 * **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MULTI
   * Set how cryptographic parameters are selected.
-* **jit**: bool = False
-  * Enable JIT compilation.
 * **loop\_parallelize**: bool = True
   * Enable loop parallelization in the compiler.
 * **dataflow\_parallelize**: bool = False
@@ -108,3 +106,5 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Specify preference for bitwise strategies, can be a single strategy or an ordered list of strategies. See [Bitwise](../tutorial/bitwise.md) to learn more.
 * **shifts_with_promotion**: bool = True,
   * Enable promotions in encrypted shifts instead of casting in runtime. See [Bitwise#Shifts](../tutorial/bitwise.md#Shifts) to learn more.
+* **composable**: bool = False,
+  * Specify that the function must be composable with itself.

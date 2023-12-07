@@ -346,6 +346,75 @@ Actual Output During Simulation
                 raise AssertionError(message)
 
     @staticmethod
+    def check_composition(
+        circuit: fhe.Circuit, function: Callable, sample: Union[Any, List[Any]], composed: int
+    ):
+        """
+        Assert that `circuit` behaves the same as `function` on `sample` when composed.
+
+        Args:
+            circuit (fhe.Circuit):
+                compiled circuit
+
+            function (Callable):
+                original function
+
+            sample (List[Any]):
+                inputs
+
+            composed (int):
+                number of times to compose the function (call sequentially with inputs as outputs)
+        """
+
+        if not isinstance(sample, list):
+            sample = [sample]
+
+        def sanitize(values):
+            if not isinstance(values, tuple):
+                values = (values,)
+
+            result = []
+            for value in values:
+                if isinstance(value, (bool, np.bool_)):
+                    value = int(value)
+                elif isinstance(value, np.ndarray) and value.dtype == np.bool_:
+                    value = value.astype(np.int64)
+
+                result.append(value)
+
+            return tuple(result)
+
+        def compute_expected(sample):
+            for _ in range(composed):
+                sample = function(*sample)
+                if not isinstance(sample, tuple):
+                    sample = (sample,)
+            return sample
+
+        def compute_actual(sample):
+            inp = circuit.encrypt(*sample)
+            for _ in range(composed):
+                inp = circuit.run(inp)
+            out = circuit.decrypt(inp)
+            return out
+
+        expected = sanitize(compute_expected(sample))
+        actual = sanitize(compute_actual(sample))
+
+        if not all(np.array_equal(e, a) for e, a in zip(expected, actual)):
+            message = f"""
+
+    Expected Output
+    ===============
+    {expected}
+
+    Actual Output
+    =============
+    {actual}
+            """
+            raise AssertionError(message)
+
+    @staticmethod
     def check_str(expected: str, actual: str):
         """
         Assert that `circuit` is behaves the same as `function` on `sample`.

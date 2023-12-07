@@ -480,6 +480,7 @@ pub(crate) mod tests {
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
+            composable: false,
         };
 
         let search_space = SearchSpace::default_cpu();
@@ -525,6 +526,7 @@ pub(crate) mod tests {
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
+            composable: false,
         };
 
         _ = optimize_v0(
@@ -623,6 +625,7 @@ pub(crate) mod tests {
             ciphertext_modulus_log: 64,
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
+            composable: false,
         };
 
         let state = optimize(&dag);

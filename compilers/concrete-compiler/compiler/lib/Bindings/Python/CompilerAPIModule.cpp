@@ -111,6 +111,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, double global_p_error) {
              options.optimizerConfig.global_p_error = global_p_error;
            })
+      .def("set_composable",
+           [](CompilationOptions &options, bool composable) {
+             options.optimizerConfig.composable = composable;
+           })
       .def("set_security_level",
            [](CompilationOptions &options, int security_level) {
              options.optimizerConfig.security = security_level;

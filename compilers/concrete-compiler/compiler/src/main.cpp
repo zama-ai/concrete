@@ -314,6 +314,12 @@ llvm::cl::opt<bool> optimizerNoCacheOnDisk(
                    "cache issues."),
     llvm::cl::init(false));
 
+llvm::cl::opt<bool> optimizerAllowComposition(
+    "optimizer-allow-composition",
+    llvm::cl::desc("Optimizer is parameterized to allow calling the circuit on "
+                   "its own output without decryptions."),
+    llvm::cl::init(false));
+
 llvm::cl::list<int64_t> fhelinalgTileSizes(
     "fhelinalg-tile-sizes",
     llvm::cl::desc(
@@ -480,6 +486,7 @@ cmdlineCompilationOptions() {
   options.optimizerConfig.key_sharing = cmdline::optimizerKeySharing;
   options.optimizerConfig.encoding = cmdline::optimizerEncoding;
   options.optimizerConfig.cache_on_disk = !cmdline::optimizerNoCacheOnDisk;
+  options.optimizerConfig.composable = cmdline::optimizerAllowComposition;
 
   if (!std::isnan(options.optimizerConfig.global_p_error) &&
       options.optimizerConfig.strategy == optimizer::Strategy::V0) {

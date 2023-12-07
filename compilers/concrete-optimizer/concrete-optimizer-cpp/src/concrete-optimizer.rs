@@ -55,6 +55,7 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
         ciphertext_modulus_log: options.ciphertext_modulus_log,
         fft_precision: options.fft_precision,
         complexity_model: &CpuComplexity::default(),
+        composable: options.composable,
     };
 
     let sum_size = 1;
@@ -510,6 +511,7 @@ impl OperationDag {
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
+            composable: options.composable,
         };
 
         let search_space = SearchSpace::default(processing_unit);
@@ -534,6 +536,7 @@ impl OperationDag {
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
+            composable: options.composable,
         };
 
         let search_space = SearchSpace::default(processing_unit);
@@ -563,6 +566,7 @@ impl OperationDag {
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
+            composable: options.composable,
         };
         let search_space = SearchSpace::default(processing_unit);
 
@@ -770,6 +774,7 @@ mod ffi {
         pub cache_on_disk: bool,
         pub ciphertext_modulus_log: u32,
         pub fft_precision: u32,
+        pub composable: bool,
     }
 
     #[namespace = "concrete_optimizer::dag"]
