@@ -2229,6 +2229,14 @@ class Context:
     ) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.LESS, Comparison.EQUAL})
 
+    def lsb(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
+        assert resulting_type.shape == x.shape
+        assert resulting_type.is_signed == x.is_signed
+        assert resulting_type.is_encrypted and x.is_encrypted
+
+        operation = fhe.LsbEintOp if x.is_scalar else fhelinalg.LsbEintOp
+        return self.operation(operation, resulting_type, x.result)
+
     def matmul(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         if x.is_clear and y.is_clear:
             highlights: Dict[Node, Union[str, List[str]]] = {
@@ -3273,14 +3281,6 @@ class Context:
             x = self.reinterpret(cleared, bit_width=new_bit_width)
 
         return x
-
-    def lsb(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
-        assert resulting_type.shape == x.shape
-        assert resulting_type.is_signed == x.is_signed
-        assert resulting_type.is_encrypted and x.is_encrypted
-
-        operation = fhe.LsbEintOp if x.is_scalar else fhelinalg.LsbEintOp
-        return self.operation(operation, resulting_type, x.result)
 
     def reinterpret(self, x: Conversion, *, bit_width: int) -> Conversion:
         assert x.is_encrypted
