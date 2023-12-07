@@ -3,6 +3,7 @@ Provide additional features that are not present in numpy.
 """
 
 from .array import array
+from .bits import bits
 from .convolution import conv
 from .hint import hint
 from .maxpool import maxpool

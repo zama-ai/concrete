@@ -308,6 +308,13 @@ class Node:
             )
             return f"array({format_constant(values, maximum_constant_length)})"
 
+        if name == "extract_bit_pattern":
+            index = self.properties["kwargs"]["bits"]
+            if not isinstance(index, tuple):
+                index = (index,)
+            elements = [format_indexing_element(element) for element in index]
+            return f"bits({predecessors[0]})[{', '.join(elements)}]"
+
         args.extend(
             format_constant(value, maximum_constant_length) for value in self.properties["args"]
         )

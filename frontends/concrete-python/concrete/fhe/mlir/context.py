@@ -26,6 +26,7 @@ from mlir.ir import Type as MlirType
 
 from ..compilation.configuration import BitwiseStrategy, ComparisonStrategy, MinMaxStrategy
 from ..dtypes import Integer
+from ..extensions.bits import MAX_EXTRACTABLE_BIT, MIN_EXTRACTABLE_BIT
 from ..representation import Graph, Node
 from ..values import ValueDescription
 from .conversion import Conversion, ConversionType
@@ -2037,6 +2038,96 @@ class Context:
     def equal(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.EQUAL})
 
+    def extract_bits(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        bits: Union[int, np.integer, slice],
+    ) -> Conversion:
+        if x.is_clear:
+            highlights: Dict[Node, Union[str, List[str]]] = {
+                x.origin: "operand is clear",
+                self.converting: "but clear bit extraction is not supported",
+            }
+            self.error(highlights)
+
+        if isinstance(bits, (int, np.integer)):
+            bits = slice(bits, bits + 1, 1)
+
+        assert isinstance(bits, slice)
+
+        step = bits.step or 1
+
+        assert step != 0
+        if step < 0:
+            assert bits.start is not None
+
+        start = bits.start or MIN_EXTRACTABLE_BIT
+        stop = bits.stop or (MAX_EXTRACTABLE_BIT if step > 0 else (MIN_EXTRACTABLE_BIT - 1))
+
+        bits_and_their_positions = []
+        for position, bit in enumerate(range(start, stop, step)):
+            bits_and_their_positions.append((bit, position))
+
+        bits_and_their_positions = sorted(
+            bits_and_their_positions,
+            key=lambda bit_and_its_position: bit_and_its_position[0],
+        )
+
+        current_bit = 0
+        max_bit = x.original_bit_width
+
+        lsb: Optional[Conversion] = None
+        result: Optional[Conversion] = None
+
+        for index, (bit, position) in enumerate(bits_and_their_positions):
+            if bit >= max_bit and x.is_unsigned:
+                break
+
+            last = index == len(bits_and_their_positions) - 1
+            while bit != (current_bit - 1):
+                if bit == (max_bit - 1) and x.bit_width == 1 and x.is_unsigned:
+                    lsb = x
+                elif last and bit == current_bit:
+                    lsb = self.lsb(resulting_type, x)
+                else:
+                    lsb = self.lsb(x.type, x)
+
+                current_bit += 1
+
+                if current_bit >= max_bit:
+                    break
+
+                if not last or bit != (current_bit - 1):
+                    cleared = self.sub(x.type, x, lsb)
+                    x = self.reinterpret(cleared, bit_width=(x.bit_width - 1))
+
+            assert lsb is not None
+            lsb = self.to_signedness(lsb, of=resulting_type)
+
+            if lsb.bit_width > resulting_type.bit_width:
+                difference = (lsb.bit_width - resulting_type.bit_width) + position
+                shifter = self.constant(self.i(lsb.bit_width + 1), 2**difference)
+                shifted = self.mul(lsb.type, lsb, shifter)
+                lsb = self.reinterpret(shifted, bit_width=resulting_type.bit_width)
+
+            elif lsb.bit_width < resulting_type.bit_width:
+                shift = 2 ** (lsb.bit_width - 1)
+                if shift != 1:
+                    shifter = self.constant(self.i(lsb.bit_width + 1), shift)
+                    shifted = self.mul(lsb.type, lsb, shifter)
+                    lsb = self.reinterpret(shifted, bit_width=1)
+                lsb = self.tlu(resulting_type, lsb, [0 << position, 1 << position])
+
+            elif position != 0:
+                shifter = self.constant(self.i(lsb.bit_width + 1), 2**position)
+                lsb = self.mul(lsb.type, lsb, shifter)
+
+            assert lsb is not None
+            result = lsb if result is None else self.add(resulting_type, result, lsb)
+
+        return result if result is not None else self.zeros(resulting_type)
+
     def flatten(self, x: Conversion) -> Conversion:
         return self.reshape(x, shape=(int(np.prod(x.shape)),))
 
@@ -2231,7 +2322,6 @@ class Context:
 
     def lsb(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
         assert resulting_type.shape == x.shape
-        assert resulting_type.is_signed == x.is_signed
         assert resulting_type.is_encrypted and x.is_encrypted
 
         operation = fhe.LsbEintOp if x.is_scalar else fhelinalg.LsbEintOp
