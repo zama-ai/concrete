@@ -335,6 +335,10 @@ class Converter:
         assert len(preds) == 1
         return ctx.reshape(preds[0], shape=node.output.shape)
 
+    def extract_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        return ctx.extract_bits(ctx.typeof(node), preds[0], bits=node.properties["kwargs"]["bits"])
+
     def greater(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 

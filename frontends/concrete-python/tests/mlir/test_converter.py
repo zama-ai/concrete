@@ -1007,6 +1007,23 @@ return %1
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: fhe.bits(x)[0],
+            {"x": "clear"},
+            [10, 20, 30],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                  # ClearScalar<uint5>        ∈ [10, 30]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ operand is clear
+%1 = bits(%0)[0]        # ClearScalar<uint1>        ∈ [0, 0]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear bit extraction is not supported
+return %1
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(

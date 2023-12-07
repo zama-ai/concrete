@@ -31,6 +31,7 @@ from .extensions import (
     AutoTruncator,
     LookupTable,
     array,
+    bits,
     conv,
     hint,
     maxpool,
