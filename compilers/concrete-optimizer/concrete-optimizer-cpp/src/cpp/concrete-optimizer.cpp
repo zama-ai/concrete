@@ -1083,6 +1083,7 @@ struct Options final {
   bool cache_on_disk;
   ::std::uint32_t ciphertext_modulus_log;
   ::std::uint32_t fft_precision;
+  bool composable;
 
   using IsRelocatable = ::std::true_type;
 };

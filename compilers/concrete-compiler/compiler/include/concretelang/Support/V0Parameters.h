@@ -80,6 +80,7 @@ constexpr concrete_optimizer::Encoding DEFAULT_ENCODING =
 constexpr bool DEFAULT_CACHE_ON_DISK = true;
 constexpr uint32_t DEFAULT_CIPHERTEXT_MODULUS_LOG = 64;
 constexpr uint32_t DEFAULT_FFT_PRECISION = 53;
+constexpr bool DEFAULT_COMPOSABLE = false;
 
 /// The strategy of the crypto optimization
 enum Strategy {
@@ -111,6 +112,7 @@ struct Config {
   bool cache_on_disk;
   uint32_t ciphertext_modulus_log;
   uint32_t fft_precision;
+  bool composable;
 };
 
 constexpr Config DEFAULT_CONFIG = {
@@ -126,6 +128,7 @@ constexpr Config DEFAULT_CONFIG = {
     DEFAULT_CACHE_ON_DISK,
     DEFAULT_CIPHERTEXT_MODULUS_LOG,
     DEFAULT_FFT_PRECISION,
+    DEFAULT_COMPOSABLE,
 };
 
 using Dag = rust::Box<concrete_optimizer::OperationDag>;

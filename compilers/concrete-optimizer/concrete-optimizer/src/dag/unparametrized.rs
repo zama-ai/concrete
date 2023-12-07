@@ -5,6 +5,7 @@ use crate::dag::operator::{
     dot_kind, DotKind, FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision,
     Shape, Weights,
 };
+use crate::optimization::dag::solo_key::analyze::extra_final_values_to_check;
 
 pub(crate) type UnparameterizedOperator = Operator;
 
@@ -241,6 +242,24 @@ impl OperationDag {
     ) -> OperatorIndex {
         let rounded = self.add_round_op(input, rounded_precision);
         self.add_lut(rounded, table, out_precision)
+    }
+
+    pub(crate) fn get_input_index_iter(&self) -> impl Iterator<Item = usize> + '_ {
+        self.operators
+            .iter()
+            .enumerate()
+            .filter_map(|(index, op)| match op {
+                Operator::Input { .. } => Some(index),
+                _ => None,
+            })
+    }
+
+    pub(crate) fn get_output_index(&self) -> Vec<usize> {
+        return extra_final_values_to_check(self)
+            .iter()
+            .enumerate()
+            .filter_map(|(index, is_output)| is_output.then_some(index))
+            .collect();
     }
 
     fn infer_out_shape(&self, op: &UnparameterizedOperator) -> Shape {

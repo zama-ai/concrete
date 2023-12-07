@@ -4,6 +4,7 @@
 #include "../tests_tools/keySetCache.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/V0Parameters.h"
 #include "concretelang/TestLib/TestCircuit.h"
 #include "cstdlib"
 #include "end_to_end_test.h"
@@ -24,6 +25,7 @@ double DEFAULT_global_p_error = TEST_ERROR_RATE;
 bool DEFAULT_chunkedIntegers = false;
 unsigned int DEFAULT_chunkSize = 4;
 unsigned int DEFAULT_chunkWidth = 2;
+bool DEFAULT_composable = false;
 
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
@@ -37,7 +39,8 @@ inline Result<TestCircuit> internalCheckedJit(
     double global_p_error = DEFAULT_global_p_error,
     bool chunkedIntegers = DEFAULT_chunkedIntegers,
     unsigned int chunkSize = DEFAULT_chunkSize,
-    unsigned int chunkWidth = DEFAULT_chunkWidth) {
+    unsigned int chunkWidth = DEFAULT_chunkWidth,
+    bool composable = DEFAULT_composable) {
 
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
@@ -60,6 +63,11 @@ inline Result<TestCircuit> internalCheckedJit(
 #endif
 #endif
   options.batchTFHEOps = batchTFHEOps;
+  if (composable) {
+    options.optimizerConfig.composable = composable;
+    options.optimizerConfig.strategy =
+        mlir::concretelang::optimizer::Strategy::DAG_MULTI;
+  }
 
   std::vector<std::string> sources = {src.str()};
   TestCircuit testCircuit(options);

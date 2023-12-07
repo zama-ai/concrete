@@ -15,6 +15,8 @@ use crate::optimization::dag::multi_parameters::symbolic_variance::SymbolicVaria
 use crate::optimization::dag::solo_key::analyze::{
     extra_final_values_to_check, first, safe_noise_bound,
 };
+use crate::optimization::Err::NotComposable;
+use crate::optimization::Result;
 
 use super::complexity::OperationsCount;
 use super::keys_spec;
@@ -28,6 +30,7 @@ use DotKind as DK;
 
 type Op = Operator;
 
+#[derive(Debug)]
 pub struct AnalyzedDag {
     pub operators: Vec<Op>,
     // Collect all operators ouput variances
@@ -51,7 +54,8 @@ pub fn analyze(
     noise_config: &NoiseBoundConfig,
     p_cut: &Option<PrecisionCut>,
     default_partition: PartitionIndex,
-) -> AnalyzedDag {
+    composable: bool,
+) -> Result<AnalyzedDag> {
     let (dag, instruction_rewrite_index) = expand_round_and_index_map(dag);
     let levelled_complexity = LevelledComplexity::ZERO;
     // The precision cut is chosen to work well with rounded pbs
@@ -61,10 +65,35 @@ pub fn analyze(
         Some(p_cut) => p_cut.clone(),
         None => maximal_p_cut(&dag),
     };
-    let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition);
+    let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition, composable);
     let instrs_partition = partitions.instrs_partition;
     let nb_partitions = partitions.nb_partitions;
-    let out_variances = out_variances(&dag, nb_partitions, &instrs_partition);
+    let mut out_variances = self::out_variances(&dag, nb_partitions, &instrs_partition, &None);
+    if composable {
+        // Verify that there is no input symbol in the symbolic variances of the outputs.
+        if !no_input_var_in_out_var(&dag, &out_variances, nb_partitions) {
+            return Err(NotComposable);
+        }
+        // Get the largest output out_variance
+        let largest_output_variances = dag
+            .get_output_index()
+            .into_iter()
+            .map(|index| out_variances[index].clone())
+            .reduce(|lhs, rhs| {
+                lhs.into_iter()
+                    .zip(rhs)
+                    .map(|(lhsi, rhsi)| lhsi.max(&rhsi))
+                    .collect()
+            })
+            .expect("Failed to get the largest output variance.");
+        // Re-compute the out variances with input variances overriden by input variances
+        out_variances = self::out_variances(
+            &dag,
+            nb_partitions,
+            &instrs_partition,
+            &Some(largest_output_variances),
+        );
+    }
     let variance_constraints =
         collect_all_variance_constraints(&dag, noise_config, &instrs_partition, &out_variances);
     let undominated_variance_constraints =
@@ -72,7 +101,7 @@ pub fn analyze(
     let operations_count_per_instrs =
         collect_operations_count(&dag, nb_partitions, &instrs_partition);
     let operations_count = sum_operations_count(&operations_count_per_instrs);
-    AnalyzedDag {
+    Ok(AnalyzedDag {
         operators: dag.operators,
         instruction_rewrite_index,
         nb_partitions,
@@ -84,7 +113,28 @@ pub fn analyze(
         operations_count_per_instrs,
         operations_count,
         p_cut,
-    }
+    })
+}
+
+fn no_input_var_in_out_var(
+    dag: &unparametrized::OperationDag,
+    symbolic_variances: &[Vec<SymbolicVariance>],
+    nb_partitions: usize,
+) -> bool {
+    // let a = dag.get_output_index()
+    //     .iter()
+    //     .flat_map(|index| symbolic_variances[*index].iter()).collect::<Vec<_>>();
+    // println!("symb_variances: {:?}", a);
+
+    dag.get_output_index()
+        .iter()
+        .flat_map(|index| symbolic_variances[*index].iter())
+        .all(|sym_var| {
+            (0..nb_partitions).all(|partition| {
+                let coeff = sym_var.coeff_input(partition);
+                coeff == 0.0f64 || coeff.is_nan()
+            })
+        })
 }
 
 pub fn original_instrs_partition(
@@ -166,7 +216,12 @@ fn out_variance(
     out_variances: &[Vec<SymbolicVariance>],
     nb_partitions: usize,
     instr_partition: &InstructionPartition,
+    input_override: Option<Vec<SymbolicVariance>>,
 ) -> Vec<SymbolicVariance> {
+    // If an override is given for input and we have an input node, we override.
+    if let (Some(overr), Op::Input { .. }) = (input_override, op) {
+        return overr;
+    }
     // one variance per partition, in case the result is converted
     let partition = instr_partition.instruction_partition;
     let out_variance_of = |input: &OperatorIndex| {
@@ -234,6 +289,7 @@ fn out_variances(
     dag: &unparametrized::OperationDag,
     nb_partitions: usize,
     instrs_partition: &[InstructionPartition],
+    input_override: &Option<Vec<SymbolicVariance>>,
 ) -> Vec<Vec<SymbolicVariance>> {
     let nb_ops = dag.operators.len();
     let mut out_variances = Vec::with_capacity(nb_ops);
@@ -244,6 +300,7 @@ fn out_variances(
             &out_variances,
             nb_partitions,
             instr_partition,
+            input_override.clone(),
         );
         out_variances.push(vf);
     }
@@ -405,7 +462,7 @@ pub mod tests {
         default_partition: PartitionIndex,
     ) -> AnalyzedDag {
         let p_cut = PrecisionCut { p_cut: vec![2] };
-        super::analyze(dag, &CONFIG, &Some(p_cut), default_partition)
+        super::analyze(dag, &CONFIG, &Some(p_cut), default_partition, false).unwrap()
     }
 
     #[allow(clippy::float_cmp)]
@@ -470,6 +527,77 @@ pub mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_composition_with_input_fails() {
+        let mut dag = unparametrized::OperationDag::new();
+        let _ = dag.add_input(1, Shape::number());
+        let p_cut = PrecisionCut { p_cut: vec![2] };
+        let res = super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true);
+        assert!(res.is_err());
+        assert!(res.unwrap_err() == NotComposable);
+    }
+
+    #[test]
+    fn test_composition_1_partition() {
+        let mut dag = unparametrized::OperationDag::new();
+        let input1 = dag.add_input(1, Shape::number());
+        let _ = dag.add_lut(input1, FunctionTable::UNKWOWN, 2);
+        let p_cut = PrecisionCut { p_cut: vec![2] };
+        let dag =
+            super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true).unwrap();
+        assert!(dag.nb_partitions == 1);
+        let actual_constraint_strings = dag
+            .variance_constraints
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>();
+        let expected_constraint_strings = vec![
+            "1σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-5 (1bits partition:0 count:1, dom=10)",
+            "1σ²Br[0] < (2²)**-6 (2bits partition:0 count:1, dom=12)",
+        ];
+        assert!(actual_constraint_strings == expected_constraint_strings);
+    }
+
+    #[test]
+    fn test_composition_2_partitions() {
+        let mut dag = unparametrized::OperationDag::new();
+        let input1 = dag.add_input(3, Shape::number());
+        let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 6);
+        let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
+        let input2 = dag.add_dot([input1, lut3], [1, 1]);
+        let _ = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
+        let analyzed_dag =
+            super::analyze(&dag, &CONFIG, &None, LOW_PRECISION_PARTITION, true).unwrap();
+        assert_eq!(analyzed_dag.nb_partitions, 2);
+        let actual_constraint_strings = analyzed_dag
+            .variance_constraints
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>();
+        let expected_constraint_strings = vec![
+            "1σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
+            "1σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+        ];
+        assert_eq!(actual_constraint_strings, expected_constraint_strings);
+        let partitions = vec![
+            LOW_PRECISION_PARTITION,
+            LOW_PRECISION_PARTITION,
+            HIGH_PRECISION_PARTITION,
+            LOW_PRECISION_PARTITION,
+            LOW_PRECISION_PARTITION,
+        ];
+        assert_eq!(
+            partitions,
+            analyzed_dag
+                .instrs_partition
+                .iter()
+                .map(|p| p.instruction_partition)
+                .collect::<Vec<_>>()
+        );
     }
 
     #[allow(clippy::needless_range_loop)]
@@ -872,7 +1000,14 @@ pub mod tests {
         eprintln!("{}", dag.dump());
         let p_cut = PrecisionCut { p_cut };
         eprintln!("{p_cut}");
-        let dag = super::analyze(&dag, &CONFIG, &Some(p_cut.clone()), LOW_PRECISION_PARTITION);
+        let dag = super::analyze(
+            &dag,
+            &CONFIG,
+            &Some(p_cut.clone()),
+            LOW_PRECISION_PARTITION,
+            false,
+        )
+        .unwrap();
         assert!(dag.nb_partitions == p_cut.p_cut.len() + 1);
     }
 }

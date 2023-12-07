@@ -113,6 +113,7 @@ class Server:
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
         options.set_compress_inputs(configuration.compress_inputs)
+        options.set_composable(configuration.composable)
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member

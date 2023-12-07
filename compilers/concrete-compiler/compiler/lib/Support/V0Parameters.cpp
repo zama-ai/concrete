@@ -35,7 +35,7 @@ concrete_optimizer::Options options_from_config(optimizer::Config config) {
       /* .cache_on_disk = */ config.cache_on_disk,
       /* .ciphertext_modulus_log = */ config.ciphertext_modulus_log,
       /* .fft_precision = */ config.fft_precision,
-  };
+      /* .composable = */ config.composable};
   return options;
 }
 

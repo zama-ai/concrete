@@ -8,6 +8,7 @@ members = [
     "brute-force-optimizer",
 ]
 
+resolver = "2"
 
 [profile.test]
 

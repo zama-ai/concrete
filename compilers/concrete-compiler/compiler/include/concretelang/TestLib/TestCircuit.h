@@ -113,6 +113,28 @@ public:
     return processedOutputs;
   }
 
+  Result<std::vector<Value>> compose_n_times(std::vector<Value> inputs,
+                                             size_t n) {
+    // preprocess arguments
+    auto preparedArgs = std::vector<TransportValue>();
+    OUTCOME_TRY(auto clientCircuit, getClientCircuit());
+    for (size_t i = 0; i < inputs.size(); i++) {
+      OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
+      preparedArgs.push_back(preparedInput);
+    }
+    // Call server multiple times in a row
+    for (size_t i = 0; i < n; i++) {
+      OUTCOME_TRY(preparedArgs, callServer(preparedArgs));
+    }
+    // postprocess arguments
+    std::vector<Value> processedOutputs(preparedArgs.size());
+    for (size_t i = 0; i < processedOutputs.size(); i++) {
+      OUTCOME_TRY(processedOutputs[i],
+                  clientCircuit.processOutput(preparedArgs[i], i));
+    }
+    return processedOutputs;
+  }
+
   Result<std::vector<TransportValue>>
   callServer(std::vector<TransportValue> inputs) {
     std::vector<TransportValue> returns;

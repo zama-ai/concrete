@@ -46,7 +46,7 @@ impl Blocks {
 // Extract block of instructions connected by levelled ops.
 // This facilitates reasonning about conflicts on levelled ops.
 #[allow(clippy::match_same_arms)]
-fn extract_levelled_block(dag: &unparametrized::OperationDag) -> Blocks {
+fn extract_levelled_block(dag: &unparametrized::OperationDag, composable: bool) -> Blocks {
     let mut uf = UnionFind::new(dag.operators.len());
     for (op_i, op) in dag.operators.iter().enumerate() {
         match op {
@@ -63,6 +63,16 @@ fn extract_levelled_block(dag: &unparametrized::OperationDag) -> Blocks {
             }
             Op::Round { .. } => unreachable!("Round should have been expanded"),
         };
+    }
+    if composable {
+        // Without knowledge of how outputs are forwarded to inputs, we can't do better than putting
+        // all inputs and outputs in the same partition.
+        let mut input_iter = dag.get_input_index_iter();
+        let first_inp = input_iter.next().unwrap();
+        dag.get_output_index()
+            .into_iter()
+            .chain(input_iter)
+            .for_each(|ind| uf.union(first_inp, ind));
     }
     Blocks::from(uf)
 }
@@ -130,8 +140,9 @@ fn resolve_by_levelled_block(
     dag: &unparametrized::OperationDag,
     p_cut: &PrecisionCut,
     default_partition: PartitionIndex,
+    composable: bool,
 ) -> Partitions {
-    let blocks = extract_levelled_block(dag);
+    let blocks = extract_levelled_block(dag, composable);
     let constraints_by_blocks = levelled_blocks_constraints(dag, &blocks, p_cut);
     let present_partitions: HashSet<PartitionIndex> = constraints_by_blocks
         .iter()
@@ -225,11 +236,12 @@ pub fn partitionning_with_preferred(
     dag: &unparametrized::OperationDag,
     p_cut: &PrecisionCut,
     default_partition: PartitionIndex,
+    composable: bool,
 ) -> Partitions {
     if p_cut.p_cut.is_empty() {
         only_1_partition(dag)
     } else {
-        resolve_by_levelled_block(dag, p_cut, default_partition)
+        resolve_by_levelled_block(dag, p_cut, default_partition, composable)
     }
 }
 
@@ -248,21 +260,22 @@ pub mod tests {
         PrecisionCut { p_cut: vec![2] }
     }
 
-    fn partitionning_no_p_cut(dag: &unparametrized::OperationDag) -> Partitions {
+    fn partitionning_no_p_cut(dag: &unparametrized::OperationDag, composable: bool) -> Partitions {
         let p_cut = PrecisionCut { p_cut: vec![] };
-        partitionning_with_preferred(dag, &p_cut, LOW_PRECISION_PARTITION)
+        partitionning_with_preferred(dag, &p_cut, LOW_PRECISION_PARTITION, composable)
     }
 
-    fn partitionning(dag: &unparametrized::OperationDag) -> Partitions {
-        partitionning_with_preferred(dag, &default_p_cut(), LOW_PRECISION_PARTITION)
+    fn partitionning(dag: &unparametrized::OperationDag, composable: bool) -> Partitions {
+        partitionning_with_preferred(dag, &default_p_cut(), LOW_PRECISION_PARTITION, composable)
     }
 
     fn partitionning_with_preferred(
         dag: &unparametrized::OperationDag,
         p_cut: &PrecisionCut,
         default_partition: usize,
+        composable: bool,
     ) -> Partitions {
-        super::partitionning_with_preferred(dag, p_cut, default_partition)
+        super::partitionning_with_preferred(dag, p_cut, default_partition, composable)
     }
 
     pub fn show_partitionning(
@@ -304,7 +317,7 @@ pub mod tests {
         let mut dag = unparametrized::OperationDag::new();
         let input1 = dag.add_input(16, Shape::number());
         _ = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 4, 8);
-        let instrs_partition = partitionning_no_p_cut(&dag).instrs_partition;
+        let instrs_partition = partitionning_no_p_cut(&dag, false).instrs_partition;
         for instr_partition in instrs_partition {
             assert!(instr_partition.instruction_partition == LOW_PRECISION_PARTITION);
             assert!(instr_partition.no_transition());
@@ -315,11 +328,29 @@ pub mod tests {
     fn test_1_input_2_partitions() {
         let mut dag = unparametrized::OperationDag::new();
         _ = dag.add_input(1, Shape::number());
-        let partitions = partitionning(&dag);
+        let partitions = partitionning(&dag, false);
         assert!(partitions.nb_partitions == 1);
         let instrs_partition = partitions.instrs_partition;
         assert!(instrs_partition[0].instruction_partition == LOW_PRECISION_PARTITION);
         assert!(partitions.nb_partitions == 1);
+    }
+
+    #[test]
+    fn test_2_partitions_with_without_compo() {
+        let mut dag = unparametrized::OperationDag::new();
+        let input = dag.add_input(10, Shape::number());
+        let lut1 = dag.add_lut(input, FunctionTable::UNKWOWN, 2);
+        let output = dag.add_lut(lut1, FunctionTable::UNKWOWN, 10);
+        let partitions = partitionning(&dag, false);
+        assert!(
+            partitions.instrs_partition[input.i].instruction_partition
+                != partitions.instrs_partition[output.i].instruction_partition
+        );
+        let partitions = partitionning(&dag, true);
+        assert!(
+            partitions.instrs_partition[input.i].instruction_partition
+                == partitions.instrs_partition[output.i].instruction_partition
+        );
     }
 
     #[test]
@@ -338,7 +369,7 @@ pub mod tests {
         expected_partitions.push(LOW_PRECISION_PARTITION);
         let lut5 = dag.add_lut(lut4, FunctionTable::UNKWOWN, 8);
         expected_partitions.push(HIGH_PRECISION_PARTITION);
-        let partitions = partitionning(&dag);
+        let partitions = partitionning(&dag, false);
         assert!(partitions.nb_partitions == 2);
         let instrs_partition = partitions.instrs_partition;
         let consider = |op_i: OperatorIndex| &instrs_partition[op_i.i];
@@ -359,7 +390,7 @@ pub mod tests {
         let input2 = dag.add_input(1, Shape::number());
         let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 8);
         let _dot = dag.add_dot([input1, lut2], Weights::from([1, 1]));
-        let partitions = partitionning(&dag);
+        let partitions = partitionning(&dag, false);
         assert!(partitions.nb_partitions == 1);
     }
 
@@ -370,7 +401,7 @@ pub mod tests {
         let input2 = dag.add_input(1, Shape::number());
         let lut2 = dag.add_lut(input1, FunctionTable::UNKWOWN, 1);
         let _dot = dag.add_dot([input2, lut2], Weights::from([1, 1]));
-        let partitions = partitionning(&dag);
+        let partitions = partitionning(&dag, false);
         assert!(partitions.nb_partitions == 1);
     }
 
@@ -382,7 +413,7 @@ pub mod tests {
         let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 8);
         let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 8);
         let dot = dag.add_dot([lut1, lut2], Weights::from([1, 1]));
-        let partitions = partitionning(&dag);
+        let partitions = partitionning(&dag, false);
         let consider = |op_i: OperatorIndex| &partitions.instrs_partition[op_i.i];
         // input1
         let p = consider(input1);
@@ -438,7 +469,7 @@ pub mod tests {
         let lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, acc_precision);
         let rounded2 = dag.add_expanded_round(lut1, precision);
         let lut2 = dag.add_lut(rounded2, FunctionTable::UNKWOWN, acc_precision);
-        let partitions = partitionning(&dag);
+        let partitions = partitionning(&dag, false);
         let consider = |op_i| &partitions.instrs_partition[op_i];
         // First layer is fully LOW_PRECISION_PARTITION
         for op_i in input1.i..lut1.i {
@@ -488,7 +519,7 @@ pub mod tests {
         let rounded1 = dag.add_expanded_round(input1, precision);
         let rounded_layer: Vec<_> = ((input1.i + 1)..rounded1.i).collect();
         let lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, acc_precision);
-        let partitions = partitionning(&dag);
+        let partitions = partitionning(&dag, false);
         let consider = |op_i: usize| &partitions.instrs_partition[op_i];
 
         // First layer is fully HIGH_PRECISION_PARTITION
@@ -549,7 +580,7 @@ pub mod tests {
         let rounded_layer = (input1.i + 1)..rounded1.i;
         let _lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, acc_precision);
         let partitions =
-            partitionning_with_preferred(&dag, &default_p_cut(), HIGH_PRECISION_PARTITION);
+            partitionning_with_preferred(&dag, &default_p_cut(), HIGH_PRECISION_PARTITION, false);
         show_partitionning(&dag, &partitions.instrs_partition);
         let consider = |op_i: usize| &partitions.instrs_partition[op_i];
 
