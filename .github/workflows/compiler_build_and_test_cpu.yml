@@ -36,6 +36,7 @@ jobs:
     runs-on: ${{ github.event.inputs.runner_name }}
     if: ${{ !cancelled() }}
     steps:
+  
       - name: Instance configuration used
         run: |
           echo "IDs: ${{ inputs.instance_id }}"
@@ -142,6 +143,11 @@ jobs:
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
             chmod -R ugo+rwx /tmp/KeySetCache
+            
+      - name: Analyze logs
+        run: |
+            cd build/gtest-parallel-logs/passed
+            ls -1 | xargs grep -H "WARNING RETRY" | sed -e "s/.log.*//g" | uniq -c | sed -re "s/ *([0-9]*) (.*)/::warning ::Test \2 retried \1 times/g" | cat
 
       # - name: Archive python package
       #   uses: actions/upload-artifact@v3

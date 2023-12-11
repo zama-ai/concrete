@@ -215,7 +215,7 @@ GTEST_PARALLEL_CMD=
 GTEST_PARALLEL_SEPARATOR=
 else
 GTEST_PARALLEL_PY=./gtest-parallel/gtest-parallel
-GTEST_PARALLEL_CMD=$(Python3_EXECUTABLE) $(GTEST_PARALLEL_PY)
+GTEST_PARALLEL_CMD=$(Python3_EXECUTABLE) $(GTEST_PARALLEL_PY) -d $(BUILD_DIR)
 GTEST_PARALLEL_SEPARATOR=--
 $(GTEST_PARALLEL_PY):
 	git clone https://github.com/google/gtest-parallel.git
@@ -299,7 +299,7 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
-	  --optimizer-strategy=$(optimizer_strategy) --retry-failing-tests=1 $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
+	  --optimizer-strategy=$(optimizer_strategy) --retry-failing-tests=5 $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
 
 ### end-to-end-tests GPU
 

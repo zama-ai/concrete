@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <llvm/Support/raw_ostream.h>
 #include <regex>
 #include <type_traits>
 
@@ -55,25 +56,41 @@ public:
   }
 
   void testOnce() {
+
+    // We try for a a number of times
     for (auto tests_rep = 0; tests_rep <= retryFailingTests; tests_rep++) {
       // We execute the circuit.
       auto maybeRes = testCircuit->call(args);
       ASSERT_OUTCOME_HAS_VALUE(maybeRes);
       auto result = maybeRes.value();
 
-      /* Check result */
+      /* Check results */
+      bool allgood = true;
       for (size_t i = 0; i < desc.outputs.size(); i++) {
         auto maybeErr = checkResult(desc.outputs[i], result[i]);
-        if (maybeErr && tests_rep < 2) {
+        if (maybeErr) {
+          allgood = false;
+          llvm::errs() << "/!\\ WARNING RETRY TEST: " << maybeErr << "\n";
           llvm::consumeError(std::move(maybeErr));
-          ASSERT_OUTCOME_HAS_VALUE(
-              testCircuit->generateKeyset(tests_rep + 1, tests_rep + 1));
           break;
-        } else {
-          ASSERT_LLVM_ERROR(std::move(maybeErr));
         }
       }
+
+      // If OK we return
+      if (allgood) {
+        return;
+      }
+
+      // Otherwise we reset the keyset
+      llvm::errs() << "Regenerating keyset with seed: ";
+      llvm::errs() << tests_rep + 1;
+      llvm::errs() << "\n";
+      ASSERT_OUTCOME_HAS_VALUE(
+          testCircuit->generateKeyset(tests_rep + 1, tests_rep + 1));
     }
+
+    // If all attempts fail, we return an error.
+    ASSERT_TRUE(false) << "Test failed after multiple attempts";
   }
 
   void testErrorRate() {
