@@ -206,8 +206,7 @@ static inline void _dfr_stop_impl() {
   if (_dfr_is_root_node())
     hpx::apply([]() { hpx::finalize(); });
   hpx::stop();
-  if (!_dfr_is_root_node())
-    exit(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 }
 
 static inline void _dfr_start_impl(int argc, char *argv[]) {
@@ -352,13 +351,6 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
 
     assert(init_guard == active && "DFR runtime failed to initialise");
 
-    // If this is not the root node in a non-JIT execution, then this
-    // node should only run the scheduler for any incoming work until
-    // termination is flagged. If this is JIT, we need to run the
-    // cancelled function which registers the work functions.
-    if (!_dfr_is_root_node() && !_dfr_is_jit())
-      _dfr_stop_impl();
-
     // If DFR is used and a runtime context is needed, and execution is
     // distributed, then broadcast from root to all compute nodes.
     if (num_nodes > 1 && (ctx || !_dfr_is_root_node())) {
@@ -367,7 +359,7 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
     }
     // If this is not JIT, then the remote nodes never reach _dfr_stop,
     // so root should not instantiate this barrier.
-    if (_dfr_is_root_node() && _dfr_is_jit())
+    if (_dfr_is_root_node())
       _dfr_startup_barrier->wait();
 
     if (num_nodes > 1 && ctx) {
@@ -392,14 +384,7 @@ void _dfr_stop(int64_t use_dfr_p) {
       // The barrier is only needed to synchronize the different
       // computation phases when the compute nodes need to generate and
       // register new work functions in each phase.
-
-      // TODO: this barrier may be removed based on how work function
-      // registration is handled - but it is unlikely to result in much
-      // gain as the root node would be waiting for the end of computation
-      // on all remote nodes before reaching here anyway (dataflow
-      // dependences).
-      if (_dfr_is_jit())
-        _dfr_jit_phase_barrier->wait();
+      _dfr_jit_phase_barrier->wait();
 
       _dfr_node_level_runtime_context_manager->clearContext();
       _dfr_node_level_work_function_registry->clearRegistry();
