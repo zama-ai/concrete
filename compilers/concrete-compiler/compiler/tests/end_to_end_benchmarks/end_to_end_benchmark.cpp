@@ -1,6 +1,7 @@
 #include "../end_to_end_tests/end_to_end_test.h"
 #include "concretelang/Common/Compat.h"
 #include "concretelang/TestLib/TestCircuit.h"
+#include <concretelang/Runtime/DFRuntime.hpp>
 
 #include <benchmark/benchmark.h>
 #include <filesystem>
@@ -51,11 +52,14 @@ static void BM_ExportArguments(benchmark::State &state,
   auto test = description.tests[0];
   auto inputArguments = std::vector<TransportValue>();
   inputArguments.reserve(test.inputs.size());
+
   auto client = tc.getClientCircuit().value();
-  for (auto _ : state) {
-    for (size_t i = 0; i < test.inputs.size(); i++) {
-      auto input = client.prepareInput(test.inputs[i].getValue(), i).value();
-      inputArguments.push_back(input);
+  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
+    for (auto _ : state) {
+      for (size_t i = 0; i < test.inputs.size(); i++) {
+        auto input = client.prepareInput(test.inputs[i].getValue(), i).value();
+        inputArguments.push_back(input);
+      }
     }
     inputArguments.resize(0);
   }
@@ -74,10 +78,12 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   auto inputArguments = std::vector<TransportValue>();
   inputArguments.reserve(test.inputs.size());
 
-  for (size_t i = 0; i < test.inputs.size(); i++) {
-    auto input =
-        clientCircuit.prepareInput(test.inputs[i].getValue(), i).value();
-    inputArguments.push_back(input);
+  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
+    for (size_t i = 0; i < test.inputs.size(); i++) {
+      auto input =
+          clientCircuit.prepareInput(test.inputs[i].getValue(), i).value();
+      inputArguments.push_back(input);
+    }
   }
 
   auto serverCircuit = tc.getServerCircuit().value();
@@ -101,7 +107,8 @@ void registerEndToEndBenchmark(std::string suiteName,
                                std::vector<EndToEndDesc> descriptions,
                                mlir::concretelang::CompilationOptions options,
                                std::vector<enum Action> actions,
-                               size_t stackSizeRequirement = 0) {
+                               size_t stackSizeRequirement = 0,
+                               int num_iterations = 0) {
   auto optionsName = getOptionsName(options);
   for (auto description : descriptions) {
     options.mainFuncName = "main";
@@ -137,10 +144,12 @@ void registerEndToEndBenchmark(std::string suiteName,
             });
         break;
       case Action::EVALUATE:
-        benchmark::RegisterBenchmark(benchName("evaluate").c_str(),
-                                     [=](::benchmark::State &st) {
-                                       BM_Evaluate(st, description, options);
-                                     });
+        auto bench = benchmark::RegisterBenchmark(
+            benchName("evaluate").c_str(), [=](::benchmark::State &st) {
+              BM_Evaluate(st, description, options);
+            });
+        if (num_iterations)
+          bench->Iterations(num_iterations);
         break;
       }
     }
@@ -180,9 +189,11 @@ int main(int argc, char **argv) {
     auto suiteName = llvm::sys::path::stem(descFile.path).str();
     registerEndToEndBenchmark(suiteName, descFile.descriptions,
                               std::get<0>(options).compilationOptions, actions,
-                              stackSizeRequirement);
+                              stackSizeRequirement,
+                              std::get<0>(options).numIterations);
   }
   ::benchmark::RunSpecifiedBenchmarks();
   ::benchmark::Shutdown();
+  _dfr_terminate();
   return 0;
 }
