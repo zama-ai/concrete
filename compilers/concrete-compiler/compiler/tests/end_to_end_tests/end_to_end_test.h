@@ -22,6 +22,7 @@ const double TEST_ERROR_RATE = 1.0 - 0.999936657516;
 typedef struct EndToEndTestOptions {
   mlir::concretelang::CompilationOptions compilationOptions;
   int numberOfRetry;
+  int numIterations;
 } EndToEndTestOptions;
 
 /// @brief  Parse the command line and return a tuple contains the compilation
@@ -74,6 +75,18 @@ parseEndToEndCommandLine(int argc, char **argv) {
       "input-compression",
       llvm::cl::desc("Enable the compression of input ciphertext"),
       llvm::cl::init(false));
+
+  llvm::cl::opt<bool> distBenchmark(
+      "distributed",
+      llvm::cl::desc("Force a constant number of iterations in the benchmark "
+                     "suite as required for distributed execution (default: 1 "
+                     "- use --iterations=<n> to change)"),
+      llvm::cl::init(false));
+  llvm::cl::opt<int> numIterations(
+      "iterations",
+      llvm::cl::desc("Set the number of iterations for the benchmark suite "
+                     "(only to be used with --distributed)"),
+      llvm::cl::init(1));
 
   // Optimizer options
   llvm::cl::opt<int> securityLevel(
@@ -143,10 +156,13 @@ parseEndToEndCommandLine(int argc, char **argv) {
     f.descriptions = loadEndToEndDesc(descFile);
     parsedDescriptionFiles.push_back(f);
   }
+  int num_iterations =
+      (distBenchmark.getValue()) ? numIterations.getValue() : 0;
   return std::make_pair(
       EndToEndTestOptions{
           compilationOptions,
           retryFailingTests.getValue(),
+          num_iterations,
       },
       parsedDescriptionFiles);
 }
