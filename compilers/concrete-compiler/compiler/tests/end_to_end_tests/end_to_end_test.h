@@ -48,25 +48,25 @@ parseEndToEndCommandLine(int argc, char **argv) {
                                   "Target a GPU backend")),
       llvm::cl::init(mlir::concretelang::Backend::CPU));
 
-  llvm::cl::opt<std::optional<bool>> loopParallelize(
+  llvm::cl::opt<bool> loopParallelize(
       "loop-parallelize",
       llvm::cl::desc(
           "Set the loopParallelize compilation options to run the tests"),
-      llvm::cl::init(std::nullopt));
-  llvm::cl::opt<std::optional<bool>> dataflowParallelize(
+      llvm::cl::init(false));
+  llvm::cl::opt<bool> dataflowParallelize(
       "dataflow-parallelize",
       llvm::cl::desc(
-          "Set the loopParallelize compilation options to run the tests"),
-      llvm::cl::init(std::nullopt));
-  llvm::cl::opt<std::optional<bool>> emitGPUOps(
+          "Set the dataflowParallelize compilation options to run the tests"),
+      llvm::cl::init(false));
+  llvm::cl::opt<bool> emitGPUOps(
       "emit-gpu-ops",
       llvm::cl::desc("Set the emitGPUOps compilation options to run the tests"),
-      llvm::cl::init(std::nullopt));
-  llvm::cl::opt<std::optional<bool>> batchTFHEOps(
+      llvm::cl::init(false));
+  llvm::cl::opt<bool> batchTFHEOps(
       "batch-tfhe-ops",
       llvm::cl::desc(
           "Set the batchTFHEOps compilation options to run the tests"),
-      llvm::cl::init(std::nullopt));
+      llvm::cl::init(false));
   llvm::cl::opt<bool> simulate("simulate",
                                llvm::cl::desc("Simulate the FHE execution"),
                                llvm::cl::init(false));
@@ -124,15 +124,10 @@ parseEndToEndCommandLine(int argc, char **argv) {
   // Build compilation options
   mlir::concretelang::CompilationOptions compilationOptions("main",
                                                             backend.getValue());
-  if (loopParallelize.has_value())
-    compilationOptions.loopParallelize = loopParallelize.getValue().value();
-  if (dataflowParallelize.has_value())
-    compilationOptions.dataflowParallelize =
-        dataflowParallelize.getValue().value();
-  if (emitGPUOps.has_value())
-    compilationOptions.emitGPUOps = emitGPUOps.getValue().value();
-  if (batchTFHEOps.has_value())
-    compilationOptions.batchTFHEOps = batchTFHEOps.getValue().value();
+  compilationOptions.loopParallelize = loopParallelize.getValue();
+  compilationOptions.dataflowParallelize = dataflowParallelize.getValue();
+  compilationOptions.emitGPUOps = emitGPUOps.getValue();
+  compilationOptions.batchTFHEOps = batchTFHEOps.getValue();
   compilationOptions.simulate = simulate.getValue();
   compilationOptions.compressInputs = inputCompression.getValue();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
