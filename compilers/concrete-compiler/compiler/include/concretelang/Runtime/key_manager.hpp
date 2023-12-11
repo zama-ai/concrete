@@ -58,6 +58,7 @@ template <typename LweKeyType> struct KeyWrapper {
       auto maybe_info_string = info.writeBinaryToString();
       assert(maybe_info_string.has_value());
       auto info_string = maybe_info_string.value();
+      ar << (size_t)info_string.size();
       ar << hpx::serialization::make_array(info_string.c_str(),
                                            info_string.size());
       ar << (size_t)k.getTransportBuffer().size();
@@ -69,8 +70,12 @@ template <typename LweKeyType> struct KeyWrapper {
     size_t num_keys;
     ar >> num_keys;
     for (uint i = 0; i < num_keys; ++i) {
-      std::string info_string;
-      ar >> info_string;
+      size_t info_size;
+      ar >> info_size;
+      auto info_vec = std::make_shared<std::vector<char>>();
+      info_vec->resize(info_size);
+      ar >> hpx::serialization::make_array(info_vec->data(), info_size);
+      std::string info_string(info_vec->data(), info_size);
       typename LweKeyType::InfoType info;
       assert(info.readBinaryFromString(info_string).has_value());
       size_t key_size;
@@ -121,8 +126,11 @@ struct RuntimeContextManager {
 
       KeyWrapper<LweKeyswitchKey> kskw(context->getKeys().lweKeyswitchKeys);
       KeyWrapper<LweBootstrapKey> bskw(context->getKeys().lweBootstrapKeys);
+      KeyWrapper<PackingKeyswitchKey> pkskw(
+          context->getKeys().packingKeyswitchKeys);
       hpx::collectives::broadcast_to("ksk_keystore", kskw);
       hpx::collectives::broadcast_to("bsk_keystore", bskw);
+      hpx::collectives::broadcast_to("pksk_keystore", pkskw);
     } else {
       auto kskFut =
           hpx::collectives::broadcast_from<KeyWrapper<LweKeyswitchKey>>(
@@ -130,10 +138,14 @@ struct RuntimeContextManager {
       auto bskFut =
           hpx::collectives::broadcast_from<KeyWrapper<LweBootstrapKey>>(
               "bsk_keystore");
+      auto pkskFut =
+          hpx::collectives::broadcast_from<KeyWrapper<PackingKeyswitchKey>>(
+              "pksk_keystore");
       KeyWrapper<LweKeyswitchKey> kskw = kskFut.get();
       KeyWrapper<LweBootstrapKey> bskw = bskFut.get();
+      KeyWrapper<PackingKeyswitchKey> pkskw = pkskFut.get();
       context = new mlir::concretelang::RuntimeContext(
-          ServerKeyset{bskw.keys, kskw.keys, {}});
+          ServerKeyset{bskw.keys, kskw.keys, pkskw.keys});
     }
   }
 
