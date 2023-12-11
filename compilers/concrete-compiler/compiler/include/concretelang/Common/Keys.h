@@ -163,11 +163,11 @@ private:
 };
 
 class PackingKeyswitchKey {
-  typedef Message<concreteprotocol::PackingKeyswitchKeyInfo> InfoType;
-
   friend class Keyset;
 
 public:
+  typedef Message<concreteprotocol::PackingKeyswitchKeyInfo> InfoType;
+
   PackingKeyswitchKey(Message<concreteprotocol::PackingKeyswitchKeyInfo> info,
                       const LweSecretKey &inputKey,
                       const LweSecretKey &outputKey,
