@@ -193,8 +193,6 @@ protected:
                                    opBody);
       // Once uses are re-targeted to the task, delete the operation
       op->erase();
-
-      return mlir::WalkResult::interrupt();
     }
     return mlir::WalkResult::advance();
   }
