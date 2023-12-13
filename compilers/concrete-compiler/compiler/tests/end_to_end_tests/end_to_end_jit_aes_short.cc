@@ -7,8 +7,6 @@
 #include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
-using concretelang::testlib::deleteFolder;
-
 std::vector<uint64_t> distributed_results;
 
 TEST(AES, aes_df) {
@@ -2740,5 +2738,4 @@ module  {
           << "result differ at pos " << i;
   } else
     ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
-  deleteFolder(lambda.getArtifactFolder());
 }

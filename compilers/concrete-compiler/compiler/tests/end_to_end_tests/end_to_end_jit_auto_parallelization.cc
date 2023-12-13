@@ -8,8 +8,6 @@
 #include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
-using concretelang::testlib::deleteFolder;
-
 ///////////////////////////////////////////////////////////////////////////////
 // Auto-parallelize independent FHE ops /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +86,6 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
     ASSERT_OUTCOME_HAS_FAILURE(testCircuit.call({}));
     ASSERT_OUTCOME_HAS_FAILURE(testCircuit.call({}));
   }
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 std::vector<uint64_t> parallel_results;
@@ -128,7 +125,6 @@ TEST(ParallelizeAndRunFHE, nn_small_parallel) {
   } else {
     ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
   }
-  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(ParallelizeAndRunFHE, nn_small_sequential) {
@@ -167,6 +163,5 @@ TEST(ParallelizeAndRunFHE, nn_small_sequential) {
         EXPECT_EQ(parallel_results[i], result.values[i])
             << "result differ at pos " << i;
     }
-    deleteFolder(lambda.getArtifactFolder());
   }
 }

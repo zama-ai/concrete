@@ -7,7 +7,6 @@
 #include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
-using concretelang::testlib::deleteFolder;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Auto-parallelize independent FHE ops /////////////////////////////////////
@@ -103,7 +102,6 @@ func.func @main(%arg0: tensor<200x4x!FHE.eint<4>>) -> tensor<200x8x!FHE.eint<4>>
   } else {
     ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
   }
-  deleteFolder(lambda.getArtifactFolder());
 }
 
 TEST(Distributed, nn_med_sequential) {
@@ -142,6 +140,5 @@ TEST(Distributed, nn_med_sequential) {
         EXPECT_EQ(distributed_results[i], result.values[i])
             << "result differ at pos " << i;
     }
-    deleteFolder(lambda.getArtifactFolder());
   }
 }

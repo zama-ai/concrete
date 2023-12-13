@@ -3,7 +3,6 @@
 #include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
-using concretelang::testlib::deleteFolder;
 
 TEST(Lambda_chunked_int, chunked_int_add_eint) {
   checkedJit(testCircuit, R"XXX(
@@ -28,5 +27,4 @@ TEST(Lambda_chunked_int, chunked_int_add_eint) {
   ASSERT_EQ(
       lambda({Tensor<uint64_t>(2057594037927936), Tensor<uint64_t>(1111)}),
       (uint64_t)2057594037929047);
-  deleteFolder(testCircuit.getArtifactFolder());
 }

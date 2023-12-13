@@ -40,47 +40,67 @@ namespace testlib {
 class TestCircuit {
 
 public:
-  static Result<TestCircuit>
-  create(Keyset keyset, Message<concreteprotocol::ProgramInfo> programInfo,
-         std::string sharedLibPath, uint64_t seedMsb, uint64_t seedLsb,
-         bool useSimulation = false) {
-    OUTCOME_TRY(auto serverProgram,
-                ServerProgram::load(programInfo, sharedLibPath, useSimulation));
-    OUTCOME_TRY(auto serverCircuit,
-                serverProgram.getServerCircuit(
-                    programInfo.asReader().getCircuits()[0].getName()));
-    __uint128_t seed = seedMsb;
-    seed <<= 64;
-    seed += seedLsb;
-    std::shared_ptr<CSPRNG> csprng = std::make_shared<ConcreteCSPRNG>(seed);
-    OUTCOME_TRY(auto clientProgram,
-                ClientProgram::create(programInfo, keyset.client, csprng,
-                                      useSimulation));
-    OUTCOME_TRY(auto clientCircuit,
-                clientProgram.getClientCircuit(
-                    programInfo.asReader().getCircuits()[0].getName()));
-    auto artifactFolder = std::filesystem::path(sharedLibPath).parent_path();
-    return TestCircuit(clientCircuit, serverCircuit, useSimulation,
-                       artifactFolder, keyset);
+  TestCircuit(mlir::concretelang::CompilationOptions options)
+      : artifactDirectory(createTempFolderIn(getSystemTempFolderPath())),
+        compiler(mlir::concretelang::CompilationContext::createShared()),
+        encryptionCsprng(std::make_shared<csprng::ConcreteCSPRNG>(0)) {
+    compiler.setCompilationOptions(options);
   }
 
-  TestCircuit(ClientCircuit clientCircuit, ServerCircuit serverCircuit,
-              bool useSimulation, Keyset keyset)
-      : clientCircuit(clientCircuit), serverCircuit(serverCircuit),
-        useSimulation(useSimulation), keyset(keyset) {}
+  TestCircuit(TestCircuit &&tc)
+      : artifactDirectory(tc.artifactDirectory), compiler(tc.compiler),
+        library(tc.library), keyset(tc.keyset),
+        encryptionCsprng(tc.encryptionCsprng) {
+    tc.artifactDirectory = "";
+  };
+
+  TestCircuit(TestCircuit &tc) = delete;
+
+  ~TestCircuit() {
+    auto d = getArtifactDirectory();
+    if (d.empty())
+      return;
+    deleteFolder(d);
+  };
+
+  Result<void> compile(std::string mlirProgram) {
+    auto compilationResult = compiler.compile({mlirProgram}, artifactDirectory);
+    if (!compilationResult) {
+      return StringError("TestCircuit: compilation error ")
+             << llvm::toString(compilationResult.takeError());
+    }
+    library = compilationResult.get();
+    return outcome::success();
+  }
+
+  Result<void> generateKeyset(__uint128_t secretSeed = 0,
+                              __uint128_t encryptionSeed = 0,
+                              bool tryCache = true) {
+    OUTCOME_TRY(auto lib, getLibrary());
+    if (tryCache) {
+      OUTCOME_TRY(keyset, getTestKeySetCachePtr()->getKeyset(
+                              lib.getProgramInfo().asReader().getKeyset(),
+                              secretSeed, encryptionSeed));
+    } else {
+      auto encryptionCsprng = csprng::ConcreteCSPRNG(encryptionSeed);
+      Message<concreteprotocol::KeysetInfo> keysetInfo =
+          lib.getProgramInfo().asReader().getKeyset();
+      keyset = Keyset(keysetInfo, encryptionCsprng);
+    }
+    return outcome::success();
+  }
 
   Result<std::vector<Value>> call(std::vector<Value> inputs) {
+    // preprocess arguments
     auto preparedArgs = std::vector<TransportValue>();
+    OUTCOME_TRY(auto clientCircuit, getClientCircuit());
     for (size_t i = 0; i < inputs.size(); i++) {
       OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
       preparedArgs.push_back(preparedInput);
     }
-    std::vector<TransportValue> returns;
-    if (useSimulation) {
-      OUTCOME_TRY(returns, serverCircuit.simulate(preparedArgs));
-    } else {
-      OUTCOME_TRY(returns, serverCircuit.call(keyset.server, preparedArgs));
-    }
+    // Call server
+    OUTCOME_TRY(auto returns, callServer(preparedArgs));
+    // postprocess arguments
     std::vector<Value> processedOutputs(returns.size());
     for (size_t i = 0; i < processedOutputs.size(); i++) {
       OUTCOME_TRY(processedOutputs[i],
@@ -89,94 +109,128 @@ public:
     return processedOutputs;
   }
 
-  std::string getArtifactFolder() { return artifactFolder; }
+  Result<std::vector<TransportValue>>
+  callServer(std::vector<TransportValue> inputs) {
+    std::vector<TransportValue> returns;
+    OUTCOME_TRY(auto serverCircuit, getServerCircuit());
+    if (compiler.getCompilationOptions().simulate) {
+      OUTCOME_TRY(returns, serverCircuit.simulate(inputs));
+    } else {
+      OUTCOME_TRY(returns, serverCircuit.call(keyset->server, inputs));
+    }
+    return returns;
+  }
+
+  Result<ClientCircuit> getClientCircuit() {
+    OUTCOME_TRY(auto lib, getLibrary());
+    OUTCOME_TRY(auto ks, getKeyset());
+    auto programInfo = lib.getProgramInfo();
+    OUTCOME_TRY(auto clientProgram,
+                ClientProgram::create(programInfo, ks.client, encryptionCsprng,
+                                      isSimulation()));
+    OUTCOME_TRY(auto clientCircuit,
+                clientProgram.getClientCircuit(
+                    programInfo.asReader().getCircuits()[0].getName()));
+    return clientCircuit;
+  }
+
+  Result<ServerCircuit> getServerCircuit() {
+    OUTCOME_TRY(auto lib, getLibrary());
+    auto programInfo = lib.getProgramInfo();
+    OUTCOME_TRY(auto serverProgram,
+                ServerProgram::load(programInfo,
+                                    lib.getSharedLibraryPath(artifactDirectory),
+                                    isSimulation()));
+    OUTCOME_TRY(auto serverCircuit,
+                serverProgram.getServerCircuit(
+                    programInfo.asReader().getCircuits()[0].getName()));
+    return serverCircuit;
+  }
 
   void setKeySet(Keyset keyset) { this->keyset = keyset; }
 
 private:
-  TestCircuit(ClientCircuit clientCircuit, ServerCircuit serverCircuit,
-              bool useSimulation, std::string artifactFolder, Keyset keyset)
-      : clientCircuit(clientCircuit), serverCircuit(serverCircuit),
-        useSimulation(useSimulation), artifactFolder(artifactFolder),
-        keyset(keyset){};
-  ClientCircuit clientCircuit;
-  ServerCircuit serverCircuit;
-  bool useSimulation;
-  std::string artifactFolder;
-  Keyset keyset;
+  std::string getArtifactDirectory() { return artifactDirectory; }
+
+  Result<mlir::concretelang::CompilerEngine::Library> getLibrary() {
+    if (!library.has_value()) {
+      return StringError("TestCircuit: compilation has not been done\n");
+    }
+    return *library;
+  }
+
+  Result<Keyset> getKeyset() {
+    if (!keyset.has_value()) {
+      return StringError("TestCircuit: keyset has not been generated\n");
+    }
+    return *keyset;
+  }
+
+  bool isSimulation() { return compiler.getCompilationOptions().simulate; }
+
+  std::string artifactDirectory;
+  mlir::concretelang::CompilerEngine compiler;
+  std::optional<mlir::concretelang::CompilerEngine::Library> library;
+  std::optional<Keyset> keyset;
+  std::shared_ptr<csprng::ConcreteCSPRNG> encryptionCsprng;
+
+private:
+  std::string getSystemTempFolderPath() {
+    llvm::SmallString<0> tempPath;
+    llvm::sys::path::system_temp_directory(true, tempPath);
+    return std::string(tempPath);
+  }
+
+  void deleteFolder(const std::string &folder) {
+    auto ec = std::error_code();
+    llvm::errs() << "TestCircuit: delete artifact directory(" << folder
+                 << ")\n";
+    if (!std::filesystem::remove_all(folder, ec)) {
+      llvm::errs() << "TestCircuit: fail to delete directory(" << folder
+                   << "), error(" << ec.message() << ")\n";
+    }
+  }
+
+  std::string createTempFolderIn(const std::string &rootFolder) {
+    std::srand(std::time(nullptr));
+    auto new_path = [=]() {
+      llvm::SmallString<0> outputPath;
+      llvm::sys::path::append(outputPath, rootFolder);
+      std::string uid = std::to_string(
+          std::hash<std::thread::id>()(std::this_thread::get_id()));
+      uid.append("-");
+      uid.append(std::to_string(std::rand()));
+      llvm::sys::path::append(outputPath, uid);
+      return std::string(outputPath);
+    };
+
+    // Macos sometimes fail to create new directories. We have to retry a few
+    // times.
+    for (size_t i = 0; i < 5; i++) {
+      auto pathString = new_path();
+      auto ec = std::error_code();
+      llvm::errs() << "TestCircuit: create temporary directory(" << pathString
+                   << ")\n";
+      if (!std::filesystem::create_directory(pathString, ec)) {
+        llvm::errs() << "TestCircuit: fail to create temporary directory("
+                     << pathString << "), ";
+        if (ec) {
+          llvm::errs() << "already exists";
+        } else {
+          llvm::errs() << "error(" << ec.message() << ")";
+        }
+      } else {
+        llvm::errs() << "TestCircuit: directory(" << pathString
+                     << ") successfuly created\n";
+        return pathString;
+      }
+    }
+    llvm::errs() << "Failed to create temp directory 5 times. Aborting...\n";
+    assert(false);
+  }
 };
 
-TestCircuit load(mlir::concretelang::CompilerEngine::Library compiled) {
-  auto keyset =
-      getTestKeySetCachePtr()
-          ->getKeyset(compiled.getProgramInfo().asReader().getKeyset(), 0, 0)
-          .value();
-  return TestCircuit::create(
-             keyset, compiled.getProgramInfo().asReader(),
-             compiled.getSharedLibraryPath(compiled.getOutputDirPath()), 0, 0,
-             false)
-      .value();
-}
-
 const std::string FUNCNAME = "main";
-
-std::string getSystemTempFolderPath() {
-  llvm::SmallString<0> tempPath;
-  llvm::sys::path::system_temp_directory(true, tempPath);
-  return std::string(tempPath);
-}
-
-std::string createTempFolderIn(const std::string &rootFolder) {
-  std::srand(std::time(nullptr));
-  auto new_path = [=]() {
-    llvm::SmallString<0> outputPath;
-    llvm::sys::path::append(outputPath, rootFolder);
-    std::string uid = std::to_string(
-        std::hash<std::thread::id>()(std::this_thread::get_id()));
-    uid.append("-");
-    uid.append(std::to_string(std::rand()));
-    llvm::sys::path::append(outputPath, uid);
-    return std::string(outputPath);
-  };
-
-  // Macos sometimes fail to create new directories. We have to retry a few
-  // times.
-  for (size_t i = 0; i < 5; i++) {
-    auto pathString = new_path();
-    auto ec = std::error_code();
-    if (!std::filesystem::create_directory(pathString, ec)) {
-      std::cout << "Failed to create directory ";
-      std::cout << pathString;
-      std::cout << " Reason: ";
-      std::cout << ec.message();
-      std::cout << " Retrying....\n";
-      std::cout.flush();
-    } else {
-      std::cout << "Using artifact folder ";
-      std::cout << pathString;
-      std::cout << "\n";
-      std::cout.flush();
-      return pathString;
-    }
-  }
-  std::cout << "Failed to create temp directory 5 times. Aborting...\n";
-  std::cout.flush();
-  assert(false);
-}
-
-void deleteFolder(const std::string &folder) {
-  if (!folder.empty()) {
-    auto ec = std::error_code();
-    if (!std::filesystem::remove_all(folder, ec)) {
-      std::cout << "Failed to delete directory ";
-      std::cout << folder;
-      std::cout << " Reason: ";
-      std::cout << ec.message();
-      std::cout.flush();
-      assert(false);
-    }
-  }
-}
 
 std::vector<uint8_t> values_3bits() { return {0, 1, 2, 5, 7}; }
 std::vector<uint8_t> values_6bits() { return {0, 1, 2, 13, 22, 59, 62, 63}; }

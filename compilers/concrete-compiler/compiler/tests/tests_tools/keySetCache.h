@@ -19,7 +19,7 @@ getTestKeySetCache() {
 
   auto cachePathStr = std::string(cachePath);
 
-  std::cout << "Using KeySetCache dir: " << cachePathStr << "\n";
+  llvm::errs() << "Using KeySetCache dir: " << cachePathStr << "\n";
 
   return concretelang::keysets::KeysetCache(cachePathStr);
 }
