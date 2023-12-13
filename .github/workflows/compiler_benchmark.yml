@@ -96,13 +96,6 @@ jobs:
           cd compilers/concrete-compiler/compiler
           make BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} build-benchmarks
 
-      - name: Download KeySetCache
-        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
-        continue-on-error: true
-        run: |
-          cd compilers/concrete-compiler/compiler
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
-
       - name: Run end-to-end benchmarks
         run: |
           set -e
