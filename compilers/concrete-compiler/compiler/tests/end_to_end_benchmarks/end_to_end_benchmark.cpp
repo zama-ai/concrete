@@ -21,86 +21,53 @@ using namespace concretelang::testlib;
 
 /// Benchmark time of the compilation
 static void BM_Compile(benchmark::State &state, EndToEndDesc description,
-                       mlir::concretelang::CompilerEngine engine,
                        mlir::concretelang::CompilationOptions options) {
-  engine.setCompilationOptions(options);
-  std::vector<std::string> sources = {description.program};
-  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
+  TestCircuit tc(options);
   for (auto _ : state) {
-    if (engine.compile(sources, artifactFolder)) {
-    };
+    assert(tc.compile(description.program));
   }
 }
 
 /// Benchmark time of the key generation
 static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
-                      mlir::concretelang::CompilerEngine engine,
                       mlir::concretelang::CompilationOptions options) {
-  engine.setCompilationOptions(options);
-  std::vector<std::string> sources = {description.program};
-  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto result = engine.compile(sources, artifactFolder);
-  assert(result);
+  TestCircuit tc(options);
+  assert(tc.compile(description.program));
 
   for (auto _ : state) {
-    assert(getTestKeySetCachePtr()->getKeyset(
-        result->getProgramInfo().asReader().getKeyset(), 0, 0));
+    assert(tc.generateKeyset(0, 0, false));
   }
 }
 
 /// Benchmark time of the encryption
 static void BM_ExportArguments(benchmark::State &state,
                                EndToEndDesc description,
-                               mlir::concretelang::CompilerEngine engine,
                                mlir::concretelang::CompilationOptions options) {
-  engine.setCompilationOptions(options);
-  std::vector<std::string> sources = {description.program};
-
-  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto compiled = engine.compile(sources, artifactFolder);
-  assert(compiled);
-  auto programInfo = compiled->getProgramInfo();
-  auto keyset = getTestKeySetCachePtr()
-                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
-                    .value();
-  auto csprng = std::make_shared<ConcreteCSPRNG>(0);
-
-  auto circuit = ClientCircuit::create(programInfo.asReader().getCircuits()[0],
-                                       keyset.client, csprng, false)
-                     .value();
+  TestCircuit tc(options);
+  assert(tc.compile(description.program));
+  assert(tc.generateKeyset());
 
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
   auto inputArguments = std::vector<TransportValue>();
   inputArguments.reserve(test.inputs.size());
-
+  auto client = tc.getClientCircuit().value();
   for (auto _ : state) {
     for (size_t i = 0; i < test.inputs.size(); i++) {
-      auto input = circuit.prepareInput(test.inputs[i].getValue(), i).value();
+      auto input = client.prepareInput(test.inputs[i].getValue(), i).value();
       inputArguments.push_back(input);
     }
+    inputArguments.resize(0);
   }
 }
 
 /// Benchmark time of the program evaluation
 static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
-                        mlir::concretelang::CompilerEngine engine,
                         mlir::concretelang::CompilationOptions options) {
-  engine.setCompilationOptions(options);
-  std::vector<std::string> sources = {description.program};
-
-  auto artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto compiled = engine.compile(sources, artifactFolder);
-  assert(compiled);
-  auto programInfo = compiled->getProgramInfo();
-  auto keyset = getTestKeySetCachePtr()
-                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
-                    .value();
-  auto csprng = std::make_shared<ConcreteCSPRNG>(0);
-  auto clientCircuit =
-      ClientCircuit::create(programInfo.asReader().getCircuits()[0],
-                            keyset.client, csprng, false)
-          .value();
+  TestCircuit tc(options);
+  assert(tc.compile(description.program));
+  assert(tc.generateKeyset());
+  auto clientCircuit = tc.getClientCircuit().value();
 
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
@@ -113,19 +80,13 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
     inputArguments.push_back(input);
   }
 
-  auto serverProgram = ServerProgram::load(
-      programInfo, compiled->getSharedLibraryPath(compiled->getOutputDirPath()),
-      false);
-  auto serverCircuit =
-      serverProgram.value()
-          .getServerCircuit(programInfo.asReader().getCircuits()[0].getName())
-          .value();
+  auto serverCircuit = tc.getServerCircuit().value();
 
   // Warmup
-  assert(serverCircuit.call(keyset.server, inputArguments));
+  assert(tc.callServer(inputArguments));
 
   for (auto _ : state) {
-    assert(serverCircuit.call(keyset.server, inputArguments));
+    assert(tc.callServer(inputArguments));
   }
 }
 
@@ -149,8 +110,6 @@ void registerEndToEndBenchmark(std::string suiteName,
       options.optimizerConfig.p_error = description.p_error.value();
     }
     options.optimizerConfig.encoding = description.encoding;
-    auto context = mlir::concretelang::CompilationContext::createShared();
-    mlir::concretelang::CompilerEngine engine(context);
     auto benchName = [&](std::string name) {
       std::ostringstream s;
       s << suiteName << "/" << name << "/" << optionsName << "/"
@@ -160,28 +119,28 @@ void registerEndToEndBenchmark(std::string suiteName,
     for (auto action : actions) {
       switch (action) {
       case Action::COMPILE:
-        benchmark::RegisterBenchmark(
-            benchName("compile").c_str(), [=](::benchmark::State &st) {
-              BM_Compile(st, description, engine, options);
-            });
+        benchmark::RegisterBenchmark(benchName("compile").c_str(),
+                                     [=](::benchmark::State &st) {
+                                       BM_Compile(st, description, options);
+                                     });
         break;
       case Action::KEYGEN:
-        benchmark::RegisterBenchmark(
-            benchName("keygen").c_str(), [=](::benchmark::State &st) {
-              BM_KeyGen(st, description, engine, options);
-            });
+        benchmark::RegisterBenchmark(benchName("keygen").c_str(),
+                                     [=](::benchmark::State &st) {
+                                       BM_KeyGen(st, description, options);
+                                     });
         break;
       case Action::ENCRYPT:
         benchmark::RegisterBenchmark(
             benchName("encrypt").c_str(), [=](::benchmark::State &st) {
-              BM_ExportArguments(st, description, engine, options);
+              BM_ExportArguments(st, description, options);
             });
         break;
       case Action::EVALUATE:
-        benchmark::RegisterBenchmark(
-            benchName("evaluate").c_str(), [=](::benchmark::State &st) {
-              BM_Evaluate(st, description, engine, options);
-            });
+        benchmark::RegisterBenchmark(benchName("evaluate").c_str(),
+                                     [=](::benchmark::State &st) {
+                                       BM_Evaluate(st, description, options);
+                                     });
         break;
       }
     }

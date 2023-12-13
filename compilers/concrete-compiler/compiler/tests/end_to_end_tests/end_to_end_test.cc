@@ -13,9 +13,6 @@
 #include "tests_tools/assert.h"
 #include "tests_tools/keySetCache.h"
 
-using concretelang::testlib::createTempFolderIn;
-using concretelang::testlib::deleteFolder;
-using concretelang::testlib::getSystemTempFolderPath;
 using concretelang::testlib::TestCircuit;
 using concretelang::values::Value;
 
@@ -34,41 +31,20 @@ public:
       options.optimizerConfig.global_p_error = errorRate->global_p_error;
       options.optimizerConfig.p_error = errorRate->global_p_error;
     }
-    artifactFolder = createTempFolderIn(getSystemTempFolderPath());
   };
 
   void SetUp() override {
-    /* Compile the program */
-    std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
-        mlir::concretelang::CompilationContext::createShared();
-    mlir::concretelang::CompilerEngine ce{ccx};
-    ce.setCompilationOptions(options);
-    auto expectCompilationResult = ce.compile({program}, artifactFolder);
-    ASSERT_EXPECTED_SUCCESS(expectCompilationResult);
-    library = expectCompilationResult.get();
-
-    /* Retrieve the keyset */
-    auto keyset =
-        getTestKeySetCachePtr()
-            ->getKeyset(library->getProgramInfo().asReader().getKeyset(), 0, 0)
-            .value();
-
-    /* Create the test circuit */
-    testCircuit =
-        TestCircuit::create(
-            keyset, library->getProgramInfo().asReader(),
-            library->getSharedLibraryPath(library->getOutputDirPath()), 0, 0,
-            false)
-            .value();
-
-    /* Create the public argument */
+    TestCircuit tc(options);
+    ASSERT_OUTCOME_HAS_VALUE(tc.compile({program}));
+    ASSERT_OUTCOME_HAS_VALUE(tc.generateKeyset());
+    testCircuit.emplace(std::move(tc));
     args = std::vector<Value>();
     for (auto &input : desc.inputs) {
       args.push_back(input.getValue());
     }
   }
 
-  void TearDown() override { deleteFolder(artifactFolder); }
+  void TearDown() override {}
 
   void TestBody() override {
     if (!errorRate.has_value()) {
@@ -81,24 +57,17 @@ public:
   void testOnce() {
     for (auto tests_rep = 0; tests_rep <= retryFailingTests; tests_rep++) {
       // We execute the circuit.
-      auto maybeRes = (*testCircuit).call(args);
+      auto maybeRes = testCircuit->call(args);
       ASSERT_OUTCOME_HAS_VALUE(maybeRes);
       auto result = maybeRes.value();
 
       /* Check result */
       for (size_t i = 0; i < desc.outputs.size(); i++) {
         auto maybeErr = checkResult(desc.outputs[i], result[i]);
-        if (!maybeErr)
-          return;
-        if (tests_rep < retryFailingTests) {
-          llvm::errs() << "/!\\ WARNING RETRY TEST: " << maybeErr << "\n";
+        if (maybeErr && tests_rep < 2) {
           llvm::consumeError(std::move(maybeErr));
-          llvm::errs() << "Regenerating keyset\n";
-          __uint128_t seed = tests_rep + 1;
-          auto csprng = ConcreteCSPRNG(seed);
-          Keyset keyset =
-              Keyset(library->getProgramInfo().asReader().getKeyset(), csprng);
-          testCircuit->setKeySet(keyset);
+          ASSERT_OUTCOME_HAS_VALUE(
+              testCircuit->generateKeyset(tests_rep + 1, tests_rep + 1));
           break;
         } else {
           ASSERT_LLVM_ERROR(std::move(maybeErr));

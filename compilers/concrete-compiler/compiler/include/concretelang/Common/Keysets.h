@@ -67,7 +67,7 @@ public:
 
   Result<Keyset>
   getKeyset(const Message<concreteprotocol::KeysetInfo> &keysetInfo,
-            uint64_t seed_msb, uint64_t seed_lsb);
+            __uint128_t secret_seed, __uint128_t encryption_seed);
 
 private:
   KeysetCache() = default;

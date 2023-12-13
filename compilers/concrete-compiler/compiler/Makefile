@@ -117,7 +117,7 @@ ifeq ($(BUILD_TYPE),Debug)
 	LIBOMP_LINK_TO_LIBSTDCXX_OPT=-DLIBOMP_USE_STDCPPLIB=ON
 endif
 
-all: concretecompiler python-bindings build-tests build-benchmarks build-mlbench doc
+all: concretecompiler python-bindings build-tests build-benchmarks doc
 
 # HPX #####################################################
 
@@ -400,10 +400,6 @@ run-gpu-benchmarks: build-benchmarks generate-cpu-benchmarks
 	$(BENCHMARK_CPU_DIR)/*.yaml
 
 
-
-build-mlbench: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_mlbench
-
 generate-mlbench:
 	mkdir -p tests/end_to_end_benchmarks/mlbench
 	rm -rf tests/end_to_end_benchmarks/mlbench/*
@@ -411,13 +407,6 @@ generate-mlbench:
 	rm -f tests/end_to_end_benchmarks/mlbench/**/*\=*
 	find tests/end_to_end_benchmarks/mlbench -name "*.mlir" -exec sed -e '1d' -e 's/ func / func.func /g' -e 's/ linalg.tensor_/ tensor./g' -e '$$d' -i {} \;
 	$(Python3_EXECUTABLE) tests/end_to_end_benchmarks/generate_bench_yaml.py tests/end_to_end_benchmarks/mlbench tests/end_to_end_benchmarks/mlbench/end_to_end_mlbench
-
-run-mlbench: build-mlbench generate-mlbench
-	tests/end_to_end_benchmarks/end_to_end_mlbench.sh tests/end_to_end_benchmarks/mlbench/ $(BUILD_DIR)/bin/end_to_end_mlbench
-
-run-mlbench-subset: build-mlbench generate-mlbench
-	@[ "${ML_BENCH_SUBSET_ID}" ] || ( echo "ML_BENCH_SUBSET_ID is not set"; exit 1 )
-	tests/end_to_end_benchmarks/end_to_end_mlbench.sh tests/end_to_end_benchmarks/mlbench/end_to_end_mlbench_$(ML_BENCH_SUBSET_ID).yaml $(BUILD_DIR)/bin/end_to_end_mlbench
 
 show-stress-tests-summary:
 	@echo '------ Stress tests summary ------'

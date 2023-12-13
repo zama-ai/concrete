@@ -20,27 +20,18 @@ using namespace concretelang::testlib;
 testing::Environment *const dfr_env =
     testing::AddGlobalTestEnvironment(new DFREnvironment);
 
-mlir::concretelang::CompilerEngine::Library
-compile(std::string artifactFolder, std::string source,
-        std::string funcname = FUNCNAME) {
-  std::vector<std::string> sources = {source};
-  std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
-      mlir::concretelang::CompilationContext::createShared();
-  mlir::concretelang::CompilerEngine ce{ccx};
+Result<TestCircuit> setupTestCircuit(std::string source,
+                                     std::string funcname = FUNCNAME) {
   mlir::concretelang::CompilationOptions options(funcname);
 #ifdef CONCRETELANG_CUDA_SUPPORT
   options.emitGPUOps = true;
   options.emitSDFGOps = true;
 #endif
   options.batchTFHEOps = true;
-  ce.setCompilationOptions(options);
-  auto result = ce.compile(sources, artifactFolder);
-  if (!result) {
-    llvm::errs() << result.takeError();
-    assert(false);
-  }
-  assert(result);
-  return result.get();
+  TestCircuit testCircuit(options);
+  OUTCOME_TRYV(testCircuit.compile({source}));
+  OUTCOME_TRYV(testCircuit.generateKeyset());
+  return std::move(testCircuit);
 }
 
 TEST(SDFG_unit_tests, add_eint) {
@@ -50,8 +41,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   for (auto a : values_7bits())
     for (auto b : values_7bits()) {
       if (a > b) {
@@ -62,7 +52,6 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
       auto out = res.value()[0].getTensor<uint64_t>().value()[0];
       ASSERT_EQ(out, (uint64_t)a + b);
     }
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, add_eint_int) {
@@ -72,8 +61,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   for (auto a : values_7bits())
     for (auto b : values_7bits()) {
       if (a > b) {
@@ -84,7 +72,6 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
       auto out = res.value()[0].getTensor<uint64_t>().value()[0];
       ASSERT_EQ(out, (uint64_t)a + b);
     }
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, mul_eint_int) {
@@ -94,8 +81,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   for (auto a : values_3bits())
     for (auto b : values_3bits()) {
       if (a > b) {
@@ -106,7 +92,6 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
       auto out = res.value()[0].getTensor<uint64_t>().value()[0];
       ASSERT_EQ(out, (uint64_t)a * b);
     }
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, neg_eint) {
@@ -116,15 +101,13 @@ func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   for (auto a : values_7bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());
     auto out = res.value()[0].getTensor<uint64_t>().value()[0];
     ASSERT_EQ(out, (uint64_t)((a == 0) ? 0 : 256 - a));
   }
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, add_eint_tree) {
@@ -136,8 +119,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
   return %3: !FHE.eint<7>
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   for (auto a : values_3bits()) {
     for (auto b : values_3bits()) {
       auto res = circuit.call({
@@ -151,7 +133,6 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
       ASSERT_EQ(out, (uint64_t)a + a + b + b);
     }
   }
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, tlu) {
@@ -162,15 +143,13 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
     return %1: !FHE.eint<3>
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   for (auto a : values_3bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());
     auto out = res.value()[0].getTensor<uint64_t>().value()[0];
     ASSERT_EQ(out, (uint64_t)a);
   }
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, tlu_tree) {
@@ -186,15 +165,13 @@ func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
     return %6: !FHE.eint<4>
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   for (auto a : values_3bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());
     auto out = res.value()[0].getTensor<uint64_t>().value()[0];
     ASSERT_EQ(out, (uint64_t)((a * 2) % 16));
   }
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, tlu_batched) {
@@ -205,14 +182,12 @@ TEST(SDFG_unit_tests, tlu_batched) {
       return %res : tensor<3x3x!FHE.eint<3>>
     }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
   auto expected = Tensor<uint64_t>({1, 3, 5, 7, 1, 3, 5, 7, 1}, {3, 3});
   auto res = circuit.call({t});
   ASSERT_TRUE(res.has_value());
   ASSERT_EQ(res.value()[0].getTensor<uint64_t>(), expected);
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, batched_tree) {
@@ -226,8 +201,7 @@ TEST(SDFG_unit_tests, batched_tree) {
       return %res : tensor<3x3x!FHE.eint<4>>
     }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
   auto a1 = Tensor<uint8_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
   auto a2 = Tensor<uint8_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
@@ -235,7 +209,6 @@ TEST(SDFG_unit_tests, batched_tree) {
   auto res = circuit.call({t, a1, a2});
   ASSERT_TRUE(res.has_value());
   ASSERT_EQ(res.value()[0].getTensor<uint64_t>(), expected);
-  deleteFolder(artifactFolder);
 }
 
 TEST(SDFG_unit_tests, batched_tree_mapped_tlu) {
@@ -253,8 +226,7 @@ TEST(SDFG_unit_tests, batched_tree_mapped_tlu) {
       return %res : tensor<3x3x!FHE.eint<4>>
     }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
   auto a1 = Tensor<uint8_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
   auto a2 = Tensor<uint8_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
@@ -262,5 +234,4 @@ TEST(SDFG_unit_tests, batched_tree_mapped_tlu) {
   auto res = circuit.call({t, a1, a2});
   ASSERT_TRUE(res.has_value());
   ASSERT_EQ(res.value()[0].getTensor<uint64_t>(), expected);
-  deleteFolder(artifactFolder);
 }

@@ -39,9 +39,6 @@ inline Result<TestCircuit> internalCheckedJit(
     unsigned int chunkSize = DEFAULT_chunkSize,
     unsigned int chunkWidth = DEFAULT_chunkWidth) {
 
-  std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
-      mlir::concretelang::CompilationContext::createShared();
-  mlir::concretelang::CompilerEngine ce{ccx};
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
   options.optimizerConfig.global_p_error = global_p_error;
@@ -64,32 +61,17 @@ inline Result<TestCircuit> internalCheckedJit(
 #endif
   options.batchTFHEOps = batchTFHEOps;
 
-  ce.setCompilationOptions(options);
   std::vector<std::string> sources = {src.str()};
-  auto artifactFolder = concretelang::testlib::createTempFolderIn(
-      concretelang::testlib::getSystemTempFolderPath());
-  auto result = ce.compile(sources, artifactFolder);
-  if (!result) {
-    llvm::errs() << result.takeError();
-    return StringError("Failed to compile sources....");
-  }
-  auto compiled = result.get();
-
-  auto keyset =
-      getTestKeySetCachePtr()
-          ->getKeyset(compiled.getProgramInfo().asReader().getKeyset(), 0, 0)
-          .value();
-  return TestCircuit::create(
-      keyset, compiled.getProgramInfo().asReader(),
-      compiled.getSharedLibraryPath(compiled.getOutputDirPath()), 0, 0, false);
+  TestCircuit testCircuit(options);
+  OUTCOME_TRYV(testCircuit.compile({src.str()}));
+  OUTCOME_TRYV(testCircuit.generateKeyset());
+  return std::move(testCircuit);
 }
 
 // Wrapper around `internalCheckedJit` that causes
 // `ASSERT_EXPECTED_SUCCESS` to use the file and line number of the
 // caller instead of `internalCheckedJit`.
 #define checkedJit(VARNAME, ...)                                               \
-  auto VARNAMEOrErr = internalCheckedJit(__VA_ARGS__);                         \
-  ASSERT_OUTCOME_HAS_VALUE(VARNAMEOrErr);                                      \
-  auto VARNAME = std::move(VARNAMEOrErr.value());
+  ASSERT_ASSIGN_OUTCOME_VALUE(VARNAME, internalCheckedJit(__VA_ARGS__));
 
 #endif

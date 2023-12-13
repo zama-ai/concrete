@@ -23,9 +23,8 @@ testing::Environment *const dfr_env =
 using namespace concretelang::testlib;
 namespace encodings = mlir::concretelang::encodings;
 
-mlir::concretelang::CompilerEngine::Library
-compile(std::string artifactFolder, std::string source,
-        std::string funcname = FUNCNAME) {
+Result<TestCircuit> setupTestCircuit(std::string source,
+                                     std::string funcname = FUNCNAME) {
   std::vector<std::string> sources = {source};
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
@@ -49,14 +48,10 @@ compile(std::string artifactFolder, std::string source,
 
   options.encodings->asBuilder().setName("main");
   options.v0Parameter = {2, 10, 693, 4, 9, 7, 2, std::nullopt};
-  ce.setCompilationOptions(options);
-  auto result = ce.compile(sources, artifactFolder);
-  if (!result) {
-    llvm::errs() << result.takeError();
-    assert(false);
-  }
-  assert(result);
-  return result.get();
+  TestCircuit testCircuit(options);
+  OUTCOME_TRYV(testCircuit.compile({source}));
+  OUTCOME_TRYV(testCircuit.generateKeyset());
+  return std::move(testCircuit);
 }
 
 TEST(Encodings_unit_tests, multi_key) {
@@ -72,13 +67,11 @@ func.func @main(
   
 }
 )";
-  std::string artifactFolder = createTempFolderIn(getSystemTempFolderPath());
-  auto circuit = load(compile(artifactFolder, source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
   uint64_t a = 5;
   uint64_t b = 5;
   auto res = circuit.call({Tensor<uint64_t>(a), Tensor<uint64_t>(b)});
   ASSERT_TRUE(res.has_value());
   auto out = res.value()[0].getTensor<uint64_t>()->values[0];
   ASSERT_EQ(out, a + b);
-  deleteFolder(artifactFolder);
 }

@@ -7,7 +7,6 @@
 #include "concretelang/TestLib/TestCircuit.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
-using concretelang::testlib::deleteFolder;
 
 TEST(CompileAndRunClear, add_u64) {
   checkedJit(testCircuit, R"XXX(
@@ -26,7 +25,6 @@ func.func @main(%arg0: i64, %arg1: i64) -> i64 {
   ASSERT_EQ(lambda({Tensor<uint64_t>(1), Tensor<uint64_t>(2)}), (uint64_t)3);
   ASSERT_EQ(lambda({Tensor<uint64_t>(4), Tensor<uint64_t>(5)}), (uint64_t)9);
   ASSERT_EQ(lambda({Tensor<uint64_t>(1), Tensor<uint64_t>(1)}), (uint64_t)2);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, extract_5) {
@@ -45,7 +43,6 @@ func.func @main(%t: tensor<10x!FHE.eint<5>>, %i: index) -> !FHE.eint<5>{
   Tensor<uint64_t> t_arg({32, 0, 10, 25, 14, 25, 18, 28, 14, 7}, {10});
   for (size_t i = 0; i < 10; i++)
     ASSERT_EQ(lambda({t_arg, Tensor<uint64_t>(i)}), t_arg[i]);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, extract_twice_and_add_5) {
@@ -69,7 +66,6 @@ func.func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
     for (size_t j = 0; j < 10; j++)
       ASSERT_EQ(lambda({t_arg, Tensor<uint64_t>(i), Tensor<uint64_t>(j)}),
                 t_arg[i] + t_arg[j]);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, dim_5) {
@@ -91,7 +87,6 @@ func.func @main(%t: tensor<10x!FHE.eint<5>>) -> index{
                 t_arg,
             }),
             10_u64);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, from_elements_5) {
@@ -110,7 +105,6 @@ func.func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
   Tensor<uint64_t> res = lambda({Tensor<uint64_t>(10)});
   ASSERT_EQ(res.values.size(), (size_t)1);
   ASSERT_EQ(res.values[0], 10_u64);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, from_elements_multiple_values) {
@@ -132,7 +126,6 @@ func.func @main(%0: !FHE.eint<5>, %1: !FHE.eint<5>, %2: !FHE.eint<5>) -> tensor<
   ASSERT_EQ(res.values[0], 1_u64);
   ASSERT_EQ(res.values[1], 2_u64);
   ASSERT_EQ(res.values[2], 3_u64);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, from_elements_many_values) {
@@ -302,7 +295,6 @@ func.func @main(%0: !FHE.eint<5>,
   ASSERT_EQ(res.values[61], 61_u64);
   ASSERT_EQ(res.values[62], 62_u64);
   ASSERT_EQ(res.values[63], 63_u64);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 TEST(CompileAndRunTensorEncrypted, in_out_tensor_with_op_5) {
@@ -333,7 +325,6 @@ func.func @main(%in: tensor<2x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
   ASSERT_EQ(res.values[0], (uint64_t)(in[0] + in[0]));
   ASSERT_EQ(res.values[1], (uint64_t)(in[0] + in[1]));
   ASSERT_EQ(res.values[2], (uint64_t)(in[1] + in[1]));
-  deleteFolder(testCircuit.getArtifactFolder());
 }
 
 // Test is failing since with the bufferization and the parallel options.
@@ -371,5 +362,4 @@ func.func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
   Tensor<uint64_t> acc(0);
 
   ASSERT_EQ(lambda({arg0, arg1, acc}), 76_u64);
-  deleteFolder(testCircuit.getArtifactFolder());
 }
