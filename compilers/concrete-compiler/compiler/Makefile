@@ -346,10 +346,10 @@ $(BENCHMARK_CPU_DIR):
 	mkdir -p $@
 
 $(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
-	$(Python3_EXECUTABLE) $< --n-ct 64 128 1024 > $@
+	$(Python3_EXECUTABLE) $< --n-ct 1024 > $@
 
 $(BENCHMARK_CPU_DIR)/end_to_end_round.yaml: tests/end_to_end_fixture/end_to_end_round_gen.py
-	$(Python3_EXECUTABLE) $< --shapes 64 128 1024 > $@
+	$(Python3_EXECUTABLE) $< --shapes 1024 > $@
 
 $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 	$(Python3_EXECUTABLE) $< > $@
@@ -357,16 +357,14 @@ $(BENCHMARK_CPU_DIR)/%.yaml: tests/end_to_end_fixture/%_gen.py
 
 BENCHS_CPU = \
 	$(BENCHMARK_CPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml \
-	$(BENCHMARK_CPU_DIR)/end_to_end_apply_lookup_table.yaml \
-	$(BENCHMARK_CPU_DIR)/end_to_end_round.yaml \
-	$(BENCHMARK_CPU_DIR)/end_to_end_linalg_leveled.yaml
+	$(BENCHMARK_CPU_DIR)/end_to_end_round.yaml
 
 generate-cpu-benchmarks: $(BENCHMARK_CPU_DIR) $(BENCHS_CPU)
 
 SECURITY_TO_BENCH=128
-OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
+OPTIMIZATION_STRATEGY_TO_BENCH=dag-multi
 run-cpu-benchmarks: build-benchmarks generate-cpu-benchmarks
-	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST),$(foreach security,$(SECURITY_TO_BENCH),$(BUILD_DIR)/bin/end_to_end_benchmark \
+	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_BENCH),$(foreach security,$(SECURITY_TO_BENCH),$(BUILD_DIR)/bin/end_to_end_benchmark \
 		--backend=cpu --security-level=$(security) --optimizer-strategy=$(optimizer_strategy)\
 		--benchmark_out=benchmarks_results.json --benchmark_out_format=json \
 		$(BENCHMARK_CPU_DIR)/*.yaml || exit $$?;))
