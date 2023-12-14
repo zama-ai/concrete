@@ -146,8 +146,7 @@ __global__ void keyswitch(Torus *lwe_array_out, Torus *lwe_array_in, Torus *ksk,
     Torus mask_mod_b = (1ll << base_log) - 1ll;
 
     for (int j = 0; j < level_count; j++) {
-      auto ksk_block = get_ith_block(ksk, i, level_count - j - 1,
-                                     lwe_dimension_out, level_count);
+      auto ksk_block = get_ith_block(ksk, i, j, lwe_dimension_out, level_count);
       Torus decomposed = decompose_one<Torus>(state, mask_mod_b, base_log);
       for (int k = 0; k < lwe_part_per_thd; k++) {
         int idx = tid + k * blockDim.x;
