@@ -1,7 +1,7 @@
 [profile.m7i-cpu-bench]
 region = "eu-west-1"
 image_id = "ami-022a4cfbf85a78faf" # Based on Ubuntu 22.4
-instance_type = "m7i.metal-48xl"
+instance_type = "m7i.48xlarge"
 
 [profile.m7i-cpu-test]
 region = "eu-west-1"
