@@ -10,6 +10,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keysets.h"
 #include <assert.h>
+#include <complex>
 #include <map>
 #include <mutex>
 #include <pthread.h>
@@ -53,10 +54,10 @@ typedef struct RuntimeContext {
   };
 
   const uint64_t *keyswitch_key_buffer(size_t keyId) {
-    return serverKeyset.lweKeyswitchKeys[keyId].getRawPtr();
+    return serverKeyset.lweKeyswitchKeys[keyId].getBuffer().data();
   }
 
-  const double *fourier_bootstrap_key_buffer(size_t keyId) {
+  const std::complex<double> *fourier_bootstrap_key_buffer(size_t keyId) {
     return fourier_bootstrap_keys[keyId]->data();
   }
 
@@ -70,7 +71,8 @@ typedef struct RuntimeContext {
 
 private:
   ServerKeyset serverKeyset;
-  std::vector<std::shared_ptr<std::vector<double>>> fourier_bootstrap_keys;
+  std::vector<std::shared_ptr<std::vector<std::complex<double>>>>
+      fourier_bootstrap_keys;
   std::vector<FFT> ffts;
 
 #ifdef CONCRETELANG_CUDA_SUPPORT

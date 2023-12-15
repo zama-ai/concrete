@@ -167,7 +167,9 @@ class Circuit:
 
         self.client.keys = new_keys
 
-    def keygen(self, force: bool = False, seed: Optional[int] = None):
+    def keygen(
+        self, force: bool = False, seed: Optional[int] = None, encryption_seed: Optional[int] = None
+    ):
         """
         Generate keys required for homomorphic evaluation.
 
@@ -176,13 +178,16 @@ class Circuit:
                 whether to generate new keys even if keys are already generated
 
             seed (Optional[int], default = None):
-                seed for randomness
+                seed for private keys randomness
+
+            encryption_seed (Optional[int], default = None):
+                seed for encryption randomness
         """
 
         if not hasattr(self, "client"):  # pragma: no cover
             self.enable_fhe_execution()
 
-        self.client.keygen(force, seed)
+        self.client.keygen(force, seed, encryption_seed)
 
     def encrypt(
         self,

@@ -60,9 +60,9 @@ template <typename LweKeyType> struct KeyWrapper {
       auto info_string = maybe_info_string.value();
       ar << hpx::serialization::make_array(info_string.c_str(),
                                            info_string.size());
-      ar << (size_t)k.getBuffer().size();
-      ar << hpx::serialization::make_array(k.getBuffer().data(),
-                                           k.getBuffer().size());
+      ar << (size_t)k.getTransportBuffer().size();
+      ar << hpx::serialization::make_array(k.getTransportBuffer().data(),
+                                           k.getTransportBuffer().size());
     }
   }
   template <class Archive> void load(Archive &ar, const unsigned int version) {
@@ -91,7 +91,7 @@ bool operator==(const KeyWrapper<LweKeyType> &lhs,
   if (lhs.keys.size() != rhs.keys.size())
     return false;
   for (size_t i = 0; i < lhs.keys.size(); ++i)
-    if (lhs.keys[i].getBuffer() != rhs.keys[i].getBuffer())
+    if (lhs.keys[i].getTransportBuffer() != rhs.keys[i].getTransportBuffer())
       return false;
   return true;
 }

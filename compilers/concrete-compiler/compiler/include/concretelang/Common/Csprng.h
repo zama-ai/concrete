@@ -6,38 +6,55 @@
 #ifndef CONCRETELANG_COMMON_CSPRNG_H
 #define CONCRETELANG_COMMON_CSPRNG_H
 
-#include <assert.h>
-#include <stdlib.h>
-
-struct Csprng;
-struct CsprngVtable;
+#include "concrete-cpu.h"
+#include <cassert>
+#include <memory>
 
 namespace concretelang {
 namespace csprng {
 
-class CSPRNG {
+void getRandomSeed(struct Uint128 *u128);
+
+template <typename Csprng> class CSPRNG {
 public:
-  struct Csprng *ptr;
-  const struct CsprngVtable *vtable;
+  Csprng *ptr;
 
   CSPRNG() = delete;
   CSPRNG(CSPRNG &) = delete;
 
-  CSPRNG(CSPRNG &&other) : ptr(other.ptr), vtable(other.vtable) {
+  CSPRNG(CSPRNG &&other) : ptr(other.ptr) {
     assert(ptr != nullptr);
     other.ptr = nullptr;
   };
 
-  CSPRNG(Csprng *ptr, const CsprngVtable *vtable) : ptr(ptr), vtable(vtable){};
+  CSPRNG(Csprng *ptr) : ptr(ptr){};
 };
 
-class ConcreteCSPRNG : public CSPRNG {
+class SoftCSPRNG : public CSPRNG<Csprng> {
 public:
-  ConcreteCSPRNG(__uint128_t seed);
-  ConcreteCSPRNG() = delete;
-  ConcreteCSPRNG(ConcreteCSPRNG &) = delete;
-  ConcreteCSPRNG(ConcreteCSPRNG &&other);
-  ~ConcreteCSPRNG();
+  SoftCSPRNG(__uint128_t seed);
+  SoftCSPRNG() = delete;
+  SoftCSPRNG(SoftCSPRNG &) = delete;
+  SoftCSPRNG(SoftCSPRNG &&other);
+  ~SoftCSPRNG();
+};
+
+class SecretCSPRNG : public CSPRNG<SecCsprng> {
+public:
+  SecretCSPRNG(__uint128_t seed);
+  SecretCSPRNG() = delete;
+  SecretCSPRNG(SecretCSPRNG &) = delete;
+  SecretCSPRNG(SecretCSPRNG &&other);
+  ~SecretCSPRNG();
+};
+
+class EncryptionCSPRNG : public CSPRNG<EncCsprng> {
+public:
+  EncryptionCSPRNG(__uint128_t seed);
+  EncryptionCSPRNG() = delete;
+  EncryptionCSPRNG(EncryptionCSPRNG &) = delete;
+  EncryptionCSPRNG(EncryptionCSPRNG &&other);
+  ~EncryptionCSPRNG();
 };
 
 } // namespace csprng

@@ -36,7 +36,8 @@ namespace clientlib {
 Result<ClientCircuit>
 ClientCircuit::create(const Message<concreteprotocol::CircuitInfo> &info,
                       const ClientKeyset &keyset,
-                      std::shared_ptr<CSPRNG> csprng, bool useSimulation) {
+                      std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
+                      bool useSimulation) {
 
   auto inputTransformers = std::vector<InputTransformer>();
 
@@ -107,7 +108,8 @@ const Message<concreteprotocol::CircuitInfo> &ClientCircuit::getCircuitInfo() {
 Result<ClientProgram>
 ClientProgram::create(const Message<concreteprotocol::ProgramInfo> &info,
                       const ClientKeyset &keyset,
-                      std::shared_ptr<CSPRNG> csprng, bool useSimulation) {
+                      std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
+                      bool useSimulation) {
   ClientProgram output;
   for (auto circuitInfo : info.asReader().getCircuits()) {
     OUTCOME_TRY(

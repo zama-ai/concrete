@@ -479,7 +479,7 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       auto programInfoOrErr =
           mlir::concretelang::createProgramInfoFromTfheDialect(
               module, funcName, options.optimizerConfig.security,
-              options.encodings.value());
+              options.encodings.value(), options.compressInputs);
 
       if (!programInfoOrErr)
         return programInfoOrErr.takeError();

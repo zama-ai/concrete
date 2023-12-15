@@ -98,7 +98,9 @@ class Client:
 
         self._keys = new_keys
 
-    def keygen(self, force: bool = False, seed: Optional[int] = None):
+    def keygen(
+        self, force: bool = False, seed: Optional[int] = None, encryption_seed: Optional[int] = None
+    ):
         """
         Generate keys required for homomorphic evaluation.
 
@@ -107,10 +109,13 @@ class Client:
                 whether to generate new keys even if keys are already generated
 
             seed (Optional[int], default = None):
-                seed for randomness
+                seed for private keys randomness
+
+            encryption_seed (Optional[int], default = None):
+                seed for encryption randomness
         """
 
-        self.keys.generate(force=force, seed=seed)
+        self.keys.generate(force=force, seed=seed, encryption_seed=encryption_seed)
 
     def encrypt(
         self,

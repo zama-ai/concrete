@@ -22,12 +22,13 @@ const KeySet = struct {
     base_log: u64,
     in_sk: []u64,
     out_sk: []u64,
-    bsk_f: []f64,
+    bsk_f: []cpu.c_double_complex,
     fft: *cpu.Fft,
     stack: []u8,
 
     pub fn init(
-        csprng: *cpu.Csprng,
+        sec_csprng: *cpu.SecCsprng,
+        enc_csprng: *cpu.EncCsprng,
         in_dim: u64,
         glwe_dim: u64,
         polynomial_size: u64,
@@ -43,13 +44,13 @@ const KeySet = struct {
         const out_dim = glwe_dim * polynomial_size;
 
         const in_sk = try allocator.alloc(u64, in_dim);
-        cpu.concrete_cpu_init_secret_key_u64(in_sk.ptr, in_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+        cpu.concrete_cpu_init_secret_key_u64(in_sk.ptr, in_dim, sec_csprng);
 
         const out_sk = try allocator.alloc(u64, out_dim);
-        cpu.concrete_cpu_init_secret_key_u64(out_sk.ptr, out_dim, csprng, &cpu.CONCRETE_CSPRNG_VTABLE);
+        cpu.concrete_cpu_init_secret_key_u64(out_sk.ptr, out_dim, sec_csprng);
 
         const bsk_f = try common.new_bsk(
-            csprng,
+            enc_csprng,
             in_dim,
             glwe_dim,
             polynomial_size,
@@ -93,7 +94,7 @@ const KeySet = struct {
         pt: u64,
         encryption_variance: f64,
         lut: []u64,
-        csprng: *cpu.Csprng,
+        enc_csprng: *cpu.EncCsprng,
     ) !u64 {
         const out_dim = self.glwe_dim * self.polynomial_size;
 
@@ -109,8 +110,7 @@ const KeySet = struct {
             pt,
             self.in_dim,
             encryption_variance,
-            csprng,
-            &cpu.CONCRETE_CSPRNG_VTABLE,
+            enc_csprng,
         );
 
         cpu.concrete_cpu_bootstrap_lwe_ciphertext_u64(
@@ -169,7 +169,8 @@ fn expand_lut(lut: []u64, glwe_dim: u64, polynomial_size: u64) ![]u64 {
 }
 
 fn encrypt_bootstrap_decrypt(
-    csprng: *cpu.Csprng,
+    sec_csprng: *cpu.SecCsprng,
+    enc_csprng: *cpu.EncCsprng,
     lut: []u64,
     lut_index: u64,
     in_dim: u64,
@@ -183,7 +184,8 @@ fn encrypt_bootstrap_decrypt(
     const precision = lut.len;
 
     var key_set = try KeySet.init(
-        csprng,
+        sec_csprng,
+        enc_csprng,
         in_dim,
         glwe_dim,
         polynomial_size,
@@ -204,14 +206,23 @@ fn encrypt_bootstrap_decrypt(
 }
 
 test "bootstrap" {
-    var raw_csprng = c.aligned_alloc(cpu.CONCRETE_CSPRNG_ALIGN, cpu.CONCRETE_CSPRNG_SIZE);
-    defer c.free(raw_csprng);
-    const csprng: *cpu.Csprng = @ptrCast(raw_csprng);
-    cpu.concrete_cpu_construct_concrete_csprng(
-        csprng,
+    var raw_sec_csprng = c.aligned_alloc(cpu.ENCRYPTION_CSPRNG_ALIGN, cpu.ENCRYPTION_CSPRNG_SIZE);
+    defer c.free(raw_sec_csprng);
+    const sec_csprng: *cpu.SecCsprng = @ptrCast(raw_sec_csprng);
+    cpu.concrete_cpu_construct_secret_csprng(
+        sec_csprng,
         cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },
     );
-    defer cpu.concrete_cpu_destroy_concrete_csprng(csprng);
+    defer cpu.concrete_cpu_destroy_secret_csprng(sec_csprng);
+
+    var raw_enc_csprng = c.aligned_alloc(cpu.ENCRYPTION_CSPRNG_ALIGN, cpu.ENCRYPTION_CSPRNG_SIZE);
+    defer c.free(raw_enc_csprng);
+    const enc_csprng: *cpu.EncCsprng = @ptrCast(raw_enc_csprng);
+    cpu.concrete_cpu_construct_encryption_csprng(
+        enc_csprng,
+        cpu.Uint128{ .little_endian_bytes = [_]u8{1} ** 16 },
+    );
+    defer cpu.concrete_cpu_destroy_encryption_csprng(enc_csprng);
 
     const log2_precision = 4;
     const precision = 1 << log2_precision;
@@ -233,7 +244,7 @@ test "bootstrap" {
     const key_variance = 0.0000000000000000000001;
     const encryption_variance = 0.0000000000000000000001;
 
-    const image = try encrypt_bootstrap_decrypt(csprng, lut, lut_index, in_dim, glwe_dim, polynomial_size, level, base_log, key_variance, encryption_variance);
+    const image = try encrypt_bootstrap_decrypt(sec_csprng, enc_csprng, lut, lut_index, in_dim, glwe_dim, polynomial_size, level, base_log, key_variance, encryption_variance);
 
     const expected_image = if (lut_index < precision) lut[lut_index] else -%lut[(lut_index - precision)];
 

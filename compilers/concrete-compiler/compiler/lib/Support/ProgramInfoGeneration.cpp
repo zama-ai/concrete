@@ -172,7 +172,7 @@ generateGate(mlir::Type inputType,
 
 Message<concreteprotocol::KeysetInfo>
 extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
-                  concrete::SecurityCurve curve) {
+                  concrete::SecurityCurve curve, bool compressInputs) {
 
   auto output = Message<concreteprotocol::KeysetInfo>();
 
@@ -201,7 +201,13 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
         ksk.getInputKey().getNormalized().value().index);
     infoMessage.asBuilder().setOutputId(
         ksk.getOutputKey().getNormalized().value().index);
-    infoMessage.asBuilder().setCompression(concreteprotocol::Compression::NONE);
+    if (!compressInputs) {
+      infoMessage.asBuilder().setCompression(
+          concreteprotocol::Compression::NONE);
+    } else {
+      infoMessage.asBuilder().setCompression(
+          concreteprotocol::Compression::SEED);
+    }
     auto paramsBuilder = infoMessage.asBuilder().initParams();
     paramsBuilder.setLevelCount(ksk.getLevels());
     paramsBuilder.setBaseLog(ksk.getBaseLog());
@@ -228,7 +234,13 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
         bsk.getInputKey().getNormalized().value().index);
     infoMessage.asBuilder().setOutputId(
         bsk.getOutputKey().getNormalized().value().index);
-    infoMessage.asBuilder().setCompression(concreteprotocol::Compression::NONE);
+    if (!compressInputs) {
+      infoMessage.asBuilder().setCompression(
+          concreteprotocol::Compression::NONE);
+    } else {
+      infoMessage.asBuilder().setCompression(
+          concreteprotocol::Compression::SEED);
+    }
     auto paramsBuilder = infoMessage.asBuilder().initParams();
     paramsBuilder.setLevelCount(bsk.getLevels());
     paramsBuilder.setBaseLog(bsk.getBaseLog());
@@ -256,7 +268,13 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
         pksk.getInputKey().getNormalized().value().index);
     infoMessage.asBuilder().setOutputId(
         pksk.getOutputKey().getNormalized().value().index);
-    infoMessage.asBuilder().setCompression(concreteprotocol::Compression::NONE);
+    if (!compressInputs) {
+      infoMessage.asBuilder().setCompression(
+          concreteprotocol::Compression::NONE);
+    } else {
+      infoMessage.asBuilder().setCompression(
+          concreteprotocol::Compression::SEED);
+    }
     auto paramsBuilder = infoMessage.asBuilder().initParams();
     paramsBuilder.setLevelCount(pksk.getLevels());
     paramsBuilder.setBaseLog(pksk.getBaseLog());
@@ -326,7 +344,8 @@ extractCircuitInfo(mlir::ModuleOp module, llvm::StringRef functionName,
 llvm::Expected<Message<concreteprotocol::ProgramInfo>>
 createProgramInfoFromTfheDialect(
     mlir::ModuleOp module, llvm::StringRef functionName, int bitsOfSecurity,
-    Message<concreteprotocol::CircuitEncodingInfo> &encodings) {
+    Message<concreteprotocol::CircuitEncodingInfo> &encodings,
+    bool compressInputs) {
 
   // Check that security curves exist
   const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
@@ -339,7 +358,8 @@ createProgramInfoFromTfheDialect(
   auto output = Message<concreteprotocol::ProgramInfo>();
 
   // We extract the keys of the circuit
-  auto keysetInfo = extractKeysetInfo(TFHE::extractCircuitKeys(module), *curve);
+  auto keysetInfo = extractKeysetInfo(TFHE::extractCircuitKeys(module), *curve,
+                                      compressInputs);
   output.asBuilder().setKeyset(keysetInfo.asReader());
 
   // We generate the gates for the inputs aud outputs

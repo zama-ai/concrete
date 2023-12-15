@@ -76,6 +76,7 @@ struct CompilationOptions {
   bool simulate;
   /// use GPU during execution by generating GPU operations if possible
   bool emitGPUOps;
+
   std::optional<std::vector<int64_t>> fhelinalgTileSizes;
 
   std::optional<std::string> mainFuncName;
@@ -93,6 +94,8 @@ struct CompilationOptions {
   /// encodings info manually to allow the client lib to be generated.
   std::optional<Message<concreteprotocol::CircuitEncodingInfo>> encodings;
 
+  bool compressInputs;
+
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
@@ -101,7 +104,7 @@ struct CompilationOptions {
         optimizeTFHE(true), simulate(false), emitGPUOps(false),
         mainFuncName(std::nullopt), optimizerConfig(optimizer::DEFAULT_CONFIG),
         chunkIntegers(false), chunkSize(4), chunkWidth(2),
-        encodings(std::nullopt){};
+        encodings(std::nullopt), compressInputs(false){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {
     mainFuncName = funcname;

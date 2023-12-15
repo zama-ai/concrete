@@ -91,6 +91,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, bool b) {
              options.dataflowParallelize = b;
            })
+      .def("set_compress_inputs", [](CompilationOptions &options,
+                                     bool b) { options.compressInputs = b; })
       .def("set_optimize_concrete", [](CompilationOptions &options,
                                        bool b) { options.optimizeTFHE = b; })
       .def("set_p_error",
@@ -306,18 +308,22 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_static(
           "key_set",
           [](::concretelang::clientlib::ClientParameters clientParameters,
-             ::concretelang::clientlib::KeySetCache *cache, uint64_t seedMsb,
-             uint64_t seedLsb) {
+             ::concretelang::clientlib::KeySetCache *cache,
+             uint64_t secretSeedMsb, uint64_t secretSeedLsb,
+             uint64_t encSeedMsb, uint64_t encSeedLsb) {
             SignalGuard signalGuard;
             auto optCache =
                 cache == nullptr
                     ? std::nullopt
                     : std::optional<::concretelang::clientlib::KeySetCache>(
                           *cache);
-            return key_set(clientParameters, optCache, seedMsb, seedLsb);
+            return key_set(clientParameters, optCache, secretSeedMsb,
+                           secretSeedLsb, encSeedMsb, encSeedLsb);
           },
           pybind11::arg().none(false), pybind11::arg().none(true),
-          pybind11::arg("seedMsb") = 0, pybind11::arg("seedLsb") = 0)
+          pybind11::arg("secretSeedMsb") = 0,
+          pybind11::arg("secretSeedLsb") = 0, pybind11::arg("encSeedMsb") = 0,
+          pybind11::arg("encSeedLsb") = 0)
       .def_static(
           "encrypt_arguments",
           [](::concretelang::clientlib::ClientParameters clientParameters,

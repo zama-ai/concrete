@@ -43,7 +43,12 @@ class Keys:
         if cache_directory is not None:
             self._keyset_cache = KeySetCache.new(str(cache_directory))
 
-    def generate(self, force: bool = False, seed: Optional[int] = None):
+    def generate(
+        self,
+        force: bool = False,
+        seed: Optional[int] = None,
+        encryption_seed: Optional[int] = None,
+    ):
         """
         Generate new keys.
 
@@ -52,16 +57,11 @@ class Keys:
                 whether to generate new keys even if keys are already generated/loaded
 
             seed (Optional[int], default = None):
-                seed for randomness
+                seed for private keys randomness
+
+            encryption_seed (Optional[int], default = None):
+                seed for encryption randomness
         """
-
-        # seed of 0 will result in a crypto secure randomly generated 128-bit seed
-        seed_msb = 0
-        seed_lsb = 0
-
-        if seed is not None:
-            seed_lsb = seed & ((2**64) - 1)
-            seed_msb = (seed >> 64) & ((2**64) - 1)
 
         if self._keyset is None or force:
             if self.client_specs is None:  # pragma: no cover
@@ -70,8 +70,8 @@ class Keys:
             self._keyset = ClientSupport.key_set(
                 self.client_specs.client_parameters,
                 self._keyset_cache,
-                seed_msb,
-                seed_lsb,
+                seed,
+                encryption_seed,
             )
 
     def save(self, location: Union[str, Path]):

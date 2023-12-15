@@ -38,7 +38,8 @@ class ClientCircuit {
 public:
   static Result<ClientCircuit>
   create(const Message<concreteprotocol::CircuitInfo> &info,
-         const ClientKeyset &keyset, std::shared_ptr<CSPRNG> csprng,
+         const ClientKeyset &keyset,
+         std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
          bool useSimulation = false);
 
   Result<TransportValue> prepareInput(Value arg, size_t pos);
@@ -70,7 +71,8 @@ public:
   /// Generates a fresh client program with fresh keyset on the first use.
   static Result<ClientProgram>
   create(const Message<concreteprotocol::ProgramInfo> &info,
-         const ClientKeyset &keyset, std::shared_ptr<CSPRNG> csprng,
+         const ClientKeyset &keyset,
+         std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
          bool useSimulation = false);
 
   /// Returns a reference to the named client circuit if it exists.

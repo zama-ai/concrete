@@ -876,6 +876,7 @@ class Configuration:
     loop_parallelize: bool
     dataflow_parallelize: bool
     auto_parallelize: bool
+    compress_inputs: bool
     p_error: Optional[float]
     global_p_error: Optional[float]
     insecure_key_cache_location: Optional[str]
@@ -911,6 +912,7 @@ class Configuration:
         loop_parallelize: bool = True,
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
+        compress_inputs: bool = False,
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
@@ -958,6 +960,7 @@ class Configuration:
         self.loop_parallelize = loop_parallelize
         self.dataflow_parallelize = dataflow_parallelize
         self.auto_parallelize = auto_parallelize
+        self.compress_inputs = compress_inputs
         self.p_error = p_error
         self.global_p_error = global_p_error
         self.auto_adjust_rounders = auto_adjust_rounders
@@ -1035,6 +1038,7 @@ class Configuration:
         loop_parallelize: Union[Keep, bool] = KEEP,
         dataflow_parallelize: Union[Keep, bool] = KEEP,
         auto_parallelize: Union[Keep, bool] = KEEP,
+        compress_inputs: Union[Keep, bool] = KEEP,
         p_error: Union[Keep, Optional[float]] = KEEP,
         global_p_error: Union[Keep, Optional[float]] = KEEP,
         auto_adjust_rounders: Union[Keep, bool] = KEEP,

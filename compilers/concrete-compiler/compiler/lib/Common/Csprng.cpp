@@ -13,39 +13,92 @@
 namespace concretelang {
 namespace csprng {
 
-ConcreteCSPRNG::ConcreteCSPRNG(__uint128_t seed)
-    : CSPRNG(nullptr, &CONCRETE_CSPRNG_VTABLE) {
-  ptr = (Csprng *)aligned_alloc(CONCRETE_CSPRNG_ALIGN, CONCRETE_CSPRNG_SIZE);
+void getRandomSeed(struct Uint128 *u128) {
+  switch (concrete_cpu_crypto_secure_random_128(u128)) {
+  case 1:
+    break;
+  case -1:
+    llvm::errs() << "WARNING: The generated random seed is not crypto secure\n";
+    break;
+  default:
+    assert(false && "Cannot instantiate a random seed");
+  }
+}
+
+SoftCSPRNG::SoftCSPRNG(__uint128_t seed) : CSPRNG<Csprng>(nullptr) {
+  ptr = (Csprng *)aligned_alloc(CSPRNG_ALIGN, CSPRNG_SIZE);
   struct Uint128 u128;
   if (seed == 0) {
-    switch (concrete_cpu_crypto_secure_random_128(&u128)) {
-    case 1:
-      break;
-    case -1:
-      llvm::errs()
-          << "WARNING: The generated random seed is not crypto secure\n";
-      break;
-    default:
-      assert(false && "Cannot instantiate a random seed");
-    }
-
+    getRandomSeed(&u128);
   } else {
     for (int i = 0; i < 16; i++) {
       u128.little_endian_bytes[i] = seed >> (8 * i);
     }
   }
-  concrete_cpu_construct_concrete_csprng(ptr, u128);
+  concrete_cpu_construct_csprng(ptr, u128);
 }
 
-ConcreteCSPRNG::ConcreteCSPRNG(ConcreteCSPRNG &&other)
-    : CSPRNG(other.ptr, &CONCRETE_CSPRNG_VTABLE) {
+SoftCSPRNG::SoftCSPRNG(SoftCSPRNG &&other) : CSPRNG(other.ptr) {
   assert(ptr != nullptr);
   other.ptr = nullptr;
 }
 
-ConcreteCSPRNG::~ConcreteCSPRNG() {
+SoftCSPRNG::~SoftCSPRNG() {
   if (ptr != nullptr) {
-    concrete_cpu_destroy_concrete_csprng(ptr);
+    concrete_cpu_destroy_csprng(ptr);
+    free(ptr);
+  }
+}
+
+SecretCSPRNG::SecretCSPRNG(__uint128_t seed) : CSPRNG<SecCsprng>(nullptr) {
+  ptr = (SecCsprng *)aligned_alloc(SECRET_CSPRNG_ALIGN, SECRET_CSPRNG_SIZE);
+  struct Uint128 u128;
+  if (seed == 0) {
+    getRandomSeed(&u128);
+  } else {
+    for (int i = 0; i < 16; i++) {
+      u128.little_endian_bytes[i] = seed >> (8 * i);
+    }
+  }
+  concrete_cpu_construct_secret_csprng(ptr, u128);
+}
+
+SecretCSPRNG::SecretCSPRNG(SecretCSPRNG &&other) : CSPRNG(other.ptr) {
+  assert(ptr != nullptr);
+  other.ptr = nullptr;
+}
+
+SecretCSPRNG::~SecretCSPRNG() {
+  if (ptr != nullptr) {
+    concrete_cpu_destroy_secret_csprng(ptr);
+    free(ptr);
+  }
+}
+
+EncryptionCSPRNG::EncryptionCSPRNG(__uint128_t seed)
+    : CSPRNG<EncCsprng>(nullptr) {
+  ptr = (EncCsprng *)aligned_alloc(ENCRYPTION_CSPRNG_ALIGN,
+                                   ENCRYPTION_CSPRNG_SIZE);
+  struct Uint128 u128;
+  if (seed == 0) {
+    getRandomSeed(&u128);
+  } else {
+    for (int i = 0; i < 16; i++) {
+      u128.little_endian_bytes[i] = seed >> (8 * i);
+    }
+  }
+  concrete_cpu_construct_encryption_csprng(ptr, u128);
+}
+
+EncryptionCSPRNG::EncryptionCSPRNG(EncryptionCSPRNG &&other)
+    : CSPRNG(other.ptr) {
+  assert(ptr != nullptr);
+  other.ptr = nullptr;
+}
+
+EncryptionCSPRNG::~EncryptionCSPRNG() {
+  if (ptr != nullptr) {
+    concrete_cpu_destroy_encryption_csprng(ptr);
     free(ptr);
   }
 }
