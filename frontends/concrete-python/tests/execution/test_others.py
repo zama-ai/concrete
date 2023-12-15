@@ -846,7 +846,7 @@ return %13
         return np.abs(np.sin(x)).reshape((2, 3)).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
-        inputset = [np.random.randint(0, 2**7, size=(3, 2)) for _ in range(100)]
+        inputset = [np.random.randint(2**6, 2**7, size=(3, 2)) for _ in range(100)]
         function2.compile(inputset, configuration)
 
     helpers.check_str(
