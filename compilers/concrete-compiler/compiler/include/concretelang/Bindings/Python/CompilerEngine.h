@@ -85,7 +85,8 @@ library_get_program_info_path(LibrarySupport_Py support);
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
 key_set(concretelang::clientlib::ClientParameters clientParameters,
         std::optional<concretelang::clientlib::KeySetCache> cache,
-        uint64_t seedMsb, uint64_t seedLsb);
+        uint64_t secretSeedMsb, uint64_t secretSeedLsb, uint64_t encSeedMsb,
+        uint64_t encSeedLsb);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
 encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,

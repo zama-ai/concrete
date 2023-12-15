@@ -490,7 +490,7 @@ Result<Transformer> getCrtModeIntegerDecodingTransformer(
 Result<Transformer> getEncryptionTransformer(
     ClientKeyset keyset,
     const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info,
-    std::shared_ptr<CSPRNG> csprng) {
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
 
   auto key = keyset.lweSecretKeys[info.asReader().getKeyId()];
   auto lweDimension = info.asReader().getLweDimension();
@@ -506,8 +506,7 @@ Result<Transformer> getEncryptionTransformer(
     for (size_t i = 0; i < inputTensor.values.size(); i++) {
       concrete_cpu_encrypt_lwe_ciphertext_u64(
           key.getRawPtr(), &outputTensor.values[i * lweSize],
-          inputTensor.values[i], lweDimension, variance, (*csprng).ptr,
-          (*csprng).vtable);
+          inputTensor.values[i], lweDimension, variance, csprng->ptr);
     }
 
     return Value{outputTensor};
@@ -516,7 +515,7 @@ Result<Transformer> getEncryptionTransformer(
 
 Result<Transformer> getEncryptionSimulationTransformer(
     const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info,
-    std::shared_ptr<CSPRNG> csprng) {
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
 
   auto lweDimension = info.asReader().getLweDimension();
 
@@ -721,7 +720,7 @@ Result<ReturnTransformer> TransformerFactory::getPlaintextReturnTransformer(
 
 Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
     ClientKeyset keyset, Message<concreteprotocol::GateInfo> gateInfo,
-    std::shared_ptr<CSPRNG> csprng, bool useSimulation) {
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng, bool useSimulation) {
   if (!gateInfo.asReader().getTypeInfo().hasLweCiphertext()) {
     return StringError("Tried to get lwe ciphertext input transformer from "
                        "non-ciphertext gate info.");

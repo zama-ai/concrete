@@ -7,6 +7,7 @@
 #define CONCRETELANG_COMMON_KEYSETS_H
 
 #include "concrete-protocol.capnp.h"
+#include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keys.h"
 #include <functional>
@@ -49,8 +50,9 @@ struct Keyset {
   ClientKeyset client;
 
   /// Generates a fresh keyset from infos.
-  Keyset(const Message<concreteprotocol::KeysetInfo> &info, CSPRNG &csprng);
-
+  Keyset(const Message<concreteprotocol::KeysetInfo> &info,
+         concretelang::csprng::SecretCSPRNG &secretCsprng,
+         csprng::EncryptionCSPRNG &encryptionCsprng);
   Keyset(ServerKeyset server, ClientKeyset client)
       : server(server), client(client) {}
 

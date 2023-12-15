@@ -70,7 +70,8 @@ public:
 
   static Result<InputTransformer> getLweCiphertextInputTransformer(
       ClientKeyset keyset, Message<concreteprotocol::GateInfo> gateInfo,
-      std::shared_ptr<CSPRNG> csprng, bool useSimulation);
+      std::shared_ptr<concretelang::csprng::EncryptionCSPRNG> csprng,
+      bool useSimulation);
 
   static Result<OutputTransformer> getLweCiphertextOutputTransformer(
       ClientKeyset keyset, Message<concreteprotocol::GateInfo> gateInfo,

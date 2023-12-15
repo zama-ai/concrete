@@ -2,22 +2,28 @@
 
 use std::cmp::Ordering;
 
-use super::types::CsprngMut;
-use crate::c_api::csprng::CONCRETE_CSPRNG_VTABLE;
-use crate::c_api::types::Csprng;
-use crate::implementation::encrypt::random_gaussian_pair;
 use crate::implementation::{from_torus, zip_eq};
 use concrete_cpu_noise_model::gaussian_noise::noise::blind_rotate::variance_blind_rotate;
 use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch::variance_keyswitch;
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
 use concrete_cpu_noise_model::gaussian_noise::noise::private_packing_keyswitch::estimate_packing_private_keyswitch;
-use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator};
+use concrete_csprng::generators::SoftwareRandomGenerator;
+use tfhe::core_crypto::commons::math::random::RandomGenerator;
+use tfhe::core_crypto::commons::parameters::*;
+
 use concrete_csprng::seeders::Seed;
 use concrete_security_curves::gaussian::security::{minimal_variance_glwe, minimal_variance_lwe};
 
-use super::types::polynomial_list::PolynomialList;
-use super::types::{DecompParams, GlweParams};
-use super::Container;
+use tfhe::core_crypto::entities::{Polynomial, PolynomialList};
+
+pub fn random_gaussian_pair(
+    variance: f64,
+    csprng: &mut RandomGenerator<SoftwareRandomGenerator>,
+) -> (f64, f64) {
+    let mut buff = [0_f64, 0_f64];
+    csprng.fill_slice_with_random_gaussian(buff.as_mut_slice(), 0.0, variance);
+    (buff[0], buff[1])
+}
 
 pub fn modular_add(ct_1: u64, ct_2: u64, modulus: u64) -> u64 {
     let mut res = ct_1.wrapping_add(ct_2);
@@ -25,15 +31,6 @@ pub fn modular_add(ct_1: u64, ct_2: u64, modulus: u64) -> u64 {
         res -= modulus;
     }
     res
-}
-
-pub fn to_generic(a: &mut SoftwareRandomGenerator) -> CsprngMut<'_, '_> {
-    unsafe {
-        CsprngMut::new(
-            a as *mut SoftwareRandomGenerator as *mut Csprng,
-            &CONCRETE_CSPRNG_VTABLE,
-        )
-    }
 }
 
 fn integer_round(lwe: u64, log_poly_size: u64, ciphertext_modulus_log: usize) -> u64 {
@@ -75,8 +72,7 @@ pub fn extract_bits(
     ciphertext_modulus_log: u32,
     security_level: u64,
 ) {
-    let sw_csprng = &mut SoftwareRandomGenerator::new(Seed(0));
-    let mut csprng = to_generic(sw_csprng);
+    let mut csprng = RandomGenerator::<SoftwareRandomGenerator>::new(Seed(0));
 
     let polynomial_size = 1 << log_poly_size;
     let mut lookup_table = vec![0_u64; polynomial_size as usize];
@@ -105,7 +101,7 @@ pub fn extract_bits(
             ciphertext_modulus_log,
             variance_ksk,
         );
-        let (keyswitch_noise, _) = random_gaussian_pair(keyswitch_variance, csprng.as_mut());
+        let (keyswitch_noise, _) = random_gaussian_pair(keyswitch_variance, &mut csprng);
 
         // Key switch to input PBS key
         let keyswitched_shifted_lwe = shifted_lwe.wrapping_add(from_torus(keyswitch_noise));
@@ -135,8 +131,7 @@ pub fn extract_bits(
             log_poly_size,
             ciphertext_modulus_log,
         );
-        let (modulus_switch_noise, _) =
-            random_gaussian_pair(modulus_switch_variance, csprng.as_mut());
+        let (modulus_switch_noise, _) = random_gaussian_pair(modulus_switch_variance, &mut csprng);
 
         let modulus_switched_lwe = modular_add(
             integer_round(
@@ -169,7 +164,7 @@ pub fn extract_bits(
             53,
             variance_bsk,
         );
-        let (blind_rotate_noise, _) = random_gaussian_pair(blind_rotate_variance, csprng.as_mut());
+        let (blind_rotate_noise, _) = random_gaussian_pair(blind_rotate_variance, &mut csprng);
 
         let blind_rotated_lwe = if modulus_switched_lwe < polynomial_size {
             lookup_table[modulus_switched_lwe as usize].wrapping_add(from_torus(blind_rotate_noise))
@@ -199,7 +194,7 @@ pub fn circuit_bootstrap_boolean(
     log_poly_size: u64,
     lwe_dimension: u64,
     ciphertext_modulus_log: u32,
-    sw_csprng: &mut SoftwareRandomGenerator,
+    csprng: &mut RandomGenerator<SoftwareRandomGenerator>,
 ) -> u64 {
     //  homomorphic_shift_boolean outputs the LUT evaluation without the blind rotate noise
     // nor the packing keyswitch noise. There will be added latter during the vertical packing.
@@ -209,7 +204,7 @@ pub fn circuit_bootstrap_boolean(
         log_poly_size,
         delta_log,
         ciphertext_modulus_log,
-        sw_csprng,
+        csprng,
     )
 }
 
@@ -223,9 +218,8 @@ pub fn homomorphic_shift_boolean(
     log_poly_size: u64,
     delta_log: usize,
     ciphertext_modulus_log: u32,
-    sw_csprng: &mut SoftwareRandomGenerator,
+    csprng: &mut RandomGenerator<SoftwareRandomGenerator>,
 ) -> u64 {
-    let mut csprng = to_generic(sw_csprng);
     let ciphertext_n_bits = ciphertext_modulus_log;
     let polynomial_size = 1 << log_poly_size;
 
@@ -260,7 +254,7 @@ pub fn homomorphic_shift_boolean(
         log_poly_size,
         ciphertext_modulus_log,
     );
-    let (modulus_switch_noise, _) = random_gaussian_pair(modulus_switch_variance, csprng.as_mut());
+    let (modulus_switch_noise, _) = random_gaussian_pair(modulus_switch_variance, csprng);
 
     let modulus_switched_lwe = modular_add(
         integer_round(
@@ -288,26 +282,6 @@ pub fn homomorphic_shift_boolean(
     blind_rotated_lwe.wrapping_add(1_u64 << (ciphertext_n_bits - 1 - 1))
 }
 
-pub type FourierGgswCiphertextListView<'a> = FourierGgswCiphertextList<&'a [f64]>;
-pub type FourierGgswCiphertextListMutView<'a> = FourierGgswCiphertextList<&'a mut [f64]>;
-pub type GlweCiphertextListView<'a, Scalar> = GlweCiphertextList<&'a [Scalar]>;
-pub type GlweCiphertextListMutView<'a, Scalar> = GlweCiphertextList<&'a mut [Scalar]>;
-
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub struct GlweCiphertextList<C: Container> {
-    pub data: C,
-    pub count: usize,
-    pub glwe_params: GlweParams,
-}
-
-#[derive(Debug, Clone)]
-pub struct FourierGgswCiphertextList<C: Container<Item = f64>> {
-    pub fourier: PolynomialList<C>,
-    pub count: usize,
-    pub glwe_params: GlweParams,
-    pub decomp_params: DecompParams,
-}
-
 pub fn cmux_tree_memory_optimized(
     log_poly_size: u64,
     output_glwe: &mut [u64],
@@ -327,7 +301,11 @@ pub fn cmux_tree_memory_optimized(
 
     let mut t_fill = vec![0_u64; nb_layer];
 
-    let mut lut_polynomial_iter = lut_per_layer.iter_polynomial();
+    let polynomial_size = lut_per_layer.polynomial_size();
+    let mut lut_polynomial_iter = lut_per_layer
+        .into_container()
+        .chunks_exact(polynomial_size.0)
+        .map(Polynomial::from_container);
     loop {
         let even = lut_polynomial_iter.next();
         let odd = lut_polynomial_iter.next();
@@ -341,9 +319,9 @@ pub fn cmux_tree_memory_optimized(
 
         let (mut j_counter, (mut t0_j, mut t1_j)) = t_iter.next().unwrap();
 
-        t0_j.copy_from_slice(lut_2i.into_data());
+        t0_j.copy_from_slice(lut_2i.into_container());
 
-        t1_j.copy_from_slice(lut_2i_plus_1.into_data());
+        t1_j.copy_from_slice(lut_2i_plus_1.into_container());
 
         t_fill[0] = 2;
 
@@ -422,9 +400,8 @@ pub fn blind_rotate(
     ggsw_list: &[u64],
     ciphertext_modulus_log: u32,
     security_level: u64,
-    sw_csprng: &mut SoftwareRandomGenerator,
+    csprng: &mut RandomGenerator<SoftwareRandomGenerator>,
 ) -> u64 {
-    let mut csprng = to_generic(sw_csprng);
     let polynomial_size = 1 << log_poly_size;
     let mut monomial_degree = 1;
     let mut exponent = 0_u64;
@@ -481,8 +458,7 @@ pub fn blind_rotate(
         ggsw_variance,
     );
 
-    let (vertical_packing_variance, _) =
-        random_gaussian_pair(vertical_packing_variance, csprng.as_mut());
+    let (vertical_packing_variance, _) = random_gaussian_pair(vertical_packing_variance, csprng);
 
     if exponent < polynomial_size {
         lookup_table[exponent as usize].wrapping_add(from_torus(vertical_packing_variance))
@@ -508,7 +484,7 @@ pub fn vertical_packing(
     pbs_level: u64,
     ciphertext_modulus_log: u32,
     security_level: u64,
-    sw_csprng: &mut SoftwareRandomGenerator,
+    csprng: &mut RandomGenerator<SoftwareRandomGenerator>,
 ) -> u64 {
     let polynomial_size = 1 << log_poly_size;
 
@@ -545,11 +521,7 @@ pub fn vertical_packing(
             debug_assert_eq!(br_ggsw.len(), log_poly_size as usize);
 
             // extract the smaller luts from the big lut
-            let small_luts = PolynomialList::new(
-                lut,
-                polynomial_size,
-                1 << (log_lut_number - log_poly_size as usize),
-            );
+            let small_luts = PolynomialList::from_container(lut, PolynomialSize(polynomial_size));
             // cmux_tree_memory_optimized will write the right lut in `cmux_tree_lut_res`
             cmux_tree_memory_optimized(
                 log_poly_size,
@@ -579,7 +551,7 @@ pub fn vertical_packing(
         br_ggsw,
         ciphertext_modulus_log,
         security_level,
-        sw_csprng,
+        csprng,
     )
 }
 
@@ -606,7 +578,7 @@ pub fn circuit_bootstrap_boolean_vertical_packing(
     ciphertext_modulus_log: u32,
     security_level: u64,
 ) {
-    let sw_csprng = &mut SoftwareRandomGenerator::new(Seed(0));
+    let sw_csprng = &mut RandomGenerator::<SoftwareRandomGenerator>::new(Seed(0));
 
     let mut ggsw_list = vec![0_u64; lwe_list_in.len()];
     let delta_log = u64::BITS as usize - 1;

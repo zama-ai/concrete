@@ -1,63 +1,96 @@
 use std::io::Read;
 
-use super::types::{Csprng, CsprngVtable, Uint128};
-use concrete_csprng::generators::{RandomGenerator, SoftwareRandomGenerator as Generator};
+use super::types::{Csprng, EncCsprng, SecCsprng, Uint128};
+use concrete_csprng::generators::SoftwareRandomGenerator;
 use concrete_csprng::seeders::Seed;
 use libc::c_int;
+use tfhe::core_crypto::commons::math::random::RandomGenerator;
+use tfhe::core_crypto::prelude::{EncryptionRandomGenerator, SecretRandomGenerator};
+use tfhe::core_crypto::seeders::Seeder;
 
-#[no_mangle]
-pub static CONCRETE_CSPRNG_VTABLE: CsprngVtable = CsprngVtable {
-    remaining_bytes: {
-        unsafe extern "C" fn remaining_bytes(csprng: *const Csprng) -> Uint128 {
-            let csprng = &*(csprng as *const Generator);
-            Uint128 {
-                little_endian_bytes: csprng.remaining_bytes().0.to_le_bytes(),
-            }
+pub struct DynamicSeeder;
+
+impl Seeder for DynamicSeeder {
+    fn seed(&mut self) -> Seed {
+        let mut u128 = Uint128 {
+            little_endian_bytes: [0; 16],
+        };
+        unsafe {
+            concrete_cpu_crypto_secure_random_128(std::ptr::addr_of_mut!(u128));
         }
+        Seed(u128::from_ne_bytes(u128.little_endian_bytes))
+    }
 
-        remaining_bytes
-    },
-    next_bytes: {
-        unsafe extern "C" fn next_bytes(
-            csprng: *mut Csprng,
-            byte_array: *mut u8,
-            byte_count: usize,
-        ) -> usize {
-            let csprng = &mut *(csprng as *mut Generator);
-            let mut count = 0;
+    fn is_available() -> bool {
+        true
+    }
+}
 
-            while count < byte_count {
-                if let Some(byte) = csprng.next() {
-                    *byte_array.add(count) = byte;
-                    count += 1;
-                } else {
-                    break;
-                };
-            }
-
-            count
-        }
-
-        next_bytes
-    },
-};
-
-#[no_mangle]
-pub static CONCRETE_CSPRNG_SIZE: usize = core::mem::size_of::<Generator>();
-
-#[no_mangle]
-pub static CONCRETE_CSPRNG_ALIGN: usize = core::mem::align_of::<Generator>();
-
-#[no_mangle]
-pub unsafe extern "C" fn concrete_cpu_construct_concrete_csprng(mem: *mut Csprng, seed: Uint128) {
-    let mem = mem as *mut Generator;
-    let seed = Seed(u128::from_le_bytes(seed.little_endian_bytes));
-    mem.write(Generator::new(seed));
+pub fn new_dyn_seeder() -> Box<dyn Seeder> {
+    Box::new(DynamicSeeder)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn concrete_cpu_destroy_concrete_csprng(mem: *mut Csprng) {
-    core::ptr::drop_in_place(mem as *mut Generator);
+pub static CSPRNG_SIZE: usize = core::mem::size_of::<RandomGenerator<SoftwareRandomGenerator>>();
+
+#[no_mangle]
+pub static CSPRNG_ALIGN: usize = core::mem::align_of::<RandomGenerator<SoftwareRandomGenerator>>();
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_construct_csprng(mem: *mut Csprng, seed: Uint128) {
+    let mem = mem as *mut RandomGenerator<SoftwareRandomGenerator>;
+    let seed = Seed(u128::from_le_bytes(seed.little_endian_bytes));
+    mem.write(RandomGenerator::new(seed));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_destroy_csprng(mem: *mut Csprng) {
+    core::ptr::drop_in_place(mem as *mut RandomGenerator<SoftwareRandomGenerator>);
+}
+
+#[no_mangle]
+pub static SECRET_CSPRNG_SIZE: usize =
+    core::mem::size_of::<SecretRandomGenerator<SoftwareRandomGenerator>>();
+
+#[no_mangle]
+pub static SECRET_CSPRNG_ALIGN: usize =
+    core::mem::align_of::<SecretRandomGenerator<SoftwareRandomGenerator>>();
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_construct_secret_csprng(mem: *mut SecCsprng, seed: Uint128) {
+    let mem = mem as *mut SecretRandomGenerator<SoftwareRandomGenerator>;
+    let seed = Seed(u128::from_le_bytes(seed.little_endian_bytes));
+    mem.write(SecretRandomGenerator::new(seed));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_destroy_secret_csprng(mem: *mut SecCsprng) {
+    core::ptr::drop_in_place(mem as *mut SecretRandomGenerator<SoftwareRandomGenerator>);
+}
+
+#[no_mangle]
+pub static ENCRYPTION_CSPRNG_SIZE: usize =
+    core::mem::size_of::<EncryptionRandomGenerator<SoftwareRandomGenerator>>();
+
+#[no_mangle]
+pub static ENCRYPTION_CSPRNG_ALIGN: usize =
+    core::mem::align_of::<EncryptionRandomGenerator<SoftwareRandomGenerator>>();
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_construct_encryption_csprng(
+    mem: *mut EncCsprng,
+    seed: Uint128,
+) {
+    let mem = mem as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>;
+    let seed = Seed(u128::from_le_bytes(seed.little_endian_bytes));
+    let mut boxed_seeder = new_dyn_seeder();
+    let seeder = boxed_seeder.as_mut();
+    mem.write(EncryptionRandomGenerator::new(seed, seeder));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_destroy_encryption_csprng(mem: *mut EncCsprng) {
+    core::ptr::drop_in_place(mem as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>);
 }
 
 // Randomly fill a uint128.

@@ -40,8 +40,10 @@ class LweSecretKey {
   friend class PackingKeyswitchKey;
 
 public:
+  typedef Message<concreteprotocol::LweSecretKeyInfo> InfoType;
+
   LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
-               CSPRNG &csprng);
+               concretelang::csprng::SecretCSPRNG &csprng);
   LweSecretKey() = delete;
   LweSecretKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                Message<concreteprotocol::LweSecretKeyInfo> info)
@@ -60,7 +62,9 @@ public:
 
   const std::vector<uint64_t> &getBuffer() const;
 
-  typedef Message<concreteprotocol::LweSecretKeyInfo> InfoType;
+  const std::vector<uint64_t> &getTransportBuffer() const {
+    return getBuffer();
+  };
 
 private:
   std::shared_ptr<std::vector<uint64_t>> buffer;
@@ -68,76 +72,106 @@ private:
 };
 
 class LweBootstrapKey {
-  friend class Keyset;
-
 public:
+  typedef Message<concreteprotocol::LweBootstrapKeyInfo> InfoType;
+
+  /// @brief Constructor of a bootstrap key that initialize according with the
+  /// given specification.
+  /// @param info The info of the key to initialize.
+  /// @param inputKey The input secret key of the bootstraping key.
+  /// @param outputKey The output secret key of the bootstraping key.
+  /// @param csprng An encryption csprng that used to encrypt the secret keys.
   LweBootstrapKey(Message<concreteprotocol::LweBootstrapKeyInfo> info,
                   const LweSecretKey &inputKey, const LweSecretKey &outputKey,
-                  CSPRNG &csprng);
-  LweBootstrapKey() = delete;
+                  concretelang::csprng::EncryptionCSPRNG &csprng);
   LweBootstrapKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                   Message<concreteprotocol::LweBootstrapKeyInfo> info)
-      : buffer(buffer), info(info){};
+      : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
+        info(info){};
 
+  /// @brief Initialize the key from the protocol message.
   static LweBootstrapKey
   fromProto(const Message<concreteprotocol::LweBootstrapKey> &proto);
 
+  /// @brief Returns the serialized form of the key.
   Message<concreteprotocol::LweBootstrapKey> toProto() const;
-
-  const uint64_t *getRawPtr() const;
-
-  size_t getSize() const;
 
   const Message<concreteprotocol::LweBootstrapKeyInfo> &getInfo() const;
 
-  const std::vector<uint64_t> &getBuffer() const;
+  const std::vector<uint64_t> &getBuffer();
 
-  typedef Message<concreteprotocol::LweBootstrapKeyInfo> InfoType;
+  const std::vector<uint64_t> &getTransportBuffer() const;
+
+  void decompress();
 
 private:
+  LweBootstrapKey(Message<concreteprotocol::LweBootstrapKeyInfo> info)
+      : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
+        buffer(std::make_shared<std::vector<uint64_t>>()), info(info){};
+  LweBootstrapKey() = delete;
+
+  /// @brief  The buffer of the seeded key if needed.
+  std::shared_ptr<std::vector<uint64_t>> seededBuffer;
+
+  /// @brief The buffer of the actual bootstrap key.
   std::shared_ptr<std::vector<uint64_t>> buffer;
+
+  /// @brief The metadata of the bootrap key.
   Message<concreteprotocol::LweBootstrapKeyInfo> info;
 };
 
 class LweKeyswitchKey {
-  friend class Keyset;
-
 public:
+  typedef Message<concreteprotocol::LweKeyswitchKeyInfo> InfoType;
+
   LweKeyswitchKey(Message<concreteprotocol::LweKeyswitchKeyInfo> info,
                   const LweSecretKey &inputKey, const LweSecretKey &outputKey,
-                  CSPRNG &csprng);
-  LweKeyswitchKey() = delete;
+                  concretelang::csprng::EncryptionCSPRNG &csprng);
   LweKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                   Message<concreteprotocol::LweKeyswitchKeyInfo> info)
-      : buffer(buffer), info(info){};
+      : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
+        info(info){};
 
+  /// @brief Initialize the key from the protocol message.
   static LweKeyswitchKey
   fromProto(const Message<concreteprotocol::LweKeyswitchKey> &proto);
 
+  /// @brief Returns the serialized form of the key.
   Message<concreteprotocol::LweKeyswitchKey> toProto() const;
-
-  const uint64_t *getRawPtr() const;
-
-  size_t getSize() const;
 
   const Message<concreteprotocol::LweKeyswitchKeyInfo> &getInfo() const;
 
-  const std::vector<uint64_t> &getBuffer() const;
+  const std::vector<uint64_t> &getBuffer();
 
-  typedef Message<concreteprotocol::LweKeyswitchKeyInfo> InfoType;
+  const std::vector<uint64_t> &getTransportBuffer() const;
+
+  void decompress();
 
 private:
+  LweKeyswitchKey(Message<concreteprotocol::LweKeyswitchKeyInfo> info)
+      : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
+        buffer(std::make_shared<std::vector<uint64_t>>()), info(info){};
+
+  /// @brief  The buffer of the seeded key if needed.
+  std::shared_ptr<std::vector<uint64_t>> seededBuffer;
+
+  /// @brief The buffer of the actual bootstrap key.
   std::shared_ptr<std::vector<uint64_t>> buffer;
+
+  /// @brief The metadata of the bootrap key.
   Message<concreteprotocol::LweKeyswitchKeyInfo> info;
 };
 
 class PackingKeyswitchKey {
+  typedef Message<concreteprotocol::PackingKeyswitchKeyInfo> InfoType;
+
   friend class Keyset;
 
 public:
   PackingKeyswitchKey(Message<concreteprotocol::PackingKeyswitchKeyInfo> info,
                       const LweSecretKey &inputKey,
-                      const LweSecretKey &outputKey, CSPRNG &csprng);
+                      const LweSecretKey &outputKey,
+                      concretelang::csprng::EncryptionCSPRNG &csprng);
   PackingKeyswitchKey() = delete;
   PackingKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                       Message<concreteprotocol::PackingKeyswitchKeyInfo> info)
@@ -156,7 +190,9 @@ public:
 
   const std::vector<uint64_t> &getBuffer() const;
 
-  typedef Message<concreteprotocol::PackingKeyswitchKeyInfo> InfoType;
+  const std::vector<uint64_t> &getTransportBuffer() const {
+    return getBuffer();
+  };
 
 private:
   std::shared_ptr<std::vector<uint64_t>> buffer;

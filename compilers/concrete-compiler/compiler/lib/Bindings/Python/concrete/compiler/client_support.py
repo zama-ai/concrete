@@ -60,8 +60,8 @@ class ClientSupport(WrapperCpp):
     def key_set(
         client_parameters: ClientParameters,
         keyset_cache: Optional[KeySetCache] = None,
-        seed_msb: int = 0,
-        seed_lsb: int = 0,
+        secret_seed: Optional[int] = None,
+        encryption_seed: Optional[int] = None,
     ) -> KeySet:
         """Generate a key set according to the client parameters.
 
@@ -71,8 +71,8 @@ class ClientSupport(WrapperCpp):
         Args:
             client_parameters (ClientParameters): client parameters specification
             keyset_cache (Optional[KeySetCache], optional): keyset cache. Defaults to None.
-            seed_msb (int): msb of seed
-            seed_lsb (int): lsb of seed
+            secret_seed (Optional[int]): secret seed, must be a positive 128 bits integer
+            encryption_seed (Optional[int]): encryption seed, must be a positive 128 bits integer
 
         Raises:
             TypeError: if client_parameters is not of type ClientParameters
@@ -82,8 +82,17 @@ class ClientSupport(WrapperCpp):
         Returns:
             KeySet: generated or loaded keyset
         """
-        assert 0 <= seed_msb < 2**64
-        assert 0 <= seed_lsb < 2**64
+        secret_seed = 0 if secret_seed is None else secret_seed
+        encryption_seed = 0 if encryption_seed is None else encryption_seed
+
+        if secret_seed < 0 or secret_seed >= 2**128:
+            raise ValueError("secret_seed must be a positive 128 bits integer")
+        if encryption_seed < 0 or secret_seed >= 2**128:
+            raise ValueError("encryption_seed must be a positive 128 bits integer")
+        secret_seed_msb = (secret_seed >> 64) & 0xFFFFFFFFFFFFFFFF
+        secret_seed_lsb = (secret_seed) & 0xFFFFFFFFFFFFFFFF
+        encryption_seed_msb = (secret_seed >> 64) & 0xFFFFFFFFFFFFFFFF
+        encryption_seed_lsb = (secret_seed) & 0xFFFFFFFFFFFFFFFF
 
         if keyset_cache is not None and not isinstance(keyset_cache, KeySetCache):
             raise TypeError(
@@ -95,8 +104,10 @@ class ClientSupport(WrapperCpp):
             _ClientSupport.key_set(
                 client_parameters.cpp(),
                 cpp_cache,
-                seed_msb,
-                seed_lsb,
+                secret_seed_msb,
+                secret_seed_lsb,
+                encryption_seed_msb,
+                encryption_seed_lsb,
             ),
         )
 

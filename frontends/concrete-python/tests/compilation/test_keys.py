@@ -155,7 +155,7 @@ def test_keys_generate_manual_seed(helpers):
     inputset = range(10)
 
     circuit = f.compile(inputset, helpers.configuration().fork(use_insecure_key_cache=False))
-    circuit.keygen(seed=42)
+    circuit.keygen(seed=42, encryption_seed=24)
 
     sample = circuit.encrypt(5)
     evaluation = circuit.run(sample)

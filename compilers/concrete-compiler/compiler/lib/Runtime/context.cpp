@@ -56,9 +56,10 @@ RuntimeContext::RuntimeContext(ServerKeyset serverKeyset)
       auto scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
 
       // Allocate the fourier_bootstrap_key
-      auto fourier_data = std::make_shared<std::vector<double>>();
-      fourier_data->resize(bsk.getSize());
-      auto bsk_data = bsk.getRawPtr();
+      auto &bsk_buffer = bsk.getBuffer();
+      auto fourier_data = std::make_shared<std::vector<std::complex<double>>>();
+      fourier_data->resize(bsk_buffer.size() / 2);
+      auto bsk_data = bsk_buffer.data();
 
       // Convert bootstrap_key to the fourier domain
       concrete_cpu_bootstrap_key_convert_u64_to_fourier(

@@ -26,7 +26,6 @@
 
 using concretelang::clientlib::ClientCircuit;
 using concretelang::clientlib::ClientProgram;
-using concretelang::csprng::ConcreteCSPRNG;
 using concretelang::error::Result;
 using concretelang::keysets::Keyset;
 using concretelang::serverlib::ServerCircuit;
@@ -43,7 +42,7 @@ public:
   TestCircuit(mlir::concretelang::CompilationOptions options)
       : artifactDirectory(createTempFolderIn(getSystemTempFolderPath())),
         compiler(mlir::concretelang::CompilationContext::createShared()),
-        encryptionCsprng(std::make_shared<csprng::ConcreteCSPRNG>(0)) {
+        encryptionCsprng(std::make_shared<csprng::EncryptionCSPRNG>(0)) {
     compiler.setCompilationOptions(options);
   }
 
@@ -82,10 +81,11 @@ public:
                               lib.getProgramInfo().asReader().getKeyset(),
                               secretSeed, encryptionSeed));
     } else {
-      auto encryptionCsprng = csprng::ConcreteCSPRNG(encryptionSeed);
+      auto encryptionCsprng = csprng::EncryptionCSPRNG(encryptionSeed);
+      auto secretCsprng = csprng::SecretCSPRNG(secretSeed);
       Message<concreteprotocol::KeysetInfo> keysetInfo =
           lib.getProgramInfo().asReader().getKeyset();
-      keyset = Keyset(keysetInfo, encryptionCsprng);
+      keyset = Keyset(keysetInfo, secretCsprng, encryptionCsprng);
     }
     return outcome::success();
   }
@@ -170,7 +170,7 @@ private:
   mlir::concretelang::CompilerEngine compiler;
   std::optional<mlir::concretelang::CompilerEngine::Library> library;
   std::optional<Keyset> keyset;
-  std::shared_ptr<csprng::ConcreteCSPRNG> encryptionCsprng;
+  std::shared_ptr<csprng::EncryptionCSPRNG> encryptionCsprng;
 
 private:
   std::string getSystemTempFolderPath() {

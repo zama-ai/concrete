@@ -111,21 +111,23 @@ library_get_program_info_path(LibrarySupport_Py support) {
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
 key_set(concretelang::clientlib::ClientParameters clientParameters,
         std::optional<concretelang::clientlib::KeySetCache> cache,
-        uint64_t seedMsb, uint64_t seedLsb) {
+        uint64_t secretSeedMsb, uint64_t secretSeedLsb, uint64_t encSeedMsb,
+        uint64_t encSeedLsb) {
+  auto secretSeed = (((__uint128_t)secretSeedMsb) << 64) | secretSeedLsb;
+  auto encryptionSeed = (((__uint128_t)encSeedMsb) << 64) | encSeedLsb;
+
   if (cache.has_value()) {
     GET_OR_THROW_RESULT(Keyset keyset,
                         (*cache).keysetCache.getKeyset(
                             clientParameters.programInfo.asReader().getKeyset(),
-                            seedMsb, seedLsb));
+                            secretSeed, encryptionSeed));
     concretelang::clientlib::KeySet output{keyset};
     return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
   } else {
-    __uint128_t seed = seedMsb;
-    seed <<= 64;
-    seed += seedLsb;
-    auto csprng = concretelang::csprng::ConcreteCSPRNG(seed);
-    auto keyset =
-        Keyset(clientParameters.programInfo.asReader().getKeyset(), csprng);
+    concretelang::csprng::SecretCSPRNG secCsprng(secretSeed);
+    concretelang::csprng::EncryptionCSPRNG encCsprng(encryptionSeed);
+    auto keyset = Keyset(clientParameters.programInfo.asReader().getKeyset(),
+                         secCsprng, encCsprng);
     concretelang::clientlib::KeySet output{keyset};
     return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
   }
@@ -137,7 +139,8 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
                   llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<CSPRNG>(::concretelang::csprng::ConcreteCSPRNG(0)),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
       false);
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
@@ -171,7 +174,8 @@ decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
                concretelang::clientlib::PublicResult &publicResult) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<CSPRNG>(::concretelang::csprng::ConcreteCSPRNG(0)),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
       false);
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
@@ -333,7 +337,8 @@ MLIR_CAPI_EXPORTED concretelang::clientlib::ValueExporter createValueExporter(
     concretelang::clientlib::ClientParameters &clientParameters) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<CSPRNG>(::concretelang::csprng::ConcreteCSPRNG(0)),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
       false);
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
@@ -349,7 +354,8 @@ createSimulatedValueExporter(
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo, ::concretelang::keysets::ClientKeyset(),
-      std::make_shared<CSPRNG>(::concretelang::csprng::ConcreteCSPRNG(0)),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
       true);
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
@@ -366,7 +372,8 @@ MLIR_CAPI_EXPORTED concretelang::clientlib::ValueDecrypter createValueDecrypter(
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<CSPRNG>(::concretelang::csprng::ConcreteCSPRNG(0)),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
       false);
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
@@ -383,7 +390,8 @@ createSimulatedValueDecrypter(
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(),
       ::concretelang::keysets::ClientKeyset(),
-      std::make_shared<CSPRNG>(::concretelang::csprng::ConcreteCSPRNG(0)),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
       true);
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);

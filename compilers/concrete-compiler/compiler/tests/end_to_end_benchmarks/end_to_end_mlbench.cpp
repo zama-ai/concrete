@@ -36,7 +36,7 @@ static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
 
   for (auto _ : state) {
     assert(getTestKeySetCachePtr()->getKeyset(
-        result->getProgramInfo().asReader().getKeyset(), 0, 0));
+        result->getProgramInfo().asReader().getKeyset(), 0, 0, 0, 0));
   }
 }
 
@@ -53,9 +53,10 @@ static void BM_ExportArguments(benchmark::State &state,
   assert(compiled);
   auto programInfo = compiled->getProgramInfo();
   auto keyset = getTestKeySetCachePtr()
-                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
+                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0, 0, 0)
                     .value();
-  auto csprng = std::make_shared<ConcreteCSPRNG>(0);
+  auto csprng = std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+      ::concretelang::csprng::EncryptionCSPRNG(0));
 
   auto circuit = ClientCircuit::create(programInfo.asReader().getCircuits()[0],
                                        keyset.client, csprng, false)
@@ -86,9 +87,10 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   assert(compiled);
   auto programInfo = compiled->getProgramInfo();
   auto keyset = getTestKeySetCachePtr()
-                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0)
+                    ->getKeyset(programInfo.asReader().getKeyset(), 0, 0, 0, 0)
                     .value();
-  auto csprng = std::make_shared<ConcreteCSPRNG>(0);
+  auto csprng = std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+      ::concretelang::csprng::EncryptionCSPRNG(0));
   auto clientCircuit =
       ClientCircuit::create(programInfo.asReader().getCircuits()[0],
                             keyset.client, csprng, false)

@@ -23,7 +23,8 @@
 #include <unistd.h>
 #include <utime.h>
 
-using concretelang::csprng::ConcreteCSPRNG;
+using concretelang::csprng::EncryptionCSPRNG;
+using concretelang::csprng::SecretCSPRNG;
 using concretelang::error::Result;
 using concretelang::error::StringError;
 using concretelang::keys::LweBootstrapKey;
@@ -102,24 +103,24 @@ Message<concreteprotocol::ServerKeyset> ServerKeyset::toProto() const {
 }
 
 Keyset::Keyset(const Message<concreteprotocol::KeysetInfo> &info,
-               CSPRNG &csprng) {
+               SecretCSPRNG &secretCsprng, EncryptionCSPRNG &encryptionCsprng) {
   for (auto keyInfo : info.asReader().getLweSecretKeys()) {
-    client.lweSecretKeys.push_back(LweSecretKey(keyInfo, csprng));
+    client.lweSecretKeys.push_back(LweSecretKey(keyInfo, secretCsprng));
   }
   for (auto keyInfo : info.asReader().getLweBootstrapKeys()) {
-    server.lweBootstrapKeys.push_back(
-        LweBootstrapKey(keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
-                        client.lweSecretKeys[keyInfo.getOutputId()], csprng));
+    server.lweBootstrapKeys.push_back(LweBootstrapKey(
+        keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
+        client.lweSecretKeys[keyInfo.getOutputId()], encryptionCsprng));
   }
   for (auto keyInfo : info.asReader().getLweKeyswitchKeys()) {
-    server.lweKeyswitchKeys.push_back(
-        LweKeyswitchKey(keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
-                        client.lweSecretKeys[keyInfo.getOutputId()], csprng));
+    server.lweKeyswitchKeys.push_back(LweKeyswitchKey(
+        keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
+        client.lweSecretKeys[keyInfo.getOutputId()], encryptionCsprng));
   }
   for (auto keyInfo : info.asReader().getPackingKeyswitchKeys()) {
     server.packingKeyswitchKeys.push_back(PackingKeyswitchKey(
         keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
-        client.lweSecretKeys[keyInfo.getOutputId()], csprng));
+        client.lweSecretKeys[keyInfo.getOutputId()], encryptionCsprng));
   }
 }
 
@@ -379,9 +380,9 @@ KeysetCache::getKeyset(const Message<concreteprotocol::KeysetInfo> &keysetInfo,
   std::cerr << "KeySetCache: miss, regenerating " << std::string(folderPath)
             << "\n";
 
-  auto encryptionCsprng = csprng::ConcreteCSPRNG(encryption_seed);
-
-  Keyset keyset(keysetInfo, encryptionCsprng);
+  auto encryptionCsprng = csprng::EncryptionCSPRNG(encryption_seed);
+  auto secretCsprng = csprng::SecretCSPRNG(secret_seed);
+  Keyset keyset(keysetInfo, secretCsprng, encryptionCsprng);
 
   OUTCOME_TRYV(saveKeys(keyset, folderPath));
 
