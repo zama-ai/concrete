@@ -303,73 +303,73 @@ jobs:
     needs: [linux-x86, macos]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.8-linux-x86
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.9-linux-x86
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.10-linux-x86
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.11-linux-x86
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.8-aws-mac1-metal
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.9-aws-mac1-metal
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.10-aws-mac1-metal
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.11-aws-mac1-metal
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.8-aws-mac2-metal
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.9-aws-mac2-metal
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.10-aws-mac2-metal
           path: wheels
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
           name: wheel-3.11-aws-mac2-metal
