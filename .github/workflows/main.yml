@@ -26,7 +26,6 @@ jobs:
       optimizer: ${{ steps.optimizer.outputs.any_changed }}
       concrete-cpu: ${{ steps.concrete-cpu.outputs.any_changed }}
       concrete-cpu-api: ${{ steps.concrete-cpu-api.outputs.any_changed }}
-      concrete-cuda: ${{ steps.concrete-cuda.outputs.any_changed }}
       concrete-cuda-api: ${{ steps.concrete-cuda-api.outputs.any_changed }}
       concrete-python: ${{ steps.concrete-python.outputs.any_changed }}
       concrete-compiler-cpu-workflow: ${{ steps.concrete-compiler-cpu-workflow.outputs.any_changed }}
@@ -35,7 +34,6 @@ jobs:
       concrete-compiler-macos-workflow: ${{ steps.concrete-compiler-macos-workflow.outputs.any_changed }}
       concrete-compiler-docker-images-workflow: ${{ steps.concrete-compiler-docker-images-workflow.outputs.any_changed }}
       concrete-cpu-workflow: ${{ steps.concrete-cpu-workflow.outputs.any_changed }}
-      concrete-cuda-workflow: ${{ steps.concrete-cuda-workflow.outputs.any_changed }}
       concrete-python-workflow: ${{ steps.concrete-python-workflow.outputs.any_changed }}
       concrete-optimizer-workflow: ${{ steps.concrete-optimizer-workflow.outputs.any_changed }}
       push-main: ${{ steps.github.outputs.push-main }}
@@ -65,12 +63,6 @@ jobs:
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: backends/concrete-cpu/implementation
-
-      - name: Get changed files in the concrete-cuda directory
-        id: concrete-cuda
-        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
-        with:
-          files: backends/concrete-cuda
 
       - name: Get changed files in the concrete-python directory
         id: concrete-python
@@ -113,12 +105,6 @@ jobs:
         uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
         with:
           files: ./.github/workflows/concrete_cpu_test.yml
-
-      - name: Check if concrete_cuda_test workflow has changed
-        id: concrete-cuda-workflow
-        uses: tj-actions/changed-files@7a453ffa2eb31a7e84f3281f88ef6d774c4d807d
-        with:
-          files: ./.github/workflows/concrete_cuda_test.yml
 
       - name: Check if concrete_python_checks workflow has changed
         id: concrete-python-workflow
@@ -221,24 +207,6 @@ jobs:
     if: needs.file-change.outputs.concrete-cpu == 'true' || needs.file-change.outputs.concrete-cpu-workflow == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_cpu_test.yml
     secrets: inherit
-
-#################################################
-# Concrete-cuda jobs ############################
-  concrete-cuda-tests:
-    needs: file-change
-    if:  needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.concrete-cuda-workflow == 'true' || needs.file-change.outputs.push-main
-    uses: ./.github/workflows/start_slab.yml
-    secrets: inherit
-    with:
-      command: concrete-cuda-tests
-
-  concrete-cuda-benchmark:
-    needs: file-change
-    if:  needs.file-change.outputs.concrete-cuda == 'true' || needs.file-change.outputs.concrete-cuda-workflow == 'true' || needs.file-change.outputs.push-main
-    uses: ./.github/workflows/start_slab.yml
-    secrets: inherit
-    with:
-      command: concrete-cuda-benchmark
 
 #################################################
 # Concrete Python jobs ##########################
