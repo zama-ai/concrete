@@ -151,6 +151,63 @@ from concrete import fhe
             lambda x: x[slice(np.int64(8), np.int64(2), np.int64(-2))],
             id="x[8:2:-2] where x.shape == (10,)",
         ),
+        pytest.param(
+            (5,),
+            lambda x: x[[3, 1, 2]],
+            id="x[[3, 1, 2]] where x.shape == (5,)",
+        ),
+        pytest.param(
+            (5,),
+            lambda x: x[
+                [
+                    [3, 0],
+                    [1, 2],
+                ]
+            ],
+            id="x[[[3, 0], [1, 2]]] where x.shape == (5,)",
+        ),
+        pytest.param(
+            (5, 4),
+            lambda x: x[
+                [0, 0, 4, 4],
+                [0, 3, 0, 3],
+            ],
+            id="x[[0, 0, 4, 4], [0, 3, 0, 3]] where x.shape == (5, 4)",
+        ),
+        pytest.param(
+            (5, 4),
+            lambda x: x[
+                0,
+                [0, 3, 0, 3],
+            ],
+            id="x[0, [0, 3, 0, 3]] where x.shape == (5, 4)",
+        ),
+        pytest.param(
+            (5, 4),
+            lambda x: x[
+                [0, 0, 4, 4],
+                0,
+            ],
+            id="x[[0, 0, 4, 4], 0] where x.shape == (5, 4)",
+        ),
+        pytest.param(
+            (5, 4),
+            lambda x: x[
+                [[0, 0], [4, 4]],
+                [[0, 3], [0, 3]],
+            ],
+            id="x[[[0, 0], [4, 4]], [[0, 3], [0, 3]]] where x.shape == (5, 4)",
+        ),
+        pytest.param(
+            (5, 4),
+            lambda x: x[0, [[0, 3], [0, 3]]],
+            id="x[0, [[0, 3], [0, 3]]] where x.shape == (5, 4)",
+        ),
+        pytest.param(
+            (5, 4),
+            lambda x: x[[[0, 3], [0, 3]], 0],
+            id="x[[[0, 3], [0, 3]], 0] where x.shape == (5, 4)",
+        ),
     ],
 )
 def test_static_indexing(shape, function, helpers):

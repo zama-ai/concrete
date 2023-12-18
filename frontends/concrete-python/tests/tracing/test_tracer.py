@@ -51,6 +51,13 @@ from concrete.fhe.values import EncryptedTensor
             RuntimeError,
             "Branching within circuits is not possible",
         ),
+        pytest.param(
+            lambda x: x[["abc", 3, 2.2, (1,)]],
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            ValueError,
+            "Tracer<output=EncryptedTensor<uint7, shape=(3, 2)>> "
+            "cannot be indexed with ['abc', 3, 2.2, (1,)]",
+        ),
     ],
 )
 def test_tracer_bad_trace(function, parameters, expected_error, expected_message):

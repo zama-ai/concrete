@@ -2055,12 +2055,15 @@ class Context:
         self,
         resulting_type: ConversionType,
         x: Conversion,
-        index: Sequence[Union[int, np.integer, slice]],
+        index: Sequence[Union[int, np.integer, slice, np.ndarray, list]],
     ) -> Conversion:
         assert self.is_bit_width_compatible(resulting_type, x)
         assert resulting_type.is_encrypted == x.is_encrypted
 
         x = self.to_signedness(x, of=resulting_type)
+
+        if any(isinstance(indexing_element, (list, np.ndarray)) for indexing_element in index):
+            return self.index_static_fancy(resulting_type, x, index)
 
         index = list(index)
         while len(index) < len(x.shape):
@@ -2102,6 +2105,7 @@ class Context:
                 )
 
             else:
+                assert isinstance(indexing_element, (int, np.integer))
                 destroyed_dimensions.append(dimension)
                 size = 1
                 stride = 1
@@ -2181,6 +2185,38 @@ class Context:
                 ],
             ),
         )
+
+    def index_static_fancy(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        index: Sequence[Union[int, np.integer, slice, np.ndarray, list]],
+    ) -> Conversion:
+        resulting_element_type = (self.eint if resulting_type.is_unsigned else self.esint)(
+            resulting_type.bit_width
+        )
+
+        result = self.zeros(resulting_type)
+        for destination_position in np.ndindex(resulting_type.shape):
+            source_position = []
+            for indexing_element in index:
+                if isinstance(indexing_element, (int, np.integer)):
+                    source_position.append(indexing_element)
+
+                elif isinstance(indexing_element, (list, np.ndarray)):
+                    position = indexing_element[destination_position[0]]
+                    for n in range(1, len(destination_position)):
+                        position = position[destination_position[n]]
+                    source_position.append(position)
+
+                else:  # pragma: no cover
+                    message = f"invalid indexing element of type {type(indexing_element)}"
+                    raise AssertionError(message)
+
+            element = self.index_static(resulting_element_type, x, tuple(source_position))
+            result = self.assign_static(resulting_type, result, element, destination_position)
+
+        return result
 
     def less(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.LESS})
