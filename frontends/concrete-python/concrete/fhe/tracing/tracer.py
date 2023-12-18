@@ -742,7 +742,13 @@ class Tracer:
     def __getitem__(
         self,
         index: Union[
-            int, np.integer, slice, "Tracer", Tuple[Union[int, np.integer, slice, "Tracer"], ...]
+            int,
+            np.integer,
+            slice,
+            np.ndarray,
+            list,
+            Tuple[Union[int, np.integer, slice, np.ndarray, list, "Tracer"], ...],
+            "Tracer",
         ],
     ) -> "Tracer":
         if (
@@ -762,11 +768,27 @@ class Tracer:
         if not isinstance(index, tuple):
             index = (index,)
 
+        is_fancy = False
+        has_slices = False
+
         reject = False
         for indexing_element in index:
+            if isinstance(indexing_element, list):
+                try:
+                    indexing_element = np.array(indexing_element)
+                except Exception:  # pylint: disable=broad-except
+                    reject = True
+                    break
+
+            if isinstance(indexing_element, np.ndarray):
+                is_fancy = True
+                reject = not np.issubdtype(indexing_element.dtype, np.integer)
+                continue
+
             valid = isinstance(indexing_element, (int, np.integer, slice))
 
             if isinstance(indexing_element, slice):  # noqa: SIM102
+                has_slices = True
                 if (
                     not (
                         indexing_element.start is None
@@ -787,7 +809,7 @@ class Tracer:
                 reject = True
                 break
 
-        if reject:
+        if reject or (is_fancy and has_slices):
             indexing_elements = [
                 format_indexing_element(indexing_element) for indexing_element in index
             ]

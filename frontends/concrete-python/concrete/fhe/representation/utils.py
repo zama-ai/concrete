@@ -110,5 +110,9 @@ def format_indexing_element(indexing_element: Union[int, np.integer, slice, Any]
             result += ":"
             result += str(indexing_element.step)
     else:
-        result += str(indexing_element)
+        result += (
+            str(indexing_element)
+            if not isinstance(indexing_element, np.ndarray)
+            else str(indexing_element.tolist())
+        )
     return result.replace("\n", " ")
