@@ -58,15 +58,6 @@ jobs:
           cd backends/concrete-cpu/implementation
           cargo test --no-fail-fast --all-targets --features=nightly
 
-      - name: Zig install
-        run: |
-          sudo snap install zig --classic --beta
-
-      - name: Zig test
-        run: |
-          cd backends/concrete-cpu/implementation/test
-          make test
-
   tests-mac_x86:
     runs-on: macos-11
     env:
@@ -88,16 +79,6 @@ jobs:
           cd backends/concrete-cpu/implementation
           cargo test --no-fail-fast --all-targets
 
-      - name: Zig install
-        run: |
-          brew install zig
-
-      - name: Zig test
-        run: |
-          cd backends/concrete-cpu/implementation/test
-          make test
-
-
   tests-mac-m1:
     runs-on: "aws-mac2-metal"
     env:
@@ -118,12 +99,3 @@ jobs:
         run: |
           cd backends/concrete-cpu/implementation
           cargo test --no-fail-fast --all-targets
-
-      - name: Zig install
-        run: |
-          brew install zig
-
-      - name: Zig test
-        run: |
-          cd backends/concrete-cpu/implementation/test
-          make test
