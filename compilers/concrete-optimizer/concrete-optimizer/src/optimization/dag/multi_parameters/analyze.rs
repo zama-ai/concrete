@@ -163,7 +163,7 @@ pub fn original_instrs_partition(
 fn out_variance(
     op: &unparametrized::UnparameterizedOperator,
     out_shapes: &[Shape],
-    out_variances: &Vec<Vec<SymbolicVariance>>,
+    out_variances: &[Vec<SymbolicVariance>],
     nb_partitions: usize,
     instr_partition: &InstructionPartition,
 ) -> Vec<SymbolicVariance> {
