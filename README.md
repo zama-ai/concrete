@@ -18,9 +18,6 @@
 </p>
 <hr/>
 
-:warning: Starting from v1, Concrete Rust Libraries are now deprecated and replaced by [TFHE-rs](https://github.com/zama-ai/tfhe-rs), Concrete
-is now, exclusively, Zama TFHE Compiler. Read full announcement [here](https://www.zama.ai/post/announcing-concrete-v1-0-0)
-
 **Concrete** is an open-source FHE Compiler which simplifies the use of fully homomorphic encryption (FHE).
 
 FHE is a powerful cryptographic tool, which allows computation to be performed directly on encrypted data without needing to decrypt it first. With FHE, you can build services that preserve privacy for all users. FHE is also great against data breaches as everything is done on encrypted data. Even if the server is compromised, in the end no sensitive data is leaked.
@@ -37,18 +34,19 @@ Since writing FHE programs can be difficult, Concrete, based on LLVM, make this 
 
 ## Installation
 
-|               OS / HW                | Available on Docker | Available on PyPI |
-| :----------------------------------: | :-----------------: | :--------------: |
-|                Linux                 |         Yes         |       Yes        |
-|               Windows                |         Yes         |        No        |
-|     Windows Subsystem for Linux      |         Yes         |       Yes        |
-|            macOS (Intel)             |         Yes         |       Yes        |
-|            macOS (Apple Silicon)     |         Yes         |       Yes        |
+|               OS / HW                       | Available on Docker | Available on PyPI |
+| :-----------------------------------------: | :-----------------: | :--------------: |
+|                Linux                        |         Yes         |       Yes        |
+|               Windows                       |         Yes         |    Coming soon   |
+|     Windows Subsystem for Linux             |         Yes         |       Yes        |
+|            macOS 11+ (Intel)                |         Yes         |       Yes        |
+| macOS 11+ (Apple Silicon: M1, M2, etc.)     |         Yes         |       Yes        |
 
 
 The preferred way to install Concrete is through PyPI:
 
 ```shell
+pip install -U pip wheel setuptools
 pip install concrete-python
 ```
 
