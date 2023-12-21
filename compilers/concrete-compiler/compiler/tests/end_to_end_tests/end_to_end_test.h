@@ -89,19 +89,15 @@ parseEndToEndCommandLine(int argc, char **argv) {
       "optimizer-strategy",
       llvm::cl::desc("Select the concrete optimizer strategy"),
       llvm::cl::init(optimizer::DEFAULT_STRATEGY),
-      llvm::cl::values(clEnumValN(optimizer::Strategy::V0,
-                                  toString(optimizer::Strategy::V0),
+      llvm::cl::values(clEnumValN(optimizer::Strategy::V0, "V0",
                                   "Use the V0 optimizer strategy that use the "
                                   "worst case atomic pattern")),
       llvm::cl::values(clEnumValN(
-          optimizer::Strategy::DAG_MONO,
-          toString(optimizer::Strategy::DAG_MONO),
-          "Use the dag-mono optimizer strategy that solve the optimization "
+          optimizer::Strategy::DAG_MONO, "dag-mono",
           "problem using the fhe computation dag with ONE set of evaluation "
           "keys")),
       llvm::cl::values(clEnumValN(
-          optimizer::Strategy::DAG_MULTI,
-          toString(optimizer::Strategy::DAG_MULTI),
+          optimizer::Strategy::DAG_MULTI, "dag-multi",
           "Use the dag-multi optimizer strategy that solve the optimization "
           "problem using the fhe computation dag with SEVERAL set of "
           "evaluation "
