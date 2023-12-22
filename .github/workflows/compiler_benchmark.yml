@@ -103,7 +103,7 @@ jobs:
           make ${{ env.BENCHMARK_TARGET }}
 
       - name: Upload raw results artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compiler_${{ github.sha }}_raw
           path: compilers/concrete-compiler/compiler/benchmarks_results.json
@@ -123,7 +123,7 @@ jobs:
           --throughput
 
       - name: Upload parsed results artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compiler_${{ github.sha }}
           path: ${{ env.RESULTS_FILENAME }}

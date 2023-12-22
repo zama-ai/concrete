@@ -121,7 +121,7 @@ jobs:
             deactivate
 
       - name: Upload wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
@@ -246,7 +246,7 @@ jobs:
           deactivate
 
       - name: Upload wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
           path: frontends/concrete-python/dist/*macos*.whl

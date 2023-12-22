@@ -96,7 +96,7 @@ jobs:
           summary-always: true
 
       - name: Upload benchmark data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: ./benchmark
           name: ${{ runner.os }}-benchmark
