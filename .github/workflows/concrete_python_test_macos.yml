@@ -106,6 +106,7 @@ jobs:
         run: |
           set -e
           export TEST_TMP_DIR=$(mktemp -d)
+          echo "TEST_TMP_DIR=$TEST_TMP_DIR" >> "${GITHUB_ENV}"
           cd $TEST_TMP_DIR
           
           python3.10 -m venv .testenv
@@ -123,4 +124,7 @@ jobs:
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
           pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow"
 
+      - name: Cleanup host
+        if: success() || failure()
+        run: |
           rm -rf $TEST_TMP_DIR
