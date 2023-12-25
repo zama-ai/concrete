@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import networkx as nx
 import numpy as np
 import scipy.special
+import z3
 
 from ..dtypes import Float, Integer, UnsignedInteger
 from .node import Node
@@ -32,6 +33,9 @@ class Graph:
 
     is_direct: bool
 
+    bit_width_constraints: Optional[z3.Optimize]
+    bit_width_assignments: Optional[z3.Model]
+
     def __init__(
         self,
         graph: nx.MultiDiGraph,
@@ -47,6 +51,9 @@ class Graph:
         self.input_indices = {node: index for index, node in input_nodes.items()}
 
         self.is_direct = is_direct
+
+        self.bit_width_assignments = None
+        self.bit_width_constraints = None
 
         self.prune_useless_nodes()
 
@@ -405,6 +412,61 @@ class Graph:
                 result += "\n".join(f"        {line}" for line in subgraph_lines)
 
         return result
+
+    def format_bit_width_constraints(self) -> str:
+        """
+        Get the textual representation of bit width constraints of the graph.
+
+        Returns:
+            str:
+                textual representation of bit width constraints of the graph
+        """
+
+        result = ""
+        for i, node in enumerate(nx.lexicographical_topological_sort(self.graph)):
+            if len(node.bit_width_constraints) > 0:
+                result += f"%{i}:\n"
+                for constraint in node.bit_width_constraints:
+                    result += f"    {constraint.arg(0)} {constraint.decl()} {constraint.arg(1)}\n"
+        return result[:-1]
+
+    def format_bit_width_assignments(self) -> str:
+        """
+        Get the textual representation of bit width assignments of the graph.
+
+        Returns:
+            str:
+                textual representation of bit width assignments of the graph
+        """
+
+        lines = []
+        for variable in self.bit_width_assignments.decls():  # type: ignore
+            width = self.bit_width_assignments.get_interp(variable)  # type: ignore
+            lines.append(f"{variable} = {width}")
+
+        def sorter(line: str) -> int:
+            if line.startswith("max"):
+                # we won't have 4 million nodes...
+                return 2**32
+
+            assert line.startswith("%")
+
+            equals_position = line.find("=")
+            index = line[1 : equals_position - 1]
+            return int(index)
+
+        result = ""
+
+        longest_length_before_equals_sign = max(len(line.split("=")[0]) for line in lines)
+        for line in sorted(lines, key=sorter):
+            length_before_equals_sign = len(line.split("=")[0])
+            result += (
+                (" " * (longest_length_before_equals_sign - length_before_equals_sign))
+                + line
+                + "\n"
+            )
+
+        return result[:-1]
 
     def measure_bounds(
         self,

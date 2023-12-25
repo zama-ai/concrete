@@ -9,6 +9,7 @@ from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import z3
 
 from ..internal.utils import assert_that
 from ..values import ValueDescription
@@ -34,6 +35,8 @@ class Node:
     location: str
     tag: str
     created_at: float
+
+    bit_width_constraints: List[z3.Bool]
 
     @staticmethod
     def constant(constant: Any) -> "Node":
@@ -184,6 +187,8 @@ class Node:
         # pylint: enable=cyclic-import,import-outside-toplevel
 
         self.created_at = time.time()
+
+        self.bit_width_constraints = []
 
     def __call__(self, *args: List[Any]) -> Union[np.bool_, np.integer, np.floating, np.ndarray]:
         def generic_error_message() -> str:

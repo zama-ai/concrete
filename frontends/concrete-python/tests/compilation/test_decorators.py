@@ -28,10 +28,12 @@ def test_compiler_call_and_compile(helpers):
     helpers.check_execution(circuit, function, sample)
 
 
-def test_compiler_verbose_trace(helpers, capsys):
+def test_compiler_verbose_trace(helpers, capsys, monkeypatch):
     """
     Test `trace` method of `compiler` decorator with verbose flag.
     """
+
+    monkeypatch.setattr("concrete.fhe.compilation.compiler.get_terminal_size", lambda: 80)
 
     configuration = helpers.configuration()
     artifacts = fhe.DebugArtifacts()
@@ -41,7 +43,7 @@ def test_compiler_verbose_trace(helpers, capsys):
         return x + 42
 
     inputset = range(10)
-    function.trace(inputset, configuration, artifacts, show_graph=True)
+    graph = function.trace(inputset, configuration, artifacts, show_graph=True)
 
     captured = capsys.readouterr()
     assert captured.out.strip() == (
@@ -49,17 +51,19 @@ def test_compiler_verbose_trace(helpers, capsys):
 
 Computation Graph
 ------------------------------------------------------------------
-{str(list(artifacts.textual_representations_of_graphs.values())[-1][-1])}
+{graph.format()}
 ------------------------------------------------------------------
 
         """.strip()
     )
 
 
-def test_compiler_verbose_compile(helpers, capsys):
+def test_compiler_verbose_compile(helpers, capsys, monkeypatch):
     """
     Test `compile` method of `compiler` decorator with verbose flag.
     """
+
+    monkeypatch.setattr("concrete.fhe.compilation.compiler.get_terminal_size", lambda: 80)
 
     configuration = helpers.configuration()
     artifacts = fhe.DebugArtifacts()
@@ -69,7 +73,7 @@ def test_compiler_verbose_compile(helpers, capsys):
         return x + 42
 
     inputset = range(10)
-    function.compile(inputset, configuration, artifacts, verbose=True)
+    circuit = function.compile(inputset, configuration, artifacts, verbose=True)
 
     captured = capsys.readouterr()
     assert captured.out.strip().startswith(
@@ -77,7 +81,32 @@ def test_compiler_verbose_compile(helpers, capsys):
 
 Computation Graph
 --------------------------------------------------------------------------------
-{list(artifacts.textual_representations_of_graphs.values())[-1][-1]}
+{circuit.graph.format()}
+--------------------------------------------------------------------------------
+
+Bit-Width Constraints
+--------------------------------------------------------------------------------
+%0:
+    %0 >= 4
+%1:
+    %1 >= 6
+%2:
+    %2 >= 6
+    %0 == %1
+    %1 == %2
+--------------------------------------------------------------------------------
+
+Bit-Width Assignments
+--------------------------------------------------------------------------------
+ %0 = 6
+ %1 = 6
+ %2 = 6
+max = 6
+--------------------------------------------------------------------------------
+
+Bit-Width Assigned Computation Graph
+--------------------------------------------------------------------------------
+{circuit.graph.format(show_assigned_bit_widths=True)}
 --------------------------------------------------------------------------------
 
 MLIR
@@ -89,7 +118,7 @@ Optimizer
 --------------------------------------------------------------------------------
 
         """.strip()
-    )
+    ), captured.out.strip()
 
 
 def test_circuit(helpers):

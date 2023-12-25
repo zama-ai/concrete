@@ -22,7 +22,7 @@ from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .configuration import Configuration
-from .utils import fuse
+from .utils import fuse, get_terminal_size
 
 # pylint: enable=import-error,no-name-in-module
 
@@ -450,17 +450,24 @@ class Compiler:
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
-            # in-memory MLIR module
-            mlir_context = self.compilation_context.mlir_context()
-            mlir_module = GraphConverter().convert(self.graph, self.configuration, mlir_context)
-            # textual representation of the MLIR module
-            mlir_str = str(mlir_module).strip()
-            if self.artifacts is not None:
-                self.artifacts.add_mlir_to_compile(mlir_str)
-
             show_graph = (
                 self.configuration.show_graph
                 if self.configuration.show_graph is not None
+                else self.configuration.verbose
+            )
+            show_bit_width_constraints = (
+                self.configuration.show_bit_width_constraints
+                if self.configuration.show_bit_width_constraints is not None
+                else self.configuration.verbose
+            )
+            show_bit_width_assignments = (
+                self.configuration.show_bit_width_assignments
+                if self.configuration.show_bit_width_assignments is not None
+                else self.configuration.verbose
+            )
+            show_assigned_graph = (
+                self.configuration.show_assigned_graph
+                if self.configuration.show_assigned_graph is not None
                 else self.configuration.verbose
             )
             show_mlir = (
@@ -479,56 +486,93 @@ class Compiler:
                 else self.configuration.verbose
             )
 
-            columns = 0
-            if show_graph or show_mlir or show_optimizer or show_statistics:
-                graph = (
-                    self.graph.format()
-                    if self.configuration.verbose or self.configuration.show_graph
-                    else ""
-                )
+            columns = get_terminal_size()
+            is_first = True
 
-                longest_graph_line = max(len(line) for line in graph.split("\n"))
-                longest_mlir_line = max(len(line) for line in mlir_str.split("\n"))
-                longest_line = max(longest_graph_line, longest_mlir_line)
-
-                try:  # pragma: no cover
-                    # this branch cannot be covered
-                    # because `os.get_terminal_size()`
-                    # raises an exception during tests
-
-                    columns, _ = os.get_terminal_size()
-                    if columns == 0:  # noqa: SIM108
-                        columns = min(longest_line, 80)
-                    else:
-                        columns = min(longest_line, columns)
-                except OSError:  # pragma: no cover
-                    columns = min(longest_line, 80)
-
+            if (
+                show_graph
+                or show_bit_width_constraints
+                or show_bit_width_assignments
+                or show_assigned_graph
+                or show_mlir
+                or show_optimizer
+                or show_statistics
+            ):
                 if show_graph:
-                    print()
+                    if is_first:  # pragma: no cover
+                        print()
+                        is_first = False
 
                     print("Computation Graph")
                     print("-" * columns)
-                    print(graph)
+                    print(self.graph.format())
                     print("-" * columns)
 
                     print()
 
-                if show_mlir:
-                    print("\n" if not show_graph else "", end="")
+            # in-memory MLIR module
+            mlir_context = self.compilation_context.mlir_context()
+            mlir_module = GraphConverter().convert(self.graph, self.configuration, mlir_context)
+            # textual representation of the MLIR module
+            mlir_str = str(mlir_module).strip()
+            if self.artifacts is not None:
+                self.artifacts.add_mlir_to_compile(mlir_str)
 
-                    print("MLIR")
-                    print("-" * columns)
-                    print(mlir_str)
-                    print("-" * columns)
-
+            if show_bit_width_constraints:
+                if is_first:  # pragma: no cover
                     print()
+                    is_first = False
 
-                if show_optimizer:
-                    print("\n" if not (show_graph or show_mlir) else "", end="")
+                print("Bit-Width Constraints")
+                print("-" * columns)
+                print(self.graph.format_bit_width_constraints())
+                print("-" * columns)
 
-                    print("Optimizer")
-                    print("-" * columns)
+                print()
+
+            if show_bit_width_assignments:
+                if is_first:  # pragma: no cover
+                    print()
+                    is_first = False
+
+                print("Bit-Width Assignments")
+                print("-" * columns)
+                print(self.graph.format_bit_width_assignments())
+                print("-" * columns)
+
+                print()
+
+            if show_assigned_graph:
+                if is_first:  # pragma: no cover
+                    print()
+                    is_first = False
+
+                print("Bit-Width Assigned Computation Graph")
+                print("-" * columns)
+                print(self.graph.format(show_assigned_bit_widths=True))
+                print("-" * columns)
+
+                print()
+
+            if show_mlir:
+                if is_first:  # pragma: no cover
+                    print()
+                    is_first = False
+
+                print("MLIR")
+                print("-" * columns)
+                print(mlir_str)
+                print("-" * columns)
+
+                print()
+
+            if show_optimizer:
+                if is_first:  # pragma: no cover
+                    print()
+                    is_first = False
+
+                print("Optimizer")
+                print("-" * columns)
 
             circuit = Circuit(
                 self.graph,
@@ -547,7 +591,8 @@ class Compiler:
                 print()
 
             if show_statistics:
-                print("\n" if not show_graph else "", end="")
+                if is_first:  # pragma: no cover
+                    print()
 
                 print("Statistics")
                 print("-" * columns)
