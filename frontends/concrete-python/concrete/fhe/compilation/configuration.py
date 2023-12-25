@@ -867,6 +867,9 @@ class Configuration:
 
     verbose: bool
     show_graph: Optional[bool]
+    show_bit_width_constraints: Optional[bool]
+    show_bit_width_assignments: Optional[bool]
+    show_assigned_graph: Optional[bool]
     show_mlir: Optional[bool]
     show_optimizer: Optional[bool]
     show_statistics: Optional[bool]
@@ -902,6 +905,9 @@ class Configuration:
         *,
         verbose: bool = False,
         show_graph: Optional[bool] = None,
+        show_bit_width_constraints: Optional[bool] = None,
+        show_bit_width_assignments: Optional[bool] = None,
+        show_assigned_graph: Optional[bool] = None,
         show_mlir: Optional[bool] = None,
         show_optimizer: Optional[bool] = None,
         show_statistics: Optional[bool] = None,
@@ -946,6 +952,9 @@ class Configuration:
         self.compiler_debug_mode = compiler_debug_mode
         self.compiler_verbose_mode = compiler_verbose_mode
         self.show_graph = show_graph
+        self.show_bit_width_constraints = show_bit_width_constraints
+        self.show_bit_width_assignments = show_bit_width_assignments
+        self.show_assigned_graph = show_assigned_graph
         self.show_mlir = show_mlir
         self.show_optimizer = show_optimizer
         self.show_statistics = show_statistics
@@ -1028,6 +1037,9 @@ class Configuration:
         # pylint: disable=unused-argument
         verbose: Union[Keep, bool] = KEEP,
         show_graph: Union[Keep, Optional[bool]] = KEEP,
+        show_bit_width_constraints: Union[Keep, Optional[bool]] = KEEP,
+        show_bit_width_assignments: Union[Keep, Optional[bool]] = KEEP,
+        show_assigned_graph: Union[Keep, Optional[bool]] = KEEP,
         show_mlir: Union[Keep, Optional[bool]] = KEEP,
         show_optimizer: Union[Keep, Optional[bool]] = KEEP,
         show_statistics: Union[Keep, Optional[bool]] = KEEP,

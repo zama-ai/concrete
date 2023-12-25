@@ -3,6 +3,7 @@ Declaration of various functions and constants related to compilation.
 """
 
 import json
+import os
 import re
 from copy import deepcopy
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
@@ -800,3 +801,21 @@ def friendly_type_format(type_: type) -> str:
                 return f"Optional[{friendly_type_format(arg0)}]"  # pragma: no cover
 
     return result
+
+
+def get_terminal_size() -> int:
+    """
+    Get the terminal size.
+    """
+
+    try:  # pragma: no cover
+        # this branch cannot be covered
+        # because `os.get_terminal_size()`
+        # raises an exception during tests
+        columns, _ = os.get_terminal_size()
+        if columns == 0:  # noqa: SIM108
+            columns = 80
+    except OSError:  # pragma: no cover
+        columns = 80
+
+    return columns

@@ -55,7 +55,7 @@ class Parameter:
         param = self._inner
 
         if isinstance(param, LweSecretKeyParam):
-            result = f"LweSecretKeyParam(" f"dimension={param.dimension}" f")"
+            result = f"LweSecretKeyParam(" f"dimension={param.dimension()}" f")"
 
         elif isinstance(param, BootstrapKeyParam):
             result = (

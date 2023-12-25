@@ -2,11 +2,15 @@
 Tests of `Configuration` class.
 """
 
+import os
 import sys
 
 import pytest
 
+from concrete import fhe
 from concrete.fhe.compilation import Configuration
+
+from ..conftest import USE_MULTI_PRECISION
 
 
 @pytest.mark.parametrize(
@@ -174,3 +178,93 @@ def test_configuration_bad_fork(kwargs, expected_error, expected_message):
         Configuration().fork(**kwargs)
 
     assert str(excinfo.value) == expected_message
+
+
+@pytest.mark.parametrize(
+    "function,encryption_status,inputset,"
+    "expected_bit_width_constraints,expected_bit_width_assignment",
+    [
+        pytest.param(
+            lambda x, y: (x**2) + y,
+            {"x": "encrypted", "y": "encrypted"},
+            [(5, 120)],
+            """
+
+%0:
+    %0 >= 3
+%1:
+    %1 >= 7
+%2:
+    %2 >= 2
+%3:
+    %3 >= 5
+%4:
+    %4 >= 8
+    %3 == %1
+    %1 == %4
+
+            """,
+            """
+
+ %0 = 3
+ %1 = 8
+ %2 = 2
+ %3 = 8
+ %4 = 8
+max = 8
+
+            """
+            if USE_MULTI_PRECISION
+            else """
+
+ %0 = 8
+ %1 = 8
+ %2 = 8
+ %3 = 8
+ %4 = 8
+max = 8
+
+            """,
+        ),
+    ],
+)
+def test_configuration_show_bit_width_constraints_and_assignment(
+    function,
+    encryption_status,
+    inputset,
+    expected_bit_width_constraints,
+    expected_bit_width_assignment,
+    helpers,
+    capsys,
+    monkeypatch,
+):
+    """
+    Test compiling with configuration where show_bit_width_(constraints/assignments)=True.
+    """
+
+    monkeypatch.setattr("concrete.fhe.compilation.compiler.get_terminal_size", lambda: 80)
+
+    configuration = helpers.configuration()
+    compiler = fhe.Compiler(function, encryption_status)
+    compiler.compile(
+        inputset,
+        configuration.fork(show_bit_width_constraints=True, show_bit_width_assignments=True),
+    )
+
+    captured = capsys.readouterr()
+    helpers.check_str(
+        captured.out.strip(),
+        f"""
+
+Bit-Width Constraints
+--------------------------------------------------------------------------------
+{expected_bit_width_constraints.lstrip(os.linesep).rstrip()}
+--------------------------------------------------------------------------------
+
+Bit-Width Assignments
+--------------------------------------------------------------------------------
+{expected_bit_width_assignment.lstrip(os.linesep).rstrip()}
+--------------------------------------------------------------------------------
+
+        """.strip(),
+    )
