@@ -157,6 +157,58 @@ def update_grid_method_5b(grid):
 
 
 @fhe.compiler({"grid": "encrypted"})
+def update_grid_method_bits(grid):
+    # Method which uses bits operator, with 4 calls to fhe.bits
+    debug = False
+
+    weights_method_basic = np.array(
+        [
+            [1, 1, 1],
+            [1, 0, 1],
+            [1, 1, 1],
+        ]
+    )
+
+    # This is to workaround the fact that we have no pad option in fhe.conv
+    do_padded_fix = True
+
+    grid_dup = fhe.univariate(lambda x: x)(grid)
+    convoluted_grid = conv_with_hand_padding(grid_dup, weights_method_basic, do_padded_fix)
+
+    # Method with bits: 3 calls
+    n = convoluted_grid
+
+    s = 10 - n
+    bs = 1 - fhe.bits(s)[3]
+
+    t = 9 - n
+    bt = fhe.bits(t)[3]
+
+    u = 11 - n
+    bu = 1 - fhe.bits(u)[3]
+
+    # This is what it computes
+    if debug:
+        assert np.array_equal(bs, (n > 2).astype(np.int8)), f"{n=} {s=}"
+        assert np.array_equal(bt, (n < 2).astype(np.int8)), f"{n=} {t=}"
+        assert np.array_equal(bu, (n > 3).astype(np.int8)), f"{n=} {u=}"
+
+    # Extract information
+    n_is_2 = 1 - bs - bt
+    n_is_2_or_3 = 1 - bu - bt
+
+    # This is what it computes
+    if debug:
+        assert np.array_equal(n_is_2, (n == 2).astype(np.int8))
+        assert np.array_equal(n_is_2_or_3, ((n == 2) | (n == 3)).astype(np.int8))
+
+    # Update the grid
+    new_grid = fhe.bits(2 * n_is_2_or_3 - n_is_2 + grid_dup)[1]
+
+    return new_grid
+
+
+@fhe.compiler({"grid": "encrypted"})
 def update_grid_basic(grid):
     # Method which follows the naive approach
 
@@ -200,6 +252,9 @@ def update_grid(grid, method="method_3b"):
 
     if method == "method_5b":
         return update_grid_method_5b(grid)
+
+    if method == "method_bits":
+        return update_grid_method_bits(grid)
 
     msg = "Bad method"
     raise ValueError(msg)
@@ -286,15 +341,16 @@ def autotest(dimension):
         # Check the results are the same
         results = {}
 
-        for method in ["method_3b", "method_4b", "method_5b", "method_basic"]:
+        for method in ["method_3b", "method_4b", "method_5b", "method_bits", "method_basic"]:
             results[method] = update_grid(grid, method=method)
 
         keys = list(results.keys())
 
         for k in keys[1:]:
+            diff = results[keys[0]] - results[k]
             assert np.array_equal(
                 results[keys[0]], results[k]
-            ), f"{results[keys[0]]} {results[k]} are different"
+            ), f"\n{results[keys[0]]} \n{results[k]} are different, diff is \n{diff}"
 
     print("Tests of methods looks ok")
 
@@ -321,7 +377,7 @@ def manage_args():
         "--method",
         dest="method",
         action="store",
-        choices=["method_3b", "method_4b", "method_5b", "method_basic"],
+        choices=["method_3b", "method_4b", "method_5b", "method_bits", "method_basic"],
         default="method_5b",
         help="Method for refreshing the grid",
     )
@@ -354,6 +410,18 @@ def manage_args():
         help="Show the MLIR",
     )
     parser.add_argument(
+        "--show_graph",
+        action="store_true",
+        dest="show_graph",
+        help="Show the graph",
+    )
+    parser.add_argument(
+        "--verbose_compilation",
+        action="store_true",
+        dest="verbose_compilation",
+        help="Add verbose option in compilation",
+    )
+    parser.add_argument(
         "--stop_after_compilation",
         action="store_true",
         dest="stop_after_compilation",
@@ -365,8 +433,19 @@ def manage_args():
         dest="text_output",
         help="Print a text output of the grid",
     )
+    parser.add_argument(
+        "--seed",
+        action="store",
+        dest="seed",
+        type=int,
+        default=np.random.randint(2**32 - 1),
+        help="Set a seed",
+    )
 
     args = parser.parse_args()
+    print(f"Using seed {args.seed=}")
+
+    np.random.seed(args.seed)
     return args
 
 
@@ -433,6 +512,8 @@ def main():
             function = update_grid_method_4b
         elif which_method == "method_5b":
             function = update_grid_method_5b
+        elif which_method == "method_bits":
+            function = update_grid_method_bits
         else:
             assert which_method == "method_basic"
             function = update_grid_basic
@@ -440,11 +521,17 @@ def main():
         circuit = function.compile(
             inputset,
             show_mlir=args.show_mlir,
+            show_graph=args.show_graph,
             fhe_simulation=fhe_simulation,
             global_p_error=None,  # 2**log2_global_p_error,
             p_error=2**log2_p_error,
             bitwise_strategy_preference=fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
+            verbose=args.verbose_compilation
+            # parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
+            # single_precision=False,
         )
+
+        # print(circuit.graph.format(show_assigned_bit_widths=True))
 
         if args.stop_after_compilation:
             sys.exit(0)
@@ -459,7 +546,7 @@ def main():
     # Run the key generation, to avoid to have a first execution time which is slower
     if do_compile and not fhe_simulation:
         time_start = time.time()
-        grid = circuit.keygen()
+        circuit.keygen()
         time_end = time.time()
 
         if do_print_time:
@@ -497,6 +584,9 @@ def main():
 
         if do_print_time:
             print(f"Updating grid in {time_end - time_start:.2f} seconds")
+
+        assert np.min(grid) >= 0
+        assert np.max(grid) <= 1
 
 
 if __name__ == "__main__":
