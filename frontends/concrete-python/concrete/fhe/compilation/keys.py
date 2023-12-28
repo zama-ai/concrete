@@ -43,6 +43,14 @@ class Keys:
         if cache_directory is not None:
             self._keyset_cache = KeySetCache.new(str(cache_directory))
 
+    @property
+    def are_generated(self) -> bool:
+        """
+        Get if the keys are already generated.
+        """
+
+        return self._keyset is not None
+
     def generate(
         self,
         force: bool = False,
