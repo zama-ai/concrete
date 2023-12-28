@@ -155,12 +155,16 @@ def test_keys_generate_manual_seed(helpers):
     inputset = range(10)
 
     circuit = f.compile(inputset, helpers.configuration().fork(use_insecure_key_cache=False))
+    assert not circuit.keys.are_generated
     circuit.keygen(seed=42, encryption_seed=24)
+    assert circuit.keys.are_generated
 
     sample = circuit.encrypt(5)
     evaluation = circuit.run(sample)
 
     same_circuit = f.compile(inputset, helpers.configuration().fork(use_insecure_key_cache=False))
+    assert not same_circuit.keys.are_generated
     same_circuit.keygen(seed=42)
+    assert same_circuit.keys.are_generated
 
     assert same_circuit.decrypt(evaluation) == 25
