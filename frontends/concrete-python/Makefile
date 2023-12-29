@@ -20,6 +20,17 @@ venv:
 	$(PIP) install -r requirements.dev.txt
 	$(PIP) install -r requirements.txt
 
+	@echo
+	@echo "The new environment is automatically activated with locals cp & bindings for makefile targets."
+	@echo "You can have the same activation in a terminal using:"
+	@echo 'eval $$(make cp_activate)'
+
+cp_activate:
+	@echo "echo 'Activating virtual env and local concrete-python and local compiler bindings' ;"
+	@echo "export PATH=$(PWD)/.venv/bin:$$PATH;"
+	@echo "export LD_PRELOAD=$(RUNTIME_LIBRARY);"
+	@echo "export PYTHONPATH=$(BINDINGS_DIRECTORY);"
+
 licenses:
 	bash scripts/versioning/summary.sh
 
