@@ -2924,7 +2924,12 @@ class Context:
             ),
         )
 
-    def round_bit_pattern(self, x: Conversion, lsbs_to_remove: int) -> Conversion:
+    def round_bit_pattern(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        lsbs_to_remove: int,
+    ) -> Conversion:
         if x.is_clear:
             highlights = {
                 x.origin: "operand is clear",
@@ -2934,7 +2939,7 @@ class Context:
 
         assert x.bit_width > lsbs_to_remove
 
-        resulting_type = self.typeof(
+        intermediate_type = self.typeof(
             ValueDescription(
                 dtype=Integer(is_signed=x.is_signed, bit_width=(x.bit_width - lsbs_to_remove)),
                 shape=x.shape,
@@ -2942,11 +2947,13 @@ class Context:
             )
         )
 
-        return self.operation(
+        rounded = self.operation(
             fhe.RoundEintOp if x.is_scalar else fhelinalg.RoundOp,
-            resulting_type,
+            intermediate_type,
             x.result,
         )
+
+        return self.to_signedness(rounded, of=resulting_type)
 
     def shift(
         self,

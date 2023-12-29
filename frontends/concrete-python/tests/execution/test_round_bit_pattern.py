@@ -592,3 +592,22 @@ def test_overflowing_round_bit_pattern_with_lsbs_to_remove_of_one(helpers):
     circuit = compiler.compile(inputset=[sample], configuration=helpers.configuration())
 
     helpers.check_execution(circuit, function, sample, retries=5)
+
+
+def test_round_bit_pattern_overflow_to_sign_bit(helpers):
+    """
+    Test round bit pattern where it's applies to a signed value and p-1 bits are removed.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        return fhe.round_bit_pattern(x - 4, lsbs_to_remove=3) // (2**3)
+
+    inputset = range(10)
+    configuration = helpers.configuration()
+
+    circuit = function.compile(inputset, configuration)
+    circuit.keys.generate()
+
+    for x in inputset:
+        helpers.check_execution(circuit, function, x, retries=3)
