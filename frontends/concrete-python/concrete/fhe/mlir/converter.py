@@ -484,7 +484,11 @@ class Converter:
             if shifter != 1:
                 pred = ctx.mul(pred.type, pred, ctx.constant(ctx.i(pred.bit_width + 1), shifter))
 
-        return ctx.round_bit_pattern(pred, node.properties["final_lsbs_to_remove"])
+        return ctx.round_bit_pattern(
+            ctx.typeof(node),
+            pred,
+            node.properties["final_lsbs_to_remove"],
+        )
 
     def subtract(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
