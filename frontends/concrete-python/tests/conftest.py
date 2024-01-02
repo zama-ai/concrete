@@ -5,13 +5,13 @@ Configuration of `pytest`.
 import json
 import os
 import random
+import warnings
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy as np
 import pytest
-import warnings
 
 import tests
 from concrete import fhe
@@ -303,8 +303,11 @@ class Helpers:
                 if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                     break
 
-                warnings.warn(UserWarning(f'Test fail ({i+1}/{retries}), regenerate keyset and retry'))
-                circuit.keygen(force=True, seed=i+1)
+                warnings.warn(
+                    UserWarning(f"Test fail ({i+1}/{retries}), regenerate keyset and retry"),
+                    stacklevel=2,
+                )
+                circuit.keygen(force=True, seed=i + 1)
 
                 if i == retries - 1:
                     message = f"""
