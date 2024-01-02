@@ -40,6 +40,7 @@ from .extensions import (
     one,
     ones,
     ones_like,
+    relu,
     round_bit_pattern,
     tag,
     truncate_bit_pattern,

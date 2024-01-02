@@ -24,7 +24,12 @@ from mlir.ir import OpResult as MlirOperation
 from mlir.ir import RankedTensorType
 from mlir.ir import Type as MlirType
 
-from ..compilation.configuration import BitwiseStrategy, ComparisonStrategy, MinMaxStrategy
+from ..compilation.configuration import (
+    BitwiseStrategy,
+    ComparisonStrategy,
+    Configuration,
+    MinMaxStrategy,
+)
 from ..dtypes import Integer
 from ..extensions.bits import MAX_EXTRACTABLE_BIT, MIN_EXTRACTABLE_BIT
 from ..representation import Graph, Node
@@ -51,7 +56,9 @@ class Context:
     conversion_cache: Dict[Tuple, Conversion]
     constant_cache: Dict[MlirAttribute, MlirOperation]
 
-    def __init__(self, context: MlirContext, graph: Graph):
+    configuration: Configuration
+
+    def __init__(self, context: MlirContext, graph: Graph, configuration: Configuration):
         self.context = context
 
         self.graph = graph
@@ -60,6 +67,8 @@ class Context:
 
         self.conversion_cache = {}
         self.constant_cache = {}
+
+        self.configuration = configuration
 
     # types
 
@@ -2786,6 +2795,62 @@ class Context:
         one = self.constant(one_type, 1)
 
         return self.add(resulting_type, one, self.zeros(resulting_type))
+
+    def relu(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
+        if x.bit_width < self.configuration.relu_on_bits_threshold:
+            if x.bit_width > x.original_bit_width:
+                shifter = self.constant(
+                    self.i(x.bit_width + 1),
+                    2 ** (x.bit_width - x.original_bit_width),
+                )
+                x = self.reinterpret(
+                    self.mul(x.type, x, shifter),
+                    bit_width=x.original_bit_width,
+                )
+
+            x_dtype = Integer(is_signed=x.is_signed, bit_width=x.bit_width)
+            table = [x for x in range(x_dtype.max() + 1)] + [0 for x in range(abs(x_dtype.min()))]
+            return self.tlu(resulting_type, x, table)
+
+        if x.is_unsigned:
+            if resulting_type.bit_width == x.bit_width:
+                return x
+
+            assert resulting_type.bit_width > x.bit_width
+            return self.extract_bits(resulting_type, x, bits=slice(0, x.original_bit_width))
+
+        if x.original_bit_width == 1:
+            return self.zeros(resulting_type)
+
+        chunk_size = self.configuration.relu_on_bits_chunk_size
+        intermediate_type = self.tensor(self.eint(chunk_size + 1), shape=x.shape)
+        sign = self.reinterpret(
+            self.extract_bits(
+                self.tensor(self.eint(1), shape=x.shape),
+                x,
+                bits=(x.original_bit_width - 1),
+            ),
+            bit_width=intermediate_type.bit_width,
+        )
+
+        filtered_chunks = []
+        for chunk_start in range(0, x.original_bit_width - 1, chunk_size):
+            chunk_end = min(chunk_start + chunk_size, x.original_bit_width - 1)
+
+            chunk = self.extract_bits(intermediate_type, x, bits=slice(chunk_start, chunk_end))
+            packed_chunk_and_sign = self.add(intermediate_type, chunk, sign)
+            filtered_chunk = self.tlu(
+                resulting_type,
+                packed_chunk_and_sign,
+                [
+                    (x << chunk_start) if x >> chunk_size == 0 else 0
+                    for x in range(2**intermediate_type.bit_width)
+                ],
+            )
+
+            filtered_chunks.append(filtered_chunk)
+
+        return self.tree_add(resulting_type, filtered_chunks)
 
     def reshape(self, x: Conversion, shape: Tuple[int, ...]) -> Conversion:
         if x.is_scalar:

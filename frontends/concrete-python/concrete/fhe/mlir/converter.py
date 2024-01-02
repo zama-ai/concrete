@@ -34,7 +34,10 @@ class Converter:
     """
 
     def convert(
-        self, graph: Graph, configuration: Configuration, mlir_context: MlirContext
+        self,
+        graph: Graph,
+        configuration: Configuration,
+        mlir_context: MlirContext,
     ) -> MlirModule:
         """
         Convert a computation graph to MLIR.
@@ -61,7 +64,7 @@ class Converter:
 
             module = MlirModule.create()
             with MlirInsertionPoint(module.body):
-                ctx = Context(context, graph)
+                ctx = Context(context, graph, configuration)
 
                 input_types = [ctx.typeof(node).mlir for node in graph.ordered_inputs()]
 
@@ -450,6 +453,10 @@ class Converter:
     def ones(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 0
         return ctx.ones(ctx.typeof(node))
+
+    def relu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        return ctx.relu(ctx.typeof(node), preds[0])
 
     def reshape(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1

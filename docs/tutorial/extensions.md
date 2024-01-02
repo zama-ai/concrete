@@ -350,3 +350,134 @@ def is_vectors_same(x, y):
 
     return is_same
 ```
+
+
+## fhe.relu(value)
+
+Allows you to perform ReLU operation, with the same semantic as `x if x >= 0 else 0`:
+
+```python
+import numpy as np
+from concrete import fhe
+
+@fhe.compiler({"x": "encrypted"})
+def f(x):
+    return fhe.relu(x)
+
+inputset = [np.random.randint(-10, 10) for _ in range(10)]
+circuit = f.compile(inputset)
+
+assert circuit.encrypt_run_decrypt(0) == 0
+assert circuit.encrypt_run_decrypt(1) == 1
+assert circuit.encrypt_run_decrypt(-1) == 0
+assert circuit.encrypt_run_decrypt(-3) == 0
+assert circuit.encrypt_run_decrypt(5) == 5
+```
+
+ReLU extension can be converted in two different ways:
+- With a single TLU on the original bit-width.
+- With multiple TLUs on smaller bit-widths.
+
+For small bit-widths, the first one is better as it'll have a single TLU on a small bit-width.
+For big bit-widths, the second one is better as it won't have a TLU on a big bit-width.
+
+The decision between the two can be controlled with `relu_on_bits_threshold: int = 7` configuration option:
+- `relu_on_bits_threshold=5` means:
+  - 1-bit to 4-bits would be converted using the first way (i.e., using TLU)
+  - 5-bits and more would be converted using the second way (i.e., using bits)
+
+There is another option to customize the implementation `relu_on_bits_chunk_size: int = 2`:
+- `relu_on_bits_chunk_size=4` means:
+  - When using the second implementation:
+    - The input would be split to 4-bit chunks using [fhe.bits](../tutorial/bit_extraction.md), and then the ReLU would be applied to those chunks, which are then combined back.
+
+Here is a script showing how execution cost is impacted when changing these values:
+```python
+from concrete import fhe
+import numpy as np
+import matplotlib.pyplot as plt
+
+chunk_sizes = np.array(range(1, 6), dtype=int)
+bit_widths = np.array(range(5, 17), dtype=int)
+
+data = []
+for bit_width in bit_widths:
+    title = f"{bit_width=}:"
+    print(title)
+    print("-" * len(title))
+
+    inputset = range(-2**(bit_width-1), 2**(bit_width-1))
+    configuration = fhe.Configuration(relu_on_bits_threshold=17)
+
+    compiler = fhe.Compiler(lambda x: fhe.relu((fhe.relu(x) - (2**(bit_width-2))) * 2), {"x": "encrypted"})
+    circuit = compiler.compile(inputset, configuration)
+
+    print(f"    Complexity: {circuit.complexity} # tlu")
+    data.append((bit_width, 0, circuit.complexity))
+
+    for chunk_size in chunk_sizes:
+        configuration = fhe.Configuration(
+            relu_on_bits_threshold=1,
+            relu_on_bits_chunk_size=int(chunk_size),
+        )
+        circuit = compiler.compile(inputset, configuration)
+
+        print(f"    Complexity: {circuit.complexity} # {chunk_size=}")
+        data.append((bit_width, chunk_size, circuit.complexity))
+
+    print()
+
+data = np.array(data)
+
+plt.title(f"ReLU using TLU vs using bits")
+plt.xlabel("Input/Output precision")
+plt.ylabel("Cost")
+
+for i, chunk_size in enumerate([0] + list(chunk_sizes)):
+    costs = [
+        cost
+        for _, candidate_chunk_size, cost in data
+        if candidate_chunk_size == chunk_size
+    ]
+    assert len(costs) == len(bit_widths)
+
+    label = "Single TLU" if i == 0 else f"Bits extract + multiples {chunk_size + 1} bits TLUs"
+    width_bar = 0.8 / (len(chunk_sizes) + 1)
+
+    if i == 0:
+        plt.hlines(
+            costs,
+            bit_widths - 0.45,
+            bit_widths + 0.45,
+            label=label,
+            linestyle="--",
+        )
+    else:
+        plt.bar(
+            np.array(bit_widths) + width_bar * (i - (len(chunk_sizes) + 1) / 2),
+            height=costs,
+            width=width_bar,
+            label=label,
+        )
+
+plt.xticks(bit_widths)
+plt.legend(loc="upper left")
+
+plt.show()
+```
+
+{% hint style="info" %}
+You might need to run the script twice to avoid crashing when plotting.
+{% endhint %}
+
+The script will show the following figure:
+
+![](../_static/tutorials/relu/configuration_and_cost.png)
+
+{% hint style="info" %}
+The default values of these options are set based on simple circuits. How they affect performance will depend on the circuit, so play around with them to get the most out of this extension.
+{% endhint %}
+
+{% hint style="warning" %}
+Conversion with the second method (i.e., using chunks) only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
+{% endhint %}
