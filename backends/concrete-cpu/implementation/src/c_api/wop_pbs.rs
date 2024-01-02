@@ -318,10 +318,7 @@ pub unsafe extern "C" fn concrete_cpu_circuit_bootstrap_boolean_vertical_packing
         assert!(cbs_decomposition_level_count * cbs_decomposition_base_log <= 64);
 
         let mut lut_container = slice::from_raw_parts(lut, lut_size * lut_count);
-        let mut expanded_luts: Vec<u64> = vec![
-            0_u64;
-            fpksk_output_polynomial_size * lut_count
-        ];
+        let mut expanded_luts: Vec<u64> = vec![0_u64; fpksk_output_polynomial_size * lut_count];
 
         if lut_size < fpksk_output_polynomial_size {
             for luti in 0..lut_count {
