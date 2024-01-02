@@ -112,3 +112,7 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Enable promotions in encrypted shifts instead of casting in runtime. See [Bitwise#Shifts](../tutorial/bitwise.md#Shifts) to learn more.
 * **composable**: bool = False,
   * Specify that the function must be composable with itself.
+* **relu_on_bits_threshold**: int = 7,
+  * Bit-width to start implementing the ReLU extension with [fhe.bits](../tutorial/bit_extraction.md).
+* **relu_on_bits_chunk_size**: int = 3,
+  * Chunk size of the ReLU extension when [fhe.bits](../tutorial/bit_extraction.md) implementation is used.

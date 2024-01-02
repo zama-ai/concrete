@@ -9,6 +9,7 @@ from .hint import hint
 from .maxpool import maxpool
 from .multivariate import multivariate
 from .ones import one, ones, ones_like
+from .relu import relu
 from .round_bit_pattern import AutoRounder, round_bit_pattern
 from .table import LookupTable
 from .tag import tag
