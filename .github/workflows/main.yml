@@ -48,27 +48,27 @@ jobs:
         id: compiler
         uses: tj-actions/changed-files@0c6f2ac4885216b1830ecbcc3573209980c97716
         with:
-          files: compilers/concrete-compiler
+          files: ./compilers/concrete-compiler/**
 
       - name: Get changed files for concrete-optimizer
         id: optimizer
         uses: tj-actions/changed-files@0c6f2ac4885216b1830ecbcc3573209980c97716
         with:
           files: |
-            compilers/concrete-optimizer
-            .github/workflows/optimizer.yml
+            ./compilers/concrete-optimizer/**
+            ./.github/workflows/optimizer.yml
 
       - name: Get changed files in the concrete-cpu directory
         id: concrete-cpu
         uses: tj-actions/changed-files@0c6f2ac4885216b1830ecbcc3573209980c97716
         with:
-          files: backends/concrete-cpu/implementation
+          files: ./backends/concrete-cpu/implementation/**
 
       - name: Get changed files in the concrete-python directory
         id: concrete-python
         uses: tj-actions/changed-files@0c6f2ac4885216b1830ecbcc3573209980c97716
         with:
-          files: frontends/concrete-python
+          files: ./frontends/concrete-python/**
 
       - name: Check if compiler_build_and_test_cpu workflow has changed
         id: concrete-compiler-cpu-workflow
@@ -122,13 +122,13 @@ jobs:
         id: concrete-cpu-api
         uses: tj-actions/changed-files@0c6f2ac4885216b1830ecbcc3573209980c97716
         with:
-          files: backends/concrete-cpu/implementation/include/
+          files: ./backends/concrete-cpu/implementation/include/**
 
       - name: Get changed files in the concrete-cuda directory
         id: concrete-cuda-api
         uses: tj-actions/changed-files@0c6f2ac4885216b1830ecbcc3573209980c97716
         with:
-          files: backends/concrete-cuda/implementation/include/
+          files: ./backends/concrete-cuda/implementation/include/**
 
       - name: Set some github event outputs
         id: github
