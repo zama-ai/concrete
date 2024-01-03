@@ -51,7 +51,7 @@ std = [
 ]
 csprng = ["concrete-csprng"]
 parallel = ["rayon"]
-nightly = ["pulp/nightly", "concrete-fft/nightly"]
+nightly = ["pulp/nightly", "concrete-fft/nightly", "tfhe/nightly-avx512"]
 
 [build-dependencies]
 cbindgen = "0.24"
