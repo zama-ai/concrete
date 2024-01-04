@@ -274,6 +274,16 @@ void fillFeedback(Solution solution, CompilationFeedback &feedback) {
       std::isnan(solution.global_p_error) ? 0 : solution.global_p_error;
 }
 
+template <typename Solution> std::string getErrorMessage(Solution solution);
+
+template <> std::string getErrorMessage(optimizer::CircuitSolution sol) {
+  return sol.error_msg.c_str();
+}
+
+template <> std::string getErrorMessage(optimizer::DagSolution sol) {
+  return "NoParametersFound";
+}
+
 /// Check if the solution p_error and global_p_error of the given `solution`
 /// match the one expected by the `config`.
 template <typename Solution>
@@ -285,7 +295,7 @@ llvm::Error checkPErrorSolution(Solution solution, optimizer::Config config) {
                       config.global_p_error < solution.global_p_error;
 
   if (no_solution || bad_solution) {
-    return StreamStringError() << "Cannot find crypto parameters";
+    return StreamStringError() << getErrorMessage(solution);
   }
 
   bool naive_config = (std::isnan(config.global_p_error) &&
@@ -367,7 +377,7 @@ llvm::Expected<optimizer::Solution> getSolution(optimizer::Description &descr,
     if (encoding != concrete_optimizer::Encoding::Crt) {
       config.encoding = concrete_optimizer::Encoding::Native;
       auto sol = getDagMultiSolution(descr.dag.value(), config);
-      if (sol.is_feasible) {
+      if (sol.is_feasible || config.composable) {
         displayOptimizer(sol, descr, config);
         return toCompilerSolution(sol, feedback, config);
       }

@@ -672,8 +672,7 @@ CompilerEngine::compile(std::vector<std::string> inputs,
   for (auto input : inputs) {
     auto compilation = compile(input, target, outputLib);
     if (!compilation) {
-      return StreamStringError("Can't compile: ")
-             << llvm::toString(compilation.takeError());
+      return compilation.takeError();
     }
   }
   if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,
@@ -698,8 +697,7 @@ compileModuleOrSource(CompilerEngine *engine, T module,
 
   auto compilation = engine->compile(module, target, outputLib);
   if (!compilation) {
-    return StreamStringError("Can't compile: ")
-           << llvm::toString(compilation.takeError());
+    return compilation.takeError();
   }
 
   if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,

@@ -65,8 +65,7 @@ public:
   Result<void> compile(std::string mlirProgram) {
     auto compilationResult = compiler.compile({mlirProgram}, artifactDirectory);
     if (!compilationResult) {
-      return StringError("TestCircuit: compilation error ")
-             << llvm::toString(compilationResult.takeError());
+      return StringError(llvm::toString(compilationResult.takeError()));
     }
     library = compilationResult.get();
     return outcome::success();
