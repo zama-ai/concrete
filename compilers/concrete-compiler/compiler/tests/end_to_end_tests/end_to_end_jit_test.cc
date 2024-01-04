@@ -428,3 +428,39 @@ func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
 )XXX");
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NotComposable");
 }
+
+TEST(CompileNotComposable, composable_not_supported_dag_mono) {
+  mlir::concretelang::CompilationOptions options("main");
+  options.optimizerConfig.composable = true;
+  options.optimizerConfig.display = true;
+  options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MONO;
+  TestCircuit circuit(options);
+  auto err = circuit.compile(R"XXX(
+func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+  %cst_1 = arith.constant 1 : i4
+  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  return %1: !FHE.eint<3>
+}
+)XXX");
+  // This error message should be more explicit (composable is not supported for
+  // dag_mono)
+  ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NoParametersFound");
+}
+
+TEST(CompileNotComposable, composable_not_supported_v0) {
+  mlir::concretelang::CompilationOptions options("main");
+  options.optimizerConfig.composable = true;
+  options.optimizerConfig.display = true;
+  options.optimizerConfig.strategy = mlir::concretelang::optimizer::V0;
+  TestCircuit circuit(options);
+  auto err = circuit.compile(R"XXX(
+func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+  %cst_1 = arith.constant 1 : i4
+  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  return %1: !FHE.eint<3>
+}
+)XXX");
+  // This error message should be more explicit (composable is not supported for
+  // dag_mono)
+  ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NoParametersFound");
+}
