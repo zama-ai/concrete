@@ -393,3 +393,18 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 7), (uint64_t)7);
   ASSERT_EQ(lambda({Tensor<uint64_t>(0)}, 8), (uint64_t)0);
 }
+
+TEST(CompileNotComposable, not_composable_1) {
+  mlir::concretelang::CompilationOptions options("main");
+  options.optimizerConfig.composable = true;
+  options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MULTI;
+  TestCircuit circuit(options);
+  auto err = circuit.compile(R"XXX(
+func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+  %cst_1 = arith.constant 1 : i4
+  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  return %1: !FHE.eint<3>
+}
+)XXX");
+  ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NotComposable");
+}

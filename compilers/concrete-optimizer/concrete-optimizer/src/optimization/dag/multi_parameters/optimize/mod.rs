@@ -1163,14 +1163,16 @@ pub fn optimize_to_circuit_solution(
     p_cut: &Option<PrecisionCut>,
 ) -> keys_spec::CircuitSolution {
     if lut_count_from_dag(dag) == 0 {
+        // If there are no lut in the dag the noise is never refresh so the dag cannot be composable
+        if config.composable {
+            return keys_spec::CircuitSolution::no_solution(NotComposable.to_string());
+        }
         let nb_instr = dag.operators.len();
         if let Some(sol) = optimize_mono(dag, config, search_space, persistent_caches).best_solution
         {
             return keys_spec::CircuitSolution::from_native_solution(sol, nb_instr);
         }
-        return keys_spec::CircuitSolution::no_solution(
-            "No crypto-parameters for the given constraints",
-        );
+        return keys_spec::CircuitSolution::no_solution(NoParametersFound.to_string());
     }
     let default_partition = 0;
     let dag_and_params = optimize(
