@@ -46,6 +46,10 @@ fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
 }
 
 fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) -> ffi::Solution {
+    // TODO: Error should be more explicit
+    if options.composable {
+        return no_solution();
+    }
     let processing_unit = processing_unit(options);
 
     let config = Config {
@@ -502,6 +506,10 @@ impl OperationDag {
     }
 
     fn optimize_v0(&self, options: ffi::Options) -> ffi::Solution {
+        // TODO: Error should be more explicit
+        if options.composable {
+            return no_solution();
+        }
         let processing_unit = processing_unit(options);
 
         let config = Config {
@@ -528,6 +536,10 @@ impl OperationDag {
     }
 
     fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
+        // TODO: Error should be more explicit
+        if options.composable {
+            return no_dag_solution();
+        }
         let processing_unit = processing_unit(options);
         let config = Config {
             security_level: options.security_level,
