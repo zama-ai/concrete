@@ -45,7 +45,7 @@ struct Statistic {
   std::string location;
   PrimitiveOperation operation;
   std::vector<std::pair<KeyType, size_t>> keys;
-  size_t count;
+  std::optional<int64_t> count;
 };
 
 struct CompilationFeedback {
@@ -79,7 +79,7 @@ struct CompilationFeedback {
   std::vector<Statistic> statistics;
 
   /// @brief memory usage per location
-  std::map<std::string, int64_t> memoryUsagePerLoc;
+  std::map<std::string, std::optional<int64_t>> memoryUsagePerLoc;
 
   /// Fill the sizes from the program info.
   void fillFromProgramInfo(const Message<protocol::ProgramInfo> &params);
