@@ -94,7 +94,7 @@ struct CompilationOptions {
   /// encodings info manually to allow the client lib to be generated.
   std::optional<Message<concreteprotocol::CircuitEncodingInfo>> encodings;
 
-  bool compressInputs;
+  bool compressEvaluationKeys;
 
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
@@ -104,7 +104,7 @@ struct CompilationOptions {
         optimizeTFHE(true), simulate(false), emitGPUOps(false),
         mainFuncName(std::nullopt), optimizerConfig(optimizer::DEFAULT_CONFIG),
         chunkIntegers(false), chunkSize(4), chunkWidth(2),
-        encodings(std::nullopt), compressInputs(false){};
+        encodings(std::nullopt), compressEvaluationKeys(false){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {
     mainFuncName = funcname;
