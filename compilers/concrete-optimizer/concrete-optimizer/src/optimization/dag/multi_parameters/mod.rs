@@ -8,7 +8,7 @@ pub mod optimize;
 pub mod optimize_generic;
 mod partitionning;
 mod partitions;
-mod precision_cut;
+pub mod precision_cut;
 mod symbolic_variance;
 mod union_find;
 mod variance_constraint;

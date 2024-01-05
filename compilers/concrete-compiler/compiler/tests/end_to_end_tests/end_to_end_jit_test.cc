@@ -429,7 +429,7 @@ func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NotComposable");
 }
 
-TEST(CompileNotComposable, composable_not_supported_dag_mono) {
+TEST(CompileComposable, composable_supported_dag_mono) {
   mlir::concretelang::CompilationOptions options("main");
   options.optimizerConfig.composable = true;
   options.optimizerConfig.display = true;
@@ -442,12 +442,10 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   return %1: !FHE.eint<3>
 }
 )XXX");
-  // This error message should be more explicit (composable is not supported for
-  // dag_mono)
-  ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NoParametersFound");
+  assert(err.has_value());
 }
 
-TEST(CompileNotComposable, composable_not_supported_v0) {
+TEST(CompileComposable, composable_supported_v0) {
   mlir::concretelang::CompilationOptions options("main");
   options.optimizerConfig.composable = true;
   options.optimizerConfig.display = true;
@@ -460,7 +458,5 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   return %1: !FHE.eint<3>
 }
 )XXX");
-  // This error message should be more explicit (composable is not supported for
-  // dag_mono)
-  ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NoParametersFound");
+  assert(err.has_value());
 }
