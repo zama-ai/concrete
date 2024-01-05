@@ -33,7 +33,18 @@ for lhs_bit_width in range(1, 5):
             ]
         ]
 
-for _ in range(8):
+NB_RANDOM_TESTS = 8
+
+strategies = [
+    fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
+    fhe.BitwiseStrategy.THREE_TLU_CASTED,
+    fhe.BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
+    fhe.BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
+    fhe.BitwiseStrategy.CHUNKED,
+]
+random_tests_stategies = strategies * (NB_RANDOM_TESTS // len(strategies) + 1)
+
+for _ in range(NB_RANDOM_TESTS):
     cases.append(
         [
             # operation
@@ -49,15 +60,7 @@ for _ in range(8):
             random.choice([(), (2,), (3, 2)]),
             random.choice([(), (2,), (3, 2)]),
             # strategy
-            random.choice(
-                [
-                    fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
-                    fhe.BitwiseStrategy.THREE_TLU_CASTED,
-                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
-                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
-                    fhe.BitwiseStrategy.CHUNKED,
-                ]
-            ),
+            random_tests_stategies.pop(),
         ]
     )
 
