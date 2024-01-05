@@ -70,9 +70,9 @@ parseEndToEndCommandLine(int argc, char **argv) {
   llvm::cl::opt<bool> simulate("simulate",
                                llvm::cl::desc("Simulate the FHE execution"),
                                llvm::cl::init(false));
-  llvm::cl::opt<bool> inputCompression(
-      "input-compression",
-      llvm::cl::desc("Enable the compression of input ciphertext"),
+  llvm::cl::opt<bool> compressEvaluationKeys(
+      "compress-evaluation-keys",
+      llvm::cl::desc("Enable the compression of evaluation keys"),
       llvm::cl::init(false));
 
   // Optimizer options
@@ -134,7 +134,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
   if (batchTFHEOps.has_value())
     compilationOptions.batchTFHEOps = batchTFHEOps.getValue().value();
   compilationOptions.simulate = simulate.getValue();
-  compilationOptions.compressInputs = inputCompression.getValue();
+  compilationOptions.compressEvaluationKeys = compressEvaluationKeys.getValue();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
   compilationOptions.optimizerConfig.strategy = optimizerStrategy.getValue();

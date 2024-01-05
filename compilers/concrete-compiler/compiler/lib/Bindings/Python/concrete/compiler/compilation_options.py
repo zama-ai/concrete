@@ -100,18 +100,18 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("can't set the option to a non-boolean value")
         self.cpp().set_loop_parallelize(loop_parallelize)
 
-    def set_compress_inputs(self, compress_inputs: bool):
-        """Set option for input compression.
+    def set_compress_evaluation_keys(self, compress_evaluation_keys: bool):
+        """Set option for compression of evaluation keys.
 
         Args:
-            compress_inputs (bool): whether to force it or use the key properties in client parameters
+            compress_evaluation_keys (bool): whether to turn it on or off
 
         Raises:
             TypeError: if the value to set is not boolean
         """
-        if not isinstance(compress_inputs, bool):
+        if not isinstance(compress_evaluation_keys, bool):
             raise TypeError("can't set the option to a non-boolean value")
-        self.cpp().set_compress_inputs(compress_inputs)
+        self.cpp().set_compress_evaluation_keys(compress_evaluation_keys)
 
     def set_verify_diagnostics(self, verify_diagnostics: bool):
         """Set option for diagnostics verification.
