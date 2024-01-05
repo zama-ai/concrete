@@ -120,7 +120,7 @@ llvm::cl::opt<bool> emitGPUOps(
     llvm::cl::init<bool>(false));
 
 llvm::cl::opt<bool>
-    compressInputs("compress-inputs",
+    compressEvaluationKeys("compress-inputs",
                    llvm::cl::desc("Force the use of compressed (seeded) input "
                                   "evaluation keys and ciphertexts"),
                    llvm::cl::init<bool>(false));
@@ -405,7 +405,7 @@ cmdlineCompilationOptions() {
   options.optimizeTFHE = cmdline::optimizeTFHE;
   options.simulate = cmdline::simulate;
   options.emitGPUOps = cmdline::emitGPUOps;
-  options.compressInputs = cmdline::compressInputs;
+  options.compressEvaluationKeys = cmdline::compressEvaluationKeys;
   options.chunkIntegers = cmdline::chunkIntegers;
   options.chunkSize = cmdline::chunkSize;
   options.chunkWidth = cmdline::chunkWidth;

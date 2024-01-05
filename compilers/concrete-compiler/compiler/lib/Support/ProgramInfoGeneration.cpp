@@ -172,7 +172,7 @@ generateGate(mlir::Type inputType,
 
 Message<concreteprotocol::KeysetInfo>
 extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
-                  concrete::SecurityCurve curve, bool compressInputs) {
+                  concrete::SecurityCurve curve, bool compressEvaluationKeys) {
 
   auto output = Message<concreteprotocol::KeysetInfo>();
 
@@ -201,7 +201,7 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
         ksk.getInputKey().getNormalized().value().index);
     infoMessage.asBuilder().setOutputId(
         ksk.getOutputKey().getNormalized().value().index);
-    if (!compressInputs) {
+    if (!compressEvaluationKeys) {
       infoMessage.asBuilder().setCompression(
           concreteprotocol::Compression::NONE);
     } else {
@@ -234,7 +234,7 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
         bsk.getInputKey().getNormalized().value().index);
     infoMessage.asBuilder().setOutputId(
         bsk.getOutputKey().getNormalized().value().index);
-    if (!compressInputs) {
+    if (!compressEvaluationKeys) {
       infoMessage.asBuilder().setCompression(
           concreteprotocol::Compression::NONE);
     } else {
@@ -268,7 +268,7 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
         pksk.getInputKey().getNormalized().value().index);
     infoMessage.asBuilder().setOutputId(
         pksk.getOutputKey().getNormalized().value().index);
-    if (!compressInputs) {
+    if (!compressEvaluationKeys) {
       infoMessage.asBuilder().setCompression(
           concreteprotocol::Compression::NONE);
     } else {
@@ -345,7 +345,7 @@ llvm::Expected<Message<concreteprotocol::ProgramInfo>>
 createProgramInfoFromTfheDialect(
     mlir::ModuleOp module, llvm::StringRef functionName, int bitsOfSecurity,
     Message<concreteprotocol::CircuitEncodingInfo> &encodings,
-    bool compressInputs) {
+    bool compressEvaluationKeys) {
 
   // Check that security curves exist
   const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
@@ -359,7 +359,7 @@ createProgramInfoFromTfheDialect(
 
   // We extract the keys of the circuit
   auto keysetInfo = extractKeysetInfo(TFHE::extractCircuitKeys(module), *curve,
-                                      compressInputs);
+                                      compressEvaluationKeys);
   output.asBuilder().setKeyset(keysetInfo.asReader());
 
   // We generate the gates for the inputs aud outputs

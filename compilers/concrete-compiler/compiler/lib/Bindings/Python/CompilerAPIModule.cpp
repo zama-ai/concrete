@@ -91,8 +91,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, bool b) {
              options.dataflowParallelize = b;
            })
-      .def("set_compress_inputs", [](CompilationOptions &options,
-                                     bool b) { options.compressInputs = b; })
+      .def("set_compress_evaluation_keys",
+           [](CompilationOptions &options, bool b) {
+             options.compressEvaluationKeys = b;
+           })
       .def("set_optimize_concrete", [](CompilationOptions &options,
                                        bool b) { options.optimizeTFHE = b; })
       .def("set_p_error",
