@@ -30,21 +30,27 @@ const _4_SIGMA: f64 = 0.000_063_342_483_999_973;
 
 const LOW_PARTITION: PartitionIndex = 0;
 
-fn optimize(
-    dag: &unparametrized::OperationDag,
-    p_cut: &Option<PrecisionCut>,
-    default_partition: usize,
-) -> Option<Parameters> {
-    let config = Config {
+static CPU_COMPLEXITY: Lazy<CpuComplexity> = Lazy::new(CpuComplexity::default);
+
+fn default_config() -> Config<'static> {
+    let complexity_model = Lazy::force(&CPU_COMPLEXITY);
+    Config {
         security_level: 128,
         maximum_acceptable_error_probability: _4_SIGMA,
         key_sharing: true,
         ciphertext_modulus_log: 64,
         fft_precision: 53,
-        complexity_model: &CpuComplexity::default(),
+        complexity_model,
         composable: false,
-    };
+    }
+}
 
+fn optimize(
+    dag: &unparametrized::OperationDag,
+    p_cut: &Option<PrecisionCut>,
+    default_partition: usize,
+) -> Option<Parameters> {
+    let config = default_config();
     let search_space = SearchSpace::default_cpu();
     super::optimize(
         dag,
@@ -633,16 +639,7 @@ fn test_multi_rounded_fks_coherency() {
 fn test_levelled_only() {
     let mut dag = unparametrized::OperationDag::new();
     let _ = dag.add_input(22, Shape::number());
-    let config = Config {
-        security_level: 128,
-        maximum_acceptable_error_probability: _4_SIGMA,
-        key_sharing: true,
-        ciphertext_modulus_log: 64,
-        fft_precision: 53,
-        complexity_model: &CpuComplexity::default(),
-        composable: false,
-    };
-
+    let config = default_config();
     let search_space = SearchSpace::default_cpu();
     let sol =
         super::optimize_to_circuit_solution(&dag, config, &search_space, &SHARED_CACHES, &None);
@@ -662,15 +659,7 @@ fn test_big_secret_key_sharing() {
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
-    let config_sharing = Config {
-        security_level: 128,
-        maximum_acceptable_error_probability: _4_SIGMA,
-        key_sharing: true,
-        ciphertext_modulus_log: 64,
-        fft_precision: 53,
-        complexity_model: &CpuComplexity::default(),
-        composable: false,
-    };
+    let config_sharing = default_config();
     let config_no_sharing = Config {
         key_sharing: false,
         ..config_sharing
@@ -712,15 +701,7 @@ fn test_big_and_small_secret_key() {
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
-    let config_sharing = Config {
-        security_level: 128,
-        maximum_acceptable_error_probability: _4_SIGMA,
-        key_sharing: true,
-        ciphertext_modulus_log: 64,
-        fft_precision: 53,
-        complexity_model: &CpuComplexity::default(),
-        composable: false,
-    };
+    let config_sharing = default_config();
     let config_no_sharing = Config {
         key_sharing: false,
         ..config_sharing
@@ -762,23 +743,10 @@ fn test_composition_2_partitions() {
     let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
     let input2 = dag.add_dot([input1, lut3], [1, 1]);
     let _ = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
-    let normal_config = Config {
-        security_level: 128,
-        maximum_acceptable_error_probability: _4_SIGMA,
-        key_sharing: true,
-        ciphertext_modulus_log: 64,
-        fft_precision: 53,
-        complexity_model: &CpuComplexity::default(),
-        composable: false,
-    };
+    let normal_config = default_config();
     let composed_config = Config {
-        security_level: 128,
-        maximum_acceptable_error_probability: _4_SIGMA,
-        key_sharing: false,
-        ciphertext_modulus_log: 64,
-        fft_precision: 53,
-        complexity_model: &CpuComplexity::default(),
         composable: true,
+        ..normal_config
     };
     let search_space = SearchSpace::default_cpu();
     let normal_sol = super::optimize(&dag, normal_config, &search_space, &SHARED_CACHES, &None, 1)
@@ -796,4 +764,30 @@ fn test_composition_2_partitions() {
     .1;
     assert!(composed_sol.is_feasible);
     assert!(composed_sol.complexity > normal_sol.complexity);
+}
+
+#[test]
+fn test_composition_1_partition_not_composable() {
+    let mut dag = unparametrized::OperationDag::new();
+    let input1 = dag.add_input(8, Shape::number());
+    let input1 = dag.add_dot([input1], [1 << 16]);
+    let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 8);
+    let _ = dag.add_dot([lut1], [1 << 16]);
+    let normal_config = default_config();
+    let composed_config = Config {
+        composable: true,
+        ..normal_config
+    };
+    let search_space = SearchSpace::default_cpu();
+    let normal_sol = super::optimize(&dag, normal_config, &search_space, &SHARED_CACHES, &None, 1);
+    let composed_sol = super::optimize(
+        &dag,
+        composed_config,
+        &search_space,
+        &SHARED_CACHES,
+        &None,
+        1,
+    );
+    assert!(normal_sol.is_ok());
+    assert!(composed_sol.is_err());
 }

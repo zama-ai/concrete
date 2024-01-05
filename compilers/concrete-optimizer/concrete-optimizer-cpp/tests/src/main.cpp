@@ -33,15 +33,19 @@ concrete_optimizer::Options default_options() {
   };
 }
 
-void test_v0() {
+#define TEST static void
+
+TEST test_v0() {
+  auto options = default_options();
+  options.composable = true;
   concrete_optimizer::v0::Solution solution =
       concrete_optimizer::v0::optimize_bootstrap(
-          PRECISION_1B, NOISE_DEVIATION_COEFF, default_options());
+          PRECISION_1B, NOISE_DEVIATION_COEFF, options);
 
   assert(solution.glwe_polynomial_size == 256);
 }
 
-void test_dag_no_lut() {
+TEST test_dag_no_lut() {
   auto dag = concrete_optimizer::dag::empty();
 
   std::vector<uint64_t> shape = {3};
@@ -58,12 +62,12 @@ void test_dag_no_lut() {
 
   dag->add_dot(slice(inputs), std::move(weights));
 
-  auto solution = dag->optimize_v0(default_options());
+  auto solution = dag->optimize(default_options());
   assert(solution.glwe_polynomial_size == 1);
   assert(solution.glwe_dimension == 555);
 }
 
-void test_dag_lut() {
+TEST test_dag_lut() {
   auto dag = concrete_optimizer::dag::empty();
 
   std::vector<uint64_t> shape = {3};
@@ -80,7 +84,7 @@ void test_dag_lut() {
   assert(!solution.use_wop_pbs);
 }
 
-void test_dag_lut_wop() {
+TEST test_dag_lut_wop() {
   auto dag = concrete_optimizer::dag::empty();
 
   std::vector<uint64_t> shape = {3};
@@ -97,7 +101,7 @@ void test_dag_lut_wop() {
   assert(solution.use_wop_pbs);
 }
 
-void test_dag_lut_force_wop() {
+TEST test_dag_lut_force_wop() {
   auto dag = concrete_optimizer::dag::empty();
 
   std::vector<uint64_t> shape = {3};
@@ -115,7 +119,7 @@ void test_dag_lut_force_wop() {
   assert(!solution.crt_decomposition.empty());
 }
 
-void test_multi_parameters_1_precision() {
+TEST test_multi_parameters_1_precision() {
   auto dag = concrete_optimizer::dag::empty();
 
   std::vector<uint64_t> shape = {3};
@@ -140,7 +144,7 @@ void test_multi_parameters_1_precision() {
   assert(circuit_solution.circuit_keys.conversion_keyswitch_keys.size() == 0);
 }
 
-void test_multi_parameters_2_precision() {
+TEST test_multi_parameters_2_precision() {
   auto dag = concrete_optimizer::dag::empty();
 
   std::vector<uint64_t> shape = {3};
@@ -179,7 +183,7 @@ void test_multi_parameters_2_precision() {
   assert(actual == expected);
 }
 
-void test_multi_parameters_2_precision_crt() {
+TEST test_multi_parameters_2_precision_crt() {
   auto dag = concrete_optimizer::dag::empty();
 
   std::vector<uint64_t> shape = {3};
@@ -214,7 +218,77 @@ void test_multi_parameters_2_precision_crt() {
   assert(circuit_solution.circuit_keys.conversion_keyswitch_keys.size() == 0);
 }
 
+TEST test_composable_dag_mono_fallback_on_dag_multi() {
+  auto dag = concrete_optimizer::dag::empty();
+
+  std::vector<uint64_t> shape = {};
+
+  concrete_optimizer::dag::OperatorIndex input1 =
+      dag->add_input(PRECISION_8B, slice(shape));
+
+  std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {input1};
+  std::vector<int64_t> weight_vec = {1 << 8};
+  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights1 =
+    concrete_optimizer::weights::vector(slice(weight_vec));
+
+  input1 = dag->add_dot(slice(inputs), std::move(weights1));
+  std::vector<u_int64_t> table = {};
+  auto lut1 = dag->add_lut(input1, slice(table), PRECISION_8B);
+  std::vector<concrete_optimizer::dag::OperatorIndex> lut1v = {lut1};
+  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights2 =
+    concrete_optimizer::weights::vector(slice(weight_vec));
+  dag->add_dot(slice(lut1v), std::move(weights2));
+
+  auto options = default_options();
+  auto solution1 = dag->optimize(options);
+  assert(!solution1.use_wop_pbs);
+  assert(solution1.p_error < options.maximum_acceptable_error_probability);
+
+  options.composable = true;
+  auto solution2 = dag->optimize(options);
+  assert(!solution2.use_wop_pbs);
+  assert(solution2.p_error < options.maximum_acceptable_error_probability);
+  assert(solution1.complexity < solution2.complexity);
+}
+
+TEST test_non_composable_dag_mono_fallback_on_woppbs() {
+  auto dag = concrete_optimizer::dag::empty();
+
+  std::vector<uint64_t> shape = {};
+
+  concrete_optimizer::dag::OperatorIndex input1 =
+      dag->add_input(PRECISION_8B, slice(shape));
+
+
+  std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {input1};
+  std::vector<int64_t> weight_vec = {1 << 16};
+  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights1 =
+    concrete_optimizer::weights::vector(slice(weight_vec));
+
+  input1 = dag->add_dot(slice(inputs), std::move(weights1));
+  std::vector<u_int64_t> table = {};
+  auto lut1 = dag->add_lut(input1, slice(table), PRECISION_8B);
+  std::vector<concrete_optimizer::dag::OperatorIndex> lut1v = {lut1};
+  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights2 =
+    concrete_optimizer::weights::vector(slice(weight_vec));
+  dag->add_dot(slice(lut1v), std::move(weights2));
+
+  auto options = default_options();
+
+  auto solution1 = dag->optimize(options);
+  assert(!solution1.use_wop_pbs);
+  assert(solution1.p_error < options.maximum_acceptable_error_probability);
+
+  options.composable = true;
+  auto solution2 = dag->optimize(options);
+  assert(solution2.p_error < options.maximum_acceptable_error_probability);
+  assert(solution1.complexity < solution2.complexity);
+  assert(solution2.use_wop_pbs);
+
+}
+
 int main() {
+
   test_v0();
   test_dag_no_lut();
   test_dag_lut();
@@ -223,6 +297,8 @@ int main() {
   test_multi_parameters_1_precision();
   test_multi_parameters_2_precision();
   test_multi_parameters_2_precision_crt();
+  test_composable_dag_mono_fallback_on_dag_multi();
+  test_non_composable_dag_mono_fallback_on_woppbs();
 
   return 0;
 }

@@ -7,6 +7,7 @@ use concrete_optimizer::dag::operator::{
 use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::{self, CircuitSolution};
+use concrete_optimizer::optimization::dag::multi_parameters::precision_cut::PrecisionCut;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
@@ -46,10 +47,7 @@ fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
 }
 
 fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) -> ffi::Solution {
-    // TODO: Error should be more explicit
-    if options.composable {
-        return no_solution();
-    }
+    // Support composable since there is no dag
     let processing_unit = processing_unit(options);
 
     let config = Config {
@@ -104,6 +102,55 @@ impl From<&ffi::Solution> for ffi::DagSolution {
             pp_decomposition_level_count: 0,
             pp_decomposition_base_log: 0,
             crt_decomposition: vec![],
+        }
+    }
+}
+
+impl From<&ffi::CircuitSolution> for ffi::DagSolution {
+    fn from(sol: &ffi::CircuitSolution) -> Self {
+        assert!(sol.circuit_keys.secret_keys.len() == 2);
+        let keys = &sol.circuit_keys;
+        let big_key = &keys.secret_keys[0];
+        let small_key = &keys.secret_keys[1];
+        let input_lwe_dimension = big_key.polynomial_size * big_key.glwe_dimension;
+        let internal_ks_output_lwe_dimension = small_key.polynomial_size * small_key.glwe_dimension;
+        let keyswitch_key = &keys.keyswitch_keys[0];
+        let bootstrap_key = &keys.bootstrap_keys[0];
+        let mut cb_decomposition_level_count = 0;
+        let mut cb_decomposition_base_log = 0;
+        let mut pp_decomposition_level_count = 0;
+        let mut pp_decomposition_base_log = 0;
+        let use_wop_pbs = !sol.circuit_keys.circuit_bootstrap_keys.is_empty();
+        if use_wop_pbs {
+            assert!(sol.circuit_keys.circuit_bootstrap_keys.len() == 1);
+            assert!(sol.circuit_keys.private_functional_packing_keys.len() == 1);
+            let cb_decomp = &keys.circuit_bootstrap_keys[0].br_decomposition_parameter;
+            cb_decomposition_level_count = cb_decomp.level;
+            cb_decomposition_base_log = cb_decomp.log2_base;
+            let pp_switch_decomp =
+                &keys.private_functional_packing_keys[0].br_decomposition_parameter;
+            pp_decomposition_level_count = pp_switch_decomp.level;
+            pp_decomposition_base_log = pp_switch_decomp.log2_base;
+        }
+        Self {
+            input_lwe_dimension,
+            internal_ks_output_lwe_dimension,
+            ks_decomposition_level_count: keyswitch_key.ks_decomposition_parameter.level,
+            ks_decomposition_base_log: keyswitch_key.ks_decomposition_parameter.log2_base,
+            glwe_polynomial_size: big_key.polynomial_size,
+            glwe_dimension: big_key.glwe_dimension,
+            br_decomposition_level_count: bootstrap_key.br_decomposition_parameter.level,
+            br_decomposition_base_log: bootstrap_key.br_decomposition_parameter.log2_base,
+            complexity: sol.complexity,
+            noise_max: f64::NAN,
+            p_error: sol.p_error,
+            global_p_error: sol.global_p_error,
+            use_wop_pbs,
+            cb_decomposition_level_count,
+            cb_decomposition_base_log,
+            pp_decomposition_level_count,
+            pp_decomposition_base_log,
+            crt_decomposition: sol.crt_decomposition.clone(),
         }
     }
 }
@@ -505,41 +552,7 @@ impl OperationDag {
         self.0.add_unsafe_cast(input.into(), new_precision).into()
     }
 
-    fn optimize_v0(&self, options: ffi::Options) -> ffi::Solution {
-        // TODO: Error should be more explicit
-        if options.composable {
-            return no_solution();
-        }
-        let processing_unit = processing_unit(options);
-
-        let config = Config {
-            security_level: options.security_level,
-            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
-            key_sharing: options.key_sharing,
-            ciphertext_modulus_log: options.ciphertext_modulus_log,
-            fft_precision: options.fft_precision,
-            complexity_model: &CpuComplexity::default(),
-            composable: options.composable,
-        };
-
-        let search_space = SearchSpace::default(processing_unit);
-
-        let result = concrete_optimizer::optimization::dag::solo_key::optimize::optimize(
-            &self.0,
-            config,
-            &search_space,
-            &caches_from(options),
-        );
-        result
-            .best_solution
-            .map_or_else(no_solution, |solution| solution.into())
-    }
-
     fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
-        // TODO: Error should be more explicit
-        if options.composable {
-            return no_dag_solution();
-        }
         let processing_unit = processing_unit(options);
         let config = Config {
             security_level: options.security_level,
@@ -554,15 +567,31 @@ impl OperationDag {
         let search_space = SearchSpace::default(processing_unit);
 
         let encoding = options.encoding.into();
-        let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
-            &self.0,
-            config,
-            &search_space,
-            encoding,
-            options.default_log_norm2_woppbs,
-            &caches_from(options),
-        );
-        result.map_or_else(no_dag_solution, |solution| solution.into())
+        if options.composable {
+            let circuit_sol =
+                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                    &Some(PrecisionCut { p_cut: vec![] }),
+                );
+            let circuit_sol: ffi::CircuitSolution = circuit_sol.into();
+            (&circuit_sol).into()
+        } else {
+            let result =
+                concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                );
+            result.map_or_else(no_dag_solution, |solution| solution.into())
+        }
     }
 
     fn dump(&self) -> String {
@@ -696,8 +725,6 @@ mod ffi {
             rounded_precision: u8,
         ) -> OperatorIndex;
 
-        fn optimize_v0(self: &OperationDag, options: Options) -> Solution;
-
         fn optimize(self: &OperationDag, options: Options) -> DagSolution;
 
         fn dump(self: &OperationDag) -> String;
@@ -716,7 +743,7 @@ mod ffi {
         #[namespace = "concrete_optimizer::weights"]
         fn number(weight: i64) -> Box<Weights>;
 
-        fn optimize_multi(self: &OperationDag, _options: Options) -> CircuitSolution;
+        fn optimize_multi(self: &OperationDag, options: Options) -> CircuitSolution;
 
         fn NO_KEY_ID() -> u64;
     }
