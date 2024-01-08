@@ -198,7 +198,6 @@ def test_minimum_maximum(
     can_be_known_failure = (
         name.endswith("xfail_if_multi")
         and configuration.parameter_selection_strategy == fhe.ParameterSelectionStrategy.MULTI
-        and lhs_is_signed != rhs_is_signed
     )
 
     if strategy is not None:
