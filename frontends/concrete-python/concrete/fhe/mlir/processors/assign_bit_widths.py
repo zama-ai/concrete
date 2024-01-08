@@ -230,7 +230,7 @@ class AdditionalConstraints:
         return any(pred.output.is_clear for pred in preds)
 
     def has_overflow_protection(self, node: Node, preds: List[Node]) -> bool:
-        return node.properties["attributes"]["overflow_protection"] is True
+        return node.properties["kwargs"]["overflow_protection"] is True
 
     # ===========
     # Constraints

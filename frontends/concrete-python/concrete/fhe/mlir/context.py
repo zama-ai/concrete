@@ -28,6 +28,7 @@ from ..compilation.configuration import (
     BitwiseStrategy,
     ComparisonStrategy,
     Configuration,
+    Exactness,
     MinMaxStrategy,
 )
 from ..dtypes import Integer
@@ -3143,6 +3144,8 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         lsbs_to_remove: int,
+        exactness: Exactness,
+        overflow_detected: bool,
     ) -> Conversion:
         if x.is_clear:
             highlights = {
@@ -3153,19 +3156,121 @@ class Context:
 
         assert x.bit_width > lsbs_to_remove
 
+        if exactness is None:
+            exactness = self.configuration.rounding_exactness
+
+        intermediate_bit_width = x.bit_width - lsbs_to_remove
         intermediate_type = self.typeof(
             ValueDescription(
-                dtype=Integer(is_signed=x.is_signed, bit_width=(x.bit_width - lsbs_to_remove)),
+                dtype=Integer(is_signed=x.is_signed, bit_width=intermediate_bit_width),
                 shape=x.shape,
                 is_encrypted=x.is_encrypted,
             )
         )
+        if exactness is Exactness.APPROXIMATE:
+            approx_conf = self.configuration.approximate_rounding_config
+            # 1. Unskew TLU's futur error distribution on approximated value
+            # this balances agains all leading zeros in the noise (ignoring symetric noise)
+            unskewed = x
+            if approx_conf.symetrize_deltas:
+                highest_supported_precision = 62
+                delta_precision = highest_supported_precision - x.type.bit_width
+                full_precision = x.type.bit_width + delta_precision
+                half_in_extra_precision = (
+                    1 << (delta_precision - 1)
+                ) - 1  # slightly smaller then half
+                half_in_extra_precision = self.constant(
+                    self.i(full_precision + 1), half_in_extra_precision
+                )
+                x_high_precision = self.reinterpret(x, bit_width=full_precision)
+                unskewed = self.add(
+                    x_high_precision.type, x_high_precision, half_in_extra_precision
+                )
 
-        rounded = self.operation(
-            fhe.RoundEintOp if x.is_scalar else fhelinalg.RoundOp,
-            intermediate_type,
-            x.result,
-        )
+            # 2. Cancel overflow to have a TLU at exactly target_precision
+            # starting from 5 bits, the extra overflow bit in the TLU is too costly
+            # a smaller precision TLU can detect approximately the overflow to cancel it
+            # this is only possible because of the extra-bit from overflow protection
+            target_precision = x.bit_width - lsbs_to_remove - overflow_detected
+            if (
+                overflow_detected
+                and target_precision >= approx_conf.approximate_clipping_start_precision
+                and approx_conf.approximate_clipping_start_precision is not False
+            ):
+                unskew_pre_overflow = self.reinterpret(unskewed, bit_width=x.type.bit_width)
+                overflow_precision = max(2, target_precision - 1)
+                # The last half-cell values in overflow_precision will naturally overflow.
+                # But there can also be an off by minus 1 to the previous cell in the worst case
+                # and an overflow in the successor TLU.
+                # We sliglty decrease the value of the rounding output on theses cells.
+                # `realign_cell_by` defines where the decrease starts to apply.
+                step_high = 1 << (x.type.bit_width - intermediate_bit_width)
+                step_wide = step_high
+                full_decrease_by = step_high
+                realign_cell_by = step_wide // 2
+                realign_cell_by = self.constant(self.i(x.type.bit_width + 1), realign_cell_by)
+                overflow_candidate = self.sub(
+                    unskew_pre_overflow.type, unskew_pre_overflow, realign_cell_by
+                )
+                overflow_candidate = self.reinterpret(
+                    overflow_candidate, bit_width=overflow_precision
+                )
+                half_tlu_size = 2 ** (overflow_precision - 1)
+                if x.is_signed:
+                    negative_size = half_tlu_size
+                    positive_size = negative_size
+                    used_positive_size = half_tlu_size // 2
+                    # this is oriented for precision higher than 3
+                    # it will work with smaller precision but with more invasive effects
+                    prevent_overflow_positive = (
+                        # pre-overflow
+                        [0] * used_positive_size
+                        # overflow part
+                        + [3 * full_decrease_by // 4, full_decrease_by]
+                        # unused
+                        + [0] * (positive_size - used_positive_size - 2)
+                    )[:half_tlu_size]
+                    prevent_overflow = prevent_overflow_positive + [0] * negative_size
+                else:
+                    prevent_overflow = (
+                        # pre-overflow
+                        [0] * half_tlu_size
+                        # overflow part
+                        + [3 * full_decrease_by // 4, full_decrease_by]
+                        # unused
+                        + [0] * (half_tlu_size - 2)
+                    )[: 2 * half_tlu_size]
+                signed_type = self.to_signed(x).type
+                overflow_cancel = self.reinterpret(
+                    self.tlu(
+                        signed_type,
+                        overflow_candidate,
+                        table=prevent_overflow,
+                    ),
+                    bit_width=x.type.bit_width,
+                    signed=x.is_signed,
+                )
+                unskewed = self.sub(unskew_pre_overflow.type, unskew_pre_overflow, overflow_cancel)
+                if approx_conf.reduce_precision_after_approximate_clipping:
+                    # a minimum bitwith 3 is required to multiply by 2 in signed case
+                    if unskewed.bit_width < 3:
+                        # pragma: no-cover
+                        self.reinterpret(unskewed, bit_width=3)
+                    unskewed = self.mul(
+                        unskewed.type, unskewed, self.constant(self.i(unskewed.bit_width + 1), 2)
+                    )
+                    rounded = self.reinterpret(unskewed, bit_width=intermediate_type.bit_width - 1)
+                    # The TLU after may be adjusted to the right precision (see `Converter.tlu`)
+                else:
+                    rounded = self.reinterpret(unskewed, bit_width=intermediate_type.bit_width)
+            else:
+                rounded = self.reinterpret(unskewed, bit_width=intermediate_type.bit_width)
+        else:
+            rounded = self.operation(
+                fhe.RoundEintOp if x.is_scalar else fhelinalg.RoundOp,
+                intermediate_type,
+                x.result,
+            )
 
         return self.to_signedness(rounded, of=resulting_type)
 
@@ -3593,13 +3698,16 @@ class Context:
 
         return x
 
-    def reinterpret(self, x: Conversion, *, bit_width: int) -> Conversion:
+    def reinterpret(
+        self, x: Conversion, *, bit_width: int, signed: Optional[bool] = None
+    ) -> Conversion:
         assert x.is_encrypted
 
         if x.bit_width == bit_width:
             return x
 
-        resulting_element_type = (self.eint if x.is_unsigned else self.esint)(bit_width)
+        result_signed = x.is_unsigned if signed is None else signed
+        resulting_element_type = (self.eint if result_signed else self.esint)(bit_width)
         resulting_type = self.tensor(resulting_element_type, shape=x.shape)
 
         operation = (

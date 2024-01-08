@@ -1,4 +1,5 @@
 importlib-resources>=6.1
+jsonpickle>=3.0.3
 networkx>=2.6
 numpy>=1.23
 scipy>=1.10

@@ -9,6 +9,7 @@ from concrete.compiler import EvaluationKeys, Parameter, PublicArguments, Public
 from .compilation import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
+    ApproximateRoundingConfig,
     BitwiseStrategy,
     Circuit,
     Client,
@@ -18,6 +19,7 @@ from .compilation import (
     Configuration,
     DebugArtifacts,
     EncryptionStatus,
+    Exactness,
     Keys,
     MinMaxStrategy,
     MultiParameterStrategy,

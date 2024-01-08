@@ -118,3 +118,12 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Chunk size of the ReLU extension when [fhe.bits](../tutorial/bit_extraction.md) implementation is used.
 * **if_then_else_chunk_size**: int = 3
   * Chunk size to use when converting `fhe.if_then_else` extension.
+* **rounding_exactness** : Exactness = `fhe.Exactness.EXACT`
+  * Set default exactness mode for the rounding operation:
+  * `EXACT`: threshold for rounding up or down is exactly centered between upper and lower value,
+  * `APPROXIMATE`: faster but threshold for rounding up or down is approximately centered with pseudo-random shift.
+  * Precise and more complete behavior is described in  [fhe.rounding_bit_pattern](../tutorial/rounding.md).
+* **approximate_rounding_config** : ApproximateRoundingConfig = `fhe.ApproximateRoundingConfig()`:
+  * Provide more fine control on [approximate rounding](../tutorial/rounding.md#approximate-rounding-features):
+  * to enable exact cliping,
+  * or/and approximate clipping which make overflow protection faster.

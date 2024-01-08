@@ -4,7 +4,6 @@ Declaration of `Server` class.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
-import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -12,6 +11,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 # mypy: disable-error-code=attr-defined
 import concrete.compiler
+import jsonpickle
 from concrete.compiler import (
     CompilationContext,
     CompilationOptions,
@@ -253,7 +253,7 @@ class Server:
                     f.write("1" if self.is_simulated else "0")
 
                 with open(Path(tmp) / "configuration.json", "w", encoding="utf-8") as f:
-                    f.write(json.dumps(self._configuration.__dict__))
+                    f.write(jsonpickle.dumps(self._configuration.__dict__))
 
                 shutil.make_archive(path, "zip", tmp)
 
@@ -300,7 +300,7 @@ class Server:
                 mlir = f.read()
 
             with open(output_dir_path / "configuration.json", "r", encoding="utf-8") as f:
-                configuration = Configuration().fork(**json.load(f))
+                configuration = Configuration().fork(**jsonpickle.loads(f.read()))
 
             return Server.create(mlir, configuration, is_simulated)
 
