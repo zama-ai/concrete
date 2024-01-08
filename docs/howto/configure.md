@@ -116,3 +116,10 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Bit-width to start implementing the ReLU extension with [fhe.bits](../tutorial/bit_extraction.md).
 * **relu_on_bits_chunk_size**: int = 3,
   * Chunk size of the ReLU extension when [fhe.bits](../tutorial/bit_extraction.md) implementation is used.
+* **exact_rounding**: bool = True,
+  * `fhe.rounding_bit_pattern` use a faster but inaccurate implementation, where you will get an off-by-one error on the next TLU with probability .
+* **rounding_exactness** : Exactness = `fhe.Exactness.EXACT`,
+  * Set the exactness default mode of rounding operation:
+  * `EXACT`: threshold for rounding up and down is exactly centered between upper and lower value,
+  * `APPROXIMATE`: threshold for rounding up and down can be randomly sligtly uncentered.
+  * See [fhe.rounding_bit_pattern](../tutorial/rounding.md)

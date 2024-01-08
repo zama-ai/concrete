@@ -97,7 +97,7 @@ prints:
 
 and displays:
 
-![](../\_static/rounding/identity.png)
+![](../_static/rounding/identity.png)
 
 {% hint style="info" %}
 If the rounded number is one of the last `2**(lsbs_to_remove - 1)` numbers in the input range `[0, 2**original_bit_width)`, an overflow **will** happen.
@@ -194,7 +194,7 @@ The reason why the speed-up is not increasing with `lsbs_to_remove` is because t
 
 and displays:
 
-![](../\_static/rounding/lsbs_to_remove.png)
+![](../_static/rounding/lsbs_to_remove.png)
 
 {% hint style="info" %}
 Feel free to disable overflow protection and see what happens.
@@ -289,8 +289,29 @@ target_msbs=1 => 2.34x speedup
 
 and displays:
 
-![](../\_static/rounding/msbs_to_keep.png)
+![](../_static/rounding/msbs_to_keep.png)
 
 {% hint style="warning" %}
 `AutoRounder`s should be defined outside the function that is being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called. Furthermore, each `AutoRounder` should be used with exactly one `round_bit_pattern` call.
 {% endhint %}
+
+
+## Exactness
+
+One use of rounding is doing faster computation by ignoring the lower significant bits.
+For this usage, you can even get faster results if you accept that the rounding it-self can be inexact.
+You can turn on this mode with `fhe.round_bit_pattern(input, lsbs_to_remove=2, exactness=fhe.Exactness.APPROXIMATE)`.
+
+The effect is that the transition threshold at which either the lower or upper value is chosen is off-centered.
+The off-centering is:
+* is bounded, that reduced precision value never differs by more than 1 compared to the exact result,
+* is pseudo-random and almost symetrically distributed,
+* depends on cryptographic properties like the encryption mask, the encryption noise and the crypto-parameters.
+
+| ![approximate-off-by-one-error.png](../_static/rounding/approximate-off-by-one-error.png) |
+|:--:|
+| *In blue the exact value, the red dots are approximate values due to off-centered transition in approximate mode.* |
+
+| ![approximate-off-centering-distribution.png](../_static/rounding/approximate-off-centering-distribution.png) |
+|:--:|
+| *Histogram of off-centering delta. Each count correspond to a specific random mask and specific encryption noise.* |
