@@ -8,6 +8,7 @@ from typing import Optional
 
 import numpy as np
 
+from ...compilation.configuration import Exactness
 from ...dtypes import Integer
 from ...extensions.table import LookupTable
 from ...representation import Graph, GraphProcessor, Node
@@ -18,6 +19,14 @@ class ProcessRounding(GraphProcessor):
     ProcessRounding graph processor, to analyze rounding and support regular operations on it.
     """
 
+    rounding_exactness: Exactness
+
+    def __init__(
+        self,
+        rounding_exactness: Exactness,
+    ):
+        self.rounding_exactness = rounding_exactness
+
     def apply(self, graph: Graph):
         rounding_nodes = graph.query_nodes(operation_filter="round_bit_pattern")
         for node in rounding_nodes:
@@ -26,8 +35,13 @@ class ProcessRounding(GraphProcessor):
             original_lsbs_to_remove = node.properties["kwargs"]["lsbs_to_remove"]
             final_lsbs_to_remove = node.properties["final_lsbs_to_remove"]
 
+            exactness = node.properties["exactness"]
+            if exactness is None:
+                exactness = self.rounding_exactness
+
             if original_lsbs_to_remove != 0 and final_lsbs_to_remove == 0:
-                self.replace_with_tlu(graph, node)
+                if exactness != Exactness.APPROXIMATE:
+                    self.replace_with_tlu(graph, node)
                 continue
 
             self.process_successors(graph, node)
@@ -43,12 +57,14 @@ class ProcessRounding(GraphProcessor):
         pred = preds[0]
         assert isinstance(pred.output.dtype, Integer)
 
-        overflow_protection = node.properties["attributes"]["overflow_protection"]
+        exactness = node.properties["kwargs"]["exactness"]
+        overflow_protection = node.properties["kwargs"]["overflow_protection"]
         overflow_detected = (
             overflow_protection
             and pred.properties["original_bit_width"] != node.properties["original_bit_width"]
         )
 
+        node.properties["exactness"] = exactness
         node.properties["overflow_protection"] = overflow_protection
         node.properties["overflow_detected"] = overflow_detected
 

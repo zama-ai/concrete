@@ -512,11 +512,11 @@ return %1
 
 Function you are trying to compile cannot be compiled
 
-%0 = x                                              # ClearScalar<uint5>        ∈ [10, 30]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ operand is clear
-%1 = round_bit_pattern(%0, lsbs_to_remove=2)        # ClearScalar<uint6>        ∈ [12, 32]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear round bit pattern is not supported
-%2 = reinterpret(%1)                                # ClearScalar<uint6>
+%0 = x                                                                                        # ClearScalar<uint5>        ∈ [10, 30]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ operand is clear
+%1 = round_bit_pattern(%0, lsbs_to_remove=2, overflow_protection=True, exactness=None)        # ClearScalar<uint6>        ∈ [12, 32]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear round bit pattern is not supported
+%2 = reinterpret(%1)                                                                          # ClearScalar<uint6>
 return %2
 
             """,  # noqa: E501

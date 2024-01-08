@@ -97,7 +97,7 @@ prints:
 
 and displays:
 
-![](../\_static/rounding/identity.png)
+![](../_static/rounding/identity.png)
 
 {% hint style="info" %}
 If the rounded number is one of the last `2**(lsbs_to_remove - 1)` numbers in the input range `[0, 2**original_bit_width)`, an overflow **will** happen.
@@ -194,7 +194,7 @@ The reason why the speed-up is not increasing with `lsbs_to_remove` is because t
 
 and displays:
 
-![](../\_static/rounding/lsbs_to_remove.png)
+![](../_static/rounding/lsbs_to_remove.png)
 
 {% hint style="info" %}
 Feel free to disable overflow protection and see what happens.
@@ -289,8 +289,73 @@ target_msbs=1 => 2.34x speedup
 
 and displays:
 
-![](../\_static/rounding/msbs_to_keep.png)
+![](../_static/rounding/msbs_to_keep.png)
 
 {% hint style="warning" %}
 `AutoRounder`s should be defined outside the function that is being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called. Furthermore, each `AutoRounder` should be used with exactly one `round_bit_pattern` call.
 {% endhint %}
+
+
+## Exactness
+
+One use of rounding is doing faster computation by ignoring the lower significant bits.
+For this usage, you can even get faster results if you accept the rounding it-self to be slighlty inexact.
+The speedup is usually around 2x-3x but can be higher for big precision reduction.
+This also enable higher precisions values that are not possible otherwise.
+
+| ![approximate-speedup.png](../_static/rounding/approximate-speedup.png) |
+|:--:|
+| *Using the default configuration in approximate mode. For 3, 4, 5 and 6 reduced precision bits and accumulator precision up to 32bits |
+
+
+
+You can turn on this mode either globally on the configuration:
+```python
+configuration = fhe.Configuration(
+    ...
+    rounding_exactness=fhe.Exactness.APPROXIMATE
+)
+```
+or on/off locally:
+```python
+v = fhe.round_bit_pattern(v, lsbs_to_remove=2, exactness=fhe.Exactness.APPROXIMATE)
+v = fhe.round_bit_pattern(v, lsbs_to_remove=2, exactness=fhe.Exactness.EXACT)
+```
+
+In approximate mode the rounding threshold up or down is not perfectly centered:
+The off-centering is:
+* is bounded, i.e. at worst an off-by-one on the reduced precision value compared to the exact result,
+* is pseudo-random, i.e. it will be different on each call,
+* almost symetrically distributed,
+* depends on cryptographic properties like the encryption mask, the encryption noise and the crypto-parameters.
+
+| ![approximate-off-by-one-error.png](../_static/rounding/approximate-off-by-one-error.png) |
+|:--:|
+| *In blue the exact value, the red dots are approximate values due to off-centered transition in approximate mode.* |
+
+| ![approximate-off-centering-distribution.png](../_static/rounding/approximate-off-centering-distribution.png) |
+|:--:|
+| *Histogram of transitions off-centering delta. Each count correspond to a specific random mask and a specific encryption noise.* |
+
+## Approximate rounding features
+
+With approximate rounding, you can enable an approximate clipping to get further improve performance in the case of overflow handling. Approximate clipping enable to discard the extra bit of overflow protection bit in the successor TLU. For consistency a logical clipping is available when this optimization is not suitable.
+
+### Logical clipping
+
+When fast approximate clipping is not suitable (i.e. slower), it's better to apply logical clipping for consistency and better resilience to code change.
+It has no extra cost since it's fuzed with the successor TLU.
+
+| ![logical-clipping.png](../_static/rounding/approximate-off-by-one-error-logical-clipping.png) |
+|:--:|
+| *Only the last step is clipped.* |
+
+
+### Approximate clipping
+
+This set the first precision where approximate clipping is enabled, starting from this precision, an extra small precision TLU is introduced to safely remove the extra precision bit used to contain overflow. This way the successor TLU is faster.
+E.g. for a rounding to 7bits, that finishes to a TLU of 8bits due to overflow, forcing to use a TLU of 7bits is 3x faster.
+
+| ![approximate-clipping.png](../_static/rounding/approximate-off-by-one-error-approx-clipping.png) |
+|:--:|
+| *The last steps are decreased.* |

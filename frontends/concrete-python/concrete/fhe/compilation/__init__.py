@@ -9,9 +9,11 @@ from .compiler import Compiler, EncryptionStatus
 from .configuration import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
+    ApproximateRoundingConfig,
     BitwiseStrategy,
     ComparisonStrategy,
     Configuration,
+    Exactness,
     MinMaxStrategy,
     MultiParameterStrategy,
     MultivariateStrategy,

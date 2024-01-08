@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from concrete import fhe
+from concrete.fhe.compilation.configuration import Exactness
 from concrete.fhe.representation.utils import format_constant
 
 
@@ -432,14 +433,14 @@ def test_auto_rounding(helpers):
     helpers.check_str(
         f"""
 
-%0 = x                                               # EncryptedScalar<uint8>
-%1 = round_bit_pattern(%0, lsbs_to_remove=3)         # EncryptedScalar<uint8>
-%2 = tlu(%1, table={table3_formatted_string})        # EncryptedScalar<uint4>
-%3 = round_bit_pattern(%2, lsbs_to_remove=2)         # EncryptedScalar<uint4>
-%4 = tlu(%3, table={table4_formatted_string})        # EncryptedScalar<uint8>
+%0 = x                                                                                        # EncryptedScalar<uint8>
+%1 = round_bit_pattern(%0, lsbs_to_remove=3, overflow_protection=True, exactness=None)        # EncryptedScalar<uint8>
+%2 = tlu(%1, table={table3_formatted_string})                                                 # EncryptedScalar<uint4>
+%3 = round_bit_pattern(%2, lsbs_to_remove=2, overflow_protection=True, exactness=None)        # EncryptedScalar<uint4>
+%4 = tlu(%3, table={table4_formatted_string})                                                 # EncryptedScalar<uint8>
 return %4
 
-        """,
+        """,  # noqa: E501
         str(circuit3.graph.format(show_bounds=False)),
     )
 
@@ -611,3 +612,253 @@ def test_round_bit_pattern_overflow_to_sign_bit(helpers):
 
     for x in inputset:
         helpers.check_execution(circuit, function, x, retries=3)
+
+
+def test_round_bit_pattern_approximate_enabling(helpers):
+    """
+    Test round bit pattern various activation paths.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def function_default(x):
+        return fhe.round_bit_pattern(x, lsbs_to_remove=8)
+
+    @fhe.compiler({"x": "encrypted"})
+    def function_exact(x):
+        return fhe.round_bit_pattern(x, lsbs_to_remove=8, exactness=Exactness.EXACT)
+
+    @fhe.compiler({"x": "encrypted"})
+    def function_approx(x):
+        return fhe.round_bit_pattern(x, lsbs_to_remove=8, exactness=Exactness.APPROXIMATE)
+
+    inputset = [-(2**10), 2**10 - 1]
+    configuration = helpers.configuration()
+
+    circuit_default_default = function_default.compile(inputset, configuration)
+    circuit_default_exact = function_default.compile(
+        inputset, configuration.fork(rounding_exactness=Exactness.EXACT)
+    )
+    circuit_default_approx = function_default.compile(
+        inputset, configuration.fork(rounding_exactness=Exactness.APPROXIMATE)
+    )
+    circuit_exact = function_exact.compile(
+        inputset, configuration.fork(rounding_exactness=Exactness.APPROXIMATE)
+    )
+    circuit_approx = function_approx.compile(
+        inputset, configuration.fork(rounding_exactness=Exactness.EXACT)
+    )
+
+    assert circuit_approx.complexity < circuit_exact.complexity
+    assert circuit_exact.complexity == circuit_default_default.complexity
+    assert circuit_exact.complexity == circuit_default_exact.complexity
+    assert circuit_approx.complexity == circuit_default_approx.complexity
+
+
+@pytest.mark.parametrize(
+    "accumulator_precision,reduced_precision,signed,conf",
+    [
+        (8, 4, True, fhe.ApproximateRoundingConfig(False, 4)),
+        (7, 4, False, fhe.ApproximateRoundingConfig(False, 4)),
+        (9, 3, True, fhe.ApproximateRoundingConfig(True, False)),
+        (8, 3, False, fhe.ApproximateRoundingConfig(True, False)),
+        (7, 3, False, fhe.ApproximateRoundingConfig(True, 3)),
+        (7, 2, True, fhe.ApproximateRoundingConfig(False, 2)),
+        (7, 2, False, fhe.ApproximateRoundingConfig(False, False, False, False)),
+        (8, 1, True, fhe.ApproximateRoundingConfig(False, 1)),
+        (8, 1, False, fhe.ApproximateRoundingConfig(True, False)),
+        (6, 5, False, fhe.ApproximateRoundingConfig(True, 6)),
+        (6, 5, False, fhe.ApproximateRoundingConfig(True, 5)),
+    ],
+)
+def test_round_bit_pattern_approximate_off_by_one_errors(
+    accumulator_precision, reduced_precision, signed, conf, helpers
+):
+    """
+    Test round bit pattern off by 1 errors.
+    """
+    lsbs_to_remove = accumulator_precision - reduced_precision
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        x = fhe.univariate(lambda x: x)(x)
+        x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
+        x = x // 2**lsbs_to_remove
+        return x
+
+    if signed:
+        inputset = [-(2 ** (accumulator_precision - 1)), 2 ** (accumulator_precision - 1) - 1]
+    else:
+        inputset = [0, 2**accumulator_precision - 1]
+
+    configuration = helpers.configuration()
+    circuit_exact = function.compile(inputset, configuration)
+    circuit_approx = function.compile(
+        inputset,
+        configuration.fork(
+            approximate_rounding_config=conf, rounding_exactness=Exactness.APPROXIMATE
+        ),
+    )
+    # check it's better even with bad conf
+    assert circuit_approx.complexity < circuit_exact.complexity
+
+    testset = range(*inputset)
+
+    nb_error = 0
+    for x in testset:
+        approx = circuit_approx.encrypt_run_decrypt(x)
+        approx_simu = circuit_approx.simulate(x)
+        exact = circuit_exact.simulate(x)
+        assert abs(approx_simu - exact) <= 1
+        assert abs(approx_simu - approx) <= 1
+        delta = abs(approx - approx_simu)
+        assert delta <= 1
+        nb_error += delta > 0
+
+    nb_transitions = 2 ** (accumulator_precision - reduced_precision)
+    assert nb_error <= 3 * nb_transitions  # of the same order as transitions but small sample size
+
+
+@pytest.mark.parametrize(
+    "signed,physical",
+    [(signed, physical) for signed in (True, False) for physical in (True, False)],
+)
+def test_round_bit_pattern_approximate_clippping(signed, physical, helpers):
+    """
+    Test round bit pattern clipping.
+    """
+    accumulator_precision = 6
+    reduced_precision = 3
+    lsbs_to_remove = accumulator_precision - reduced_precision
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        x = fhe.univariate(lambda x: x)(x)
+        x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove)
+        x = x // 2**lsbs_to_remove
+        return x
+
+    if signed:
+        input_domain = range(-(2 ** (accumulator_precision - 1)), 2 ** (accumulator_precision - 1))
+    else:
+        input_domain = range(0, 2 ** (accumulator_precision))
+
+    configuration = helpers.configuration()
+    approx_conf = fhe.ApproximateRoundingConfig(
+        logical_clipping=not physical,
+        approximate_clipping_start_precision=physical and reduced_precision,
+        reduce_precision_after_approximate_clipping=False,
+    )
+    no_clipping_conf = fhe.ApproximateRoundingConfig(
+        logical_clipping=False, approximate_clipping_start_precision=False
+    )
+    assert approx_conf.logical_clipping or approx_conf.approximate_clipping_start_precision
+    circuit_clipping = function.compile(
+        input_domain,
+        configuration.fork(
+            approximate_rounding_config=approx_conf, rounding_exactness=Exactness.APPROXIMATE
+        ),
+    )
+    circuit_no_clipping = function.compile(
+        input_domain,
+        configuration.fork(
+            approximate_rounding_config=no_clipping_conf, rounding_exactness=Exactness.APPROXIMATE
+        ),
+    )
+
+    if signed:
+        clipped_output_domain = range(-(2 ** (reduced_precision - 1)), 2 ** (reduced_precision - 1))
+    else:
+        clipped_output_domain = range(0, 2**reduced_precision)
+
+    # With clipping
+    for x in input_domain:
+        assert (
+            circuit_clipping.encrypt_run_decrypt(x) in clipped_output_domain
+        ), circuit_clipping.mlir  # no overflow
+        assert circuit_clipping.simulate(x) in clipped_output_domain
+
+    # Without clipping
+    # overflow
+    assert circuit_no_clipping.simulate(input_domain[-1]) not in clipped_output_domain
+
+
+@pytest.mark.parametrize(
+    "signed,accumulator_precision",
+    [
+        (signed, accumulator_precision)
+        for signed in (True, False)
+        for accumulator_precision in (13, 24)
+    ],
+)
+def test_round_bit_pattern_approximate_acc_to_6_costs(signed, accumulator_precision, helpers):
+    """
+    Test round bit pattern speedup when approximatipn is activated.
+    """
+    reduced_precision = 6
+    lsbs_to_remove = accumulator_precision - reduced_precision
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove, overflow_protection=True)
+        x = x // 2**lsbs_to_remove
+        return x
+
+    # with overflow
+    if signed:
+        input_domain = [-(2 ** (accumulator_precision - 1)), 2 ** (accumulator_precision - 1) - 1]
+    else:
+        input_domain = [0, 2 ** (accumulator_precision) - 1]
+
+    configuration = helpers.configuration().fork(
+        single_precision=False,
+        parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
+        composable=True,
+    )
+    circuit_exact = function.compile(input_domain, configuration)
+    approx_conf_fastest = fhe.ApproximateRoundingConfig(approximate_clipping_start_precision=6)
+    approx_conf_safest = fhe.ApproximateRoundingConfig(approximate_clipping_start_precision=100)
+    circuit_approx_fastest = function.compile(
+        input_domain,
+        configuration.fork(
+            approximate_rounding_config=approx_conf_fastest,
+            rounding_exactness=Exactness.APPROXIMATE,
+        ),
+    )
+    circuit_approx_safest = function.compile(
+        input_domain,
+        configuration.fork(
+            approximate_rounding_config=approx_conf_safest, rounding_exactness=Exactness.APPROXIMATE
+        ),
+    )
+    assert circuit_approx_safest.complexity < circuit_exact.complexity
+    assert circuit_approx_fastest.complexity < circuit_approx_safest.complexity
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):  # pylint: disable=function-redefined
+        x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_to_remove, overflow_protection=False)
+        x = x // 2**lsbs_to_remove
+        return x
+
+    # without overflow
+    if signed:
+        input_domain = [-(2 ** (accumulator_precision - 1)), 2 ** (accumulator_precision - 2) - 2]
+    else:
+        input_domain = [0, 2 ** (accumulator_precision - 1) - 2]
+
+    circuit_exact_no_ovf = function.compile(input_domain, configuration)
+    circuit_approx_fastest_no_ovf = function.compile(
+        input_domain,
+        configuration.fork(
+            approximate_rounding_config=approx_conf_fastest,
+            rounding_exactness=Exactness.APPROXIMATE,
+        ),
+    )
+    circuit_approx_safest_no_ovf = function.compile(
+        input_domain,
+        configuration.fork(
+            approximate_rounding_config=approx_conf_safest, rounding_exactness=Exactness.APPROXIMATE
+        ),
+    )
+    assert circuit_approx_fastest_no_ovf.complexity == circuit_approx_safest_no_ovf.complexity
+    assert circuit_approx_safest_no_ovf.complexity < circuit_exact_no_ovf.complexity
+    assert circuit_exact_no_ovf.complexity < circuit_exact.complexity

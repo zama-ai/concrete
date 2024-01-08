@@ -4,10 +4,11 @@ Declaration of `round_bit_pattern` function, to provide an interface for rounded
 
 import threading
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
+from ..compilation.configuration import Exactness
 from ..dtypes import Integer
 from ..mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from ..representation import Node
@@ -158,6 +159,7 @@ def round_bit_pattern(
     x: Union[int, np.integer, List, np.ndarray, Tracer],
     lsbs_to_remove: Union[int, AutoRounder],
     overflow_protection: bool = True,
+    exactness: Optional[Exactness] = None,
 ) -> Union[int, np.integer, List, np.ndarray, Tracer]:
     """
     Round the bit pattern of an integer.
@@ -212,6 +214,11 @@ def round_bit_pattern(
         overflow_protection (bool, default = True)
             whether to adjust bit widths and lsbs to remove to avoid overflows
 
+        exactness (Optional[Exactness], default = None)
+            select the exactness of the operation, None means use the global exactness.
+            The global exactnessdefault is EXACT.
+            It can be changed on the Configuration object.
+
     Returns:
         Union[int, np.integer, np.ndarray, Tracer]:
             Tracer that respresents the operation during tracing
@@ -240,6 +247,8 @@ def round_bit_pattern(
     def evaluator(
         x: Union[int, np.integer, np.ndarray],
         lsbs_to_remove: int,
+        overflow_protection: bool,  # pylint: disable=unused-argument
+        exactness: Optional[Exactness],  # pylint: disable=unused-argument
     ) -> Union[int, np.integer, np.ndarray]:
         if lsbs_to_remove == 0:
             return x
@@ -255,8 +264,11 @@ def round_bit_pattern(
             [deepcopy(x.output)],
             deepcopy(x.output),
             evaluator,
-            kwargs={"lsbs_to_remove": lsbs_to_remove},
-            attributes={"overflow_protection": overflow_protection},
+            kwargs={
+                "lsbs_to_remove": lsbs_to_remove,
+                "overflow_protection": overflow_protection,
+                "exactness": exactness,
+            },
         )
         return Tracer(computation, [x])
 
@@ -276,6 +288,6 @@ def round_bit_pattern(
         message = f"Expected input to be an int or a numpy array but it's {type(x).__name__}"
         raise TypeError(message)
 
-    return evaluator(x, lsbs_to_remove)
+    return evaluator(x, lsbs_to_remove, overflow_protection, exactness)
 
     # pylint: enable=protected-access,too-many-branches

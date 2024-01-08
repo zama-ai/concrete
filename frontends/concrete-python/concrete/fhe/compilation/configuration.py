@@ -3,7 +3,8 @@ Declaration of `Configuration` class.
 """
 
 import platform
-from enum import Enum
+from dataclasses import dataclass
+from enum import Enum, IntEnum
 from pathlib import Path
 from typing import List, Optional, Tuple, Union, get_type_hints
 
@@ -71,6 +72,54 @@ class MultiParameterStrategy(str, Enum):
             f"{', '.join(v.value for v in MultiParameterStrategy)})"
         )
         raise ValueError(message)
+
+
+class Exactness(IntEnum):
+    """
+    Exactness, to specify for specific operator the implementation preference (default and local).
+    """
+
+    EXACT = 0
+    APPROXIMATE = 1
+
+
+@dataclass
+class ApproximateRoundingConfig:
+    """
+    Controls the behavior of approximate rounding.
+
+    In the following `k` is the ideal rounding output precision.
+    Often the precision used after rounding is `k`+1 to avoid overflow.
+    `logical_clipping`, `approximate_clipping_start_precision` can be used to stay at precision `k`,
+    either logically or physically at the successor TLU.
+    See examples in https://github.com/zama-ai/concrete/blob/main/docs/tutorial/rounding.md.
+    """
+
+    logical_clipping: bool = True
+    """
+    Enable logical clipping to simulate a precision `k` in the successor TLU of precision `k`+1.
+    """
+
+    approximate_clipping_start_precision: int = 5
+    """Actively avoid the overflow using a `k`-1 precision TLU.
+    This is similar to logical clipping but less accurate and faster.
+    Effect on:
+    * accuracy: the upper values of the rounding range are sligtly decreased,
+    * cost: adds an extra `k`-1 bits TLU to guarantee that the precision after rounding is `k`.
+            This is usually a win when `k` >= 5 .
+    This is enabled by default for `k` >= 5.
+    Due to the extra inaccuracy and cost, it is possible to disable it completely using False."""
+
+    reduce_precision_after_approximate_clipping: bool = True
+    """Enable the reduction to `k` bits in the TLU.
+    Can be disabled for debugging/testing purposes.
+    When disabled along with logical_clipping, the result of approximate clipping is accessible.
+    """
+
+    symetrize_deltas: bool = True
+    """Enable asymetry of correction of deltas w.r.t. the exact rounding computation.
+    Can be disabled for debugging/testing purposes.
+    """
 
 
 class ComparisonStrategy(str, Enum):
@@ -933,6 +982,8 @@ class Configuration:
     relu_on_bits_chunk_size: int
     if_then_else_chunk_size: int
     additional_processors: List[GraphProcessor]
+    rounding_exactness: Exactness
+    approximate_rounding_config: ApproximateRoundingConfig
 
     def __init__(
         self,
@@ -990,6 +1041,8 @@ class Configuration:
         relu_on_bits_chunk_size: int = 3,
         if_then_else_chunk_size: int = 3,
         additional_processors: Optional[List[GraphProcessor]] = None,
+        rounding_exactness: Exactness = Exactness.EXACT,
+        approximate_rounding_config: Optional[ApproximateRoundingConfig] = None,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1073,6 +1126,10 @@ class Configuration:
         self.relu_on_bits_chunk_size = relu_on_bits_chunk_size
         self.if_then_else_chunk_size = if_then_else_chunk_size
         self.additional_processors = [] if additional_processors is None else additional_processors
+        self.rounding_exactness = rounding_exactness
+        self.approximate_rounding_config = (
+            approximate_rounding_config or ApproximateRoundingConfig()
+        )
 
         self._validate()
 
@@ -1134,6 +1191,8 @@ class Configuration:
         relu_on_bits_chunk_size: Union[Keep, int] = KEEP,
         if_then_else_chunk_size: Union[Keep, int] = KEEP,
         additional_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
+        rounding_exactness: Union[Keep, Exactness] = KEEP,
+        approximate_rounding_config: Union[Keep, Optional[ApproximateRoundingConfig]] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

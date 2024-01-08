@@ -4,6 +4,7 @@ Declaration of `Converter` class.
 
 # pylint: disable=import-error,no-name-in-module
 
+import math
 import sys
 from typing import Dict, List, Tuple, Union
 
@@ -17,8 +18,7 @@ from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import Location as MlirLocation
 from mlir.ir import Module as MlirModule
 
-from concrete.fhe.compilation.configuration import Configuration
-
+from ..compilation.configuration import Configuration, Exactness
 from ..representation import Graph, Node, Operation
 from .context import Context
 from .conversion import Conversion
@@ -195,7 +195,9 @@ class Converter:
                 multivariate_strategy_preference=configuration.multivariate_strategy_preference,
                 min_max_strategy_preference=configuration.min_max_strategy_preference,
             ),
-            ProcessRounding(),
+            ProcessRounding(
+                rounding_exactness=configuration.rounding_exactness,
+            ),
         ] + configuration.additional_processors
 
         for processor in pipeline:
@@ -485,9 +487,9 @@ class Converter:
         assert len(preds) == 1
         pred = preds[0]
 
+        overflow_detected = node.properties["overflow_detected"]
         if pred.is_encrypted and pred.bit_width != pred.original_bit_width:
             overflow_protection = node.properties["overflow_protection"]
-            overflow_detected = node.properties["overflow_detected"]
 
             shifter = 2 ** (pred.bit_width - pred.original_bit_width)
             if overflow_protection and overflow_detected:
@@ -500,6 +502,8 @@ class Converter:
             ctx.typeof(node),
             pred,
             node.properties["final_lsbs_to_remove"],
+            node.properties["exactness"],
+            overflow_detected,
         )
 
     def subtract(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
@@ -530,6 +534,61 @@ class Converter:
 
         # otherwise, a simple reshape would work as we already have the correct shape
         return ctx.reshape(preds[0], shape=node.output.shape)
+
+    @classmethod
+    def tlu_adjust(cls, table, variable_input, target_bit_width, clipping, reduce_precision):
+        target_bit_width = min(
+            variable_input.bit_width, target_bit_width
+        )  # inconsistency due to more precise bound vs precision
+        table_bit_width = math.log2(len(table))
+        assert table_bit_width.is_integer()
+        table_bit_width = int(table_bit_width)
+        table_has_right_size = variable_input.bit_width == table_bit_width
+        if table_has_right_size and not clipping:
+            return table
+        half_rounded_bit_width = target_bit_width - 1
+        if variable_input.is_signed:
+            # upper = positive part, lower = negative part
+            upper_clipping_index = 2**half_rounded_bit_width - 1
+            lower_clipping_index = 2**table_bit_width - 2**half_rounded_bit_width
+            positive_clipped_card = 2 ** (table_bit_width - 1) - upper_clipping_index - 1
+            negative_clipped_card = 2 ** (table_bit_width - 1) - 2**half_rounded_bit_width
+        else:
+            upper_clipping_index = 2**target_bit_width - 1
+            lower_clipping_index = 0
+            positive_clipped_card = 2**table_bit_width - upper_clipping_index - 1
+        lower_clipping = table[lower_clipping_index]
+        upper_clipping = table[upper_clipping_index]
+        if table_has_right_size:
+            # value clipping
+            assert clipping
+            if variable_input.is_signed:
+                table = (
+                    list(table[: upper_clipping_index + 1])
+                    + [upper_clipping] * positive_clipped_card
+                    + [lower_clipping] * negative_clipped_card
+                    + list(table[lower_clipping_index:])
+                )
+            else:
+                table = (
+                    list(table[lower_clipping_index : upper_clipping_index + 1])
+                    + [upper_clipping] * positive_clipped_card
+                )
+            assert len(table) == 2**table_bit_width, (
+                len(table),
+                2**table_bit_width,
+                table,
+                upper_clipping,
+                lower_clipping,
+            )
+            return np.array(table, dtype=np.uint64)  # negative value are in unsigned representation
+
+        # adjust tlu size
+        assert reduce_precision
+        if variable_input.is_signed:
+            return np.concatenate((table[: upper_clipping_index + 1], table[lower_clipping_index:]))
+
+        return table[lower_clipping_index : upper_clipping_index + 1]
 
     def tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert node.converted_to_table_lookup
@@ -654,6 +713,33 @@ class Converter:
                 variable_input = ctx.mul(variable_input.type, variable_input, shifter)
 
             variable_input = ctx.reinterpret(variable_input, bit_width=truncated_bit_width)
+        elif variable_input.origin.properties.get("name") == "round_bit_pattern":
+            exactness = (
+                variable_input.origin.properties["exactness"]
+                or ctx.configuration.rounding_exactness
+            )
+            if exactness == Exactness.APPROXIMATE:
+                # we clip values to enforce input precision exactly as queried
+                original_bit_width = variable_input.origin.properties["original_bit_width"]
+                lsbs_to_remove = variable_input.origin.properties["kwargs"]["lsbs_to_remove"]
+                overflow = variable_input.origin.properties["overflow_detected"]
+                rounded_bit_width = original_bit_width - lsbs_to_remove - overflow
+                approx_config = ctx.configuration.approximate_rounding_config
+                clipping = approx_config.logical_clipping
+                reduce_precision = approx_config.reduce_precision_after_approximate_clipping
+                if len(tables) == 1:
+                    lut_values = self.tlu_adjust(
+                        lut_values, variable_input, rounded_bit_width, clipping, reduce_precision
+                    )
+                else:
+                    for sub_i, sub_lut_values in enumerate(lut_values):
+                        lut_values[sub_i] = self.tlu_adjust(
+                            sub_lut_values,
+                            variable_input,
+                            rounded_bit_width,
+                            clipping,
+                            reduce_precision,
+                        )
 
         if len(tables) == 1:
             return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist())
