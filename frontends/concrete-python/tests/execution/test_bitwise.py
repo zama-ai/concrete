@@ -3,6 +3,7 @@ Tests of execution of bitwise operations.
 """
 
 import random
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 import pytest
@@ -11,57 +12,62 @@ from concrete import fhe
 from concrete.fhe.dtypes import Integer
 from concrete.fhe.values import ValueDescription
 
-cases = []
-for lhs_bit_width in range(1, 6):
-    for rhs_bit_width in range(1, 6):
+operations = [
+    ("&", lambda x, y: x & y),
+    ("|", lambda x, y: x | y),
+    ("^", lambda x, y: x ^ y),
+]
+
+cases: List[
+    Tuple[
+        Tuple[str, Callable],
+        int,
+        int,
+        Tuple[int, ...],
+        Tuple[int, ...],
+        Optional[fhe.BitwiseStrategy],
+    ]
+] = []
+for lhs_bitwidth in range(1, 6):
+    for rhs_bitwidth in range(1, 6):
         cases += [
-            [
+            (
                 # operation
-                operation,
+                operations[0],
                 # bit widths
-                lhs_bit_width,
-                rhs_bit_width,
+                lhs_bitwidth,
+                rhs_bitwidth,
                 # shapes
                 (),
                 (),
                 # strategy
                 None,
-            ]
-            for operation in [
-                ("|", lambda x, y: x | y),
-            ]
+            )
         ]
 
-for _ in range(10):
-    cases.append(
-        [
-            # operation
-            random.choice(
-                [
-                    ("&", lambda x, y: x & y),
-                    ("|", lambda x, y: x | y),
-                    ("^", lambda x, y: x ^ y),
-                ]
-            ),
-            # bit widths
-            random.choice([1, 2, 3, 4, 5]),
-            random.choice([1, 2, 3, 4, 5]),
-            # shapes
-            random.choice([(), (2,), (3, 2)]),
-            random.choice([(), (2,), (3, 2)]),
-            # strategy
-            random.choice(
-                [
-                    fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
-                    fhe.BitwiseStrategy.THREE_TLU_CASTED,
-                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
-                    fhe.BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
-                ]
-            ),
-        ]
+
+cases += [
+    (
+        operation,
+        # bit widths
+        random.choice([1, 2, 3, 4, 5]),
+        random.choice([1, 2, 3, 4, 5]),
+        # shapes
+        random.choice([(), (2,), (3, 2)]),
+        random.choice([(), (2,), (3, 2)]),
+        # strategy
+        random.choice(
+            [
+                fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
+                fhe.BitwiseStrategy.THREE_TLU_CASTED,
+                fhe.BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED,
+                fhe.BitwiseStrategy.TWO_TLU_BIGGER_CASTED_SMALLER_PROMOTED,
+            ]
+        ),
     )
-
-# pylint: disable=redefined-outer-name
+    for operation in operations
+    for _ in range(10)
+]
 
 
 @pytest.mark.parametrize(
