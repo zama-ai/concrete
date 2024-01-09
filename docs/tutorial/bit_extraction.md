@@ -122,3 +122,38 @@ prints
 
 - Bits of floats cannot be extracted.
   - Floats are partially supported but extracting their bits is not supported at all.
+
+## Performance Considerations
+
+### A Chain of Individual Bit Extractions
+
+**Key Concept**: Extracting a specific bit requires clearing all the preceding lower bits. This involves extracting these previous bits as intermediate values and then subtracting them from the input.
+
+**Implications:**
+
+* Bits are extracted sequentially, starting from the least significant bit to the more significant ones. The cost is proportional to the index of the highest extracted bit plus one.
+* No parallelization is possible. The computation time is proportional to the cost, independent of the number of CPUs.
+
+**Examples:**
+
+* Extracting `fhe.bits(x)[4]` is approximately five times costlier than extracting `fhe.bits(x)[0]`.
+* Extracting `fhe.bits(x)[4]` takes around five times more wall clock time than `fhe.bits(x)[0]`.
+* The cost of extracting `fhe.bits(x)[0:5]` is almost the same as that of `fhe.bits(x)[5]`.
+
+### Reuse of Intermediate Extracted Bits
+
+**Key Concept**: Common sub-expression elimination is applied to intermediate extracted bits.
+
+**Implications:**
+
+* The overall cost for a series of `fhe.bits(x)[m:n]` calls on the same input `x` is almost equivalent to the cost of the single most computationally expensive extraction in the series, i.e. `fhe.bits(x)[n]`.
+* The order of extraction in that series does not affect the overall cost.
+
+**Example**:
+
+The combined operation `fhe.bit(x)[3] + fhe.bit(x)[2] + fhe.bit(x)[1]` has almost the same cost as `fhe.bits(x)[3]`.
+
+### TLUs of 1b input precision
+
+Each extracted bit incurs a cost of approximately one TLU of 1-bit input precision. Therefore, `fhe.bits(x)[0]` is generally faster than any other TLU operation.
+
