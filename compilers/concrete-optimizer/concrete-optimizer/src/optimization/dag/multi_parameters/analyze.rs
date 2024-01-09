@@ -69,7 +69,7 @@ pub fn analyze(
     let mut out_variances = self::out_variances(&dag, nb_partitions, &instrs_partition, &None);
     if composable {
         // Verify that there is no input symbol in the symbolic variances of the outputs.
-        if !no_input_var_in_out_var(&dag, &out_variances, nb_partitions) {
+        if !is_composable(&dag, &out_variances, nb_partitions) {
             return Err(NotComposable);
         }
         // Get the largest output out_variance
@@ -114,16 +114,22 @@ pub fn analyze(
     })
 }
 
-fn no_input_var_in_out_var(
+fn is_composable(
     dag: &unparametrized::OperationDag,
     symbolic_variances: &[Vec<SymbolicVariance>],
     nb_partitions: usize,
 ) -> bool {
-    // let a = dag.get_output_index()
-    //     .iter()
-    //     .flat_map(|index| symbolic_variances[*index].iter()).collect::<Vec<_>>();
-    // println!("symb_variances: {:?}", a);
+    // If the circuit only contains inputs, then it is composable.
+    let only_inputs = dag
+        .operators
+        .iter()
+        .all(|node| matches!(node, Operator::Input { .. }));
+    if only_inputs {
+        return true;
+    }
 
+    // If the circuit outputs are free from input variances, it means that every outputs are
+    // refreshed, and the function can be composed.
     dag.get_output_index()
         .iter()
         .flat_map(|index| symbolic_variances[*index].iter())
@@ -515,13 +521,12 @@ pub mod tests {
     }
 
     #[test]
-    fn test_composition_with_input_fails() {
+    fn test_composition_with_inputs_only() {
         let mut dag = unparametrized::OperationDag::new();
         let _ = dag.add_input(1, Shape::number());
         let p_cut = PartitionCut::for_each_precision(&dag);
         let res = super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true);
-        assert!(res.is_err());
-        assert!(res.unwrap_err() == NotComposable);
+        assert!(res.is_ok());
     }
 
     #[test]
