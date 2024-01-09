@@ -35,8 +35,6 @@ parseEndToEndCommandLine(int argc, char **argv) {
   // --help
   // llvm::cl::ResetCommandLineParser();
 
-  mlir::concretelang::CompilationOptions defaultOptions;
-
   llvm::cl::list<std::string> descriptionFiles(
       llvm::cl::Positional, llvm::cl::desc("<End to end description Files>"),
       llvm::cl::OneOrMore);
@@ -51,32 +49,32 @@ parseEndToEndCommandLine(int argc, char **argv) {
                                   "Target a GPU backend")),
       llvm::cl::init(mlir::concretelang::Backend::CPU));
 
-  llvm::cl::opt<bool> loopParallelize(
+  llvm::cl::opt<int> loopParallelize(
       "loop-parallelize",
       llvm::cl::desc(
           "Set the loopParallelize compilation options to run the tests"),
-      llvm::cl::init(defaultOptions.loopParallelize));
-  llvm::cl::opt<bool> dataflowParallelize(
+      llvm::cl::init(-1));
+  llvm::cl::opt<int> dataflowParallelize(
       "dataflow-parallelize",
       llvm::cl::desc(
-          "Set the dataflowParallelize compilation options to run the tests"),
-      llvm::cl::init(defaultOptions.dataflowParallelize));
-  llvm::cl::opt<bool> emitGPUOps(
+          "Set the loopParallelize compilation options to run the tests"),
+      llvm::cl::init(-1));
+  llvm::cl::opt<int> emitGPUOps(
       "emit-gpu-ops",
       llvm::cl::desc("Set the emitGPUOps compilation options to run the tests"),
-      llvm::cl::init(defaultOptions.emitGPUOps));
-  llvm::cl::opt<bool> batchTFHEOps(
+      llvm::cl::init(-1));
+  llvm::cl::opt<int> batchTFHEOps(
       "batch-tfhe-ops",
       llvm::cl::desc(
           "Set the batchTFHEOps compilation options to run the tests"),
-      llvm::cl::init(defaultOptions.batchTFHEOps));
+      llvm::cl::init(-1));
   llvm::cl::opt<bool> simulate("simulate",
                                llvm::cl::desc("Simulate the FHE execution"),
                                llvm::cl::init(false));
   llvm::cl::opt<bool> compressEvaluationKeys(
       "compress-evaluation-keys",
       llvm::cl::desc("Enable the compression of evaluation keys"),
-      llvm::cl::init(defaultOptions.compressEvaluationKeys));
+      llvm::cl::init(false));
 
   llvm::cl::opt<bool> distBenchmark(
       "distributed",
@@ -139,10 +137,15 @@ parseEndToEndCommandLine(int argc, char **argv) {
   // Build compilation options
   mlir::concretelang::CompilationOptions compilationOptions("main",
                                                             backend.getValue());
-  compilationOptions.loopParallelize = loopParallelize.getValue();
-  compilationOptions.dataflowParallelize = dataflowParallelize.getValue();
-  compilationOptions.emitGPUOps = emitGPUOps.getValue();
-  compilationOptions.batchTFHEOps = batchTFHEOps.getValue();
+  if (loopParallelize.getValue() != -1)
+    compilationOptions.loopParallelize = loopParallelize.getValue();
+
+  if (dataflowParallelize.getValue() != -1)
+    compilationOptions.dataflowParallelize = dataflowParallelize.getValue();
+  if (emitGPUOps.getValue() != -1)
+    compilationOptions.emitGPUOps = emitGPUOps.getValue();
+  if (batchTFHEOps.getValue() != -1)
+    compilationOptions.batchTFHEOps = batchTFHEOps.getValue();
   compilationOptions.simulate = simulate.getValue();
   compilationOptions.compressEvaluationKeys = compressEvaluationKeys.getValue();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
