@@ -163,7 +163,7 @@ impl PartitionCut {
                 let quantization = 1.0;
                 let mut lnorm2 = (original_norm2 * 2.0_f64.powi(delta_precision)).log2();
                 #[allow(clippy::cast_sign_loss)]
-                if ROUND_INNER_MULTI_PARAMETER || input_precision > 0 {
+                if ROUND_INNER_MULTI_PARAMETER || !round_index.contains_key(&op_i) {
                     lnorm2 = (lnorm2 / quantization).ceil() * quantization;
                     *output_norm2 = lnorm2;
                 } else if ROUND_EXTERNAL_MULTI_PARAMETER {
