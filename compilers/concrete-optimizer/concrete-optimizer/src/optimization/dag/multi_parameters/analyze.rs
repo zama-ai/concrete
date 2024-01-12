@@ -590,6 +590,50 @@ pub mod tests {
         );
     }
 
+    #[test]
+    fn test_composition_3_partitions() {
+        let mut dag = unparametrized::OperationDag::new();
+        let input1 = dag.add_input(3, Shape::number());
+        let input2 = dag.add_input(13, Shape::number());
+        let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 6);
+        let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
+        let a = dag.add_dot([input2, lut3], [1, 1]);
+        let b = dag.add_dot([input1, lut3], [1, 1]);
+        let _ = dag.add_lut(a, FunctionTable::UNKWOWN, 3);
+        let _ = dag.add_lut(b, FunctionTable::UNKWOWN, 3);
+        let analyzed_dag = super::analyze(&dag, &CONFIG, &None, 1, true).unwrap();
+        assert_eq!(analyzed_dag.nb_partitions, 3);
+        let actual_constraint_strings = analyzed_dag
+            .variance_constraints
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>();
+        let expected_constraint_strings = vec![
+            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
+            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→2] + 1σ²M[2] < (2²)**-17 (13bits partition:2 count:1, dom=34)",
+            "1σ²Br[2] < (2²)**-7 (3bits partition:2 count:1, dom=14)",
+            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+        ];
+        assert_eq!(actual_constraint_strings, expected_constraint_strings);
+        let partitions = vec![1, 1, 0, 1, 1, 1, 2, 0];
+        assert_eq!(
+            partitions,
+            analyzed_dag
+                .instrs_partition
+                .iter()
+                .map(|p| p.instruction_partition)
+                .collect::<Vec<_>>()
+        );
+        assert!(analyzed_dag.instrs_partition[6]
+            .alternative_output_representation
+            .contains(&1));
+        assert!(analyzed_dag.instrs_partition[7]
+            .alternative_output_representation
+            .contains(&1));
+    }
+
     #[allow(clippy::needless_range_loop)]
     #[test]
     fn test_lut_sequence() {
