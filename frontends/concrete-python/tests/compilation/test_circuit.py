@@ -658,9 +658,15 @@ def test_setting_keys(helpers):
 
     @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):
-        return x + y
+        return (x + y) ** 2
 
-    inputset = [(np.random.randint(0, 2**3), np.random.randint(0, 2**5)) for _ in range(100)]
+    inputset = [
+        (
+            np.random.randint(0, 2**3, size=(10,)),
+            np.random.randint(0, 2**5, size=(10,)),
+        )
+        for _ in range(100)
+    ]
     circuit = f.compile(inputset, configuration.fork(use_insecure_key_cache=False))
 
     circuit.keygen(force=True, seed=100)
@@ -671,13 +677,16 @@ def test_setting_keys(helpers):
 
     assert keys1 != keys2
 
-    sample = circuit.encrypt(3, 5)
+    sample_x = np.random.randint(0, 2**3, size=(10,))
+    sample_y = np.random.randint(0, 2**5, size=(10,))
+
+    sample = circuit.encrypt(sample_x, sample_y)
     output = circuit.run(*sample)
 
     circuit.keys = fhe.Keys.deserialize(keys1)
     result = circuit.decrypt(output)
-    assert result != 8
+    assert not np.array_equal(result, (sample_x + sample_y) ** 2)
 
     circuit.keys = fhe.Keys.deserialize(keys2)
     result = circuit.decrypt(output)
-    assert result == 8
+    assert np.array_equal(result, (sample_x + sample_y) ** 2)
