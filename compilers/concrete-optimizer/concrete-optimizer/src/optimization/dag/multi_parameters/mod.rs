@@ -12,3 +12,4 @@ mod partitions;
 mod symbolic_variance;
 mod union_find;
 mod variance_constraint;
+mod visualization;
