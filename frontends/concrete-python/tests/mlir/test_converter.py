@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from concrete import fhe
+from concrete.fhe.compilation.configuration import ParameterSelectionStrategy
 from concrete.fhe.mlir import GraphConverter
 
 from ..conftest import USE_MULTI_PRECISION
@@ -1284,6 +1285,47 @@ def test_converter_convert_single_precision(function, parameters, expected_mlir,
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration().fork(single_precision=True)
+
+    compiler = fhe.Compiler(function, parameter_encryption_statuses)
+
+    inputset = helpers.generate_inputset(parameters)
+    circuit = compiler.compile(inputset, configuration)
+
+    helpers.check_str(expected_mlir.strip(), circuit.mlir.strip())
+
+
+@pytest.mark.parametrize(
+    "function,parameters,expected_mlir",
+    [
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 70], "status": "encrypted"},
+                "y": {"range": [0, 7], "status": "encrypted"},
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.eint<9>, %arg1: !FHE.eint<9>) -> !FHE.eint<9> {
+    %0 = "FHE.mul_eint"(%arg0, %arg1) : (!FHE.eint<9>, !FHE.eint<9>) -> !FHE.eint<9>
+    return %0 : !FHE.eint<9>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+    ],
+)
+def test_converter_convert_composition(function, parameters, expected_mlir, helpers):
+    """
+    Test `convert` method of `Converter` with multi precision and composition activated.
+    """
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+    configuration = helpers.configuration().fork(
+        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
+        single_precision=False,
+        composable=True,
+    )
 
     compiler = fhe.Compiler(function, parameter_encryption_statuses)
 

@@ -188,6 +188,7 @@ class Converter:
             CheckIntegerOnly(),
             AssignBitWidths(
                 single_precision=configuration.single_precision,
+                composable=configuration.composable,
                 comparison_strategy_preference=configuration.comparison_strategy_preference,
                 bitwise_strategy_preference=configuration.bitwise_strategy_preference,
                 shifts_with_promotion=configuration.shifts_with_promotion,
