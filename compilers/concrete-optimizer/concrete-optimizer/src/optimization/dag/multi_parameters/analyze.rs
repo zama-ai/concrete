@@ -69,9 +69,7 @@ pub fn analyze(
     let mut out_variances = self::out_variances(&dag, nb_partitions, &instrs_partition, &None);
     if composable {
         // Verify that there is no input symbol in the symbolic variances of the outputs.
-        if !is_composable(&dag, &out_variances, nb_partitions) {
-            return Err(NotComposable);
-        }
+        check_composability(&dag, &out_variances, nb_partitions)?;
         // Get the largest output out_variance
         let largest_output_variances = dag
             .get_output_index()
@@ -114,31 +112,40 @@ pub fn analyze(
     })
 }
 
-fn is_composable(
+fn check_composability(
     dag: &unparametrized::OperationDag,
     symbolic_variances: &[Vec<SymbolicVariance>],
     nb_partitions: usize,
-) -> bool {
+) -> Result<()> {
     // If the circuit only contains inputs, then it is composable.
     let only_inputs = dag
         .operators
         .iter()
         .all(|node| matches!(node, Operator::Input { .. }));
     if only_inputs {
-        return true;
+        return Ok(());
     }
 
     // If the circuit outputs are free from input variances, it means that every outputs are
     // refreshed, and the function can be composed.
-    dag.get_output_index()
-        .iter()
-        .flat_map(|index| symbolic_variances[*index].iter())
-        .all(|sym_var| {
-            (0..nb_partitions).all(|partition| {
-                let coeff = sym_var.coeff_input(partition);
-                coeff == 0.0f64 || coeff.is_nan()
-            })
-        })
+    let in_var_in_out_var = dag
+        .get_output_index()
+        .into_iter()
+        .flat_map(|index| symbolic_variances[index].iter().map(move |v| (index, v)))
+        .find_map(|(output_index, sym_var)| {
+            (0..nb_partitions)
+                .find(|partition| {
+                    let coeff = sym_var.coeff_input(*partition);
+                    coeff != 0.0f64 && !coeff.is_nan()
+                })
+                .map(|_| (output_index, sym_var))
+        });
+    match in_var_in_out_var {
+        Some((output_id, sym_var)) => Err(NotComposable(format!(
+            "Output {output_id} has variance {sym_var}."
+        ))),
+        None => Ok(()),
+    }
 }
 
 pub fn original_instrs_partition(

@@ -4,17 +4,17 @@ pub mod dag;
 pub mod decomposition;
 pub mod wop_atomic_pattern;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Err {
-    NotComposable,
+    NotComposable(String),
     NoParametersFound,
 }
 
 impl std::fmt::Display for Err {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::NotComposable => write!(f, "NotComposable"),
-            Self::NoParametersFound => write!(f, "NoParametersFound"),
+            Self::NotComposable(details) => write!(f, "Program can not be composed: {details}"),
+            Self::NoParametersFound => write!(f, "No crypto parameters could be found"),
         }
     }
 }
