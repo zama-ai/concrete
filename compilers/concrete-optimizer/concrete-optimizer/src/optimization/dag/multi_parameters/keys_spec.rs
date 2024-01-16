@@ -580,7 +580,7 @@ impl ExpandedCircuitKeys {
         // initial key to final key (identifier change + description change)
         let mut final_keys: HashMap<Id, SecretLweKey> = HashMap::new();
         let mut final_groups: HashMap<Id, Vec<Id>> = HashMap::new();
-        let mut new_secret_keys = vec![vec![], vec![]];
+        let mut new_secret_keys = [vec![], vec![]];
 
         for (case, &secret_keys) in [&self.big_secret_keys, &self.small_secret_keys]
             .iter()
