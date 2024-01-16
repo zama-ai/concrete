@@ -81,6 +81,8 @@ jobs:
             set -e
             rm -rf /build/*
 
+            dnf -y install graphviz graphviz-devel
+
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate
@@ -105,6 +107,8 @@ jobs:
           shell: bash
           run: |
             set -e
+
+            dnf -y install graphviz graphviz-devel
             
             cd /concrete/frontends/concrete-python
             make venv

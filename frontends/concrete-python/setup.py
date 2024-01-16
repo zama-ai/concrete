@@ -73,7 +73,12 @@ setuptools.setup(
             dependency
             for dependency in read("requirements.dev.txt").split("\n")
             if dependency.strip() != ""
-        ]
+        ],
+        "full": [
+            "matplotlib>=3.7",
+            "pillow>=10.2",
+            "pygraphviz>=1.11",
+        ],
     },
 
     package_dir={

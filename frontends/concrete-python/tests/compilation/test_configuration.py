@@ -83,7 +83,7 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             {"insecure_key_cache_location": 3},
             TypeError,
             "Unexpected type for keyword argument 'insecure_key_cache_location' "
-            "(expected 'Union[str, Path, NoneType]', got 'int')",
+            "(expected 'Union[Path, str, NoneType]', got 'int')",
         ),
         pytest.param(
             {"p_error": "yes"},

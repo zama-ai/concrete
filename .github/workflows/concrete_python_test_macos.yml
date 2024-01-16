@@ -34,7 +34,7 @@ jobs:
 
       - name: Install OS Dependencies
         run: |
-          brew install ninja ccache
+          brew install ninja ccache graphviz
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -78,6 +78,8 @@ jobs:
           
           . .venv/bin/activate
           
+          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
+          
           pip install -r requirements.dev.txt
           pip install -r requirements.txt
           
@@ -111,6 +113,8 @@ jobs:
           
           python3.10 -m venv .testenv
           . .testenv/bin/activate
+          
+          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
           
           pip install $GITHUB_WORKSPACE/frontends/concrete-python/dist/*macos*.whl
           pip install -r $GITHUB_WORKSPACE/frontends/concrete-python/requirements.dev.txt

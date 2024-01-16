@@ -103,6 +103,8 @@ jobs:
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
             echo "Using $PYTHON"
 
+            dnf -y install graphviz graphviz-devel
+            
             cd /concrete/frontends/concrete-python
             make PYTHON=$PYTHON venv
             source .venv/bin/activate
@@ -142,6 +144,8 @@ jobs:
           
           python -m venv .testenv
           source .testenv/bin/activate
+          
+          dnf -y install graphviz graphviz-devel
           
           pip install $CONCRETE_PYTHON/dist/*manylinux*.whl
           pip install -r $CONCRETE_PYTHON/requirements.dev.txt
@@ -185,7 +189,7 @@ jobs:
 
       - name: Install OS Dependencies
         run: |
-          brew install ninja ccache
+          brew install ninja ccache graphviz
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -220,6 +224,8 @@ jobs:
           ${{ format('python{0}', matrix.python-version) }} -m venv .venv
 
           . .venv/bin/activate
+          
+          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
 
           pip install -r requirements.dev.txt
           pip install -r requirements.txt
@@ -265,6 +271,8 @@ jobs:
 
           $PYTHON_VERSION -m venv .testenv
           source .testenv/bin/activate
+          
+          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
 
           pip install $CONCRETE_PYTHON/dist/*macos*.whl
           pip install -r $CONCRETE_PYTHON/requirements.dev.txt

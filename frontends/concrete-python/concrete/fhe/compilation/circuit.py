@@ -4,6 +4,7 @@ Declaration of `Circuit` class.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -63,6 +64,39 @@ class Circuit:
 
     def __str__(self):
         return self.graph.format()
+
+    def draw(
+        self,
+        *,
+        horizontal: bool = False,
+        save_to: Optional[Union[Path, str]] = None,
+        show: bool = False,
+    ) -> Path:
+        """
+        Draw the graph of the circuit.
+
+        That this function requires the python `pygraphviz` package
+        which itself requires the installation of `graphviz` packages
+
+        (see https://pygraphviz.github.io/documentation/stable/install.html)
+
+        Args:
+            horizontal (bool, default = False):
+                whether to draw horizontally
+
+            save_to (Optional[Path], default = None):
+                path to save the drawing
+                a temporary file will be used if it's None
+
+            show (bool, default = False):
+                whether to show the drawing using matplotlib
+
+        Returns:
+            Path:
+                path to the drawing
+        """
+
+        return self.graph.draw(horizontal=horizontal, save_to=save_to, show=show)
 
     @property
     def mlir(self) -> str:

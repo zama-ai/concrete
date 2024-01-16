@@ -15,7 +15,12 @@ from ..internal.utils import assert_that
 from ..values import ValueDescription
 from .evaluator import ConstantEvaluator, GenericEvaluator, GenericTupleEvaluator, InputEvaluator
 from .operation import Operation
-from .utils import KWARGS_IGNORED_IN_FORMATTING, format_constant, format_indexing_element
+from .utils import (
+    KWARGS_IGNORED_IN_FORMATTING,
+    NODES_THAT_HAVE_TLU_WHEN_ALL_INPUTS_ARE_ENCRYPTED,
+    format_constant,
+    format_indexing_element,
+)
 
 
 class Node:
@@ -415,6 +420,22 @@ class Node:
             "transpose",
             "zeros",
         ]
+
+    @property
+    def conversion_have_table_lookup(self) -> bool:
+        """
+        Get whether the node will have table lookups during execution.
+
+        Returns:
+            bool:
+                True if the node will have table lookups during execution, False otherwise
+        """
+
+        has_tlu = self.converted_to_table_lookup
+        if not has_tlu:
+            if self.label() in NODES_THAT_HAVE_TLU_WHEN_ALL_INPUTS_ARE_ENCRYPTED:
+                has_tlu = all(input_.is_encrypted for input_ in self.inputs)
+        return has_tlu
 
     @property
     def is_fusable(self) -> bool:

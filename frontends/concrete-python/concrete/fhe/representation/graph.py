@@ -3,8 +3,11 @@ Declaration of `Graph` class.
 """
 
 import math
+import os
 import re
+import tempfile
 from copy import deepcopy
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
@@ -193,6 +196,145 @@ class Graph:
                 ) from error
 
         return node_results
+
+    def draw(
+        self,
+        *,
+        horizontal: bool = False,
+        save_to: Optional[Union[Path, str]] = None,
+        show: bool = False,
+    ) -> Path:
+        """
+        Draw the graph.
+
+        That this function requires the python `pygraphviz` package
+        which itself requires the installation of `graphviz` packages
+
+        (see https://pygraphviz.github.io/documentation/stable/install.html)
+
+        Args:
+            horizontal (bool, default = False):
+                whether to draw horizontally
+
+            save_to (Optional[Path], default = None):
+                path to save the drawing
+                a temporary file will be used if it's None
+
+            show (bool, default = False):
+                whether to show the drawing using matplotlib
+
+        Returns:
+            Path:
+                path to the drawing
+        """
+
+        def get_color(node: Node):
+            if node.operation == Operation.Input:
+                return "blue"
+
+            if node.conversion_have_table_lookup:
+                return "red"
+
+            return "black"
+
+        def get_label(index: int, node: Node):
+            result = f"{node.label()}\n"
+
+            details = "" if node.output.shape == () else "tensor["
+            details += f"{node.output.dtype}"
+            if node.output.shape != ():
+                details += f", {', '.join(str(element) for element in node.output.shape)}]"
+
+            result += f"[%{index}: {details}]"
+
+            return result
+
+        graph = self.graph
+        output_nodes = set(self.output_nodes.values())
+
+        attributes = {
+            node: {
+                "label": get_label(i, node),
+                "color": get_color(node),
+                "penwidth": 2,  # double thickness for circles
+                "peripheries": 2 if node in output_nodes else 1,  # two circles for output nodes
+            }
+            for i, node in enumerate(nx.lexicographical_topological_sort(graph))
+        }
+        nx.set_node_attributes(graph, attributes)
+
+        for edge in graph.edges(keys=True):
+            idx = graph.edges[edge]["input_idx"]
+            graph.edges[edge]["label"] = f" {idx} "
+
+        try:
+            agraph = nx.nx_agraph.to_agraph(graph)
+        except ImportError as error:  # pragma: no cover
+            if "pygraphviz" in str(error):
+                message = (
+                    "Graph.draw requires `full` version of Concrete. "
+                    "See https://docs.zama.ai/concrete/getting-started/installing."
+                )
+                raise ImportError(message) from error
+
+            raise
+
+        agraph.graph_attr["rankdir"] = "LR" if horizontal else "TB"
+        agraph.layout("dot")
+
+        if save_to is None:
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                # we need to change the permissions of the temporary file
+                # so that it can be read by all users
+
+                # (https://stackoverflow.com/a/44130605)
+
+                # get the old umask and replace it with 0o666
+                old_umask = os.umask(0o666)
+
+                # restore the old umask back
+                os.umask(old_umask)
+
+                # combine the old umask with the wanted permissions
+                permissions = 0o666 & ~old_umask
+
+                # set new permissions
+                os.chmod(tmp.name, permissions)
+
+                save_to_str = str(tmp.name)
+        else:
+            save_to_str = str(save_to)
+
+        agraph.draw(save_to_str)
+
+        if show:  # pragma: no cover
+            try:
+                # pylint: disable=import-outside-toplevel
+                import matplotlib.pyplot as plt
+                from PIL import Image
+
+                # pylint: enable=import-outside-toplevel
+            except ImportError as error:
+                if "matplotlib" in str(error) or "pillow" in str(error) or "PIL" in str(error):
+                    message = (
+                        "Graph.draw with show=True requires `full` version of Concrete. "
+                        "See https://docs.zama.ai/concrete/getting-started/installing."
+                    )
+                    raise ImportError(message) from error
+
+                raise
+
+            plt.close("all")
+            plt.figure()
+
+            img = Image.open(save_to_str)
+            plt.imshow(img)
+            img.close()
+
+            plt.axis("off")
+            plt.show()
+
+        return Path(save_to_str)
 
     def format(
         self,
