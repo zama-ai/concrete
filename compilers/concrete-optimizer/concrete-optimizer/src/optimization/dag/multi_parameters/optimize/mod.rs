@@ -1165,7 +1165,9 @@ pub fn optimize_to_circuit_solution(
     if lut_count_from_dag(dag) == 0 {
         // If there are no lut in the dag the noise is never refresh so the dag cannot be composable
         if config.composable {
-            return keys_spec::CircuitSolution::no_solution(NotComposable.to_string());
+            return keys_spec::CircuitSolution::no_solution(
+                NotComposable("No luts in the circuit.".into()).to_string(),
+            );
         }
         let nb_instr = dag.operators.len();
         if let Some(sol) = optimize_mono(dag, config, search_space, persistent_caches).best_solution

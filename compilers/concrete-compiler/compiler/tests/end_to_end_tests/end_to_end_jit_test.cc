@@ -406,7 +406,8 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   return %1: !FHE.eint<3>
 }
 )XXX");
-  ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(err, "NotComposable");
+  ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(
+      err, "Program can not be composed: No luts in the circuit.");
 }
 
 // This test pass while the compilation should failed as %1 is not refresh so it
