@@ -16,7 +16,7 @@
 
 * [Decorator](tutorial/decorator.md)
 * [Progressbar](tutorial/progressbar.md)
-* [Formatting](tutorial/formatting.md)
+* [Formatting and Drawing](tutorial/formatting\_and\_drawing.md)
 * [Tagging](tutorial/tagging.md)
 * [Extensions](tutorial/extensions.md)
 * [Comparisons](tutorial/comparisons.md)

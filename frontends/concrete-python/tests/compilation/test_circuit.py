@@ -29,6 +29,40 @@ def test_circuit_str(helpers):
     assert str(circuit) == circuit.graph.format()
 
 
+def test_circuit_draw(helpers):
+    """
+    Test `draw` method of `Circuit` class.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return (x**2) * y + 2
+
+    inputset = [
+        (
+            np.random.randint(0, 2**4, size=(2,)),
+            np.random.randint(0, 2**5, size=()),
+        )
+        for _ in range(100)
+    ]
+    circuit = f.compile(inputset, configuration)
+
+    drawing = circuit.draw()
+
+    assert drawing.suffix == ".png"
+    assert drawing.exists()
+
+    with tempfile.TemporaryDirectory() as path:
+        tmpdir = Path(path)
+
+        png = tmpdir / "drawing.png"
+        circuit.draw(save_to=png)
+
+        assert png.exists()
+
+
 def test_circuit_feedback(helpers):
     """
     Test feedback properties of `Circuit` class.

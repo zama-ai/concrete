@@ -37,6 +37,29 @@ SPECIAL_OBJECT_MAPPING: Dict[Any, str] = {
     np.ulonglong: "ulonglong",
 }
 
+NODES_THAT_HAVE_TLU_WHEN_ALL_INPUTS_ARE_ENCRYPTED = [
+    "bitwise_and",
+    "bitwise_or",
+    "bitwise_xor",
+    "dot",
+    "equal",
+    "extract_bit_pattern",
+    "greater",
+    "greater_equal",
+    "left_shift",
+    "less",
+    "less_equal",
+    "matmul",
+    "maximum",
+    "minimum",
+    "multiply",
+    "not_equal",
+    "relu",
+    "right_shift",
+    "round_bit_pattern",
+    "truncate_bit_pattern",
+]
+
 
 def format_constant(constant: Any, maximum_length: int = 45, keep_newlines: bool = False) -> str:
     """

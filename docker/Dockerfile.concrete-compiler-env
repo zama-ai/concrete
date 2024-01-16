@@ -4,7 +4,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64:2022-11-19-1b19e81
 RUN dnf install -y epel-release
 RUN dnf update -y
 RUN dnf install -y ninja-build hwloc-devel ccache ncurses-devel
-RUN dnf install -y openssh-clients
+RUN dnf install -y openssh-clients graphviz graphviz-devel
 RUN dnf clean all
 RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 # setup ccache with an unlimited amount of files and storage
