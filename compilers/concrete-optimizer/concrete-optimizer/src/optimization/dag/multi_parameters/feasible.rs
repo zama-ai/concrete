@@ -197,7 +197,7 @@ impl Feasible {
                 constraint.partition == partition
                     || (0..nb_partitions).any(|i| touch_any_ks(constraint, i))
             })
-            .map(VarianceConstraint::clone)
+            .cloned()
             .collect();
         Self::of(&partition_constraints, self.kappa, self.global_p_error)
     }
