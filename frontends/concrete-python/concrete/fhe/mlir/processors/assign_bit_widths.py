@@ -2,6 +2,7 @@
 Declaration of `AssignBitWidths` graph processor.
 """
 
+from itertools import chain
 from typing import Dict, List
 
 import z3
@@ -31,6 +32,7 @@ class AssignBitWidths(GraphProcessor):
     """
 
     single_precision: bool
+    composable: bool
     comparison_strategy_preference: List[ComparisonStrategy]
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
@@ -40,6 +42,7 @@ class AssignBitWidths(GraphProcessor):
     def __init__(
         self,
         single_precision: bool,
+        composable: bool,
         comparison_strategy_preference: List[ComparisonStrategy],
         bitwise_strategy_preference: List[BitwiseStrategy],
         shifts_with_promotion: bool,
@@ -47,6 +50,7 @@ class AssignBitWidths(GraphProcessor):
         min_max_strategy_preference: List[MinMaxStrategy],
     ):
         self.single_precision = single_precision
+        self.composable = composable
         self.comparison_strategy_preference = comparison_strategy_preference
         self.bitwise_strategy_preference = bitwise_strategy_preference
         self.shifts_with_promotion = shifts_with_promotion
@@ -93,6 +97,12 @@ class AssignBitWidths(GraphProcessor):
         if self.single_precision:
             for bit_width in bit_widths.values():
                 optimizer.add(bit_width == max_bit_width)
+
+        if self.composable:
+            input_output_bitwidth = z3.Int("input_output")
+            for node in chain(graph.input_nodes.values(), graph.output_nodes.values()):
+                bit_width = bit_widths[node]
+                optimizer.add(bit_width == input_output_bitwidth)
 
         optimizer.minimize(sum(bit_width for bit_width in bit_widths.values()))
 
