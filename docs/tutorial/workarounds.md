@@ -5,14 +5,14 @@ is to adapt their code to fit FHE constraints. In this document we have collecte
 to illustrate the kind of optimization one can do to get better performance.
 
 {% hint style="info" %}
-All code snippets provided here are temporary workarounds. In future version of Concrete, some
+All code snippets provided here are temporary workarounds. In future versions of Concrete, some
 functions described here could be directly available in a more generic and efficient form.
 These code snippets are coming from support answers in our [community forum](https://community.zama.ai)
 {% endhint %}
 
 ## Minimum for Two values
 
-In this first example, we compute a minimum by creating a difference between the two numbers `y` and `x`
+In this first example, we compute a minimum by creating the difference between two numbers `y` and `x`
 and conditionally remove this diff from `y` to either get `x` if `y>x` or `y` if `x>y`:
 
 ```python
@@ -80,7 +80,7 @@ assert circuit.encrypt_run_decrypt([x1, x2, x3, x4, x5]) == min(x1, x2, x3, x4, 
 
 ## Retrieving a value within an encrypted array with an encrypted index
 
-This example show how to deal with an array and an encrypted index. It will create a "selection" array filled with `0` except for the requested index that will be `1`, and sum the products of all array values by this selection array:
+This example shows how to deal with an array and an encrypted index. It will create a "selection" array filled with `0` except for the requested index that will be `1`, and sum the products of all array values by this selection array:
 
 ```python
 import numpy as np
@@ -138,9 +138,9 @@ assert np.array_equal(circuit.encrypt_run_decrypt(numbers, threshold), list(map(
 
 ## Matrix Row/Col means
 
-In this example of Matrix operation, we are introducing a key concept when using Concrete:
-trying to maximize the parallelization. Here instead of sequentially sum all values to create a
-mean value, we split the values in sub-groups, and do the mean of the sub-groups means:
+In this example Matrix operation, we are introducing a key concept when using Concrete:
+trying to maximize the parallelization. Here instead of sequentially summing all values to create a
+mean value, we split the values in sub-groups, and do the mean of the sub-group means:
 
 ```python
 import numpy as np
