@@ -32,7 +32,7 @@ result = np.sum(result_chunks)
 ### Notes
 
 - Signed bitwise operations are not supported.
-- Optimal chunk size is selected automatically to reduce the number of table lookups.
+- The optimal chunk size is selected automatically to reduce the number of table lookups.
 - Chunked bitwise operations result in at least 4 and at most 9 table lookups.
 - It is used if no other implementation can be used.
 
@@ -78,10 +78,10 @@ module {
     %cst_0 = arith.constant dense<[0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]> : tensor<16xi64>
     %1 = "FHE.apply_lookup_table"(%arg1, %cst_0) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<4>
         
-    // packing first chunks
+    // packing the first chunks
     %2 = "FHE.add_eint"(%0, %1) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
         
-    // applying the bitwise operation to first chunks, adjusted for addition in the end
+    // applying the bitwise operation to the first chunks, adjusted for addition in the end
     %cst_1 = arith.constant dense<[0, 0, 0, 0, 0, 4, 0, 4, 0, 0, 8, 8, 0, 4, 8, 12]> : tensor<16xi64>
     %3 = "FHE.apply_lookup_table"(%2, %cst_1) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<4>
         
@@ -93,7 +93,7 @@ module {
     %cst_3 = arith.constant dense<[0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]> : tensor<16xi64>
     %5 = "FHE.apply_lookup_table"(%arg1, %cst_3) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<4>
         
-    // packing second chunks
+    // packing the second chunks
     %6 = "FHE.add_eint"(%4, %5) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
         
     // applying the bitwise operation to second chunks
@@ -114,7 +114,7 @@ module {
 
 This implementation uses the fact that we can combine two values into a single value and apply a single table lookup to this combined value!
 
-There are two major problems with this implementation though:
+There are two major problems with this implementation:
 1) packing requires the same bit-width across operands.
 2) packing requires the bit-width of at least `x.bit_width + y.bit_width` and that bit-width cannot exceed maximum TLU bit-width, which is `16` at the moment.
 
@@ -191,7 +191,7 @@ module {
 
 ### 2. fhe.BitwiseStrategy.THREE_TLU_CASTED
 
-This strategy will not put any constraint in bit-widths during bit-width assignment, instead operands are cast to a bit-width that can store `pack(x, y)` during runtime using table lookups. The idea is:
+This strategy will not put any constraint on bit-widths during bit-width assignment, instead operands are cast to a bit-width that can store `pack(x, y)` during runtime using table lookups. The idea is:
 
 ```python
 uint3_to_uint9_lut = fhe.LookupTable([...])
@@ -271,7 +271,7 @@ module {
 
 ### 3. fhe.BitwiseStrategy.TWO_TLU_BIGGER_PROMOTED_SMALLER_CASTED 
 
-This strategy is like the middle ground between the two strategies described above. With this strategy, only the bigger operand will be constrained to have at least the required bit-width to store `pack(x, y)`, and the smaller operand will be cast to that bit-width during runtime. The idea is:
+This strategy can be viewed as a middle ground between the two strategies described above. With this strategy, only the bigger operand will be constrained to have at least the required bit-width to store `pack(x, y)`, and the smaller operand will be cast to that bit-width during runtime. The idea is:
 
 ```python
 uint3_to_uint9_lut = fhe.LookupTable([...])
@@ -287,7 +287,7 @@ result = comparison_lut[x_cast_to_uint9 - y_promoted_to_uint9]
 
 #### Pros
 
-- It will only put constraint on the bigger operand, which is great if the smaller operand is used in other costly operations.
+- It will only put a constraint on the bigger operand, which is great if the smaller operand is used in other costly operations.
 - It will result in at most 2 table lookups, which is great.
 
 #### Cons
@@ -445,7 +445,7 @@ The same configuration option is used to modify the behavior of encrypted shift 
 
 ### With promotion
 
-In this way, shifted operand and shift result is assigned the same bit-width during bit-width assignment, which avoids an additional TLU on the shifted operand, but it might increase the bit-width of the result or the shifted operand, and if they're used in other costly operations, it could result in significant slowdowns. This is the default behavior.
+Here, the shifted operand and shift result are assigned the same bit-width during bit-width assignment, which avoids an additional TLU on the shifted operand. On the other hand, it might increase the bit-width of the result or the shifted operand, and if they're used in other costly operations, it could result in significant slowdowns. This is the default behavior.
 
 ```python
 import numpy as np
@@ -514,7 +514,7 @@ module {
 
 ### With casting
 
-Approach described above could be suboptimal for some circuits, so it is advised to check the complexity with it disabled before production. Here is how the implementation changes with it disabled.
+The approach described above could be suboptimal for some circuits, so it is advised to check the complexity with it disabled before production. Here is how the implementation changes with it disabled.
 
 ```python
 import numpy as np

@@ -293,9 +293,9 @@ You'd expect all of `a`, `b`, and `c` to be 8-bits, but because inputset is very
 return %5
 ```
 
-The first solution in these cases should be to use a bigger inputset, but it can still be tricky to solve with the inputset. That's where `hint` extension comes into play. Hints are a way to provide extra information to compilation process:
+The first solution in these cases should be to use a bigger inputset, but it can still be tricky to solve with the inputset. That's where the `hint` extension comes into play. Hints are a way to provide extra information to compilation process:
 
-- Bit-width hints are for constraining the minimum number of bits in the encoded the value. If you hint a value to be 8-bits, it means it should be at least `uint8` or `int8`.
+- Bit-width hints are for constraining the minimum number of bits in the encoded value. If you hint a value to be 8-bits, it means it should be at least `uint8` or `int8`.
 
 To fix `f` using hints, you can do:
 

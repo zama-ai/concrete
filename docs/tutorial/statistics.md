@@ -10,7 +10,7 @@ Concrete analyzes all compiled circuits and calculates some statistics. These st
 - **packing key switch:** building block for table lookups
 - **programmable bootstrapping:** building block for table lookups
 
-You can print all statistics using `show_statistics` configuration option:
+You can print all statistics using the `show_statistics` configuration option:
 
 ```python
 from concrete import fhe
@@ -69,7 +69,7 @@ Each of these properties can be directly accessed on the circuit (e.g., `circuit
 
 Circuit analysis also considers [tags](../tutorial/tagging.md)!
 
-Imagine you have a neural network with 10 layers, each of them tagged. You can easily see the amount of additions and multiplications required for matrix multiplications per layer:
+Imagine you have a neural network with 10 layers, each of them tagged. You can easily see the number of additions and multiplications required for matrix multiplications per layer:
 
 ```
 Statistics
