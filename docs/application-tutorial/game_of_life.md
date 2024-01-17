@@ -40,7 +40,7 @@ Then, you can play with the different options, and in particular:
 
 - `dimension`, to chose the size of the grid; the larger, the slower
 - `method`, to chose which implementation is used for the grid update
-- `log2_global_p_error` and `log2_p_error`, to chose the probability of correctness issue (see the Concrete documentation for more information)
+- `log2_global_p_error` and `log2_p_error`, to chose the probability of correctness (see the Concrete documentation for more information)
 - `simulate`, to do computations only in simulation, i.e., not in FHE
 
 ### Typical Executions
@@ -51,4 +51,4 @@ In FHE: `python3 game_of_life.py --dimension 6 --refresh_every 8 --log2_p_error 
 
 ### Technical Explanations
 
-A blog is currently being under writening, and a link will be added it here when it's available. In the meantime, some explanations are given in the code.
+A blog is currently in the process of being written, and a link will be added here when it's available. In the meantime, some explanations are given in the code.

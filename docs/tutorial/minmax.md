@@ -1,6 +1,6 @@
 # Min/Max Operations
 
-Finding the minimum or maximum, of two numbers is not a native operation in Concrete, so it needs to be implemented using existing native operations (i.e., additions, clear multiplications, negations, table lookups). Concrete offers two different implementations for this.
+Finding the minimum or maximum of two numbers is not a native operation in Concrete, so it needs to be implemented using existing native operations (i.e., additions, clear multiplications, negations, table lookups). Concrete offers two different implementations for this.
 
 ## Chunked
 
@@ -82,7 +82,7 @@ module {
     %cst_5 = arith.constant dense<[0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0]> : tensor<16xi64>
     %9 = "FHE.apply_lookup_table"(%8, %cst_5) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<1>
     
-    // extracting first 2 bits of x shifhted to left by 1 bits for packing
+    // extracting the first 2 bits of x shifhted to left by 1 bits for packing
     %cst_6 = arith.constant dense<[0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6]> : tensor<16xi64>
     %10 = "FHE.apply_lookup_table"(%arg0, %cst_6) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<3>
     
@@ -90,44 +90,44 @@ module {
     %cst_7 = arith.constant dense<[0, 1]> : tensor<2xi64>
     %11 = "FHE.apply_lookup_table"(%9, %cst_7) : (!FHE.eint<1>, tensor<2xi64>) -> !FHE.eint<3>
     
-    // packing first 2 bits of x with select_x
+    // packing the first 2 bits of x with select_x
     %12 = "FHE.add_eint"(%10, %11) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
     
-    // calculating contribution of 0 if select_x is 0 else first 2 bits of x
+    // calculating contribution of 0 if select_x is 0 else the first 2 bits of x
     %cst_8 = arith.constant dense<[0, 0, 0, 1, 0, 2, 0, 3]> : tensor<8xi64>
     %13 = "FHE.apply_lookup_table"(%12, %cst_8) : (!FHE.eint<3>, tensor<8xi64>) -> !FHE.eint<4>
     
-    // extracting last 2 bits of x shifhted to left by 1 bits for packing
+    // extracting the last 2 bits of x shifhted to the left by 1 bit for packing
     %cst_9 = arith.constant dense<[0, 0, 0, 0, 2, 2, 2, 2, 4, 4, 4, 4, 6, 6, 6, 6]> : tensor<16xi64>
     %14 = "FHE.apply_lookup_table"(%arg0, %cst_9) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<3>
     
-    // packing last 2 bits of x with select_x
+    // packing the last 2 bits of x with select_x
     %15 = "FHE.add_eint"(%14, %11) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
     
-    // calculating contribution of 0 if select_x is 0 else last 2 bits of x shifted by 2 bits for direct addition
+    // calculating contribution of 0 if select_x is 0 else the last 2 bits of x shifted by 2 bits for direct addition
     %cst_10 = arith.constant dense<[0, 0, 0, 4, 0, 8, 0, 12]> : tensor<8xi64>
     %16 = "FHE.apply_lookup_table"(%15, %cst_10) : (!FHE.eint<3>, tensor<8xi64>) -> !FHE.eint<4>
     
     // computing x * select_x
     %17 = "FHE.add_eint"(%13, %16) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
     
-    // extracting first 2 bits of y shifhted to left by 1 bits for packing
+    // extracting the first 2 bits of y shifhted to the left by 1 bit for packing
     %18 = "FHE.apply_lookup_table"(%arg1, %cst_6) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<3>
     
-    // packing first 2 bits of y with select_x
+    // packing the first 2 bits of y with select_x
     %19 = "FHE.add_eint"(%18, %11) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
     
-    // calculating contribution of 0 if select_x is 1 else first 2 bits of y
+    // calculating contribution of 0 if select_x is 1 else the first 2 bits of y
     %cst_11 = arith.constant dense<[0, 0, 1, 0, 2, 0, 3, 0]> : tensor<8xi64>
     %20 = "FHE.apply_lookup_table"(%19, %cst_11) : (!FHE.eint<3>, tensor<8xi64>) -> !FHE.eint<4>
     
-    // extracting last 2 bits of y shifhted to left by 1 bits for packing
+    // extracting the last 2 bits of y shifhted to left by 1 bit for packing
     %21 = "FHE.apply_lookup_table"(%arg1, %cst_9) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<3>
     
-    // packing last 2 bits of y with select_x
+    // packing the last 2 bits of y with select_x
     %22 = "FHE.add_eint"(%21, %11) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
     
-    // calculating contribution of 0 if select_x is 1 else last 2 bits of y shifted by 2 bits for direct addition
+    // calculating contribution of 0 if select_x is 1 else the last 2 bits of y shifted by 2 bits for direct addition
     %cst_12 = arith.constant dense<[0, 0, 4, 0, 8, 0, 12, 0]> : tensor<8xi64>
     %23 = "FHE.apply_lookup_table"(%22, %cst_12) : (!FHE.eint<3>, tensor<8xi64>) -> !FHE.eint<4>
     
@@ -150,9 +150,9 @@ This implementation uses the fact that `[min,max](x, y)` is equal to `[min, max]
 
 There are two major problems with this implementation though:
 1) subtraction before the TLU requires up to 2 additional bits to avoid overflows (it is 1 in most cases).
-2) subtraction and addition requires the same bit-width across operands.
+2) subtraction and addition require the same bit-width across operands.
 
-What this means is if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint7` in some way to do the subtraction and proceed with the TLU in 7-bits. There are 2 ways to achieve this behavior.
+What this means is that if we are comparing `uint3` and `uint6`, we need to convert both of them to `uint7` in some way to do the subtraction and proceed with the TLU in 7-bits. There are 2 ways to achieve this behavior.
 
 ### Requirements
 
@@ -175,7 +175,7 @@ result = comparison_lut[x_promoted_to_uint7 - y_promoted_to_uint7] + y_promoted_
 
 #### Cons
 
-- It will increase the bit-width of both operands and result, and lock them together across the whole circuit, which can result in significant slowdowns if the result or the operands are used in other costly operations.
+- It will increase the bit-width of both operands and the result, and lock them together across the whole circuit, which can result in significant slowdowns if the result or the operands are used in other costly operations.
 
 #### Example
 
@@ -228,7 +228,7 @@ module {
 
 ### 2. fhe.ComparisonStrategy.THREE_TLU_CASTED
 
-This strategy will not put any constraint in bit-widths during bit-width assignment, instead operands are cast to a bit-width that can store `x - y` during runtime using table lookups. The idea is:
+This strategy will not put any constraint on bit-widths during bit-width assignment. Instead, operands are cast to a bit-width that can store `x - y` during runtime using table lookups. The idea is:
 
 ```python
 uint3_to_uint7_lut = fhe.LookupTable([...])

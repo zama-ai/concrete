@@ -328,7 +328,7 @@ Effects: MemoryEffects::Effect{}
 
 Extract the lowest significant bit at a given precision.
 
-  This operation extract the lsb of a ciphertext in a specific precision.
+  This operation extracts the lsb of a ciphertext in a specific precision.
 
   Extracting the lsb with the smallest precision:
   ```mlir
@@ -564,14 +564,14 @@ Effects: MemoryEffects::Effect{}
 Reinterpret the ciphertext with a different precision.
 
   Changing the precision of a ciphertext.
-  It change both the precision, the value and in certain case the correctness of the cyphertext.
+  It changes both the precision, the value, and in certain cases the correctness of the ciphertext.
 
   Changing to
     - a bigger precision is always safe.
-      This is equivalent to a shift left for the value
+      This is equivalent to a shift left for the value.
     - a smaller precision is only safe if you clear the lowest bits that are discarded.
       If not, you can assume small errors on the next TLU.
-      This is equivalent to a shift right for the value
+      This is equivalent to a shift right for the value.
 
   Example:
   ```mlir

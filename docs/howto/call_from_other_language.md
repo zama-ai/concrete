@@ -1,6 +1,6 @@
 # Calling from other languages
 
-After doing a compilation, we endup with a couple of artifacts, including crypto parameters and a binary file containing the executable circuit. In order to be able to encrypt and run the circuit properly, we need to know how to interpret these artifacts, and there are a couple of utility functions to load them. These utility functions can be accessed through a variety of languages, including Python and C++.
+After doing a compilation, we end up with a couple of artifacts, including crypto parameters and a binary file containing the executable circuit. In order to be able to encrypt and run the circuit properly, we need to know how to interpret these artifacts, and there are a couple of utility functions which can be used to load them. These utility functions can be accessed through a variety of languages, including Python and C++.
 
 ### Demo
 
