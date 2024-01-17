@@ -90,7 +90,7 @@ return %1
 
 #### traceback.txt
 
-This file contains information about the error you received.
+This file contains information about the error that was received.
 
 ```
 Traceback (most recent call last):
@@ -204,7 +204,7 @@ Subgraphs:
 
 #### mlir.txt
 
-This file contains information about the MLIR of the function you compiled using the inputset you provided.
+This file contains information about the MLIR of the function which was compiled using the provided inputset.
 
 ```
 module {
@@ -300,7 +300,7 @@ You can seek help with your issue by asking a question directly in the [communit
 
 ## Submitting an issue
 
-If you cannot find a solution in the community forum, or you found a bug in the library, you could create an issue in our GitHub repository.
+If you cannot find a solution in the community forum, or if you have found a bug in the library, you could create an issue in our GitHub repository.
 
 In case of a bug, try to:
 
