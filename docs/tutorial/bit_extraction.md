@@ -1,11 +1,11 @@
 # Bit Extraction
 
-Some applications require directly manipulating bits of integers. Concrete provides bit extraction operation for such applications.
+Some applications require directly manipulating bits of integers. Concrete provides a bit extraction operation for such applications.
 
 Bit extraction is capable of extracting a slice of bits from an integer. Index 0 corresponds to the lowest significant bit. The cost of this operation is proportional to the highest significant bit index.
 
 {% hint style="warning" %}
-Bit extraction only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
+Bit extraction only works in the `Native` encoding, which is usually selected when all table lookups in the circuit are less than or equal to 8 bits.
 {% endhint %}
 
 ```python
@@ -108,14 +108,14 @@ prints
 
 - Bits cannot be extracted using a negative index.
   - Which means `fhe.bits(x)[-1]` or `fhe.bits(x)[-4:-1]` is not supported for example.
-  - The reason for this is we don't know in advance (i.e., before inputset evaluation) how many bits `x` has.
+  - The reason for this is that we don't know in advance (i.e., before inputset evaluation) how many bits `x` has.
     - For example, let's say you have `x == 10 == 0b_000...0001010`, and you want to do `fhe.bits(x)[-1]`. If the value is 4-bits (i.e., `0b_1010`), the result needs to be `1`, but if it's 6-bits (i.e., `0b_001010`), the result needs to be `0`. Since we don't know the bit-width of `x` before inputset evaluation, we cannot calculate `fhe.bits(x)[-1]`.
   
-- When extracting bits using slices in reverse order (i.e., step < 0), start bit **needs** to be provided explicitly.
+- When extracting bits using slices in reverse order (i.e., step < 0), the start bit **needs** to be provided explicitly.
   - Which means `fhe.bits(x)[::-1]` or `fhe.bits(x)[:2:-1]` is not supported for example.
   - The reason is the same as above.
 
-- When extracting bits of signed values using slices, stop bit **needs** to be provided explicitly.
+- When extracting bits of signed values using slices, the stop bit **needs** to be provided explicitly.
     - Which means `fhe.bits(x)[1:]` or `fhe.bits(x)[1::2]` is not supported for example.
     - The reason is similar to above.
       - To explain a bit more, signed integers use [two's complement](https://en.wikipedia.org/wiki/Two%27s_complement#:~:text=Two's%20complement%20is%20the%20most,number%20is%20positive%20or%20negative) representation. In this representation, negative values have their most significant bits set to 1 (e.g., `-1 == 0b_11111`, `-2 == 0b_11110`, `-3 == 0b_11101`). Extracting bits always returns a positive value (e.g., `fhe.bits(-1)[1:3] == 0b_11 == 3`) This means if you were to do `fhe.bits(x)[1:]` where `x == -1`, if `x` is 4 bits, the result would be `0b_111 == 7`, but if `x` is 5 bits the result would be `0b_1111 == 15`. Since we don't know the bit-width of `x` before inputset evaluation, we cannot calculate `fhe.bits(x)[1:]`.
@@ -156,4 +156,3 @@ The combined operation `fhe.bit(x)[3] + fhe.bit(x)[2] + fhe.bit(x)[1]` has almos
 ### TLUs of 1b input precision
 
 Each extracted bit incurs a cost of approximately one TLU of 1-bit input precision. Therefore, `fhe.bits(x)[0]` is generally faster than any other TLU operation.
-
