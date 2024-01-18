@@ -64,6 +64,10 @@ static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
   Region &DFTOpBody = DFTOp.getBody();
   OpBuilder::InsertionGuard guard(builder);
 
+  SetVector<Value> operands;
+  getUsedValuesDefinedAbove(DFTOpBody, operands);
+  DFTOp->setOperands(operands.takeVector());
+
   // Instead of outlining with the same operands/results, we pass all
   // results as operands as well.  For now we preserve the results'
   // types, which will be changed to use an indirection when lowering.
@@ -589,6 +593,23 @@ struct FinalizeTaskCreationPass
                                                   builder.getI64IntegerAttr(1));
         op->setOperand(0, newval);
         op->setOperand(1, clone);
+      }
+    });
+
+    module.walk([&](RT::WorkFunctionReturnOp op) {
+      OpBuilder builder(op);
+
+      Value val = op.getOperand(0);
+      if (val.getType().isa<mlir::MemRefType>() &&
+          isa<RT::DerefWorkFunctionArgumentPtrPlaceholderOp>(
+              val.getDefiningOp())) {
+        Value newval =
+            builder
+                .create<mlir::memref::AllocOp>(
+                    val.getLoc(), val.getType().dyn_cast<mlir::MemRefType>())
+                .getResult();
+        builder.create<mlir::memref::CopyOp>(val.getLoc(), val, newval);
+        op->setOperand(0, newval);
       }
     });
   }

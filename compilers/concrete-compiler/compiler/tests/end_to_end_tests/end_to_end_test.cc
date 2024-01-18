@@ -68,6 +68,9 @@ public:
       ASSERT_OUTCOME_HAS_VALUE(maybeRes);
       auto result = maybeRes.value();
 
+      if (!mlir::concretelang::dfr::_dfr_is_root_node())
+        return;
+
       /* Check results */
       bool allgood = true;
       for (size_t i = 0; i < desc.outputs.size(); i++) {
