@@ -85,16 +85,22 @@ install(EXPORT concrete-protocol DESTINATION "./")
 # -------------------------------------------------------------------------------
 
 set(CONCRETE_OPTIMIZER_DIR "${PROJECT_SOURCE_DIR}/../../concrete-optimizer")
-set(CONCRETE_OPTIMIZER_RELEASE_DIR "${CONCRETE_OPTIMIZER_DIR}/target/release")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(CONCRETE_OPTIMIZER_BUILD_DIR "${CONCRETE_OPTIMIZER_DIR}/target/debug")
+  set(CONCRETE_OPTIMIZER_PROFILE "dev")
+else()
+  set(CONCRETE_OPTIMIZER_BUILD_DIR "${CONCRETE_OPTIMIZER_DIR}/target/release")
+  set(CONCRETE_OPTIMIZER_PROFILE "release")
+endif()
 set(CONCRETE_OPTIMIZER_INCLUDE_DIR "${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp")
-set(CONCRETE_OPTIMIZER_STATIC_LIB "${CONCRETE_OPTIMIZER_RELEASE_DIR}/libconcrete_optimizer_cpp.a")
+set(CONCRETE_OPTIMIZER_STATIC_LIB "${CONCRETE_OPTIMIZER_BUILD_DIR}/libconcrete_optimizer_cpp.a")
 
 ExternalProject_Add(
   concrete_optimizer_rust
   DOWNLOAD_COMMAND ""
   CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_OPTIMIZER_STATIC_LIB}"
   BUILD_ALWAYS true
-  BUILD_COMMAND cargo build -p concrete-optimizer-cpp --profile release
+  BUILD_COMMAND cargo build -p concrete-optimizer-cpp --profile ${CONCRETE_OPTIMIZER_PROFILE}
   BINARY_DIR "${CONCRETE_OPTIMIZER_DIR}"
   INSTALL_COMMAND cp ${CONCRETE_OPTIMIZER_STATIC_LIB} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
   LOG_BUILD ON
@@ -102,8 +108,7 @@ ExternalProject_Add(
 
 add_library(concrete_optimizer STATIC ${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp/concrete-optimizer.cpp)
 
-target_link_libraries(concrete_optimizer PRIVATE pthread m dl
-                                                 "${CONCRETE_OPTIMIZER_DIR}/target/release/libconcrete_optimizer_cpp.a")
+target_link_libraries(concrete_optimizer PRIVATE pthread m dl "${CONCRETE_OPTIMIZER_STATIC_LIB}")
 install(TARGETS concrete_optimizer EXPORT concrete_optimizer)
 install(EXPORT concrete_optimizer DESTINATION "./")
 
