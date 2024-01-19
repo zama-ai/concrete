@@ -143,6 +143,36 @@ private:
   conversion::TypeConverter &typeConverter;
 };
 
+struct BatchedKeySwitchGLWEOpPattern
+    : public mlir::OpRewritePattern<TFHE::BatchedKeySwitchGLWEOp> {
+  BatchedKeySwitchGLWEOpPattern(mlir::MLIRContext *context,
+                                conversion::TypeConverter &typeConverter,
+                                conversion::KeyConverter &keyConverter,
+                                mlir::PatternBenefit benefit =
+                                    mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<TFHE::BatchedKeySwitchGLWEOp>(context, benefit),
+        keyConverter(keyConverter), typeConverter(typeConverter) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(TFHE::BatchedKeySwitchGLWEOp ksOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto newInputTy = typeConverter.convertType(ksOp.getCiphertexts().getType())
+                          .cast<mlir::TensorType>();
+    auto newOutputTy = typeConverter.convertType(ksOp.getResult().getType());
+    auto newKeyswitchKey = keyConverter.convertKeyswitchKey(ksOp.getKeyAttr());
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::BatchedKeySwitchGLWEOp>(
+        ksOp, newOutputTy, ksOp.getCiphertexts(), newKeyswitchKey);
+    rewriter.startRootUpdate(newOp);
+    newOp.getCiphertexts().setType(newInputTy);
+    rewriter.finalizeRootUpdate(newOp);
+    return mlir::success();
+  };
+
+private:
+  conversion::KeyConverter &keyConverter;
+  conversion::TypeConverter &typeConverter;
+};
+
 struct BootstrapGLWEOpPattern
     : public mlir::OpRewritePattern<TFHE::BootstrapGLWEOp> {
   BootstrapGLWEOpPattern(mlir::MLIRContext *context,
@@ -287,6 +317,15 @@ void TFHEKeyNormalizationPass::runOnOperation() {
                                                    keyConverter);
     target.addDynamicallyLegalOp<TFHE::KeySwitchGLWEOp>(
         [&](TFHE::KeySwitchGLWEOp op) {
+          return op.getKeyAttr().getInputKey().isNormalized() &&
+                 op.getKeyAttr().getOutputKey().isNormalized() &&
+                 op.getKeyAttr().getIndex() != -1;
+        });
+
+    patterns.add<patterns::BatchedKeySwitchGLWEOpPattern>(
+        &getContext(), typeConverter, keyConverter);
+    target.addDynamicallyLegalOp<TFHE::BatchedKeySwitchGLWEOp>(
+        [&](TFHE::BatchedKeySwitchGLWEOp op) {
           return op.getKeyAttr().getInputKey().isNormalized() &&
                  op.getKeyAttr().getOutputKey().isNormalized() &&
                  op.getKeyAttr().getIndex() != -1;

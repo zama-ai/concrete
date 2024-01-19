@@ -105,6 +105,12 @@ TFHECircuitKeys extractCircuitKeys(mlir::ModuleOp moduleOp) {
     secretKeys.insert(op.getKeyAttr().getOutputKey());
   });
 
+  moduleOp->walk([&](TFHE::BatchedKeySwitchGLWEOp op) {
+    keyswitchKeys.insert(op.getKeyAttr());
+    secretKeys.insert(op.getKeyAttr().getInputKey());
+    secretKeys.insert(op.getKeyAttr().getOutputKey());
+  });
+
   // Gathering circuit bootstrap keys
   SmallSet<TFHE::GLWEBootstrapKeyAttr> bootstrapKeys;
   moduleOp->walk([&](TFHE::BootstrapGLWEOp op) {
