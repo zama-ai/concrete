@@ -359,6 +359,10 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
+    def identity(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        return ctx.identity(ctx.typeof(node), preds[0])
+
     def index_static(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.index_static(
