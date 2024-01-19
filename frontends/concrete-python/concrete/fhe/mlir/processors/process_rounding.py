@@ -151,7 +151,7 @@ class ProcessRounding(GraphProcessor):
                 return identity
 
             identity = Node.generic(
-                "identity",
+                "reinterpret",
                 [deepcopy(node.output)],
                 deepcopy(node.output),
                 lambda x: x,

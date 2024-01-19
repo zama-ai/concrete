@@ -513,3 +513,37 @@ assert circuit.encrypt_run_decrypt(0, 3, -5) == -5
 {% hint style="info" %}
 `fhe.if_then_else` is just an alias for [np.where](https://numpy.org/doc/stable/reference/generated/numpy.where.html).
 {% endhint %}
+
+## fhe.identity(value)
+
+Allows you to copy the value:
+
+```python
+import numpy as np
+from concrete import fhe
+
+@fhe.compiler({"x": "encrypted"})
+def f(x):
+    return fhe.identity(x)
+
+inputset = [np.random.randint(-10, 10) for _ in range(10)]
+circuit = f.compile(inputset)
+
+assert circuit.encrypt_run_decrypt(0) == 0
+assert circuit.encrypt_run_decrypt(1) == 1
+assert circuit.encrypt_run_decrypt(-1) == -1
+assert circuit.encrypt_run_decrypt(-3) == -3
+assert circuit.encrypt_run_decrypt(5) == 5
+```
+
+{% hint style="info" %}
+Identity extension can be used to clone an input while changing its bit-width. Imagine you
+have `return x**2, x+100` where `x` is 2-bits. Because of `x+100`, `x` will be assigned 7-bits
+and `x**2` would be more expensive than it needs to be. If `return x**2, fhe.identity(x)+100`
+is used instead, `x` will be assigned 2-bits as it should and `fhe.identity(x)` will be assigned
+7-bits as necessary.
+{% endhint %}
+
+{% hint style="warning" %}
+Identity extension only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
+{% endhint %}

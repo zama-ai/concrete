@@ -2269,6 +2269,38 @@ class Context:
     ) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.GREATER, Comparison.EQUAL})
 
+    def identity(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
+        assert (
+            x.is_encrypted
+            and resulting_type.is_encrypted
+            and x.shape == resulting_type.shape
+            and x.is_signed == resulting_type.is_signed
+        )
+
+        if resulting_type.bit_width == x.bit_width:
+            return x
+
+        result = self.extract_bits(
+            self.tensor(self.eint(resulting_type.bit_width), shape=x.shape),
+            x,
+            bits=slice(0, x.original_bit_width),
+        )
+
+        if x.is_signed:
+            sign = self.extract_bits(
+                self.tensor(self.eint(resulting_type.bit_width), shape=x.shape),
+                x,
+                bits=(x.original_bit_width - 1),
+            )
+            base = self.mul(
+                resulting_type,
+                sign,
+                self.constant(self.i(sign.bit_width + 1), -(2**x.original_bit_width)),
+            )
+            result = self.add(resulting_type, base, result)
+
+        return result
+
     def index_static(
         self,
         resulting_type: ConversionType,
