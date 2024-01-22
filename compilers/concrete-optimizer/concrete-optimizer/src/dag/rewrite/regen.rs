@@ -35,6 +35,7 @@ pub(crate) fn regen(
             regen_dag.operators.push(op.clone());
             regen_dag.out_precisions.push(dag.out_precisions[i]);
             regen_dag.out_shapes.push(dag.out_shapes[i].clone());
+            regen_dag.output_tags.push(dag.output_tags[i]);
         }
     }
     (regen_dag, instructions_multi_map(&old_index_to_new))

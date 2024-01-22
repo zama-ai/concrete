@@ -976,6 +976,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
+  void tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept;
   ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options options) const noexcept;
   ~OperationDag() = delete;
 
@@ -1312,6 +1313,8 @@ extern "C" {
 } // namespace weights
 
 extern "C" {
+void concrete_optimizer$cxxbridge1$OperationDag$tag_operator_as_output(::concrete_optimizer::OperationDag &self, ::concrete_optimizer::dag::OperatorIndex op) noexcept;
+
 void concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
 
 ::std::uint64_t concrete_optimizer$cxxbridge1$NO_KEY_ID() noexcept;
@@ -1418,6 +1421,10 @@ namespace weights {
   return ::rust::Box<::concrete_optimizer::Weights>::from_raw(concrete_optimizer$weights$cxxbridge1$number(weight));
 }
 } // namespace weights
+
+void OperationDag::tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept {
+  concrete_optimizer$cxxbridge1$OperationDag$tag_operator_as_output(*this, op);
+}
 
 ::concrete_optimizer::dag::CircuitSolution OperationDag::optimize_multi(::concrete_optimizer::Options options) const noexcept {
   ::rust::MaybeUninit<::concrete_optimizer::dag::CircuitSolution> return$;

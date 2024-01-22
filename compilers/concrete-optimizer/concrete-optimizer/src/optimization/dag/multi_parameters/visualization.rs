@@ -42,15 +42,7 @@ fn write_dot_svg(dot: &str, maybe_path: Option<PathBuf>) -> PathBuf {
 }
 
 fn extract_node_inputs(node: &Operator) -> Vec<usize> {
-    match node {
-        Operator::Input { .. } => vec![],
-        Operator::LevelledOp { inputs, .. } | Operator::Dot { inputs, .. } => {
-            inputs.iter().map(|n| n.i).collect()
-        }
-        Operator::UnsafeCast { input, .. }
-        | Operator::Lut { input, .. }
-        | Operator::Round { input, .. } => vec![input.i],
-    }
+    node.get_inputs_iter().map(|id| id.i).collect()
 }
 
 fn extract_node_label(node: &Operator, index: usize) -> String {

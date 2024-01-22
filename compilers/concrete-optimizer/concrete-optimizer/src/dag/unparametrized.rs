@@ -5,7 +5,6 @@ use crate::dag::operator::{
     dot_kind, DotKind, FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision,
     Shape, Weights,
 };
-use crate::optimization::dag::solo_key::analyze::extra_final_values_to_check;
 
 pub(crate) type UnparameterizedOperator = Operator;
 
@@ -17,6 +16,8 @@ pub struct OperationDag {
     pub(crate) out_shapes: Vec<Shape>,
     // Collect all operators ouput precision
     pub(crate) out_precisions: Vec<Precision>,
+    // Collect whether operators are tagged as outputs
+    pub(crate) output_tags: Vec<bool>,
 }
 
 impl fmt::Display for OperationDag {
@@ -34,6 +35,7 @@ impl OperationDag {
             operators: vec![],
             out_shapes: vec![],
             out_precisions: vec![],
+            output_tags: vec![],
         }
     }
 
@@ -43,6 +45,7 @@ impl OperationDag {
             .push(self.infer_out_precision(&operator));
         self.out_shapes.push(self.infer_out_shape(&operator));
         self.operators.push(operator);
+        self.output_tags.push(false);
         OperatorIndex { i }
     }
 
@@ -128,6 +131,11 @@ impl OperationDag {
             input,
             out_precision: rounded_precision,
         })
+    }
+
+    pub fn tag_operator_as_output(&mut self, operator: OperatorIndex) {
+        assert!(operator.i < self.len());
+        self.output_tags[operator.i] = true;
     }
 
     #[allow(clippy::len_without_is_empty)]
@@ -244,6 +252,7 @@ impl OperationDag {
         self.add_lut(rounded, table, out_precision)
     }
 
+    /// Returns an iterator over input nodes indices.
     pub(crate) fn get_input_index_iter(&self) -> impl Iterator<Item = usize> + '_ {
         self.operators
             .iter()
@@ -254,12 +263,36 @@ impl OperationDag {
             })
     }
 
-    pub(crate) fn get_output_index(&self) -> Vec<usize> {
-        return extra_final_values_to_check(self)
+    /// If no outputs were declared, automatically tag final nodes as outputs.
+    #[allow(unused)]
+    pub(crate) fn detect_outputs(&mut self) {
+        assert!(!self.is_output_tagged());
+        self.output_tags = vec![true; self.len()];
+        self.operators
+            .iter()
+            .flat_map(|op| op.get_inputs_iter())
+            .for_each(|op| self.output_tags[op.i] = false);
+    }
+
+    fn is_output_tagged(&self) -> bool {
+        self.output_tags
+            .iter()
+            .copied()
+            .reduce(|a, b| a || b)
+            .unwrap()
+    }
+
+    /// Returns an iterator over output nodes indices.
+    pub(crate) fn get_output_index_iter(&self) -> impl Iterator<Item = usize> + '_ {
+        self.output_tags
             .iter()
             .enumerate()
             .filter_map(|(index, is_output)| is_output.then_some(index))
-            .collect();
+    }
+
+    /// Returns whether the node is tagged as output.
+    pub(crate) fn is_output_node(&self, oid: usize) -> bool {
+        self.output_tags[oid]
     }
 
     fn infer_out_shape(&self, op: &UnparameterizedOperator) -> Shape {

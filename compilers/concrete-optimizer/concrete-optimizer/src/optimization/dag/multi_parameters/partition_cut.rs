@@ -6,7 +6,7 @@ use crate::dag::operator::{Operator, OperatorIndex, Precision};
 use crate::dag::rewrite::round::expand_round_and_index_map;
 use crate::dag::unparametrized;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
-use crate::optimization::dag::solo_key::analyze::{extra_final_values_to_check, out_variances};
+use crate::optimization::dag::solo_key::analyze::out_variances;
 use crate::optimization::dag::solo_key::symbolic_variance::SymbolicVariance;
 
 const ROUND_INNER_MULTI_PARAMETER: bool = false;
@@ -143,12 +143,10 @@ impl PartitionCut {
                 }
             }
         }
-        for (op_i, &need_decrypt) in extra_final_values_to_check(&dag).iter().enumerate() {
-            if need_decrypt {
-                for &origin in &noise_origins[op_i] {
-                    max_output_norm2[origin] = max_output_norm2[origin].max(out_norm2(op_i));
-                    assert!(!max_output_norm2[origin].is_nan());
-                }
+        for op_i in dag.get_output_index_iter() {
+            for &origin in &noise_origins[op_i] {
+                max_output_norm2[origin] = max_output_norm2[origin].max(out_norm2(op_i));
+                assert!(!max_output_norm2[origin].is_nan());
             }
         }
         let mut round_done: HashMap<usize, u64> = HashMap::default();

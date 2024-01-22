@@ -599,6 +599,10 @@ impl OperationDag {
         self.0.dump()
     }
 
+    fn tag_operator_as_output(&mut self, op: ffi::OperatorIndex) {
+        self.0.tag_operator_as_output(op.into());
+    }
+
     fn optimize_multi(&self, options: ffi::Options) -> ffi::CircuitSolution {
         let processing_unit = processing_unit(options);
         let config = Config {
@@ -750,6 +754,8 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::weights"]
         fn number(weight: i64) -> Box<Weights>;
+
+        fn tag_operator_as_output(self: &mut OperationDag, op: OperatorIndex);
 
         fn optimize_multi(self: &OperationDag, options: Options) -> CircuitSolution;
 

@@ -206,42 +206,17 @@ pub fn out_variances(dag: &unparametrized::OperationDag) -> Vec<SymbolicVariance
     out_variances
 }
 
-pub fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> {
-    let nb_ops = dag.operators.len();
-    let mut extra_values_to_check = vec![true; nb_ops];
-    for op in &dag.operators {
-        match op {
-            Op::Input { .. } => (),
-            Op::Lut { input, .. } | Op::UnsafeCast { input, .. } | Op::Round { input, .. } => {
-                extra_values_to_check[input.i] = false;
-            }
-            Op::Dot { inputs, .. } | Op::LevelledOp { inputs, .. } => {
-                for input in inputs {
-                    extra_values_to_check[input.i] = false;
-                }
-            }
-        }
-    }
-    extra_values_to_check
-}
-
 fn extra_final_variances(
     dag: &unparametrized::OperationDag,
     out_variances: &[SymbolicVariance],
 ) -> Vec<(Precision, Shape, SymbolicVariance)> {
-    extra_final_values_to_check(dag)
-        .iter()
-        .enumerate()
-        .filter_map(|(i, &is_final)| {
-            if is_final {
-                Some((
-                    dag.out_precisions[i],
-                    dag.out_shapes[i].clone(),
-                    out_variances[i],
-                ))
-            } else {
-                None
-            }
+    dag.get_output_index_iter()
+        .map(|i| {
+            (
+                dag.out_precisions[i],
+                dag.out_shapes[i].clone(),
+                out_variances[i],
+            )
         })
         .collect()
 }
@@ -666,6 +641,7 @@ pub mod tests {
     fn test_1_input() {
         let mut graph = unparametrized::OperationDag::new();
         let input1 = graph.add_input(1, Shape::number());
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -689,6 +665,7 @@ pub mod tests {
         let mut graph = unparametrized::OperationDag::new();
         let input1 = graph.add_input(8, Shape::number());
         let lut1 = graph.add_lut(input1, FunctionTable::UNKWOWN, 8);
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -715,6 +692,7 @@ pub mod tests {
         let weights = Weights::vector([1, 2]);
         let norm2: f64 = 1.0 * 1.0 + 2.0 * 2.0;
         let dot = graph.add_dot([input1, input1], weights);
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -746,6 +724,7 @@ pub mod tests {
         #[allow(clippy::imprecise_flops)]
         let manp = (1.0 * 1.0 + 2.0 * 2_f64).sqrt();
         let dot = graph.add_levelled_op([input1, input1], cpx_dot, manp, Shape::number(), "dot");
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -775,6 +754,7 @@ pub mod tests {
         let lut1 = graph.add_lut(dot1, FunctionTable::UNKWOWN, 1);
         let dot2 = graph.add_dot([lut1, lut1], weights);
         let lut2 = graph.add_lut(dot2, FunctionTable::UNKWOWN, 1);
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -823,6 +803,7 @@ pub mod tests {
         let weights = &Weights::vector([2, 3]);
         let dot1 = graph.add_dot([input1, lut1], weights);
         let _lut2 = graph.add_lut(dot1, FunctionTable::UNKWOWN, 1);
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -849,6 +830,7 @@ pub mod tests {
         for i in 1..=max_precision {
             _ = graph.add_input(i, Shape::number());
         }
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         assert!(analysis.constraints_by_precisions.len() == max_precision as usize);
         let mut prev_safe_noise_bound = 0.0;
@@ -869,6 +851,7 @@ pub mod tests {
             let input = graph.add_input(p, Shape::number());
             let _lut = graph.add_lut(input, FunctionTable::UNKWOWN, p);
         }
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         assert!(analysis.constraints_by_precisions.len() == max_precision as usize);
         let mut prev_safe_noise_bound = 0.0;
@@ -896,6 +879,7 @@ pub mod tests {
         let weights = &Weights::number(2);
         _ = graph.add_dot([input1], weights);
         assert!(*graph.out_shapes.last().unwrap() == shape);
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
     }
@@ -912,6 +896,7 @@ pub mod tests {
         let weights = &Weights::vector([2, 3]);
         _ = graph.add_dot([input1, lut2], weights);
         assert!(*graph.out_shapes.last().unwrap() == shape);
+        graph.detect_outputs();
         let analysis = analyze(&graph);
         assert_f64_eq(analysis.out_variances.last().unwrap().input_coeff, 4.0);
         assert_f64_eq(analysis.out_variances.last().unwrap().lut_coeff, 9.0);

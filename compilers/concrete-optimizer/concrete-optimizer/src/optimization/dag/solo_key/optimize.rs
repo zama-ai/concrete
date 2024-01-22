@@ -596,6 +596,7 @@ pub(crate) mod tests {
             let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
             let dot2 = dag.add_dot([lut1], [weight]);
             let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
+            dag.detect_outputs();
         }
         {
             let dag2 = analyze::analyze(
