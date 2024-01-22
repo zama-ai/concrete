@@ -45,6 +45,7 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
 #include "concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h"
+#include "concretelang/Dialect/TypeInference/IR/TypeInferenceDialect.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Encodings.h"
@@ -81,6 +82,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
   if (this->mlirContext == nullptr) {
     mlir::DialectRegistry registry;
     registry.insert<
+        mlir::concretelang::TypeInference::TypeInferenceDialect,
         mlir::concretelang::Tracing::TracingDialect,
         mlir::concretelang::RT::RTDialect, mlir::concretelang::FHE::FHEDialect,
         mlir::concretelang::TFHE::TFHEDialect,
