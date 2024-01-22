@@ -61,7 +61,8 @@ TEST test_dag_no_lut() {
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
       concrete_optimizer::weights::vector(slice(weight_vec));
 
-  dag->add_dot(slice(inputs), std::move(weights));
+  auto id = dag->add_dot(slice(inputs), std::move(weights));
+  dag->tag_operator_as_output(id);
 
   auto solution = dag->optimize(default_options());
   assert(solution.glwe_polynomial_size == 1);
@@ -77,7 +78,8 @@ TEST test_dag_lut() {
       dag->add_input(PRECISION_8B, slice(shape));
 
   std::vector<u_int64_t> table = {};
-  dag->add_lut(input, slice(table), PRECISION_8B);
+  auto id = dag->add_lut(input, slice(table), PRECISION_8B);
+  dag->tag_operator_as_output(id);
 
   auto solution = dag->optimize(default_options());
   assert(solution.glwe_dimension == 1);
@@ -94,7 +96,8 @@ TEST test_dag_lut_wop() {
       dag->add_input(PRECISION_16B, slice(shape));
 
   std::vector<u_int64_t> table = {};
-  dag->add_lut(input, slice(table), PRECISION_16B);
+  auto id = dag->add_lut(input, slice(table), PRECISION_16B);
+  dag->tag_operator_as_output(id);
 
   auto solution = dag->optimize(default_options());
   assert(solution.glwe_dimension == 2);
@@ -111,7 +114,8 @@ TEST test_dag_lut_force_wop() {
       dag->add_input(PRECISION_8B, slice(shape));
 
   std::vector<u_int64_t> table = {};
-  dag->add_lut(input, slice(table), PRECISION_8B);
+  auto id = dag->add_lut(input, slice(table), PRECISION_8B);
+  dag->tag_operator_as_output(id);
 
   auto options = default_options();
   options.encoding = concrete_optimizer::Encoding::Crt;
@@ -129,7 +133,8 @@ TEST test_multi_parameters_1_precision() {
       dag->add_input(PRECISION_8B, slice(shape));
 
   std::vector<u_int64_t> table = {};
-  dag->add_lut(input, slice(table), PRECISION_8B);
+  auto id = dag->add_lut(input, slice(table), PRECISION_8B);
+  dag->tag_operator_as_output(id);
 
   auto options = default_options();
   auto circuit_solution = dag->optimize_multi(options);
@@ -167,7 +172,8 @@ TEST test_multi_parameters_2_precision() {
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
       concrete_optimizer::weights::vector(slice(weight_vec));
 
-  dag->add_dot(slice(inputs), std::move(weights));
+  auto id = dag->add_dot(slice(inputs), std::move(weights));
+  dag->tag_operator_as_output(id);
 
   auto options = default_options();
   auto circuit_solution = dag->optimize_multi(options);
@@ -206,7 +212,8 @@ TEST test_multi_parameters_2_precision_crt() {
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
       concrete_optimizer::weights::vector(slice(weight_vec));
 
-  dag->add_dot(slice(inputs), std::move(weights));
+  auto id = dag->add_dot(slice(inputs), std::move(weights));
+  dag->tag_operator_as_output(id);
 
   auto options = default_options();
   options.encoding = concrete_optimizer::Encoding::Crt;
@@ -238,7 +245,8 @@ TEST test_composable_dag_mono_fallback_on_dag_multi() {
   std::vector<concrete_optimizer::dag::OperatorIndex> lut1v = {lut1};
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights2 =
     concrete_optimizer::weights::vector(slice(weight_vec));
-  dag->add_dot(slice(lut1v), std::move(weights2));
+  auto id = dag->add_dot(slice(lut1v), std::move(weights2));
+  dag->tag_operator_as_output(id);
 
   auto options = default_options();
   auto solution1 = dag->optimize(options);
@@ -272,7 +280,8 @@ TEST test_non_composable_dag_mono_fallback_on_woppbs() {
   std::vector<concrete_optimizer::dag::OperatorIndex> lut1v = {lut1};
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights2 =
     concrete_optimizer::weights::vector(slice(weight_vec));
-  dag->add_dot(slice(lut1v), std::move(weights2));
+  auto id = dag->add_dot(slice(lut1v), std::move(weights2));
+  dag->tag_operator_as_output(id);
 
   auto options = default_options();
 

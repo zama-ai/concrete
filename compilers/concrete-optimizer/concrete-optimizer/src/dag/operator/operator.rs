@@ -1,4 +1,5 @@
 use std::fmt;
+use std::iter::{empty, once};
 
 use crate::dag::operator::tensor::{ClearTensor, Shape};
 
@@ -99,6 +100,19 @@ pub enum Operator {
         input: OperatorIndex,
         out_precision: Precision,
     },
+}
+
+impl Operator {
+    // Returns an iterator on the indices of the operator inputs.
+    pub(crate) fn get_inputs_iter(&self) -> Box<dyn Iterator<Item = &OperatorIndex> + '_> {
+        match self {
+            Self::Input { .. } => Box::new(empty()),
+            Self::LevelledOp { inputs, .. } | Self::Dot { inputs, .. } => Box::new(inputs.iter()),
+            Self::UnsafeCast { input, .. }
+            | Self::Lut { input, .. }
+            | Self::Round { input, .. } => Box::new(once(input)),
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

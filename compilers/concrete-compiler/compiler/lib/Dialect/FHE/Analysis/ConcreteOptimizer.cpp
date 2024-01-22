@@ -129,18 +129,20 @@ struct FunctionToDag {
   void addOperation(optimizer::Dag &dag, mlir::Operation &op) {
     DEBUG("Instr " << op);
 
+    auto encrypted_inputs = encryptedInputs(op);
     if (isReturn(op)) {
-      // This op has no result
+      for (auto op : encrypted_inputs) {
+        dag->tag_operator_as_output(op);
+      }
       return;
     }
-
-    auto encrypted_inputs = encryptedInputs(op);
     if (!hasEncryptedResult(op)) {
       // This op is unrelated to FHE
       assert(encrypted_inputs.empty() ||
              mlir::isa<mlir::concretelang::Tracing::TraceCiphertextOp>(op));
       return;
     }
+
     assert(op.getNumResults() == 1);
     auto val = op.getResult(0);
     auto precision = fhe::utils::getEintPrecision(val);

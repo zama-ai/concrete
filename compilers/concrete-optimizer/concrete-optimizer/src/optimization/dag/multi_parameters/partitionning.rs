@@ -69,8 +69,7 @@ fn extract_levelled_block(dag: &unparametrized::OperationDag, composable: bool) 
         // all inputs and outputs in the same partition.
         let mut input_iter = dag.get_input_index_iter();
         let first_inp = input_iter.next().unwrap();
-        dag.get_output_index()
-            .into_iter()
+        dag.get_output_index_iter()
             .chain(input_iter)
             .for_each(|ind| uf.union(first_inp, ind));
     }
@@ -362,6 +361,7 @@ pub mod tests {
         let input = dag.add_input(10, Shape::number());
         let lut1 = dag.add_lut(input, FunctionTable::UNKWOWN, 2);
         let output = dag.add_lut(lut1, FunctionTable::UNKWOWN, 10);
+        dag.detect_outputs();
         let partitions = partitionning(&dag, false);
         assert!(
             partitions.instrs_partition[input.i].instruction_partition

@@ -177,8 +177,11 @@ fn optimize_multi_independant_2_precisions() {
                 let noise_factor = manp as f64;
                 let mut dag_multi = v0_dag(sum_size, precision1, noise_factor);
                 add_v0_dag(&mut dag_multi, sum_size, precision2, noise_factor);
-                let dag_1 = v0_dag(sum_size, precision1, noise_factor);
-                let dag_2 = v0_dag(sum_size, precision2, noise_factor);
+                dag_multi.detect_outputs();
+                let mut dag_1 = v0_dag(sum_size, precision1, noise_factor);
+                dag_1.detect_outputs();
+                let mut dag_2 = v0_dag(sum_size, precision2, noise_factor);
+                dag_2.detect_outputs();
                 if let Some(equiv) = equiv_2_single(&dag_multi, &dag_1, &dag_2) {
                     assert!(equiv, "FAILED ON {precision1} {precision2} {manp}");
                 } else {
@@ -205,6 +208,7 @@ fn dag_lut_sum_of_2_partitions_2_layer(
     if final_lut {
         _ = dag.add_lut(dot, FunctionTable::UNKWOWN, precision1);
     }
+    dag.detect_outputs();
     dag
 }
 
@@ -615,6 +619,7 @@ fn test_multi_rounded_fks_coherency() {
     let reduced_8 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 8, 8);
     let reduced_4 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 4, 8);
     _ = dag.add_dot([reduced_8, reduced_4], [1, 1]);
+    dag.detect_outputs();
     let sol = optimize(&dag, &None, 0);
     assert!(sol.is_some());
     let sol = sol.unwrap();
@@ -650,6 +655,7 @@ fn test_big_secret_key_sharing() {
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
+    dag.detect_outputs();
     let config_sharing = Config {
         security_level: 128,
         maximum_acceptable_error_probability: _4_SIGMA,
@@ -700,6 +706,7 @@ fn test_big_and_small_secret_key() {
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
+    dag.detect_outputs();
     let config_sharing = Config {
         security_level: 128,
         maximum_acceptable_error_probability: _4_SIGMA,
@@ -750,6 +757,7 @@ fn test_composition_2_partitions() {
     let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
     let input2 = dag.add_dot([input1, lut3], [1, 1]);
     let _ = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
+    dag.detect_outputs();
     let normal_config = default_config();
     let composed_config = Config {
         composable: true,
@@ -780,6 +788,7 @@ fn test_composition_1_partition_not_composable() {
     let input1 = dag.add_dot([input1], [1 << 16]);
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 8);
     let _ = dag.add_dot([lut1], [1 << 16]);
+    dag.detect_outputs();
     let normal_config = default_config();
     let composed_config = Config {
         composable: true,
@@ -808,6 +817,7 @@ fn test_maximal_multi() {
     let lut1 = dag.add_lut(input, FunctionTable::UNKWOWN, 8u8);
     let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 8u8);
     _ = dag.add_dot([lut2], [1 << 16]);
+    dag.detect_outputs();
 
     let sol = optimize(&dag, &None, 0).unwrap();
     assert!(sol.macro_params.len() == 1);
