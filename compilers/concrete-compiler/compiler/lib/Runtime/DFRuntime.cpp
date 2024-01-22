@@ -29,8 +29,8 @@ namespace concretelang {
 namespace dfr {
 namespace {
 static std::vector<GenericComputeClient> gcc;
-static hpx::lcos::barrier *_dfr_jit_phase_barrier;
-static hpx::lcos::barrier *_dfr_startup_barrier;
+static hpx::distributed::barrier *_dfr_jit_phase_barrier;
+static hpx::distributed::barrier *_dfr_startup_barrier;
 static size_t num_nodes = 0;
 #if CONCRETELANG_TIMING_ENABLED
 static struct timespec init_timer, broadcast_timer, compute_timer, whole_timer;
@@ -204,7 +204,7 @@ static uint64_t terminated = 2;
 } // namespace mlir
 static inline void _dfr_stop_impl() {
   if (_dfr_is_root_node())
-    hpx::apply([]() { hpx::finalize(); });
+    hpx::post([]() { hpx::finalize(); });
   hpx::stop();
   exit(EXIT_SUCCESS);
 }
@@ -317,10 +317,10 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
 
   new WorkFunctionRegistry();
   new RuntimeContextManager();
-  _dfr_jit_phase_barrier = new hpx::lcos::barrier("phase_barrier", num_nodes,
-                                                  hpx::get_locality_id());
-  _dfr_startup_barrier = new hpx::lcos::barrier("startup_barrier", num_nodes,
-                                                hpx::get_locality_id());
+  _dfr_jit_phase_barrier = new hpx::distributed::barrier(
+      "phase_barrier", num_nodes, hpx::get_locality_id());
+  _dfr_startup_barrier = new hpx::distributed::barrier(
+      "startup_barrier", num_nodes, hpx::get_locality_id());
 
   if (_dfr_is_root_node()) {
     // Create compute server components on each node - from the root

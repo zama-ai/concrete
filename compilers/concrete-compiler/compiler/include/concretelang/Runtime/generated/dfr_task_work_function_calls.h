@@ -520,7 +520,8 @@ case 1: {
         inputs.params[47], inputs.params[48], inputs.params[49]);
     break;
   default:
-    HPX_THROW_EXCEPTION(hpx::no_success, "GenericComputeServer::execute_task",
+    HPX_THROW_EXCEPTION(hpx::error::no_success,
+                        "GenericComputeServer::execute_task",
                         "Error: number of task parameters not supported.");
   }
   outputs = {output1};
@@ -1050,7 +1051,8 @@ case 2: {
         inputs.params[47], inputs.params[48], inputs.params[49]);
     break;
   default:
-    HPX_THROW_EXCEPTION(hpx::no_success, "GenericComputeServer::execute_task",
+    HPX_THROW_EXCEPTION(hpx::error::no_success,
+                        "GenericComputeServer::execute_task",
                         "Error: number of task parameters not supported.");
   }
   outputs = {output1, output2};
@@ -1597,7 +1599,8 @@ case 3: {
         inputs.params[49]);
     break;
   default:
-    HPX_THROW_EXCEPTION(hpx::no_success, "GenericComputeServer::execute_task",
+    HPX_THROW_EXCEPTION(hpx::error::no_success,
+                        "GenericComputeServer::execute_task",
                         "Error: number of task parameters not supported.");
   }
   outputs = {output1, output2, output3};

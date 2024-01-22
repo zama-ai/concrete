@@ -36,7 +36,6 @@
 #include "concretelang/Runtime/runtime_api.h"
 #include "concretelang/Runtime/workfunction_registry.hpp"
 
-using namespace hpx::naming;
 using namespace hpx::components;
 using namespace hpx::collectives;
 
@@ -54,10 +53,10 @@ static inline void _dfr_checked_aligned_alloc(void **out, size_t align,
                                               size_t size) {
   int res = posix_memalign(out, align, size);
   if (res == ENOMEM)
-    HPX_THROW_EXCEPTION(hpx::no_success, "DFR: memory allocation failed",
+    HPX_THROW_EXCEPTION(hpx::error::no_success, "DFR: memory allocation failed",
                         "Error: insufficient memory available.");
   if (res == EINVAL)
-    HPX_THROW_EXCEPTION(hpx::no_success, "DFR: memory allocation failed",
+    HPX_THROW_EXCEPTION(hpx::error::no_success, "DFR: memory allocation failed",
                         "Error: invalid memory alignment.");
 }
 
@@ -118,7 +117,7 @@ struct OpaqueInputData {
         static_cast<StridedMemRefType<char, 1> *>(params[p])->data = data;
       } break;
       default:
-        HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
+        HPX_THROW_EXCEPTION(hpx::error::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
       }
     }
@@ -151,7 +150,7 @@ struct OpaqueInputData {
             mref.data + mref.offset * elementSize, size * elementSize);
       } break;
       default:
-        HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
+        HPX_THROW_EXCEPTION(hpx::error::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
       }
     }
@@ -211,7 +210,7 @@ struct OpaqueOutputData {
         static_cast<StridedMemRefType<char, 1> *>(outputs[p])->data = data;
       } break;
       default:
-        HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
+        HPX_THROW_EXCEPTION(hpx::error::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
       }
     }
@@ -237,7 +236,7 @@ struct OpaqueOutputData {
             mref.data + mref.offset * elementSize, size * elementSize);
       } break;
       default:
-        HPX_THROW_EXCEPTION(hpx::no_success, "DFR: OpaqueInputData save",
+        HPX_THROW_EXCEPTION(hpx::error::no_success, "DFR: OpaqueInputData save",
                             "Error: invalid task argument type.");
       }
     }
@@ -263,7 +262,8 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
 #include "concretelang/Runtime/generated/dfr_task_work_function_calls.h"
 
     default:
-      HPX_THROW_EXCEPTION(hpx::no_success, "GenericComputeServer::execute_task",
+      HPX_THROW_EXCEPTION(hpx::error::no_success,
+                          "GenericComputeServer::execute_task",
                           "Error: number of task outputs not supported.");
     }
 
@@ -281,7 +281,7 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
                             std::move(inputs.output_types));
   }
 
-  HPX_DEFINE_COMPONENT_ACTION(GenericComputeServer, execute_task);
+  HPX_DEFINE_COMPONENT_ACTION(GenericComputeServer, execute_task)
 };
 
 } // namespace dfr
@@ -310,7 +310,7 @@ struct GenericComputeClient
   typedef client_base<GenericComputeClient, GenericComputeServer> base_type;
 
   GenericComputeClient() = default;
-  GenericComputeClient(id_type id) : base_type(std::move(id)) {}
+  GenericComputeClient(hpx::id_type id) : base_type(std::move(id)) {}
 
   hpx::future<OpaqueOutputData> execute_task(const OpaqueInputData &inputs) {
     typedef GenericComputeServer::execute_task_action action_type;

@@ -10,7 +10,7 @@ RUN ./bootstrap.sh && ./b2 --with-filesystem install
 # Build HPX
 RUN git clone https://github.com/STEllAR-GROUP/hpx.git /hpx
 WORKDIR /hpx
-RUN git checkout 1.7.1
+RUN git checkout 1.9.1
 RUN mkdir build
 # empty HPX_WITH_MAX_CPU_COUNT = dynamic
 # ref https://github.com/STEllAR-GROUP/hpx/blob/1.7.1/CMakeLists.txt#L759

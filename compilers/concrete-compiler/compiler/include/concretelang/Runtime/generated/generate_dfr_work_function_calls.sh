@@ -26,7 +26,7 @@ for i in $(eval echo {$1..$2}); do
 	     wfn($outs$ins); break;"
     done
     echo "      default:
-        HPX_THROW_EXCEPTION(hpx::no_success,
+        HPX_THROW_EXCEPTION(hpx::error::no_success,
                             \"GenericComputeServer::execute_task\",
                             \"Error: number of task parameters not supported.\");
       }"
