@@ -26,8 +26,8 @@ KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
 KEYSETCACHENAME ?= KeySetCacheV4
 
-HPX_VERSION?=1.7.1
-HPX_URL=https://github.com/STEllAR-GROUP/hpx/archive/refs/tags/$(HPX_VERSION).tar.gz
+HPX_VERSION?=1.9.1
+HPX_URL=https://github.com/STEllAR-GROUP/hpx/archive/refs/tags/v$(HPX_VERSION).tar.gz
 HPX_TARBALL=$(shell pwd)/hpx-$(HPX_VERSION).tar.gz
 HPX_LOCAL_DIR=$(shell pwd)/hpx-$(HPX_VERSION)
 HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)/build

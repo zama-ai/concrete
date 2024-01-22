@@ -61,7 +61,7 @@ void dfr_create_async_task_impl(wfnptr wfn, void *ctx,
 #include "concretelang/Runtime/generated/dfr_dataflow_inputs_cases.h"
 
   default:
-    HPX_THROW_EXCEPTION(hpx::no_success, "_dfr_create_async_task",
+    HPX_THROW_EXCEPTION(hpx::error::no_success, "_dfr_create_async_task",
                         "Error: number of task parameters not supported.");
   }
 
@@ -126,7 +126,7 @@ void dfr_create_async_task_impl(wfnptr wfn, void *ctx,
   }
 
   default:
-    HPX_THROW_EXCEPTION(hpx::no_success, "_dfr_create_async_task",
+    HPX_THROW_EXCEPTION(hpx::error::no_success, "_dfr_create_async_task",
                         "Error: number of task outputs not supported.");
   }
 }

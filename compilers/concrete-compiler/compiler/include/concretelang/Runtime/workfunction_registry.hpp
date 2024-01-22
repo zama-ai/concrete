@@ -37,7 +37,7 @@ struct WorkFunctionRegistry {
 
     auto ptr = dlsym(dl_handle, name.c_str());
     if (ptr == nullptr) {
-      HPX_THROW_EXCEPTION(hpx::no_success,
+      HPX_THROW_EXCEPTION(hpx::error::no_success,
                           "WorkFunctionRegistry::getWorkFunctionPointer",
                           "Error recovering work function pointer from name.");
     }
