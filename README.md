@@ -142,8 +142,10 @@ If you have built awesome projects using Concrete, feel free to let us know and 
 ## Need support?
 
 <a target="_blank" href="https://community.zama.ai">
-  <img src="https://user-images.githubusercontent.com/5758427/231145251-9cb3f03f-3e0e-4750-afb8-2e6cf391fa43.png">
+  <img src="https://github.com/zama-ai/concrete/assets/157474013/73328587-e9c5-461d-bb21-3055fb5195af">
 </a>
+
+
 
 ## Citing Concrete
 To cite Concrete in academic papers, please use the following entry:
