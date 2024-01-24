@@ -65,6 +65,18 @@ pytest-multi:
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
+pytest-multi-one-test:
+	export LD_PRELOAD=$(RUNTIME_LIBRARY)
+	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+
+	# test multi precision, multi params
+	pytest tests -s -vv \
+		--precision=multi \
+		--strategy=multi \
+		--key-cache "${KEY_CACHE_DIRECTORY}" \
+		-k "${PYTEST_REGEXP}"
+
+
 pytest-gpu:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
 	export PYTHONPATH=$(BINDINGS_DIRECTORY)
