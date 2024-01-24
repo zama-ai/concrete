@@ -226,7 +226,7 @@ class Converter:
         operation = "constant" if node.operation == Operation.Constant else node.properties["name"]
         assert operation not in ["convert", "node"]
 
-        converter = getattr(self, operation) if hasattr(self, operation) else self.tlu
+        converter = getattr(self, operation, self.tlu)
         conversion = converter(ctx, node, preds)
         conversion.set_original_bit_width(node.properties["original_bit_width"])
 
