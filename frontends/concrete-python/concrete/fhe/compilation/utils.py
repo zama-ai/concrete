@@ -97,7 +97,10 @@ def validate_input_args(
                 sanitized_args[index] = arg
 
         if not is_valid:
-            actual_value = ValueDescription.of(arg, is_encrypted=is_encrypted)
+            try:
+                actual_value = str(ValueDescription.of(arg, is_encrypted=is_encrypted))
+            except ValueError:
+                actual_value = type(arg).__name__
             message = f"Expected argument {index} to be {expected_value} but it's {actual_value}"
             raise ValueError(message)
 

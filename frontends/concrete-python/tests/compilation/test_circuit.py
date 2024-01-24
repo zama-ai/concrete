@@ -180,6 +180,14 @@ def test_circuit_bad_run(helpers):
 
     assert str(excinfo.value) == "Expected argument 0 to be an fhe.Value but it's dict"
 
+    # with invalid argument
+    # ---------------------
+
+    with pytest.raises(ValueError) as excinfo:
+        circuit.encrypt_run_decrypt({"yes": "no"}, 10)
+
+    assert str(excinfo.value) == "Expected argument 0 to be EncryptedScalar<uint6> but it's dict"
+
 
 def test_circuit_separate_args(helpers):
     """
