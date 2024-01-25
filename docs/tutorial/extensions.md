@@ -351,7 +351,6 @@ def is_vectors_same(x, y):
     return is_same
 ```
 
-
 ## fhe.relu(value)
 
 Allows you to perform ReLU operation, with the same semantic as `x if x >= 0 else 0`:
@@ -480,4 +479,37 @@ The default values of these options are set based on simple circuits. How they a
 
 {% hint style="warning" %}
 Conversion with the second method (i.e., using chunks) only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
+{% endhint %}
+
+
+## fhe.if_then_else(condition, x, y)
+
+Allows you to perform ternary if operation, with the same semantic as `x if condition else y`:
+
+```python
+import numpy as np
+from concrete import fhe
+
+@fhe.compiler({"condition": "encrypted", "x": "encrypted", "y": "encrypted"})
+def f(condition, x, y):
+    return fhe.if_then_else(condition, x, y)
+
+inputset = [
+    (
+        np.random.randint(0, 2**1),
+        np.random.randint(0, 2**5),
+        np.random.randint(-2**3, 2**3),
+    )
+    for _ in range(10)
+]
+circuit = f.compile(inputset)
+
+assert circuit.encrypt_run_decrypt(1, 3, 5) == 3
+assert circuit.encrypt_run_decrypt(0, 3, 5) == 5
+assert circuit.encrypt_run_decrypt(1, 3, -5) == 3
+assert circuit.encrypt_run_decrypt(0, 3, -5) == -5
+```
+
+{% hint style="info" %}
+`fhe.if_then_else` is just an alias for [np.where](https://numpy.org/doc/stable/reference/generated/numpy.where.html).
 {% endhint %}

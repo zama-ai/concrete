@@ -1025,6 +1025,82 @@ return %1
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x, y, z: np.where(x, y, z),
+            {"x": "encrypted", "y": "encrypted", "z": "encrypted"},
+            [(10, 2, 3), (20, 1, 5)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                       # EncryptedScalar<uint5>        ∈ [10, 20]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ condition is not uint1
+%1 = y                       # EncryptedScalar<uint2>        ∈ [1, 2]
+%2 = z                       # EncryptedScalar<uint3>        ∈ [3, 5]
+%3 = %1 if %0 else %2        # EncryptedScalar<uint2>        ∈ [1, 2]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but it needs to be for where operation
+return %3
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y, z: np.where(x, y, z),
+            {"x": "encrypted", "y": "clear", "z": "encrypted"},
+            [(1, 2, 3), (0, 1, 5)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                       # EncryptedScalar<uint1>        ∈ [0, 1]
+%1 = y                       # ClearScalar<uint2>            ∈ [1, 2]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ outcome of true condition is not encrypted
+%2 = z                       # EncryptedScalar<uint3>        ∈ [3, 5]
+%3 = %1 if %0 else %2        # EncryptedScalar<uint3>        ∈ [2, 5]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but it needs to be for where operation
+return %3
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y, z: np.where(x, y, z),
+            {"x": "encrypted", "y": "encrypted", "z": "clear"},
+            [(1, 2, 3), (0, 1, 5)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                       # EncryptedScalar<uint1>        ∈ [0, 1]
+%1 = y                       # EncryptedScalar<uint2>        ∈ [1, 2]
+%2 = z                       # ClearScalar<uint3>            ∈ [3, 5]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ outcome of false condition is not encrypted
+%3 = %1 if %0 else %2        # EncryptedScalar<uint3>        ∈ [2, 5]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but it needs to be for where operation
+return %3
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y, z: np.where(x, y, z),
+            {"x": "clear", "y": "encrypted", "z": "encrypted"},
+            [(1, 2, 3), (0, 1, 5)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x                       # ClearScalar<uint1>            ∈ [0, 1]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ condition is not encrypted
+%1 = y                       # EncryptedScalar<uint2>        ∈ [1, 2]
+%2 = z                       # EncryptedScalar<uint3>        ∈ [3, 5]
+%3 = %1 if %0 else %2        # EncryptedScalar<uint3>        ∈ [2, 5]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but it needs to be for where operation
+return %3
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(

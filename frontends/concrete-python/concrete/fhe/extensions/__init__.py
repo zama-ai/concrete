@@ -2,6 +2,8 @@
 Provide additional features that are not present in numpy.
 """
 
+from numpy import where as if_then_else
+
 from .array import array
 from .bits import bits
 from .convolution import conv
