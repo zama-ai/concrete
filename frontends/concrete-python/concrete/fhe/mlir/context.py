@@ -1408,6 +1408,124 @@ class Context:
         # add contributions of x and y to compute the result
         return self.add(resulting_type, x_contribution, y_contribution)
 
+    def multiplication_with_boolean(
+        self,
+        boolean: Conversion,
+        value: Conversion,
+        *,
+        resulting_bit_width: int,
+        chunk_size: int,
+        inverted: bool = False,
+    ):
+        """
+        Calculate boolean * value using bits.
+        """
+
+        assert boolean.is_encrypted and boolean.is_unsigned and boolean.bit_width == 1
+        assert value.is_encrypted
+
+        boolean = self.reinterpret(boolean, bit_width=(chunk_size + 1))
+
+        chunks = []
+        intermediate_type = self.tensor(
+            self.eint(resulting_bit_width),
+            shape=(np.zeros(boolean.shape) + np.zeros(value.shape)).shape,
+        )
+
+        cursor = 0
+        while cursor < value.original_bit_width:
+            start = cursor
+            end = min(start + chunk_size, value.original_bit_width)
+            cursor += chunk_size
+
+            chunk = self.extract_bits(
+                self.tensor(self.eint(chunk_size + 1), shape=value.shape),
+                value,
+                slice(start, end),
+            )
+            packed_boolean_and_chunk = self.add(
+                self.tensor(self.eint(chunk_size + 1), shape=intermediate_type.shape),
+                boolean,
+                chunk,
+            )
+
+            chunks.append(
+                self.tlu(
+                    intermediate_type,
+                    packed_boolean_and_chunk,
+                    (
+                        (
+                            [0 for _ in range(2**chunk_size)]
+                            + [x << start for x in range(2**chunk_size)]
+                        )
+                        if not inverted
+                        else (
+                            [x << start for x in range(2**chunk_size)]
+                            + [0 for _ in range(2**chunk_size)]
+                        )
+                    ),
+                )
+            )
+
+        result = self.tree_add(intermediate_type, chunks)
+        if value.is_signed:
+            # bit extraction results in unsigned result
+            # so if you have -2 in 3-bits for example
+            # you have the following bit pattern
+            # 110 which is 6 but we want -2
+            # it's simple to get it back to -2
+            # if the value is signed and negative
+            # we need to apply -(2**original_bit_width) + result
+            # for the case above, it's -8 + 6 == -2
+
+            sign = self.extract_bits(
+                self.tensor(self.eint(2), shape=value.shape),
+                value,
+                bits=(value.original_bit_width - 1),
+            )
+            packed_boolean_and_sign = self.add(
+                self.tensor(self.eint(2), shape=result.shape),
+                self.reinterpret(boolean, bit_width=2),
+                sign,
+            )
+
+            result_signed_type = self.tensor(self.esint(result.bit_width), shape=result.shape)
+            result_base = self.tlu(
+                result_signed_type,
+                packed_boolean_and_sign,
+                (
+                    (
+                        [
+                            # boolean=0, sign=0
+                            0,
+                            # boolean=0, sign=1
+                            0,
+                            # boolean=1, sign=0
+                            0,
+                            # boolean=1, sign=1
+                            -(2**value.original_bit_width),
+                        ]
+                    )
+                    if not inverted
+                    else (
+                        [
+                            # boolean=0, sign=0
+                            0,
+                            # boolean=0, sign=1
+                            -(2**value.original_bit_width),
+                            # boolean=1, sign=0
+                            0,
+                            # boolean=1, sign=1
+                            0,
+                        ]
+                    )
+                ),
+            )
+
+            result = self.add(result_signed_type, result_base, result)
+
+        return result
+
     # operations
 
     # each operation is checked for compatibility
@@ -3447,6 +3565,9 @@ class Context:
     def reinterpret(self, x: Conversion, *, bit_width: int) -> Conversion:
         assert x.is_encrypted
 
+        if x.bit_width == bit_width:
+            return x
+
         resulting_element_type = (self.eint if x.is_unsigned else self.esint)(bit_width)
         resulting_type = self.tensor(resulting_element_type, shape=x.shape)
 
@@ -3454,6 +3575,64 @@ class Context:
             fhe.ReinterpretPrecisionEintOp if x.is_scalar else fhelinalg.ReinterpretPrecisionEintOp
         )
         return self.operation(operation, resulting_type, x.result)
+
+    def where(
+        self,
+        resulting_type: ConversionType,
+        condition: Conversion,
+        when_true: Conversion,
+        when_false: Conversion,
+    ) -> Conversion:
+        if condition.is_clear:
+            highlights = {
+                condition.origin: "condition is not encrypted",
+                self.converting: "but it needs to be for where operation",
+            }
+            self.error(highlights)
+
+        if when_true.is_clear:
+            highlights = {
+                when_true.origin: "outcome of true condition is not encrypted",
+                self.converting: "but it needs to be for where operation",
+            }
+            self.error(highlights)
+
+        if when_false.is_clear:
+            highlights = {
+                when_false.origin: "outcome of false condition is not encrypted",
+                self.converting: "but it needs to be for where operation",
+            }
+            self.error(highlights)
+
+        if condition.original_bit_width != 1 or condition.is_signed:
+            highlights = {
+                condition.origin: "condition is not uint1",
+                self.converting: "but it needs to be for where operation",
+            }
+            self.error(highlights)
+
+        if condition.bit_width != 1:
+            shifter = self.constant(self.i(condition.bit_width + 1), 2 ** (condition.bit_width - 1))
+            condition = self.reinterpret(self.mul(condition.type, condition, shifter), bit_width=1)
+
+        chunk_size = self.configuration.if_then_else_chunk_size
+
+        when_true_contribution = self.multiplication_with_boolean(
+            condition,
+            when_true,
+            resulting_bit_width=resulting_type.bit_width,
+            chunk_size=chunk_size,
+            inverted=False,
+        )
+        when_false_contribution = self.multiplication_with_boolean(
+            condition,
+            when_false,
+            resulting_bit_width=resulting_type.bit_width,
+            chunk_size=chunk_size,
+            inverted=True,
+        )
+
+        return self.add(resulting_type, when_true_contribution, when_false_contribution)
 
     def zeros(self, resulting_type: ConversionType) -> Conversion:
         assert resulting_type.is_encrypted

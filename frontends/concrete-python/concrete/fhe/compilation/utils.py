@@ -666,6 +666,9 @@ def convert_subgraph_to_subgraph_node(
                 variable_input_node.location,
             ]
 
+        if terminal_node.properties["name"] == "where":
+            return None
+
         raise RuntimeError(
             "A subgraph within the function you are trying to compile cannot be fused "
             "because it has multiple input nodes\n\n"
