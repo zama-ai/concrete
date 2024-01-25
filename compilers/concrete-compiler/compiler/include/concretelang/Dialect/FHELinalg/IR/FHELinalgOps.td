@@ -1355,7 +1355,7 @@ def FHELinalg_LsbEintOp: FHELinalg_Op<"lsb", [Pure, TensorUnaryEint, UnaryEint, 
     let summary = "Extract the lowest significant bit at a given precision.";
 
     let description = [{
-      This operation extract the lsb of a ciphertext tensor in a specific precision.
+      This operation extracts the lsb of a ciphertext tensor in a specific precision.
 
       Extracting only 1 bit:
       ```mlir
@@ -1388,14 +1388,14 @@ def FHELinalg_ReinterpretPrecisionEintOp: FHELinalg_Op<"reinterpret_precision", 
     let summary = "Reinterpret the ciphertext tensor with a different precision.";
 
     let description = [{
-      It's a reinterpret cast changing only the precision.
+      It's a reinterpretation cast which changes only the precision.
       On CRT represention, it does nothing.
-      On Native representation, it moves the message/noise frontier, effectively changing the precision.
+      On Native representation, it moves the message/noise further forward, effectively changing the precision.
       Changing to
-        - a bigger precision is safe, as the crypto-parameters are chosen such that only zeros will comes from the noise part.
+        - a bigger precision is safe, as the crypto-parameters are chosen such that only zeros will come from the noise part.
           This is equivalent to a shift left for the value
-        - a smaller precision is only safe if you clear the message lowests bits first.
-          If not, you can assume small errors with high probability and frequent bigger errors, which can be contained to smalls errors using margins.
+        - a smaller precision is only safe if you clear the lowest message bits first.
+          If not, you can assume small errors with high probability and frequent bigger errors, which can be contained to small errors using margins.
           This is equivalent to a shift right for the value
 
       Example:
