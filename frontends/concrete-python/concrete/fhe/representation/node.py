@@ -325,6 +325,9 @@ class Node:
             elements = [format_indexing_element(element) for element in index]
             return f"bits({predecessors[0]})[{', '.join(elements)}]"
 
+        if name == "where" and len(predecessors) == 3:
+            return f"{predecessors[1]} if {predecessors[0]} else {predecessors[2]}"
+
         args.extend(
             format_constant(value, maximum_constant_length) for value in self.properties["args"]
         )

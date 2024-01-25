@@ -116,3 +116,5 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Bit-width to start implementing the ReLU extension with [fhe.bits](../tutorial/bit_extraction.md).
 * **relu_on_bits_chunk_size**: int = 3,
   * Chunk size of the ReLU extension when [fhe.bits](../tutorial/bit_extraction.md) implementation is used.
+* **if_then_else_chunk_size**: int = 3
+  * Chunk size to use when converting `fhe.if_then_else` extension.

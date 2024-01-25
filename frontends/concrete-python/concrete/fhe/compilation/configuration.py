@@ -930,6 +930,7 @@ class Configuration:
     use_gpu: bool
     relu_on_bits_threshold: int
     relu_on_bits_chunk_size: int
+    if_then_else_chunk_size: int
 
     def __init__(
         self,
@@ -985,6 +986,7 @@ class Configuration:
         use_gpu: bool = False,
         relu_on_bits_threshold: int = 7,
         relu_on_bits_chunk_size: int = 3,
+        if_then_else_chunk_size: int = 3,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1066,6 +1068,7 @@ class Configuration:
         self.use_gpu = use_gpu
         self.relu_on_bits_threshold = relu_on_bits_threshold
         self.relu_on_bits_chunk_size = relu_on_bits_chunk_size
+        self.if_then_else_chunk_size = if_then_else_chunk_size
 
         self._validate()
 
@@ -1125,6 +1128,7 @@ class Configuration:
         use_gpu: Union[Keep, bool] = KEEP,
         relu_on_bits_threshold: Union[Keep, int] = KEEP,
         relu_on_bits_chunk_size: Union[Keep, int] = KEEP,
+        if_then_else_chunk_size: Union[Keep, int] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

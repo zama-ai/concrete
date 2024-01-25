@@ -671,6 +671,10 @@ class Converter:
         assert len(preds) == 1
         return ctx.truncate_bit_pattern(preds[0], node.properties["kwargs"]["lsbs_to_remove"])
 
+    def where(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 3
+        return ctx.where(ctx.typeof(node), *preds)
+
     def zeros(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 0
         return ctx.zeros(ctx.typeof(node))

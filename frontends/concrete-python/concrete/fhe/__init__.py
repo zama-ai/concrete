@@ -35,6 +35,7 @@ from .extensions import (
     bits,
     conv,
     hint,
+    if_then_else,
     maxpool,
     multivariate,
     one,
