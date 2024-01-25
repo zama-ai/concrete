@@ -173,7 +173,9 @@ class Server:
         multi_parameter_strategy = configuration.multi_parameter_strategy
         converter = {
             MultiParameterStrategy.PRECISION: OptimizerMultiParameterStrategy.PRECISION,
-            MultiParameterStrategy.PRECISION_AND_NORM2: OptimizerMultiParameterStrategy.PRECISION_AND_NORM2,  # noqa: E501
+            MultiParameterStrategy.PRECISION_AND_NORM2: (
+                OptimizerMultiParameterStrategy.PRECISION_AND_NORM2
+            ),
         }
         options.set_optimizer_multi_parameter_strategy(converter[multi_parameter_strategy])
         try:
