@@ -8,6 +8,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Transforms/Passes.h"
 
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/Transforms/Transforms.h"
@@ -34,14 +35,16 @@ std::string transform(std::string source,
   pm.addPass(mlir::concretelang::createTFHECircuitSolutionParametrizationPass(
       solution));
 
+  pm.addPass(mlir::createCanonicalizerPass());
+
   assert(pm.run(mlirModuleRef->getOperation()).succeeded() &&
          "pass manager fail");
-  // mlirModuleRef->dump();
+
   std::string moduleString;
   llvm::raw_string_ostream s(moduleString);
 
   mlirModuleRef->getOperation()->print(s);
-  mlirModuleRef->dump();
+
   return s.str();
 }
 
