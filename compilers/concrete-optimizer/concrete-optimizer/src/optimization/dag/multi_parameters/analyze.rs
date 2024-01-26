@@ -270,7 +270,7 @@ fn out_variance(
                     let mut out_variance = SymbolicVariance::ZERO;
                     for (input_variance, &weight) in inputs_variance.zip(&weights.values) {
                         assert!(input_variance != SymbolicVariance::ZERO);
-                        out_variance += input_variance * square(weight);
+                        out_variance += input_variance * square(weight as f64);
                     }
                     out_variance
                 }
