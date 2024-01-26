@@ -79,13 +79,6 @@ impl std::ops::Mul<u64> for SymbolicVariance {
     }
 }
 
-impl std::ops::Mul<i64> for SymbolicVariance {
-    type Output = Self;
-    fn mul(self, sq_weight: i64) -> Self {
-        self * sq_weight as f64
-    }
-}
-
 impl SymbolicVariance {
     pub const ZERO: Self = Self {
         input_coeff: 0.0,

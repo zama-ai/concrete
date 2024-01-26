@@ -181,7 +181,7 @@ fn out_variance(
                         } else {
                             first_input.i
                         };
-                        out_variance += out_variances[k] * square(weight);
+                        out_variance += out_variances[k] * square(weight as f64);
                     }
                     out_variance
                 }
