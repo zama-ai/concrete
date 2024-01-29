@@ -100,6 +100,8 @@ def TFHE_EncodeExpandLutForBootstrapOp : TFHE_Op<"encode_expand_lut_for_bootstra
     );
 
     let results = (outs 1DTensorOf<[I64]> : $result);
+
+    let hasVerifier = 1;
 }
 
 def TFHE_EncodeLutForCrtWopPBSOp : TFHE_Op<"encode_lut_for_crt_woppbs", [Pure]> {

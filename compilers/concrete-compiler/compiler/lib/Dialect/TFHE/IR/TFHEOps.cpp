@@ -117,6 +117,24 @@ mlir::LogicalResult MulGLWEIntOp::verify() {
       *this);
 }
 
+mlir::LogicalResult EncodeExpandLutForBootstrapOp::verify() {
+  mlir::IntegerAttr polySizeAttr = this->getPolySizeAttr();
+
+  mlir::RankedTensorType rtt =
+      this->getResult().getType().template cast<mlir::RankedTensorType>();
+
+  if (rtt.getNumElements() != polySizeAttr.getInt()) {
+    this->emitError("The number of elements of the output tensor of ")
+        << rtt.getNumElements()
+        << " does not match the size of the polynomial of "
+        << polySizeAttr.getInt();
+
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 template <typename BootstrapOpT>
 mlir::LogicalResult verifyBootstrapSingleLUTConstraints(BootstrapOpT &op) {
   GLWEBootstrapKeyAttr keyAttr = op.getKeyAttr();
