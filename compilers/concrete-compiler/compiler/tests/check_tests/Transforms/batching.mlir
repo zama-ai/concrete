@@ -197,8 +197,8 @@ func.func @batch_offset_shifted_bounds_nonunitstep_extract_keyswitch(%arg0: tens
 // CHECK: (%arg0: tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_IN:.*]]{{\]}}<1,2048>>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>> {
 // CHECK:   %[[Vcollapsed:.*]] = tensor.collapse_shape %[[Varg0:.*]] {{\[\[0, 1, 2\]\]}} : tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>> into tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>>
 // CHECK-NEXT:   %[[V1:.*]] = "TFHE.batched_keyswitch_glwe"(%[[Vcollapsed]]) {key = #TFHE<ksk{{\[}}[[KSK:.*]]{{\]}}<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, sk{{\[}}[[SK_OUT:.*]]{{\]}}<1,750>, 3, 4>>} : (tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>>) -> tensor<24x!TFHE.glwe<sk{{\[}}[[SK_OUT]]{{\]}}<1,750>>>
-// CHECK-NEXT:   %[[V2:.*]] = "TFHE.encode_expand_lut_for_bootstrap"(%[[Varg1:.*]]) {isSigned = false, outputBits = 2 : i32, polySize = 256 : i32} : (tensor<4xi64>) -> tensor<256xi64>
-// CHECK-NEXT:   %[[V3:.*]] = "TFHE.batched_bootstrap_glwe"(%[[V1]], %[[V2]]) {key = #TFHE<bsk{{\[}}[[BSK:.*]]{{\]}}<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, 1024, 2, 1, 23>>} : (tensor<24x!TFHE.glwe<sk{{\[}}[[SK_OUT]]{{\]}}<1,750>>>, tensor<256xi64>) -> tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>>
+// CHECK-NEXT:   %[[V2:.*]] = "TFHE.encode_expand_lut_for_bootstrap"(%[[Varg1:.*]]) {isSigned = false, outputBits = 2 : i32, polySize = 1024 : i32} : (tensor<4xi64>) -> tensor<1024xi64>
+// CHECK-NEXT:   %[[V3:.*]] = "TFHE.batched_bootstrap_glwe"(%[[V1]], %[[V2]]) {key = #TFHE<bsk{{\[}}[[BSK:.*]]{{\]}}<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, 1024, 2, 1, 23>>} : (tensor<24x!TFHE.glwe<sk{{\[}}[[SK_OUT]]{{\]}}<1,750>>>, tensor<1024xi64>) -> tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>>
 // CHECK-NEXT:   %[[Vexpanded:.*]] = tensor.expand_shape %[[V3]] {{\[\[0, 1, 2\]\]}} : tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>> into tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>
 func.func @apply_lookup_table_contiguous(%arg0: tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>> {
   %c0 = arith.constant 0 : index
@@ -211,9 +211,9 @@ func.func @apply_lookup_table_contiguous(%arg0: tensor<2x3x4x!TFHE.glwe<sk<0,1,2
     %2 = scf.for %arg4 = %c0 to %c3 step %c1 iter_args(%arg5 = %arg3) -> (tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>) {
       %3 = scf.for %arg6 = %c0 to %c4 step %c1 iter_args(%arg7 = %arg5) -> (tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>) {
         %extracted = tensor.extract %arg0[%arg2, %arg4, %arg6] : tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>
-        %4 = "TFHE.encode_expand_lut_for_bootstrap"(%arg1) {isSigned = false, outputBits = 2 : i32, polySize = 256 : i32} : (tensor<4xi64>) -> tensor<256xi64>
+        %4 = "TFHE.encode_expand_lut_for_bootstrap"(%arg1) {isSigned = false, outputBits = 2 : i32, polySize = 1024 : i32} : (tensor<4xi64>) -> tensor<1024xi64>
         %5 = "TFHE.keyswitch_glwe"(%extracted) {key = #TFHE.ksk<sk<0,1,2048>, sk<1,1,750>, 3, 4>} : (!TFHE.glwe<sk<0,1,2048>>) -> !TFHE.glwe<sk<1,1,750>>
-        %6 = "TFHE.bootstrap_glwe"(%5, %4) {key = #TFHE.bsk<sk<0,1,2048>, sk<0,1,2048>, 1024, 2, 1, 23>} : (!TFHE.glwe<sk<1,1,750>>, tensor<256xi64>) -> !TFHE.glwe<sk<0,1,2048>>
+        %6 = "TFHE.bootstrap_glwe"(%5, %4) {key = #TFHE.bsk<sk<0,1,2048>, sk<0,1,2048>, 1024, 2, 1, 23>} : (!TFHE.glwe<sk<1,1,750>>, tensor<1024xi64>) -> !TFHE.glwe<sk<0,1,2048>>
         %inserted = tensor.insert %6 into %arg7[%arg2, %arg4, %arg6] : tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>
         scf.yield %inserted : tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>
       }
@@ -229,14 +229,13 @@ func.func @apply_lookup_table_contiguous(%arg0: tensor<2x3x4x!TFHE.glwe<sk<0,1,2
 // CHECK-LABEL: func.func @apply_lookup_table_contiguous_hoistable_nonbatchable
 // CHECK: (%arg0: tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_IN:.*]]{{\]}}<1,2048>>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>> {
 // CHECK:   %[[V1:.*]] = "TFHE.batched_keyswitch_glwe"(%[[Vcollapsed]]) {key = #TFHE<ksk{{\[}}[[KSK:.*]]{{\]}}<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, sk{{\[}}[[SK_OUT:.*]]{{\]}}<1,750>, 3, 4>>} : (tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>>) -> tensor<24x!TFHE.glwe<sk{{\[}}[[SK_OUT]]{{\]}}<1,750>>>
-// CHECK:   %[[V3:.*]] = "TFHE.batched_bootstrap_glwe"(%[[V1]], %[[V2:.*]]) {key = #TFHE<bsk{{\[}}[[BSK:.*]]{{\]}}<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, 1024, 2, 1, 23>>} : (tensor<24x!TFHE.glwe<sk{{\[}}[[SK_OUT]]{{\]}}<1,750>>>, tensor<256xi64>) -> tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>>
+// CHECK:   %[[V3:.*]] = "TFHE.batched_bootstrap_glwe"(%[[V1]], %[[V2:.*]]) {key = #TFHE<bsk{{\[}}[[BSK:.*]]{{\]}}<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, sk{{\[}}[[SK_IN]]{{\]}}<1,2048>, 1024, 2, 1, 23>>} : (tensor<24x!TFHE.glwe<sk{{\[}}[[SK_OUT]]{{\]}}<1,750>>>, tensor<1024xi64>) -> tensor<24x!TFHE.glwe<sk{{\[}}[[SK_IN]]{{\]}}<1,2048>>>
 func.func @apply_lookup_table_contiguous_hoistable_nonbatchable(%arg0: tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>> {
   %c0 = arith.constant 0 : index
   %c2 = arith.constant 2 : index
   %c1 = arith.constant 1 : index
   %c3 = arith.constant 3 : index
   %c4 = arith.constant 4 : index
-  %c256 = arith.constant 256 : index
   %c1_i64 = arith.constant 1 : i64
   %c0_i64 = arith.constant 0 : i64
   %0 = bufferization.alloc_tensor() : tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>
@@ -244,7 +243,7 @@ func.func @apply_lookup_table_contiguous_hoistable_nonbatchable(%arg0: tensor<2x
     %2 = scf.for %arg4 = %c0 to %c3 step %c1 iter_args(%arg5 = %arg3) -> (tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>) {
       %3 = scf.for %arg6 = %c0 to %c4 step %c1 iter_args(%arg7 = %arg5) -> (tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>) {
         %extracted = tensor.extract %arg0[%arg2, %arg4, %arg6] : tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>
-        %4 = "TFHE.encode_expand_lut_for_bootstrap"(%arg1) {isSigned = false, outputBits = 2 : i32, polySize = 256 : i32} : (tensor<4xi64>) -> tensor<256xi64>
+        %4 = "TFHE.encode_expand_lut_for_bootstrap"(%arg1) {isSigned = false, outputBits = 2 : i32, polySize = 1024 : i32} : (tensor<4xi64>) -> tensor<1024xi64>
 	%aa = tensor.from_elements
 	   %c1_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
 	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
@@ -261,14 +260,62 @@ func.func @apply_lookup_table_contiguous_hoistable_nonbatchable(%arg0: tensor<2x
 	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
 	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
 	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c1_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c1_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c1_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
+	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64,
 	   %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64, %c0_i64
-	   : tensor<256xi64>
-	%b = tensor.extract_slice %4[0][255][1] : tensor<256xi64> to tensor<255xi64>
-	%x = tensor.extract %4[%c0] : tensor<256xi64>
-	%c = tensor.insert_slice %b into %aa[1][255][1] : tensor<255xi64> into tensor<256xi64>
-	%d = tensor.insert %x into %c[%c0] : tensor<256xi64>
+	   : tensor<1024xi64>
+	%b = tensor.extract_slice %4[0][255][1] : tensor<1024xi64> to tensor<255xi64>
+	%x = tensor.extract %4[%c0] : tensor<1024xi64>
+	%c = tensor.insert_slice %b into %aa[1][255][1] : tensor<255xi64> into tensor<1024xi64>
+	%d = tensor.insert %x into %c[%c0] : tensor<1024xi64>
         %5 = "TFHE.keyswitch_glwe"(%extracted) {key = #TFHE.ksk<sk<0,1,2048>, sk<1,1,750>, 3, 4>} : (!TFHE.glwe<sk<0,1,2048>>) -> !TFHE.glwe<sk<1,1,750>>
-        %6 = "TFHE.bootstrap_glwe"(%5, %d) {key = #TFHE.bsk<sk<0,1,2048>, sk<0,1,2048>, 1024, 2, 1, 23>} : (!TFHE.glwe<sk<1,1,750>>, tensor<256xi64>) -> !TFHE.glwe<sk<0,1,2048>>
+        %6 = "TFHE.bootstrap_glwe"(%5, %d) {key = #TFHE.bsk<sk<0,1,2048>, sk<0,1,2048>, 1024, 2, 1, 23>} : (!TFHE.glwe<sk<1,1,750>>, tensor<1024xi64>) -> !TFHE.glwe<sk<0,1,2048>>
         %inserted = tensor.insert %6 into %arg7[%arg2, %arg4, %arg6] : tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>
         scf.yield %inserted : tensor<2x3x4x!TFHE.glwe<sk<0,1,2048>>>
       }
