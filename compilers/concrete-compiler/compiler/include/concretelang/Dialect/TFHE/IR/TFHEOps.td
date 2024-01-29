@@ -382,6 +382,8 @@ def TFHE_BatchedBootstrapGLWEOp : TFHE_Op<"batched_bootstrap_glwe", [Pure]> {
   );
 
   let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+
+  let hasVerifier = 1;
 }
 
 def TFHE_BatchedMappedBootstrapGLWEOp : TFHE_Op<"batched_mapped_bootstrap_glwe", [Pure]> {
@@ -394,6 +396,8 @@ def TFHE_BatchedMappedBootstrapGLWEOp : TFHE_Op<"batched_mapped_bootstrap_glwe",
   );
 
   let results = (outs 1DTensorOf<[TFHE_GLWECipherTextType]> : $result);
+
+  let hasVerifier = 1;
 }
 
 def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe", [Pure, BatchableOpInterface]> {
@@ -407,6 +411,8 @@ def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe", [Pure, BatchableOpInterface
   );
 
   let results = (outs TFHE_GLWECipherTextType : $result);
+
+  let hasVerifier = 1;
 
   let extraClassDeclaration = [{
     struct BatchingVariant {
