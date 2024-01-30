@@ -306,6 +306,9 @@ parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
             *circuitSolution),
         enablePass);
   }
+
+  addPotentiallyNestedPass(pm, mlir::createCanonicalizerPass(), enablePass);
+
   return pm.run(module.getOperation());
 }
 
