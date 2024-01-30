@@ -155,6 +155,7 @@ class Helpers:
             single_precision=(not USE_MULTI_PRECISION),
             parameter_selection_strategy=OPTIMIZATION_STRATEGY,
             use_gpu=USE_GPU,
+            compress_evaluation_keys=True,
         )
 
     @staticmethod
