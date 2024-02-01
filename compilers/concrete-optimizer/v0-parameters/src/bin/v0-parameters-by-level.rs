@@ -17,7 +17,7 @@ fn main() {
     let month = now.month();
     let day = now.day();
 
-    args.p_error = 2_f64.powi(-40);
+    args.p_error = 2_f64.powi(-80);
 
     if args.wop_pbs {
         args.min_intern_lwe_dim = 450;
