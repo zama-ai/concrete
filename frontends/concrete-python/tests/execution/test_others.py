@@ -662,6 +662,13 @@ def copy_modify(x):
         pytest.param(
             lambda x: np.squeeze(x),
             {
+                "x": {"status": "encrypted", "range": [-10, 10], "shape": ()},
+            },
+            id="np.squeeze(x)",
+        ),
+        pytest.param(
+            lambda x: np.squeeze(x),
+            {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 2, 1, 3, 1, 4)},
             },
             id="np.squeeze(x)",
