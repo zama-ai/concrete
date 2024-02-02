@@ -521,6 +521,9 @@ class Converter:
         # if the output shape is (), it means (1, 1, ..., 1, 1) is squeezed
         # and the result is a scalar, so we need to do indexing, not reshape
         if node.output.shape == ():
+            if preds[0].shape == ():
+                return preds[0]
+
             assert all(size == 1 for size in preds[0].shape)
             index = (0,) * len(preds[0].shape)
             return ctx.index_static(ctx.typeof(node), preds[0], index)
