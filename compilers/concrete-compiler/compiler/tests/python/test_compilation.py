@@ -341,11 +341,6 @@ def test_compile_and_run_loop_parallelize(
     )
 
 
-# FIXME #51
-@pytest.mark.xfail(
-    platform.system() == "Darwin",
-    reason="MacOS have issues with translating Cpp exceptions",
-)
 @pytest.mark.parametrize(
     "mlir_input, args",
     [
@@ -370,11 +365,6 @@ def test_compile_and_run_invalid_arg_number(mlir_input, args, keyset_cache):
         compile_run_assert(engine, mlir_input, args, None, keyset_cache)
 
 
-# FIXME #51
-@pytest.mark.xfail(
-    platform.system() == "Darwin",
-    reason="MacOS have issues with translating Cpp exceptions",
-)
 @pytest.mark.parametrize(
     "mlir_input",
     [

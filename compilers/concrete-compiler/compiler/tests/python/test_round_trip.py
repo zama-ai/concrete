@@ -86,11 +86,6 @@ def test_valid_mlir_inputs(mlir_input):
     compiler.round_trip(mlir_input)
 
 
-# FIXME #51
-@pytest.mark.xfail(
-    platform.system() == "Darwin",
-    reason="MacOS have issues with translating Cpp exceptions",
-)
 @pytest.mark.parametrize("mlir_input", INVALID_INPUTS)
 def test_invalid_mlir_inputs(mlir_input):
     # We need to check that invalud inputs are raising an error
