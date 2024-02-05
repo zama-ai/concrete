@@ -257,3 +257,78 @@ func.func @for5(%arg0: tensor<2x!TFHE.glwe<sk?>>, %arg1: tensor<2x!TFHE.glwe<sk?
 
   return %1: tensor<2x!TFHE.glwe<sk?>>
 }
+
+// -----
+
+#map = affine_map<()[s0, s1] -> (s0 * s1)>
+#map1 = affine_map<()[s0, s1] -> (s0 + s1)>
+
+func.func @tiled_2(%arg0: tensor<8x4x!TFHE.glwe<sk?>>, %arg1: tensor<4x2xi7>) -> tensor<8x2x!TFHE.glwe<sk?>> {
+  %c0 = arith.constant 0 : index
+  %c8 = arith.constant 8 : index
+  %c1 = arith.constant 1 : index
+  %c2 = arith.constant 2 : index
+  %c4 = arith.constant 4 : index
+  %0 = "TFHE.zero_tensor"() : () -> tensor<8x2x!TFHE.glwe<sk?>>
+  %1 = "TFHE.zero"() : () -> !TFHE.glwe<sk?>
+  %2 = tensor.empty() : tensor<8x2x2x!TFHE.glwe<sk?>>
+  %3 = scf.for %arg2 = %c0 to %c8 step %c1 iter_args(%arg3 = %2) -> (tensor<8x2x2x!TFHE.glwe<sk?>>) {
+    %6 = scf.for %arg4 = %c0 to %c2 step %c1 iter_args(%arg5 = %arg3) -> (tensor<8x2x2x!TFHE.glwe<sk?>>) {
+      %7 = scf.for %arg6 = %c0 to %c2 step %c1 iter_args(%arg7 = %arg5) -> (tensor<8x2x2x!TFHE.glwe<sk?>>) {
+        %inserted = tensor.insert %1 into %arg7[%arg2, %arg4, %arg6] : tensor<8x2x2x!TFHE.glwe<sk?>>
+        scf.yield %inserted : tensor<8x2x2x!TFHE.glwe<sk?>>
+      }
+      scf.yield %7 : tensor<8x2x2x!TFHE.glwe<sk?>>
+    }
+    scf.yield %6 : tensor<8x2x2x!TFHE.glwe<sk?>>
+  }
+  %4 = scf.forall (%arg2) in (2) shared_outs(%arg3 = %3) -> (tensor<8x2x2x!TFHE.glwe<sk?>>) {
+    %extracted_slice = tensor.extract_slice %arg3[0, 0, %arg2] [8, 2, 1] [1, 1, 1] : tensor<8x2x2x!TFHE.glwe<sk?>> to tensor<8x2x!TFHE.glwe<sk?>>
+    %6 = affine.apply #map()[%arg2, %c2]
+    %7 = affine.apply #map1()[%6, %c0]
+    %8 = scf.for %arg4 = %7 to %c4 step %c4 iter_args(%arg5 = %extracted_slice) -> (tensor<8x2x!TFHE.glwe<sk?>>) {
+      %extracted_slice_0 = tensor.extract_slice %arg0[0, %arg4] [8, 2] [1, 1] : tensor<8x4x!TFHE.glwe<sk?>> to tensor<8x2x!TFHE.glwe<sk?>>
+      %extracted_slice_1 = tensor.extract_slice %arg1[%arg4, 0] [2, 2] [1, 1] : tensor<4x2xi7> to tensor<2x2xi7>
+      %9 = scf.for %arg6 = %c0 to %c8 step %c1 iter_args(%arg7 = %arg5) -> (tensor<8x2x!TFHE.glwe<sk?>>) {
+        %10 = scf.for %arg8 = %c0 to %c2 step %c1 iter_args(%arg9 = %arg7) -> (tensor<8x2x!TFHE.glwe<sk?>>) {
+          %11 = scf.for %arg10 = %c0 to %c2 step %c1 iter_args(%arg11 = %arg9) -> (tensor<8x2x!TFHE.glwe<sk?>>) {
+            %extracted = tensor.extract %extracted_slice_0[%arg6, %arg10] : tensor<8x2x!TFHE.glwe<sk?>>
+            %extracted_2 = tensor.extract %extracted_slice_1[%arg10, %arg8] : tensor<2x2xi7>
+            %extracted_3 = tensor.extract %arg11[%arg6, %arg8] : tensor<8x2x!TFHE.glwe<sk?>>
+            %12 = arith.extsi %extracted_2 : i7 to i64
+            %13 = "TFHE.mul_glwe_int"(%extracted, %12) : (!TFHE.glwe<sk?>, i64) -> !TFHE.glwe<sk?>
+
+	    // "Seed" type
+	    %a13 = "TypeInference.propagate_upward"(%13) : (!TFHE.glwe<sk?>) -> !TFHE.glwe<sk[1]<12, 1024>>
+            %aextracted_3 = "TypeInference.propagate_upward"(%extracted_3) : (!TFHE.glwe<sk?>) -> !TFHE.glwe<sk[1]<12, 1024>>
+            %14 = "TFHE.add_glwe"(%aextracted_3, %a13) : (!TFHE.glwe<sk[1]<12, 1024>>, !TFHE.glwe<sk[1]<12, 1024>>) -> !TFHE.glwe<sk[1]<12, 1024>>
+	    %a14 = "TypeInference.propagate_downward"(%14) : (!TFHE.glwe<sk[1]<12, 1024>>) -> !TFHE.glwe<sk?>
+
+            %inserted = tensor.insert %a14 into %arg11[%arg6, %arg8] : tensor<8x2x!TFHE.glwe<sk?>>
+            scf.yield %inserted : tensor<8x2x!TFHE.glwe<sk?>>
+          }
+          scf.yield %11 : tensor<8x2x!TFHE.glwe<sk?>>
+        }
+        scf.yield %10 : tensor<8x2x!TFHE.glwe<sk?>>
+      }
+      scf.yield %9 : tensor<8x2x!TFHE.glwe<sk?>>
+    }
+    scf.forall.in_parallel {
+      tensor.parallel_insert_slice %8 into %arg3[0, 0, %arg2] [8, 2, 1] [1, 1, 1] : tensor<8x2x!TFHE.glwe<sk?>> into tensor<8x2x2x!TFHE.glwe<sk?>>
+    }
+  }
+  %5 = scf.for %arg2 = %c0 to %c8 step %c1 iter_args(%arg3 = %0) -> (tensor<8x2x!TFHE.glwe<sk?>>) {
+    %6 = scf.for %arg4 = %c0 to %c2 step %c1 iter_args(%arg5 = %arg3) -> (tensor<8x2x!TFHE.glwe<sk?>>) {
+      %7 = scf.for %arg6 = %c0 to %c2 step %c1 iter_args(%arg7 = %arg5) -> (tensor<8x2x!TFHE.glwe<sk?>>) {
+        %extracted = tensor.extract %4[%arg2, %arg4, %arg6] : tensor<8x2x2x!TFHE.glwe<sk?>>
+        %extracted_0 = tensor.extract %arg7[%arg2, %arg4] : tensor<8x2x!TFHE.glwe<sk?>>
+        %8 = "TFHE.add_glwe"(%extracted, %extracted_0) : (!TFHE.glwe<sk?>, !TFHE.glwe<sk?>) -> !TFHE.glwe<sk?>
+        %inserted = tensor.insert %8 into %arg7[%arg2, %arg4] : tensor<8x2x!TFHE.glwe<sk?>>
+        scf.yield %inserted : tensor<8x2x!TFHE.glwe<sk?>>
+      }
+      scf.yield %7 : tensor<8x2x!TFHE.glwe<sk?>>
+    }
+    scf.yield %6 : tensor<8x2x!TFHE.glwe<sk?>>
+  }
+  return %5 : tensor<8x2x!TFHE.glwe<sk?>>
+}
