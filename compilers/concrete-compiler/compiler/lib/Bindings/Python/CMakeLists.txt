@@ -4,20 +4,6 @@ include(AddMLIRPython)
 add_compile_options(-fexceptions)
 
 # ######################################################################################################################
-# Support wrapper library for Python
-# ######################################################################################################################
-set(LLVM_OPTIONAL_SOURCES CompilerAPIModule.cpp ConcretelangModule.cpp FHEModule.cpp)
-
-add_mlir_public_c_api_library(
-  CONCRETELANGPySupport
-  CompilerEngine.cpp
-  LINK_LIBS
-  PUBLIC
-  MLIRCAPIIR
-  ConcretelangSupport
-  ConcretelangCommon)
-
-# ######################################################################################################################
 # Decalare native Python extension
 # ######################################################################################################################
 
@@ -33,9 +19,11 @@ declare_mlir_python_extension(
   ConcretelangModule.cpp
   FHEModule.cpp
   CompilerAPIModule.cpp
+  PRIVATE_LINK_LIBS
+  ConcretelangSupport
+  ConcretelangCommon
   EMBED_CAPI_LINK_LIBS
-  MLIRCAPIRegisterEverything
-  CONCRETELANGPySupport)
+  MLIRCAPIRegisterEverything)
 
 # ######################################################################################################################
 # Declare python sources

@@ -5,12 +5,12 @@
 
 #include "concretelang/Bindings/Python/CompilerAPIModule.h"
 #include "concrete-protocol.capnp.h"
-#include "concretelang/Bindings/Python/CompilerEngine.h"
 #include "concretelang/ClientLib/ClientLib.h"
 #include "concretelang/Common/Compat.h"
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Keysets.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
+#include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/logging.h"
 #include <llvm/Support/Debug.h>
 #include <mlir-c/Bindings/Python/Interop.h>
@@ -42,6 +42,620 @@ private:
     kill(getpid(), SIGKILL);
   }
 };
+
+/// Wrapper of the mlir::concretelang::LambdaArgument
+struct lambdaArgument {
+  std::shared_ptr<mlir::concretelang::LambdaArgument> ptr;
+};
+typedef struct lambdaArgument lambdaArgument;
+
+/// Hold a list of lambdaArgument to represent execution arguments
+struct executionArguments {
+  lambdaArgument *data;
+  size_t size;
+};
+typedef struct executionArguments executionArguments;
+
+// Library Support bindings ///////////////////////////////////////////////////
+
+struct LibrarySupport_Py {
+  mlir::concretelang::LibrarySupport support;
+};
+typedef struct LibrarySupport_Py LibrarySupport_Py;
+
+LibrarySupport_Py
+library_support(const char *outputPath, const char *runtimeLibraryPath,
+                bool generateSharedLib, bool generateStaticLib,
+                bool generateClientParameters, bool generateCompilationFeedback,
+                bool generateCppHeader) {
+  return LibrarySupport_Py{mlir::concretelang::LibrarySupport(
+      outputPath, runtimeLibraryPath, generateSharedLib, generateStaticLib,
+      generateClientParameters, generateCompilationFeedback)};
+}
+
+std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
+library_compile(LibrarySupport_Py support, const char *module,
+                mlir::concretelang::CompilationOptions options) {
+  llvm::SourceMgr sm;
+  sm.AddNewSourceBuffer(llvm::MemoryBuffer::getMemBuffer(module),
+                        llvm::SMLoc());
+  GET_OR_THROW_LLVM_EXPECTED(compilationResult,
+                             support.support.compile(sm, options));
+  return std::move(*compilationResult);
+}
+
+std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
+library_compile_module(
+    LibrarySupport_Py support, mlir::ModuleOp module,
+    mlir::concretelang::CompilationOptions options,
+    std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
+  GET_OR_THROW_LLVM_EXPECTED(compilationResult,
+                             support.support.compile(module, cctx, options));
+  return std::move(*compilationResult);
+}
+
+concretelang::clientlib::ClientParameters library_load_client_parameters(
+    LibrarySupport_Py support,
+    mlir::concretelang::LibraryCompilationResult &result) {
+  GET_OR_THROW_LLVM_EXPECTED(clientParameters,
+                             support.support.loadClientParameters(result));
+  return *clientParameters;
+}
+
+mlir::concretelang::CompilationFeedback library_load_compilation_feedback(
+    LibrarySupport_Py support,
+    mlir::concretelang::LibraryCompilationResult &result) {
+  GET_OR_THROW_LLVM_EXPECTED(compilationFeedback,
+                             support.support.loadCompilationFeedback(result));
+  return *compilationFeedback;
+}
+
+concretelang::serverlib::ServerLambda
+library_load_server_lambda(LibrarySupport_Py support,
+                           mlir::concretelang::LibraryCompilationResult &result,
+                           bool useSimulation) {
+  GET_OR_THROW_LLVM_EXPECTED(
+      serverLambda, support.support.loadServerLambda(result, useSimulation));
+  return *serverLambda;
+}
+
+std::unique_ptr<concretelang::clientlib::PublicResult>
+library_server_call(LibrarySupport_Py support,
+                    concretelang::serverlib::ServerLambda lambda,
+                    concretelang::clientlib::PublicArguments &args,
+                    concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+  GET_OR_THROW_LLVM_EXPECTED(
+      publicResult, support.support.serverCall(lambda, args, evaluationKeys));
+  return std::move(*publicResult);
+}
+
+std::unique_ptr<concretelang::clientlib::PublicResult>
+library_simulate(LibrarySupport_Py support,
+                 concretelang::serverlib::ServerLambda lambda,
+                 concretelang::clientlib::PublicArguments &args) {
+  GET_OR_THROW_LLVM_EXPECTED(publicResult,
+                             support.support.simulate(lambda, args));
+  return std::move(*publicResult);
+}
+
+std::string library_get_shared_lib_path(LibrarySupport_Py support) {
+  return support.support.getSharedLibPath();
+}
+
+std::string library_get_program_info_path(LibrarySupport_Py support) {
+  return support.support.getProgramInfoPath();
+}
+
+// Client Support bindings ///////////////////////////////////////////////////
+
+std::unique_ptr<concretelang::clientlib::KeySet>
+key_set(concretelang::clientlib::ClientParameters clientParameters,
+        std::optional<concretelang::clientlib::KeySetCache> cache,
+        uint64_t secretSeedMsb, uint64_t secretSeedLsb, uint64_t encSeedMsb,
+        uint64_t encSeedLsb) {
+  auto secretSeed = (((__uint128_t)secretSeedMsb) << 64) | secretSeedLsb;
+  auto encryptionSeed = (((__uint128_t)encSeedMsb) << 64) | encSeedLsb;
+
+  if (cache.has_value()) {
+    GET_OR_THROW_RESULT(Keyset keyset,
+                        (*cache).keysetCache.getKeyset(
+                            clientParameters.programInfo.asReader().getKeyset(),
+                            secretSeed, encryptionSeed));
+    concretelang::clientlib::KeySet output{keyset};
+    return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
+  } else {
+    concretelang::csprng::SecretCSPRNG secCsprng(secretSeed);
+    concretelang::csprng::EncryptionCSPRNG encCsprng(encryptionSeed);
+    auto keyset = Keyset(clientParameters.programInfo.asReader().getKeyset(),
+                         secCsprng, encCsprng);
+    concretelang::clientlib::KeySet output{keyset};
+    return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
+  }
+}
+
+std::unique_ptr<concretelang::clientlib::PublicArguments>
+encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
+                  concretelang::clientlib::KeySet &keySet,
+                  llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args) {
+  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
+      clientParameters.programInfo.asReader(), keySet.keyset.client,
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      false);
+  if (maybeProgram.has_failure()) {
+    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
+  }
+  auto circuit = maybeProgram.value()
+                     .getClientCircuit(clientParameters.programInfo.asReader()
+                                           .getCircuits()[0]
+                                           .getName())
+                     .value();
+  std::vector<TransportValue> output;
+  for (size_t i = 0; i < args.size(); i++) {
+    auto info =
+        clientParameters.programInfo.asReader().getCircuits()[0].getInputs()[i];
+    auto typeTransformer = getPythonTypeTransformer(info);
+    auto input = typeTransformer(args[i]->value);
+    auto maybePrepared = circuit.prepareInput(input, i);
+
+    if (maybePrepared.has_failure()) {
+      throw std::runtime_error(maybePrepared.as_failure().error().mesg);
+    }
+    output.push_back(maybePrepared.value());
+  }
+  concretelang::clientlib::PublicArguments publicArgs{output};
+  return std::make_unique<concretelang::clientlib::PublicArguments>(
+      std::move(publicArgs));
+}
+
+std::vector<lambdaArgument>
+decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
+               concretelang::clientlib::KeySet &keySet,
+               concretelang::clientlib::PublicResult &publicResult) {
+  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
+      clientParameters.programInfo.asReader(), keySet.keyset.client,
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      false);
+  if (maybeProgram.has_failure()) {
+    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
+  }
+  auto circuit = maybeProgram.value()
+                     .getClientCircuit(clientParameters.programInfo.asReader()
+                                           .getCircuits()[0]
+                                           .getName())
+                     .value();
+  std::vector<lambdaArgument> results;
+  for (auto e : llvm::enumerate(publicResult.values)) {
+    auto maybeProcessed = circuit.processOutput(e.value(), e.index());
+    if (maybeProcessed.has_failure()) {
+      throw std::runtime_error(maybeProcessed.as_failure().error().mesg);
+    }
+
+    mlir::concretelang::LambdaArgument out{maybeProcessed.value()};
+    lambdaArgument tensor_arg{
+        std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+    results.push_back(tensor_arg);
+  }
+  return results;
+}
+
+std::unique_ptr<concretelang::clientlib::PublicArguments>
+publicArgumentsUnserialize(
+    concretelang::clientlib::ClientParameters &clientParameters,
+    const std::string &buffer) {
+  auto publicArgumentsProto = Message<concreteprotocol::PublicArguments>();
+  if (publicArgumentsProto.readBinaryFromString(buffer).has_failure()) {
+    throw std::runtime_error("Failed to deserialize public arguments.");
+  }
+  std::vector<TransportValue> values;
+  for (auto arg : publicArgumentsProto.asReader().getArgs()) {
+    values.push_back(arg);
+  }
+  concretelang::clientlib::PublicArguments output{values};
+  return std::make_unique<concretelang::clientlib::PublicArguments>(
+      std::move(output));
+}
+
+std::string publicArgumentsSerialize(
+    concretelang::clientlib::PublicArguments &publicArguments) {
+  auto publicArgumentsProto = Message<concreteprotocol::PublicArguments>();
+  auto argBuilder =
+      publicArgumentsProto.asBuilder().initArgs(publicArguments.values.size());
+  for (size_t i = 0; i < publicArguments.values.size(); i++) {
+    argBuilder.setWithCaveats(i, publicArguments.values[i].asReader());
+  }
+  auto maybeBuffer = publicArgumentsProto.writeBinaryToString();
+  if (maybeBuffer.has_failure()) {
+    throw std::runtime_error("Failed to serialize public arguments.");
+  }
+  return maybeBuffer.value();
+}
+
+std::unique_ptr<concretelang::clientlib::PublicResult> publicResultUnserialize(
+    concretelang::clientlib::ClientParameters &clientParameters,
+    const std::string &buffer) {
+  auto publicResultsProto = Message<concreteprotocol::PublicResults>();
+  if (publicResultsProto.readBinaryFromString(buffer).has_failure()) {
+    throw std::runtime_error("Failed to deserialize public results.");
+  }
+  std::vector<TransportValue> values;
+  for (auto res : publicResultsProto.asReader().getResults()) {
+    values.push_back(res);
+  }
+  concretelang::clientlib::PublicResult output{values};
+  return std::make_unique<concretelang::clientlib::PublicResult>(
+      std::move(output));
+}
+
+std::string
+publicResultSerialize(concretelang::clientlib::PublicResult &publicResult) {
+  std::string buffer;
+  auto publicResultsProto = Message<concreteprotocol::PublicResults>();
+  auto resBuilder =
+      publicResultsProto.asBuilder().initResults(publicResult.values.size());
+  for (size_t i = 0; i < publicResult.values.size(); i++) {
+    resBuilder.setWithCaveats(i, publicResult.values[i].asReader());
+  }
+  auto maybeBuffer = publicResultsProto.writeBinaryToString();
+  if (maybeBuffer.has_failure()) {
+    throw std::runtime_error("Failed to serialize public results.");
+  }
+  return maybeBuffer.value();
+}
+
+concretelang::clientlib::EvaluationKeys
+evaluationKeysUnserialize(const std::string &buffer) {
+  auto serverKeysetProto = Message<concreteprotocol::ServerKeyset>();
+  auto maybeError = serverKeysetProto.readBinaryFromString(
+      buffer, capnp::ReaderOptions{7000000000, 64});
+  if (maybeError.has_failure()) {
+    throw std::runtime_error("Failed to deserialize server keyset." +
+                             maybeError.as_failure().error().mesg);
+  }
+  auto serverKeyset =
+      concretelang::keysets::ServerKeyset::fromProto(serverKeysetProto);
+  concretelang::clientlib::EvaluationKeys output{serverKeyset};
+  return output;
+}
+
+std::string evaluationKeysSerialize(
+    concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+  auto serverKeysetProto = evaluationKeys.keyset.toProto();
+  auto maybeBuffer = serverKeysetProto.writeBinaryToString();
+  if (maybeBuffer.has_failure()) {
+    throw std::runtime_error("Failed to serialize evaluation keys.");
+  }
+  return maybeBuffer.value();
+}
+
+std::unique_ptr<concretelang::clientlib::KeySet>
+keySetUnserialize(const std::string &buffer) {
+  auto keysetProto = Message<concreteprotocol::Keyset>();
+  auto maybeError = keysetProto.readBinaryFromString(
+      buffer, capnp::ReaderOptions{7000000000, 64});
+  if (maybeError.has_failure()) {
+    throw std::runtime_error("Failed to deserialize keyset." +
+                             maybeError.as_failure().error().mesg);
+  }
+  auto keyset = concretelang::keysets::Keyset::fromProto(keysetProto);
+  concretelang::clientlib::KeySet output{keyset};
+  return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
+}
+
+std::string keySetSerialize(concretelang::clientlib::KeySet &keySet) {
+  auto keysetProto = keySet.keyset.toProto();
+  auto maybeBuffer = keysetProto.writeBinaryToString();
+  if (maybeBuffer.has_failure()) {
+    throw std::runtime_error("Failed to serialize keys.");
+  }
+  return maybeBuffer.value();
+}
+
+concretelang::clientlib::SharedScalarOrTensorData
+valueUnserialize(const std::string &buffer) {
+  auto inner = TransportValue();
+  if (inner.readBinaryFromString(buffer).has_failure()) {
+    throw std::runtime_error("Failed to deserialize Value");
+  }
+  return {inner};
+}
+
+std::string
+valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value) {
+  auto maybeString = value.value.writeBinaryToString();
+  if (maybeString.has_failure()) {
+    throw std::runtime_error("Failed to serialize Value");
+  }
+  return maybeString.value();
+}
+
+concretelang::clientlib::ValueExporter createValueExporter(
+    concretelang::clientlib::KeySet &keySet,
+    concretelang::clientlib::ClientParameters &clientParameters) {
+  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
+      clientParameters.programInfo.asReader(), keySet.keyset.client,
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      false);
+  if (maybeProgram.has_failure()) {
+    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
+  }
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(
+      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  return ::concretelang::clientlib::ValueExporter{maybeCircuit.value()};
+}
+
+concretelang::clientlib::SimulatedValueExporter createSimulatedValueExporter(
+    concretelang::clientlib::ClientParameters &clientParameters) {
+
+  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
+      clientParameters.programInfo, ::concretelang::keysets::ClientKeyset(),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      true);
+  if (maybeProgram.has_failure()) {
+    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
+  }
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(
+      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  return ::concretelang::clientlib::SimulatedValueExporter{
+      maybeCircuit.value()};
+}
+
+concretelang::clientlib::ValueDecrypter createValueDecrypter(
+    concretelang::clientlib::KeySet &keySet,
+    concretelang::clientlib::ClientParameters &clientParameters) {
+
+  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
+      clientParameters.programInfo.asReader(), keySet.keyset.client,
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      false);
+  if (maybeProgram.has_failure()) {
+    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
+  }
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(
+      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  return ::concretelang::clientlib::ValueDecrypter{maybeCircuit.value()};
+}
+
+concretelang::clientlib::SimulatedValueDecrypter createSimulatedValueDecrypter(
+    concretelang::clientlib::ClientParameters &clientParameters) {
+
+  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
+      clientParameters.programInfo.asReader(),
+      ::concretelang::keysets::ClientKeyset(),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      true);
+  if (maybeProgram.has_failure()) {
+    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
+  }
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(
+      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  return ::concretelang::clientlib::SimulatedValueDecrypter{
+      maybeCircuit.value()};
+}
+
+concretelang::clientlib::ClientParameters
+clientParametersUnserialize(const std::string &json) {
+  auto programInfo = Message<concreteprotocol::ProgramInfo>();
+  if (programInfo.readJsonFromString(json).has_failure()) {
+    throw std::runtime_error("Failed to deserialize client parameters");
+  }
+  return concretelang::clientlib::ClientParameters{programInfo, {}, {}, {}, {}};
+}
+
+std::string
+clientParametersSerialize(concretelang::clientlib::ClientParameters &params) {
+  auto maybeJson = params.programInfo.writeJsonToString();
+  if (maybeJson.has_failure()) {
+    throw std::runtime_error("Failed to serialize client parameters");
+  }
+  return maybeJson.value();
+}
+
+void terminateDataflowParallelization() { _dfr_terminate(); }
+
+void initDataflowParallelization() {
+  mlir::concretelang::dfr::_dfr_set_required(true);
+}
+
+std::string roundTrip(const char *module) {
+  std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
+      mlir::concretelang::CompilationContext::createShared();
+  mlir::concretelang::CompilerEngine ce{ccx};
+
+  std::string backingString;
+  llvm::raw_string_ostream os(backingString);
+
+  llvm::Expected<mlir::concretelang::CompilerEngine::CompilationResult>
+      retOrErr = ce.compile(
+          module, mlir::concretelang::CompilerEngine::Target::ROUND_TRIP);
+  if (!retOrErr) {
+    os << "MLIR parsing failed: " << llvm::toString(retOrErr.takeError());
+    throw std::runtime_error(os.str());
+  }
+
+  retOrErr->mlirModuleRef->get().print(os);
+  return os.str();
+}
+
+bool lambdaArgumentIsTensor(lambdaArgument &lambda_arg) {
+  return !lambda_arg.ptr->value.isScalar();
+}
+
+std::vector<uint64_t> lambdaArgumentGetTensorData(lambdaArgument &lambda_arg) {
+  if (auto tensor = lambda_arg.ptr->value.getTensor<uint8_t>(); tensor) {
+    Tensor<uint64_t> out = (Tensor<uint64_t>)tensor.value();
+    return out.values;
+  } else if (auto tensor = lambda_arg.ptr->value.getTensor<uint16_t>();
+             tensor) {
+    Tensor<uint64_t> out = (Tensor<uint64_t>)tensor.value();
+    return out.values;
+  } else if (auto tensor = lambda_arg.ptr->value.getTensor<uint32_t>();
+             tensor) {
+    Tensor<uint64_t> out = (Tensor<uint64_t>)tensor.value();
+    return out.values;
+  } else if (auto tensor = lambda_arg.ptr->value.getTensor<uint64_t>();
+             tensor) {
+    return tensor.value().values;
+  } else {
+    throw std::invalid_argument(
+        "LambdaArgument isn't a tensor or has an unsupported bitwidth");
+  }
+}
+
+std::vector<int64_t>
+lambdaArgumentGetSignedTensorData(lambdaArgument &lambda_arg) {
+  if (auto tensor = lambda_arg.ptr->value.getTensor<int8_t>(); tensor) {
+    Tensor<int64_t> out = (Tensor<int64_t>)tensor.value();
+    return out.values;
+  } else if (auto tensor = lambda_arg.ptr->value.getTensor<int16_t>(); tensor) {
+    Tensor<int64_t> out = (Tensor<int64_t>)tensor.value();
+    return out.values;
+  } else if (auto tensor = lambda_arg.ptr->value.getTensor<int32_t>(); tensor) {
+    Tensor<int64_t> out = (Tensor<int64_t>)tensor.value();
+    return out.values;
+  } else if (auto tensor = lambda_arg.ptr->value.getTensor<int64_t>(); tensor) {
+    return tensor.value().values;
+  } else {
+    throw std::invalid_argument(
+        "LambdaArgument isn't a tensor or has an unsupported bitwidth");
+  }
+}
+
+std::vector<int64_t>
+lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg) {
+  std::vector<size_t> dims = lambda_arg.ptr->value.getDimensions();
+  return {dims.begin(), dims.end()};
+}
+
+bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg) {
+  return lambda_arg.ptr->value.isScalar();
+}
+
+bool lambdaArgumentIsSigned(lambdaArgument &lambda_arg) {
+  return lambda_arg.ptr->value.isSigned();
+}
+
+uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
+  if (lambda_arg.ptr->value.isScalar() &&
+      lambda_arg.ptr->value.hasElementType<uint64_t>()) {
+    return lambda_arg.ptr->value.getTensor<uint64_t>()->values[0];
+  } else {
+    throw std::invalid_argument("LambdaArgument isn't a scalar, should "
+                                "be an IntLambdaArgument<uint64_t>");
+  }
+}
+
+int64_t lambdaArgumentGetSignedScalar(lambdaArgument &lambda_arg) {
+  if (lambda_arg.ptr->value.isScalar() &&
+      lambda_arg.ptr->value.hasElementType<int64_t>()) {
+    return lambda_arg.ptr->value.getTensor<int64_t>()->values[0];
+  } else {
+    throw std::invalid_argument("LambdaArgument isn't a scalar, should "
+                                "be an IntLambdaArgument<int64_t>");
+  }
+}
+
+lambdaArgument lambdaArgumentFromTensorU8(std::vector<uint8_t> data,
+                                          std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+
+  auto val = Value{((Tensor<int64_t>)Tensor<uint8_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorI8(std::vector<int8_t> data,
+                                          std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+  auto val = Value{((Tensor<int64_t>)Tensor<int8_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorU16(std::vector<uint16_t> data,
+                                           std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+  auto val = Value{((Tensor<int64_t>)Tensor<uint16_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorI16(std::vector<int16_t> data,
+                                           std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+  auto val = Value{((Tensor<int64_t>)Tensor<int16_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorU32(std::vector<uint32_t> data,
+                                           std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+  auto val = Value{((Tensor<int64_t>)Tensor<uint32_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorI32(std::vector<int32_t> data,
+                                           std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+  auto val = Value{((Tensor<int64_t>)Tensor<int32_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorU64(std::vector<uint64_t> data,
+                                           std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+  auto val = Value{((Tensor<int64_t>)Tensor<uint64_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorI64(std::vector<int64_t> data,
+                                           std::vector<int64_t> dimensions) {
+  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
+  auto val = Value{((Tensor<int64_t>)Tensor<int64_t>(data, dims))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromScalar(uint64_t scalar) {
+  auto val = Value{((Tensor<int64_t>)Tensor<uint64_t>(scalar))};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument scalar_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return scalar_arg;
+}
+
+lambdaArgument lambdaArgumentFromSignedScalar(int64_t scalar) {
+  auto val = Value{Tensor<int64_t>(scalar)};
+  mlir::concretelang::LambdaArgument out{val};
+  lambdaArgument scalar_arg{
+      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
+  return scalar_arg;
+}
 
 /// Populate the compiler API python module.
 void mlir::concretelang::python::populateCompilerAPISubmodule(
