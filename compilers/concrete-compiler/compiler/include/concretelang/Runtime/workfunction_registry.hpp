@@ -22,8 +22,9 @@ namespace dfr {
 
 struct WorkFunctionRegistry;
 namespace {
+static void *dl_handle;
 static WorkFunctionRegistry *_dfr_node_level_work_function_registry;
-}
+} // namespace
 
 struct WorkFunctionRegistry {
   WorkFunctionRegistry() { _dfr_node_level_work_function_registry = this; }

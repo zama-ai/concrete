@@ -316,7 +316,16 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
   num_nodes = hpx::get_num_localities().get();
 
   new WorkFunctionRegistry();
-  new RuntimeContextManager();
+
+  char *env = getenv("DFR_LAZY_KEY_TRANSFER");
+  bool lazy = false;
+  if (env != nullptr)
+    if (!strncmp(env, "True", 4) || !strncmp(env, "true", 4) ||
+        !strncmp(env, "On", 2) || !strncmp(env, "on", 2) ||
+        !strncmp(env, "1", 1))
+      lazy = true;
+  new RuntimeContextManager(lazy);
+
   _dfr_jit_phase_barrier = new hpx::distributed::barrier(
       "phase_barrier", num_nodes, hpx::get_locality_id());
   _dfr_startup_barrier = new hpx::distributed::barrier(
@@ -351,14 +360,12 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
 
     assert(init_guard == active && "DFR runtime failed to initialise");
 
-    // If DFR is used and a runtime context is needed, and execution is
-    // distributed, then broadcast from root to all compute nodes.
-    if (num_nodes > 1 && (ctx || !_dfr_is_root_node())) {
+    // If execution is distributed, then broadcast (possibly an empty)
+    // context from root to all compute nodes.
+    if (num_nodes > 1) {
       BEGIN_TIME(&broadcast_timer);
       _dfr_node_level_runtime_context_manager->setContext(ctx);
     }
-    // If this is not JIT, then the remote nodes never reach _dfr_stop,
-    // so root should not instantiate this barrier.
     if (_dfr_is_root_node())
       _dfr_startup_barrier->wait();
 
