@@ -8,6 +8,7 @@
 #include "mlir/IR/Region.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
+#include "llvm/Support/Debug.h"
 
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
@@ -345,6 +346,11 @@ OpFoldResult MulEintIntOp::fold(FoldAdaptor operands) {
     }
   }
   return nullptr;
+}
+
+void mlir::concretelang::FHE::ApplyLookupTableEintOp::getCanonicalizationPatterns(mlir::RewritePatternSet&, mlir::MLIRContext*)
+{
+  llvm::dbgs() << "YOOOOOOOOOOOOOOOOOOOOOO\n";
 }
 
 void MulEintIntOp::getCanonicalizationPatterns(

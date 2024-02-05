@@ -423,6 +423,8 @@ def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [Pure, ConstantNoi
         TensorOf<[AnyInteger]>:$lut);
     let results = (outs FHE_AnyEncryptedInteger);
     let hasVerifier = 1;
+
+    let hasCanonicalizer = 1;
 }
 
 def FHE_RoundEintOp: FHE_Op<"round", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint, ["sqMANP"]>]> {
