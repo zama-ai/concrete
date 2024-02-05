@@ -916,6 +916,55 @@ protected:
     }
   }
 
+  // Prints an indentation composed of `indent` times `" "`.
+  void printIndent(int indent) {
+    for (int i = 0; i < indent; i++)
+      llvm::dbgs() << "  ";
+  }
+
+  // Dumps the state of type inference for the operation `op` with an
+  // indentation level of `indent` as the name of the operation,
+  // followed by the types inferred for each operand, followed by
+  // `->`, followed by a dump of the state for any operation nested in
+  // any region of `op`.
+  void dumpStateForOp(mlir::Operation *op, int indent) {
+    const LocalInferenceState state = getCurrentInferredTypes(op);
+
+    printIndent(indent);
+    llvm::dbgs() << op->getName() << ": (";
+    for (mlir::Value v : op->getOperands()) {
+      llvm::dbgs() << state.find(v) << ", ";
+    }
+
+    llvm::dbgs() << ") -> (";
+
+    for (mlir::Value v : op->getResults()) {
+      llvm::dbgs() << state.find(v) << ", ";
+    }
+
+    llvm::dbgs() << ")\n";
+
+    for (mlir::Region &r : op->getRegions())
+      for (mlir::Block &b : r.getBlocks())
+        for (mlir::Operation &childOp : b.getOperations())
+          dumpStateForOp(&childOp, indent + 1);
+  }
+
+  // Dumps the entire state of type inference for the function
+  // containing the operation `op`. For each operation, this prints
+  // the name of the operation, followed by the types inferred for
+  // each operand, followed by `->`, followed by the types inferred
+  // for the results.
+  void dumpAllState(mlir::Operation *op) {
+    mlir::Operation *funcOp = op;
+    while (funcOp && !llvm::isa<mlir::func::FuncOp>(funcOp))
+      funcOp = funcOp->getParentOp();
+
+    assert(funcOp);
+
+    dumpStateForOp(funcOp, 0);
+  }
+
   TypeResolver &resolver;
 };
 
