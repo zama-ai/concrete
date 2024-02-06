@@ -288,21 +288,12 @@ jobs:
           # we fix it by using a single one (from torch)
           # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
           export SITE_PACKAGES=$(pwd)/.testenv/lib/$PYTHON_VERSION/site-packages/
-          export CONCRETE_LIB_OMP=$SITE_PACKAGES/concrete/.dylibs/libomp.dylib
-          # Where is libiomp? Possibilities ordered in increasing priorities
-          export TORCH_LIB_IOMP="this shouldn't exist"
-          ls $SITE_PACKAGES/torch/lib/libiomp5.dylib && export TORCH_LIB_IOMP=$SITE_PACKAGES/torch/lib/libiomp5.dylib
-          ls $SITE_PACKAGES/torch/.dylibs/libiomp5.dylib && export TORCH_LIB_IOMP=$SITE_PACKAGES/torch/.dylibs/libiomp5.dylib
-          ls $SITE_PACKAGES/functorch/.dylibs/libiomp5.dylib && export TORCH_LIB_IOMP=$SITE_PACKAGES/functorch/.dylibs/libiomp5.dylib
-          ls $TORCH_LIB_IOMP \
-          && rm $CONCRETE_LIB_OMP \
-          && ln -s $TORCH_LIB_IOMP $CONCRETE_LIB_OMP
+          find $SITE_PACKAGES/site-packages -not \( -path $SITE_PACKAGES/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $SITE_PACKAGES/concrete/.dylibs/libomp.dylib
 
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
 
-          pytest tests -svv -n auto -m "not dataflow" --key-cache /tmp/KeySetCache
-          rm -rf /tmp/KeySetCache
+          pytest tests -svv -n auto -m "not dataflow" --key-cache "./KeySetCache"
 
           rm -rf $TEST_TMP_DIR
 
