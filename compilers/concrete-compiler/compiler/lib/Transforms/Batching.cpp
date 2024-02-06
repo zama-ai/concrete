@@ -176,7 +176,7 @@ unsigned getOperandIndexForValue(mlir::Operation *op, mlir::Value v) {
 }
 
 // Walks up the use-def-chain of of the value `v`, executing `cb`
-// for any value not previsouly encountered un `visited`.
+// for any value not previously encountered un `visited`.
 static void walkUseDefChainRec(mlir::DenseSet<mlir::Value> &visited,
                                mlir::Value v,
                                llvm::function_ref<void(mlir::Value)> cb) {
@@ -807,7 +807,7 @@ getBoundsOfAffineMap(mlir::AffineMap map,
 }
 
 /// Returns the lower bound, upper bound and step of the quasi-affine
-/// expression `expr` on the the induction variable from a for
+/// expression `expr` on the induction variable from a for
 /// operation.
 static std::optional<BoundsAndStep>
 getBoundsOfQuasiAffineIVExpression(mlir::Value expr, mlir::scf::ForOp forOp) {
