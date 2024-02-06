@@ -123,7 +123,7 @@ jobs:
           find .testenv/lib/python3.10/site-packages -name 'lib*omp5.dylib' | xargs -n 1  ln -f -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib
 
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
-          pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow"
+          KMP_DUPLICATE_LIB_OK=TRUE pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow"
 
       - name: Cleanup host
         if: success() || failure()

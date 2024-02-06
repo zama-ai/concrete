@@ -301,7 +301,7 @@ jobs:
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
 
-          pytest tests -svv -n auto -m "not dataflow" --key-cache /tmp/KeySetCache
+          KMP_DUPLICATE_LIB_OK=TRUE pytest tests -svv -n auto -m "not dataflow" --key-cache /tmp/KeySetCache
           rm -rf /tmp/KeySetCache
 
           rm -rf $TEST_TMP_DIR
