@@ -414,7 +414,7 @@ pub fn blind_rotate(
     }
 
     // Vertical Packing + Blind rotate
-    // The Vertical packing (VP) selected a lut `lookup_table` using part of the the GGSWs
+    // The Vertical packing (VP) selected a lut `lookup_table` using part of the GGSWs
     // The blind rotate outputs: L[exponent] + noise_blindrotate(n= number of GGSWs, var_bsk=var_circuit_bootstrap)
 
     let variance_bsk = minimal_variance_glwe(
