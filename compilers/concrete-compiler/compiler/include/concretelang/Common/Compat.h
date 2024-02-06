@@ -436,7 +436,7 @@ public:
     return output;
   }
 
-  /// Load the the compilation result if circuit already compiled
+  /// Load the compilation result if circuit already compiled
   llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
   loadCompilationResult() {
     auto result = std::make_unique<LibraryCompilationResult>();
