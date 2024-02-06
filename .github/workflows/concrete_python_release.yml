@@ -145,6 +145,7 @@ jobs:
           python -m venv .testenv
           source .testenv/bin/activate
           
+          sudo apt update
           sudo apt install graphviz graphviz-devel
           
           pip install $CONCRETE_PYTHON/dist/*manylinux*.whl
