@@ -132,7 +132,7 @@ jobs:
 
       - name: Set some github event outputs
         id: github
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'release'))
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release'))
         run: echo "push-main=true" >> "$GITHUB_OUTPUT"
 
 #################################################
