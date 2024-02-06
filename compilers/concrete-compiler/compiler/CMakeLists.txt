@@ -136,7 +136,7 @@ ExternalProject_Add(
   DOWNLOAD_COMMAND ""
   CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_CPU_STATIC_LIB}"
   BUILD_ALWAYS true
-  BUILD_COMMAND cargo +nightly build --release --features=nightly
+  BUILD_COMMAND cargo +nightly-2024-01-31 build --release --features=nightly
   BINARY_DIR "${CONCRETE_CPU_DIR}"
   INSTALL_COMMAND ""
   LOG_BUILD ON

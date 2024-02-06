@@ -1,0 +1,8 @@
+runs:
+  using: "composite"
+  steps:
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly-2024-01-31
+        override: true

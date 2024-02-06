@@ -63,11 +63,8 @@ jobs:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - name: Setup rust toolchain for concrete-cpu
+        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
 
       - name: Create build dir
         run: mkdir build
@@ -89,6 +86,7 @@ jobs:
             --gpus all
           shell: bash
           run: |
+            rustup toolchain install nightly-2024-01-31
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*

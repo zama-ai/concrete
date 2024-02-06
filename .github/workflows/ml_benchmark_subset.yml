@@ -63,11 +63,8 @@ jobs:
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - name: Setup rust toolchain for concrete-cpu
+        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
 
       - name: Build compiler and ML benchmarks
         run: |
