@@ -392,13 +392,7 @@ protected:
     void applyKeyswitch(mlir::Operation *op, TypeResolver &resolver,
                         LocalInferenceState &currState,
                         const LocalInferenceState &prevState, int64_t oid) {
-      // Operands
-      TFHE::GLWECipherTextType scalarOperandType = solution.getTFHETypeForKey(
-          op->getContext(),
-          solution.lookupSecretKey(
-              oid, CircuitSolutionWrapper::SolutionKeyKind::KSK_IN));
-      setUnresolvedTo(op->getOperands(), scalarOperandType, resolver,
-                      currState);
+      // Operand types are taken as-is from producers without lookup
 
       // Results
       TFHE::GLWECipherTextType scalarResultType = solution.getTFHETypeForKey(
