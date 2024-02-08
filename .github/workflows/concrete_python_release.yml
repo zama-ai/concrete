@@ -264,6 +264,7 @@ jobs:
           export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
 
           export TEST_TMP_DIR=$(mktemp -d)
+          echo "TEST_TMP_DIR=$TEST_TMP_DIR" >> "${GITHUB_ENV}"
           cd $TEST_TMP_DIR
 
           export PYTHON_VERSION=${{ format('python{0}', matrix.python-version) }}
@@ -295,6 +296,9 @@ jobs:
 
           pytest tests -svv -n auto -m "not dataflow" --key-cache "./KeySetCache"
 
+      - name: Cleanup host
+        if: success() || failure()
+        run: |
           rm -rf $TEST_TMP_DIR
 
   push:
