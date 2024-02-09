@@ -1,4 +1,4 @@
-// RUN: concretecompiler --split-input-file --passes tfhe-to-concrete --action=dump-concrete %s 2>&1| FileCheck %s
+// RUN: concretecompiler --split-input-file --passes tfhe-to-concrete --action=dump-concrete --skip-program-info %s 2>&1| FileCheck %s
 
 //CHECK: func.func @tensor_collapse_shape(%[[A0:.*]]: tensor<2x3x4x5x6x1025xi64>) -> tensor<720x1025xi64> {
 //CHECK:   %[[V0:.*]] = tensor.collapse_shape %[[A0]] [[_:\[\[0, 1, 2, 3, 4\], \[5\]\]]] : tensor<2x3x4x5x6x1025xi64> into tensor<720x1025xi64>

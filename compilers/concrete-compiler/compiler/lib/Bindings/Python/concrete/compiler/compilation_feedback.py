@@ -8,7 +8,8 @@ from typing import Dict, Set
 
 # pylint: disable=no-name-in-module,import-error,too-many-instance-attributes
 from mlir._mlir_libs._concretelang._compiler import (
-    CompilationFeedback as _CompilationFeedback,
+    ProgramCompilationFeedback as _ProgramCompilationFeedback,
+    CircuitCompilationFeedback as _CircuitCompilationFeedback,
     KeyType,
     PrimitiveOperation,
 )
@@ -39,38 +40,36 @@ def tag_from_location(location):
     return tag
 
 
-class CompilationFeedback(WrapperCpp):
-    """CompilationFeedback is a set of hint computed by the compiler engine."""
+class CircuitCompilationFeedback(WrapperCpp):
+    """CircuitCompilationFeedback is a set of hint computed by the compiler engine for a circuit."""
 
-    def __init__(self, compilation_feedback: _CompilationFeedback):
+    def __init__(self, circuit_compilation_feedback: _CircuitCompilationFeedback):
         """Wrap the native Cpp object.
 
         Args:
-            compilation_feeback (_CompilationFeedback): object to wrap
+            circuit_compilation_feeback (_CircuitCompilationFeedback): object to wrap
 
         Raises:
-            TypeError: if compilation_feedback is not of type _CompilationFeedback
+            TypeError: if circuit_compilation_feedback is not of type _CircuitCompilationFeedback
         """
-        if not isinstance(compilation_feedback, _CompilationFeedback):
+        if not isinstance(circuit_compilation_feedback, _CircuitCompilationFeedback):
             raise TypeError(
-                f"compilation_feedback must be of type _CompilationFeedback, not {type(compilation_feedback)}"
+                "circuit_compilation_feedback must be of type "
+                f"_CircuitCompilationFeedback, not {type(circuit_compilation_feedback)}"
             )
 
-        self.complexity = compilation_feedback.complexity
-        self.p_error = compilation_feedback.p_error
-        self.global_p_error = compilation_feedback.global_p_error
-        self.total_secret_keys_size = compilation_feedback.total_secret_keys_size
-        self.total_bootstrap_keys_size = compilation_feedback.total_bootstrap_keys_size
-        self.total_keyswitch_keys_size = compilation_feedback.total_keyswitch_keys_size
-        self.total_inputs_size = compilation_feedback.total_inputs_size
-        self.total_output_size = compilation_feedback.total_output_size
+        self.name = circuit_compilation_feedback.name
+        self.total_inputs_size = circuit_compilation_feedback.total_inputs_size
+        self.total_output_size = circuit_compilation_feedback.total_output_size
         self.crt_decompositions_of_outputs = (
-            compilation_feedback.crt_decompositions_of_outputs
+            circuit_compilation_feedback.crt_decompositions_of_outputs
         )
-        self.statistics = compilation_feedback.statistics
-        self.memory_usage_per_location = compilation_feedback.memory_usage_per_location
+        self.statistics = circuit_compilation_feedback.statistics
+        self.memory_usage_per_location = (
+            circuit_compilation_feedback.memory_usage_per_location
+        )
 
-        super().__init__(compilation_feedback)
+        super().__init__(circuit_compilation_feedback)
 
     def count(self, *, operations: Set[PrimitiveOperation]) -> int:
         """
@@ -216,3 +215,68 @@ class CompilationFeedback(WrapperCpp):
                     result[current_tag][parameter] += statistic.count
 
         return result
+
+
+class ProgramCompilationFeedback(WrapperCpp):
+    """CompilationFeedback is a set of hint computed by the compiler engine."""
+
+    def __init__(self, program_compilation_feedback: _ProgramCompilationFeedback):
+        """Wrap the native Cpp object.
+
+        Args:
+            compilation_feeback (_CompilationFeedback): object to wrap
+
+        Raises:
+            TypeError: if program_compilation_feedback is not of type _CompilationFeedback
+        """
+        if not isinstance(program_compilation_feedback, _ProgramCompilationFeedback):
+            raise TypeError(
+                "program_compilation_feedback must be of type "
+                f"_CompilationFeedback, not {type(program_compilation_feedback)}"
+            )
+
+        self.complexity = program_compilation_feedback.complexity
+        self.p_error = program_compilation_feedback.p_error
+        self.global_p_error = program_compilation_feedback.global_p_error
+        self.total_secret_keys_size = (
+            program_compilation_feedback.total_secret_keys_size
+        )
+        self.total_bootstrap_keys_size = (
+            program_compilation_feedback.total_bootstrap_keys_size
+        )
+        self.total_keyswitch_keys_size = (
+            program_compilation_feedback.total_keyswitch_keys_size
+        )
+        self.circuit_feedbacks = [
+            CircuitCompilationFeedback(c)
+            for c in program_compilation_feedback.circuit_feedbacks
+        ]
+
+        super().__init__(program_compilation_feedback)
+
+    def circuit(self, circuit_name: str) -> CircuitCompilationFeedback:
+        """
+        Returns the feedback for the circuit circuit_name.
+
+        Args:
+            circuit_name (str):
+                the name of the circuit.
+
+        Returns:
+            CircuitCompilationFeedback:
+                the feedback for the circuit.
+
+        Raises:
+            TypeError: if the circuit_name is not a string
+            ValueError: if there is no circuit with name circuit_name
+        """
+        if not isinstance(circuit_name, str):
+            raise TypeError(
+                f"circuit_name must be of type str, not {type(circuit_name)}"
+            )
+
+        for circuit in self.circuit_feedbacks:
+            if circuit.name == circuit_name:
+                return circuit
+
+        raise ValueError(f"no circuit with name {circuit_name} found")

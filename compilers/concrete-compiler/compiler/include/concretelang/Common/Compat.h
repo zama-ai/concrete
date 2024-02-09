@@ -286,7 +286,6 @@ struct LibraryCompilationResult {
   /// The output directory path where the compilation artifacts have been
   /// generated.
   std::string outputDirPath;
-  std::string funcName;
 };
 
 class LibrarySupport {
@@ -318,14 +317,8 @@ public:
       return std::move(err);
     }
 
-    if (!options.mainFuncName.has_value()) {
-      return StreamStringError("Need to have a funcname to compile library");
-    }
-    this->funcName = options.mainFuncName.value();
-
     auto result = std::make_unique<LibraryCompilationResult>();
     result->outputDirPath = outputPath;
-    result->funcName = *options.mainFuncName;
     return std::move(result);
   }
 
@@ -356,20 +349,15 @@ public:
       return std::move(err);
     }
 
-    if (!options.mainFuncName.has_value()) {
-      return StreamStringError("Need to have a funcname to compile library");
-    }
-    this->funcName = options.mainFuncName.value();
-
     auto result = std::make_unique<LibraryCompilationResult>();
     result->outputDirPath = outputPath;
-    result->funcName = *options.mainFuncName;
     return std::move(result);
   }
 
   /// Load the server lambda from the compilation result.
   llvm::Expected<::concretelang::serverlib::ServerLambda>
-  loadServerLambda(LibraryCompilationResult &result, bool useSimulation) {
+  loadServerLambda(LibraryCompilationResult &result, std::string circuitName,
+                   bool useSimulation) {
     EXPECTED_TRY(auto programInfo, getProgramInfo());
     EXPECTED_TRY(ServerProgram serverProgram,
                  outcomeToExpected(ServerProgram::load(programInfo.asReader(),
@@ -377,7 +365,7 @@ public:
                                                        useSimulation)));
     EXPECTED_TRY(
         ServerCircuit serverCircuit,
-        outcomeToExpected(serverProgram.getServerCircuit(result.funcName)));
+        outcomeToExpected(serverProgram.getServerCircuit(circuitName)));
     return ::concretelang::serverlib::ServerLambda{serverCircuit,
                                                    useSimulation};
   }
@@ -386,13 +374,6 @@ public:
   llvm::Expected<::concretelang::clientlib::ClientParameters>
   loadClientParameters(LibraryCompilationResult &result) {
     EXPECTED_TRY(auto programInfo, getProgramInfo());
-    if (programInfo.asReader().getCircuits().size() > 1) {
-      return StreamStringError("ClientLambda: Provided program info contains "
-                               "more than one circuit.");
-    }
-    if (programInfo.asReader().getCircuits()[0].getName() != result.funcName) {
-      return StreamStringError("Unexpected circuit name in program info");
-    }
     auto secretKeys =
         std::vector<::concretelang::clientlib::LweSecretKeyParam>();
     for (auto key : programInfo.asReader().getKeyset().getLweSecretKeys()) {
@@ -441,15 +422,14 @@ public:
   loadCompilationResult() {
     auto result = std::make_unique<LibraryCompilationResult>();
     result->outputDirPath = outputPath;
-    result->funcName = funcName;
     return std::move(result);
   }
 
-  llvm::Expected<CompilationFeedback>
+  llvm::Expected<ProgramCompilationFeedback>
   loadCompilationFeedback(LibraryCompilationResult &result) {
     auto path = CompilerEngine::Library::getCompilationFeedbackPath(
         result.outputDirPath);
-    auto feedback = CompilationFeedback::load(path);
+    auto feedback = ProgramCompilationFeedback::load(path);
     if (feedback.has_error()) {
       return StreamStringError(feedback.error().mesg);
     }
@@ -499,7 +479,6 @@ public:
 
 private:
   std::string outputPath;
-  std::string funcName;
   std::string runtimeLibraryPath;
   /// Flags to select generated artifacts
   bool generateSharedLib;

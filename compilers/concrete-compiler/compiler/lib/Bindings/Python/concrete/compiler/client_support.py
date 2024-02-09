@@ -116,6 +116,7 @@ class ClientSupport(WrapperCpp):
         client_parameters: ClientParameters,
         keyset: KeySet,
         args: List[Union[int, np.ndarray]],
+        circuit_name: str = "main",
     ) -> PublicArguments:
         """Prepare arguments for encrypted computation.
 
@@ -126,10 +127,12 @@ class ClientSupport(WrapperCpp):
             client_parameters (ClientParameters): client parameters specification
             keyset (KeySet): keyset used to encrypt arguments that require encryption
             args (List[Union[int, np.ndarray]]): list of scalar or tensor arguments
+            circuit_name(str): the name of the circuit for which to encrypt
 
         Raises:
             TypeError: if client_parameters is not of type ClientParameters
             TypeError: if keyset is not of type KeySet
+            TypeError: if circuit_name is not of type str
 
         Returns:
             PublicArguments: public arguments for execution
@@ -140,6 +143,10 @@ class ClientSupport(WrapperCpp):
             )
         if not isinstance(keyset, KeySet):
             raise TypeError(f"keyset must be of type KeySet, not {type(keyset)}")
+        if not isinstance(circuit_name, str):
+            raise TypeError(
+                f"circuit_name must be of type str, not {type(circuit_name)}"
+            )
 
         signs = client_parameters.input_signs()
         if len(signs) != len(args):
@@ -156,6 +163,7 @@ class ClientSupport(WrapperCpp):
                 client_parameters.cpp(),
                 keyset.cpp(),
                 [arg.cpp() for arg in lambda_arguments],
+                circuit_name,
             )
         )
 
@@ -164,17 +172,20 @@ class ClientSupport(WrapperCpp):
         client_parameters: ClientParameters,
         keyset: KeySet,
         public_result: PublicResult,
+        circuit_name: str = "main",
     ) -> Union[int, np.ndarray]:
         """Decrypt a public result using the keyset.
 
         Args:
             client_parameters (ClientParameters): client parameters for decryption
             keyset (KeySet): keyset used for decryption
-            public_result: public result to decrypt
+            public_result (PublicResult): public result to decrypt
+            circuit_name (str): name of the circuit for which to decrypt
 
         Raises:
             TypeError: if keyset is not of type KeySet
             TypeError: if public_result is not of type PublicResult
+            TypeError: if circuit_name is not of type str
             RuntimeError: if the result is of an unknown type
 
         Returns:
@@ -186,8 +197,12 @@ class ClientSupport(WrapperCpp):
             raise TypeError(
                 f"public_result must be of type PublicResult, not {type(public_result)}"
             )
+        if not isinstance(circuit_name, str):
+            raise TypeError(
+                f"circuit_name must be of type str, not {type(circuit_name)}"
+            )
         results = _ClientSupport.decrypt_result(
-            client_parameters.cpp(), keyset.cpp(), public_result.cpp()
+            client_parameters.cpp(), keyset.cpp(), public_result.cpp(), circuit_name
         )
 
         def process_result(result):

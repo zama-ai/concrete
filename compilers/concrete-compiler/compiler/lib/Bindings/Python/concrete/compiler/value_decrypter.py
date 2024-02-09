@@ -42,12 +42,14 @@ class ValueDecrypter(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(keyset: KeySet, client_parameters: ClientParameters):
+    def new(
+        keyset: KeySet, client_parameters: ClientParameters, circuit_name: str = "main"
+    ):
         """
         Create a value decrypter.
         """
         return ValueDecrypter(
-            _ValueDecrypter.create(keyset.cpp(), client_parameters.cpp())
+            _ValueDecrypter.create(keyset.cpp(), client_parameters.cpp(), circuit_name)
         )
 
     def decrypt(self, position: int, value: Value) -> Union[int, np.ndarray]:

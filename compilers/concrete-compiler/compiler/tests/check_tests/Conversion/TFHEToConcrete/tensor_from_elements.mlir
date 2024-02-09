@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes tfhe-to-concrete --action=dump-concrete --split-input-file %s 2>&1| FileCheck %s
+// RUN: concretecompiler --passes tfhe-to-concrete --action=dump-concrete --split-input-file --skip-program-info %s 2>&1| FileCheck %s
 
 // CHECK: func.func @main(%[[A0:.*]]: tensor<2049xi64>, %[[A1:.*]]: tensor<2049xi64>, %[[A2:.*]]: tensor<2049xi64>, %[[A3:.*]]: tensor<2049xi64>, %[[A4:.*]]: tensor<2049xi64>, %[[A5:.*]]: tensor<2049xi64>) -> tensor<6x2049xi64> {
 // CHECK:   %[[V0:.*]] = bufferization.alloc_tensor() : tensor<6x2049xi64>

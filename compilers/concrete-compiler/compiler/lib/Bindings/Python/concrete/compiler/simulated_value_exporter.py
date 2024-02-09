@@ -40,12 +40,14 @@ class SimulatedValueExporter(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(client_parameters: ClientParameters) -> "SimulatedValueExporter":
+    def new(
+        client_parameters: ClientParameters, circuitName: str = "main"
+    ) -> "SimulatedValueExporter":
         """
         Create a value exporter.
         """
         return SimulatedValueExporter(
-            _SimulatedValueExporter.create(client_parameters.cpp())
+            _SimulatedValueExporter.create(client_parameters.cpp(), circuitName)
         )
 
     def export_scalar(self, position: int, value: int) -> Value:

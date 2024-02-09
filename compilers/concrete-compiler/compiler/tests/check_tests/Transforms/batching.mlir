@@ -1,4 +1,4 @@
-// RUN: concretecompiler --split-input-file --action=dump-batched-tfhe --batch-tfhe-ops %s 2>&1| FileCheck %s
+// RUN: concretecompiler --split-input-file --action=dump-batched-tfhe --batch-tfhe-ops --skip-program-info %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: func.func @batch_continuous_slice_keyswitch
 // CHECK: (%arg0: tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_IN:.*]]{{\]}}<1,2048>>>) -> tensor<2x3x4x!TFHE.glwe<sk{{\[}}[[SK_OUT:.*]]{{\]}}<1,750>>> {

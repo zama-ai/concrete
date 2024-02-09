@@ -296,32 +296,22 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
 }
 
 llvm::Expected<Message<concreteprotocol::CircuitInfo>>
-extractCircuitInfo(mlir::ModuleOp module, llvm::StringRef functionName,
-                   Message<concreteprotocol::CircuitEncodingInfo> &encodings,
+extractCircuitInfo(mlir::func::FuncOp funcOp,
+                   concreteprotocol::CircuitEncodingInfo::Reader encodings,
                    concrete::SecurityCurve curve) {
 
   auto output = Message<concreteprotocol::CircuitInfo>();
 
-  // Check that the specified function can be found
-  auto rangeOps = module.getOps<mlir::func::FuncOp>();
-  auto funcOp = llvm::find_if(rangeOps, [&](mlir::func::FuncOp op) {
-    return op.getName() == functionName;
-  });
-  if (funcOp == rangeOps.end()) {
-    return StreamStringError(
-               "cannot find the function for generate client parameters: ")
-           << functionName;
-  }
   // Create input and output circuit gate parameters
-  auto funcType = (*funcOp).getFunctionType();
+  auto funcType = funcOp.getFunctionType();
 
-  output.asBuilder().setName(functionName.str());
+  output.asBuilder().setName(encodings.getName().cStr());
   output.asBuilder().initInputs(funcType.getNumInputs());
   output.asBuilder().initOutputs(funcType.getNumResults());
 
   for (unsigned int i = 0; i < funcType.getNumInputs(); i++) {
     auto ty = funcType.getInput(i);
-    auto encoding = encodings.asReader().getInputs()[i];
+    auto encoding = encodings.getInputs()[i];
     auto maybeGate = generateGate(ty, encoding, curve);
     if (!maybeGate) {
       return maybeGate.takeError();
@@ -330,7 +320,7 @@ extractCircuitInfo(mlir::ModuleOp module, llvm::StringRef functionName,
   }
   for (unsigned int i = 0; i < funcType.getNumResults(); i++) {
     auto ty = funcType.getResult(i);
-    auto encoding = encodings.asReader().getOutputs()[i];
+    auto encoding = encodings.getOutputs()[i];
     auto maybeGate = generateGate(ty, encoding, curve);
     if (!maybeGate) {
       return maybeGate.takeError();
@@ -341,10 +331,43 @@ extractCircuitInfo(mlir::ModuleOp module, llvm::StringRef functionName,
   return output;
 }
 
+llvm::Expected<Message<concreteprotocol::ProgramInfo>> extractProgramInfo(
+    mlir::ModuleOp module,
+    const Message<concreteprotocol::ProgramEncodingInfo> &encodings,
+    concrete::SecurityCurve curve) {
+
+  auto output = Message<concreteprotocol::ProgramInfo>();
+  auto circuitsCount = encodings.asReader().getCircuits().size();
+  auto circuitsBuilder = output.asBuilder().initCircuits(circuitsCount);
+  auto rangeOps = module.getOps<mlir::func::FuncOp>();
+
+  for (size_t i = 0; i < circuitsCount; i++) {
+    auto circuitEncoding = encodings.asReader().getCircuits()[i];
+    auto functionName = circuitEncoding.getName();
+    auto funcOp = llvm::find_if(rangeOps, [&](mlir::func::FuncOp op) {
+      return op.getName() == functionName.cStr();
+    });
+    if (funcOp == rangeOps.end()) {
+      return StreamStringError("cannot find the following function to generate "
+                               "program info: ")
+             << functionName.cStr();
+    }
+
+    auto maybeCircuitInfo = extractCircuitInfo(*funcOp, circuitEncoding, curve);
+    if (!maybeCircuitInfo) {
+      return maybeCircuitInfo.takeError();
+    }
+
+    circuitsBuilder.setWithCaveats(i, (*maybeCircuitInfo).asReader());
+  }
+
+  return output;
+}
+
 llvm::Expected<Message<concreteprotocol::ProgramInfo>>
 createProgramInfoFromTfheDialect(
-    mlir::ModuleOp module, llvm::StringRef functionName, int bitsOfSecurity,
-    Message<concreteprotocol::CircuitEncodingInfo> &encodings,
+    mlir::ModuleOp module, int bitsOfSecurity,
+    const Message<concreteprotocol::ProgramEncodingInfo> &encodings,
     bool compressEvaluationKeys) {
 
   // Check that security curves exist
@@ -354,22 +377,19 @@ createProgramInfoFromTfheDialect(
            << bitsOfSecurity << "bits";
   }
 
-  // Create the output Program Info.
-  auto output = Message<concreteprotocol::ProgramInfo>();
+  // We generate the circuit infos from the module.
+  auto maybeProgramInfo = extractProgramInfo(module, encodings, *curve);
+  if (!maybeProgramInfo) {
+    return maybeProgramInfo.takeError();
+  }
+
+  // Extract the output Program Info.
+  Message<concreteprotocol::ProgramInfo> output = *maybeProgramInfo;
 
   // We extract the keys of the circuit
   auto keysetInfo = extractKeysetInfo(TFHE::extractCircuitKeys(module), *curve,
                                       compressEvaluationKeys);
   output.asBuilder().setKeyset(keysetInfo.asReader());
-
-  // We generate the gates for the inputs aud outputs
-  auto maybeCircuitInfo =
-      extractCircuitInfo(module, functionName, encodings, *curve);
-  if (!maybeCircuitInfo) {
-    return maybeCircuitInfo.takeError();
-  }
-  output.asBuilder().initCircuits(1).setWithCaveats(
-      0, maybeCircuitInfo->asReader());
 
   return output;
 }

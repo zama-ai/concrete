@@ -1,4 +1,4 @@
-// RUN: concretecompiler --action=dump-llvm-dialect --emit-gpu-ops %s 2>&1| FileCheck %s
+// RUN: concretecompiler --action=dump-llvm-dialect --emit-gpu-ops --skip-program-info %s 2>&1| FileCheck %s
 
 //CHECK: llvm.call @memref_keyswitch_lwe_cuda_u64
 //CHECK: llvm.call @memref_bootstrap_lwe_cuda_u64

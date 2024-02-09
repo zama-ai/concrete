@@ -3,6 +3,7 @@
 #include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
 #include <concretelang/Support/logging.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/BuiltinOps.h>
@@ -66,34 +67,48 @@ namespace Concrete {
 struct MemoryUsagePass
     : public PassWrapper<MemoryUsagePass, OperationPass<ModuleOp>> {
 
-  CompilationFeedback &feedback;
+  ProgramCompilationFeedback &feedback;
+  CircuitCompilationFeedback *circuitFeedback;
 
-  MemoryUsagePass(CompilationFeedback &feedback) : feedback{feedback} {};
+  MemoryUsagePass(ProgramCompilationFeedback &feedback)
+      : feedback{feedback}, circuitFeedback{nullptr} {};
 
   void runOnOperation() override {
-    WalkResult walk =
-        getOperation()->walk([&](Operation *op, const WalkStage &stage) {
-          if (stage.isBeforeAllRegions()) {
-            std::optional<StringError> error = this->enter(op);
-            if (error.has_value()) {
-              op->emitError() << error->mesg;
-              return WalkResult::interrupt();
+    auto module = getOperation();
+    auto funcs = module.getOps<mlir::func::FuncOp>();
+    for (CircuitCompilationFeedback &circuitFeedback :
+         feedback.circuitFeedbacks) {
+      auto funcOp = llvm::find_if(funcs, [&](mlir::func::FuncOp op) {
+        return op.getName() == circuitFeedback.name;
+      });
+      assert(funcOp != funcs.end());
+      this->circuitFeedback = &circuitFeedback;
+
+      WalkResult walk =
+          getOperation()->walk([&](Operation *op, const WalkStage &stage) {
+            if (stage.isBeforeAllRegions()) {
+              std::optional<StringError> error = this->enter(op);
+              if (error.has_value()) {
+                op->emitError() << error->mesg;
+                return WalkResult::interrupt();
+              }
             }
-          }
 
-          if (stage.isAfterAllRegions()) {
-            std::optional<StringError> error = this->exit(op);
-            if (error.has_value()) {
-              op->emitError() << error->mesg;
-              return WalkResult::interrupt();
+            if (stage.isAfterAllRegions()) {
+              std::optional<StringError> error = this->exit(op);
+              if (error.has_value()) {
+                op->emitError() << error->mesg;
+                return WalkResult::interrupt();
+              }
             }
-          }
 
-          return WalkResult::advance();
-        });
+            return WalkResult::advance();
+          });
 
-    if (walk.wasInterrupted()) {
-      signalPassFailure();
+      if (walk.wasInterrupted()) {
+        signalPassFailure();
+        return;
+      }
     }
   }
 
@@ -172,7 +187,7 @@ struct MemoryUsagePass
     // element_size
     auto memoryUsage = numberOfAlloc * maybeBufferSize.value();
 
-    pass.feedback.memoryUsagePerLoc[location] += memoryUsage;
+    pass.circuitFeedback->memoryUsagePerLoc[location] += memoryUsage;
 
     return std::nullopt;
   }
@@ -218,7 +233,7 @@ struct MemoryUsagePass
         }
         auto bufferSize = maybeBufferSize.value();
 
-        pass.feedback.memoryUsagePerLoc[location] += bufferSize;
+        pass.circuitFeedback->memoryUsagePerLoc[location] += bufferSize;
       }
     }
 
@@ -233,7 +248,7 @@ struct MemoryUsagePass
 } // namespace Concrete
 
 std::unique_ptr<OperationPass<ModuleOp>>
-createMemoryUsagePass(CompilationFeedback &feedback) {
+createMemoryUsagePass(ProgramCompilationFeedback &feedback) {
   return std::make_unique<Concrete::MemoryUsagePass>(feedback);
 }
 

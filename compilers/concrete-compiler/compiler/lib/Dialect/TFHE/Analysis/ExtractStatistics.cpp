@@ -1,3 +1,4 @@
+#include "concretelang/Support/CompilationFeedback.h"
 #include <concretelang/Analysis/Utils.h>
 #include <concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h>
 
@@ -34,35 +35,48 @@ namespace TFHE {
 struct ExtractTFHEStatisticsPass
     : public PassWrapper<ExtractTFHEStatisticsPass, OperationPass<ModuleOp>> {
 
-  CompilationFeedback &feedback;
+  ProgramCompilationFeedback &feedback;
+  CircuitCompilationFeedback *circuitFeedback;
 
-  ExtractTFHEStatisticsPass(CompilationFeedback &feedback)
-      : feedback{feedback} {};
+  ExtractTFHEStatisticsPass(ProgramCompilationFeedback &feedback)
+      : feedback{feedback}, circuitFeedback{nullptr} {};
 
   void runOnOperation() override {
-    WalkResult walk =
-        getOperation()->walk([&](Operation *op, const WalkStage &stage) {
-          if (stage.isBeforeAllRegions()) {
-            std::optional<StringError> error = this->enter(op);
-            if (error.has_value()) {
-              op->emitError() << error->mesg;
-              return WalkResult::interrupt();
+    auto module = getOperation();
+    auto funcs = module.getOps<mlir::func::FuncOp>();
+    for (CircuitCompilationFeedback &circuitFeedback :
+         feedback.circuitFeedbacks) {
+      auto funcOp = llvm::find_if(funcs, [&](mlir::func::FuncOp op) {
+        return op.getName() == circuitFeedback.name;
+      });
+      assert(funcOp != funcs.end());
+      this->circuitFeedback = &circuitFeedback;
+
+      WalkResult walk =
+          (*funcOp)->walk([&](Operation *op, const WalkStage &stage) {
+            if (stage.isBeforeAllRegions()) {
+              std::optional<StringError> error = this->enter(op);
+              if (error.has_value()) {
+                op->emitError() << error->mesg;
+                return WalkResult::interrupt();
+              }
             }
-          }
 
-          if (stage.isAfterAllRegions()) {
-            std::optional<StringError> error = this->exit(op);
-            if (error.has_value()) {
-              op->emitError() << error->mesg;
-              return WalkResult::interrupt();
+            if (stage.isAfterAllRegions()) {
+              std::optional<StringError> error = this->exit(op);
+              if (error.has_value()) {
+                op->emitError() << error->mesg;
+                return WalkResult::interrupt();
+              }
             }
-          }
 
-          return WalkResult::advance();
-        });
+            return WalkResult::advance();
+          });
 
-    if (walk.wasInterrupted()) {
-      signalPassFailure();
+      if (walk.wasInterrupted()) {
+        signalPassFailure();
+        return;
+      }
     }
   }
 
@@ -118,14 +132,14 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::ENCRYPTED_ADDITION;
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -145,14 +159,14 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::CLEAR_ADDITION;
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -172,14 +186,14 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::PBS;
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::BOOTSTRAP, (size_t)bsk.getIndex());
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::BOOTSTRAP, (int64_t)bsk.getIndex());
     keys.push_back(key);
 
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -199,14 +213,14 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::KEY_SWITCH;
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::KEY_SWITCH, (size_t)ksk.getIndex());
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::KEY_SWITCH, (int64_t)ksk.getIndex());
     keys.push_back(key);
 
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -226,14 +240,14 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::CLEAR_MULTIPLICATION;
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -253,14 +267,14 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -279,17 +293,17 @@ struct ExtractTFHEStatisticsPass
     auto resultingKey = op.getType().getKey().getNormalized();
 
     auto location = locationString(op.getLoc());
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::SECRET, (size_t)resultingKey->index);
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
     // clear - encrypted = clear + neg(encrypted)
 
     auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -297,7 +311,7 @@ struct ExtractTFHEStatisticsPass
     });
 
     operation = PrimitiveOperation::CLEAR_ADDITION;
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -319,20 +333,20 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::WOP_PBS;
-    auto keys = std::vector<std::pair<KeyType, size_t>>();
+    auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.iterations;
 
-    std::pair<KeyType, size_t> key =
-        std::make_pair(KeyType::BOOTSTRAP, (size_t)bsk.getIndex());
+    std::pair<KeyType, int64_t> key =
+        std::make_pair(KeyType::BOOTSTRAP, (int64_t)bsk.getIndex());
     keys.push_back(key);
 
-    key = std::make_pair(KeyType::KEY_SWITCH, (size_t)ksk.getIndex());
+    key = std::make_pair(KeyType::KEY_SWITCH, (int64_t)ksk.getIndex());
     keys.push_back(key);
 
-    key = std::make_pair(KeyType::PACKING_KEY_SWITCH, (size_t)pksk.getIndex());
+    key = std::make_pair(KeyType::PACKING_KEY_SWITCH, (int64_t)pksk.getIndex());
     keys.push_back(key);
 
-    pass.feedback.statistics.push_back(concretelang::Statistic{
+    pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
@@ -342,13 +356,13 @@ struct ExtractTFHEStatisticsPass
     return std::nullopt;
   }
 
-  size_t iterations = 1;
+  int64_t iterations = 1;
 };
 
 } // namespace TFHE
 
 std::unique_ptr<OperationPass<ModuleOp>>
-createStatisticExtractionPass(CompilationFeedback &feedback) {
+createStatisticExtractionPass(ProgramCompilationFeedback &feedback) {
   return std::make_unique<TFHE::ExtractTFHEStatisticsPass>(feedback);
 }
 

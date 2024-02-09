@@ -957,6 +957,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
   ::rust::String dump() const noexcept;
+  void concat(::concrete_optimizer::OperationDag const &other) noexcept;
   void tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept;
   ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options options) const noexcept;
   ~OperationDag() = delete;

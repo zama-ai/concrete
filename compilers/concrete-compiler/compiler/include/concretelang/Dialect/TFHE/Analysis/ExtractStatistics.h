@@ -15,7 +15,7 @@ namespace mlir {
 namespace concretelang {
 
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
-createStatisticExtractionPass(CompilationFeedback &feedback);
+createStatisticExtractionPass(ProgramCompilationFeedback &feedback);
 } // namespace concretelang
 } // namespace mlir
 

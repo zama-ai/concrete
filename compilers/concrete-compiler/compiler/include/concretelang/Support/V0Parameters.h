@@ -151,10 +151,10 @@ typedef std::variant<V0Parameter, CircuitSolution> Solution;
 
 } // namespace optimizer
 
-struct CompilationFeedback;
+struct ProgramCompilationFeedback;
 
 llvm::Expected<optimizer::Solution>
-getSolution(optimizer::Description &descr, CompilationFeedback &feedback,
+getSolution(optimizer::Description &descr, ProgramCompilationFeedback &feedback,
             optimizer::Config optimizerConfig);
 
 // As for now the solution which contains a crt encoding is mono parameter only

@@ -1,4 +1,4 @@
-// RUN: concretecompiler --action=dump-fhe %s 2>&1| FileCheck %s
+// RUN: concretecompiler --action=dump-fhe --optimizer-strategy=V0 --skip-program-info %s 2>&1| FileCheck %s
 
 // CHECK: func.func @add_eint_int_1D(%[[a0:.*]]: tensor<4x!FHE.eint<2>>) -> tensor<4x!FHE.eint<2>> {
 // CHECK-NEXT: return %[[a0]] : tensor<4x!FHE.eint<2>>

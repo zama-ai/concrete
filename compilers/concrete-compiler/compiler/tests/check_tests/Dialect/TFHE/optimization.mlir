@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes tfhe-optimization --action=dump-tfhe %s 2>&1| FileCheck %s
+// RUN: concretecompiler --passes tfhe-optimization --action=dump-tfhe --skip-program-info %s 2>&1| FileCheck %s
 
 
 // CHECK-LABEL: func.func @mul_cleartext_lwe_ciphertext(%arg0: !TFHE.glwe<sk[1]<527,1>>, %arg1: i64) -> !TFHE.glwe<sk[1]<527,1>>

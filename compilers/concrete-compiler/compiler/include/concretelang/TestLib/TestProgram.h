@@ -36,26 +36,26 @@ using concretelang::values::Value;
 namespace concretelang {
 namespace testlib {
 
-class TestCircuit {
+class TestProgram {
 
 public:
-  TestCircuit(mlir::concretelang::CompilationOptions options)
+  TestProgram(mlir::concretelang::CompilationOptions options)
       : artifactDirectory(createTempFolderIn(getSystemTempFolderPath())),
         compiler(mlir::concretelang::CompilationContext::createShared()),
         encryptionCsprng(std::make_shared<csprng::EncryptionCSPRNG>(0)) {
     compiler.setCompilationOptions(options);
   }
 
-  TestCircuit(TestCircuit &&tc)
+  TestProgram(TestProgram &&tc)
       : artifactDirectory(tc.artifactDirectory), compiler(tc.compiler),
         library(tc.library), keyset(tc.keyset),
         encryptionCsprng(tc.encryptionCsprng) {
     tc.artifactDirectory = "";
   };
 
-  TestCircuit(TestCircuit &tc) = delete;
+  TestProgram(TestProgram &tc) = delete;
 
-  ~TestCircuit() {
+  ~TestProgram() {
     auto d = getArtifactDirectory();
     if (d.empty())
       return;
@@ -93,16 +93,17 @@ public:
     return outcome::success();
   }
 
-  Result<std::vector<Value>> call(std::vector<Value> inputs) {
+  Result<std::vector<Value>> call(std::vector<Value> inputs,
+                                  std::string name = "main") {
     // preprocess arguments
     auto preparedArgs = std::vector<TransportValue>();
-    OUTCOME_TRY(auto clientCircuit, getClientCircuit());
+    OUTCOME_TRY(auto clientCircuit, getClientCircuit(name));
     for (size_t i = 0; i < inputs.size(); i++) {
       OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
       preparedArgs.push_back(preparedInput);
     }
     // Call server
-    OUTCOME_TRY(auto returns, callServer(preparedArgs));
+    OUTCOME_TRY(auto returns, callServer(preparedArgs, name));
     // postprocess arguments
     std::vector<Value> processedOutputs(returns.size());
     for (size_t i = 0; i < processedOutputs.size(); i++) {
@@ -113,17 +114,18 @@ public:
   }
 
   Result<std::vector<Value>> compose_n_times(std::vector<Value> inputs,
-                                             size_t n) {
+                                             size_t n,
+                                             std::string name = "main") {
     // preprocess arguments
     auto preparedArgs = std::vector<TransportValue>();
-    OUTCOME_TRY(auto clientCircuit, getClientCircuit());
+    OUTCOME_TRY(auto clientCircuit, getClientCircuit(name));
     for (size_t i = 0; i < inputs.size(); i++) {
       OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
       preparedArgs.push_back(preparedInput);
     }
     // Call server multiple times in a row
     for (size_t i = 0; i < n; i++) {
-      OUTCOME_TRY(preparedArgs, callServer(preparedArgs));
+      OUTCOME_TRY(preparedArgs, callServer(preparedArgs, name));
     }
     // postprocess arguments
     std::vector<Value> processedOutputs(preparedArgs.size());
@@ -135,9 +137,9 @@ public:
   }
 
   Result<std::vector<TransportValue>>
-  callServer(std::vector<TransportValue> inputs) {
+  callServer(std::vector<TransportValue> inputs, std::string name = "main") {
     std::vector<TransportValue> returns;
-    OUTCOME_TRY(auto serverCircuit, getServerCircuit());
+    OUTCOME_TRY(auto serverCircuit, getServerCircuit(name));
     if (compiler.getCompilationOptions().simulate) {
       OUTCOME_TRY(returns, serverCircuit.simulate(inputs));
     } else {
@@ -146,29 +148,25 @@ public:
     return returns;
   }
 
-  Result<ClientCircuit> getClientCircuit() {
+  Result<ClientCircuit> getClientCircuit(std::string name = "main") {
     OUTCOME_TRY(auto lib, getLibrary());
     OUTCOME_TRY(auto ks, getKeyset());
     auto programInfo = lib.getProgramInfo();
     OUTCOME_TRY(auto clientProgram,
                 ClientProgram::create(programInfo, ks.client, encryptionCsprng,
                                       isSimulation()));
-    OUTCOME_TRY(auto clientCircuit,
-                clientProgram.getClientCircuit(
-                    programInfo.asReader().getCircuits()[0].getName()));
+    OUTCOME_TRY(auto clientCircuit, clientProgram.getClientCircuit(name));
     return clientCircuit;
   }
 
-  Result<ServerCircuit> getServerCircuit() {
+  Result<ServerCircuit> getServerCircuit(std::string name = "main") {
     OUTCOME_TRY(auto lib, getLibrary());
     auto programInfo = lib.getProgramInfo();
     OUTCOME_TRY(auto serverProgram,
                 ServerProgram::load(programInfo,
                                     lib.getSharedLibraryPath(artifactDirectory),
                                     isSimulation()));
-    OUTCOME_TRY(auto serverCircuit,
-                serverProgram.getServerCircuit(
-                    programInfo.asReader().getCircuits()[0].getName()));
+    OUTCOME_TRY(auto serverCircuit, serverProgram.getServerCircuit(name));
     return serverCircuit;
   }
 
@@ -177,14 +175,14 @@ private:
 
   Result<mlir::concretelang::CompilerEngine::Library> getLibrary() {
     if (!library.has_value()) {
-      return StringError("TestCircuit: compilation has not been done\n");
+      return StringError("TestProgram: compilation has not been done\n");
     }
     return *library;
   }
 
   Result<Keyset> getKeyset() {
     if (!keyset.has_value()) {
-      return StringError("TestCircuit: keyset has not been generated\n");
+      return StringError("TestProgram: keyset has not been generated\n");
     }
     return *keyset;
   }
@@ -206,10 +204,10 @@ private:
 
   void deleteFolder(const std::string &folder) {
     auto ec = std::error_code();
-    llvm::errs() << "TestCircuit: delete artifact directory(" << folder
+    llvm::errs() << "TestProgram: delete artifact directory(" << folder
                  << ")\n";
     if (!std::filesystem::remove_all(folder, ec)) {
-      llvm::errs() << "TestCircuit: fail to delete directory(" << folder
+      llvm::errs() << "TestProgram: fail to delete directory(" << folder
                    << "), error(" << ec.message() << ")\n";
     }
   }
@@ -232,10 +230,10 @@ private:
     for (size_t i = 0; i < 5; i++) {
       auto pathString = new_path();
       auto ec = std::error_code();
-      llvm::errs() << "TestCircuit: create temporary directory(" << pathString
+      llvm::errs() << "TestProgram: create temporary directory(" << pathString
                    << ")\n";
       if (!std::filesystem::create_directory(pathString, ec)) {
-        llvm::errs() << "TestCircuit: fail to create temporary directory("
+        llvm::errs() << "TestProgram: fail to create temporary directory("
                      << pathString << "), ";
         if (ec) {
           llvm::errs() << "already exists";
@@ -243,7 +241,7 @@ private:
           llvm::errs() << "error(" << ec.message() << ")";
         }
       } else {
-        llvm::errs() << "TestCircuit: directory(" << pathString
+        llvm::errs() << "TestProgram: directory(" << pathString
                      << ") successfuly created\n";
         return pathString;
       }

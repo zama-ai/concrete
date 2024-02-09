@@ -5,7 +5,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/V0Parameters.h"
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 #include "cstdlib"
 #include "end_to_end_test.h"
 #include "globals.h"
@@ -14,7 +14,7 @@
 
 using concretelang::error::Result;
 using concretelang::error::StringError;
-using concretelang::testlib::TestCircuit;
+using concretelang::testlib::TestProgram;
 
 llvm::StringRef DEFAULT_func = "main";
 bool DEFAULT_useDefaultFHEConstraints = false;
@@ -30,7 +30,7 @@ bool DEFAULT_composable = false;
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
-inline Result<TestCircuit> internalCheckedJit(
+inline Result<TestProgram> internalCheckedJit(
     llvm::StringRef src, llvm::StringRef func = DEFAULT_func,
     bool useDefaultFHEConstraints = DEFAULT_useDefaultFHEConstraints,
     bool dataflowParallelize = DEFAULT_dataflowParallelize,
@@ -42,8 +42,7 @@ inline Result<TestCircuit> internalCheckedJit(
     unsigned int chunkWidth = DEFAULT_chunkWidth,
     bool composable = DEFAULT_composable) {
 
-  auto options =
-      mlir::concretelang::CompilationOptions(std::string(func.data()));
+  auto options = mlir::concretelang::CompilationOptions();
   options.optimizerConfig.global_p_error = global_p_error;
   options.chunkIntegers = chunkedIntegers;
   options.chunkSize = chunkSize;
@@ -70,10 +69,10 @@ inline Result<TestCircuit> internalCheckedJit(
   }
 
   std::vector<std::string> sources = {src.str()};
-  TestCircuit testCircuit(options);
-  OUTCOME_TRYV(testCircuit.compile({src.str()}));
-  OUTCOME_TRYV(testCircuit.generateKeyset());
-  return std::move(testCircuit);
+  TestProgram testProgram(options);
+  OUTCOME_TRYV(testProgram.compile({src.str()}));
+  OUTCOME_TRYV(testProgram.generateKeyset());
+  return std::move(testProgram);
 }
 
 // Wrapper around `internalCheckedJit` that causes

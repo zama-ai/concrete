@@ -35,11 +35,11 @@ namespace mlir {
 namespace concretelang {
 namespace encodings {
 
-llvm::Expected<Message<concreteprotocol::CircuitEncodingInfo>>
-getCircuitEncodings(llvm::StringRef functionName, mlir::ModuleOp module);
+llvm::Expected<Message<concreteprotocol::ProgramEncodingInfo>>
+getProgramEncoding(mlir::ModuleOp module);
 
-void setCircuitEncodingModes(
-    Message<concreteprotocol::CircuitEncodingInfo> &info,
+void setProgramEncodingModes(
+    Message<concreteprotocol::ProgramEncodingInfo> &info,
     std::optional<
         Message<concreteprotocol::IntegerCiphertextEncodingInfo::ChunkedMode>>
         maybeChunk,

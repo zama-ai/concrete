@@ -240,6 +240,7 @@ private:
 
 template struct Message<concreteprotocol::ProgramInfo>;
 template struct Message<concreteprotocol::CircuitEncodingInfo>;
+template struct Message<concreteprotocol::ProgramEncodingInfo>;
 template struct Message<concreteprotocol::Value>;
 template struct Message<concreteprotocol::GateInfo>;
 

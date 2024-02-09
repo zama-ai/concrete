@@ -102,7 +102,8 @@ concretelang::clientlib::ClientParameters library_load_client_parameters(
   return *clientParameters;
 }
 
-mlir::concretelang::CompilationFeedback library_load_compilation_feedback(
+mlir::concretelang::ProgramCompilationFeedback
+library_load_compilation_feedback(
     LibrarySupport_Py support,
     mlir::concretelang::LibraryCompilationResult &result) {
   GET_OR_THROW_LLVM_EXPECTED(compilationFeedback,
@@ -113,9 +114,10 @@ mlir::concretelang::CompilationFeedback library_load_compilation_feedback(
 concretelang::serverlib::ServerLambda
 library_load_server_lambda(LibrarySupport_Py support,
                            mlir::concretelang::LibraryCompilationResult &result,
-                           bool useSimulation) {
+                           std::string circuitName, bool useSimulation) {
   GET_OR_THROW_LLVM_EXPECTED(
-      serverLambda, support.support.loadServerLambda(result, useSimulation));
+      serverLambda,
+      support.support.loadServerLambda(result, circuitName, useSimulation));
   return *serverLambda;
 }
 
@@ -176,7 +178,8 @@ key_set(concretelang::clientlib::ClientParameters clientParameters,
 std::unique_ptr<concretelang::clientlib::PublicArguments>
 encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
                   concretelang::clientlib::KeySet &keySet,
-                  llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args) {
+                  llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args,
+                  const std::string &circuitName) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
       std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
@@ -185,15 +188,10 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto circuit = maybeProgram.value()
-                     .getClientCircuit(clientParameters.programInfo.asReader()
-                                           .getCircuits()[0]
-                                           .getName())
-                     .value();
+  auto circuit = maybeProgram.value().getClientCircuit(circuitName).value();
   std::vector<TransportValue> output;
   for (size_t i = 0; i < args.size(); i++) {
-    auto info =
-        clientParameters.programInfo.asReader().getCircuits()[0].getInputs()[i];
+    auto info = circuit.getCircuitInfo().asReader().getInputs()[i];
     auto typeTransformer = getPythonTypeTransformer(info);
     auto input = typeTransformer(args[i]->value);
     auto maybePrepared = circuit.prepareInput(input, i);
@@ -211,7 +209,8 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
 std::vector<lambdaArgument>
 decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
                concretelang::clientlib::KeySet &keySet,
-               concretelang::clientlib::PublicResult &publicResult) {
+               concretelang::clientlib::PublicResult &publicResult,
+               const std::string &circuitName) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
       std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
@@ -220,11 +219,7 @@ decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto circuit = maybeProgram.value()
-                     .getClientCircuit(clientParameters.programInfo.asReader()
-                                           .getCircuits()[0]
-                                           .getName())
-                     .value();
+  auto circuit = maybeProgram.value().getClientCircuit(circuitName).value();
   std::vector<lambdaArgument> results;
   for (auto e : llvm::enumerate(publicResult.values)) {
     auto maybeProcessed = circuit.processOutput(e.value(), e.index());
@@ -370,9 +365,10 @@ valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value) {
   return maybeString.value();
 }
 
-concretelang::clientlib::ValueExporter createValueExporter(
-    concretelang::clientlib::KeySet &keySet,
-    concretelang::clientlib::ClientParameters &clientParameters) {
+concretelang::clientlib::ValueExporter
+createValueExporter(concretelang::clientlib::KeySet &keySet,
+                    concretelang::clientlib::ClientParameters &clientParameters,
+                    const std::string &circuitName) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
       std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
@@ -381,13 +377,13 @@ concretelang::clientlib::ValueExporter createValueExporter(
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(
-      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
   return ::concretelang::clientlib::ValueExporter{maybeCircuit.value()};
 }
 
 concretelang::clientlib::SimulatedValueExporter createSimulatedValueExporter(
-    concretelang::clientlib::ClientParameters &clientParameters) {
+    concretelang::clientlib::ClientParameters &clientParameters,
+    const std::string &circuitName) {
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo, ::concretelang::keysets::ClientKeyset(),
@@ -397,15 +393,15 @@ concretelang::clientlib::SimulatedValueExporter createSimulatedValueExporter(
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(
-      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
   return ::concretelang::clientlib::SimulatedValueExporter{
       maybeCircuit.value()};
 }
 
 concretelang::clientlib::ValueDecrypter createValueDecrypter(
     concretelang::clientlib::KeySet &keySet,
-    concretelang::clientlib::ClientParameters &clientParameters) {
+    concretelang::clientlib::ClientParameters &clientParameters,
+    const std::string &circuitName) {
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(), keySet.keyset.client,
@@ -415,13 +411,13 @@ concretelang::clientlib::ValueDecrypter createValueDecrypter(
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(
-      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
   return ::concretelang::clientlib::ValueDecrypter{maybeCircuit.value()};
 }
 
 concretelang::clientlib::SimulatedValueDecrypter createSimulatedValueDecrypter(
-    concretelang::clientlib::ClientParameters &clientParameters) {
+    concretelang::clientlib::ClientParameters &clientParameters,
+    const std::string &circuitName) {
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
       clientParameters.programInfo.asReader(),
@@ -432,8 +428,7 @@ concretelang::clientlib::SimulatedValueDecrypter createSimulatedValueDecrypter(
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(
-      clientParameters.programInfo.asReader().getCircuits()[0].getName());
+  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
   return ::concretelang::clientlib::SimulatedValueDecrypter{
       maybeCircuit.value()};
 }
@@ -699,14 +694,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .export_values();
 
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
-      .def(pybind11::init(
-          [](std::string funcname, mlir::concretelang::Backend backend) {
-            return CompilationOptions(funcname, backend);
-          }))
-      .def("set_funcname",
-           [](CompilationOptions &options, std::string funcname) {
-             options.mainFuncName = funcname;
-           })
+      .def(pybind11::init([](mlir::concretelang::Backend backend) {
+        return CompilationOptions(backend);
+      }))
       .def("set_verify_diagnostics",
            [](CompilationOptions &options, bool b) {
              options.verifyDiagnostics = b;
@@ -828,34 +818,46 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_readonly("keys", &mlir::concretelang::Statistic::keys)
       .def_readonly("count", &mlir::concretelang::Statistic::count);
 
-  pybind11::class_<mlir::concretelang::CompilationFeedback>(
-      m, "CompilationFeedback")
+  pybind11::class_<mlir::concretelang::ProgramCompilationFeedback>(
+      m, "ProgramCompilationFeedback")
       .def_readonly("complexity",
-                    &mlir::concretelang::CompilationFeedback::complexity)
-      .def_readonly("p_error", &mlir::concretelang::CompilationFeedback::pError)
-      .def_readonly("global_p_error",
-                    &mlir::concretelang::CompilationFeedback::globalPError)
+                    &mlir::concretelang::ProgramCompilationFeedback::complexity)
+      .def_readonly("p_error",
+                    &mlir::concretelang::ProgramCompilationFeedback::pError)
+      .def_readonly(
+          "global_p_error",
+          &mlir::concretelang::ProgramCompilationFeedback::globalPError)
       .def_readonly(
           "total_secret_keys_size",
-          &mlir::concretelang::CompilationFeedback::totalSecretKeysSize)
+          &mlir::concretelang::ProgramCompilationFeedback::totalSecretKeysSize)
+      .def_readonly("total_bootstrap_keys_size",
+                    &mlir::concretelang::ProgramCompilationFeedback::
+                        totalBootstrapKeysSize)
+      .def_readonly("total_keyswitch_keys_size",
+                    &mlir::concretelang::ProgramCompilationFeedback::
+                        totalKeyswitchKeysSize)
       .def_readonly(
-          "total_bootstrap_keys_size",
-          &mlir::concretelang::CompilationFeedback::totalBootstrapKeysSize)
+          "circuit_feedbacks",
+          &mlir::concretelang::ProgramCompilationFeedback::circuitFeedbacks);
+
+  pybind11::class_<mlir::concretelang::CircuitCompilationFeedback>(
+      m, "CircuitCompilationFeedback")
+      .def_readonly("name",
+                    &mlir::concretelang::CircuitCompilationFeedback::name)
       .def_readonly(
-          "total_keyswitch_keys_size",
-          &mlir::concretelang::CompilationFeedback::totalKeyswitchKeysSize)
-      .def_readonly("total_inputs_size",
-                    &mlir::concretelang::CompilationFeedback::totalInputsSize)
-      .def_readonly("total_output_size",
-                    &mlir::concretelang::CompilationFeedback::totalOutputsSize)
+          "total_inputs_size",
+          &mlir::concretelang::CircuitCompilationFeedback::totalInputsSize)
       .def_readonly(
-          "crt_decompositions_of_outputs",
-          &mlir::concretelang::CompilationFeedback::crtDecompositionsOfOutputs)
+          "total_output_size",
+          &mlir::concretelang::CircuitCompilationFeedback::totalOutputsSize)
+      .def_readonly("crt_decompositions_of_outputs",
+                    &mlir::concretelang::CircuitCompilationFeedback::
+                        crtDecompositionsOfOutputs)
       .def_readonly("statistics",
-                    &mlir::concretelang::CompilationFeedback::statistics)
+                    &mlir::concretelang::CircuitCompilationFeedback::statistics)
       .def_readonly(
           "memory_usage_per_location",
-          &mlir::concretelang::CompilationFeedback::memoryUsagePerLoc);
+          &mlir::concretelang::CircuitCompilationFeedback::memoryUsagePerLoc);
 
   pybind11::class_<mlir::concretelang::CompilationContext,
                    std::shared_ptr<mlir::concretelang::CompilationContext>>(
@@ -872,11 +874,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   pybind11::class_<mlir::concretelang::LibraryCompilationResult>(
       m, "LibraryCompilationResult")
-      .def(pybind11::init([](std::string outputDirPath, std::string funcname) {
-        return mlir::concretelang::LibraryCompilationResult{
-            outputDirPath,
-            funcname,
-        };
+      .def(pybind11::init([](std::string outputDirPath) {
+        return mlir::concretelang::LibraryCompilationResult{outputDirPath};
       }));
   pybind11::class_<::concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
   pybind11::class_<LibrarySupport_Py>(m, "LibrarySupport")
@@ -920,8 +919,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "load_server_lambda",
           [](LibrarySupport_Py &support,
              mlir::concretelang::LibraryCompilationResult &result,
-             bool useSimulation) {
-            return library_load_server_lambda(support, result, useSimulation);
+             std::string circuitName, bool useSimulation) {
+            return library_load_server_lambda(support, result, circuitName,
+                                              useSimulation);
           },
           pybind11::return_value_policy::reference)
       .def("server_call",
@@ -974,19 +974,22 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "encrypt_arguments",
           [](::concretelang::clientlib::ClientParameters clientParameters,
              ::concretelang::clientlib::KeySet &keySet,
-             std::vector<lambdaArgument> args) {
+             std::vector<lambdaArgument> args, const std::string &circuitName) {
             std::vector<mlir::concretelang::LambdaArgument *> argsRef;
             for (auto i = 0u; i < args.size(); i++) {
               argsRef.push_back(args[i].ptr.get());
             }
-            return encrypt_arguments(clientParameters, keySet, argsRef);
+            return encrypt_arguments(clientParameters, keySet, argsRef,
+                                     circuitName);
           })
       .def_static(
           "decrypt_result",
           [](::concretelang::clientlib::ClientParameters clientParameters,
              ::concretelang::clientlib::KeySet &keySet,
-             ::concretelang::clientlib::PublicResult &publicResult) {
-            return decrypt_result(clientParameters, keySet, publicResult);
+             ::concretelang::clientlib::PublicResult &publicResult,
+             const std::string &circuitName) {
+            return decrypt_result(clientParameters, keySet, publicResult,
+                                  circuitName);
           });
   pybind11::class_<::concretelang::clientlib::KeySetCache>(m, "KeySetCache")
       .def(pybind11::init<std::string &>());
@@ -1187,8 +1190,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_static(
           "create",
           [](::concretelang::clientlib::KeySet &keySet,
-             ::concretelang::clientlib::ClientParameters &clientParameters) {
-            return createValueExporter(keySet, clientParameters);
+             ::concretelang::clientlib::ClientParameters &clientParameters,
+             const std::string &circuitName) {
+            return createValueExporter(keySet, clientParameters, circuitName);
           })
       .def("export_scalar",
            [](::concretelang::clientlib::ValueExporter &exporter,
@@ -1233,8 +1237,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       m, "SimulatedValueExporter")
       .def_static(
           "create",
-          [](::concretelang::clientlib::ClientParameters &clientParameters) {
-            return createSimulatedValueExporter(clientParameters);
+          [](::concretelang::clientlib::ClientParameters &clientParameters,
+             const std::string &circuitName) {
+            return createSimulatedValueExporter(clientParameters, circuitName);
           })
       .def("export_scalar",
            [](::concretelang::clientlib::SimulatedValueExporter &exporter,
@@ -1279,8 +1284,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_static(
           "create",
           [](::concretelang::clientlib::KeySet &keySet,
-             ::concretelang::clientlib::ClientParameters &clientParameters) {
-            return createValueDecrypter(keySet, clientParameters);
+             ::concretelang::clientlib::ClientParameters &clientParameters,
+             const std::string &circuitName) {
+            return createValueDecrypter(keySet, clientParameters, circuitName);
           })
       .def("decrypt",
            [](::concretelang::clientlib::ValueDecrypter &decrypter,
@@ -1303,8 +1309,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       m, "SimulatedValueDecrypter")
       .def_static(
           "create",
-          [](::concretelang::clientlib::ClientParameters &clientParameters) {
-            return createSimulatedValueDecrypter(clientParameters);
+          [](::concretelang::clientlib::ClientParameters &clientParameters,
+             const std::string &circuitName) {
+            return createSimulatedValueDecrypter(clientParameters, circuitName);
           })
       .def("decrypt",
            [](::concretelang::clientlib::SimulatedValueDecrypter &decrypter,

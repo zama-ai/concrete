@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
 

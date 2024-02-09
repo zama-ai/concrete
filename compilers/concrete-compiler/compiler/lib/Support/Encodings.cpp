@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <variant>
+#include <vector>
 
 namespace FHE = mlir::concretelang::FHE;
 using concretelang::protocol::Message;
@@ -67,20 +68,13 @@ encodingFromType(mlir::Type ty) {
 }
 
 llvm::Expected<Message<concreteprotocol::CircuitEncodingInfo>>
-getCircuitEncodings(llvm::StringRef functionName, mlir::ModuleOp module) {
-  // Find the input function
-  auto rangeOps = module.getOps<mlir::func::FuncOp>();
-  auto funcOp = llvm::find_if(rangeOps, [&](mlir::func::FuncOp op) {
-    return op.getName() == functionName;
-  });
-  if (funcOp == rangeOps.end()) {
-    return StreamStringError("Function not found, name='")
-           << functionName << "', cannot get circuit encodings";
-  }
-  auto funcType = (*funcOp).getFunctionType();
+getCircuitEncodings(mlir::func::FuncOp funcOp) {
+
+  auto funcType = funcOp.getFunctionType();
 
   // Retrieve input/output encodings
   auto circuitEncodings = Message<concreteprotocol::CircuitEncodingInfo>();
+  circuitEncodings.asBuilder().setName(funcOp.getSymName().str());
   auto inputsBuilder =
       circuitEncodings.asBuilder().initInputs(funcType.getNumInputs());
   for (size_t i = 0; i < funcType.getNumInputs(); i++) {
@@ -105,8 +99,32 @@ getCircuitEncodings(llvm::StringRef functionName, mlir::ModuleOp module) {
   return std::move(circuitEncodings);
 }
 
+llvm::Expected<Message<concreteprotocol::ProgramEncodingInfo>>
+getProgramEncoding(mlir::ModuleOp module) {
+
+  auto funcs = module.getOps<mlir::func::FuncOp>();
+  auto circuitEncodings =
+      std::vector<Message<concreteprotocol::CircuitEncodingInfo>>();
+  for (auto func : funcs) {
+    auto encodingInfosOrErr = getCircuitEncodings(func);
+    if (!encodingInfosOrErr) {
+      return encodingInfosOrErr.takeError();
+    }
+    circuitEncodings.push_back(*encodingInfosOrErr);
+  }
+
+  auto programEncoding = Message<concreteprotocol::ProgramEncodingInfo>();
+  auto circuitBuilder =
+      programEncoding.asBuilder().initCircuits(circuitEncodings.size());
+  for (size_t i = 0; i < circuitEncodings.size(); i++) {
+    circuitBuilder.setWithCaveats(i, circuitEncodings[i].asReader());
+  }
+
+  return std::move(programEncoding);
+}
+
 void setCircuitEncodingModes(
-    Message<concreteprotocol::CircuitEncodingInfo> &info,
+    concreteprotocol::CircuitEncodingInfo::Builder info,
     std::optional<
         Message<concreteprotocol::IntegerCiphertextEncodingInfo::ChunkedMode>>
         maybeChunk,
@@ -164,13 +182,25 @@ void setCircuitEncodingModes(
     // Got nothing particular. Setting encoding mode to native.
     integerEncodingBuilder.getMode().initNative();
   };
-  for (auto encInfoBuilder : info.asBuilder().getInputs()) {
+  for (auto encInfoBuilder : info.getInputs()) {
     setMode(encInfoBuilder);
   }
-  for (auto encInfoBuilder : info.asBuilder().getOutputs()) {
+  for (auto encInfoBuilder : info.getOutputs()) {
     setMode(encInfoBuilder);
   }
 }
+
+void setProgramEncodingModes(
+    Message<concreteprotocol::ProgramEncodingInfo> &info,
+    std::optional<
+        Message<concreteprotocol::IntegerCiphertextEncodingInfo::ChunkedMode>>
+        maybeChunk,
+    std::optional<V0FHEContext> maybeFheContext) {
+  for (auto circuitInfo : info.asBuilder().getCircuits()) {
+    setCircuitEncodingModes(circuitInfo, maybeChunk, maybeFheContext);
+  }
+}
+
 } // namespace encodings
 } // namespace concretelang
 } // namespace mlir

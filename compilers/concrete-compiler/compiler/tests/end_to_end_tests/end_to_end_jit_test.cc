@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
 
@@ -395,10 +395,10 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
 }
 
 TEST(CompileNotComposable, not_composable_1) {
-  mlir::concretelang::CompilationOptions options("main");
+  mlir::concretelang::CompilationOptions options;
   options.optimizerConfig.composable = true;
   options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MULTI;
-  TestCircuit circuit(options);
+  TestProgram circuit(options);
   auto err = circuit.compile(R"XXX(
 func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   %cst_1 = arith.constant 1 : i4
@@ -411,11 +411,11 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
 }
 
 TEST(CompileNotComposable, not_composable_2) {
-  mlir::concretelang::CompilationOptions options("main");
+  mlir::concretelang::CompilationOptions options;
   options.optimizerConfig.composable = true;
   options.optimizerConfig.display = true;
   options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MULTI;
-  TestCircuit circuit(options);
+  TestProgram circuit(options);
   auto err = circuit.compile(R"XXX(
 func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
   %cst_1 = arith.constant 1 : i4
@@ -430,11 +430,11 @@ func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
 }
 
 TEST(CompileComposable, composable_supported_dag_mono) {
-  mlir::concretelang::CompilationOptions options("main");
+  mlir::concretelang::CompilationOptions options;
   options.optimizerConfig.composable = true;
   options.optimizerConfig.display = true;
   options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MONO;
-  TestCircuit circuit(options);
+  TestProgram circuit(options);
   auto err = circuit.compile(R"XXX(
 func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   %cst_1 = arith.constant 1 : i4
@@ -446,11 +446,11 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
 }
 
 TEST(CompileComposable, composable_supported_v0) {
-  mlir::concretelang::CompilationOptions options("main");
+  mlir::concretelang::CompilationOptions options;
   options.optimizerConfig.composable = true;
   options.optimizerConfig.display = true;
   options.optimizerConfig.strategy = mlir::concretelang::optimizer::V0;
-  TestCircuit circuit(options);
+  TestProgram circuit(options);
   auto err = circuit.compile(R"XXX(
 func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   %cst_1 = arith.constant 1 : i4
@@ -459,4 +459,40 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
 }
 )XXX");
   assert(err.has_value());
+}
+
+TEST(CompileMultiFunctions, multi_functions_v0) {
+  mlir::concretelang::CompilationOptions options;
+  options.optimizerConfig.strategy = mlir::concretelang::optimizer::V0;
+  TestProgram circuit(options);
+  auto err = circuit.compile(R"XXX(
+func.func @inc(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+  %cst_1 = arith.constant 1 : i4
+  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  return %1: !FHE.eint<3>
+}
+func.func @dec(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+  %cst_1 = arith.constant 1 : i4
+  %1 = "FHE.sub_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  return %1: !FHE.eint<3>
+}
+)XXX");
+  assert(err.has_value());
+  assert(circuit.generateKeyset().has_value());
+  auto lambda_inc = [&](std::vector<concretelang::values::Value> args) {
+    return circuit.call(args, "inc")
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
+  auto lambda_dec = [&](std::vector<concretelang::values::Value> args) {
+    return circuit.call(args, "dec")
+        .value()[0]
+        .template getTensor<uint64_t>()
+        .value()[0];
+  };
+  ASSERT_EQ(lambda_inc({Tensor<uint64_t>(1)}), (uint64_t)2);
+  ASSERT_EQ(lambda_inc({Tensor<uint64_t>(4)}), (uint64_t)5);
+  ASSERT_EQ(lambda_dec({Tensor<uint64_t>(1)}), (uint64_t)0);
+  ASSERT_EQ(lambda_dec({Tensor<uint64_t>(4)}), (uint64_t)3);
 }

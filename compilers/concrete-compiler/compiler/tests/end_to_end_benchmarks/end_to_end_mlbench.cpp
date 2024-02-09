@@ -1,5 +1,5 @@
 #include "concretelang/Common/Compat.h"
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 #include "end_to_end_fixture/EndToEndFixture.h"
 #include <concretelang/Runtime/DFRuntime.hpp>
 #define BENCHMARK_HAS_CXX11

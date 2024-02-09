@@ -8,7 +8,7 @@
 
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 
 #include "tests_tools/GtestEnvironment.h"
 #include "tests_tools/assert.h"
@@ -18,17 +18,17 @@ using namespace concretelang::testlib;
 testing::Environment *const dfr_env =
     testing::AddGlobalTestEnvironment(new DFREnvironment);
 
-Result<TestCircuit> setupTestCircuit(std::string source,
+Result<TestProgram> setupTestProgram(std::string source,
                                      std::string funcname = FUNCNAME) {
   std::vector<std::string> sources = {source};
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
   mlir::concretelang::CompilerEngine ce{ccx};
-  mlir::concretelang::CompilationOptions options(funcname);
+  mlir::concretelang::CompilationOptions options;
 #ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
   options.dataflowParallelize = true;
 #endif
-  TestCircuit testCircuit(options);
+  TestProgram testCircuit(options);
   OUTCOME_TRYV(testCircuit.compile({source}));
   OUTCOME_TRYV(testCircuit.generateKeyset());
   return std::move(testCircuit);
@@ -67,7 +67,7 @@ func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   return %arg0: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());
@@ -82,7 +82,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   return %arg0: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits())
     for (auto b : values_7bits()) {
       if (a > b) {
@@ -102,7 +102,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits())
     for (auto b : values_7bits()) {
       if (a > b) {
@@ -122,7 +122,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto res = circuit.call({Tensor<uint64_t>(1)});
   ASSERT_FALSE(res.has_value());
 }
@@ -134,7 +134,7 @@ func.func @main(%arg0: !FHE.eint<7>) -> tensor<1x!FHE.eint<7>> {
   return %1: tensor<1x!FHE.eint<7>>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     EXPECT_TRUE(res);
@@ -150,7 +150,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> tensor<2x!FHE.eint<
   return %1: tensor<2x!FHE.eint<7>>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a), Tensor<uint64_t>(a + 1)});
     EXPECT_TRUE(res);
@@ -168,7 +168,7 @@ func.func @main(%arg0: tensor<1x!FHE.eint<7>>) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (uint8_t a : values_7bits()) {
     auto ta = Tensor<uint64_t>({a}, {1});
     auto res = circuit.call({ta});
@@ -184,7 +184,7 @@ func.func @main(%arg0: tensor<3x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   return %arg0: tensor<3x!FHE.eint<7>>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto ta = Tensor<uint64_t>({1, 2, 3}, {3});
   auto res = circuit.call({ta});
   ASSERT_TRUE(res);
@@ -202,7 +202,7 @@ func.func @main(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) ->
   return %3: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto ta = Tensor<uint64_t>({1, 2, 3}, {3});
   auto tb = Tensor<uint64_t>({5, 7, 9}, {3});
   auto res = circuit.call({ta, tb});
@@ -219,7 +219,7 @@ func.func @main(%arg0: tensor<2x3x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
   return %arg0: tensor<2x3x!FHE.eint<7>>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto ta = Tensor<uint64_t>({1, 2, 3, 4, 5, 6}, {2, 3});
   auto res = circuit.call({ta});
   ASSERT_TRUE(res);
@@ -233,7 +233,7 @@ func.func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>>
   return %arg0: tensor<2x3x1x!FHE.eint<7>>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto ta = Tensor<uint64_t>({1, 2, 3, 4, 5, 6}, {2, 3, 1});
   auto res = circuit.call({ta});
   ASSERT_TRUE(res);
@@ -248,7 +248,7 @@ func.func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>, %arg1: tensor<2x3x1x!FHE.eint
   return %1: tensor<2x3x1x!FHE.eint<7>>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto ta = Tensor<uint64_t>({1, 2, 3, 4, 5, 6}, {2, 3, 1});
   auto res = circuit.call({ta, ta});
   ASSERT_TRUE(res);
@@ -312,7 +312,7 @@ func.func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<3>) -> !FHE.eint<6> {
     return %a_plus_b: !FHE.eint<6>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_6bits())
     for (auto b : values_3bits()) {
       auto res = circuit.call({Tensor<uint64_t>(a), Tensor<uint64_t>(b)});

@@ -44,27 +44,13 @@ enum class KeyType {
 struct Statistic {
   std::string location;
   PrimitiveOperation operation;
-  std::vector<std::pair<KeyType, size_t>> keys;
-  size_t count;
+  std::vector<std::pair<KeyType, int64_t>> keys;
+  int64_t count;
 };
 
-struct CompilationFeedback {
-  double complexity;
-
-  /// @brief Probability of error for every PBS.
-  double pError;
-
-  /// @brief Probability of error for the whole programs.
-  double globalPError;
-
-  /// @brief the total number of bytes of secret keys
-  uint64_t totalSecretKeysSize;
-
-  /// @brief the total number of bytes of bootstrap keys
-  uint64_t totalBootstrapKeysSize;
-
-  /// @brief the total number of bytes of keyswitch keys
-  uint64_t totalKeyswitchKeysSize;
+struct CircuitCompilationFeedback {
+  /// @brief the name of circuit.
+  std::string name;
 
   /// @brief the total number of bytes of inputs
   uint64_t totalInputsSize;
@@ -82,24 +68,51 @@ struct CompilationFeedback {
   std::map<std::string, int64_t> memoryUsagePerLoc;
 
   /// Fill the sizes from the program info.
+  void fillFromCircuitInfo(concreteprotocol::CircuitInfo::Reader params);
+};
+
+struct ProgramCompilationFeedback {
+  double complexity;
+
+  /// @brief Probability of error for every PBS.
+  double pError;
+
+  /// @brief Probability of error for the whole programs.
+  double globalPError;
+
+  /// @brief the total number of bytes of secret keys
+  uint64_t totalSecretKeysSize;
+
+  /// @brief the total number of bytes of bootstrap keys
+  uint64_t totalBootstrapKeysSize;
+
+  /// @brief the total number of bytes of keyswitch keys
+  uint64_t totalKeyswitchKeysSize;
+
+  /// @brief the feedback for each circuit
+  std::vector<CircuitCompilationFeedback> circuitFeedbacks;
+
+  /// Fill the sizes from the program info.
   void fillFromProgramInfo(const Message<protocol::ProgramInfo> &params);
 
   /// Load the compilation feedback from a path
-  static outcome::checked<CompilationFeedback, StringError>
+  static outcome::checked<ProgramCompilationFeedback, StringError>
   load(std::string path);
 };
 
-llvm::json::Value toJSON(const mlir::concretelang::CompilationFeedback &);
+llvm::json::Value
+toJSON(const mlir::concretelang::ProgramCompilationFeedback &);
 
 bool fromJSON(const llvm::json::Value,
-              mlir::concretelang::CompilationFeedback &, llvm::json::Path);
+              mlir::concretelang::ProgramCompilationFeedback &,
+              llvm::json::Path);
 
 } // namespace concretelang
 } // namespace mlir
 
 static inline llvm::raw_ostream &
 operator<<(llvm::raw_string_ostream &OS,
-           mlir::concretelang::CompilationFeedback cp) {
+           mlir::concretelang::ProgramCompilationFeedback cp) {
   return OS << llvm::formatv("{0:2}", toJSON(cp));
 }
 #endif
