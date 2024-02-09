@@ -268,7 +268,7 @@ optimizer::Solution convertSolution(optimizer::CircuitSolution sol) {
 
 /// Fill the compilation `feedback` from a `solution` returned by the optmizer.
 template <typename Solution>
-void fillFeedback(Solution solution, CompilationFeedback &feedback) {
+void fillFeedback(Solution solution, ProgramCompilationFeedback &feedback) {
   feedback.complexity = solution.complexity;
   feedback.pError = solution.p_error;
   feedback.globalPError =
@@ -314,7 +314,7 @@ llvm::Error checkPErrorSolution(Solution solution, optimizer::Config config) {
 /// optimizer::Solution, and fill the `feedback`.
 template <typename Solution>
 llvm::Expected<optimizer::Solution>
-toCompilerSolution(Solution solution, CompilationFeedback &feedback,
+toCompilerSolution(Solution solution, ProgramCompilationFeedback &feedback,
                    optimizer::Config config) {
   // display(descr, config, sol, naive_user, duration);
   if (auto err = checkPErrorSolution(solution, config); err) {
@@ -334,9 +334,9 @@ optimizer::Solution emptySolution() {
   return solution;
 }
 
-llvm::Expected<optimizer::Solution> getSolution(optimizer::Description &descr,
-                                                CompilationFeedback &feedback,
-                                                optimizer::Config config) {
+llvm::Expected<optimizer::Solution>
+getSolution(optimizer::Description &descr, ProgramCompilationFeedback &feedback,
+            optimizer::Config config) {
   namespace chrono = std::chrono;
   // auto start = chrono::high_resolution_clock::now();
   auto naive_user =

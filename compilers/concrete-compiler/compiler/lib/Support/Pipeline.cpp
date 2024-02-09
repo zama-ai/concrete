@@ -5,6 +5,7 @@
 
 #include "llvm/Support/TargetSelect.h"
 
+#include "concretelang/Support/CompilationFeedback.h"
 #include "mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h"
 #include "mlir/Conversion/Passes.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
@@ -345,7 +346,7 @@ normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult
 extractTFHEStatistics(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       std::function<bool(mlir::Pass *)> enablePass,
-                      CompilationFeedback &feedback) {
+                      ProgramCompilationFeedback &feedback) {
   mlir::PassManager pm(&context);
   pipelinePrinting("TFHEStatistics", pm, context);
 
@@ -371,7 +372,7 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult
 computeMemoryUsage(mlir::MLIRContext &context, mlir::ModuleOp &module,
                    std::function<bool(mlir::Pass *)> enablePass,
-                   CompilationFeedback &feedback) {
+                   ProgramCompilationFeedback &feedback) {
   mlir::PassManager pm(&context);
   pipelinePrinting("Computing Memory Usage", pm, context);
 

@@ -77,7 +77,7 @@ normalizeTFHEKeys(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult
 extractTFHEStatistics(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       std::function<bool(mlir::Pass *)> enablePass,
-                      CompilationFeedback &feedback);
+                      ProgramCompilationFeedback &feedback);
 
 mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
@@ -86,7 +86,7 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult
 computeMemoryUsage(mlir::MLIRContext &context, mlir::ModuleOp &module,
                    std::function<bool(mlir::Pass *)> enablePass,
-                   CompilationFeedback &feedback);
+                   ProgramCompilationFeedback &feedback);
 
 mlir::LogicalResult
 lowerConcreteLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,

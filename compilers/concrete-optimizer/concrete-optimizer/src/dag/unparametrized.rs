@@ -252,6 +252,29 @@ impl OperationDag {
         self.add_lut(rounded, table, out_precision)
     }
 
+    /// Concatenates two dags into a single one (with two disconnected clusters).
+    pub fn concat(&mut self, other: &Self) {
+        let length = self.len();
+        self.operators.extend(other.operators.iter().cloned());
+        self.out_precisions.extend(other.out_precisions.iter());
+        self.out_shapes.extend(other.out_shapes.iter().cloned());
+        self.output_tags.extend(other.output_tags.iter());
+        self.operators[length..]
+            .iter_mut()
+            .for_each(|node| match node {
+                Operator::Lut { ref mut input, .. }
+                | Operator::UnsafeCast { ref mut input, .. }
+                | Operator::Round { ref mut input, .. } => {
+                    input.i += length;
+                }
+                Operator::Dot { ref mut inputs, .. }
+                | Operator::LevelledOp { ref mut inputs, .. } => {
+                    inputs.iter_mut().for_each(|inp| inp.i += length);
+                }
+                _ => (),
+            });
+    }
+
     /// Returns an iterator over input nodes indices.
     pub(crate) fn get_input_index_iter(&self) -> impl Iterator<Item = usize> + '_ {
         self.operators
@@ -315,6 +338,7 @@ impl OperationDag {
                     DotKind::Broadcast { shape } => shape,
                     DotKind::Unsupported { .. } => {
                         let weights_shape = &weights.shape;
+
                         println!();
                         println!();
                         println!("Error diagnostic on dot operation:");
@@ -346,6 +370,33 @@ impl OperationDag {
 mod tests {
     use super::*;
     use crate::dag::operator::Shape;
+
+    #[test]
+    fn graph_concat() {
+        let mut graph1 = OperationDag::new();
+        let a = graph1.add_input(1, Shape::number());
+        let b = graph1.add_input(1, Shape::number());
+        let c = graph1.add_dot([a, b], [1, 1]);
+        let _d = graph1.add_lut(c, FunctionTable::UNKWOWN, 1);
+        let mut graph2 = OperationDag::new();
+        let a = graph2.add_input(2, Shape::number());
+        let b = graph2.add_input(2, Shape::number());
+        let c = graph2.add_dot([a, b], [2, 2]);
+        let _d = graph2.add_lut(c, FunctionTable::UNKWOWN, 2);
+        graph1.concat(&graph2);
+
+        let mut graph3 = OperationDag::new();
+        let a = graph3.add_input(1, Shape::number());
+        let b = graph3.add_input(1, Shape::number());
+        let c = graph3.add_dot([a, b], [1, 1]);
+        let _d = graph3.add_lut(c, FunctionTable::UNKWOWN, 1);
+        let a = graph3.add_input(2, Shape::number());
+        let b = graph3.add_input(2, Shape::number());
+        let c = graph3.add_dot([a, b], [2, 2]);
+        let _d = graph3.add_lut(c, FunctionTable::UNKWOWN, 2);
+
+        assert_eq!(graph1, graph3);
+    }
 
     #[test]
     fn graph_creation() {

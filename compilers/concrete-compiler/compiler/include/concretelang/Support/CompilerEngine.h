@@ -79,8 +79,6 @@ struct CompilationOptions {
 
   std::optional<std::vector<int64_t>> fhelinalgTileSizes;
 
-  std::optional<std::string> mainFuncName;
-
   optimizer::Config optimizerConfig;
 
   /// When decomposing big integers into chunks, chunkSize is the total number
@@ -92,7 +90,9 @@ struct CompilationOptions {
 
   /// When compiling from a dialect lower than FHE, one needs to provide
   /// encodings info manually to allow the client lib to be generated.
-  std::optional<Message<concreteprotocol::CircuitEncodingInfo>> encodings;
+  std::optional<Message<concreteprotocol::ProgramEncodingInfo>> encodings;
+
+  bool skipProgramInfo;
 
   bool compressEvaluationKeys;
 
@@ -102,20 +102,14 @@ struct CompilationOptions {
         maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
         unrollLoopsWithSDFGConvertibleOps(false), dataflowParallelize(false),
         optimizeTFHE(true), simulate(false), emitGPUOps(false),
-        mainFuncName(std::nullopt), optimizerConfig(optimizer::DEFAULT_CONFIG),
-        chunkIntegers(false), chunkSize(4), chunkWidth(2),
-        encodings(std::nullopt), compressEvaluationKeys(false){};
-
-  CompilationOptions(std::string funcname) : CompilationOptions() {
-    mainFuncName = funcname;
-  }
+        optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
+        chunkSize(4), chunkWidth(2), encodings(std::nullopt),
+        skipProgramInfo(false), compressEvaluationKeys(false){};
 
   /// @brief Constructor for CompilationOptions with default parameters for a
   /// specific backend.
-  /// @param funcname The name of the function to compile.
   /// @param backend The backend to target.
-  CompilationOptions(std::string funcname, enum Backend backend)
-      : CompilationOptions(funcname) {
+  CompilationOptions(enum Backend backend) : CompilationOptions() {
     switch (backend) {
     case Backend::CPU:
       loopParallelize = true;
@@ -143,7 +137,7 @@ public:
 
     std::optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
     std::optional<Message<concreteprotocol::ProgramInfo>> programInfo;
-    std::optional<CompilationFeedback> feedback;
+    std::optional<ProgramCompilationFeedback> feedback;
     std::unique_ptr<llvm::Module> llvmModule;
     std::optional<mlir::concretelang::V0FHEContext> fheContext;
 
@@ -157,7 +151,7 @@ public:
     /// Path to the runtime library. Will be linked to the output library if set
     std::string runtimeLibraryPath;
     bool cleanUp;
-    mlir::concretelang::CompilationFeedback compilationFeedback;
+    mlir::concretelang::ProgramCompilationFeedback compilationFeedback;
     Message<concreteprotocol::ProgramInfo> programInfo;
 
   public:
@@ -280,7 +274,7 @@ public:
 
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(), compilerOptions(),
-        generateProgramInfo(compilerOptions.mainFuncName.has_value()),
+        generateProgramInfo(true),
         enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
@@ -324,10 +318,6 @@ public:
     compilerOptions = std::move(options);
     if (compilerOptions.v0FHEConstraints.has_value()) {
       setFHEConstraints(*compilerOptions.v0FHEConstraints);
-    }
-
-    if (compilerOptions.mainFuncName.has_value()) {
-      setGenerateProgramInfo(true);
     }
   }
 

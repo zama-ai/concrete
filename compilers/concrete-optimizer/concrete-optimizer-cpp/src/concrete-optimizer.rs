@@ -599,6 +599,10 @@ impl OperationDag {
         self.0.dump()
     }
 
+    fn concat(&mut self, other: &Self) {
+        self.0.concat(&other.0);
+    }
+
     fn tag_operator_as_output(&mut self, op: ffi::OperatorIndex) {
         self.0.tag_operator_as_output(op.into());
     }
@@ -740,6 +744,8 @@ mod ffi {
         fn optimize(self: &OperationDag, options: Options) -> DagSolution;
 
         fn dump(self: &OperationDag) -> String;
+
+        fn concat(self: &mut OperationDag, other: &OperationDag);
 
         #[namespace = "concrete_optimizer::dag"]
         fn dump(self: &CircuitSolution) -> String;

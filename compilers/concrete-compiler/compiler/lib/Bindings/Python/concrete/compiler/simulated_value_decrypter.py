@@ -41,12 +41,12 @@ class SimulatedValueDecrypter(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(client_parameters: ClientParameters):
+    def new(client_parameters: ClientParameters, circuit_name: str = "main"):
         """
         Create a value decrypter.
         """
         return SimulatedValueDecrypter(
-            _SimulatedValueDecrypter.create(client_parameters.cpp())
+            _SimulatedValueDecrypter.create(client_parameters.cpp(), circuit_name)
         )
 
     def decrypt(self, position: int, value: Value) -> Union[int, np.ndarray]:

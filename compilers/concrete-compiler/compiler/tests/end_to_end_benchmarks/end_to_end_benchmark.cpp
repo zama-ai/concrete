@@ -1,6 +1,6 @@
 #include "../end_to_end_tests/end_to_end_test.h"
 #include "concretelang/Common/Compat.h"
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 #include <concretelang/Runtime/DFRuntime.hpp>
 
 #include <benchmark/benchmark.h>
@@ -23,7 +23,7 @@ using namespace concretelang::testlib;
 /// Benchmark time of the compilation
 static void BM_Compile(benchmark::State &state, EndToEndDesc description,
                        mlir::concretelang::CompilationOptions options) {
-  TestCircuit tc(options);
+  TestProgram tc(options);
   for (auto _ : state) {
     assert(tc.compile(description.program));
   }
@@ -32,7 +32,7 @@ static void BM_Compile(benchmark::State &state, EndToEndDesc description,
 /// Benchmark time of the key generation
 static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
                       mlir::concretelang::CompilationOptions options) {
-  TestCircuit tc(options);
+  TestProgram tc(options);
   assert(tc.compile(description.program));
 
   for (auto _ : state) {
@@ -44,7 +44,7 @@ static void BM_KeyGen(benchmark::State &state, EndToEndDesc description,
 static void BM_ExportArguments(benchmark::State &state,
                                EndToEndDesc description,
                                mlir::concretelang::CompilationOptions options) {
-  TestCircuit tc(options);
+  TestProgram tc(options);
   assert(tc.compile(description.program));
   assert(tc.generateKeyset());
 
@@ -68,7 +68,7 @@ static void BM_ExportArguments(benchmark::State &state,
 /// Benchmark time of the program evaluation
 static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
                         mlir::concretelang::CompilationOptions options) {
-  TestCircuit tc(options);
+  TestProgram tc(options);
   assert(tc.compile(description.program));
   assert(tc.generateKeyset());
   auto clientCircuit = tc.getClientCircuit().value();
@@ -111,7 +111,6 @@ void registerEndToEndBenchmark(std::string suiteName,
                                int num_iterations = 0) {
   auto optionsName = getOptionsName(options);
   for (auto description : descriptions) {
-    options.mainFuncName = "main";
     if (description.p_error) {
       assert(std::isnan(options.optimizerConfig.global_p_error));
       options.optimizerConfig.p_error = description.p_error.value();

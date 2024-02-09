@@ -7,14 +7,14 @@
 
 #include "concretelang/Common/Values.h"
 #include "concretelang/Support/CompilationFeedback.h"
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 #include "end_to_end_fixture/EndToEndFixture.h"
 #include "end_to_end_jit_test.h"
 #include "tests_tools/GtestEnvironment.h"
 #include "tests_tools/assert.h"
 #include "tests_tools/keySetCache.h"
 
-using concretelang::testlib::TestCircuit;
+using concretelang::testlib::TestProgram;
 using concretelang::values::Value;
 
 /// @brief EndToEndTest is a template that allows testing for one program for a
@@ -35,7 +35,7 @@ public:
   };
 
   void SetUp() override {
-    TestCircuit tc(options.compilationOptions);
+    TestProgram tc(options.compilationOptions);
     ASSERT_OUTCOME_HAS_VALUE(tc.compile({program}));
     ASSERT_OUTCOME_HAS_VALUE(tc.generateKeyset());
     testCircuit.emplace(std::move(tc));
@@ -122,7 +122,7 @@ private:
   TestDescription desc;
   std::optional<TestErrorRate> errorRate;
   std::optional<mlir::concretelang::CompilerEngine::Library> library;
-  std::optional<TestCircuit> testCircuit;
+  std::optional<TestProgram> testCircuit;
   EndToEndTestOptions options;
   std::vector<Value> args;
 };

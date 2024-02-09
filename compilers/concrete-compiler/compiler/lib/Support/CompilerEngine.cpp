@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "concretelang/Support/V0Parameters.h"
 #include "mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h"
@@ -166,19 +167,33 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
   if (descriptions->empty()) { // The pass has not been run
     return std::nullopt;
   }
-  if (this->compilerOptions.mainFuncName.has_value()) {
-    auto name = this->compilerOptions.mainFuncName.value();
-    auto description = descriptions->find(name);
-    if (description == descriptions->end()) {
-      std::string names;
-      return StreamStringError("Function not found, name='")
-             << name << "', cannot get optimizer description";
-    }
-    return std::move(description->second);
+  if (descriptions->size() > 1 &&
+      config.strategy !=
+          mlir::concretelang::optimizer::V0) { // Multi circuits without V0
+    return StreamStringError(
+        "Multi-circuits is only supported for V0 optimization.");
   }
-  if (descriptions->size() != 1) {
-    llvm::errs() << "Several crypto parameters exists: the function need to be "
-                    "specified, taking the first one";
+  if (descriptions->size() > 1) {
+    auto iter = descriptions->begin();
+    auto desc = std::move(iter->second);
+    if (!desc.has_value()) {
+      return StreamStringError("Expected description.");
+    }
+    if (!desc.value().dag.has_value()) {
+      return StreamStringError("Expected dag in description.");
+    }
+    iter++;
+    while (iter != descriptions->end()) {
+      if (!iter->second.has_value()) {
+        return StreamStringError("Expected description.");
+      }
+      if (!iter->second.value().dag.has_value()) {
+        return StreamStringError("Expected dag in description.");
+      }
+      desc->dag.value()->concat(*iter->second.value().dag.value());
+      iter++;
+    }
+    return std::move(desc);
   }
   return std::move(descriptions->begin()->second);
 }
@@ -199,7 +214,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     res.fheContext.emplace(
         mlir::concretelang::V0FHEContext{constraint, v0Params});
 
-    CompilationFeedback feedback;
+    ProgramCompilationFeedback feedback;
     res.feedback.emplace(feedback);
 
     return llvm::Error::success();
@@ -213,7 +228,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     if (!descr.get().has_value()) {
       return llvm::Error::success();
     }
-    CompilationFeedback feedback;
+    ProgramCompilationFeedback feedback;
     // Make sure to use the gpu constraint of the optimizer if we use gpu
     // backend.
     compilerOptions.optimizerConfig.use_gpu_constraints =
@@ -322,9 +337,8 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   // on the `FHE` dialect.
   if ((this->generateProgramInfo || target == Target::LIBRARY) &&
       !options.encodings) {
-    auto funcName = options.mainFuncName.value_or("main");
     auto encodingInfosOrErr =
-        mlir::concretelang::encodings::getCircuitEncodings(funcName, module);
+        mlir::concretelang::encodings::getProgramEncoding(module);
     if (!encodingInfosOrErr) {
       return encodingInfosOrErr.takeError();
     }
@@ -363,7 +377,7 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       chunkedMode.asBuilder().setWidth(options.chunkWidth);
       maybeChunkInfo = chunkedMode;
     }
-    mlir::concretelang::encodings::setCircuitEncodingModes(
+    mlir::concretelang::encodings::setProgramEncodingModes(
         *options.encodings, maybeChunkInfo, res.fheContext);
   }
 
@@ -457,41 +471,29 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
 
   // Generate client parameters if requested
   if (this->generateProgramInfo) {
-    if (!options.mainFuncName.has_value()) {
-      return StreamStringError(
-          "Generation of client parameters requested, but no function name "
-          "specified");
-    }
     if (!res.fheContext.has_value()) {
       return StreamStringError(
-          "Cannot generate client parameters, the fhe context is empty for " +
-          options.mainFuncName.value());
+          "Cannot generate client parameters, the fhe context is empty");
     }
   }
   // Generate program info if requested
   if (this->generateProgramInfo || target == Target::LIBRARY) {
-    auto funcName = options.mainFuncName.value_or("main");
     if (!res.fheContext.has_value()) {
       // Some tests involve call a to non encrypted functions
       auto programInfo = Message<concreteprotocol::ProgramInfo>();
       programInfo.asBuilder().initCircuits(1);
-      programInfo.asBuilder().getCircuits()[0].setName(std::string(funcName));
+      programInfo.asBuilder().getCircuits()[0].setName(std::string("main"));
       res.programInfo = programInfo;
     } else {
       auto programInfoOrErr =
           mlir::concretelang::createProgramInfoFromTfheDialect(
-              module, funcName, options.optimizerConfig.security,
+              module, options.optimizerConfig.security,
               options.encodings.value(), options.compressEvaluationKeys);
 
       if (!programInfoOrErr)
         return programInfoOrErr.takeError();
 
       res.programInfo = std::move(*programInfoOrErr);
-      // If more than one circuit, feedback can not be generated for now ..
-      if (res.programInfo->asReader().getCircuits().size() != 1) {
-        return StreamStringError(
-            "Cannot generate feedback for program with more than one circuit.");
-      }
       res.feedback->fillFromProgramInfo(*res.programInfo);
     }
   }

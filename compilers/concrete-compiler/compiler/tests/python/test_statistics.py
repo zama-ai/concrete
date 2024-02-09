@@ -32,7 +32,10 @@ module {
         compilation_result = support.compile(mlir)
 
         client_parameters = support.load_client_parameters(compilation_result)
-        compilation_feedback = support.load_compilation_feedback(compilation_result)
+        program_compilation_feedback = support.load_compilation_feedback(
+            compilation_result
+        )
+        compilation_feedback = program_compilation_feedback.circuit("main")
 
         pbs_count = compilation_feedback.count(
             operations={

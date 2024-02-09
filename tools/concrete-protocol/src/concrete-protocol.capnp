@@ -399,6 +399,13 @@ struct CircuitEncodingInfo {
   name @2 :Text; # The name of the circuit.
 }
 
+struct ProgramEncodingInfo {
+  # A program encodings is described by the set of circuit encodings. This structure represents 
+  # this ensemble of encoding signatures.
+       
+  circuits @0 :List(CircuitEncodingInfo); # The list of the circuit encoding infos.
+}
+
 ###################################################################################### Encryption ##
 
 struct LweCiphertextEncryptionInfo {

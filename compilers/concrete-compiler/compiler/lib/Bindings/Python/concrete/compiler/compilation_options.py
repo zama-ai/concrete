@@ -43,11 +43,11 @@ class CompilationOptions(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(function_name="main", backend=_Backend.CPU) -> "CompilationOptions":
+    def new(backend=_Backend.CPU) -> "CompilationOptions":
         """Build a CompilationOptions.
 
         Args:
-            function_name (str, optional): name of the entrypoint function. Defaults to "main".
+            backend (_Backend): backend to use.
 
         Raises:
             TypeError: if function_name is not an str
@@ -55,15 +55,9 @@ class CompilationOptions(WrapperCpp):
         Returns:
             CompilationOptions
         """
-        if not isinstance(function_name, str):
-            raise TypeError(
-                f"function_name must be of type str not {type(function_name)}"
-            )
         if not isinstance(backend, _Backend):
-            raise TypeError(
-                f"backend must be of type Backend not {type(function_name)}"
-            )
-        return CompilationOptions.wrap(_CompilationOptions(function_name, backend))
+            raise TypeError(f"backend must be of type Backend not {type(backend)}")
+        return CompilationOptions.wrap(_CompilationOptions(backend))
 
     # pylint: enable=arguments-differ
 

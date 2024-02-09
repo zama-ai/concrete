@@ -135,8 +135,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
   // Build compilation options
-  mlir::concretelang::CompilationOptions compilationOptions("main",
-                                                            backend.getValue());
+  mlir::concretelang::CompilationOptions compilationOptions(backend.getValue());
   if (loopParallelize.getValue() != -1)
     compilationOptions.loopParallelize = loopParallelize.getValue();
 

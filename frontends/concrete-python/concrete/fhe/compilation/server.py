@@ -14,13 +14,13 @@ from typing import Dict, List, Optional, Tuple, Union
 import concrete.compiler
 from concrete.compiler import (
     CompilationContext,
-    CompilationFeedback,
     CompilationOptions,
     EvaluationKeys,
     LibraryCompilationResult,
     LibraryLambda,
     LibrarySupport,
     Parameter,
+    ProgramCompilationFeedback,
     PublicArguments,
     set_compiler_logging,
     set_llvm_debug_flag,
@@ -59,7 +59,7 @@ class Server:
     _output_dir: Optional[tempfile.TemporaryDirectory]
     _support: LibrarySupport
     _compilation_result: LibraryCompilationResult
-    _compilation_feedback: CompilationFeedback
+    _compilation_feedback: ProgramCompilationFeedback
     _server_lambda: LibraryLambda
 
     _mlir: Optional[str]
@@ -114,7 +114,7 @@ class Server:
         """
 
         backend = Backend.GPU if configuration.use_gpu else Backend.CPU
-        options = CompilationOptions.new("main", backend)
+        options = CompilationOptions.new(backend)
 
         options.simulation(is_simulated)
 
@@ -312,7 +312,7 @@ class Server:
             generateCppHeader=False,
             generateStaticLib=False,
         )
-        compilation_result = support.reload("main")
+        compilation_result = support.reload()
         server_lambda = support.load_server_lambda(compilation_result, is_simulated)
 
         return Server(
@@ -408,14 +408,14 @@ class Server:
         """
         Get size of the inputs of the compiled program.
         """
-        return self._compilation_feedback.total_inputs_size
+        return self._compilation_feedback.circuit("main").total_inputs_size
 
     @property
     def size_of_outputs(self) -> int:
         """
         Get size of the outputs of the compiled program.
         """
-        return self._compilation_feedback.total_output_size
+        return self._compilation_feedback.circuit("main").total_output_size
 
     @property
     def p_error(self) -> int:
@@ -445,7 +445,7 @@ class Server:
         """
         Get the number of programmable bootstraps in the compiled program.
         """
-        return self._compilation_feedback.count(
+        return self._compilation_feedback.circuit("main").count(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
         )
 
@@ -454,7 +454,7 @@ class Server:
         """
         Get the number of programmable bootstraps per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_parameter(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.BOOTSTRAP},
             client_parameters=self.client_specs.client_parameters,
@@ -465,7 +465,7 @@ class Server:
         """
         Get the number of programmable bootstraps per tag in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag(
+        return self._compilation_feedback.circuit("main").count_per_tag(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
         )
 
@@ -474,7 +474,7 @@ class Server:
         """
         Get the number of programmable bootstraps per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.BOOTSTRAP},
             client_parameters=self.client_specs.client_parameters,
@@ -487,7 +487,7 @@ class Server:
         """
         Get the number of key switches in the compiled program.
         """
-        return self._compilation_feedback.count(
+        return self._compilation_feedback.circuit("main").count(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
         )
 
@@ -496,7 +496,7 @@ class Server:
         """
         Get the number of key switches per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_parameter(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
@@ -507,7 +507,7 @@ class Server:
         """
         Get the number of key switches per tag in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag(
+        return self._compilation_feedback.circuit("main").count_per_tag(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
         )
 
@@ -516,7 +516,7 @@ class Server:
         """
         Get the number of key switches per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
@@ -529,14 +529,16 @@ class Server:
         """
         Get the number of packing key switches in the compiled program.
         """
-        return self._compilation_feedback.count(operations={PrimitiveOperation.WOP_PBS})
+        return self._compilation_feedback.circuit("main").count(
+            operations={PrimitiveOperation.WOP_PBS}
+        )
 
     @property
     def packing_key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_parameter(
             operations={PrimitiveOperation.WOP_PBS},
             key_types={KeyType.PACKING_KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
@@ -547,14 +549,16 @@ class Server:
         """
         Get the number of packing key switches per tag in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag(operations={PrimitiveOperation.WOP_PBS})
+        return self._compilation_feedback.circuit("main").count_per_tag(
+            operations={PrimitiveOperation.WOP_PBS}
+        )
 
     @property
     def packing_key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
             operations={PrimitiveOperation.WOP_PBS},
             key_types={KeyType.PACKING_KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
@@ -567,14 +571,16 @@ class Server:
         """
         Get the number of clear additions in the compiled program.
         """
-        return self._compilation_feedback.count(operations={PrimitiveOperation.CLEAR_ADDITION})
+        return self._compilation_feedback.circuit("main").count(
+            operations={PrimitiveOperation.CLEAR_ADDITION}
+        )
 
     @property
     def clear_addition_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_parameter(
             operations={PrimitiveOperation.CLEAR_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -585,7 +591,7 @@ class Server:
         """
         Get the number of clear additions per tag in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag(
+        return self._compilation_feedback.circuit("main").count_per_tag(
             operations={PrimitiveOperation.CLEAR_ADDITION},
         )
 
@@ -594,7 +600,7 @@ class Server:
         """
         Get the number of clear additions per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
             operations={PrimitiveOperation.CLEAR_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -607,14 +613,16 @@ class Server:
         """
         Get the number of encrypted additions in the compiled program.
         """
-        return self._compilation_feedback.count(operations={PrimitiveOperation.ENCRYPTED_ADDITION})
+        return self._compilation_feedback.circuit("main").count(
+            operations={PrimitiveOperation.ENCRYPTED_ADDITION}
+        )
 
     @property
     def encrypted_addition_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -625,7 +633,7 @@ class Server:
         """
         Get the number of encrypted additions per tag in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag(
+        return self._compilation_feedback.circuit("main").count_per_tag(
             operations={PrimitiveOperation.ENCRYPTED_ADDITION},
         )
 
@@ -634,7 +642,7 @@ class Server:
         """
         Get the number of encrypted additions per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -647,7 +655,7 @@ class Server:
         """
         Get the number of clear multiplications in the compiled program.
         """
-        return self._compilation_feedback.count(
+        return self._compilation_feedback.circuit("main").count(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
         )
 
@@ -656,7 +664,7 @@ class Server:
         """
         Get the number of clear multiplications per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_parameter(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -667,7 +675,7 @@ class Server:
         """
         Get the number of clear multiplications per tag in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag(
+        return self._compilation_feedback.circuit("main").count_per_tag(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
         )
 
@@ -676,7 +684,7 @@ class Server:
         """
         Get the number of clear multiplications per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -689,14 +697,16 @@ class Server:
         """
         Get the number of encrypted negations in the compiled program.
         """
-        return self._compilation_feedback.count(operations={PrimitiveOperation.ENCRYPTED_NEGATION})
+        return self._compilation_feedback.circuit("main").count(
+            operations={PrimitiveOperation.ENCRYPTED_NEGATION}
+        )
 
     @property
     def encrypted_negation_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_NEGATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -707,7 +717,7 @@ class Server:
         """
         Get the number of encrypted negations per tag in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag(
+        return self._compilation_feedback.circuit("main").count_per_tag(
             operations={PrimitiveOperation.ENCRYPTED_NEGATION},
         )
 
@@ -716,7 +726,7 @@ class Server:
         """
         Get the number of encrypted negations per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_NEGATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,

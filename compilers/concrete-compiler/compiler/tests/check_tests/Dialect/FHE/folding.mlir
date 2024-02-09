@@ -1,4 +1,4 @@
-// RUN: concretecompiler --action=dump-fhe %s 2>&1| FileCheck %s
+// RUN: concretecompiler --action=dump-fhe --optimizer-strategy=V0 --skip-program-info %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: func.func @add_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2>
 func.func @add_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {

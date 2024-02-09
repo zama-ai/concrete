@@ -21,7 +21,7 @@ from .compilation_options import CompilationOptions, Encoding
 from .compilation_context import CompilationContext
 from .key_set_cache import KeySetCache
 from .client_parameters import ClientParameters
-from .compilation_feedback import CompilationFeedback
+from .compilation_feedback import ProgramCompilationFeedback, CircuitCompilationFeedback
 from .key_set import KeySet
 from .public_result import PublicResult
 from .public_arguments import PublicArguments

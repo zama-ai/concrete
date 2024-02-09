@@ -49,7 +49,7 @@ def compile_run_assert(
     mlir_input,
     args_and_shape,
     expected_result,
-    options=CompilationOptions.new("main"),
+    options=CompilationOptions.new(),
 ):
     # compile with simulation
     options.simulation(True)

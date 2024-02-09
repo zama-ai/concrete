@@ -223,11 +223,6 @@ llvm::cl::opt<bool> dataflowParallelize(
     llvm::cl::desc("Generate the program as a dataflow graph"),
     llvm::cl::init(false));
 
-llvm::cl::opt<std::string>
-    funcName("funcname",
-             llvm::cl::desc("Name of the function to compile, default 'main'"),
-             llvm::cl::init<std::string>(""));
-
 llvm::cl::opt<bool>
     chunkIntegers("chunk-integers",
                   llvm::cl::desc("Whether to decompose integer into chunks or "
@@ -379,11 +374,16 @@ llvm::cl::list<int64_t> largeIntegerCircuitBootstrap(
         "(experimental) [level, baseLog]"),
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 
-llvm::cl::opt<std::string> circuitEncodings(
-    "circuit-encodings",
-    llvm::cl::desc("Specify the input and output encodings of the circuit, "
+llvm::cl::opt<std::string> programEncoding(
+    "program-encoding",
+    llvm::cl::desc("Specify the encodings to use for the program, "
                    "using the JSON representation."),
     llvm::cl::init(std::string{}));
+
+llvm::cl::opt<bool> skipProgramInfo(
+    "skip-program-info",
+    llvm::cl::desc("Skip generating the program info artefacts."),
+    llvm::cl::init(false));
 
 } // namespace cmdline
 
@@ -424,6 +424,7 @@ cmdlineCompilationOptions() {
   options.chunkIntegers = cmdline::chunkIntegers;
   options.chunkSize = cmdline::chunkSize;
   options.chunkWidth = cmdline::chunkWidth;
+  options.skipProgramInfo = cmdline::skipProgramInfo;
 
   if (!cmdline::v0Constraint.empty()) {
     if (cmdline::v0Constraint.size() != 2) {
@@ -433,10 +434,6 @@ cmdlineCompilationOptions() {
     }
     options.v0FHEConstraints = mlir::concretelang::V0FHEConstraint{
         cmdline::v0Constraint[1], cmdline::v0Constraint[0]};
-  }
-
-  if (!cmdline::funcName.empty()) {
-    options.mainFuncName = cmdline::funcName;
   }
 
   // Convert tile sizes to `Optional`
@@ -512,12 +509,12 @@ cmdlineCompilationOptions() {
         llvm::inconvertibleErrorCode());
   }
 
-  if (!cmdline::circuitEncodings.empty()) {
-    auto jsonString = cmdline::circuitEncodings.getValue();
-    auto encodings = Message<concreteprotocol::CircuitEncodingInfo>();
+  if (!cmdline::programEncoding.empty()) {
+    auto jsonString = cmdline::programEncoding.getValue();
+    auto encodings = Message<concreteprotocol::ProgramEncodingInfo>();
     if (encodings.readJsonFromString(jsonString).has_failure()) {
       return llvm::make_error<llvm::StringError>(
-          "Failed to parse the --circuit-encodings option",
+          "Failed to parse the --program-encoding option",
           llvm::inconvertibleErrorCode());
     }
     options.encodings = encodings;
@@ -556,10 +553,9 @@ mlir::LogicalResult processInputBuffer(
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
 
-  std::string funcName = options.mainFuncName.value_or("");
-
   mlir::concretelang::CompilerEngine ce{ccx};
   ce.setCompilationOptions(std::move(options));
+  ce.setGenerateProgramInfo(!options.skipProgramInfo);
 
   if (cmdline::passes.size() != 0) {
     ce.setEnablePass([](mlir::Pass *pass) {

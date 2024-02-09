@@ -1,4 +1,4 @@
-// RUN: concretecompiler --action=dump-tfhe --force-encoding crt %s
+// RUN: concretecompiler --action=dump-tfhe --optimizer-strategy=V0 --force-encoding crt --skip-program-info %s
 func.func @main(%arg0: tensor<32x!FHE.eint<8>>) -> tensor<16x!FHE.eint<8>>{
  %0 = tensor.extract_slice %arg0[16] [16] [1] : tensor<32x!FHE.eint<8>> to tensor<16x!FHE.eint<8>>
  return %0 : tensor<16x!FHE.eint<8>>

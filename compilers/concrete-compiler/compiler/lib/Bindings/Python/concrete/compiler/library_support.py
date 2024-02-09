@@ -23,7 +23,7 @@ from .public_arguments import PublicArguments
 from .library_lambda import LibraryLambda
 from .public_result import PublicResult
 from .client_parameters import ClientParameters
-from .compilation_feedback import CompilationFeedback
+from .compilation_feedback import ProgramCompilationFeedback
 from .wrapper import WrapperCpp
 from .utils import lookup_runtime_lib
 from .evaluation_keys import EvaluationKeys
@@ -132,7 +132,7 @@ class LibrarySupport(WrapperCpp):
     def compile(
         self,
         mlir_program: Union[str, MlirModule],
-        options: CompilationOptions = CompilationOptions.new("main"),
+        options: CompilationOptions = CompilationOptions.new(),
         compilation_context: Optional[CompilationContext] = None,
     ) -> LibraryCompilationResult:
         """Compile an MLIR program using Concrete dialects into a library.
@@ -178,18 +178,13 @@ class LibrarySupport(WrapperCpp):
             self.cpp().compile(mlir_program, options.cpp())
         )
 
-    def reload(self, func_name: str = "main") -> LibraryCompilationResult:
+    def reload(self) -> LibraryCompilationResult:
         """Reload the library compilation result from the output_dir_path.
-
-        Args:
-            func_name: entrypoint function name
 
         Returns:
             LibraryCompilationResult: loaded library
         """
-        if not isinstance(func_name, str):
-            raise TypeError(f"func_name must be of type str, not {type(func_name)}")
-        return LibraryCompilationResult.new(self.output_dir_path, func_name)
+        return LibraryCompilationResult.new(self.output_dir_path)
 
     def load_client_parameters(
         self, library_compilation_result: LibraryCompilationResult
@@ -217,7 +212,7 @@ class LibrarySupport(WrapperCpp):
 
     def load_compilation_feedback(
         self, compilation_result: LibraryCompilationResult
-    ) -> CompilationFeedback:
+    ) -> ProgramCompilationFeedback:
         """Load the compilation feedback from the compilation result.
 
         Args:
@@ -227,13 +222,13 @@ class LibrarySupport(WrapperCpp):
             TypeError: if compilation_result is not of type LibraryCompilationResult
 
         Returns:
-            CompilationFeedback: the compilation feedback for the compiled program
+            ProgramCompilationFeedback: the compilation feedback for the compiled program
         """
         if not isinstance(compilation_result, LibraryCompilationResult):
             raise TypeError(
                 f"compilation_result must be of type LibraryCompilationResult, not {type(compilation_result)}"
             )
-        return CompilationFeedback.wrap(
+        return ProgramCompilationFeedback.wrap(
             self.cpp().load_compilation_feedback(compilation_result.cpp())
         )
 
@@ -241,14 +236,18 @@ class LibrarySupport(WrapperCpp):
         self,
         library_compilation_result: LibraryCompilationResult,
         simulation: bool,
+        circuit_name: str = "main",
     ) -> LibraryLambda:
-        """Load the server lambda from the library compilation result.
+        """Load the server lambda for a given circuit from the library compilation result.
 
         Args:
             library_compilation_result (LibraryCompilationResult): compilation result of the library
+            simulation (bool): use simulation for execution
+            circuit_name (str): name of the circuit to be loaded
 
         Raises:
-            TypeError: if library_compilation_result is not of type LibraryCompilationResult
+            TypeError: if library_compilation_result is not of type LibraryCompilationResult, if
+                circuit_name is not of type str or
 
         Returns:
             LibraryLambda: executable reference to the library
@@ -258,8 +257,18 @@ class LibrarySupport(WrapperCpp):
                 f"library_compilation_result must be of type LibraryCompilationResult, not "
                 f"{type(library_compilation_result)}"
             )
+        if not isinstance(circuit_name, str):
+            raise TypeError(
+                f"circuit_name must be of type str, not " f"{type(circuit_name)}"
+            )
+        if not isinstance(simulation, bool):
+            raise TypeError(
+                f"simulation must be of type bool, not " f"{type(simulation)}"
+            )
         return LibraryLambda.wrap(
-            self.cpp().load_server_lambda(library_compilation_result.cpp(), simulation)
+            self.cpp().load_server_lambda(
+                library_compilation_result.cpp(), circuit_name, simulation
+            )
         )
 
     def server_call(

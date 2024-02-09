@@ -15,7 +15,7 @@ namespace mlir {
 namespace concretelang {
 
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
-createMemoryUsagePass(CompilationFeedback &feedback);
+createMemoryUsagePass(ProgramCompilationFeedback &feedback);
 
 } // namespace concretelang
 } // namespace mlir

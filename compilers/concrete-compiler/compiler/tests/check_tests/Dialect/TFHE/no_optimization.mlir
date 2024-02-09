@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes tfhe-optimization --optimize-tfhe=false --action=dump-tfhe %s 2>&1| FileCheck %s
+// RUN: concretecompiler --passes tfhe-optimization --optimize-tfhe=false --action=dump-tfhe --skip-program-info %s 2>&1| FileCheck %s
 
 //CHECK: func.func @mul_cleartext_glwe_ciphertext_0(%[[A0:.*]]: !TFHE.glwe<sk[1]<527,1>>) -> !TFHE.glwe<sk[1]<527,1>> {
 //CHECK:   %c0_i64 = arith.constant 0 : i64

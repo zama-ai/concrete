@@ -10,7 +10,7 @@
 
 #include "concretelang/Common/Error.h"
 #include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/TestLib/TestCircuit.h"
+#include "concretelang/TestLib/TestProgram.h"
 
 #include "tests_tools/GtestEnvironment.h"
 #include "tests_tools/assert.h"
@@ -20,15 +20,15 @@ using namespace concretelang::testlib;
 testing::Environment *const dfr_env =
     testing::AddGlobalTestEnvironment(new DFREnvironment);
 
-Result<TestCircuit> setupTestCircuit(std::string source,
+Result<TestProgram> setupTestProgram(std::string source,
                                      std::string funcname = FUNCNAME) {
-  mlir::concretelang::CompilationOptions options(funcname);
+  mlir::concretelang::CompilationOptions options;
 #ifdef CONCRETELANG_CUDA_SUPPORT
   options.emitGPUOps = true;
   options.emitSDFGOps = true;
 #endif
   options.batchTFHEOps = true;
-  TestCircuit testCircuit(options);
+  TestProgram testCircuit(options);
   OUTCOME_TRYV(testCircuit.compile({source}));
   OUTCOME_TRYV(testCircuit.generateKeyset());
   return std::move(testCircuit);
@@ -41,7 +41,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits())
     for (auto b : values_7bits()) {
       if (a > b) {
@@ -61,7 +61,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits())
     for (auto b : values_7bits()) {
       if (a > b) {
@@ -81,7 +81,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_3bits())
     for (auto b : values_3bits()) {
       if (a > b) {
@@ -101,7 +101,7 @@ func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   return %1: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_7bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());
@@ -119,7 +119,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
   return %3: !FHE.eint<7>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_3bits()) {
     for (auto b : values_3bits()) {
       auto res = circuit.call({
@@ -143,7 +143,7 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
     return %1: !FHE.eint<3>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_3bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());
@@ -165,7 +165,7 @@ func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
     return %6: !FHE.eint<4>
 }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   for (auto a : values_3bits()) {
     auto res = circuit.call({Tensor<uint64_t>(a)});
     ASSERT_TRUE(res.has_value());
@@ -182,7 +182,7 @@ TEST(SDFG_unit_tests, tlu_batched) {
       return %res : tensor<3x3x!FHE.eint<3>>
     }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
   auto expected = Tensor<uint64_t>({1, 3, 5, 7, 1, 3, 5, 7, 1}, {3, 3});
   auto res = circuit.call({t});
@@ -201,7 +201,7 @@ TEST(SDFG_unit_tests, batched_tree) {
       return %res : tensor<3x3x!FHE.eint<4>>
     }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
   auto a1 = Tensor<uint8_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
   auto a2 = Tensor<uint8_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
@@ -226,7 +226,7 @@ TEST(SDFG_unit_tests, batched_tree_mapped_tlu) {
       return %res : tensor<3x3x!FHE.eint<4>>
     }
 )";
-  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestCircuit(source));
+  ASSERT_ASSIGN_OUTCOME_VALUE(circuit, setupTestProgram(source));
   auto t = Tensor<uint64_t>({0, 1, 2, 3, 0, 1, 2, 3, 0}, {3, 3});
   auto a1 = Tensor<uint8_t>({0, 1, 0, 0, 1, 0, 0, 1, 0}, {3, 3});
   auto a2 = Tensor<uint8_t>({1, 0, 1, 1, 0, 1, 1, 0, 1}, {3, 3});
