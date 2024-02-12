@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:2022-11-19-1b19e81
+FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
 
 RUN dnf install -y kernel-devel kernel-headers
 RUN curl https://developer.download.nvidia.com/compute/cuda/11.7.1/local_installers/cuda-repo-rhel8-11-7-local-11.7.1_515.65.01-1.x86_64.rpm -o cuda-repo-rhel8-11-7-local-11.7.1_515.65.01-1.x86_64.rpm
