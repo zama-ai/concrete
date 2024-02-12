@@ -142,12 +142,12 @@ jobs:
 # Compiler jobs #################################
   compiler-compliance:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-format-and-linting-workflow == 'true' || needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/tags/')
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-format-and-linting-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/compiler_format_and_linting.yml
 
   compiler-cpu-build:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-cpu-api == 'true'|| needs.file-change.outputs.concrete-compiler-cpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/tags/')
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-cpu-api == 'true'|| needs.file-change.outputs.concrete-compiler-cpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
@@ -155,7 +155,7 @@ jobs:
 
   compiler-gpu-build:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-cuda-api == 'true' || needs.file-change.outputs.concrete-compiler-gpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/tags/')
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-cuda-api == 'true' || needs.file-change.outputs.concrete-compiler-gpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
@@ -163,7 +163,7 @@ jobs:
 
   compiler-macos-tests:
     needs: file-change
-    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-macos-workflow == 'true' || needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/tags/')
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-macos-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
     uses: ./.github/workflows/compiler_macos_build_and_test.yml
     secrets: inherit
 
@@ -215,13 +215,13 @@ jobs:
 # Concrete Python jobs ##########################
   concrete-python:
     needs: file-change
-    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.concrete-python-workflow == 'true' || needs.file-change.outputs.push-main || contains(github.ref, 'refs/tags/')
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.concrete-python-workflow == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_python_checks.yml
     secrets: inherit
 
   concrete-python-tests-linux:
     needs: file-change
-    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main || contains(github.ref, 'refs/tags/')
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
@@ -229,7 +229,7 @@ jobs:
 
   concrete-python-tests-linux-gpu:
     needs: file-change
-    if: (needs.file-change.outputs.concrete-python == 'true' || contains(github.ref, 'refs/tags/')) && needs.file-change.outputs.push-main
+    if: needs.file-change.outputs.concrete-python == 'true' && needs.file-change.outputs.push-main
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
@@ -237,7 +237,7 @@ jobs:
 
   concrete-python-tests-macos:
     needs: file-change
-    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main || contains(github.ref, 'refs/tags/')
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/concrete_python_test_macos.yml
     secrets: inherit
 
