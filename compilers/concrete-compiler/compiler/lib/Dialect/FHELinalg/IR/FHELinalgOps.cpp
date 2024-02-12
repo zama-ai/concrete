@@ -1687,6 +1687,450 @@ void ToUnsignedOp::getCanonicalizationPatterns(
   getSignedConvCanonicalizationPatterns<ToUnsignedOp>(patterns, context);
 }
 
+std::optional<mlir::Value>
+fuseBackToBackTableLookups(mlir::Operation *currentOperation,
+                           mlir::PatternRewriter &rewriter) {
+
+  using mlir::concretelang::FHE::FheIntegerInterface;
+
+  auto currentOperationAsTlu =
+      llvm::dyn_cast<ApplyLookupTableEintOp>(currentOperation);
+  auto currentOperationAsMappedTlu =
+      llvm::dyn_cast<ApplyMappedLookupTableEintOp>(currentOperation);
+
+  if (!currentOperationAsTlu && !currentOperationAsMappedTlu) {
+    return std::nullopt;
+  }
+
+  auto intermediateValue =
+      (currentOperationAsTlu ? (currentOperationAsTlu.getT())
+                             : (currentOperationAsMappedTlu.getT()));
+
+  auto intermediateOperation = intermediateValue.getDefiningOp();
+  if (!intermediateOperation) {
+    return std::nullopt;
+  }
+
+  auto intermediateOperationAsTlu =
+      llvm::dyn_cast<ApplyLookupTableEintOp>(intermediateOperation);
+  auto intermediateOperationAsMappedTlu =
+      llvm::dyn_cast<ApplyMappedLookupTableEintOp>(intermediateOperation);
+
+  if (!intermediateOperationAsTlu && !intermediateOperationAsMappedTlu) {
+    return std::nullopt;
+  }
+
+  auto inputValue =
+      (intermediateOperationAsTlu ? (intermediateOperationAsTlu.getT())
+                                  : (intermediateOperationAsMappedTlu.getT()));
+
+  struct Indexer {
+    int64_t tableSize;
+    bool isSigned;
+
+    Indexer(int64_t tableSize, bool isSigned)
+        : tableSize{tableSize}, isSigned{isSigned} {}
+
+    virtual ~Indexer() = default;
+
+    int64_t sanitizeIndex(int64_t index) const {
+      // Same logic as the lookup lambda in
+      // cannonicalization of FHE.apply_lookup_table.
+      // See FHEOps.cpp for explanation of the following code.
+      if (index < 0) {
+        index += tableSize;
+        if (index < 0) {
+          index = tableSize / 2;
+        }
+      } else if (index >= tableSize) {
+        if (!isSigned) {
+          index = tableSize - 1;
+        } else {
+          index = (tableSize / 2) - 1;
+        }
+      }
+      return index;
+    }
+
+    virtual int64_t get(int64_t index, int64_t position) const = 0;
+  };
+
+  struct TluIdexer : public Indexer {
+    std::vector<int64_t> tableContent;
+
+    TluIdexer(int64_t tableSize, bool isSigned,
+              std::vector<int64_t> tableContent)
+        :
+
+          Indexer{tableSize, isSigned}, tableContent{std::move(tableContent)} {}
+
+    ~TluIdexer() override = default;
+
+    static std::optional<std::unique_ptr<TluIdexer>>
+    create(ApplyLookupTableEintOp operation) {
+      auto tableValue = operation.getLut();
+
+      auto tableOperation =
+          llvm::dyn_cast_or_null<arith::ConstantOp>(tableValue.getDefiningOp());
+      if (!tableOperation) {
+        return std::nullopt;
+      }
+
+      auto tableContentAttr =
+          tableOperation.getValueAttr()
+              .dyn_cast_or_null<mlir::DenseIntElementsAttr>();
+      if (!tableContentAttr) {
+        return std::nullopt;
+      }
+
+      auto tableContent = std::vector<int64_t>();
+      for (auto value : tableContentAttr.getValues<int64_t>()) {
+        tableContent.push_back(value);
+      }
+
+      auto inputValue = operation.getT();
+      auto inputType = inputValue.getType()
+                           .cast<RankedTensorType>()
+                           .getElementType()
+                           .dyn_cast<FheIntegerInterface>();
+
+      auto tableSize = 1 << inputType.getWidth();
+      auto isSigned = inputType.isSigned();
+
+      return std::make_unique<TluIdexer>(
+          TluIdexer(tableSize, isSigned, tableContent));
+    };
+
+    int64_t get(int64_t index, int64_t position) const override {
+      return tableContent[sanitizeIndex(index)];
+    }
+  };
+
+  struct MappedTluIdexer : public Indexer {
+    std::vector<int64_t> tablesContent;
+    std::vector<int64_t> mapContent;
+
+    MappedTluIdexer(int64_t tableSize, bool isSigned,
+                    std::vector<int64_t> tablesContent,
+                    std::vector<int64_t> mapContent)
+        :
+
+          Indexer{tableSize, isSigned}, tablesContent{std::move(tablesContent)},
+          mapContent{std::move(mapContent)} {}
+
+    ~MappedTluIdexer() override = default;
+
+    static std::optional<std::unique_ptr<MappedTluIdexer>>
+    create(ApplyMappedLookupTableEintOp operation) {
+      auto tablesValue = operation.getLuts();
+
+      auto tablesOperation = llvm::dyn_cast_or_null<arith::ConstantOp>(
+          tablesValue.getDefiningOp());
+      if (!tablesOperation) {
+        return std::nullopt;
+      }
+
+      auto tablesContentAttr =
+          tablesOperation.getValueAttr()
+              .dyn_cast_or_null<mlir::DenseIntElementsAttr>();
+      if (!tablesContentAttr) {
+        return std::nullopt;
+      }
+
+      auto tablesContent = std::vector<int64_t>();
+      for (auto value : tablesContentAttr.getValues<int64_t>()) {
+        tablesContent.push_back(value);
+      }
+
+      auto mapValue = operation.getMap();
+
+      auto mapOperation =
+          llvm::dyn_cast_or_null<arith::ConstantOp>(mapValue.getDefiningOp());
+      if (!mapOperation) {
+        return std::nullopt;
+      }
+
+      auto mapContentAttr = mapOperation.getValueAttr()
+                                .dyn_cast_or_null<mlir::DenseIntElementsAttr>();
+      if (!mapContentAttr) {
+        return std::nullopt;
+      }
+
+      auto mapContent = std::vector<int64_t>();
+      for (auto value : mapContentAttr.getValues<int64_t>()) {
+        mapContent.push_back(value);
+      }
+
+      auto inputValue = operation.getT();
+      auto inputType = inputValue.getType()
+                           .cast<RankedTensorType>()
+                           .getElementType()
+                           .dyn_cast<FheIntegerInterface>();
+
+      auto tableSize = 1 << inputType.getWidth();
+      auto isSigned = inputType.isSigned();
+
+      return std::make_unique<MappedTluIdexer>(
+          MappedTluIdexer(tableSize, isSigned, tablesContent, mapContent));
+    }
+
+    int64_t get(int64_t index, int64_t position) const override {
+      int64_t tableIndex = mapContent[position];
+      return tablesContent[sanitizeIndex(index) + (tableIndex * tableSize)];
+    }
+  };
+
+  std::unique_ptr<Indexer> intermediateIndexer;
+  if (intermediateOperationAsTlu) {
+    auto indexer = TluIdexer::create(intermediateOperationAsTlu);
+    if (!indexer) {
+      return std::nullopt;
+    }
+    intermediateIndexer = std::move(*indexer);
+  } else {
+    auto indexer = MappedTluIdexer::create(intermediateOperationAsMappedTlu);
+    if (!indexer) {
+      return std::nullopt;
+    }
+    intermediateIndexer = std::move(*indexer);
+  }
+
+  std::unique_ptr<Indexer> currentIndexer;
+  if (currentOperationAsTlu) {
+    auto indexer = TluIdexer::create(currentOperationAsTlu);
+    if (!indexer) {
+      return std::nullopt;
+    }
+    currentIndexer = std::move(*indexer);
+  } else {
+    auto indexer = MappedTluIdexer::create(currentOperationAsMappedTlu);
+    if (!indexer) {
+      return std::nullopt;
+    }
+    currentIndexer = std::move(*indexer);
+  }
+
+  auto usersOfPreviousOperation = intermediateOperation->getUsers();
+  auto numberOfUsersOfPreviousOperation = std::distance(
+      usersOfPreviousOperation.begin(), usersOfPreviousOperation.end());
+
+  if (numberOfUsersOfPreviousOperation > 1) {
+    // This is a special case.
+    //
+    // Imagine you have this structure:
+    // -----------------
+    // x: uint6
+    // y: uint3 = tlu[x]
+    // z: uint3 = y + 1
+    // a: uint3 = tlu[y]
+    // b: uint3 = a + z
+    // -----------------
+    //
+    // In this case, it might be better not to fuse `a = tlu[tlu[x]]`.
+    //
+    // The reason is, intermediate `y` is necessary for `z`,
+    // so it have to be computed anyway.
+    //
+    // So to calculate `a`, there are 2 options:
+    // - fused tlu on x
+    // - regular tlu on y
+    //
+    // In this case, it's best to fuse only if
+    // bit width of `x` is smaller than bit width of `y`.
+
+    // We can use the table size as it's derived from the bit width
+    // and it preserves the ordering.
+    auto xTableSize = intermediateIndexer->tableSize;
+    auto yTableSize = currentIndexer->tableSize;
+
+    auto shouldFuse = xTableSize < yTableSize;
+    if (!shouldFuse) {
+      return std::nullopt;
+    }
+  }
+
+  auto resultingType =
+      (currentOperationAsTlu ? (currentOperationAsTlu.getType())
+                             : (currentOperationAsMappedTlu.getType()));
+
+  if (intermediateOperationAsTlu && currentOperationAsTlu) {
+    auto newTableContent = std::vector<int64_t>();
+    newTableContent.reserve(intermediateIndexer->tableSize);
+
+    if (!intermediateIndexer->isSigned) {
+      for (ssize_t x = 0; x < intermediateIndexer->tableSize; x++) {
+        auto resultOfFirstTableLookup = intermediateIndexer->get(x, 0);
+        newTableContent.push_back(
+            currentIndexer->get(resultOfFirstTableLookup, 0));
+      }
+    } else {
+      for (ssize_t x = 0; x < intermediateIndexer->tableSize / 2; x++) {
+        auto resultOfFirstTableLookup = intermediateIndexer->get(x, 0);
+        newTableContent.push_back(
+            currentIndexer->get(resultOfFirstTableLookup, 0));
+      }
+      for (ssize_t x = -(intermediateIndexer->tableSize / 2); x < 0; x++) {
+        auto resultOfFirstTableLookup = intermediateIndexer->get(x, 0);
+        newTableContent.push_back(
+            currentIndexer->get(resultOfFirstTableLookup, 0));
+      }
+    }
+
+    auto newTableShape = std::vector<int64_t>{intermediateIndexer->tableSize};
+    auto newTableType = RankedTensorType::get(
+        newTableShape, IntegerType::get(currentOperation->getContext(), 64));
+
+    auto newTable = rewriter.create<arith::ConstantOp>(
+        currentOperation->getLoc(),
+        DenseIntElementsAttr::get(newTableType, newTableContent));
+
+    auto newOperation = rewriter.create<ApplyLookupTableEintOp>(
+        currentOperation->getLoc(), resultingType, inputValue, newTable);
+
+    return newOperation;
+  }
+
+  auto newTableContents = std::vector<std::vector<int64_t>>();
+  auto newMapContent = std::vector<int64_t>();
+
+  auto inputShape = inputValue.getType().cast<RankedTensorType>().getShape();
+  int64_t numberOfInputs = 1;
+  for (auto dimension : inputShape) {
+    numberOfInputs *= dimension;
+  }
+
+  for (int64_t position = 0; position < numberOfInputs; position++) {
+    auto newTableContent = std::vector<int64_t>();
+    newTableContent.reserve(intermediateIndexer->tableSize);
+
+    if (!intermediateIndexer->isSigned) {
+      for (ssize_t x = 0; x < intermediateIndexer->tableSize; x++) {
+        auto resultOfFirstTableLookup = intermediateIndexer->get(x, position);
+        newTableContent.push_back(
+            currentIndexer->get(resultOfFirstTableLookup, position));
+      }
+    } else {
+      for (ssize_t x = 0; x < intermediateIndexer->tableSize / 2; x++) {
+        auto resultOfFirstTableLookup = intermediateIndexer->get(x, position);
+        newTableContent.push_back(
+            currentIndexer->get(resultOfFirstTableLookup, position));
+      }
+      for (ssize_t x = -(intermediateIndexer->tableSize / 2); x < 0; x++) {
+        auto resultOfFirstTableLookup = intermediateIndexer->get(x, position);
+        newTableContent.push_back(
+            currentIndexer->get(resultOfFirstTableLookup, position));
+      }
+    }
+
+    auto search = std::find(newTableContents.begin(), newTableContents.end(),
+                            newTableContent);
+
+    size_t index;
+    if (search == newTableContents.end()) {
+      index = newTableContents.size();
+      newTableContents.push_back(newTableContent);
+    } else {
+      index = std::distance(newTableContents.begin(), search);
+    }
+
+    newMapContent.push_back(index);
+  }
+
+  if (newTableContents.size() == 1) {
+    auto newTableShape = std::vector<int64_t>{intermediateIndexer->tableSize};
+    auto newTableType = RankedTensorType::get(
+        newTableShape, IntegerType::get(currentOperation->getContext(), 64));
+
+    auto newTable = rewriter.create<arith::ConstantOp>(
+        currentOperation->getLoc(),
+        DenseIntElementsAttr::get(newTableType, newTableContents[0]));
+
+    auto newOperation = rewriter.create<ApplyLookupTableEintOp>(
+        currentOperation->getLoc(), resultingType, inputValue, newTable);
+
+    return newOperation;
+  } else {
+    auto newTablesShape =
+        std::vector<int64_t>{static_cast<int64_t>(newTableContents.size()),
+                             intermediateIndexer->tableSize};
+    auto newTablesType = RankedTensorType::get(
+        newTablesShape, IntegerType::get(currentOperation->getContext(), 64));
+
+    auto newTableContentsFlattened = std::vector<int64_t>();
+    for (auto newTableContent : newTableContents) {
+      newTableContentsFlattened.insert(newTableContentsFlattened.end(),
+                                       newTableContent.begin(),
+                                       newTableContent.end());
+    }
+
+    auto newTables = rewriter.create<arith::ConstantOp>(
+        currentOperation->getLoc(),
+        DenseIntElementsAttr::get(newTablesType, newTableContentsFlattened));
+
+    auto newMapShape = inputShape;
+    auto newMapType = RankedTensorType::get(
+        newMapShape, IndexType::get(currentOperation->getContext()));
+
+    auto newMap = rewriter.create<arith::ConstantOp>(
+        currentOperation->getLoc(),
+        DenseIntElementsAttr::get(newMapType, newMapContent));
+
+    auto newOperation = rewriter.create<ApplyMappedLookupTableEintOp>(
+        currentOperation->getLoc(), resultingType, inputValue, newTables,
+        newMap);
+
+    return newOperation;
+  }
+
+  return std::nullopt;
+}
+
+void ApplyLookupTableEintOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns, MLIRContext *context) {
+
+  class AfterTluPattern
+      : public mlir::OpRewritePattern<ApplyLookupTableEintOp> {
+  public:
+    AfterTluPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<ApplyLookupTableEintOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(ApplyLookupTableEintOp currentOperation,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto replacement = fuseBackToBackTableLookups(currentOperation, rewriter);
+      if (replacement) {
+        rewriter.replaceAllUsesWith(currentOperation, *replacement);
+        return mlir::success();
+      }
+      return mlir::failure();
+    }
+  };
+  patterns.add<AfterTluPattern>(context);
+}
+
+void ApplyMappedLookupTableEintOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns, MLIRContext *context) {
+
+  class AfterTluPattern
+      : public mlir::OpRewritePattern<ApplyMappedLookupTableEintOp> {
+  public:
+    AfterTluPattern(mlir::MLIRContext *context)
+        : mlir::OpRewritePattern<ApplyMappedLookupTableEintOp>(context, 0) {}
+
+    mlir::LogicalResult
+    matchAndRewrite(ApplyMappedLookupTableEintOp currentOperation,
+                    mlir::PatternRewriter &rewriter) const override {
+      auto replacement = fuseBackToBackTableLookups(currentOperation, rewriter);
+      if (replacement) {
+        rewriter.replaceAllUsesWith(currentOperation, *replacement);
+        return mlir::success();
+      }
+      return mlir::failure();
+    }
+  };
+  patterns.add<AfterTluPattern>(context);
+}
+
 } // namespace FHELinalg
 } // namespace concretelang
 } // namespace mlir
