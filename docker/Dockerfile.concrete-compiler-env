@@ -24,9 +24,9 @@ RUN ./bootstrap.sh && ./b2 --with-filesystem install
 COPY --from=ghcr.io/zama-ai/hpx:latest /hpx /hpx
 ENV HPX_INSTALL_DIR=/hpx/build
 # Setup CUDA
-COPY --from=ghcr.io/zama-ai/cuda:11-7 /usr/local/cuda-11.7/ /usr/local/cuda-11.7/
-COPY --from=ghcr.io/zama-ai/cuda:11-7 /usr/lib64/libcuda.so* /usr/lib64/
-ENV PATH "$PATH:/usr/local/cuda-11.7/bin"
+COPY --from=ghcr.io/zama-ai/cuda:12-3 /usr/local/cuda-12.3/ /usr/local/cuda-12.3/
+COPY --from=ghcr.io/zama-ai/cuda:12-3 /usr/lib64/libcuda.so* /usr/lib64/
+ENV PATH "$PATH:/usr/local/cuda-12.3/bin"
 # Set the python path. Options: [cp37-cp37m, cp38-cp38, cp39-cp39, cp310-cp310]
 # Links and env would be available to use the appropriate python version
 ARG python_tag=cp38-cp38

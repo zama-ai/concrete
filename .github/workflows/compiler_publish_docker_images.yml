@@ -116,7 +116,7 @@ jobs:
     runs-on: ${{ github.event.inputs.runner_name }}
     env:
       IMAGE: ghcr.io/zama-ai/cuda
-      TAG: "11-7"
+      TAG: "12-3"
 
     steps:
       - uses: actions/checkout@v3

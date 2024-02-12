@@ -1,8 +1,8 @@
 FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
 
 RUN dnf install -y kernel-devel kernel-headers
-RUN curl https://developer.download.nvidia.com/compute/cuda/11.7.1/local_installers/cuda-repo-rhel8-11-7-local-11.7.1_515.65.01-1.x86_64.rpm -o cuda-repo-rhel8-11-7-local-11.7.1_515.65.01-1.x86_64.rpm
-RUN rpm -i cuda-repo-rhel8-11-7-local-11.7.1_515.65.01-1.x86_64.rpm
+RUN curl https://developer.download.nvidia.com/compute/cuda/12.3.2/local_installers/cuda-repo-rhel8-12-3-local-12.3.2_545.23.08-1.x86_64.rpm -o cuda.rpm
+RUN rpm -i cuda.rpm
 RUN dnf clean all
 RUN dnf install -y epel-release
 RUN dnf update -y
@@ -10,5 +10,5 @@ RUN dnf -y module install nvidia-driver:latest-dkms
 RUN dnf -y install cuda
 
 FROM scratch
-COPY --from=0 /usr/local/cuda-11.7/ /usr/local/cuda-11.7/
+COPY --from=0 /usr/local/cuda-12.3/ /usr/local/cuda-12.3/
 COPY --from=0 /usr/lib64/libcuda.so* /usr/lib64/
