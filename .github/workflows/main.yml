@@ -7,6 +7,7 @@ on:
     branches:
       - 'main'
       - 'release/*'
+      - 'force-docker-images'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   schedule:
@@ -98,7 +99,9 @@ jobs:
         id: concrete-compiler-docker-images-workflow
         uses: tj-actions/changed-files@0c6f2ac4885216b1830ecbcc3573209980c97716
         with:
-          files: ./.github/workflows/compiler_publish_docker_images.yml
+          files: |
+            ./.github/workflows/compiler_publish_docker_images.yml
+            ./docker/**
 
       - name: Check if concrete_cpu_test workflow has changed
         id: concrete-cpu-workflow
@@ -166,7 +169,7 @@ jobs:
 
   compiler-publish-docker-images:
     needs: file-change
-    if: (needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-docker-images-workflow == 'true') && (needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/tags/'))
+    if: (needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-compiler-docker-images-workflow == 'true') && (needs.file-change.outputs.push-main == 'true' || contains(github.ref, 'refs/heads/force-docker-images'))
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
