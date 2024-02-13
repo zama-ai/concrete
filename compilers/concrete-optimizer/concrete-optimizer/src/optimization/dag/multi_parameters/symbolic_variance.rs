@@ -256,10 +256,3 @@ impl std::ops::Mul<f64> for SymbolicVariance {
         }
     }
 }
-
-impl std::ops::Mul<i64> for SymbolicVariance {
-    type Output = Self;
-    fn mul(self, sq_weight: i64) -> Self {
-        self * sq_weight as f64
-    }
-}

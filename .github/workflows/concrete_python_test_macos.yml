@@ -36,11 +36,8 @@ jobs:
         run: |
           brew install ninja ccache graphviz
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - name: Setup rust toolchain for concrete-cpu
+        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
 
       - name: Cache Compilation (push)
         if: github.event_name == 'push'
@@ -123,7 +120,7 @@ jobs:
           # we fix it by using a single one (from torch)
           # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
           
-          find .testenv/lib/python3.10/site-packages -name 'lib*omp5.dylib' | xargs -n 1  ln -f -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib
+          find .testenv/lib/python3.10/site-packages -not \( -path .testenv/lib/python3.10/site-packages/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib
 
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
           pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow"

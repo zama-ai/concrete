@@ -243,7 +243,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.batched_mul_glwe_cst_int` (::mlir::concretelang::TFHE::BatchedMulGLWECstIntOp)
 
-Batched version of MulGLWEIntOp
+Batched version of MulGLWECstIntOp
 
 
 Traits: AlwaysSpeculatableImplTrait
@@ -267,7 +267,7 @@ Effects: MemoryEffects::Effect{}
 
 ### `TFHE.batched_mul_glwe_int_cst` (::mlir::concretelang::TFHE::BatchedMulGLWEIntCstOp)
 
-Batched version of MulGLWEIntOp
+Batched version of MulGLWEIntCstOp
 
 
 Traits: AlwaysSpeculatableImplTrait

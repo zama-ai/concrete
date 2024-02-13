@@ -294,7 +294,7 @@ def TFHE_BatchedMulGLWEIntOp : TFHE_Op<"batched_mul_glwe_int", [Pure]> {
 }
 
 def TFHE_BatchedMulGLWECstIntOp : TFHE_Op<"batched_mul_glwe_cst_int", [Pure]> {
-  let summary = "Batched version of MulGLWEIntOp";
+  let summary = "Batched version of MulGLWECstIntOp";
 
   let arguments = (ins
     TFHE_GLWECipherTextType : $ciphertext,
@@ -305,7 +305,7 @@ def TFHE_BatchedMulGLWECstIntOp : TFHE_Op<"batched_mul_glwe_cst_int", [Pure]> {
 }
 
 def TFHE_BatchedMulGLWEIntCstOp : TFHE_Op<"batched_mul_glwe_int_cst", [Pure]> {
-  let summary = "Batched version of MulGLWEIntOp";
+  let summary = "Batched version of MulGLWEIntCstOp";
 
   let arguments = (ins
     1DTensorOf<[TFHE_GLWECipherTextType]> : $ciphertexts,

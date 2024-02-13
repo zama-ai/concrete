@@ -25,7 +25,7 @@ on:
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-  CUDA_PATH: /usr/local/cuda-11.7
+  CUDA_PATH: /usr/local/cuda-12.3
   GCC_VERSION: 11
   GLIB_VER: 2_28
 
@@ -62,6 +62,9 @@ jobs:
       - name: Create build directory
         run: mkdir build
 
+      - name: Setup rust toolchain for concrete-cpu
+        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
+
       - name: Build bindings
         uses: addnab/docker-run-action@v3
         if: ${{ !contains(inputs.instance_type, 'p3') }}
@@ -78,6 +81,7 @@ jobs:
             -e SSH_AUTH_SOCK=/ssh.socket
           shell: bash
           run: |
+            rustup toolchain install nightly-2024-01-31
             set -e
             rm -rf /build/*
 

@@ -98,6 +98,7 @@ jobs:
           shell: bash
           run: |
             set -e
+            rustup toolchain install nightly-2024-01-31
             rm -rf /build/*
             
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
@@ -145,7 +146,8 @@ jobs:
           python -m venv .testenv
           source .testenv/bin/activate
           
-          sudo apt install graphviz graphviz-devel
+          sudo apt update -y
+          sudo apt install -y graphviz libgraphviz-dev
           
           pip install $CONCRETE_PYTHON/dist/*manylinux*.whl
           pip install -r $CONCRETE_PYTHON/requirements.dev.txt
@@ -191,11 +193,8 @@ jobs:
         run: |
           brew install ninja ccache graphviz
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - name: Setup rust toolchain for concrete-cpu
+        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
 
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
@@ -265,6 +264,7 @@ jobs:
           export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
 
           export TEST_TMP_DIR=$(mktemp -d)
+          echo "TEST_TMP_DIR=$TEST_TMP_DIR" >> "${GITHUB_ENV}"
           cd $TEST_TMP_DIR
 
           export PYTHON_VERSION=${{ format('python{0}', matrix.python-version) }}
@@ -289,22 +289,16 @@ jobs:
           # we fix it by using a single one (from torch)
           # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
           export SITE_PACKAGES=$(pwd)/.testenv/lib/$PYTHON_VERSION/site-packages/
-          export CONCRETE_LIB_OMP=$SITE_PACKAGES/concrete/.dylibs/libomp.dylib
-          # Where is libiomp? Possibilities ordered in increasing priorities
-          export TORCH_LIB_IOMP="this shouldn't exist"
-          ls $SITE_PACKAGES/torch/lib/libiomp5.dylib && export TORCH_LIB_IOMP=$SITE_PACKAGES/torch/lib/libiomp5.dylib
-          ls $SITE_PACKAGES/torch/.dylibs/libiomp5.dylib && export TORCH_LIB_IOMP=$SITE_PACKAGES/torch/.dylibs/libiomp5.dylib
-          ls $SITE_PACKAGES/functorch/.dylibs/libiomp5.dylib && export TORCH_LIB_IOMP=$SITE_PACKAGES/functorch/.dylibs/libiomp5.dylib
-          ls $TORCH_LIB_IOMP \
-          && rm $CONCRETE_LIB_OMP \
-          && ln -s $TORCH_LIB_IOMP $CONCRETE_LIB_OMP
+          find $SITE_PACKAGES/site-packages -not \( -path $SITE_PACKAGES/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $SITE_PACKAGES/concrete/.dylibs/libomp.dylib
 
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
 
-          pytest tests -svv -n auto -m "not dataflow" --key-cache /tmp/KeySetCache
-          rm -rf /tmp/KeySetCache
+          pytest tests -svv -n auto -m "not dataflow" --key-cache "./KeySetCache"
 
+      - name: Cleanup host
+        if: success() || failure()
+        run: |
           rm -rf $TEST_TMP_DIR
 
   push:

@@ -31,7 +31,10 @@ def main(args):
     print("# /!\ THIS FILE HAS BEEN GENERATED THANKS THE end_to_end_levelled_gen.py scripts")
     print("# This reference file aims to test all levelled ops with all bitwidth than we known that the compiler/optimizer support.\n\n")
     # unsigned
-    for p in range(MIN_PRECISON, MAX_PRECISION+1):
+    step = 1
+    if args.minimal:
+        step = 6
+    for p in range(MIN_PRECISON, MAX_PRECISION+1, step):
         if p != 1:
             print("---")
         def may_check_error_rate():

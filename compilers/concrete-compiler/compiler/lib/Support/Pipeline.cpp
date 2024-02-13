@@ -283,29 +283,37 @@ mlir::LogicalResult
 parametrizeTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                 std::optional<V0FHEContext> &fheContext,
                 std::function<bool(mlir::Pass *)> enablePass) {
-  if (!fheContext)
-    return mlir::success();
-
   mlir::PassManager pm(&context);
   pipelinePrinting("ParametrizeTFHE", pm, context);
 
-  if (auto monoSolution = std::get_if<V0Parameter>(&fheContext->solution);
-      monoSolution != nullptr) {
+  if (!fheContext) {
+    // For tests, which invoke the pipeline without determining FHE
+    // parameters
+    addPotentiallyNestedPass(
+        pm,
+        mlir::concretelang::createTFHECircuitSolutionParametrizationPass(
+            std::nullopt),
+        enablePass);
+  } else if (auto monoSolution =
+                 std::get_if<V0Parameter>(&fheContext->solution);
+             monoSolution != nullptr) {
     addPotentiallyNestedPass(
         pm,
         mlir::concretelang::createConvertTFHEGlobalParametrizationPass(
             *monoSolution),
         enablePass);
-  }
-  if (auto circuitSolution =
-          std::get_if<optimizer::CircuitSolution>(&fheContext->solution);
-      circuitSolution != nullptr) {
+  } else if (auto circuitSolution =
+                 std::get_if<optimizer::CircuitSolution>(&fheContext->solution);
+             circuitSolution != nullptr) {
     addPotentiallyNestedPass(
         pm,
         mlir::concretelang::createTFHECircuitSolutionParametrizationPass(
             *circuitSolution),
         enablePass);
   }
+
+  addPotentiallyNestedPass(pm, mlir::createCanonicalizerPass(), enablePass);
+
   return pm.run(module.getOperation());
 }
 

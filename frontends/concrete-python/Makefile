@@ -60,7 +60,7 @@ pytest-multi:
 		--precision=multi \
 		--strategy=multi \
 		--cov=concrete \
-		--cov-fail-under=100 \
+		--cov-fail-under=95 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"

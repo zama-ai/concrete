@@ -10,7 +10,7 @@ def TFHEOptimization : Pass<"tfhe-optimization"> {
   let dependentDialects = [ "mlir::concretelang::TFHE::TFHEDialect" ];
 }
 
-def TFHECircuitSolutionParametrization : Pass<"tfhe-circuit-solution-parametrization"> {
+def TFHECircuitSolutionParametrization : Pass<"tfhe-circuit-solution-parametrization", "mlir::ModuleOp"> {
   let summary = "Parametrize TFHE with a circuit solution given by the optimizer";
   let constructor = "mlir::concretelang::createTFHECircuitSolutionParametrizationPass()";
   let options = [];

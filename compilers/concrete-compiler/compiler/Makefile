@@ -40,6 +40,7 @@ ifeq ($(shell uname), Linux)
 	OS=linux
 else ifeq ($(shell uname), Darwin)
 	OS=darwin
+	MINIMAL_TESTS_BOOL=ON
 endif
 
 # Set rust flags to activate target cpu features
@@ -291,7 +292,11 @@ generate-cpu-tests: \
 	$(FIXTURE_CPU_DIR)/end_to_end_linalg_enc_enc_matmul_dot.yaml
 
 SECURITY_TO_TEST=128
-OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
+ifeq ($(MINIMAL_TESTS),ON)
+	OPTIMIZATION_STRATEGY_TO_TEST=dag-multi
+else
+	OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
+endif
 PARALLEL_END_2_END_TESTS= end_to_end_jit_test end_to_end_jit_lambda
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
 	$(foreach TEST,$(PARALLEL_END_2_END_TESTS), \

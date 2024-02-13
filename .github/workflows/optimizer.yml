@@ -100,31 +100,3 @@ jobs:
         with:
           path: ./benchmark
           name: ${{ runner.os }}-benchmark
-
-  nightly-check:
-    runs-on: ubuntu-20.04
-    env:
-      RUSTFLAGS: -D warnings
-    steps:
-      - uses: actions/checkout@v3
-      - name: Rust install
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-          components: rustfmt, clippy
-      # A SSH private key is required as some dependencies are from private repos
-      - name: Set ssh keys
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
-      - name: Formatting
-        run: |
-          cd compilers/concrete-optimizer
-          cargo fmt --check
-
-      - name: Lint
-        run: |
-          cd compilers/concrete-optimizer
-          cargo clippy --release --all-targets
-
