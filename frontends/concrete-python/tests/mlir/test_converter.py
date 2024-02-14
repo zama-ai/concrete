@@ -231,7 +231,7 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                    # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 34-bit value is used as an input to a table lookup
-                                                                              (note that it's assigned 34-bits during compilation because of its relation with other operations)
+                                                                              (note that it's assigned to 34-bits during compilation because of its relation with other operations)
 %1 = 2                    # ClearScalar<uint2>             ∈ [2, 2]
 %2 = power(%0, %1)        # EncryptedScalar<uint34>        ∈ [10000000000, 10000000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit table lookups are supported
@@ -546,7 +546,7 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a bitwise operation
-                                                                                   (note that it's assigned 19-bits during compilation because of its relation with other operations)
+                                                                                   (note that it's assigned to 19-bits during compilation because of its relation with other operations)
 %1 = y                         # EncryptedScalar<uint19>        ∈ [300000, 300000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a bitwise operation
 %2 = bitwise_or(%0, %1)        # EncryptedScalar<uint19>        ∈ [366560, 366560]
@@ -582,7 +582,7 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
 %1 = y                        # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
-                                                                                  (note that it's assigned 19-bits during compilation because of its relation with other operations)
+                                                                                  (note that it's assigned to 19-bits during compilation because of its relation with other operations)
 %2 = not_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
 return %2
@@ -616,7 +616,7 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
 %1 = y                            # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to a comparison operation
-                                                                                      (note that it's assigned 19-bits during compilation because of its relation with other operations)
+                                                                                      (note that it's assigned to 19-bits during compilation because of its relation with other operations)
 %2 = greater_equal(%0, %1)        # EncryptedScalar<uint1>         ∈ [1, 1]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
 return %2
@@ -634,7 +634,7 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 37-bit value is used as the operand of a shift operation
-                                                                                   (note that it's assigned 37-bits during compilation because of its relation with other operations)
+                                                                                   (note that it's assigned to 37-bits during compilation because of its relation with other operations)
 %1 = y                         # EncryptedScalar<uint5>         ∈ [20, 20]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 5-bit value is used as the shift amount of a shift operation
 %2 = left_shift(%0, %1)        # EncryptedScalar<uint37>        ∈ [104857600000, 104857600000]
@@ -649,10 +649,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                         # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 37-bit value is used as the operand of a shift operation
-                                                                                   (note that it's assigned 37-bits during compilation because of its relation with other operations)
+                                                                                   (note that it's assigned to 37-bits during compilation because of its relation with other operations)
 %1 = y                         # EncryptedScalar<uint5>         ∈ [20, 20]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 37-bit value is used as the shift amount of a shift operation
-                                                                           (note that it's assigned 37-bits during compilation because of its relation with other operations)
+                                                                           (note that it's assigned to 37-bits during compilation because of its relation with other operations)
 %2 = left_shift(%0, %1)        # EncryptedScalar<uint37>        ∈ [104857600000, 104857600000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this shift operation resulted in 37-bits but only up to 16-bit shift operations are supported
 return %2
@@ -670,10 +670,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                       # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to an encrypted multiplication
-                                                                                 (note that it's assigned 18-bits during compilation because of its relation with other operations)
+                                                                                 (note that it's assigned to 18-bits during compilation because of its relation with other operations)
 %1 = y                       # EncryptedScalar<uint5>         ∈ [20, 20]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to an encrypted multiplication
-                                                                         (note that it's assigned 18-bits during compilation because of its relation with other operations)
+                                                                         (note that it's assigned to 18-bits during compilation because of its relation with other operations)
 %2 = multiply(%0, %1)        # EncryptedScalar<uint21>        ∈ [2000000, 2000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted multiplications are supported
 return %2
@@ -686,10 +686,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                       # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 21-bit value is used as an operand to an encrypted multiplication
-                                                                                 (note that it's assigned 21-bits during compilation because of its relation with other operations)
+                                                                                 (note that it's assigned to 21-bits during compilation because of its relation with other operations)
 %1 = y                       # EncryptedScalar<uint5>         ∈ [20, 20]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 21-bit value is used as an operand to an encrypted multiplication
-                                                                         (note that it's assigned 21-bits during compilation because of its relation with other operations)
+                                                                         (note that it's assigned to 21-bits during compilation because of its relation with other operations)
 %2 = multiply(%0, %1)        # EncryptedScalar<uint21>        ∈ [2000000, 2000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted multiplications are supported
 return %2
@@ -712,10 +712,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted dot products
-                                                                                        (note that it's assigned 19-bits during compilation because of its relation with other operations)
+                                                                                        (note that it's assigned to 19-bits during compilation because of its relation with other operations)
 %1 = y                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted dot products
-                                                                                        (note that it's assigned 19-bits during compilation because of its relation with other operations)
+                                                                                        (note that it's assigned to 19-bits during compilation because of its relation with other operations)
 %2 = dot(%0, %1)        # EncryptedScalar<uint36>                    ∈ [40000000000, 40000000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
 return %2
@@ -728,10 +728,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted dot products
-                                                                                        (note that it's assigned 36-bits during compilation because of its relation with other operations)
+                                                                                        (note that it's assigned to 36-bits during compilation because of its relation with other operations)
 %1 = y                  # EncryptedTensor<uint18, shape=(2,)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted dot products
-                                                                                        (note that it's assigned 36-bits during compilation because of its relation with other operations)
+                                                                                        (note that it's assigned to 36-bits during compilation because of its relation with other operations)
 %2 = dot(%0, %1)        # EncryptedScalar<uint36>                    ∈ [40000000000, 40000000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
 return %2
@@ -760,10 +760,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted matrix multiplication
-                                                                                             (note that it's assigned 19-bits during compilation because of its relation with other operations)
+                                                                                             (note that it's assigned to 19-bits during compilation because of its relation with other operations)
 %1 = y                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 19-bit value is used as an operand to an encrypted matrix multiplication
-                                                                                             (note that it's assigned 19-bits during compilation because of its relation with other operations)
+                                                                                             (note that it's assigned to 19-bits during compilation because of its relation with other operations)
 %2 = matmul(%0, %1)        # EncryptedTensor<uint36, shape=(2, 2)>        ∈ [40000000000, 50000000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
 return %2
@@ -776,10 +776,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted matrix multiplication
-                                                                                             (note that it's assigned 36-bits during compilation because of its relation with other operations)
+                                                                                             (note that it's assigned to 36-bits during compilation because of its relation with other operations)
 %1 = y                     # EncryptedTensor<uint18, shape=(2, 2)>        ∈ [100000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 36-bit value is used as an operand to an encrypted matrix multiplication
-                                                                                             (note that it's assigned 36-bits during compilation because of its relation with other operations)
+                                                                                             (note that it's assigned to 36-bits during compilation because of its relation with other operations)
 %2 = matmul(%0, %1)        # EncryptedTensor<uint36, shape=(2, 2)>        ∈ [40000000000, 50000000000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
 return %2
@@ -802,10 +802,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                  # EncryptedTensor<uint16, shape=(2,)>        ∈ [0, 50000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted dot products
-                                                                                  (note that it's assigned 17-bits during compilation because of its relation with other operations)
+                                                                                  (note that it's assigned to 17-bits during compilation because of its relation with other operations)
 %1 = y                  # EncryptedTensor<uint14, shape=(2,)>        ∈ [1, 10000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted dot products
-                                                                                  (note that it's assigned 17-bits during compilation because of its relation with other operations)
+                                                                                  (note that it's assigned to 17-bits during compilation because of its relation with other operations)
 %2 = dot(%0, %1)        # EncryptedScalar<uint16>                    ∈ [50000, 50000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
 return %2
@@ -834,10 +834,10 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                     # EncryptedTensor<uint16, shape=(2, 2)>        ∈ [3, 50000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted matrix multiplication
-                                                                                       (note that it's assigned 17-bits during compilation because of its relation with other operations)
+                                                                                       (note that it's assigned to 17-bits during compilation because of its relation with other operations)
 %1 = y                     # EncryptedTensor<uint1, shape=(2, 2)>         ∈ [0, 1]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an operand to an encrypted matrix multiplication
-                                                                                   (note that it's assigned 17-bits during compilation because of its relation with other operations)
+                                                                                   (note that it's assigned to 17-bits during compilation because of its relation with other operations)
 %2 = matmul(%0, %1)        # EncryptedTensor<uint16, shape=(2, 2)>        ∈ [3, 50000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
 return %2
@@ -875,7 +875,7 @@ Function you are trying to compile cannot be compiled
 
 %0 = x                          # EncryptedScalar<uint1>                ∈ [1, 1]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookup input is 3-bits
-                                                                                 (note that it's assigned 3-bits during compilation because of its relation with other operations)
+                                                                                 (note that it's assigned to 3-bits during compilation because of its relation with other operations)
 %1 = y                          # ClearTensor<uint3, shape=(4,)>        ∈ [1, 4]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table has the shape (4,)
 %2 = dynamic_tlu(%0, %1)        # EncryptedScalar<uint2>                ∈ [2, 2]
@@ -945,7 +945,7 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a minimum operation
 %1 = y                      # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a minimum operation
-                                                                                (note that it's assigned 18-bits during compilation because of its relation with other operations)
+                                                                                (note that it's assigned to 18-bits during compilation because of its relation with other operations)
 %2 = minimum(%0, %1)        # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit minimum operation is supported
 return %2
@@ -984,7 +984,7 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a maximum operation
 %1 = y                      # EncryptedScalar<uint17>        ∈ [100000, 100000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 18-bit value is used as an operand to a maximum operation
-                                                                                (note that it's assigned 18-bits during compilation because of its relation with other operations)
+                                                                                (note that it's assigned to 18-bits during compilation because of its relation with other operations)
 %2 = maximum(%0, %1)        # EncryptedScalar<uint18>        ∈ [200000, 200000]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit maximum operation is supported
 return %2

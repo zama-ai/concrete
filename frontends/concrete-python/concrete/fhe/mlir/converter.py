@@ -569,7 +569,7 @@ class Converter:
                 if variable_input.bit_width != variable_input.original_bit_width:
                     variable_input_messages.append(
                         "("
-                        f"note that it's assigned {variable_input.bit_width}-bits "
+                        f"note that it's assigned to {variable_input.bit_width}-bits "
                         f"during compilation because of its relation with other operations"
                         ")"
                     )

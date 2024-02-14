@@ -324,7 +324,7 @@ class Context:
                     if operand.bit_width != operand.original_bit_width:  # pragma: no cover
                         highlights[operand.origin].append(
                             "("
-                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"note that it's assigned to {operand.bit_width}-bits "
                             f"during compilation because of its relation with other operations"
                             ")"
                         )
@@ -1740,7 +1740,7 @@ class Context:
                     if operand.bit_width != operand.original_bit_width:  # pragma: no cover
                         highlights[operand.origin].append(  # type: ignore
                             "("
-                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"note that it's assigned to {operand.bit_width}-bits "
                             f"during compilation because of its relation with other operations"
                             ")"
                         )
@@ -2075,7 +2075,7 @@ class Context:
                     if operand.bit_width != operand.original_bit_width:
                         highlights[operand.origin].append(  # type: ignore
                             "("
-                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"note that it's assigned to {operand.bit_width}-bits "
                             f"during compilation because of its relation with other operations"
                             ")"
                         )
@@ -2144,7 +2144,7 @@ class Context:
             if on.bit_width != on.original_bit_width:  # pragma: no cover
                 highlights[on.origin].append(  # type: ignore
                     "("
-                    f"note that it's assigned {on.bit_width}-bits "
+                    f"note that it's assigned to {on.bit_width}-bits "
                     f"during compilation because of its relation with other operations"
                     ")"
                 )
@@ -2482,7 +2482,7 @@ class Context:
                     if operand.bit_width != operand.original_bit_width:
                         highlights[operand.origin].append(  # type: ignore
                             "("
-                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"note that it's assigned to {operand.bit_width}-bits "
                             f"during compilation because of its relation with other operations"
                             ")"
                         )
@@ -2550,7 +2550,7 @@ class Context:
                     if operand.bit_width != operand.original_bit_width:  # pragma: no cover
                         highlights[operand.origin].append(
                             "("
-                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"note that it's assigned to {operand.bit_width}-bits "
                             f"during compilation because of its relation with other operations"
                             ")"
                         )
@@ -2672,7 +2672,7 @@ class Context:
                     if operand.bit_width != operand.original_bit_width:  # pragma: no cover
                         highlights[operand.origin].append(
                             "("
-                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"note that it's assigned to {operand.bit_width}-bits "
                             f"during compilation because of its relation with other operations"
                             ")"
                         )
@@ -2752,7 +2752,7 @@ class Context:
                     if operand.bit_width != operand.original_bit_width:
                         highlights[operand.origin].append(
                             "("
-                            f"note that it's assigned {operand.bit_width}-bits "
+                            f"note that it's assigned to {operand.bit_width}-bits "
                             f"during compilation because of its relation with other operations"
                             ")"
                         )
@@ -3173,7 +3173,7 @@ class Context:
                 assert isinstance(highlights[self.converting], list)
                 highlights[self.converting].append(  # type: ignore
                     "("
-                    f"note that it's assigned {resulting_type.bit_width}-bits "
+                    f"note that it's assigned to {resulting_type.bit_width}-bits "
                     f"during compilation because of its relation with other operations"
                     ")"
                 )
@@ -3185,7 +3185,7 @@ class Context:
                 assert isinstance(highlights[x.origin], list)
                 highlights[x.origin].append(  # type: ignore
                     "("
-                    f"note that it's assigned {x.bit_width}-bits "
+                    f"note that it's assigned to {x.bit_width}-bits "
                     f"during compilation because of its relation with other operations"
                     ")"
                 )
@@ -3197,7 +3197,7 @@ class Context:
                 assert isinstance(highlights[b.origin], list)
                 highlights[b.origin].append(  # type: ignore
                     "("
-                    f"note that it's assigned {b.bit_width}-bits "
+                    f"note that it's assigned to {b.bit_width}-bits "
                     f"during compilation because of its relation with other operations"
                     ")"
                 )
