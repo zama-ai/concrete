@@ -115,7 +115,10 @@ class AssignBitWidths(GraphProcessor):
             if node.output.is_clear:
                 new_bit_width += 1
 
-            node.properties["original_bit_width"] = node.output.dtype.bit_width
+            node.properties["original_bit_width"] = node.properties.get(
+                "bit_width_hint",
+                node.output.dtype.bit_width,
+            )
             node.output.dtype.bit_width = new_bit_width
 
         graph.bit_width_constraints = optimizer

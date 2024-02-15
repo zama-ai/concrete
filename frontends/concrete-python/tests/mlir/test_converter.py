@@ -1125,7 +1125,7 @@ def test_converter_bad_convert(
 
 
 @pytest.mark.parametrize(
-    "function,parameters,expected_mlir",
+    "function,parameters,configuration_overrides,expected_mlir",
     [
         pytest.param(
             lambda x, y: x * y,
@@ -1133,6 +1133,7 @@ def test_converter_bad_convert(
                 "x": {"range": [0, 7], "status": "encrypted"},
                 "y": {"range": [0, 7], "status": "encrypted"},
             },
+            {},
             """
 
 module {
@@ -1150,6 +1151,7 @@ module {
                 "x": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
                 "y": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
             },
+            {},
             """
 
 module {
@@ -1167,6 +1169,7 @@ module {
                 "x": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
                 "y": {"range": [0, 7], "status": "encrypted", "shape": (2,)},
             },
+            {},
             """
 
 module {
@@ -1184,6 +1187,7 @@ module {
                 "x": {"range": [0, 7], "status": "encrypted", "shape": (3, 2)},
                 "y": {"range": [0, 7], "status": "encrypted", "shape": (2, 4)},
             },
+            {},
             """
 
 module {
@@ -1201,6 +1205,7 @@ module {
                 "x": {"range": [0, 7], "status": "encrypted", "shape": (10,)},
                 "y": {"range": [0, 7], "status": "encrypted", "shape": (10,)},
             },
+            {},
             """
 
 module {
@@ -1227,6 +1232,7 @@ module {
                 "x": {"range": [0, 3], "status": "encrypted", "shape": (2,)},
                 "y": {"range": [0, 7], "status": "encrypted", "shape": ()},
             },
+            {},
             """
 
 module {
@@ -1242,15 +1248,283 @@ module {
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [12, 13], "status": "encrypted", "shape": ()},
+            },
+            {},
+            """
+
+module {
+  func.func @main(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+    %c2_i3 = arith.constant 2 : i3
+    %c8_i8 = arith.constant 8 : i8
+    %0 = "FHE.mul_eint_int"(%arg0, %c8_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    %1 = "FHE.reinterpret_precision"(%0) : (!FHE.eint<7>) -> !FHE.eint<4>
+    %cst = arith.constant dense<[0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225]> : tensor<16xi64>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.eint<4>, tensor<16xi64>) -> !FHE.eint<8>
+    %c100_i8 = arith.constant 100 : i8
+    %3 = "FHE.add_eint_int"(%arg0, %c100_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    return %2, %3 : !FHE.eint<8>, !FHE.eint<7>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [12, 13], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+    %c2_i3 = arith.constant 2 : i3
+    %c12_i8 = arith.constant 12 : i8
+    %0 = "FHE.sub_eint_int"(%arg0, %c12_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    %c64_i8 = arith.constant 64 : i8
+    %1 = "FHE.mul_eint_int"(%0, %c64_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    %2 = "FHE.reinterpret_precision"(%1) : (!FHE.eint<7>) -> !FHE.eint<1>
+    %cst = arith.constant dense<[144, 169]> : tensor<2xi64>
+    %3 = "FHE.apply_lookup_table"(%2, %cst) : (!FHE.eint<1>, tensor<2xi64>) -> !FHE.eint<8>
+    %c100_i8 = arith.constant 100 : i8
+    %4 = "FHE.add_eint_int"(%arg0, %c100_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    return %3, %4 : !FHE.eint<8>, !FHE.eint<7>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: fhe.univariate(lambda x: x // np.array([2, 3]))(x),
+            {
+                "x": {"range": [12, 15], "status": "encrypted", "shape": (2,)},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<3>> {
+    %c12_i5 = arith.constant 12 : i5
+    %from_elements = tensor.from_elements %c12_i5 : tensor<1xi5>
+    %0 = "FHELinalg.sub_eint_int"(%arg0, %from_elements) : (tensor<2x!FHE.eint<4>>, tensor<1xi5>) -> tensor<2x!FHE.eint<4>>
+    %c4_i5 = arith.constant 4 : i5
+    %from_elements_0 = tensor.from_elements %c4_i5 : tensor<1xi5>
+    %1 = "FHELinalg.mul_eint_int"(%0, %from_elements_0) : (tensor<2x!FHE.eint<4>>, tensor<1xi5>) -> tensor<2x!FHE.eint<4>>
+    %2 = "FHELinalg.reinterpret_precision"(%1) : (tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<2>>
+    %cst = arith.constant dense<[0, 1]> : tensor<2xindex>
+    %cst_1 = arith.constant dense<[[6, 6, 7, 7], [4, 4, 4, 5]]> : tensor<2x4xi64>
+    %3 = "FHELinalg.apply_mapped_lookup_table"(%2, %cst_1, %cst) : (tensor<2x!FHE.eint<2>>, tensor<2x4xi64>, tensor<2xindex>) -> tensor<2x!FHE.eint<3>>
+    return %3 : tensor<2x!FHE.eint<3>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: (fhe.hint(x, bit_width=5) ** 2, x + 100),
+            {
+                "x": {"range": [12, 13], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+    %c2_i3 = arith.constant 2 : i3
+    %c4_i8 = arith.constant 4 : i8
+    %0 = "FHE.mul_eint_int"(%arg0, %c4_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    %1 = "FHE.reinterpret_precision"(%0) : (!FHE.eint<7>) -> !FHE.eint<5>
+    %cst = arith.constant dense<[0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576, 625, 676, 729, 784, 841, 900, 961]> : tensor<32xi64>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.eint<5>, tensor<32xi64>) -> !FHE.eint<8>
+    %c100_i8 = arith.constant 100 : i8
+    %3 = "FHE.add_eint_int"(%arg0, %c100_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    return %2, %3 : !FHE.eint<8>, !FHE.eint<7>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: fhe.univariate(lambda x: x // np.array([2, 3]))(x),
+            {
+                "x": {"range": [12, 15], "status": "encrypted", "shape": (2,)},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<3>> {
+    %c12_i5 = arith.constant 12 : i5
+    %from_elements = tensor.from_elements %c12_i5 : tensor<1xi5>
+    %0 = "FHELinalg.sub_eint_int"(%arg0, %from_elements) : (tensor<2x!FHE.eint<4>>, tensor<1xi5>) -> tensor<2x!FHE.eint<4>>
+    %c4_i5 = arith.constant 4 : i5
+    %from_elements_0 = tensor.from_elements %c4_i5 : tensor<1xi5>
+    %1 = "FHELinalg.mul_eint_int"(%0, %from_elements_0) : (tensor<2x!FHE.eint<4>>, tensor<1xi5>) -> tensor<2x!FHE.eint<4>>
+    %2 = "FHELinalg.reinterpret_precision"(%1) : (tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<2>>
+    %cst = arith.constant dense<[0, 1]> : tensor<2xindex>
+    %cst_1 = arith.constant dense<[[6, 6, 7, 7], [4, 4, 4, 5]]> : tensor<2x4xi64>
+    %3 = "FHELinalg.apply_mapped_lookup_table"(%2, %cst_1, %cst) : (tensor<2x!FHE.eint<2>>, tensor<2x4xi64>, tensor<2xindex>) -> tensor<2x!FHE.eint<3>>
+    return %3 : tensor<2x!FHE.eint<3>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: fhe.univariate(lambda x: x // np.array([2, 3]))(fhe.hint(x, bit_width=5)),
+            {
+                "x": {"range": [12, 15], "status": "encrypted", "shape": (2,)},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x!FHE.eint<5>>) -> tensor<2x!FHE.eint<3>> {
+    %cst = arith.constant dense<[0, 1]> : tensor<2xindex>
+    %cst_0 = arith.constant dense<[[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15], [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10]]> : tensor<2x32xi64>
+    %0 = "FHELinalg.apply_mapped_lookup_table"(%arg0, %cst_0, %cst) : (tensor<2x!FHE.eint<5>>, tensor<2x32xi64>, tensor<2xindex>) -> tensor<2x!FHE.eint<3>>
+    return %0 : tensor<2x!FHE.eint<3>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: (x // 2, x + 100),
+            {
+                "x": {"range": [1, 63], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.eint<8>) -> (!FHE.eint<5>, !FHE.eint<8>) {
+    %c2_i3 = arith.constant 2 : i3
+    %c4_i9 = arith.constant 4 : i9
+    %0 = "FHE.mul_eint_int"(%arg0, %c4_i9) : (!FHE.eint<8>, i9) -> !FHE.eint<8>
+    %1 = "FHE.reinterpret_precision"(%0) : (!FHE.eint<8>) -> !FHE.eint<6>
+    %cst = arith.constant dense<[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31]> : tensor<64xi64>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.eint<6>, tensor<64xi64>) -> !FHE.eint<5>
+    %c100_i9 = arith.constant 100 : i9
+    %3 = "FHE.add_eint_int"(%arg0, %c100_i9) : (!FHE.eint<8>, i9) -> !FHE.eint<8>
+    return %2, %3 : !FHE.eint<5>, !FHE.eint<8>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [-13, -12], "status": "encrypted", "shape": ()},
+            },
+            {},
+            """
+
+module {
+  func.func @main(%arg0: !FHE.esint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+    %c2_i3 = arith.constant 2 : i3
+    %c4_i8 = arith.constant 4 : i8
+    %0 = "FHE.mul_eint_int"(%arg0, %c4_i8) : (!FHE.esint<7>, i8) -> !FHE.esint<7>
+    %1 = "FHE.reinterpret_precision"(%0) : (!FHE.esint<7>) -> !FHE.esint<5>
+    %cst = arith.constant dense<[0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 225, 196, 169, 144, 121, 100, 81, 64, 49, 36, 25, 16, 9, 4, 1]> : tensor<32xi64>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.esint<5>, tensor<32xi64>) -> !FHE.eint<8>
+    %c100_i8 = arith.constant 100 : i8
+    %3 = "FHE.to_unsigned"(%arg0) : (!FHE.esint<7>) -> !FHE.eint<7>
+    %4 = "FHE.add_eint_int"(%3, %c100_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    return %2, %4 : !FHE.eint<8>, !FHE.eint<7>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [-13, -12], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.esint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+    %c2_i3 = arith.constant 2 : i3
+    %c13_i8 = arith.constant 13 : i8
+    %0 = "FHE.add_eint_int"(%arg0, %c13_i8) : (!FHE.esint<7>, i8) -> !FHE.esint<7>
+    %c64_i8 = arith.constant 64 : i8
+    %1 = "FHE.mul_eint_int"(%0, %c64_i8) : (!FHE.esint<7>, i8) -> !FHE.esint<7>
+    %2 = "FHE.reinterpret_precision"(%1) : (!FHE.esint<7>) -> !FHE.esint<1>
+    %cst = arith.constant dense<[169, 144]> : tensor<2xi64>
+    %3 = "FHE.apply_lookup_table"(%2, %cst) : (!FHE.esint<1>, tensor<2xi64>) -> !FHE.eint<8>
+    %c100_i8 = arith.constant 100 : i8
+    %4 = "FHE.to_unsigned"(%arg0) : (!FHE.esint<7>) -> !FHE.eint<7>
+    %5 = "FHE.add_eint_int"(%4, %c100_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
+    return %3, %5 : !FHE.eint<8>, !FHE.eint<7>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: (x // 2, x + 100),
+            {
+                "x": {"range": [-32, 31], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: !FHE.esint<8>) -> (!FHE.esint<5>, !FHE.eint<8>) {
+    %c2_i3 = arith.constant 2 : i3
+    %c4_i9 = arith.constant 4 : i9
+    %0 = "FHE.mul_eint_int"(%arg0, %c4_i9) : (!FHE.esint<8>, i9) -> !FHE.esint<8>
+    %1 = "FHE.reinterpret_precision"(%0) : (!FHE.esint<8>) -> !FHE.esint<6>
+    %cst = arith.constant dense<[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, -16, -16, -15, -15, -14, -14, -13, -13, -12, -12, -11, -11, -10, -10, -9, -9, -8, -8, -7, -7, -6, -6, -5, -5, -4, -4, -3, -3, -2, -2, -1, -1]> : tensor<64xi64>
+    %2 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.esint<6>, tensor<64xi64>) -> !FHE.esint<5>
+    %c100_i9 = arith.constant 100 : i9
+    %3 = "FHE.to_unsigned"(%arg0) : (!FHE.esint<8>) -> !FHE.eint<8>
+    %4 = "FHE.add_eint_int"(%3, %c100_i9) : (!FHE.eint<8>, i9) -> !FHE.eint<8>
+    return %2, %4 : !FHE.esint<5>, !FHE.eint<8>
+  }
+}
+
+            """,  # noqa: E501
+        ),
     ],
 )
-def test_converter_convert_multi_precision(function, parameters, expected_mlir, helpers):
+def test_converter_convert_multi_precision(
+    function,
+    parameters,
+    configuration_overrides,
+    expected_mlir,
+    helpers,
+):
     """
     Test `convert` method of `Converter` with multi precision.
     """
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    configuration = helpers.configuration().fork(single_precision=False)
+    configuration = helpers.configuration().fork(single_precision=False, **configuration_overrides)
 
     compiler = fhe.Compiler(function, parameter_encryption_statuses)
 
@@ -1342,10 +1616,14 @@ module {
 module {
   func.func @main(%arg0: tensor<2x!FHE.eint<6>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
     %c2_i7 = arith.constant 2 : i7
-    %cst = arith.constant dense<[0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576, 625, 676, 729, 784, 841, 900, 961, 1024, 1089, 1156, 1225, 1296, 1369, 1444, 1521, 1600, 1681, 1764, 1849, 1936, 2025, 2116, 2209, 2304, 2401, 2500, 2601, 2704, 2809, 2916, 3025, 3136, 3249, 3364, 3481, 3600, 3721, 3844, 3969]> : tensor<64xi64>
-    %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<2x!FHE.eint<6>>, tensor<64xi64>) -> tensor<2x!FHE.eint<6>>
-    %from_elements = tensor.from_elements %arg1 : tensor<1x!FHE.eint<6>>
-    %inserted_slice = tensor.insert_slice %from_elements into %0[0] [1] [1] : tensor<1x!FHE.eint<6>> into tensor<2x!FHE.eint<6>>
+    %c16_i7 = arith.constant 16 : i7
+    %from_elements = tensor.from_elements %c16_i7 : tensor<1xi7>
+    %0 = "FHELinalg.mul_eint_int"(%arg0, %from_elements) : (tensor<2x!FHE.eint<6>>, tensor<1xi7>) -> tensor<2x!FHE.eint<6>>
+    %1 = "FHELinalg.reinterpret_precision"(%0) : (tensor<2x!FHE.eint<6>>) -> tensor<2x!FHE.eint<2>>
+    %cst = arith.constant dense<[0, 1, 4, 9]> : tensor<4xi64>
+    %2 = "FHELinalg.apply_lookup_table"(%1, %cst) : (tensor<2x!FHE.eint<2>>, tensor<4xi64>) -> tensor<2x!FHE.eint<6>>
+    %from_elements_0 = tensor.from_elements %arg1 : tensor<1x!FHE.eint<6>>
+    %inserted_slice = tensor.insert_slice %from_elements_0 into %2[0] [1] [1] : tensor<1x!FHE.eint<6>> into tensor<2x!FHE.eint<6>>
     return %inserted_slice : tensor<2x!FHE.eint<6>>
   }
 }
@@ -1445,7 +1723,7 @@ def test_converter_process_multi_precision(function, parameters, expected_graph,
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    GraphConverter().process(graph, configuration)
+    GraphConverter(configuration).process(graph)
     for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
@@ -1487,7 +1765,7 @@ def test_converter_process_single_precision(function, parameters, expected_graph
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    GraphConverter().process(graph, configuration)
+    GraphConverter(configuration).process(graph)
     for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
