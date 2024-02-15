@@ -33,10 +33,14 @@ class Converter:
     Converter class, to convert a computation graph to MLIR.
     """
 
+    configuration: Configuration
+
+    def __init__(self, configuration: Configuration):
+        self.configuration = configuration
+
     def convert(
         self,
         graph: Graph,
-        configuration: Configuration,
         mlir_context: MlirContext,
     ) -> MlirModule:
         """
@@ -46,9 +50,6 @@ class Converter:
             graph (Graph):
                 graph to convert
 
-            configuration (Configuration):
-                configuration to use
-
             mlir_context (MlirContext):
                 MLIR Context to use for module generation
 
@@ -57,14 +58,14 @@ class Converter:
                 In-memory MLIR module corresponding to the graph
         """
 
-        self.process(graph, configuration)
+        self.process(graph)
 
         with mlir_context as context, MlirLocation.unknown():
             concrete.lang.register_dialects(context)  # pylint: disable=no-member
 
             module = MlirModule.create()
             with MlirInsertionPoint(module.body):
-                ctx = Context(context, graph, configuration)
+                ctx = Context(context, graph, self.configuration)
 
                 input_types = [ctx.typeof(node).mlir for node in graph.ordered_inputs()]
 
@@ -83,10 +84,10 @@ class Converter:
                     ]
 
                     for progress_index, node in enumerate(ordered_nodes):
-                        self.trace_progress(configuration, progress_index, ordered_nodes)
+                        self.trace_progress(self.configuration, progress_index, ordered_nodes)
                         preds = [ctx.conversions[pred] for pred in graph.ordered_preds_of(node)]
                         self.node(ctx, node, preds)
-                    self.trace_progress(configuration, len(ordered_nodes), ordered_nodes)
+                    self.trace_progress(self.configuration, len(ordered_nodes), ordered_nodes)
 
                     outputs = []
                     for node in graph.ordered_outputs():
@@ -172,17 +173,16 @@ class Converter:
             return
         concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)  # pylint: disable=no-member
 
-    def process(self, graph: Graph, configuration: Configuration):
+    def process(self, graph: Graph):
         """
         Process a computation graph for MLIR conversion.
 
         Args:
             graph (Graph):
                 graph to process
-
-            configuration (Configuration):
-                configuration to use
         """
+
+        configuration = self.configuration
 
         pipeline = (
             configuration.additional_pre_processors
@@ -491,7 +491,9 @@ class Converter:
         assert len(preds) == 1
         pred = preds[0]
 
+        final_lsbs_to_remove = node.properties["final_lsbs_to_remove"]
         overflow_detected = node.properties["overflow_detected"]
+
         if pred.is_encrypted and pred.bit_width != pred.original_bit_width:
             overflow_protection = node.properties["overflow_protection"]
 
@@ -500,12 +502,17 @@ class Converter:
                 shifter //= 2
 
             if shifter != 1:
-                pred = ctx.mul(pred.type, pred, ctx.constant(ctx.i(pred.bit_width + 1), shifter))
+                shift_amount = int(np.log2(shifter))
+                pred = ctx.reinterpret(
+                    ctx.mul(pred.type, pred, ctx.constant(ctx.i(pred.bit_width + 1), shifter)),
+                    bit_width=(pred.bit_width - shift_amount),
+                )
+                final_lsbs_to_remove -= shift_amount
 
         return ctx.round_bit_pattern(
             ctx.typeof(node),
             pred,
-            node.properties["final_lsbs_to_remove"],
+            final_lsbs_to_remove,
             node.properties["exactness"],
             overflow_detected,
         )
@@ -650,7 +657,7 @@ class Converter:
                 }
                 ctx.error(highlights)
 
-        tables = construct_deduplicated_tables(node, pred_nodes)
+        tables = construct_deduplicated_tables(node, pred_nodes, self.configuration)
 
         assert len(tables) > 0
 

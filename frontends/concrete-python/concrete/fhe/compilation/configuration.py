@@ -985,6 +985,7 @@ class Configuration:
     additional_post_processors: List[GraphProcessor]
     rounding_exactness: Exactness
     approximate_rounding_config: ApproximateRoundingConfig
+    optimize_tlu_based_on_measured_bounds: bool
 
     def __init__(
         self,
@@ -1045,6 +1046,7 @@ class Configuration:
         additional_post_processors: Optional[List[GraphProcessor]] = None,
         rounding_exactness: Exactness = Exactness.EXACT,
         approximate_rounding_config: Optional[ApproximateRoundingConfig] = None,
+        optimize_tlu_based_on_measured_bounds: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1137,6 +1139,7 @@ class Configuration:
         self.approximate_rounding_config = (
             approximate_rounding_config or ApproximateRoundingConfig()
         )
+        self.optimize_tlu_based_on_measured_bounds = optimize_tlu_based_on_measured_bounds
 
         self._validate()
 
@@ -1201,6 +1204,7 @@ class Configuration:
         additional_post_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
         rounding_exactness: Union[Keep, Exactness] = KEEP,
         approximate_rounding_config: Union[Keep, Optional[ApproximateRoundingConfig]] = KEEP,
+        optimize_tlu_based_on_measured_bounds: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
