@@ -1382,3 +1382,17 @@ tests:
     - scalar: 1
     outputs:
     - scalar: 1
+---
+description: return_aliasing
+program: |
+  func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
+    %1 = "FHE.add_eint"(%arg0, %arg0) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
+    return %1, %1: !FHE.eint<3>, !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    outputs:
+    - scalar: 6
+    - scalar: 6
+

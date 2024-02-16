@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <functional>
+#include <llvm/ADT/SmallSet.h>
 #include <memory>
 #include <vector>
 
@@ -169,17 +170,6 @@ struct MemRefDescriptor {
       opaquePtrs[3 + sizes.size() + i] = (void *)strides[i];
     }
   }
-
-  void tryFree() {
-    if (allocated != nullptr && !isReferenceToMLIRGlobalMemory(allocated)) {
-      free(allocated);
-    }
-  }
-
-private:
-  static inline bool isReferenceToMLIRGlobalMemory(void *ptr) {
-    return reinterpret_cast<uintptr_t>(ptr) == 0xdeadbeef;
-  }
 };
 
 struct ScalarDescriptor {
@@ -291,11 +281,31 @@ struct InvocationDescriptor {
     }
   }
 
-  void tryFree() {
-    if (std::holds_alternative<MemRefDescriptor>(inner)) {
-      std::get<MemRefDescriptor>(inner).tryFree();
+  // Structure used to free memory allocated by the circuit after invocation.
+  struct Liberator {
+
+    // Insert in the dropper for further freeing.
+    void insert(const InvocationDescriptor &desc) {
+      if (std::holds_alternative<MemRefDescriptor>(desc.inner)) {
+        ptrs.insert(std::get<MemRefDescriptor>(desc.inner).allocated);
+      }
     }
-  }
+
+    // Free the memory.
+    void tryFree() {
+      for (void *ptr : ptrs) {
+        if (ptr != nullptr && !isReferenceToMLIRGlobalMemory(ptr)) {
+          ::free(ptr);
+        }
+      }
+    }
+
+  private:
+    llvm::SmallSet<void *, 8> ptrs;
+    static inline bool isReferenceToMLIRGlobalMemory(void *ptr) {
+      return reinterpret_cast<uintptr_t>(ptr) == 0xdeadbeef;
+    }
+  };
 
 private:
   template <typename T>
@@ -578,7 +588,12 @@ void ServerCircuit::invoke(const ServerKeyset &serverKeyset) {
   func(_invocationRaws.data());
 
   // The circuit has been executed, we can load the results from the
-  // _returnRaws
+  // _returnRaws.
+  //
+  // Note that, the addition of multi outputs made it possible to have aliased
+  // outputs. We must then deduplicate the output descriptors before freeing
+  // their memory to prevent constructing corrupted outputs and double-freeing.
+  auto liberator = InvocationDescriptor::Liberator();
   for (unsigned int i = 0; i < circuitInfo.asReader().getOutputs().size();
        i++) {
     // We read the descriptor from the _returnRaws via the maps.
@@ -590,10 +605,12 @@ void ServerCircuit::invoke(const ServerKeyset &serverKeyset) {
     // We generate a value from the descriptor which we store in the
     // returnsBuffer.
     returnsBuffer[i] = descriptor.intoValue();
-    // We (eventually) free the memory allocated for this result by the
-    // circuit.
-    descriptor.tryFree();
+    // // We push the descriptor into the output set for later freeing.
+    liberator.insert(descriptor);
   }
+
+  // We (eventually) free the memory allocated for this result by the circuit.
+  liberator.tryFree();
 }
 
 Result<ServerProgram>
