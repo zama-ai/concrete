@@ -14,8 +14,13 @@ static inline std::optional<concretelang::keysets::KeysetCache>
 getTestKeySetCache() {
 
   llvm::SmallString<0> cachePath;
-  llvm::sys::path::system_temp_directory(true, cachePath);
-  llvm::sys::path::append(cachePath, CACHE_PATH);
+
+  if (auto envCachepath = std::getenv("KEY_CACHE_DIRECTORY")) {
+    cachePath.append(envCachepath);
+  } else {
+    llvm::sys::path::system_temp_directory(true, cachePath);
+    llvm::sys::path::append(cachePath, CACHE_PATH);
+  }
 
   auto cachePathStr = std::string(cachePath);
 
