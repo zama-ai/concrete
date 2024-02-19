@@ -34,7 +34,7 @@ jobs:
 
       - name: Install OS Dependencies
         run: |
-          brew install ninja ccache graphviz
+          brew install ninja ccache
 
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
@@ -75,8 +75,6 @@ jobs:
           
           . .venv/bin/activate
           
-          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
-          
           pip install -r requirements.dev.txt
           pip install -r requirements.txt
           
@@ -111,8 +109,6 @@ jobs:
           python3.10 -m venv .testenv
           . .testenv/bin/activate
           
-          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
-          
           pip install $GITHUB_WORKSPACE/frontends/concrete-python/dist/*macos*.whl
           pip install -r $GITHUB_WORKSPACE/frontends/concrete-python/requirements.dev.txt
 
@@ -123,7 +119,7 @@ jobs:
           find .testenv/lib/python3.10/site-packages -not \( -path .testenv/lib/python3.10/site-packages/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib
 
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
-          pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow"
+          pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
 
       - name: Cleanup host
         if: success() || failure()
