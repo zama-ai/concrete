@@ -89,6 +89,10 @@ jobs:
       - name: Test
         run: |
           set -e
+          export KEY_CACHE_DIRECTORY=$(mktemp -d)/KeySetCache
+          echo "KEY_CACHE_DIRECTORY=$KEY_CACHE_DIRECTORY" >> "${GITHUB_ENV}"
+          mkdir $KEY_CACHE_DIRECTORY
+
           cd compilers/concrete-compiler/compiler
           echo "Debug: ccache statistics (prior to the tests):"
           ccache -s
@@ -97,3 +101,8 @@ jobs:
           make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} Python3_EXECUTABLE=$(which python3.10) run-tests
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
+
+      - name: Cleanup host
+        if: success() || failure()
+        run: |
+         rm -rf $KEY_CACHE_DIRECTORY
