@@ -18,6 +18,7 @@ venv:
 	. .venv/bin/activate
 
 	$(PIP) install -r requirements.dev.txt
+	$(PIP) install -r requirements.extra-full.txt
 	$(PIP) install -r requirements.txt
 
 	@echo

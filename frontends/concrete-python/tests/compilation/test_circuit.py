@@ -29,6 +29,7 @@ def test_circuit_str(helpers):
     assert str(circuit) == circuit.graph.format()
 
 
+@pytest.mark.graphviz
 def test_circuit_draw(helpers):
     """
     Test `draw` method of `Circuit` class.

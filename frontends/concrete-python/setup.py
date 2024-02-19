@@ -31,6 +31,14 @@ class MakeBuild(build_ext):
         pass
 
 
+def read_requirements(*filenames):
+    return [
+        dependency
+        for filename in filenames
+        for dependency in read(filename).split("\n")
+        if dependency.strip() != ""
+    ]
+
 setuptools.setup(
 
     name="concrete-python",
@@ -63,24 +71,11 @@ setuptools.setup(
 
     python_requires=">=3.8",
     setup_requires=["wheel"],
-    install_requires=[
-        dependency
-        for dependency in read("requirements.txt").split("\n")
-        if dependency.strip() != ""
-    ],
+    install_requires=read_requirements("requirements.txt"),
     extras_require={
-        "dev": [
-            dependency
-            for dependency in read("requirements.dev.txt").split("\n")
-            if dependency.strip() != ""
-        ],
-        "full": [
-            "matplotlib>=3.7",
-            "pillow>=10.2",
-            "pygraphviz>=1.11",
-        ],
+        "dev": read_requirements("requirements.dev.txt", "requirements.extra-full.txt"),
+        "full": read_requirements("requirements.extra-full.txt"),
     },
-
     package_dir={
         "concrete.fhe": "./concrete/fhe",
         "": bindings_directory(),
