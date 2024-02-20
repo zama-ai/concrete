@@ -347,6 +347,12 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::bufferization::AllocTensorOp>(target, converter);
 
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<mlir::tensor::EmptyOp>>(
+        &getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
+        target, converter);
+
     patterns.add<RegionOpTypeConverterPattern<
         mlir::linalg::GenericOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);

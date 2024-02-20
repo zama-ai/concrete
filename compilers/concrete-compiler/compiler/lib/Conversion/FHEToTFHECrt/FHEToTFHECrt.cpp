@@ -996,6 +996,8 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
         mlir::tensor::CollapseShapeOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
         target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
+        target, converter);
 
     //---------------------------------------------------------- Adding patterns
     mlir::RewritePatternSet patterns(&getContext());
@@ -1075,6 +1077,9 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
 
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::scf::YieldOp>>(&getContext(), converter);
+
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::tensor::EmptyOp>>(&getContext(), converter);
 
     mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
                                                             converter);

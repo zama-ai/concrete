@@ -875,11 +875,11 @@ void TFHEToConcretePass::runOnOperation() {
       mlir::tensor::YieldOp, mlir::scf::YieldOp, mlir::tensor::GenerateOp,
       mlir::tensor::ExtractSliceOp, mlir::tensor::ExtractOp,
       mlir::tensor::InsertSliceOp, mlir::tensor::ExpandShapeOp,
-      mlir::tensor::CollapseShapeOp, mlir::bufferization::AllocTensorOp>(
-      [&](mlir::Operation *op) {
-        return converter.isLegal(op->getResultTypes()) &&
-               converter.isLegal(op->getOperandTypes());
-      });
+      mlir::tensor::CollapseShapeOp, mlir::bufferization::AllocTensorOp,
+      mlir::tensor::EmptyOp>([&](mlir::Operation *op) {
+    return converter.isLegal(op->getResultTypes()) &&
+           converter.isLegal(op->getOperandTypes());
+  });
 
   // rewrite scf for loops if working on illegal types
   patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
@@ -912,8 +912,9 @@ void TFHEToConcretePass::runOnOperation() {
                mlir::concretelang::TypeConvertingReinstantiationPattern<
                    mlir::scf::YieldOp>,
                mlir::concretelang::TypeConvertingReinstantiationPattern<
-                   mlir::bufferization::AllocTensorOp, true>>(&getContext(),
-                                                              converter);
+                   mlir::bufferization::AllocTensorOp, true>,
+               mlir::concretelang::TypeConvertingReinstantiationPattern<
+                   mlir::tensor::EmptyOp, true>>(&getContext(), converter);
 
   mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
                                                           converter);

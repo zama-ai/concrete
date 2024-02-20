@@ -445,6 +445,12 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
   mlir::PassManager pm(&context);
   pipelinePrinting("Lowering to Std", pm, context);
 
+  // Replace non-bufferizable ops (e;g., `tensor.empty` ->
+  // `bufferization.alloc_tensor`)
+  addPotentiallyNestedPass(
+      pm, mlir::bufferization::createEmptyTensorToAllocTensorPass(),
+      enablePass);
+
   // Bufferize
   mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;
   bufferizationOptions.allowReturnAllocs = true;

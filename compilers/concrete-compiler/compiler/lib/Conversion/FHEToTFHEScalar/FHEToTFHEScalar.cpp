@@ -888,6 +888,12 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::scf::YieldOp>>(&getContext(), converter);
 
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::tensor::EmptyOp>>(&getContext(), converter);
+
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
+        target, converter);
+
     mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
                                                             converter);
 
