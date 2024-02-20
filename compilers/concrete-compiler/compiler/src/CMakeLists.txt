@@ -16,6 +16,7 @@ target_link_libraries(
           TFHEDialect
           FHEDialect
           SDFGDialect
+          OptimizerDialect
           ConcretelangSupport
           ConcretelangTransforms
           MLIRIR
