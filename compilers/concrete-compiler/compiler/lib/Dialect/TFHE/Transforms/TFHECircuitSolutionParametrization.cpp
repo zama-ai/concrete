@@ -8,6 +8,7 @@
 #include "concretelang/Dialect/TypeInference/IR/TypeInferenceOps.h"
 
 #include <concretelang/Analysis/TypeInferenceAnalysis.h>
+#include <concretelang/Dialect/Optimizer/IR/OptimizerOps.h>
 #include <concretelang/Dialect/TFHE/IR/TFHEOps.h>
 #include <concretelang/Dialect/TFHE/IR/TFHETypes.h>
 #include <concretelang/Dialect/TFHE/Transforms/Transforms.h>
@@ -765,71 +766,46 @@ protected:
 // The TypeInference operations are necessary to avoid producing
 // invalid IR if `T2` is an unparametrized type.
 class MaterializePartitionBoundaryPattern
-    : public mlir::OpRewritePattern<TFHE::BootstrapGLWEOp> {
+    : public mlir::OpRewritePattern<Optimizer::PartitionFrontierOp> {
 public:
-  static constexpr mlir::StringLiteral kTransformMarker =
-      "__internal_materialize_partition_boundary_marker__";
-
   MaterializePartitionBoundaryPattern(mlir::MLIRContext *ctx,
                                       const CircuitSolutionWrapper &solution)
-      : mlir::OpRewritePattern<TFHE::BootstrapGLWEOp>(ctx, 0),
+      : mlir::OpRewritePattern<Optimizer::PartitionFrontierOp>(ctx, 0),
         solution(solution) {}
 
   mlir::LogicalResult
-  matchAndRewrite(TFHE::BootstrapGLWEOp bsOp,
+  matchAndRewrite(Optimizer::PartitionFrontierOp pfOp,
                   mlir::PatternRewriter &rewriter) const override {
-    // Avoid infinite recursion
-    if (bsOp->hasAttr(kTransformMarker))
-      return mlir::failure();
-
-    mlir::IntegerAttr oidAttr =
-        bsOp->getAttrOfType<mlir::IntegerAttr>("TFHE.OId");
-
-    if (!oidAttr)
-      return mlir::failure();
-
-    int64_t oid = oidAttr.getInt();
-
-    const ::concrete_optimizer::dag::InstructionKeys &instrKeys =
-        solution.lookupInstructionKeys(oid);
-
-    if (instrKeys.extra_conversion_keys.size() == 0)
-      return mlir::failure();
-
-    assert(instrKeys.extra_conversion_keys.size() == 1);
-
-    // Mark operation to avoid infinite recursion
-    bsOp->setAttr(kTransformMarker, rewriter.getUnitAttr());
-
     const ::concrete_optimizer::dag::ConversionKeySwitchKey &cksk =
-        solution.lookupConversionKeyswitchKey(oid);
+        solution.lookupConversionKeyswitchKey(pfOp.getInputKeyID(),
+                                              pfOp.getOutputKeyID());
 
     TFHE::GLWECipherTextType cksInputType =
-        solution.getTFHETypeForKey(bsOp->getContext(), cksk.input_key);
+        solution.getTFHETypeForKey(pfOp->getContext(), cksk.input_key);
 
     TFHE::GLWECipherTextType cksOutputType =
-        solution.getTFHETypeForKey(bsOp->getContext(), cksk.output_key);
+        solution.getTFHETypeForKey(pfOp->getContext(), cksk.output_key);
 
-    rewriter.setInsertionPointAfter(bsOp);
+    rewriter.setInsertionPointAfter(pfOp);
 
     TypeInference::PropagateUpwardOp puOp =
         rewriter.create<TypeInference::PropagateUpwardOp>(
-            bsOp->getLoc(), cksInputType, bsOp.getResult());
+            pfOp->getLoc(), cksInputType, pfOp.getInput());
 
     TFHE::GLWEKeyswitchKeyAttr keyAttr =
         solution.getKeyswitchKeyAttr(rewriter.getContext(), cksk);
 
     TFHE::KeySwitchGLWEOp ksOp = rewriter.create<TFHE::KeySwitchGLWEOp>(
-        bsOp->getLoc(), cksOutputType, puOp.getResult(), keyAttr);
+        pfOp->getLoc(), cksOutputType, puOp.getResult(), keyAttr);
 
     mlir::Type unparametrizedType = TFHE::GLWECipherTextType::get(
         rewriter.getContext(), TFHE::GLWESecretKey::newNone());
 
     TypeInference::PropagateDownwardOp pdOp =
         rewriter.create<TypeInference::PropagateDownwardOp>(
-            bsOp->getLoc(), unparametrizedType, ksOp.getResult());
+            pfOp->getLoc(), unparametrizedType, ksOp.getResult());
 
-    rewriter.replaceAllUsesExcept(bsOp.getResult(), pdOp.getResult(), puOp);
+    rewriter.replaceAllUsesWith(pfOp.getResult(), pdOp.getResult());
 
     return mlir::success();
   }
@@ -855,13 +831,10 @@ public:
             : std::nullopt;
 
     if (solutionWrapper.has_value()) {
-      // The optimizer may have decided to place bootstrap operations
-      // at the edge of a partition. This is indicated by the presence
-      // of an "extra" conversion key for the OIds of the affected
-      // bootstrap operations.
-      //
-      // To keep type inference and the subsequent rewriting simple,
-      // materialize the required keyswitch operations straight away.
+      // Materialize explicit transitions between optimizer partitions
+      // by replacing `optimizer.partition_frontier` operations with
+      // keyswitch operations in order to keep type inference and the
+      // subsequent rewriting simple.
       mlir::RewritePatternSet patterns(module->getContext());
       patterns.add<MaterializePartitionBoundaryPattern>(
           module->getContext(), solutionWrapper.value());
@@ -869,11 +842,6 @@ public:
       if (mlir::applyPatternsAndFoldGreedily(module, std::move(patterns))
               .failed())
         this->signalPassFailure();
-
-      // Clean operations from transformation marker
-      module.walk([](TFHE::BootstrapGLWEOp bsOp) {
-        bsOp->removeAttr(MaterializePartitionBoundaryPattern::kTransformMarker);
-      });
     }
 
     TFHEParametrizationTypeResolver typeResolver(solutionWrapper);

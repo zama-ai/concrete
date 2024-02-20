@@ -6,11 +6,13 @@ add_mlir_dialect_library(
   DEPENDS
   FHEDialect
   FHELinalgDialect
+  OptimizerDialect
   mlir-headers
   LINK_LIBS
   PUBLIC
   MLIRIR
   FHEDialect
-  FHELinalgDialect)
+  FHELinalgDialect
+  OptimizerDialect)
 
 target_link_libraries(FHEDialect PUBLIC MLIRIR)

@@ -342,6 +342,8 @@ private:
   llvm::Expected<std::optional<optimizer::Description>>
   getConcreteOptimizerDescription(CompilationResult &res);
   llvm::Error determineFHEParameters(CompilationResult &res);
+  mlir::LogicalResult
+  materializeOptimizerPartitionFrontiers(CompilationResult &res);
 };
 
 } // namespace concretelang

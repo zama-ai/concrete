@@ -6,6 +6,7 @@
 #include "llvm/Support/TargetSelect.h"
 
 #include "concretelang/Support/CompilationFeedback.h"
+#include "concretelang/Support/V0Parameters.h"
 #include "mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h"
 #include "mlir/Conversion/Passes.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
@@ -40,6 +41,7 @@
 #include "concretelang/Dialect/FHE/Transforms/DynamicTLU/DynamicTLU.h"
 #include "concretelang/Dialect/FHE/Transforms/EncryptedMulToDoubleTLU/EncryptedMulToDoubleTLU.h"
 #include "concretelang/Dialect/FHE/Transforms/Max/Max.h"
+#include "concretelang/Dialect/FHE/Transforms/Optimizer/Optimizer.h"
 #include "concretelang/Dialect/FHELinalg/Transforms/Tiling.h"
 #include "concretelang/Dialect/RT/Analysis/Autopar.h"
 #include "concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h"
@@ -144,6 +146,32 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
         entry_dag.first, std::move(opt_description)));
   }
   return std::move(descriptions);
+}
+
+mlir::LogicalResult materializeOptimizerPartitionFrontiers(
+    mlir::MLIRContext &context, mlir::ModuleOp &module,
+    std::optional<V0FHEContext> &fheContext,
+    std::function<bool(mlir::Pass *)> enablePass) {
+
+  if (!fheContext.has_value())
+    return mlir::success();
+
+  optimizer::CircuitSolution *circuitSolution =
+      std::get_if<optimizer::CircuitSolution>(&fheContext->solution);
+
+  if (!circuitSolution)
+    return mlir::success();
+
+  mlir::PassManager pm(&context);
+  pipelinePrinting("MaterializeOptimizerPartitionFrontiers", pm, context);
+
+  addPotentiallyNestedPass(
+      pm,
+      mlir::concretelang::createOptimizerPartitionFrontierMaterializationPass(
+          *circuitSolution),
+      enablePass);
+
+  return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,

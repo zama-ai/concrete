@@ -38,6 +38,7 @@
 #include "concretelang/Dialect/Concrete/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h"
+#include "concretelang/Dialect/Optimizer/IR/OptimizerDialect.h"
 #include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGDialect.h"
@@ -85,6 +86,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
     registry.insert<
         mlir::concretelang::TypeInference::TypeInferenceDialect,
         mlir::concretelang::Tracing::TracingDialect,
+        mlir::concretelang::Optimizer::OptimizerDialect,
         mlir::concretelang::RT::RTDialect, mlir::concretelang::FHE::FHEDialect,
         mlir::concretelang::TFHE::TFHEDialect,
         mlir::concretelang::FHELinalg::FHELinalgDialect,
@@ -246,6 +248,18 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   return llvm::Error::success();
 }
 
+mlir::LogicalResult
+CompilerEngine::materializeOptimizerPartitionFrontiers(CompilationResult &res) {
+  mlir::ModuleOp module = res.mlirModuleRef->get();
+
+  if (res.fheContext.has_value()) {
+    return pipeline::materializeOptimizerPartitionFrontiers(
+        *module.getContext(), module, res.fheContext, enablePass);
+  }
+
+  return mlir::success();
+}
+
 using OptionalLib = std::optional<std::shared_ptr<CompilerEngine::Library>>;
 // Compile the sources managed by the source manager `sm` to the
 // target dialect `target`. If successful, the result can be retrieved
@@ -363,6 +377,11 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   // FHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);
+
+  if (this->materializeOptimizerPartitionFrontiers(res).failed()) {
+    return StreamStringError(
+        "Could not materialize explicit optimizer partition frontiers");
+  }
 
   // Now that FHE Parameters were computed, we can set the encoding mode of
   // integer ciphered inputs.

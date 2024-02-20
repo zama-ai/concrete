@@ -5,12 +5,15 @@ add_mlir_library(
   Max.cpp
   EncryptedMulToDoubleTLU.cpp
   DynamicTLU.cpp
+  Optimizer.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/FHE
   DEPENDS
   FHEDialect
+  OptimizerDialect
   mlir-headers
   LINK_LIBS
   PUBLIC
   MLIRIR
-  FHEDialect)
+  FHEDialect
+  OptimizerDialect)

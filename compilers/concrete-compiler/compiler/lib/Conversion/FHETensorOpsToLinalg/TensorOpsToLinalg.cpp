@@ -22,6 +22,7 @@
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
+#include "concretelang/Dialect/Optimizer/IR/OptimizerOps.h"
 #include "concretelang/Support/Constants.h"
 #include "concretelang/Support/logging.h"
 
@@ -1936,6 +1937,77 @@ struct FHELinalgUnaryOpToLinalgGeneric
   };
 };
 
+// Replaces a `optimizer.partition_frontier` operation with a tensor
+// operand and a tensor result with a `linalg.generic` operation
+// applying a `optimizer.partition_frontier` operation with scalar
+// operands.
+struct TensorPartitionFrontierOpToLinalgGeneric
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::Optimizer::PartitionFrontierOp> {
+  TensorPartitionFrontierOpToLinalgGeneric(
+      ::mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : ::mlir::OpRewritePattern<
+            mlir::concretelang::Optimizer::PartitionFrontierOp>(context,
+                                                                benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::Optimizer::PartitionFrontierOp pfOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    mlir::RankedTensorType resultTy =
+        pfOp.getResult().getType().cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType tensorTy =
+        pfOp.getInput().getType().cast<mlir::RankedTensorType>();
+
+    mlir::Value init = rewriter.create<mlir::tensor::EmptyOp>(
+        pfOp.getLoc(), resultTy, mlir::ValueRange{});
+
+    // Create affine maps and iterator types for an embarassingly
+    // parallel op
+    llvm::SmallVector<mlir::AffineMap, 2> maps{
+        mlir::AffineMap::getMultiDimIdentityMap(tensorTy.getShape().size(),
+                                                this->getContext()),
+        mlir::AffineMap::getMultiDimIdentityMap(resultTy.getShape().size(),
+                                                this->getContext()),
+    };
+
+    llvm::SmallVector<mlir::utils::IteratorType> iteratorTypes(
+        resultTy.getShape().size(), mlir::utils::IteratorType::parallel);
+
+    // Create the body of the `linalg.generic` op applying a
+    // `tensor.partition_frontier` op on the scalar arguments
+    auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                           mlir::Location nestedLoc,
+                           mlir::ValueRange blockArgs) {
+      mlir::concretelang::Optimizer::PartitionFrontierOp scalarOp =
+          nestedBuilder
+              .create<mlir::concretelang::Optimizer::PartitionFrontierOp>(
+                  pfOp.getLoc(), resultTy.getElementType(), blockArgs[0],
+                  pfOp->getAttrs());
+
+      nestedBuilder.create<mlir::linalg::YieldOp>(pfOp.getLoc(),
+                                                  scalarOp.getResult());
+    };
+
+    // Create the `linalg.generic` op
+    llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
+    llvm::SmallVector<mlir::Value, 1> ins{pfOp.getInput()};
+    llvm::SmallVector<mlir::Value, 1> outs{init};
+    llvm::StringRef doc{""};
+    llvm::StringRef call{""};
+
+    mlir::linalg::GenericOp genericOp =
+        rewriter.create<mlir::linalg::GenericOp>(pfOp.getLoc(), resTypes, ins,
+                                                 outs, maps, iteratorTypes, doc,
+                                                 call, bodyBuilder);
+
+    rewriter.replaceOp(pfOp, {genericOp.getResult(0)});
+
+    return ::mlir::success();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -1955,6 +2027,13 @@ void FHETensorOpsToLinalg::runOnOperation() {
   target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addIllegalOp<mlir::concretelang::FHELinalg::Dot>();
   target.addIllegalDialect<mlir::concretelang::FHELinalg::FHELinalgDialect>();
+
+  target.addDynamicallyLegalOp<
+      mlir::concretelang::Optimizer::PartitionFrontierOp>(
+      [&](mlir::concretelang::Optimizer::PartitionFrontierOp op) {
+        return !op.getInput().getType().isa<mlir::RankedTensorType>() &&
+               !op.getResult().getType().isa<mlir::RankedTensorType>();
+      });
 
   mlir::RewritePatternSet patterns(&getContext());
 
@@ -2109,6 +2188,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<FHELinalgMaxpool2dToLinalgMaxpool2d>(&getContext());
   patterns.insert<TransposeToLinalgGeneric>(&getContext());
   patterns.insert<FromElementToTensorFromElements>(&getContext());
+  patterns.insert<TensorPartitionFrontierOpToLinalgGeneric>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())

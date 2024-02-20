@@ -6,8 +6,10 @@ add_mlir_library(
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/TFHE
   DEPENDS
   TFHEDialect
+  OptimizerDialect
   mlir-headers
   LINK_LIBS
   PUBLIC
   MLIRIR
-  TFHEDialect)
+  TFHEDialect
+  OptimizerDialect)

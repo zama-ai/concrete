@@ -10,6 +10,7 @@
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/IR/Operation.h>
 
+#include "concretelang/Dialect/Optimizer/IR/OptimizerOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -887,6 +888,13 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
 
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::scf::YieldOp>>(&getContext(), converter);
+
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::concretelang::Optimizer::PartitionFrontierOp, true>>(
+        &getContext(), converter);
+
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::Optimizer::PartitionFrontierOp>(target, converter);
 
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::EmptyOp>>(&getContext(), converter);

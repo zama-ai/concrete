@@ -11,6 +11,7 @@
 
 #include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Conversion/Utils/ReinstantiatingOpTypeConversion.h"
+#include "concretelang/Dialect/Optimizer/IR/OptimizerOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -996,6 +997,8 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
         mlir::tensor::CollapseShapeOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<Tracing::TraceCiphertextOp>(
         target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::Optimizer::PartitionFrontierOp>(target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
         target, converter);
 
@@ -1077,6 +1080,10 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
 
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::scf::YieldOp>>(&getContext(), converter);
+
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::concretelang::Optimizer::PartitionFrontierOp, true>>(
+        &getContext(), converter);
 
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::tensor::EmptyOp>>(&getContext(), converter);

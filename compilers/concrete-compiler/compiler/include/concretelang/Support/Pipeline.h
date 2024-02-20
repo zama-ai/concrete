@@ -19,6 +19,11 @@ namespace pipeline {
 mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
                             std::function<bool(mlir::Pass *)> enablePass);
 
+mlir::LogicalResult materializeOptimizerPartitionFrontiers(
+    mlir::MLIRContext &context, mlir::ModuleOp &module,
+    std::optional<V0FHEContext> &fheContext,
+    std::function<bool(mlir::Pass *)> enablePass);
+
 llvm::Expected<std::map<std::string, std::optional<optimizer::Description>>>
 getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      optimizer::Config config,
